@@ -5,19 +5,16 @@
 #include "hw-monitor.h"
 #include "l500-device.h"
 
-namespace librealsense
-{
-    namespace ivcam2
-    {
-        namespace l535
-        {
-            class l535_options : public virtual l500_device
-            {
-            public:
-                l535_options(std::shared_ptr<context> ctx,
-                    const platform::backend_device_group& group);
+namespace librealsense {
+namespace ivcam2 {
+namespace l535 {
 
-            };
-        } // namespace l535
-    } // namespace ivcam2
-} // namespace librealsense
+    class device_options : public virtual l500_device
+    {
+    public:
+        device_options( std::shared_ptr< context > ctx, const platform::backend_device_group & group );
+    };
+
+}  // namespace l535
+}  // namespace ivcam2
+}  // namespace librealsense

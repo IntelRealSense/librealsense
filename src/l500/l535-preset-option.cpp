@@ -5,31 +5,26 @@
 #include "l500-private.h"
 #include "l500-depth.h"
 
-namespace librealsense
+using namespace librealsense;
+using namespace librealsense::ivcam2::l535;
+
+preset_option::preset_option( const option_range& range, std::string description )
+    : float_option_with_description< rs2_l500_visual_preset >( range, description )
 {
-    namespace ivcam2
-    {
-        namespace l535
-        {
-            l535_preset_option::l535_preset_option(option_range range, std::string description)
-                :float_option_with_description< rs2_l500_visual_preset >(range, description)
-            {}
+}
 
-            void l535_preset_option::set(float value)
-            {
-                if (static_cast<rs2_l500_visual_preset>(int(value))
-                    == RS2_L500_VISUAL_PRESET_DEFAULT)
-                    throw invalid_value_exception(to_string()
-                        << "RS2_L500_VISUAL_PRESET_DEFAULT was deprecated!");
+void preset_option::set( float value )
+{
+    if (static_cast<rs2_l500_visual_preset>(int(value)) != RS2_L500_VISUAL_PRESET_CUSTOM)
+        throw invalid_value_exception(to_string() <<
+            static_cast<rs2_l500_visual_preset>(int(value)) << "not supported!");
 
-                float_option_with_description< rs2_l500_visual_preset >::set(value);
-            }
+    super::set( value );
+}
 
-            void l535_preset_option::set_value(float value)
-            {
-                float_option_with_description< rs2_l500_visual_preset >::set(value);
-            }
+void preset_option::set_value( float value )
+{
+    super::set( value );
+}
 
-         } // namespace l535
-    } // namespace ivcam2
-} // namespace librealsense
+        
