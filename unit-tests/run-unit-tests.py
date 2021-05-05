@@ -31,9 +31,10 @@ def usage():
     print( '        -q, --quiet    Suppress output; rely on exit status (0=no failures)' )
     print( '        -r, --regex    run all tests that fit the following regular expression' )
     print( '        -s, --stdout   do not redirect stdout to logs' )
-    print( '        -t, --tag      run all tests with the following tag' )
-    print( '        tests automatically get tagged with \'exe\' or \'py\' and based on their location inside unit-tests/,' )
-    print( '        e.g. unit-tests/func/test-hdr.py gets [func, py]' )
+    print( '        -t, --tag      run all tests with the following tag. If used multiple times runs all tests matching' )
+    print( '                       all tags. e.g. -t tag1 -t tag will run tests who have both tag1 and tag2' )
+    print( '                       tests automatically get tagged with \'exe\' or \'py\' and based on their location' )
+    print( '                       inside unit-tests/, e.g. unit-tests/func/test-hdr.py gets [func, py]' )
     print( '        --list-tags    print out all available tags. This option will not run any tests' )
     print( '        --list-tests   print out all available tests. This option will not run any tests' )
     sys.exit( 2 )
@@ -57,7 +58,7 @@ except getopt.GetoptError as err:
     usage()
 regex = None
 to_stdout = False
-tag = None
+required_tags = []
 list_tags = False
 list_tests = False
 for opt, arg in opts:
@@ -72,7 +73,7 @@ for opt, arg in opts:
     elif opt in ('-s', '--stdout'):
         to_stdout = True
     elif opt in ('-t', '--tag'):
-        tag = arg
+        required_tags.append( arg )
     elif opt == '--list-tags':
         list_tags = True
     elif opt == '--list-tests':
@@ -639,7 +640,7 @@ if not list_only:
     skip_live_tests = len( devices.all() ) == 0 and not devices.acroname
 #
 log.reset_errors()
-tags = set()
+available_tags = set()
 tests = []
 for test in prioritize_tests( get_tests() ):
     #
@@ -648,11 +649,11 @@ for test in prioritize_tests( get_tests() ):
         log.debug_indent()
         test.debug_dump()
         #
-        if tag and tag not in test.config.tags:
+        if required_tags and not all( tag in test.config.tags for tag in required_tags ):
             log.d( 'does not fit --tag:', test.config.tags )
             continue
         #
-        tags.update( test.config.tags )
+        available_tags.update( test.config.tags )
         tests.append( test.name )
         if list_only:
             n_tests += 1
@@ -690,7 +691,7 @@ if not n_tests:
 if list_only:
     if list_tags:
         print( "Available tags:" )
-        for t in sorted( list( tags ) ):
+        for t in sorted( list( available_tags ) ):
             print( t )
     #
     if list_tests:
