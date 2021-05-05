@@ -9,7 +9,7 @@
 
 #include <math.h>
 #include <float.h>
-#include "../example.hpp"
+#include "../examples/example-utils.hpp"
 
 inline rs2_quaternion quaternion_exp(rs2_vector v)
 {

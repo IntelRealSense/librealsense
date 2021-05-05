@@ -6,7 +6,7 @@
 #include <chrono>
 #include <thread>
 #include <mutex>
-#include "../example.hpp"
+#include "../examples/example-utils.hpp"
 
 int main(int argc, char * argv[]) try
 {

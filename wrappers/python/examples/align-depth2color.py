@@ -12,7 +12,6 @@ import numpy as np
 # Import OpenCV for easy image rendering
 import cv2
 
-context = rs.context()
 # Create a pipeline
 pipeline = rs.pipeline()
 # Create a config and configure the pipeline to stream

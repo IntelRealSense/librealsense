@@ -3,6 +3,7 @@
 
 #include <librealsense2/rs.hpp>
 #include "example-imgui.hpp"
+#include "../examples/example-utils.hpp"
 
 /*
  This example introduces the concept of spatial stream alignment.

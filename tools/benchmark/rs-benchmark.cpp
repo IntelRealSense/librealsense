@@ -17,6 +17,7 @@
 #include <fstream>
 
 #include "tclap/CmdLine.h"
+#include "../examples/example-utils.hpp"
 
 using namespace std;
 using namespace chrono;
@@ -206,6 +207,10 @@ public:
 
 int main(int argc, char** argv) try
 {
+    std::string serial;
+    if (!device_with_streams({ RS2_STREAM_COLOR,RS2_STREAM_DEPTH }, serial))
+        return EXIT_SUCCESS;
+
     CmdLine cmd("librealsense rs-benchmark tool", ' ', RS2_API_VERSION_STR);
     cmd.parse(argc, argv);
 
@@ -236,6 +241,8 @@ int main(int argc, char** argv) try
 
     pipeline p;
     config cfg;
+    if (!serial.empty())
+        cfg.enable_device(serial);
     cfg.enable_stream(RS2_STREAM_DEPTH);
     cfg.enable_stream(RS2_STREAM_COLOR, RS2_FORMAT_YUYV, 30);
     auto prof = p.start(cfg);
