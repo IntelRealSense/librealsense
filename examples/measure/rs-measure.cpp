@@ -14,7 +14,6 @@
 #include <thread>
 #include <atomic>
 #include <mutex>
-#include "../examples/example-utils.hpp"
 
 using pixel = std::pair<int, int>;
 

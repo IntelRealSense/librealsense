@@ -17,7 +17,7 @@
 #include <fstream>
 
 #include "tclap/CmdLine.h"
-#include "../examples/example-utils.hpp"
+#include "example-utils.hpp"
 
 using namespace std;
 using namespace chrono;
@@ -208,8 +208,23 @@ public:
 int main(int argc, char** argv) try
 {
     std::string serial;
-    if (!device_with_streams({ RS2_STREAM_COLOR,RS2_STREAM_DEPTH }, serial))
+    enum second_stream {
+        rgb_stream,
+        ir_stream
+    };
+    second_stream second_stream;
+    if (!device_with_streams({ RS2_STREAM_DEPTH }, serial))
         return EXIT_SUCCESS;
+
+    if (device_with_streams({ RS2_STREAM_COLOR }, serial))
+        second_stream = rgb_stream;
+    else if (device_with_streams({ RS2_STREAM_INFRARED }, serial))
+        second_stream = ir_stream;
+    else
+    {
+        std::cout<< " Connect a device that supports either RGB stream or Infrared stream." <<std::endl;
+        return EXIT_SUCCESS;
+    }
 
     CmdLine cmd("librealsense rs-benchmark tool", ' ', RS2_API_VERSION_STR);
     cmd.parse(argc, argv);
@@ -244,7 +259,10 @@ int main(int argc, char** argv) try
     if (!serial.empty())
         cfg.enable_device(serial);
     cfg.enable_stream(RS2_STREAM_DEPTH);
-    cfg.enable_stream(RS2_STREAM_COLOR, RS2_FORMAT_YUYV, 30);
+    if(second_stream == rgb_stream)
+        cfg.enable_stream(RS2_STREAM_COLOR, RS2_FORMAT_YUYV, 30);
+    else
+        cfg.enable_stream(RS2_STREAM_INFRARED);
     auto prof = p.start(cfg);
     auto dev = prof.get_device();
     auto name = dev.get_info(RS2_CAMERA_INFO_NAME);

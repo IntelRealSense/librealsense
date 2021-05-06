@@ -25,7 +25,7 @@ for s in device.sensors:
         found_rgb = True
         break
 if not found_rgb:
-    print("The connected device does not support RGB stream")
+    print("The demo requires Depth camera with Color sensor")
     exit(0)
 
 config.enable_stream(rs.stream.depth, 640, 480, rs.format.z16, 30)

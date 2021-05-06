@@ -9,7 +9,6 @@
 #include <fstream>
 #include <vector>
 #include "example.hpp"
-#include "../examples/example-utils.hpp"
 
 struct point3d {
     float f[3];
