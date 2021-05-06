@@ -28,10 +28,6 @@ color_metadata = [rs.frame_metadata_value.backlight_compensation,
                      rs.frame_metadata_value.white_balance]
 
 def check_option_and_metadata_values(option, metadata, value_to_set, frame):
-    print("checking option: " + repr(option) +
-          ", metadata:" + repr(metadata) +
-          ", value: " + repr(value_to_set))
-
     changed = color_sensor.get_option(option)
     if changed != value_to_set:
         print("failure in setting option: " + repr(option) + "with value: " + repr(value_to_set) +
@@ -63,6 +59,9 @@ color_sensor.start(lrs_queue)
 
 #############################################################################################
 test.start("checking color options")
+# test scenario:
+# for each option, set value, wait 5 frames, check value with get_option and get_frame_metadata
+# values set for each option are min, max, and default values
 iteration = 0
 option_index = -1 #running over options
 value_index = -1  # 0, 1, 2 for min, max, default
