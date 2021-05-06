@@ -361,7 +361,7 @@ TEST_CASE("Extrinsic memory leak detection", "[live]")
                 delay_thresholds["Depth"] = 2000;  // ms
                 delay_thresholds["Gyro"] = 2200;   // ms
                 delay_thresholds["Confidence"] = 2000; // ms
-                delay_thresholds["Infrared"] = 1700;   // ms
+                delay_thresholds["Infrared"] = 2000;   // ms
             }
 
             // SR300
