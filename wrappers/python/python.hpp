@@ -149,6 +149,7 @@ MAP_FMT_TO_TYPE(RS2_FORMAT_Y8I, uint8_t);
 MAP_FMT_TO_TYPE(RS2_FORMAT_INVI, uint8_t);
 //MAP_FMT_TO_TYPE(RS2_FORMAT_W10, );
 MAP_FMT_TO_TYPE(RS2_FORMAT_FG, uint16_t);
+//MAP_FMT_TO_TYPE(RS2_FORMAT_Y411, uint16_t);
 template <rs2_format FMT> struct itemsize {
     static constexpr size_t func() { return sizeof(typename FmtToType<FMT>::type); }
 };
@@ -187,6 +188,7 @@ template<template<rs2_format> class F>
     case RS2_FORMAT_INVI: return F<RS2_FORMAT_INVI>::func();
     case RS2_FORMAT_W10: return F<RS2_FORMAT_W10>::func();
     case RS2_FORMAT_FG: return F<RS2_FORMAT_FG>::func();
+    case RS2_FORMAT_Y411: return F<RS2_FORMAT_Y411>::func();
     // c++11 standard doesn't allow throw in constexpr function switch case
     case RS2_FORMAT_COUNT: throw std::runtime_error("format.count is not a valid value for arguments of type format!");
     default: return F<RS2_FORMAT_ANY>::func();

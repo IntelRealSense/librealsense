@@ -2060,6 +2060,7 @@ class Frame {
       case constants.format.FORMAT_GPIO_RAW:
       case constants.format.FORMAT_RAW10:
       case constants.format.FORMAT_FG:
+      case constants.format.RS2_FORMAT_Y411:
       case constants.format.FORMAT_ANY:
         this.typedArray = new Uint8Array(this.arrayBuffer);
         return this.typedArray;
@@ -3990,6 +3991,11 @@ const format = {
   */
   format_FG: 'FG',
   /**
+  * String literal of <code>'Y411'</code>.
+  * <br>12-bit per-pixel. 6 pixel data stream taking 4 bytes.
+  */
+  format_Y411: 'Y411',
+  /**
    * When passed to enable stream, librealsense will try to provide best suited
    * format. <br>Equivalent to its lowercase counterpart.
    * @type {Integer}
@@ -4144,6 +4150,11 @@ const format = {
    * <br>Equivalent to its lowercase counterpart.
    * @type {Integer}
    */
+   FORMAT_Y411: RS2.RS2_FORMAT_Y411,
+  /**
+  * 12-bit per-pixel. 4 pixel data stream taking 6 bytes.
+  * @type {Integer}
+  */
   FORMAT_COUNT: RS2.RS2_FORMAT_COUNT,
 
   /**
@@ -4210,6 +4221,8 @@ const format = {
 		return this.format_w10;
       case this.RS2_FORMAT_FG:
         return this.format_FG;
+      case this.RS2_FORMAT_Y411:
+        return this.format_Y411;
     }
   },
 };
