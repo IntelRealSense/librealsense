@@ -61,4 +61,27 @@ namespace librealsense
             color_converter(name, RS2_FORMAT_RGB8, RS2_STREAM_INFRARED) {};
         void process_function(byte * const dest[], const byte * source, int width, int height, int actual_size, int input_size) override;
     };
+
+    class Y411_converter : public functional_processing_block
+    {
+    public:
+        Y411_converter(const rs2_format & target_format)
+            : functional_processing_block("Y411 Transform", target_format) {};
+
+    protected:
+        Y411_converter(const char * name, const rs2_format & target_format)
+            : functional_processing_block(
+                name, target_format, RS2_STREAM_COLOR, RS2_EXTENSION_VIDEO_FRAME)
+        {
+            _stream_filter.format = _target_format;
+            _stream_filter.stream = _target_stream;
+        }
+
+        void process_function(byte * const dest[],
+            const byte * source,
+            int width,
+            int height,
+            int actual_size,
+            int input_size) override;
+    };
 }
