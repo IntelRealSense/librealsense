@@ -50,6 +50,7 @@ namespace librealsense
         case RS2_FORMAT_W10: return 32;
         case RS2_FORMAT_Z16H: return 16;
         case RS2_FORMAT_FG: return 16;
+        case RS2_FORMAT_Y411: return 12;
         default: assert(false); return 0;
         }
     }

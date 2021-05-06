@@ -66,7 +66,7 @@ namespace librealsense
 
     class l535_device : public l500_depth,
         public l535::device_options,
-        public l500_color,
+        public l535_color,
         public l500_motion,
         public l500_serializable,
         public firmware_logger_device
@@ -79,7 +79,7 @@ namespace librealsense
             l500_device(ctx, group),
             l500_depth(ctx, group),
             device_options(ctx, group),
-            l500_color(ctx, group),
+            l535_color(ctx, group),
             l500_motion(ctx, group),
             l500_serializable(l500_device::_hw_monitor, get_depth_sensor()),
             firmware_logger_device(ctx, group, l500_device::_hw_monitor,
