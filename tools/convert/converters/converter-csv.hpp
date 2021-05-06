@@ -6,7 +6,9 @@
 
 
 #include <fstream>
-
+#include <map>
+#include <mutex>
+#include <condition_variable>
 #include "../converter.hpp"
 
 
@@ -14,84 +16,72 @@ namespace rs2 {
     namespace tools {
         namespace converter {
 
+            struct stringify
+            {
+                std::ostringstream ss;
+                template<class T> stringify& operator << (const T& val) { ss << val; return *this; }
+                operator std::string() const { return ss.str(); }
+            };
+
+            template <typename T>
+            inline bool val_in_range(const T& val, const std::initializer_list<T>& list)
+            {
+                for (const auto& i : list) {
+                    if (val == i) {
+                        return true;
+                    }
+                }
+                return false;
+            }
+
             class converter_csv : public converter_base {
             protected:
+                struct motion_pose_frame_record {
+                    motion_pose_frame_record(rs2_stream stream_type, int stream_index,
+                        unsigned long long frame_number,
+                        long long frame_ts, long long backend_ts, long long arrival_time,
+                        double p1 = 0., double p2 = 0., double p3 = 0.,
+                        double p4 = 0., double p5 = 0., double p6 = 0., double p7 = 0.);
+
+                    rs2_stream              _stream_type;
+                    int                     _stream_idx;
+                    unsigned long long      _frame_number;
+                    long long               _frame_ts;          // Device-based timestamp. (msec)
+                    long long               _backend_ts;        // Driver-based timestamp. (msec)
+                    long long               _arrival_time;      // Host arrival timestamp (msec)
+                    std::array<double, 7>   _params;            // The parameters are optional and sensor specific
+                    
+                    std::string to_string() const;
+                };
+                std::string get_time_string() const;
+
                 rs2_stream _streamType;
                 std::string _filePath;
+                std::map<std::pair<rs2_stream, int>, std::vector<motion_pose_frame_record>> _imu_pose_collection;
+                bool _sub_workers_joined;
+                std::mutex _m;
+                std::condition_variable _cv;
+
 
             public:
-                converter_csv(const std::string& filePath, rs2_stream streamType = rs2_stream::RS2_STREAM_ANY)
-                    : _filePath(filePath)
-                    , _streamType(streamType)
-                {
-                }
 
+                converter_csv(const std::string& filePath, rs2_stream streamType = rs2_stream::RS2_STREAM_ANY);
+
+                void convert(rs2::frame& frame) override;
+                
                 std::string name() const override
                 {
                     return "CSV converter";
                 }
 
-                void convert(rs2::frame& frame) override
-                {
-                    auto depthframe = frame.as<rs2::depth_frame>();
-
-                    if (!depthframe || !(_streamType == rs2_stream::RS2_STREAM_ANY || depthframe.get_profile().stream_type() == _streamType)) {
-                        return;
-                    }
-
-                    if (frames_map_get_and_set(depthframe.get_profile().stream_type(), depthframe.get_frame_number())) {
-                        return;
-                    }
-
-                    start_worker(
-                        [this, &frame] {
-                            auto depthframe = frame.as<rs2::depth_frame>();
-
-                            std::stringstream filename;
-                            filename << _filePath
-                                << "_" << depthframe.get_profile().stream_name()
-                                << "_" << std::setprecision(14) << std::fixed << depthframe.get_timestamp()
-                                << ".csv";
-
-                            std::stringstream metadata_file;
-                            metadata_file << _filePath
-                                << "_" << depthframe.get_profile().stream_name()
-                                << "_metadata_" << std::setprecision(14) << std::fixed << depthframe.get_timestamp()
-                                << ".txt";
-
-                            std::string filenameS = filename.str();
-                            std::string metadataS = metadata_file.str();
-
-                            add_sub_worker(
-                                [filenameS, metadataS, depthframe] {
-                                    std::ofstream fs(filenameS, std::ios::trunc);
-
-                                    if (fs) {
-                                        for (int y = 0; y < depthframe.get_height(); y++) {
-                                            auto delim = "";
-
-                                            for (int x = 0; x < depthframe.get_width(); x++) {
-                                                fs << delim << depthframe.get_distance(x, y);
-                                                delim = ",";
-                                            }
-
-                                            fs << '\n';
-                                        }
-
-                                        fs.flush();
-                                    }
-
-                                    metadata_to_txtfile(depthframe, metadataS);
-                            });
-
-                            wait_sub_workers();
-                    });
-                }
+                void convert_depth(rs2::depth_frame& depthframe);
+                void convert_motion_pose(rs2::frame& f);
+                void save_motion_pose_data_to_file();
             };
+        } // namespace converter
+    } // namespace tools
+} // namespace rs2
 
-        }
-    }
-}
 
 
 #endif
