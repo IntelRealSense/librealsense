@@ -333,7 +333,7 @@ const rs2_raw_data_buffer* rs2_run_on_chip_calibration(rs2_device* device, const
                                     }
                                     average step count - number of frames to average, must be between 1 - 30, default = 20
                                     step count - max iteration steps, must be between 5 - 30, default = 10
-                                    accuracy - Subpixel accuracy level, value can be one of: Very high = 0 (0.025%), High = 1 (0.05%), Medium = 2 (0.1%), Low = 3 (0.2%), Default = Very high (0.025%), default is very high (0.025%)
+                                    accuracy - Subpixel accuracy level, value can be one of: Very high = 0 (0.025%), High = 1 (0.05%), Medium = 2 (0.1%), Low = 3 (0.2%), Default = Very high (0.025%), default is Medium
                                     scan_parameter - value can be one of: Py scan (default) = 0, Rx scan = 1
                                     data_sampling - value can be one of:polling data sampling = 0, interrupt data sampling = 1
                                     host_assistance: 0 for no assistance, 1 for starting with assistance, 2 for feeding host data to firmware
@@ -428,7 +428,7 @@ void rs2_trigger_device_calibration( rs2_device* dev, rs2_calibration_type type,
                                     }
                                     average step count - number of frames to average, must be between 1 - 30, default = 20
                                     step count - max iteration steps, must be between 5 - 30, default = 10
-                                    accuracy - Subpixel accuracy level, value can be one of: Very high = 0 (0.025%), High = 1 (0.05%), Medium = 2 (0.1%), Low = 3 (0.2%), Default = Very high (0.025%), default is very high (0.025%)
+                                    accuracy - Subpixel accuracy level, value can be one of: Very high = 0 (0.025%), High = 1 (0.05%), Medium = 2 (0.1%), Low = 3 (0.2%), Default = Very high (0.025%), default is Medium
                                     scan_parameter - value can be one of: Py scan (default) = 0, Rx scan = 1
                                     data_sampling - value can be one of:polling data sampling = 0, interrupt data sampling = 1
                                     host_assistance: 0 for no assistance, 1 for starting with assistance, 2 for feeding host data to firmware
