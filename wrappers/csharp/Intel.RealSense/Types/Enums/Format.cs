@@ -96,6 +96,9 @@ namespace Intel.RealSense
         Z16H = 28,
 
         /// <summary>16-bit per-pixel frame grabber format.</summary>
-        FG = 29
+        FG = 29,
+
+        /// <summary>12-bit per-pixel. 4 pixel data stream taking 6 bytes.</summary>
+        Y411 = 30
     }
 }
