@@ -84,4 +84,7 @@ namespace librealsense
             int actual_size,
             int input_size) override;
     };
+    void unpack_y411(byte * const dest[], const byte * s, int w, int h, int actual_size);
+    void unpack_y411_sse(byte * const dest, const byte * s, int w, int h, int actual_size);
+    void unpack_y411_native(byte * const dest, const byte * s, int w, int h, int actual_size);
 }
