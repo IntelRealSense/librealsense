@@ -46,6 +46,66 @@ bool has_avx()
 
 namespace librealsense 
 {
+    void convert_yuv_to_rgb( const byte yuv[3], byte * rgb )
+    {
+        int32_t c = yuv[0] - 16;
+        int32_t d = yuv[1] - 128;
+        int32_t e = yuv[2] - 128;
+
+        int32_t t;
+        #define clamp( x ) ( ( t = ( x ) ) > 255 ? 255 : t < 0 ? 0 : t )
+            rgb[0] = clamp( ( 298 * c + 409 * e + 128 ) >> 8 );
+            rgb[1] = clamp( ( 298 * c - 100 * d - 208 * e + 128 ) >> 8 );
+            rgb[2] = clamp( ( 298 * c + 516 * d + 128 ) >> 8 );
+        #undef clamp
+    }
+    // The bytes alignment on y411:
+    // Y is luminance and U,V are chrome
+    // each U,V are duplicated for 4 pixels
+    //
+    // [L1-Y3] [L1-Y2] [V1] [L0-Y3] [L0-Y2] [U1] [L1-Y1] [L1-Y0] [V0] [L0-Y1] [L0-Y0] [U0]
+    // [L1-Y7] [L1-Y6] [V3] [L0-Y7] [L0-Y6] [U3] [L1-Y5] [L1-Y4] [V2] [L0-Y5] [L0-Y4] [U2]
+    //
+    // Before converting to RGB we unpack the y411 to yuv and then convert it to RBG
+    // After the transformation to yuv the bytes alignment looks like this:
+    //
+    // [L0-Y3 U1 V1] [L0-Y2 U1 V1] [L0-Y1 U0 V0] [L0-Y0 U0 V0]
+    // [L1-Y3 U1 V1] [L1-Y2 U1 V1] [L1-Y1 U0 V0] [L1-Y0 U0 V0]
+    // [L1-Y7 U3 V3] [L1-Y6 U3 V3] [L0-Y5 U2 V2] [L0-Y4 U2 V2]
+    // [L1-Y7 U3 V3] [L1-Y6 U3 V3] [L1-Y5 U2 V2] [L1-Y4 U2 V2]
+    void unpack_y411( byte * const dest[], const byte * s, int w, int h, int actual_size )
+    {
+        auto out = dest[0];
+        auto index_source = 0;
+        for( auto i = 0; i < h; i += 2 )
+        {
+            for( auto j = 0; j < w; j += 2 )
+            {
+                auto y411_pix = &s[index_source];
+                auto l0_u0 = y411_pix[0];
+                auto l0_y0 = y411_pix[1];
+                auto l0_y1 = y411_pix[2];
+                auto l0_v0 = y411_pix[3];
+                auto l1_y0 = y411_pix[4];
+                auto l1_y1 = y411_pix[4];
+
+                byte yuv0_0[3] = { l0_y0, l0_u0, l0_v0 };
+                convert_yuv_to_rgb( yuv0_0, &out[i * w * 3 + j * 3] );
+
+                byte yuv0_1[3] = { l0_y1, l0_u0, l0_v0 };
+                convert_yuv_to_rgb( yuv0_0, &out[i * w * 3 + j * 3 + 3 * 3] );
+
+                byte yuv1_0[3] = { l1_y0, l0_u0, l0_v0 };
+                convert_yuv_to_rgb( yuv1_0, &out[( i + 1 ) * w * 3 + j * 3] );
+
+                byte yuv1_1[3] = { l1_y1, l0_u0, l0_v0 };
+                convert_yuv_to_rgb( yuv1_0, &out[( i + 1 ) * w * 3 + j * 3 + 3 * 3] );
+
+                index_source += 6;
+            }
+        }
+    }
+
     /////////////////////////////
     // YUY2 unpacking routines //
     /////////////////////////////
@@ -702,4 +762,13 @@ namespace librealsense
         unpack_rgb_from_bgr(dest, source, width, height, actual_size);
     }
 
+    void Y411_converter::process_function(byte * const dest[],
+        const byte * source,
+        int width,
+        int height,
+        int actual_size,
+        int input_size)
+    {
+        unpack_y411(dest, source, width, height, actual_size);
+    }  // namespace librealsense
 }

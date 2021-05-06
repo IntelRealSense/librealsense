@@ -48,6 +48,13 @@ namespace librealsense
         std::vector<uint8_t> get_raw_extrinsics_table() const;
     };
 
+    class l535_color :public l500_color
+    {
+    public:
+        l535_color(std::shared_ptr<context> ctx,
+            const platform::backend_device_group& group);
+    };
+
     class l500_color_sensor
         : public synthetic_sensor
         , public video_sensor_interface

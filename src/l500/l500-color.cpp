@@ -20,13 +20,15 @@ namespace librealsense
     std::map<uint32_t, rs2_format> l500_color_fourcc_to_rs2_format = {
         {rs_fourcc('Y','U','Y','2'), RS2_FORMAT_YUYV},
         {rs_fourcc('Y','U','Y','V'), RS2_FORMAT_YUYV},
-        {rs_fourcc('U','Y','V','Y'), RS2_FORMAT_UYVY}
+        {rs_fourcc('U','Y','V','Y'), RS2_FORMAT_UYVY},
+        {rs_fourcc('Y','4','1','1'), RS2_FORMAT_Y411}
     };
 
     std::map<uint32_t, rs2_stream> l500_color_fourcc_to_rs2_stream = {
         {rs_fourcc('Y','U','Y','2'), RS2_STREAM_COLOR},
         {rs_fourcc('Y','U','Y','V'), RS2_STREAM_COLOR},
-        {rs_fourcc('U','Y','V','Y'), RS2_STREAM_COLOR}
+        {rs_fourcc('U','Y','V','Y'), RS2_STREAM_COLOR},
+        {rs_fourcc('Y','4','1','1'), RS2_STREAM_COLOR}
     };
 
     std::shared_ptr<synthetic_sensor> l500_color::create_color_device(std::shared_ptr<context> ctx, const std::vector<platform::uvc_device_info>& color_devices_info)
@@ -150,6 +152,19 @@ namespace librealsense
         color_ep->register_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP, make_uvc_header_parser(&platform::uvc_header::timestamp));
 
         return color_ep;
+    }
+
+    l535_color::l535_color( std::shared_ptr< context > ctx,
+                            const platform::backend_device_group & group )
+        : device( ctx, group )
+        , l500_device( ctx, group )
+        , l500_color( ctx, group )
+    {
+        get_color_sensor()->register_processing_block(processing_block_factory::create_id_pbf(RS2_FORMAT_Y411, RS2_STREAM_COLOR));
+        get_color_sensor()->register_processing_block(
+            { { RS2_FORMAT_Y411 } },
+            { { RS2_FORMAT_RGB8, RS2_STREAM_COLOR } },
+            []() { return std::make_shared<Y411_converter>(RS2_FORMAT_RGB8); });
     }
 
     l500_color::l500_color(std::shared_ptr<context> ctx, const platform::backend_device_group & group)
