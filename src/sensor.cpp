@@ -367,6 +367,12 @@ namespace librealsense
                             else
                                 LOG_DEBUG(expected_size << "expected size is smaller than " << sizeof(byte)*fr->data.size() << "actual size");
                         }
+
+                        memcpy((void*)fh->get_frame_data(), fr->data.data(), expected_size);
+                        auto&& video = (video_frame*)fh.frame;
+                        video->assign(width, height, width * bpp / 8, bpp);
+                        video->set_timestamp_domain(timestamp_domain);
+                        fh->set_stream(req_profile_base);
                     }
                     else
                     {
