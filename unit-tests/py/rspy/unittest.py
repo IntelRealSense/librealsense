@@ -121,7 +121,7 @@ class TestConfigFromText( TestConfig ):
 
     def __init__( self, source, line_prefix ):
         """
-        :param source: The path to the text file
+        :param source: The absolute path to the text file
         :param line_prefix: A regex to denote a directive (must be first thing in a line), which will
             be immediately followed by the directive itself and optional arguments
         """
@@ -169,8 +169,8 @@ class TestConfigFromText( TestConfig ):
                 log.e( source + '+' + str( context['index'] ) + ': invalid directive "' + directive + '"; ignoring' )
 
     def derive_tags_from_path( self, source ):
-        # we need the relative ath starting at the unit-tests directory
-        relative_path = source.split( "unit-tests" + os.sep )[-1]
+        # we need the relative path starting at the unit-tests directory
+        relative_path = source.split( os.sep + "unit-tests" + os.sep )[-1]
         sub_dirs = re.split( r"[/\\]", relative_path )[:-1] # last element will be the name of the test
         self._tags.update( sub_dirs )
 
@@ -336,6 +336,8 @@ class ExeTest( Test ):
         :param exe: full path to executable
         """
         global unit_tests_dir
+        if not os.path.isfile( exe ):
+            log.f( "Tried to create exe test with invalid exe file:", exe )
         Test.__init__( self, testname )
         self.exe = exe
 
@@ -359,8 +361,6 @@ class ExeTest( Test ):
         return cmd
 
     def run_test( self, configuration = None, log_path = None ):
-        if self.exe is None:
-            log.f( "Tried to run exe test", self.name, "without providing exe file" )
         try:
             run( self.command, stdout=log_path, append=self.ran, timeout=self.config.timeout )
         finally:

@@ -33,7 +33,7 @@ def usage():
     print( '                       inside unit-tests/, e.g. unit-tests/func/test-hdr.py gets [func, py]' )
     print( '        --list-tags    print out all available tags. This option will not run any tests' )
     print( '        --list-tests   print out all available tests. This option will not run any tests' )
-    exit(2)
+    sys.exit(2)
 dir=sys.argv[1]
 builddir=sys.argv[2]
 if not os.path.isdir( dir ) or not os.path.isdir( builddir ):
@@ -277,6 +277,6 @@ handle.close()
 
 print( 'Generated ' + str(n_tests) + ' unit-tests' )
 if log.n_errors():
-    exit(1)
-exit(0)
+    sys.exit(1)
+sys.exit(0)
 

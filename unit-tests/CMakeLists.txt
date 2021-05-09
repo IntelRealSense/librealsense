@@ -16,7 +16,7 @@ endif()
 if(BUILD_UNIT_TESTS)
     if(Python3_FOUND)
         execute_process(
-            COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/unit-test-config.py ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR} ${UNIT-TESTS}
+            COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/unit-test-config.py ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR} ${UNIT_TESTS_ARGS}
             RESULT_VARIABLE rv
         )
         if( NOT ${rv} EQUAL 0 )
