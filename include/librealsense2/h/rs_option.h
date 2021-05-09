@@ -95,8 +95,8 @@ extern "C" {
         RS2_OPTION_SENSOR_MODE, /**< The resolution mode: see rs2_sensor_mode for values */
         RS2_OPTION_EMITTER_ALWAYS_ON, /**< Enable Laser On constantly (GS SKU Only) */
         RS2_OPTION_THERMAL_COMPENSATION, /**< Depth Thermal Compensation for selected D400 SKUs */
-        RS2_OPTION_TRIGGER_CAMERA_ACCURACY_HEALTH, /**< DEPRECATED! */
-        RS2_OPTION_RESET_CAMERA_ACCURACY_HEALTH, /**< DEPRECATED! */
+        RS2_OPTION_TRIGGER_CAMERA_ACCURACY_HEALTH, /**< DEPRECATED as of 2.46! */
+        RS2_OPTION_RESET_CAMERA_ACCURACY_HEALTH, /**< DEPRECATED as of 2.46! */
         RS2_OPTION_HOST_PERFORMANCE, /**< Set host performance mode to optimize device settings so host can keep up with workload, for example, USB transaction granularity, setting option to low performance host leads to larger USB transaction size and reduced number of transactions which improves performance and stability if host is relatively weak as compared to workload */
         RS2_OPTION_HDR_ENABLED,  /**< Enable / disable HDR */
         RS2_OPTION_SEQUENCE_NAME, /**< HDR Sequence name */
