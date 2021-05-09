@@ -1,17 +1,16 @@
 //// License: Apache 2.0. See LICENSE file in root directory.
 //// Copyright(c) 2020 Intel Corporation. All Rights Reserved.
 
-#include "l535-options.h"
+#include "l535-device-options.h"
 #include "l535-amc-option.h"
 #include "l535-preset-option.h"
 #include "l500-private.h"
 #include "l500-depth.h"
 
-using namespace librealsense;
-using namespace librealsense::ivcam2::l535;
+using librealsense::ivcam2::l535::device_options;
 
-device_options::device_options( std::shared_ptr< context > ctx,
-                            const platform::backend_device_group & group )
+device_options::device_options( std::shared_ptr< librealsense::context > ctx,
+                                const librealsense::platform::backend_device_group & group )
     : device( ctx, group )
     , l500_device( ctx, group )
 {
@@ -43,8 +42,8 @@ device_options::device_options( std::shared_ptr< context > ctx,
               { min_distance, "Minimal distance to the target (in mm)" } },
             { RS2_OPTION_INVALIDATION_BYPASS,
               { invalidation_bypass, "Enable/disable pixel invalidation" } },
-            { RS2_OPTION_INVALIDATION_BYPASS,
-              { invalidation_bypass, "Enable/disable pixel invalidation" } },
+             { RS2_OPTION_ALTERNATE_IR,
+              { alternate_ir, "Enable/Disable alternate IR" } },
             { RS2_OPTION_RX_SENSITIVITY,
               { rx_sensitivity, "auto gain" } }  // TODO: replace the description
         };

@@ -6,12 +6,11 @@
 #include "l500-depth.h"
 
 
-using namespace librealsense;
-using namespace librealsense::ivcam2::l535;
+using librealsense::ivcam2::l535::amc_option;
 
-amc_option::amc_option( l500_device * l500_dev,
-                        hw_monitor * hw_monitor,
-                        amc_control type,
+amc_option::amc_option( librealsense::l500_device * l500_dev,
+                        librealsense::hw_monitor * hw_monitor,
+                        librealsense::ivcam2::l535::amc_control type,
                         const std::string & description )
     : _device( l500_dev )
     , _hw_monitor( hw_monitor )
@@ -47,7 +46,7 @@ amc_option::amc_option( l500_device * l500_dev,
 
 float amc_option::query() const
 {
-    auto res = _hw_monitor->send( command{ AMCGET, _control, get_current, RS2_SENSOR_MODE_VGA } );
+    auto res = _hw_monitor->send( command{ AMCGET, _control, get_current } );
 
     if( res.size() < sizeof( int32_t ) )
     {
@@ -65,17 +64,14 @@ void amc_option::set( float value )
     _hw_monitor->send( command{ AMCSET, _control, (int)value } );
 }
 
-option_range amc_option::get_range() const
+librealsense::option_range amc_option::get_range() const
 {
     return _range;
 }
 
 float amc_option::query_default() const
 {
-    auto res = _hw_monitor->send(
-        command{ AMCGET, _control, l500_command::get_default, RS2_SENSOR_MODE_VGA }
-        // todo: remove sensor mode
-    );
+    auto res = _hw_monitor->send( command{ AMCGET, _control, l500_command::get_default } );
 
     auto val = *( reinterpret_cast< uint32_t * >( res.data() ) );
     return float( val );

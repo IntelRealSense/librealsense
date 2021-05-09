@@ -5,10 +5,9 @@
 #include "l500-private.h"
 #include "l500-depth.h"
 
-using namespace librealsense;
-using namespace librealsense::ivcam2::l535;
+using librealsense::ivcam2::l535::preset_option;
 
-preset_option::preset_option( const option_range& range, std::string description )
+preset_option::preset_option( const librealsense::option_range & range, std::string description )
     : float_option_with_description< rs2_l500_visual_preset >( range, description )
 {
 }
