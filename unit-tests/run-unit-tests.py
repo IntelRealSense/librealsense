@@ -319,7 +319,7 @@ for test in prioritize_tests( get_tests() ):
             continue
         #
         available_tags.update( test.config.tags )
-        tests.append( test.name )
+        tests.append( test )
         if list_only:
             n_tests += 1
             continue
@@ -354,15 +354,22 @@ if not n_tests:
     sys.exit( 1 )
 #
 if list_only:
-    if list_tags:
+    if list_tags and list_tests:
+        for t in sorted( tests, key= lambda x: x.name ):
+            print( t.name, "has tags:", end=' ' )
+            for tag in t.config.tags:
+                print( tag, end=' ')
+            print()
+    #
+    elif list_tags:
         print( "Available tags:" )
         for t in sorted( list( available_tags ) ):
             print( t )
     #
-    if list_tests:
+    elif list_tests:
         print( "Available tests:" )
-        for t in sorted( tests ):
-            print( t )
+        for t in sorted( tests, key= lambda x: x.name ):
+            print( t.name )
 #
 else:
     n_errors = log.n_errors()
