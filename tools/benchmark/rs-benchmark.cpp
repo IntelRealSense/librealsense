@@ -222,7 +222,7 @@ int main(int argc, char** argv) try
         second_stream = ir_stream;
     else
     {
-        std::cout<< " Connect a device that supports either RGB stream or Infrared stream." <<std::endl;
+        std::cout<< " Connect a Depth Camera that supports either RGB or Infrared streams." <<std::endl;
         return EXIT_SUCCESS;
     }
 

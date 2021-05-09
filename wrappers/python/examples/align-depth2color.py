@@ -14,9 +14,11 @@ import cv2
 
 # Create a pipeline
 pipeline = rs.pipeline()
+
 # Create a config and configure the pipeline to stream
 #  different resolutions of color and depth streams
 config = rs.config()
+
 # Get device product line for setting a supporting resolution
 pipeline_wrapper = rs.pipeline_wrapper(pipeline)
 pipeline_profile = config.resolve(pipeline_wrapper)
