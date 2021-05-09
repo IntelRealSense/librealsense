@@ -4990,7 +4990,7 @@ const option = {
    * Set or get auto rx sensitivity.
    * @type {Integer}
    */
-  OPTION_RX_SENSITIVITY: RS2.RS2_OPTION_RX_SENSITIVITY,
+  OPTION_AUTO_RX_SENSITIVITY: RS2.RS2_OPTION_AUTO_RX_SENSITIVITY,
   /**
    * Number of enumeration values. Not a valid input: intended to be used in for-loops.
    * @type {Integer}

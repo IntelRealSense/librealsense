@@ -44,7 +44,7 @@ device_options::device_options( std::shared_ptr< librealsense::context > ctx,
               { invalidation_bypass, "Enable/disable pixel invalidation" } },
              { RS2_OPTION_ALTERNATE_IR,
               { alternate_ir, "Enable/Disable alternate IR" } },
-            { RS2_OPTION_RX_SENSITIVITY,
+            { RS2_OPTION_AUTO_RX_SENSITIVITY,
               { rx_sensitivity, "auto gain" } }  // TODO: replace the description
         };
 

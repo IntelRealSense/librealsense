@@ -141,6 +141,7 @@ enum class ERealSenseOptionType : uint8
     ENABLE_IR_REFLECTIVITY                     , /**< Enables data collection for calculating IR pixel reflectivity */
     AUTO_EXPOSURE_LIMIT                        , /**< Set and get auto exposure limit in microseconds. Default is 0 which means full exposure range. If the requested exposure limit is greater than frame time, it will be set to frame time at runtime. Setting will not take effect until next streaming session. */
     AUTO_GAIN_LIMIT                            , /**< Set and get auto gain limits ranging from 16 to 248. Default is 0 which means full gain. If the requested gain limit is less than 16, it will be set to 16. If the requested gain limit is greater than 248, it will be set to 248. Setting will not take effect until next streaming session. */
+    AUTO_RX_SENSITIVITY                        , /**< Set and get auto receiver sensitivity.*/
 };
 
 UENUM(Blueprintable)

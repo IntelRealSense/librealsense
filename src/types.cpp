@@ -455,7 +455,7 @@ namespace librealsense
             case RS2_OPTION_ENABLE_IR_REFLECTIVITY: return "Enable IR Reflectivity";
             CASE(AUTO_EXPOSURE_LIMIT)
             CASE(AUTO_GAIN_LIMIT)
-            CASE(RX_SENSITIVITY)
+            CASE(AUTO_RX_SENSITIVITY)
         default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
 #undef CASE
