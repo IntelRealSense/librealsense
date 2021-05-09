@@ -6,8 +6,13 @@ from abc import ABC, abstractmethod
 
 from rspy import log, file
 
+# this script is in unit-test/py/rspy
 unit_tests_dir = os.path.dirname( os.path.dirname( os.path.dirname( os.path.abspath( __file__ ) ) ) )
+# the full path to the directory that should hold the unit-tests logs. It is updated in run-unit-tests when we know
+# the target directory
 logdir = None
+# if True all the messages are to be printed to stdout and not to a log file. Updated in run-unit-tests if
+# the flag specifying this option is given
 to_stdout = False
 
 
@@ -122,7 +127,10 @@ class TestConfigFromText( TestConfig ):
         """
         TestConfig.__init__( self )
 
-        # Parse the python
+        self.derive_config_from_text( source, line_prefix )
+        self.derive_tags_from_path( source )
+
+    def derive_config_from_text( self, source, line_prefix ):
         regex = r'^' + line_prefix + r'(\S+)((?:\s+\S+)*?)\s*(?:#\s*(.*))?$'
         for context in file.grep( regex, source ):
             match = context['match']
@@ -136,7 +144,7 @@ class TestConfigFromText( TestConfig ):
                     log.e( source + '+' + str( context['index'] ) + ': device directive with no devices listed' )
                 elif 'each' in text_params.lower() and len( params ) > 1:
                     log.e( source + '+' + str(
-                        context['index'] ) + ': each() cannot be used in combination with other specs', params )
+                            context['index'] ) + ': each() cannot be used in combination with other specs', params )
                 elif 'each' in text_params.lower() and not re.fullmatch( r'each\(.+\)', text_params, re.IGNORECASE ):
                     log.e( source + '+' + str( context['index'] ) + ': invalid \'each\' syntax:', params )
                 else:
@@ -159,6 +167,24 @@ class TestConfigFromText( TestConfig ):
                 self._flags.update( params )
             else:
                 log.e( source + '+' + str( context['index'] ) + ': invalid directive "' + directive + '"; ignoring' )
+
+    def derive_tags_from_path( self, source ):
+        # we need the relative ath starting at the unit-tests directory
+        relative_path = source.split( "unit-tests" + os.sep )[-1]
+        sub_dirs = re.split( r"[/\\]", relative_path )[:-1] # last element will be the name of the test
+        self._tags.update( sub_dirs )
+
+
+class TestConfigFromCpp( TestConfigFromText ):
+    def __init__( self, source ):
+        TestConfigFromText.__init__( self, source, r'//#\s*test:' )
+        self._tags.add( 'exe' )
+
+
+class TestConfigFromPy( TestConfigFromText ):
+    def __init__( self, source ):
+        TestConfigFromText.__init__( self, source, r'#\s*test:' )
+        self._tags.add( 'py' )
 
 
 class Test( ABC ):  # Abstract Base Class
@@ -268,12 +294,7 @@ class PyTest( Test ):
         global unit_tests_dir
         Test.__init__( self, testname )
         self.path_to_script = unit_tests_dir + os.sep + path_to_test
-        self._config = TestConfigFromText( self.path_to_script, r'#\s*test:' )
-        relative_test_path = self.find_source_path()
-        if relative_test_path:
-            sub_dirs = relative_test_path.split( os.sep )[:-1] # last element will be the test's name
-            self._config.tags.update( sub_dirs )
-        self._config.tags.add( "py" )
+        self._config = TestConfigFromPy( self.path_to_script )
 
     def debug_dump( self ):
         log.d( 'script:', self.path_to_script )
@@ -321,10 +342,7 @@ class ExeTest( Test ):
         relative_test_path = self.find_source_path()
         if relative_test_path:
             sub_dirs = relative_test_path.split( os.sep )[:-1]  # last element will be the test's name
-            self._config = TestConfigFromText( unit_tests_dir + os.sep + relative_test_path, r'//#\s*test:' )
-            self._config.tags.update( sub_dirs )
-            self._config.tags.add( "exe" )
-
+            self._config = TestConfigFromCpp( unit_tests_dir + os.sep + relative_test_path )
 
     @property
     def command( self ):

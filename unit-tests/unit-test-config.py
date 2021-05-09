@@ -20,14 +20,14 @@ from glob import glob
 current_dir = os.path.dirname( os.path.abspath( __file__ ) )
 sys.path.append( current_dir + os.sep + "py" )
 
-from rspy import file, repo, unittest
+from rspy import file, repo, unittest, log
 
 def usage():
     ourname = os.path.basename(sys.argv[0])
     print( 'Syntax: ' + ourname + ' <dir> <build-dir> [options]' )
     print( '        build unit-testing framework for the tree in $dir' )
-    print( '        -r, --regex    run all tests that fit the following regular expression' )
-    print( '        -t, --tag      run all tests with the following tag. If used multiple times runs all tests matching' )
+    print( '        -r, --regex    configure all tests that fit the following regular expression' )
+    print( '        -t, --tag      configure all tests with the following tag. If used multiple times runs all tests matching' )
     print( '                       all tags. e.g. -t tag1 -t tag2 will run tests who have both tag1 and tag2' )
     print( '                       tests automatically get tagged with \'exe\' or \'py\' and based on their location' )
     print( '                       inside unit-tests/, e.g. unit-tests/func/test-hdr.py gets [func, py]' )
@@ -36,21 +36,15 @@ def usage():
     exit(2)
 dir=sys.argv[1]
 builddir=sys.argv[2]
-if not os.path.isdir( dir ):
-    print( 'FATAL  Directory not found:', dir )
+if not os.path.isdir( dir ) or not os.path.isdir( builddir ):
     usage()
-    exit(1)
-if not os.path.isdir( builddir ):
-    print( 'FATAL  Directory not found:', builddir )
-    usage()
-    exit(1)
 
 # Parse command-line:
 try:
     opts, args = getopt.getopt( sys.argv[3].split(), 'hr:t:',
                                 longopts=['help', 'regex=', 'tag=', 'list-tags', 'list-tests'] )
 except getopt.GetoptError as err:
-    print( err )  # something like "option -a not recognized"
+    log.e( err )  # something like "option -a not recognized"
     usage()
 regex = None
 required_tags = []
@@ -68,32 +62,12 @@ for opt, arg in opts:
     elif opt == '--list-tests':
         list_tests = True
 
-have_errors = False
-
-def debug(*args):
-    #print( '-D-', *args )
-    pass
-def error(*args):
-    print( '-E-', *args )
-    global have_errors
-    have_errors = True
-
-
-def grep( expr, *args ):
-    #debug( f"grep {expr} {args}" )
-    pattern = re.compile( expr )
-    context = dict()
-    for filename in args:
-        context['filename'] = filename
-        with open( filename, errors = 'ignore' ) as handle:
-            for line in file._grep( pattern, file.remove_newlines( handle ), context ):
-                yield context
-
-src = repo.root.replace( '\\' , '/' ) + '/src' # we need to use / because CMake s fubar
+# We have to stick to Unix conventions because CMake on Windows is fubar...
+src = repo.root.replace( '\\' , '/' ) + '/src'
 
 def generate_cmake( builddir, testdir, testname, filelist ):
     makefile = builddir + '/' + testdir + '/CMakeLists.txt'
-    debug( '   creating:', makefile )
+    log.d( '   creating:', makefile )
     handle = open( makefile, 'w' )
     filelist = '\n    '.join( filelist )
     handle.write( '''
@@ -126,7 +100,7 @@ target_include_directories(''' + testname + ''' PRIVATE ''' + src + ''')
 def find_includes( filepath ):
     filelist = set()
     filedir = os.path.dirname(filepath)
-    for context in grep( '^\s*#\s*include\s+"(.*)"\s*$', filepath ):
+    for context in file.grep( '^\s*#\s*include\s+"(.*)"\s*$', filepath ):
         m = context['match']
         index = context['index']
         include = m.group(1)
@@ -148,28 +122,25 @@ def process_cpp( dir, builddir ):
     for f in file.find( dir, '(^|/)test-.*\.cpp$' ):
         testdir = os.path.splitext( f )[0]                          # "log/internal/test-all"  <-  "log/internal/test-all.cpp"
         testparent = os.path.dirname(testdir)                       # "log/internal"
-        # Each CMakeLists.txt sits in its own directory
-        os.makedirs( builddir + '/' + testdir, exist_ok = True )    # "build/log/internal/test-all"
         # We need the project name unique: keep the path but make it nicer:
         testname = 'test-' + testparent.replace( '/', '-' ) + '-' + os.path.basename(testdir)[5:]   # "test-log-internal-all"
 
-        #TODO: 1. check if testname matches the regex if -r was used
-        #      2. if -t was used, create ExeTest using the testname and check if the tags fit
-        #    if either of these don't match, continue
         if regex and not pattern.search( testname ):
             continue
 
         if required_tags or list_tags:
-            test = unittest.ExeTest( testname, None )
-            if not all( tag in test.config.tags for tag in required_tags ):
+            config = unittest.TestConfigFromCpp( dir + os.sep + f )
+            if not all( tag in config.tags for tag in required_tags ):
                 continue
-            available_tags.update( test.config.tags )
+            available_tags.update( config.tags )
 
         available_tests.append( testname )
 
         if list_only:
             continue
 
+        # Each CMakeLists.txt sits in its own directory
+        os.makedirs( builddir + '/' + testdir, exist_ok=True )  # "build/log/internal/test-all"
         # Build the list of files we want in the project:
         # At a minimum, we have the original file, plus any common files
         filelist = [ dir + '/' + f, '${ELPP_FILES}', '${CATCH_FILES}' ]
@@ -180,7 +151,7 @@ def process_cpp( dir, builddir ):
         # Any files listed are relative to $dir
         shared = False
         static = False
-        for context in grep( '^//#cmake:\s*', dir + '/' + f ):
+        for context in file.grep( '^//#cmake:\s*', dir + '/' + f ):
             m = context['match']
             index = context['index']
             cmd, *rest = context['line'][m.end():].split()
@@ -191,33 +162,33 @@ def process_cpp( dir, builddir ):
                         files = dir + '/' + testparent + '/' + additional_file
                     files = glob( files )
                     if not files:
-                        error( f + '+' + str(index) + ': no files match "' + additional_file + '"' )
+                        log.e( f + '+' + str(index) + ': no files match "' + additional_file + '"' )
                     for abs_file in files:
                         abs_file = os.path.normpath( abs_file )
                         abs_file = abs_file.replace( '\\', '/' )
                         if not os.path.exists( abs_file ):
-                            error( f + '+' + str(index) + ': file not found "' + additional_file + '"' )
-                        debug( '   add file:', abs_file )
+                            log.e( f + '+' + str(index) + ': file not found "' + additional_file + '"' )
+                        log.d( '   add file:', abs_file )
                         filelist.append( abs_file )
                         if( os.path.splitext( abs_file )[0] == 'cpp' ):
                             # Add any "" includes specified in the .cpp that we can find
                             includes |= find_includes( abs_file )
             elif cmd == 'static!':
                 if len(rest):
-                    error( f + '+' + str(index) + ': unexpected arguments past \'' + cmd + '\'' )
+                    log.e( f + '+' + str(index) + ': unexpected arguments past \'' + cmd + '\'' )
                 elif shared:
-                    error( f + '+' + str(index) + ': \'' + cmd + '\' mutually exclusive with \'shared!\'' )
+                    log.e( f + '+' + str(index) + ': \'' + cmd + '\' mutually exclusive with \'shared!\'' )
                 else:
                     static = True
             elif cmd == 'shared!':
                 if len(rest):
-                    error( f + '+' + str(index) + ': unexpected arguments past \'' + cmd + '\'' )
+                    log.e( f + '+' + str(index) + ': unexpected arguments past \'' + cmd + '\'' )
                 elif static:
-                    error( f + '+' + str(index) + ': \'' + cmd + '\' mutually exclusive with \'static!\'' )
+                    log.e( f + '+' + str(index) + ': \'' + cmd + '\' mutually exclusive with \'static!\'' )
                 else:
                     shared = True
             else:
-                error( f + '+' + str(index) + ': unknown cmd \'' + cmd + '\' (should be \'add-file\', \'static!\', or \'shared!\')' )
+                log.e( f + '+' + str(index) + ': unknown cmd \'' + cmd + '\' (should be \'add-file\', \'static!\', or \'shared!\')' )
         for include in includes:
             filelist.append( include )
         generate_cmake( builddir, testdir, testname, filelist )
@@ -262,9 +233,9 @@ static_tests.extend( st )
 
 cmakefile = builddir + '/CMakeLists.txt'
 name = os.path.basename( os.path.realpath( dir ))
-debug( 'Creating "' + name + '" project in', cmakefile )
+log.d( 'Creating "' + name + '" project in', cmakefile )
 
-handle = open( cmakefile, 'w' );
+handle = open( cmakefile, 'w' )
 handle.write( '''
 
 # We make use of ELPP (EasyLogging++):
@@ -282,7 +253,7 @@ set( CATCH_FILES
 n_tests = 0
 for sdir in normal_tests:
     handle.write( 'add_subdirectory( ' + sdir + ' )\n' )
-    debug( '... including:', sdir )
+    log.d( '... including:', sdir )
     n_tests += 1
 if len(shared_tests):
     handle.write( 'if(NOT ${BUILD_SHARED_LIBS})\n' )
@@ -290,7 +261,7 @@ if len(shared_tests):
     handle.write( 'else()\n' )
     for test in shared_tests:
         handle.write( '    add_subdirectory( ' + test + ' )\n' )
-        debug( '... including:', sdir )
+        log.d( '... including:', sdir )
         n_tests += 1
     handle.write( 'endif()\n' )
 if len(static_tests):
@@ -299,13 +270,13 @@ if len(static_tests):
     handle.write( 'else()\n' )
     for test in static_tests:
         handle.write( '    add_subdirectory( ' + test + ' )\n' )
-        debug( '... including:', sdir )
+        log.d( '... including:', sdir )
         n_tests += 1
     handle.write( 'endif()\n' )
 handle.close()
 
 print( 'Generated ' + str(n_tests) + ' unit-tests' )
-if have_errors:
+if log.n_errors():
     exit(1)
 exit(0)
 
