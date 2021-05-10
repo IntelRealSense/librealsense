@@ -11,7 +11,7 @@ if(CHECK_FOR_UPDATES)
     if (WIN32)
         set(CURL_FLAGS ${CURL_FLAGS} -DCMAKE_USE_SCHANNEL=ON )
     else()
-        set(CURL_FLAGS ${CURL_FLAGS} -DCMAKE_USE_OPENSSL=ON )
+        set(CURL_FLAGS ${CURL_FLAGS} -DCMAKE_USE_OPENSSL=ON -DOPENSSL_ROOT_DIR=${OPENSSL_ROOT_DIR})
     endif()
     
     ExternalProject_Add(
