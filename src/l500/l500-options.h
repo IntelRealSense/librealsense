@@ -31,10 +31,10 @@ namespace librealsense
 
     class l500_options;
 
-    typedef uvc_xu_option< int > super;
-
-    class digital_gain_option : public super
+    class digital_gain_option : public uvc_xu_option< int >
     {
+        typedef uvc_xu_option< int > super;
+
     public:
         digital_gain_option( uvc_sensor & ep,
                              platform::extension_unit xu,

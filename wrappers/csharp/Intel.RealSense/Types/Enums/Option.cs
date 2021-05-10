@@ -273,6 +273,9 @@ namespace Intel.RealSense
         auto_exposure_limit = 85,
 
         /// <summary>auto gain limit - for D400 SKUs</summary>
-        auto_gain_limit = 86
+        auto_gain_limit = 86,
+
+        /// <summary>auto receiver sensitivity</summary>
+        auto_rx_sensitivity = 87
     }
 }
