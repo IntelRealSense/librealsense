@@ -331,12 +331,7 @@ namespace librealsense
 
     bool ds5_device::check_fw_compatibility(const std::vector<uint8_t>& image) const
     {
-        return check_firmware_above_minimum((const void*)image.data());
-    }
-
-    bool ds5_device::check_firmware_above_minimum(const void* fw_image) const
-    {
-        std::string fw_version = get_firmware_version_string(fw_image);
+        std::string fw_version = get_firmware_version_string((const void*)image.data());
 
         auto it = ds::device_to_fw_min_version.find(_pid);
         if (it == ds::device_to_fw_min_version.end())

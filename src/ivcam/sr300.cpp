@@ -584,18 +584,14 @@ namespace librealsense
 
     bool sr3xx_camera::check_fw_compatibility(const std::vector<uint8_t>& image) const
     {
-        return check_firmware_above_minimum((const void*)image.data());
-    }
+        std::string fw_version = get_firmware_version_string((const void*)image.data());
 
-    bool sr3xx_camera::check_firmware_above_minimum(const void* fw_image) const
-    {
-        std::string fw_version = get_firmware_version_string(fw_image);
-
-        auto it = device_to_fw_min_version.find(_pid);
-        if (it == device_to_fw_min_version.end())
+        auto min_max_fw_it = device_to_fw_min_max_version.find(_pid);
+        if (min_max_fw_it == device_to_fw_min_max_version.end())
             throw std::runtime_error("Minimum firmware version has not been defined for this device!");
 
-        return (firmware_version(fw_version) >= firmware_version(it->second));
+        return (firmware_version(fw_version) >= firmware_version(min_max_fw_it->second.first)) &&
+            (firmware_version(fw_version) <= firmware_version(min_max_fw_it->second.second));
     }
 
     std::string sr3xx_camera::get_firmware_version_string(const void* fw_image) const

@@ -81,7 +81,6 @@ namespace librealsense
         command get_flash_logs_command() const;
 
         std::string get_firmware_version_string(const void* fw_image) const;
-        bool check_firmware_above_minimum(const void* fw_image) const;
 
         void init(std::shared_ptr<context> ctx,
             const platform::backend_device_group& group);

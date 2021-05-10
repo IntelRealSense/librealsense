@@ -77,7 +77,6 @@ namespace librealsense
         void stop_temperatures_reader();
 
         std::string get_firmware_version_string(const void* fw_image) const;
-        bool check_firmware_above_minimum(const void* fw_image) const;
 
         friend class l500_depth_sensor;
 

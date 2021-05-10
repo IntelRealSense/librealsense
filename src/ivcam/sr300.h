@@ -36,11 +36,11 @@ namespace librealsense
     class sr300_camera;
     class sr3xx_camera;
 
-    static std::map<uint16_t, std::string> device_to_fw_min_version = {
-            { SR306_PID, "3.26.1.0"},
-            { SR300_PID, "3.26.1.0"},
-            { SR300v2_PID, "3.26.1.0"},
-            { SR300_RECOVERY, "3.26.1.0"}
+    static std::map<uint16_t, std::pair<std::string, std::string>> device_to_fw_min_max_version = {
+            { SR306_PID,        {"3.27.1.0", "99.99.99.99"}},
+            { SR300_PID,        {"3.26.1.0", "3.27.0.0"}},
+            { SR300v2_PID,      {"3.26.1.0", "3.26.1.0"}},
+            { SR300_RECOVERY,   {"3.26.1.0", "3.26.1.0"}}
     };
 
     class sr300_timestamp_reader : public frame_timestamp_reader
@@ -482,7 +482,6 @@ namespace librealsense
         command get_flash_logs_command() const;
 
         std::string get_firmware_version_string(const void* fw_image) const;
-        bool check_firmware_above_minimum(const void* fw_image) const;
 
         std::shared_ptr<stream_interface> _depth_stream;
         std::shared_ptr<stream_interface> _ir_stream;
