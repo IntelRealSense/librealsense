@@ -27,7 +27,6 @@
 #include "fw-update-helper.h"
 #include "updates-model.h"
 #include "calibration-model.h"
-#include "cah-model.h"
 #include <utilities/time/periodic_timer.h>
 #include "reflectivity/reflectivity.h"
 #include <utilities/number/stabilized-value.h>
@@ -789,7 +788,6 @@ namespace rs2
 
 
         std::shared_ptr< atomic_objects_in_frame > get_detected_objects() const { return _detected_objects; }
-        bool is_cah_model_enabled() const { return _accuracy_health_model ? true : false; }
 
         std::vector<std::shared_ptr<subdevice_model>> subdevices;
         std::shared_ptr<syncer_model> syncer;
@@ -815,16 +813,10 @@ namespace rs2
 
         std::vector<std::shared_ptr<notification_model>> related_notifications;
 
-        bool show_trigger_camera_accuracy_health_popup = false;
-        bool show_reset_camera_accuracy_health_popup = false;
-
     private:
         // This class is in charge of camera accuracy health window parameters,
         // Needed as a member for reseting the window memory on device disconnection.
        
-
-        std::unique_ptr< cah_model > _accuracy_health_model;  // If this device does not support CAH feature,
-                                                              // the pointer will point to nullptr
 
         void draw_info_icon(ux_window& window, ImFont* font, const ImVec2& size);
         int draw_seek_bar();

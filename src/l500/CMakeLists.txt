@@ -27,8 +27,5 @@ target_sources(${LRS_TARGET}
         "${CMAKE_CURRENT_LIST_DIR}/l535-device-options.h"
         "${CMAKE_CURRENT_LIST_DIR}/l535-amc-option.h"
         "${CMAKE_CURRENT_LIST_DIR}/l535-preset-option.h"
-
-        "${CMAKE_CURRENT_LIST_DIR}/ac-trigger.h"
-        "${CMAKE_CURRENT_LIST_DIR}/ac-trigger.cpp"
 )
 

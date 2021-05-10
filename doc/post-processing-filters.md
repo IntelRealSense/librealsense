@@ -146,9 +146,9 @@ Using `C++` API:
     rs2::spatial_filter spat_filter;
 
     // Configure filter parameters
-    decimation_filter.set_option(RS2_OPTION_FILTER_MAGNITUDE, 3);
+    dec_filter.set_option(RS2_OPTION_FILTER_MAGNITUDE, 3);
     ...
-    spatial_filter.set_option(RS2_OPTION_FILTER_SMOOTH_ALPHA, 0.55f);
+    spat_filter.set_option(RS2_OPTION_FILTER_SMOOTH_ALPHA, 0.55f);
     ...
 
 
