@@ -686,7 +686,7 @@ namespace rs2
                                 {
                                     error_message = "Invalid numeric input!";
                                 }
-                                else if (new_value < range.min || new_value > range.max)
+                                else if ((new_value < range.min || new_value > range.max) && !((opt == RS2_OPTION_AUTO_EXPOSURE_LIMIT || opt == RS2_OPTION_AUTO_GAIN_LIMIT) && new_value==0) )
                                 {
                                     error_message = to_string() << new_value
                                         << " is out of bounds [" << range.min << ", "

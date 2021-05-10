@@ -666,7 +666,7 @@ namespace librealsense
 
     void auto_exposure_limit_option::set(float value)
     {
-        if (!is_valid(value))
+        if (!is_valid(value) && value != 0)
             throw invalid_value_exception("set(enable_auto_exposure) failed! Invalid Auto-Exposure mode request " + std::to_string(value));
 
         command cmd_get(ds::AUTO_CALIB);
@@ -711,7 +711,7 @@ namespace librealsense
 
     void auto_gain_limit_option::set(float value)
     {
-        if (!is_valid(value))
+        if (!is_valid(value) && value != 0)
             throw invalid_value_exception("set(enable_auto_gain) failed! Invalid Auto-Gain mode request " + std::to_string(value));
 
         command cmd_get(ds::AUTO_CALIB);
