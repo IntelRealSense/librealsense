@@ -702,19 +702,12 @@ namespace librealsense
     bool l500_device::check_firmware_above_minimum(const void* fw_image) const
     {
         std::string fw_version = get_firmware_version_string(fw_image);
-        std::string min_version = "5.0.0.0";
-        switch (_pid)
-        {
-        case L500_RECOVERY_PID:
-        case L500_USB2_RECOVERY_PID_OLD:
-        case L500_PID:
-        case L515_PID_PRE_PRQ:
-        case L515_PID:
-        case L535_PID:
-            min_version = "5.0.0.0";
-            break;
-        }
-        return (firmware_version(fw_version) >= firmware_version(min_version));
+
+        auto it = ivcam2::device_to_fw_min_version.find(_pid);
+        if (it == ivcam2::device_to_fw_min_version.end())
+            throw std::runtime_error("Minimum firmware version has not been defined for this device!");
+
+        return (firmware_version(fw_version) >= firmware_version(it->second));
     }
 
     std::string l500_device::get_firmware_version_string(const void* fw_image) const

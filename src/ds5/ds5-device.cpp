@@ -337,46 +337,12 @@ namespace librealsense
     bool ds5_device::check_firmware_above_minimum(const void* fw_image) const
     {
         std::string fw_version = get_firmware_version_string(fw_image);
-        std::string min_version = "5.0.0.0";
-        switch (_pid)
-        {
-        case ds::RS430_MM_PID:
-        case ds::RS_USB2_PID:
-        case ds::RS_RECOVERY_PID:
-        case ds::RS_USB2_RECOVERY_PID:
-        case ds::RS400_IMU_PID:
-        case ds::RS420_MM_PID:
-        case ds::RS410_MM_PID:
-        case ds::RS400_MM_PID:
-        case ds::RS430_MM_RGB_PID:
-        case ds::RS460_PID:
-        case ds::RS405U_PID:
-        case ds::RS416_PID:
-        case ds::RS430I_PID:
-        case ds::RS465_PID:
-        case ds::RS416_RGB_PID:
-        case ds::RS405_PID:
-            min_version = "5.0.0.0"; // TBD
-            break;
 
-        case ds::RS400_PID:
-        case ds::RS410_PID:
-        case ds::RS420_PID:
-            min_version = "5.0.0.0"; // TBD
-            break;
+        auto it = ds::device_to_fw_min_version.find(_pid);
+        if (it == ds::device_to_fw_min_version.end())
+            throw std::runtime_error("Minimum firmware version has not been defined for this device!");
 
-        case ds::RS415_PID:
-        case ds::RS430_PID:
-        case ds::RS435_RGB_PID:
-        case ds::RS435I_PID:
-            min_version = "5.9.2.0";
-            break;
-
-        case ds::RS455_PID:
-            min_version = "5.12.7.100";
-            break;
-        }
-        return (firmware_version(fw_version) >= firmware_version(min_version));
+        return (firmware_version(fw_version) >= firmware_version(it->second));
     }
 
     std::string ds5_device::get_firmware_version_string(const void* fw_image) const

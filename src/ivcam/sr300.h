@@ -36,6 +36,13 @@ namespace librealsense
     class sr300_camera;
     class sr3xx_camera;
 
+    static std::map<uint16_t, std::string> device_to_fw_min_version = {
+            { SR306_PID, "3.26.1.0"},
+            { SR300_PID, "3.26.1.0"},
+            { SR300v2_PID, "3.26.1.0"},
+            { SR300_RECOVERY, "3.26.1.0"}
+    };
+
     class sr300_timestamp_reader : public frame_timestamp_reader
     {
         bool started;
