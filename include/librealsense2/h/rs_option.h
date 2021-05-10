@@ -95,8 +95,8 @@ extern "C" {
         RS2_OPTION_SENSOR_MODE, /**< The resolution mode: see rs2_sensor_mode for values */
         RS2_OPTION_EMITTER_ALWAYS_ON, /**< Enable Laser On constantly (GS SKU Only) */
         RS2_OPTION_THERMAL_COMPENSATION, /**< Depth Thermal Compensation for selected D400 SKUs */
-        RS2_OPTION_TRIGGER_CAMERA_ACCURACY_HEALTH, /**< Enable depth & color frame sync with periodic calibration for proper alignment */
-        RS2_OPTION_RESET_CAMERA_ACCURACY_HEALTH,
+        RS2_OPTION_TRIGGER_CAMERA_ACCURACY_HEALTH, /**< DEPRECATED as of 2.46! */
+        RS2_OPTION_RESET_CAMERA_ACCURACY_HEALTH, /**< DEPRECATED as of 2.46! */
         RS2_OPTION_HOST_PERFORMANCE, /**< Set host performance mode to optimize device settings so host can keep up with workload, for example, USB transaction granularity, setting option to low performance host leads to larger USB transaction size and reduced number of transactions which improves performance and stability if host is relatively weak as compared to workload */
         RS2_OPTION_HDR_ENABLED,  /**< Enable / disable HDR */
         RS2_OPTION_SEQUENCE_NAME, /**< HDR Sequence name */
@@ -187,16 +187,6 @@ extern "C" {
         RS2_DIGITAL_GAIN_LOW = 2,
     } rs2_digital_gain;
     const char* rs2_digital_gain_to_string(rs2_digital_gain preset);
-
-    /** \brief values for RS2_OPTION_TRIGGER_CAMERA_ACCURACY_HEALTH option. */
-    typedef enum rs2_cah_trigger
-    {
-        RS2_CAH_TRIGGER_MANUAL = 0,  /**< not triggered until you give _NOW */
-        RS2_CAH_TRIGGER_NOW    = 1,  /**< triggers CAH and leaves previous value intact! */
-        RS2_CAH_TRIGGER_AUTO   = 2,  /**< triggered periodically or with certain conditions */
-        RS2_CAH_TRIGGER_COUNT        /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
-    } rs2_cah_trigger;
-    const char* rs2_cah_trigger_to_string( rs2_cah_trigger preset );
 
     /** \brief values for RS2_OPTION_HOST_PERFORMANCE option. */
     typedef enum rs2_host_perf_mode

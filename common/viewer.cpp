@@ -876,8 +876,6 @@ namespace rs2
         _hidden_options.emplace(RS2_OPTION_STREAM_INDEX_FILTER);
         _hidden_options.emplace(RS2_OPTION_FRAMES_QUEUE_SIZE);
         _hidden_options.emplace(RS2_OPTION_SENSOR_MODE);
-        _hidden_options.emplace(RS2_OPTION_TRIGGER_CAMERA_ACCURACY_HEALTH);
-        _hidden_options.emplace(RS2_OPTION_RESET_CAMERA_ACCURACY_HEALTH);
         _hidden_options.emplace(RS2_OPTION_NOISE_ESTIMATION);
     }
 

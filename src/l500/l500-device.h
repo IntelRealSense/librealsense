@@ -16,7 +16,6 @@
 #include "error-handling.h"
 #include "global_timestamp_reader.h"
 #include "fw-update/fw-update-device-interface.h"
-#include "device-calibration.h"
 
 namespace librealsense
 {
@@ -28,7 +27,6 @@ namespace librealsense
         , public debug_interface
         , public global_time_interface
         , public updatable
-        , public device_calibration
     {
     public:
         l500_device(std::shared_ptr<context> ctx,
@@ -48,15 +46,6 @@ namespace librealsense
             synthetic_sensor& depth_sensor = get_synthetic_depth_sensor();
             return dynamic_cast<uvc_sensor&>(*depth_sensor.get_raw_sensor());
         }
-
-        void register_calibration_change_callback( calibration_change_callback_ptr callback ) override
-        {
-            _calibration_change_callbacks.push_back( callback );
-        }
-
-        void trigger_device_calibration( rs2_calibration_type ) override;
-
-        void notify_of_calibration_change( rs2_calibration_status status );
 
         std::vector< uint8_t > send_receive_raw_data(const std::vector< uint8_t > & input) override;
 
@@ -99,8 +88,6 @@ namespace librealsense
         std::shared_ptr<stream_interface> _ir_stream;
         std::shared_ptr<stream_interface> _confidence_stream;
         
-        std::shared_ptr< ivcam2::ac_trigger > _autocal;
-
         void force_hardware_reset() const;
         bool _is_locked = true;
 
@@ -110,7 +97,6 @@ namespace librealsense
 
         std::vector<rs2_option> _advanced_options;
 
-        std::vector< calibration_change_callback_ptr > _calibration_change_callbacks;
         platform::usb_spec _usb_mode;
 
         mutable std::mutex _temperature_mutex;
