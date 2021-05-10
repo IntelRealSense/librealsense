@@ -61,7 +61,7 @@ try:
     value_index = -1  # 0, 1, 2 for min, max, default
     # number of frames to wait between set_option and checking metadata
     # is set as 10 - the expected delay is ~120ms for Win and ~80-90ms for Linux
-    num_of_frames_to_wait = 10
+    num_of_frames_to_wait = 15
     while True:
         try:
             lrs_frame = lrs_queue.wait_for_frame(5000)
