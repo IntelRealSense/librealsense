@@ -32,6 +32,9 @@ def check_option_and_metadata_values(option, metadata, value_to_set, frame):
     test.check_equal(changed, value_to_set)
     if frame.supports_frame_metadata(metadata):
         changed_md = frame.get_frame_metadata(metadata)
+        if changed_md != value_to_set:
+            print("failure in setting option: " + repr(option) + "with value: " + repr(value_to_set) +
+                  ", get_frame_metadata returned " + repr(changed_md))
         test.check_equal(changed_md, value_to_set)
     else:
         print("metadata " + repr(metadata) + " not supported")
