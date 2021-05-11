@@ -100,7 +100,7 @@ void RSRTSPClient::playSession() {
     if (m_streams_it == NULL) m_streams_it = new std::map<uint64_t, rs_net_stream*>::iterator(m_streams.begin());
 
     while (*m_streams_it != m_streams.end()) {
-        rs2::stream_profile profile = (*m_streams_it)->second->profile;
+        rs2::stream_profile profile = (*m_streams_it)->second->get_profile();
         uint64_t profile_key = slib::profile2key(profile);
 
         // check for fake formats for color streams
@@ -172,7 +172,7 @@ void RSRTSPClient::continueAfterSETUP(int resultCode, char* resultString)
     // Having successfully setup the subsession, create a data sink for it, and call "startPlaying()" on it.
     // (This will prepare the data sink to receive data; the actual flow of data from the client won't start happening until later,
     // after we've sent a RTSP "PLAY" command.)
-    m_subsession->sink = RSSink::createNew(env, *m_subsession, url(), (*m_streams_it)->second->queue, m_subsession->videoWidth() * m_subsession->videoHeight() * m_subsession->videoFPS());
+    m_subsession->sink = RSSink::createNew(env, *m_subsession, url(), (*m_streams_it)->second->get_queue(), m_subsession->videoWidth() * m_subsession->videoHeight() * m_subsession->videoFPS());
 
     // do not wait for the out of order packets
     // m_scs.subsession->rtpSource()->setPacketReorderingThresholdTime(0); 

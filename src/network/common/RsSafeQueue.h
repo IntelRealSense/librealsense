@@ -17,12 +17,12 @@ public:
     SafeQueue() {};
     ~SafeQueue() {};
 
-    void push(uint8_t* e) {
+    void push(std::shared_ptr<uint8_t> e) {
         std::lock_guard<std::mutex> lck (m);
         return q.push(e);
     };
 
-    uint8_t* front() {
+    std::shared_ptr<uint8_t> front() {
         std::lock_guard<std::mutex> lck (m);
         if (q.empty()) return NULL;
         return q.front();
@@ -40,6 +40,6 @@ public:
     };
 
 private:
-    std::queue<uint8_t*> q;
+    std::queue<std::shared_ptr<uint8_t>> q;
     std::mutex m;
 };

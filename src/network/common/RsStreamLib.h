@@ -14,6 +14,8 @@
 #include <list>
 #include <sstream>
 
+using SoftSensor      = std::shared_ptr<rs2::software_sensor>;
+
 class slib {
 public:
     slib() {};

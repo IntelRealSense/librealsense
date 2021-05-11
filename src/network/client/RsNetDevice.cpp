@@ -113,7 +113,7 @@ rs_net_device::rs_net_device(rs2::software_device sw_device, std::string ip_addr
             sensor.erase(0, pos + 1);
 
             // TODO: move the following code to the NetSensor's constructor
-            NetSensor netsensor(new rs_net_sensor(m_device, sensor_name));
+            NetSensor netsensor(new rs_net_sensor(std::make_shared<rs2::software_sensor>(m_device.add_sensor(sensor_name)), sensor_name));
 
             // get the sensor MRL
             pos = sensor.find("|");

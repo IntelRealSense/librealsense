@@ -13,22 +13,21 @@
 // Implementation of "RSSink":
 #define RS_SINK_RECEIVE_BUFFER_SIZE (CHUNK_SIZE + CHUNK_HLEN + 20)
 
-RSSink* RSSink::createNew(UsageEnvironment& env, MediaSubsession& subsession, char const* streamId, SafeQueue* q, uint32_t threshold)
+RSSink* RSSink::createNew(UsageEnvironment& env, MediaSubsession& subsession, char const* streamId, std::shared_ptr<SafeQueue> q, uint32_t threshold)
 {
     return new RSSink(env, subsession, streamId, q, threshold);
 }
 
-RSSink::RSSink(UsageEnvironment& env, MediaSubsession& subsession, char const* streamId, SafeQueue* q, uint32_t threshold)
+RSSink::RSSink(UsageEnvironment& env, MediaSubsession& subsession, char const* streamId, std::shared_ptr<SafeQueue> q, uint32_t threshold)
     : MediaSink(env), fSubsession(subsession), m_threshold(threshold), m_frames(q)
 {
     fStreamId = strDup(streamId);
-    fReceiveBuffer = new u_int8_t[RS_SINK_RECEIVE_BUFFER_SIZE];
-    // chunks_allocated++;
+    std::shared_ptr<uint8_t> chunk(new u_int8_t[RS_SINK_RECEIVE_BUFFER_SIZE]);
+    m_chunk = chunk;
 }
 
 RSSink::~RSSink()
 {
-    if (fReceiveBuffer) delete[] fReceiveBuffer;
     delete[] fStreamId;
 }
 
@@ -40,8 +39,9 @@ void RSSink::afterGettingFrame(void* clientData, unsigned frameSize, unsigned nu
 
 void RSSink::afterGettingFrame(unsigned frameSize, unsigned numTruncatedBytes, struct timeval presentationTime, unsigned /*durationInMicroseconds*/)
 {
-    m_frames->push(fReceiveBuffer);
-    fReceiveBuffer = new u_int8_t[RS_SINK_RECEIVE_BUFFER_SIZE];
+    m_frames->push(m_chunk);
+    std::shared_ptr<uint8_t> chunk(new u_int8_t[RS_SINK_RECEIVE_BUFFER_SIZE]);
+    m_chunk = chunk;
  
     // Then continue, to request the next frame of data:
     continuePlaying();
@@ -55,6 +55,6 @@ Boolean RSSink::continuePlaying() {
     if(fSource == NULL) return False; // sanity check (should not happen)
 
     // Request the next frame of data from our input source.  "afterGettingFrame()" will get called later, when it arrives:
-    fSource->getNextFrame(fReceiveBuffer, RS_SINK_RECEIVE_BUFFER_SIZE, afterGettingFrame, this, onSourceClosure, this);
+    fSource->getNextFrame(m_chunk.get(), RS_SINK_RECEIVE_BUFFER_SIZE, afterGettingFrame, this, onSourceClosure, this);
     return True;
 }

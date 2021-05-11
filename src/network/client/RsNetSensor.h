@@ -18,18 +18,10 @@
 #include "RsStreamLib.h"
 #include "RsRTSPClient.h"
 
-using SoftSensor      = std::shared_ptr<rs2::software_sensor>;
-using StreamProfile   = std::shared_ptr<rs2::video_stream_profile>;
-using ProfileQPair    = std::pair<rs2::stream_profile, SafeQueue*>;
-using ProfileQMap     = std::map<rs2::stream_profile, SafeQueue*>;
-
 class rs_net_sensor {
 public: 
-    rs_net_sensor(rs2::software_device device, std::string name)
-        : m_sw_device(device), m_name(name), m_streaming(false), m_dev_flag(false), m_eventLoopWatchVariable(0)
-    {
-        m_sw_sensor = std::make_shared<rs2::software_sensor>(m_sw_device.add_sensor(m_name));
-    };
+    rs_net_sensor(SoftSensor sw_sensor, std::string name)
+        : m_sw_sensor(sw_sensor), m_name(name), m_streaming(false), m_dev_flag(false), m_eventLoopWatchVariable(0) {};
 
     ~rs_net_sensor() {};
 
@@ -105,7 +97,6 @@ public:
         sensor->doControl(); 
     };
     void doControl();
-    void doDevice(uint64_t key);
 
 private:    
     rs2::software_device m_sw_device;
@@ -115,7 +106,6 @@ private:
     std::string    m_opts;
 
     SoftSensor     m_sw_sensor;
-    ProfileQMap    m_stream_q;
 
     std::map<uint64_t, rs_net_stream*> m_streams;
 

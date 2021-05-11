@@ -21,6 +21,7 @@ set(RS_CLIENT_NET_CPP
     ./client/RsNetSensor.h
     ./client/RsNetSensor.cpp
     ./client/RsNetStream.h
+    ./client/RsNetStream.cpp
     ./client/RsRTSPClient.h
     ./client/RsRTSPClient.cpp
     ./client/RsVideoRTPSource.h
