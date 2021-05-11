@@ -3708,7 +3708,7 @@ namespace rs2
         _updates->set_device_status(*_updates_profile, false);
     }
 
-    void device_model::check_for_bundled_fw_update(const rs2::context &ctx, std::shared_ptr<notifications_model> not_model)
+    bool device_model::check_for_bundled_fw_update(const rs2::context &ctx, std::shared_ptr<notifications_model> not_model , bool reset_delay )
     {
         if( dev.supports( RS2_CAMERA_INFO_FIRMWARE_VERSION )
             && dev.supports( RS2_CAMERA_INFO_RECOMMENDED_FIRMWARE_VERSION )
@@ -3758,15 +3758,20 @@ namespace rs2
                 auto n = std::make_shared< fw_update_notification_model >( msg.str(),
                                                                            manager,
                                                                            false );
-                n->delay_id = "dfu." + dev_name.second;
+                n->delay_id = "fw_update_alert." + recommended + "." + dev_name.second;
                 n->enable_complex_dismiss = true;
+
+                if( reset_delay ) n->reset_delay();
+
                 if( ! n->is_delayed() )
                 {
                     not_model->add_notification( n );
                     related_notifications.push_back( n );
+                    return true;
                 }
             }
         }
+        return false;
     }
 
     void device_model::refresh_notifications(viewer_model& viewer)
@@ -4876,7 +4881,7 @@ namespace rs2
             error_message = e.what();
         }
     }
-    void device_model::check_for_device_updates(viewer_model& viewer)
+    void device_model::check_for_device_updates(viewer_model& viewer, bool activated_by_user )
     {
         std::weak_ptr< updates_model > updates_model_protected( viewer.updates );
         std::weak_ptr< dev_updates_profile::update_profile > update_profile_protected(
@@ -4887,7 +4892,8 @@ namespace rs2
                                                       updates_model_protected,
                                                       notification_model_protected,
                                                       this,
-                                                      update_profile_protected]() {
+                                                      update_profile_protected,
+                                                      activated_by_user]() {
             try
             {
                 bool need_to_check_bundle = true;
@@ -4905,9 +4911,10 @@ namespace rs2
                 }
                 sw_update::dev_updates_profile updates_profile( dev, server_url, use_local_file );
 
-                bool sw_online_update_available = updates_profile.retrieve_updates( sw_update::LIBREALSENSE );
-                bool fw_online_update_available = updates_profile.retrieve_updates( sw_update::FIRMWARE ); 
-
+                bool fail_access_db = false;
+                bool sw_online_update_available = updates_profile.retrieve_updates( sw_update::LIBREALSENSE, fail_access_db);
+                bool fw_online_update_available = updates_profile.retrieve_updates( sw_update::FIRMWARE, fail_access_db);
+                bool fw_bundled_update_available = false;
                 if (sw_online_update_available || fw_online_update_available)
                 {
                     if (auto update_profile = update_profile_protected.lock())
@@ -4942,14 +4949,14 @@ namespace rs2
                                     {
                                         if (auto nm = notification_model_protected.lock())
                                         {
-                                            handle_online_sw_update( nm, update_profile );
+                                            handle_online_sw_update( nm, update_profile, activated_by_user);
                                         }
                                     }
                                     if (fw_online_update_available)
                                     {
                                         if (auto nm = notification_model_protected.lock())
                                         {
-                                            need_to_check_bundle = !handle_online_fw_update( ctx, nm, update_profile );
+                                            need_to_check_bundle = !handle_online_fw_update( ctx, nm, update_profile , activated_by_user);
                                         }
                                     }
                                 }
@@ -4964,7 +4971,12 @@ namespace rs2
                 }
                 else if( auto nm = notification_model_protected.lock() )
                 {
-                    nm->add_log( "No online SW / FW updates available" );
+                    if ( activated_by_user && fail_access_db )
+                        nm->add_notification( { to_string() << textual_icons::wifi << "  Unable to access versions database!\n",
+                                                RS2_LOG_SEVERITY_INFO,
+                                                RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR } );
+                    else
+                        nm->add_log( "No online SW / FW updates available" );
                 }
 
                 // If no on-line updates notification, offer bundled FW update if needed
@@ -4973,7 +4985,23 @@ namespace rs2
                 {
                     if( auto nm = notification_model_protected.lock() )
                     {
-                        check_for_bundled_fw_update( ctx, nm );
+                        fw_bundled_update_available = check_for_bundled_fw_update( ctx, nm , activated_by_user);
+                    }
+                }
+
+                // When no updates available (on-line + bundled), add a notification to indicate "all up to date"
+                if( activated_by_user && ! fail_access_db && ! sw_online_update_available
+                    && ! fw_online_update_available && ! fw_bundled_update_available )
+                {
+                    auto n = std::make_shared< sw_update_up_to_date_model >();
+                    auto name = get_device_name(dev);
+                    n->delay_id = "no_updates_alert." + name.second;
+                    n->enable_complex_dismiss = true;  // allow advanced dismiss menu
+                   
+                    if (auto nm = notification_model_protected.lock())
+                    {
+                        nm->add_notification(n);
+                        related_notifications.push_back(n);
                     }
                 }
             }
@@ -5274,7 +5302,7 @@ namespace rs2
                                     n->dismiss( false ); // No need for snooze, if needed a new notification will be popped 
                             }
 
-                            check_for_device_updates( viewer );
+                            check_for_device_updates( viewer , true);
                         }
                     }
 
@@ -5574,7 +5602,10 @@ namespace rs2
         }
     }
 
-    void rs2::device_model::handle_online_sw_update(std::shared_ptr < notifications_model > nm , std::shared_ptr < dev_updates_profile::update_profile >update_profile )
+    void rs2::device_model::handle_online_sw_update(
+        std::shared_ptr< notifications_model > nm,
+        std::shared_ptr< dev_updates_profile::update_profile > update_profile,
+        bool reset_delay )
     {
         dev_updates_profile::version_info recommended_sw_update_info;
         update_profile->get_sw_update(sw_update::RECOMMENDED, recommended_sw_update_info);
@@ -5582,9 +5613,12 @@ namespace rs2
             RS2_API_FULL_VERSION_STR,
             recommended_sw_update_info.ver,
             recommended_sw_update_info.download_link);
-        auto name = get_device_name(dev);
-        n->delay_id = "update_alert." + name.second;
+
+        auto dev_name = get_device_name(dev);
+        n->delay_id = "sw_update_alert." + std::string(recommended_sw_update_info.ver) + "." + dev_name.second;
         n->enable_complex_dismiss = true;  // allow advanced dismiss menu
+
+        if ( reset_delay ) n->reset_delay();
 
         if (!n->is_delayed())
         {
@@ -5593,7 +5627,11 @@ namespace rs2
         }
     }
 
-    bool rs2::device_model::handle_online_fw_update( const context& ctx, std::shared_ptr < notifications_model >  nm, std::shared_ptr< dev_updates_profile::update_profile> update_profile )
+    bool rs2::device_model::handle_online_fw_update(
+        const context & ctx,
+        std::shared_ptr< notifications_model > nm,
+        std::shared_ptr< dev_updates_profile::update_profile > update_profile,
+        bool reset_delay )
     {
         bool fw_update_notification_raised = false;
         std::shared_ptr< firmware_update_manager > manager = nullptr;
@@ -5640,8 +5678,11 @@ namespace rs2
                 msg.str(),
                 manager,
                 false);
-            n->delay_id = "dfu." + dev_name.second;
+            n->delay_id = "fw_update_alert." +  std::string(recommended_fw_update_info.ver) + "." +  dev_name.second;
             n->enable_complex_dismiss = true;
+
+            if ( reset_delay ) n->reset_delay();
+
             if (!n->is_delayed())
             {
                 nm->add_notification(n);

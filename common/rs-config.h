@@ -82,6 +82,8 @@ namespace rs2
 
         void reset();
 
+        void remove(const char* key);
+
         static config_file& instance();
 
     private:
