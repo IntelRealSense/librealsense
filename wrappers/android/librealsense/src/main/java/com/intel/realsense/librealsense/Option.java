@@ -89,7 +89,8 @@ public enum Option {
     ENABLE_IR_REFLECTIVITY(84),
     AUTO_EXPOSURE_LIMIT(85),
     AUTO_GAIN_LIMIT(86),
-    AUTO_RX_SENSITIVITY(87),
+    AUTO_RX_SENSITIVITY(87);
+
     private final int mValue;
 
     private Option(int value) { mValue = value; }
