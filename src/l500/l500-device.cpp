@@ -709,9 +709,8 @@ namespace librealsense
     {
         uint32_t version{};
 
-        //NEED TO UNDERSTAND WHY "-2" IS NEEDED IN THE OFFSET
         memcpy(reinterpret_cast<char*>(&version), reinterpret_cast<const char*>(fw_image) +
-            offsetof(platform::dfu_header, platform::dfu_header::bcdDevice) - 2, sizeof(version));
+            offsetof(platform::dfu_header, platform::dfu_header::bcdDevice), sizeof(version));
 
         uint8_t major = (version & 0xFF000000) >> 24;
         uint8_t minor = (version & 0x00FF0000) >> 16;
