@@ -1,5 +1,6 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2019 Intel Corporation. All Rights Reserved.
+#include "../include/librealsense2/rsutil_gpu.h"
 
 #include "depth-formats-converter.h"
 
@@ -17,11 +18,16 @@ namespace librealsense
         auto in = reinterpret_cast<const uint16_t*>(source);
         auto out_ir = reinterpret_cast<uint8_t *>(dest[1]);
 #ifdef RS2_USE_CUDA
-        rscuda::unpack_z16_y8_from_sr300_inzi_cuda(out_ir, in, count);
-        in += count;
-#else
-        for (int i = 0; i < count; ++i) *out_ir++ = *in++ >> 2;
+        if (rs2_is_gpu_available())
+        {
+          rscuda::unpack_z16_y8_from_sr300_inzi_cuda(out_ir, in, count);
+          in += count;
+        }
+        else
 #endif
+        {
+            for (int i = 0; i < count; ++i) *out_ir++ = *in++ >> 2;
+        }
         librealsense::copy(dest[0], in, count * 2);
     }
 
@@ -31,11 +37,16 @@ namespace librealsense
         auto in = reinterpret_cast<const uint16_t*>(source);
         auto out_ir = reinterpret_cast<uint16_t*>(dest[1]);
 #ifdef RS2_USE_CUDA
+        if (rs2_is_gpu_available())
+        {
         rscuda::unpack_z16_y16_from_sr300_inzi_cuda(out_ir, in, count);
         in += count;
-#else
-        for (int i = 0; i < count; ++i) *out_ir++ = *in++ << 6;
+        }
+        else
 #endif
+        {
+            for (int i = 0; i < count; ++i) *out_ir++ = *in++ << 6;
+        }
         librealsense::copy(dest[0], in, count * 2);
     }
 

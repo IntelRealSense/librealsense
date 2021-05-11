@@ -1,5 +1,6 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2019 Intel Corporation. All Rights Reserved.
+#include "../include/librealsense2/rsutil_gpu.h"
 
 #include "y12i-to-y16y16.h"
 #include "stream.h"
@@ -10,17 +11,21 @@
 namespace librealsense
 {
     struct y12i_pixel { uint8_t rl : 8, rh : 4, ll : 4, lh : 8; int l() const { return lh << 4 | ll; } int r() const { return rh << 8 | rl; } };
-    void unpack_y16_y16_from_y12i_10(byte * const dest[], const byte * source, int width, int height, int actual_size)
+    static void unpack_y16_y16_from_y12i_10_CPU(byte * const dest[], const byte * source, int width, int height, int actual_size)
     {
         auto count = width * height;
-#ifdef RS2_USE_CUDA
-        rscuda::split_frame_y16_y16_from_y12i_cuda(dest, count, reinterpret_cast<const y12i_pixel *>(source));
-#else
         split_frame(dest, count, reinterpret_cast<const y12i_pixel*>(source),
             [](const y12i_pixel & p) -> uint16_t { return p.l() << 6 | p.l() >> 4; },  // We want to convert 10-bit data to 16-bit data
             [](const y12i_pixel & p) -> uint16_t { return p.r() << 6 | p.r() >> 4; }); // Multiply by 64 1/16 to efficiently approximate 65535/1023
-#endif
     }
+#ifdef RS2_USE_CUDA
+    static void unpack_y16_y16_from_y12i_10_GPU(byte * const dest[], const byte * source, int width, int height, int actual_size)
+    {
+        auto count = width * height;
+
+        rscuda::split_frame_y16_y16_from_y12i_cuda(dest, count, reinterpret_cast<const y12i_pixel *>(source));
+    }
+#endif
 
     y12i_to_y16y16::y12i_to_y16y16(int left_idx, int right_idx)
         : y12i_to_y16y16("Y12I to Y16L Y16R Transform", left_idx, right_idx) {}
@@ -28,7 +33,15 @@ namespace librealsense
     y12i_to_y16y16::y12i_to_y16y16(const char * name, int left_idx, int right_idx)
         : interleaved_functional_processing_block(name, RS2_FORMAT_Y12I, RS2_FORMAT_Y16, RS2_STREAM_INFRARED, RS2_EXTENSION_VIDEO_FRAME, 1,
                                                                          RS2_FORMAT_Y16, RS2_STREAM_INFRARED, RS2_EXTENSION_VIDEO_FRAME, 2)
-    {}
+        , unpack_y16_y16_from_y12i_10(unpack_y16_y16_from_y12i_10_CPU)
+    {
+#ifdef RS2_USE_CUDA
+      if (rs2_is_gpu_available())
+      {
+        unpack_y16_y16_from_y12i_10 = unpack_y16_y16_from_y12i_10_GPU;
+      }
+#endif
+    }
 
     void y12i_to_y16y16::process_function(byte * const dest[], const byte * source, int width, int height, int actual_size, int input_size)
     {
