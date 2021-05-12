@@ -53,6 +53,7 @@ void init_frame(py::module &m) {
         .def(BIND_DOWNCAST(stream_profile, stream_profile))
         .def(BIND_DOWNCAST(stream_profile, video_stream_profile))
         .def(BIND_DOWNCAST(stream_profile, motion_stream_profile))
+        .def(BIND_DOWNCAST(stream_profile, pose_stream_profile))
         .def("stream_name", &rs2::stream_profile::stream_name, "The stream's human-readable name.")
         .def("is_default", &rs2::stream_profile::is_default, "Checks if the stream profile is marked/assigned as default, "
              "meaning that the profile will be selected when the user requests stream configuration using wildcards.")

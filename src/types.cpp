@@ -627,6 +627,8 @@ namespace librealsense
             CASE(DI_C)
             CASE(DLR_C)
             CASE(DLR)
+            CASE(DIC)
+            CASE(DIC_C)
             CASE(DEFAULT)
         default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }

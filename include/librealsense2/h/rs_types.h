@@ -251,7 +251,8 @@ typedef enum rs2_matchers
    RS2_MATCHER_DEFAULT, //the default matcher compare all the streams based on closest timestamp
 
    RS2_MATCHER_COUNT
-}rs2_matchers;
+} rs2_matchers;
+const char* rs2_matchers_to_string(rs2_matchers stream);
 
 typedef struct rs2_device_info rs2_device_info;
 typedef struct rs2_device rs2_device;
