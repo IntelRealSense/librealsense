@@ -225,12 +225,10 @@ if list_only:
             print( t, "has tags:", ' '.join( tests_and_tags[t] ) )
     #
     elif list_tags:
-        print( "Available tags:" )
         for t in sorted( list( available_tags ) ):
             print( t )
     #
     elif list_tests:
-        print( "Available tests:" )
         for t in sorted( tests_and_tags.keys() ):
             print( t )
     sys.exit( 0 )
