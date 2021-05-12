@@ -276,6 +276,9 @@ namespace Intel.RealSense
         auto_gain_limit = 86,
 
         /// <summary>auto receiver sensitivity</summary>
-        auto_rx_sensitivity = 87
+        auto_rx_sensitivity = 87,
+
+        /// <summary>auto receiver sensitivity</summary>
+        transmitter_frequency = 88
     }
 }

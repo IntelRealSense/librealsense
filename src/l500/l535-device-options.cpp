@@ -45,7 +45,9 @@ device_options::device_options( std::shared_ptr< librealsense::context > ctx,
              { RS2_OPTION_ALTERNATE_IR,
               { alternate_ir, "Enable/Disable alternate IR" } },
             { RS2_OPTION_AUTO_RX_SENSITIVITY,
-              { rx_sensitivity, "auto gain" } }  // TODO: replace the description
+              { rx_sensitivity, "auto gain" } },  // TODO: replace the description
+            { RS2_OPTION_TRANSMITTER_FREQUENCY,
+              { transmitter_frequency, "changes the transmitter frequencies increasing effective range over sharpness" } }
         };
 
         for( auto i : options )
