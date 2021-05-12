@@ -1,0 +1,51 @@
+[1mdiff --git a/unit-tests/unit-test-config.py b/unit-tests/unit-test-config.py[m
+[1mindex a3986bde6..1f0b206f8 100644[m
+[1m--- a/unit-tests/unit-test-config.py[m
+[1m+++ b/unit-tests/unit-test-config.py[m
+[36m@@ -39,28 +39,29 @@[m [mbuilddir=sys.argv[2][m
+ if not os.path.isdir( dir ) or not os.path.isdir( builddir ):[m
+     usage()[m
+ [m
+[31m-# Parse command-line:[m
+[31m-try:[m
+[31m-    opts, args = getopt.getopt( sys.argv[3].split(), 'hr:t:',[m
+[31m-                                longopts=['help', 'regex=', 'tag=', 'list-tags', 'list-tests'] )[m
+[31m-except getopt.GetoptError as err:[m
+[31m-    log.e( err )  # something like "option -a not recognized"[m
+[31m-    usage()[m
+ regex = None[m
+ required_tags = [][m
+ list_tags = False[m
+ list_tests = False[m
+[31m-for opt, arg in opts:[m
+[31m-    if opt in ('-h', '--help'):[m
+[32m+[m[32m# if we received flags, parse command-line:[m
+[32m+[m[32mif len( sys.argv ) > 3:[m
+[32m+[m[32m    try:[m
+[32m+[m[32m        opts, args = getopt.getopt( sys.argv[3].split(), 'hr:t:',[m
+[32m+[m[32m                                    longopts=['help', 'regex=', 'tag=', 'list-tags', 'list-tests'] )[m
+[32m+[m[32m    except getopt.GetoptError as err:[m
+[32m+[m[32m        log.e( err )  # something like "option -a not recognized"[m
+         usage()[m
+[31m-    elif opt in ('-r', '--regex'):[m
+[31m-        regex = arg[m
+[31m-    elif opt in ('-t', '--tag'):[m
+[31m-        required_tags.append( arg )[m
+[31m-    elif opt == '--list-tags':[m
+[31m-        list_tags = True[m
+[31m-    elif opt == '--list-tests':[m
+[31m-        list_tests = True[m
+[32m+[m[32m    for opt, arg in opts:[m
+[32m+[m[32m        if opt in ('-h', '--help'):[m
+[32m+[m[32m            usage()[m
+[32m+[m[32m        elif opt in ('-r', '--regex'):[m
+[32m+[m[32m            regex = arg[m
+[32m+[m[32m        elif opt in ('-t', '--tag'):[m
+[32m+[m[32m            required_tags.append( arg )[m
+[32m+[m[32m        elif opt == '--list-tags':[m
+[32m+[m[32m            list_tags = True[m
+[32m+[m[32m        elif opt == '--list-tests':[m
+[32m+[m[32m            list_tests = True[m
+ [m
+ # We have to stick to Unix conventions because CMake on Windows is fubar...[m
+ src = repo.root.replace( '\\' , '/' ) + '/src'[m

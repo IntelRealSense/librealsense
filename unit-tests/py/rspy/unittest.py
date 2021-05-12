@@ -9,11 +9,8 @@ from rspy import log, file
 # this script is in unit-test/py/rspy
 unit_tests_dir = os.path.dirname( os.path.dirname( os.path.dirname( os.path.abspath( __file__ ) ) ) )
 # the full path to the directory that should hold the unit-tests logs. It is updated in run-unit-tests when we know
-# the target directory
+# the target directory. If None we assume the output should go to stdout
 logdir = None
-# if True all the messages are to be printed to stdout and not to a log file. Updated in run-unit-tests if
-# the flag specifying this option is given
-to_stdout = False
 
 
 def run( cmd, stdout = None, timeout = 200, append = False ):
@@ -219,11 +216,9 @@ class Test( ABC ):  # Abstract Base Class
         return self._ran
 
     def get_log( self ):
-        global to_stdout, logdir
-        if to_stdout:
+        global logdir
+        if not logdir:
             path = None
-        elif not logdir:
-            log.f( "Log was requested but no log directory was found" )
         else:
             path = logdir + os.sep + self.name + ".log"
         return path
@@ -337,7 +332,7 @@ class ExeTest( Test ):
         """
         global unit_tests_dir
         if not os.path.isfile( exe ):
-            log.f( "Tried to create exe test with invalid exe file:", exe )
+            raise RuntimeError( "Tried to create exe test with invalid exe file: " + exe )
         Test.__init__( self, testname )
         self.exe = exe
 

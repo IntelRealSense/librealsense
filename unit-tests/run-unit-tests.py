@@ -56,6 +56,7 @@ except getopt.GetoptError as err:
     log.e( err )  # something like "option -a not recognized"
     usage()
 regex = None
+to_stdout = False
 required_tags = []
 list_tags = False
 list_tests = False
@@ -69,7 +70,7 @@ for opt, arg in opts:
     elif opt in ('-r', '--regex'):
         regex = arg
     elif opt in ('-s', '--stdout'):
-        unittest.to_stdout = True
+        to_stdout = True
     elif opt in ('-t', '--tag'):
         required_tags.append( arg )
     elif opt == '--list-tags':
@@ -98,12 +99,14 @@ if not target:
             usage()
         target = dir_with_test
 
-if target:
-    logdir = target + os.sep + 'unit-tests'
-else:  # no test executables were found. We put the logs directly in build directory
-    logdir = os.path.join( repo.root, 'build', 'unit-tests' )
-os.makedirs( logdir, exist_ok=True )
-unittest.logdir = logdir
+if not to_stdout:
+    if target:
+        logdir = target + os.sep + 'unit-tests'
+    else:  # no test executables were found. We put the logs directly in build directory
+        logdir = os.path.join( repo.root, 'build', 'unit-tests' )
+    os.makedirs( logdir, exist_ok=True )
+    unittest.logdir = logdir
+    log.i('Logs in:', logdir)
 n_tests = 0
 
 # Python scripts should be able to find the pyrealsense2 .pyd or else they won't work. We don't know
@@ -264,9 +267,6 @@ def devices_by_test_config( test ):
             else:
                 log.w( log.yellow + test.name + log.reset + ': ' + str( e ) )
             continue
-
-
-log.i( 'Logs in:', logdir )
 
 
 def test_wrapper( test, configuration = None ):
