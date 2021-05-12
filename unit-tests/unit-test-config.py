@@ -33,6 +33,8 @@ def usage():
     print( '                       inside unit-tests/, e.g. unit-tests/func/test-hdr.py gets [func, py]' )
     print( '        --list-tags    print out all available tags. This option will not run any tests' )
     print( '        --list-tests   print out all available tests. This option will not run any tests' )
+    print( '                       if both list-tags and list-tests are specified each test will be printed along' )
+    print( '                       with what tags it has' )
     sys.exit(2)
 
 regex = None
@@ -116,7 +118,7 @@ def find_includes( filepath ):
     return filelist
 
 def process_cpp( dir, builddir ):
-    global regex, required_tags, list_only, available_tags, available_tests
+    global regex, required_tags, list_only, available_tags, tests_and_tags
     found = []
     shareds = []
     statics = []
@@ -136,8 +138,11 @@ def process_cpp( dir, builddir ):
             if not all( tag in config.tags for tag in required_tags ):
                 continue
             available_tags.update( config.tags )
+            if list_tests:
+                tests_and_tags[ testname ] = config.tags
 
-        available_tests.append( testname )
+        if testname not in tests_and_tags:
+            tests_and_tags[testname] = None
 
         if list_only:
             continue
@@ -208,21 +213,23 @@ def process_py( dir, builddir ):
 
 list_only = list_tags or list_tests
 available_tags = set()
-available_tests = []
+tests_and_tags = dict()
 normal_tests = []
 shared_tests = []
 static_tests = []
 n,sh,st = process_cpp( dir, builddir )
 
 if list_only:
-    if list_tags:
-        print( "Available tags:" )
+    if list_tags and list_tests:
+        for t in sorted( tests_and_tags.keys() ):
+            print( t, "has tags:", ' '.join( tests_and_tags[t] ) )
+    #
+    elif list_tags:
         for t in sorted( list( available_tags ) ):
             print( t )
     #
-    if list_tests:
-        print( "Available tests:" )
-        for t in sorted( available_tests ):
+    elif list_tests:
+        for t in sorted( tests_and_tags.keys() ):
             print( t )
     sys.exit( 0 )
 
