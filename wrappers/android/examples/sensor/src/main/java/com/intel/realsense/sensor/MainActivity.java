@@ -4,7 +4,7 @@ import android.Manifest;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
-import android.os.Handler;
+
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.appcompat.app.AppCompatActivity;
@@ -17,7 +17,6 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 
-import com.intel.realsense.librealsense.CameraInfo;
 import com.intel.realsense.librealsense.Colorizer;
 import com.intel.realsense.librealsense.DepthSensor;
 import com.intel.realsense.librealsense.DeviceList;
@@ -34,10 +33,8 @@ import com.intel.realsense.librealsense.Extension;
 
 import com.intel.realsense.librealsense.VideoStreamProfile;
 import com.intel.realsense.librealsense.FrameCallback;
-import com.intel.realsense.librealsense.Sensor;
 import com.intel.realsense.librealsense.GLRsSurfaceView;
 import com.intel.realsense.librealsense.RsContext;
-import com.intel.realsense.librealsense.StreamType;
 
 public class MainActivity extends AppCompatActivity {
     private static final String TAG = "librs sensor example";
@@ -119,7 +116,7 @@ public class MainActivity extends AppCompatActivity {
         stop();
     }
 
-    private FrameCallback mFrameHandler = new FrameCallback()
+    private FrameCallback mDepthFrameHandler = new FrameCallback()
     {
         @Override
         public void onFrame(final Frame f) {
@@ -281,7 +278,7 @@ public class MainActivity extends AppCompatActivity {
             }
 
             depth_sensor.open(sp);
-            depth_sensor.start(mFrameHandler);
+            depth_sensor.start(mDepthFrameHandler);
         }
 
         if (color_sensor != null) {
@@ -296,7 +293,7 @@ public class MainActivity extends AppCompatActivity {
                         VideoStreamProfile video_stream_profile = sp2.as(Extension.VIDEO_PROFILE);
 
                         // After using the "as" method we can use the new data type
-                        //  for additinal operations:
+                        //  for additional operations:
                         StreamFormat sf = video_stream_profile.getFormat();
                         int index = sp2.getIndex();
                         StreamType st = sp2.getType();
