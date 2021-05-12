@@ -45,8 +45,7 @@ device_options::device_options( std::shared_ptr< librealsense::context > ctx,
              { RS2_OPTION_ALTERNATE_IR,
               { alternate_ir, "Enable/Disable alternate IR" } },
             { RS2_OPTION_AUTO_RX_SENSITIVITY, 
-              { rx_auto_sensitivity, "0 - Auto receiver sensitivity is disabled, receiver sensitivity is set according to the receiver sensitivity control"
-                                     "1 - Auto receiver sensitivity is enabled, receiver sensitivity is set according to the ambient light, bounded by the receiver sensitivity control" } },
+              { rx_auto_sensitivity, "Enable receiver sensitivity according to ambient light, bounded by the Receiver Gain control" } },
             { RS2_OPTION_TRANSMITTER_FREQUENCY,
               { transmitter_frequency, "Change transmitter frequency, increasing effective range over sharpness" } }
         };
