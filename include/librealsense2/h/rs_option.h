@@ -109,7 +109,7 @@ extern "C" {
         RS2_OPTION_ENABLE_IR_REFLECTIVITY, /**< Enables data collection for calculating IR pixel reflectivity  */
         RS2_OPTION_AUTO_EXPOSURE_LIMIT, /**< Set and get auto exposure limit in microseconds. Default is 0 which means full exposure range. If the requested exposure limit is greater than frame time, it will be set to frame time at runtime. Setting will not take effect until next streaming session. */
         RS2_OPTION_AUTO_GAIN_LIMIT, /**< Set and get auto gain limits ranging from 16 to 248. Default is 0 which means full gain. If the requested gain limit is less than 16, it will be set to 16. If the requested gain limit is greater than 248, it will be set to 248. Setting will not take effect until next streaming session. */
-        RS2_OPTION_AUTO_RX_SENSITIVITY,
+        RS2_OPTION_AUTO_RX_SENSITIVITY, /**< Enable receiver sensitivity according to ambient light, bounded by the Receiver Gain control. */
         RS2_OPTION_TRANSMITTER_FREQUENCY, /**<changes the transmitter frequencies increasing effective range over sharpness. */
         RS2_OPTION_COUNT /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
     } rs2_option;
