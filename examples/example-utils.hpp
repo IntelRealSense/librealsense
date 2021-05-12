@@ -6,6 +6,7 @@
 #include <string>
 #include <map>
 #include <librealsense2/rs.hpp>
+#include <algorithm>
 
 //////////////////////////////
 // Demos Helpers            //
@@ -17,7 +18,7 @@ bool device_with_streams(std::vector <rs2_stream> stream_requests, std::string& 
     rs2::context ctx;
     auto devs = ctx.query_devices();
     std::vector <rs2_stream> unavailable_streams = stream_requests;
-    for (auto& dev : devs)
+    for (auto dev : devs)
     {
         std::map<rs2_stream, bool> found_streams;
         for (auto& type : stream_requests)
