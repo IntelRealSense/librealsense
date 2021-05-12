@@ -687,6 +687,11 @@ namespace librealsense
         unpack_yuy2(_target_format, _target_stream, dest, source, width, height, actual_size);
     }
 
+    void y411_converter::process_function(byte * const dest[], const byte * source, int width, int height, int actual_size, int input_size)
+    {
+        unpack_y411( dest, source, width, height, actual_size);
+    }
+
     void uyvy_converter::process_function(byte * const dest[], const byte * source, int width, int height, int actual_size, int input_size)
     {
         unpack_uyvyc(_target_format, _target_stream, dest, source, width, height, actual_size);

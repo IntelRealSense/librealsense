@@ -1001,6 +1001,7 @@ namespace rs2
         streaming(false), _pause(false),
         depth_colorizer(std::make_shared<rs2::gl::colorizer>()),
         yuy2rgb(std::make_shared<rs2::gl::yuy_decoder>()),
+        y411(std::make_shared<rs2::gl::y411_decoder>()),
         depth_decoder(std::make_shared<rs2::depth_huffman_decoder>()),
         viewer(viewer),
         detected_objects(device_detected_objects)
@@ -1008,6 +1009,7 @@ namespace rs2
         supported_options = s->get_supported_options();
         restore_processing_block("colorizer", depth_colorizer);
         restore_processing_block("yuy2rgb", yuy2rgb);
+        restore_processing_block("y411", y411);
 
         std::string device_name(dev.get_info(RS2_CAMERA_INFO_NAME));
         std::string sensor_name(s->get_info(RS2_CAMERA_INFO_NAME));
@@ -2074,6 +2076,7 @@ namespace rs2
 
             save_processing_block_to_config_file("colorizer", depth_colorizer);
             save_processing_block_to_config_file("yuy2rgb", yuy2rgb);
+            save_processing_block_to_config_file("y411", y411);
 
             for (auto&& pbm : post_processing) pbm->save_to_config_file();
         }
@@ -2310,6 +2313,7 @@ namespace rs2
         profile = p;
         texture->colorize = d->depth_colorizer;
         texture->yuy2rgb = d->yuy2rgb;
+        texture->y411 = d->y411;
         texture->depth_decode = d->depth_decoder;
 
         if (auto vd = p.as<video_stream_profile>())

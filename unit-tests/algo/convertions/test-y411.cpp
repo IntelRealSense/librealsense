@@ -10,6 +10,7 @@
 #include "../src/proc/color-formats-converter.h"
 #include <librealsense2-gl/rs_processing_gl.hpp> // Include GPU-Processing API
 #include <../third-party/glfw/include/GLFW/glfw3.h>
+#include <librealsense2/hpp/rs_internal.hpp>
 
 const int W = 16;
 const int H = 2;
@@ -22,6 +23,16 @@ const int DEST_BYTES = W * H* BPP_RGB / 8;
 
 struct byte3
 {
+    byte3( byte data1 = 0, byte data2 = 0, byte data3 = 0 )
+    {
+        data[0] = data1; data[1] = data2; data[2] = data3;
+    }
+
+    byte3(int data1, int data2, int data3)
+    {
+        data[0] = data1; data[1] = data2; data[2] = data3;
+    }
+
     byte data[3];
     bool operator==(const byte3& other) const
     {
@@ -96,6 +107,51 @@ byte3 const yuv[W*H] =
     {10, 0, 30}, {20, 0, 30},    {70, 60, 90},  {80, 60, 90},    {130, 120, 150}, {140, 120, 150},  {190, 180, 210}, {200, 180, 210},   {250, 240, 270}, {260, 240, 270},   {310, 300, 330}, {320, 300, 330},   {370, 360, 390}, {380, 360, 390},   {430, 420, 450}, {440, 420, 450},
     {40, 0, 30}, {50, 0, 30},    {100, 60, 90}, {110, 60, 90},   {160, 120, 150}, {170, 120, 150},  {220, 180, 210}, {230, 180, 210},   {280, 240, 270}, {290, 240, 270},   {340, 300, 330}, {350, 300, 330},   {400, 360, 390}, {410, 360, 390},   {460, 420, 450}, {470, 420, 450}
 };
+
+TEST_CASE("unpack_y411_glsl")
+{
+    glfwInit();
+    glfwWindowHint(GLFW_VISIBLE, 0);
+    auto win = glfwCreateWindow(100, 100, "offscreen", 0, 0);
+    glfwMakeContextCurrent(win);
+#ifndef __APPLE__
+    rs2::gl::init_processing(true);
+#endif
+
+    rs2::gl::y411_decoder y411;
+    rs2::software_device dev;
+    auto depth_sensor = dev.add_sensor("Depth");
+
+    auto stream = depth_sensor.add_video_stream({ RS2_STREAM_COLOR, 0, 0,
+                               W,H, 60, 2,
+                                RS2_FORMAT_RGB8, {} });
+
+    rs2::frame_queue queue;
+    depth_sensor.open(stream);
+    depth_sensor.start(queue);
+
+    byte3 dest[DEST_BYTES];
+    byte source[SOURCE_BYTES_Y411];
+
+    for (auto i = 0; i < SOURCE_BYTES_Y411; i++)
+    {
+        source[i] = i /** 10*/;
+    }
+
+    depth_sensor.on_video_frame({ source, // Frame pixels from capture API
+            [](void*) {}, // Custom deleter (if required)
+            W * 2, 2, // Stride and Bytes-per-pixel
+            1, RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK, 1, // Timestamp, Frame# for potential sync services
+            stream });
+
+    auto f = queue.wait_for_frame();
+    auto d1 = f.get_data();
+    rs2::frame_queue res_queue;
+    y411.start(res_queue);
+    y411.invoke(f);
+    auto res = res_queue.wait_for_frame();
+    auto d = res.get_data();
+}
 
 #if defined __SSSE3__
 TEST_CASE("unpack_y411_sse")

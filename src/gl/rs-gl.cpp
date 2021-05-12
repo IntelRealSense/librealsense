@@ -4,6 +4,7 @@
 #include "api.h"
 #include "synthetic-stream-gl.h"
 #include "yuy2rgb-gl.h"
+#include "y411-2rgb-gl.h"
 #include "align-gl.h"
 #include "pointcloud-gl.h"
 #include "../include/librealsense2/h/rs_types.h"
@@ -76,6 +77,19 @@ rs2_processing_block* rs2_gl_create_yuy_decoder(int api_version, rs2_error** err
     dual->add(block);
     dual->add(backup);
     return new rs2_processing_block { dual };
+}
+NOARGS_HANDLE_EXCEPTIONS_AND_RETURN(nullptr)
+
+rs2_processing_block* rs2_gl_create_y411_decoder(int api_version, rs2_error** error) BEGIN_API_CALL
+{
+    verify_version_compatibility(api_version);
+
+    auto block = std::make_shared<librealsense::gl::y411_2rgb>();
+    auto backup = std::make_shared<librealsense::y411_converter>(RS2_FORMAT_RGB8);
+    auto dual = std::make_shared<librealsense::gl::dual_processing_block>();
+    dual->add(block);
+    dual->add(backup);
+    return new rs2_processing_block{ dual };
 }
 NOARGS_HANDLE_EXCEPTIONS_AND_RETURN(nullptr)
 
