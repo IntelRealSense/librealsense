@@ -36,6 +36,8 @@ def usage():
     print( '                       inside unit-tests/, e.g. unit-tests/func/test-hdr.py gets [func, py]' )
     print( '        --list-tags    print out all available tags. This option will not run any tests' )
     print( '        --list-tests   print out all available tests. This option will not run any tests' )
+    print( '                       if both list-tags and list-tests are specified each test will be printed along' )
+    print( '                       with what tags it has' )
     sys.exit( 2 )
 
 
