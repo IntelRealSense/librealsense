@@ -43,25 +43,24 @@ regex = None
 required_tags = []
 list_tags = False
 list_tests = False
-# if we received flags, parse command-line:
-if len( sys.argv ) > 3:
-    try:
-        opts, args = getopt.getopt( sys.argv[3].split(), 'hr:t:',
-                                    longopts=['help', 'regex=', 'tag=', 'list-tags', 'list-tests'] )
-    except getopt.GetoptError as err:
-        log.e( err )  # something like "option -a not recognized"
+# parse command-line:
+try:
+    opts, args = getopt.getopt( sys.argv[3:], 'hr:t:',
+                                longopts=['help', 'regex=', 'tag=', 'list-tags', 'list-tests'] )
+except getopt.GetoptError as err:
+    log.e( err )  # something like "option -a not recognized"
+    usage()
+for opt, arg in opts:
+    if opt in ('-h', '--help'):
         usage()
-    for opt, arg in opts:
-        if opt in ('-h', '--help'):
-            usage()
-        elif opt in ('-r', '--regex'):
-            regex = arg
-        elif opt in ('-t', '--tag'):
-            required_tags.append( arg )
-        elif opt == '--list-tags':
-            list_tags = True
-        elif opt == '--list-tests':
-            list_tests = True
+    elif opt in ('-r', '--regex'):
+        regex = arg
+    elif opt in ('-t', '--tag'):
+        required_tags.append( arg )
+    elif opt == '--list-tags':
+        list_tags = True
+    elif opt == '--list-tests':
+        list_tests = True
 
 # We have to stick to Unix conventions because CMake on Windows is fubar...
 src = repo.root.replace( '\\' , '/' ) + '/src'
@@ -220,7 +219,7 @@ if list_only:
     #
     if list_tests:
         print( "Available tests:" )
-        for t in sorted( tests ):
+        for t in sorted( available_tests ):
             print( t )
     sys.exit( 0 )
 

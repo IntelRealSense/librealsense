@@ -167,7 +167,7 @@ class TestConfigFromText( TestConfig ):
 
     def derive_tags_from_path( self, source ):
         # we need the relative path starting at the unit-tests directory
-        relative_path = source.split( os.sep + "unit-tests" + os.sep )[-1]
+        relative_path = re.split( r"[/\\]unit-tests[/\\]", source )[-1]
         sub_dirs = re.split( r"[/\\]", relative_path )[:-1] # last element will be the name of the test
         self._tags.update( sub_dirs )
 
@@ -338,7 +338,6 @@ class ExeTest( Test ):
 
         relative_test_path = self.find_source_path()
         if relative_test_path:
-            sub_dirs = relative_test_path.split( os.sep )[:-1]  # last element will be the test's name
             self._config = TestConfigFromCpp( unit_tests_dir + os.sep + relative_test_path )
 
     @property
