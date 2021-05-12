@@ -24,7 +24,7 @@ from rspy import file, repo, unittest, log
 
 def usage():
     ourname = os.path.basename(sys.argv[0])
-    print( 'Syntax: ' + ourname + ' <dir> <build-dir> [options]' )
+    print( 'Syntax: ' + ourname + ' [options] <dir> <build-dir>' )
     print( '        build unit-testing framework for the tree in $dir' )
     print( '        -r, --regex    configure all tests that fit the following regular expression' )
     print( '        -t, --tag      configure all tests with the following tag. If used multiple times runs all tests matching' )
@@ -34,10 +34,6 @@ def usage():
     print( '        --list-tags    print out all available tags. This option will not run any tests' )
     print( '        --list-tests   print out all available tests. This option will not run any tests' )
     sys.exit(2)
-dir=sys.argv[1]
-builddir=sys.argv[2]
-if not os.path.isdir( dir ) or not os.path.isdir( builddir ):
-    usage()
 
 regex = None
 required_tags = []
@@ -45,7 +41,7 @@ list_tags = False
 list_tests = False
 # parse command-line:
 try:
-    opts, args = getopt.getopt( sys.argv[3:], 'hr:t:',
+    opts, args = getopt.getopt( sys.argv[1:], 'hr:t:',
                                 longopts=['help', 'regex=', 'tag=', 'list-tags', 'list-tests'] )
 except getopt.GetoptError as err:
     log.e( err )  # something like "option -a not recognized"
@@ -61,6 +57,13 @@ for opt, arg in opts:
         list_tags = True
     elif opt == '--list-tests':
         list_tests = True
+
+if len( args ) != 2:
+    usage()
+dir=args[0]
+builddir=args[1]
+if not os.path.isdir( dir ) or not os.path.isdir( builddir ):
+    usage()
 
 # We have to stick to Unix conventions because CMake on Windows is fubar...
 src = repo.root.replace( '\\' , '/' ) + '/src'
