@@ -5,12 +5,11 @@
 // This set of tests is valid for any device that supports the HDR feature //
 /////////////////////////////////////////////////////////////////////////////
 
-//#cmake:add-file ../unit-tests-common.h
-//#cmake:add-file ../approx.h
+//#test:device D400*
 
 #define CATCH_CONFIG_MAIN
-#include "../catch.h"
-#include "../unit-tests-common.h"
+#include "../../catch.h"
+#include "../../unit-tests-common.h"
 
 #include <easylogging++.h>
 #ifdef BUILD_SHARED_LIBS
@@ -422,7 +421,7 @@ TEST_CASE("HDR Streaming - checking sequence id", "[hdr][live][using_pipeline]")
                         if (iteration == iterations_for_preparation)
                         {
                             REQUIRE(depth_seq_id == ir_seq_id);
-                            sequence_id = depth_seq_id;
+                            sequence_id = (int) depth_seq_id;
                         }
                         else
                         {
@@ -466,7 +465,10 @@ TEST_CASE("Emitter on/off - checking sequence id", "[hdr][live][using_pipeline]"
 
                 int iteration = 0;
                 int sequence_id = -1;
-                int iterations_for_preparation = 6;
+
+                // emitter on/off works with PWM (pulse with modulation) in the hardware
+				// this takes some time to configure it
+                int iterations_for_preparation = 10;
                 while (++iteration < 50) // Application still alive?
                 {
                     rs2::frameset data;
@@ -486,7 +488,7 @@ TEST_CASE("Emitter on/off - checking sequence id", "[hdr][live][using_pipeline]"
                         if (iteration == iterations_for_preparation)
                         {
                             REQUIRE(depth_seq_id == ir_seq_id);
-                            sequence_id = depth_seq_id;
+                            sequence_id = (int) depth_seq_id;
                         }
                         else
                         {
@@ -532,7 +534,7 @@ TEST_CASE("HDR Merge - discard merged frame", "[hdr][live][using_pipeline]") {
                 rs2::hdr_merge merging_filter;
 
                 int num_of_iterations_in_serie = 10;
-                int first_series_last_merged_ts = -1;
+                long long first_series_last_merged_ts = -1;
                 for (int i = 0; i < num_of_iterations_in_serie; ++i)
                 {
                     rs2::frameset data;
@@ -547,11 +549,11 @@ TEST_CASE("HDR Merge - discard merged frame", "[hdr][live][using_pipeline]") {
 
                         long long frame_ts = merged_depth_frame.get_frame_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP);
 
-                        if (i == (num_of_iterations_in_serie - 1))
+                        if( i == (num_of_iterations_in_serie - 1) )
                             first_series_last_merged_ts = frame_ts;
                     }
                 }
-                REQUIRE(first_series_last_merged_ts != -1);
+                REQUIRE( first_series_last_merged_ts != -1LL );
 
                 pipe.stop();
 

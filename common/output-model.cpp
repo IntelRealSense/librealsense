@@ -886,33 +886,7 @@ bool output_model::user_defined_command( std::string command, device_models_list
     // passed to the FW commands check logic.
     // Note: For now we find the first device that supports the command and activate the command only on it.
 
-    if( to_lower( command ) == "trigger-camera-accuracy-health" )
-    {
-        user_defined_command_detected = true;
-
-        for( auto && dev_model : device_models )
-        {
-            if( dev_model->is_cah_model_enabled() && !user_defined_command_activated)
-            {
-                dev_model->show_trigger_camera_accuracy_health_popup = true;
-                user_defined_command_activated = true;
-            }
-        }
-    }
-    else if( to_lower( command ) == "reset-camera-accuracy-health" )
-    {
-        user_defined_command_detected = true;
-
-        for( auto && dev_model : device_models )
-        {
-            if( dev_model->is_cah_model_enabled() && !user_defined_command_activated)
-            {
-                dev_model->show_reset_camera_accuracy_health_popup = true;
-                user_defined_command_activated = true;
-            }
-        }
-    }
-    else if( to_lower( command ) == "get-nest" )
+    if( to_lower( command ) == "get-nest" )
     {
         user_defined_command_detected = true;
 

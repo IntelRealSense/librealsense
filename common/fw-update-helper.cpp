@@ -257,8 +257,6 @@ namespace rs2
                 // if querying devices is called while device still switching to DFU state, an exception will be thrown
                 // to prevent that, a blocking is added to make sure device is updated before continue to next step of querying device
                 upd.enter_update_state();
-                // Allow time for the device to disconnect before calling "query_devices"
-                std::this_thread::sleep_for(std::chrono::seconds(2));
 
                 if (!check_for([this, serial, &dfu]() {
                     auto devs = _ctx.query_devices();

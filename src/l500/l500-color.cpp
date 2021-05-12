@@ -10,8 +10,6 @@
 
 #include "l500-private.h"
 #include "proc/color-formats-converter.h"
-#include "ac-trigger.h"
-#include "algo/depth-to-rgb-calibration/debug.h"
 #include "algo/thermal-loop/l500-thermal-loop.h"
 
 
@@ -45,27 +43,10 @@ namespace librealsense
         color_ep->register_info(RS2_CAMERA_INFO_PHYSICAL_PORT, color_devices_info.front().device_path);
 
         // processing blocks
-        if( _autocal )
-        {
-            color_ep->register_processing_block(
-                processing_block_factory::create_pbf_vector< yuy2_converter >(
-                    RS2_FORMAT_YUYV,                                                      // from
-                    map_supported_color_formats( RS2_FORMAT_YUYV ), RS2_STREAM_COLOR,     // to
-                    [=]( std::shared_ptr< generic_processing_block > pb )
-                    {
-                        auto cpb = std::make_shared< composite_processing_block >();
-                        cpb->add(std::make_shared< ac_trigger::color_processing_block >(_autocal));
-                        cpb->add( pb );
-                        return cpb;
-                    } ) );
-        }
-        else
-        {
-            color_ep->register_processing_block(
-                processing_block_factory::create_pbf_vector< yuy2_converter >(
-                    RS2_FORMAT_YUYV,                                                      // from
-                    map_supported_color_formats( RS2_FORMAT_YUYV ), RS2_STREAM_COLOR ) ); // to
-        }
+        color_ep->register_processing_block(
+            processing_block_factory::create_pbf_vector< yuy2_converter >(
+                RS2_FORMAT_YUYV,                                                      // from
+                map_supported_color_formats( RS2_FORMAT_YUYV ), RS2_STREAM_COLOR ) ); // to
 
         // options
         color_ep->register_option(RS2_OPTION_GLOBAL_TIME_ENABLED, enable_global_time_option);
@@ -147,25 +128,26 @@ namespace librealsense
         color_ep->register_metadata(RS2_FRAME_METADATA_ACTUAL_EXPOSURE, make_attribute_parser(&md_rgb_control::manual_exp, md_rgb_control_attributes::manual_exp_attribute, md_prop_offset));
         color_ep->register_metadata(RS2_FRAME_METADATA_AUTO_EXPOSURE, make_attribute_parser(&md_rgb_control::ae_mode, md_rgb_control_attributes::ae_mode_attribute, md_prop_offset,
             [](rs2_metadata_type param) { return (param != 1); }));
-        color_ep->register_metadata(RS2_FRAME_METADATA_BRIGHTNESS, make_attribute_parser(&md_rgb_control::brightness, md_rgb_control_attributes::brightness_attribute, md_prop_offset));
+        color_ep->register_metadata(RS2_FRAME_METADATA_BRIGHTNESS, make_attribute_parser(&md_rgb_control::brightness, md_rgb_control_attributes::brightness_attribute, md_prop_offset,
+                [](const rs2_metadata_type& param) {
+                    // cast to short in order to return negative values
+                    return *(short*)&(param);
+                }));
         color_ep->register_metadata(RS2_FRAME_METADATA_CONTRAST, make_attribute_parser(&md_rgb_control::contrast, md_rgb_control_attributes::contrast_attribute, md_prop_offset));
         color_ep->register_metadata(RS2_FRAME_METADATA_SATURATION, make_attribute_parser(&md_rgb_control::saturation, md_rgb_control_attributes::saturation_attribute, md_prop_offset));
         color_ep->register_metadata(RS2_FRAME_METADATA_SHARPNESS, make_attribute_parser(&md_rgb_control::sharpness, md_rgb_control_attributes::sharpness_attribute, md_prop_offset));
         color_ep->register_metadata(RS2_FRAME_METADATA_AUTO_WHITE_BALANCE_TEMPERATURE, make_attribute_parser(&md_rgb_control::awb_temp, md_rgb_control_attributes::awb_temp_attribute, md_prop_offset));
         color_ep->register_metadata(RS2_FRAME_METADATA_BACKLIGHT_COMPENSATION, make_attribute_parser(&md_rgb_control::backlight_comp, md_rgb_control_attributes::backlight_comp_attribute, md_prop_offset));
         color_ep->register_metadata(RS2_FRAME_METADATA_GAMMA, make_attribute_parser(&md_rgb_control::gamma, md_rgb_control_attributes::gamma_attribute, md_prop_offset));
-        color_ep->register_metadata(RS2_FRAME_METADATA_HUE, make_attribute_parser(&md_rgb_control::hue, md_rgb_control_attributes::hue_attribute, md_prop_offset));
+        color_ep->register_metadata(RS2_FRAME_METADATA_HUE, make_attribute_parser(&md_rgb_control::hue, md_rgb_control_attributes::hue_attribute, md_prop_offset,
+            [](const rs2_metadata_type& param) {
+                // cast to short in order to return negative values
+                return *(short*)&(param);
+            }));
         color_ep->register_metadata(RS2_FRAME_METADATA_MANUAL_WHITE_BALANCE, make_attribute_parser(&md_rgb_control::manual_wb, md_rgb_control_attributes::manual_wb_attribute, md_prop_offset));
         color_ep->register_metadata(RS2_FRAME_METADATA_POWER_LINE_FREQUENCY, make_attribute_parser(&md_rgb_control::power_line_frequency, md_rgb_control_attributes::power_line_frequency_attribute, md_prop_offset));
         color_ep->register_metadata(RS2_FRAME_METADATA_LOW_LIGHT_COMPENSATION, make_attribute_parser(&md_rgb_control::low_light_comp, md_rgb_control_attributes::low_light_comp_attribute, md_prop_offset));
         color_ep->register_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP, make_uvc_header_parser(&platform::uvc_header::timestamp));
-
-        // We manipulate several controls when the CAH process turn on/off the color stream
-        // This should be done after registration of the device options
-        if (_autocal)
-        {
-            color_ep->register_calibration_controls();
-        }
 
         return color_ep;
     }
@@ -203,10 +185,9 @@ namespace librealsense
                                            response );
             if( response != hwm_Success )
             {
-                AC_LOG( WARNING,
-                        "Failed to read FW table 0x"
-                            << std::hex
-                            << algo::thermal_loop::l500::thermal_calibration_table::id );
+                LOG_WARNING( "Failed to read FW table 0x"
+                             << std::hex
+                             << algo::thermal_loop::l500::thermal_calibration_table::id );
                 throw invalid_value_exception(
                     to_string() << "Failed to read FW table 0x" << std::hex
                                 << algo::thermal_loop::l500::thermal_calibration_table::id );
@@ -340,66 +321,6 @@ namespace librealsense
         intr.d[4] = i.coeffs[4];
     }
 
-
-    void l500_color_sensor::override_intrinsics( rs2_intrinsics const& intr )
-    {
-        // The distortion model is not part of the table. The FW assumes it is brown,
-        // but in LRS we (mistakenly) use INVERSE brown. We therefore make sure the user
-        // has not tried to change anything from the intrinsics reported:
-
-        if( intr.model != l500_distortion)
-            throw invalid_value_exception("invalid intrinsics distortion model");
-
-        rgb_calibration_table table;
-        AC_LOG( DEBUG, "Reading RGB calibration table 0x" << std::hex << table.table_id );
-        ivcam2::read_fw_table( *_owner->_hw_monitor, table.table_id, &table );
-        AC_LOG( DEBUG, "    version:     " << table.version );
-        AC_LOG( DEBUG, "    timestamp:   " << table.timestamp << "; incrementing" );
-        AC_LOG( DEBUG, "    type:        " << table.type << "; setting to 0x10" );
-        AC_LOG( DEBUG, "    intrinsics:  " << table.get_intrinsics() );
-        table.set_intrinsics( intr );
-        AC_LOG( INFO, "Overriding intr: " << intr );
-        AC_LOG( DEBUG, "    normalized:  " << table.get_intrinsics() );
-        table.update_write_fields();
-        write_fw_table( *_owner->_hw_monitor, table.table_id, table );
-        AC_LOG( DEBUG, "    done" );
-
-        // Intrinsics are resolution-specific, so all the rest of the profile info is not
-        // important
-        _owner->_color_intrinsics_table.reset();
-        reset_k_thermal_intrinsics();
-    }
-
-    void l500_color_sensor::override_extrinsics( rs2_extrinsics const& extr )
-    {
-        rgb_calibration_table table;
-        AC_LOG( DEBUG, "Reading RGB calibration table 0x" << std::hex << table.table_id );
-        ivcam2::read_fw_table( *_owner->_hw_monitor, table.table_id, &table );
-        AC_LOG( DEBUG, "    version:     " << table.version );
-        AC_LOG( DEBUG, "    timestamp:   " << table.timestamp << "; incrementing" );
-        AC_LOG( DEBUG, "    type:        " << table.type << "; setting to 0x10" );
-        AC_LOG( DEBUG, "    raw extr:    " << table.get_extrinsics() );
-        table.extr = to_raw_extrinsics(extr);
-        AC_LOG( INFO , "Overriding extr: " << extr );
-        table.update_write_fields();
-        AC_LOG( DEBUG, "    as raw:      " << table.get_extrinsics());
-        ivcam2::write_fw_table( *_owner->_hw_monitor, table.table_id, table );
-        AC_LOG( DEBUG, "    done" );
-
-
-        environment::get_instance().get_extrinsics_graph().override_extrinsics( *_owner->_depth_stream, *_owner->_color_stream, extr );
-    }
-
-    rs2_dsm_params l500_color_sensor::get_dsm_params() const
-    {
-        throw std::logic_error( "color sensor does not support DSM parameters" );
-    }
-
-    void l500_color_sensor::override_dsm_params( rs2_dsm_params const & dsm )
-    {
-        throw std::logic_error( "color sensor does not support DSM parameters" );
-    }
-
     void l500_color_sensor::set_k_thermal_intrinsics( rs2_intrinsics const & intr )
     {
 
@@ -426,34 +347,6 @@ namespace librealsense
 
         // The time-stamp is simply a sequential number that we increment
         ++timestamp;
-    }
-
-    void l500_color_sensor::reset_calibration()
-    {
-        // Read from EEPROM (factory defaults), write to FLASH (current)
-        // Note that factory defaults may be different than the trinsics at the time of
-        // our initialization!
-        rgb_calibration_table table;
-        AC_LOG( DEBUG, "Reading factory calibration from table 0x" << std::hex << table.eeprom_table_id );
-        ivcam2::read_fw_table( *_owner->_hw_monitor, table.eeprom_table_id, &table );
-        AC_LOG( DEBUG, "    version:     " << table.version );
-        AC_LOG( DEBUG, "    timestamp:   " << table.timestamp << "; incrementing" );
-        AC_LOG( DEBUG, "    type:        " << table.type << "; setting to 0x10" );
-        AC_LOG( DEBUG, "Normalized:" );
-        AC_LOG( DEBUG, "    intrinsics:  " << table.get_intrinsics() );
-        AC_LOG( DEBUG, "    extrinsics:  " << table.get_extrinsics() );
-        AC_LOG( DEBUG, "Writing RGB calibration table 0x" << std::hex << table.table_id );
-        ivcam2::write_fw_table( *_owner->_hw_monitor, table.table_id, table );
-        AC_LOG( DEBUG, "    done" );
-
-        _owner->_color_intrinsics_table.reset();
-        reset_k_thermal_intrinsics();
-
-         environment::get_instance().get_extrinsics_graph().override_extrinsics(
-            *_owner->_depth_stream,
-            *_owner->_color_stream,
-            from_raw_extrinsics( table.get_extrinsics() ) );
-        AC_LOG( INFO, "Color sensor calibration has been reset" );
     }
 
     void l500_color_sensor::start(frame_callback_ptr callback)
@@ -528,23 +421,6 @@ namespace librealsense
     {
         std::lock_guard< std::mutex > lock( _state_mutex );
 
-        if( sensor_state::OWNED_BY_AUTO_CAL == _state )
-        {
-            if( is_streaming() )
-            {
-                delayed_stop();
-            }
-            if( is_opened() )
-            {
-                AC_LOG( DEBUG, "Calibration color stream was on, Closing color sensor..." );
-                synthetic_sensor::close();
-            }
-
-            restore_pre_calibration_controls();
-
-            set_sensor_state( sensor_state::CLOSED );
-        }
-
         synthetic_sensor::open( requests );
         set_sensor_state( sensor_state::OWNED_BY_USER );
     }
@@ -561,154 +437,17 @@ namespace librealsense
         set_sensor_state(sensor_state::CLOSED);
     }
 
-    // Helper function for start stream callback
-    template<class T>
-    frame_callback_ptr make_frame_callback(T callback)
-    {
-        return {
-            new internal_frame_callback<T>(callback),
-            [](rs2_frame_callback* p) { p->release(); }
-        };
-    }
-
-    bool l500_color_sensor::start_stream_for_calibration(const stream_profiles& requests)
-    {
-        std::lock_guard< std::mutex > lock( _state_mutex );
-
-        // Allow calibration process to open the color stream only if it is not started by the user.
-        if( _state == sensor_state::CLOSED )
-        {
-            set_calibration_controls_to_defaults();
-
-            synthetic_sensor::open(requests);
-            set_sensor_state(sensor_state::OWNED_BY_AUTO_CAL);
-            AC_LOG( DEBUG, "Starting color sensor stream -- for calibration" );
-            delayed_start( make_frame_callback( [&]( frame_holder fref ) {} ) );
-            return true;
-        }
-        if( ! is_streaming() )
-        {
-            // This is a corner case that is not covered at the moment: The user opened the sensor
-            // but did not start it.
-            AC_LOG( WARNING,
-                    "The color sensor was opened but never started by the user; streaming may not work" );
-        }
-        else
-            AC_LOG( DEBUG, "Color sensor is already streaming (" << state_to_string(_state) << ")" );
-        return false;
-    }
-
-    void l500_color_sensor::stop_stream_for_calibration()
-    {
-        std::lock_guard< std::mutex > lock( _state_mutex );
-        
-        if( _state == sensor_state::OWNED_BY_AUTO_CAL )
-        {
-            AC_LOG(DEBUG, "Closing color sensor stream from calibration");
-
-            if( is_streaming() )
-            {
-                delayed_stop();
-
-            }
-            if (is_opened())
-            {
-                synthetic_sensor::close();
-            }
-
-            restore_pre_calibration_controls();
-
-            // If we got here with no exception it means the start has succeeded.
-            set_sensor_state( sensor_state::CLOSED );
-        }
-        else
-        {
-            AC_LOG( DEBUG, "Color sensor was not opened by us; no need to close" );
-        }
-    }
-
     std::string l500_color_sensor::state_to_string(sensor_state state)
     {
         switch (state)
         {
         case sensor_state::CLOSED:
             return "CLOSED";
-        case sensor_state::OWNED_BY_AUTO_CAL:
-            return "OWNED_BY_AUTO_CAL";
         case sensor_state::OWNED_BY_USER:
             return "OWNED_BY_USER";
         default:
             LOG_DEBUG("Invalid color sensor state: " << static_cast<int>(state));
             return "Unknown state";
-        }
-    }
-
-
-    void l500_color_sensor::set_calibration_controls_to_defaults()
-    {
-        for (auto && calib_control : _calib_controls)
-        {
-            auto && control = get_option(calib_control.option);
-
-            auto curr_val = control.query();
-            if (curr_val != calib_control.default_value)
-            {
-                AC_LOG(DEBUG, "Calibration - changed option: " << rs2_option_to_string( calib_control.option ) << " value,"
-                                              << " from: " << curr_val
-                                              << " to: " << calib_control.default_value );
-                calib_control.need_to_restore = true;
-                calib_control.previous_value = curr_val;
-                control.set(calib_control.default_value);
-            }
-            else
-            {
-                AC_LOG(DEBUG, "Calibration - no need to changed option: " << rs2_option_to_string(calib_control.option) << " value,"
-                    << " current value is: " << curr_val
-                    << " which is the default value");
-            }
-        }
-    }
-
-    void l500_color_sensor::restore_pre_calibration_controls()
-    {
-        for (auto && calib_control : _calib_controls)
-        {
-            auto && control = get_option(calib_control.option);
-
-            auto curr_val = control.query();
-            if( calib_control.need_to_restore &&
-                ( curr_val == calib_control.default_value ) )
-            {
-                AC_LOG(DEBUG, "Calibration - restored option: " << rs2_option_to_string(calib_control.option) << " value,"
-                    << " from: " << curr_val
-                    << " to: " << calib_control.previous_value);
-                control.set(calib_control.previous_value);
-            }
-            else
-            {
-                std::stringstream ss;
-                ss << "Calibration - no need to restore option : "
-                   << rs2_option_to_string( calib_control.option ) << " value, "
-                   << " current value is: " << curr_val;
-
-                if( curr_val == calib_control.default_value ) ss << " which is the default value";
-                else  ss << " which is the user value";
-
-                AC_LOG(DEBUG, ss.str());
-            }
-            calib_control.need_to_restore = false;
-        }
-    }
-
-    void l500_color_sensor::register_calibration_controls()
-    {
-        for( auto && option : { RS2_OPTION_ENABLE_AUTO_EXPOSURE,
-                                RS2_OPTION_BACKLIGHT_COMPENSATION,
-                                RS2_OPTION_BRIGHTNESS,
-                                RS2_OPTION_CONTRAST } )
-        {
-            auto && control = get_option(option);
-            _calib_controls.push_back({ option, control.get_range().def });
         }
     }
 
@@ -729,7 +468,7 @@ namespace librealsense
     ivcam2::intrinsic_rgb l500_color::read_intrinsics_table() const
     {
         // Get RAW data from firmware
-        AC_LOG(DEBUG, "RGB_INTRINSIC_GET");
+        LOG_DEBUG( "RGB_INTRINSIC_GET" );
         std::vector< uint8_t > response_vec = _hw_monitor->send(command{ RGB_INTRINSIC_GET });
 
         if (response_vec.empty())
@@ -764,7 +503,7 @@ namespace librealsense
     }
     std::vector<uint8_t> l500_color::get_raw_extrinsics_table() const
     {
-        AC_LOG( DEBUG, "RGB_EXTRINSIC_GET" );
+        LOG_DEBUG( "RGB_EXTRINSIC_GET" );
         return _hw_monitor->send(command{ RGB_EXTRINSIC_GET });
     }
 }

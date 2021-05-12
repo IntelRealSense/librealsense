@@ -88,6 +88,7 @@ classdef option < int64
         enable_ir_reclectivity          (84)
         auto_exposure_limit             (85)
         auto_gain_limit                 (86)
-        count                           (87)
+        auto_rx_sensitivity             (87)
+        count                           (88)
     end
 end
