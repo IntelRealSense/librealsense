@@ -361,12 +361,10 @@ if list_only:
             print( t.name, "has tags:", ' '.join( t.config.tags ) )
     #
     elif list_tags:
-        print( "Available tags:" )
         for t in sorted( list( available_tags ) ):
             print( t )
     #
     elif list_tests:
-        print( "Available tests:" )
         for t in sorted( tests, key= lambda x: x.name ):
             print( t.name )
 #
