@@ -339,6 +339,8 @@ class ExeTest( Test ):
         relative_test_path = self.find_source_path()
         if relative_test_path:
             self._config = TestConfigFromCpp( unit_tests_dir + os.sep + relative_test_path )
+        else:
+            self._config = TestConfig()
 
     @property
     def command( self ):
