@@ -90,7 +90,7 @@ public enum Option {
     AUTO_EXPOSURE_LIMIT(85),
     AUTO_GAIN_LIMIT(86),
     AUTO_RX_SENSITIVITY(87),
-    OPTION_TRANSMITTER_FREQUENCY(88),
+    OPTION_TRANSMITTER_FREQUENCY(88);
 
     private final int mValue;
 
