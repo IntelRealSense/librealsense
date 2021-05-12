@@ -6,7 +6,7 @@
 #include "../include/librealsense2-gl/rs_processing_gl.hpp"
 
 #include "proc/synthetic-stream.h"
-#include "yuy2rgb-gl.h"
+#include "y411-2rgb-gl.h"
 #include "option.h"
 
 #ifndef NOMINMAX
@@ -36,21 +36,63 @@ static const char* fragment_shader_text =
 "    float u = 0.0;\n"
 "    float v = 0.0;\n"
 "    float tex_y = 1.0 - textCoords.y;\n"
-"    if (mod(floor(gl_FragCoord.x), 2.0) == 0.0){\n"
-"        vec2 tx1 = vec2(textCoords.x, tex_y);\n"
-"        vec4 px1 = texture2D(textureSampler, tx1);\n"
-"        vec2 tx2 = vec2(textCoords.x + pixel_width, tex_y);\n"
-"        vec4 px2 = texture2D(textureSampler, tx2);\n"
-"        y = px1.x; u = px1.y; v = px2.y;\n"
-"    }\n"
-"    else\n"
-"    {\n"
-"        vec2 tx1 = vec2(textCoords.x - pixel_width, tex_y);\n"
-"        vec4 px1 = texture2D(textureSampler, tx1);\n"
-"        vec2 tx2 = vec2(textCoords.x, tex_y);\n"
-"        vec4 px2 = texture2D(textureSampler, tx2);\n"
-"        y = px2.x; u = px1.y; v = px2.y;\n"
-"    }\n"
+"    float tex_x = textCoords.x +textCoords.x/2.0*pixel_width;\n"
+"    vec3 uyyvyy1 = vec3(gl_FragCoord.x, gl_FragCoord.x+pixel_width, gl_FragCoord.x+pixel_width*2.0); \n"
+"    vec4 puy6 = texture2D(textureSampler, uyyvyy1);\n"
+"    if (mod(gl_FragCoord.y, 2.0) == 0.0){\n"
+"        if (mod(floor(gl_FragCoord.x), 3.0) == 0.0) {\n"
+"           vec2 tuy1 = vec2(tex_x, tex_y);\n"
+"           vec4 puy1 = texture2D(textureSampler, tuy1);\n"
+"           vec2 ty2v = vec2(tex_x + pixel_width, tex_y);\n"
+"           vec4 py2v = texture2D(textureSampler, ty2v);\n"
+"           u = puy1.x; y = puy1.y; v = py2v.y;\n"
+"           //y = mod(gl_FragCoord.x, 3.0)/255.0;\n"
+"           //u = textCoords.y;\n"
+"           //v =0.0;\n"
+"       }\n"
+"       else if (mod(floor(gl_FragCoord.x), 3.0) == 1.0) {\n"
+"           vec2 tuy1 = vec2(tex_x- pixel_width, tex_y);\n"
+"           vec4 puy1 = texture2D(textureSampler, tuy1);\n"
+"           vec2 ty2v = vec2(tex_x, tex_y);\n"
+"           vec4 py2v = texture2D(textureSampler, ty2v);\n"
+"           u = puy1.x; y = py2v.x; v = py2v.y;\n"
+"           //y = mod(gl_FragCoord.x, 3.0)/255.0;\n"
+"           //u = textCoords.y;\n"
+"           //v =0.0;\n"
+"       }\n"
+"       else if (mod(floor(gl_FragCoord.x), 3.0) == 2.0) {"
+"       \n"
+"           vec2 tuy1 = vec2(tex_x+ pixel_width, tex_y);\n"
+"           vec4 puy1 = texture2D(textureSampler, tuy1);\n"
+"           vec2 ty2v = vec2(tex_x+ pixel_width* 2.0, tex_y);\n"
+"           vec4 py2v = texture2D(textureSampler, ty2v);\n"
+"           u = puy1.x; y = puy1.y; v = py2v.y;\n"
+"           //y = mod(gl_FragCoord.x, 3.0)/255.0;\n"
+"           //u = textCoords.y;\n"
+"           //v =0.0;\n"
+"       }\n"
+"   }\n"
+//"   else\n"
+//"   {\n"
+//"       if (mod(floor(gl_FragCoord.x), 2.0) == 0.0)"
+//"       {\n"
+//"           vec2 tuy1 = vec2(textCoords.x, tex_y+pixel_height);\n"
+//"           vec4 puy1 = texture2D(textureSampler, tuy1);\n"
+//"           vec2 ty2v = vec2(textCoords.x + pixel_width, tex_y-pixel_height);\n"
+//"           vec4 py2v = texture2D(textureSampler, ty2v);\n"
+//"           vec2 ty3y4 = vec2(textCoords.x + 2*pixel_width, tex_y-pixel_height); \n"
+//"           vec4 py3y4 = texture2D(textureSampler, ty3y4);\n"
+//"           u = puy1.x; y = ty2v.x; v = ty2v.y;\n"
+//"       }\n"
+//"       else\n"
+//"       {"
+//"           vec2 tuy1 = vec2(textCoords.x, tex_y); \n"
+//"           vec4 puy1 = texture2D(textureSampler, tuy1);\n"
+//"           vec2 ty2v = vec2(textCoords.x + pixel_width, tex_y);\n"
+//"           vec4 py2v = texture2D(textureSampler, ty2v);\n"
+//"           u = puy1.x; y = py2v.x; v = py2v.y;\n"
+//"      }\n"
+//"    }\n"
 "    //y *= 256.0; u *= 256.0; v *= 256.0;\n"
 "    float c = y - (16.0 / 256.0);\n"
 "    float d = u - 0.5;\n"
@@ -62,16 +104,22 @@ static const char* fragment_shader_text =
 "    color.x = clamp((y + 1.40200 * (v - 0.5)), 0.0, 1.0);\n"
 "    color.y = clamp((y - 0.34414 * (u - 0.5) - 0.71414 * (v - 0.5)), 0.0, 1.0);\n"
 "    color.z = clamp((y + 1.77200 * (u - 0.5)), 0.0, 1.0);\n"
+
+"    //vec2 tu2 = vec2(textCoords.x, tex_y); \n"
+"    //vec4 pu2 = texture2D(textureSampler, tu2);\n"
+"    color.x = tex_x;\n"
+"    color.y = u;\n"
+"    color.z = v;\n"
 "    gl_FragColor = vec4(color.xyz, opacity);\n"
 "}";
 
 using namespace rs2;
 using namespace librealsense::gl;
 
-class yuy2rgb_shader : public texture_2d_shader
+class y411_2rgb_shader : public texture_2d_shader
 {
 public:
-    yuy2rgb_shader()
+    y411_2rgb_shader()
         : texture_2d_shader(shader_program::load(
             texture_2d_shader::default_vertex_shader(), 
             fragment_shader_text, "position", "textureCoords"))
@@ -91,22 +139,22 @@ private:
     uint32_t _height_location;
 };
 
-void yuy2rgb::cleanup_gpu_resources()
+void y411_2rgb::cleanup_gpu_resources()
 {
     _viz.reset();
     _fbo.reset();
     _enabled = 0;
 }
 
-void yuy2rgb::create_gpu_resources()
+void y411_2rgb::create_gpu_resources()
 {
-    _viz = std::make_shared<visualizer_2d>(std::make_shared<yuy2rgb_shader>());
+    _viz = std::make_shared<visualizer_2d>(std::make_shared<y411_2rgb_shader>());
     _fbo = std::make_shared<fbo>(_width, _height);
     _enabled = glsl_enabled() ? 1 : 0;
 }
 
-yuy2rgb::yuy2rgb()
-    : stream_filter_processing_block("YUY Converter (GLSL)")
+y411_2rgb::y411_2rgb()
+    : stream_filter_processing_block("Y411 Converter (GLSL)")
 {
     _source.add_extension<gpu_video_frame>(RS2_EXTENSION_VIDEO_FRAME_GL);
 
@@ -117,7 +165,7 @@ yuy2rgb::yuy2rgb()
     initialize();
 }
 
-yuy2rgb::~yuy2rgb()
+y411_2rgb::~y411_2rgb()
 {
     perform_gl_action([&]()
     {
@@ -125,7 +173,7 @@ yuy2rgb::~yuy2rgb()
     }, []{});
 }
 
-rs2::frame yuy2rgb::process_frame(const rs2::frame_source& src, const rs2::frame& f)
+rs2::frame y411_2rgb::process_frame(const rs2::frame_source& src, const rs2::frame& f)
 {
     //scoped_timer t("yuy2rgb");
 
@@ -191,7 +239,7 @@ rs2::frame yuy2rgb::process_frame(const rs2::frame_source& src, const rs2::frame
         glClearColor(1, 0, 0, 1);
         glClear(GL_COLOR_BUFFER_BIT);
 
-        auto& shader = (yuy2rgb_shader&)_viz->get_shader();
+        auto& shader = (y411_2rgb_shader&)_viz->get_shader();
         shader.begin();
         shader.set_size(_width, _height);
         shader.end();

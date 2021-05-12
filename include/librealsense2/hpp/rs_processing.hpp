@@ -508,6 +508,34 @@ namespace rs2
         }
     };
 
+    class y411_decoder : public filter
+    {
+    public:
+        /**
+        * Creates YUY decoder processing block. This block accepts raw YUY frames and outputs frames of other formats.
+        * YUY is a common video format used by a variety of web-cams. It benefits from packing pixels into 2 bytes per pixel
+        * without signficant quality drop. YUY representation can be converted back to more usable RGB form,
+        * but this requires somewhat costly conversion.
+        * The SDK will automatically try to use SSE2 and AVX instructions and CUDA where available to get
+        * best performance. Other implementations (using GLSL, OpenCL, Neon and NCS) should follow.
+        */
+        y411_decoder() : filter(init(), 1) { }
+
+    protected:
+        y411_decoder(std::shared_ptr<rs2_processing_block> block) : filter(block, 1) {}
+
+    private:
+        std::shared_ptr<rs2_processing_block> init()
+        {
+            rs2_error* e = nullptr;
+            auto block = std::shared_ptr<rs2_processing_block>(
+                rs2_create_y411_decoder(&e),
+                rs2_delete_processing_block);
+            error::handle(e);
+
+            return block;
+        }
+    };
   class threshold_filter : public filter
     {
     public:
