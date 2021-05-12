@@ -358,10 +358,7 @@ if not n_tests:
 if list_only:
     if list_tags and list_tests:
         for t in sorted( tests, key= lambda x: x.name ):
-            print( t.name, "has tags:", end=' ' )
-            for tag in t.config.tags:
-                print( tag, end=' ')
-            print()
+            print( t.name, "has tags:", ' '.join( t.config.tags ) )
     #
     elif list_tags:
         print( "Available tags:" )

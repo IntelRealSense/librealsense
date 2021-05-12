@@ -33,8 +33,8 @@ def usage():
     print( '                       inside unit-tests/, e.g. unit-tests/func/test-hdr.py gets [func, py]' )
     print( '        --list-tags    print out all available tags. This option will not run any tests' )
     print( '        --list-tests   print out all available tests. This option will not run any tests' )
-    print('                       if both list-tags and list-tests are specified each test will be printed along')
-    print('                       with what tags it has')
+    print( '                       if both list-tags and list-tests are specified each test will be printed along' )
+    print( '                       with what tags it has' )
     sys.exit(2)
 
 regex = None
@@ -141,7 +141,7 @@ def process_cpp( dir, builddir ):
             if list_tests:
                 tests_and_tags[ testname ] = config.tags
 
-        if testname not in tests_and_tags.keys():
+        if testname not in tests_and_tags:
             tests_and_tags[testname] = None
 
         if list_only:
@@ -213,7 +213,7 @@ def process_py( dir, builddir ):
 
 list_only = list_tags or list_tests
 available_tags = set()
-tests_and_tags = {}
+tests_and_tags = dict()
 normal_tests = []
 shared_tests = []
 static_tests = []
@@ -222,10 +222,7 @@ n,sh,st = process_cpp( dir, builddir )
 if list_only:
     if list_tags and list_tests:
         for t in sorted( tests_and_tags.keys() ):
-            print( t, "has tags:", end=' ' )
-            for tag in tests_and_tags[t]:
-                print( tag, end=' ')
-            print()
+            print( t, "has tags:", ' '.join( tests_and_tags[t] ) )
     #
     elif list_tags:
         print( "Available tags:" )
