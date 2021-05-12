@@ -24,7 +24,6 @@ import com.intel.realsense.librealsense.Device;
 import com.intel.realsense.librealsense.DeviceListener;
 import com.intel.realsense.librealsense.Frame;
 import com.intel.realsense.librealsense.Sensor;
-import com.intel.realsense.librealsense.ColorSensor;
 
 import com.intel.realsense.librealsense.StreamProfile;
 import com.intel.realsense.librealsense.StreamFormat;
@@ -52,7 +51,6 @@ public class MainActivity extends AppCompatActivity {
 
     private Device mDevice;
     DepthSensor depth_sensor = null;
-    ColorSensor color_sensor = null;
 
     Thread streaming = null;
 
@@ -117,18 +115,6 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private FrameCallback mDepthFrameHandler = new FrameCallback()
-    {
-        @Override
-        public void onFrame(final Frame f) {
-            Frame cf = f.clone();
-
-            if (frameQueue.remainingCapacity() > 0) {
-                frameQueue.add(cf);
-            }
-        }
-    };
-
-    private FrameCallback mColorFrameHandler = new FrameCallback()
     {
         @Override
         public void onFrame(final Frame f) {
@@ -222,9 +208,6 @@ public class MainActivity extends AppCompatActivity {
             if (s.is(Extension.DEPTH_SENSOR)) {
                 depth_sensor = s.as(Extension.DEPTH_SENSOR);
             }
-            else if (s.is(Extension.COLOR_SENSOR)) {
-                color_sensor = s.as(Extension.COLOR_SENSOR);
-            }
 
             List<StreamProfile> sps = s.getStreamProfiles();
 
@@ -280,40 +263,6 @@ public class MainActivity extends AppCompatActivity {
             depth_sensor.open(sp);
             depth_sensor.start(mDepthFrameHandler);
         }
-
-        if (color_sensor != null) {
-            List<StreamProfile> sps = color_sensor.getStreamProfiles();
-            StreamProfile sp = sps.get(0);
-
-            for (StreamProfile sp2 : sps)
-            {
-                if (sp2.getType().compareTo(StreamType.COLOR) == 0) {
-
-                    if (sp2.is(Extension.VIDEO_PROFILE)) {
-                        VideoStreamProfile video_stream_profile = sp2.as(Extension.VIDEO_PROFILE);
-
-                        // After using the "as" method we can use the new data type
-                        //  for additional operations:
-                        StreamFormat sf = video_stream_profile.getFormat();
-                        int index = sp2.getIndex();
-                        StreamType st = sp2.getType();
-                        int w = video_stream_profile.getWidth();
-                        int h = video_stream_profile.getHeight();
-                        int fps = video_stream_profile.getFrameRate();
-
-                        if (w == 640 && fps == 30) {
-                            Log.d(TAG, "color stream: " + index + ":" + st.name() + ":" + sf.name() + ":" + w + "x" + h + "@" + fps + "HZ");
-
-                            sp = sp2;
-                            break;
-                        }
-                    }
-                }
-            }
-
-            color_sensor.open(sp);
-            color_sensor.start(mColorFrameHandler);
-        }
     }
 
     private synchronized void start() {
@@ -343,12 +292,10 @@ public class MainActivity extends AppCompatActivity {
             mIsStreaming = false;
             streaming.join(1000);
 
-            if (color_sensor != null) color_sensor.stop();
             if (depth_sensor != null) depth_sensor.stop();
 
             if (mColorizer != null) mColorizer.close();
             if (depth_sensor != null) {depth_sensor.close();}
-            if (color_sensor != null) {color_sensor.close();}
 
             if (mDevice != null) mDevice.close();
 
