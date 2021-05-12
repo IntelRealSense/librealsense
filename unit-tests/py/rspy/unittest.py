@@ -332,7 +332,7 @@ class ExeTest( Test ):
         """
         global unit_tests_dir
         if not os.path.isfile( exe ):
-            raise RuntimeError( "Tried to create exe test with invalid exe file: " + exe )
+            log.d( "Tried to create exe test with invalid exe file: " + exe )
         Test.__init__( self, testname )
         self.exe = exe
 
