@@ -79,6 +79,7 @@ namespace librealsense
 
     void inline unpack_y411_sse(byte * const dest, const byte * s, int w, int h, int actual_size)
     {
+#if defined __SSSE3__ && ! defined ANDROID
         auto n = w * h;
         // working each iteration on 8 y411 pixels, and extract 4 rgb pixels from each one
         // so we get 32 rgb pixels
@@ -289,6 +290,7 @@ namespace librealsense
             _mm_storeu_si128(&dst[(line*2  + 1) * reg_num_on_line + j * 3 + 1], _mm_alignr_epi8(rgb2_l1, rgb1_l1, 8));
             _mm_storeu_si128(&dst[(line*2  + 1) * reg_num_on_line + j * 3 + 2], _mm_alignr_epi8(rgb3_l1, rgb2_l1, 12));
         }
+#endif
     }
     void unpack_y411_native(byte * const dest, const byte * s, int w, int h, int actual_size)
     {
