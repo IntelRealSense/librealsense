@@ -139,6 +139,31 @@ namespace rs2
         };
 
         /**
+       * yuy_decoder can be used for YUY->RGB conversion
+       * Similar in functionality to rs2::yuy_decoder but performed on the GPU
+       */
+        class y411_decoder : public rs2::y411_decoder
+        {
+        public:
+            y411_decoder() : rs2::y411_decoder(init()) { }
+
+        private:
+            std::shared_ptr<rs2_processing_block> init()
+            {
+                rs2_error* e = nullptr;
+                auto block = std::shared_ptr<rs2_processing_block>(
+                    rs2_gl_create_y411_decoder(RS2_API_VERSION, &e),
+                    rs2_delete_processing_block);
+                error::handle(e);
+
+                // Redirect options API to the processing block
+                //options::operator=(pb);
+
+                return block;
+            }
+        };
+
+        /**
         * Colorizer can be used for Depth->RGB conversion, including histogram equalization
         * Similar in functionality to rs2::colorizer but performed on the GPU
         */

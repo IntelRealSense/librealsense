@@ -24,11 +24,11 @@ namespace librealsense
 {
     namespace gl
     {
-        class yuy2rgb : public stream_filter_processing_block, public gpu_processing_object
+        class y411_2rgb : public stream_filter_processing_block, public gpu_processing_object
         {
         public:
-            yuy2rgb();
-            ~yuy2rgb() override;
+            y411_2rgb();
+            ~y411_2rgb() override;
 
             void cleanup_gpu_resources() override;
             void create_gpu_resources() override;
