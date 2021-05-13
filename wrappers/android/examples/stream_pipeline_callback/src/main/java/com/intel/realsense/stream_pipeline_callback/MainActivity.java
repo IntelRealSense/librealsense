@@ -4,7 +4,6 @@ import android.Manifest;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
-import android.os.Handler;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.appcompat.app.AppCompatActivity;
@@ -12,13 +11,10 @@ import android.util.Log;
 import android.view.View;
 import android.widget.TextView;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 
-import com.intel.realsense.librealsense.CameraInfo;
 import com.intel.realsense.librealsense.Colorizer;
 import com.intel.realsense.librealsense.Config;
 
@@ -26,13 +22,7 @@ import com.intel.realsense.librealsense.DeviceList;
 import com.intel.realsense.librealsense.Device;
 import com.intel.realsense.librealsense.DeviceListener;
 import com.intel.realsense.librealsense.Frame;
-
-import com.intel.realsense.librealsense.StreamProfile;
-import com.intel.realsense.librealsense.StreamFormat;
-import com.intel.realsense.librealsense.StreamType;
 import com.intel.realsense.librealsense.Extension;
-
-import com.intel.realsense.librealsense.VideoStreamProfile;
 import com.intel.realsense.librealsense.FrameCallback;
 
 import com.intel.realsense.librealsense.FrameSet;
@@ -40,10 +30,9 @@ import com.intel.realsense.librealsense.GLRsSurfaceView;
 import com.intel.realsense.librealsense.Pipeline;
 import com.intel.realsense.librealsense.PipelineProfile;
 import com.intel.realsense.librealsense.RsContext;
-import com.intel.realsense.librealsense.StreamType;
 
 public class MainActivity extends AppCompatActivity {
-    private static final String TAG = "librs stream callback";
+    private static final String TAG = "librs pipeline callback";
     private static final int PERMISSIONS_REQUEST_CAMERA = 0;
 
     private boolean mPermissionsGranted = false;

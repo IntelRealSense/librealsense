@@ -6,7 +6,7 @@
 
 #include <android/log.h>
 
-#define  LRS_JNI_LOG_TAG    "librs jni api"
+#define  LRS_JNI_LOG_TAG    "librs_jni_api"
 
 #define  LRS_JNI_LOGE(...)  __android_log_print(ANDROID_LOG_ERROR,LRS_JNI_LOG_TAG,__VA_ARGS__)
 #define  LRS_JNI_LOGW(...)  __android_log_print(ANDROID_LOG_WARN,LRS_JNI_LOG_TAG,__VA_ARGS__)
