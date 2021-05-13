@@ -134,9 +134,10 @@ namespace librealsense
             auto epa = request->get_endpoint()->get_address();
             auto ovl = reinterpret_cast<OVERLAPPED*>(request->get_native_request());
             auto h = _handle->get_interface_handle(in);
+            auto buffer_size = static_cast<ULONG>(request->get_buffer().size());
 
             auto buffer = const_cast<uint8_t*>(request->get_buffer().data());
-            int res = WinUsb_ReadPipe(h, epa, buffer, request->get_buffer().size(), &read_pipe_transfer_size, ovl);
+            int res = WinUsb_ReadPipe(h, epa, buffer, buffer_size, &read_pipe_transfer_size, ovl);
             if (0 != res)
                 return winusb_status_to_rs(res);
 

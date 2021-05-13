@@ -47,12 +47,15 @@ namespace librealsense
                                                       RS2_OPTION_RESET_CAMERA_ACCURACY_HEALTH };
 
             // We have to set the sensor mode (resolution) first
-            auto & sensor_mode = _depth_sensor.get_option( RS2_OPTION_SENSOR_MODE );
-            auto found_sensor_mode = j.find( get_string( RS2_OPTION_SENSOR_MODE ) );
-            if( found_sensor_mode != j.end() )
+            if (_depth_sensor.supports_option(RS2_OPTION_SENSOR_MODE))
             {
-                float sensor_mode_val = found_sensor_mode.value();
-                sensor_mode.set( sensor_mode_val );
+                auto & sensor_mode = _depth_sensor.get_option(RS2_OPTION_SENSOR_MODE);
+                auto found_sensor_mode = j.find(get_string(RS2_OPTION_SENSOR_MODE));
+                if (found_sensor_mode != j.end())
+                {
+                    float sensor_mode_val = found_sensor_mode.value();
+                    sensor_mode.set(sensor_mode_val);
+                }
             }
 
             // If a non custom preset is used, we should ignore all the settings that are

@@ -809,7 +809,7 @@ inline std::shared_ptr<rs2::device> do_with_waiting_for_camera_connection(rs2::c
     std::shared_ptr<rs2::device> result;
     std::condition_variable cv;
 
-    ctx.set_devices_changed_callback([&result, dev, &disconnected, &connected, &m, &cv, &serial](rs2::event_information info) mutable
+    ctx.set_devices_changed_callback([&](rs2::event_information info) mutable
         {
             if (info.was_removed(*dev))
             {
@@ -844,6 +844,8 @@ inline std::shared_ptr<rs2::device> do_with_waiting_for_camera_connection(rs2::c
         }, dev));
     REQUIRE(cv.wait_for(lock, std::chrono::seconds(20), [&]() { return connected; }));
     REQUIRE(result);
+    ctx.set_devices_changed_callback( []( rs2::event_information info ) {} );  // reset callback
+
     return result;
 }
 

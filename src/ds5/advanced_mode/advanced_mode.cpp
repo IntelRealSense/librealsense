@@ -64,7 +64,13 @@ namespace librealsense
                                               const firmware_version& fw_version)
     {
         auto p = get_all();
-        auto res = get_res_type(configuration.front().width, configuration.front().height);
+        res_type res;
+
+        // configuration is empty before first streaming - so set default res
+        if (configuration.empty())
+            res = low_resolution;
+        else
+            res = get_res_type(configuration.front().width, configuration.front().height);
 
         switch (preset)
         {
@@ -884,7 +890,7 @@ namespace librealsense
             throw wrong_api_call_sequence_exception(to_string() << "set(advanced_mode_preset_option) failed! Device is not in Advanced-Mode.");
 
         auto preset = to_preset(value);
-        if (preset == RS2_RS400_VISUAL_PRESET_CUSTOM || !_ep.is_streaming())
+        if (preset == RS2_RS400_VISUAL_PRESET_CUSTOM)
         {
             _last_preset = preset;
             return;

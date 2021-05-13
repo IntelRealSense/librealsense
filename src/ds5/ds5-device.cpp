@@ -137,26 +137,36 @@ namespace librealsense
         using namespace std;
         using namespace std::chrono;
 
-        try {
-            LOG_INFO("entering to update state, device disconnect is expected");
-            command cmd(ds::DFU);
-            cmd.param1 = 1;
-            _hw_monitor->send(cmd);
-            std::vector<uint8_t> gvd_buff(HW_MONITOR_BUFFER_SIZE);
-            for (auto i = 0; i < 50; i++)
-            {
-                _hw_monitor->get_gvd(gvd_buff.size(), gvd_buff.data(), ds::GVD);
-                this_thread::sleep_for(milliseconds(50));
-            }
-            throw std::runtime_error("Device still connected!");
-
-        }
-        catch (std::exception& e)
+        try
         {
-            LOG_WARNING(e.what());
+            LOG_INFO( "entering to update state, device disconnect is expected" );
+            command cmd( ds::DFU );
+            cmd.param1 = 1;
+            _hw_monitor->send( cmd );
+
+            // We allow 6 seconds because on Linux the removal status is updated at a 5 seconds rate.
+            const int MAX_ITERATIONS_FOR_DEVICE_DISCONNECTED_LOOP = (POLLING_DEVICES_INTERVAL_MS + 1000) / DELAY_FOR_RETRIES;
+            for( auto i = 0; i < MAX_ITERATIONS_FOR_DEVICE_DISCONNECTED_LOOP; i++ )
+            {
+                // If the device was detected as removed we assume the device is entering update mode
+                // Note: if no device status callback is registered we will wait the whole time and it is OK
+                if( ! is_valid() )
+                    return;
+
+                this_thread::sleep_for( milliseconds( DELAY_FOR_RETRIES ) );
+            }
+
+
+            if (device_changed_notifications_on())
+                LOG_WARNING( "Timeout waiting for device disconnect after DFU command!" );
         }
-        catch (...) {
-            // The set command returns a failure because switching to DFU resets the device while the command is running.
+        catch( std::exception & e )
+        {
+            LOG_WARNING( e.what() );
+        }
+        catch( ... )
+        {
+            LOG_ERROR( "Unknown error during entering DFU state" );
         }
     }
 
@@ -972,8 +982,16 @@ namespace librealsense
             depth_sensor->register_option(RS2_OPTION_DEPTH_UNITS, depth_scale);
         }
         else
+        {
+            float default_depth_units = 0.001f; //meters
+            // default depth units is different for D405
+            if (_pid == RS405_PID)
+                default_depth_units = 0.0001f;  //meters
             depth_sensor.register_option(RS2_OPTION_DEPTH_UNITS, std::make_shared<const_value_option>("Number of meters represented by a single depth unit",
-                lazy<float>([]() { return 0.001f; })));
+                lazy<float>([default_depth_units]()
+                    { return default_depth_units; })));
+        }
+            
         // Metadata registration
         depth_sensor.register_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP, make_uvc_header_parser(&uvc_header::timestamp));
 

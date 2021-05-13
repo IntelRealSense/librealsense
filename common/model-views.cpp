@@ -3822,12 +3822,6 @@ namespace rs2
         _updates_profile(std::make_shared<dev_updates_profile::update_profile>()),
         _allow_remove(remove)
     {
-
-        if( dev.supports( RS2_CAMERA_INFO_FIRMWARE_VERSION ) && dev.is< device_calibration >() )
-        {
-            _accuracy_health_model = std::unique_ptr< cah_model >( new cah_model( *this, viewer ) );
-        }
-
         auto name = get_device_name(dev);
         id = to_string() << name.first << ", " << name.second;
 
@@ -5487,22 +5481,6 @@ namespace rs2
 
         }
 
-
-        if (show_trigger_camera_accuracy_health_popup)
-        {
-            if (_accuracy_health_model)
-            {
-                show_trigger_camera_accuracy_health_popup = _accuracy_health_model->prompt_trigger_popup(window, error_message);
-            }
-        }
-
-        if (show_reset_camera_accuracy_health_popup)
-        {
-            if (_accuracy_health_model)
-            {
-                show_reset_camera_accuracy_health_popup = _accuracy_health_model->prompt_reset_popup(window, error_message);
-            }
-        }
 
         if (keep_showing_advanced_mode_modal)
         {
