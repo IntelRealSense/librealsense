@@ -95,8 +95,7 @@ matrix:
       sudo: required
       osx_image: xcode12.2
       script:
-        - export OPENSSL_ROOT_DIR=`brew --prefix openssl` # Used by libcurl for 'CHECK_FOR_UPDATES' capability
-        - cmake .. -DBUILD_EXAMPLES=true -DBUILD_WITH_OPENMP=false -DHWM_OVER_XU=false -DCHECK_FOR_UPDATES=true
+        - cmake .. -DBUILD_EXAMPLES=true -DBUILD_WITH_OPENMP=false -DHWM_OVER_XU=false -DCHECK_FOR_UPDATES=true -DOPENSSL_ROOT_DIR=$(brew --prefix openssl)
         - cmake --build . --config $LRS_BUILD_CONFIG -- -j4
         - ls
 
