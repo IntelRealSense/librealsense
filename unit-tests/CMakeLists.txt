@@ -15,8 +15,10 @@ endif()
 
 if(BUILD_UNIT_TESTS)
     if(Python3_FOUND)
+		# split single string argument into options for unit-test-config.py
+		separate_arguments( UNIT_TESTS_SPLIT_ARGS NATIVE_COMMAND ${UNIT_TESTS_ARGS})
         execute_process(
-            COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/unit-test-config.py ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR}
+            COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/unit-test-config.py ${UNIT_TESTS_SPLIT_ARGS} ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR}
             RESULT_VARIABLE rv
         )
         if( NOT ${rv} EQUAL 0 )

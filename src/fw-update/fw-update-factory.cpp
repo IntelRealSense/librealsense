@@ -70,7 +70,7 @@ namespace librealsense
 
     int get_product_line(const platform::usb_device_info &usb_info)
     {
-        if( SR300_RECOVERY == usb_info.pid && platform::RS2_USB_CLASS_VENDOR_SPECIFIC == usb_info.cls )
+        if( SR300_RECOVERY == usb_info.pid )
             return RS2_PRODUCT_LINE_SR300;
         if( ds::RS_RECOVERY_PID == usb_info.pid )
             return RS2_PRODUCT_LINE_D400;

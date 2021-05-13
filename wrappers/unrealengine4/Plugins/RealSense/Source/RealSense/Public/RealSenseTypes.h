@@ -127,8 +127,8 @@ enum class ERealSenseOptionType : uint8
     SENSOR_MODE                                , /**< The resolution mode: see rs2_sensor_mode for values */
     EMITTER_ALWAYS_ON                          , /**< Enable Laser On constantly (GS SKU Only) */
     THERMAL_COMPENSATION                       , /**< Depth Thermal Compensation for selected D400 SKUs */
-    TRIGGER_CAMERA_ACCURACY_HEALTH             ,
-    RESET_CAMERA_ACCURACY_HEALTH               ,
+    TRIGGER_CAMERA_ACCURACY_HEALTH             , /**< DEPRECATED! */
+    RESET_CAMERA_ACCURACY_HEALTH               , /**< DEPRECATED! */
     HOST_PERFORMANCE                           , /**< Set host performance mode to optimize device settings so host can keep up with workload, for example, USB transaction granularity, setting option to low performance host leads to larger USB transaction size and reduced number of transactions which improves performance and stability if host is relatively weak as compared to workload */
     HDR_ENABLED                                , /**< Enable / disable HDR */
     SEQUENCE_NAME                              , /**< HDR Sequence name */
@@ -141,6 +141,8 @@ enum class ERealSenseOptionType : uint8
     ENABLE_IR_REFLECTIVITY                     , /**< Enables data collection for calculating IR pixel reflectivity */
     AUTO_EXPOSURE_LIMIT                        , /**< Set and get auto exposure limit in microseconds. Default is 0 which means full exposure range. If the requested exposure limit is greater than frame time, it will be set to frame time at runtime. Setting will not take effect until next streaming session. */
     AUTO_GAIN_LIMIT                            , /**< Set and get auto gain limits ranging from 16 to 248. Default is 0 which means full gain. If the requested gain limit is less than 16, it will be set to 16. If the requested gain limit is greater than 248, it will be set to 248. Setting will not take effect until next streaming session. */
+    AUTO_RX_SENSITIVITY                        , /**< Set and get auto receiver sensitivity.*/
+    TRANSMITTER_FREQUENCY                      , /**< Change transmitter frequency, increasing effective range over sharpness. */
 };
 
 UENUM(Blueprintable)

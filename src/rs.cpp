@@ -1279,7 +1279,7 @@ const char* rs2_l500_visual_preset_to_string(rs2_l500_visual_preset preset)     
 const char* rs2_sensor_mode_to_string(rs2_sensor_mode mode)                               { return get_string(mode); }
 const char* rs2_ambient_light_to_string( rs2_ambient_light ambient )                      { return get_string(ambient); }
 const char* rs2_digital_gain_to_string(rs2_digital_gain gain)                             { return get_string(gain); }
-const char* rs2_cah_trigger_to_string( rs2_cah_trigger mode )                             { return get_string(mode); }
+const char* rs2_cah_trigger_to_string( int mode )                                         { return "DEPRECATED as of 2.46"; }
 const char* rs2_calibration_type_to_string(rs2_calibration_type type)                     { return get_string(type); }
 const char* rs2_calibration_status_to_string(rs2_calibration_status status)               { return get_string(status); }
 const char* rs2_host_perf_mode_to_string(rs2_host_perf_mode mode)                         { return get_string(mode); }
@@ -2942,7 +2942,9 @@ void rs2_update_firmware_cpp(const rs2_device* device, const void* fw_image, int
 {
     VALIDATE_NOT_NULL(device);
     VALIDATE_NOT_NULL(fw_image);
-    VALIDATE_FIXED_SIZE(fw_image_size, signed_fw_size); // check if the given FW size matches the expected FW size
+    // check if the given FW size matches the expected FW size
+    if (!val_in_range(fw_image_size, { signed_fw_size, signed_sr300_size }))
+        throw librealsense::invalid_value_exception(to_string() << "Unsupported firmware binary image provided - " << fw_image_size << " bytes");
 
     auto fwu = VALIDATE_INTERFACE(device->device, librealsense::update_device_interface);
 
@@ -2957,7 +2959,9 @@ void rs2_update_firmware(const rs2_device* device, const void* fw_image, int fw_
 {
     VALIDATE_NOT_NULL(device);
     VALIDATE_NOT_NULL(fw_image);
-    VALIDATE_FIXED_SIZE(fw_image_size, signed_fw_size); // check if the given FW size matches the expected FW size
+    // check if the given FW size matches the expected FW size
+    if (!val_in_range(fw_image_size, { signed_fw_size, signed_sr300_size }))
+        throw librealsense::invalid_value_exception(to_string() << "Unsupported firmware binary image provided - " << fw_image_size << " bytes");
 
     if (fw_image_size <= 0)
         throw std::runtime_error("invlid firmware image size provided to rs2_update");
@@ -3021,7 +3025,12 @@ void rs2_update_firmware_unsigned_cpp(const rs2_device* device, const void* imag
 {
     VALIDATE_NOT_NULL(device);
     VALIDATE_NOT_NULL(image);
-    VALIDATE_FIXED_SIZE(image_size, unsigned_fw_size); // check if the given FW size matches the expected FW size
+    // check if the given FW size matches the expected FW size
+    if (!val_in_range(image_size, { unsigned_fw_size, unsigned_sr300_size }))
+        throw librealsense::invalid_value_exception(to_string() << "Unsupported firmware binary image (unsigned) provided - " << image_size << " bytes");
+
+    if (image_size <= 0)
+        throw std::runtime_error("invalid firmware image size provided to rs2_update_firmware_unsigned");
 
     auto fwud = std::dynamic_pointer_cast<updatable>(device->device);
     if (!fwud)
@@ -3040,10 +3049,12 @@ void rs2_update_firmware_unsigned(const rs2_device* device, const void* image, i
 {
     VALIDATE_NOT_NULL(device);
     VALIDATE_NOT_NULL(image);
-    VALIDATE_FIXED_SIZE(image_size, unsigned_fw_size); // check if the given FW size matches the expected FW size
+    // check if the given FW size matches the expected FW size
+    if (!val_in_range(image_size, { unsigned_fw_size, unsigned_sr300_size }))
+        throw librealsense::invalid_value_exception(to_string() << "Unsupported firmware binary image (unsigned) provided - " << image_size << " bytes");
 
     if (image_size <= 0)
-        throw std::runtime_error("invlid firmware image size provided to rs2_update_firmware_unsigned");
+        throw std::runtime_error("invalid firmware image size provided to rs2_update_firmware_unsigned");
 
     auto fwud = std::dynamic_pointer_cast<updatable>(device->device);
     if (!fwud)

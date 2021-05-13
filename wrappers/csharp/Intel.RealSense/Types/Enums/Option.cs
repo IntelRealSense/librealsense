@@ -273,6 +273,12 @@ namespace Intel.RealSense
         auto_exposure_limit = 85,
 
         /// <summary>auto gain limit - for D400 SKUs</summary>
-        auto_gain_limit = 86
+        auto_gain_limit = 86,
+
+        /// <summary>Enable automatic receiver sensitivity</summary>
+        auto_rx_sensitivity = 87,
+
+        /// <summary>Change transmitter frequency, increasing effective range over sharpness</summary>
+        transmitter_frequency = 88
     }
 }

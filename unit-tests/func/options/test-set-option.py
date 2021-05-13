@@ -92,7 +92,7 @@ product_line = dev.get_info(rs.camera_info.product_line)
 options_to_ignore = [] 
 
 if product_line == "L500":
-    options_to_ignore = [rs.option.host_performance, rs.option.trigger_camera_accuracy_health, rs.option.reset_camera_accuracy_health]
+    options_to_ignore = [rs.option.host_performance]
 
 def test_option_changes( sensor ):
     global options_to_ignore

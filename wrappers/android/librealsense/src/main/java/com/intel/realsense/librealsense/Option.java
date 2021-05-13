@@ -88,7 +88,10 @@ public enum Option {
     NOISE_ESTIMATION(83),
     ENABLE_IR_REFLECTIVITY(84),
     AUTO_EXPOSURE_LIMIT(85),
-    AUTO_GAIN_LIMIT(86);
+    AUTO_GAIN_LIMIT(86),
+    AUTO_RX_SENSITIVITY(87),
+    OPTION_TRANSMITTER_FREQUENCY(88);
+
     private final int mValue;
 
     private Option(int value) { mValue = value; }
