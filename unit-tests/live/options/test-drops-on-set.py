@@ -2,7 +2,6 @@
 # Copyright(c) 2020 Intel Corporation. All Rights Reserved.
 
 #test:device L500*
-#test:device D400*
 
 import platform
 import pyrealsense2 as rs
