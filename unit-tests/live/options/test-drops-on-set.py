@@ -99,6 +99,9 @@ options_to_ignore = []
 if product_line == "L500":
     options_to_ignore = [rs.option.host_performance]
 
+if product_line == "D400":
+    options_to_ignore = [rs.option.visual_preset]
+
 def test_option_changes(sensor):
     global options_to_ignore
     options = sensor.get_supported_options()
