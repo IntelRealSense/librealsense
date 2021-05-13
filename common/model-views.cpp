@@ -3715,7 +3715,7 @@ namespace rs2
             && dev.supports( RS2_CAMERA_INFO_PRODUCT_LINE ) )
         {
             std::string fw = dev.get_info( RS2_CAMERA_INFO_FIRMWARE_VERSION );
-            std::string recommended
+            std::string recommended_fw_ver
                 = dev.get_info( RS2_CAMERA_INFO_RECOMMENDED_FIRMWARE_VERSION );
 
             int product_line
@@ -3725,13 +3725,13 @@ namespace rs2
                 configurations::update::allow_rc_firmware,
                 false );
             bool is_rc = ( product_line == RS2_PRODUCT_LINE_D400 ) && allow_rc_firmware;
-            std::string available = get_available_firmware_version( product_line );
+            std::string available_fw_ver = get_available_firmware_version( product_line );
 
             std::shared_ptr< firmware_update_manager > manager = nullptr;
 
-            if( is_upgradeable( fw, available ) )
+            if( is_upgradeable( fw, available_fw_ver) )
             {
-                recommended = available;
+                recommended_fw_ver = available_fw_ver;
 
                 static auto table = create_default_fw_table();
 
@@ -3743,22 +3743,24 @@ namespace rs2
                                                                        true );
             }
 
-            if( is_upgradeable( fw, recommended ) )
+            auto dev_name = get_device_name(dev);
+            if( is_upgradeable( fw, recommended_fw_ver) )
             {
-                auto dev_name = get_device_name( dev );
                 std::stringstream msg;
                 msg << dev_name.first << " (S/N " << dev_name.second << ")\n"
                     << "Current Version: " << fw << "\n";
 
                 if( is_rc )
-                    msg << "Release Candidate: " << recommended << " Pre-Release";
+                    msg << "Release Candidate: " << recommended_fw_ver << " Pre-Release";
                 else
-                    msg << "Recommended Version: " << recommended;
+                    msg << "Recommended Version: " << recommended_fw_ver;
 
                 auto n = std::make_shared< fw_update_notification_model >( msg.str(),
                                                                            manager,
                                                                            false );
-                n->delay_id = "fw_update_alert." + recommended + "." + dev_name.second;
+                // The FW update delay ID include the dismissed recommended version and the device serial number
+                // This way a newer FW recommended version will not be dismissed 
+                n->delay_id = "fw_update_alert." + recommended_fw_ver + "." + dev_name.second;
                 n->enable_complex_dismiss = true;
 
                 if( reset_delay ) n->reset_delay();
@@ -3769,6 +3771,15 @@ namespace rs2
                     related_notifications.push_back( n );
                     return true;
                 }
+            }
+            else
+            {
+                std::stringstream msg;
+                msg << "Bundled FW is up to date for: " << dev_name.first << " (S/N " << dev_name.second << ")\n"
+                    << "Current Version: " << fw << "\n" 
+                    << "Recommended Version: " << recommended_fw_ver;
+
+                not_model->add_log(msg.str(), RS2_LOG_SEVERITY_DEBUG);
             }
         }
         return false;
@@ -4924,14 +4935,39 @@ namespace rs2
                             ctx,
                             this);
 
-                        // For essential policy we don't need the update info, if essential update exist we take the whole update profile for full updates display
-                        dev_updates_profile::version_info dummy_update_info;
-                        if (update_profile->get_sw_update(sw_update::ESSENTIAL, dummy_update_info) || update_profile->get_fw_update(sw_update::ESSENTIAL, dummy_update_info))
+                        dev_updates_profile::version_info sw_update_info, fw_update_info;
+                        bool essential_sw_update_found = update_profile->get_sw_update(sw_update::ESSENTIAL, sw_update_info);
+                        bool essential_fw_update_found = update_profile->get_fw_update(sw_update::ESSENTIAL, fw_update_info);
+                        if (essential_sw_update_found || essential_fw_update_found)
                         {
                             if (auto viewer_updates = updates_model_protected.lock())
                             {
                                 viewer_updates->add_profile(updates_profile_model);
                                 need_to_check_bundle = false;
+
+                                // Log the essential updates
+                                if (auto nm = notification_model_protected.lock())
+                                {
+                                    if( essential_sw_update_found )
+                                        nm->add_log(
+                                            to_string()
+                                                << update_profile->device_name << " (S/N "
+                                                << update_profile->serial_number << ")\n"
+                                                << "Current SW version: " << std::string( update_profile->software_version )
+                                                << "\nEssential SW version: "
+                                                << std::string( sw_update_info.ver ),
+                                            RS2_LOG_SEVERITY_WARN );
+                                    
+                                    if( essential_fw_update_found )
+                                        nm->add_log(
+                                            to_string()
+                                                << update_profile->device_name << " (S/N "
+                                                << update_profile->serial_number << ")\n"
+                                                << "Current FW version: " << std::string( update_profile->firmware_version )
+                                                << "\nEssential FW version: "
+                                                << std::string( fw_update_info.ver ),
+                                            RS2_LOG_SEVERITY_WARN );
+                                }
                             }
                         }
                         else 
@@ -4972,8 +5008,8 @@ namespace rs2
                 else if( auto nm = notification_model_protected.lock() )
                 {
                     if ( activated_by_user && fail_access_db )
-                        nm->add_notification( { to_string() << textual_icons::wifi << "  Unable to access versions database!\n",
-                                                RS2_LOG_SEVERITY_INFO,
+                        nm->add_notification( { to_string() << textual_icons::wifi << "  Unable to retrieve updates.\nPlease check your network connection.\n",
+                                                RS2_LOG_SEVERITY_ERROR,
                                                 RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR } );
                     else
                         nm->add_log( "No online SW / FW updates available" );
@@ -5615,6 +5651,8 @@ namespace rs2
             recommended_sw_update_info.download_link);
 
         auto dev_name = get_device_name(dev);
+        // The SW update delay ID include the dismissed recommended version and the device serial number
+        // This way a newer SW recommended version will not be dismissed. 
         n->delay_id = "sw_update_alert." + std::string(recommended_sw_update_info.ver) + "." + dev_name.second;
         n->enable_complex_dismiss = true;  // allow advanced dismiss menu
 

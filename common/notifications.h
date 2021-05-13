@@ -207,9 +207,9 @@ namespace rs2
 
         notifications_model() {}
 
-        void add_log(std::string message)
+        void add_log(std::string message, rs2_log_severity severity = RS2_LOG_SEVERITY_INFO )
         {
-            output.add_log(RS2_LOG_SEVERITY_INFO, "", 0, message);
+            output.add_log(severity, "", 0, message);
         }
 
         output_model output;
