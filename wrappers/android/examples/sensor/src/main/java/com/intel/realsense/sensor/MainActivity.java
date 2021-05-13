@@ -13,9 +13,6 @@ import android.view.View;
 import android.widget.TextView;
 
 import java.util.List;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.TimeUnit;
 
 import com.intel.realsense.librealsense.Colorizer;
 import com.intel.realsense.librealsense.DepthSensor;
@@ -52,9 +49,6 @@ public class MainActivity extends AppCompatActivity {
     private Device mDevice;
     DepthSensor depth_sensor = null;
 
-    Thread streaming = null;
-
-    BlockingQueue<Frame> frameQueue = new ArrayBlockingQueue<Frame>(4);
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -108,9 +102,6 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onPause() {
         super.onPause();
-        if(mRsContext != null)
-            mRsContext.close();
-
         stop();
     }
 
@@ -118,11 +109,20 @@ public class MainActivity extends AppCompatActivity {
     {
         @Override
         public void onFrame(final Frame f) {
-            Frame cf = f.clone();
-
-            if (frameQueue.remainingCapacity() > 0) {
-                frameQueue.add(cf);
-            }
+            try {
+                if (f != null) {
+                    if (f.is(Extension.DEPTH_FRAME))
+                    {
+                        try (Frame processed = f.applyFilter(mColorizer)) {
+                            mGLSurfaceView.upload(processed);
+                        }
+                    }
+                    else
+                    {
+                        mGLSurfaceView.upload(f);
+                    }
+                }
+            } catch (Exception e) {}
         }
     };
 
@@ -171,35 +171,6 @@ public class MainActivity extends AppCompatActivity {
         }
     };
 
-    Runnable mStreaming = new Runnable() {
-        @Override
-        public void run() {
-            synchronized(this) {
-                frameQueue.clear();
-
-                while(mIsStreaming) {
-                    try {
-                        Frame mFrame = frameQueue.poll(1000, TimeUnit.MILLISECONDS);
-
-                        if (mFrame != null) {
-                            if (mFrame.is(Extension.DEPTH_FRAME)) {
-                                Frame cf = mFrame.applyFilter(mColorizer);
-                                mGLSurfaceView.upload(cf);
-                                cf.close();
-                            } else {
-                                mGLSurfaceView.upload(mFrame);
-                            }
-
-                            mFrame.close();
-                        }
-                    } catch (Exception e) {
-                        Log.e(TAG, "streaming, error: " + e.getMessage());
-                    }
-                }
-            }
-        }
-    };
-
     private void configAndStart() throws Exception {
         List<Sensor> sensors = mDevice.querySensors();
 
@@ -207,27 +178,6 @@ public class MainActivity extends AppCompatActivity {
         {
             if (s.is(Extension.DEPTH_SENSOR)) {
                 depth_sensor = s.as(Extension.DEPTH_SENSOR);
-            }
-
-            List<StreamProfile> sps = s.getStreamProfiles();
-
-            for (StreamProfile sp : sps)
-            {
-                int index = sp.getIndex();
-                StreamType st = sp.getType();
-
-                if (sp.is(Extension.VIDEO_PROFILE)) {
-                    VideoStreamProfile video_stream_profile = sp.as(Extension.VIDEO_PROFILE);
-
-                    // After using the "as" method we can use the new data type
-                    //  for additinal operations:
-                    StreamFormat sf = video_stream_profile.getFormat();
-                    int w = video_stream_profile.getWidth();
-                    int h = video_stream_profile.getHeight();
-                    int fps = video_stream_profile.getFrameRate();
-
-                    Log.d(TAG, "stream: " + index + ":" + st.name() + ":" + sf.name() + ":" + w + "x" + h + "@" + fps + "HZ");
-                }
             }
         }
 
@@ -242,7 +192,7 @@ public class MainActivity extends AppCompatActivity {
                         VideoStreamProfile video_stream_profile = sp2.as(Extension.VIDEO_PROFILE);
 
                         // After using the "as" method we can use the new data type
-                        //  for additinal operations:
+                        //  for additional operations:
                         StreamFormat sf = video_stream_profile.getFormat();
                         int index = sp2.getIndex();
                         StreamType st = sp2.getType();
@@ -273,9 +223,6 @@ public class MainActivity extends AppCompatActivity {
             mGLSurfaceView.clear();
             mIsStreaming = true;
 
-            streaming = new Thread(mStreaming);
-            streaming.start();
-
             configAndStart();
 
             Log.d(TAG, "streaming started successfully");
@@ -290,7 +237,6 @@ public class MainActivity extends AppCompatActivity {
         try {
             Log.d(TAG, "try stop streaming");
             mIsStreaming = false;
-            streaming.join(1000);
 
             if (depth_sensor != null) depth_sensor.stop();
 
@@ -298,6 +244,12 @@ public class MainActivity extends AppCompatActivity {
             if (depth_sensor != null) {depth_sensor.close();}
 
             if (mDevice != null) mDevice.close();
+
+            if(mRsContext != null) {
+                mRsContext.removeDevicesChangedCallback();
+                mRsContext.close();
+                mRsContext = null;
+            }
 
             mGLSurfaceView.clear();
             Log.d(TAG, "streaming stopped successfully");
