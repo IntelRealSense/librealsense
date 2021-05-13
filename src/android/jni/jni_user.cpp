@@ -62,6 +62,12 @@ bool rs_jni_cb(rs2::frame f, rs_jni_userdata* ud)
 
     jobject callback = ud->jcb;
 
+    if (callback == NULL)
+    {
+        ud->jvm->DetachCurrentThread();
+        return false;
+    }
+
     if(cb_thread_env){
         jclass usercb = cb_thread_env->GetObjectClass(callback);
         if(usercb == NULL){

@@ -11,15 +11,8 @@ import android.util.Log;
 import android.view.View;
 import android.widget.TextView;
 
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.TimeUnit;
-
 import com.intel.realsense.librealsense.Colorizer;
-import com.intel.realsense.librealsense.Config;
 
-import com.intel.realsense.librealsense.DeviceList;
-import com.intel.realsense.librealsense.Device;
 import com.intel.realsense.librealsense.DeviceListener;
 import com.intel.realsense.librealsense.Frame;
 import com.intel.realsense.librealsense.Extension;
@@ -45,11 +38,6 @@ public class MainActivity extends AppCompatActivity {
     private Pipeline mPipeline;
     private Colorizer mColorizer;
     private RsContext mRsContext;
-
-    private Device mDevice;
-    Thread streaming = null;
-
-    BlockingQueue<Frame> frameQueue = new ArrayBlockingQueue<Frame>(4);
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -103,8 +91,6 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onPause() {
         super.onPause();
-        if(mRsContext != null)
-            mRsContext.close();
         stop();
     }
 
@@ -112,11 +98,18 @@ public class MainActivity extends AppCompatActivity {
     {
         @Override
         public void onFrame(final Frame f) {
-            Frame cf = f.clone();
 
-            if (frameQueue.remainingCapacity() > 0) {
-                frameQueue.add(cf);
-            }
+            try {
+                if (f != null) {
+                    FrameSet fs = f.as(Extension.FRAMESET);
+
+                    if (fs != null) {
+                        try (FrameSet processed = fs.applyFilter(mColorizer)) {
+                            mGLSurfaceView.upload(processed);
+                        }
+                    }
+                }
+            } catch (Exception e) {}
         }
     };
 
@@ -132,16 +125,16 @@ public class MainActivity extends AppCompatActivity {
         mPipeline = new Pipeline();
         mColorizer = new Colorizer();
 
-        try(DeviceList dl = mRsContext.queryDevices()){
-            int num_devices = dl.getDeviceCount();
+        try {
+            int num_devices = mRsContext.queryDevices().getDeviceCount();
             Log.d(TAG, "devices found: " + num_devices);
 
-            if( num_devices> 0) {
-                mDevice = dl.createDevice(0);
+            if (num_devices > 0) {
                 showConnectLabel(false);
                 start();
             }
         }
+        catch (Exception e) {}
     }
 
     private void showConnectLabel(final boolean state){
@@ -166,39 +159,8 @@ public class MainActivity extends AppCompatActivity {
         }
     };
 
-    Runnable mStreaming = new Runnable() {
-        @Override
-        public void run() {
-            synchronized(this) {
-                frameQueue.clear();
-
-                while(mIsStreaming) {
-                    try {
-                        Frame mFrame = frameQueue.poll(1000, TimeUnit.MILLISECONDS);
-
-                        if (mFrame != null) {
-                            FrameSet frames = mFrame.as(Extension.FRAMESET);
-
-                            if (frames != null) {
-                                try (FrameSet processed = frames.applyFilter(mColorizer)) {
-                                    mGLSurfaceView.upload(processed);
-                                }
-
-                                frames.close();
-                            }
-
-                            mFrame.close();
-                        }
-                    } catch (Exception e) {
-                        Log.e(TAG, "streaming, error: " + e.getMessage());
-                    }
-                }
-            }
-        }
-    };
-
     private void configAndStart() throws Exception {
-        try(Config config  = new Config())
+        //  try(Config config  = new Config())
         {
             // streaming pipeline with default configuration or custom configuration and user callback
             // the user callback must be a class implements the FrameCallback interface
@@ -222,10 +184,6 @@ public class MainActivity extends AppCompatActivity {
             mGLSurfaceView.clear();
 
             mIsStreaming = true;
-
-            streaming = new Thread(mStreaming);
-            streaming.start();
-
             configAndStart();
 
             Log.d(TAG, "streaming started successfully");
@@ -240,12 +198,22 @@ public class MainActivity extends AppCompatActivity {
         try {
             Log.d(TAG, "try stop streaming");
             mIsStreaming = false;
-            streaming.join(1000);
 
-            mPipeline.stop();
+            if (mPipeline != null)
+            {
+                mPipeline.stop();
+                mPipeline.close();
+                mPipeline = null;
+            }
 
             if (mColorizer != null) mColorizer.close();
-            if (mPipeline != null) mPipeline.close();
+
+            if(mRsContext != null) {
+                mRsContext.removeDevicesChangedCallback();
+                mRsContext.close();
+                mRsContext = null;
+            }
+
             mGLSurfaceView.clear();
             Log.d(TAG, "streaming stopped successfully");
         } catch (Exception e) {
