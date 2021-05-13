@@ -89,6 +89,7 @@ classdef option < int64
         auto_exposure_limit             (85)
         auto_gain_limit                 (86)
         auto_rx_sensitivity             (87)
-        count                           (88)
+        transmitter_frequency           (88)
+        count                           (89)
     end
 end

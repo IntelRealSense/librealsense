@@ -19,7 +19,8 @@ namespace l535 {
         min_distance = 6,
         invalidation_bypass = 7,
         alternate_ir = 8,
-        rx_sensitivity = 9,
+        auto_rx_sensitivity = 9,
+        transmitter_frequency = 10
     };
 
     enum amc_command

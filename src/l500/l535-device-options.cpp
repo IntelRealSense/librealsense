@@ -44,8 +44,10 @@ device_options::device_options( std::shared_ptr< librealsense::context > ctx,
               { invalidation_bypass, "Enable/disable pixel invalidation" } },
              { RS2_OPTION_ALTERNATE_IR,
               { alternate_ir, "Enable/Disable alternate IR" } },
-            { RS2_OPTION_AUTO_RX_SENSITIVITY,
-              { rx_sensitivity, "auto gain" } }  // TODO: replace the description
+            { RS2_OPTION_AUTO_RX_SENSITIVITY, 
+              { auto_rx_sensitivity, "Enable receiver sensitivity according to ambient light, bounded by the Receiver Gain control" } },
+            { RS2_OPTION_TRANSMITTER_FREQUENCY,
+              { transmitter_frequency, "Change transmitter frequency, increasing effective range over sharpness" } }
         };
 
         for( auto i : options )
