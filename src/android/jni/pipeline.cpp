@@ -35,10 +35,7 @@ Java_com_intel_realsense_librealsense_Pipeline_nStartWithCallback(JNIEnv *env, j
     if (rs_jni_callback_init(env, jcb, &pdata) != true) return NULL;
 
     auto cb = [&](rs2::frame f) {
-        rs2_error* e = nullptr;
-
         rs_jni_cb(f, &pdata);
-        return NULL;
     };
 
     auto rv = rs2_pipeline_start_with_callback_cpp(reinterpret_cast<rs2_pipeline *>(handle), new rs2::frame_callback<decltype(cb)>(cb), &e);
@@ -64,10 +61,7 @@ Java_com_intel_realsense_librealsense_Pipeline_nStartWithConfigAndCallback(JNIEn
     if (rs_jni_callback_init(env, jcb, &pdata) != true) return NULL;
 
     auto cb = [&](rs2::frame f) {
-        rs2_error* e = nullptr;
-
         rs_jni_cb(f, &pdata);
-        return NULL;
     };
 
     auto rv = rs2_pipeline_start_with_config_and_callback_cpp(reinterpret_cast<rs2_pipeline *>(handle),

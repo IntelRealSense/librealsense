@@ -29,10 +29,7 @@ Java_com_intel_realsense_librealsense_Sensor_nStart(JNIEnv *env, jclass type, jl
     if (rs_jni_callback_init(env, jcb, &sdata) != true) return;
 
     auto cb = [&](rs2::frame f) {
-        rs2_error* e = nullptr;
-
         rs_jni_cb(f, &sdata);
-        return NULL;
     };
 
     rs2_start_cpp(reinterpret_cast<rs2_sensor *>(handle), new rs2::frame_callback<decltype(cb)>(cb), &e);
