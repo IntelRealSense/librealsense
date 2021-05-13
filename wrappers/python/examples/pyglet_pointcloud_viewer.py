@@ -84,12 +84,24 @@ class AppState:
         Ry = rotation_matrix((0, 1, 0), math.radians(-self.yaw))
         return np.dot(Ry, Rx).astype(np.float32)
 
-
 state = AppState()
 
 # Configure streams
 pipeline = rs.pipeline()
 config = rs.config()
+
+pipeline_wrapper = rs.pipeline_wrapper(pipeline)
+pipeline_profile = config.resolve(pipeline_wrapper)
+device = pipeline_profile.get_device()
+
+found_rgb = False
+for s in device.sensors:
+    if s.get_info(rs.camera_info.name) == 'RGB Camera':
+        found_rgb = True
+        break
+if not found_rgb:
+    print("The demo requires Depth camera with Color sensor")
+    exit(0)
 
 config.enable_stream(rs.stream.depth, rs.format.z16, 30)
 other_stream, other_format = rs.stream.color, rs.format.rgb8
