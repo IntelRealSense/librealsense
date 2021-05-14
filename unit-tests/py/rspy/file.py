@@ -64,7 +64,7 @@ def _grep( pattern, lines, context ):
             context['line']  = line
             context['match'] = match
             yield context
-            matches = matches + 1
+            matches += 1
     if matches:
         del context['index']
         del context['line']
@@ -83,3 +83,23 @@ def cat( filename ):
     with open( filename, errors = 'ignore' ) as file:
         for line in remove_newlines( file ):
             log.out( line )
+
+
+def split_comments( filename, comment_delim_regex = '#' ):
+    """
+    Yields all lines in a file, but with comments separated:
+        '  line'                yields ('  line', None )
+        'line # comment at EOL' yields ('line', 'comment at EOL')
+        '# comment line  '      yields ('', 'comment line')
+    """
+    context = dict()
+    pattern = re.compile( r'^(.*?)(?:\s*' + comment_delim_regex + r'\s*(.*?)\s*)?$' )  # to end-of-line
+    with open( filename, errors = 'ignore' ) as file:
+        for line in remove_newlines( file ):
+            match = pattern.search( line )
+            line_without_comment = match.group(1)
+            comment = match.group(2)                 # can be None
+            yield (line_without_comment, comment)
+
+
+
