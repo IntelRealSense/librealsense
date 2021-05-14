@@ -232,27 +232,29 @@ public:
                         ch->size   = sizeof(chunk_header_t);
                         int ret = 0;
                         int csz = size - offset > CHUNK_SIZE ? CHUNK_SIZE : size - offset;
-    #ifdef COMPRESSION_ENABLED
-        #ifdef COMPRESSION_ZSTD                    
-                        ret = ZSTD_compress((void*)(chunk.get() + CHUNK_HLEN), CHUNK_SIZE, (void*)(data + offset), csz, 1);
-                        // if the compressed chunk sometimes bigger than original just copy uncompressed data
-                        if (ret < 0) {
-                            ch->status = ch->status & 0xFC; // clean lower two bits - no compression
+
+                        #ifdef COMPRESSION_ENABLED
+                            #ifdef COMPRESSION_ZSTD                    
+                                ret = ZSTD_compress((void*)(chunk.get() + CHUNK_HLEN), CHUNK_SIZE, (void*)(data + offset), csz, 1);
+                                // if the compressed chunk sometimes bigger than original just copy uncompressed data
+                                if (ret < 0) {
+                                    ch->status = ch->status & 0xFC; // clean lower two bits - no compression
+                                    memcpy((void*)(chunk.get() + CHUNK_HLEN), (void*)(data + offset), csz);
+                                    ret = csz;
+                                } else {
+                                    ch->status = (ch->status & 0xFC) | 1; // set lower bit - ZSTD compression
+                                }
+
+                            #else
+                                // ch->size  += LZ4_compress_fast((const char*)(data + offset), (char*)(chunk.get() + CHUNK_HLEN), csz, CHUNK_SIZE, 10);
+                                ret = LZ4_compress_default((const char*)(data + offset), (char*)(chunk.get() + CHUNK_HLEN), csz, CHUNK_SIZE);
+                            #endif
+                        #else
                             memcpy((void*)(chunk.get() + CHUNK_HLEN), (void*)(data + offset), csz);
                             ret = csz;
-                        } else {
-                            ch->status = (ch->status & 0xFC) | 1; // set lower bit - ZSTD compression
-                        }
-
-        #else
-                        // ch->size  += LZ4_compress_fast((const char*)(data + offset), (char*)(chunk.get() + CHUNK_HLEN), csz, CHUNK_SIZE, 10);
-                        ret = LZ4_compress_default((const char*)(data + offset), (char*)(chunk.get() + CHUNK_HLEN), csz, CHUNK_SIZE);
-        #endif
-    #else
-                        memcpy((void*)(chunk.get() + CHUNK_HLEN), (void*)(data + offset), csz);
-                        ret = csz;
-                        ch->status = ch->status & 0xFC; // clean lower two bits - no compression
-    #endif                    
+                            ch->status = ch->status & 0xFC; // clean lower two bits - no compression
+                        #endif                
+                            
                         ch->size  += ret;
                         out_size  += ch->size;
                         offset    += CHUNK_SIZE;

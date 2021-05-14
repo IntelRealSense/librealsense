@@ -21,6 +21,121 @@ public:
     slib() {};
    ~slib() {};
 
+    static int get_bpp(rs2::stream_profile profile) {
+        int bpp = 0;
+        if (profile.is<rs2::video_stream_profile>()) {
+            rs2::video_stream_profile vsp = profile.as<rs2::video_stream_profile>();
+            switch(vsp.format()) {
+            case RS2_FORMAT_Z16   : bpp = 2; break;
+            case RS2_FORMAT_YUYV  : bpp = 2; break;
+            case RS2_FORMAT_Y8    : bpp = 1; break;
+            case RS2_FORMAT_UYVY  : bpp = 2; break;
+            case RS2_FORMAT_RGB8  : bpp = 3; break;
+            case RS2_FORMAT_BGR8  : bpp = 3; break;
+            case RS2_FORMAT_RGBA8 : bpp = 4; break;
+            case RS2_FORMAT_BGRA8 : bpp = 4; break;
+            }
+        }
+        return bpp;
+    };
+
+    // converts from YUV to profile's video format
+    // returnes new frame in case of conversion or 
+    // NULL if no conversion was available
+    static uint8_t* convert(rs2::stream_profile profile, uint8_t* data_in) {
+        uint8_t* data_out = NULL;
+
+        if (profile.is<rs2::video_stream_profile>()) {
+
+            if (profile.format() == RS2_FORMAT_RGB8  || profile.format() == RS2_FORMAT_BGR8 || 
+                profile.format() == RS2_FORMAT_RGBA8 || profile.format() == RS2_FORMAT_BGRA8) {
+
+                rs2::video_stream_profile vsp = profile.as<rs2::video_stream_profile>();
+                int bpp = get_bpp(profile);
+
+                data_out = new uint8_t[vsp.width() * vsp.height() * bpp];
+
+                // convert the format if necessary
+                switch(vsp.format()) {
+                case RS2_FORMAT_RGB8  :
+                case RS2_FORMAT_BGR8  :
+                    // perform the conversion
+                    for (int y = 0; y < vsp.height(); y++) {
+                        for (int x = 0; x < vsp.width(); x += 2) {                
+                            {
+                                uint8_t Y = data_in[y * vsp.width() * 2 + x * 2 + 0];
+                                uint8_t U = data_in[y * vsp.width() * 2 + x * 2 + 1];
+                                uint8_t V = data_in[y * vsp.width() * 2 + x * 2 + 3];
+
+                                uint8_t R = fmax(0, fmin(255, Y + 1.402 * (V - 128)));
+                                uint8_t G = fmax(0, fmin(255, Y - 0.344 * (U - 128) - 0.714 * (V - 128)));
+                                uint8_t B = fmax(0, fmin(255, Y + 1.772 * (U - 128)));
+
+                                data_out[y * vsp.width() * bpp + x * bpp + 0] = R;
+                                data_out[y * vsp.width() * bpp + x * bpp + 1] = G;
+                                data_out[y * vsp.width() * bpp + x * bpp + 2] = B;
+                            }
+
+                            {
+                                uint8_t Y = data_in[y * vsp.width() * 2 + x * 2 + 2];
+                                uint8_t U = data_in[y * vsp.width() * 2 + x * 2 + 1];
+                                uint8_t V = data_in[y * vsp.width() * 2 + x * 2 + 3];
+
+                                uint8_t R = fmax(0, fmin(255, Y + 1.402 * (V - 128)));
+                                uint8_t G = fmax(0, fmin(255, Y - 0.344 * (U - 128) - 0.714 * (V - 128)));
+                                uint8_t B = fmax(0, fmin(255, Y + 1.772 * (U - 128)));
+
+                                data_out[y * vsp.width() * bpp + x * bpp + 3] = R;
+                                data_out[y * vsp.width() * bpp + x * bpp + 4] = G;
+                                data_out[y * vsp.width() * bpp + x * bpp + 5] = B;
+                            }                        
+                        }
+                    }
+                    break;
+                case RS2_FORMAT_RGBA8 :
+                case RS2_FORMAT_BGRA8 :
+                    // perform the conversion
+                    for (int y = 0; y < vsp.height(); y++) {
+                        for (int x = 0; x < vsp.width(); x += 2) {                
+                            {
+                                uint8_t Y = data_in[y * vsp.width() * 2 + x * 2 + 0];
+                                uint8_t U = data_in[y * vsp.width() * 2 + x * 2 + 1];
+                                uint8_t V = data_in[y * vsp.width() * 2 + x * 2 + 3];
+
+                                uint8_t R = fmax(0, fmin(255, Y + 1.402 * (V - 128)));
+                                uint8_t G = fmax(0, fmin(255, Y - 0.344 * (U - 128) - 0.714 * (V - 128)));
+                                uint8_t B = fmax(0, fmin(255, Y + 1.772 * (U - 128)));
+
+                                data_out[y * vsp.width() * bpp + x * bpp + 0] = R;
+                                data_out[y * vsp.width() * bpp + x * bpp + 1] = G;
+                                data_out[y * vsp.width() * bpp + x * bpp + 2] = B;
+                                data_out[y * vsp.width() * bpp + x * bpp + 3] = 0xFF;
+                            }
+
+                            {
+                                uint8_t Y = data_in[y * vsp.width() * 2 + x * 2 + 2];
+                                uint8_t U = data_in[y * vsp.width() * 2 + x * 2 + 1];
+                                uint8_t V = data_in[y * vsp.width() * 2 + x * 2 + 3];
+
+                                uint8_t R = fmax(0, fmin(255, Y + 1.402 * (V - 128)));
+                                uint8_t G = fmax(0, fmin(255, Y - 0.344 * (U - 128) - 0.714 * (V - 128)));
+                                uint8_t B = fmax(0, fmin(255, Y + 1.772 * (U - 128)));
+
+                                data_out[y * vsp.width() * bpp + x * bpp + 4] = R;
+                                data_out[y * vsp.width() * bpp + x * bpp + 5] = G;
+                                data_out[y * vsp.width() * bpp + x * bpp + 6] = B;
+                                data_out[y * vsp.width() * bpp + x * bpp + 7] = 0xFF;
+                            }                        
+                        }
+                    }
+                    break;
+                }
+            }
+        }
+
+        return data_out;
+    }
+
     static std::string print_profile(rs2::stream_profile profile) {
         std::stringstream ss;
         ss << std::setw(10) << profile.stream_type() << std::setw(2);
