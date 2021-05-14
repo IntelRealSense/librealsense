@@ -7,12 +7,14 @@ import android.os.Bundle;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.appcompat.app.AppCompatActivity;
+
 import android.util.Log;
 import android.view.View;
 import android.widget.TextView;
 
 import com.intel.realsense.librealsense.Colorizer;
 
+import com.intel.realsense.librealsense.Config;
 import com.intel.realsense.librealsense.DeviceListener;
 import com.intel.realsense.librealsense.Frame;
 import com.intel.realsense.librealsense.Extension;
@@ -20,6 +22,7 @@ import com.intel.realsense.librealsense.FrameCallback;
 
 import com.intel.realsense.librealsense.FrameSet;
 import com.intel.realsense.librealsense.GLRsSurfaceView;
+import com.intel.realsense.librealsense.MotionFrame;
 import com.intel.realsense.librealsense.Pipeline;
 import com.intel.realsense.librealsense.PipelineProfile;
 import com.intel.realsense.librealsense.RsContext;
@@ -101,11 +104,19 @@ public class MainActivity extends AppCompatActivity {
 
             try {
                 if (f != null) {
-                    FrameSet fs = f.as(Extension.FRAMESET);
+                    Log.d(TAG, "frame received: " + f.getNumber() + ", " + f.getDataSize() + ", " + f.getProfile().getType().name());
 
-                    if (fs != null) {
-                        try (FrameSet processed = fs.applyFilter(mColorizer)) {
-                            mGLSurfaceView.upload(processed);
+                    if (f.is(Extension.MOTION_FRAME)) {
+                        MotionFrame fm = f.as(Extension.MOTION_FRAME);
+                        mGLSurfaceView.upload(fm);
+                    }
+                    else {
+                        FrameSet fs = f.as(Extension.FRAMESET);
+
+                        if (fs != null) {
+                            try (FrameSet processed = fs.applyFilter(mColorizer)) {
+                                mGLSurfaceView.upload(processed);
+                            }
                         }
                     }
                 }
