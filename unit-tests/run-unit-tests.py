@@ -17,7 +17,7 @@ sys.path.append( os.path.join( os.path.dirname( sys.executable ), 'lib' ) )
 current_dir = os.path.dirname( os.path.abspath( __file__ ) )
 sys.path.append( current_dir + os.sep + "py" )
 
-from rspy import log, file, repo, unittest
+from rspy import log, file, repo, libci
 
 
 def usage():
@@ -107,7 +107,7 @@ if not to_stdout:
     else:  # no test executables were found. We put the logs directly in build directory
         logdir = os.path.join( repo.root, 'build', 'unit-tests' )
     os.makedirs( logdir, exist_ok=True )
-    unittest.logdir = logdir
+    libci.logdir = logdir
     log.i('Logs in:', logdir)
 n_tests = 0
 
@@ -228,7 +228,7 @@ def get_tests():
             else:
                 exe = target + '/' + testname + '.exe'
 
-            yield unittest.ExeTest( testname, exe )
+            yield libci.ExeTest( testname, exe )
 
     # Python unit-test scripts are in the same directory as us... we want to consider running them
     # (we may not if they're live and we have no pyrealsense2.pyd):
@@ -242,7 +242,7 @@ def get_tests():
         if regex and not pattern.search( testname ):
             continue
 
-        yield unittest.PyTest( testname, py_test )
+        yield libci.PyTest( testname, py_test )
 
 
 def prioritize_tests( tests ):
