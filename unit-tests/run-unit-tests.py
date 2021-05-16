@@ -39,6 +39,7 @@ def usage():
     print( '                         if both list-tags and list-tests are specified each test will be printed along' )
     print( '                         with what tags it has' )
     print( '        --no-exceptions  do not load the LibCI/exceptions.specs file' )
+    print( '        --context        The context to use for test configuration' )
     sys.exit( 2 )
 
 
@@ -54,7 +55,7 @@ else:
 try:
     opts, args = getopt.getopt( sys.argv[1:], 'hvqr:st:',
                                 longopts=['help', 'verbose', 'debug', 'quiet', 'regex=', 'stdout', 'tag=', 'list-tags',
-                                          'list-tests', 'no-exceptions'] )
+                                          'list-tests', 'no-exceptions', '--context='] )
 except getopt.GetoptError as err:
     log.e( err )  # something like "option -a not recognized"
     usage()
@@ -83,6 +84,8 @@ for opt, arg in opts:
         list_tests = True
     elif opt == '--no-exceptions':
         no_exceptions = True
+    elif opt == '--context':
+        context = arg
 
 if len( args ) > 1:
     usage()
