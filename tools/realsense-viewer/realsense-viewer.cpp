@@ -325,6 +325,10 @@ int main(int argc, const char** argv) try
         {
             if (auto not_model = notifications.lock())
             {
+                if (severity == RS2_LOG_SEVERITY_DEBUG)
+                {
+                    int a = 5;
+                }
                 not_model->output.add_log(severity, msg.filename(), (int)(msg.line_number()), msg.raw());
             }
         });

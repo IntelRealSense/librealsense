@@ -1146,9 +1146,6 @@ namespace rs2
         ImGui::Text("SW/FW Versions All Up To Date");
         
         ImGui::SetCursorScreenPos({ float(x + 5), float(y + height - 25) });
-
-        const auto bar_width = width - 115;
-
     }
 
 }

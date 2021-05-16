@@ -3710,6 +3710,10 @@ namespace rs2
 
     bool device_model::check_for_bundled_fw_update(const rs2::context &ctx, std::shared_ptr<notifications_model> not_model , bool reset_delay )
     {
+        // The viewer application supply a bundled FW version (binary data bundled inside the application binary file) when the user run CMake with a
+        // valid Internet connection. The FW version is called here "available_fw_ver".
+        // If the user run the CMake without Internet connection, there is no "available_fw_ver" binary file bundled,
+        // Only a recommended FW version number (called "recommended_fw_ver") and a link on-line
         if( dev.supports( RS2_CAMERA_INFO_FIRMWARE_VERSION )
             && dev.supports( RS2_CAMERA_INFO_RECOMMENDED_FIRMWARE_VERSION )
             && dev.supports( RS2_CAMERA_INFO_PRODUCT_LINE ) )
@@ -3775,7 +3779,7 @@ namespace rs2
             else
             {
                 std::stringstream msg;
-                msg << "Bundled FW is up to date for: " << dev_name.first << " (S/N " << dev_name.second << ")\n"
+                msg << "Current FW >= Bundled FW for: " << dev_name.first << " (S/N " << dev_name.second << ")\n"
                     << "Current Version: " << fw << "\n" 
                     << "Recommended Version: " << recommended_fw_ver;
 
@@ -5032,7 +5036,6 @@ namespace rs2
                     auto n = std::make_shared< sw_update_up_to_date_model >();
                     auto name = get_device_name(dev);
                     n->delay_id = "no_updates_alert." + name.second;
-                    n->enable_complex_dismiss = true;  // allow advanced dismiss menu
                    
                     if (auto nm = notification_model_protected.lock())
                     {

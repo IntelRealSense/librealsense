@@ -48,7 +48,7 @@ namespace rs2
                 {
                     version_info experimental_update;
                     auto parse_update_stts = try_parse_update(_versions_db, _update_profile.device_name, EXPERIMENTAL, comp, experimental_update);
-                    if ( parse_update_stts )
+                    if ( parse_update_stts == VERSION_FOUND)
                     {
                         if (current_version < experimental_update.ver)
                         {
