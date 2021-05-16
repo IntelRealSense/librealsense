@@ -68,29 +68,23 @@ namespace librealsense
         auto& depth_sensor = get_depth_sensor();
         auto& raw_depth_sensor = get_raw_depth_sensor();
 
-        if (group.usb_devices.size() > 0)
+#ifndef HWM_OVER_XU
+        if( group.usb_devices.size() > 0 )
         {
+            // This use-case is mainly to support FW development & debugging on unlock units before they
+            // have any XU capabilities
             _hw_monitor = std::make_shared<hw_monitor>(
-                std::make_shared<locked_transfer>(backend.create_usb_device(group.usb_devices.front()),
-                    raw_depth_sensor));
+                std::make_shared<locked_transfer>( backend.create_usb_device( group.usb_devices.front() ),
+                    raw_depth_sensor ) );
         }
         else
-        {
-            _hw_monitor = std::make_shared<hw_monitor>(
-                std::make_shared<locked_transfer>(std::make_shared<command_transfer_over_xu>(
-                    raw_depth_sensor, depth_xu, L500_HWMONITOR),
-                    raw_depth_sensor));
-        }
-
-#ifdef HWM_OVER_XU
-        if (group.usb_devices.size() > 0)
-        {
-            _hw_monitor = std::make_shared<hw_monitor>(
-                std::make_shared<locked_transfer>(std::make_shared<command_transfer_over_xu>(
-                    raw_depth_sensor, depth_xu, L500_HWMONITOR),
-                    raw_depth_sensor));
-        }
 #endif
+        {
+            _hw_monitor = std::make_shared<hw_monitor>(
+                std::make_shared<locked_transfer>( std::make_shared<command_transfer_over_xu>(
+                    raw_depth_sensor, depth_xu, L500_HWMONITOR ),
+                    raw_depth_sensor ) );
+        }
 
         std::vector<uint8_t> gvd_buff(HW_MONITOR_BUFFER_SIZE);
         _hw_monitor->get_gvd(gvd_buff.size(), gvd_buff.data(), GVD);
