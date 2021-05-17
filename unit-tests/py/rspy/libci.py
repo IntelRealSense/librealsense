@@ -12,6 +12,20 @@ unit_tests_dir = os.path.dirname( os.path.dirname( os.path.dirname( os.path.absp
 # the target directory. If None we assume the output should go to stdout
 logdir = None
 
+# LibCI needs a directory in which to look for a configuration and/or collaterals: we call that our "home"
+# This is always a directory called "LibCI", but may be in different locations, in this order of priority:
+#     1. C:\LibCI  (on the LibCI machine)
+#     2. ~/LibCI   (in Windows, ~ is likely C:\Users\<username>)
+home = 'C:\\LibCI'
+if not os.path.isdir( home ):
+    home = os.path.normpath( os.path.expanduser( '~/LibCI' ))
+#
+# Configuration (git config format) is kept in this file:
+configfile = home + os.sep + 'configfile'
+#
+# And exceptions for configuration specs are stored here:
+exceptionsfile = home + os.sep + 'exceptions.specs'
+
 
 def run( cmd, stdout = None, timeout = 200, append = False ):
     """
