@@ -28,7 +28,7 @@ namespace librealsense
     const uint16_t SR306_PID = 0x0aa3;
     const uint16_t SR306_PID_DBG = 0x0aa2;
     const uint16_t SR300_PID = 0x0aa5;
-    const uint16_t SR300v2_PID = 0x0B48;
+    const uint16_t SR300v2_PID = 0x0B48;    //SR305
     const uint16_t SR300_RECOVERY = 0x0ab3;
 
     const double TIMESTAMP_10NSEC_TO_MSEC = 0.00001;
@@ -37,10 +37,10 @@ namespace librealsense
     class sr3xx_camera;
 
     static std::map<uint16_t, std::pair<std::string, std::string>> device_to_fw_min_max_version = {
-            { SR306_PID,        {"3.27.1.0", "99.99.99.99"}},
-            { SR300_PID,        {"3.26.1.0", "3.27.0.0"}},
-            { SR300v2_PID,      {"3.26.1.0", "3.26.1.0"}},
-            { SR300_RECOVERY,   {"3.26.1.0", "3.26.1.0"}}
+            { SR300_PID,        {"3.21.0.0", "3.26.3.0"}},
+            { SR300v2_PID,      {"3.27.0.0", "99.99.99.99"}},
+            { SR306_PID,        {"3.27.0.0", "99.99.99.99"}},
+            { SR300_RECOVERY,   {"3.21.0.0", "99.99.99.99"}}
     };
 
     class sr300_timestamp_reader : public frame_timestamp_reader
