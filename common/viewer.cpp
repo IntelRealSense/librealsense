@@ -442,30 +442,35 @@ namespace rs2
                  s.second.profile.stream_type() == RS2_STREAM_DEPTH ||
                  s.second.profile.stream_type() == RS2_STREAM_FISHEYE))
             {
+                auto profile_unique_id = s.second.profile.unique_id();
+                bool profile_found = streams_origin.find(profile_unique_id) != streams_origin.end();
+
                 if (selected_tex_source_uid == -1 && selected_depth_source_uid != -1)
                 {
-                    if (streams_origin.find(s.second.profile.unique_id()) != streams_origin.end() &&
-                        streams.find(streams_origin[s.second.profile.unique_id()]) != streams.end())
+                    if (profile_found && streams.find(streams_origin[profile_unique_id]) != streams.end())
                     {
-                        selected_tex_source_uid = streams_origin[s.second.profile.unique_id()];
+                        selected_tex_source_uid = streams_origin[profile_unique_id];
                     }                         
                 }
-                if ((streams_origin.find(s.second.profile.unique_id()) != streams_origin.end() &&streams_origin[s.second.profile.unique_id()] == selected_tex_source_uid))
+                if ((profile_found && streams_origin[profile_unique_id] == selected_tex_source_uid))
                 {
                     selected_tex_source = i;
                 }
 
-                // The texture source shall always refer to the raw (original) streams
-                tex_sources.push_back(streams_origin[s.second.profile.unique_id()]);
-                tex_profiles.push_back(s.second.profile);
+                if ( profile_found )
+                {
+                    // The texture source shall always refer to the raw (original) streams
+                    tex_sources.push_back(streams_origin[profile_unique_id]);
+                    tex_profiles.push_back(s.second.profile);
 
-                auto dev_name = s.second.dev ? s.second.dev->dev.get_info(RS2_CAMERA_INFO_NAME) : "Unknown";
-                std::string stream_name = rs2_stream_to_string(s.second.profile.stream_type());
-                if (s.second.profile.stream_index())
-                    stream_name += "_" + std::to_string(s.second.profile.stream_index());
-                tex_sources_str.push_back(to_string() << dev_name << " " << stream_name);
+                    auto dev_name = s.second.dev ? s.second.dev->dev.get_info(RS2_CAMERA_INFO_NAME) : "Unknown";
+                    std::string stream_name = rs2_stream_to_string(s.second.profile.stream_type());
+                    if (s.second.profile.stream_index())
+                        stream_name += "_" + std::to_string(s.second.profile.stream_index());
+                    tex_sources_str.push_back(to_string() << dev_name << " " << stream_name);
 
-                i++;
+                    i++;
+                }
             }
         }
 
@@ -600,7 +605,8 @@ namespace rs2
                     {
                         if (selected)
                         {
-                            selected_depth_source_uid = streams_origin[s.second.profile.unique_id()];
+                            if( streams_origin.find( s.second.profile.unique_id() ) != streams_origin.end() )
+                                selected_depth_source_uid = streams_origin[s.second.profile.unique_id()];
                         }
                     }
                     i++;
@@ -1349,16 +1355,26 @@ namespace rs2
                 {
                     for (auto frame : f.as<rs2::frameset>())
                     {
-                        if (streams.find(frame.get_profile().unique_id()) != streams.end() ||
-                            streams.find(streams_origin[frame.get_profile().unique_id()]) != streams.end())
-                            last_frames[frame.get_profile().unique_id()] = frame;
+                        auto profile_id = frame.get_profile().unique_id();
+
+                        if( streams.find( profile_id ) != streams.end()
+                            || ( streams_origin.find( profile_id ) != streams_origin.end() && streams.find( streams_origin[ profile_id ] ) != streams.end() )
+                            || frame.is< points >() )  // point cloud is not a stream type yet it's a frame we want to display
+                        {
+                            last_frames[ profile_id ] = frame;
+                        }
                     }
                 }
                 else
                 {
-                    if (streams.find(f.get_profile().unique_id()) != streams.end() ||
-                        streams.find(streams_origin[f.get_profile().unique_id()]) != streams.end())
-                        last_frames[f.get_profile().unique_id()] = f;
+                    auto profile_id = f.get_profile().unique_id();
+
+                    if( streams.find( f.get_profile().unique_id() ) != streams.end()
+                        || ( streams_origin.find( profile_id ) != streams_origin.end() && streams.find( streams_origin[profile_id] ) != streams.end() )
+                        || f.is< points >() )  // point cloud is not a stream type yet it's a frame we want to display
+                    {
+                        last_frames[profile_id] = f;
+                    }
                 }
             }
 
@@ -3314,7 +3330,7 @@ namespace rs2
         auto index = f.get_profile().unique_id();
 
         std::lock_guard<std::mutex> lock(streams_mutex);
-        if (streams.find(streams_origin[index]) != streams.end())
+        if (streams_origin.find(index) != streams_origin.end() && streams.find(streams_origin[index]) != streams.end())
             return streams[streams_origin[index]].upload_frame(std::move(f));
         else return nullptr;
     }
