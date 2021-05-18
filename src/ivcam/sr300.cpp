@@ -55,6 +55,7 @@ namespace librealsense
                 this->get_device_data(),
                 register_device_notifications);
         case SR306_PID:
+        case SR306_PID_DBG:
             return std::make_shared<sr306_camera>(ctx, _depth, _hwm,
                 this->get_device_data(),
                 register_device_notifications);
@@ -73,7 +74,7 @@ namespace librealsense
         std::vector<platform::uvc_device_info> chosen;
         std::vector<std::shared_ptr<device_info>> results;
 
-        auto correct_pid = filter_by_product(uvc, { SR300_PID, SR300v2_PID, SR306_PID });
+        auto correct_pid = filter_by_product(uvc, { SR300_PID, SR300v2_PID, SR306_PID, SR306_PID_DBG });
         auto group_devices = group_devices_by_unique_id(correct_pid);
         for (auto& group : group_devices)
         {
