@@ -7,19 +7,20 @@
 import pyrealsense2 as rs
 from rspy import test
 
-d400_fw_min_version_1 = 'D400/Signed_Image_UVC_5_8_15_0.bin'
-d400_fw_min_version_2 = 'D400/Signed_Image_UVC_5_12_7_100.bin'
-d400_fw_min_version_3 = 'D400/Signed_Image_UVC_5_12_12_100.bin'
-d400_fw_min_version_1_prev = 'D400/Signed_Image_UVC_5_8_14_0.bin'
-d400_fw_min_version_2_prev = 'D400/Signed_Image_UVC_5_12_6_0.bin'
-d400_fw_min_version_3_prev = 'D400/Signed_Image_UVC_5_12_11_0.bin'
+fw_dir = 'C:/LibCI/data/FW/'
+d400_fw_min_version_1 = 'Signed_Image_UVC_5_8_15_0.bin'
+d400_fw_min_version_2 = 'Signed_Image_UVC_5_12_7_100.bin'
+d400_fw_min_version_3 = 'Signed_Image_UVC_5_12_12_100.bin'
+d400_fw_min_version_1_prev = 'Signed_Image_UVC_5_8_14_0.bin'
+d400_fw_min_version_2_prev = 'Signed_Image_UVC_5_12_6_0.bin'
+d400_fw_min_version_3_prev = 'Signed_Image_UVC_5_12_11_0.bin'
 
-l500_fw_min_version = 'L500/Signed_Image_UVC_1_4_1_0.bin'
-l500_fw_min_version_prev = 'L500/Signed_Image_UVC_1_4_0_10.bin'
+l500_fw_min_version = 'Signed_Image_UVC_1_4_1_0.bin'
+l500_fw_min_version_prev = 'Signed_Image_UVC_1_4_0_10.bin'
 
-sr300_fw_min_version_1 = 'SR300/Signed_Image_UVC_3_21_0_0.bin'
-sr300_fw_min_version_2 = 'SR300/Signed_Image_UVC_3_27_0_0.bin'
-sr300_fw_min_version_2_prev = 'SR300/Signed_Image_UVC_3_26_3_0.bin'
+sr300_fw_min_version_1 = 'Signed_Image_UVC_3_21_0_0.bin'
+sr300_fw_min_version_2 = 'Signed_Image_UVC_3_27_0_0.bin'
+sr300_fw_min_version_2_prev = 'Signed_Image_UVC_3_26_3_0.bin'
 pid_to_min_fw_version = {  # D400 product line:
     '0AD1': d400_fw_min_version_1,  # D400
     '0AD2': d400_fw_min_version_1,  # D410
@@ -61,8 +62,8 @@ pid_to_min_fw_version = {  # D400 product line:
     '0AB3': sr300_fw_min_version_1  # SR300_RECOVERY
 }
 
-sr300_fw_max_version_1 = 'SR300/Signed_Image_UVC_3_26_3_0.bin'
-sr300_fw_min_version_1_next = 'SR300/Signed_Image_UVC_3_27_0_0.bin'
+sr300_fw_max_version_1 = 'Signed_Image_UVC_3_26_3_0.bin'
+sr300_fw_min_version_1_next = 'Signed_Image_UVC_3_27_0_0.bin'
 
 pid_to_max_fw_version = {  # SR300 product line:
     '0AA5': sr300_fw_max_version_1,  # SR300
@@ -85,10 +86,13 @@ def check_firmware_not_compatible(updatable_device, fw_image):
 def check_firmware_compatible(updatable_device, fw_image):
     test.check(updatable_device.check_firmware_compatibility(fw_image))
 
+def get_fw_version_path(product_line_dir, fw_version):
+    return fw_dir + product_line_dir + fw_version
 
 ctx = rs.context()
 dev = ctx.query_devices()[0]
 updatable_device = dev.as_updatable()
+product_line_dir = dev.get_info(rs.camera_info.product_line) + '/'
 
 #############################################################################################
 test.start("checking firmware compatibility with device")
@@ -101,15 +105,17 @@ print(dev.get_info(rs.camera_info.name) + " found")
 
 if pid in pid_to_min_fw_version:
     min_fw_version = pid_to_min_fw_version[pid]
+    min_fw_version_path = get_fw_version_path(product_line_dir, min_fw_version)
     print("fw min version: " + min_fw_version)
-    with open(min_fw_version, 'rb') as binary_file:
+    with open(min_fw_version_path, 'rb') as binary_file:
         fw_image = bytearray(binary_file.read())
         check_firmware_compatible(updatable_device, fw_image)
 
     if min_fw_version in fw_previous_version:
         one_before_min_fw_version = fw_previous_version[min_fw_version]
+        one_before_min_fw_version_path = get_fw_version_path(product_line_dir, one_before_min_fw_version)
         print("one before: " + one_before_min_fw_version)
-        with open(one_before_min_fw_version, 'rb') as binary_file:
+        with open(one_before_min_fw_version_path, 'rb') as binary_file:
             fw_image = bytearray(binary_file.read())
             check_firmware_not_compatible(updatable_device, fw_image)
     else:
@@ -119,15 +125,17 @@ else:
 
 if pid in pid_to_max_fw_version:
     max_fw_version = pid_to_max_fw_version[pid]
+    max_fw_version_path = get_fw_version_path(product_line_dir, max_fw_version)
     print("fw max version: " + max_fw_version)
-    with open(max_fw_version, 'rb') as binary_file:
+    with open(max_fw_version_path, 'rb') as binary_file:
         fw_image = bytearray(binary_file.read())
         check_firmware_compatible(updatable_device, fw_image)
 
     if max_fw_version in fw_next_version:
         one_after_max_fw_version = fw_next_version[max_fw_version]
+        one_after_max_fw_version_path = get_fw_version_path(product_line_dir, one_after_max_fw_version)
         print("fw max version: " + max_fw_version + ", one after: " + one_after_max_fw_version)
-        with open(one_after_max_fw_version, 'rb') as binary_file:
+        with open(one_after_max_fw_version_path, 'rb') as binary_file:
             fw_image = bytearray(binary_file.read())
             check_firmware_not_compatible(updatable_device, fw_image)
     else:
