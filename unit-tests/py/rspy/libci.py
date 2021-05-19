@@ -191,13 +191,13 @@ class TestConfigFromText( TestConfig ):
 
 
 class TestConfigFromCpp( TestConfigFromText ):
-    def __init__( self, source, context = None ):
+    def __init__( self, source, context ):
         TestConfigFromText.__init__( self, source, r'//#\s*test:', context )
         self._tags.add( 'exe' )
 
 
 class TestConfigFromPy( TestConfigFromText ):
-    def __init__( self, source, context = None ):
+    def __init__( self, source, context ):
         TestConfigFromText.__init__( self, source, r'#\s*test:', context )
         self._tags.add( 'py' )
 
