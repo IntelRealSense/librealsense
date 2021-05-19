@@ -147,41 +147,55 @@ class TestConfigFromText( TestConfig ):
 
     def derive_config_from_text( self, source, line_prefix ):
         regex = r'^' + line_prefix + r'([^\s:]+)(:(\S+))?((?:\s+\S+)*?)\s*(?:#\s*(.*))?$'
-        for context in file.grep( regex, source ):
-            match = context['match']
+        for line in file.grep( regex, source ):
+            match = line['match']
             directive = match.group( 1 )
+            directive_context = match.group( 3 )
             text_params = match.group( 4 ).strip()
             params = [s for s in text_params.split()]
             comment = match.group( 5 )
+            if directive_context:
+                if not directive_context.startswith('!') and directive_context != self.context:
+                    log.d( "directive", line['line'], "ignored because of context mismatch with running context",
+                           self.context)
+                    continue
+                if directive_context.startswith('!') and directive_context[1:] == self.context:
+                    log.d( "directive", line['line'], "ignored because of context mismatch with running context",
+                           self.context )
+                    continue
             if directive == 'device':
                 # log.d( '    configuration:', params )
                 if not params:
-                    log.e( source + '+' + str( context['index'] ) + ': device directive with no devices listed' )
+                    log.e( source + '+' + str( line['index'] ) + ': device directive with no devices listed' )
                 elif 'each' in text_params.lower() and len( params ) > 1:
                     log.e( source + '+' + str(
-                            context['index'] ) + ': each() cannot be used in combination with other specs', params )
+                            line['index'] ) + ': each() cannot be used in combination with other specs', params )
                 elif 'each' in text_params.lower() and not re.fullmatch( r'each\(.+\)', text_params, re.IGNORECASE ):
-                    log.e( source + '+' + str( context['index'] ) + ': invalid \'each\' syntax:', params )
+                    log.e( source + '+' + str( line['index'] ) + ': invalid \'each\' syntax:', params )
                 else:
                     self._configurations.append( params )
             elif directive == 'priority':
                 if len( params ) == 1 and params[0].isdigit():
+                    if self.priority != 1000:
+                        log.w( "2 priority directives recognised in", source, " The first one is ignored")
                     self._priority = int( params[0] )
                 else:
-                    log.e( source + '+' + str( context['index'] ) + ': priority directive with invalid parameters:',
+                    log.e( source + '+' + str( line['index'] ) + ': priority directive with invalid parameters:',
                            params )
             elif directive == 'timeout':
                 if len( params ) == 1 and params[0].isdigit():
+                    if self.timeout != 200:
+                        log.w( "2 timeout directives recognised in", source, " The first one is ignored")
                     self._timeout = int( params[0] )
                 else:
-                    log.e( source + '+' + str( context['index'] ) + ': timeout directive with invalid parameters:',
+                    log.e( source + '+' + str( line['index'] ) + ': timeout directive with invalid parameters:',
                            params )
             elif directive == 'tag':
                 self._tags.update( params )
             elif directive == 'flag':
                 self._flags.update( params )
             else:
-                log.e( source + '+' + str( context['index'] ) + ': invalid directive "' + directive + '"; ignoring' )
+                log.e( source + '+' + str( line['index'] ) + ': invalid directive "' + directive + '"; ignoring' )
 
     def derive_tags_from_path( self, source ):
         # we need the relative path starting at the unit-tests directory

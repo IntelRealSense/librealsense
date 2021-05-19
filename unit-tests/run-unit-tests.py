@@ -55,7 +55,7 @@ else:
 try:
     opts, args = getopt.getopt( sys.argv[1:], 'hvqr:st:',
                                 longopts=['help', 'verbose', 'debug', 'quiet', 'regex=', 'stdout', 'tag=', 'list-tags',
-                                          'list-tests', 'no-exceptions', '--context='] )
+                                          'list-tests', 'no-exceptions', 'context='] )
 except getopt.GetoptError as err:
     log.e( err )  # something like "option -a not recognized"
     usage()
@@ -330,6 +330,8 @@ if not list_only:
 log.reset_errors()
 available_tags = set()
 tests = []
+if context:
+    log.d( 'running under context:', context )
 for test in prioritize_tests( get_tests() ):
     #
     log.d( 'found', test.name, '...' )
