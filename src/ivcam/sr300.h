@@ -26,6 +26,7 @@
 namespace librealsense
 {
     const uint16_t SR306_PID = 0x0aa3;
+    const uint16_t SR306_PID_DBG = 0x0aa2;
     const uint16_t SR300_PID = 0x0aa5;
     const uint16_t SR300v2_PID = 0x0B48;
     const uint16_t SR300_RECOVERY = 0x0ab3;

@@ -909,7 +909,8 @@ namespace librealsense
         {
             SR300_PID,
             SR300v2_PID,
-            SR306_PID
+            SR306_PID,
+            SR306_PID_DBG
         };
 
         auto it = std::find_if(sr300_PIDs.begin(), sr300_PIDs.end(), [&](int sr300_pid)
