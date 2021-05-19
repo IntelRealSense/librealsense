@@ -146,13 +146,13 @@ class TestConfigFromText( TestConfig ):
         self.derive_tags_from_path( source )
 
     def derive_config_from_text( self, source, line_prefix ):
-        regex = r'^' + line_prefix + r'(\S+)((?:\s+\S+)*?)\s*(?:#\s*(.*))?$'
+        regex = r'^' + line_prefix + r'([^\s:]+)(:(\S+))?((?:\s+\S+)*?)\s*(?:#\s*(.*))?$'
         for context in file.grep( regex, source ):
             match = context['match']
             directive = match.group( 1 )
-            text_params = match.group( 2 ).strip()
+            text_params = match.group( 4 ).strip()
             params = [s for s in text_params.split()]
-            comment = match.group( 3 )
+            comment = match.group( 5 )
             if directive == 'device':
                 # log.d( '    configuration:', params )
                 if not params:
