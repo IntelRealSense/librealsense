@@ -17,7 +17,7 @@ sys.path.append( os.path.join( os.path.dirname( sys.executable ), 'lib' ) )
 current_dir = os.path.dirname( os.path.abspath( __file__ ) )
 sys.path.append( current_dir + os.sep + "py" )
 
-from rspy import log, file, repo, unittest
+from rspy import log, file, repo, libci
 
 
 def usage():
@@ -25,19 +25,21 @@ def usage():
     print( 'Syntax: ' + ourname + ' [options] [dir]' )
     print( '        dir: the directory holding the executable tests to run (default to the build directory' )
     print( 'Options:' )
-    print( '        --debug        Turn on debugging information' )
-    print( '        -v, --verbose  Errors will dump the log to stdout' )
-    print( '        -q, --quiet    Suppress output; rely on exit status (0=no failures)' )
-    print( '        -r, --regex    run all tests that fit the following regular expression' )
-    print( '        -s, --stdout   do not redirect stdout to logs' )
-    print( '        -t, --tag      run all tests with the following tag. If used multiple times runs all tests matching' )
-    print( '                       all tags. e.g. -t tag1 -t tag2 will run tests who have both tag1 and tag2' )
-    print( '                       tests automatically get tagged with \'exe\' or \'py\' and based on their location' )
-    print( '                       inside unit-tests/, e.g. unit-tests/func/test-hdr.py gets [func, py]' )
-    print( '        --list-tags    print out all available tags. This option will not run any tests' )
-    print( '        --list-tests   print out all available tests. This option will not run any tests' )
-    print( '                       if both list-tags and list-tests are specified each test will be printed along' )
-    print( '                       with what tags it has' )
+    print( '        --debug          Turn on debugging information' )
+    print( '        -v, --verbose    Errors will dump the log to stdout' )
+    print( '        -q, --quiet      Suppress output; rely on exit status (0=no failures)' )
+    print( '        -r, --regex      run all tests that fit the following regular expression' )
+    print( '        -s, --stdout     do not redirect stdout to logs' )
+    print( '        -t, --tag        run all tests with the following tag. If used multiple times runs all tests matching' )
+    print( '                         all tags. e.g. -t tag1 -t tag2 will run tests who have both tag1 and tag2' )
+    print( '                         tests automatically get tagged with \'exe\' or \'py\' and based on their location' )
+    print( '                         inside unit-tests/, e.g. unit-tests/func/test-hdr.py gets [func, py]' )
+    print( '        --list-tags      print out all available tags. This option will not run any tests' )
+    print( '        --list-tests     print out all available tests. This option will not run any tests' )
+    print( '                         if both list-tags and list-tests are specified each test will be printed along' )
+    print( '                         with what tags it has' )
+    print( '        --no-exceptions  do not load the LibCI/exceptions.specs file' )
+    print( '        --context        The context to use for test configuration' )
     sys.exit( 2 )
 
 
@@ -53,7 +55,7 @@ else:
 try:
     opts, args = getopt.getopt( sys.argv[1:], 'hvqr:st:',
                                 longopts=['help', 'verbose', 'debug', 'quiet', 'regex=', 'stdout', 'tag=', 'list-tags',
-                                          'list-tests'] )
+                                          'list-tests', 'no-exceptions', 'context='] )
 except getopt.GetoptError as err:
     log.e( err )  # something like "option -a not recognized"
     usage()
@@ -62,6 +64,8 @@ to_stdout = False
 required_tags = []
 list_tags = False
 list_tests = False
+no_exceptions = False
+context = None
 for opt, arg in opts:
     if opt in ('-h', '--help'):
         usage()
@@ -79,6 +83,10 @@ for opt, arg in opts:
         list_tags = True
     elif opt == '--list-tests':
         list_tests = True
+    elif opt == '--no-exceptions':
+        no_exceptions = True
+    elif opt == '--context':
+        context = arg
 
 if len( args ) > 1:
     usage()
@@ -107,8 +115,7 @@ if not to_stdout:
     else:  # no test executables were found. We put the logs directly in build directory
         logdir = os.path.join( repo.root, 'build', 'unit-tests' )
     os.makedirs( logdir, exist_ok=True )
-    unittest.logdir = logdir
-    log.i('Logs in:', logdir)
+    libci.logdir = logdir
 n_tests = 0
 
 # Python scripts should be able to find the pyrealsense2 .pyd or else they won't work. We don't know
@@ -228,7 +235,7 @@ def get_tests():
             else:
                 exe = target + '/' + testname + '.exe'
 
-            yield unittest.ExeTest( testname, exe )
+            yield libci.ExeTest( testname, exe, context )
 
     # Python unit-test scripts are in the same directory as us... we want to consider running them
     # (we may not if they're live and we have no pyrealsense2.pyd):
@@ -242,14 +249,14 @@ def get_tests():
         if regex and not pattern.search( testname ):
             continue
 
-        yield unittest.PyTest( testname, py_test )
+        yield libci.PyTest( testname, py_test, context )
 
 
 def prioritize_tests( tests ):
     return sorted( tests, key=lambda t: t.config.priority )
 
 
-def devices_by_test_config( test ):
+def devices_by_test_config( test, exceptions ):
     """
     Yield <configuration,serial-numbers> pairs for each valid configuration under which the
     test should run.
@@ -261,7 +268,7 @@ def devices_by_test_config( test ):
     """
     for configuration in test.config.configurations:
         try:
-            for serial_numbers in devices.by_configuration( configuration ):
+            for serial_numbers in devices.by_configuration( configuration, exceptions ):
                 yield configuration, serial_numbers
         except RuntimeError as e:
             if devices.acroname:
@@ -305,10 +312,26 @@ if not list_only:
     #
     # Under Travis, we'll have no devices and no acroname
     skip_live_tests = len( devices.all() ) == 0 and not devices.acroname
+    #
+    if not skip_live_tests:
+        if not to_stdout:
+            log.i( 'Logs in:', libci.logdir )
+        exceptions = None
+        if not no_exceptions and os.path.isfile( libci.exceptionsfile ):
+            try:
+                log.d( 'loading device exceptions from:', libci.exceptionsfile )
+                log.debug_indent()
+                exceptions = devices.load_specs_from_file( libci.exceptionsfile )
+                exceptions = devices.expand_specs( exceptions )
+                log.d( '==>', exceptions )
+            finally:
+                log.debug_unindent()
 #
 log.reset_errors()
 available_tags = set()
 tests = []
+if context:
+    log.d( 'running under context:', context )
 for test in prioritize_tests( get_tests() ):
     #
     log.d( 'found', test.name, '...' )
@@ -334,7 +357,7 @@ for test in prioritize_tests( get_tests() ):
             log.w( test.name + ':', 'is live and there are no cameras; skipping' )
             continue
         #
-        for configuration, serial_numbers in devices_by_test_config( test ):
+        for configuration, serial_numbers in devices_by_test_config( test, exceptions ):
             try:
                 log.d( 'configuration:', configuration )
                 log.debug_indent()
@@ -352,8 +375,7 @@ for test in prioritize_tests( get_tests() ):
 log.progress()
 #
 if not n_tests:
-    log.e( 'No unit-tests found!' )
-    sys.exit( 1 )
+    log.f( 'No unit-tests found!' )
 #
 if list_only:
     if list_tags and list_tests:

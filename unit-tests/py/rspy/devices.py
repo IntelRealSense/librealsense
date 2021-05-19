@@ -315,34 +315,80 @@ def _get_sns_from_spec( spec ):
             yield sn
 
 
-def by_configuration( config ):
+def expand_specs( specs ):
+    """
+    Given a collection of configuration specs, expand them into actual serial numbers.
+    Specs can be loaded from a file: see load_specs_from_file()
+    :param specs: a collection of specs
+    :return: a set of serial-numbers
+    """
+    expanded = set()
+    for spec in specs:
+        sns = {sn for sn in _get_sns_from_spec( spec )}
+        if sns:
+            expanded.update( sns )
+        else:
+            # maybe the spec is a specific serial-number?
+            if get(spec):
+                expanded.add( spec )
+            else:
+                log.d( 'unknown spec:', spec )
+    return expanded
+
+
+def load_specs_from_file( filename ):
+    """
+    Loads a set of specs from a file:
+        - Comments (#) are removed
+        - Each word in the file is a spec
+    :param filename: the path to the text file we want to load
+    :return: a set of specs that can then be expanded to a set of serial-numbers (see expand_specs())
+    """
+    from rspy import file
+    exceptions = set()
+    for line, comment in file.split_comments( filename ):
+        specs = line.split()
+        if specs:
+            log.d( '...', specs, comment and ('  # ' + comment) or '', )
+            exceptions.update( specs )
+    return exceptions
+
+
+def by_configuration( config, exceptions = None ):
     """
     Yields the serial numbers fitting the given configuration. If configuration includes an 'each' directive
     will yield all fitting serial numbers one at a time. Otherwise yields one set of serial numbers fitting the configuration
 
     :param config: A test:device line collection of arguments (e.g., [L515 D400*])
+    :param exceptions: A collection of serial-numbers that serve as exceptions that will never get matched
 
     If no device matches the configuration devices specified, a RuntimeError will be
     raised!
     """
+    exceptions = exceptions or set()
     if len( config ) == 1 and re.fullmatch( r'each\(.+\)', config[0], re.IGNORECASE ):
         spec = config[0][5:-1]
         for sn in _get_sns_from_spec( spec ):
-            yield { sn }
+            if sn not in exceptions:
+                yield { sn }
     else:
         sns = set()
         for spec in config:
             old_len = len(sns)
             for sn in _get_sns_from_spec( spec ):
+                if sn in exceptions:
+                    continue
                 if sn not in sns:
                     sns.add( sn )
                     break
             new_len = len(sns)
             if new_len == old_len:
+                error = 'no device matches configuration "' + spec + '"'
                 if old_len:
-                    raise RuntimeError( 'no device matches configuration "' + spec + '" (after already matching ' + str(sns) + ')' )
-                else:
-                    raise RuntimeError( 'no device matches configuration "' + spec + '"' )
+                    error += ' (after already matching ' + str(sns) + ')'
+                if exceptions:
+                    error += ' (-' + str(exceptions) + ')'
+                raise RuntimeError( error )
         if sns:
             yield sns
 

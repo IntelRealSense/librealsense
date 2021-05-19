@@ -20,7 +20,7 @@ from glob import glob
 current_dir = os.path.dirname( os.path.abspath( __file__ ) )
 sys.path.append( current_dir + os.sep + "py" )
 
-from rspy import file, repo, unittest, log
+from rspy import file, repo, libci, log
 
 def usage():
     ourname = os.path.basename(sys.argv[0])
@@ -134,7 +134,7 @@ def process_cpp( dir, builddir ):
             continue
 
         if required_tags or list_tags:
-            config = unittest.TestConfigFromCpp( dir + os.sep + f )
+            config = libci.TestConfigFromCpp( dir + os.sep + f )
             if not all( tag in config.tags for tag in required_tags ):
                 continue
             available_tags.update( config.tags )

@@ -12,6 +12,20 @@ unit_tests_dir = os.path.dirname( os.path.dirname( os.path.dirname( os.path.absp
 # the target directory. If None we assume the output should go to stdout
 logdir = None
 
+# LibCI needs a directory in which to look for a configuration and/or collaterals: we call that our "home"
+# This is always a directory called "LibCI", but may be in different locations, in this order of priority:
+#     1. C:\LibCI  (on the LibCI machine)
+#     2. ~/LibCI   (in Windows, ~ is likely C:\Users\<username>)
+home = 'C:\\LibCI'
+if not os.path.isdir( home ):
+    home = os.path.normpath( os.path.expanduser( '~/LibCI' ))
+#
+# Configuration (git config format) is kept in this file:
+configfile = home + os.sep + 'configfile'
+#
+# And exceptions for configuration specs are stored here:
+exceptionsfile = home + os.sep + 'exceptions.specs'
+
 
 def run( cmd, stdout = None, timeout = 200, append = False ):
     """
@@ -64,12 +78,13 @@ class TestConfig( ABC ):  # Abstract Base Class
     Configuration for a test, encompassing any metadata needed to control its run, like retries etc.
     """
 
-    def __init__( self ):
+    def __init__( self, context ):
         self._configurations = list()
         self._priority = 1000
         self._tags = set()
         self._flags = set()
         self._timeout = 200
+        self._context = context
 
     def debug_dump( self ):
         if self._priority != 1000:
@@ -104,6 +119,9 @@ class TestConfig( ABC ):  # Abstract Base Class
     def flags( self ):
         return self._flags
 
+    @property
+    def context( self ):
+        return self._context
 
 class TestConfigFromText( TestConfig ):
     """
@@ -116,54 +134,78 @@ class TestConfigFromText( TestConfig ):
         //#test:...
     """
 
-    def __init__( self, source, line_prefix ):
+    def __init__( self, source, line_prefix, context ):
         """
         :param source: The absolute path to the text file
         :param line_prefix: A regex to denote a directive (must be first thing in a line), which will
             be immediately followed by the directive itself and optional arguments
         """
-        TestConfig.__init__( self )
+        TestConfig.__init__( self, context )
 
         self.derive_config_from_text( source, line_prefix )
         self.derive_tags_from_path( source )
 
     def derive_config_from_text( self, source, line_prefix ):
-        regex = r'^' + line_prefix + r'(\S+)((?:\s+\S+)*?)\s*(?:#\s*(.*))?$'
-        for context in file.grep( regex, source ):
-            match = context['match']
+        # Configuration is made up of directives:
+        #     #test:<directive>[:[!]<context>] <param>*
+        # If a context is not specified, the directive always applies. Any directive with a context
+        # will only get applied if we're running under the context it specifies (! means not, so
+        # !nightly means when not under nightly).
+        regex  = r'^' + line_prefix
+        regex += r'([^\s:]+)'          # 1: directive
+        regex += r'(?::(\S+))?'        # 2: optional context
+        regex += r'((?:\s+\S+)*?)'     # 3: params
+        regex += r'\s*(?:#\s*(.*))?$'  # 4: optional comment
+        for line in file.grep( regex, source ):
+            match = line['match']
             directive = match.group( 1 )
-            text_params = match.group( 2 ).strip()
+            directive_context = match.group( 2 )
+            text_params = match.group( 3 ).strip()
             params = [s for s in text_params.split()]
-            comment = match.group( 3 )
+            comment = match.group( 4 )
+            if directive_context:
+                not_context = directive_context.startswith('!')
+                if not_context:
+                    directive_context = directive_context[1:]
+                # not_context | directive_ctx==context | RESULT
+                # ----------- | ---------------------- | ------
+                #      0      |           0            | IGNORE
+                #      0      |           1            | USE
+                #      1      |           0            | USE
+                #      1      |           1            | IGNORE
+                if not_context == (directive_context == self.context):
+                    # log.d( "directive", line['line'], "ignored because of context mismatch with running context",
+                    #       self.context)
+                    continue
             if directive == 'device':
                 # log.d( '    configuration:', params )
                 if not params:
-                    log.e( source + '+' + str( context['index'] ) + ': device directive with no devices listed' )
+                    log.e( source + '+' + str( line['index'] ) + ': device directive with no devices listed' )
                 elif 'each' in text_params.lower() and len( params ) > 1:
                     log.e( source + '+' + str(
-                            context['index'] ) + ': each() cannot be used in combination with other specs', params )
+                            line['index'] ) + ': each() cannot be used in combination with other specs', params )
                 elif 'each' in text_params.lower() and not re.fullmatch( r'each\(.+\)', text_params, re.IGNORECASE ):
-                    log.e( source + '+' + str( context['index'] ) + ': invalid \'each\' syntax:', params )
+                    log.e( source + '+' + str( line['index'] ) + ': invalid \'each\' syntax:', params )
                 else:
                     self._configurations.append( params )
             elif directive == 'priority':
                 if len( params ) == 1 and params[0].isdigit():
                     self._priority = int( params[0] )
                 else:
-                    log.e( source + '+' + str( context['index'] ) + ': priority directive with invalid parameters:',
+                    log.e( source + '+' + str( line['index'] ) + ': priority directive with invalid parameters:',
                            params )
             elif directive == 'timeout':
                 if len( params ) == 1 and params[0].isdigit():
                     self._timeout = int( params[0] )
                 else:
-                    log.e( source + '+' + str( context['index'] ) + ': timeout directive with invalid parameters:',
+                    log.e( source + '+' + str( line['index'] ) + ': timeout directive with invalid parameters:',
                            params )
             elif directive == 'tag':
                 self._tags.update( params )
             elif directive == 'flag':
                 self._flags.update( params )
             else:
-                log.e( source + '+' + str( context['index'] ) + ': invalid directive "' + directive + '"; ignoring' )
+                log.e( source + '+' + str( line['index'] ) + ': invalid directive "' + directive + '"; ignoring' )
 
     def derive_tags_from_path( self, source ):
         # we need the relative path starting at the unit-tests directory
@@ -173,14 +215,14 @@ class TestConfigFromText( TestConfig ):
 
 
 class TestConfigFromCpp( TestConfigFromText ):
-    def __init__( self, source ):
-        TestConfigFromText.__init__( self, source, r'//#\s*test:' )
+    def __init__( self, source, context ):
+        TestConfigFromText.__init__( self, source, r'//#\s*test:', context )
         self._tags.add( 'exe' )
 
 
 class TestConfigFromPy( TestConfigFromText ):
-    def __init__( self, source ):
-        TestConfigFromText.__init__( self, source, r'#\s*test:' )
+    def __init__( self, source, context ):
+        TestConfigFromText.__init__( self, source, r'#\s*test:', context )
         self._tags.add( 'py' )
 
 
@@ -281,7 +323,7 @@ class PyTest( Test ):
     Class for python tests. Hold the path to the script of the test
     """
 
-    def __init__( self, testname, path_to_test ):
+    def __init__( self, testname, path_to_test, context = None ):
         """
         :param testname: name of the test
         :param path_to_test: the relative path from the current directory to the path
@@ -289,7 +331,7 @@ class PyTest( Test ):
         global unit_tests_dir
         Test.__init__( self, testname )
         self.path_to_script = unit_tests_dir + os.sep + path_to_test
-        self._config = TestConfigFromPy( self.path_to_script )
+        self._config = TestConfigFromPy( self.path_to_script, context )
 
     def debug_dump( self ):
         log.d( 'script:', self.path_to_script )
@@ -311,6 +353,8 @@ class PyTest( Test ):
                 cmd += ['--debug']
             if log.is_color_on():
                 cmd += ['--color']
+            if self.config.context:
+                cmd += ['--context', self.config.context]
         return cmd
 
     def run_test( self, configuration = None, log_path = None ):
@@ -325,7 +369,7 @@ class ExeTest( Test ):
     Class for c/cpp tests. Hold the path to the executable for the test
     """
 
-    def __init__( self, testname, exe ):
+    def __init__( self, testname, exe, context = None ):
         """
         :param testname: name of the test
         :param exe: full path to executable
@@ -338,7 +382,7 @@ class ExeTest( Test ):
 
         relative_test_path = self.find_source_path()
         if relative_test_path:
-            self._config = TestConfigFromCpp( unit_tests_dir + os.sep + relative_test_path )
+            self._config = TestConfigFromCpp( unit_tests_dir + os.sep + relative_test_path, context )
         else:
             self._config = TestConfig()
 
