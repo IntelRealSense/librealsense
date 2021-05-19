@@ -78,7 +78,7 @@ class TestConfig( ABC ):  # Abstract Base Class
     Configuration for a test, encompassing any metadata needed to control its run, like retries etc.
     """
 
-    def __init__( self, context = None ):
+    def __init__( self, context ):
         self._configurations = list()
         self._priority = 1000
         self._tags = set()
@@ -134,7 +134,7 @@ class TestConfigFromText( TestConfig ):
         //#test:...
     """
 
-    def __init__( self, source, line_prefix, context = None ):
+    def __init__( self, source, line_prefix, context ):
         """
         :param source: The absolute path to the text file
         :param line_prefix: A regex to denote a directive (must be first thing in a line), which will
@@ -329,7 +329,7 @@ class PyTest( Test ):
                 cmd += ['--debug']
             if log.is_color_on():
                 cmd += ['--color']
-            if self.context:
+            if self.config.context:
                 cmd += ['--context', self.config.context]
         return cmd
 
