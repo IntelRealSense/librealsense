@@ -65,6 +65,7 @@ required_tags = []
 list_tags = False
 list_tests = False
 no_exceptions = False
+context = None
 for opt, arg in opts:
     if opt in ('-h', '--help'):
         usage()
@@ -234,7 +235,7 @@ def get_tests():
             else:
                 exe = target + '/' + testname + '.exe'
 
-            yield libci.ExeTest( testname, exe )
+            yield libci.ExeTest( testname, exe, context )
 
     # Python unit-test scripts are in the same directory as us... we want to consider running them
     # (we may not if they're live and we have no pyrealsense2.pyd):
@@ -248,7 +249,7 @@ def get_tests():
         if regex and not pattern.search( testname ):
             continue
 
-        yield libci.PyTest( testname, py_test )
+        yield libci.PyTest( testname, py_test, context )
 
 
 def prioritize_tests( tests ):

@@ -26,6 +26,12 @@ test_failed = False
 test_in_progress = False
 test_info = {} # Dictionary for holding additional information to print in case of a failed check.
 
+context = None
+if '--context' in sys.argv:
+    context_index = sys.argv.index( '--context' )
+    context = sys.argv.pop(context_index + 1)
+    sys.argv.pop( context_index )
+
 
 def set_env_vars( env_vars ):
     """

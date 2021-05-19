@@ -130,7 +130,7 @@ class TestConfigFromText( TestConfig ):
         //#test:...
     """
 
-    def __init__( self, source, line_prefix ):
+    def __init__( self, source, line_prefix, context = None ):
         """
         :param source: The absolute path to the text file
         :param line_prefix: A regex to denote a directive (must be first thing in a line), which will
@@ -138,10 +138,10 @@ class TestConfigFromText( TestConfig ):
         """
         TestConfig.__init__( self )
 
-        self.derive_config_from_text( source, line_prefix )
+        self.derive_config_from_text( source, line_prefix, context )
         self.derive_tags_from_path( source )
 
-    def derive_config_from_text( self, source, line_prefix ):
+    def derive_config_from_text( self, source, line_prefix, context = None ):
         regex = r'^' + line_prefix + r'(\S+)((?:\s+\S+)*?)\s*(?:#\s*(.*))?$'
         for context in file.grep( regex, source ):
             match = context['match']
@@ -187,14 +187,14 @@ class TestConfigFromText( TestConfig ):
 
 
 class TestConfigFromCpp( TestConfigFromText ):
-    def __init__( self, source ):
-        TestConfigFromText.__init__( self, source, r'//#\s*test:' )
+    def __init__( self, source, context = None ):
+        TestConfigFromText.__init__( self, source, r'//#\s*test:', context )
         self._tags.add( 'exe' )
 
 
 class TestConfigFromPy( TestConfigFromText ):
-    def __init__( self, source ):
-        TestConfigFromText.__init__( self, source, r'#\s*test:' )
+    def __init__( self, source, context = None ):
+        TestConfigFromText.__init__( self, source, r'#\s*test:', context  )
         self._tags.add( 'py' )
 
 
@@ -203,11 +203,12 @@ class Test( ABC ):  # Abstract Base Class
     Abstract class for a test. Holds the name of the test
     """
 
-    def __init__( self, testname ):
+    def __init__( self, testname, context = None ):
         # log.d( 'found', testname )
         self._name = testname
         self._config = None
         self._ran = False
+        self._context = context
 
     @abstractmethod
     def run_test( self, configuration = None, log_path = None ):
@@ -228,6 +229,10 @@ class Test( ABC ):  # Abstract Base Class
     @property
     def ran( self ):
         return self._ran
+
+    @property
+    def context( self ):
+        return self._context
 
     def get_log( self ):
         global logdir
@@ -295,15 +300,15 @@ class PyTest( Test ):
     Class for python tests. Hold the path to the script of the test
     """
 
-    def __init__( self, testname, path_to_test ):
+    def __init__( self, testname, path_to_test, context = None ):
         """
         :param testname: name of the test
         :param path_to_test: the relative path from the current directory to the path
         """
         global unit_tests_dir
-        Test.__init__( self, testname )
+        Test.__init__( self, testname, context )
         self.path_to_script = unit_tests_dir + os.sep + path_to_test
-        self._config = TestConfigFromPy( self.path_to_script )
+        self._config = TestConfigFromPy( self.path_to_script, context )
 
     def debug_dump( self ):
         log.d( 'script:', self.path_to_script )
@@ -325,6 +330,8 @@ class PyTest( Test ):
                 cmd += ['--debug']
             if log.is_color_on():
                 cmd += ['--color']
+            if self.context:
+                cmd += ['--context', self.context]
         return cmd
 
     def run_test( self, configuration = None, log_path = None ):
@@ -339,7 +346,7 @@ class ExeTest( Test ):
     Class for c/cpp tests. Hold the path to the executable for the test
     """
 
-    def __init__( self, testname, exe ):
+    def __init__( self, testname, exe, context = None ):
         """
         :param testname: name of the test
         :param exe: full path to executable
@@ -347,12 +354,12 @@ class ExeTest( Test ):
         global unit_tests_dir
         if not os.path.isfile( exe ):
             log.d( "Tried to create exe test with invalid exe file: " + exe )
-        Test.__init__( self, testname )
+        Test.__init__( self, testname, context )
         self.exe = exe
 
         relative_test_path = self.find_source_path()
         if relative_test_path:
-            self._config = TestConfigFromCpp( unit_tests_dir + os.sep + relative_test_path )
+            self._config = TestConfigFromCpp( unit_tests_dir + os.sep + relative_test_path, context )
         else:
             self._config = TestConfig()
 
