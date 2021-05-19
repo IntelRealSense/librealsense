@@ -7,7 +7,7 @@ import os
 root = os.path.dirname( os.path.dirname( os.path.dirname( os.path.dirname( os.path.abspath( __file__ )))))
 
 # Usually we expect the build directory to be directly under the root, named 'build'
-build = os.path.join( root, 'win10', 'win64', 'static', 'RelWithDebInfo' )
+build = os.path.join( root, 'win10', 'win64', 'static' )
 if not os.path.isdir( build ):
     build = os.path.join( root, 'build' )
     if not os.path.isdir( build ):
