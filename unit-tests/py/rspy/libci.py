@@ -151,11 +151,11 @@ class TestConfigFromText( TestConfig ):
         # If a context is not specified, the directive always applies. Any directive with a context
         # will only get applied if we're running under the context it specifies (! means not, so
         # !nightly means when not under nightly).
-        regex = r'^' + line_prefix
-        regex += r'([^\s:]+)'  # 1: directive
-        regex += r'(?::(\S+))?'  # 3: optional context
-        regex += r'((?:\s+\S+)*?)'  # 4: params
-        regex += r'\s*(?:#\s*(.*))?$'  # 5: optional comment
+        regex  = r'^' + line_prefix
+        regex += r'([^\s:]+)'          # 1: directive
+        regex += r'(?::(\S+))?'        # 2: optional context
+        regex += r'((?:\s+\S+)*?)'     # 3: params
+        regex += r'\s*(?:#\s*(.*))?$'  # 4: optional comment
         for line in file.grep( regex, source ):
             match = line['match']
             directive = match.group( 1 )
@@ -163,20 +163,19 @@ class TestConfigFromText( TestConfig ):
             text_params = match.group( 3 ).strip()
             params = [s for s in text_params.split()]
             comment = match.group( 4 )
-            # With ! | directive_ctx == context | RESULT
-            # ------ | ------------------------ | ------
-            # 0      |           0              | IGNORE
-            # 0      |           1              | USE
-            # 1      |           0              | USE
-            # 1      |           1              | IGNORE
             if directive_context:
-                if not directive_context.startswith('!') and directive_context != self.context:
+                not_context = directive_context.startswith('!')
+                if not_context:
+                    directive_context = directive_context[1:]
+                # not_context | directive_ctx==context | RESULT
+                # ----------- | ---------------------- | ------
+                #      0      |           0            | IGNORE
+                #      0      |           1            | USE
+                #      1      |           0            | USE
+                #      1      |           1            | IGNORE
+                if not_context == (directive_context == self.context):
                     # log.d( "directive", line['line'], "ignored because of context mismatch with running context",
                     #       self.context)
-                    continue
-                if directive_context.startswith('!') and directive_context[1:] == self.context:
-                    # log.d( "directive", line['line'], "ignored because of context mismatch with running context",
-                    #       self.context )
                     continue
             if directive == 'device':
                 # log.d( '    configuration:', params )
