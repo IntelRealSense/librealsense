@@ -1550,6 +1550,12 @@ namespace librealsense
         _raw_sensor->stop();
     }
 
+    float librealsense::synthetic_sensor::get_preset_max_value() const
+    {
+        // to be overriden by depth sensors which need this api
+        return 0.0f;
+    }
+
     void synthetic_sensor::register_processing_block(const std::vector<stream_profile>& from,
         const std::vector<stream_profile>& to,
         std::function<std::shared_ptr<processing_block>(void)> generate_func)

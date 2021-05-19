@@ -209,6 +209,8 @@ namespace librealsense
         void start(frame_callback_ptr callback) override;
         void stop() override;
 
+        virtual float get_preset_max_value() const;
+
         void register_processing_block(const std::vector<stream_profile>& from,
             const std::vector<stream_profile>& to,
             std::function<std::shared_ptr<processing_block>(void)> generate_func);
