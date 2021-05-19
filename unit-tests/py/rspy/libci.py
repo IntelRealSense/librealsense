@@ -146,42 +146,66 @@ class TestConfigFromText( TestConfig ):
         self.derive_tags_from_path( source )
 
     def derive_config_from_text( self, source, line_prefix ):
-        regex = r'^' + line_prefix + r'(\S+)((?:\s+\S+)*?)\s*(?:#\s*(.*))?$'
-        for context in file.grep( regex, source ):
-            match = context['match']
+        # Configuration is made up of directives:
+        #     #test:<directive>[:[!]<context>] <param>*
+        # If a context is not specified, the directive always applies. Any directive with a context
+        # will only get applied if we're running under the context it specifies (! means not, so
+        # !nightly means when not under nightly).
+        regex  = r'^' + line_prefix
+        regex += r'([^\s:]+)'          # 1: directive
+        regex += r'(?::(\S+))?'        # 2: optional context
+        regex += r'((?:\s+\S+)*?)'     # 3: params
+        regex += r'\s*(?:#\s*(.*))?$'  # 4: optional comment
+        for line in file.grep( regex, source ):
+            match = line['match']
             directive = match.group( 1 )
-            text_params = match.group( 2 ).strip()
+            directive_context = match.group( 2 )
+            text_params = match.group( 3 ).strip()
             params = [s for s in text_params.split()]
-            comment = match.group( 3 )
+            comment = match.group( 4 )
+            if directive_context:
+                not_context = directive_context.startswith('!')
+                if not_context:
+                    directive_context = directive_context[1:]
+                # not_context | directive_ctx==context | RESULT
+                # ----------- | ---------------------- | ------
+                #      0      |           0            | IGNORE
+                #      0      |           1            | USE
+                #      1      |           0            | USE
+                #      1      |           1            | IGNORE
+                if not_context == (directive_context == self.context):
+                    # log.d( "directive", line['line'], "ignored because of context mismatch with running context",
+                    #       self.context)
+                    continue
             if directive == 'device':
                 # log.d( '    configuration:', params )
                 if not params:
-                    log.e( source + '+' + str( context['index'] ) + ': device directive with no devices listed' )
+                    log.e( source + '+' + str( line['index'] ) + ': device directive with no devices listed' )
                 elif 'each' in text_params.lower() and len( params ) > 1:
                     log.e( source + '+' + str(
-                            context['index'] ) + ': each() cannot be used in combination with other specs', params )
+                            line['index'] ) + ': each() cannot be used in combination with other specs', params )
                 elif 'each' in text_params.lower() and not re.fullmatch( r'each\(.+\)', text_params, re.IGNORECASE ):
-                    log.e( source + '+' + str( context['index'] ) + ': invalid \'each\' syntax:', params )
+                    log.e( source + '+' + str( line['index'] ) + ': invalid \'each\' syntax:', params )
                 else:
                     self._configurations.append( params )
             elif directive == 'priority':
                 if len( params ) == 1 and params[0].isdigit():
                     self._priority = int( params[0] )
                 else:
-                    log.e( source + '+' + str( context['index'] ) + ': priority directive with invalid parameters:',
+                    log.e( source + '+' + str( line['index'] ) + ': priority directive with invalid parameters:',
                            params )
             elif directive == 'timeout':
                 if len( params ) == 1 and params[0].isdigit():
                     self._timeout = int( params[0] )
                 else:
-                    log.e( source + '+' + str( context['index'] ) + ': timeout directive with invalid parameters:',
+                    log.e( source + '+' + str( line['index'] ) + ': timeout directive with invalid parameters:',
                            params )
             elif directive == 'tag':
                 self._tags.update( params )
             elif directive == 'flag':
                 self._flags.update( params )
             else:
-                log.e( source + '+' + str( context['index'] ) + ': invalid directive "' + directive + '"; ignoring' )
+                log.e( source + '+' + str( line['index'] ) + ': invalid directive "' + directive + '"; ignoring' )
 
     def derive_tags_from_path( self, source ):
         # we need the relative path starting at the unit-tests directory
