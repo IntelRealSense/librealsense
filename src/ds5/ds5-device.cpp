@@ -478,6 +478,25 @@ namespace librealsense
         {
             //does not change over time
         }
+
+        float get_preset_max_value() const override
+        {
+            float preset_max_value = RS2_RS400_VISUAL_PRESET_COUNT - 1;
+            switch (_owner->_pid)
+            {
+            case ds::RS400_PID:
+            case ds::RS410_PID:
+            case ds::RS415_PID:
+            case ds::RS465_PID:
+            case ds::RS460_PID:
+                preset_max_value = static_cast<float>(RS2_RS400_VISUAL_PRESET_REMOVE_IR_PATTERN);
+                break;
+            default:
+                preset_max_value = static_cast<float>(RS2_RS400_VISUAL_PRESET_MEDIUM_DENSITY);
+            }
+            return preset_max_value;
+        }
+
     protected:
         const ds5_device* _owner;
         mutable std::atomic<float> _depth_units;
