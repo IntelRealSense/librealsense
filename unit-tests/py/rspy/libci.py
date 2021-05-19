@@ -78,12 +78,13 @@ class TestConfig( ABC ):  # Abstract Base Class
     Configuration for a test, encompassing any metadata needed to control its run, like retries etc.
     """
 
-    def __init__( self ):
+    def __init__( self, context = None ):
         self._configurations = list()
         self._priority = 1000
         self._tags = set()
         self._flags = set()
         self._timeout = 200
+        self._context = context
 
     def debug_dump( self ):
         if self._priority != 1000:
@@ -118,6 +119,9 @@ class TestConfig( ABC ):  # Abstract Base Class
     def flags( self ):
         return self._flags
 
+    @property
+    def context( self ):
+        return self._context
 
 class TestConfigFromText( TestConfig ):
     """
@@ -136,12 +140,12 @@ class TestConfigFromText( TestConfig ):
         :param line_prefix: A regex to denote a directive (must be first thing in a line), which will
             be immediately followed by the directive itself and optional arguments
         """
-        TestConfig.__init__( self )
+        TestConfig.__init__( self, context )
 
-        self.derive_config_from_text( source, line_prefix, context )
+        self.derive_config_from_text( source, line_prefix )
         self.derive_tags_from_path( source )
 
-    def derive_config_from_text( self, source, line_prefix, context = None ):
+    def derive_config_from_text( self, source, line_prefix ):
         regex = r'^' + line_prefix + r'(\S+)((?:\s+\S+)*?)\s*(?:#\s*(.*))?$'
         for context in file.grep( regex, source ):
             match = context['match']
@@ -194,7 +198,7 @@ class TestConfigFromCpp( TestConfigFromText ):
 
 class TestConfigFromPy( TestConfigFromText ):
     def __init__( self, source, context = None ):
-        TestConfigFromText.__init__( self, source, r'#\s*test:', context  )
+        TestConfigFromText.__init__( self, source, r'#\s*test:', context )
         self._tags.add( 'py' )
 
 
@@ -203,12 +207,11 @@ class Test( ABC ):  # Abstract Base Class
     Abstract class for a test. Holds the name of the test
     """
 
-    def __init__( self, testname, context = None ):
+    def __init__( self, testname ):
         # log.d( 'found', testname )
         self._name = testname
         self._config = None
         self._ran = False
-        self._context = context
 
     @abstractmethod
     def run_test( self, configuration = None, log_path = None ):
@@ -229,10 +232,6 @@ class Test( ABC ):  # Abstract Base Class
     @property
     def ran( self ):
         return self._ran
-
-    @property
-    def context( self ):
-        return self._context
 
     def get_log( self ):
         global logdir
@@ -306,7 +305,7 @@ class PyTest( Test ):
         :param path_to_test: the relative path from the current directory to the path
         """
         global unit_tests_dir
-        Test.__init__( self, testname, context )
+        Test.__init__( self, testname )
         self.path_to_script = unit_tests_dir + os.sep + path_to_test
         self._config = TestConfigFromPy( self.path_to_script, context )
 
@@ -331,7 +330,7 @@ class PyTest( Test ):
             if log.is_color_on():
                 cmd += ['--color']
             if self.context:
-                cmd += ['--context', self.context]
+                cmd += ['--context', self.config.context]
         return cmd
 
     def run_test( self, configuration = None, log_path = None ):
@@ -354,7 +353,7 @@ class ExeTest( Test ):
         global unit_tests_dir
         if not os.path.isfile( exe ):
             log.d( "Tried to create exe test with invalid exe file: " + exe )
-        Test.__init__( self, testname, context )
+        Test.__init__( self, testname )
         self.exe = exe
 
         relative_test_path = self.find_source_path()

@@ -29,7 +29,10 @@ test_info = {} # Dictionary for holding additional information to print in case 
 context = None
 if '--context' in sys.argv:
     context_index = sys.argv.index( '--context' )
-    context = sys.argv.pop(context_index + 1)
+    try:
+        context = sys.argv.pop(context_index + 1)
+    except IndexError:
+        log.f( "Received context flag but no context" )
     sys.argv.pop( context_index )
 
 
