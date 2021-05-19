@@ -26,7 +26,7 @@ test_failed = False
 test_in_progress = False
 test_info = {} # Dictionary for holding additional information to print in case of a failed check.
 
-# if --context flag was sent, the test is running under a specific context which could affect it's run
+# if --context flag was sent, the test is running under a specific context which could affect its run
 context = None
 if '--context' in sys.argv:
     context_index = sys.argv.index( '--context' )
