@@ -146,22 +146,37 @@ class TestConfigFromText( TestConfig ):
         self.derive_tags_from_path( source )
 
     def derive_config_from_text( self, source, line_prefix ):
-        regex = r'^' + line_prefix + r'([^\s:]+)(:(\S+))?((?:\s+\S+)*?)\s*(?:#\s*(.*))?$'
+        # Configuration is made up of directives:
+        #     #test:<directive>[:[!]<context>] <param>*
+        # If a context is not specified, the directive always applies. Any directive with a context
+        # will only get applied if we're running under the context it specifies (! means not, so
+        # !nightly means when not under nightly).
+        regex = r'^' + line_prefix
+        regex += r'([^\s:]+)'  # 1: directive
+        regex += r'(?::(\S+))?'  # 3: optional context
+        regex += r'((?:\s+\S+)*?)'  # 4: params
+        regex += r'\s*(?:#\s*(.*))?$'  # 5: optional comment
         for line in file.grep( regex, source ):
             match = line['match']
             directive = match.group( 1 )
-            directive_context = match.group( 3 )
-            text_params = match.group( 4 ).strip()
+            directive_context = match.group( 2 )
+            text_params = match.group( 3 ).strip()
             params = [s for s in text_params.split()]
-            comment = match.group( 5 )
+            comment = match.group( 4 )
+            # With ! | directive_ctx == context | RESULT
+            # ------ | ------------------------ | ------
+            # 0      |           0              | IGNORE
+            # 0      |           1              | USE
+            # 1      |           0              | USE
+            # 1      |           1              | IGNORE
             if directive_context:
                 if not directive_context.startswith('!') and directive_context != self.context:
-                    log.d( "directive", line['line'], "ignored because of context mismatch with running context",
-                           self.context)
+                    # log.d( "directive", line['line'], "ignored because of context mismatch with running context",
+                    #       self.context)
                     continue
                 if directive_context.startswith('!') and directive_context[1:] == self.context:
-                    log.d( "directive", line['line'], "ignored because of context mismatch with running context",
-                           self.context )
+                    # log.d( "directive", line['line'], "ignored because of context mismatch with running context",
+                    #       self.context )
                     continue
             if directive == 'device':
                 # log.d( '    configuration:', params )
@@ -176,16 +191,12 @@ class TestConfigFromText( TestConfig ):
                     self._configurations.append( params )
             elif directive == 'priority':
                 if len( params ) == 1 and params[0].isdigit():
-                    if self.priority != 1000:
-                        log.w( "2 priority directives recognised in", source, " The first one is ignored")
                     self._priority = int( params[0] )
                 else:
                     log.e( source + '+' + str( line['index'] ) + ': priority directive with invalid parameters:',
                            params )
             elif directive == 'timeout':
                 if len( params ) == 1 and params[0].isdigit():
-                    if self.timeout != 200:
-                        log.w( "2 timeout directives recognised in", source, " The first one is ignored")
                     self._timeout = int( params[0] )
                 else:
                     log.e( source + '+' + str( line['index'] ) + ': timeout directive with invalid parameters:',
