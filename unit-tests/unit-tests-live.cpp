@@ -5067,11 +5067,13 @@ TEST_CASE("Syncer try wait for frames", "[live][software-device]") {
             if (shared_dev == nullptr)
                 return;
             s.on_video_frame({ pixels.data(), [](void*) {}, 0,0,0, RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK, 7, depth });
+            std::this_thread::sleep_for(std::chrono::milliseconds(20));
             s.on_video_frame({ pixels.data(), [](void*) {}, 0,0,0, RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK, 5, ir });
-
+            std::this_thread::sleep_for(std::chrono::milliseconds(20));
             s.on_video_frame({ pixels.data(), [](void*) {},0,0, 0, RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK, 8, depth });
+            std::this_thread::sleep_for(std::chrono::milliseconds(20));
             s.on_video_frame({ pixels.data(), [](void*) {},0,0, 0, RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK, 6, ir });
-
+            std::this_thread::sleep_for(std::chrono::milliseconds(20));
             s.on_video_frame({ pixels.data(), [](void*) {},0,0, 0, RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK, 8, ir });
         });
         t.detach();
