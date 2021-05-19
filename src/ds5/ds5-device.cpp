@@ -898,16 +898,16 @@ namespace librealsense
         // Alternating laser pattern is applicable for global shutter/active SKUs
         auto mask = d400_caps::CAP_GLOBAL_SHUTTER | d400_caps::CAP_ACTIVE_PROJECTOR;
         // Alternating laser pattern should be set and query in a different way according to the firmware version
-        bool is_fw_version_using_id = (_fw_version >= firmware_version("5.12.8.100")); 
         if ((_fw_version >= firmware_version("5.11.3.0")) && ((_device_capabilities & mask) == mask))
         {
+            bool is_fw_version_using_id = (_fw_version >= firmware_version("5.12.8.100"));
             auto alternating_emitter_opt = std::make_shared<alternating_emitter_option>(*_hw_monitor, &raw_depth_sensor, is_fw_version_using_id);
             auto emitter_always_on_opt = std::make_shared<emitter_always_on_option>(*_hw_monitor, &depth_sensor);
 
             if ((_fw_version >= firmware_version("5.12.1.0")) && ((_device_capabilities & d400_caps::CAP_GLOBAL_SHUTTER) == d400_caps::CAP_GLOBAL_SHUTTER))
             {
-                std::vector<std::pair<std::shared_ptr<option>, std::string>> options_and_reasons = { std::make_pair(alternating_emitter_opt, 
-                    "Emitter always ON cannot be set while Emitter ON/OFF is enabled")};
+                std::vector<std::pair<std::shared_ptr<option>, std::string>> options_and_reasons = { std::make_pair(alternating_emitter_opt,
+                    "Emitter always ON cannot be set while Emitter ON/OFF is enabled") };
                 depth_sensor.register_option(RS2_OPTION_EMITTER_ALWAYS_ON,
                     std::make_shared<gated_option>(
                         emitter_always_on_opt,
@@ -938,7 +938,8 @@ namespace librealsense
                 depth_sensor.register_option(RS2_OPTION_EMITTER_ON_OFF, alternating_emitter_opt);
             }
         }
-        else if (_fw_version >= firmware_version("5.10.9.0") &&
+        else if (_fw_version >= firmware_version("5.10.9.0") && 
+            (_device_capabilities & d400_caps::CAP_ACTIVE_PROJECTOR) == d400_caps::CAP_ACTIVE_PROJECTOR &&
             _fw_version.experimental()) // Not yet available in production firmware
         {
             depth_sensor.register_option(RS2_OPTION_EMITTER_ON_OFF, std::make_shared<emitter_on_and_off_option>(*_hw_monitor, &raw_depth_sensor));
