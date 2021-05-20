@@ -367,6 +367,7 @@ EXPORTS
     rs2_create_flash_backup_cpp
     rs2_update_firmware_unsigned
     rs2_update_firmware_unsigned_cpp
+    rs2_check_firmware_compatibility
     rs2_enter_update_state
     rs2_run_on_chip_calibration_cpp
     rs2_run_tare_calibration_cpp

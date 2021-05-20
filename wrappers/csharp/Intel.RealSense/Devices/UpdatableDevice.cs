@@ -60,5 +60,11 @@ namespace Intel.RealSense
         {
             OnFlashBackupProgress?.Invoke(progress);
         }
+
+        public bool CheckFirmwareCompatibility()
+        {
+            object error;
+            return NativeMethods.rs2_check_firmware_compatibility(Handle, out error) != 0;
+        }
     }
 }

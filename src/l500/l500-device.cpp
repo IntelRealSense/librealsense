@@ -58,8 +58,8 @@ namespace librealsense
         _temperatures()
     {
         _depth_device_idx = add_sensor(create_depth_device(ctx, group.uvc_devices));
-        auto pid = group.uvc_devices.front().pid;
-        std::string device_name = (rs500_sku_names.end() != rs500_sku_names.find(pid)) ? rs500_sku_names.at(pid) : "RS5xx";
+        _pid = group.uvc_devices.front().pid;
+        std::string device_name = (rs500_sku_names.end() != rs500_sku_names.find(_pid)) ? rs500_sku_names.at(_pid) : "RS5xx";
 
         using namespace ivcam2;
 
@@ -691,6 +691,17 @@ namespace librealsense
         {
             _temperature_reader.join();
         }
+    }
+
+    bool l500_device::check_fw_compatibility(const std::vector<uint8_t>& image) const
+    {
+        std::string fw_version = extract_firmware_version_string((const void*)image.data(), image.size());
+
+        auto it = ivcam2::device_to_fw_min_version.find(_pid);
+        if (it == ivcam2::device_to_fw_min_version.end())
+            throw std::runtime_error("Minimum firmware version has not been defined for this device!");
+
+        return (firmware_version(fw_version) >= firmware_version(it->second));
     }
 
     notification l500_notification_decoder::decode(int value)

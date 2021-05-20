@@ -701,6 +701,33 @@ namespace librealsense
             { res_1152_1152,{ 1152, 1152 } },
         };
 
+        static std::map<uint16_t, std::string> device_to_fw_min_version = {
+            {RS400_PID, "5.8.15.0"},
+            {RS410_PID, "5.8.15.0"},
+            {RS415_PID, "5.8.15.0"},
+            {RS430_PID, "5.8.15.0"},
+            {RS430_MM_PID, "5.8.15.0"},
+            {RS_USB2_PID, "5.8.15.0"},
+            {RS_RECOVERY_PID, "5.8.15.0"},
+            {RS_USB2_RECOVERY_PID, "5.8.15.0"},
+            {RS400_IMU_PID, "5.8.15.0"},
+            {RS420_PID, "5.8.15.0"},
+            {RS420_MM_PID, "5.8.15.0"},
+            {RS410_MM_PID, "5.8.15.0"},
+            {RS400_MM_PID, "5.8.15.0" },
+            {RS430_MM_RGB_PID, "5.8.15.0" },
+            {RS460_PID, "5.8.15.0" },
+            {RS435_RGB_PID, "5.8.15.0" },
+            {RS405U_PID, "5.8.15.0" },
+            {RS435I_PID, "5.12.7.100" },
+            {RS416_PID, "5.8.15.0" },
+            {RS430I_PID, "5.8.15.0" },
+            {RS465_PID, "5.12.7.100" },
+            {RS416_RGB_PID, "5.8.15.0" },
+            {RS405_PID, "5.12.11.8" },
+            {RS455_PID, "5.12.7.100" }
+        };
+
 
         ds5_rect_resolutions width_height_to_ds5_rect_resolutions(uint32_t width, uint32_t height);
 
