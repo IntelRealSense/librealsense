@@ -331,28 +331,13 @@ namespace librealsense
 
     bool ds5_device::check_fw_compatibility(const std::vector<uint8_t>& image) const
     {
-        std::string fw_version = get_firmware_version_string((const void*)image.data());
+        std::string fw_version = extract_firmware_version_string((const void*)image.data(), image.size());
 
         auto it = ds::device_to_fw_min_version.find(_pid);
         if (it == ds::device_to_fw_min_version.end())
             throw std::runtime_error("Minimum firmware version has not been defined for this device!");
 
         return (firmware_version(fw_version) >= firmware_version(it->second));
-    }
-
-    std::string ds5_device::get_firmware_version_string(const void* fw_image) const
-    {
-        uint32_t version{};
-
-        memcpy(reinterpret_cast<char*>(&version), reinterpret_cast<const char*>(fw_image) +
-            offsetof(platform::dfu_header, bcdDevice), sizeof(version));
-
-        uint8_t major = (version & 0xFF000000) >> 24;
-        uint8_t minor = (version & 0x00FF0000) >> 16;
-        uint8_t patch = (version & 0x0000FF00) >> 8;
-        uint8_t build = version & 0x000000FF;
-
-        return std::to_string(major) + "." + std::to_string(minor) + "." + std::to_string(patch) + "." + std::to_string(build);
     }
 
     class ds5_depth_sensor : public synthetic_sensor, public video_sensor_interface, public depth_stereo_sensor, public roi_sensor_base

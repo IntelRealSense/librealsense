@@ -76,8 +76,6 @@ namespace librealsense
         void start_temperatures_reader();
         void stop_temperatures_reader();
 
-        std::string get_firmware_version_string(const void* fw_image) const;
-
         friend class l500_depth_sensor;
 
         std::shared_ptr<hw_monitor> _hw_monitor;

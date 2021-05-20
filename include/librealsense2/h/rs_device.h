@@ -224,9 +224,9 @@ void rs2_update_firmware_unsigned_cpp(const rs2_device* device, const void* fw_i
 * Checks if the device and the provided firmware image are compatible
 * \param[in]  device        Device to update
 * \param[in]  fw_image      Firmware image buffer
-* \param[in]  fw_image_size Firmware image buffer size
+* \param[in]  fw_image_size Firmware image buffer size in bytes
 * \param[out] error         If non-null, receives any error that occurs during this call, otherwise, errors are ignored
-* \return                   True if the firmware is compatible with the device and false otherwise
+* \return                   Non-zero if the firmware is compatible with the device and 0 otherwise
 */
 int rs2_check_firmware_compatibility(const rs2_device* device, const void* fw_image, int fw_image_size, rs2_error** error);
 

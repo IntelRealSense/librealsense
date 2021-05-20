@@ -3,6 +3,7 @@
 
 # test:device L500*
 # test:device D400*
+# test:device SR300*
 
 import pyrealsense2 as rs
 from rspy import test
@@ -20,7 +21,9 @@ l500_fw_min_version_prev = 'Signed_Image_UVC_1_4_0_10.bin'
 
 sr300_fw_min_version_1 = 'Signed_Image_UVC_3_21_0_0.bin'
 sr300_fw_min_version_2 = 'Signed_Image_UVC_3_27_0_0.bin'
+sr300_fw_min_version_3 = 'Signed_Image_UVC_3_28_3_0.bin'
 sr300_fw_min_version_2_prev = 'Signed_Image_UVC_3_26_3_0.bin'
+sr300_fw_min_version_3_prev = 'Signed_Image_UVC_3_27_3_0.bin'
 pid_to_min_fw_version = {  # D400 product line:
     '0AD1': d400_fw_min_version_1,  # D400
     '0AD2': d400_fw_min_version_1,  # D410
@@ -55,11 +58,11 @@ pid_to_min_fw_version = {  # D400 product line:
     '0B64': l500_fw_min_version,  # L515
     '0B68': l500_fw_min_version,  # L535
     # SR300 product line:
-    '0AA2': sr300_fw_min_version_2,  # SR306
-    '0AA3': sr300_fw_min_version_2,  # SR306_DEBUG
     '0AA5': sr300_fw_min_version_1,  # SR300
-    '0B48': sr300_fw_min_version_1,  # SR300v2
-    '0AB3': sr300_fw_min_version_1  # SR300_RECOVERY
+    '0AB3': sr300_fw_min_version_1,  # SR300_RECOVERY
+    '0B48': sr300_fw_min_version_2,  # SR305 (SR300v2)
+    '0AA2': sr300_fw_min_version_3,  # SR306
+    '0AA3': sr300_fw_min_version_3   # SR306_DEBUG
 }
 
 sr300_fw_max_version_1 = 'Signed_Image_UVC_3_26_3_0.bin'
@@ -74,7 +77,8 @@ fw_previous_version = {d400_fw_min_version_1: d400_fw_min_version_1_prev,
                        d400_fw_min_version_3: d400_fw_min_version_3_prev,
                        l500_fw_min_version: l500_fw_min_version_prev,
                        # sr300_fw_min_version_1:sr300_fw_min_version_1_prev, no version before exists
-                       sr300_fw_min_version_2: sr300_fw_min_version_2_prev
+                       sr300_fw_min_version_2: sr300_fw_min_version_2_prev,
+                       sr300_fw_min_version_3: sr300_fw_min_version_3_prev
                        }
 
 fw_next_version = {sr300_fw_min_version_1 : sr300_fw_min_version_1_next}

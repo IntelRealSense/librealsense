@@ -584,29 +584,16 @@ namespace librealsense
 
     bool sr3xx_camera::check_fw_compatibility(const std::vector<uint8_t>& image) const
     {
-        std::string fw_version = get_firmware_version_string((const void*)image.data());
+        std::string fw_version = extract_firmware_version_string((const void*)image.data(), image.size());
 
         auto min_max_fw_it = device_to_fw_min_max_version.find(_pid);
         if (min_max_fw_it == device_to_fw_min_max_version.end())
-            throw std::runtime_error("Minimum firmware version has not been defined for this device!");
+            throw std::runtime_error("Min and Max firmware versions have not been defined for this device!");
 
+        // advanced SR3XX devices do not fit the "old" fw versions and 
+        // legacy SR3XX devices do not fit the "new" fw versions
         return (firmware_version(fw_version) >= firmware_version(min_max_fw_it->second.first)) &&
             (firmware_version(fw_version) <= firmware_version(min_max_fw_it->second.second));
-    }
-
-    std::string sr3xx_camera::get_firmware_version_string(const void* fw_image) const
-    {
-        uint32_t version{};
-
-        memcpy(reinterpret_cast<char*>(&version), reinterpret_cast<const char*>(fw_image) +
-            offsetof(platform::dfu_header, bcdDevice), sizeof(version));
-
-        uint8_t major = (version & 0xFF000000) >> 24;
-        uint8_t minor = (version & 0x00FF0000) >> 16;
-        uint8_t patch = (version & 0x0000FF00) >> 8;
-        uint8_t build = version & 0x000000FF;
-
-        return std::to_string(major) + "." + std::to_string(minor) + "." + std::to_string(patch) + "." + std::to_string(build);
     }
 
     void sr3xx_camera::create_snapshot(std::shared_ptr<debug_interface>& snapshot) const

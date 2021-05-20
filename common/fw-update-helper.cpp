@@ -212,7 +212,7 @@ namespace rs2
                 if (!upd.check_firmware_compatibility(_fw))
                 {
                     std::stringstream ss;
-                    ss << "This firmware version is not compatible with ";
+                    ss << "The firmware version is not compatible with ";
                     ss << _dev.get_info(RS2_CAMERA_INFO_NAME) << std::endl;
                     fail(ss.str());
                     return;

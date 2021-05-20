@@ -15,6 +15,20 @@ namespace librealsense
         virtual std::vector<uint8_t> backup_flash(update_progress_callback_ptr callback) = 0;
         virtual void update_flash(const std::vector<uint8_t>& image, update_progress_callback_ptr callback, int update_mode) = 0;
         virtual bool check_fw_compatibility(const std::vector<uint8_t>& image) const = 0;
+        std::string extract_firmware_version_string(const void* fw_image, size_t fw_image_size) const
+        {
+            uint32_t version{};
+
+            memcpy(reinterpret_cast<char*>(&version), reinterpret_cast<const char*>(fw_image) +
+                offsetof(platform::dfu_header, bcdDevice), sizeof(version));
+
+            uint8_t major = (version & 0xFF000000) >> 24;
+            uint8_t minor = (version & 0x00FF0000) >> 16;
+            uint8_t patch = (version & 0x0000FF00) >> 8;
+            uint8_t build = version & 0x000000FF;
+
+            return std::to_string(major) + "." + std::to_string(minor) + "." + std::to_string(patch) + "." + std::to_string(build);
+        }
     };
 
     class update_device_interface : public device_interface

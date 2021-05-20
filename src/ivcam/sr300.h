@@ -39,7 +39,8 @@ namespace librealsense
     static std::map<uint16_t, std::pair<std::string, std::string>> device_to_fw_min_max_version = {
             { SR300_PID,        {"3.21.0.0", "3.26.3.0"}},
             { SR300v2_PID,      {"3.27.0.0", "99.99.99.99"}},
-            { SR306_PID,        {"3.27.0.0", "99.99.99.99"}},
+            { SR306_PID,        {"3.28.3.0", "99.99.99.99"}},
+            { SR306_PID_DBG,    {"3.28.3.0", "99.99.99.99"}},
             { SR300_RECOVERY,   {"3.21.0.0", "99.99.99.99"}}
     };
 
@@ -480,8 +481,6 @@ namespace librealsense
         //TODO - add these to device class as pure virtual methods
         command get_firmware_logs_command() const;
         command get_flash_logs_command() const;
-
-        std::string get_firmware_version_string(const void* fw_image) const;
 
         std::shared_ptr<stream_interface> _depth_stream;
         std::shared_ptr<stream_interface> _ir_stream;
