@@ -3710,10 +3710,11 @@ namespace rs2
 
     bool device_model::check_for_bundled_fw_update(const rs2::context &ctx, std::shared_ptr<notifications_model> not_model , bool reset_delay )
     {
-        // The viewer application supply a bundled FW version (binary data bundled inside the application binary file) when the user run CMake with a
-        // valid Internet connection. The FW version is called here "available_fw_ver".
-        // If the user run the CMake without Internet connection, there is no "available_fw_ver" binary file bundled,
-        // Only a recommended FW version number (called "recommended_fw_ver") and a link on-line
+        // LibRS can have a "bundled" FW binary downloaded during CMake. That's the version
+        // "available" to us, but it may not be there (e.g., no internet connection to download
+        // it). Lacking an available version, we try to let the user choose a "recommended"
+        // version for download. The recommended version is defined by the device (and comes
+        // from a #define).
         if( dev.supports( RS2_CAMERA_INFO_FIRMWARE_VERSION )
             && dev.supports( RS2_CAMERA_INFO_RECOMMENDED_FIRMWARE_VERSION )
             && dev.supports( RS2_CAMERA_INFO_PRODUCT_LINE ) )
