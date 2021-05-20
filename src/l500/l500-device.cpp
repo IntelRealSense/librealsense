@@ -58,8 +58,8 @@ namespace librealsense
         _temperatures()
     {
         _depth_device_idx = add_sensor(create_depth_device(ctx, group.uvc_devices));
-        auto pid = group.uvc_devices.front().pid;
-        std::string device_name = (rs500_sku_names.end() != rs500_sku_names.find(pid)) ? rs500_sku_names.at(pid) : "RS5xx";
+        _pid = group.uvc_devices.front().pid;
+        std::string device_name = (rs500_sku_names.end() != rs500_sku_names.find(_pid)) ? rs500_sku_names.at(_pid) : "RS5xx";
 
         using namespace ivcam2;
 
@@ -68,29 +68,23 @@ namespace librealsense
         auto& depth_sensor = get_depth_sensor();
         auto& raw_depth_sensor = get_raw_depth_sensor();
 
-        if (group.usb_devices.size() > 0)
+#ifndef HWM_OVER_XU
+        if( group.usb_devices.size() > 0 )
         {
+            // This use-case is mainly to support FW development & debugging on unlock units before they
+            // have any XU capabilities
             _hw_monitor = std::make_shared<hw_monitor>(
-                std::make_shared<locked_transfer>(backend.create_usb_device(group.usb_devices.front()),
-                    raw_depth_sensor));
+                std::make_shared<locked_transfer>( backend.create_usb_device( group.usb_devices.front() ),
+                    raw_depth_sensor ) );
         }
         else
-        {
-            _hw_monitor = std::make_shared<hw_monitor>(
-                std::make_shared<locked_transfer>(std::make_shared<command_transfer_over_xu>(
-                    raw_depth_sensor, depth_xu, L500_HWMONITOR),
-                    raw_depth_sensor));
-        }
-
-#ifdef HWM_OVER_XU
-        if (group.usb_devices.size() > 0)
-        {
-            _hw_monitor = std::make_shared<hw_monitor>(
-                std::make_shared<locked_transfer>(std::make_shared<command_transfer_over_xu>(
-                    raw_depth_sensor, depth_xu, L500_HWMONITOR),
-                    raw_depth_sensor));
-        }
 #endif
+        {
+            _hw_monitor = std::make_shared<hw_monitor>(
+                std::make_shared<locked_transfer>( std::make_shared<command_transfer_over_xu>(
+                    raw_depth_sensor, depth_xu, L500_HWMONITOR ),
+                    raw_depth_sensor ) );
+        }
 
         std::vector<uint8_t> gvd_buff(HW_MONITOR_BUFFER_SIZE);
         _hw_monitor->get_gvd(gvd_buff.size(), gvd_buff.data(), GVD);
@@ -697,6 +691,17 @@ namespace librealsense
         {
             _temperature_reader.join();
         }
+    }
+
+    bool l500_device::check_fw_compatibility(const std::vector<uint8_t>& image) const
+    {
+        std::string fw_version = extract_firmware_version_string((const void*)image.data(), image.size());
+
+        auto it = ivcam2::device_to_fw_min_version.find(_pid);
+        if (it == ivcam2::device_to_fw_min_version.end())
+            throw std::runtime_error("Minimum firmware version has not been defined for this device!");
+
+        return (firmware_version(fw_version) >= firmware_version(it->second));
     }
 
     notification l500_notification_decoder::decode(int value)

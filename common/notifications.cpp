@@ -1014,6 +1014,14 @@ namespace rs2
         std::string str = to_string() << "notifications." << delay_id << ".next";
         config_file::instance().set(str.c_str(), (long long)(rawtime + days * 60 * 60 * 24));
     }
+    void notification_model::reset_delay()
+    {
+        if( is_delayed() )
+        {
+            std::string str = to_string() << "notifications." << delay_id << ".next";
+            config_file::instance().remove( str.c_str());
+        }
+    }
 
     sw_recommended_update_alert_model::sw_recommended_update_alert_model(const std::string& current_version, const std::string& recommended_version, const std::string& recommended_version_link)
         : notification_model(), _current_version(current_version), _recommended_version(recommended_version), _recommended_version_link(recommended_version_link)
@@ -1092,4 +1100,52 @@ namespace rs2
         }
         ImGui::PopStyleColor(2);
     }
+
+    sw_update_up_to_date_model::sw_update_up_to_date_model()
+        : notification_model()
+    {
+        enable_expand = false;
+        enable_dismiss = false;
+        pinned = false;
+        forced = true;
+        severity = RS2_LOG_SEVERITY_INFO;
+        message = "SW/FW versions up to date";
+    }
+
+    void sw_update_up_to_date_model::set_color_scheme(float t) const
+    {
+        notification_model::set_color_scheme(t);
+        ImGui::PopStyleColor();
+
+        ImVec4 c;
+        c = alpha(saturate(light_blue, 0.7f), 1 - t);
+        ImGui::PushStyleColor(ImGuiCol_WindowBg, c);
+    }
+
+
+    void sw_update_up_to_date_model::draw_content(ux_window& win, int x, int y, float t, std::string& error_message)
+    {
+        using namespace std;
+        using namespace chrono;
+
+        ImGui::SetCursorScreenPos({ float(x + 9), float(y + 4) });
+
+        ImVec4 shadow{ 1.f, 1.f, 1.f, 0.1f };
+        ImGui::GetWindowDrawList()->AddRectFilled({ float(x), float(y) },
+            { float(x + width), float(y + 25) }, ImColor(shadow));
+
+        ImGui::Text("Updates Status");
+
+        ImGui::SetCursorScreenPos({ float(x + 10), float(y + 35) });
+        ImGui::PushFont(win.get_large_font());
+        std::string txt = to_string() << textual_icons::throphy;
+        ImGui::Text("%s", txt.c_str());
+        ImGui::PopFont();
+
+        ImGui::SetCursorScreenPos({ float(x + 40), float(y + 35) });
+        ImGui::Text("SW/FW Versions All Up To Date");
+        
+        ImGui::SetCursorScreenPos({ float(x + 5), float(y + height - 25) });
+    }
+
 }

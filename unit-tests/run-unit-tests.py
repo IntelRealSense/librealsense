@@ -39,6 +39,7 @@ def usage():
     print( '                         if both list-tags and list-tests are specified each test will be printed along' )
     print( '                         with what tags it has' )
     print( '        --no-exceptions  do not load the LibCI/exceptions.specs file' )
+    print( '        --context        The context to use for test configuration' )
     sys.exit( 2 )
 
 
@@ -54,7 +55,7 @@ else:
 try:
     opts, args = getopt.getopt( sys.argv[1:], 'hvqr:st:',
                                 longopts=['help', 'verbose', 'debug', 'quiet', 'regex=', 'stdout', 'tag=', 'list-tags',
-                                          'list-tests', 'no-exceptions'] )
+                                          'list-tests', 'no-exceptions', 'context='] )
 except getopt.GetoptError as err:
     log.e( err )  # something like "option -a not recognized"
     usage()
@@ -64,6 +65,7 @@ required_tags = []
 list_tags = False
 list_tests = False
 no_exceptions = False
+context = None
 for opt, arg in opts:
     if opt in ('-h', '--help'):
         usage()
@@ -83,6 +85,8 @@ for opt, arg in opts:
         list_tests = True
     elif opt == '--no-exceptions':
         no_exceptions = True
+    elif opt == '--context':
+        context = arg
 
 if len( args ) > 1:
     usage()
@@ -231,7 +235,7 @@ def get_tests():
             else:
                 exe = target + '/' + testname + '.exe'
 
-            yield libci.ExeTest( testname, exe )
+            yield libci.ExeTest( testname, exe, context )
 
     # Python unit-test scripts are in the same directory as us... we want to consider running them
     # (we may not if they're live and we have no pyrealsense2.pyd):
@@ -245,7 +249,7 @@ def get_tests():
         if regex and not pattern.search( testname ):
             continue
 
-        yield libci.PyTest( testname, py_test )
+        yield libci.PyTest( testname, py_test, context )
 
 
 def prioritize_tests( tests ):
@@ -326,6 +330,8 @@ if not list_only:
 log.reset_errors()
 available_tags = set()
 tests = []
+if context:
+    log.d( 'running under context:', context )
 for test in prioritize_tests( get_tests() ):
     #
     log.d( 'found', test.name, '...' )

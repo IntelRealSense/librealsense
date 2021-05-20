@@ -5,7 +5,7 @@
 
 import os
 import pyrealsense2 as rs2
-from rspy import test
+from rspy import test, log, repo
 import tempfile
 
 # This test checks that stop of pipeline with playback file
@@ -14,7 +14,8 @@ import tempfile
 #############################################################################################
 test.start("Playback with non realtime isn't stuck at stop")
 
-filename = tempfile.gettempdir() + os.sep + 'recording_deadlock.bag'
+filename = os.path.join( repo.build, 'unit-tests', 'recordings', 'recording_deadlock.bag' )
+log.d( 'deadlock file:', filename )
 
 pipeline = rs2.pipeline()
 config = rs2.config()

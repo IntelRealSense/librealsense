@@ -75,7 +75,7 @@ def reset_update_counter( device ):
 
 # find the update tool exe
 fw_updater_exe = None
-for tool in file.find( repo.root, '(^|/)rs-fw-update.exe$' ):
+for tool in file.find( repo.build, '(^|/)rs-fw-update.exe$' ):
     fw_updater_exe = os.path.join( repo.root, tool)
 if not fw_updater_exe:
     log.f( "Could not find the update tool file (rs-fw-update.exe)" )
@@ -90,6 +90,8 @@ log.d( 'found:', device )
 product_line = device.get_info( rs.camera_info.product_line )
 log.d( 'product line:', product_line )
 
+###############################################################################
+#
 test.start( "Update FW" )
 # check if recovery. If so recover
 recovered = False
@@ -110,6 +112,7 @@ if device.is_update_device():
         subprocess.run( cmd )
         recovered = True
     except Exception as e:
+        test.unexpected_exception()
         log.f( "Unexpected error while trying to recover device:", e )
     else:
         devices.query( monitor_changes = False )
@@ -120,9 +123,35 @@ log.d( 'FW version:', current_fw_version )
 bundled_fw_version = repo.pretty_fw_version( device.get_info( rs.camera_info.recommended_firmware_version ) )
 log.d( 'bundled FW version:', bundled_fw_version )
 
-if recovered and current_fw_version == bundled_fw_version:
-    test.finish()
-    test.print_results_and_exit()
+def compare_fw_versions( v1, v2 ):
+    """
+    :param v1: left FW version
+    :param v2: right FW version
+    :return: 1 if v1 > v2; -1 is v1 < v2; 0 if they're equal
+    """
+    v1_list = v1.split( '.' )
+    v2_list = v2.split( '.' )
+    if len(v1_list) != 4:
+        raise RuntimeError( "FW version (left) '" + v1 + "' is invalid" )
+    if len(v2_list) != 4:
+        raise RuntimeError( "FW version (right) '" + v2 + "' is invalid" )
+    for n1, n2 in zip( v1_list, v2_list ):
+        if int(n1) > int(n2):
+            return 1
+        if int(n1) < int(n2):
+            return -1
+    return 0
+
+if compare_fw_versions( current_fw_version, bundled_fw_version ) == 0:
+    # Current is same as bundled
+    if recovered or test.context != 'nightly':
+        # In nightly, we always update; otherwise we try to save time, so do not do anything!
+        log.d( 'versions are same; skipping FW update' )
+        test.finish()
+        test.print_results_and_exit()
+else:
+    # It is expected that, post-recovery, the FW versions will be the same
+    test.check( not recovered, abort_if_failed = True )
 
 update_counter = get_update_counter( device )
 log.d( 'update counter:', update_counter )
@@ -160,5 +189,7 @@ if new_update_counter > 0:
     test.check( new_update_counter == update_counter + 1 )
 
 test.finish()
+#
+###############################################################################
 
 test.print_results_and_exit()

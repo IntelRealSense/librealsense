@@ -23,6 +23,12 @@ void config_file::set_default(const char* key, const char* calculate)
     _defaults[key] = calculate;
 }
 
+void config_file::remove(const char* key)
+{
+    _values.erase(key);
+    save();
+}
+
 void config_file::reset()
 {
     _values.clear();
