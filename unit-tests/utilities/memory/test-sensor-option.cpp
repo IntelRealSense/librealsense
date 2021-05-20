@@ -1,9 +1,10 @@
 #include "../../test.h"
 #include "../../func/func-common.h"
 #include <iostream>
+//#test:device D400*
+//#test:tag D400
 
-
-TEST_CASE( "sensor get_option memory leak", "[D400][live]" )
+TEST_CASE( "sensor get_option memory leak", "[live]" )
 {
     // running this test with the following command:
     // `valgrind --leak-check=yes --show-leak-kinds=all --track-origins=yes ./unit-tests/build/utilities/memory/test-sensor-option/test-utilities-memory-sensor-option 2>&1 | grep 'depends\|No device'`
