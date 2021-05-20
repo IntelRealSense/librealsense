@@ -3,7 +3,6 @@
 
 #include "l500-device.h"
 
-#include <cstddef>
 #include <vector>
 
 #include "context.h"

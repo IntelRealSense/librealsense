@@ -5,7 +5,6 @@
 #include <chrono>
 #include <vector>
 #include <iterator>
-#include <cstddef>
 #include <string>
 
 #include "device.h"

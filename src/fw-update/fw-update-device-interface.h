@@ -5,6 +5,7 @@
 
 #include "types.h"
 #include "core/streaming.h"
+#include <cstddef>
 
 namespace librealsense
 {
