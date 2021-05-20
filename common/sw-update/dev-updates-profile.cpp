@@ -27,7 +27,7 @@ namespace rs2
             _update_profile.serial_number = serial;
         }
 
-        bool dev_updates_profile::retrieve_updates(component_part_type comp)
+        bool dev_updates_profile::retrieve_updates(component_part_type comp, bool& fail_access_db)
         {
             // throw on unsupported components (Not implemented yet)
             if (comp != LIBREALSENSE && comp != FIRMWARE)
@@ -47,7 +47,8 @@ namespace rs2
                 version& current_version((comp == FIRMWARE) ? _update_profile.firmware_version : _update_profile.software_version);
                 {
                     version_info experimental_update;
-                    if (try_parse_update(_versions_db, _update_profile.device_name, EXPERIMENTAL, comp, experimental_update))
+                    auto parse_update_stts = try_parse_update(_versions_db, _update_profile.device_name, EXPERIMENTAL, comp, experimental_update);
+                    if ( parse_update_stts == VERSION_FOUND)
                     {
                         if (current_version < experimental_update.ver)
                         {
@@ -57,7 +58,7 @@ namespace rs2
                     }
 
                     version_info recommened_update;
-                    if (try_parse_update(_versions_db, _update_profile.device_name, RECOMMENDED, comp, recommened_update))
+                    if (try_parse_update(_versions_db, _update_profile.device_name, RECOMMENDED, comp, recommened_update) == VERSION_FOUND)
                     {
                         if (current_version < recommened_update.ver)
                         {
@@ -67,7 +68,7 @@ namespace rs2
                     }
 
                     version_info required_update;
-                    if (try_parse_update(_versions_db, _update_profile.device_name, ESSENTIAL, comp, required_update))
+                    if (try_parse_update(_versions_db, _update_profile.device_name, ESSENTIAL, comp, required_update) == VERSION_FOUND)
                     {
                         if (current_version < required_update.ver)
                         {
@@ -75,22 +76,24 @@ namespace rs2
                             update_available = true;
                         }
                     }
+
+                    fail_access_db = (parse_update_stts == DB_LOAD_FAILURE);
                 }
             }
-
             return update_available;
         }
 
-        bool dev_updates_profile::try_parse_update(versions_db_manager& up_handler,
+        query_status_type dev_updates_profile::try_parse_update(versions_db_manager& up_handler,
             const std::string& dev_name,
             update_policy_type policy,
             component_part_type part,
             dev_updates_profile::version_info& result)
         {
+            query_status_type query_status = DB_LOAD_FAILURE;
             if (_keep_trying)
             {
                 sw_update::version required_version;
-                auto query_status = up_handler.query_versions(dev_name, part, policy, required_version);
+                query_status = up_handler.query_versions(dev_name, part, policy, required_version);
                 if (query_status == VERSION_FOUND)
                 {
                     up_handler.get_version_download_link(part, required_version, result.download_link);
@@ -102,7 +105,6 @@ namespace rs2
                     ss << std::string(result.ver) << " (" << sw_update::to_string(policy) << ")";
                     result.name_for_display = ss.str();
                     result.policy = policy;
-                    return true;
                 }
                 else if (query_status == DB_LOAD_FAILURE)
                 {
@@ -110,7 +112,7 @@ namespace rs2
                 }
 
             }
-            return false;
+            return query_status;
         }
 
         bool dev_updates_profile::update_profile::get_sw_update( update_policy_type policy,
