@@ -2250,7 +2250,7 @@ namespace rs2
         if (action == RS2_CALIB_ACTION_FL_CALIB || action == RS2_CALIB_ACTION_UVMAPPING_CALIB || action == RS2_CALIB_ACTION_FL_PLUS_CALIB)
             _viewer.is_3d_view = false;
 
-        if (action == RS2_CALIB_ACTION_FL_CALIB || RS2_CALIB_ACTION_TARE_GROUND_TRUTH || action == RS2_CALIB_ACTION_UVMAPPING_CALIB || action == RS2_CALIB_ACTION_FL_PLUS_CALIB)
+        if (action == RS2_CALIB_ACTION_FL_CALIB || action == RS2_CALIB_ACTION_TARE_GROUND_TRUTH || action == RS2_CALIB_ACTION_UVMAPPING_CALIB || action == RS2_CALIB_ACTION_FL_PLUS_CALIB)
             try_start_viewer(1280, 720, 30, invoke);
         else
             try_start_viewer(256, 144, 90, invoke);
