@@ -773,6 +773,14 @@ namespace librealsense
                 if (host_assistance)
                     param.param_4 |= (1 << 8);
 
+                // Log the current preset
+                auto advanced_mode = dynamic_cast<ds5_advanced_mode_base*>(this);
+                if (advanced_mode)
+                {
+                    auto cur_preset = (rs2_rs400_visual_preset)(int)advanced_mode->_preset_opt->query();
+                    LOG_INFO("run_tare_calibration with preset: " << rs2_rs400_visual_preset_to_string(cur_preset));
+                }
+
                 if (depth == 0)
                     _hw_monitor->send(command{ ds::AUTO_CALIB, tare_calib_begin, param2, param3.param3, param.param_4 });
             }
