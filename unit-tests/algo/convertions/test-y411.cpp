@@ -151,6 +151,14 @@ TEST_CASE("unpack_y411_glsl")
     y411.invoke(f);
     auto res = res_queue.wait_for_frame();
     auto d = res.get_data();
+
+    byte3 rgb[W*H] = { 0 };
+    convert_yuv_to_rgb(&rgb[0], &yuv[0]);
+    for (auto i = 0; i < W*H; i++)
+    {
+        CAPTURE(i);
+        CHECK(((byte3*)d)[i] == rgb[i]);
+    }
 }
 
 #if defined __SSSE3__
