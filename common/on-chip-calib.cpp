@@ -173,6 +173,57 @@ namespace rs2
         catch (...) {}
     }
 
+    void on_chip_calib_manager::start_gt_viewer()
+    {
+        try
+        {
+            stop_viewer();
+            _viewer.is_3d_view = false;
+
+            _uid = 1;
+            for (const auto& format : _sub->formats)
+            {
+                if (format.second[0] == "Y8")
+                {
+                    _uid = format.first;
+                    break;
+                }
+            }
+
+            // Select stream
+            _sub->stream_enabled.clear();
+            _sub->stream_enabled[_uid] = true;
+
+            _sub->ui.selected_format_id.clear();
+            _sub->ui.selected_format_id[_uid] = 0;
+
+            // Select FPS value
+            for (int i = 0; i < _sub->shared_fps_values.size(); i++)
+            {
+                if (_sub->shared_fps_values[i] == 00)
+                    _sub->ui.selected_shared_fps_id = i;
+            }
+
+            // Select Resolution
+            for (int i = 0; i < _sub->res_values.size(); i++)
+            {
+                auto kvp = _sub->res_values[i];
+                if (kvp.first == 1280 && kvp.second == 720)
+                    _sub->ui.selected_res_id = i;
+            }
+
+            auto profiles = _sub->get_selected_profiles();
+
+            if (!_model.dev_syncer)
+                _model.dev_syncer = _viewer.syncer->create_syncer();
+
+            _sub->play(profiles, _viewer, _model.dev_syncer);
+            for (auto&& profile : profiles)
+                _viewer.begin_stream(_sub, profile);
+        }
+        catch (...) {}
+    }
+
     void on_chip_calib_manager::start_fl_viewer()
     {
         try
@@ -212,7 +263,7 @@ namespace rs2
             // Select FPS value
             for (int i = 0; i < _sub->shared_fps_values.size(); i++)
             {
-                if (_sub->shared_fps_values[i] == 90)
+                if (_sub->shared_fps_values[i] == 30)
                     _sub->ui.selected_shared_fps_id = i;
             }
 
@@ -220,7 +271,7 @@ namespace rs2
             for (int i = 0; i < _sub->res_values.size(); i++)
             {
                 auto kvp = _sub->res_values[i];
-                if (kvp.first == 256 && kvp.second == 144)
+                if (kvp.first == 1280 && kvp.second == 720)
                     _sub->ui.selected_res_id = i;
             }
 
@@ -426,7 +477,7 @@ namespace rs2
         bool frame_arrived = false;
         try
         {
-            bool run_fl_calib = action == RS2_CALIB_ACTION_FL_CALIB && w == 256 && h == 144 && fps == 90;
+            bool run_fl_calib = action == RS2_CALIB_ACTION_FL_CALIB && w == 1280 && h == 720 && fps == 30;
             if (action == RS2_CALIB_ACTION_TARE_GROUND_TRUTH)
             {
                 _uid = 1;
@@ -1445,7 +1496,7 @@ namespace rs2
                                 stream_profile profile = f.get_profile();
                                 auto vsp = profile.as<video_stream_profile>();
 
-                                gt_calculator[i] = std::make_shared<rect_calculator>();
+                                gt_calculator[i] = std::make_shared<rect_calculator>(true);
                                 fx[i] = vsp.get_intrinsics().fx;
                                 fy[i] = vsp.get_intrinsics().fy;
                                 target_fw[i] = vsp.get_intrinsics().fx * config_file::instance().get_or_default(configurations::viewer::target_width_r, 175.0f);
@@ -2082,7 +2133,7 @@ namespace rs2
                         stream_profile profile = f.get_profile();
                         auto vsp = profile.as<video_stream_profile>();
 
-                        gt_calculator = std::make_shared<rect_calculator>();
+                        gt_calculator = std::make_shared<rect_calculator>(true);
                         target_fw = vsp.get_intrinsics().fx * config_file::instance().get_or_default(configurations::viewer::target_width_r, 175.0f);
                         target_fh = vsp.get_intrinsics().fy * config_file::instance().get_or_default(configurations::viewer::target_height_r, 100.0f);
                         created = true;
@@ -2199,7 +2250,7 @@ namespace rs2
         if (action == RS2_CALIB_ACTION_FL_CALIB || action == RS2_CALIB_ACTION_UVMAPPING_CALIB || action == RS2_CALIB_ACTION_FL_PLUS_CALIB)
             _viewer.is_3d_view = false;
 
-        if (action == RS2_CALIB_ACTION_UVMAPPING_CALIB || action == RS2_CALIB_ACTION_FL_PLUS_CALIB)
+        if (action == RS2_CALIB_ACTION_FL_CALIB || RS2_CALIB_ACTION_TARE_GROUND_TRUTH || action == RS2_CALIB_ACTION_UVMAPPING_CALIB || action == RS2_CALIB_ACTION_FL_PLUS_CALIB)
             try_start_viewer(1280, 720, 30, invoke);
         else
             try_start_viewer(256, 144, 90, invoke);
@@ -2419,8 +2470,11 @@ namespace rs2
         using namespace chrono;
 
         if (update_state == RS2_CALIB_STATE_UVMAPPING_INPUT || 
+            update_state == RS2_CALIB_STATE_FL_INPUT ||
             update_state == RS2_CALIB_STATE_FL_PLUS_INPUT ||
-            update_state == RS2_CALIB_STATE_CALIB_IN_PROCESS && ((get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_UVMAPPING_CALIB) || get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_FL_PLUS_CALIB))
+            update_state == RS2_CALIB_STATE_GET_TARE_GROUND_TRUTH ||
+            update_state == RS2_CALIB_STATE_GET_TARE_GROUND_TRUTH_IN_PROCESS ||
+            update_state == RS2_CALIB_STATE_CALIB_IN_PROCESS && (get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_FL_CALIB || get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_UVMAPPING_CALIB || get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_FL_PLUS_CALIB))
             get_manager().turn_roi_on();
         else
             get_manager().turn_roi_off();
@@ -2572,7 +2626,10 @@ namespace rs2
             }
             else if (update_state == RS2_CALIB_STATE_GET_TARE_GROUND_TRUTH)
             {
-                ImGui::SetCursorScreenPos({ float(x + 9), float(y + 33) });
+                ImGui::SetCursorScreenPos({ float(x + 3), float(y + 33) });
+                ImGui::Text("%s", "Please make sure target is inside yellow rectangle.");
+
+                ImGui::SetCursorScreenPos({ float(x + 9), float(y + 38 + ImGui::GetTextLineHeightWithSpacing()) });
                 ImGui::Text("%s", "Target Width:");
                 if (ImGui::IsItemHovered())
                 {
@@ -2582,7 +2639,7 @@ namespace rs2
                 const int MAX_SIZE = 256;
                 char buff[MAX_SIZE];
 
-                ImGui::SetCursorScreenPos({ float(x + 135), float(y + 30) });
+                ImGui::SetCursorScreenPos({ float(x + 135), float(y + 35 + ImGui::GetTextLineHeightWithSpacing()) });
                 std::string id = to_string() << "##target_width_" << index;
                 ImGui::PushItemWidth(width - 145.0f);
                 float target_width = config_file::instance().get_or_default(configurations::viewer::target_width_r, 175.0f);
@@ -2597,14 +2654,14 @@ namespace rs2
                 }
                 ImGui::PopItemWidth();
 
-                ImGui::SetCursorScreenPos({ float(x + 9), float(y + 38 + ImGui::GetTextLineHeightWithSpacing()) });
+                ImGui::SetCursorScreenPos({ float(x + 9), float(y + 43 + 2 * ImGui::GetTextLineHeightWithSpacing()) });
                 ImGui::Text("%s", "Target Height:");
                 if (ImGui::IsItemHovered())
                 {
                     ImGui::SetTooltip("%s", "The height of the rectangle in millimeter inside the specific target");
                 }
 
-                ImGui::SetCursorScreenPos({ float(x + 135), float(y + 35 + ImGui::GetTextLineHeightWithSpacing()) });
+                ImGui::SetCursorScreenPos({ float(x + 135), float(y + 40 + 2 * ImGui::GetTextLineHeightWithSpacing()) });
                 id = to_string() << "##target_height_" << index;
                 ImGui::PushItemWidth(width - 145.0f);
                 float target_height = config_file::instance().get_or_default(configurations::viewer::target_height_r, 100.0f);
@@ -2631,6 +2688,7 @@ namespace rs2
                     update_state = update_state_prev;
                     if (get_manager()._sub->s->supports(RS2_OPTION_EMITTER_ENABLED))
                         get_manager()._sub->s->set_option(RS2_OPTION_EMITTER_ENABLED, get_manager().laser_status_prev);
+                    get_manager().stop_viewer();
                 }
 
                 ImGui::SetCursorScreenPos({ float(x + 85), float(y + height - 25) });
@@ -2838,6 +2896,7 @@ namespace rs2
 
                     update_state_prev = update_state;
                     update_state = RS2_CALIB_STATE_GET_TARE_GROUND_TRUTH;
+                    get_manager().start_gt_viewer();
                 }
                 if (ImGui::IsItemHovered())
                     ImGui::SetTooltip("%s", "Calculate ground truth for the specific target");
@@ -2968,7 +3027,7 @@ namespace rs2
             else if (update_state == RS2_CALIB_STATE_FL_INPUT)
             {
                 ImGui::SetCursorScreenPos({ float(x + 15), float(y + 33) });
-                ImGui::Text("%s", "Please make sure the target is inside both\nleft and right images. Adjust camera position\nif necessary before to start.");
+                ImGui::Text("%s", "Please make sure the target is inside yellow\nrectangle of both left and right images. Adjust\ncamera position if necessary before to start.");
 
                 ImGui::SetCursorScreenPos({ float(x + 9), float(y + height - 25) });
                 auto sat = 1.f + sin(duration_cast<milliseconds>(system_clock::now() - created_time).count() / 700.f) * 0.1f;
@@ -3903,7 +3962,7 @@ namespace rs2
         else if (update_state == RS2_CALIB_STATE_SELF_INPUT) return (get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_OB_CALIB ? 180 : 160);
         else if (update_state == RS2_CALIB_STATE_TARE_INPUT) return 105;
         else if (update_state == RS2_CALIB_STATE_TARE_INPUT_ADVANCED) return 230;
-        else if (update_state == RS2_CALIB_STATE_GET_TARE_GROUND_TRUTH) return 110;
+        else if (update_state == RS2_CALIB_STATE_GET_TARE_GROUND_TRUTH) return 135;
         else if (update_state == RS2_CALIB_STATE_GET_TARE_GROUND_TRUTH_FAILED) return 115;
         else if (update_state == RS2_CALIB_STATE_FAILED) return ((get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_OB_CALIB || get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_FL_CALIB) ? (get_manager().retry_times < 3 ? 0 : 80) : 110);
         else if (update_state == RS2_CALIB_STATE_FL_INPUT) return 120;
@@ -3963,7 +4022,7 @@ namespace rs2
 
         int ret = 0;
         rs2_error* e = nullptr;
-        rs2_extract_target_dimensions(frame_ref, RS2_CALIB_TARGET_RECT_GAUSSIAN_DOT_VERTICES, _rec_sides[_rec_idx], 4, &e);
+        rs2_extract_target_dimensions(frame_ref, _roi ? RS2_CALIB_TARGET_ROI_RECT_GAUSSIAN_DOT_VERTICES : RS2_CALIB_TARGET_RECT_GAUSSIAN_DOT_VERTICES, _rec_sides[_rec_idx], 4, &e);
         if (e == nullptr)
         {
             ret = 1;

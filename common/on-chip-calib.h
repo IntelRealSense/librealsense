@@ -108,9 +108,11 @@ namespace rs2
         void turn_roi_on();
         void turn_roi_off();
 
+        void start_gt_viewer();
         void start_fl_viewer();
         void start_uvmapping_viewer(bool b3D = false);
         void start_fl_plus_viewer();
+        void stop_viewer();
 
     private:
         std::vector<uint8_t> safe_send_command(const std::vector<uint8_t>& cmd, const std::string& name);
@@ -150,7 +152,6 @@ namespace rs2
         float _fx = 0.0f;
         float _fy = 0.0f;
 
-        void stop_viewer();
         void stop_viewer(invoker invoke);
         bool start_viewer(int w, int h, int fps, invoker invoke);
         void try_start_viewer(int w, int h, int fps, invoker invoke);
@@ -204,7 +205,7 @@ namespace rs2
     class rect_calculator
     {
     public:
-        rect_calculator() {}
+        rect_calculator(bool roi = false) : _roi(roi) {}
         virtual ~rect_calculator() {}
 
         int calculate(const rs2_frame * frame_ref, float rect_sides[4]); // return 0 if the target is not in the center, 1 if found, 2 if found and the rectangle sides are updated
@@ -222,6 +223,8 @@ namespace rs2
         int _rec_idx = 0;
         int _rec_num = 0;
         const int _reset_limit = 10;
+
+        bool _roi = false;
     };
 
     // Class for calculating the four Gaussian dot center locations on the specific target
