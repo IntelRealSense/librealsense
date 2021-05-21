@@ -201,7 +201,7 @@ class TestConfigFromText( TestConfig ):
                     log.e( source + '+' + str( line['index'] ) + ': timeout directive with invalid parameters:',
                            params )
             elif directive == 'tag':
-                self._tags.update( params )
+                self._tags.update( map( str.lower, params ))  # tags are case-insensitive
             elif directive == 'flag':
                 self._flags.update( params )
             else:
