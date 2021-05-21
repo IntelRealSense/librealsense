@@ -5,7 +5,7 @@
 //#test:device L500*
 
 #include "../../presets-common.h"
-#include <l500/l500-options.h>
+#include <src/l500/l500-options.h>
 
 using namespace rs2;
 

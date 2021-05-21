@@ -1,7 +1,7 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2021 Intel Corporation. All Rights Reserved.
 
-#include "l500/l500-private.h"
+#include <src/l500/l500-private.h>
 
 const uint8_t l500_trigger_error_opcode = 0x5E;
 

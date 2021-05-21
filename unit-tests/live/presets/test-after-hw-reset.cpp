@@ -6,7 +6,7 @@
 
 #include "presets-common.h"
 #include "../reset-camera.h"
-#include <l500/l500-options.h>
+#include <src/l500/l500-options.h>
 
 using namespace rs2;
 

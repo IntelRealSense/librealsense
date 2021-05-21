@@ -2,10 +2,10 @@
 // Copyright(c) 2020 Intel Corporation. All Rights Reserved.
 
 #include "../live-common.h"
-#include <concurrency.h>
-#include <types.h>
-#include "l500/l500-private.h"
-#include "l500/l500-options.h"
+#include <src/concurrency.h>
+#include <src/types.h>
+#include <src/l500/l500-private.h>
+#include <src/l500/l500-options.h>
 #include "../send-hw-monitor-command.h"
 
 using namespace rs2;
@@ -181,8 +181,8 @@ void build_preset_to_expected_values_map( rs2::device & dev,
     auto preset = preset_mode.first;
     auto mode = preset_mode.second;
 
-    depth_sens.set_option( RS2_OPTION_DIGITAL_GAIN, preset_to_gain_and_laser[preset].first );
-    depth_sens.set_option( RS2_OPTION_SENSOR_MODE, mode );
+    depth_sens.set_option( RS2_OPTION_DIGITAL_GAIN, (float)preset_to_gain_and_laser[preset].first );
+    depth_sens.set_option( RS2_OPTION_SENSOR_MODE, (float)mode );
 
     expected_defs = get_defaults_from_fw( dev );
 

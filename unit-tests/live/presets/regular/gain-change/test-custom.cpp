@@ -5,7 +5,7 @@
 //#test:device L500*
 
 #include "../../presets-common.h"
-#include <l500/l500-options.h>
+#include <src/l500/l500-options.h>
 
 using namespace rs2;
 TEST_CASE( "move to custom after gain changed", "[l500][live]" )
@@ -20,7 +20,7 @@ TEST_CASE( "move to custom after gain changed", "[l500][live]" )
     for( int gain = RS2_DIGITAL_GAIN_HIGH; gain < RS2_DIGITAL_GAIN_LOW; gain++ )
     {
         reset_camera_preset_mode_to_defaults( depth_sens );
-        depth_sens.set_option( RS2_OPTION_DIGITAL_GAIN, gain );
+        depth_sens.set_option( RS2_OPTION_DIGITAL_GAIN, (float)gain );
 
         rs2_l500_visual_preset curr_preset;
         REQUIRE_NOTHROW( curr_preset = ( rs2_l500_visual_preset )(int)depth_sens.get_option(

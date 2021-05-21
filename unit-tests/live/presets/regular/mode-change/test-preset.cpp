@@ -5,7 +5,7 @@
 //#test:device L500*
 
 #include "../../presets-common.h"
-#include <l500/l500-options.h>
+#include <src/l500/l500-options.h>
 
 using namespace rs2;
 TEST_CASE( "stay at the same preset after resolution changed", "[l500][live]" )
@@ -22,8 +22,8 @@ TEST_CASE( "stay at the same preset after resolution changed", "[l500][live]" )
     {
         for( int gain = RS2_DIGITAL_GAIN_HIGH; gain < RS2_DIGITAL_GAIN_LOW; gain++ )
         {
-            depth_sens.set_option( RS2_OPTION_VISUAL_PRESET, preset_mode.first);
-            depth_sens.set_option( RS2_OPTION_SENSOR_MODE, preset_mode.second);
+            depth_sens.set_option( RS2_OPTION_VISUAL_PRESET, (float)preset_mode.first );
+            depth_sens.set_option( RS2_OPTION_SENSOR_MODE, (float)preset_mode.second );
 
             rs2_l500_visual_preset curr_preset;
             REQUIRE_NOTHROW( curr_preset = ( rs2_l500_visual_preset )(int)depth_sens.get_option(

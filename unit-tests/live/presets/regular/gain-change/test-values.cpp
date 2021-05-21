@@ -5,7 +5,7 @@
 //#test:device L500*
 
 #include "../../presets-common.h"
-#include <l500/l500-options.h>
+#include <src/l500/l500-options.h>
 
 using namespace rs2;
 
@@ -30,9 +30,9 @@ TEST_CASE( "check currents and defaults values after gain changed", "[l500][live
     {
         reset_camera_preset_mode_to_defaults( depth_sens );
 
-        depth_sens.set_option( RS2_OPTION_DIGITAL_GAIN, gain );
+        depth_sens.set_option( RS2_OPTION_DIGITAL_GAIN, (float)gain );
 
-        expected_values[RS2_OPTION_DIGITAL_GAIN] = gain;
+        expected_values[RS2_OPTION_DIGITAL_GAIN] = (float)gain;
 
         compare_to_actual( depth_sens, expected_values, expected_defs);
     }

@@ -5,7 +5,7 @@
 //#test:device L500*
 
 #include "../../presets-common.h"
-#include <l500/l500-options.h>
+#include <src/l500/l500-options.h>
 
 using namespace rs2;
 
@@ -25,12 +25,12 @@ TEST_CASE( "check currents after resolution changed", "[l500][live]" )
 
     // print_presets_to_csv( depth_sens, preset_to_expected_map );
     for_each_preset_mode_combination( [&]( preset_mode_pair preset_mode) {
-        depth_sens.set_option( RS2_OPTION_VISUAL_PRESET, (float)preset_mode.first);
-        depth_sens.set_option( RS2_OPTION_SENSOR_MODE, preset_mode.second);
+        depth_sens.set_option( RS2_OPTION_VISUAL_PRESET, (float)preset_mode.first );
+        depth_sens.set_option( RS2_OPTION_SENSOR_MODE, (float)preset_mode.second );
 
         CAPTURE(preset_mode);
 
-        depth_sens.set_option( RS2_OPTION_SENSOR_MODE, preset_mode.second);
+        depth_sens.set_option( RS2_OPTION_SENSOR_MODE, (float)preset_mode.second);
 
         compare_to_actual(depth_sens, expected_values[preset_mode], expected_defs[preset_mode]);
     } );

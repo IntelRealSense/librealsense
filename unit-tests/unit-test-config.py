@@ -68,7 +68,8 @@ if not os.path.isdir( dir ) or not os.path.isdir( builddir ):
     usage()
 
 # We have to stick to Unix conventions because CMake on Windows is fubar...
-src = repo.root.replace( '\\' , '/' ) + '/src'
+root = repo.root.replace( '\\' , '/' )
+src = root + '/src'
 
 def generate_cmake( builddir, testdir, testname, filelist ):
     makefile = builddir + '/' + testdir + '/CMakeLists.txt'
@@ -91,7 +92,8 @@ target_link_libraries( ''' + testname + ''' ${DEPENDENCIES})
 
 set_target_properties( ''' + testname + ''' PROPERTIES FOLDER "Unit-Tests/''' + os.path.dirname( testdir ) + '''" )
 
-target_include_directories(''' + testname + ''' PRIVATE ''' + src + ''')
+# Add the repo root directory (so includes into src/ will be specific: <src/...>)
+target_include_directories(''' + testname + ''' PRIVATE ''' + root + ''')
 
 ''' )
     handle.close()

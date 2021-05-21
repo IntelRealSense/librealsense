@@ -1,7 +1,7 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2021 Intel Corporation. All Rights Reserved.
 
-#include <concurrency.h>
+#include <src/concurrency.h>
 
 // This should be defined, per device type
 void trigger_error_or_exit( const rs2::device & dev, uint8_t num );

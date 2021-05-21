@@ -1,10 +1,10 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2021 Intel Corporation. All Rights Reserved.
 
-#include "../test.h"
+#include <unit-tests/test.h>
 #include <librealsense2/rs.hpp>
 #include <condition_variable>
-#include "hw-monitor.h"
+#include <src/hw-monitor.h>
 
 using namespace rs2;
 
