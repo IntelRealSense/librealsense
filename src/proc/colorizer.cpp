@@ -4,9 +4,7 @@
 #include "../include/librealsense2/hpp/rs_sensor.hpp"
 #include "../include/librealsense2/hpp/rs_processing.hpp"
 
-#include "proc/synthetic-stream.h"
 #include "context.h"
-#include "environment.h"
 #include "option.h"
 #include "colorizer.h"
 #include "disparity-transform.h"

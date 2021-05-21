@@ -3,12 +3,16 @@
 
 #include "../include/librealsense2/rs.hpp"
 #include "../include/librealsense2/rsutil.h"
-#include "proc/synthetic-stream.h"
+
 #include "proc/occlusion-filter.h"
-//#include  "../../common/tiny-profiler.h"
 #include <vector>
 #include <cmath>
 
+#include "proc/rotation-transform.h"
+
+#define ROTATION_BUFFER_SIZE 32 // minimum limit that could be divided by all resolutions
+#define VERTICAL_SCAN_WINDOW_SIZE 16
+#define DEPTH_OCCLUSION_THRESHOLD 0.5f //meters
 
 namespace librealsense
 {

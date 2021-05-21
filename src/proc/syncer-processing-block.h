@@ -11,6 +11,7 @@
 #include "types.h"
 #include "archive.h"
 #include "option.h"
+#include "sync.h"
 
 namespace librealsense
 {
