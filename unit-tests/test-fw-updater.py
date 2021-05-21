@@ -76,7 +76,7 @@ def reset_update_counter( device ):
 # find the update tool exe
 fw_updater_exe = None
 for tool in file.find( repo.build, '(^|/)rs-fw-update.exe$' ):
-    fw_updater_exe = os.path.join( repo.root, tool)
+    fw_updater_exe = os.path.join( repo.build, tool )
 if not fw_updater_exe:
     log.f( "Could not find the update tool file (rs-fw-update.exe)" )
 
@@ -169,13 +169,10 @@ for image in file.find( repo.root, image_mask ):
 if not image_file:
     log.f( "Could not find image file for " + product_line + " device with FW version: " + bundled_fw_version )
 
-try:
-    cmd = [fw_updater_exe, '-f', image_file]
-    log.d( 'running:', cmd )
-    sys.stdout.flush()
-    subprocess.run( cmd )
-except Exception as e:
-    test.unexpected_exception()
+cmd = [fw_updater_exe, '-f', image_file]
+log.d( 'running:', cmd )
+sys.stdout.flush()
+subprocess.run( cmd )   # may throw
 
 # make sure update worked
 devices.query( monitor_changes = False )
@@ -186,7 +183,7 @@ test.check_equal( current_fw_version, bundled_fw_version )
 new_update_counter = get_update_counter( device )
 # According to FW: "update counter zeros if you load newer FW than (ever) before"
 if new_update_counter > 0:
-    test.check( new_update_counter == update_counter + 1 )
+    test.check_equal( new_update_counter, update_counter + 1 )
 
 test.finish()
 #
