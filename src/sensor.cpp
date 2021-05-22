@@ -347,7 +347,8 @@ namespace librealsense
                     int width = vsp ? vsp->get_width() : 0;
                     int height = vsp ? vsp->get_height() : 0;
 
-                    frame_holder fh = _source.alloc_frame(stream_to_frame_types(req_profile_base->get_stream_type()), width * height * (float)bpp / 8.f, fr->additional_data, requires_processing);
+                    assert((width * height) % 8 == 0);
+                    frame_holder fh = _source.alloc_frame(stream_to_frame_types(req_profile_base->get_stream_type()), (width * height * bpp) >> 3, fr->additional_data, requires_processing);
                     auto diff = environment::get_instance().get_time_service()->get_time() - system_time;
                     if (diff >10 )
                         LOG_DEBUG("!! Frame allocation took " << diff << " msec");
@@ -367,7 +368,7 @@ namespace librealsense
                                 LOG_DEBUG(expected_size << "expected size is smaller than " << sizeof(byte)*fr->data.size() << "actual size");
                         }
 
-                        memcpy((void*)fh->get_frame_data(), fr->data.data(), expected_size > sizeof(byte)*fr->data.size() ? sizeof(byte)*fr->data.size() : expected_size);
+                        memcpy((void*)fh->get_frame_data(), fr->data.data(), expected_size > sizeof(byte)*fr->data.size() ? sizeof(byte)*fr->data.size() : (size_t)expected_size);
                         auto&& video = (video_frame*)fh.frame;
                         video->assign(width, height, width * bpp / 8, bpp);
                         video->set_timestamp_domain(timestamp_domain);
