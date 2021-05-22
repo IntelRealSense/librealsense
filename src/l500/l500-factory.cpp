@@ -17,6 +17,7 @@
 #include "l500-depth.h"
 #include "l500-motion.h"
 #include "l500-color.h"
+#include "l535-color.h"
 #include "l500-serializable.h"
 #include "l535-device-options.h"
 #include "../firmware_logger_device.h"

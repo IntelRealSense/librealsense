@@ -325,6 +325,8 @@ namespace librealsense
             }
         }
     }
+
+    // This function unpacks Y411 format into RGB8 using SSE if defined
     void unpack_y411( byte * const dest[], const byte * s, int w, int h, int actual_size )
     {
 #if defined __SSSE3__
@@ -990,7 +992,7 @@ namespace librealsense
         unpack_rgb_from_bgr(dest, source, width, height, actual_size);
     }
 
-    void Y411_converter::process_function(byte * const dest[],
+    void y411_converter::process_function(byte * const dest[],
         const byte * source,
         int width,
         int height,
