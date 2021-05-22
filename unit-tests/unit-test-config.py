@@ -96,25 +96,62 @@ target_include_directories(''' + testname + ''' PRIVATE ''' + src + ''')
 ''' )
     handle.close()
 
-# Recursively searches a .cpp file for #include directives and returns
-# a set of all of them.
-#
-# Only directives that are relative to the current path (#include "<path>")
-# are looked for!
-#
-def find_includes( filepath ):
-    filelist = set()
-    filedir = os.path.dirname(filepath)
-    for context in file.grep( '^\s*#\s*include\s+"(.*)"\s*$', filepath ):
-        m = context['match']
-        index = context['index']
-        include = m.group(1)
+
+def find_include( include, relative_to ):
+    """
+    Try to match the include to an existing file.
+
+    :param include: the text within "" or <> from the include directive
+    :param relative_to: the directory from which to start finding if include is non-absolute
+    :return: the normalized & absolute file path, if found -- otherwise, None
+    """
+    if include:
         if not os.path.isabs( include ):
-            include = os.path.normpath( filedir + '/' + include )
+            include = os.path.normpath( relative_to + '/' + include )
         include = include.replace( '\\', '/' )
         if os.path.exists( include ):
-            filelist.add( include )
-            filelist |= find_includes( include )
+            return include
+
+
+standard_include_dirs = [
+    os.path.join( root, 'include' ),
+    root
+    ]
+def find_include_in_dirs( include ):
+    """
+    Search for the given include in all the standard include directories
+    """
+    global include_dirs
+    for include_dir in standard_include_dirs:
+        path = find_include( include, include_dir )
+        if path:
+            return path
+
+
+def find_includes( filepath, filelist = set() ):
+    """
+    Recursively searches a .cpp file for #include directives and returns
+    a set of all of them.
+    :return: a list of all includes found
+    """
+    filedir = os.path.dirname(filepath)
+    try:
+        log.debug_indent()
+        for context in file.grep( r'^\s*#\s*include\s+("(.*)"|<(.*)>)\s*$', filepath ):
+            m = context['match']
+            index = context['index']
+            include = find_include( m.group(2), filedir ) or find_include_in_dirs( m.group(2) ) or find_include_in_dirs( m.group(3) )
+            if include:
+                if include in filelist:
+                    log.d( m.group(0), '->', include, '(already processed)' )
+                else:
+                    log.d( m.group(0), '->', include )
+                    filelist.add( include )
+                    filelist = find_includes( include, filelist )
+            else:
+                log.d( 'not found:', m.group(0) )
+    finally:
+        log.debug_unindent()
     return filelist
 
 def process_cpp( dir, builddir ):
@@ -124,6 +161,7 @@ def process_cpp( dir, builddir ):
     statics = []
     if regex:
         pattern = re.compile( regex )
+    log.d( 'looking for C++ files in:', dir )
     for f in file.find( dir, '(^|/)test-.*\.cpp$' ):
         testdir = os.path.splitext( f )[0]                          # "log/internal/test-all"  <-  "log/internal/test-all.cpp"
         testparent = os.path.dirname(testdir)                       # "log/internal"
@@ -133,79 +171,87 @@ def process_cpp( dir, builddir ):
         if regex and not pattern.search( testname ):
             continue
 
-        if required_tags or list_tags:
-            config = libci.TestConfigFromCpp( dir + os.sep + f )
-            if not all( tag in config.tags for tag in required_tags ):
+        log.d( '... found:', f )
+        log.debug_indent()
+        try:
+            if required_tags or list_tags:
+                config = libci.TestConfigFromCpp( dir + os.sep + f )
+                if not all( tag in config.tags for tag in required_tags ):
+                    continue
+                available_tags.update( config.tags )
+                if list_tests:
+                    tests_and_tags[ testname ] = config.tags
+
+            if testname not in tests_and_tags:
+                tests_and_tags[testname] = None
+
+            # Build the list of files we want in the project:
+            # At a minimum, we have the original file, plus any common files
+            filelist = [ dir + '/' + f, '${ELPP_FILES}', '${CATCH_FILES}' ]
+            # Add any "" includes specified in the .cpp that we can find
+            includes = find_includes( dir + '/' + f )
+            # Add any files explicitly listed in the .cpp itself, like this:
+            #         //#cmake:add-file <filename>
+            # Any files listed are relative to $dir
+            shared = False
+            static = False
+            for context in file.grep( '^//#cmake:\s*', dir + '/' + f ):
+                m = context['match']
+                index = context['index']
+                cmd, *rest = context['line'][m.end():].split()
+                if cmd == 'add-file':
+                    for additional_file in rest:
+                        files = additional_file
+                        if not os.path.isabs( additional_file ):
+                            files = dir + '/' + testparent + '/' + additional_file
+                        files = glob( files )
+                        if not files:
+                            log.e( f + '+' + str(index) + ': no files match "' + additional_file + '"' )
+                        for abs_file in files:
+                            abs_file = os.path.normpath( abs_file )
+                            abs_file = abs_file.replace( '\\', '/' )
+                            if not os.path.exists( abs_file ):
+                                log.e( f + '+' + str(index) + ': file not found "' + additional_file + '"' )
+                            log.d( 'add file:', abs_file )
+                            filelist.append( abs_file )
+                            if( os.path.splitext( abs_file )[0] == 'cpp' ):
+                                # Add any "" includes specified in the .cpp that we can find
+                                includes |= find_includes( abs_file )
+                elif cmd == 'static!':
+                    if len(rest):
+                        log.e( f + '+' + str(index) + ': unexpected arguments past \'' + cmd + '\'' )
+                    elif shared:
+                        log.e( f + '+' + str(index) + ': \'' + cmd + '\' mutually exclusive with \'shared!\'' )
+                    else:
+                        log.d( 'static!' )
+                        static = True
+                elif cmd == 'shared!':
+                    if len(rest):
+                        log.e( f + '+' + str(index) + ': unexpected arguments past \'' + cmd + '\'' )
+                    elif static:
+                        log.e( f + '+' + str(index) + ': \'' + cmd + '\' mutually exclusive with \'static!\'' )
+                    else:
+                        log.d( 'shared!' )
+                        shared = True
+                else:
+                    log.e( f + '+' + str(index) + ': unknown cmd \'' + cmd + '\' (should be \'add-file\', \'static!\', or \'shared!\')' )
+            for include in includes:
+                filelist.append( include )
+
+            if list_only:
                 continue
-            available_tags.update( config.tags )
-            if list_tests:
-                tests_and_tags[ testname ] = config.tags
 
-        if testname not in tests_and_tags:
-            tests_and_tags[testname] = None
-
-        if list_only:
-            continue
-
-        # Each CMakeLists.txt sits in its own directory
-        os.makedirs( builddir + '/' + testdir, exist_ok=True )  # "build/log/internal/test-all"
-        # Build the list of files we want in the project:
-        # At a minimum, we have the original file, plus any common files
-        filelist = [ dir + '/' + f, '${ELPP_FILES}', '${CATCH_FILES}' ]
-        # Add any "" includes specified in the .cpp that we can find
-        includes = find_includes( dir + '/' + f )
-        # Add any files explicitly listed in the .cpp itself, like this:
-        #         //#cmake:add-file <filename>
-        # Any files listed are relative to $dir
-        shared = False
-        static = False
-        for context in file.grep( '^//#cmake:\s*', dir + '/' + f ):
-            m = context['match']
-            index = context['index']
-            cmd, *rest = context['line'][m.end():].split()
-            if cmd == 'add-file':
-                for additional_file in rest:
-                    files = additional_file
-                    if not os.path.isabs( additional_file ):
-                        files = dir + '/' + testparent + '/' + additional_file
-                    files = glob( files )
-                    if not files:
-                        log.e( f + '+' + str(index) + ': no files match "' + additional_file + '"' )
-                    for abs_file in files:
-                        abs_file = os.path.normpath( abs_file )
-                        abs_file = abs_file.replace( '\\', '/' )
-                        if not os.path.exists( abs_file ):
-                            log.e( f + '+' + str(index) + ': file not found "' + additional_file + '"' )
-                        log.d( '   add file:', abs_file )
-                        filelist.append( abs_file )
-                        if( os.path.splitext( abs_file )[0] == 'cpp' ):
-                            # Add any "" includes specified in the .cpp that we can find
-                            includes |= find_includes( abs_file )
-            elif cmd == 'static!':
-                if len(rest):
-                    log.e( f + '+' + str(index) + ': unexpected arguments past \'' + cmd + '\'' )
-                elif shared:
-                    log.e( f + '+' + str(index) + ': \'' + cmd + '\' mutually exclusive with \'shared!\'' )
-                else:
-                    static = True
-            elif cmd == 'shared!':
-                if len(rest):
-                    log.e( f + '+' + str(index) + ': unexpected arguments past \'' + cmd + '\'' )
-                elif static:
-                    log.e( f + '+' + str(index) + ': \'' + cmd + '\' mutually exclusive with \'static!\'' )
-                else:
-                    shared = True
+            # Each CMakeLists.txt sits in its own directory
+            os.makedirs( builddir + '/' + testdir, exist_ok=True )  # "build/log/internal/test-all"
+            generate_cmake( builddir, testdir, testname, filelist )
+            if static:
+                statics.append( testdir )
+            elif shared:
+                shareds.append( testdir )
             else:
-                log.e( f + '+' + str(index) + ': unknown cmd \'' + cmd + '\' (should be \'add-file\', \'static!\', or \'shared!\')' )
-        for include in includes:
-            filelist.append( include )
-        generate_cmake( builddir, testdir, testname, filelist )
-        if static:
-            statics.append( testdir )
-        elif shared:
-            shareds.append( testdir )
-        else:
-            found.append( testdir )
+                found.append( testdir )
+        finally:
+            log.debug_unindent()
     return found, shareds, statics
 def process_py( dir, builddir ):
     # TODO
