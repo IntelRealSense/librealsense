@@ -12,12 +12,14 @@
 #include "l500-depth.h"
 #include "algo/thermal-loop/l500-thermal-loop.h"
 
-namespace librealsense
+namespace librealsense {
+namespace ivcam2 {
+namespace l535 {
+class color_device : public l500_color
 {
-    class l535_color :public l500_color
-    {
-    public:
-        l535_color(std::shared_ptr<context> ctx,
-            const platform::backend_device_group& group);
-    };
-}
+public:
+    color_device( std::shared_ptr< context > ctx, const platform::backend_device_group & group );
+};
+};  // namespace l535
+};  // namespace ivcam2
+};  // namespace librealsense
