@@ -3,7 +3,7 @@
 
 # test:device L500*
 # test:device D400*
-# COMMENTED UNTIL SR300 IS CONNECTED TO LIBCI - test:device SR300*
+# test:device SR300*
 
 import pyrealsense2 as rs
 from rspy import test
