@@ -187,7 +187,7 @@ int main(int argc, char** argv)
 
     std::vector<rs2::device> rs_device_list;
     //Ensure that diviceList only has realsense devices in it. tmpList contains webcams as well
-    for (size_t i = 0; i < all_device_list.size(); i++) {
+    for (uint32_t i = 0; i < all_device_list.size(); i++) {
         try {
             all_device_list[i].get_info(RS2_CAMERA_INFO_FIRMWARE_VERSION);
             rs_device_list.push_back(all_device_list[i]);
