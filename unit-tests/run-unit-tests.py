@@ -339,6 +339,9 @@ for test in prioritize_tests( get_tests() ):
         log.debug_indent()
         test.debug_dump()
         #
+        if test.config.donotrun:
+            continue
+        #
         if required_tags and not all( tag in test.config.tags for tag in required_tags ):
             log.d( 'does not fit --tag:', test.config.tags )
             continue
