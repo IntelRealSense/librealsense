@@ -316,7 +316,7 @@ namespace librealsense
                     const auto&& fr = generate_frame_from_data(f, _timestamp_reader.get(), last_timestamp, last_frame_number, req_profile_base);
                     const auto&& requires_processing = true; // TODO - Ariel add option
                     const auto&& timestamp_domain = _timestamp_reader->get_frame_timestamp_domain(fr);
-                    const auto&& bpp = get_image_bpp(req_profile_base->get_format());
+                    auto&& bpp = get_image_bpp(req_profile_base->get_format());
                     auto&& frame_counter = fr->additional_data.frame_number;
                     auto&& timestamp = fr->additional_data.timestamp;
 
@@ -348,27 +348,33 @@ namespace librealsense
                     int height = vsp ? vsp->get_height() : 0;
 
                     assert((width * height) % 8 == 0);
-                    frame_holder fh = _source.alloc_frame(stream_to_frame_types(req_profile_base->get_stream_type()), (width * height * bpp) >> 3, fr->additional_data, requires_processing);
+
+                    // TODO: remove when adding confidence format
+                    if (req_profile->get_stream_type() == RS2_STREAM_CONFIDENCE)
+                        bpp = 4;
+
+                    auto expected_size = (width * height * bpp) >> 3;
+                    frame_holder fh = _source.alloc_frame(stream_to_frame_types(req_profile_base->get_stream_type()), expected_size, fr->additional_data, requires_processing);
                     auto diff = environment::get_instance().get_time_service()->get_time() - system_time;
                     if (diff >10 )
                         LOG_DEBUG("!! Frame allocation took " << diff << " msec");
 
                     if (fh.frame)
                     {
-                        auto expected_size = width * height * (float)bpp / 8.f;
-
                         if (expected_size != sizeof(byte)*fr->data.size())
                         {
                             if (expected_size > sizeof(byte)*fr->data.size())
                             {
                                 // if we got less data from what expected we drop the frame 
-                                LOG_ERROR(expected_size << "expected size is bigger than " << sizeof(byte)*fr->data.size() << "actual size");
+                                LOG_DEBUG(expected_size << "expected size is bigger than " << sizeof(byte)*fr->data.size() << "actual size");
+                                return;
                             }
-                            else
+                            // TODO: remove the if when FW will fix the bug of wrong size reported-
+                            else if(req_profile ->get_format() != RS2_FORMAT_Y411)
                                 LOG_DEBUG(expected_size << "expected size is smaller than " << sizeof(byte)*fr->data.size() << "actual size");
                         }
 
-                        memcpy((void*)fh->get_frame_data(), fr->data.data(), expected_size > sizeof(byte)*fr->data.size() ? sizeof(byte)*fr->data.size() : (size_t)expected_size);
+                        memcpy((void*)fh->get_frame_data(), fr->data.data(), expected_size);
                         auto&& video = (video_frame*)fh.frame;
                         video->assign(width, height, width * bpp / 8, bpp);
                         video->set_timestamp_domain(timestamp_domain);
