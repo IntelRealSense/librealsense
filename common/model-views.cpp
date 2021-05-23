@@ -3662,7 +3662,6 @@ namespace rs2
 
             glColor3f(1.f, 1.f, 1.f);
             roi_percentage = dev->roi_percentage;
-            roi_display_rect = r;
         }
 
         update_ae_roi_rect(stream_rect, g, error_message);
