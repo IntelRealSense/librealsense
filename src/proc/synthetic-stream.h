@@ -3,11 +3,11 @@
 
 #pragma once
 
-#include "core/processing.h"
-#include "image.h"
-#include "source.h"
-#include "../include/librealsense2/hpp/rs_frame.hpp"
-#include "../include/librealsense2/hpp/rs_processing.hpp"
+#include "../core/processing.h"
+#include "../image.h"
+#include "../source.h"
+#include <librealsense2/hpp/rs_frame.hpp>
+#include <librealsense2/hpp/rs_processing.hpp>
 
 namespace librealsense
 {

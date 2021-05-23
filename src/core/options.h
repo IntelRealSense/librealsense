@@ -3,9 +3,9 @@
 #pragma once
 
 #include <map>
-#include "../include/librealsense2/h/rs_option.h"
+#include <librealsense2/h/rs_option.h>
 #include "extension.h"
-#include "types.h"
+#include "../types.h"
 
 namespace librealsense
 {

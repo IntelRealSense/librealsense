@@ -18,7 +18,7 @@
 #define TRACE(X) do {} while(0)
 #endif
 
-#include "../src/log.h"
+#include <src/log.h>
 
 
 using namespace librealsense;
