@@ -791,6 +791,9 @@ namespace librealsense
 
     void sensor_mode_option::set(float value)
     {
+        if (is_read_only())
+            throw std::runtime_error("Cannot change sensor mode while streaming!");
+
         if (_value == value) return;
 
         // Restrictions for sensor mode option as required on [RS5-8358]
