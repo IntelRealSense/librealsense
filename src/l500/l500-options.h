@@ -130,11 +130,15 @@ namespace librealsense
         , public observable_option
     {
     public:
-        sensor_mode_option(l500_device *l500_depth_dev, option_range range, std::string description) : float_option_with_description<rs2_sensor_mode>(range, description), _l500_depth_dev(l500_depth_dev) {};
+        sensor_mode_option(l500_device *l500_depth_dev, sensor_base* depth_ep, option_range range, std::string description) : float_option_with_description<rs2_sensor_mode>(range, description), _l500_depth_dev(l500_depth_dev),_sensor(depth_ep) {};
         void set(float value) override;
+        bool is_read_only() const override {
+            return _sensor && _sensor->is_opened();
+        }
 
     private:
         l500_device *_l500_depth_dev;
+        sensor_base* _sensor;
     };
 
     class ir_reflectivity_option : public bool_option
