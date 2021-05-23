@@ -132,7 +132,8 @@ namespace librealsense
     public:
         sensor_mode_option(l500_device *l500_depth_dev, sensor_base* depth_ep, option_range range, std::string description) : float_option_with_description<rs2_sensor_mode>(range, description), _l500_depth_dev(l500_depth_dev),_sensor(depth_ep) {};
         void set(float value) override;
-        bool is_read_only() const override {
+        bool is_read_only() const override
+        {
             return _sensor && _sensor->is_opened();
         }
 
