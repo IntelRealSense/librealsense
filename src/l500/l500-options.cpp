@@ -247,7 +247,7 @@ namespace librealsense
                     = static_cast< float >( usb3mode ? RS2_SENSOR_MODE_VGA : RS2_SENSOR_MODE_QVGA );
 
                 auto resolution_option = std::make_shared< sensor_mode_option >(
-                    this,
+                    this, &depth_sensor,
                     option_range{ RS2_SENSOR_MODE_VGA,
                                   RS2_SENSOR_MODE_COUNT - 1,
                                   1,
