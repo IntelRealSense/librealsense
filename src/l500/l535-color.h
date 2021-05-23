@@ -3,14 +3,7 @@
 
 #pragma once
 
-#include <vector>
-#include <string>
-#include <map>
-
-#include "l500-device.h"
-#include "stream.h"
-#include "l500-depth.h"
-#include "algo/thermal-loop/l500-thermal-loop.h"
+#include "l500-color.h"
 
 namespace librealsense {
 namespace ivcam2 {

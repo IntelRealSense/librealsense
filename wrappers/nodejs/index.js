@@ -2060,7 +2060,7 @@ class Frame {
       case constants.format.FORMAT_GPIO_RAW:
       case constants.format.FORMAT_RAW10:
       case constants.format.FORMAT_FG:
-      case constants.format.RS2_FORMAT_Y411:
+      case constants.format.FORMAT_Y411:
       case constants.format.FORMAT_ANY:
         this.typedArray = new Uint8Array(this.arrayBuffer);
         return this.typedArray;
