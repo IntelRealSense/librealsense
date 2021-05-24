@@ -85,8 +85,11 @@ class TestConfig( ABC ):  # Abstract Base Class
         self._flags = set()
         self._timeout = 200
         self._context = context
+        self._donotrun = False
 
     def debug_dump( self ):
+        if self._donotrun:
+            log.d( 'THIS TEST WILL BE SKIPPED (donotrun specified)' )
         if self._priority != 1000:
             log.d( 'priority:', self._priority )
         if self._timeout != 200:
@@ -122,6 +125,10 @@ class TestConfig( ABC ):  # Abstract Base Class
     @property
     def context( self ):
         return self._context
+
+    @property
+    def donotrun( self ):
+        return  self._donotrun
 
 class TestConfigFromText( TestConfig ):
     """
@@ -204,6 +211,11 @@ class TestConfigFromText( TestConfig ):
                 self._tags.update( map( str.lower, params ))  # tags are case-insensitive
             elif directive == 'flag':
                 self._flags.update( params )
+            elif directive == 'donotrun':
+                if params:
+                    log.e( source + '+' + str( line['index'] ) + ': donotrun directive should not have parameters:',
+                           params )
+                self._donotrun = True
             else:
                 log.e( source + '+' + str( line['index'] ) + ': invalid directive "' + directive + '"; ignoring' )
 

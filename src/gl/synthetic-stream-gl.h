@@ -469,9 +469,9 @@ namespace librealsense
 
             processing_block& get() 
             { 
-                for(size_t i = 0; i < _blocks.size(); i++)
+                for(auto i = 0; i < _blocks.size(); i++)
                 {
-                    index = i;
+                    index = (int)i;
                     if (_blocks[i]->supports_option(RS2_OPTION_COUNT))
                     {
                         auto val = _blocks[i]->get_option(RS2_OPTION_COUNT).query();

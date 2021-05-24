@@ -16,7 +16,7 @@ INITIALIZE_EASYLOGGINGPP
 #include "../approx.h"
 
 //#cmake:add-file ../../src/types.h
-#include <types.h>
+#include <src/types.h>
 
 using namespace librealsense;
 

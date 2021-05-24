@@ -21,7 +21,6 @@
 #include "proc/zero-order.h"
 #include "proc/syncer-processing-block.h"
 #include "proc/rotation-transform.h"
-#include "fw-update/fw-update-unsigned.h"
 #include "../common/fw/firmware-version.h"
 #include "../common/utilities/time/periodic_timer.h"
 #include "../common/utilities/time/work_week.h"

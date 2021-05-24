@@ -2,10 +2,10 @@
 // Copyright(c) 2017 Intel Corporation. All Rights Reserved.
 
 #pragma once
-#include <core/roi.h>
-#include <core/extension.h>
-#include <core/serialization.h>
-#include "core/streaming.h"
+#include "../../core/roi.h"
+#include "../../core/extension.h"
+#include "../../core/serialization.h"
+#include "../../core/streaming.h"
 #include "archive.h"
 #include "concurrency.h"
 #include "sensor.h"

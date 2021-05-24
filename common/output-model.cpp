@@ -520,7 +520,7 @@ void output_model::draw(ux_window& win, rect view_rect, device_models_list & dev
             if (commands_histroy.size())
             {
                 if (ImGui::IsKeyPressed(GLFW_KEY_UP)) history_offset = (history_offset + 1) % commands_histroy.size();
-                if (ImGui::IsKeyPressed(GLFW_KEY_DOWN)) history_offset = (history_offset - 1 + commands_histroy.size()) % commands_histroy.size();
+                if (ImGui::IsKeyPressed(GLFW_KEY_DOWN)) history_offset = (history_offset - 1 + (int)commands_histroy.size()) % commands_histroy.size();
                 command_line = commands_histroy[history_offset];
 
                 force_refresh = true;
@@ -1010,7 +1010,7 @@ void stream_dashboard::draw_dashboard(ux_window& win, rect& r)
     bool has_room = true;
     while (has_room)
     {
-        auto total = 0;
+        float total = 0;
         for (int i = 0; i <= ticks_x; i++)
         {
             auto x = min_x + i * (gap_x / ticks_x);
@@ -1070,7 +1070,7 @@ void frame_drops_dashboard::process_frame(rs2::frame f)
         {
             auto last = stream_to_time[f.get_profile().unique_id()];
 
-            auto fps = f.get_profile().fps();
+            long long fps = f.get_profile().fps();
 
             if (f.supports_frame_metadata(RS2_FRAME_METADATA_ACTUAL_FPS))
                 fps = f.get_frame_metadata(RS2_FRAME_METADATA_ACTUAL_FPS);
@@ -1102,7 +1102,7 @@ void frame_drops_dashboard::draw(ux_window& win, rect r)
     auto hist = read_shared_data<std::deque<int>>([&](){ return drops_history; });
     for (int i = 0; i < hist.size(); i++)
     {
-        add_point(i, hist[i]);
+        add_point((float)i, (float)hist[i]);
     }
     r.h -= ImGui::GetTextLineHeightWithSpacing() + 10;
     draw_dashboard(win, r);

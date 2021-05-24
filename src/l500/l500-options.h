@@ -2,7 +2,7 @@
 // Copyright(c) 2020 Intel Corporation. All Rights Reserved.
 
 #pragma once
-#include "hw-monitor.h"
+#include "../hw-monitor.h"
 #include "l500-device.h"
 
 namespace librealsense
