@@ -43,7 +43,6 @@ RUN cd /usr/src/librealsense \
     && cmake \
     -DCMAKE_C_FLAGS_RELEASE="${CMAKE_C_FLAGS_RELEASE} -s" \
     -DCMAKE_CXX_FLAGS_RELEASE="${CMAKE_CXX_FLAGS_RELEASE} -s" \
-    -DBUILD_NETWORK_DEVICE=ON \
     -DCMAKE_INSTALL_PREFIX=/opt/librealsense \    
     -DBUILD_GRAPHICAL_EXAMPLES=OFF \
     -DBUILD_PYTHON_BINDINGS:bool=true \
@@ -67,6 +66,10 @@ RUN apt-get update \
     && apt-get install -y --no-install-recommends \	
     libusb-1.0-0 \
     udev \
+    apt-transport-https \
+    ca-certificates \
+    curl \
+    software-properties-common \
     && rm -rf /var/lib/apt/lists/*
 
 # Shows a list of connected Realsense devices
