@@ -60,7 +60,7 @@ struct position_and_rotation {
 
                 if (fabs(pos_and_rot[i][j] - other.pos_and_rot[i][j]) > tolerance)
                 {
-                    std::cout << "i,j = " << i << "," << j << ", pos_and_rot[i][j] = " << (double)pos_and_rot[i][j] << ", tolerance = " << tolerance << std::endl;
+                    std::cout << "i,j = " << i << "," << j << ", pos_and_rot[i][j] = " << pos_and_rot[i][j] << ", tolerance = " << tolerance << std::endl;
                     return false;
                 }
             }
@@ -81,7 +81,7 @@ struct position_and_rotation {
 
                 if (fabs(pos_and_rot[i][j] - target) > tolerance)
                 {
-                    std::cout << "i,j = " << i << "," << j << ", pos_and_rot[i][j] = " << (double)pos_and_rot[i][j] << ", target = " << (double)target << ", tolerance = " << tolerance << std::endl;
+                    std::cout << "i,j = " << i << "," << j << ", pos_and_rot[i][j] = " << pos_and_rot[i][j] << ", target = " << target << ", tolerance = " << tolerance << std::endl;
                     return false;
                 }
             }
