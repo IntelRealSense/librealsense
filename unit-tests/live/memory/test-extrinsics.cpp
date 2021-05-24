@@ -3,6 +3,8 @@
 
 //#cmake: static!
 //#test:device D400*
+//#test:donotrun:!nightly
+//#test:timeout 480
 
 
 #define CATCH_CONFIG_MAIN
@@ -14,7 +16,6 @@
 #include <librealsense2/hpp/rs_sensor.hpp>
 #include "./../src/environment.h"
 
-#define LIGHT_TEST true;
 
 using namespace librealsense;
 using namespace librealsense::platform;
@@ -23,13 +24,8 @@ constexpr int DELAY_INCREMENT_THRESHOLD = 3; //[%]
 constexpr int DELAY_INCREMENT_THRESHOLD_IMU = 8; //[%]
 constexpr int SPIKE_THRESHOLD = 2; //[stdev]
 
-#ifdef LIGHT_TEST
-constexpr int ITERATIONS_PER_CONFIG = 15;
-constexpr int INNER_ITERATIONS_PER_CONFIG = 1;
-#else
 constexpr int ITERATIONS_PER_CONFIG = 100;
-constexpr int INNER_ITERATIONS_PER_CONFIG = 20;
-#endif
+constexpr int INNER_ITERATIONS_PER_CONFIG = 10;
 
 // Input:     vector that represent samples of delay to first frame of one stream
 // Output:  - slope of the fitted line
