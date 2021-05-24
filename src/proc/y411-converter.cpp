@@ -30,16 +30,13 @@ namespace librealsense
     // Y is luminance and U,V are chrome
     // each U,V are duplicated for 4 pixels
     //
-    // [L1-Y3] [L1-Y2] [V1] [L0-Y3] [L0-Y2] [U1] [L1-Y1] [L1-Y0] [V0] [L0-Y1] [L0-Y0] [U0]
-    // [L1-Y7] [L1-Y6] [V3] [L0-Y7] [L0-Y6] [U3] [L1-Y5] [L1-Y4] [V2] [L0-Y5] [L0-Y4] [U2]
+    // [u1 y1 y2 v1 y3 y4]    [u2 y5 y6 v2 y7 y8]   [u3 y9 y10 v3 y11 y12]
     //
     // Before converting to RGB we unpack the y411 to yuv and then convert it to RBG
     // After the transformation to yuv the bytes alignment looks like this:
     //
-    // [L0-Y3 U1 V1] [L0-Y2 U1 V1] [L0-Y1 U0 V0] [L0-Y0 U0 V0]
-    // [L1-Y3 U1 V1] [L1-Y2 U1 V1] [L1-Y1 U0 V0] [L1-Y0 U0 V0]
-    // [L1-Y7 U3 V3] [L1-Y6 U3 V3] [L0-Y5 U2 V2] [L0-Y4 U2 V2]
-    // [L1-Y7 U3 V3] [L1-Y6 U3 V3] [L1-Y5 U2 V2] [L1-Y4 U2 V2]
+    // [y1 u1 v1][y2 u1 v1]     [y5 u2 v2][y6 u2 v2]    [y9 u3 v3][y10 u3 v3]
+    // [y3 u1 v1][y4 u1 v1]     [y7 u2 v2][y7 u2 v2]    [y11 u3 v3][y12 u3 v3]
     //
     //https://www.fourcc.org/pixel-format/yuv-y411/
 
