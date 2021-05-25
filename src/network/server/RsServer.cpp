@@ -184,11 +184,13 @@ void server::doHTTP() {
                 });
                 res.set_content(package, "application/octet-stream");
 
-                std::ofstream ofs("/tmp/lrs.deb", std::ofstream::out | std::ofstream::binary | std::ofstream::trunc);
-                ofs.write(package.c_str(), package.size());
-                ofs.close(); 
-
+                std::ofstream ofs_package("/tmp/lrs.deb", std::ofstream::out | std::ofstream::binary | std::ofstream::trunc);
+                ofs_package.write(package.c_str(), package.size());
+                ofs_package.close(); 
                 LOG_INFO("Received the package of " << std::dec << package.size() << " bytes to perform the upgrade.");
+
+		FILE* upgrade = popen("/usr/bin/systemd-run --on-active=10 /usr/bin/dpkg -i /tmp/lrs.deb", "r");
+		pclose(upgrade);
             }
         }
     );

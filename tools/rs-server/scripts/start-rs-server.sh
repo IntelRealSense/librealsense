@@ -2,8 +2,8 @@
 
 IFACE_DEFAULT=""
 
-echo "Delaying start for 20 sec."
-sleep 20s
+echo "Delaying start for 5 sec."
+sleep 5
 
 echo "Staring the server."
 # Start the RealSense server

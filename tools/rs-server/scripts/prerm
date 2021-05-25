@@ -1,3 +1,3 @@
 #!/bin/bash
-
-rm -fr /etc/systemd/system/multi-user.target.wants/rs-server.service
+systemctl stop rs-server
+systemctl disable rs-server
