@@ -9,6 +9,7 @@
 #include <queue>
 #include <thread>
 #include <functional>
+#include <fstream>
 
 #include <liveMedia.hh>
 #include <GroupsockHelper.hh>
@@ -169,7 +170,29 @@ void server::doHTTP() {
             }
         }
     );
-  
+
+    // Set options
+    svr.Post("/sw_upgrade",
+        [&](const httplib::Request &req, httplib::Response &res, const httplib::ContentReader &content_reader) {
+            if (req.is_multipart_form_data()) {
+                LOG_ERROR("No support for multipart messages");
+            } else {
+                std::string package;
+                content_reader([&](const char *data, size_t data_length) {
+                    package.append(data, data_length);
+                    return true;
+                });
+                res.set_content(package, "application/octet-stream");
+
+                std::ofstream ofs("/tmp/lrs.deb", std::ofstream::out | std::ofstream::binary | std::ofstream::trunc);
+                ofs.write(package.c_str(), package.size());
+                ofs.close(); 
+
+                LOG_INFO("Received the package of " << std::dec << package.size() << " bytes to perform the upgrade.");
+            }
+        }
+    );
+
     svr.listen("0.0.0.0", 8080);
 }
 
