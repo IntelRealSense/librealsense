@@ -3,7 +3,7 @@
 
 #include <functional>   // For function
 
-#include "../include/librealsense2/rsutil.h"
+#include <librealsense2/rsutil.h>
 #include "api.h"
 #include "log.h"
 #include "context.h"
