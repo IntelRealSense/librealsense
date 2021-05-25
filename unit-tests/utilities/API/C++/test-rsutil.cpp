@@ -1,8 +1,8 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2021 Intel Corporation. All Rights Reserved.
 
-#include "../../test.h"
-#include "../../../include/librealsense2/rsutil.h"
+#include "../../../test.h"
+#include <librealsense2/rsutil.h>
 
 // C++ test to check that rsutil function 
 TEST_CASE( "rsutil", "[string]" )
