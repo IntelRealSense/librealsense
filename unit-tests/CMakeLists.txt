@@ -70,5 +70,4 @@ endif()
 if(NOT ${BUILD_SHARED_LIBS} AND ${BUILD_INTERNAL_UNIT_TESTS})
     add_subdirectory(internal)
 endif()
-
-add_subdirectory(utilities/API_C)
+add_subdirectory(utilities/API/C)

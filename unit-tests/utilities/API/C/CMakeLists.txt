@@ -7,11 +7,10 @@ project(test-utilities-rsutil-c)
 
 # Save the command line compile commands in the build output
 set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
-add_executable(test-utilities-rsutil-c test-rsutil-c.c ../../../include/librealsense2/rsutil.h)
-# include_directories(../../../common)
+add_executable(test-utilities-rsutil-c test-rsutil-c.c ../../../../include/librealsense2/rsutil.h)
 target_link_libraries(test-utilities-rsutil-c ${DEPENDENCIES})
 set_target_properties (test-utilities-rsutil-c PROPERTIES
-FOLDER "API_C"
+FOLDER "API/C"
 )
 
 install(TARGETS test-utilities-rsutil-c RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
