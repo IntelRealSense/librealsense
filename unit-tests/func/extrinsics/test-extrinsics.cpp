@@ -119,7 +119,60 @@ position_and_rotation matrix_4_by_4_from_translation_and_rotation(const float* p
     return pos_rot;
 }
 
+std::string to_string(const rs2_extrinsics& extrinsics)
+{
+    std::stringstream ss;
+    ss << extrinsics.rotation[0] << " " << extrinsics.rotation[3] << " " << extrinsics.rotation[6] << std::endl;
+    ss << extrinsics.rotation[1] << " " << extrinsics.rotation[4] << " " << extrinsics.rotation[7] << std::endl;
+    ss << extrinsics.rotation[2] << " " << extrinsics.rotation[5] << " " << extrinsics.rotation[8] << std::endl;
 
+    return ss.str();
+}
+
+const double rotation_diagonal_min = 0.95;
+const double rotation_diagonal_max = 1.0;
+bool check_calibration_criteria(const rs2_extrinsics& extrinsics)
+{
+    if (extrinsics.rotation[0] > rotation_diagonal_min && extrinsics.rotation[0] <= rotation_diagonal_max &&
+        extrinsics.rotation[4] > rotation_diagonal_min && extrinsics.rotation[4] <= rotation_diagonal_max &&
+        extrinsics.rotation[8] > rotation_diagonal_min && extrinsics.rotation[8] <= rotation_diagonal_max)
+        return true;
+    return false;
+}
+
+bool is_rgb_calibrated(const std::vector<rs2::stream_profile>& profiles)
+{
+    bool res = false;
+    std::vector<rs2::stream_profile> depth_and_color_profiles;
+    bool depth_profile_added = false;
+    bool color_profile_added = false;
+
+    for (auto&& p : profiles)
+    {
+        // getting depth profile
+        if (!depth_profile_added && p.stream_type() == RS2_STREAM_DEPTH)
+        {
+            depth_and_color_profiles.push_back(p);
+            depth_profile_added = true;
+        }
+        // getting color profile
+        if (!color_profile_added && p.stream_type() == RS2_STREAM_COLOR)
+        {
+            depth_and_color_profiles.push_back(p);
+            color_profile_added = true;
+        }
+        if (depth_profile_added && color_profile_added)
+            break;
+    }
+
+    if (depth_and_color_profiles.size() == 2)
+    {
+        rs2_extrinsics depth_color_extrinsics = depth_and_color_profiles[0].get_extrinsics_to(depth_and_color_profiles[1]);
+        res = check_calibration_criteria(depth_color_extrinsics);
+    }
+
+    return res;
+}
 
 // checking the extrinsics graph
 // steps are:
@@ -148,20 +201,55 @@ TEST_CASE("Extrinsics graph - matrices 4x4", "[live]")
             }
         }
 
+        std::vector<rs2_stream> streams_to_ignore = { RS2_STREAM_ACCEL, RS2_STREAM_GYRO };
+        bool rgb_calibrated = is_rgb_calibrated(profiles);
+        if (!rgb_calibrated)
+        {
+            std::cout << "RGB is not calibrated on this device" << std::endl;
+            streams_to_ignore.push_back(RS2_STREAM_COLOR);
+        }
+        std::vector<rs2::stream_profile> relevant_profiles;
+
+        for (auto&& i : profiles)
+        {
+            auto stream_type = i.stream_type();
+            auto it = find(streams_to_ignore.begin(), streams_to_ignore.end(), stream_type);
+            if (it == streams_to_ignore.end())
+                relevant_profiles.push_back(i);
+        }
+
         float start_point[3] = { 1.f, 2.f, 3.f };
 
-        for (int i = 0; i < profiles.size() - 2; ++i)
+        for (int i = 0; i < relevant_profiles.size() - 2; ++i)
         {
-            for (int j = i + 1; j < profiles.size() - 1; ++j)
+            for (int j = i + 1; j < relevant_profiles.size() - 1; ++j)
             {
-                rs2_extrinsics extr_i_to_j = profiles[i].get_extrinsics_to(profiles[j]);
-                rs2_extrinsics extr_j_to_i = profiles[j].get_extrinsics_to(profiles[i]);
+                rs2_extrinsics extr_i_to_j = relevant_profiles[i].get_extrinsics_to(relevant_profiles[j]);
+                rs2_extrinsics extr_j_to_i = relevant_profiles[j].get_extrinsics_to(relevant_profiles[i]);
 
                 position_and_rotation pr_i_to_j = matrix_4_by_4_from_translation_and_rotation(extr_i_to_j.translation, extr_i_to_j.rotation);
                 position_and_rotation pr_j_to_i = matrix_4_by_4_from_translation_and_rotation(extr_j_to_i.translation, extr_j_to_i.rotation);
 
                 position_and_rotation product = pr_i_to_j * pr_j_to_i;
                 // checking that product of extrinsics from i to j with extrinsiscs from j to i is identity matrix
+                if (!product.is_identity())
+                {
+                    std::cout << "i : stream type: " << relevant_profiles[i].stream_type()
+                        << ", format: " << relevant_profiles[i].format()
+                        << ", fps: " << relevant_profiles[i].fps()
+                        << ", stream index: " << relevant_profiles[i].stream_index() << std::endl;
+
+                    std::cout << "j : stream type: " << relevant_profiles[j].stream_type()
+                        << ", format: " << relevant_profiles[j].format()
+                        << ", fps: " << relevant_profiles[j].fps()
+                        << ", stream index: " << relevant_profiles[j].stream_index() << std::endl;
+
+                    std::cout << "extr_i_to_j : " << std::endl;
+                    std::cout << to_string(extr_i_to_j) << std::endl;
+                    std::cout << "extr_j_to_i : " << std::endl;
+                    std::cout << to_string(extr_j_to_i) << std::endl;
+                    std::cout << std::endl;
+                }
                 REQUIRE(product.is_identity());
 
                 // checking with API rs2_transform_point_to_point
@@ -184,26 +272,26 @@ TEST_CASE("Extrinsics graph - matrices 4x4", "[live]")
                 // from profile A to B, and then from profile B to A
                 position_and_rotation point_and_orientation;
                 // rotation part with 30 degrees rotation on each axis
-                point_and_orientation.pos_and_rot[0][0] = 0.75f;
-                point_and_orientation.pos_and_rot[0][1] = -0.4330127f;
-                point_and_orientation.pos_and_rot[0][2] = 0.5f;
-                point_and_orientation.pos_and_rot[1][0] = 0.649519f;
-                point_and_orientation.pos_and_rot[1][1] = 0.625f;
-                point_and_orientation.pos_and_rot[1][2] = -0.4330127f;
-                point_and_orientation.pos_and_rot[2][0] = -0.125f;
-                point_and_orientation.pos_and_rot[2][1] = 0.649519f;
-                point_and_orientation.pos_and_rot[2][2] = 0.75f;
+                point_and_orientation.pos_and_rot[0][0] = 0.75;
+                point_and_orientation.pos_and_rot[0][1] = -0.4330127;
+                point_and_orientation.pos_and_rot[0][2] = 0.5;
+                point_and_orientation.pos_and_rot[1][0] = 0.649519;
+                point_and_orientation.pos_and_rot[1][1] = 0.625;
+                point_and_orientation.pos_and_rot[1][2] = -0.4330127;
+                point_and_orientation.pos_and_rot[2][0] = -0.125;
+                point_and_orientation.pos_and_rot[2][1] = 0.649519;
+                point_and_orientation.pos_and_rot[2][2] = 0.75;
 
-                point_and_orientation.pos_and_rot[3][0] = 0.f;
-                point_and_orientation.pos_and_rot[3][1] = 0.f;
-                point_and_orientation.pos_and_rot[3][2] = 0.f;
+                point_and_orientation.pos_and_rot[3][0] = 0.0;
+                point_and_orientation.pos_and_rot[3][1] = 0.0;
+                point_and_orientation.pos_and_rot[3][2] = 0.0;
 
                 // translation part
-                point_and_orientation.pos_and_rot[0][3] = 1.f;
-                point_and_orientation.pos_and_rot[1][3] = 2.f;
-                point_and_orientation.pos_and_rot[2][3] = 3.f;
+                point_and_orientation.pos_and_rot[0][3] = 1.0;
+                point_and_orientation.pos_and_rot[1][3] = 2.0;
+                point_and_orientation.pos_and_rot[2][3] = 3.0;
 
-                point_and_orientation.pos_and_rot[3][3] = 1.f;
+                point_and_orientation.pos_and_rot[3][3] = 1.0;
 
                 // applying extrinsics from i to j on point with orientation
                 position_and_rotation retransformed_temp = pr_j_to_i * point_and_orientation;
