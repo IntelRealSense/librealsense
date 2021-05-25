@@ -3431,6 +3431,10 @@ rs2_raw_data_buffer* rs2_terminal_parse_response(rs2_terminal_parser* terminal_p
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, terminal_parser, command, response)
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 void rs2_project_point_to_pixel(float pixel[2], const struct rs2_intrinsics* intrin, const float point[3]) BEGIN_API_CALL
 {
     float x = point[0] / point[2], y = point[1] / point[2];
@@ -3673,3 +3677,7 @@ void rs2_project_color_pixel_to_depth_pixel(float to_pixel[2],
     }
 }
 NOEXCEPT_RETURN(, to_pixel, data)
+
+#ifdef __cplusplus
+}
+#endif

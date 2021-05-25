@@ -3,6 +3,9 @@
 
 #ifndef LIBREALSENSE_RSUTIL2_H
 #define LIBREALSENSE_RSUTIL2_H
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #include "h/rs_types.h"
 #include "h/rs_sensor.h"
@@ -14,6 +17,8 @@
 #include <stdint.h>
 #include <math.h>
 #include <float.h>
+
+
 
 /* Given a point in 3D space, compute the corresponding pixel coordinates in an image with no distortion or forward distortion coefficients produced by the same camera */
 void rs2_project_point_to_pixel(float pixel[2], const struct rs2_intrinsics* intrin, const float point[3]);
@@ -42,4 +47,8 @@ void rs2_project_color_pixel_to_depth_pixel(float to_pixel[2],
     const struct rs2_extrinsics* color_to_depth,
     const struct rs2_extrinsics* depth_to_color,
     const float from_pixel[2]);
+#ifdef __cplusplus
+}
 #endif
+
+#endif 
