@@ -24,7 +24,7 @@ constexpr int DELAY_INCREMENT_THRESHOLD = 3; //[%]
 constexpr int DELAY_INCREMENT_THRESHOLD_IMU = 8; //[%]
 constexpr int SPIKE_THRESHOLD = 2; //[stdev]
 
-constexpr int ITERATIONS_PER_CONFIG = 100;
+constexpr int ITERATIONS_PER_CONFIG = 80;
 constexpr int INNER_ITERATIONS_PER_CONFIG = 10;
 
 // Input:     vector that represent samples of delay to first frame of one stream
