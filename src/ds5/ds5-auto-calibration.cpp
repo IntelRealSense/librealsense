@@ -25,6 +25,24 @@ namespace librealsense
         float rightRotation[9]; // Right rotation
     };
 
+    struct TareCalibrationResult
+    {
+      uint16_t status;  // DscStatus
+      uint32_t tareDepth;  // Tare depth in 1/100 of depth unit
+      uint32_t aveDepth;  // Average depth in 1/100 of depth unit
+      int32_t curPx;    // Current Px in 1/1000000 of normalized unit
+      int32_t calPx;    // Calibrated Px in 1/1000000 of normalized unit
+      float curRightRotation[9]; // Current right rotation
+      float calRightRotation[9]; // Calibrated right rotation
+      uint16_t accuracyLevel;  // [0-3] (Very High/High/Medium/Low)
+      uint16_t iterations;        // Number of iterations it took to converge
+      //int32_t errors[iterations];  // Array of errors in 1/1000000 of a percent
+      //int32_t x[iterations];    // Intrinsic scan: array of Px in 1/1000000 normalized unit
+      //                         // Extrinsic scan: array of Ry in 1/100000 radian
+      //float beforeHealthCheck; // Before health check number
+      //float afterHealthCheck;  // After health check number
+    };
+
     struct FocalLengthCalibrationResult
     {
         uint16_t status;    // DscStatus
@@ -258,7 +276,7 @@ namespace librealsense
         int keep_new_value_after_sucessful_scan = DEFAULT_KEEP_NEW_VALUE_AFTER_SUCESSFUL_SCAN;
         int fl_data_sampling = DEFAULT_FL_SAMPLING;
         int adjust_both_sides = DEFAULT_ADJUST_BOTH_SIDES;
-
+        
         int fl_scan_location = DEFAULT_OCC_FL_SCAN_LOCATION;
         int fy_scan_direction = DEFAULT_FY_SCAN_DIRECTION;
         int white_wall_mode = DEFAULT_WHITE_WALL_MODE;
@@ -339,6 +357,7 @@ namespace librealsense
                 {
                     LOG_WARNING(ex.what());
                 }
+
                 if (progress_callback)
                     progress_callback->on_update_progress(count++ * (2.f * speed)); //curently this number does not reflect the actual progress
 
@@ -534,7 +553,7 @@ namespace librealsense
             if (status != RS2_DSC_STATUS_SUCCESS)
                 handle_calibration_error(status);
 
-            res = get_PyRxFL_calibration_results(&h_1 , &h_2);
+            res = get_PyRxFL_calibration_results(&h_1, &h_2);
 
             int health_1 = static_cast<int>(abs(h_1) * 1000.0f + 0.5f);
             health_1 &= 0xFFF;
@@ -553,11 +572,11 @@ namespace librealsense
             h |= sign << 24;
             *health = static_cast<float>(h);
         }
-
+            
         return res;
     }
 
-    std::vector<uint8_t> auto_calibrated::run_tare_calibration(int timeout_ms, float ground_truth_mm, std::string json, update_progress_callback_ptr progress_callback)
+    std::vector<uint8_t> auto_calibrated::run_tare_calibration(int timeout_ms, float ground_truth_mm, std::string json, float* health, update_progress_callback_ptr progress_callback)
     {
         int average_step_count = DEFAULT_AVERAGE_STEP_COUNT;
         int step_count = DEFAULT_STEP_COUNT;
@@ -566,6 +585,7 @@ namespace librealsense
         int scan_parameter = DEFAULT_SCAN;
         int data_sampling = DEFAULT_TARE_SAMPLING;
         int apply_preset = 1;
+        std::vector<uint8_t> res;
 
         //Enforce Thermal Compensation off during Tare calibration
         volatile thermal_compensation_guard grd(this);
@@ -597,7 +617,7 @@ namespace librealsense
 
         _hw_monitor->send(command{ ds::AUTO_CALIB, tare_calib_begin, param2, param3.param3, param.param_4});
 
-        DirectSearchCalibrationResult result;
+        TareCalibrationResult result;
 
         // While not ready...
         int count = 0;
@@ -605,24 +625,21 @@ namespace librealsense
 
         auto start = std::chrono::high_resolution_clock::now();
         auto now = start;
-
         do
         {
-            memset(&result, 0, sizeof(DirectSearchCalibrationResult));
-
+            memset(&result, 0, sizeof(TareCalibrationResult));
             std::this_thread::sleep_for(std::chrono::milliseconds(200));
 
             // Check calibration status
             try
             {
-                auto res = _hw_monitor->send(command{ ds::AUTO_CALIB, tare_calib_check_status });
-                if (res.size() < sizeof(DirectSearchCalibrationResult))
+                res = _hw_monitor->send(command{ ds::AUTO_CALIB, tare_calib_check_status });
+                if (res.size() < sizeof(TareCalibrationResult))
                     throw std::runtime_error("Not enough data from CALIB_STATUS!");
 
-                result = *reinterpret_cast<DirectSearchCalibrationResult*>(res.data());
+                result = *reinterpret_cast<TareCalibrationResult*>(res.data());
                 done = result.status != RS2_DSC_STATUS_RESULT_NOT_READY;
             }
-
             catch (const std::exception& ex)
             {
                 LOG_WARNING(ex.what());
@@ -637,18 +654,22 @@ namespace librealsense
 
         // If we exit due to timeout, report timeout
         if (!done)
-        {
-            throw std::runtime_error("Operation timed-out!\n"
-                "Calibration state did not converged in time");
-        }
+            throw std::runtime_error("Operation timed-out!\nCalibration state did not converged in time");
 
         auto status = (rs2_dsc_status)result.status;
+                
+        uint8_t* p = res.data() + sizeof(TareCalibrationResult) + 2 * result.iterations * sizeof(uint32_t);
+        float* ph = reinterpret_cast<float*>(p);
+        health[0] = ph[0];
+        health[1] = ph[1];
+
+        LOG_INFO("Ground truth: " << ground_truth_mm << "mm");
+        LOG_INFO("Health check numbers from TareCalibrationResult(0x0C): before=" << ph[0] << ", after=" << ph[1]);
+        LOG_INFO("Z calculated from health check numbers : before=" << (ph[0] + 1) * ground_truth_mm << ", after=" << (ph[1] + 1) * ground_truth_mm);
 
         // Handle errors from firmware
         if (status != RS2_DSC_STATUS_SUCCESS)
-        {
             handle_calibration_error(status);
-        }
 
         return get_calibration_results();
     }
