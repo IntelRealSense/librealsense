@@ -550,9 +550,11 @@ TEST_CASE("HDR Merge - discard merged frame", "[hdr][live][using_pipeline]") {
 
                         long long frame_ts = merged_depth_frame.get_frame_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP);
 
-                        if( i == (num_of_iterations_in_serie - 1) )
+                        if (i == (num_of_iterations_in_serie - 1))
                             first_series_last_merged_ts = frame_ts;
                     }
+                    else
+                        std::cout << "sequence_id metadata not supported!!!" << std::endl;
                 }
                 REQUIRE( first_series_last_merged_ts != -1LL );
 
