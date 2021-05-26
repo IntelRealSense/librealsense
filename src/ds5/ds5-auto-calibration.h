@@ -14,7 +14,7 @@ namespace librealsense
         auto_calibrated(std::shared_ptr<hw_monitor>& hwm);
         void write_calibration() const override;
         std::vector<uint8_t> run_on_chip_calibration(int timeout_ms, std::string json, float* health, update_progress_callback_ptr progress_callback) override;
-        std::vector<uint8_t> run_tare_calibration(int timeout_ms, float ground_truth_mm, std::string json, update_progress_callback_ptr progress_callback) override;
+        std::vector<uint8_t> run_tare_calibration(int timeout_ms, float ground_truth_mm, std::string json, float* health, update_progress_callback_ptr progress_callback) override;
         std::vector<uint8_t> get_calibration_table() const override;
         void set_calibration_table(const std::vector<uint8_t>& calibration) override;
         void reset_to_factory_calibration() const override;

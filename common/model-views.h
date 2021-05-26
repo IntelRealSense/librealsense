@@ -723,6 +723,8 @@ namespace rs2
         bool post_processing_enabled = true;
         std::vector<std::shared_ptr<processing_block_model>> const_effects;
 
+        bool uvmapping_calib_full = false;
+
     private:
         std::pair<int, int> get_max_resolution(rs2_stream stream) const;
         void sort_resolutions(std::vector<std::pair<int, int>>& resolutions) const;
