@@ -9,11 +9,37 @@
 
 namespace librealsense
 {
+    /**
+    * \brief The class stores and manages the inter - stream extrinsic information in a form of dis / connected graph.
+    *        The nodes of the graph represent the streaming profiles that the different sensors provide.
+    *        The edge between each pair of nodes designates and stores the extrinsic info - the spatial location and orientation of one sensor in the coordinate system of the other.
+    *        In case of multiple physical devices, the graph is automatically populated with a set of disconnected clusters(per camera) that allows for inter - stream but not inter - camera transformation.
+    * 
+    *        The graph's creation has 3 steps:
+    *        1. The streams are added to it - e.g. depth, ir1, ir2, color, and eventually some links between them (not each of them)
+    *           Using the method register_extrinsics
+    *        2. All the profiles for each stream is added - without any link
+    *           Using the method register_profile
+    *        3. Each profile is linked to its stream
+    *           Using the method register_extrinsics
+    * 
+    *        Schematically, with only 2 streams, the graph would look as:
+    * 
+    *         profile 1 for stream A ------                         ------- profile 1 for stream B
+    *         profile 2 for stream A ----- stream A  ------- stream B ----- profile 2 for stream B
+    *                 |                   /                           \             |             
+    *                 |                  /                             \            |             
+    *         profile n for stream A----                                ----profile n for stream B
+    * 
+    * 
+    *        The search in the graph is implemented as DFS, and it is implemented in the try_fetch_extrinsics method
+    */
     class extrinsics_graph
     {
     public:
         extrinsics_graph();
         void register_same_extrinsics(const stream_interface& from, const stream_interface& to);
+        void register_profile(const stream_interface& profile);
         void register_extrinsics(const stream_interface& from, const stream_interface& to, std::weak_ptr<lazy<rs2_extrinsics>> extr);
         void register_extrinsics(const stream_interface& from, const stream_interface& to, rs2_extrinsics extr);
         void override_extrinsics(const stream_interface& from, const stream_interface& to, rs2_extrinsics const & extr);
