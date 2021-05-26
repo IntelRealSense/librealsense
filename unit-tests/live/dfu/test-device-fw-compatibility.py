@@ -66,7 +66,7 @@ pid_to_min_fw_version = {  # D400 product line:
 }
 
 sr300_fw_max_version_1 = 'Signed_Image_UVC_3_26_3_0.bin'
-sr300_fw_min_version_1_next = 'Signed_Image_UVC_3_27_0_0.bin'
+sr300_fw_max_version_1_next = 'Signed_Image_UVC_3_27_0_0.bin'
 
 pid_to_max_fw_version = {  # SR300 product line:
     '0AA5': sr300_fw_max_version_1,  # SR300
@@ -81,7 +81,7 @@ fw_previous_version = {d400_fw_min_version_1: d400_fw_min_version_1_prev,
                        sr300_fw_min_version_3: sr300_fw_min_version_3_prev
                        }
 
-fw_next_version = {sr300_fw_min_version_1 : sr300_fw_min_version_1_next}
+fw_next_version = {sr300_fw_max_version_1 : sr300_fw_max_version_1_next}
 
 def check_firmware_not_compatible(updatable_device, fw_image):
     test.check(not updatable_device.check_firmware_compatibility(fw_image))
