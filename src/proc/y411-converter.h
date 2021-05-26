@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2019 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2021 Intel Corporation. All Rights Reserved.
 
 #pragma once
 
@@ -10,11 +10,11 @@ namespace librealsense
     class y411_converter : public functional_processing_block
     {
     public:
-        y411_converter(const rs2_format & target_format)
+        y411_converter(rs2_format target_format)
             : functional_processing_block("Y411 Transform", target_format) {};
 
     protected:
-        y411_converter(const char * name, const rs2_format & target_format)
+        y411_converter(const char * name, rs2_format target_format)
             : functional_processing_block(
                 name, target_format, RS2_STREAM_COLOR, RS2_EXTENSION_VIDEO_FRAME)
         {
