@@ -1,3 +1,9 @@
+# License: Apache 2.0. See LICENSE file in root directory.
+# Copyright(c) 2021 Intel Corporation. All Rights Reserved.
+
+# test:device D400*
+#test:donotrun:!nightly
+
 import time
 import threading
 from Queue import Queue
@@ -96,7 +102,7 @@ if __name__ == '__main__':
         consumer_thread.start()
 
         test.start_rgb_sensor()
-        time.sleep(60)
+        time.sleep(30)
         test.stop()  # notify to stop producing-consuming frames
 
         producer_thread.join(timeout=60)
