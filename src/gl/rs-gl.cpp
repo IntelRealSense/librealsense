@@ -14,6 +14,7 @@
 #include "pc-shader.h"
 #include "colorizer-gl.h"
 #include "proc/color-formats-converter.h"
+#include "proc/y411-converter.h"
 #include "proc/colorizer.h"
 #include "proc/align.h"
 #include "log.h"
