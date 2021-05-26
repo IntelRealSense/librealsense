@@ -1195,6 +1195,16 @@ namespace rs2
                     {
                         default_resolution = std::pair<int, int>(vid_prof.width(), vid_prof.height());
                         default_fps = profile.fps();
+
+                        if (is_rgb_camera)
+                        {
+                            auto intrinsics = vid_prof.get_intrinsics();
+                            if (intrinsics.model == RS2_DISTORTION_INVERSE_BROWN_CONRADY
+                                && (intrinsics.coeffs[0] != 0.0f || intrinsics.coeffs[1] != 0.0f || intrinsics.coeffs[2] != 0.0f || intrinsics.coeffs[3] != 0.0f || intrinsics.coeffs[4] != 0.0f))
+                            {
+                                uvmapping_calib_full = true;
+                            }
+                        }
                     }
                     res << vid_prof.width() << " x " << vid_prof.height();
                     push_back_if_not_exists(res_values, std::pair<int, int>(vid_prof.width(), vid_prof.height()));
@@ -5501,9 +5511,8 @@ namespace rs2
                             {
                                 if (ImGui::Selectable("UVMapping Calibration"))
                                 {
-                                    auto manager = std::make_shared<on_chip_calib_manager>(viewer, sub, *this, dev, sub2);
-                                    auto n = std::make_shared<autocalib_notification_model>(
-                                        "", manager, false);
+                                    auto manager = std::make_shared<on_chip_calib_manager>(viewer, sub, *this, dev, sub2, sub2->uvmapping_calib_full);
+                                    auto n = std::make_shared<autocalib_notification_model>("", manager, false);
 
                                     viewer.not_model->add_notification(n);
                                     n->forced = true;

@@ -22,7 +22,7 @@ namespace rs2
     class on_chip_calib_manager : public process_manager
     {
     public:
-        on_chip_calib_manager(viewer_model& viewer, std::shared_ptr<subdevice_model> sub, device_model& model, device dev, std::shared_ptr<subdevice_model> sub_color = nullptr);
+        on_chip_calib_manager(viewer_model& viewer, std::shared_ptr<subdevice_model> sub, device_model& model, device dev, std::shared_ptr<subdevice_model> sub_color = nullptr, bool uvmapping_calib_full = false);
         ~on_chip_calib_manager();
 
         bool allow_calib_keep() const { return true; }

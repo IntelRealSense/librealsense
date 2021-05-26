@@ -677,6 +677,8 @@ namespace rs2
         bool post_processing_enabled = true;
         std::vector<std::shared_ptr<processing_block_model>> const_effects;
 
+        bool uvmapping_calib_full = false;
+
     private:
         const float SHORT_RANGE_MIN_DISTANCE = 0.05f; // 5 cm
         const float SHORT_RANGE_MAX_DISTANCE = 4.0f;  // 4 meters

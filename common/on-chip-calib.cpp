@@ -18,8 +18,8 @@
 
 namespace rs2
 {
-    on_chip_calib_manager::on_chip_calib_manager(viewer_model& viewer, std::shared_ptr<subdevice_model> sub, device_model& model, device dev, std::shared_ptr<subdevice_model> sub_color)
-        : process_manager("On-Chip Calibration"), _model(model), _dev(dev), _sub(sub), _viewer(viewer), _sub_color(sub_color)
+    on_chip_calib_manager::on_chip_calib_manager(viewer_model& viewer, std::shared_ptr<subdevice_model> sub, device_model& model, device dev, std::shared_ptr<subdevice_model> sub_color, bool uvmapping_calib_full)
+        : process_manager("On-Chip Calibration"), _model(model), _dev(dev), _sub(sub), _viewer(viewer), _sub_color(sub_color), py_px_only(!uvmapping_calib_full)
     {
         auto dev_name = dev.get_info(RS2_CAMERA_INFO_NAME);
         if (!strcmp(dev_name, "Intel RealSense D415"))
@@ -2582,15 +2582,10 @@ namespace rs2
                     update_state = RS2_CALIB_STATE_CALIB_IN_PROCESS;
                     enable_dismiss = false;
                 }
-                if (ImGui::IsItemHovered())
-                {
-                    ImGui::SetTooltip("%s", "Begin UVMapping calibration after adjusting camera position");
-                }
-                ImGui::PopStyleColor(2);
 
-                string id = to_string() << "Py Px Calibration only##py_px_only" << index;
-                ImGui::SetCursorScreenPos({ float(x + 15), float(y + height - ImGui::GetTextLineHeightWithSpacing() - 32) });
-                ImGui::Checkbox(id.c_str(), &get_manager().py_px_only);
+                if (ImGui::IsItemHovered())
+                    ImGui::SetTooltip("%s", "Begin UVMapping calibration after adjusting camera position");
+                ImGui::PopStyleColor(2);
             }
             else if (update_state == RS2_CALIB_STATE_FL_PLUS_INPUT)
             {
@@ -3968,7 +3963,8 @@ namespace rs2
         else if (update_state == RS2_CALIB_STATE_GET_TARE_GROUND_TRUTH_FAILED) return 115;
         else if (update_state == RS2_CALIB_STATE_FAILED) return ((get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_OB_CALIB || get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_FL_CALIB) ? (get_manager().retry_times < 3 ? 0 : 80) : 110);
         else if (update_state == RS2_CALIB_STATE_FL_INPUT) return 120;
-        else if (update_state == RS2_CALIB_STATE_UVMAPPING_INPUT || update_state == RS2_CALIB_STATE_FL_PLUS_INPUT) return 140;
+        else if (update_state == RS2_CALIB_STATE_UVMAPPING_INPUT) return 120;
+        else if (update_state == RS2_CALIB_STATE_FL_PLUS_INPUT) return 140;
         else return 100;
     }
 
