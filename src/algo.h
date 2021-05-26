@@ -148,7 +148,7 @@ namespace librealsense
     class rect_gaussian_dots_target_calculator : public target_calculator_interface
     {
     public:
-        rect_gaussian_dots_target_calculator(int width, int height);
+        rect_gaussian_dots_target_calculator(int width, int height, int roi_start_x, int roi_start_y, int roi_width, int roi_height);
         virtual ~rect_gaussian_dots_target_calculator();
         bool calculate(const uint8_t* img, float* target_dims, unsigned int target_dims_size) override;
 
@@ -157,6 +157,13 @@ namespace librealsense
 
         rect_gaussian_dots_target_calculator(const rect_gaussian_dots_target_calculator&&) = delete;
         rect_gaussian_dots_target_calculator& operator=(const rect_gaussian_dots_target_calculator&&) = delete;
+
+        static const int _roi_ws = 480;
+        static const int _roi_we = 800;
+        static const int _roi_hs = 240;
+        static const int _roi_he = 480;
+
+        static const int _patch_size = 20; // in pixels
 
     protected:
         void normalize(const uint8_t* img);
@@ -171,9 +178,6 @@ namespace librealsense
         void minimize_x(const double* p, int s, double* f, double& x);
         void minimize_y(const double* p, int s, double* f, double& y);
         double subpixel_agj(double* f, int s);
-
-    public:
-        static const int _frame_num = 25; // number of frames used to smooth the result
 
     protected:
         const int _tsize = 28; // template size
@@ -214,7 +218,6 @@ namespace librealsense
         };
 
         const double _thresh = 0.7; // used internally, range from 0 to 1 for normalized image ma
-        const int _patch_size = 20; // in pixels
         std::vector<double> _buf;
 
         std::vector<double> _img;
@@ -237,5 +240,10 @@ namespace librealsense
 
         point<double> _corners[4];
         point<int> _pts[4];
+
+        int _roi_start_x;
+        int _roi_start_y;
+        int _full_width;
+        int _full_height;
     };
 }
