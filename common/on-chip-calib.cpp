@@ -1882,10 +1882,8 @@ namespace rs2
                     }
 
                     undistort(const_cast<uint8_t *>(static_cast<const uint8_t *>(f.get_data())), width, height, intrin[1], 
-                        librealsense::rect_gaussian_dots_target_calculator::_roi_ws - librealsense::rect_gaussian_dots_target_calculator::_patch_size,
-                        librealsense::rect_gaussian_dots_target_calculator::_roi_hs - librealsense::rect_gaussian_dots_target_calculator::_patch_size,
-                        librealsense::rect_gaussian_dots_target_calculator::_roi_we + librealsense::rect_gaussian_dots_target_calculator::_patch_size,
-                        librealsense::rect_gaussian_dots_target_calculator::_roi_he + librealsense::rect_gaussian_dots_target_calculator::_patch_size);
+                        librealsense::_roi_ws - librealsense::_patch_size, librealsense::_roi_hs - librealsense::_patch_size,
+                        librealsense::_roi_we + librealsense::_patch_size, librealsense::_roi_he + librealsense::_patch_size);
                     ret = gt_calculator[1]->calculate(f.get(), dots_x[1], dots_y[1]);
                     if (ret == 0)
                         ++counter;
