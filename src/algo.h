@@ -145,6 +145,12 @@ namespace librealsense
         virtual ~target_calculator_interface() = default;
     };
 
+    const int _roi_ws = 480;
+    const int _roi_we = 800;
+    const int _roi_hs = 240;
+    const int _roi_he = 480;
+    const int _patch_size = 20; // in pixels
+
     class rect_gaussian_dots_target_calculator : public target_calculator_interface
     {
     public:
@@ -157,13 +163,6 @@ namespace librealsense
 
         rect_gaussian_dots_target_calculator(const rect_gaussian_dots_target_calculator&&) = delete;
         rect_gaussian_dots_target_calculator& operator=(const rect_gaussian_dots_target_calculator&&) = delete;
-
-        static const int _roi_ws = 480;
-        static const int _roi_we = 800;
-        static const int _roi_hs = 240;
-        static const int _roi_he = 480;
-
-        static const int _patch_size = 20; // in pixels
 
     protected:
         void normalize(const uint8_t* img);
