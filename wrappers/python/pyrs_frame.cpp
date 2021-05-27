@@ -174,6 +174,16 @@ void init_frame(py::module &m) {
                 target_dims.resize(4);
                 self.extract_target_dimensions(RS2_CALIB_TARGET_RECT_GAUSSIAN_DOT_VERTICES, target_dims.data(), 4);
             }
+            else if (target_type == RS2_CALIB_TARGET_ROI_RECT_GAUSSIAN_DOT_VERTICES)
+            {
+                target_dims.resize(4);
+                self.extract_target_dimensions(RS2_CALIB_TARGET_ROI_RECT_GAUSSIAN_DOT_VERTICES, target_dims.data(), 4);
+            }
+            else if (target_type == RS2_CALIB_TARGET_POS_GAUSSIAN_DOT_VERTICES)
+            {
+                target_dims.resize(8);
+                self.extract_target_dimensions(RS2_CALIB_TARGET_POS_GAUSSIAN_DOT_VERTICES, target_dims.data(), 8);
+            }
             return target_dims;
         }, "This will calculate the four target dimenson size(s) in millimeter on the specific target.");
 

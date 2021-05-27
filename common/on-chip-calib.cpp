@@ -36,19 +36,13 @@ namespace rs2
         if (_sub)
         {
             _sub->show_algo_roi = true;
-            _sub->algo_roi = { librealsense::rect_gaussian_dots_target_calculator::_roi_ws, 
-                               librealsense::rect_gaussian_dots_target_calculator::_roi_hs, 
-                               librealsense::rect_gaussian_dots_target_calculator::_roi_we, 
-                               librealsense::rect_gaussian_dots_target_calculator::_roi_he };
+            _sub->algo_roi = { librealsense::_roi_ws, librealsense::_roi_hs, librealsense::_roi_we, librealsense::_roi_he };
         }
 
         if (_sub_color)
         {
             _sub_color->show_algo_roi = true;
-            _sub_color->algo_roi = { librealsense::rect_gaussian_dots_target_calculator::_roi_ws, 
-                                     librealsense::rect_gaussian_dots_target_calculator::_roi_hs, 
-                                     librealsense::rect_gaussian_dots_target_calculator::_roi_we, 
-                                     librealsense::rect_gaussian_dots_target_calculator::_roi_he };
+            _sub_color->algo_roi = { librealsense::_roi_ws, librealsense::_roi_hs, librealsense::_roi_we, librealsense::_roi_he };
         }
     }
 
