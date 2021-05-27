@@ -1068,8 +1068,19 @@ namespace rs2
                 float ratio_to_apply = corrected_ratio / 100.0f + 1.0f;
                 _new_calib = _old_calib;
                 auto table = (librealsense::ds::coefficients_table*)_new_calib.data();
-                table->intrinsic_right.x.x *= ratio_to_apply;
-                table->intrinsic_right.x.y *= ratio_to_apply;
+                if (adjust_both_sides)
+                {
+                    float ratio_to_apply_2 = sqrtf(ratio_to_apply);
+                    table->intrinsic_left.x.x /= ratio_to_apply_2;
+                    table->intrinsic_left.x.y /= ratio_to_apply_2;
+                    table->intrinsic_right.x.x *= ratio_to_apply_2;
+                    table->intrinsic_right.x.y *= ratio_to_apply_2;
+                }
+                else
+                {
+                    table->intrinsic_right.x.x *= ratio_to_apply;
+                    table->intrinsic_right.x.y *= ratio_to_apply;
+                }
 
                 auto actual_data = _new_calib.data() + sizeof(librealsense::ds::table_header);
                 auto actual_data_size = _new_calib.size() - sizeof(librealsense::ds::table_header);
@@ -2273,6 +2284,13 @@ namespace rs2
                 ImGui::SetCursorScreenPos({ float(x + 15), float(y + 33) });
                 ImGui::Text("%s", "Please make sure the target is inside yellow\nrectangle of both left and right images. Adjust\ncamera position if necessary before to start.");
 
+                ImGui::SetCursorScreenPos({ float(x + 25), float(y + 38) + 3 * ImGui::GetTextLineHeight() });
+                bool adj_both = (get_manager().adjust_both_sides == 1);
+                if (ImGui::Checkbox("Adjust both sides focal length", &adj_both))
+                    get_manager().adjust_both_sides = (adj_both ? 1 : 0);
+                if (ImGui::IsItemHovered())
+                    ImGui::SetTooltip("%s", "check = adjust both sides, uncheck = adjust right side only");
+
                 ImGui::SetCursorScreenPos({ float(x + 9), float(y + height - 25) });
                 auto sat = 1.f + sin(duration_cast<milliseconds>(system_clock::now() - created_time).count() / 700.f) * 0.1f;
                 ImGui::PushStyleColor(ImGuiCol_Button, saturate(sensor_header_light_blue, sat));
@@ -3098,7 +3116,7 @@ namespace rs2
         else if (update_state == RS2_CALIB_STATE_GET_TARE_GROUND_TRUTH) return 135;
         else if (update_state == RS2_CALIB_STATE_GET_TARE_GROUND_TRUTH_FAILED) return 115;
         else if (update_state == RS2_CALIB_STATE_FAILED) return ((get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_OB_CALIB || get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_FL_CALIB) ? (get_manager().retry_times < 3 ? 0 : 80) : 110);
-        else if (update_state == RS2_CALIB_STATE_FL_INPUT) return 120;
+        else if (update_state == RS2_CALIB_STATE_FL_INPUT) return 140;
         else if (update_state == RS2_CALIB_STATE_UVMAPPING_INPUT) return 120;
         else return 100;
     }
