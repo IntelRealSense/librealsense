@@ -510,7 +510,7 @@ TEST_CASE("Emitter on/off - checking sequence id", "[hdr][live][using_pipeline]"
 // This test is removed until its failure is solved
 // It does not fail locally but it fails on our internal validation environment
 //This tests checks that the previously saved merged frame is discarded after a pipe restart
-/*TEST_CASE("HDR Merge - discard merged frame", "[hdr][live][using_pipeline]") {
+TEST_CASE("HDR Merge - discard merged frame", "[hdr][live][using_pipeline]") {
 
     rs2::context ctx;
     if (make_context(SECTION_FROM_TEST_NAME, &ctx, "2.39.0"))
@@ -536,6 +536,7 @@ TEST_CASE("Emitter on/off - checking sequence id", "[hdr][live][using_pipeline]"
 
                 int num_of_iterations_in_serie = 10;
                 long long first_series_last_merged_ts = -1;
+                bool at_least_one_frame_supported_seq_id = false;
                 for (int i = 0; i < num_of_iterations_in_serie; ++i)
                 {
                     rs2::frameset data;
@@ -544,41 +545,46 @@ TEST_CASE("Emitter on/off - checking sequence id", "[hdr][live][using_pipeline]"
 
                     if (out_depth_frame.supports_frame_metadata(RS2_FRAME_METADATA_SEQUENCE_ID))
                     {
+                        at_least_one_frame_supported_seq_id = true;
                         // merging the frames from the different HDR sequence IDs 
                         auto merged_frameset = merging_filter.process(data);
                         auto merged_depth_frame = merged_frameset.as<rs2::frameset>().get_depth_frame();
 
                         long long frame_ts = merged_depth_frame.get_frame_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP);
 
-                        if( i == (num_of_iterations_in_serie - 1) )
+                        if (i == (num_of_iterations_in_serie - 1))
                             first_series_last_merged_ts = frame_ts;
                     }
                 }
-                REQUIRE( first_series_last_merged_ts != -1LL );
-
                 pipe.stop();
-
-                REQUIRE(depth_sensor.get_option(RS2_OPTION_HDR_ENABLED) == 1.f);
-
-                pipe.start(cfg);
-
-                for (int i = 0; i < 10; ++i)
+                if (at_least_one_frame_supported_seq_id)
                 {
-                    rs2::frameset data;
-                    REQUIRE_NOTHROW(data = pipe.wait_for_frames());
-                    rs2::depth_frame out_depth_frame = data.get_depth_frame();
+                    REQUIRE(first_series_last_merged_ts != -1LL);
 
-                    if (out_depth_frame.supports_frame_metadata(RS2_FRAME_METADATA_SEQUENCE_ID))
+                    REQUIRE(depth_sensor.get_option(RS2_OPTION_HDR_ENABLED) == 1.f);
+
+                    pipe.start(cfg);
+
+                    for (int i = 0; i < 10; ++i)
                     {
-                        // merging the frames from the different HDR sequence IDs 
-                        auto merged_frameset = merging_filter.process(data);
-                        auto merged_depth_frame = merged_frameset.as<rs2::frameset>().get_depth_frame();
+                        rs2::frameset data;
+                        REQUIRE_NOTHROW(data = pipe.wait_for_frames());
+                        rs2::depth_frame out_depth_frame = data.get_depth_frame();
 
-                        long long frame_ts = merged_depth_frame.get_frame_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP);
-                        REQUIRE(frame_ts > first_series_last_merged_ts);
+                        if (out_depth_frame.supports_frame_metadata(RS2_FRAME_METADATA_SEQUENCE_ID))
+                        {
+                            // merging the frames from the different HDR sequence IDs 
+                            auto merged_frameset = merging_filter.process(data);
+                            auto merged_depth_frame = merged_frameset.as<rs2::frameset>().get_depth_frame();
+
+                            long long frame_ts = merged_depth_frame.get_frame_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP);
+                            REQUIRE(frame_ts > first_series_last_merged_ts);
+                        }
                     }
+                    pipe.stop();
                 }
-                pipe.stop();
+                else
+                    std::cout << "sequence_id metadata was not supported - skipping test" << std::endl;
             }
         }
         else
@@ -586,7 +592,7 @@ TEST_CASE("Emitter on/off - checking sequence id", "[hdr][live][using_pipeline]"
             std::cout << "No device was found - skipping test" << std::endl;
         }
     }
-}*/
+}
 
 
 TEST_CASE("HDR Start Stop - recover manual exposure and gain", "[HDR]") 
