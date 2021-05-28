@@ -9,7 +9,7 @@
 #include "../../../include/librealsense2/rs.h"
 
 #include "jni_logging.h"
-#include "jni_user.h"
+#include "jni_usercb.h"
 
 extern "C"
 JNIEXPORT void JNICALL

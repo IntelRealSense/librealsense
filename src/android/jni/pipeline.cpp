@@ -7,7 +7,7 @@
 #include "../../../include/librealsense2/h/rs_pipeline.h"
 
 #include "jni_logging.h"
-#include "jni_user.h"
+#include "jni_usercb.h"
 
 extern "C" JNIEXPORT jlong JNICALL
 Java_com_intel_realsense_librealsense_Pipeline_nCreate(JNIEnv *env, jclass type,

@@ -7,7 +7,7 @@
 #include "../../../include/librealsense2/hpp/rs_frame.hpp"
 
 #include "jni_logging.h"
-#include "jni_user.h"
+#include "jni_usercb.h"
 
 bool rs_jni_callback_init(JNIEnv *env, jobject jcb, rs_jni_cbdata* ud)
 {
