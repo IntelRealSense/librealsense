@@ -9,7 +9,7 @@
 #include "jni_logging.h"
 #include "jni_user.h"
 
-bool rs_jni_callback_init(JNIEnv *env, jobject jcb, rs_jni_userdata* ud)
+bool rs_jni_callback_init(JNIEnv *env, jobject jcb, rs_jni_cbdata* ud)
 {
     // get the Java VM interface associated with the current thread
     int status = env->GetJavaVM(&(ud->jvm));
@@ -51,7 +51,7 @@ bool rs_jni_callback_init(JNIEnv *env, jobject jcb, rs_jni_userdata* ud)
     return true;
 }
 
-bool rs_jni_cb(rs2::frame f, rs_jni_userdata* ud)
+bool rs_jni_cb(rs2::frame f, rs_jni_cbdata* ud)
 {
     JNIEnv *cb_thread_env = NULL;
     int env_state = ud->jvm->GetEnv((void **)&cb_thread_env, ud->version);
@@ -111,7 +111,7 @@ bool rs_jni_cb(rs2::frame f, rs_jni_userdata* ud)
     return true;
 }
 
-void rs_jni_cleanup(JNIEnv *env, rs_jni_userdata* ud)
+void rs_jni_cleanup(JNIEnv *env, rs_jni_cbdata* ud)
 {
     if (ud)
     {

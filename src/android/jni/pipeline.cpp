@@ -26,7 +26,7 @@ Java_com_intel_realsense_librealsense_Pipeline_nStart(JNIEnv *env, jclass type, 
     return reinterpret_cast<jlong>(rv);
 }
 
-static rs_jni_userdata pdata = {NULL, 0, JNI_FALSE, NULL, NULL};
+static rs_jni_cbdata pdata = {NULL, 0, JNI_FALSE, NULL, NULL};
 
 extern "C" JNIEXPORT jlong JNICALL
 Java_com_intel_realsense_librealsense_Pipeline_nStartWithCallback(JNIEnv *env, jclass type, jlong handle, jobject jcb) {

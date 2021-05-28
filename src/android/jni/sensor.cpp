@@ -19,7 +19,7 @@ Java_com_intel_realsense_librealsense_Sensor_nOpen(JNIEnv *env, jclass type, jlo
     handle_error(env, e);
 }
 
-static rs_jni_userdata sdata = {NULL, 0, JNI_FALSE, NULL, NULL};
+static rs_jni_cbdata sdata = {NULL, 0, JNI_FALSE, NULL, NULL};
 
 extern "C"
 JNIEXPORT void JNICALL
