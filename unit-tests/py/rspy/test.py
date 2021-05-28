@@ -268,7 +268,7 @@ def check_exception(exception, expected_type, expected_msg = None, abort_if_fail
     return True
 
 
-def check_frame_drops(frame, previous_frame_number, allowed_drops = 1):
+def check_frame_drops(frame, previous_frame_number, allowed_drops = 1, is_d400 = 0):
     """
     Used for checking frame drops while streaming
     :param frame: Current frame being checked
@@ -281,7 +281,8 @@ def check_frame_drops(frame, previous_frame_number, allowed_drops = 1):
         return True
     frame_number = frame.get_frame_number()
     failed = False
-    if previous_frame_number > 0:
+    # special case for D400, because the depth sensor may reset itself
+    if previous_frame_number > 0 and not (is_d400 and frame_number < 5):
         dropped_frames = frame_number - (previous_frame_number + 1)
         if dropped_frames > allowed_drops:
             print( dropped_frames, "frame(s) starting from frame", previous_frame_number + 1, "were dropped" )

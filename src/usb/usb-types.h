@@ -206,5 +206,20 @@ namespace librealsense
             uint8_t type;
             std::vector<uint8_t> data;
         };
+
+#pragma pack(push, 1)
+        struct dfu_header {
+            uint32_t dwCRC;
+            uint8_t  headerSignature[256];
+            uint8_t  cssHeader[128];
+            uint32_t magicNumber;
+            uint32_t prefixLength;
+            uint16_t bcdDFU;
+            uint32_t bcdDevice;
+            uint8_t  reserve[4];
+            uint32_t imageSize;
+            uint16_t nofBlocks;
+        };
+#pragma pack(pop)
     }
 }

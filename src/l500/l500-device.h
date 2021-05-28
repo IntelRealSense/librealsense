@@ -6,16 +6,16 @@
 #include <vector>
 #include <mutex>
 #include <string>
-#include "device.h"
-#include "context.h"
-#include "backend.h"
-#include "hw-monitor.h"
-#include "image.h"
-#include "stream.h"
+#include "../device.h"
+#include "../context.h"
+#include "../backend.h"
+#include "../hw-monitor.h"
+#include "../image.h"
+#include "../stream.h"
 #include "l500-private.h"
-#include "error-handling.h"
-#include "global_timestamp_reader.h"
-#include "fw-update/fw-update-device-interface.h"
+#include "../error-handling.h"
+#include "../global_timestamp_reader.h"
+#include "../fw-update/fw-update-device-interface.h"
 
 namespace librealsense
 {
@@ -67,6 +67,7 @@ namespace librealsense
             update_progress_callback_ptr callback, float continue_from, float ratio);
         void update_flash_internal(std::shared_ptr<hw_monitor> hwm, const std::vector<uint8_t>& image, std::vector<uint8_t>& flash_backup,
             update_progress_callback_ptr callback, int update_mode);
+        bool check_fw_compatibility(const std::vector<uint8_t>& image) const override;
 
         ivcam2::extended_temperatures get_temperatures() const;
 
@@ -79,6 +80,7 @@ namespace librealsense
 
         std::shared_ptr<hw_monitor> _hw_monitor;
         uint8_t _depth_device_idx;
+        uint16_t _pid;
 
         std::shared_ptr<polling_error_handler> _polling_error_handler;
 

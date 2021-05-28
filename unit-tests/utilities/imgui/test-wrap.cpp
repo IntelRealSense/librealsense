@@ -1,13 +1,11 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2020 Intel Corporation. All Rights Reserved.
 
-//#cmake:add-file ../../../common/utilities/imgui/wrap.h
 //#cmake:add-file ../../../common/utilities/imgui/wrap.cpp
-//#cmake:add-file ../../../third-party/imgui/imgui.h
 
 #include "common.h"
-#include "../../../common/utilities/imgui/wrap.h"
-#include "../../../third-party/imgui/imgui.h"
+#include <common/utilities/imgui/wrap.h>
+#include <third-party/imgui/imgui.h>
 
 namespace ImGui {
 // Mock ImGui function for test

@@ -5,7 +5,6 @@
 #include "updates-model.h"
 #include "model-views.h"
 #include "os.h"
-#include "res/l515-icon.h"
 #include <stb_image.h>
 #include "sw-update/http-downloader.h"
 
@@ -20,18 +19,6 @@ void updates_model::draw(std::shared_ptr<notifications_model> not_model, ux_wind
     {
         std::lock_guard<std::mutex> lock(_lock);
         updates_copy = _updates;
-    }
-
-    // Prepare camera icon
-    if (!_icon)
-    {
-        _icon = std::make_shared<rs2::texture_buffer>();
-        int x, y, comp;
-        auto data = stbi_load_from_memory(camera_icon_l515_png_data, camera_icon_l515_png_size, &x, &y, &comp, 4);
-        _icon->upload_image(x, y, data);
-        stbi_image_free(data);
-
-        _progress.last_progress_time = std::chrono::system_clock::now();
     }
 
     const auto window_name = "Updates Window";
@@ -76,53 +63,10 @@ void updates_model::draw(std::shared_ptr<notifications_model> not_model, ux_wind
         positions.orig_pos = ImGui::GetCursorScreenPos();
         positions.mid_y = (positions.orig_pos.y + positions.y0 + positions.h - 30) / 2;
 
-        ImGui::GetWindowDrawList()->AddRectFilled({ positions.orig_pos.x + 140.f, positions.orig_pos.y },
+        ImGui::GetWindowDrawList()->AddRectFilled({ positions.orig_pos.x, positions.orig_pos.y },
             { positions.x0 + positions.w - 5, positions.y0 + positions.h - 30 }, ImColor(header_color));
-        ImGui::GetWindowDrawList()->AddLine({ positions.orig_pos.x + 145.f, positions.mid_y },
+        ImGui::GetWindowDrawList()->AddLine({ positions.orig_pos.x, positions.mid_y },
             { positions.x0 + positions.w - 10, positions.mid_y }, ImColor(sensor_bg));
-
-        // ===========================================================================
-        // Draw Left Pane
-        // ===========================================================================
-
-        for (int i = 0; i < static_cast<int>(updates_copy.size()); i++)
-        {
-            auto& update = updates_copy[i];
-
-            if (ImGui::GetCursorPosY() + 150 > positions.h) break;
-
-            auto pos = ImGui::GetCursorScreenPos();
-
-            if (i == selected_index)
-            {
-                ImGui::GetWindowDrawList()->AddRectFilled(pos,
-                    { pos.x + 140.f, pos.y + 185.f }, ImColor(header_color));
-            }
-
-            ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5);
-            ImGui::SetCursorPosX(ImGui::GetCursorPosX() + 4);
-
-            ImGui::Image((void*)(intptr_t)(_icon->get_gl_handle()), ImVec2{ 128.f, 114.f });
-
-            ImGui::SetCursorPosX(ImGui::GetCursorPosX() + 4);
-            ImGui::PushTextWrapPos(ImGui::GetCursorPosX() + 140);
-            ImGui::PushStyleColor(ImGuiCol_Border, transparent);
-            ImGui::PushStyleColor(ImGuiCol_FrameBg, transparent);
-            ImGui::PushStyleColor(ImGuiCol_ScrollbarBg, transparent);
-            ImGui::PushStyleColor(ImGuiCol_ScrollbarGrab, transparent);
-            ImGui::PushStyleColor(ImGuiCol_ScrollbarGrabActive, transparent);
-            ImGui::PushStyleColor(ImGuiCol_ScrollbarGrabHovered, transparent);
-            ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, regular_blue);
-
-            std::string limited_name = update.profile.device_name.substr(0, 40);
-            ImGui::Text("%s", limited_name.c_str());
-            ImGui::PopStyleColor(7);
-            ImGui::PopTextWrapPos();
-
-            auto sn_size = ImGui::CalcTextSize(update.profile.serial_number.c_str());
-            ImGui::SetCursorPosX(ImGui::GetCursorPosX() + 70 - sn_size.x / 2);
-            ImGui::Text("%s", update.profile.serial_number.c_str());
-        }
 
         auto& update = updates_copy[selected_index];
 
@@ -168,7 +112,7 @@ void updates_model::draw(std::shared_ptr<notifications_model> not_model, ux_wind
 
         if (!no_update_needed)
         {
-            ImGui::SetCursorPos({ 145, positions.h - 25 });
+            ImGui::SetCursorPos({ 5, positions.h - 25 });
             if (emphasize_dismiss_text)
             {
                 ImGui::PushStyleColor(ImGuiCol_Text, light_red);
@@ -295,7 +239,7 @@ bool updates_model::draw_software_section(const char * window_name, update_profi
             }
         }
 
-        ImVec2 sw_text_pos(pos.orig_pos.x + 150, pos.orig_pos.y + 10);
+        ImVec2 sw_text_pos(pos.orig_pos.x + 10, pos.orig_pos.y + 10);
         ImGui::SetCursorScreenPos(sw_text_pos);
 
         ImGui::PushFont(window.get_large_font());
@@ -485,7 +429,7 @@ bool updates_model::draw_software_section(const char * window_name, update_profi
             }
 
             ImGui::PopStyleColor(3);
-            ImGui::SetCursorScreenPos({ pos.orig_pos.x + 150,  pos.mid_y - 25 });
+            ImGui::SetCursorScreenPos({ pos.orig_pos.x + 10,  pos.mid_y - 25 });
             ImGui::Text("%s", "Visit the release page before download to identify the most suitable package.");
         }
 
@@ -556,7 +500,7 @@ bool updates_model::draw_firmware_section(std::shared_ptr<notifications_model> n
 
     }
 
-    ImVec2 fw_text_pos(pos.orig_pos.x + 150, pos.mid_y + 15);
+    ImVec2 fw_text_pos(pos.orig_pos.x + 10, pos.mid_y + 15);
     ImGui::SetCursorScreenPos(fw_text_pos);
 
     ImGui::PushFont(window.get_large_font());
@@ -598,7 +542,17 @@ bool updates_model::draw_firmware_section(std::shared_ptr<notifications_model> n
     ImGui::PopStyleColor();
     ImGui::Text("%s", "Signed Firmware Image (.bin file)");
 
-    fw_text_pos.y += 50;
+    fw_text_pos.y += 25;
+    ImGui::SetCursorScreenPos(fw_text_pos);
+    ImGui::PushStyleColor(ImGuiCol_Text, white);
+    ImGui::Text("%s", "Device detected: ");
+    ImGui::PopStyleColor();
+    ImGui::SameLine();
+    ImGui::Text("%s", selected_profile.profile.device_name.c_str());
+    ImGui::SameLine();
+    ImGui::Text(", SN: %s", selected_profile.profile.serial_number.c_str());
+
+    fw_text_pos.y += 25;
     ImGui::SetCursorScreenPos(fw_text_pos);
     ImGui::PushStyleColor(ImGuiCol_Text, white);
     ImGui::Text("%s", "Current FW version:");
@@ -746,6 +700,7 @@ bool updates_model::draw_firmware_section(std::shared_ptr<notifications_model> n
             download_thread.detach();
 
             _fw_update_state = fw_update_states::downloading;
+            _progress.last_progress_time = std::chrono::system_clock::now();
         }
         if (ImGui::IsItemHovered())
         {

@@ -340,7 +340,18 @@ int main(int argc, char** argv) try
         }
         else
         {
-            d.as<rs2::updatable>().enter_update_state();
+            auto upd = d.as<rs2::updatable>();
+            // checking compatibility bewtween firmware and device
+            if (!upd.check_firmware_compatibility(fw_image))
+            {
+                std::stringstream ss;
+                ss << "This firmware version is not compatible with ";
+                ss << d.get_info(RS2_CAMERA_INFO_NAME) << std::endl;
+                std::cout << std::endl << ss.str() << std::endl;
+                return EXIT_FAILURE;
+            }
+
+            upd.enter_update_state();
 
             std::unique_lock<std::mutex> lk(mutex);
             if (!cv.wait_for(lk, std::chrono::seconds(WAIT_FOR_DEVICE_TIMEOUT), [&] { return new_fw_update_device; }))

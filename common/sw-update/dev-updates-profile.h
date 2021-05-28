@@ -56,11 +56,11 @@ namespace rs2
 
             ~dev_updates_profile() {};
 
-            bool retrieve_updates(component_part_type comp);
+            bool retrieve_updates(component_part_type comp, bool& fail_access_db);
             update_profile & get_update_profile() { return _update_profile; };
 
         private:
-            bool try_parse_update(versions_db_manager& up_handler,
+            query_status_type try_parse_update(versions_db_manager& up_handler,
                 const std::string& dev_name,
                 update_policy_type policy,
                 component_part_type part,

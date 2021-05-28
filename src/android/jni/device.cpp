@@ -115,6 +115,17 @@ Java_com_intel_realsense_librealsense_Updatable_nCreateFlashBackup(JNIEnv *env, 
 }
 
 extern "C"
+JNIEXPORT jboolean JNICALL
+Java_com_intel_realsense_librealsense_Updatable_nCheckFirmwareCompatibility(JNIEnv *env, jobject instance,
+                                                                            jlong handle, jbyteArray image) {
+    rs2_error *e = NULL;
+    auto length = env->GetArrayLength(image);
+    int rv = rs2_check_firmware_compatibility(reinterpret_cast<const rs2_device *>(handle), image, length, &e);
+    handle_error(env, e);
+    return rv > 0;
+}
+
+extern "C"
 JNIEXPORT void JNICALL
 Java_com_intel_realsense_librealsense_UpdateDevice_nUpdateFirmware(JNIEnv *env, jobject instance,
                                                                    jlong handle,

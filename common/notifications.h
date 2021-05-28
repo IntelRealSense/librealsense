@@ -94,6 +94,7 @@ namespace rs2
 
         bool is_delayed() const;
         void delay(int days);
+        void reset_delay();
 
         float last_x, last_y;
         bool animating = false;
@@ -206,9 +207,9 @@ namespace rs2
 
         notifications_model() {}
 
-        void add_log(std::string message)
+        void add_log(std::string message, rs2_log_severity severity = RS2_LOG_SEVERITY_INFO )
         {
-            output.add_log(RS2_LOG_SEVERITY_INFO, "", 0, message);
+            output.add_log(severity, "", 0, message);
         }
 
         output_model output;
@@ -230,7 +231,6 @@ namespace rs2
         void draw_content(
             ux_window & win, int x, int y, float t, std::string & error_message ) override;
         int calc_height() override { return 150; }
-        int get_max_lifetime_ms() const override { return 10000; }
         const std::string _current_version;
         const std::string _recommended_version;
         const std::string _recommended_version_link;
@@ -245,6 +245,16 @@ namespace rs2
     {
         return{ v.x, v.y, v.z, a };
     }
+
+    struct sw_update_up_to_date_model : public notification_model
+    {
+        sw_update_up_to_date_model();
+
+        void set_color_scheme(float t) const override;
+        void draw_content(
+            ux_window& win, int x, int y, float t, std::string& error_message) override;
+        int calc_height() override { return 65; }
+    };    
 
     class export_manager : public process_manager
     {

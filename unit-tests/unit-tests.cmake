@@ -16,4 +16,4 @@ else()
 endif()
 
 include(algo/CMakeLists.txt)
-include(func/CMakeLists.txt)
+include(live/CMakeLists.txt)

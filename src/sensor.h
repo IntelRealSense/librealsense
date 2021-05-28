@@ -89,6 +89,8 @@ namespace librealsense
         void raise_on_before_streaming_changes(bool streaming);
         void set_active_streams(const stream_profiles& requests);
 
+        void register_profile(std::shared_ptr<stream_profile_interface> target) const;
+
         void assign_stream(const std::shared_ptr<stream_interface>& stream,
                            std::shared_ptr<stream_profile_interface> target) const;
 
