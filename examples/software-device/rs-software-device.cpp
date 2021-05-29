@@ -113,6 +113,8 @@ private:
 
 int main(int argc, char * argv[]) try
 {
+    //rs2::log_to_console( RS2_LOG_SEVERITY_DEBUG );
+
     window app(1280, 1500, "RealSense Capture Example");
     glfw_state app_state;
     register_glfw_callbacks(app, app_state);
@@ -149,7 +151,7 @@ int main(int argc, char * argv[]) try
                                 texture.y, 60, texture.bpp,
                                 RS2_FORMAT_RGBA8, color_intrinsics });
 
-    dev.create_matcher(RS2_MATCHER_DLR_C);
+    dev.create_matcher( RS2_MATCHER_DEFAULT );  // Compare all streams according to timestamp
     rs2::syncer sync;
 
     depth_sensor.open(depth_stream);
