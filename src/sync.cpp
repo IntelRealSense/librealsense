@@ -144,7 +144,7 @@ namespace librealsense
         }
         else
         {
-            LOG_ERROR( "didn't find any matcher; frame will not be synchronized" );
+            LOG_ERROR( "didn't find any matcher; releasing unsynchronized frame " << *f.frame );
             _callback(std::move(f), env);
         }
         
@@ -399,6 +399,8 @@ namespace librealsense
                     match.push_back(std::move(frame));
                 }
 
+                // The frameset should always be with the same order of streams (the first stream carries extra
+                // meaning because it decides the frameset properties) -- so we sort them...
                 std::sort( match.begin(),
                            match.end(),
                            []( const frame_holder & f1, const frame_holder & f2 ) {
@@ -442,7 +444,10 @@ namespace librealsense
         std::vector<stream_id> inactive_matchers;
         for(auto m: _matchers)
         {
-            if (_last_arrived[m.second.get()] && (fabs((long long)f->get_frame_number() - (long long)_last_arrived[m.second.get()])) > 5)
+            if( _last_arrived[m.second.get()]
+                && ( fabs( (long long)f->get_frame_number()
+                           - (long long)_last_arrived[m.second.get()] ) )
+                       > 5 )
             {
                 std::stringstream s;
                 s << "clean inactive stream in "<<_name;
@@ -534,11 +539,12 @@ namespace librealsense
     {
         if(f->supports_frame_metadata(RS2_FRAME_METADATA_ACTUAL_FPS))
             _fps[m] = (uint32_t)f->get_frame_metadata(RS2_FRAME_METADATA_ACTUAL_FPS);
-
         else
             _fps[m] = f->get_stream()->get_framerate();
 
-        _last_arrived[m] = environment::get_instance().get_time_service()->get_time();
+        auto const now = environment::get_instance().get_time_service()->get_time();
+        //LOG_DEBUG( _name << ": _last_arrived[" << m->get_name() << "] = " << now );
+        _last_arrived[m] = now;
     }
 
     unsigned int timestamp_composite_matcher::get_fps(const frame_holder & f)
@@ -576,28 +582,44 @@ namespace librealsense
 
     void timestamp_composite_matcher::clean_inactive_streams(frame_holder& f)
     {
-        if (f.is_blocking())
+        if( f.is_blocking() )
             return;
-        auto now = environment::get_instance().get_time_service()->get_time();
+
+        // NOTE:
+        // The following uses the WALL clock to mark streams as "inactive". So, for example,
+        // in this case ...
+        //       [Color/1 #0 @  0.000000] arrive at T-100 ms
+        //       [Color/1 #1 @ 16.666667] arrive at T-0   ms
+        // ... the big delay (100 ms) between frames is taken to mean that the stream was
+        // deactivated -- even when we can see from the actual frames that it was not (at 60
+        // fps, we can expect sequential frames to arrive with ~16 ms in between them).
+        // It is unclear why this was implemented in this fashion...
+        // 
+        // When a stream is marked as inactive its queue is also cleared. This means frames
+        // are lost! Again, unclear why: it shouldn't be the syncer's job to decide to throw
+        // away frames...
+        //
+        auto const now = environment::get_instance().get_time_service()->get_time();
         for(auto m: _matchers)
         {
             auto const p_matcher = m.second.get();
             auto const it = _last_arrived.find( p_matcher );
             if( it == _last_arrived.end() )
                 continue;
+            auto const elapsed = now - it->second;
 
             auto const fps_it = _fps.find( p_matcher );
             auto const threshold = (fps_it != _fps.end()) ? (1000 / fps_it->second) * 5 : 500; 
             // If frame of a specific stream didn't arrive for time equivalence to 5 frames duration
             // this stream will be marked as "not active" in order to not stack the other streams
-            if( ( now - it->second ) > threshold )
+            if( elapsed > threshold )
             {
                 std::stringstream s;
-                s << "more (" << ( now - it->second ) << ") than " << threshold
+                s << _name << ": more (" << elapsed << ") than " << threshold
                   << " ms since last frame (@" << std::fixed << it->second << "); cleaning up "
                   << p_matcher->get_name();
-                for( auto stream : p_matcher->get_streams_types() )
-                    s << ' ' << stream;
+                //for( auto stream : p_matcher->get_streams_types() )
+                //    s << ' ' << stream;
                 LOG_DEBUG( s.str() );
 
                 auto const q_it = _frames_queue.find( p_matcher );
