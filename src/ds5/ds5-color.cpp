@@ -41,15 +41,6 @@ namespace librealsense
         using namespace ds;
         auto&& backend = ctx->get_backend();
 
-        _color_calib_table_raw = [this]()
-        {
-            return get_raw_calibration_table(rgb_calibration_id);
-        };
-
-        _color_extrinsic = std::make_shared<lazy<rs2_extrinsics>>([this]() { return from_pose(get_color_stream_extrinsic(*_color_calib_table_raw)); });
-        environment::get_instance().get_extrinsics_graph().register_extrinsics(*_color_stream, *_depth_stream, _color_extrinsic);
-        register_stream_to_extrinsic_group(*_color_stream, 0);
-
         std::vector<platform::uvc_device_info> color_devs_info;
         // end point 3 is used for color sensor
         // except for D405, in which the color is part of the depth unit
@@ -131,8 +122,17 @@ namespace librealsense
                 { 2.f, "60Hz" },
                 { 3.f, "Auto" }, }));
 
+        
         if (_separate_color)
         {
+            _color_calib_table_raw = [this]()
+            {
+                return get_raw_calibration_table(ds::rgb_calibration_id);
+            };
+            _color_extrinsic = std::make_shared<lazy<rs2_extrinsics>>([this]() { return from_pose(ds::get_color_stream_extrinsic(*_color_calib_table_raw)); });
+            environment::get_instance().get_extrinsics_graph().register_extrinsics(*_color_stream, *_depth_stream, _color_extrinsic);
+
+            register_stream_to_extrinsic_group(*_color_stream, 0);
             // Currently disabled for certain sensors
             if (!val_in_range(_pid, { ds::RS465_PID }))
             {
@@ -184,6 +184,9 @@ namespace librealsense
         }
         else
         {
+            environment::get_instance().get_extrinsics_graph().register_same_extrinsics(*_color_stream, *_depth_stream);
+            register_stream_to_extrinsic_group(*_color_stream, 0);
+
             // attributes of md_rgb_control
             auto md_prop_offset = offsetof(metadata_raw, mode) +
                 offsetof(md_rgb_mode, rgb_mode) +
