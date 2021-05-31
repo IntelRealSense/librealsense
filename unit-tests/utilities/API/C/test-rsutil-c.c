@@ -2,6 +2,7 @@
 // Copyright(c) 2021 Intel Corporation. All Rights Reserved.
 
 #include <librealsense2/rsutil.h>
+#include <stdio.h>
 
 #ifdef __cplusplus
 extern "C" {
