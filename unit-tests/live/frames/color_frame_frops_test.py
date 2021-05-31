@@ -2,6 +2,8 @@
 # Copyright(c) 2021 Intel Corporation. All Rights Reserved.
 
 #test:device D400*
+#test:device L500*
+#test:device SR300*
 #test:donotrun:!nightly
 
 import logging
@@ -19,7 +21,8 @@ _format = rs.format.rgb8
 ctx = rs.context()
 dev = ctx.query_devices()[0]  # type: rs.device
 color_sensor = dev.first_color_sensor()  # type: rs.sensor
-color_sensor.set_option(rs.option.auto_exposure_priority, 0)
+if color_sensor.supports(rs.option.auto_exposure_priority):
+    color_sensor.set_option(rs.option.auto_exposure_priority, 0)
 
 hw_ts = []
 
