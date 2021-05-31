@@ -208,6 +208,14 @@ namespace librealsense
             double system_time_start = duration<double, std::milli>(system_clock::now().time_since_epoch()).count();
             double sample_hw_time = _device->get_device_time_ms();
             double system_time_finish = duration<double, std::milli>(system_clock::now().time_since_epoch()).count();
+            if (system_time_finish - system_time_start > IMMEDIATE_RETRY_PERIOD_MILLISECONDS) {
+                // The response took longer to receive than retry_controls_work_around's IMMEDIATE_RETRY_PERIOD_MILLISECONDS.
+                // This means that system_time_finish is very likely an inaccurate measurement of the time point at which the
+                // device actually responded to the command, because retry_controls_work_around did a sleep() before obtaining it.
+                // We thus skip this sample.
+                LOG_DEBUG("Temporary skip during time_diff_keeper polling: Delayed USB response");
+                return false;
+            }
             double command_delay = (system_time_finish-system_time_start)/2;
 
             std::lock_guard<std::recursive_mutex> lock(_read_mtx);

@@ -27,13 +27,14 @@
 #include <fstream>
 
 
-const uint16_t MAX_RETRIES                 = 100;
-const uint8_t  DEFAULT_V4L2_FRAME_BUFFERS  = 4;
-const uint16_t DELAY_FOR_RETRIES           = 50;
-const int      POLLING_DEVICES_INTERVAL_MS = 5000;
+const uint16_t MAX_RETRIES                         = 500;
+const uint8_t  DEFAULT_V4L2_FRAME_BUFFERS          = 4;
+const uint16_t DELAY_FOR_RETRIES                   = 10;
+const int      POLLING_DEVICES_INTERVAL_MS         = 5000;
+const float    IMMEDIATE_RETRY_PERIOD_MILLISECONDS = 2;
 
-const uint8_t MAX_META_DATA_SIZE          = 0xff; // UVC Metadata total length
-                                            // is limited by (UVC Bulk) design to 255 bytes
+const uint8_t MAX_META_DATA_SIZE                   = 0xff; // UVC Metadata total length
+                                                           // is limited by (UVC Bulk) design to 255 bytes
 
 namespace librealsense
 {
@@ -427,26 +428,18 @@ namespace librealsense
 
             bool set_xu(const extension_unit& xu, uint8_t ctrl, const uint8_t* data, int len) override
             {
-                for (auto i = 0; i < MAX_RETRIES; ++i)
+                return retry([&]()
                 {
-                    if (_dev->set_xu(xu, ctrl, data, len))
-                        return true;
-
-                    std::this_thread::sleep_for(std::chrono::milliseconds(DELAY_FOR_RETRIES));
-                }
-                return false;
+                    return _dev->set_xu(xu, ctrl, data, len);
+                });
             }
 
             bool get_xu(const extension_unit& xu, uint8_t ctrl, uint8_t* data, int len) const override
             {
-                for (auto i = 0; i < MAX_RETRIES; ++i)
+                return retry([&]()
                 {
-                    if (_dev->get_xu(xu, ctrl, data, len))
-                        return true;
-
-                    std::this_thread::sleep_for(std::chrono::milliseconds(DELAY_FOR_RETRIES));
-                }
-                return false;
+                    return _dev->get_xu(xu, ctrl, data, len);
+                });
             }
 
             control_range get_xu_range(const extension_unit& xu, uint8_t ctrl, int len) const override
@@ -456,26 +449,18 @@ namespace librealsense
 
             bool get_pu(rs2_option opt, int32_t& value) const override
             {
-                for (auto i = 0; i < MAX_RETRIES; ++i)
+                return retry([&]()
                 {
-                    if (_dev->get_pu(opt, value))
-                        return true;
-
-                    std::this_thread::sleep_for(std::chrono::milliseconds(DELAY_FOR_RETRIES));
-                }
-                return false;
+                    return _dev->get_pu(opt, value);
+                });
             }
 
             bool set_pu(rs2_option opt, int32_t value) override
             {
-                for (auto i = 0; i < MAX_RETRIES; ++i)
+                return retry([&]()
                 {
-                    if (_dev->set_pu(opt, value))
-                        return true;
-
-                    std::this_thread::sleep_for(std::chrono::milliseconds(DELAY_FOR_RETRIES));
-                }
-                return false;
+                    return _dev->set_pu(opt, value);
+                });
             }
 
             control_range get_pu_range(rs2_option opt) const override
@@ -502,6 +487,32 @@ namespace librealsense
             void unlock() const override { _dev->unlock(); }
 
         private:
+            template <typename Func>
+            inline bool retry(const Func& func) const
+            {
+                std::chrono::steady_clock::time_point start_time = std::chrono::steady_clock::now();
+
+                // Retry immediately within the first IMMEDIATE_RETRY_PERIOD_MILLISECONDS, or at least 3 times
+                int try_count = 0;
+                do {
+                    if (func())
+                        return true;
+                    ++ try_count;
+                } while (try_count < 3 || std::chrono::duration<float, std::milli>(std::chrono::steady_clock::now() - start_time).count() < IMMEDIATE_RETRY_PERIOD_MILLISECONDS);
+
+                // It seems that we may have to wait longer for the response, so retry with a delay
+                // now to prevent stressing the CPU too much
+                for (auto i = 0; i < MAX_RETRIES; ++i)
+                {
+                    std::this_thread::sleep_for(std::chrono::milliseconds(DELAY_FOR_RETRIES));
+
+                    if (func())
+                        return true;
+                }
+
+                return false;
+            }
+
             std::shared_ptr<uvc_device> _dev;
         };
 
