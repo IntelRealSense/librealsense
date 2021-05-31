@@ -409,7 +409,4 @@ EXPORTS
     rs2_deproject_pixel_to_point
     rs2_transform_point_to_point
     rs2_fov
-    next_pixel_in_line
-    is_pixel_in_line
-    adjust_2D_point_to_boundary
     rs2_project_color_pixel_to_depth_pixel
