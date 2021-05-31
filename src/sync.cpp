@@ -304,7 +304,7 @@ namespace librealsense
         std::vector<librealsense::matcher*> synced_frames;
         std::vector<librealsense::matcher*> missing_streams;
 
-        do
+        while( true )
         {
             missing_streams.clear();
             frames_arrived_matchers.clear();
@@ -381,42 +381,41 @@ namespace librealsense
                                    << matchers_to_string( missing_streams ),
                                env );
             }
-            if( release_synced_frames )
+            if( ! release_synced_frames )
+                break;
+
+            std::vector<frame_holder> match;
+            match.reserve(synced_frames.size());
+
+            for (auto index : synced_frames)
             {
-                std::vector<frame_holder> match;
-                match.reserve(synced_frames.size());
-
-                for (auto index : synced_frames)
+                frame_holder frame;
+                int timeout_ms = 5000;
+                _frames_queue[index].dequeue(&frame, timeout_ms);
+                if (old_frames)
                 {
-                    frame_holder frame;
-                    int timeout_ms = 5000;
-                    _frames_queue[index].dequeue(&frame, timeout_ms);
-                    if (old_frames)
-                    {
-                        LOG_IF_ENABLE("--> " << frame_holder_to_string(frame), env);
-                    }
-                    match.push_back(std::move(frame));
+                    LOG_IF_ENABLE("--> " << frame_holder_to_string(frame), env);
                 }
+                match.push_back(std::move(frame));
+            }
 
-                // The frameset should always be with the same order of streams (the first stream carries extra
-                // meaning because it decides the frameset properties) -- so we sort them...
-                std::sort( match.begin(),
-                           match.end(),
-                           []( const frame_holder & f1, const frame_holder & f2 ) {
-                               return ( (frame_interface *)f1 )->get_stream()->get_unique_id()
-                                    > ( (frame_interface *)f2 )->get_stream()->get_unique_id();
-                           } );
+            // The frameset should always be with the same order of streams (the first stream carries extra
+            // meaning because it decides the frameset properties) -- so we sort them...
+            std::sort( match.begin(),
+                        match.end(),
+                        []( const frame_holder & f1, const frame_holder & f2 ) {
+                            return ( (frame_interface *)f1 )->get_stream()->get_unique_id()
+                                > ( (frame_interface *)f2 )->get_stream()->get_unique_id();
+                        } );
 
 
-                frame_holder composite = env.source->allocate_composite_frame(std::move(match));
-                if (composite.frame)
-                {
-                    auto cb = begin_callback();
-                    _callback(std::move(composite), env);
-                }
+            frame_holder composite = env.source->allocate_composite_frame(std::move(match));
+            if (composite.frame)
+            {
+                auto cb = begin_callback();
+                _callback(std::move(composite), env);
             }
         }
-        while( ! synced_frames.empty() );
     }
 
     frame_number_composite_matcher::frame_number_composite_matcher(
