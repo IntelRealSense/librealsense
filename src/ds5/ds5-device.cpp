@@ -973,24 +973,26 @@ namespace librealsense
         {
             depth_sensor.register_option(RS2_OPTION_EMITTER_ON_OFF, std::make_shared<emitter_on_and_off_option>(*_hw_monitor, &raw_depth_sensor));
         }
-     
-        if (_fw_version >= firmware_version("5.12.12.100") && (_device_capabilities & d400_caps::CAP_GLOBAL_SHUTTER) == d400_caps::CAP_GLOBAL_SHUTTER)
+
+        if (_pid != ds::RS405_PID)
         {
-            depth_sensor.register_option(RS2_OPTION_INTER_CAM_SYNC_MODE,
-                std::make_shared<external_sync_mode>(*_hw_monitor, &raw_depth_sensor, 3));
-        }
-        else if (_fw_version >= firmware_version("5.12.4.0") && (_device_capabilities & d400_caps::CAP_GLOBAL_SHUTTER) == d400_caps::CAP_GLOBAL_SHUTTER)
-        {
-            depth_sensor.register_option(RS2_OPTION_INTER_CAM_SYNC_MODE,
-                std::make_shared<external_sync_mode>(*_hw_monitor, &raw_depth_sensor, 2));
-        }
-        else if (_fw_version >= firmware_version("5.9.15.1"))
-        {
-            depth_sensor.register_option(RS2_OPTION_INTER_CAM_SYNC_MODE,
-                std::make_shared<external_sync_mode>(*_hw_monitor, &raw_depth_sensor, 1));
+            if (_fw_version >= firmware_version("5.12.12.100") && (_device_capabilities & d400_caps::CAP_GLOBAL_SHUTTER) == d400_caps::CAP_GLOBAL_SHUTTER)
+            {
+                depth_sensor.register_option(RS2_OPTION_INTER_CAM_SYNC_MODE,
+                    std::make_shared<external_sync_mode>(*_hw_monitor, &raw_depth_sensor, 3));
+            }
+            else if (_fw_version >= firmware_version("5.12.4.0") && (_device_capabilities & d400_caps::CAP_GLOBAL_SHUTTER) == d400_caps::CAP_GLOBAL_SHUTTER)
+            {
+                depth_sensor.register_option(RS2_OPTION_INTER_CAM_SYNC_MODE,
+                    std::make_shared<external_sync_mode>(*_hw_monitor, &raw_depth_sensor, 2));
+            }
+            else if (_fw_version >= firmware_version("5.9.15.1"))
+            {
+                depth_sensor.register_option(RS2_OPTION_INTER_CAM_SYNC_MODE,
+                    std::make_shared<external_sync_mode>(*_hw_monitor, &raw_depth_sensor, 1));
+            }
         }
 
-        
         roi_sensor_interface* roi_sensor = dynamic_cast<roi_sensor_interface*>(&depth_sensor);
         if (roi_sensor)
             roi_sensor->set_roi_method(std::make_shared<ds5_auto_exposure_roi_method>(*_hw_monitor));
