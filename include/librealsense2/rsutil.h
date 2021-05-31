@@ -19,6 +19,38 @@ extern "C" {
 #include <math.h>
 #include <float.h>
 
+/* Helper inner function (not part of the API) */
+inline void next_pixel_in_line(float curr[2], const float start[2], const float end[2])
+{
+    float line_slope = (end[1] - start[1]) / (end[0] - start[0]);
+    if (fabs(end[0] - curr[0]) > fabs(end[1] - curr[1]))
+    {
+        curr[0] = end[0] > curr[0] ? curr[0] + 1 : curr[0] - 1;
+        curr[1] = end[1] - line_slope * (end[0] - curr[0]);
+    }
+    else
+    {
+        curr[1] = end[1] > curr[1] ? curr[1] + 1 : curr[1] - 1;
+        curr[0] = end[0] - ((end[1] + curr[1]) / line_slope);
+    }
+}
+
+/* Helper inner function (not part of the API) */
+inline bool is_pixel_in_line(const float curr[2], const float start[2], const float end[2])
+{
+    return ((end[0] >= start[0] && end[0] >= curr[0] && curr[0] >= start[0]) || (end[0] <= start[0] && end[0] <= curr[0] && curr[0] <= start[0])) &&
+        ((end[1] >= start[1] && end[1] >= curr[1] && curr[1] >= start[1]) || (end[1] <= start[1] && end[1] <= curr[1] && curr[1] <= start[1]));
+}
+
+/* Helper inner function (not part of the API) */
+inline void adjust_2D_point_to_boundary(float p[2], int width, int height)
+{
+    if (p[0] < 0) p[0] = 0;
+    if (p[0] > width) p[0] = (float)width;
+    if (p[1] < 0) p[1] = 0;
+    if (p[1] > height) p[1] = (float)height;
+}
+
 
 /* Given a point in 3D space, compute the corresponding pixel coordinates in an image with no distortion or forward distortion coefficients produced by the same camera */
 void rs2_project_point_to_pixel(float pixel[2], const struct rs2_intrinsics* intrin, const float point[3]);
@@ -32,12 +64,6 @@ void rs2_transform_point_to_point(float to_point[3], const struct rs2_extrinsics
 /* Calculate horizontal and vertical feild of view, based on video intrinsics */
 void rs2_fov(const struct rs2_intrinsics* intrin, float to_fov[2]);
 
-void next_pixel_in_line(float curr[2], const float start[2], const float end[2]);
-
-bool is_pixel_in_line(const float curr[2], const float start[2], const float end[2]);
-
-void adjust_2D_point_to_boundary(float p[2], int width, int height);
-
 /* Find projected pixel with unknown depth search along line. */
 void rs2_project_color_pixel_to_depth_pixel(float to_pixel[2],
     const uint16_t* data, float depth_scale,
@@ -47,6 +73,7 @@ void rs2_project_color_pixel_to_depth_pixel(float to_pixel[2],
     const struct rs2_extrinsics* color_to_depth,
     const struct rs2_extrinsics* depth_to_color,
     const float from_pixel[2]);
+
 
 #ifdef __cplusplus
 }

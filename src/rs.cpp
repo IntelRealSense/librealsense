@@ -3596,38 +3596,6 @@ void rs2_fov(const struct rs2_intrinsics* intrin, float to_fov[2]) BEGIN_API_CAL
 }
 NOEXCEPT_RETURN(, intrin)
 
-void next_pixel_in_line(float curr[2], const float start[2], const float end[2]) BEGIN_API_CALL
-{
-    float line_slope = (end[1] - start[1]) / (end[0] - start[0]);
-    if (fabs(end[0] - curr[0]) > fabs(end[1] - curr[1]))
-    {
-        curr[0] = end[0] > curr[0] ? curr[0] + 1 : curr[0] - 1;
-        curr[1] = end[1] - line_slope * (end[0] - curr[0]);
-    }
-    else
-    {
-        curr[1] = end[1] > curr[1] ? curr[1] + 1 : curr[1] - 1;
-        curr[0] = end[0] - ((end[1] + curr[1]) / line_slope);
-    }
-}
-NOEXCEPT_RETURN(, curr, start, end)
-
-bool is_pixel_in_line(const float curr[2], const float start[2], const float end[2]) BEGIN_API_CALL
-{
-    return ((end[0] >= start[0] && end[0] >= curr[0] && curr[0] >= start[0]) || (end[0] <= start[0] && end[0] <= curr[0] && curr[0] <= start[0])) &&
-        ((end[1] >= start[1] && end[1] >= curr[1] && curr[1] >= start[1]) || (end[1] <= start[1] && end[1] <= curr[1] && curr[1] <= start[1]));
-}
-NOEXCEPT_RETURN(true, curr, start, end)
-
-void adjust_2D_point_to_boundary(float p[2], int width, int height) BEGIN_API_CALL
-{
-    if (p[0] < 0) p[0] = 0;
-    if (p[0] > width) p[0] = (float)width;
-    if (p[1] < 0) p[1] = 0;
-    if (p[1] > height) p[1] = (float)height;
-}
-NOEXCEPT_RETURN(, p)
-
 void rs2_project_color_pixel_to_depth_pixel(float to_pixel[2],
     const uint16_t* data, float depth_scale,
     float depth_min, float depth_max,
