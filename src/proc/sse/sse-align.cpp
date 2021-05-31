@@ -435,6 +435,8 @@ void align_sse::align_other_to_z(rs2::video_frame& aligned, const rs2::video_fra
 
     auto z_intrin = depth_profile.get_intrinsics();
     auto other_intrin = other_profile.get_intrinsics();
+    static int val = 0;
+    other_intrin.ppx += val;
     auto z_to_other = depth_profile.get_extrinsics_to(other_profile);
 
     auto z_pixels = reinterpret_cast<const uint16_t*>(depth.get_data());
