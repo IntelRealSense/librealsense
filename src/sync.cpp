@@ -357,7 +357,7 @@ namespace librealsense
                     old_frames = true;
                 }
             }
-
+            bool release_synced_frames = ( synced_frames.size() != 0 );
             if (!old_frames)
             {
                 // Everything (could be only one!) matches together... but if we also have something missing, we can't
@@ -372,8 +372,7 @@ namespace librealsense
                     }
 
                     LOG_IF_ENABLE( "...     waiting for it", env );
-                    synced_frames.clear();
-                    //break;
+                    release_synced_frames = false;
                 }
             }
             else
@@ -382,7 +381,7 @@ namespace librealsense
                                    << matchers_to_string( missing_streams ),
                                env );
             }
-            if (synced_frames.size())
+            if( release_synced_frames )
             {
                 std::vector<frame_holder> match;
                 match.reserve(synced_frames.size());
