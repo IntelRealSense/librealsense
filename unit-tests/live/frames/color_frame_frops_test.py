@@ -1,14 +1,16 @@
-from __future__ import division
+# License: Apache 2.0. See LICENSE file in root directory.
+# Copyright(c) 2021 Intel Corporation. All Rights Reserved.
+
+#test:device D400*
+#test:donotrun:!nightly
+
 import logging
 import time
-
 import pyrealsense2 as rs
-
 from lrs_frame_queue_manager import LRSFrameQueueManager
 
 logging.basicConfig(level=logging.INFO)
 
-# iterations, sleep = int(sys.argv[1]), int(sys.argv[2])
 iterations, sleep = 4, 10
 fps = 60
 width, height = 640, 480
@@ -21,11 +23,9 @@ color_sensor.set_option(rs.option.auto_exposure_priority, 0)
 
 hw_ts = []
 
-
 def cb(frame, ts):
     global hw_ts
     hw_ts.append(frame.get_frame_metadata(rs.frame_metadata_value.frame_timestamp))
-
 
 lrs_fq = LRSFrameQueueManager()
 lrs_fq.register_callback(cb)

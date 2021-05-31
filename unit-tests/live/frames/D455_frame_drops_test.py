@@ -1,14 +1,15 @@
 # License: Apache 2.0. See LICENSE file in root directory.
 # Copyright(c) 2021 Intel Corporation. All Rights Reserved.
 
-# test:device D400*
+#test:device D400*
 #test:donotrun:!nightly
 
 import time
 import threading
-from Queue import Queue
+from queue import Queue
 import pyrealsense2 as rs
 
+# Run RGB stream with 90 fps and find frame drops by checking HW timestamp of each frame
 
 if __name__ == '__main__':
     ctx = rs.context()
@@ -56,6 +57,7 @@ if __name__ == '__main__':
                     str(e)
                     continue
                 self.post_process_queue.put(lrs_frame, block=True, timeout=timeout)
+
         def consume_frames(self):
             while not self._stop:
                 element = self.post_process_queue.get(block=True)
@@ -63,7 +65,7 @@ if __name__ == '__main__':
                 self.my_process(lrs_frame)
                 del lrs_frame
                 self.post_process_queue.task_done()
-        """User callback to modify"""
+
         def my_process(self, f):
             if not f:
                 return
@@ -86,7 +88,7 @@ if __name__ == '__main__':
             #print("* frame drops = ", self.count_drops)
 
         def analysis(self):
-            print "Number of frame drops is {}".format(self.count_drops)
+            print ("Number of frame drops is {}".format(self.count_drops))
             for k, v in self.frame_drops_info:
                 print("Number of dropped frame before frame ", k, ", is :", v)
 
@@ -111,4 +113,3 @@ if __name__ == '__main__':
         test.analysis()
         rgb_sensor.stop()
         rgb_sensor.close()
-        
