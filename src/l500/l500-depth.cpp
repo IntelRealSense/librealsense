@@ -176,18 +176,13 @@ namespace librealsense
 
     std::shared_ptr<matcher> l500_depth::create_matcher(const frame_holder& frame) const
     {
-        std::vector<std::shared_ptr<matcher>> depth_matchers;
-
-        std::vector<stream_interface*> streams = { _depth_stream.get(), _ir_stream.get(), _confidence_stream.get() };
-
-        for (auto& s : streams)
+        std::vector<std::shared_ptr<matcher>> depth_matchers =
         {
-            depth_matchers.push_back(std::make_shared<identity_matcher>(s->get_unique_id(), s->get_stream_type()));
-        }
-        std::vector<std::shared_ptr<matcher>> matchers;
-        matchers.push_back(std::make_shared<timestamp_composite_matcher>(depth_matchers));
-
-        return std::make_shared<timestamp_composite_matcher>(matchers);
+            std::make_shared<identity_matcher>( _depth_stream->get_unique_id(),      _depth_stream->get_stream_type() ),
+            std::make_shared<identity_matcher>( _ir_stream->get_unique_id(),         _ir_stream->get_stream_type() ),
+            std::make_shared<identity_matcher>( _confidence_stream->get_unique_id(), _confidence_stream->get_stream_type() )
+        };
+        return std::make_shared< timestamp_composite_matcher >( depth_matchers );
     }
 
     // If the user did not ask for IR, The open function will add it anyway. 

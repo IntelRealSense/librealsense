@@ -123,24 +123,30 @@ namespace librealsense
     class composite_matcher : public matcher
     {
     public:
-        composite_matcher(std::vector<std::shared_ptr<matcher>> matchers, std::string name);
+        composite_matcher(std::vector<std::shared_ptr<matcher>> const & matchers, std::string const & name);
 
 
         virtual bool are_equivalent(frame_holder& a, frame_holder& b) = 0;
         virtual bool is_smaller_than(frame_holder& a, frame_holder& b) = 0;
-        virtual bool skip_missing_stream(std::vector<matcher*> synced, matcher* missing, const syncronization_environment& env) = 0;
+        virtual bool skip_missing_stream( std::vector< matcher * > const & synced,
+                                          matcher * missing,
+                                          const syncronization_environment & env )
+            = 0;
         virtual void clean_inactive_streams(frame_holder& f) = 0;
         virtual void update_last_arrived(frame_holder& f, matcher* m) = 0;
 
         void dispatch(frame_holder f, const syncronization_environment& env) override;
-        std::string frames_to_string(std::vector<librealsense::matcher*> matchers);
         void sync(frame_holder f, const syncronization_environment& env) override;
         std::shared_ptr<matcher> find_matcher(const frame_holder& f);
         virtual void stop() override;
 
+        static std::string frames_to_string( std::vector< frame_holder* > const& );
+        std::string matchers_to_string( std::vector< matcher* > const& );
 
     protected:
-        virtual void update_next_expected(const frame_holder& f) = 0;
+        virtual void update_next_expected( std::shared_ptr< matcher > const & matcher,
+                                           const frame_holder & f )
+            = 0;
 
         std::map<matcher*, single_consumer_frame_queue<frame_holder>> _frames_queue;
         std::map<stream_id, std::shared_ptr<matcher>> _matchers;
@@ -152,29 +158,41 @@ namespace librealsense
     class composite_identity_matcher : public composite_matcher
     {
     public:
-        composite_identity_matcher(std::vector<std::shared_ptr<matcher>> matchers);
+        composite_identity_matcher( std::vector< std::shared_ptr< matcher > > const & matchers );
 
         void sync(frame_holder f, const syncronization_environment& env) override;
         virtual bool are_equivalent(frame_holder& a, frame_holder& b) override { return false; }
         virtual bool is_smaller_than(frame_holder& a, frame_holder& b) override { return false; }
-        virtual bool skip_missing_stream(std::vector<matcher*> synced, matcher* missing, const syncronization_environment& env) override { return false; }
+        virtual bool skip_missing_stream( std::vector< matcher * > const & synced,
+                                          matcher * missing,
+                                          const syncronization_environment & env ) override
+        {
+            return false;
+        }
         virtual void clean_inactive_streams(frame_holder& f) override {}
         virtual void update_last_arrived(frame_holder& f, matcher* m) override {}
 
     protected:
-        virtual void update_next_expected(const frame_holder& f) override {}
+        void update_next_expected( std::shared_ptr< matcher > const & matcher,
+                                   const frame_holder & f ) override
+        {
+        }
     };
 
     class frame_number_composite_matcher : public composite_matcher
     {
     public:
-        frame_number_composite_matcher(std::vector<std::shared_ptr<matcher>> matchers);
+        frame_number_composite_matcher(
+            std::vector< std::shared_ptr< matcher > > const & matchers );
         virtual void update_last_arrived(frame_holder& f, matcher* m) override;
         bool are_equivalent(frame_holder& a, frame_holder& b) override;
         bool is_smaller_than(frame_holder& a, frame_holder& b) override;
-        bool skip_missing_stream(std::vector<matcher*> synced, matcher* missing, const syncronization_environment& env) override;
+        bool skip_missing_stream( std::vector< matcher * > const & synced,
+                                  matcher * missing,
+                                  const syncronization_environment & env ) override;
         void clean_inactive_streams(frame_holder& f) override;
-        void update_next_expected(const frame_holder& f) override;
+        void update_next_expected( std::shared_ptr< matcher > const & matcher,
+                                   const frame_holder & f ) override;
 
     private:
          std::map<matcher*,unsigned long long> _last_arrived;
@@ -183,13 +201,16 @@ namespace librealsense
     class timestamp_composite_matcher : public composite_matcher
     {
     public:
-        timestamp_composite_matcher(std::vector<std::shared_ptr<matcher>> matchers);
+        timestamp_composite_matcher( std::vector< std::shared_ptr< matcher > > const & matchers );
         bool are_equivalent(frame_holder& a, frame_holder& b) override;
         bool is_smaller_than(frame_holder& a, frame_holder& b) override;
         virtual void update_last_arrived(frame_holder& f, matcher* m) override;
         void clean_inactive_streams(frame_holder& f) override;
-        bool skip_missing_stream(std::vector<matcher*> synced, matcher* missing, const syncronization_environment& env) override;
-        void update_next_expected(const frame_holder & f) override;
+        bool skip_missing_stream( std::vector< matcher * > const & synced,
+                                  matcher * missing,
+                                  const syncronization_environment & env ) override;
+        void update_next_expected( std::shared_ptr< matcher > const & matcher,
+                                   const frame_holder & f ) override;
 
     private:
         unsigned int get_fps(const frame_holder & f);

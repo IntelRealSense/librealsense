@@ -149,7 +149,7 @@ int main(int argc, char * argv[]) try
                                 texture.y, 60, texture.bpp,
                                 RS2_FORMAT_RGBA8, color_intrinsics });
 
-    dev.create_matcher(RS2_MATCHER_DLR_C);
+    dev.create_matcher( RS2_MATCHER_DEFAULT );  // Compare all streams according to timestamp
     rs2::syncer sync;
 
     depth_sensor.open(depth_stream);
@@ -164,25 +164,33 @@ int main(int argc, char * argv[]) try
     {
         synthetic_frame& depth_frame = app_data.get_synthetic_depth(app_state);
 
-        depth_sensor.on_video_frame({ depth_frame.frame.data(), // Frame pixels from capture API
-            [](void*) {}, // Custom deleter (if required)
-            depth_frame.x*depth_frame.bpp, depth_frame.bpp, // Stride and Bytes-per-pixel
-            (rs2_time_t)frame_number * 16, RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK, frame_number, // Timestamp, Frame# for potential sync services
-            depth_stream });
+        // The timestamp jumps are closely correlated to the FPS passed above to the video streams:
+        // syncer expects frames to arrive every 1000/FPS milliseconds!
+        rs2_time_t timestamp = (rs2_time_t)frame_number * 16;
+        auto domain = RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK;
+
+        depth_sensor.on_video_frame( { depth_frame.frame.data(),  // Frame pixels from capture API
+                                       []( void * ) {},           // Custom deleter (if required)
+                                       depth_frame.x * depth_frame.bpp,  // Stride
+                                       depth_frame.bpp,
+                                       timestamp, domain, frame_number,
+                                       depth_stream } );
 
 
-        color_sensor.on_video_frame({ texture.frame.data(), // Frame pixels from capture API
-            [](void*) {}, // Custom deleter (if required)
-            texture.x*texture.bpp, texture.bpp, // Stride and Bytes-per-pixel
-            (rs2_time_t)frame_number * 16, RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK, frame_number, // Timestamp, Frame# for potential sync services
-            color_stream });
+        color_sensor.on_video_frame( { texture.frame.data(),     // Frame pixels from capture API
+                                       []( void * ) {},          // Custom deleter (if required)
+                                       texture.x * texture.bpp,  // Stride
+                                       texture.bpp,
+                                       timestamp, domain, frame_number,
+                                       color_stream } );
 
         ++frame_number;
 
         rs2::frameset fset = sync.wait_for_frames();
         rs2::frame depth = fset.first_or_default(RS2_STREAM_DEPTH);
         rs2::frame color = fset.first_or_default(RS2_STREAM_COLOR);
-
+        // We cannot expect the syncer to always output both depth and color -- especially on the
+        // first few frames! Hiccups can always occur: OS stalls, processing demands, etc...
         if (depth && color)
         {
             if (auto as_depth = depth.as<rs2::depth_frame>())
