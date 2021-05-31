@@ -580,55 +580,7 @@ namespace librealsense
 
     void timestamp_composite_matcher::clean_inactive_streams(frame_holder& f)
     {
-        if( f.is_blocking() )
-            return;
-
-        // NOTE:
-        // The following uses the WALL clock to mark streams as "inactive". So, for example,
-        // in this case ...
-        //       [Color/1 #0 @  0.000000] arrive at T-100 ms
-        //       [Color/1 #1 @ 16.666667] arrive at T-0   ms
-        // ... the big delay (100 ms) between frames is taken to mean that the stream was
-        // deactivated -- even when we can see from the actual frames that it was not (at 60
-        // fps, we can expect sequential frames to arrive with ~16 ms in between them).
-        // It is unclear why this was implemented in this fashion...
-        // 
-        // When a stream is marked as inactive its queue is also cleared. This means frames
-        // are lost! Again, unclear why: it shouldn't be the syncer's job to decide to throw
-        // away frames...
-        //
-        auto const now = environment::get_instance().get_time_service()->get_time();
-        for(auto m: _matchers)
-        {
-            auto const p_matcher = m.second.get();
-            auto const it = _last_arrived.find( p_matcher );
-            if( it == _last_arrived.end() )
-                continue;
-            auto const elapsed = now - it->second;
-
-            auto const fps_it = _fps.find( p_matcher );
-            auto const threshold = (fps_it != _fps.end()) ? (1000 / fps_it->second) * 5 : 500; 
-            // If frame of a specific stream didn't arrive for time equivalence to 5 frames duration
-            // this stream will be marked as "not active" in order to not stack the other streams
-            if( elapsed > threshold )
-            {
-                std::stringstream s;
-                s << _name << ": more (" << elapsed << ") than " << threshold
-                  << " ms since last frame (@" << std::fixed << it->second << "); cleaning up "
-                  << p_matcher->get_name();
-                //for( auto stream : p_matcher->get_streams_types() )
-                //    s << ' ' << stream;
-                LOG_DEBUG( s.str() );
-
-                auto const q_it = _frames_queue.find( p_matcher );
-                if( q_it != _frames_queue.end() )
-                {
-                    q_it->second.clear();
-                    _frames_queue.erase( q_it );
-                }
-                p_matcher->set_active( false );
-            }
-        }
+        // We let skip_missing_stream clean any inactive missing streams
     }
 
     bool timestamp_composite_matcher::skip_missing_stream( std::vector< matcher * > const & synced,
@@ -672,7 +624,15 @@ namespace librealsense
                 //LOG_IF_ENABLE( "...     next expected of the missing stream didn't updated yet", env );
                 return false;
             }
-            LOG_IF_ENABLE( "...     exceeded {10*gap}" << threshold, env );
+            LOG_IF_ENABLE( "...     exceeded threshold of {10*gap}" << threshold << "; deactivating matcher!", env );
+
+            auto const q_it = _frames_queue.find( missing );
+            if( q_it != _frames_queue.end() )
+            {
+                if( q_it->second.empty() )
+                    _frames_queue.erase( q_it );
+            }
+            missing->set_active( false );
         }
 
         return ! are_equivalent( timestamp, next_expected, get_fps( *synced_frame ) );
