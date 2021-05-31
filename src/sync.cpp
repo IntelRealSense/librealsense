@@ -78,7 +78,12 @@ namespace librealsense
         :matcher({stream})
     {
         _streams_type = {stream_type};
-        _name = std::string(rs2_stream_to_string(stream_type));
+
+        std::ostringstream ss;
+        ss << rs2_stream_to_string( stream_type );
+        ss << '/';
+        ss << stream;
+        _name = ss.str();
     }
 
     void identity_matcher::dispatch(frame_holder f, const syncronization_environment& env)
