@@ -15,7 +15,7 @@ template<class T>
 class single_consumer_queue
 {
     std::deque<T> _queue;
-    std::mutex _mutex;
+    mutable std::mutex _mutex;
     std::condition_variable _deq_cv; // not empty signal
     std::condition_variable _enq_cv; // not empty signal
 
@@ -89,7 +89,7 @@ public:
 
     bool try_dequeue(T* item)
     {
-        std::unique_lock<std::mutex> lock(_mutex);
+        std::lock_guard< std::mutex > lock( _mutex );
         _accepting = true;
         if (_queue.size() > 0)
         {
@@ -104,7 +104,7 @@ public:
 
     bool peek(T** item)
     {
-        std::unique_lock<std::mutex> lock(_mutex);
+        std::lock_guard< std::mutex > lock( _mutex );
 
         if (_queue.size() <= 0)
         {
@@ -116,7 +116,7 @@ public:
 
     void clear()
     {
-        std::unique_lock<std::mutex> lock(_mutex);
+        std::lock_guard< std::mutex > lock( _mutex );
 
         _accepting = false;
         _need_to_flush = true;
@@ -132,16 +132,18 @@ public:
 
     void start()
     {
-        std::unique_lock<std::mutex> lock(_mutex);
+        std::lock_guard< std::mutex > lock( _mutex );
         _need_to_flush = false;
         _accepting = true;
     }
 
-    size_t size()
+    size_t size() const
     {
-        std::unique_lock<std::mutex> lock(_mutex);
+        std::lock_guard< std::mutex > lock( _mutex );
         return _queue.size();
     }
+
+    bool empty() const { return ! size(); }
 };
 
 template<class T>
@@ -185,9 +187,14 @@ public:
         _queue.start();
     }
 
-    size_t size()
+    size_t size() const
     {
         return _queue.size();
+    }
+
+    bool empty() const
+    {
+        return _queue.empty();
     }
 };
 
