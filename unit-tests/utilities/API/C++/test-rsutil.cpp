@@ -22,11 +22,5 @@ TEST_CASE( "rsutil", "[string]" )
 
     rs2_fov(&intrinsic, pixel);
 
-    next_pixel_in_line(pixel, pixel, pixel);
-
-    is_pixel_in_line(pixel, pixel, pixel);
-    
-    adjust_2D_point_to_boundary(pixel, 1, 1);
-
     rs2_project_color_pixel_to_depth_pixel(pixel, 0, 0.5, 0.0, 1.0, &intrinsic, &intrinsic, &extrinsic, &extrinsic, pixel);
 }
