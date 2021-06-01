@@ -9,8 +9,13 @@
 // Otherwise, don't let it define its own:
 #define ELPP_NO_CHECK_MACROS
 
-#include "catch/catch.hpp"
+#if defined(CATCH_CONFIG_MAIN)
+#error CATCH_CONFIG_MAIN defined
+#endif
 
+#include "catch/catch.hpp"
+#include <string>
+std::string context = "";
 
 #if defined(CATCH_CONFIG_RUNNER)
 

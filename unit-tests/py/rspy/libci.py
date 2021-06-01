@@ -410,6 +410,8 @@ class ExeTest( Test ):
                 # cmd += ['--success']  # show successful assertions in output
             # if log.is_color_on():
             #    cmd += ['--use-colour', 'yes']
+            if self.config.context:
+                cmd += ['--context', self.config.context]
         return cmd
 
     def run_test( self, configuration = None, log_path = None ):
