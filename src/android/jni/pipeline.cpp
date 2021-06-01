@@ -7,7 +7,7 @@
 #include "../../../include/librealsense2/h/rs_pipeline.h"
 
 #include "jni_logging.h"
-#include "jni_usercb.h"
+#include "frame_callback.h"
 
 extern "C" JNIEXPORT jlong JNICALL
 Java_com_intel_realsense_librealsense_Pipeline_nCreate(JNIEnv *env, jclass type,
@@ -26,7 +26,7 @@ Java_com_intel_realsense_librealsense_Pipeline_nStart(JNIEnv *env, jclass type, 
     return reinterpret_cast<jlong>(rv);
 }
 
-static rs_jni_cbdata pdata = {NULL, 0, JNI_FALSE, NULL, NULL};
+static frame_callback_data pdata = {NULL, 0, JNI_FALSE, NULL, NULL};
 
 extern "C" JNIEXPORT jlong JNICALL
 Java_com_intel_realsense_librealsense_Pipeline_nStartWithCallback(JNIEnv *env, jclass type, jlong handle, jobject jcb) {

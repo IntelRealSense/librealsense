@@ -9,7 +9,7 @@
 #include "../../../include/librealsense2/rs.h"
 
 #include "jni_logging.h"
-#include "jni_usercb.h"
+#include "frame_callback.h"
 
 extern "C"
 JNIEXPORT void JNICALL
@@ -19,7 +19,7 @@ Java_com_intel_realsense_librealsense_Sensor_nOpen(JNIEnv *env, jclass type, jlo
     handle_error(env, e);
 }
 
-static rs_jni_cbdata sdata = {NULL, 0, JNI_FALSE, NULL, NULL};
+static frame_callback_data sdata = {NULL, 0, JNI_FALSE, NULL, NULL};
 
 extern "C"
 JNIEXPORT void JNICALL

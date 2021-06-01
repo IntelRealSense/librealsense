@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2019 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2021 Intel Corporation. All Rights Reserved.
 
 #include <jni.h>
 #include "error.h"
@@ -7,9 +7,9 @@
 #include "../../../include/librealsense2/hpp/rs_frame.hpp"
 
 #include "jni_logging.h"
-#include "jni_usercb.h"
+#include "frame_callback.h"
 
-bool rs_jni_callback_init(JNIEnv *env, jobject jcb, rs_jni_cbdata* ud)
+bool rs_jni_callback_init(JNIEnv *env, jobject jcb, frame_callback_data* ud)
 {
     // get the Java VM interface associated with the current thread
     int status = env->GetJavaVM(&(ud->jvm));
@@ -29,7 +29,7 @@ bool rs_jni_callback_init(JNIEnv *env, jobject jcb, rs_jni_cbdata* ud)
         LRS_JNI_LOGE("Failed to create global reference to java callback in rs_jni_callback_init at line %d", __LINE__);
         return false;
     }
-    ud->jcb = callback;
+    ud->frame_cb = callback;
 
     // find Frame class
     jclass frameclass = env->FindClass("com/intel/realsense/librealsense/Frame");
@@ -51,7 +51,7 @@ bool rs_jni_callback_init(JNIEnv *env, jobject jcb, rs_jni_cbdata* ud)
     return true;
 }
 
-bool rs_jni_cb(rs2::frame f, rs_jni_cbdata* ud)
+bool rs_jni_cb(rs2::frame f, frame_callback_data* ud)
 {
     JNIEnv *cb_thread_env = NULL;
     int env_state = ud->jvm->GetEnv((void **)&cb_thread_env, ud->version);
@@ -63,7 +63,7 @@ bool rs_jni_cb(rs2::frame f, rs_jni_cbdata* ud)
         ud->attached = JNI_TRUE;
     }
 
-    jobject callback = ud->jcb;
+    jobject callback = ud->frame_cb;
 
     if (callback == NULL)
     {
@@ -111,11 +111,11 @@ bool rs_jni_cb(rs2::frame f, rs_jni_cbdata* ud)
     return true;
 }
 
-void rs_jni_cleanup(JNIEnv *env, rs_jni_cbdata* ud)
+void rs_jni_cleanup(JNIEnv *env, frame_callback_data* ud)
 {
     if (ud)
     {
-        if (ud->jcb) { env->DeleteGlobalRef(ud->jcb); ud->jcb = NULL; }
+        if (ud->frame_cb) { env->DeleteGlobalRef(ud->frame_cb); ud->frame_cb = NULL; }
         if (ud->frameclass) { env->DeleteGlobalRef(ud->frameclass); ud->frameclass = NULL; }
     }
 }
