@@ -35,16 +35,18 @@ def usage():
     print( '        --list-tests   print out all available tests. This option will not run any tests' )
     print( '                       if both list-tags and list-tests are specified each test will be printed along' )
     print( '                       with what tags it has' )
+    print( '        --context        The context to use for test configuration' )
     sys.exit(2)
 
 regex = None
 required_tags = []
 list_tags = False
 list_tests = False
+context = None
 # parse command-line:
 try:
     opts, args = getopt.getopt( sys.argv[1:], 'hr:t:',
-                                longopts=['help', 'regex=', 'tag=', 'list-tags', 'list-tests'] )
+                                longopts=['help', 'regex=', 'tag=', 'list-tags', 'list-tests', 'context='] )
 except getopt.GetoptError as err:
     log.e( err )  # something like "option -a not recognized"
     usage()
@@ -59,6 +61,8 @@ for opt, arg in opts:
         list_tags = True
     elif opt == '--list-tests':
         list_tests = True
+    elif opt == '--context':
+        context = arg
 
 if len( args ) != 2:
     usage()
@@ -139,9 +143,9 @@ def find_includes( filepath, filelist = set() ):
     filedir = os.path.dirname(filepath)
     try:
         log.debug_indent()
-        for context in file.grep( r'^\s*#\s*include\s+("(.*)"|<(.*)>)\s*$', filepath ):
-            m = context['match']
-            index = context['index']
+        for include_line in file.grep( r'^\s*#\s*include\s+("(.*)"|<(.*)>)\s*$', filepath ):
+            m = include_line['match']
+            index = include_line['index']
             include = find_include( m.group(2), filedir ) or find_include_in_dirs( m.group(2) ) or find_include_in_dirs( m.group(3) )
             if include:
                 if include in filelist:
@@ -177,7 +181,7 @@ def process_cpp( dir, builddir ):
         log.debug_indent()
         try:
             if required_tags or list_tags:
-                config = libci.TestConfigFromCpp( dir + os.sep + f )
+                config = libci.TestConfigFromCpp( dir + os.sep + f, context )
                 if not all( tag in config.tags for tag in required_tags ):
                     continue
                 available_tags.update( config.tags )
@@ -197,10 +201,10 @@ def process_cpp( dir, builddir ):
             # Any files listed are relative to $dir
             shared = False
             static = False
-            for context in file.grep( '^//#cmake:\s*', dir + '/' + f ):
-                m = context['match']
-                index = context['index']
-                cmd, *rest = context['line'][m.end():].split()
+            for add_file_directive in file.grep( '^//#cmake:\s*', dir + '/' + f ):
+                m = add_file_directive['match']
+                index = add_file_directive['index']
+                cmd, *rest = add_file_directive['line'][m.end():].split()
                 if cmd == 'add-file':
                     for additional_file in rest:
                         files = additional_file
