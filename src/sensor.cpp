@@ -237,7 +237,7 @@ namespace librealsense
         return *_owner;
     }
 
-    std::shared_ptr<frame> sensor_base::generate_frame_from_data(const platform::frame_object& fo,
+    std::shared_ptr<frame> sensor_base::generate_empty_frame_from_data(const platform::frame_object& fo,
         frame_timestamp_reader* timestamp_reader,
         const rs2_time_t& last_timestamp,
         const unsigned long long& last_frame_number,
@@ -245,9 +245,6 @@ namespace librealsense
     {
         auto system_time = environment::get_instance().get_time_service()->get_time();
         auto fr = std::make_shared<frame>();
-        byte* pix = (byte*)fo.pixels;
-        std::vector<byte> pixels(pix, pix + fo.frame_size);
-        fr->data = pixels;
         fr->set_stream(profile);
 
         // generate additional data
@@ -318,7 +315,7 @@ namespace librealsense
                     [this, req_profile_base, req_profile, last_frame_number, last_timestamp](platform::stream_profile p, platform::frame_object f, std::function<void()> continuation) mutable
                 {
                     const auto&& system_time = environment::get_instance().get_time_service()->get_time();
-                    const auto&& fr = generate_frame_from_data(f, _timestamp_reader.get(), last_timestamp, last_frame_number, req_profile_base);
+                    const auto&& fr = generate_empty_frame_from_data(f, _timestamp_reader.get(), last_timestamp, last_frame_number, req_profile_base);
                     const auto&& requires_processing = true; // TODO - Ariel add option
                     const auto&& timestamp_domain = _timestamp_reader->get_frame_timestamp_domain(fr);
                     const auto&& bpp = get_image_bpp(req_profile_base->get_format());
@@ -359,7 +356,7 @@ namespace librealsense
 
                     if (fh.frame)
                     {
-                        memcpy((void*)fh->get_frame_data(), fr->data.data(), sizeof(byte)*fr->data.size());
+                        memcpy((void*)fh->get_frame_data(), f.pixels, f.frame_size);
                         auto&& video = (video_frame*)fh.frame;
                         video->assign(width, height, width * bpp / 8, bpp);
                         video->set_timestamp_domain(timestamp_domain);
@@ -825,7 +822,7 @@ namespace librealsense
                 return;
             }
 
-            const auto&& fr = generate_frame_from_data(sensor_data.fo, timestamp_reader, last_timestamp, last_frame_number, request);
+            const auto&& fr = generate_empty_frame_from_data(sensor_data.fo, timestamp_reader, last_timestamp, last_frame_number, request);
             auto&& frame_counter = fr->additional_data.frame_number;
             const auto&& timestamp_domain = timestamp_reader->get_frame_timestamp_domain(fr);
             auto&& timestamp = fr->additional_data.timestamp;
@@ -843,7 +840,7 @@ namespace librealsense
             last_frame_number = frame_counter;
             last_timestamp = timestamp;
             frame_holder frame = _source.alloc_frame(RS2_EXTENSION_MOTION_FRAME, data_size, fr->additional_data, true);
-            memcpy((void*)frame->get_frame_data(), fr->data.data(), sizeof(byte)*fr->data.size());
+            memcpy((void*)frame->get_frame_data(), sensor_data.fo.pixels, data_size);
             if (!frame)
             {
                 LOG_INFO("Dropped frame. alloc_frame(...) returned nullptr");

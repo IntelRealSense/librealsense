@@ -94,7 +94,7 @@ namespace librealsense
         void assign_stream(const std::shared_ptr<stream_interface>& stream,
                            std::shared_ptr<stream_profile_interface> target) const;
 
-        std::shared_ptr<frame> generate_frame_from_data(const platform::frame_object& fo,
+        std::shared_ptr<frame> generate_empty_frame_from_data(const platform::frame_object& fo,
             frame_timestamp_reader* timestamp_reader,
             const rs2_time_t& last_timestamp,
             const unsigned long long& last_frame_number,
