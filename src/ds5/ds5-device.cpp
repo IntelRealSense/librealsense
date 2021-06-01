@@ -638,6 +638,8 @@ namespace librealsense
             val |= d400_caps::CAP_ROLLING_SHUTTER;  // e.g. ASRC
         if (0x2 == gvd_buf[depth_sensor_type])
             val |= d400_caps::CAP_GLOBAL_SHUTTER;   // e.g. AWGC
+        if (_pid != ds::RS405_PID)
+            val |= d400_caps::CAP_INTERCAM_HW_SYNC;
 
         return val;
     }
@@ -974,7 +976,7 @@ namespace librealsense
             depth_sensor.register_option(RS2_OPTION_EMITTER_ON_OFF, std::make_shared<emitter_on_and_off_option>(*_hw_monitor, &raw_depth_sensor));
         }
 
-        if (_pid != ds::RS405_PID)
+        if ((_device_capabilities & d400_caps::CAP_INTERCAM_HW_SYNC) == d400_caps::CAP_INTERCAM_HW_SYNC)
         {
             if (_fw_version >= firmware_version("5.12.12.100") && (_device_capabilities & d400_caps::CAP_GLOBAL_SHUTTER) == d400_caps::CAP_GLOBAL_SHUTTER)
             {

@@ -280,6 +280,7 @@ namespace librealsense
             CAP_ROLLING_SHUTTER         = (1u << 5),
             CAP_BMI_055                 = (1u << 6),
             CAP_BMI_085                 = (1u << 7),
+            CAP_INTERCAM_HW_SYNC        = (1u << 8),
             CAP_MAX
         };
 
