@@ -65,9 +65,9 @@ endif()
 
 if(BUILD_LEGACY_LIVE_TEST)
     include(./live-test.cmake)
+	include(C/CMakeLists.txt)
 endif()
 
 if(NOT ${BUILD_SHARED_LIBS} AND ${BUILD_INTERNAL_UNIT_TESTS})
     add_subdirectory(internal)
 endif()
-add_subdirectory(utilities/API/C)
