@@ -28,11 +28,11 @@
 #ifdef INTERNAL_FW
 #include "common/fw/D4XX_FW_Image.h"
 #include "common/fw/SR3XX_FW_Image.h"
-#include "common/fw/L5XX_FW_Image.h"
+#include "common/fw/L51X_FW_Image.h"
 #else
 #define FW_D4XX_FW_IMAGE_VERSION ""
 #define FW_SR3XX_FW_IMAGE_VERSION ""
-#define FW_L5XX_FW_IMAGE_VERSION ""
+#define FW_L51X_FW_IMAGE_VERSION ""
 #endif // INTERNAL_FW
 
 #ifdef BUILD_EASYLOGGINGPP

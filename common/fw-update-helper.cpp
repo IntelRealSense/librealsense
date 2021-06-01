@@ -18,11 +18,11 @@
 #ifdef INTERNAL_FW
 #include "common/fw/D4XX_FW_Image.h"
 #include "common/fw/SR3XX_FW_Image.h"
-#include "common/fw/L5XX_FW_Image.h"
+#include "common/fw/L51X_FW_Image.h"
 #else
 #define FW_D4XX_FW_IMAGE_VERSION ""
 #define FW_SR3XX_FW_IMAGE_VERSION ""
-#define FW_L5XX_FW_IMAGE_VERSION ""
+#define FW_L51X_FW_IMAGE_VERSION ""
 const char* fw_get_D4XX_FW_Image(int) { return NULL; }
 const char* fw_get_SR3XX_FW_Image(int) { return NULL; }
 const char* fw_get_L5XX_FW_Image(int) { return NULL; }
@@ -60,7 +60,7 @@ namespace rs2
     {
         if (product_line == RS2_PRODUCT_LINE_D400) return FW_D4XX_FW_IMAGE_VERSION;
         //else if (product_line == RS2_PRODUCT_LINE_SR300) return FW_SR3XX_FW_IMAGE_VERSION;
-        else if (product_line == RS2_PRODUCT_LINE_L500) return FW_L5XX_FW_IMAGE_VERSION;
+        else if (product_line == RS2_PRODUCT_LINE_L500) return FW_L51X_FW_IMAGE_VERSION;
         else return "";
     }
 
@@ -86,10 +86,10 @@ namespace rs2
             rv[RS2_PRODUCT_LINE_SR300] = vec;
         }
 
-        if (strlen(FW_L5XX_FW_IMAGE_VERSION))
+        if (strlen(FW_L51X_FW_IMAGE_VERSION))
         {
             int size = 0;
-            auto hex = fw_get_L5XX_FW_Image(size);
+            auto hex = fw_get_L51X_FW_Image(size);
             auto vec = std::vector<uint8_t>(hex, hex + size);
             rv[RS2_PRODUCT_LINE_L500] = vec;
         }

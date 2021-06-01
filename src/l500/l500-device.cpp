@@ -94,7 +94,7 @@ namespace librealsense
         auto asic_serial = _hw_monitor->get_module_serial_string(gvd_buff, module_asic_serial_offset, module_asic_serial_size);
         auto fwv = _hw_monitor->get_firmware_version_string(gvd_buff, fw_version_offset);
         _fw_version = firmware_version(fwv);
-        firmware_version recommended_fw_version(L5XX_RECOMMENDED_FIRMWARE_VERSION);
+        firmware_version recommended_fw_version(L51X_RECOMMENDED_FIRMWARE_VERSION);
 
         _is_locked = _hw_monitor->get_gvd_field<uint8_t>(gvd_buff, is_camera_locked_offset) != 0;
 
