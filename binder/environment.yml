@@ -7,9 +7,9 @@ dependencies:
   - scipy
   - matplotlib
   - pandas
-  - notebook>=5.2.2
-  - ipywidgets>=6.0.1
-  - ipython>=6.2.1
+  - notebook
+  - ipywidgets
+  - ipython
   - h5py
   - numba
   - pythreejs
