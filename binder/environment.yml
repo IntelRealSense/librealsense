@@ -13,7 +13,7 @@ dependencies:
   - h5py
   - numba
   - pythreejs
-  - python=2.7
+  - python=3.9
   - pip:
     - laspy
     - appmode
