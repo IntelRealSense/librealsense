@@ -18,13 +18,13 @@ namespace Intel.RealSense
                     return;
                 }
 
-                using (var config = new Config())
                 using (var pipeline = new Pipeline(ctx))
+                using (var config = new Config())
                 {
                     // Add pose stream
                     config.EnableStream(Stream.Pose, Format.SixDOF);
                     // Start pipeline with chosen configuration
-                    using (var profile = pipeline.Start(config))
+                    using(var profile = pipeline.Start(config))
                     using (var streamprofile = profile.GetStream(Stream.Pose).As<PoseStreamProfile>())
                     {
                         Console.WriteLine($"\nDevice : {profile.Device.Info[CameraInfo.Name]}");
@@ -38,17 +38,15 @@ namespace Intel.RealSense
                         // Wait for the next set of frames from the camera
                         using (FrameSet frameset = pipeline.WaitForFrames())
                         // Get a frame from the pose stream
-                        using (Frame frame = frameset.FirstOrDefault(Stream.Pose))
-                            if (frame != null)
-                            {
-                                // Cast the frame to pose_frame and get its data
-                                Pose data = frame.As<PoseFrame>().PoseData;
+                        using (PoseFrame frame = frameset.PoseFrame)
+                        {
+                            // Get pose frame data
+                            Pose data = frame.PoseData;
 
-                                // Print the x, y, z values of the translation, relative to initial position
-                                Console.WriteLine("Device Position: {0} {1} {2} (meters)", data.translation.x.ToString("N3"), data.translation.y.ToString("N3"), data.translation.z.ToString("N3"));
-                            }
-
-                        Thread.Sleep(100);
+                            // Print the x, y, z values of the translation, relative to initial position
+                            Console.Write("\r" + new String(' ', 80));
+                            Console.Write("\rDevice Position: {0} {1} {2} (meters)", data.translation.x.ToString("N3"), data.translation.y.ToString("N3"), data.translation.z.ToString("N3"));
+                        }
                     }
                 }
             }
