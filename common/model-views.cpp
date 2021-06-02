@@ -549,6 +549,17 @@ namespace rs2
         }
         return option;
     }
+    std::string option_model::get_option_description() const
+    {
+        std::string desc (endpoint->get_option_description(opt));
+        std::string device_pid = dev->s->get_info(RS2_CAMERA_INFO_PRODUCT_ID);
+        if (device_pid == "0B5B" && (opt == RS2_OPTION_MIN_DISTANCE || opt == RS2_OPTION_MAX_DISTANCE))
+        {
+            auto pos = desc.find("meters");
+            desc.replace(pos, desc.size(), "cm");
+        }
+        return desc;
+    }
 
     bool option_model::draw(std::string& error_message, notifications_model& model, bool new_line, bool use_option_name)
     {
@@ -560,7 +571,8 @@ namespace rs2
             if (opt == RS2_OPTION_HOLES_FILL)
                 use_option_name = false;
 
-            auto desc = endpoint->get_option_description(opt);
+            auto desc_str = get_option_description();          
+            auto desc = desc_str.c_str();
 
             // remain option to append to the current line
             if (!new_line)
@@ -720,6 +732,16 @@ namespace rs2
                         else
                         {
                             float tmp_value = value;
+                            
+                            // displaying in cm instead of meters for D405
+                            std::string device_pid = dev->s->get_info(RS2_CAMERA_INFO_PRODUCT_ID);
+                            if (device_pid == "0B5B" && (opt == RS2_OPTION_MIN_DISTANCE || opt == RS2_OPTION_MAX_DISTANCE))
+                            {
+                                tmp_value *= 100.f; 
+                                range.min *= 100.f;
+                                range.max *= 100.f;
+                            }
+
                             if (ImGui::SliderFloat(id.c_str(), &tmp_value,
                                 range.min, range.max, "%.4f"))
                             {

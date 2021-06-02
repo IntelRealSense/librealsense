@@ -332,6 +332,7 @@ namespace rs2
         bool edit_mode = false;
         std::string edit_value = "";
     private:
+        std::string get_option_description() const;
         bool is_all_integers() const;
         bool is_enum() const;
         bool is_checkbox() const;
