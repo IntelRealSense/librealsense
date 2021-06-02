@@ -100,6 +100,14 @@ namespace librealsense
             const unsigned long long& last_frame_number,
             std::shared_ptr<stream_profile_interface> profile);
 
+        void update_depth_units(float depth_units)
+        {
+            _updated_depth_units = depth_units;
+        }
+        float get_updated_depth_units()
+        {
+            return _updated_depth_units;
+        }
         std::vector<platform::stream_profile> _internal_config;
 
         std::atomic<bool> _is_streaming;
@@ -121,6 +129,7 @@ namespace librealsense
         stream_profiles _active_profiles;
         mutable std::mutex _active_profile_mutex;
         signal<sensor_base, bool> on_before_streaming_changes;
+        float _updated_depth_units;
     };
 
     class processing_block;

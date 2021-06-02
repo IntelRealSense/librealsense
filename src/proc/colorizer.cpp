@@ -239,7 +239,8 @@ namespace librealsense
         {
             _source_stream_profile = f.get_profile();
             _target_stream_profile = f.get_profile().clone(RS2_STREAM_DEPTH, f.get_profile().stream_index(), RS2_FORMAT_RGB8);
-
+            auto du = f.get_md_depth_units(); // NOHA :: TODO :: fix it to get updated value
+            
             auto snr = ( (frame_interface *)f.get() )->get_sensor().get();
             auto depth_sensor = As< librealsense::depth_sensor >( snr );
             if( depth_sensor )

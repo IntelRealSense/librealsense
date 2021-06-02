@@ -937,6 +937,13 @@ int rs2_get_frame_data_size(const rs2_frame* frame_ref, rs2_error** error) BEGIN
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, frame_ref)
 
+float rs2_get_md_depth_units(const rs2_frame* frame_ref, rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(frame_ref);
+    return ((frame_interface*)frame_ref)->get_frame_depth_units();
+}
+HANDLE_EXCEPTIONS_AND_RETURN(0, frame_ref)
+
 const void* rs2_get_frame_data(const rs2_frame* frame_ref, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(frame_ref);

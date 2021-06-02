@@ -2113,6 +2113,8 @@ namespace rs2
 
                 if (next == RS2_OPTION_DEPTH_UNITS)
                 {
+                    //s->as<depth_sensor>().;
+                    s;
                     opt_md.dev->depth_units = opt_md.value;
                 }
 

@@ -44,6 +44,8 @@ namespace librealsense
         register_metadata(RS2_FRAME_METADATA_TIME_OF_ARRIVAL, std::make_shared<librealsense::md_time_of_arrival_parser>());
 
         register_info(RS2_CAMERA_INFO_NAME, name);
+
+        _updated_depth_units = -1;
     }
 
     const std::string& sensor_base::get_info(rs2_camera_info info) const
@@ -249,7 +251,7 @@ namespace librealsense
         std::vector<byte> pixels(pix, pix + fo.frame_size);
         fr->data = pixels;
         fr->set_stream(profile);
-
+        float depth_units = (float)get_updated_depth_units();
         // generate additional data
         frame_additional_data additional_data(0,
             0,
@@ -260,7 +262,8 @@ namespace librealsense
             last_timestamp,
             last_frame_number,
             false,
-            (uint32_t)fo.frame_size );
+            depth_units,
+            (uint32_t)fo.frame_size);
         fr->additional_data = additional_data;
 
         // update additional data

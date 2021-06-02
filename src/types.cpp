@@ -570,6 +570,7 @@ namespace librealsense
             CASE(SEQUENCE_NAME)
             CASE(SEQUENCE_ID)
             CASE(SEQUENCE_SIZE)
+            CASE(DEPTH_UNITS)
         default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
 #undef CASE

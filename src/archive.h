@@ -41,11 +41,14 @@ namespace librealsense
         bool                is_blocking = false; // when running from recording, this bit indicates 
                                                  // if the recorder was configured to realtime mode or not
                                                  // if true, this will force any queue receiving this frame not to drop it
+        float               depth_units = 0.0f;
         uint32_t            raw_size = 0;   // The frame transmitted size (payload only)
+        
 
         frame_additional_data() {}
 
-        frame_additional_data(double in_timestamp,
+        frame_additional_data(
+            double in_timestamp,
             unsigned long long in_frame_number,
             double in_system_time,
             uint8_t md_size,
@@ -54,8 +57,10 @@ namespace librealsense
             rs2_time_t last_timestamp,
             unsigned long long last_frame_number,
             bool in_is_blocking,
+            float in_depth_units,
             uint32_t transmitted_size = 0)
-            : timestamp(in_timestamp),
+            :
+            timestamp(in_timestamp),
             frame_number(in_frame_number),
             system_time(in_system_time),
             metadata_size(md_size),
@@ -63,6 +68,7 @@ namespace librealsense
             last_timestamp(last_timestamp),
             last_frame_number(last_frame_number),
             is_blocking(in_is_blocking),
+            depth_units(in_depth_units),
             raw_size(transmitted_size)
         {
             // Copy up to 255 bytes to preserve metadata as raw data
@@ -140,6 +146,7 @@ namespace librealsense
         }
 
         rs2_time_t get_frame_system_time() const override;
+        float get_frame_depth_units() const override;
 
         std::shared_ptr<stream_profile_interface> get_stream() const override { return stream; }
         void set_stream(std::shared_ptr<stream_profile_interface> sp) override { stream = std::move(sp); }
@@ -237,6 +244,10 @@ namespace librealsense
         int get_frame_data_size() const override
         {
             return first()->get_frame_data_size();
+        }
+        float get_frame_depth_units() const override
+        {
+            return first()->get_frame_depth_units();
         }
         const byte* get_frame_data() const override
         {

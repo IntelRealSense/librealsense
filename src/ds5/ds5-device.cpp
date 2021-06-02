@@ -373,9 +373,15 @@ namespace librealsense
             }
         }
 
+        void add_depth_units_md()
+        {
+
+        }
+
         void open(const stream_profiles& requests) override
         {
             _depth_units = get_option(RS2_OPTION_DEPTH_UNITS).query();
+            update_depth_units(_depth_units);
             synthetic_sensor::open(requests);
 
             // needed in order to restore the HDR sub-preset when streaming is turned off and on
@@ -1074,6 +1080,7 @@ namespace librealsense
         depth_sensor.register_metadata(RS2_FRAME_METADATA_EXPOSURE_ROI_BOTTOM, make_attribute_parser(&md_depth_control::exposure_roi_bottom, md_depth_control_attributes::roi_attribute, md_prop_offset));
         depth_sensor.register_metadata(RS2_FRAME_METADATA_FRAME_EMITTER_MODE, make_attribute_parser(&md_depth_control::emitterMode, md_depth_control_attributes::emitter_mode_attribute, md_prop_offset));
         depth_sensor.register_metadata(RS2_FRAME_METADATA_FRAME_LED_POWER, make_attribute_parser(&md_depth_control::ledPower, md_depth_control_attributes::led_power_attribute, md_prop_offset));
+        depth_sensor.register_metadata(RS2_FRAME_METADATA_DEPTH_UNITS, make_attribute_parser(&md_depth_control::depth_units, md_depth_control_attributes::depth_units_attribute, md_prop_offset));
 
         // md_configuration - will be used for internal validation only
         md_prop_offset = offsetof(metadata_raw, mode) + offsetof(md_depth_mode, depth_y_mode) + offsetof(md_depth_y_normal_mode, intel_configuration);

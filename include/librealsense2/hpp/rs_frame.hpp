@@ -562,6 +562,13 @@ namespace rs2
             return stream_profile(s);
         }
 
+        float get_md_depth_units() const
+        {
+            rs2_error* e = nullptr;
+            auto r = rs2_get_md_depth_units(frame_ref, &e);
+            error::handle(e);
+            return r;
+        }
         /**
         * Template function, checking if current instance is the type of another class
         * \return  bool - true or false.

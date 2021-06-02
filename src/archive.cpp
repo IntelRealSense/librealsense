@@ -315,6 +315,11 @@ namespace librealsense
         return additional_data.frame_callback_started;
     }
 
+    float frame::get_frame_depth_units() const
+    {
+        return additional_data.depth_units;
+    }
+
     void frame::log_callback_start(rs2_time_t timestamp)
     {
         update_frame_callback_start_ts(timestamp);
@@ -337,4 +342,5 @@ namespace librealsense
                 << "ms, FPS: " << get_stream()->get_framerate() << ", Max Duration: " << callback_warning_duration << "ms)");
         }
     }
+
 }

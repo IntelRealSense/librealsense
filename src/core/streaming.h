@@ -90,6 +90,7 @@ namespace librealsense
         virtual rs2_timestamp_domain get_frame_timestamp_domain() const = 0;
         virtual void set_timestamp(double new_ts) = 0;
         virtual unsigned long long get_frame_number() const = 0;
+        virtual float get_frame_depth_units() const = 0;
 
         virtual void set_timestamp_domain(rs2_timestamp_domain timestamp_domain) = 0;
         virtual rs2_time_t get_frame_system_time() const = 0;
