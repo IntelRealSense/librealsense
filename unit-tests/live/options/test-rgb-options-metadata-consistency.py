@@ -74,6 +74,8 @@ try:
                     continue
                 option_range = color_sensor.get_option_range(option)
                 metadata = color_metadata[option_index]
+                if option == rs.option.white_balance:
+                    color_sensor.set_option(rs.option.enable_auto_white_balance, 0)
                 value_to_set = option_range.min
             elif iteration == (num_of_frames_to_wait + 1):
                 value_to_set = option_range.max
