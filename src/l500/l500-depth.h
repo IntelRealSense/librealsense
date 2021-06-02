@@ -206,6 +206,8 @@ namespace librealsense
 
         float get_depth_scale() const override { return get_option(RS2_OPTION_DEPTH_UNITS).query(); }
 
+        void set_uvc_depth_scale(float) override {}
+
         ivcam2::intrinsic_depth get_intrinsic() const override
         {
             using namespace ivcam2;

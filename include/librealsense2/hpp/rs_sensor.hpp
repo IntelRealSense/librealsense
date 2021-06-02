@@ -476,6 +476,13 @@ namespace rs2
             return res;
         }
 
+        void set_uvc_depth_scale(float val)
+        {
+            rs2_error* e = nullptr;
+            rs2_set_uvc_depth_scale(_sensor.get(), val, &e);
+            error::handle(e);
+        }
+
         operator bool() const { return _sensor.get() != nullptr; }
         explicit depth_sensor(std::shared_ptr<rs2_sensor> dev) : depth_sensor(sensor(dev)) {}
     };

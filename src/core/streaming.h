@@ -323,6 +323,7 @@ namespace librealsense
     {
     public:
         virtual float get_depth_scale() const = 0;
+        virtual void set_uvc_depth_scale(float val = -1) = 0;
         virtual ~depth_sensor() = default;
     };
 
@@ -336,6 +337,8 @@ namespace librealsense
         {
             return m_depth_units;
         }
+
+        void set_uvc_depth_scale(float) override {};
 
         void update(std::shared_ptr<extension_snapshot> ext) override
         {

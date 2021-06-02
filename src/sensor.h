@@ -98,16 +98,9 @@ namespace librealsense
             frame_timestamp_reader* timestamp_reader,
             const rs2_time_t& last_timestamp,
             const unsigned long long& last_frame_number,
-            std::shared_ptr<stream_profile_interface> profile);
+            std::shared_ptr<stream_profile_interface> profile,
+            float depth_units = -1);
 
-        void update_depth_units(float depth_units)
-        {
-            _updated_depth_units = depth_units;
-        }
-        float get_updated_depth_units()
-        {
-            return _updated_depth_units;
-        }
         std::vector<platform::stream_profile> _internal_config;
 
         std::atomic<bool> _is_streaming;
@@ -129,7 +122,6 @@ namespace librealsense
         stream_profiles _active_profiles;
         mutable std::mutex _active_profile_mutex;
         signal<sensor_base, bool> on_before_streaming_changes;
-        float _updated_depth_units;
     };
 
     class processing_block;
@@ -346,6 +338,8 @@ namespace librealsense
         void stop() override;
         void register_xu(platform::extension_unit xu);
         void register_pu(rs2_option id);
+        void set_depth_units(float value);
+        float get_depth_units();
 
         std::vector<platform::stream_profile> get_configuration() const { return _internal_config; }
         std::shared_ptr<platform::uvc_device> get_uvc_device() { return _device; }
@@ -403,6 +397,7 @@ namespace librealsense
         std::vector<platform::extension_unit> _xus;
         std::unique_ptr<power> _power;
         std::unique_ptr<frame_timestamp_reader> _timestamp_reader;
+        mutable std::atomic<float> _depth_units;
     };
 
     processing_blocks get_color_recommended_proccesing_blocks();

@@ -167,7 +167,7 @@ int rs2_is_sensor_extendable_to(const rs2_sensor* sensor, rs2_extension extensio
 * \return                the number of meters represented by a single depth unit
 */
 float rs2_get_depth_scale(rs2_sensor* sensor, rs2_error** error);
-
+void rs2_set_uvc_depth_scale(rs2_sensor* sensor, float val, rs2_error** error);
 /**
 * Retrieve the stereoscopic baseline value from frame. Applicable to stereo-based depth modules
 * \param[out] float  Stereoscopic baseline in millimeters
