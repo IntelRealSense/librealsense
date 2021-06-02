@@ -30,9 +30,11 @@ def run_demo():
 	depth_resolution_width = 640 # pixels
 	depth_resolution_height = 480 # pixels
 	depth_frame_rate = 30
+
 	color_resolution_width = 1280 # pixels
 	color_resolution_height = 720 # pixels
 	color_frame_rate = 15  # fps
+
 	dispose_frames_for_stablisation = 30  # frames
 	
 	chessboard_width = 6 # squares
@@ -44,7 +46,7 @@ def run_demo():
 		rs_config = rs.config()
 		rs_config.enable_stream(rs.stream.depth, depth_resolution_width, depth_resolution_height, rs.format.z16, depth_frame_rate)
 		rs_config.enable_stream(rs.stream.infrared, 1, depth_resolution_width, depth_resolution_height, rs.format.y8, depth_frame_rate)
-		rs_config.enable_stream(rs.stream.color, color_resolution_width, color_resolution_height, rs.format.rgb8, color_frame_rate)
+		rs_config.enable_stream(rs.stream.color, color_resolution_width, color_resolution_height, rs.format.bgr8, color_frame_rate)
 
 		# Use the device manager class to enable the devices and get the frames
 		device_manager = DeviceManager(rs.context(), rs_config)

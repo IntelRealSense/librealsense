@@ -301,9 +301,9 @@ class DeviceManager:
 if __name__ == "__main__":
     try:
         c = rs.config()
-        c.enable_stream(rs.stream.depth, 1280, 720, rs.format.z16, 6)
-        c.enable_stream(rs.stream.infrared, 1, 1280, 720, rs.format.y8, 6)
-        c.enable_stream(rs.stream.infrared, 2, 1280, 720, rs.format.y8, 6)
+        c.enable_stream(rs.stream.depth, 640, 480, rs.format.z16, 30)
+        c.enable_stream(rs.stream.infrared, 1, 640, 480, rs.format.y8, 30)
+        c.enable_stream(rs.stream.infrared, 2, 640, 480, rs.format.y8, 30)
         c.enable_stream(rs.stream.color, 1280, 720, rs.format.rgb8, 6)
         device_manager = DeviceManager(rs.context(), c)
         device_manager.enable_all_devices()
