@@ -136,8 +136,7 @@ namespace librealsense
         void set(float value) override;
         bool is_read_only() const override
         {
-            //auto& _sensor = _l500_depth_dev->get_depth_sensor();
-            //return _sensor.is_opened();
+            return _sensor && _sensor->is_opened();
         }
 
     private:
