@@ -27,9 +27,9 @@ namespace librealsense
         else
         {
             s << "[" << f.get_stream()->get_stream_type();
-            s << " " << f.get_stream()->get_unique_id();
-            s << " " << f.get_frame_number();
-            s << " " << std::fixed << (double)f.get_frame_timestamp();
+            s << "/" << f.get_stream()->get_unique_id();
+            s << " #" << f.get_frame_number();
+            s << " @" << std::fixed << (double)f.get_frame_timestamp();
             s << "]";
         }
         return s.str();
