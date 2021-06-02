@@ -9,13 +9,15 @@
 // Otherwise, don't let it define its own:
 #define ELPP_NO_CHECK_MACROS
 
+// We always set our own main, CATCH_CONFIG_MAIN will cause errors in build due to having our main and catch2 main
 #if defined(CATCH_CONFIG_MAIN)
 #error CATCH_CONFIG_MAIN defined
 #endif
 
 #include "catch/catch.hpp"
 #include <string>
-std::string context = "";
+
+std::string test_context;
 
 #if defined(CATCH_CONFIG_RUNNER)
 

@@ -251,6 +251,8 @@ def process_cpp( dir, builddir ):
             for include in includes:
                 filelist.append( include )
 
+            # the directive custom-main indicates that the test is defining it's own main.
+            # If it is not specified we use our default main
             if not custom_main:
                 filelist.append(root + "/unit-tests/unit-test-default-main.cpp")
 
