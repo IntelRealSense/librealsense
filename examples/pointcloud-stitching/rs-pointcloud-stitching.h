@@ -7,6 +7,8 @@
 #include "example.hpp"
 #include <condition_variable>
 #include <librealsense2/hpp/rs_internal.hpp>
+#include <librealsense2/hpp/rs_record_playback.hpp>
+#include "example-imgui.hpp"    // Include short list of convenience functions for rendering
 
 using namespace std;
 
@@ -178,34 +180,37 @@ namespace rs_pointcloud_stitching
     private:
         bool OpenSensors(std::shared_ptr<rs2::device> dev);
         void frame_callback(rs2::frame frame, const string& serial);
-        //void frame_callback_soft(rs2::frame frame);
         rs2_intrinsics create_intrinsics(const synthetic_frame& _virtual_frame, const float fov_x, const float fov_y);    // fov_x, fov_y in radians.
         void InitializeVirtualFrames();
         void CreateVirtualDevice();
         void ProjectFramesOnOtherDevice(rs2::frameset frames, const string& from_serial, const string& to_serial);
+        void RecordButton(const ImVec2& window_size);
+        void DrawTitles(const ImVec2& window_size);
+        void StartRecording(const std::string& path);
+        void StopRecording();
 
     private:
 	    std::string _working_dir;
         std::string _left_device;
         std::vector<std::shared_ptr<rs2::device> > _devices;
         std::map<std::string, std::vector<rs2::sensor> >    _active_sensors;
-        //std::vector<rs2::software_sensor> _active_software_sensors;
         std::map<std::string, rs2::software_sensor> _active_software_sensors;
         std::map<std::string, std::vector<stream_request> > _wanted_profiles;
         std::map<std::string, PipelineSyncer> _syncer;
         rs2::syncer _soft_sync;
         std::map<std::string, rs2::frame_queue>     _frames;
-        //std::map<std::string, rs2::frame>     _frames;
         std::mutex              _frames_mutex;
         std::condition_variable _frame_cv;
         frames_mosaic _frames_map;
         rs2::colorizer _colorizer;
         rs2::pointcloud _pc;
-        //std::map< std::string, std::map<std::string, std::vector<std::double_t> > > _ir_extrinsics;
         std::map< std::string, std::map<std::string, rs2_extrinsics > > _ir_extrinsics;
         rs2::software_device _soft_dev; // Create software-only device
         synthetic_frame _virtual_depth_frame, _virtual_color_frame;
         int _frame_number;
+        std::shared_ptr<rs2::recorder> _recorder;
+        bool _is_recording;
+
 
         enum frame_id { COLOR1, COLOR_UNITED, COLOR2, DEPTH1, DEPTH_UNITED, DEPTH2};
     };
