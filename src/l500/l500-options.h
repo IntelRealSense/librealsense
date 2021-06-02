@@ -4,7 +4,6 @@
 #pragma once
 #include "../hw-monitor.h"
 #include "l500-device.h"
-#include "l500-depth.h"
 
 
 namespace librealsense
