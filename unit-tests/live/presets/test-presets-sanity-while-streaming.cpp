@@ -37,5 +37,7 @@ TEST_CASE( "presets sanity while streaming", "[l500][live]" )
         expected_values,
         expected_defs,
         []( preset_mode_pair preset_mode ) {},
-        [&]( preset_mode_pair preset_mode ) { set_mode_preset( depth_sens, preset_mode ); } );
+        [&]( preset_mode_pair preset_mode ) { 
+        REQUIRE_NOTHROW(depth_sens.set_option(RS2_OPTION_VISUAL_PRESET, (float)preset_mode.first));
+        CHECK(depth_sens.get_option(RS2_OPTION_VISUAL_PRESET) == (float)preset_mode.first); });
 }

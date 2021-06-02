@@ -4,6 +4,8 @@
 #pragma once
 #include "../hw-monitor.h"
 #include "l500-device.h"
+#include "l500-depth.h"
+
 
 namespace librealsense
 {
@@ -134,7 +136,8 @@ namespace librealsense
         void set(float value) override;
         bool is_read_only() const override
         {
-            return _sensor && _sensor->is_opened();
+            //auto& _sensor = _l500_depth_dev->get_depth_sensor();
+            //return _sensor.is_opened();
         }
 
     private:
