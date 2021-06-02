@@ -44,8 +44,6 @@ namespace librealsense
         register_metadata(RS2_FRAME_METADATA_TIME_OF_ARRIVAL, std::make_shared<librealsense::md_time_of_arrival_parser>());
 
         register_info(RS2_CAMERA_INFO_NAME, name);
-
-        std::cout << "NOHA :: sensor_base:: PID"<< getpid()<<std::endl;
     }
 
     const std::string& sensor_base::get_info(rs2_camera_info info) const
@@ -244,15 +242,15 @@ namespace librealsense
         const rs2_time_t& last_timestamp,
         const unsigned long long& last_frame_number,
         std::shared_ptr<stream_profile_interface> profile,
-        float depth_units)
+        float depth_units = -1)
     {
-        std::cout << "NOHA :: sensor_base::generate_frame_from_data :: PID" << getpid() << std::endl;
         auto system_time = environment::get_instance().get_time_service()->get_time();
         auto fr = std::make_shared<frame>();
         byte* pix = (byte*)fo.pixels;
         std::vector<byte> pixels(pix, pix + fo.frame_size);
         fr->data = pixels;
         fr->set_stream(profile);
+
         // generate additional data
         frame_additional_data additional_data(0,
             0,
@@ -299,7 +297,6 @@ namespace librealsense
     void uvc_sensor::open(const stream_profiles& requests)
     {
         std::lock_guard<std::mutex> lock(_configure_lock);
-        std::cout << "NOHA :: uvc_sensor :: open() :: PID" << getpid() << std::endl;
         if (_is_streaming)
             throw wrong_api_call_sequence_exception("open(...) failed. UVC device is streaming!");
         else if (_is_opened)
@@ -311,7 +308,7 @@ namespace librealsense
         _source.set_sensor(_source_owner->shared_from_this());
 
         std::vector<platform::stream_profile> commited;
-        auto depth_units = get_depth_units();
+
         for (auto&& req_profile : requests)
         {
             auto&& req_profile_base = std::dynamic_pointer_cast<stream_profile_base>(req_profile);
@@ -320,10 +317,10 @@ namespace librealsense
                 unsigned long long last_frame_number = 0;
                 rs2_time_t last_timestamp = 0;
                 _device->probe_and_commit(req_profile_base->get_backend_profile(),
-                    [this, req_profile_base, req_profile, last_frame_number, last_timestamp, depth_units](platform::stream_profile p, platform::frame_object f, std::function<void()> continuation) mutable
+                    [this, req_profile_base, req_profile, last_frame_number, last_timestamp](platform::stream_profile p, platform::frame_object f, std::function<void()> continuation) mutable
                 {
                     const auto&& system_time = environment::get_instance().get_time_service()->get_time();
-                    const auto&& fr = generate_frame_from_data(f, _timestamp_reader.get(), last_timestamp, last_frame_number, req_profile_base, depth_units);
+                    const auto&& fr = generate_frame_from_data(f, _timestamp_reader.get(), last_timestamp, last_frame_number, req_profile_base, _depth_units);
                     const auto&& requires_processing = true; // TODO - Ariel add option
                     const auto&& timestamp_domain = _timestamp_reader->get_frame_timestamp_domain(fr);
                     const auto&& bpp = get_image_bpp(req_profile_base->get_format());
@@ -651,15 +648,11 @@ namespace librealsense
         register_option(id, std::make_shared<uvc_pu_option>(*this, id));
     }
 
-    void uvc_sensor::set_depth_units(float value)
+    void uvc_sensor::set_depth_units(float value) // TODO for refactoring
     {
         _depth_units = value;
     }
 
-    float uvc_sensor::get_depth_units()
-    {
-        return _depth_units;
-    }
     //////////////////////////////////////////////////////
     /////////////////// HID Sensor ///////////////////////
     //////////////////////////////////////////////////////
@@ -954,8 +947,6 @@ namespace librealsense
     {
         register_metadata(RS2_FRAME_METADATA_BACKEND_TIMESTAMP, make_additional_data_parser(&frame_additional_data::backend_timestamp));
         register_metadata(RS2_FRAME_METADATA_RAW_FRAME_SIZE, make_additional_data_parser(&frame_additional_data::raw_size));
-        //dynamic_cast<synthetic_sensor&>(dev->get_sensor(_depth_device_idx));
-        std::cout <<"NOHA :: uvc_sensor PID" << getpid() <<std::endl;
     }
 
     iio_hid_timestamp_reader::iio_hid_timestamp_reader()

@@ -99,7 +99,7 @@ namespace librealsense
             const rs2_time_t& last_timestamp,
             const unsigned long long& last_frame_number,
             std::shared_ptr<stream_profile_interface> profile,
-            float depth_units = -1);
+            float depth_units);
 
         std::vector<platform::stream_profile> _internal_config;
 
@@ -339,7 +339,6 @@ namespace librealsense
         void register_xu(platform::extension_unit xu);
         void register_pu(rs2_option id);
         void set_depth_units(float value);
-        float get_depth_units();
 
         std::vector<platform::stream_profile> get_configuration() const { return _internal_config; }
         std::shared_ptr<platform::uvc_device> get_uvc_device() { return _device; }

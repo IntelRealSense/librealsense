@@ -331,6 +331,7 @@ namespace librealsense
             data.metadata_size = 0;
             data.system_time = _actual_source.get_time();
             data.is_blocking = original->is_blocking();
+            data.depth_units = original->get_frame_depth_units();
 
             auto res = _actual_source.alloc_frame(frame_type, vid_stream->get_width() * vid_stream->get_height() * sizeof(float) * 5, data, true);
             if (!res) throw wrong_api_call_sequence_exception("Out of frame resources!");

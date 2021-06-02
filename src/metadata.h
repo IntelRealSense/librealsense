@@ -111,8 +111,7 @@ namespace librealsense
         roi_attribute                   = (1u << 5),
         preset_attribute                = (1u << 6),
         emitter_mode_attribute          = (1u << 7),
-        led_power_attribute             = (1u << 8),
-        depth_units_attribute           = (1u << 9)
+        led_power_attribute             = (1u << 8)
     };
 
     /**\brief md_depth_control_attributes - bit mask to find active attributes,
@@ -376,7 +375,6 @@ namespace librealsense
     struct md_depth_control
     {
         md_header   header;
-        uint32_t    depth_units;
         uint32_t    version;
         uint32_t    flags;
         uint32_t    manual_gain;        //  Manual gain value

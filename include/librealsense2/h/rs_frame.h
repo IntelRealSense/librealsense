@@ -65,7 +65,6 @@ typedef enum rs2_frame_metadata_value
     RS2_FRAME_METADATA_SEQUENCE_NAME                         , /**< sub-preset id */
     RS2_FRAME_METADATA_SEQUENCE_ID                , /**< sub-preset sequence id */
     RS2_FRAME_METADATA_SEQUENCE_SIZE              , /**< sub-preset sequence size */
-    RS2_FRAME_METADATA_DEPTH_UNITS                , /**< depth units value */
     RS2_FRAME_METADATA_COUNT
 } rs2_frame_metadata_value;
 const char* rs2_frame_metadata_to_string(rs2_frame_metadata_value metadata);
@@ -138,7 +137,7 @@ unsigned long long rs2_get_frame_number(const rs2_frame* frame, rs2_error** erro
 * \return               the size of the frame data
 */
 int rs2_get_frame_data_size(const rs2_frame* frame, rs2_error** error);
-float rs2_get_md_depth_units(const rs2_frame* frame, rs2_error** error);
+
 /**
 * retrieve data from frame handle
 * \param[in] frame      handle returned from a callback

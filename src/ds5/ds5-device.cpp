@@ -349,9 +349,7 @@ namespace librealsense
             _depth_units(-1),
             _uvc_sensor(uvc_sensor),
             _hdr_cfg(nullptr)
-        { 
-            std::cout << "NOHA :: ds5_depth_sensor :: PID" << getpid() << std::endl;
-        }
+        { }
 
         processing_blocks get_recommended_processing_blocks() const override
         {
@@ -376,15 +374,10 @@ namespace librealsense
             }
         }
 
-        void add_depth_units_md(frame& fr)
-        {
-            fr.additional_data.depth_units = _depth_units;
-        }
-
         void open(const stream_profiles& requests) override
         {
             _depth_units = get_option(RS2_OPTION_DEPTH_UNITS).query();
-            //update_depth_units(_depth_units);
+            _uvc_sensor->set_depth_units(_depth_units);
             synthetic_sensor::open(requests);
 
             // needed in order to restore the HDR sub-preset when streaming is turned off and on
@@ -467,13 +460,9 @@ namespace librealsense
         }
 
         void set_depth_scale(float val)
-        { 
-            _depth_units = val; 
-        }
-
-        void set_uvc_depth_scale(float val) override
         {
-            _uvc_sensor->set_depth_units(val); // NOHA :: TODO :: set actual value
+            _depth_units = val;
+            _uvc_sensor->set_depth_units(val);
         }
 
         void init_hdr_config(const option_range& exposure_range, const option_range& gain_range)
@@ -538,9 +527,7 @@ namespace librealsense
         explicit ds5u_depth_sensor(ds5u_device* owner,
             std::shared_ptr<uvc_sensor> uvc_sensor)
             : ds5_depth_sensor(owner, uvc_sensor), _owner(owner)
-        {
-            std::cout << "NOHA :: ds5u_depth_sensor() :: PID" << getpid()<<std::endl;
-        }
+        {}
 
         stream_profiles init_stream_profiles() override
         {
@@ -1094,7 +1081,6 @@ namespace librealsense
         depth_sensor.register_metadata(RS2_FRAME_METADATA_EXPOSURE_ROI_BOTTOM, make_attribute_parser(&md_depth_control::exposure_roi_bottom, md_depth_control_attributes::roi_attribute, md_prop_offset));
         depth_sensor.register_metadata(RS2_FRAME_METADATA_FRAME_EMITTER_MODE, make_attribute_parser(&md_depth_control::emitterMode, md_depth_control_attributes::emitter_mode_attribute, md_prop_offset));
         depth_sensor.register_metadata(RS2_FRAME_METADATA_FRAME_LED_POWER, make_attribute_parser(&md_depth_control::ledPower, md_depth_control_attributes::led_power_attribute, md_prop_offset));
-        depth_sensor.register_metadata(RS2_FRAME_METADATA_DEPTH_UNITS, make_attribute_parser(&md_depth_control::depth_units, md_depth_control_attributes::depth_units_attribute, md_prop_offset));
 
         // md_configuration - will be used for internal validation only
         md_prop_offset = offsetof(metadata_raw, mode) + offsetof(md_depth_mode, depth_y_mode) + offsetof(md_depth_y_normal_mode, intel_configuration);

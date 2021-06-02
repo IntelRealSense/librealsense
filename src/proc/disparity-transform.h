@@ -82,6 +82,7 @@ namespace librealsense
             librealsense::depth_stereo_sensor* dss;
             auto info = disparity_info::info();
             float stereo_baseline_meter;
+            info.depth_units = ((depth_frame*)f.get())->get_units();
 
             // Playback sensor
             if (auto a = As<librealsense::extendable_interface>(snr))
@@ -90,7 +91,6 @@ namespace librealsense
                 if ((info.stereoscopic_depth = a->extend_to(TypeToExtension<librealsense::depth_stereo_sensor>::value, (void**)&ptr)))
                 {
                     dss = ptr;
-                    info.depth_units = dss->get_depth_scale();
                     stereo_baseline_meter = dss->get_stereo_baseline_mm()*0.001f;
                 }
             }
@@ -100,7 +100,6 @@ namespace librealsense
                 if (info.stereoscopic_depth)
                 {
                     dss = As<librealsense::depth_stereo_sensor>(snr);
-                    info.depth_units = dss->get_depth_scale();
                     stereo_baseline_meter = dss->get_stereo_baseline_mm()* 0.001f;
                 }
             }

@@ -937,13 +937,6 @@ int rs2_get_frame_data_size(const rs2_frame* frame_ref, rs2_error** error) BEGIN
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, frame_ref)
 
-float rs2_get_md_depth_units(const rs2_frame* frame_ref, rs2_error** error) BEGIN_API_CALL
-{
-    VALIDATE_NOT_NULL(frame_ref);
-    return ((frame_interface*)frame_ref)->get_frame_depth_units();
-}
-HANDLE_EXCEPTIONS_AND_RETURN(0, frame_ref)
-
 const void* rs2_get_frame_data(const rs2_frame* frame_ref, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(frame_ref);
@@ -2323,14 +2316,6 @@ float rs2_get_depth_scale(rs2_sensor* sensor, rs2_error** error) BEGIN_API_CALL
     return ds->get_depth_scale();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0.f, sensor)
-
-void rs2_set_uvc_depth_scale(rs2_sensor* sensor, float val, rs2_error** error) BEGIN_API_CALL
-{
-    VALIDATE_NOT_NULL(sensor);
-    auto ds = VALIDATE_INTERFACE(sensor->sensor, librealsense::depth_sensor);
-    ds->set_uvc_depth_scale(val);
-}
-HANDLE_EXCEPTIONS_AND_RETURN(,sensor)
 
 float rs2_get_max_usable_depth_range(rs2_sensor const * sensor, rs2_error** error) BEGIN_API_CALL
 {

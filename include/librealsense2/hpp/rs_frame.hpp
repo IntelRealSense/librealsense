@@ -526,6 +526,14 @@ namespace rs2
             return r;
         }
 
+        float get_frame_depth_units() const
+        {
+            rs2_error* e = nullptr;
+            auto r = rs2_depth_frame_get_units(frame_ref, &e);
+            error::handle(e);
+            return r;
+        }
+
         /**
         * retrieve data size from frame handle
         * \return               the number of bytes in frame
@@ -562,13 +570,6 @@ namespace rs2
             return stream_profile(s);
         }
 
-        float get_md_depth_units() const
-        {
-            rs2_error* e = nullptr;
-            auto r = rs2_get_md_depth_units(frame_ref, &e);
-            error::handle(e);
-            return r;
-        }
         /**
         * Template function, checking if current instance is the type of another class
         * \return  bool - true or false.

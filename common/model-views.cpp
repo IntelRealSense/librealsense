@@ -2113,8 +2113,6 @@ namespace rs2
 
                 if (next == RS2_OPTION_DEPTH_UNITS)
                 {
-                    s->as<depth_sensor>().set_uvc_depth_scale(opt_md.value);
-
                     opt_md.dev->depth_units = opt_md.value;
                 }
 

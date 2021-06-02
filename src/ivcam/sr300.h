@@ -307,8 +307,6 @@ namespace librealsense
 
             float get_depth_scale() const override { return get_option(RS2_OPTION_DEPTH_UNITS).query(); }
 
-            void set_uvc_depth_scale(float) override {}
-
             void create_snapshot(std::shared_ptr<depth_sensor>& snapshot) const  override
             {
                 snapshot = std::make_shared<depth_sensor_snapshot>(get_depth_scale());

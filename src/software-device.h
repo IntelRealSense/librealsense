@@ -128,8 +128,6 @@ namespace librealsense
                 return _owner->get_option(RS2_OPTION_DEPTH_UNITS).query();
             }
 
-            void set_uvc_depth_scale(float) override {}
-
             float get_stereo_baseline_mm() const override {
                 return _owner->get_option(RS2_OPTION_STEREO_BASELINE).query();
             }
@@ -151,8 +149,6 @@ namespace librealsense
             float get_depth_scale() const override {
                 return _owner->get_option(RS2_OPTION_DEPTH_UNITS).query();
             }
-
-            void set_uvc_depth_scale(float) override {}
 
             void create_snapshot(std::shared_ptr<depth_sensor>& snapshot) const override {}
             void enable_recording(std::function<void(const depth_sensor&)> recording_function) override {}

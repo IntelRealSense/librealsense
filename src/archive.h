@@ -43,12 +43,10 @@ namespace librealsense
                                                  // if true, this will force any queue receiving this frame not to drop it
         float               depth_units = 0.0f;
         uint32_t            raw_size = 0;   // The frame transmitted size (payload only)
-        
 
         frame_additional_data() {}
 
-        frame_additional_data(
-            double in_timestamp,
+        frame_additional_data(double in_timestamp,
             unsigned long long in_frame_number,
             double in_system_time,
             uint8_t md_size,
@@ -59,8 +57,7 @@ namespace librealsense
             bool in_is_blocking,
             float in_depth_units,
             uint32_t transmitted_size = 0)
-            :
-            timestamp(in_timestamp),
+            : timestamp(in_timestamp),
             frame_number(in_frame_number),
             system_time(in_system_time),
             metadata_size(md_size),
@@ -140,13 +137,13 @@ namespace librealsense
         rs2_timestamp_domain get_frame_timestamp_domain() const override;
         void set_timestamp(double new_ts) override { additional_data.timestamp = new_ts; }
         unsigned long long get_frame_number() const override;
+        float get_frame_depth_units() const override;
         void set_timestamp_domain(rs2_timestamp_domain timestamp_domain) override
         {
             additional_data.timestamp_domain = timestamp_domain;
         }
 
         rs2_time_t get_frame_system_time() const override;
-        float get_frame_depth_units() const override;
 
         std::shared_ptr<stream_profile_interface> get_stream() const override { return stream; }
         void set_stream(std::shared_ptr<stream_profile_interface> sp) override { stream = std::move(sp); }
@@ -245,10 +242,6 @@ namespace librealsense
         {
             return first()->get_frame_data_size();
         }
-        float get_frame_depth_units() const override
-        {
-            return first()->get_frame_depth_units();
-        }
         const byte* get_frame_data() const override
         {
             return first()->get_frame_data();
@@ -267,6 +260,10 @@ namespace librealsense
                 return first()->get_frame_number();
             else
                 return frame::get_frame_number();
+        }
+        float get_frame_depth_units() const override
+        {
+            return first()->get_frame_depth_units();
         }
         rs2_time_t get_frame_system_time() const override
         {
@@ -309,13 +306,10 @@ namespace librealsense
     class depth_frame : public video_frame
     {
     public:
-        depth_frame() : video_frame(), _depth_units()
-        {
-        }
+        depth_frame() : video_frame() {}
 
         frame_interface* publish(std::shared_ptr<archive_interface> new_owner) override
         {
-            _depth_units = optional_value<float>();
             return video_frame::publish(new_owner);
         }
 
@@ -347,9 +341,7 @@ namespace librealsense
 
         float get_units() const
         {
-            if (!_depth_units)
-                _depth_units = query_units(get_sensor());
-            return _depth_units.value();
+            return additional_data.depth_units;
         }
 
         void set_original(frame_holder h)
@@ -403,7 +395,6 @@ namespace librealsense
         }
 
         frame_holder _original;
-        mutable optional_value<float> _depth_units;
     };
 
     MAP_EXTENSION(RS2_EXTENSION_DEPTH_FRAME, librealsense::depth_frame);
