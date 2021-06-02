@@ -553,10 +553,19 @@ namespace rs2
     {
         std::string desc (endpoint->get_option_description(opt));
         std::string device_pid = dev->s->get_info(RS2_CAMERA_INFO_PRODUCT_ID);
-        if (device_pid == "0B5B" && (opt == RS2_OPTION_MIN_DISTANCE || opt == RS2_OPTION_MAX_DISTANCE))
+        if (device_pid == "0B5B")
         {
-            auto pos = desc.find("meters");
-            desc.replace(pos, desc.size(), "cm");
+            std::string meters_str("meters");
+            if (opt == RS2_OPTION_MIN_DISTANCE || opt == RS2_OPTION_MAX_DISTANCE)
+            {
+                auto pos = desc.find(meters_str);
+                desc.replace(pos, desc.size(), "cm");
+            }
+            else if (opt == RS2_OPTION_DEPTH_UNITS)
+            {
+                auto pos = desc.find(meters_str);
+                desc.replace(pos, meters_str.size(), "cm");
+            }
         }
         return desc;
     }
@@ -732,18 +741,21 @@ namespace rs2
                         else
                         {
                             float tmp_value = value;
-                            
+                            float temp_value_displayed = tmp_value;
+                            float min_range_displayed = range.min;
+                            float max_range_displayed = range.max;
+
                             // displaying in cm instead of meters for D405
                             std::string device_pid = dev->s->get_info(RS2_CAMERA_INFO_PRODUCT_ID);
-                            if (device_pid == "0B5B" && (opt == RS2_OPTION_MIN_DISTANCE || opt == RS2_OPTION_MAX_DISTANCE))
+                            if (device_pid == "0B5B" && (opt == RS2_OPTION_MIN_DISTANCE || opt == RS2_OPTION_MAX_DISTANCE || opt == RS2_OPTION_DEPTH_UNITS))
                             {
-                                tmp_value *= 100.f; 
-                                range.min *= 100.f;
-                                range.max *= 100.f;
+                                temp_value_displayed *= 100.f;
+                                min_range_displayed *= 100.f;
+                                max_range_displayed *= 100.f;
                             }
 
-                            if (ImGui::SliderFloat(id.c_str(), &tmp_value,
-                                range.min, range.max, "%.4f"))
+                            if (ImGui::SliderFloat(id.c_str(), &temp_value_displayed,
+                                min_range_displayed, max_range_displayed, "%.4f"))
                             {
                                 auto loffset = std::abs(fmod(tmp_value, range.step));
                                 auto roffset = range.step - loffset;
