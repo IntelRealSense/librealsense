@@ -638,6 +638,7 @@ namespace librealsense
             val |= d400_caps::CAP_ROLLING_SHUTTER;  // e.g. ASRC
         if (0x2 == gvd_buf[depth_sensor_type])
             val |= d400_caps::CAP_GLOBAL_SHUTTER;   // e.g. AWGC
+        // Option INTER_CAM_SYNC_MODE is not enabled in D405
         if (_pid != ds::RS405_PID)
             val |= d400_caps::CAP_INTERCAM_HW_SYNC;
 
