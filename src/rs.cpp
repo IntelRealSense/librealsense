@@ -30,6 +30,7 @@
 #include "proc/zero-order.h"
 #include "proc/hole-filling-filter.h"
 #include "proc/color-formats-converter.h"
+#include "proc/y411-converter.h"
 #include "proc/rates-printer.h"
 #include "proc/hdr-merge.h"
 #include "proc/sequence-id-filter.h"
