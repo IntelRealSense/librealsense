@@ -3,6 +3,7 @@
 
 //#cmake: static!
 //#test:device D400*
+//#test:donotrun
 
 
 #define CATCH_CONFIG_MAIN
