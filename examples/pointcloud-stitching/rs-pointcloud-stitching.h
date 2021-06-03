@@ -23,6 +23,19 @@ namespace rs_pointcloud_stitching
     const uint64_t  DEF_FRAMES_NUMBER = 100;
     const std::string DEF_OUTPUT_FILE_NAME("frames_data.csv");
 
+    std::string trim(const std::string& str,
+        const std::string& whitespace = " \t")
+    {
+        const auto strBegin = str.find_first_not_of(whitespace);
+        if (strBegin == std::string::npos)
+            return ""; // no content
+
+        const auto strEnd = str.find_last_not_of(whitespace);
+        const auto strRange = strEnd - strBegin + 1;
+
+        return str.substr(strBegin, strRange);
+    }
+
     // Split string into token,  trim unreadable characters
     inline std::vector<std::string> tokenize(std::string line, char separator)
     {
@@ -36,7 +49,8 @@ namespace rs_pointcloud_stitching
         {
             string substr;
             getline(ss, substr, separator);
-            tokens.push_back(substr);
+
+            tokens.push_back(trim(substr));
         }
 
         return tokens;
@@ -170,7 +184,7 @@ namespace rs_pointcloud_stitching
     class CPointcloudStitcher
     {
     public:
-	    CPointcloudStitcher(const std::string& working_dir);
+	    CPointcloudStitcher(const std::string& working_dir, const std::string& calibration_file);
         bool Init();
         bool Start();
         void CloseSensors();
@@ -188,9 +202,10 @@ namespace rs_pointcloud_stitching
         void DrawTitles(const ImVec2& window_size);
         void StartRecording(const std::string& path);
         void StopRecording();
+        void parse_calibration_file(const std::string& config_filename);
 
     private:
-	    std::string _working_dir;
+	    std::string _working_dir, _calibration_file;
         std::string _left_device;
         std::vector<std::shared_ptr<rs2::device> > _devices;
         std::map<std::string, std::vector<rs2::sensor> >    _active_sensors;
@@ -206,6 +221,7 @@ namespace rs_pointcloud_stitching
         rs2::pointcloud _pc;
         std::map< std::string, std::map<std::string, rs2_extrinsics > > _ir_extrinsics;
         rs2::software_device _soft_dev; // Create software-only device
+        std::string _serial_vir;
         synthetic_frame _virtual_depth_frame, _virtual_color_frame;
         int _frame_number;
         std::shared_ptr<rs2::recorder> _recorder;

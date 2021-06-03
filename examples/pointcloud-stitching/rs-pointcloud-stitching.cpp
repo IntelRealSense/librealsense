@@ -18,6 +18,90 @@
 using namespace std;
 using namespace rs_pointcloud_stitching;
 
+// structure of a matrix 4 X 4, representing rotation and translation as following:
+// pos_and_rot[i][j] is 
+//  _                        _ 
+// |           |              |
+// | rotation  | translation  |
+// |   (3x3)   |    (3x1)     |
+// | _________ |____________  |
+// |     0     |      1       |
+// |_  (1x3)   |    (1x1)    _|
+//
+struct position_and_rotation {
+    double pos_and_rot[4][4];
+    // rotation tolerance - units are in cosinus of radians
+    const double rotation_tolerance = 0.000001;
+    // translation tolerance - units are in meters
+    const double translation_tolerance = 0.000001; // 0.001mm
+
+    position_and_rotation operator* (const position_and_rotation& other)
+    {
+        position_and_rotation product;
+        for (int i = 0; i < 4; i++) {
+            for (int j = 0; j < 4; j++) {
+                product.pos_and_rot[i][j] = 0;
+                for (int k = 0; k < 4; k++)
+                    product.pos_and_rot[i][j] += pos_and_rot[i][k] * other.pos_and_rot[k][j];
+            }
+        }
+        return product;
+    }
+};
+
+position_and_rotation matrix_4_by_4_from_translation_and_rotation(const float* position, const float* rotation)
+{
+    position_and_rotation pos_rot;
+    pos_rot.pos_and_rot[0][0] = static_cast<double>(rotation[0]);
+    pos_rot.pos_and_rot[1][0] = static_cast<double>(rotation[1]);
+    pos_rot.pos_and_rot[2][0] = static_cast<double>(rotation[2]);
+
+    pos_rot.pos_and_rot[0][1] = static_cast<double>(rotation[3]);
+    pos_rot.pos_and_rot[1][1] = static_cast<double>(rotation[4]);
+    pos_rot.pos_and_rot[2][1] = static_cast<double>(rotation[5]);
+
+    pos_rot.pos_and_rot[0][2] = static_cast<double>(rotation[6]);
+    pos_rot.pos_and_rot[1][2] = static_cast<double>(rotation[7]);
+    pos_rot.pos_and_rot[2][2] = static_cast<double>(rotation[8]);
+
+    pos_rot.pos_and_rot[3][0] = 0.0;
+    pos_rot.pos_and_rot[3][1] = 0.0;
+    pos_rot.pos_and_rot[3][2] = 0.0;
+
+    pos_rot.pos_and_rot[0][3] = static_cast<double>(position[0]);
+    pos_rot.pos_and_rot[1][3] = static_cast<double>(position[1]);
+    pos_rot.pos_and_rot[2][3] = static_cast<double>(position[2]);
+
+    pos_rot.pos_and_rot[3][3] = 1.0;
+
+    return pos_rot;
+}
+
+rs2_extrinsics matrix_to_extrinsics(const position_and_rotation& pos_rot)
+{
+    rs2_extrinsics res = {
+        {
+        (float)pos_rot.pos_and_rot[0][0],
+        (float)pos_rot.pos_and_rot[1][0],
+        (float)pos_rot.pos_and_rot[2][0],
+
+        (float)pos_rot.pos_and_rot[0][1],
+        (float)pos_rot.pos_and_rot[1][1],
+        (float)pos_rot.pos_and_rot[2][1],
+
+        (float)pos_rot.pos_and_rot[0][2],
+        (float)pos_rot.pos_and_rot[1][2],
+        (float)pos_rot.pos_and_rot[2][2]
+        },
+        {
+        (float)pos_rot.pos_and_rot[0][3],
+        (float)pos_rot.pos_and_rot[1][3],
+        (float)pos_rot.pos_and_rot[2][3]
+        }
+    };
+    return res;
+}
+
 bool parse_configuration(const std::string& line, const std::vector<std::string>& tokens,
     rs2_stream& type, int& width, int& height, rs2_format& format, int& fps, int& index)
 {
@@ -95,8 +179,105 @@ std::vector<stream_request> parse_profiles_file(const std::string& config_filena
     return user_requests;
 }
 
-CPointcloudStitcher::CPointcloudStitcher(const std::string& working_dir) :
+void CPointcloudStitcher::parse_calibration_file(const std::string& config_filename)
+{
+    ifstream file(config_filename);
+
+    if (!file.is_open())
+        throw runtime_error(stringify() << "Given .cfg configure file " << config_filename << " was not found!");
+
+    // Line starting with non-alpha characters will be treated as comments
+
+    const static std::regex starts_with("^[a-zA-Z0-9]");
+    string line;
+
+    std::vector<std::string> serials;
+    for (auto serial : _wanted_profiles)
+        serials.push_back(serial.first);
+    
+    // Parse the config file
+    while (getline(file, line))
+    {
+        if (std::regex_search(line, starts_with))
+        {
+            auto tokens = tokenize(line, ',');
+            if (tokens.size() != 14)
+            {
+                std::cout << "invalid configuration line: " << line << std::endl;
+                continue;
+            }
+            std::string from_serial(tokens[0]);
+            if (from_serial == "virtual_dev") from_serial = _serial_vir;
+            else if (std::count(serials.begin(), serials.end(), from_serial) == 0) continue;
+
+            std::string to_serial(tokens[1]);
+            if (to_serial == "virtual_dev") to_serial = _serial_vir;
+            else if (std::count(serials.begin(), serials.end(), to_serial) == 0) continue;
+
+            rs2_extrinsics crnt_extrinsics({ { 0,0,0,0,0,0,0,0,0 }, { 0,0,0 } });
+            int count(0);
+            for (auto it = tokens.begin() + 2; it != tokens.end(); ++it, count++) {
+                std::string token = *it;
+                if (count <= 9)
+                    crnt_extrinsics.rotation[count] = stof(token);
+                else
+                    crnt_extrinsics.translation[count-9] = stof(token);
+                if (count == 12)
+                    break;
+            }
+            if (count == 12)
+                _ir_extrinsics[from_serial][to_serial] = crnt_extrinsics;
+        }
+    }
+    if (_ir_extrinsics.empty())
+        throw runtime_error(stringify() << "Given .cfg configure file " << config_filename << " contains less then 1 full transformation!");
+    if (_ir_extrinsics.size() < 2)
+        throw runtime_error(stringify() << "Given .cfg configure file " << config_filename << " does not contain 2 full transformation!");
+    // Fill calibration from exery camera to the virtual one:
+
+    // Check that from every device there is, even passing through another, a transformation to virtual_dev
+    for (auto serial : serials)
+    {
+        try
+        {
+            std::map<std::string, rs2_extrinsics >& this_transformations = _ir_extrinsics.at(serial);
+            if (this_transformations.find(_serial_vir) == this_transformations.end())
+            {
+                for (auto trans_to_other : this_transformations)
+                {
+                    try
+                    {
+                        rs2_extrinsics this_to_other = trans_to_other.second;
+                        rs2_extrinsics other_to_virtual = _ir_extrinsics.at(trans_to_other.first).at(_serial_vir);
+                        position_and_rotation pr_t_to_o = matrix_4_by_4_from_translation_and_rotation(this_to_other.translation, this_to_other.rotation);
+                        position_and_rotation pr_o_to_v = matrix_4_by_4_from_translation_and_rotation(other_to_virtual.translation, other_to_virtual.rotation);
+                        position_and_rotation pr_t_to_v = pr_t_to_o * pr_o_to_v;
+                        this_transformations.insert(std::pair<std::string, rs2_extrinsics>(_serial_vir, matrix_to_extrinsics(pr_t_to_v)));
+                        break;
+                    }
+                    catch (const std::out_of_range& e)
+                    {
+                        std::cout << "Given .cfg configure file " << config_filename << " does not contain transformation: " << e.what() << std::endl;
+                    }
+                }
+                if (this_transformations.find(_serial_vir) == this_transformations.end())
+                {
+                    throw runtime_error(stringify() << "Given .cfg configure file " << config_filename << " does not contain a connection from " << serial << " to virtual_dev.");
+                }
+            }
+        }
+        catch (const std::out_of_range&)
+        {
+            throw runtime_error(stringify() << "Given .cfg configure file " << config_filename << " does not contain transformation from " << serial << ".");
+        }
+    }
+}
+
+
+CPointcloudStitcher::CPointcloudStitcher(const std::string& working_dir, const std::string& calibration_file) :
     _working_dir(working_dir),
+    _calibration_file(calibration_file),
+    _serial_vir("12345678"),
     _frame_number(0),
     _is_recording(false)
 {
@@ -210,6 +391,9 @@ bool CPointcloudStitcher::Init()
         _wanted_profiles[dev_serial] = parse_profiles_file(filename.str());
     }
     // TODO: Read transformations.cfg file
+    std::stringstream filename;
+    filename << _working_dir << "/" << _calibration_file;
+    parse_calibration_file(filename.str());
     // This is a rotation matrix of 30 degrees around z-axis:
     //array([[ 0.8660254, -0.5, 0. ],
     //    [0.5, 0.8660254, 0.],
@@ -223,25 +407,25 @@ bool CPointcloudStitcher::Init()
     //double tranlation_a_b(200); // 200 mm
     double tranlation_a_b(0); // 200 mm
 
-    std::string serial_vir(_soft_dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER));
-    //_ir_extrinsics[serials[0]][serial_vir] = std::vector<double>({ 0.96592583, 0.25881905, 0.,     -0.25881905, 0.96592583, 0,     0., 0. ,1.,    -tranlation_a_b / 2.0, 0, 0 });
-    //_ir_extrinsics[serials[1]][serial_vir] = std::vector<double>({ 0.96592583, -0.25881905, 0.,     0.25881905, 0.96592583, 0,     0., 0., 1. ,    tranlation_a_b / 2.0, 0, 0 });
+    //std::string serial_vir(_soft_dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER));
+    //_ir_extrinsics[serials[0]][_serial_vir] = std::vector<double>({ 0.96592583, 0.25881905, 0.,     -0.25881905, 0.96592583, 0,     0., 0. ,1.,    -tranlation_a_b / 2.0, 0, 0 });
+    //_ir_extrinsics[serials[1]][_serial_vir] = std::vector<double>({ 0.96592583, -0.25881905, 0.,     0.25881905, 0.96592583, 0,     0., 0., 1. ,    tranlation_a_b / 2.0, 0, 0 });
 
-    //_ir_extrinsics[serials[0]][serial_vir] = std::vector<double>({ 1, 0, 0.,     0, 1, 0,     0., 0. ,1.,    0, 0, 0 });
-    //_ir_extrinsics[serials[1]][serial_vir] = std::vector<double>({ 1, 0, 0.,     0, 1, 0,     0., 0. ,1.,    0, 0, 0 });
+    //_ir_extrinsics[serials[0]][_serial_vir] = std::vector<double>({ 1, 0, 0.,     0, 1, 0,     0., 0. ,1.,    0, 0, 0 });
+    //_ir_extrinsics[serials[1]][_serial_vir] = std::vector<double>({ 1, 0, 0.,     0, 1, 0,     0., 0. ,1.,    0, 0, 0 });
 
 
-    //_ir_extrinsics[serials[0]][serial_vir] = rs2_extrinsics({ {0.96592583, -0.25881905, 0.,     0.25881905, 0.96592583, 0,  0,0,1}, {0,0,0} }); // Around Z axis ?
-    //_ir_extrinsics[serials[1]][serial_vir] = rs2_extrinsics({ {0.96592583,  0.25881905, 0.,    -0.25881905, 0.96592583, 0,  0,0,1}, {0,0,0} });
+    //_ir_extrinsics[serials[0]][_serial_vir] = rs2_extrinsics({ {0.96592583, -0.25881905, 0.,     0.25881905, 0.96592583, 0,  0,0,1}, {0,0,0} }); // Around Z axis ?
+    //_ir_extrinsics[serials[1]][_serial_vir] = rs2_extrinsics({ {0.96592583,  0.25881905, 0.,    -0.25881905, 0.96592583, 0,  0,0,1}, {0,0,0} });
 
-    _ir_extrinsics[serials[0]][serial_vir] = rs2_extrinsics({ {0.96592583, 0,  0.25881905,  0,1,0,      -0.25881905, 0., 0.96592583}, {0,0,0} });   //15 Around Y axis ?
-    _ir_extrinsics[serials[1]][serial_vir] = rs2_extrinsics({ {0.96592583, 0, -0.25881905, 0,1,0,        0.25881905,  0., 0.96592583}, {0,0,0} });
+    //_ir_extrinsics[serials[0]][_serial_vir] = rs2_extrinsics({ {0.96592583, 0,  0.25881905,  0,1,0,      -0.25881905, 0., 0.96592583}, {0,0,0} });   //15 Around Y axis ?
+    //_ir_extrinsics[serials[1]][_serial_vir] = rs2_extrinsics({ {0.96592583, 0, -0.25881905, 0,1,0,        0.25881905,  0., 0.96592583}, {0,0,0} });
 
-    //_ir_extrinsics[serials[0]][serial_vir] = rs2_extrinsics({ {0.8660254, 0,  0.5,  0,1,0,      -0.5, 0., 0.8660254}, {0,0,0} });   //30 Around Y axis ?
-    //_ir_extrinsics[serials[1]][serial_vir] = rs2_extrinsics({ {0.8660254, 0, -0.5, 0,1,0,        0.5,  0., 0.8660254}, {0,0,0} });
+    //_ir_extrinsics[serials[0]][_serial_vir] = rs2_extrinsics({ {0.8660254, 0,  0.5,  0,1,0,      -0.5, 0., 0.8660254}, {0,0,0} });   //30 Around Y axis ?
+    //_ir_extrinsics[serials[1]][_serial_vir] = rs2_extrinsics({ {0.8660254, 0, -0.5, 0,1,0,        0.5,  0., 0.8660254}, {0,0,0} });
 
-    //_ir_extrinsics[serials[0]][serial_vir] = rs2_extrinsics({ {1,0,0,   0,1,0,  0,0,1}, {0,0,0} });
-    //_ir_extrinsics[serials[1]][serial_vir] = rs2_extrinsics({ {1,0,0,   0,1,0,  0,0,1}, {0,0,0} });
+    //_ir_extrinsics[serials[0]][_serial_vir] = rs2_extrinsics({ {1,0,0,   0,1,0,  0,0,1}, {0,0,0} });
+    //_ir_extrinsics[serials[1]][_serial_vir] = rs2_extrinsics({ {1,0,0,   0,1,0,  0,0,1}, {0,0,0} });
 
     _left_device = serials[0];  // TODO: define left device based on transformation between devices.
     return true;
@@ -298,8 +482,7 @@ void CPointcloudStitcher::CreateVirtualDevice()
     //           Declare Software-Only Device           //
     //==================================================//
 
-    std::string serial("12345678");
-    _soft_dev.register_info(RS2_CAMERA_INFO_SERIAL_NUMBER, serial);
+    _soft_dev.register_info(RS2_CAMERA_INFO_SERIAL_NUMBER, _serial_vir);
     auto depth_sensor = _soft_dev.add_sensor("Depth"); // Define single sensor
     _active_software_sensors.insert(std::pair<std::string, rs2::software_sensor>("Depth", depth_sensor));
     auto color_sensor = _soft_dev.add_sensor("Color"); // Define single sensor
@@ -530,7 +713,7 @@ void CPointcloudStitcher::DrawTitles(const ImVec2& window_size)
     float text_width(200);
     ImGui::SetNextWindowPos({ 0.15f * window_size.x + 0 * tile_width + (tile_width - text_width) / 2, 40 });
     ImGui::Begin("left_title", nullptr, ImGuiWindowFlags_NoTitleBar);
-    ImGui::Text("Left Camera");
+    ImGui::Text((std::string("Left Camera:") + _left_device).c_str());
     ImGui::End();
 
     ImGui::SetNextWindowSize({ 200, 25 });
@@ -587,7 +770,7 @@ void CPointcloudStitcher::RecordButton(const ImVec2& window_size)
 void CPointcloudStitcher::Run(window& app)
 {
     const auto SLEEP_TIME = std::chrono::milliseconds(30);
-    std::string serial_vir(_soft_dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER));
+    //std::string serial_vir(_soft_dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER));
     bool display_original_images(true), display_output_images(true);
 
     int frame_number(0);
@@ -632,7 +815,7 @@ void CPointcloudStitcher::Run(window& app)
         {
             rs2::frame frm = frames.second;    // Wait for next set of frames from the camera
             auto start_project_time = std::chrono::system_clock::now();
-            ProjectFramesOnOtherDevice(frm, frames.first, serial_vir);
+            ProjectFramesOnOtherDevice(frm, frames.first, _serial_vir);
             auto end_project_time = std::chrono::system_clock::now();
             //std::cout << "Processing took: " << std::chrono::duration_cast<std::chrono::milliseconds>(end_project_time - start_project_time).count() << std::endl;
 
@@ -728,7 +911,7 @@ int main(int argc, char* argv[]) try
 {
     rs2::log_to_file(RS2_LOG_SEVERITY_DEBUG, "C:\\projects\\librealsense\\build\\Debug\\lrs_log.txt");
 
-    std::string working_dir;
+    std::string working_dir, calibration_file;
     for (int c = 1; c < argc; ++c) {
         if (!std::strcmp(argv[c], "-h") || !std::strcmp(argv[c], "--help")) {
             std::cout << "USAGE: " << std::endl;
@@ -748,12 +931,18 @@ int main(int argc, char* argv[]) try
             return -1;
         }
     }
-    if (argc > 1)
+    if (argc > 2)
+    {
         working_dir = argv[1];
+        calibration_file = argv[2];
+    }
     else
+    {
         working_dir = ".";
+        calibration_file = "calibration_15.cfg";
+    }
 
-    CPointcloudStitcher pc_stitcher(working_dir);
+    CPointcloudStitcher pc_stitcher(working_dir, calibration_file);
     if (!pc_stitcher.Init())
         return -1;
     if (!pc_stitcher.Start())
