@@ -7,7 +7,7 @@
 
 namespace librealsense
 {
-    class y411_converter : public functional_processing_block
+    class LRS_EXTENSION_API y411_converter : public functional_processing_block
     {
     public:
         y411_converter(rs2_format target_format)
