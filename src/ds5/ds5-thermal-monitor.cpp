@@ -50,7 +50,7 @@ namespace librealsense
 
     void ds5_thermal_monitor::polling(dispatcher::cancellable_timer cancellable_timer)
     {
-        if (cancellable_timer.try_sleep(_poll_intervals_ms))
+        if (cancellable_timer.try_sleep( std::chrono::milliseconds( _poll_intervals_ms )))
         {
             try
             {

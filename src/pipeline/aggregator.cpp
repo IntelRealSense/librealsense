@@ -120,7 +120,7 @@ namespace librealsense
         void aggregator::stop()
         {
             _accepting = false;
-            _queue->clear();
+            _queue->stop();
         }
     }
 }
