@@ -135,7 +135,7 @@ namespace rs2
                 {
                     auto now = std::chrono::high_resolution_clock::now();
                     if (now - start_time > std::chrono::milliseconds(timeout_ms))
-                        throw std::runtime_error(to_string() << "Failed to fetch depth frame within " << timeout_ms << "ms");
+                        throw std::runtime_error(to_string() << "Failed to fetch depth frame within " << timeout_ms << " ms");
 
                     if (now - stream.second.last_frame < std::chrono::milliseconds(100))
                     {
@@ -218,7 +218,7 @@ namespace rs2
             // Select FPS value
             for (int i = 0; i < _sub->shared_fps_values.size(); i++)
             {
-                if (_sub->shared_fps_values[i] == 00)
+                if (_sub->shared_fps_values[i] == 0)
                     _sub->ui.selected_shared_fps_id = i;
             }
 
@@ -1964,7 +1964,7 @@ namespace rs2
         }
         catch (...)
         {
-            fail("UVMapping calibration failed!");
+            fail("UV-Mapping calibration failed!");
         }
     }
 
@@ -2230,7 +2230,7 @@ namespace rs2
         else if (action == RS2_CALIB_ACTION_ON_CHIP_OB_CALIB)
             log(to_string() << "Starting OCC Extended");
         else if (action == RS2_CALIB_ACTION_UVMAPPING_CALIB)
-            log(to_string() << "Starting UVMapping calibration");
+            log(to_string() << "Starting UV-Mapping calibration");
         else if (action == RS2_CALIB_ACTION_FL_PLUS_CALIB)
             log(to_string() << "Starting focal length plus calibration");
         else
@@ -2324,7 +2324,7 @@ namespace rs2
         else if (action == RS2_CALIB_ACTION_FL_CALIB)
             log(to_string() << "Focal length ratio is got: " << ratio);
         else if (action == RS2_CALIB_ACTION_UVMAPPING_CALIB)
-            log(to_string() << "UVMapping calibration completed.");
+            log(to_string() << "UV-Mapping calibration completed.");
         else
             log(to_string() << "Calibration completed, health factor = " << _health);
 
@@ -2521,7 +2521,7 @@ namespace rs2
             if (update_state == RS2_CALIB_STATE_INITIAL_PROMPT)
                 ImGui::Text("%s", "Calibration Health-Check");
             else if (update_state == RS2_CALIB_STATE_UVMAPPING_INPUT)
-                ImGui::Text("%s", "UVMapping Calibration");
+                ImGui::Text("%s", "UV-Mapping Calibration");
             else if (update_state == RS2_CALIB_STATE_FL_PLUS_INPUT)
                 ImGui::Text("%s", "Focal Length Plus Calibration");
             else if (update_state == RS2_CALIB_STATE_CALIB_IN_PROCESS ||
@@ -2537,7 +2537,7 @@ namespace rs2
                else if (get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_FL_CALIB)
                    ImGui::Text("%s", "Focal Length Calibration");
                else if (get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_UVMAPPING_CALIB)
-                   ImGui::Text("%s", "UVMapping Calibration");
+                   ImGui::Text("%s", "UV-Mapping Calibration");
                else if (get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_FL_PLUS_CALIB)
                    ImGui::Text("%s", "Focal Length Plus Calibration");
                else
@@ -2611,7 +2611,7 @@ namespace rs2
                 }
 
                 if (ImGui::IsItemHovered())
-                    ImGui::SetTooltip("%s", "Begin UVMapping calibration after adjusting camera position");
+                    ImGui::SetTooltip("%s", "Begin UV-Mapping calibration after adjusting camera position");
                 ImGui::PopStyleColor(2);
             }
             else if (update_state == RS2_CALIB_STATE_FL_PLUS_INPUT)
