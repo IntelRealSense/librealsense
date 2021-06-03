@@ -40,12 +40,13 @@ def run_demo():
 	chessboard_width = 6 # squares
 	chessboard_height = 9 	# squares
 	square_size = 0.0253 # meters
+	stream_index = -1 
 
 	try:
 		# Enable the streams from all the intel realsense devices
 		rs_config = rs.config()
 		rs_config.enable_stream(rs.stream.depth, depth_resolution_width, depth_resolution_height, rs.format.z16, depth_frame_rate)
-		rs_config.enable_stream(rs.stream.infrared, 1, depth_resolution_width, depth_resolution_height, rs.format.y8, depth_frame_rate)
+		rs_config.enable_stream(rs.stream.infrared, stream_index, depth_resolution_width, depth_resolution_height, rs.format.y8, depth_frame_rate)
 		rs_config.enable_stream(rs.stream.color, color_resolution_width, color_resolution_height, rs.format.bgr8, color_frame_rate)
 
 		# Use the device manager class to enable the devices and get the frames

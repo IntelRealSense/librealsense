@@ -153,7 +153,8 @@ class DeviceManager:
 
         # Set the acquisition parameters
         sensor = pipeline_profile.get_device().first_depth_sensor()
-        sensor.set_option(rs.option.emitter_enabled, 1 if enable_ir_emitter else 0)
+        if sensor.supports(rs.option.emitter_enabled):
+            sensor.set_option(rs.option.emitter_enabled, 1 if enable_ir_emitter else 0)
         self._enabled_devices[device_serial] = (Device(pipeline, pipeline_profile))
 
     def enable_all_devices(self, enable_ir_emitter=False):
@@ -174,6 +175,8 @@ class DeviceManager:
         for (device_serial, device) in self._enabled_devices.items():
             # Get the active profile and enable the emitter for all the connected devices
             sensor = device.pipeline_profile.get_device().first_depth_sensor()
+            if not sensor.supports(rs.option.emitter_enabled):
+                continue
             sensor.set_option(rs.option.emitter_enabled, 1 if enable_ir_emitter else 0)
             if enable_ir_emitter:
                 sensor.set_option(rs.option.laser_power, 330)
@@ -211,7 +214,8 @@ class DeviceManager:
                     for stream in streams:
                         if (rs.stream.infrared == stream.stream_type()):
                             frame = frameset.get_infrared_frame(stream.stream_index())
-                            key_ = (stream.stream_type(), stream.stream_index())
+                            #key_ = (stream.stream_type(), stream.stream_index())
+                            key_ = (stream.stream_type(), 1 ) #for L515 stream_index() = 0, for D415 stream_index() = 1 
                         else:
                             frame = frameset.first_or_default(stream.stream_type())
                             key_ = stream.stream_type()
