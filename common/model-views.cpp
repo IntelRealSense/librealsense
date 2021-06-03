@@ -549,23 +549,14 @@ namespace rs2
         }
         return option;
     }
-    std::string option_model::get_option_description(rs2_option option) const
+    std::string option_model::get_option_description(rs2_option option, bool display_in_cm) const
     {
         std::string desc (endpoint->get_option_description(option));
-        std::string device_pid = dev->s->get_info(RS2_CAMERA_INFO_PRODUCT_ID);
-        if (device_pid == "0B5B")
+        std::string meters_str("meters");
+        if (display_in_cm)
         {
-            std::string meters_str("meters");
-            if (option == RS2_OPTION_MIN_DISTANCE || option == RS2_OPTION_MAX_DISTANCE)
-            {
-                auto pos = desc.find(meters_str);
-                desc.replace(pos, desc.size(), "cm");
-            }
-            else if (option == RS2_OPTION_DEPTH_UNITS)
-            {
-                auto pos = desc.find(meters_str);
-                desc.replace(pos, meters_str.size(), "cm");
-            }
+            auto pos = desc.find(meters_str);
+            desc.replace(pos, meters_str.size(), "cm");
         }
         return desc;
     }
@@ -580,7 +571,12 @@ namespace rs2
             if (opt == RS2_OPTION_HOLES_FILL)
                 use_option_name = false;
 
-            auto desc_str = get_option_description(opt);          
+            bool should_be_displayed_in_cm = false;
+            std::string device_pid = dev->s->get_info(RS2_CAMERA_INFO_PRODUCT_ID);
+            if (device_pid == "0B5B" && (opt == RS2_OPTION_MIN_DISTANCE || opt == RS2_OPTION_MAX_DISTANCE || opt == RS2_OPTION_DEPTH_UNITS))
+                should_be_displayed_in_cm = true;
+
+            auto desc_str = get_option_description(opt, should_be_displayed_in_cm);          
             auto desc = desc_str.c_str();
 
             // remain option to append to the current line
@@ -698,10 +694,28 @@ namespace rs2
                         {
                             char buff[TEXT_BUFF_SIZE];
                             memset(buff, 0, TEXT_BUFF_SIZE);
-                            strcpy(buff, edit_value.c_str());
+
+                            if (should_be_displayed_in_cm)
+                            {
+                                float edit_value_float = std::stof(edit_value);
+                                edit_value_float *= 100.f;
+                                std::string edit_value_cm(std::to_string(edit_value_float));
+                                strcpy(buff, edit_value_cm.c_str());
+                            }
+                            else
+                                strcpy(buff, edit_value.c_str());
                             if (ImGui::InputText(id.c_str(), buff, TEXT_BUFF_SIZE,
                                 ImGuiInputTextFlags_EnterReturnsTrue))
                             {
+                                if (should_be_displayed_in_cm)
+                                {
+                                    std::string buff_str(buff);
+                                    float buff_float = std::stof(buff_str);
+                                    buff_float /= 100.f;
+                                    std::string buff_str_cm(std::to_string(buff_float));
+                                    memset(buff, 0, TEXT_BUFF_SIZE);
+                                    strcpy(buff, buff_str_cm.c_str());
+                                }
                                 float new_value;
                                 if(!utilities::string::string_to_value<float>(buff, new_value))
                                 {
@@ -717,8 +731,16 @@ namespace rs2
                                 {
                                     set_option(opt, new_value, error_message);
                                 }
-
                                 edit_mode = false;
+                            }
+                            else if (should_be_displayed_in_cm)
+                            {
+                                std::string buff_str(buff);
+                                float buff_float = std::stof(buff_str);
+                                buff_float /= 100.f;
+                                std::string buff_str_cm(std::to_string(buff_float));
+                                memset(buff, 0, TEXT_BUFF_SIZE);
+                                strcpy(buff, buff_str_cm.c_str());
                             }
                             edit_value = buff;
                         }
@@ -746,20 +768,17 @@ namespace rs2
                             float max_range_displayed = range.max;
 
                             // displaying in cm instead of meters for D405
-                            bool is_displayed_in_cm = false;
-                            std::string device_pid = dev->s->get_info(RS2_CAMERA_INFO_PRODUCT_ID);
-                            if (device_pid == "0B5B" && (opt == RS2_OPTION_MIN_DISTANCE || opt == RS2_OPTION_MAX_DISTANCE || opt == RS2_OPTION_DEPTH_UNITS))
+                            if (should_be_displayed_in_cm)
                             {
                                 temp_value_displayed *= 100.f;
                                 min_range_displayed *= 100.f;
                                 max_range_displayed *= 100.f;
-                                is_displayed_in_cm = true;
                             }
 
                             if (ImGui::SliderFloat(id.c_str(), &temp_value_displayed,
                                 min_range_displayed, max_range_displayed, "%.4f"))
                             {
-                                if (is_displayed_in_cm)
+                                if (should_be_displayed_in_cm)
                                     tmp_value = temp_value_displayed / 100.f;
                                 auto loffset = std::abs(fmod(tmp_value, range.step));
                                 auto roffset = range.step - loffset;
