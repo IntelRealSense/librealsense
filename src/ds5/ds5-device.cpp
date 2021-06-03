@@ -438,6 +438,7 @@ namespace librealsense
                 }
                 auto&& vid_profile = dynamic_cast<video_stream_profile_interface*>(p.get());
 
+                // used when color stream comes from depth sensor (as in D405)
                 if (p->get_stream_type() == RS2_STREAM_COLOR)
                 {
                     const auto&& profile = to_profile(p.get());
