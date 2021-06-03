@@ -396,6 +396,14 @@ namespace librealsense
             synthetic_sensor::close();
         }
 
+        rs2_intrinsics ds5_depth_sensor::get_color_intrinsics(const stream_profile& profile) const
+        {
+            return get_intrinsic_by_resolution(
+                *_owner->_color_calib_table_raw,
+                ds::calibration_table_id::rgb_calibration_id,
+                profile.width, profile.height);
+        }
+
         /*
         Infrared profiles are initialized with the following logic:
         - If device has color sensor (D415 / D435), infrared profile is chosen with Y8 format
@@ -430,8 +438,22 @@ namespace librealsense
                 }
                 auto&& vid_profile = dynamic_cast<video_stream_profile_interface*>(p.get());
 
+                if (p->get_stream_type() == RS2_STREAM_COLOR)
+                {
+                    const auto&& profile = to_profile(p.get());
+                    std::weak_ptr<ds5_depth_sensor> wp =
+                        std::dynamic_pointer_cast<ds5_depth_sensor>(this->shared_from_this());
+                    vid_profile->set_intrinsics([profile, wp]()
+                        {
+                            auto sp = wp.lock();
+                            if (sp)
+                                return sp->get_color_intrinsics(profile);
+                            else
+                                return rs2_intrinsics{};
+                        });
+                }
                 // Register intrinsics
-                if (p->get_format() != RS2_FORMAT_Y16) // Y16 format indicate unrectified images, no intrinsics are available for these
+                else if (p->get_format() != RS2_FORMAT_Y16) // Y16 format indicate unrectified images, no intrinsics are available for these
                 {
                     const auto&& profile = to_profile(p.get());
                     std::weak_ptr<ds5_depth_sensor> wp =
@@ -698,6 +720,11 @@ namespace librealsense
         auto&& backend = ctx->get_backend();
         auto& raw_sensor = get_raw_depth_sensor();
         auto pid = group.uvc_devices.front().pid;
+
+        _color_calib_table_raw = [this]()
+        {
+            return get_raw_calibration_table(rgb_calibration_id);
+        };
 
         if (((hw_mon_over_xu) && (RS400_IMU_PID != pid)) || (!group.usb_devices.size()))
         {
