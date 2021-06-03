@@ -74,6 +74,8 @@ try:
                     continue
                 option_range = color_sensor.get_option_range(option)
                 metadata = color_metadata[option_index]
+                # the following if statement is needed because of some bug in FW - see DSO-17221
+                # to be removed after this bug is solved
                 if option == rs.option.white_balance:
                     color_sensor.set_option(rs.option.enable_auto_white_balance, 0)
                 value_to_set = option_range.min
