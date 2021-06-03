@@ -1277,7 +1277,11 @@ namespace rs2
                         {
                             auto intrinsics = vid_prof.get_intrinsics();
                             if (intrinsics.model == RS2_DISTORTION_INVERSE_BROWN_CONRADY
-                                && (intrinsics.coeffs[0] != 0.0f || intrinsics.coeffs[1] != 0.0f || intrinsics.coeffs[2] != 0.0f || intrinsics.coeffs[3] != 0.0f || intrinsics.coeffs[4] != 0.0f))
+                                && (std::abs(intrinsics.coeffs[0]) > std::numeric_limits< float >::epsilon() || 
+                                    std::abs(intrinsics.coeffs[1]) > std::numeric_limits< float >::epsilon() || 
+                                    std::abs(intrinsics.coeffs[2]) > std::numeric_limits< float >::epsilon() || 
+                                    std::abs(intrinsics.coeffs[3]) > std::numeric_limits< float >::epsilon() || 
+                                    std::abs(intrinsics.coeffs[4]) > std::numeric_limits< float >::epsilon()))
                             {
                                 uvmapping_calib_full = true;
                             }
@@ -5586,7 +5590,7 @@ namespace rs2
                         {
                             if (sub2->s->is<rs2::color_sensor>())
                             {
-                                if (ImGui::Selectable("UVMapping Calibration"))
+                                if (ImGui::Selectable("UV-Mapping Calibration"))
                                 {
                                     auto manager = std::make_shared<on_chip_calib_manager>(viewer, sub, *this, dev, sub2, sub2->uvmapping_calib_full);
                                     auto n = std::make_shared<autocalib_notification_model>("", manager, false);
@@ -5604,7 +5608,7 @@ namespace rs2
                                 }
 
                                 if (ImGui::IsItemHovered())
-                                    ImGui::SetTooltip("UVMapping calibration is used to improve UVMapping with specific target.");
+                                    ImGui::SetTooltip("UV-Mapping calibration is used to improve UV-Mapping with specific target.");
                             }
                         }
                     }
