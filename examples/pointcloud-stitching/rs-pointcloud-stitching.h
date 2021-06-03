@@ -203,6 +203,7 @@ namespace rs_pointcloud_stitching
         void StartRecording(const std::string& path);
         void StopRecording();
         void parse_calibration_file(const std::string& config_filename);
+        void parse_virtual_device_config_file(const std::string& config_filename);
 
     private:
 	    std::string _working_dir, _calibration_file;
@@ -226,6 +227,7 @@ namespace rs_pointcloud_stitching
         int _frame_number;
         std::shared_ptr<rs2::recorder> _recorder;
         bool _is_recording;
+        std::map<std::string, double> _virtual_dev_params;
 
 
         enum frame_id { COLOR1, COLOR_UNITED, COLOR2, DEPTH1, DEPTH_UNITED, DEPTH2};

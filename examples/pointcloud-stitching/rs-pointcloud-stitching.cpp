@@ -273,6 +273,40 @@ void CPointcloudStitcher::parse_calibration_file(const std::string& config_filen
     }
 }
 
+void CPointcloudStitcher::parse_virtual_device_config_file(const std::string& config_filename)
+{
+    ifstream file(config_filename);
+
+    if (!file.is_open())
+        throw runtime_error(stringify() << "Given .cfg configure file " << config_filename << " was not found!");
+
+    // Line starting with non-alpha characters will be treated as comments
+
+    const static std::regex starts_with("^[a-zA-Z]");
+    string line;
+
+    // Parse the config file
+    while (getline(file, line))
+    {
+        if (std::regex_search(line, starts_with))
+        {
+            auto tokens = tokenize(line, '=');
+            if (tokens.size() != 2)
+                continue;
+            _virtual_dev_params.insert(std::pair<std::string, double > (tokens[0], stod(tokens[1])));
+        }
+    }
+    // Test that all values where assigned:
+    std::vector<std::string> needed_keys{ "width", "height", "fov_x", "fov_y" };
+    for (auto key : needed_keys)
+    {
+        if (_virtual_dev_params.find(key) == _virtual_dev_params.end())
+        {
+            throw runtime_error(stringify() << "Given .cfg configure file " << config_filename << " does not contain value for: " << key);
+        }
+    }
+}
+
 
 CPointcloudStitcher::CPointcloudStitcher(const std::string& working_dir, const std::string& calibration_file) :
     _working_dir(working_dir),
@@ -363,6 +397,11 @@ bool CPointcloudStitcher::OpenSensors(std::shared_ptr<rs2::device> dev)
 
 bool CPointcloudStitcher::Init()
 {
+    {
+        std::stringstream filename;
+        filename << _working_dir << "/" << "virtual_dev.cfg";
+        parse_virtual_device_config_file(filename.str());
+    }
     rs2::context ctx;
     rs2::device_list list;
 
@@ -390,10 +429,11 @@ bool CPointcloudStitcher::Init()
         filename << _working_dir << "/" << dev_serial << ".cfg";
         _wanted_profiles[dev_serial] = parse_profiles_file(filename.str());
     }
-    // TODO: Read transformations.cfg file
-    std::stringstream filename;
-    filename << _working_dir << "/" << _calibration_file;
-    parse_calibration_file(filename.str());
+    {
+        std::stringstream filename;
+        filename << _working_dir << "/" << _calibration_file;
+        parse_calibration_file(filename.str());
+    }
     // This is a rotation matrix of 30 degrees around z-axis:
     //array([[ 0.8660254, -0.5, 0. ],
     //    [0.5, 0.8660254, 0.],
@@ -404,19 +444,6 @@ bool CPointcloudStitcher::Init()
         //[0.25881905, 0.96592583, 0.],
         //[0., 0., 1.]] )
     CreateVirtualDevice();
-    //double tranlation_a_b(200); // 200 mm
-    double tranlation_a_b(0); // 200 mm
-
-    //std::string serial_vir(_soft_dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER));
-    //_ir_extrinsics[serials[0]][_serial_vir] = std::vector<double>({ 0.96592583, 0.25881905, 0.,     -0.25881905, 0.96592583, 0,     0., 0. ,1.,    -tranlation_a_b / 2.0, 0, 0 });
-    //_ir_extrinsics[serials[1]][_serial_vir] = std::vector<double>({ 0.96592583, -0.25881905, 0.,     0.25881905, 0.96592583, 0,     0., 0., 1. ,    tranlation_a_b / 2.0, 0, 0 });
-
-    //_ir_extrinsics[serials[0]][_serial_vir] = std::vector<double>({ 1, 0, 0.,     0, 1, 0,     0., 0. ,1.,    0, 0, 0 });
-    //_ir_extrinsics[serials[1]][_serial_vir] = std::vector<double>({ 1, 0, 0.,     0, 1, 0,     0., 0. ,1.,    0, 0, 0 });
-
-
-    //_ir_extrinsics[serials[0]][_serial_vir] = rs2_extrinsics({ {0.96592583, -0.25881905, 0.,     0.25881905, 0.96592583, 0,  0,0,1}, {0,0,0} }); // Around Z axis ?
-    //_ir_extrinsics[serials[1]][_serial_vir] = rs2_extrinsics({ {0.96592583,  0.25881905, 0.,    -0.25881905, 0.96592583, 0,  0,0,1}, {0,0,0} });
 
     //_ir_extrinsics[serials[0]][_serial_vir] = rs2_extrinsics({ {0.96592583, 0,  0.25881905,  0,1,0,      -0.25881905, 0., 0.96592583}, {0,0,0} });   //15 Around Y axis ?
     //_ir_extrinsics[serials[1]][_serial_vir] = rs2_extrinsics({ {0.96592583, 0, -0.25881905, 0,1,0,        0.25881905,  0., 0.96592583}, {0,0,0} });
@@ -446,8 +473,8 @@ rs2_intrinsics CPointcloudStitcher::create_intrinsics(const synthetic_frame& _vi
 
 void CPointcloudStitcher::InitializeVirtualFrames()
 {
-    const int W = 640;
-    const int H = 480;
+    const int W = static_cast<int>(_virtual_dev_params.at("width"));
+    const int H = static_cast<int>(_virtual_dev_params.at("height"));
 
     _virtual_depth_frame.x = W;
     _virtual_depth_frame.y = H;
@@ -470,11 +497,8 @@ void CPointcloudStitcher::CreateVirtualDevice()
 {
     InitializeVirtualFrames();
 
-    //auto texture = g_app_data.get_synthetic_texture();
-    //float fov_x(74.0 * PI / 180.0);
-    //float fov_y(62.0 * PI / 180.0);
-    float fov_x(float(120.0 * PI / 180.0));
-    float fov_y(float(82.0 * PI / 180.0));
+    float fov_x(float(_virtual_dev_params.at("fov_x") * PI / 180.0));
+    float fov_y(float(_virtual_dev_params.at("fov_y") * PI / 180.0));
     rs2_intrinsics color_intrinsics = create_intrinsics(_virtual_color_frame, fov_x, fov_y);
     rs2_intrinsics depth_intrinsics = create_intrinsics(_virtual_depth_frame, fov_x, fov_y);
 
@@ -770,7 +794,6 @@ void CPointcloudStitcher::RecordButton(const ImVec2& window_size)
 void CPointcloudStitcher::Run(window& app)
 {
     const auto SLEEP_TIME = std::chrono::milliseconds(30);
-    //std::string serial_vir(_soft_dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER));
     bool display_original_images(true), display_output_images(true);
 
     int frame_number(0);
