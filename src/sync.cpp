@@ -256,10 +256,11 @@ namespace librealsense
 
     void composite_matcher::stop()
     {
-        for (auto& fq : _frames_queue)
-        {
-            fq.second.clear();
-        }
+        set_active( false );
+        for( auto & fq : _frames_queue )
+            fq.second.stop();
+        for( auto m : _matchers )
+            m.second->stop();
     }
 
     std::string
