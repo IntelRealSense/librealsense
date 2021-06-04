@@ -78,7 +78,6 @@ set(RAW_RS
     ../../src/log.cpp
     ../../src/backend.h
     ../../src/backend.cpp
-    ../../src/backend.cpp
     ../../src/dispatcher.cpp
 )
 
