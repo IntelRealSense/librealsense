@@ -154,8 +154,8 @@ public:
     }
 
 protected:
-	void _clear()
-	{
+    void _clear()
+    {
         _queue.clear();
 
         // Wake up anyone who is waiting for room to enqueue, or waiting for something to dequeue -- there's nothing now
