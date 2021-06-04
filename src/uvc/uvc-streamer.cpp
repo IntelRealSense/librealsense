@@ -128,7 +128,10 @@ namespace librealsense
                         {
                             _frame_arrived = true;
                             _watchdog->kick();
-                            memcpy(f->pixels.data(), r->get_buffer().data(), r->get_buffer().size());
+                            if (f->pixels.size() == r->get_buffer().size())
+                                r->swap_buffer(&f->pixels);
+                            else
+                                memcpy(f->pixels.data(), r->get_buffer().data(), r->get_buffer().size());
                             uvc_process_bulk_payload(std::move(f), r->get_actual_length(), _queue);
                         }
                     }

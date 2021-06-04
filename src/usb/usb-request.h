@@ -30,6 +30,7 @@ namespace librealsense
             virtual void* get_native_request() const = 0;
             virtual const std::vector<uint8_t>& get_buffer() const = 0;
             virtual void set_buffer(std::vector<uint8_t>&& buffer) = 0;
+            virtual void swap_buffer(std::vector<uint8_t>* other_buffer) = 0;
 
         protected:
             virtual void set_native_buffer_length(int length) = 0;
@@ -52,6 +53,12 @@ namespace librealsense
             virtual void set_buffer(std::vector<uint8_t>&& buffer) override
             {
                 _buffer = std::move(buffer);
+                set_native_buffer(_buffer.data());
+                set_native_buffer_length( static_cast< int >( _buffer.size() ));
+            }
+            virtual void swap_buffer(std::vector<uint8_t>* other_buffer) override
+            {
+                std::swap(_buffer, *other_buffer);
                 set_native_buffer(_buffer.data());
                 set_native_buffer_length( static_cast< int >( _buffer.size() ));
             }
