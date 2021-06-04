@@ -1320,7 +1320,7 @@ namespace librealsense
             _device->submit_request(request);
         });
 
-        _interrupt_request = _device->interrupt_read_request(buffer, _interrupt_callback);
+        _interrupt_request = _device->interrupt_read_request(std::move(buffer), _interrupt_callback);
         _device->submit_request(_interrupt_request);
         return true;
     }
@@ -1381,7 +1381,7 @@ namespace librealsense
             _device->submit_request(request);
         });
 
-        _stream_request = _device->stream_read_request(buffer, _stream_callback);
+        _stream_request = _device->stream_read_request(std::move(buffer), _stream_callback);
         _device->submit_request(_stream_request);
         return true;
     }
@@ -2087,10 +2087,10 @@ namespace librealsense
         return e;
     }
 
-    platform::rs_usb_request tm2_device::stream_read_request(std::vector<uint8_t> & buffer, std::shared_ptr<platform::usb_request_callback> callback)
+    platform::rs_usb_request tm2_device::stream_read_request(std::vector<uint8_t> && buffer, std::shared_ptr<platform::usb_request_callback> callback)
     {
         auto request = usb_messenger->create_request(endpoint_bulk_in);
-        request->set_buffer(buffer);
+        request->set_buffer(std::move(buffer));
         request->set_callback(callback);
         return request;
     }
@@ -2110,10 +2110,10 @@ namespace librealsense
         return true;
     }
 
-    platform::rs_usb_request tm2_device::interrupt_read_request(std::vector<uint8_t> & buffer, std::shared_ptr<platform::usb_request_callback> callback)
+    platform::rs_usb_request tm2_device::interrupt_read_request(std::vector<uint8_t> && buffer, std::shared_ptr<platform::usb_request_callback> callback)
     {
         auto request = usb_messenger->create_request(endpoint_int_in);
-        request->set_buffer(buffer);
+        request->set_buffer(std::move(buffer));
         request->set_callback(callback);
         return request;
     }

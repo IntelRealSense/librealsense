@@ -143,7 +143,7 @@ namespace librealsense
             for(auto&& r : _requests)
             {
                 r = _context.messenger->create_request(_read_endpoint);
-                r->set_buffer(std::vector<uint8_t>(_read_buff_length));
+                r->set_buffer(std::move(std::vector<uint8_t>(_read_buff_length)));
                 r->set_callback(_request_callback);
             }
         }
