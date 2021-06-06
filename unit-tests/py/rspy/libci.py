@@ -146,6 +146,7 @@ class TestConfigFromText( TestConfig ):
         :param source: The absolute path to the text file
         :param line_prefix: A regex to denote a directive (must be first thing in a line), which will
             be immediately followed by the directive itself and optional arguments
+        :param context: context in which to configure the test
         """
         TestConfig.__init__( self, context )
 
@@ -339,6 +340,7 @@ class PyTest( Test ):
         """
         :param testname: name of the test
         :param path_to_test: the relative path from the current directory to the path
+        :param context: context in which the test will run
         """
         global unit_tests_dir
         Test.__init__( self, testname )
@@ -381,13 +383,14 @@ class ExeTest( Test ):
     Class for c/cpp tests. Hold the path to the executable for the test
     """
 
-    def __init__( self, testname, exe, context = None ):
+    def __init__( self, testname, exe = None, context = None ):
         """
         :param testname: name of the test
         :param exe: full path to executable
+        :param context: context in which the test will run
         """
         global unit_tests_dir
-        if not os.path.isfile( exe ):
+        if exe and not os.path.isfile( exe ):
             log.d( "Tried to create exe test with invalid exe file: " + exe )
         Test.__init__( self, testname )
         self.exe = exe
@@ -396,7 +399,7 @@ class ExeTest( Test ):
         if relative_test_path:
             self._config = TestConfigFromCpp( unit_tests_dir + os.sep + relative_test_path, context )
         else:
-            self._config = TestConfig()
+            self._config = TestConfig(context)
 
     @property
     def command( self ):
@@ -413,6 +416,8 @@ class ExeTest( Test ):
         return cmd
 
     def run_test( self, configuration = None, log_path = None ):
+        if not self.exe:
+            raise RuntimeError("Tried to run test " + self.name + " with no exe file provided")
         try:
             run( self.command, stdout=log_path, append=self.ran, timeout=self.config.timeout )
         finally:

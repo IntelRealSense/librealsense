@@ -204,10 +204,25 @@ def check_log_for_fails( path_to_log, testname, configuration = None ):
 
 
 def get_tests():
-    global regex, target, pyrs, current_dir, linux
+    global regex, target, pyrs, current_dir, linux, context, list_only
     if regex:
         pattern = re.compile( regex )
-    if target:
+    if list_only:
+        # We want to list all tests, even if they weren't built.
+        # So we look for the source files instead of using the manifest
+        for cpp_test in file.find( current_dir, '(^|/)test-.*\.cpp' ):
+            testparent = os.path.dirname( cpp_test )  # "log/internal" <-  "log/internal/test-all.py"
+            if testparent:
+                testname = 'test-' + testparent.replace( '/', '-' ) + '-' + os.path.basename( cpp_test )[
+                                                                            5:-4]  # remove .cpp
+            else:
+                testname = os.path.basename( cpp_test )[:-4]
+
+            if regex and not pattern.search( testname ):
+                continue
+
+            yield libci.ExeTest( testname )
+    elif target:
         # In Linux, the build targets are located elsewhere than on Windows
         # Go over all the tests from a "manifest" we take from the result of the last CMake
         # run (rather than, for example, looking for test-* in the build-directory):
