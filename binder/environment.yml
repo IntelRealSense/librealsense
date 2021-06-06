@@ -14,8 +14,8 @@ dependencies:
   - numba
   - pythreejs
   - python=3.9
-  - opencv-python
   - pip:
     - laspy
     - appmode
     - pyrealsense2
+    - opencv-python
