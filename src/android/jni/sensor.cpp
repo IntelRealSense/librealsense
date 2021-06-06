@@ -8,6 +8,52 @@
 
 #include "../../../include/librealsense2/rs.h"
 
+#include "jni_logging.h"
+#include "frame_callback.h"
+
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_intel_realsense_librealsense_Sensor_nOpen(JNIEnv *env, jclass type, jlong handle, jlong sp) {
+    rs2_error* e = nullptr;
+    rs2_open(reinterpret_cast<rs2_sensor *>(handle), reinterpret_cast<rs2_stream_profile *>(sp), &e);
+    handle_error(env, e);
+}
+
+static frame_callback_data sdata = {NULL, 0, JNI_FALSE, NULL, NULL};
+
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_intel_realsense_librealsense_Sensor_nStart(JNIEnv *env, jclass type, jlong handle, jobject jcb) {
+    rs2_error* e = nullptr;
+
+    if (rs_jni_callback_init(env, jcb, &sdata) != true) return;
+
+    auto cb = [&](rs2::frame f) {
+        rs_jni_cb(f, &sdata);
+    };
+
+    rs2_start_cpp(reinterpret_cast<rs2_sensor *>(handle), new rs2::frame_callback<decltype(cb)>(cb), &e);
+    handle_error(env, e);
+}
+
+
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_intel_realsense_librealsense_Sensor_nStop(JNIEnv *env, jclass type, jlong handle) {
+    rs2_error* e = nullptr;
+    rs_jni_cleanup(env, &sdata);
+    rs2_stop(reinterpret_cast<rs2_sensor *>(handle), &e);
+    handle_error(env, e);
+}
+
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_intel_realsense_librealsense_Sensor_nClose(JNIEnv *env, jclass type, jlong handle) {
+    rs2_error* e = nullptr;
+    rs2_close(reinterpret_cast<rs2_sensor *>(handle), &e);
+    handle_error(env, e);
+}
+
 extern "C"
 JNIEXPORT void JNICALL
 Java_com_intel_realsense_librealsense_Sensor_nRelease(JNIEnv *env, jclass type, jlong handle) {
