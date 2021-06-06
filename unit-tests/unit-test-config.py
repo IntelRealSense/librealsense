@@ -174,6 +174,13 @@ def process_cpp( dir, builddir ):
         # We need the project name unique: keep the path but make it nicer:
         testname = 'test-' + testparent.replace( '/', '-' ) + '-' + os.path.basename(testdir)[5:]   # "test-log-internal-all"
 
+        config = libci.TestConfigFromCpp( dir + os.sep + f, context )
+        if f.startswith( "live/" ) != len(config.configurations) > 0:
+            if f.startswith( "live/" ):
+                log.e( testname, "is in live/ but is not a live test (has no configuration)" )
+            else:
+                log.e( testname, "is live, so it should be in live/" )
+
         if regex and not pattern.search( testname ):
             continue
 
@@ -181,7 +188,6 @@ def process_cpp( dir, builddir ):
         log.debug_indent()
         try:
             if required_tags or list_tags:
-                config = libci.TestConfigFromCpp( dir + os.sep + f, context )
                 if not all( tag in config.tags for tag in required_tags ):
                     continue
                 available_tags.update( config.tags )
