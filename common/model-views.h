@@ -27,7 +27,6 @@
 #include "fw-update-helper.h"
 #include "updates-model.h"
 #include "calibration-model.h"
-#include "cah-model.h"
 #include <utilities/time/periodic_timer.h>
 #include "reflectivity/reflectivity.h"
 #include <utilities/number/stabilized-value.h>
@@ -261,6 +260,7 @@ namespace rs2
         static const textual_icon mail                     { u8"\uF01C" };
         static const textual_icon cube                     { u8"\uf1b2" };
         static const textual_icon measure                  { u8"\uf545" };
+        static const textual_icon wifi                     { u8"\uf1eb" };
     }
 
     class subdevice_model;
@@ -768,7 +768,9 @@ namespace rs2
         void resume_record();
         
         void refresh_notifications(viewer_model& viewer);
-        void check_for_bundled_fw_update(const rs2::context& ctx, std::shared_ptr<notifications_model> not_model);
+        bool check_for_bundled_fw_update( const rs2::context & ctx,
+                                          std::shared_ptr< notifications_model > not_model,
+                                          bool reset_delay = false );
 
         int draw_playback_panel(ux_window& window, ImFont* font, viewer_model& view);
         bool draw_advanced_controls(viewer_model& view, ux_window& window, std::string& error_message);
@@ -785,11 +787,10 @@ namespace rs2
         void begin_update(std::vector<uint8_t> data,
             viewer_model& viewer, std::string& error_message);
         void begin_update_unsigned(viewer_model& viewer, std::string& error_message);
-        void check_for_device_updates(viewer_model& viewer);
+        void check_for_device_updates(viewer_model& viewer, bool activated_by_user = false);
 
 
         std::shared_ptr< atomic_objects_in_frame > get_detected_objects() const { return _detected_objects; }
-        bool is_cah_model_enabled() const { return _accuracy_health_model ? true : false; }
 
         std::vector<std::shared_ptr<subdevice_model>> subdevices;
         std::shared_ptr<syncer_model> syncer;
@@ -815,16 +816,10 @@ namespace rs2
 
         std::vector<std::shared_ptr<notification_model>> related_notifications;
 
-        bool show_trigger_camera_accuracy_health_popup = false;
-        bool show_reset_camera_accuracy_health_popup = false;
-
     private:
         // This class is in charge of camera accuracy health window parameters,
         // Needed as a member for reseting the window memory on device disconnection.
        
-
-        std::unique_ptr< cah_model > _accuracy_health_model;  // If this device does not support CAH feature,
-                                                              // the pointer will point to nullptr
 
         void draw_info_icon(ux_window& window, ImFont* font, const ImVec2& size);
         int draw_seek_bar();
@@ -852,13 +847,15 @@ namespace rs2
         void load_viewer_configurations(const std::string& json_str);
         void save_viewer_configurations(std::ofstream& outfile, nlohmann::json& j);
         void handle_online_sw_update(
-            std::shared_ptr < notifications_model > nm,
-            std::shared_ptr< sw_update::dev_updates_profile::update_profile > update_profile );
+            std::shared_ptr< notifications_model > nm,
+            std::shared_ptr< sw_update::dev_updates_profile::update_profile > update_profile,
+            bool reset_delay = false );
 
         bool handle_online_fw_update(
             const context & ctx,
             std::shared_ptr< notifications_model > nm,
-            std::shared_ptr< sw_update::dev_updates_profile::update_profile > update_profile );
+            std::shared_ptr< sw_update::dev_updates_profile::update_profile > update_profile,
+            bool reset_delay = false );
 
         std::shared_ptr<recorder> _recorder;
         std::vector<std::shared_ptr<subdevice_model>> live_subdevices;

@@ -20,6 +20,16 @@ using namespace TCLAP;
 
 #define WAIT_FOR_DEVICE_TIMEOUT 10
 
+#if _WIN32
+#include <io.h>
+#define ISATTY _isatty
+#define FILENO _fileno
+#else
+#include <unistd.h>
+#define ISATTY isatty
+#define FILENO fileno
+#endif
+
 std::vector<uint8_t> read_fw_file(std::string file_path)
 {
     std::vector<uint8_t> rv;
@@ -76,10 +86,16 @@ void update(rs2::update_device fwu_dev, std::vector<uint8_t> fw_image)
 {  
     std::cout << std::endl << "firmware update started"<< std::endl << std::endl;
 
-    fwu_dev.update(fw_image, [&](const float progress)
+    if (ISATTY(FILENO(stdout)))
     {
-        printf("\rfirmware update progress: %d[%%]", (int)(progress * 100));
-    });
+        fwu_dev.update(fw_image, [&](const float progress)
+            {
+                printf("\rfirmware update progress: %d[%%]", (int)(progress * 100));
+            });
+    }
+    else
+        fwu_dev.update(fw_image, [&](const float progress){});
+    
     std::cout << std::endl << std::endl << "firmware update done" << std::endl;
 }
 
@@ -161,35 +177,71 @@ int main(int argc, char** argv) try
     std::string update_serial_number;
 
     // Recovery
-    bool recovery_executed = false;
     if (recover_arg.isSet() )
     {
         std::vector<uint8_t> fw_image = read_firmware_data(file_arg.isSet(), file_arg.getValue());
 
         std::cout << std::endl << "update to FW: " << file_arg.getValue() << std::endl;
         auto devs = ctx.query_devices(RS2_PRODUCT_LINE_DEPTH);
+        rs2::device recovery_device;
+
         for (auto&& d : devs)
         {
-            if (!d.is<rs2::update_device>())
+            if( ! d.is< rs2::update_device >() )
                 continue;
-            try
+            auto sn = d.get_info( RS2_CAMERA_INFO_FIRMWARE_UPDATE_ID );
+            if( ! selected_serial_number.empty() && sn != selected_serial_number )
+                continue;
+            if( recovery_device )
             {
-                std::cout << std::endl << "recovering device: " << std::endl;
-                print_device_info(d);
-                update(d, fw_image);
-                recovery_executed = true;
+                std::cout << std::endl << "More than one recovery device is connected; serial number must be specified" << std::endl << std::endl;
+                return EXIT_FAILURE;
             }
-            catch (...)
-            {
-                std::cout << std::endl << "failed to recover device" << std::endl;
-            }
+            recovery_device = d;
         }
-        if (recovery_executed)
+        if( ! recovery_device )
         {
+            std::cout << std::endl << "No recovery devices were found!" << std::endl << std::endl;
+            return EXIT_FAILURE;
+        }
+        try
+        {
+            update_serial_number = recovery_device.get_info( RS2_CAMERA_INFO_FIRMWARE_UPDATE_ID );
+            ctx.set_devices_changed_callback( [&]( rs2::event_information & info ) {
+                for( auto && d : info.get_new_devices() )
+                {
+                    if( d.is< rs2::update_device >() )
+                        continue;
+                    auto recovery_sn = d.get_info( RS2_CAMERA_INFO_FIRMWARE_UPDATE_ID );
+                    if( recovery_sn == update_serial_number )
+                    {
+                        std::cout << "... found it" << std::endl;
+                        std::lock_guard< std::mutex > lk( mutex );
+                        cv.notify_one();
+                        break;
+                    }
+                }
+            } );
+            std::cout << std::endl << "recovering device: " << std::endl;
+            print_device_info( recovery_device );
+            update( recovery_device, fw_image );
+            std::cout << "waiting for new device..." << std::endl;
+            {
+                std::unique_lock< std::mutex > lk( mutex );
+                if( cv.wait_for( lk, std::chrono::seconds( 5 ) ) == std::cv_status::timeout )
+                {
+                    std::cout << "... timed out!" << std::endl;
+                    return EXIT_FAILURE;
+                }
+            }
             std::cout << std::endl << "recovery done" << std::endl;
             return EXIT_SUCCESS;
         }
-        return EXIT_FAILURE;
+        catch (...)
+        {
+            std::cout << std::endl << "failed to recover device" << std::endl;
+            return EXIT_FAILURE;
+        }
     }
 
     // Update device
@@ -247,10 +299,15 @@ int main(int argc, char** argv) try
         {
             std::cout << std::endl << "backing-up device flash: " << std::endl;
 
-            auto flash = d.as<rs2::updatable>().create_flash_backup([&](const float progress)
+            std::vector< uint8_t > flash;
+            if( ISATTY( FILENO( stdout )))
             {
-                printf("\rflash backup progress: %d[%%]", (int)(progress * 100));
-            });
+                flash = d.as< rs2::updatable >().create_flash_backup( [&]( const float progress ) {
+                    printf( "\rflash backup progress: %d[%%]", (int)( progress * 100 ) );
+                } );
+            }
+            else
+                flash = d.as<rs2::updatable>().create_flash_backup([&](const float progress){});
 
             auto temp = backup_arg.getValue();
             std::ofstream file(temp.c_str(), std::ios::binary);
@@ -269,15 +326,32 @@ int main(int argc, char** argv) try
         {
             std::cout << std::endl << "firmware update started" << std::endl << std::endl;
 
-            d.as<rs2::updatable>().update_unsigned(fw_image, [&](const float progress)
+            if (ISATTY(FILENO(stdout)))
             {
-                printf("\rfirmware update progress: %d[%%]", (int)(progress * 100));
-            });
+                d.as<rs2::updatable>().update_unsigned(fw_image, [&](const float progress)
+                    {
+                        printf("\rfirmware update progress: %d[%%]", (int)(progress * 100));
+                    });
+            }
+            else
+                d.as<rs2::updatable>().update_unsigned(fw_image, [&](const float progress){});
+                
             std::cout << std::endl << std::endl << "firmware update done" << std::endl;
         }
         else
         {
-            d.as<rs2::updatable>().enter_update_state();
+            auto upd = d.as<rs2::updatable>();
+            // checking compatibility bewtween firmware and device
+            if (!upd.check_firmware_compatibility(fw_image))
+            {
+                std::stringstream ss;
+                ss << "This firmware version is not compatible with ";
+                ss << d.get_info(RS2_CAMERA_INFO_NAME) << std::endl;
+                std::cout << std::endl << ss.str() << std::endl;
+                return EXIT_FAILURE;
+            }
+
+            upd.enter_update_state();
 
             std::unique_lock<std::mutex> lk(mutex);
             if (!cv.wait_for(lk, std::chrono::seconds(WAIT_FOR_DEVICE_TIMEOUT), [&] { return new_fw_update_device; }))

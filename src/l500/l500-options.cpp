@@ -211,6 +211,19 @@ namespace librealsense
 
         // Keep the USB power on while triggering multiple HW monitor commands on it.
         ivcam2::group_multiple_fw_calls( depth_sensor, [&]() {
+            if (_fw_version >= firmware_version("1.5.0.0"))
+            {
+                bool usb3mode = (_usb_mode >= platform::usb3_type || _usb_mode == platform::usb_undefined);
+                if (usb3mode)
+                {
+                    auto enable_max_usable_range = std::make_shared<max_usable_range_option>(this);
+                    depth_sensor.register_option(RS2_OPTION_ENABLE_MAX_USABLE_RANGE, enable_max_usable_range);
+
+                    auto enable_ir_reflectivity = std::make_shared<ir_reflectivity_option>(this);
+                    depth_sensor.register_option(RS2_OPTION_ENABLE_IR_REFLECTIVITY, enable_ir_reflectivity);
+                }
+            }
+
             if( _fw_version < firmware_version( MIN_CONTROLS_FW_VERSION ) )
             {
                 depth_sensor.register_option(

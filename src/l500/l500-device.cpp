@@ -23,8 +23,6 @@
 #include "proc/rotation-transform.h"
 #include "fw-update/fw-update-unsigned.h"
 #include "../common/fw/firmware-version.h"
-#include "ac-trigger.h"
-#include "algo/depth-to-rgb-calibration/debug.h"
 #include "../common/utilities/time/periodic_timer.h"
 #include "../common/utilities/time/work_week.h"
 #include "../common/utilities/time/l500/get-mfr-ww.h"
@@ -60,8 +58,8 @@ namespace librealsense
         _temperatures()
     {
         _depth_device_idx = add_sensor(create_depth_device(ctx, group.uvc_devices));
-        auto pid = group.uvc_devices.front().pid;
-        std::string device_name = (rs500_sku_names.end() != rs500_sku_names.find(pid)) ? rs500_sku_names.at(pid) : "RS5xx";
+        _pid = group.uvc_devices.front().pid;
+        std::string device_name = (rs500_sku_names.end() != rs500_sku_names.find(_pid)) ? rs500_sku_names.at(_pid) : "RS5xx";
 
         using namespace ivcam2;
 
@@ -70,29 +68,23 @@ namespace librealsense
         auto& depth_sensor = get_depth_sensor();
         auto& raw_depth_sensor = get_raw_depth_sensor();
 
-        if (group.usb_devices.size() > 0)
+#ifndef HWM_OVER_XU
+        if( group.usb_devices.size() > 0 )
         {
+            // This use-case is mainly to support FW development & debugging on unlock units before they
+            // have any XU capabilities
             _hw_monitor = std::make_shared<hw_monitor>(
-                std::make_shared<locked_transfer>(backend.create_usb_device(group.usb_devices.front()),
-                    raw_depth_sensor));
+                std::make_shared<locked_transfer>( backend.create_usb_device( group.usb_devices.front() ),
+                    raw_depth_sensor ) );
         }
         else
-        {
-            _hw_monitor = std::make_shared<hw_monitor>(
-                std::make_shared<locked_transfer>(std::make_shared<command_transfer_over_xu>(
-                    raw_depth_sensor, depth_xu, L500_HWMONITOR),
-                    raw_depth_sensor));
-        }
-
-#ifdef HWM_OVER_XU
-        if (group.usb_devices.size() > 0)
-        {
-            _hw_monitor = std::make_shared<hw_monitor>(
-                std::make_shared<locked_transfer>(std::make_shared<command_transfer_over_xu>(
-                    raw_depth_sensor, depth_xu, L500_HWMONITOR),
-                    raw_depth_sensor));
-        }
 #endif
+        {
+            _hw_monitor = std::make_shared<hw_monitor>(
+                std::make_shared<locked_transfer>( std::make_shared<command_transfer_over_xu>(
+                    raw_depth_sensor, depth_xu, L500_HWMONITOR ),
+                    raw_depth_sensor ) );
+        }
 
         std::vector<uint8_t> gvd_buff(HW_MONITOR_BUFFER_SIZE);
         _hw_monitor->get_gvd(gvd_buff.size(), gvd_buff.data(), GVD);
@@ -225,58 +217,6 @@ namespace librealsense
     {
         synthetic_sensor & depth_sensor = get_depth_sensor();
 
-        if( _fw_version >= firmware_version( "1.5.0.0" ) )
-        {
-            bool usb3mode = (_usb_mode >= platform::usb3_type || _usb_mode == platform::usb_undefined);
-            if (usb3mode)
-            {
-                auto enable_max_usable_range = std::make_shared<max_usable_range_option>(this);
-                depth_sensor.register_option(RS2_OPTION_ENABLE_MAX_USABLE_RANGE, enable_max_usable_range);
-
-                auto enable_ir_reflectivity = std::make_shared<ir_reflectivity_option>(this);
-                depth_sensor.register_option(RS2_OPTION_ENABLE_IR_REFLECTIVITY, enable_ir_reflectivity);
-            }
-
-            // TODO may not need auto-cal if there's no color sensor, like on the rs500...
-            _autocal = std::make_shared< ac_trigger >( *this, _hw_monitor );
-
-            // Have the auto-calibration mechanism notify us when calibration has finished
-            _autocal->register_callback(
-                [&]( rs2_calibration_status status )
-                {
-                    if( status == RS2_CALIBRATION_SUCCESSFUL )
-                    {
-                        rs2_dsm_params new_dsm_params = _autocal->get_dsm_params();
-                        // We update the age of the device in weeks and the time between factory
-                        // calibration and last AC to aid projection
-                        auto manufacture = utilities::time::l500::get_manufacture_work_week(
-                            get_info( RS2_CAMERA_INFO_SERIAL_NUMBER ) );
-                        auto age
-                            = utilities::time::get_work_weeks_since( manufacture );
-                        new_dsm_params.weeks_since_calibration = (uint8_t)age;
-                        new_dsm_params.ac_weeks_since_calibaration = (uint8_t)age;
-
-                        // We override the DSM params first, because it can throw if the parameters
-                        // are exceeding spec! This may throw!!
-                        get_depth_sensor().override_dsm_params( new_dsm_params );
-                        auto & color_sensor = *get_color_sensor();
-                        color_sensor.override_intrinsics( _autocal->get_raw_intrinsics() );
-                        color_sensor.override_extrinsics( _autocal->get_extrinsics() );
-                        color_sensor.set_k_thermal_intrinsics( _autocal->get_thermal_intrinsics() );
-                    }
-                    notify_of_calibration_change( status );
-                } );
-
-            depth_sensor.register_option(
-                RS2_OPTION_TRIGGER_CAMERA_ACCURACY_HEALTH,
-                std::make_shared< ac_trigger::enabler_option >( _autocal )
-            );
-            depth_sensor.register_option(
-                RS2_OPTION_RESET_CAMERA_ACCURACY_HEALTH,
-                std::make_shared< ac_trigger::reset_option >( _autocal )
-            );
-        }
-
         depth_sensor.register_processing_block(
             { {RS2_FORMAT_Z16}, {RS2_FORMAT_Y8} },
             { {RS2_FORMAT_Z16, RS2_STREAM_DEPTH, 0, 0, 0, 0, &rotate_resolution} },
@@ -289,11 +229,6 @@ namespace librealsense
                 cpb->add(z16rot);
                 cpb->add(y8rot);
                 cpb->add(sync);
-                if( _autocal )
-                {
-                    //sync->add_enabling_option( _autocal->get_enabler_opt() );
-                    cpb->add( std::make_shared< ac_trigger::depth_processing_block >( _autocal ) );
-                }
                 cpb->add( std::make_shared< filtering_processing_block >( RS2_STREAM_DEPTH ) );
                 return cpb;
             }
@@ -317,11 +252,6 @@ namespace librealsense
                 cpb->add(y8rot);
                 cpb->add(conf);
                 cpb->add(sync);
-                if( _autocal )
-                {
-                    //sync->add_enabling_option( _autocal->get_enabler_opt() );
-                    cpb->add( std::make_shared< ac_trigger::depth_processing_block >( _autocal ) );
-                }
                 cpb->add( std::shared_ptr< filtering_processing_block >(
                     new filtering_processing_block{RS2_STREAM_DEPTH, RS2_STREAM_CONFIDENCE} ) );
                 return cpb;
@@ -366,45 +296,6 @@ namespace librealsense
         {
             LOG_DEBUG( "Skipping HW Sync control: requires FW 1.3.12.9" );
         }
-    }
-
-    void l500_device::notify_of_calibration_change( rs2_calibration_status status )
-    {
-        std::time_t now = std::time( nullptr );
-        auto ptm = localtime( &now );
-        char buf[256];
-        strftime( buf, sizeof( buf ), "%T", ptm );
-        AC_LOG( DEBUG, ".,_,.-'``'-.,_,.-'``'-   " << buf << "   status= " << status );
-        for( auto&& cb : _calibration_change_callbacks )
-            cb->on_calibration_change( status );
-    }
-
-    void l500_device::trigger_device_calibration( rs2_calibration_type type )
-    {
-        ac_trigger::calibration_type calibration_type;
-        switch( type )
-        {
-        case RS2_CALIBRATION_AUTO_DEPTH_TO_RGB:
-            calibration_type = ac_trigger::calibration_type::AUTO;
-            break;
-        case RS2_CALIBRATION_MANUAL_DEPTH_TO_RGB:
-            calibration_type = ac_trigger::calibration_type::MANUAL;
-            break;
-        default:
-            throw not_implemented_exception(
-                to_string() << "unsupported calibration type (" << type << ")" );
-        }
-
-        if( !_autocal )
-            throw not_implemented_exception(
-                to_string() << "the current firmware version (" << _fw_version
-                            << ") does not support depth-to-rgb calibration" );
-
-        if( _autocal->is_active() )
-            throw wrong_api_call_sequence_exception( "Camera Accuracy Health is already active" );
-
-        AC_LOG( INFO, "Camera Accuracy Health has been manually triggered" );
-        _autocal->trigger_calibration( calibration_type );
     }
 
     void l500_device::force_hardware_reset() const
@@ -456,26 +347,35 @@ namespace librealsense
         using namespace std;
         using namespace std::chrono;
 
-        try {
-            LOG_INFO("entering to update state, device disconnect is expected");
-            command cmd(ivcam2::DFU);
+        try
+        {
+            LOG_INFO( "entering to update state, device disconnect is expected" );
+            command cmd( ivcam2::DFU );
             cmd.param1 = 1;
-            _hw_monitor->send(cmd);
-            std::vector<uint8_t> gvd_buff(HW_MONITOR_BUFFER_SIZE);
-            for (auto i = 0; i < 50; i++)
+            _hw_monitor->send( cmd );
+
+            // We allow 6 seconds because on Linux the removal status is updated at a 5 seconds rate.
+            const int MAX_ITERATIONS_FOR_DEVICE_DISCONNECTED_LOOP = (POLLING_DEVICES_INTERVAL_MS + 1000) / DELAY_FOR_RETRIES;
+            for( auto i = 0; i < MAX_ITERATIONS_FOR_DEVICE_DISCONNECTED_LOOP; i++ )
             {
+                // If the device was detected as removed we assume the device is entering update mode
+                // Note: if no device status callback is registered we will wait the whole time and it is OK
+                if( ! is_valid() )
+                    return;
 
-                _hw_monitor->get_gvd(gvd_buff.size(), gvd_buff.data(), GVD);
-                this_thread::sleep_for(milliseconds(50));
+                this_thread::sleep_for( milliseconds(DELAY_FOR_RETRIES) );
             }
-            throw std::runtime_error("Device still connected!");
 
+            if (device_changed_notifications_on())
+                LOG_WARNING("Timeout waiting for device disconnect after DFU command!");
         }
-        catch (std::exception& e) {
-            LOG_WARNING(e.what());
+        catch( std::exception & e )
+        {
+            LOG_ERROR( e.what() );
         }
-        catch (...) {
-            // The set command returns a failure because switching to DFU resets the device while the command is running.
+        catch( ... )
+        {
+            LOG_ERROR( "Unknown error during entering DFU state" );
         }
     }
 
@@ -791,6 +691,17 @@ namespace librealsense
         {
             _temperature_reader.join();
         }
+    }
+
+    bool l500_device::check_fw_compatibility(const std::vector<uint8_t>& image) const
+    {
+        std::string fw_version = extract_firmware_version_string((const void*)image.data(), image.size());
+
+        auto it = ivcam2::device_to_fw_min_version.find(_pid);
+        if (it == ivcam2::device_to_fw_min_version.end())
+            throw std::runtime_error("Minimum firmware version has not been defined for this device!");
+
+        return (firmware_version(fw_version) >= firmware_version(it->second));
     }
 
     notification l500_notification_decoder::decode(int value)

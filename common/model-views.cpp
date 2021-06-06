@@ -682,9 +682,9 @@ namespace rs2
                                 ImGuiInputTextFlags_EnterReturnsTrue))
                             {
                                 float new_value;
-                                if (!string_to_int(buff, new_value))
+                                if(!utilities::string::string_to_value<float>(buff, new_value))
                                 {
-                                    error_message = "Invalid numeric input!";
+                                    error_message = "Invalid float input!";
                                 }
                                 else if (new_value < range.min || new_value > range.max)
                                 {
@@ -3708,14 +3708,19 @@ namespace rs2
         _updates->set_device_status(*_updates_profile, false);
     }
 
-    void device_model::check_for_bundled_fw_update(const rs2::context &ctx, std::shared_ptr<notifications_model> not_model)
+    bool device_model::check_for_bundled_fw_update(const rs2::context &ctx, std::shared_ptr<notifications_model> not_model , bool reset_delay )
     {
+        // LibRS can have a "bundled" FW binary downloaded during CMake. That's the version
+        // "available" to us, but it may not be there (e.g., no internet connection to download
+        // it). Lacking an available version, we try to let the user choose a "recommended"
+        // version for download. The recommended version is defined by the device (and comes
+        // from a #define).
         if( dev.supports( RS2_CAMERA_INFO_FIRMWARE_VERSION )
             && dev.supports( RS2_CAMERA_INFO_RECOMMENDED_FIRMWARE_VERSION )
             && dev.supports( RS2_CAMERA_INFO_PRODUCT_LINE ) )
         {
             std::string fw = dev.get_info( RS2_CAMERA_INFO_FIRMWARE_VERSION );
-            std::string recommended
+            std::string recommended_fw_ver
                 = dev.get_info( RS2_CAMERA_INFO_RECOMMENDED_FIRMWARE_VERSION );
 
             int product_line
@@ -3725,13 +3730,13 @@ namespace rs2
                 configurations::update::allow_rc_firmware,
                 false );
             bool is_rc = ( product_line == RS2_PRODUCT_LINE_D400 ) && allow_rc_firmware;
-            std::string available = get_available_firmware_version( product_line );
+            std::string available_fw_ver = get_available_firmware_version( product_line );
 
             std::shared_ptr< firmware_update_manager > manager = nullptr;
 
-            if( is_upgradeable( fw, available ) )
+            if( is_upgradeable( fw, available_fw_ver) )
             {
-                recommended = available;
+                recommended_fw_ver = available_fw_ver;
 
                 static auto table = create_default_fw_table();
 
@@ -3743,30 +3748,46 @@ namespace rs2
                                                                        true );
             }
 
-            if( is_upgradeable( fw, recommended ) )
+            auto dev_name = get_device_name(dev);
+            if( is_upgradeable( fw, recommended_fw_ver) )
             {
-                auto dev_name = get_device_name( dev );
                 std::stringstream msg;
                 msg << dev_name.first << " (S/N " << dev_name.second << ")\n"
                     << "Current Version: " << fw << "\n";
 
                 if( is_rc )
-                    msg << "Release Candidate: " << recommended << " Pre-Release";
+                    msg << "Release Candidate: " << recommended_fw_ver << " Pre-Release";
                 else
-                    msg << "Recommended Version: " << recommended;
+                    msg << "Recommended Version: " << recommended_fw_ver;
 
                 auto n = std::make_shared< fw_update_notification_model >( msg.str(),
                                                                            manager,
                                                                            false );
-                n->delay_id = "dfu." + dev_name.second;
+                // The FW update delay ID include the dismissed recommended version and the device serial number
+                // This way a newer FW recommended version will not be dismissed 
+                n->delay_id = "fw_update_alert." + recommended_fw_ver + "." + dev_name.second;
                 n->enable_complex_dismiss = true;
+
+                if( reset_delay ) n->reset_delay();
+
                 if( ! n->is_delayed() )
                 {
                     not_model->add_notification( n );
                     related_notifications.push_back( n );
+                    return true;
                 }
             }
+            else
+            {
+                std::stringstream msg;
+                msg << "Current FW >= Bundled FW for: " << dev_name.first << " (S/N " << dev_name.second << ")\n"
+                    << "Current Version: " << fw << "\n" 
+                    << "Recommended Version: " << recommended_fw_ver;
+
+                not_model->add_log(msg.str(), RS2_LOG_SEVERITY_DEBUG);
+            }
         }
+        return false;
     }
 
     void device_model::refresh_notifications(viewer_model& viewer)
@@ -3822,12 +3843,6 @@ namespace rs2
         _updates_profile(std::make_shared<dev_updates_profile::update_profile>()),
         _allow_remove(remove)
     {
-
-        if( dev.supports( RS2_CAMERA_INFO_FIRMWARE_VERSION ) && dev.is< device_calibration >() )
-        {
-            _accuracy_health_model = std::unique_ptr< cah_model >( new cah_model( *this, viewer ) );
-        }
-
         auto name = get_device_name(dev);
         id = to_string() << name.first << ", " << name.second;
 
@@ -4882,7 +4897,7 @@ namespace rs2
             error_message = e.what();
         }
     }
-    void device_model::check_for_device_updates(viewer_model& viewer)
+    void device_model::check_for_device_updates(viewer_model& viewer, bool activated_by_user )
     {
         std::weak_ptr< updates_model > updates_model_protected( viewer.updates );
         std::weak_ptr< dev_updates_profile::update_profile > update_profile_protected(
@@ -4893,7 +4908,8 @@ namespace rs2
                                                       updates_model_protected,
                                                       notification_model_protected,
                                                       this,
-                                                      update_profile_protected]() {
+                                                      update_profile_protected,
+                                                      activated_by_user]() {
             try
             {
                 bool need_to_check_bundle = true;
@@ -4911,9 +4927,10 @@ namespace rs2
                 }
                 sw_update::dev_updates_profile updates_profile( dev, server_url, use_local_file );
 
-                bool sw_online_update_available = updates_profile.retrieve_updates( sw_update::LIBREALSENSE );
-                bool fw_online_update_available = updates_profile.retrieve_updates( sw_update::FIRMWARE ); 
-
+                bool fail_access_db = false;
+                bool sw_online_update_available = updates_profile.retrieve_updates( sw_update::LIBREALSENSE, fail_access_db);
+                bool fw_online_update_available = updates_profile.retrieve_updates( sw_update::FIRMWARE, fail_access_db);
+                bool fw_bundled_update_available = false;
                 if (sw_online_update_available || fw_online_update_available)
                 {
                     if (auto update_profile = update_profile_protected.lock())
@@ -4923,14 +4940,39 @@ namespace rs2
                             ctx,
                             this);
 
-                        // For essential policy we don't need the update info, if essential update exist we take the whole update profile for full updates display
-                        dev_updates_profile::version_info dummy_update_info;
-                        if (update_profile->get_sw_update(sw_update::ESSENTIAL, dummy_update_info) || update_profile->get_fw_update(sw_update::ESSENTIAL, dummy_update_info))
+                        dev_updates_profile::version_info sw_update_info, fw_update_info;
+                        bool essential_sw_update_found = update_profile->get_sw_update(sw_update::ESSENTIAL, sw_update_info);
+                        bool essential_fw_update_found = update_profile->get_fw_update(sw_update::ESSENTIAL, fw_update_info);
+                        if (essential_sw_update_found || essential_fw_update_found)
                         {
                             if (auto viewer_updates = updates_model_protected.lock())
                             {
                                 viewer_updates->add_profile(updates_profile_model);
                                 need_to_check_bundle = false;
+
+                                // Log the essential updates
+                                if (auto nm = notification_model_protected.lock())
+                                {
+                                    if( essential_sw_update_found )
+                                        nm->add_log(
+                                            to_string()
+                                                << update_profile->device_name << " (S/N "
+                                                << update_profile->serial_number << ")\n"
+                                                << "Current SW version: " << std::string( update_profile->software_version )
+                                                << "\nEssential SW version: "
+                                                << std::string( sw_update_info.ver ),
+                                            RS2_LOG_SEVERITY_WARN );
+                                    
+                                    if( essential_fw_update_found )
+                                        nm->add_log(
+                                            to_string()
+                                                << update_profile->device_name << " (S/N "
+                                                << update_profile->serial_number << ")\n"
+                                                << "Current FW version: " << std::string( update_profile->firmware_version )
+                                                << "\nEssential FW version: "
+                                                << std::string( fw_update_info.ver ),
+                                            RS2_LOG_SEVERITY_WARN );
+                                }
                             }
                         }
                         else 
@@ -4948,14 +4990,14 @@ namespace rs2
                                     {
                                         if (auto nm = notification_model_protected.lock())
                                         {
-                                            handle_online_sw_update( nm, update_profile );
+                                            handle_online_sw_update( nm, update_profile, activated_by_user);
                                         }
                                     }
                                     if (fw_online_update_available)
                                     {
                                         if (auto nm = notification_model_protected.lock())
                                         {
-                                            need_to_check_bundle = !handle_online_fw_update( ctx, nm, update_profile );
+                                            need_to_check_bundle = !handle_online_fw_update( ctx, nm, update_profile , activated_by_user);
                                         }
                                     }
                                 }
@@ -4970,7 +5012,12 @@ namespace rs2
                 }
                 else if( auto nm = notification_model_protected.lock() )
                 {
-                    nm->add_log( "No online SW / FW updates available" );
+                    if ( activated_by_user && fail_access_db )
+                        nm->add_notification( { to_string() << textual_icons::wifi << "  Unable to retrieve updates.\nPlease check your network connection.\n",
+                                                RS2_LOG_SEVERITY_ERROR,
+                                                RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR } );
+                    else
+                        nm->add_log( "No online SW / FW updates available" );
                 }
 
                 // If no on-line updates notification, offer bundled FW update if needed
@@ -4979,7 +5026,22 @@ namespace rs2
                 {
                     if( auto nm = notification_model_protected.lock() )
                     {
-                        check_for_bundled_fw_update( ctx, nm );
+                        fw_bundled_update_available = check_for_bundled_fw_update( ctx, nm , activated_by_user);
+                    }
+                }
+
+                // When no updates available (on-line + bundled), add a notification to indicate "all up to date"
+                if( activated_by_user && ! fail_access_db && ! sw_online_update_available
+                    && ! fw_online_update_available && ! fw_bundled_update_available )
+                {
+                    auto n = std::make_shared< sw_update_up_to_date_model >();
+                    auto name = get_device_name(dev);
+                    n->delay_id = "no_updates_alert." + name.second;
+                   
+                    if (auto nm = notification_model_protected.lock())
+                    {
+                        nm->add_notification(n);
+                        related_notifications.push_back(n);
                     }
                 }
             }
@@ -5280,7 +5342,7 @@ namespace rs2
                                     n->dismiss( false ); // No need for snooze, if needed a new notification will be popped 
                             }
 
-                            check_for_device_updates( viewer );
+                            check_for_device_updates( viewer , true);
                         }
                     }
 
@@ -5488,22 +5550,6 @@ namespace rs2
         }
 
 
-        if (show_trigger_camera_accuracy_health_popup)
-        {
-            if (_accuracy_health_model)
-            {
-                show_trigger_camera_accuracy_health_popup = _accuracy_health_model->prompt_trigger_popup(window, error_message);
-            }
-        }
-
-        if (show_reset_camera_accuracy_health_popup)
-        {
-            if (_accuracy_health_model)
-            {
-                show_reset_camera_accuracy_health_popup = _accuracy_health_model->prompt_reset_popup(window, error_message);
-            }
-        }
-
         if (keep_showing_advanced_mode_modal)
         {
             const bool is_advanced_mode_enabled = dev.as<advanced_mode>().is_enabled();
@@ -5596,7 +5642,10 @@ namespace rs2
         }
     }
 
-    void rs2::device_model::handle_online_sw_update(std::shared_ptr < notifications_model > nm , std::shared_ptr < dev_updates_profile::update_profile >update_profile )
+    void rs2::device_model::handle_online_sw_update(
+        std::shared_ptr< notifications_model > nm,
+        std::shared_ptr< dev_updates_profile::update_profile > update_profile,
+        bool reset_delay )
     {
         dev_updates_profile::version_info recommended_sw_update_info;
         update_profile->get_sw_update(sw_update::RECOMMENDED, recommended_sw_update_info);
@@ -5604,9 +5653,14 @@ namespace rs2
             RS2_API_FULL_VERSION_STR,
             recommended_sw_update_info.ver,
             recommended_sw_update_info.download_link);
-        auto name = get_device_name(dev);
-        n->delay_id = "update_alert." + name.second;
+
+        auto dev_name = get_device_name(dev);
+        // The SW update delay ID include the dismissed recommended version and the device serial number
+        // This way a newer SW recommended version will not be dismissed. 
+        n->delay_id = "sw_update_alert." + std::string(recommended_sw_update_info.ver) + "." + dev_name.second;
         n->enable_complex_dismiss = true;  // allow advanced dismiss menu
+
+        if ( reset_delay ) n->reset_delay();
 
         if (!n->is_delayed())
         {
@@ -5615,7 +5669,11 @@ namespace rs2
         }
     }
 
-    bool rs2::device_model::handle_online_fw_update( const context& ctx, std::shared_ptr < notifications_model >  nm, std::shared_ptr< dev_updates_profile::update_profile> update_profile )
+    bool rs2::device_model::handle_online_fw_update(
+        const context & ctx,
+        std::shared_ptr< notifications_model > nm,
+        std::shared_ptr< dev_updates_profile::update_profile > update_profile,
+        bool reset_delay )
     {
         bool fw_update_notification_raised = false;
         std::shared_ptr< firmware_update_manager > manager = nullptr;
@@ -5662,8 +5720,11 @@ namespace rs2
                 msg.str(),
                 manager,
                 false);
-            n->delay_id = "dfu." + dev_name.second;
+            n->delay_id = "fw_update_alert." +  std::string(recommended_fw_update_info.ver) + "." +  dev_name.second;
             n->enable_complex_dismiss = true;
+
+            if ( reset_delay ) n->reset_delay();
+
             if (!n->is_delayed())
             {
                 nm->add_notification(n);
@@ -6023,7 +6084,7 @@ namespace rs2
                                     model.add_log(to_string() << "Setting " << opt_model.opt << " to "
                                         << new_val << " (" << labels[selected] << ")");
 
-                                    opt_model.set_option(opt_model.opt, new_val, error_message);
+                                    opt_model.set_option(opt_model.opt, static_cast<float>(new_val), error_message);
 
                                     // Only apply preset to GUI if set_option was succesful
                                     selected_file_preset = "";

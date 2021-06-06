@@ -17,9 +17,6 @@
 #include <cstddef>
 #include "metadata-parser.h"
 #include "l500-options.h"
-#include "ac-trigger.h"
-#include "algo/depth-to-rgb-calibration/debug.h"
-#include "algo/depth-to-rgb-calibration/utils.h"  // validate_dsm_params
 #include "algo/max-usable-range/l500/max-usable-range.h" 
 
 
@@ -33,7 +30,6 @@ namespace librealsense
     ivcam2::intrinsic_depth l500_depth::read_intrinsics_table() const
     {
         // Get RAW data from firmware
-        AC_LOG(DEBUG, "DPT_INTRINSICS_FULL_GET");
         std::vector< uint8_t > response_vec = _hw_monitor->send( command{ DPT_INTRINSICS_FULL_GET } );
 
         if (response_vec.empty())
@@ -276,78 +272,6 @@ namespace librealsense
         _owner->stop_temperatures_reader();
     }
 
-    int l500_depth_sensor::read_algo_version()
-    {
-        const int algo_version_address = 0xa0020bd8;
-        command cmd(ivcam2::fw_cmd::MRD, algo_version_address, algo_version_address + 4);
-        auto res = _owner->_hw_monitor->send(cmd);
-        if (res.size() < 2)
-        {
-            throw std::runtime_error("Invalid result size!");
-        }
-        auto data = (uint8_t*)res.data();
-        auto ver = data[0] + 100* data[1];
-        return ver;
-    }
-
-    void l500_depth_sensor::override_intrinsics( rs2_intrinsics const & intr )
-    {
-        throw librealsense::not_implemented_exception( "depth sensor does not support intrinsics override" );
-    }
-
-    void l500_depth_sensor::override_extrinsics( rs2_extrinsics const & extr )
-    {
-        throw librealsense::not_implemented_exception( "depth sensor does not support extrinsics override" );
-    }
-
-    rs2_dsm_params l500_depth_sensor::get_dsm_params() const
-    {
-        ac_depth_results table = { { 0 } };
-        read_fw_table( *_owner->_hw_monitor, table.table_id, &table, nullptr,
-            [&]()
-            {
-                //time_t t;
-                //time( &t );                                       // local time
-                //table.params.timestamp = mktime( gmtime( &t ) );  // UTC time
-                // Leave the timestamp & version at 0, so it's recognizable as "new"
-                //table.params.version = table.this_version;
-                table.params.model = RS2_DSM_CORRECTION_AOT;
-                table.params.h_scale = table.params.v_scale = 1.;
-            } );
-        return table.params;
-    }
-
-    void l500_depth_sensor::override_dsm_params( rs2_dsm_params const & dsm_params )
-    {
-        try
-        {
-            algo::depth_to_rgb_calibration::validate_dsm_params( dsm_params );  // throws!
-        }
-        catch( invalid_value_exception const & e )
-        {
-            if( ! getenv( "RS2_AC_IGNORE_LIMITERS" ))
-                throw;
-            AC_LOG( ERROR, "Ignoring (RS2_AC_IGNORE_LIMITERS) " << e.what() );
-        }
-
-        ac_depth_results table( dsm_params );
-        // table.params.timestamp = std::chrono::system_clock::now().time_since_epoch().count();
-        time_t t;
-        time( &t );                                       // local time
-        table.params.timestamp = mktime( gmtime( &t ) );  // UTC time
-        table.params.version = ac_depth_results::this_version;
-
-        AC_LOG( INFO, "Overriding DSM : " << table.params );
-        ivcam2::write_fw_table( *_owner->_hw_monitor, ac_depth_results::table_id, table );
-    }
-
-    void l500_depth_sensor::reset_calibration()
-    {
-        command cmd( ivcam2::fw_cmd::DELETE_TABLE, ac_depth_results::table_id );
-        _owner->_hw_monitor->send( cmd );
-        AC_LOG( INFO, "Depth sensor calibration has been reset" );
-    }
-
     float l500_depth_sensor::get_max_usable_depth_range() const
     {
         using namespace algo::max_usable_range;
@@ -555,9 +479,6 @@ namespace librealsense
             synthetic_sensor::start( std::make_shared< frame_filter >( callback, _user_requests ) );
 
             _owner->start_temperatures_reader();
-
-            if( _owner->_autocal )
-                _owner->_autocal->start();
         } );
     }
 
@@ -565,9 +486,6 @@ namespace librealsense
     {
     // The delay is here as a work around to a firmware bug [RS5-5453]
         _action_delayer.do_after_delay([&]() { synthetic_sensor::stop(); });
-
-        if( _owner->_autocal )
-            _owner->_autocal->stop();
 
         _owner->stop_temperatures_reader();
 
@@ -586,62 +504,6 @@ namespace librealsense
             vl->get_height() == vr->get_height();
     }
 
-
-    std::shared_ptr< stream_profile_interface > l500_depth_sensor::is_color_sensor_needed() const
-    {
-        // If AC is off, we don't need the color stream on
-        if( !_owner->_autocal )
-            return {};
-
-        auto is_rgb_requested
-            = std::find_if( _user_requests.begin(),
-                            _user_requests.end(),
-                            []( std::shared_ptr< stream_profile_interface > const & sp )
-                            { return sp->get_stream_type() == RS2_STREAM_COLOR; } )
-           != _user_requests.end();
-        if( is_rgb_requested )
-            return {};
-
-        // Find a profile that's acceptable for RGB:
-        //     1. has the same framerate
-        //     2. format is RGB8
-        //     2. has the right resolution (1280x720 should be good enough)
-        auto user_request
-            = std::find_if( _user_requests.begin(),
-                            _user_requests.end(),
-                            []( std::shared_ptr< stream_profile_interface > const & sp ) {
-                                return sp->get_stream_type() == RS2_STREAM_DEPTH;
-                            } );
-        if( user_request == _user_requests.end() )
-        {
-            AC_LOG( ERROR, "Depth input stream profiles do not contain depth!" );
-            return {};
-        }
-        auto requested_depth_profile
-            = dynamic_cast< video_stream_profile * >( user_request->get() );
-
-        auto & color_sensor = *_owner->get_color_sensor();
-        auto color_profiles = color_sensor.get_stream_profiles();
-        auto rgb_profile = std::find_if(
-            color_profiles.begin(),
-            color_profiles.end(),
-            [&]( std::shared_ptr< stream_profile_interface > const & sp )
-            {
-                auto vsp = dynamic_cast< video_stream_profile * >( sp.get() );
-                return vsp->get_stream_type() == RS2_STREAM_COLOR
-                    && vsp->get_framerate() == requested_depth_profile->get_framerate()
-                    && vsp->get_format() == RS2_FORMAT_RGB8
-                    && vsp->get_width() == 1280  // flipped
-                    && vsp->get_height() == 720;
-            } );
-        if( rgb_profile == color_profiles.end() )
-        {
-            AC_LOG( ERROR,
-                "Can't find color stream corresponding to depth; AC will not work" );
-            return {};
-        }
-        return *rgb_profile;
-    }
 
     void l500_depth_sensor::open(const stream_profiles& requests)
     {

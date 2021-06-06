@@ -141,34 +141,20 @@ namespace librealsense
 
     rs2_format sensor_base::fourcc_to_rs2_format(uint32_t fourcc_format) const
     {
-        rs2_format f = RS2_FORMAT_ANY;
+        auto it = _fourcc_to_rs2_format->find( fourcc_format );
+        if( it != _fourcc_to_rs2_format->end() )
+            return it->second;
 
-        std::find_if(_fourcc_to_rs2_format->begin(), _fourcc_to_rs2_format->end(), [&fourcc_format, &f](const std::pair<uint32_t, rs2_format>& p) {
-            if (p.first == fourcc_format)
-            {
-                f = p.second;
-                return true;
-            }
-            return false;
-        });
-
-        return f;
+        return RS2_FORMAT_ANY;
     }
 
     rs2_stream sensor_base::fourcc_to_rs2_stream(uint32_t fourcc_format) const
     {
-        rs2_stream s = RS2_STREAM_ANY;
+        auto it = _fourcc_to_rs2_stream->find( fourcc_format );
+        if( it != _fourcc_to_rs2_stream->end() )
+            return it->second;
 
-        std::find_if(_fourcc_to_rs2_stream->begin(), _fourcc_to_rs2_stream->end(), [&fourcc_format, &s](const std::pair<uint32_t, rs2_stream>& p) {
-            if (p.first == fourcc_format)
-            {
-                s = p.second;
-                return true;
-            }
-            return false;
-        });
-
-        return s;
+        return RS2_STREAM_ANY;
     }
 
     void sensor_base::raise_on_before_streaming_changes(bool streaming)
@@ -1504,9 +1490,9 @@ namespace librealsense
             auto&& composite = dynamic_cast<composite_frame*>(f.frame);
             if (composite)
             {
-                for (size_t i = 0; i < composite->get_embedded_frames_count(); i++)
+                for (auto i = 0; i < composite->get_embedded_frames_count(); i++)
                 {
-                    processed_frames.push_back(composite->get_frame(i));
+                    processed_frames.push_back( composite->get_frame( (int)i ) );
                 }
             }
 
@@ -1562,6 +1548,12 @@ namespace librealsense
     {
         std::lock_guard<std::mutex> lock(_synthetic_configure_lock);
         _raw_sensor->stop();
+    }
+
+    float librealsense::synthetic_sensor::get_preset_max_value() const
+    {
+        // to be overriden by depth sensors which need this api
+        return 0.0f;
     }
 
     void synthetic_sensor::register_processing_block(const std::vector<stream_profile>& from,

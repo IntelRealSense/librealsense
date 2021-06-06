@@ -1279,7 +1279,7 @@ const char* rs2_l500_visual_preset_to_string(rs2_l500_visual_preset preset)     
 const char* rs2_sensor_mode_to_string(rs2_sensor_mode mode)                               { return get_string(mode); }
 const char* rs2_ambient_light_to_string( rs2_ambient_light ambient )                      { return get_string(ambient); }
 const char* rs2_digital_gain_to_string(rs2_digital_gain gain)                             { return get_string(gain); }
-const char* rs2_cah_trigger_to_string( rs2_cah_trigger mode )                             { return get_string(mode); }
+const char* rs2_cah_trigger_to_string( int mode )                                         { return "DEPRECATED as of 2.46"; }
 const char* rs2_calibration_type_to_string(rs2_calibration_type type)                     { return get_string(type); }
 const char* rs2_calibration_status_to_string(rs2_calibration_status status)               { return get_string(status); }
 const char* rs2_host_perf_mode_to_string(rs2_host_perf_mode mode)                         { return get_string(mode); }
@@ -1522,7 +1522,7 @@ rs2_device* rs2_context_add_device(rs2_context* ctx, const char* file, rs2_error
     VALIDATE_NOT_NULL(file);
 
     auto dev_info = ctx->ctx->add_device(file);
-    return new rs2_device{ ctx->ctx, dev_info, dev_info->create_device(false) };
+    return new rs2_device{ ctx->ctx, dev_info, dev_info->create_device() };
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, ctx, file)
 
@@ -2918,7 +2918,9 @@ void rs2_update_firmware_cpp(const rs2_device* device, const void* fw_image, int
 {
     VALIDATE_NOT_NULL(device);
     VALIDATE_NOT_NULL(fw_image);
-    VALIDATE_FIXED_SIZE(fw_image_size, signed_fw_size); // check if the given FW size matches the expected FW size
+    // check if the given FW size matches the expected FW size
+    if (!val_in_range(fw_image_size, { signed_fw_size, signed_sr300_size }))
+        throw librealsense::invalid_value_exception(to_string() << "Unsupported firmware binary image provided - " << fw_image_size << " bytes");
 
     auto fwu = VALIDATE_INTERFACE(device->device, librealsense::update_device_interface);
 
@@ -2933,10 +2935,9 @@ void rs2_update_firmware(const rs2_device* device, const void* fw_image, int fw_
 {
     VALIDATE_NOT_NULL(device);
     VALIDATE_NOT_NULL(fw_image);
-    VALIDATE_FIXED_SIZE(fw_image_size, signed_fw_size); // check if the given FW size matches the expected FW size
-
-    if (fw_image_size <= 0)
-        throw std::runtime_error("invlid firmware image size provided to rs2_update");
+    // check if the given FW size matches the expected FW size
+    if (!val_in_range(fw_image_size, { signed_fw_size, signed_sr300_size }))
+        throw librealsense::invalid_value_exception(to_string() << "Unsupported firmware binary image provided - " << fw_image_size << " bytes");
 
     auto fwu = VALIDATE_INTERFACE(device->device, librealsense::update_device_interface);
 
@@ -2957,7 +2958,7 @@ const rs2_raw_data_buffer* rs2_create_flash_backup_cpp(const rs2_device* device,
 
     auto fwud = std::dynamic_pointer_cast<updatable>(device->device);
     if (!fwud)
-        throw std::runtime_error("This device does not supports update protocol!");
+        throw std::runtime_error("This device does not support update protocol!");
 
     std::vector<uint8_t> res;
 
@@ -2976,7 +2977,7 @@ const rs2_raw_data_buffer* rs2_create_flash_backup(const rs2_device* device, rs2
 
     auto fwud = std::dynamic_pointer_cast<updatable>(device->device);
     if (!fwud)
-        throw std::runtime_error("This device does not supports update protocol!");
+        throw std::runtime_error("This device does not support update protocol!");
 
     std::vector<uint8_t> res;
 
@@ -2997,11 +2998,13 @@ void rs2_update_firmware_unsigned_cpp(const rs2_device* device, const void* imag
 {
     VALIDATE_NOT_NULL(device);
     VALIDATE_NOT_NULL(image);
-    VALIDATE_FIXED_SIZE(image_size, unsigned_fw_size); // check if the given FW size matches the expected FW size
+    // check if the given FW size matches the expected FW size
+    if (!val_in_range(image_size, { unsigned_fw_size, unsigned_sr300_size }))
+        throw librealsense::invalid_value_exception(to_string() << "Unsupported firmware binary image (unsigned) provided - " << image_size << " bytes");
 
     auto fwud = std::dynamic_pointer_cast<updatable>(device->device);
     if (!fwud)
-        throw std::runtime_error("This device does not supports update protocol!");
+        throw std::runtime_error("This device does not support update protocol!");
 
     std::vector<uint8_t> buffer((uint8_t*)image, (uint8_t*)image + image_size);
 
@@ -3016,14 +3019,13 @@ void rs2_update_firmware_unsigned(const rs2_device* device, const void* image, i
 {
     VALIDATE_NOT_NULL(device);
     VALIDATE_NOT_NULL(image);
-    VALIDATE_FIXED_SIZE(image_size, unsigned_fw_size); // check if the given FW size matches the expected FW size
-
-    if (image_size <= 0)
-        throw std::runtime_error("invlid firmware image size provided to rs2_update_firmware_unsigned");
+    // check if the given FW size matches the expected FW size
+    if (!val_in_range(image_size, { unsigned_fw_size, unsigned_sr300_size }))
+        throw librealsense::invalid_value_exception(to_string() << "Unsupported firmware binary image (unsigned) provided - " << image_size << " bytes");
 
     auto fwud = std::dynamic_pointer_cast<updatable>(device->device);
     if (!fwud)
-        throw std::runtime_error("This device does not supports update protocol!");
+        throw std::runtime_error("This device does not support update protocol!");
 
     std::vector<uint8_t> buffer((uint8_t*)image, (uint8_t*)image + image_size);
 
@@ -3038,13 +3040,33 @@ void rs2_update_firmware_unsigned(const rs2_device* device, const void* image, i
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, image, device)
 
+int rs2_check_firmware_compatibility(const rs2_device* device, const void* fw_image, int fw_image_size, rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(device);
+    VALIDATE_NOT_NULL(fw_image);
+    // check if the given FW size matches the expected FW size
+    if (!val_in_range(fw_image_size, { signed_fw_size, signed_sr300_size }))
+        throw librealsense::invalid_value_exception(to_string() << "Unsupported firmware binary image provided - " << fw_image_size << " bytes");
+
+    auto fwud = std::dynamic_pointer_cast<updatable>(device->device);
+    if (!fwud)
+        throw std::runtime_error("This device does not support update protocol!");
+
+    std::vector<uint8_t> buffer((uint8_t*)fw_image, (uint8_t*)fw_image + fw_image_size);
+
+    bool res = fwud->check_fw_compatibility(buffer);
+
+    return res ? 1 : 0;
+}
+HANDLE_EXCEPTIONS_AND_RETURN(0, fw_image, device)
+
 void rs2_enter_update_state(const rs2_device* device, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(device);
 
     auto fwud = std::dynamic_pointer_cast<updatable>(device->device);
     if (!fwud)
-        throw std::runtime_error("this device does not supports fw update");
+        throw std::runtime_error("this device does not support fw update");
     fwud->enter_update_state();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, device)

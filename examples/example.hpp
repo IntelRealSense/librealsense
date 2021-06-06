@@ -19,6 +19,7 @@
 #include <functional>
 
 #include "../third-party/stb_easy_font.h"
+#include "example-utils.hpp"
 
 #ifndef PI
 #define PI  3.14159265358979323846

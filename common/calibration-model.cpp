@@ -370,7 +370,7 @@ void calibration_model::update(ux_window& window, std::string& error_message)
         }
 
         ImGui::PushItemWidth(120);
-        ImGui::Combo("##RectifiedResolutions", &selected_resolution, resolution_names_char.data(), resolution_names_char.size());
+        ImGui::Combo("##RectifiedResolutions", &selected_resolution, resolution_names_char.data(), int(resolution_names_char.size()));
 
         ImGui::SetCursorPosX(10);
         ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5);

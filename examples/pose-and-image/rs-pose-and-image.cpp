@@ -6,13 +6,20 @@
 #include <chrono>
 #include <thread>
 #include <mutex>
+#include "example-utils.hpp"
 
 int main(int argc, char * argv[]) try
 {
+    std::string serial;
+    if (!device_with_streams({ RS2_STREAM_POSE }, serial))
+        return EXIT_SUCCESS;
+
     // Declare RealSense pipeline, encapsulating the actual device and sensors
     rs2::pipeline pipe;
     // Create a configuration for configuring the pipeline with a non default profile
     rs2::config cfg;
+    if (!serial.empty())
+        cfg.enable_device(serial);
     // Add pose stream
     cfg.enable_stream(RS2_STREAM_POSE, RS2_FORMAT_6DOF);
     // Enable both image streams

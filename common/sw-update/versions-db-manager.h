@@ -44,7 +44,7 @@ namespace rs2
             {
                 constexpr int MINIMAL_MATCH_SECTIONS = 4;
                 constexpr int MATCH_SECTIONS_INC_BUILD_NUM = 5;
-                std::regex rgx("^(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,5})?$");
+                std::regex rgx("^(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})(\\.\\d{1,5})?$");
                 std::smatch match;
 
                 if (std::regex_search(str.begin(), str.end(), match, rgx) && match.size() >= MINIMAL_MATCH_SECTIONS)

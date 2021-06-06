@@ -71,7 +71,9 @@ void output_model::thread_loop()
                                 for (auto& elem : message.data())
                                     ss << std::setfill('0') << std::setw(2) << std::hex << static_cast<int>(elem) << " ";
                                 add_log(message.get_severity(), __FILE__, 0, ss.str());
-                            }                            
+                            }
+                            if (!enable_firmware_logs && fwlogger.get_number_of_fw_logs() == 0)
+                                break;
                         }
                     }
                 }
@@ -156,7 +158,7 @@ void output_model::open(ux_window& win)
 {
     is_output_open = true;
     config_file::instance().set(configurations::viewer::output_open, true);
-    default_log_h = (int)((win.height() - 100) / 2);
+    default_log_h = static_cast<int>((win.height() - 100) / 2);
     new_log = true;
 }
 
@@ -884,33 +886,7 @@ bool output_model::user_defined_command( std::string command, device_models_list
     // passed to the FW commands check logic.
     // Note: For now we find the first device that supports the command and activate the command only on it.
 
-    if( to_lower( command ) == "trigger-camera-accuracy-health" )
-    {
-        user_defined_command_detected = true;
-
-        for( auto && dev_model : device_models )
-        {
-            if( dev_model->is_cah_model_enabled() && !user_defined_command_activated)
-            {
-                dev_model->show_trigger_camera_accuracy_health_popup = true;
-                user_defined_command_activated = true;
-            }
-        }
-    }
-    else if( to_lower( command ) == "reset-camera-accuracy-health" )
-    {
-        user_defined_command_detected = true;
-
-        for( auto && dev_model : device_models )
-        {
-            if( dev_model->is_cah_model_enabled() && !user_defined_command_activated)
-            {
-                dev_model->show_reset_camera_accuracy_health_popup = true;
-                user_defined_command_activated = true;
-            }
-        }
-    }
-    else if( to_lower( command ) == "get-nest" )
+    if( to_lower( command ) == "get-nest" )
     {
         user_defined_command_detected = true;
 

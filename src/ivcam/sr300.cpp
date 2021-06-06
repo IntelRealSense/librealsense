@@ -55,6 +55,7 @@ namespace librealsense
                 this->get_device_data(),
                 register_device_notifications);
         case SR306_PID:
+        case SR306_PID_DBG:
             return std::make_shared<sr306_camera>(ctx, _depth, _hwm,
                 this->get_device_data(),
                 register_device_notifications);
@@ -73,7 +74,7 @@ namespace librealsense
         std::vector<platform::uvc_device_info> chosen;
         std::vector<std::shared_ptr<device_info>> results;
 
-        auto correct_pid = filter_by_product(uvc, { SR300_PID, SR300v2_PID, SR306_PID });
+        auto correct_pid = filter_by_product(uvc, { SR300_PID, SR300v2_PID, SR306_PID, SR306_PID_DBG });
         auto group_devices = group_devices_by_unique_id(correct_pid);
         for (auto& group : group_devices)
         {
@@ -339,24 +340,35 @@ namespace librealsense
         using namespace std;
         using namespace std::chrono;
 
-        try {
-            command cmd(ivcam::GoToDFU);
-            cmd.param1 = 1;
-            _hw_monitor->send(cmd);
-            std::vector<uint8_t> gvd_buff(HW_MONITOR_BUFFER_SIZE);
-            for (auto i = 0; i < 50; i++)
-            {
-                _hw_monitor->get_gvd(gvd_buff.size(), gvd_buff.data(), ds::GVD);
-                this_thread::sleep_for(milliseconds(50));
-            }
-            throw std::runtime_error("Device still connected!");
-        }
-        catch (std::exception& e)
+        try
         {
-            LOG_WARNING(e.what());
+            command cmd( ivcam::GoToDFU );
+            cmd.param1 = 1;
+            _hw_monitor->send( cmd );
+
+            // We allow 6 seconds because on Linux the removal status is updated at a 5 seconds rate.
+            const int MAX_ITERATIONS_FOR_DEVICE_DISCONNECTED_LOOP = (POLLING_DEVICES_INTERVAL_MS + 1000) / DELAY_FOR_RETRIES;
+
+            for( auto i = 0; i < MAX_ITERATIONS_FOR_DEVICE_DISCONNECTED_LOOP; i++ )
+            {
+                // If the device was detected as removed we assume the device is entering update mode
+                // Note: if no device status callback is registered we will wait the whole time and it is OK
+                if( ! is_valid() )
+                    return;
+
+                this_thread::sleep_for( milliseconds( DELAY_FOR_RETRIES ) );
+            }
+
+            if (device_changed_notifications_on())
+                LOG_WARNING("Timeout waiting for device disconnect after DFU command!");
         }
-        catch (...) {
-            // The set command returns a failure because switching to DFU resets the device while the command is running.
+        catch( std::exception & e )
+        {
+            LOG_WARNING( e.what() );
+        }
+        catch( ... )
+        {
+            LOG_ERROR( "Unknown error during entering DFU state" );
         }
     }
 
@@ -466,6 +478,7 @@ namespace librealsense
 
         auto fw_version = _hw_monitor->get_firmware_version_string(gvd_buff, fw_version_offset);
         auto serial = _hw_monitor->get_module_serial_string(gvd_buff, module_serial_offset);
+        _pid = depth.pid;
         auto pid_hex_str = hexify(depth.pid);
 
         _camer_calib_params = [this]() { return get_calibration(); };
@@ -567,6 +580,20 @@ namespace librealsense
     command sr3xx_camera::get_flash_logs_command() const
     {
         return command{ ivcam::FlashRead, 0x000B6000, 0x3f8 };
+    }
+
+    bool sr3xx_camera::check_fw_compatibility(const std::vector<uint8_t>& image) const
+    {
+        std::string fw_version = extract_firmware_version_string((const void*)image.data(), image.size());
+
+        auto min_max_fw_it = device_to_fw_min_max_version.find(_pid);
+        if (min_max_fw_it == device_to_fw_min_max_version.end())
+            throw std::runtime_error("Min and Max firmware versions have not been defined for this device!");
+
+        // advanced SR3XX devices do not fit the "old" fw versions and 
+        // legacy SR3XX devices do not fit the "new" fw versions
+        return (firmware_version(fw_version) >= firmware_version(min_max_fw_it->second.first)) &&
+            (firmware_version(fw_version) <= firmware_version(min_max_fw_it->second.second));
     }
 
     void sr3xx_camera::create_snapshot(std::shared_ptr<debug_interface>& snapshot) const

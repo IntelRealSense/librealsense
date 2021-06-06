@@ -258,6 +258,16 @@ namespace librealsense
 
         };
 
+        static std::map<uint16_t, std::string> device_to_fw_min_version = {
+            { L500_RECOVERY_PID, "1.4.1.0"},
+            { L535_RECOVERY_PID, "1.4.1.0"},
+            { L500_USB2_RECOVERY_PID_OLD, "1.4.1.0"},
+            { L500_PID, "1.4.1.0"},
+            { L515_PID_PRE_PRQ, "1.4.1.0"},
+            { L515_PID, "1.4.1.0"},
+            { L535_PID, "1.4.1.0"}
+        };
+
         // Known FW error codes, if we poll for errors (RS2_OPTION_ERROR_POLLING_ENABLED)
         enum l500_notifications_types
         {

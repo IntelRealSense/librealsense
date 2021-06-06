@@ -11,7 +11,7 @@
 
 #ifndef NOMINMAX
 #define NOMINMAX
-#endif
+#endif // NOMINMAX
 
 #include <glad/glad.h>
 

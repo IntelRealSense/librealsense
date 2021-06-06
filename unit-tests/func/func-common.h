@@ -15,8 +15,8 @@ inline rs2::device find_first_device_or_exit()
     rs2::device_list devices_list = ctx.query_devices();
     if( devices_list.size() == 0 )
     {
-        std::cout << "No device was found; skipping test" << std::endl;
-        exit( 0 );
+        std::cout << "No device was found" << std::endl;
+        exit( 1 );
     }
     return devices_list[0];
 }
@@ -27,9 +27,9 @@ inline rs2::device_list find_devices_by_product_line_or_exit( int product )
     rs2::device_list devices_list = ctx.query_devices( product );
     if( devices_list.size() == 0 )
     {
-        std::cout << "No device of the " << product << " product line was found; skipping test"
+        std::cout << "No device of the " << product << " product line was found"
                   << std::endl;
-        exit( 0 );
+        exit( 1 );
     }
 
     return devices_list;
@@ -68,8 +68,8 @@ inline rs2::device find_first_device_by_name_or_exit( const std::string & dev_na
         return *dev_iter;
     }
 
-    std::cout << "No " << dev_name << " device was found; skipping test" << std::endl;
-    exit( 0 );
+    std::cout << "No " << dev_name << " device was found" << std::endl;
+    exit( 1 );
 }
 
 // Return the first device that supports the input option or exits.

@@ -20,12 +20,7 @@ In case the public key still cannot be retrieved, check and specify proxy settin
 , and rerun the command. See additional methods in the following [link](https://unix.stackexchange.com/questions/361213/unable-to-add-gpg-key-with-apt-key-behind-a-proxy).  
 
 - Add the server to the list of repositories:  
-  Ubuntu 16 LTS:  
-`sudo add-apt-repository "deb https://librealsense.intel.com/Debian/apt-repo xenial main" -u`  
-  Ubuntu 18 LTS:  
-`sudo add-apt-repository "deb https://librealsense.intel.com/Debian/apt-repo bionic main" -u`  
-  Ubuntu 20 LTS:  
-`sudo add-apt-repository "deb https://librealsense.intel.com/Debian/apt-repo focal main" -u`
+`sudo add-apt-repository "deb https://librealsense.intel.com/Debian/apt-repo $(lsb_release -cs) main" -u`  
 
 - Install the libraries (see section below if upgrading packages):  
   `sudo apt-get install librealsense2-dkms`  

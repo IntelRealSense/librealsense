@@ -43,9 +43,9 @@ namespace librealsense
     class device_info
     {
     public:
-        virtual std::shared_ptr<device_interface> create_device(bool register_device_notifications = false) const
+        virtual std::shared_ptr<device_interface> create_device() const
         {
-            return create(_ctx, register_device_notifications);
+            return create(_ctx, true);
         }
 
         virtual ~device_info() = default;
@@ -86,7 +86,7 @@ namespace librealsense
 
         }
 
-        std::shared_ptr<device_interface> create_device(bool) const override
+        std::shared_ptr<device_interface> create_device() const override
         {
             return _dev;
         }

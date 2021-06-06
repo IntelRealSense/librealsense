@@ -36,11 +36,7 @@ set(COMMON_SRC
         "${CMAKE_CURRENT_LIST_DIR}/decompress-huffman.h"
         "${CMAKE_CURRENT_LIST_DIR}/updates-model.h"
         "${CMAKE_CURRENT_LIST_DIR}/updates-model.cpp"
-        "${CMAKE_CURRENT_LIST_DIR}/cah-model.h"
-        "${CMAKE_CURRENT_LIST_DIR}/cah-model.cpp"
-        
-        
-)
+        )
 
     set(SW_UPDATE_FILES
         "${CMAKE_CURRENT_LIST_DIR}/sw-update/http-downloader.h"
@@ -50,12 +46,12 @@ set(COMMON_SRC
         "${CMAKE_CURRENT_LIST_DIR}/sw-update/versions-db-manager.h"
         "${CMAKE_CURRENT_LIST_DIR}/sw-update/versions-db-manager.cpp"
         )
-        
+
     set(REFLECTIVITY_FILES
         "${CMAKE_CURRENT_LIST_DIR}/reflectivity/reflectivity.h"
         "${CMAKE_CURRENT_LIST_DIR}/reflectivity/reflectivity.cpp"
         )
-        
+
     set(UTILITIES_FILES
         "${CMAKE_CURRENT_LIST_DIR}/utilities/number/stabilized-value.h"
         "${CMAKE_CURRENT_LIST_DIR}/utilities/string/trim-newlines.h"
@@ -63,7 +59,7 @@ set(COMMON_SRC
         "${CMAKE_CURRENT_LIST_DIR}/utilities/imgui/wrap.h"
         "${CMAKE_CURRENT_LIST_DIR}/utilities/imgui/wrap.cpp"
         )
-        
+
     set(COMMON_SRC
         ${COMMON_SRC}
         ${SW_UPDATE_FILES}

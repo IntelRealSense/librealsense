@@ -5,7 +5,6 @@
 #include <chrono>
 #include <vector>
 #include <iterator>
-#include <cstddef>
 #include <string>
 
 #include "device.h"
@@ -137,26 +136,36 @@ namespace librealsense
         using namespace std;
         using namespace std::chrono;
 
-        try {
-            LOG_INFO("entering to update state, device disconnect is expected");
-            command cmd(ds::DFU);
-            cmd.param1 = 1;
-            _hw_monitor->send(cmd);
-            std::vector<uint8_t> gvd_buff(HW_MONITOR_BUFFER_SIZE);
-            for (auto i = 0; i < 50; i++)
-            {
-                _hw_monitor->get_gvd(gvd_buff.size(), gvd_buff.data(), ds::GVD);
-                this_thread::sleep_for(milliseconds(50));
-            }
-            throw std::runtime_error("Device still connected!");
-
-        }
-        catch (std::exception& e)
+        try
         {
-            LOG_WARNING(e.what());
+            LOG_INFO( "entering to update state, device disconnect is expected" );
+            command cmd( ds::DFU );
+            cmd.param1 = 1;
+            _hw_monitor->send( cmd );
+
+            // We allow 6 seconds because on Linux the removal status is updated at a 5 seconds rate.
+            const int MAX_ITERATIONS_FOR_DEVICE_DISCONNECTED_LOOP = (POLLING_DEVICES_INTERVAL_MS + 1000) / DELAY_FOR_RETRIES;
+            for( auto i = 0; i < MAX_ITERATIONS_FOR_DEVICE_DISCONNECTED_LOOP; i++ )
+            {
+                // If the device was detected as removed we assume the device is entering update mode
+                // Note: if no device status callback is registered we will wait the whole time and it is OK
+                if( ! is_valid() )
+                    return;
+
+                this_thread::sleep_for( milliseconds( DELAY_FOR_RETRIES ) );
+            }
+
+
+            if (device_changed_notifications_on())
+                LOG_WARNING( "Timeout waiting for device disconnect after DFU command!" );
         }
-        catch (...) {
-            // The set command returns a failure because switching to DFU resets the device while the command is running.
+        catch( std::exception & e )
+        {
+            LOG_WARNING( e.what() );
+        }
+        catch( ... )
+        {
+            LOG_ERROR( "Unknown error during entering DFU state" );
         }
     }
 
@@ -319,6 +328,17 @@ namespace librealsense
         });
     }
 
+    bool ds5_device::check_fw_compatibility(const std::vector<uint8_t>& image) const
+    {
+        std::string fw_version = extract_firmware_version_string((const void*)image.data(), image.size());
+
+        auto it = ds::device_to_fw_min_version.find(_pid);
+        if (it == ds::device_to_fw_min_version.end())
+            throw std::runtime_error("Minimum firmware version has not been defined for this device!");
+
+        return (firmware_version(fw_version) >= firmware_version(it->second));
+    }
+
     class ds5_depth_sensor : public synthetic_sensor, public video_sensor_interface, public depth_stereo_sensor, public roi_sensor_base
     {
     public:
@@ -468,6 +488,25 @@ namespace librealsense
         {
             //does not change over time
         }
+
+        float get_preset_max_value() const override
+        {
+            float preset_max_value = RS2_RS400_VISUAL_PRESET_COUNT - 1;
+            switch (_owner->_pid)
+            {
+            case ds::RS400_PID:
+            case ds::RS410_PID:
+            case ds::RS415_PID:
+            case ds::RS465_PID:
+            case ds::RS460_PID:
+                preset_max_value = static_cast<float>(RS2_RS400_VISUAL_PRESET_REMOVE_IR_PATTERN);
+                break;
+            default:
+                preset_max_value = static_cast<float>(RS2_RS400_VISUAL_PRESET_MEDIUM_DENSITY);
+            }
+            return preset_max_value;
+        }
+
     protected:
         const ds5_device* _owner;
         mutable std::atomic<float> _depth_units;
@@ -888,16 +927,16 @@ namespace librealsense
         // Alternating laser pattern is applicable for global shutter/active SKUs
         auto mask = d400_caps::CAP_GLOBAL_SHUTTER | d400_caps::CAP_ACTIVE_PROJECTOR;
         // Alternating laser pattern should be set and query in a different way according to the firmware version
-        bool is_fw_version_using_id = (_fw_version >= firmware_version("5.12.8.100")); 
         if ((_fw_version >= firmware_version("5.11.3.0")) && ((_device_capabilities & mask) == mask))
         {
+            bool is_fw_version_using_id = (_fw_version >= firmware_version("5.12.8.100"));
             auto alternating_emitter_opt = std::make_shared<alternating_emitter_option>(*_hw_monitor, &raw_depth_sensor, is_fw_version_using_id);
             auto emitter_always_on_opt = std::make_shared<emitter_always_on_option>(*_hw_monitor, &depth_sensor);
 
             if ((_fw_version >= firmware_version("5.12.1.0")) && ((_device_capabilities & d400_caps::CAP_GLOBAL_SHUTTER) == d400_caps::CAP_GLOBAL_SHUTTER))
             {
-                std::vector<std::pair<std::shared_ptr<option>, std::string>> options_and_reasons = { std::make_pair(alternating_emitter_opt, 
-                    "Emitter always ON cannot be set while Emitter ON/OFF is enabled")};
+                std::vector<std::pair<std::shared_ptr<option>, std::string>> options_and_reasons = { std::make_pair(alternating_emitter_opt,
+                    "Emitter always ON cannot be set while Emitter ON/OFF is enabled") };
                 depth_sensor.register_option(RS2_OPTION_EMITTER_ALWAYS_ON,
                     std::make_shared<gated_option>(
                         emitter_always_on_opt,
@@ -928,7 +967,8 @@ namespace librealsense
                 depth_sensor.register_option(RS2_OPTION_EMITTER_ON_OFF, alternating_emitter_opt);
             }
         }
-        else if (_fw_version >= firmware_version("5.10.9.0") &&
+        else if (_fw_version >= firmware_version("5.10.9.0") && 
+            (_device_capabilities & d400_caps::CAP_ACTIVE_PROJECTOR) == d400_caps::CAP_ACTIVE_PROJECTOR &&
             _fw_version.experimental()) // Not yet available in production firmware
         {
             depth_sensor.register_option(RS2_OPTION_EMITTER_ON_OFF, std::make_shared<emitter_on_and_off_option>(*_hw_monitor, &raw_depth_sensor));
@@ -972,8 +1012,16 @@ namespace librealsense
             depth_sensor->register_option(RS2_OPTION_DEPTH_UNITS, depth_scale);
         }
         else
+        {
+            float default_depth_units = 0.001f; //meters
+            // default depth units is different for D405
+            if (_pid == RS405_PID)
+                default_depth_units = 0.0001f;  //meters
             depth_sensor.register_option(RS2_OPTION_DEPTH_UNITS, std::make_shared<const_value_option>("Number of meters represented by a single depth unit",
-                lazy<float>([]() { return 0.001f; })));
+                lazy<float>([default_depth_units]()
+                    { return default_depth_units; })));
+        }
+            
         // Metadata registration
         depth_sensor.register_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP, make_uvc_header_parser(&uvc_header::timestamp));
 

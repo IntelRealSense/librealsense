@@ -21,7 +21,7 @@ if(BUILD_NETWORK_DEVICE)
     ExternalProject_Add (libjpeg-turbo
         PREFIX libjpeg-turbo
         GIT_REPOSITORY "https://github.com/libjpeg-turbo/libjpeg-turbo.git"
-        GIT_TAG "master"
+        GIT_TAG "main"
         SOURCE_DIR "${CMAKE_BINARY_DIR}/third-party/libjpeg-turbo"
         CMAKE_ARGS "-DCMAKE_INSTALL_PREFIX=${CMAKE_BINARY_DIR}/libjpeg-turbo"
           "-DCMAKE_GENERATOR=${CMAKE_GENERATOR}"

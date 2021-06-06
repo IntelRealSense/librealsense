@@ -26,14 +26,23 @@
 namespace librealsense
 {
     const uint16_t SR306_PID = 0x0aa3;
+    const uint16_t SR306_PID_DBG = 0x0aa2;
     const uint16_t SR300_PID = 0x0aa5;
-    const uint16_t SR300v2_PID = 0x0B48;
+    const uint16_t SR300v2_PID = 0x0B48;    //SR305
     const uint16_t SR300_RECOVERY = 0x0ab3;
 
     const double TIMESTAMP_10NSEC_TO_MSEC = 0.00001;
 
     class sr300_camera;
     class sr3xx_camera;
+
+    static std::map<uint16_t, std::pair<std::string, std::string>> device_to_fw_min_max_version = {
+            { SR300_PID,        {"3.21.0.0", "3.26.3.0"}},
+            { SR300v2_PID,      {"3.27.0.0", "99.99.99.99"}},
+            { SR306_PID,        {"3.28.3.0", "99.99.99.99"}},
+            { SR306_PID_DBG,    {"3.28.3.0", "99.99.99.99"}},
+            { SR300_RECOVERY,   {"3.21.0.0", "99.99.99.99"}}
+    };
 
     class sr300_timestamp_reader : public frame_timestamp_reader
     {
@@ -419,11 +428,13 @@ namespace librealsense
         void enter_update_state() const override;
         std::vector<uint8_t> backup_flash(update_progress_callback_ptr callback) override;
         void update_flash(const std::vector<uint8_t>& image, update_progress_callback_ptr callback, int update_mode) override;
+        bool check_fw_compatibility(const std::vector<uint8_t>& image) const override;
 
         virtual std::shared_ptr<matcher> create_matcher(const frame_holder& frame) const override;
 
     private:
         const uint8_t _depth_device_idx;
+        uint16_t _pid;
         bool _is_locked = true;
 
         template<class T>

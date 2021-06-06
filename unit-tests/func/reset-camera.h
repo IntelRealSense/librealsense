@@ -51,5 +51,6 @@ inline rs2::device reset_camera_and_wait_for_connection( rs2::device & dev)
     REQUIRE(cv.wait_for( lock, std::chrono::seconds( 50 ), [&]() { return disconnected; } ) );
     REQUIRE( cv.wait_for( lock, std::chrono::seconds( 50 ), [&]() { return connected; } ) );
     REQUIRE( result );
+    ctx.set_devices_changed_callback( []( rs2::event_information info ) {} );  // reset callback
     return result;
 }

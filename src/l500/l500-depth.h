@@ -17,7 +17,6 @@
 #include "l500-private.h"
 #include "error-handling.h"
 #include "l500-options.h"
-#include "calibrated-sensor.h"
 #include "max-usable-range-sensor.h"
 #include "debug-stream-sensor.h"
 
@@ -92,7 +91,6 @@ namespace librealsense
         , public video_sensor_interface
         , public virtual depth_sensor
         , public virtual l500_depth_sensor_interface
-        , public calibrated_sensor
         , public max_usable_range_sensor
         , public debug_stream_sensor
     {
@@ -163,13 +161,6 @@ namespace librealsense
             intrinsics.model = RS2_DISTORTION_NONE;
             return intrinsics;
         }
-
-        // calibrated_sensor
-        void override_intrinsics( rs2_intrinsics const & intr ) override;
-        void override_extrinsics( rs2_extrinsics const & extr ) override;
-        rs2_dsm_params get_dsm_params() const override;
-        void override_dsm_params( rs2_dsm_params const & dsm_params ) override;
-        void reset_calibration() override;
 
         stream_profiles init_stream_profiles() override
         {
@@ -251,9 +242,6 @@ namespace librealsense
             return get_l500_recommended_proccesing_blocks();
         };
 
-        std::shared_ptr< stream_profile_interface > is_color_sensor_needed() const;
-
-        int read_algo_version();
         float read_baseline() const override;
         float read_znorm();
 
