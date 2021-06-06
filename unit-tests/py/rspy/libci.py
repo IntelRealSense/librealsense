@@ -146,7 +146,7 @@ class TestConfigFromText( TestConfig ):
         :param source: The absolute path to the text file
         :param line_prefix: A regex to denote a directive (must be first thing in a line), which will
             be immediately followed by the directive itself and optional arguments
-        :param context: context in which to cinfigure the test
+        :param context: context in which to configure the test
         """
         TestConfig.__init__( self, context )
 
@@ -417,7 +417,7 @@ class ExeTest( Test ):
 
     def run_test( self, configuration = None, log_path = None ):
         if not self.exe:
-            log.e("Tried to run test", self.name, "with no exe file provided")
+            raise RuntimeError("Tried to run test " + self.name + " with no exe file provided")
         try:
             run( self.command, stdout=log_path, append=self.ran, timeout=self.config.timeout )
         finally:
