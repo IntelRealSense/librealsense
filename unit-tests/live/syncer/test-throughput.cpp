@@ -146,7 +146,7 @@ TEST_CASE("Syncer dynamic FPS - throughput test", "[live]")
                 auto actual_fps = v.front().second;
                 float calc_fps = (float)v.size() / dt;
                 float fps_ratio = calc_fps / actual_fps;
-                CAPTURE(stream_type, actual_fps, calc_fps, v.size());
+                CAPTURE(stream_type, actual_fps, calc_fps, v.size(), dt);
                 CHECK(fps_ratio > 0.9);
                 CHECK(fps_ratio < 1.1);
                 check_frame_drops(v);
@@ -166,7 +166,7 @@ TEST_CASE("Syncer dynamic FPS - throughput test", "[live]")
                 float dt_msec_ratio = calc_dt_msec / expected_dt_ms;
                 CAPTURE(expected_dt_ms, calc_dt_msec, dt_msec_ratio, frame_time, prev_frame_time);
                 if (!first)
-                    CHECK(dt_msec_ratio < 1.5);
+                    CHECK(dt_msec_ratio < 2.1); // frame drops is counted when at least 2 successive frames are dropped
                 prev_frame_time = frame_time;
                 first = false;
             }
