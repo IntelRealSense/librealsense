@@ -15,9 +15,6 @@
 #endif
 
 #include "catch/catch.hpp"
-#include <string>
-
-std::string test_context;
 
 #if defined(CATCH_CONFIG_RUNNER)
 

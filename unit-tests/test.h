@@ -3,6 +3,12 @@
 
 #pragma once
 
+#include <string>
+
+namespace test {
+	extern std::string context;
+}
+
 #include "librealsense2/rs.hpp"
 
 #include "catch.h"
