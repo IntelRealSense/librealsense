@@ -19,6 +19,7 @@ matrix:
         - cd $LRS_RUN_CONFIG
         - ls
         - ./live-test.exe -d yes -i [software-device]
+        - ./unit-tests-rsutil-c.exe 
         
     - name: "Windows - cpp"
       os: windows
