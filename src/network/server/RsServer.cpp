@@ -242,29 +242,21 @@ void server::doHTTP() {
                     std::cout << std::endl << "starting to update the device" << std::endl;
 
                     rs2::context ctx;
-                    rs2::device new_device;
                     rs2::update_device new_fw_update_device;
                     std::condition_variable cv;
                     std::mutex mutex;
 
                     // Update device
-                    ctx.set_devices_changed_callback([&](rs2::event_information& info)
-                    {
-                        if (info.get_new_devices().size() == 0)
-                        {
-                            return;
+                    ctx.set_devices_changed_callback([&](rs2::event_information& info) {
+                        if (info.get_new_devices().size() == 0) return;
+
+                        for (auto&& d : info.get_new_devices()) {
+                            std::lock_guard<std::mutex> lk(mutex);
+                            if (d.is<rs2::update_device>())
+                                new_fw_update_device = d;
                         }
 
-                        for (auto&& d : info.get_new_devices())
-                        {
-                            std::lock_guard<std::mutex> lk(mutex);
-                            if (d.is<rs2::update_device>() && (d.get_info(RS2_CAMERA_INFO_FIRMWARE_UPDATE_ID) == update_serial_number))
-                                new_fw_update_device = d;
-                            else
-                                new_device = d;
-                        }
-                        if(new_fw_update_device || new_device)
-                            cv.notify_one();
+                        if (new_fw_update_device) cv.notify_one();
                     });
 
                     m_dev.as<rs2::updatable>().enter_update_state();
@@ -274,11 +266,13 @@ void server::doHTTP() {
                         return EXIT_FAILURE;
                     }
 
-                    std::cout << std::endl << "firmware update started"<< std::endl << std::endl;
+                    std::cout << std::endl << "firmware update started" << std::endl << std::endl;
                     new_fw_update_device.update(fw_image, [&](const float progress) {
                         printf("\rfirmware update progress: %d[%%]", (int)(progress * 100));
                     });
                     std::cout << std::endl << std::endl << "firmware update done" << std::endl;
+
+                    exit(EXIT_SUCCESS);
                 }
             }
         }
