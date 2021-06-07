@@ -7,7 +7,6 @@
 
 //#test:device D400*
 
-#define CATCH_CONFIG_MAIN
 #include "../../catch.h"
 #include "../../unit-tests-common.h"
 

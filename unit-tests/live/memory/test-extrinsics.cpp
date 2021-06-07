@@ -6,8 +6,6 @@
 //#test:donotrun:!nightly
 //#test:timeout 480
 
-
-#define CATCH_CONFIG_MAIN
 #include <numeric>
 #include <stdlib.h> 
 #include <cmath>

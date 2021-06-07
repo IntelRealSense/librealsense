@@ -3,11 +3,13 @@
 
 #pragma once
 
-#include "librealsense2/rs.hpp"
+#include <string>
 
-#if ! defined( NO_CATCH_CONFIG_MAIN )
-#define CATCH_CONFIG_MAIN
-#endif
+namespace test {
+	extern std::string context;
+}
+
+#include "librealsense2/rs.hpp"
 
 #include "catch.h"
 
