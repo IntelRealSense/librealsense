@@ -396,7 +396,7 @@ namespace librealsense
             synthetic_sensor::close();
         }
 
-        rs2_intrinsics ds5_depth_sensor::get_color_intrinsics(const stream_profile& profile) const
+        rs2_intrinsics get_color_intrinsics(const stream_profile& profile) const
         {
             return get_intrinsic_by_resolution(
                 *_owner->_color_calib_table_raw,
