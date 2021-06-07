@@ -171,7 +171,8 @@ void server::doHTTP() {
         }
     );
 
-    // Set options
+    // SW upgrade
+    // TODO: Add CRC validation
     svr.Post("/sw_upgrade",
         [&](const httplib::Request &req, httplib::Response &res, const httplib::ContentReader &content_reader) {
             if (req.is_multipart_form_data()) {
@@ -189,8 +190,73 @@ void server::doHTTP() {
                 ofs_package.close(); 
                 LOG_INFO("Received the package of " << std::dec << package.size() << " bytes to perform the upgrade.");
 
-		FILE* upgrade = popen("/usr/bin/systemd-run --on-active=10 /usr/bin/dpkg -i /tmp/lrs.deb", "r");
-		pclose(upgrade);
+        		FILE* upgrade = popen("/usr/bin/systemd-run --on-active=10 /usr/bin/dpkg -i /tmp/lrs.deb", "r");
+		        pclose(upgrade);
+            }
+        }
+    );
+
+    // FW upgrade
+    // TODO:;Add CRC validation
+    svr.Post("/fw_upgrade",
+        [&](const httplib::Request &req, httplib::Response &res, const httplib::ContentReader &content_reader) {
+            if (req.is_multipart_form_data()) {
+                LOG_ERROR("No support for multipart messages");
+            } else {
+                std::string image;
+                content_reader([&](const char *data, size_t data_length) {
+                    image.append(data, data_length);
+                    return true;
+                });
+                res.set_content(image, "application/octet-stream");
+
+                // std::ofstream ofs_package("/tmp/rsfw.bin", std::ofstream::out | std::ofstream::binary | std::ofstream::trunc);
+                // ofs_package.write(package.c_str(), package.size());
+                // ofs_package.close(); 
+                LOG_INFO("Received the image of " << std::dec << image.size() << " bytes to perform the upgrade.");
+
+                // start the update
+                if (!m_dev.is<rs2::updatable>() || !(m_dev.supports(RS2_CAMERA_INFO_SERIAL_NUMBER) && m_dev.supports(RS2_CAMERA_INFO_FIRMWARE_UPDATE_ID))) {
+                    LOG_ERROR("Device is not updatable");
+                } else {
+                    auto update_serial_number = m_dev.get_info(RS2_CAMERA_INFO_FIRMWARE_UPDATE_ID);
+                    auto sn = m_dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER);
+                    auto fw = m_dev.get_info(RS2_CAMERA_INFO_FIRMWARE_VERSION);
+
+                    #if 0
+                    if (backup_arg.isSet()) {
+                        std::cout << std::endl << "backing-up device flash: " << std::endl;
+
+                        auto flash = d.as<rs2::updatable>().create_flash_backup([&](const float progress)
+                        {
+                            printf("\rflash backup progress: %d[%%]", (int)(progress * 100));
+                        });
+
+                        auto temp = backup_arg.getValue();
+                        std::ofstream file(temp.c_str(), std::ios::binary);
+                        file.write((const char*)flash.data(), flash.size());
+                    }
+                    #endif
+
+                    std::vector<uint8_t> fw_image(image.begin(), image.end()); 
+                    std::cout << std::endl << "starting to update device" << std::endl;
+
+                    std::condition_variable cv;
+                    std::mutex mutex;
+                    rs2::update_device new_fw_update_device;
+                    m_dev.as<rs2::updatable>().enter_update_state();
+                    std::unique_lock<std::mutex> lk(mutex);
+                    if (!cv.wait_for(lk, std::chrono::seconds( /* WAIT_FOR_DEVICE_TIMEOUT */ 10), [&] { return new_fw_update_device; })) {
+                        std::cout << std::endl << "failed to locate a device in FW update mode" << std::endl;
+                        return EXIT_FAILURE;
+                    }
+
+                    std::cout << std::endl << "firmware update started"<< std::endl << std::endl;
+                    new_fw_update_device.update(fw_image, [&](const float progress) {
+                        printf("\rfirmware update progress: %d[%%]", (int)(progress * 100));
+                    });
+                    std::cout << std::endl << std::endl << "firmware update done" << std::endl;
+                }
             }
         }
     );
