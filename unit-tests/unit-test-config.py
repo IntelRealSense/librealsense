@@ -87,7 +87,7 @@ def generate_cmake( builddir, testdir, testname, filelist ):
 cmake_minimum_required( VERSION 3.1.0 )
 project( ''' + testname + ''' )
 
-set( SRC_FILES ''' + filelist + ''' 
+set( SRC_FILES ''' + filelist + '''
 )
 add_executable( ''' + testname + ''' ${SRC_FILES} )
 source_group( "Common Files" FILES ${ELPP_FILES} ${CATCH_FILES} )
@@ -251,10 +251,10 @@ def process_cpp( dir, builddir ):
             for include in includes:
                 filelist.append( include )
 
-            # the directive custom-main indicates that the test is defining it's own main.
-            # If it is not specified we use our default main
+            # 'cmake:custom-main' indicates that the test is defining its own main() function.
+            # If not specified we use a default main() which lives in its own .cpp:
             if not custom_main:
-                filelist.append(root + "/unit-tests/unit-test-default-main.cpp")
+                filelist.append( root + "/unit-tests/unit-test-default-main.cpp" )
 
             if list_only:
                 continue
