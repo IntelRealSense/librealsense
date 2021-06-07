@@ -82,7 +82,8 @@ namespace librealsense
             librealsense::depth_stereo_sensor* dss;
             auto info = disparity_info::info();
             float stereo_baseline_meter;
-            info.depth_units = ((depth_frame*)f.get())->get_units();
+            if (f.as<rs2::depth_frame>())
+                info.depth_units = ((depth_frame*)f.get())->get_units();
 
             // Playback sensor
             if (auto a = As<librealsense::extendable_interface>(snr))

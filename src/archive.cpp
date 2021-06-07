@@ -300,11 +300,6 @@ namespace librealsense
         return additional_data.frame_number;
     }
 
-    float frame::get_frame_depth_units() const
-    {
-        return additional_data.depth_units;
-    }
-
     rs2_time_t frame::get_frame_system_time() const
     {
         return additional_data.system_time;

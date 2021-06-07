@@ -41,7 +41,7 @@ namespace librealsense
         bool                is_blocking = false; // when running from recording, this bit indicates 
                                                  // if the recorder was configured to realtime mode or not
                                                  // if true, this will force any queue receiving this frame not to drop it
-        float               depth_units = 0.0f;
+        float               depth_units = 0.0f; // adding depth units to frame metadata is a temporary solution, it will be replaced by FW metadata
         uint32_t            raw_size = 0;   // The frame transmitted size (payload only)
 
         frame_additional_data() {}
@@ -55,7 +55,7 @@ namespace librealsense
             rs2_time_t last_timestamp,
             unsigned long long last_frame_number,
             bool in_is_blocking,
-            float in_depth_units,
+            float in_depth_units = 0,
             uint32_t transmitted_size = 0)
             : timestamp(in_timestamp),
             frame_number(in_frame_number),
@@ -137,7 +137,6 @@ namespace librealsense
         rs2_timestamp_domain get_frame_timestamp_domain() const override;
         void set_timestamp(double new_ts) override { additional_data.timestamp = new_ts; }
         unsigned long long get_frame_number() const override;
-        float get_frame_depth_units() const override;
         void set_timestamp_domain(rs2_timestamp_domain timestamp_domain) override
         {
             additional_data.timestamp_domain = timestamp_domain;
@@ -260,10 +259,6 @@ namespace librealsense
                 return first()->get_frame_number();
             else
                 return frame::get_frame_number();
-        }
-        float get_frame_depth_units() const override
-        {
-            return first()->get_frame_depth_units();
         }
         rs2_time_t get_frame_system_time() const override
         {

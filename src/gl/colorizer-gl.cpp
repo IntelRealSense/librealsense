@@ -191,6 +191,8 @@ namespace librealsense
 
         rs2::frame colorizer::process_frame(const rs2::frame_source& src, const rs2::frame& f)
         {
+            if(f.as<rs2::depth_frame>())
+                _depth_units = ((depth_frame*)f.get())->get_units();
             if (f.get_profile().get() != _source_stream_profile.get())
             {
                 _source_stream_profile = f.get_profile();
@@ -202,7 +204,6 @@ namespace librealsense
                 _width = vp.width(); _height = vp.height();
 
                 auto info = disparity_info::update_info_from_frame(f);
-                _depth_units = ((depth_frame*)f.get())->get_units();
                 _d2d_convert_factor = info.d2d_convert_factor;
 
                 perform_gl_action([&]()

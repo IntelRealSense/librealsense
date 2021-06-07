@@ -526,14 +526,6 @@ namespace rs2
             return r;
         }
 
-        float get_frame_depth_units() const
-        {
-            rs2_error* e = nullptr;
-            auto r = rs2_depth_frame_get_units(frame_ref, &e);
-            error::handle(e);
-            return r;
-        }
-
         /**
         * retrieve data size from frame handle
         * \return               the number of bytes in frame
