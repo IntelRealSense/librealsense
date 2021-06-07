@@ -11,7 +11,9 @@ If you don't want this file included, use this cmake directive:
     //#cmake:custom-main
 Catch2 will then include its own main() by default.
 If you want to create your own main(), define CATCH_CONFIG_RUNNER before including catch.h so Catch2
-doesn't.
+doesn't. You may also want to use '//#flags:custom-args'.
+
+See below for each of the custom options...
 */
 
 // We are not using the main from catch2
@@ -28,12 +30,20 @@ using namespace Catch::clara;
 int main( int argc, char * argv[] )
 {
     Catch::Session session;
-    // The following lines define a command line option for all tests using the flag '--context' and
-    // save it's value into test::context. If you wish to have this option in your custom main you
-    // need this to be in it. If you wish to add more option you can do so by adding more options
-    // with "|" in between every 2 option.
+    /*
+        --context <context>
+        
+        Define the context for the test. This is usually left blank but can be set if you want to
+        emulate test operation in the 'nightly' context, for example.
+        
+        We write the value directly to 'test::context'.
+    */
     auto cli = session.cli()
              | Opt( test::context, "context" )["--context"]( "Context in which to run the tests" );
+    
+    // Use '|' to add additional options:
+    //       | Opt( test::flag, "flag" )["-f"]["--flag"]("Switch something on")
+    // (see https://github.com/catchorg/Clara)
 
     session.cli( cli );
 
