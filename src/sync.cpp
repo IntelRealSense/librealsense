@@ -659,6 +659,17 @@ namespace librealsense
                 return false;
             }
         }
+
+
+        auto synced_frame_hw_system_diff = abs((*synced_frame)->get_frame_timestamp() - _last_arrived[synced[0]]);
+        auto fps = _fps[missing];
+        auto gap = 1000.f / (float)fps;
+        auto missing_last_timestasmp = next_expected - gap;
+        auto missing_hw_system_diff = abs(missing_last_timestasmp - _last_arrived[missing]);
+
+        if((missing_hw_system_diff - synced_frame_hw_system_diff) > 10)
+            LOG_WARNING(missing->get_name()<<" has a latency of "<< missing_hw_system_diff - synced_frame_hw_system_diff);
+
         //next expected of the missing stream didn't updated yet
         auto timestamp = (*synced_frame)->get_frame_timestamp();
         if( timestamp > next_expected )
