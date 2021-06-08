@@ -30,6 +30,10 @@ private:
     std::thread m_httpd;
     void doHTTP();
 
+    std::thread m_upgrade;
+    void doUpgrade();
+    std::string image;
+
     std::string m_sensors_desc; // sensors description
     std::stringstream m_extrinsics;   // streams extrinsics
 };
