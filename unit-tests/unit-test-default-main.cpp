@@ -11,7 +11,7 @@ If you don't want this file included, use this cmake directive:
     //#cmake:custom-main
 Catch2 will then include its own main() by default.
 If you want to create your own main(), define CATCH_CONFIG_RUNNER before including catch.h so Catch2
-doesn't. You may also want to use '//#flags:custom-args'.
+doesn't. You may also want to use '//#test:flag custom-args'.
 
 See below for each of the custom options...
 */
