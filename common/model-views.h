@@ -386,7 +386,32 @@ namespace rs2
             stop();
             std::lock_guard<std::mutex> lock(_mutex);
             auto shared_syncer = std::make_shared<rs2::asynchronous_syncer>();
-            rs2::frame_queue q;
+
+            // This queue stores the output from the syncer, and has to be large enough to deal with
+            // slowdowns on the processing / rendering threads of the Viewer, to avoid frame drops.Frame
+            // drops can be pretty noticeable!
+            //
+            // The syncer may also give out frames in bursts.This commonly happens, for example, when
+            // streams have different FPS, and is a known issue.Even with same - FPS streams, the actual
+            // FPS may change depending on a number of variables(e.g., exposure).When FPS is not the
+            // same between the streams, a latency is introduced and bursts from the syncer happen.
+            //
+            // Bursts are so fast the other threads will never have a chance to pull them in time.For
+            //  example, the syncer output can be the following, all one after the other :
+            // [Color @ timestamp 100 (arrived @ 105), Infrared @ timestamp 100 (arrived at 150)]
+            // [Color @ timestamp 116 (arrived @ 120)]
+            // [Color @ timestamp 132 (arrived @ 145)]
+            // They are received one at a time, pushed into the syncer, which will wait and keep all of
+            //  them inside until a match with Infrared is possible.Once that happens, it will output
+            //  everything it has, resulting in a burst.
+            //
+            // The queue size must therefore be big enough to deal with expected latency : the more
+            // latency, the bigger the burst.
+            //
+            // Another option is to use an aggregator, similar to the behavior inside the pipeline.
+            // But this still doesn't solve the issue of the bursts: we'll get frame drops in the fast
+            // stream instead of the slow.
+            rs2::frame_queue q(10);
 
            _syncers.push_back({shared_syncer,q});
            shared_syncer->start([this, q](rs2::frame f)
