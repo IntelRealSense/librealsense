@@ -40,6 +40,18 @@ def usage():
     print( '                         with what tags it has' )
     print( '        --no-exceptions  do not load the LibCI/exceptions.specs file' )
     print( '        --context        The context to use for test configuration' )
+    print()
+    print( 'Examples:' )
+    print( 'Running: python <path-to-exe-dir> run-unit-tests.py -r cpp -t log' )
+    print( "    Will run all tests whose name contain 'cpp' and who have the tag 'log' while searching for the " )
+    print( "    exe files in the provided directory. Each test will create it's own .log file to which it's " )
+    print( "    output will be written. The output to stdout will have the names of all the tests that ran." )
+    print( 'Running: python run-unit-tests.py --list-tests --list-tags' )
+    print( "    Will find all test source files and print for each one what tags it has in the following format " )
+    print( '    <test-name> has tags: <tags-separated-by-spaces>' )
+    print( 'Running: python run-unit-tests.py -s' )
+    print( '    Will try to deduce the directory holding the exe files by searching for test executables in ' )
+    print( '    the repository. If succeeds runs all tests printing their output to stdout and not to log files' )
     sys.exit( 2 )
 
 
