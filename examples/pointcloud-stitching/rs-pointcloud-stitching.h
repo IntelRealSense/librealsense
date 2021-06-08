@@ -199,9 +199,11 @@ namespace rs_pointcloud_stitching
         void CreateVirtualDevice();
         void ProjectFramesOnOtherDevice(rs2::frameset frames, const string& from_serial, const string& to_serial);
         void RecordButton(const ImVec2& window_size);
+        void SaveFramesButton(const std::map<std::string, rs2::frame>& frames_sets, const ImVec2& window_size);
         void DrawTitles(const ImVec2& window_size);
         void StartRecording(const std::string& path);
         void StopRecording();
+        void SaveOriginImages(const std::map<std::string, rs2::frame>& frames_sets);
         void parse_calibration_file(const std::string& config_filename);
         void parse_virtual_device_config_file(const std::string& config_filename);
 

@@ -14,10 +14,25 @@
 #include <fstream>
 #include <regex>
 #include <thread>
+#include <windows.h>
 
 using namespace std;
 using namespace rs_pointcloud_stitching;
 
+#define INVALID_FILE_ATTRIBUTES ((DWORD)-1)
+#define FILE_ATTRIBUTE_DIRECTORY            0x00000010  
+
+bool dirExists(const std::string& dirName_in)
+{
+    DWORD ftyp = GetFileAttributesA(dirName_in.c_str());
+    if (ftyp == INVALID_FILE_ATTRIBUTES)
+        return false;  //something is wrong with your path!
+
+    if (ftyp & FILE_ATTRIBUTE_DIRECTORY)
+        return true;   // this is a directory!
+
+    return false;    // this is not a directory!
+}
 // structure of a matrix 4 X 4, representing rotation and translation as following:
 // pos_and_rot[i][j] is 
 //  _                        _ 
@@ -132,8 +147,9 @@ bool parse_configuration(const std::string& line, const std::vector<std::string>
     return res;
 }
 
-std::vector<stream_request> parse_profiles_file(const std::string& config_filename)
+std::vector<stream_request> parse_profiles_file(const std::string& config_filename, bool& is_left)
 {
+    is_left = false;
     std::vector<stream_request> user_requests;
 
     ifstream file(config_filename);
@@ -155,6 +171,11 @@ std::vector<stream_request> parse_profiles_file(const std::string& config_filena
 
         if (std::regex_search(line, starts_with))
         {
+            if (tokens[0] == "left")
+            {
+                is_left = true;
+                continue;
+            }
             if (parse_configuration(line, tokens, stream_type, width, height, format, fps, index))
                 user_requests.push_back({ stream_type, format, width, height, fps,  index });
         }
@@ -421,13 +442,19 @@ bool CPointcloudStitcher::Init()
     std::vector<std::string> serials;
     for (auto dev : _devices)
     {
+        bool is_left;
         std::string dev_name = dev->get_info(RS2_CAMERA_INFO_NAME);
         std::string dev_serial = dev->get_info(RS2_CAMERA_INFO_SERIAL_NUMBER);
         serials.push_back(dev_serial);
         std::cout << "Got Device: " << dev_name << " : " << dev_serial << std::endl;
         std::stringstream filename;
         filename << _working_dir << "/" << dev_serial << ".cfg";
-        _wanted_profiles[dev_serial] = parse_profiles_file(filename.str());
+        _wanted_profiles[dev_serial] = parse_profiles_file(filename.str(), is_left);
+        if (is_left)
+        {
+            std::cout << "Device : " << dev_serial << " will be presented on the left side" << std::endl;
+            _left_device = dev_serial;  // TODO: define left device based on transformation between devices.
+        }
     }
     {
         std::stringstream filename;
@@ -454,7 +481,6 @@ bool CPointcloudStitcher::Init()
     //_ir_extrinsics[serials[0]][_serial_vir] = rs2_extrinsics({ {1,0,0,   0,1,0,  0,0,1}, {0,0,0} });
     //_ir_extrinsics[serials[1]][_serial_vir] = rs2_extrinsics({ {1,0,0,   0,1,0,  0,0,1}, {0,0,0} });
 
-    _left_device = serials[0];  // TODO: define left device based on transformation between devices.
     return true;
 }
 
@@ -619,6 +645,7 @@ void CPointcloudStitcher::ProjectFramesOnOtherDevice(rs2::frameset frames, const
 {
     rs2::points points;
     rs2::frame depth = frames.first_or_default(RS2_STREAM_DEPTH);
+    if (!depth) return;
     rs2::frame color = frames.first_or_default(RS2_STREAM_COLOR);
     float depth_point[3] = { 0 };
     float virtual_point[3] = { 0 };
@@ -704,6 +731,31 @@ void CPointcloudStitcher::ProjectFramesOnOtherDevice(rs2::frameset frames, const
     }
 }
 
+void CPointcloudStitcher::SaveOriginImages(const std::map<std::string, rs2::frame>& frames_sets)
+{
+    unsigned long long first_frame_number(0);
+    for (auto frames : frames_sets)
+    {
+        rs2::frame frame = frames.second.as<rs2::frameset>().first_or_default(RS2_STREAM_INFRARED);
+        auto vf = frame.as<rs2::video_frame>();
+        std::stringstream png_file;
+        png_file << _working_dir << "/" << frames.first;
+        if (!dirExists(png_file.str()))
+        {
+            std::cout << "Create directory: " << png_file.str() << std::endl;
+            CreateDirectoryA(png_file.str().c_str(), NULL);
+        }
+        if (!first_frame_number)
+        {
+            first_frame_number = frame.get_frame_number();
+        }
+        png_file << "/" << "img_" << first_frame_number << ".png";
+        stbi_write_png(png_file.str().c_str(), vf.get_width(), vf.get_height(),
+            vf.get_bytes_per_pixel(), vf.get_data(), vf.get_stride_in_bytes());
+        std::cout << "Saved " << png_file.str() << std::endl;
+    }
+}
+
 void CPointcloudStitcher::StartRecording(const std::string& path)
 {
     if (_recorder != nullptr)
@@ -761,7 +813,6 @@ void CPointcloudStitcher::RecordButton(const ImVec2& window_size)
     ////////////////////////////////////////
     // Draw recording icon
     ////////////////////////////////////////
-    bool is_streaming(true);
     std::string recorod_button_name(_is_recording ? "Stop Recording" : "Record");
     auto record_button_color = _is_recording ? light_blue : light_grey;
     ImGui::PushStyleColor(ImGuiCol_Text, record_button_color);
@@ -785,6 +836,35 @@ void CPointcloudStitcher::RecordButton(const ImVec2& window_size)
     {
         std::string record_button_hover_text = (_is_recording ? "Stop Recording" : "Start Recording");
         ImGui::SetTooltip("%s", record_button_hover_text.c_str());
+    }
+
+    ImGui::End();
+    ImGui::PopStyleColor(2);
+}
+
+void CPointcloudStitcher::SaveFramesButton(const std::map<std::string, rs2::frame>& frames_sets, const ImVec2& window_size)
+{
+    static const ImVec4 light_blue(0.0f, 174.0f / 255, 239.0f / 255, 255.0f / 255); // Light blue color for selected elements such as play button glyph when paused
+    static const ImVec4 light_grey((0xc3) / 255.0f, (0xd5) / 255.0f, (0xe5) / 255.0f, (0xff) / 255.0f); // Text
+
+    ////////////////////////////////////////
+    // Draw recording icon
+    ////////////////////////////////////////
+    std::string button_name("Save Frames");
+    auto button_color = light_blue;
+    ImGui::PushStyleColor(ImGuiCol_Text, button_color);
+    ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, button_color);
+
+    ImGui::SetNextWindowPos({ 100,  window_size.y - 40 });
+    ImGui::Begin("save_origin_button", nullptr, ImGuiWindowFlags_NoTitleBar);
+    if (ImGui::ButtonEx(button_name.c_str(), { 280, 25 }))
+    {
+        SaveOriginImages(frames_sets);
+    }
+    if (ImGui::IsItemHovered())
+    {
+        std::string button_hover_text = "Save original images";
+        ImGui::SetTooltip("%s", button_hover_text.c_str());
     }
 
     ImGui::End();
@@ -922,6 +1002,7 @@ void CPointcloudStitcher::Run(window& app)
             ImGui_ImplGlfw_NewFrame(1);
             
             RecordButton({ app.width(), app.height() });
+            SaveFramesButton(frames_sets, { app.width(), app.height() });
             DrawTitles({ app.width(), app.height() });
 
             ImGui::Render();
@@ -974,7 +1055,7 @@ int main(int argc, char* argv[]) try
     unsigned tiles_in_row = 4;
     unsigned tiles_in_col = 3;
 
-    //window app(1920, 1080, "RealSense Pointcloud-Stitching Example", tiles_in_row, tiles_in_col);
+    //window app(1920, 1200, "RealSense Pointcloud-Stitching Example", tiles_in_row, tiles_in_col);
     window app(1280, 720, "RealSense Pointcloud-Stitching Example", tiles_in_row, tiles_in_col);
     ImGui_ImplGlfw_Init(app, false);
 
