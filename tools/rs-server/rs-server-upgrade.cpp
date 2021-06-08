@@ -71,7 +71,20 @@ int main(int argc, char** argv) {
     switch (res.error()) {
         case httplib::Error::Success:
             if (res->status == 200) {
-                std::cout << "Done" << std::endl;
+                if (arg_fw.isSet()) {
+                    try {
+                        while(true) {
+                            res = client.Get("/fw_upgrade_status");
+                            if (res->status == 200) {
+                                std::cout << res->body << "\n";
+                            }
+                        }
+                    } catch (...) {
+                        std::cout << "firmware upgrade is done" << std::endl;
+                    }
+                } else {
+                    std::cout << "Done" << std::endl;
+                }
             } else {
                 std::cout << "Failed: " << res->reason << std::endl;
                 return EXIT_FAILURE;

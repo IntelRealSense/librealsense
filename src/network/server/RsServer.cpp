@@ -27,65 +27,68 @@
 using namespace TCLAP;
 
 void server::doUpgrade() {
-                    // start the update
-                    if (!m_dev.is<rs2::updatable>() || !(m_dev.supports(RS2_CAMERA_INFO_SERIAL_NUMBER) && m_dev.supports(RS2_CAMERA_INFO_FIRMWARE_UPDATE_ID))) {
-                        LOG_ERROR("Device is not updatable");
-                    } else {
-                        auto update_serial_number = m_dev.get_info(RS2_CAMERA_INFO_FIRMWARE_UPDATE_ID);
-                        auto sn = m_dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER);
-                        auto fw = m_dev.get_info(RS2_CAMERA_INFO_FIRMWARE_VERSION);
+    // start the update
+    if (!m_dev.is<rs2::updatable>() || !(m_dev.supports(RS2_CAMERA_INFO_SERIAL_NUMBER) && m_dev.supports(RS2_CAMERA_INFO_FIRMWARE_UPDATE_ID))) {
+        LOG_ERROR("Device is not updatable");
+    } else {
+        auto update_serial_number = m_dev.get_info(RS2_CAMERA_INFO_FIRMWARE_UPDATE_ID);
+        auto sn = m_dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER);
+        auto fw = m_dev.get_info(RS2_CAMERA_INFO_FIRMWARE_VERSION);
 
-                        #if 0
-                        if (backup_arg.isSet()) {
-                            std::cout << std::endl << "backing-up device flash: " << std::endl;
+        #if 0
+        if (backup_arg.isSet()) {
+            std::cout << std::endl << "backing-up device flash: " << std::endl;
 
-                            auto flash = d.as<rs2::updatable>().create_flash_backup([&](const float progress)
-                            {
-                                printf("\rflash backup progress: %d[%%]", (int)(progress * 100));
-                            });
+            auto flash = d.as<rs2::updatable>().create_flash_backup([&](const float progress)
+            {
+                printf("\rflash backup progress: %d[%%]", (int)(progress * 100));
+            });
 
-                            auto temp = backup_arg.getValue();
-                            std::ofstream file(temp.c_str(), std::ios::binary);
-                            file.write((const char*)flash.data(), flash.size());
-                        }
-                        #endif
+            auto temp = backup_arg.getValue();
+            std::ofstream file(temp.c_str(), std::ios::binary);
+            file.write((const char*)flash.data(), flash.size());
+        }
+        #endif
 
-                        std::vector<uint8_t> fw_image(image.begin(), image.end()); 
-                        std::cout << std::endl << "starting to update the device" << std::endl;
+        std::vector<uint8_t> fw_image(m_image.begin(), m_image.end()); 
+        std::cout << std::endl << "starting to update the device" << std::endl;
 
-                        rs2::context ctx;
-                        rs2::update_device new_fw_update_device;
-                        std::condition_variable cv;
-                        std::mutex mutex;
+        rs2::context ctx;
+        rs2::update_device new_fw_update_device;
+        std::condition_variable cv;
+        std::mutex mutex;
 
-                        // Update device
-                        ctx.set_devices_changed_callback([&](rs2::event_information& info) {
-                            if (info.get_new_devices().size() == 0) return;
+        // Update device
+        ctx.set_devices_changed_callback([&](rs2::event_information& info) {
+            if (info.get_new_devices().size() == 0) return;
 
-                            for (auto&& d : info.get_new_devices()) {
-                                std::lock_guard<std::mutex> lk(mutex);
-                                if (d.is<rs2::update_device>())
-                                    new_fw_update_device = d;
-                            }
+            for (auto&& d : info.get_new_devices()) {
+                std::lock_guard<std::mutex> lk(mutex);
+                if (d.is<rs2::update_device>())
+                    new_fw_update_device = d;
+            }
 
-                            if (new_fw_update_device) cv.notify_one();
-                        });
+            if (new_fw_update_device) cv.notify_one();
+        });
 
-                        m_dev.as<rs2::updatable>().enter_update_state();
-                        std::unique_lock<std::mutex> lk(mutex);
-                        if (!cv.wait_for(lk, std::chrono::seconds( /* WAIT_FOR_DEVICE_TIMEOUT */ 10), [&] { return new_fw_update_device; })) {
-                            std::cout << std::endl << "failed to locate a device in FW update mode" << std::endl;
-                            return;
-                        }
+        m_dev.as<rs2::updatable>().enter_update_state();
+        std::unique_lock<std::mutex> lk(mutex);
+        if (!cv.wait_for(lk, std::chrono::seconds( /* WAIT_FOR_DEVICE_TIMEOUT */ 10), [&] { return new_fw_update_device; })) {
+            std::cout << std::endl << "failed to locate a device in FW update mode" << std::endl;
+            return;
+        }
 
-                        std::cout << std::endl << "firmware update started" << std::endl << std::endl;
-                        new_fw_update_device.update(fw_image, [&](const float progress) {
-                            printf("\rfirmware update progress: %d[%%]", (int)(progress * 100));
-                        });
-                        std::cout << std::endl << std::endl << "firmware update done" << std::endl;
+        std::cout << std::endl << "firmware update started" << std::endl << std::endl;
+        new_fw_update_device.update(fw_image, [&](const float progress) {
+            std::stringstream ss;
+            ss << (int)(progress * 100) << "%";
+            m_progress = ss.str();
+            printf("\rfirmware update progress: %s", m_progress.c_str());
+        });
+        std::cout << std::endl << std::endl << "firmware update done" << std::endl;
 
-                        exit(EXIT_SUCCESS);
-                    }
+        exit(EXIT_SUCCESS);
+    }
 }
 
 void server::doHTTP() {
@@ -266,87 +269,27 @@ void server::doHTTP() {
                 LOG_ERROR("No support for multipart messages");
             } else {
                 // std::string image;
+                m_image = "";
                 content_reader([&](const char *data, size_t data_length) {
-                    image.append(data, data_length);
+                    m_image.append(data, data_length);
                     return true;
                 });
-                res.set_content(image, "application/octet-stream");
+                res.set_content(m_image, "application/octet-stream");
 
                 // std::ofstream ofs_package("/tmp/rsfw.bin", std::ofstream::out | std::ofstream::binary | std::ofstream::trunc);
                 // ofs_package.write(package.c_str(), package.size());
                 // ofs_package.close(); 
-                LOG_INFO("Received the image of " << std::dec << image.size() << " bytes to perform the upgrade.");
+                LOG_INFO("Received the image of " << std::dec << m_image.size() << " bytes to perform the upgrade.");
 
                 m_upgrade = std::thread( [this](){ doUpgrade(); } ); 
-
-
-#if 0
-                std::thread fw_update([&] {
-                    // start the update
-                    if (!m_dev.is<rs2::updatable>() || !(m_dev.supports(RS2_CAMERA_INFO_SERIAL_NUMBER) && m_dev.supports(RS2_CAMERA_INFO_FIRMWARE_UPDATE_ID))) {
-                        LOG_ERROR("Device is not updatable");
-                    } else {
-                        auto update_serial_number = m_dev.get_info(RS2_CAMERA_INFO_FIRMWARE_UPDATE_ID);
-                        auto sn = m_dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER);
-                        auto fw = m_dev.get_info(RS2_CAMERA_INFO_FIRMWARE_VERSION);
-
-                        #if 0
-                        if (backup_arg.isSet()) {
-                            std::cout << std::endl << "backing-up device flash: " << std::endl;
-
-                            auto flash = d.as<rs2::updatable>().create_flash_backup([&](const float progress)
-                            {
-                                printf("\rflash backup progress: %d[%%]", (int)(progress * 100));
-                            });
-
-                            auto temp = backup_arg.getValue();
-                            std::ofstream file(temp.c_str(), std::ios::binary);
-                            file.write((const char*)flash.data(), flash.size());
-                        }
-                        #endif
-
-                        std::vector<uint8_t> fw_image(image.begin(), image.end()); 
-                        std::cout << std::endl << "starting to update the device" << std::endl;
-
-                        rs2::context ctx;
-                        rs2::update_device new_fw_update_device;
-                        std::condition_variable cv;
-                        std::mutex mutex;
-
-                        // Update device
-                        ctx.set_devices_changed_callback([&](rs2::event_information& info) {
-                            if (info.get_new_devices().size() == 0) return;
-
-                            for (auto&& d : info.get_new_devices()) {
-                                std::lock_guard<std::mutex> lk(mutex);
-                                if (d.is<rs2::update_device>())
-                                    new_fw_update_device = d;
-                            }
-
-                            if (new_fw_update_device) cv.notify_one();
-                        });
-
-                        m_dev.as<rs2::updatable>().enter_update_state();
-                        std::unique_lock<std::mutex> lk(mutex);
-                        if (!cv.wait_for(lk, std::chrono::seconds( /* WAIT_FOR_DEVICE_TIMEOUT */ 10), [&] { return new_fw_update_device; })) {
-                            std::cout << std::endl << "failed to locate a device in FW update mode" << std::endl;
-                            return EXIT_FAILURE;
-                        }
-
-                        std::cout << std::endl << "firmware update started" << std::endl << std::endl;
-                        new_fw_update_device.update(fw_image, [&](const float progress) {
-                            printf("\rfirmware update progress: %d[%%]", (int)(progress * 100));
-                        });
-                        std::cout << std::endl << std::endl << "firmware update done" << std::endl;
-
-                        exit(EXIT_SUCCESS);
-                    }
-                });
-                // fw_update.join();
-#endif                
             }
         }
     );
+
+    // Return extrinsics
+    svr.Get("/fw_upgrade_status", [&](const httplib::Request &, httplib::Response &res) {
+        res.set_content(m_progress, "text/plain");
+    });
 
     svr.listen("0.0.0.0", 8080);
 }
