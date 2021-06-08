@@ -782,7 +782,7 @@ void CPointcloudStitcher::StopRecording()
     std::cout << "Saved recording to:\n" << saved_to_filename << std::endl;
 }
 
-void CPointcloudStitcher::DrawTitles(const ImVec2& window_size)
+void CPointcloudStitcher::DrawTitles(const double fps, const ImVec2& window_size)
 {
     ImGui::SetNextWindowSize({ 200, 25 });
     float tile_width(window_size.x / 4);
@@ -802,6 +802,12 @@ void CPointcloudStitcher::DrawTitles(const ImVec2& window_size)
     ImGui::SetNextWindowPos({ 0.15f * window_size.x + 1 * tile_width + (tile_width - text_width) / 2, 40 });
     ImGui::Begin("virtual_camera_title", nullptr, ImGuiWindowFlags_NoTitleBar);
     ImGui::Text("Combined Camera");
+    ImGui::End();
+
+    ImGui::SetNextWindowSize({ 200, 25 });
+    ImGui::SetNextWindowPos({ 20, 40 });
+    ImGui::Begin("fps", nullptr, ImGuiWindowFlags_NoTitleBar);
+    ImGui::Text("FPS: %.2f", fps);
     ImGui::End();
 }
 
@@ -878,6 +884,7 @@ void CPointcloudStitcher::Run(window& app)
 
     int frame_number(0);
     int count(0);
+    double fps;
     auto start_time = std::chrono::system_clock::now();
     while (app)
     {
@@ -886,7 +893,8 @@ void CPointcloudStitcher::Run(window& app)
         std::chrono::duration<double> diff = end_time - start_time;
         if (diff.count() >= 1.0)
         {
-            std::cout << "FPS: " << count / diff.count() << std::endl;
+            fps = count / diff.count();
+            std::cout << "FPS: " << fps << std::endl;
             count = 0;
             start_time = end_time;
         }
@@ -1003,7 +1011,7 @@ void CPointcloudStitcher::Run(window& app)
             
             RecordButton({ app.width(), app.height() });
             SaveFramesButton(frames_sets, { app.width(), app.height() });
-            DrawTitles({ app.width(), app.height() });
+            DrawTitles(fps, { app.width(), app.height() });
 
             ImGui::Render();
         }
