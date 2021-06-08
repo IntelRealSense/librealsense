@@ -269,7 +269,8 @@ void server::doHTTP() {
                 LOG_ERROR("No support for multipart messages");
             } else {
                 // std::string image;
-                m_image = "";
+                m_progress = "started";
+                m_image.clear();
                 content_reader([&](const char *data, size_t data_length) {
                     m_image.append(data, data_length);
                     return true;
@@ -294,7 +295,7 @@ void server::doHTTP() {
     svr.listen("0.0.0.0", 8080);
 }
 
-server::server(rs2::device dev, std::string addr, int port) : m_dev(dev)
+server::server(rs2::device dev, std::string addr, int port) : m_dev(dev), m_progress("not active")
 {
     ReceivingInterfaceAddr = inet_addr(addr.c_str());
 

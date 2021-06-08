@@ -72,15 +72,18 @@ int main(int argc, char** argv) {
         case httplib::Error::Success:
             if (res->status == 200) {
                 if (arg_fw.isSet()) {
-                    try {
-                        while(true) {
-                            res = client.Get("/fw_upgrade_status");
+                    while(true) {
+                        res = client.Get("/fw_upgrade_status");
+                        if (res) {
                             if (res->status == 200) {
-                                std::cout << res->body << "\n";
+                                // std::cout << res->body << std::endl;
+                                printf("firmware upgrade: %s\r", res->body.c_str());
+                                // std::this_thread::sleep_for(std::chrono::milliseconds(100));
                             }
+                        } else {
+                            std::cout << "firmware upgrade is done" << std::endl;
+                            break;
                         }
-                    } catch (...) {
-                        std::cout << "firmware upgrade is done" << std::endl;
                     }
                 } else {
                     std::cout << "Done" << std::endl;
