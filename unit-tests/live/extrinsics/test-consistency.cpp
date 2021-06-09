@@ -273,7 +273,7 @@ TEST_CASE("Extrinsics graph - matrices 4x4", "[live]")
                 // from profile A to B, and then from profile B to A
                 position_and_rotation point_and_orientation;
                 // rotation part with 30 degrees rotation on each axis
-                point_and_orientation.pos_and_rot[0][0] = 0.75;
+                /*point_and_orientation.pos_and_rot[0][0] = 0.75;
                 point_and_orientation.pos_and_rot[0][1] = -0.4330127;
                 point_and_orientation.pos_and_rot[0][2] = 0.5;
                 point_and_orientation.pos_and_rot[1][0] = 0.649519;
@@ -281,7 +281,17 @@ TEST_CASE("Extrinsics graph - matrices 4x4", "[live]")
                 point_and_orientation.pos_and_rot[1][2] = -0.4330127;
                 point_and_orientation.pos_and_rot[2][0] = -0.125;
                 point_and_orientation.pos_and_rot[2][1] = 0.649519;
-                point_and_orientation.pos_and_rot[2][2] = 0.75;
+                point_and_orientation.pos_and_rot[2][2] = 0.75;*/
+
+                point_and_orientation.pos_and_rot[0][0] = 0.9106836;
+                point_and_orientation.pos_and_rot[0][1] = -0.2440169;
+                point_and_orientation.pos_and_rot[0][2] = 0.3333333;
+                point_and_orientation.pos_and_rot[1][0] = 0.3333333;
+                point_and_orientation.pos_and_rot[1][1] = 0.9106836;
+                point_and_orientation.pos_and_rot[1][2] = -0.2440169;
+                point_and_orientation.pos_and_rot[2][0] = -0.2440169;
+                point_and_orientation.pos_and_rot[2][1] = 0.3333333;
+                point_and_orientation.pos_and_rot[2][2] = 0.9106836;
 
                 point_and_orientation.pos_and_rot[3][0] = 0.0;
                 point_and_orientation.pos_and_rot[3][1] = 0.0;
