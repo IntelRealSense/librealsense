@@ -27,30 +27,34 @@ from measurement_task import calculate_boundingbox_points, calculate_cumulative_
 def run_demo():
 	
 	# Define some constants 
-	depth_resolution_width = 640 # pixels
-	depth_resolution_height = 480 # pixels
-	depth_frame_rate = 30
+	L515_resolution_width = 1024 # pixels
+	L515_resolution_height = 768 # pixels
+	L515_frame_rate = 30
 
-	color_resolution_width = 1280 # pixels
-	color_resolution_height = 720 # pixels
-	color_frame_rate = 15  # fps
+	resolution_width = 1280 # pixels
+	resolution_height = 720 # pixels
+	frame_rate = 15  # fps
 
 	dispose_frames_for_stablisation = 30  # frames
 	
 	chessboard_width = 6 # squares
 	chessboard_height = 9 	# squares
 	square_size = 0.0253 # meters
-	stream_index = -1 
 
 	try:
 		# Enable the streams from all the intel realsense devices
+		L515_rs_config = rs.config()
+		L515_rs_config.enable_stream(rs.stream.depth, L515_resolution_width, L515_resolution_height, rs.format.z16, L515_frame_rate)
+		L515_rs_config.enable_stream(rs.stream.infrared, 0, L515_resolution_width, L515_resolution_height, rs.format.y8, L515_frame_rate)
+		L515_rs_config.enable_stream(rs.stream.color, resolution_width, resolution_height, rs.format.bgr8, frame_rate)
+
 		rs_config = rs.config()
-		rs_config.enable_stream(rs.stream.depth, depth_resolution_width, depth_resolution_height, rs.format.z16, depth_frame_rate)
-		rs_config.enable_stream(rs.stream.infrared, stream_index, depth_resolution_width, depth_resolution_height, rs.format.y8, depth_frame_rate)
-		rs_config.enable_stream(rs.stream.color, color_resolution_width, color_resolution_height, rs.format.bgr8, color_frame_rate)
+		rs_config.enable_stream(rs.stream.depth, resolution_width, resolution_height, rs.format.z16, frame_rate)
+		rs_config.enable_stream(rs.stream.infrared, 1, resolution_width, resolution_height, rs.format.y8, frame_rate)
+		rs_config.enable_stream(rs.stream.color, resolution_width, resolution_height, rs.format.bgr8, frame_rate)
 
 		# Use the device manager class to enable the devices and get the frames
-		device_manager = DeviceManager(rs.context(), rs_config)
+		device_manager = DeviceManager(rs.context(), rs_config, L515_rs_config)
 		device_manager.enable_all_devices()
 		
 		# Allow some frames for the auto-exposure controller to stablise

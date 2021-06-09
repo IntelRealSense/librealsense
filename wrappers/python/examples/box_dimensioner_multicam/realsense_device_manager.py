@@ -113,7 +113,7 @@ def post_process_depth_frame(depth_frame, decimation_magnitude=1.0, spatial_magn
 
 
 class DeviceManager:
-    def __init__(self, context, pipeline_configuration):
+    def __init__(self, context, D400_pipeline_configuration, L500_pipeline_configuration = rs.config()):
         """
         Class to manage the Intel RealSense devices
 
@@ -121,16 +121,22 @@ class DeviceManager:
         -----------
         context                 : rs.context()
                                   The context created for using the realsense library
-        pipeline_configuration  : rs.config()
-                                  The realsense library configuration to be used for the application
+        D400_pipeline_configuration  : rs.config()
+                                  The realsense library configuration to be used for the application when D400 product is attached.
+                                  Pass "rs.config()" if no D400 product is attached
+
+        L500_pipeline_configuration  : rs.config()
+                                  The realsense library configuration to be used for the application when L500 product is attached.
 
         """
         assert isinstance(context, type(rs.context()))
-        assert isinstance(pipeline_configuration, type(rs.config()))
+        assert isinstance(D400_pipeline_configuration, type(rs.config()))
+        assert isinstance(L500_pipeline_configuration, type(rs.config()))
         self._context = context
         self._available_devices = enumerate_connected_devices(context)
         self._enabled_devices = {}
-        self._config = pipeline_configuration
+        self.D400_config = D400_pipeline_configuration
+        self.L500_config = L500_pipeline_configuration
         self._frame_counter = 0
 
     def enable_device(self, device_serial, enable_ir_emitter):
@@ -146,10 +152,15 @@ class DeviceManager:
 
         """
         pipeline = rs.pipeline()
+        if device_serial.startswith("f"): #need to find a better way to discover product line from serial number
+            # Enable L515 device (L515)
+            self.L500_config.enable_device(device_serial)
+            pipeline_profile = pipeline.start(self.L500_config)
+        else: 
+            # Enable D400 device
+            self.D400_config.enable_device(device_serial)
+            pipeline_profile = pipeline.start(self.D400_config)
 
-        # Enable the device
-        self._config.enable_device(device_serial)
-        pipeline_profile = pipeline.start(self._config)
 
         # Set the acquisition parameters
         sensor = pipeline_profile.get_device().first_depth_sensor()
@@ -214,7 +225,7 @@ class DeviceManager:
                     for stream in streams:
                         if (rs.stream.infrared == stream.stream_type()):
                             frame = frameset.get_infrared_frame(stream.stream_index())
-                            key_ = (stream.stream_type(), 1 ) 
+                            key_ = (stream.stream_type(), stream.stream_index())
                         else:
                             frame = frameset.first_or_default(stream.stream_type())
                             key_ = stream.stream_type()
@@ -289,7 +300,8 @@ class DeviceManager:
         return device_extrinsics
 
     def disable_streams(self):
-        self._config.disable_all_streams()
+        self.D400_config.disable_all_streams()
+        self.L500_config.disable_all_streams()
 
 
 """
@@ -304,9 +316,9 @@ class DeviceManager:
 if __name__ == "__main__":
     try:
         c = rs.config()
-        c.enable_stream(rs.stream.depth, 640, 480, rs.format.z16, 30)
-        c.enable_stream(rs.stream.infrared, 1, 640, 480, rs.format.y8, 30)
-        c.enable_stream(rs.stream.infrared, 2, 640, 480, rs.format.y8, 30)
+        c.enable_stream(rs.stream.depth, 1280, 720, rs.format.z16, 6)
+        c.enable_stream(rs.stream.infrared, 1, 1280, 720, rs.format.y8, 6)
+        c.enable_stream(rs.stream.infrared, 2, 1280, 720, rs.format.y8, 6)
         c.enable_stream(rs.stream.color, 1280, 720, rs.format.rgb8, 6)
         device_manager = DeviceManager(rs.context(), c)
         device_manager.enable_all_devices()

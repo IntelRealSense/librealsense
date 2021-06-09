@@ -152,7 +152,11 @@ class PoseEstimation:
 		corners3D = {}
 		for (serial, frameset) in self.frames.items():
 			depth_frame = post_process_depth_frame(frameset[rs.stream.depth])
-			infrared_frame = frameset[(rs.stream.infrared, 1)]
+			if serial.startswith("f"):
+				infrared_frame = frameset[(rs.stream.infrared, 0)]
+			else: 
+				infrared_frame = frameset[(rs.stream.infrared, 1)]
+
 			depth_intrinsics = self.intrinsic[serial][rs.stream.depth]	
 			found_corners, points2D = cv_find_chessboard(depth_frame, infrared_frame, self.chessboard_params)
 			corners3D[serial] = [found_corners, None, None, None]
