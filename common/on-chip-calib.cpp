@@ -25,7 +25,6 @@ namespace rs2
         if (!strcmp(dev_name, "Intel RealSense D415"))
             speed = 4;
 
-#if 0 // Waiting for official firmware version with tare health number.
         if (dev.supports(RS2_CAMERA_INFO_FIRMWARE_VERSION))
         {
             std::string fw_version = dev.get_info(RS2_CAMERA_INFO_FIRMWARE_VERSION);
@@ -42,12 +41,9 @@ namespace rs2
             }
 
             versions.emplace_back(atoi(fw_version.substr(i).c_str()));
-            if (versions[0] >= 5 && versions[1] >= 12 && versions[2] >= 15 && versions[3] >= 0) // FW 05.12.15.0
+            if (versions[0] >= 5 && versions[1] >= 12 && versions[2] >= 14 && versions[3] >= 100) // FW 05.12.14.100
                 tare_health = true;
         }
-#else
-        tare_health = true;
-#endif
     }
 
     on_chip_calib_manager::~on_chip_calib_manager()
