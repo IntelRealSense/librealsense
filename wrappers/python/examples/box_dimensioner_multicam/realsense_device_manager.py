@@ -214,8 +214,7 @@ class DeviceManager:
                     for stream in streams:
                         if (rs.stream.infrared == stream.stream_type()):
                             frame = frameset.get_infrared_frame(stream.stream_index())
-                            #key_ = (stream.stream_type(), stream.stream_index())
-                            key_ = (stream.stream_type(), 1 ) #for L515 stream_index() = 0, for D415 stream_index() = 1 
+                            key_ = (stream.stream_type(), 1 ) 
                         else:
                             frame = frameset.first_or_default(stream.stream_type())
                             key_ = stream.stream_type()
