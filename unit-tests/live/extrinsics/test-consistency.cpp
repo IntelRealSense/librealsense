@@ -34,7 +34,7 @@ using namespace rs2;
 struct position_and_rotation {
     double pos_and_rot[4][4];
     // rotation tolerance - units are in cosinus of radians
-    const double rotation_tolerance = 0.000001;
+    const double rotation_tolerance = 0.00001;
     // translation tolerance - units are in meters
     const double translation_tolerance = 0.000001; // 0.001mm
 
