@@ -768,9 +768,9 @@ namespace rs2
                             float min_range_displayed = range.min;
                             float max_range_displayed = range.max;
 
-                            // computing the number of decimal dggits in the range's step of the option
+                            // computing the number of decimal digits taken from the step options' property
                             // this will then be used to format the displayed value
-                            auto num_of_decimal_diggits = [](float f) {
+                            auto num_of_decimal_digits = [](float f) {
                                 int res = 0;
                                 while (f && (int)f == 0)
                                 {
@@ -779,7 +779,7 @@ namespace rs2
                                 }
                                 return res;
                             };
-                            int num_of_decimal_diggits_displayed = num_of_decimal_diggits(range.step);
+                            int num_of_decimal_digits_displayed = num_of_decimal_digits(range.step);
 
                             // displaying in cm instead of meters for D405
                             if (use_cm_units)
@@ -787,13 +787,13 @@ namespace rs2
                                 temp_value_displayed *= 100.f;
                                 min_range_displayed *= 100.f;
                                 max_range_displayed *= 100.f;
-                                int updated_num_of_decimal_diggits_displayed = num_of_decimal_diggits_displayed - 2;
-                                if (updated_num_of_decimal_diggits_displayed > 0)
-                                    num_of_decimal_diggits_displayed = updated_num_of_decimal_diggits_displayed;
+                                int updated_num_of_decimal_digits_displayed = num_of_decimal_digits_displayed - 2;
+                                if (updated_num_of_decimal_digits_displayed > 0)
+                                    num_of_decimal_digits_displayed = updated_num_of_decimal_digits_displayed;
                             }
 
                             std::stringstream formatting_ss;
-                            formatting_ss << "%." << num_of_decimal_diggits_displayed << "f";
+                            formatting_ss << "%." << num_of_decimal_digits_displayed << "f";
 
                             if (ImGui::SliderFloat(id.c_str(), &temp_value_displayed,
                                 min_range_displayed, max_range_displayed, formatting_ss.str().c_str()))
