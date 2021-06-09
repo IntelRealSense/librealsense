@@ -123,7 +123,7 @@ class DeviceManager:
                                   The context created for using the realsense library
         D400_pipeline_configuration  : rs.config()
                                   The realsense library configuration to be used for the application when D400 product is attached.
-                                  Pass "rs.config()" if no D400 product is attached
+                                  Pass "rs.config()" if no D400 product attached
 
         L500_pipeline_configuration  : rs.config()
                                   The realsense library configuration to be used for the application when L500 product is attached.
