@@ -318,7 +318,7 @@ void CPointcloudStitcher::parse_virtual_device_config_file(const std::string& co
         }
     }
     // Test that all values where assigned:
-    std::vector<std::string> needed_keys{ "width", "height", "fov_x", "fov_y" };
+    std::vector<std::string> needed_keys{ "depth_width", "depth_height", "depth_fov_x", "depth_fov_y", "color_width", "color_height", "color_fov_x", "color_fov_y" };
     for (auto key : needed_keys)
     {
         if (_virtual_dev_params.find(key) == _virtual_dev_params.end())
@@ -499,15 +499,12 @@ rs2_intrinsics CPointcloudStitcher::create_intrinsics(const synthetic_frame& _vi
 
 void CPointcloudStitcher::InitializeVirtualFrames()
 {
-    const int W = static_cast<int>(_virtual_dev_params.at("width"));
-    const int H = static_cast<int>(_virtual_dev_params.at("height"));
-
-    _virtual_depth_frame.x = W;
-    _virtual_depth_frame.y = H;
+    _virtual_depth_frame.x = static_cast<int>(_virtual_dev_params.at("depth_width"));
+    _virtual_depth_frame.y = static_cast<int>(_virtual_dev_params.at("depth_height"));
     _virtual_depth_frame.bpp = 2;
 
-    _virtual_color_frame.x = W;
-    _virtual_color_frame.y = H;
+    _virtual_color_frame.x = static_cast<int>(_virtual_dev_params.at("color_width"));
+    _virtual_color_frame.y = static_cast<int>(_virtual_dev_params.at("color_height"));
     _virtual_color_frame.bpp = 4;
 
 
@@ -523,9 +520,11 @@ void CPointcloudStitcher::CreateVirtualDevice()
 {
     InitializeVirtualFrames();
 
-    float fov_x(float(_virtual_dev_params.at("fov_x") * PI / 180.0));
-    float fov_y(float(_virtual_dev_params.at("fov_y") * PI / 180.0));
+    float fov_x(float(_virtual_dev_params.at("color_fov_x") * PI / 180.0));
+    float fov_y(float(_virtual_dev_params.at("color_fov_y") * PI / 180.0));
     rs2_intrinsics color_intrinsics = create_intrinsics(_virtual_color_frame, fov_x, fov_y);
+    fov_x = float(_virtual_dev_params.at("depth_fov_x") * PI / 180.0);
+    fov_y = float(_virtual_dev_params.at("depth_fov_y") * PI / 180.0);
     rs2_intrinsics depth_intrinsics = create_intrinsics(_virtual_depth_frame, fov_x, fov_y);
 
     //==================================================//
@@ -650,12 +649,15 @@ void CPointcloudStitcher::ProjectFramesOnOtherDevice(rs2::frameset frames, const
     float depth_point[3] = { 0 };
     float virtual_point[3] = { 0 };
     float color_pixel[2] = { 0 };
-    float virtual_pixel[2] = { 0 };
+    float virtual_depth_pixel[2] = { 0 };
+    float virtual_color_pixel[2] = { 0 };
 
     rs2::software_sensor virtual_depth_sensor = _active_software_sensors.at("Depth");
     const rs2_extrinsics& extrinsics(_ir_extrinsics[from_serial][to_serial]);
     const rs2_intrinsics& virtual_depth_intinsics(virtual_depth_sensor.get_active_streams()[0].as<rs2::video_stream_profile>().get_intrinsics());
-    
+    rs2::software_sensor virtual_color_sensor = _active_software_sensors.at("Color");
+    const rs2_intrinsics& virtual_color_intinsics(virtual_color_sensor.get_active_streams()[0].as<rs2::video_stream_profile>().get_intrinsics());
+
     rs2_intrinsics color_intinsics;
     int color_bpp(0);
     if (color)
@@ -665,13 +667,20 @@ void CPointcloudStitcher::ProjectFramesOnOtherDevice(rs2::frameset frames, const
         color_bpp = color_frame.get_bytes_per_pixel();
     }
 
-    if (!depth) return;
-
     if (auto as_depth = depth.as<rs2::depth_frame>())
     {
         const rs2_intrinsics& depth_intinsics(as_depth.get_profile().as<rs2::video_stream_profile>().get_intrinsics());
-        //float HFOV = (2 * atan(depth_intinsics.width / (2 * depth_intinsics.fx))) * 180.0 / PI;
-        //float VFOV = (2 * atan(depth_intinsics.height / (2 * depth_intinsics.fy))) * 180.0 / PI;
+        //{
+        //    float HFOV = (2 * atan(depth_intinsics.width / (2 * depth_intinsics.fx))) * 180.0 / PI;
+        //    float VFOV = (2 * atan(depth_intinsics.height / (2 * depth_intinsics.fy))) * 180.0 / PI;
+        //    std::cout << "Depth Fov: " << HFOV << "x" << VFOV << std::endl;
+        //}
+        //{
+        //    float HFOV = (2 * atan(color_intinsics.width / (2 * color_intinsics.fx))) * 180.0 / PI;
+        //    float VFOV = (2 * atan(color_intinsics.height / (2 * color_intinsics.fy))) * 180.0 / PI;
+        //    std::cout << "Color Fov: " << HFOV << "x" << VFOV << std::endl;
+        //}
+
         int counter(0);
         uint8_t* zero_buf[3] = { 0,0,0 };
 
@@ -691,40 +700,46 @@ void CPointcloudStitcher::ProjectFramesOnOtherDevice(rs2::frameset frames, const
 
                 rs2_transform_point_to_point(virtual_point, &extrinsics, depth_point);
                 //std::cout << virtual_point[0] << ", " << virtual_point[1] << ", " << virtual_point[2] << std::endl;
-                rs2_project_point_to_pixel(virtual_pixel, &virtual_depth_intinsics, virtual_point);
-                //std::cout << virtual_pixel[0] << ", " << virtual_pixel[1] << std::endl;
+                rs2_project_point_to_pixel(virtual_depth_pixel, &virtual_depth_intinsics, virtual_point);
+                //std::cout << virtual_depth_pixel[0] << ", " << virtual_depth_pixel[1] << std::endl;
 
-                //std::cout << "-----" << std::endl;
-                //if (counter == 5) break;
-
-                if (virtual_pixel[0] < 0 || virtual_pixel[0] > virtual_depth_intinsics.width ||
-                    virtual_pixel[1] < 0 || virtual_pixel[1] > virtual_depth_intinsics.height)
+                if (virtual_depth_pixel[0] < 0 || virtual_depth_pixel[0] > virtual_depth_intinsics.width ||
+                    virtual_depth_pixel[1] < 0 || virtual_depth_pixel[1] > virtual_depth_intinsics.height)
+                {
                     continue;
-                int offset((int)(virtual_pixel[1]) * _virtual_depth_frame.x + (int)(virtual_pixel[0]));
+                }
+                int offset((int)(virtual_depth_pixel[1]) * _virtual_depth_frame.x + (int)(virtual_depth_pixel[0]));
                 uint16_t crnt_depth_val(((uint16_t*)_virtual_depth_frame.frame.data())[offset]);
-                uint8_t* virtual_color_ptr;
+                uint8_t* virtual_color_ptr(NULL);
                 bool missing_color(false);
                 if (color)
                 {
                     rs2_project_point_to_pixel(color_pixel, &color_intinsics, depth_point);
-                    if (color_pixel[0] < 0 || color_pixel[0] > color_intinsics.width ||
-                        color_pixel[1] < 0 || color_pixel[1] > color_intinsics.height)
-                        continue;
-                    int offset_dest(((int)virtual_pixel[1] * _virtual_color_frame.x + (int)virtual_pixel[0]) * _virtual_color_frame.bpp);
-                    virtual_color_ptr = (uint8_t*)_virtual_color_frame.frame.data() + offset_dest;
-                    missing_color = (0 == memcmp(virtual_color_ptr, zero_buf, 3));
+                    if (color_pixel[0] >= 0 && color_pixel[0] < color_intinsics.width &&
+                        color_pixel[1] >= 0 && color_pixel[1] < color_intinsics.height)
+                    {
+                        rs2_project_point_to_pixel(virtual_color_pixel, &virtual_color_intinsics, virtual_point);
+                        if (virtual_color_pixel[0] >= 0 && virtual_color_pixel[0] < virtual_color_intinsics.width &&
+                            virtual_color_pixel[1] >= 0 && virtual_color_pixel[1] < virtual_color_intinsics.height)
+                        {
+                            int offset_dest(((int)virtual_color_pixel[1] * _virtual_color_frame.x + (int)virtual_color_pixel[0]) * _virtual_color_frame.bpp);
+                            virtual_color_ptr = (uint8_t*)_virtual_color_frame.frame.data() + offset_dest;
+                            missing_color = (0 == memcmp(virtual_color_ptr, zero_buf, 3));
+                        }
+                    }
                 }
 
-                if (!crnt_depth_val || crnt_depth_val > *ptr || missing_color)
+                bool is_filling_depth(!crnt_depth_val || crnt_depth_val > *ptr);
+                if (is_filling_depth) // || missing_color)
                 {
                     ((uint16_t*)_virtual_depth_frame.frame.data())[offset] = *ptr;
-                    if (missing_color)
-                    {
-                        int offset_src(((int)color_pixel[1] * color_intinsics.width + (int)color_pixel[0]) * color_bpp);
-                        memcpy(virtual_color_ptr,
-                            (uint8_t*)(color.get_data()) + offset_src,
-                            color_bpp * sizeof(uint8_t));
-                    }
+                }
+                if (virtual_color_ptr && (is_filling_depth || missing_color))
+                {
+                    int offset_src(((int)color_pixel[1] * color_intinsics.width + (int)color_pixel[0]) * color_bpp);
+                    memcpy(virtual_color_ptr,
+                        (uint8_t*)(color.get_data()) + offset_src,
+                        color_bpp * sizeof(uint8_t));
                 }
             }
         }
@@ -884,7 +899,7 @@ void CPointcloudStitcher::Run(window& app)
 
     int frame_number(0);
     int count(0);
-    double fps;
+    double fps(0);
     auto start_time = std::chrono::system_clock::now();
     while (app)
     {
@@ -1063,8 +1078,8 @@ int main(int argc, char* argv[]) try
     unsigned tiles_in_row = 4;
     unsigned tiles_in_col = 3;
 
-    //window app(1920, 1200, "RealSense Pointcloud-Stitching Example", tiles_in_row, tiles_in_col);
-    window app(1280, 720, "RealSense Pointcloud-Stitching Example", tiles_in_row, tiles_in_col);
+    window app(1920, 1200, "RealSense Pointcloud-Stitching Example", tiles_in_row, tiles_in_col);
+    //window app(1280, 720, "RealSense Pointcloud-Stitching Example", tiles_in_row, tiles_in_col);
     ImGui_ImplGlfw_Init(app, false);
 
     pc_stitcher.Run(app);
