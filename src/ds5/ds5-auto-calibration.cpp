@@ -344,6 +344,7 @@ namespace librealsense
         std::shared_ptr<ds5_advanced_mode_base> preset_recover;
 
         std::vector<uint8_t> res;
+        std::shared_ptr<ds5_advanced_mode_base> preset_recover;
         if (calib_type == 0)
         {
             LOG_INFO("run_on_chip_calibration with parameters: speed = " << speed << " scan_parameter = " << scan_parameter << " data_sampling = " << data_sampling);

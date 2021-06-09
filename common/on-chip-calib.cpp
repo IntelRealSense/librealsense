@@ -27,7 +27,6 @@ namespace rs2
             if (val_in_range(dev_pid, { std::string("0AD3") }))
                 speed = 4;
 
-#if 0 // Waiting for official firmware version with tare health number.
         if (dev.supports(RS2_CAMERA_INFO_FIRMWARE_VERSION))
         {
             std::string fw_version = dev.get_info(RS2_CAMERA_INFO_FIRMWARE_VERSION);
@@ -44,12 +43,9 @@ namespace rs2
             }
 
             versions.emplace_back(atoi(fw_version.substr(i).c_str()));
-            if (versions[0] >= 5 && versions[1] >= 12 && versions[2] >= 15 && versions[3] >= 0) // FW 05.12.15.0
+            if (versions[0] >= 5 && versions[1] >= 12 && versions[2] >= 14 && versions[3] >= 100) // FW 05.12.14.100
                 tare_health = true;
         }
-#else
-        tare_health = true;
-#endif
         }
     }
 
@@ -967,6 +963,8 @@ namespace rs2
         config_file::instance().set(id.c_str(), (long long)rawtime);
     }
 
+    // fill_missing_data:
+    // Fill every zeros section linearly based on the section's edges.
     void on_chip_calib_manager::fill_missing_data(uint16_t data[256], int size)
     {
         int counter = 0;
@@ -1006,6 +1004,31 @@ namespace rs2
         {
             for (int i = start; i < size; ++i)
                 data[i] = data[start - 1];
+        }
+    }
+
+    // get_depth_frame_sum:
+    // Function sums the pixels in the image ROI - return values, count and sum are accumulative - not reset at function call. 
+    void get_depth_frame_sum(rs2::depth_frame f, int roi_start_w, int roi_start_h, int roi_w, int roi_h, int& count, double& sum)
+    {
+        int width = f.get_width();
+        int height = f.get_height();
+
+        const uint16_t* p = reinterpret_cast<const uint16_t*>(f.get_data());
+        p += roi_start_h * height + roi_start_w;
+
+        for (int j = 0; j < roi_h; ++j)
+        {
+            for (int i = 0; i < roi_w; ++i)
+            {
+                if (*p)
+                {
+                    ++count;
+                    sum += *p;
+                }
+                ++p;
+            }
+            p += width;
         }
     }
 
@@ -1049,27 +1072,14 @@ namespace rs2
         }
 
         std::stringstream ss;
-        if (action == RS2_CALIB_ACTION_ON_CHIP_CALIB)
+        if (action == RS2_CALIB_ACTION_ON_CHIP_FL_CALIB)
         {
-            ss << "{\n \"calib type\":" << 0 <<
-                  ",\n \"host assistance\":" << host_assistance <<
                   ",\n \"average step count\":" << average_step_count <<
                   ",\n \"scan parameter\":" << (intrinsic_scan ? 0 : 1) <<
                   ",\n \"step count\":" << step_count <<
                   ",\n \"apply preset\":" << (apply_preset ? 1 : 0) <<
                   ",\n \"accuracy\":" << accuracy <<
                   ",\n \"scan only\":" << 0 <<
-                  ",\n \"interactive scan\":" << 0 << "}";
-        }
-        else if (action == RS2_CALIB_ACTION_ON_CHIP_FL_CALIB)
-        {
-                  ",\n \"speed\":" << speed <<
-                  ",\n \"average step count\":" << average_step_count <<
-                  ",\n \"scan parameter\":" << (intrinsic_scan ? 0 : 1) <<
-                  ",\n \"step count\":" << step_count <<
-                  ",\n \"apply preset\":" << (apply_preset ? 1 : 0) <<
-                  ",\n \"accuracy\":" << accuracy <<
-                  ",\n \"scan only\":" << (host_assistance ? 1 : 0) <<
                   ",\n \"interactive scan\":" << 0 << "}";
         }
         else if (action == RS2_CALIB_ACTION_ON_CHIP_FL_CALIB)
@@ -1086,6 +1096,19 @@ namespace rs2
                   ",\n \"white wall mode\":" << white_wall_mode <<
                   ",\n \"scan only\":" << (host_assistance ? 1 : 0) <<
                   ",\n \"interactive scan\":" << 0 << "}";
+        }
+        else if (action == RS2_CALIB_ACTION_ON_CHIP_CALIB)
+        {
+            ss << "{\n \"calib type\":" << 0 <<
+                ",\n \"host assistance\":" << host_assistance <<
+                ",\n \"speed\":" << speed <<
+                ",\n \"average step count\":" << average_step_count <<
+                ",\n \"scan parameter\":" << (intrinsic_scan ? 0 : 1) <<
+                ",\n \"step count\":" << step_count <<
+                ",\n \"apply preset\":" << (apply_preset ? 1 : 0) <<
+                ",\n \"accuracy\":" << accuracy <<
+                ",\n \"scan only\":" << (host_assistance ? 1 : 0) <<
+                ",\n \"interactive scan\":" << 0 << "}";
         }
         else
         {
@@ -1135,7 +1158,7 @@ namespace rs2
         float health[2] = { 0 };
         auto calib_dev = _dev.as<auto_calibrated_device>();
         if (action == RS2_CALIB_ACTION_TARE_CALIB)
-            _new_calib = calib_dev.run_tare_calibration(ground_truth, json, health, [&](const float progress) {_progress = int(progress);}, 5000);
+            _new_calib = calib_dev.run_tare_calibration(ground_truth, json, health, [&](const float progress) {_progress = progress;}, 5000);
         else if (action == RS2_CALIB_ACTION_ON_CHIP_CALIB || action == RS2_CALIB_ACTION_ON_CHIP_FL_CALIB || action == RS2_CALIB_ACTION_ON_CHIP_OB_CALIB)
             _new_calib = calib_dev.run_on_chip_calibration(json, &_health, [&](const float progress) {_progress = progress;}, occ_timeout_ms);
 
@@ -1166,6 +1189,7 @@ namespace rs2
             {
                //_viewer.not_model->add_log(to_string() << "TARE, start_frame_counter=" << start_frame_counter << ", frame_counter=" << frame_counter);
 
+                // Skip frames until interactive process begins:
                 auto start_time = std::chrono::high_resolution_clock::now();
                 auto now = start_time;
                 while (frame_counter >= start_frame_counter)
@@ -1198,22 +1222,7 @@ namespace rs2
                 {
                     if (frame_num < average_step_count)
                     {
-                        p = reinterpret_cast<const uint16_t*>(f.get_data());
-                        p += roi_start_h * height + roi_start_w;
-
-                        for (int j = 0; j < roi_h; ++j)
-                        {
-                            for (int i = 0; i < roi_w; ++i)
-                            {
-                                if (*p)
-                                {
-                                    ++counter;
-                                    tmp += *p;
-                                }
-                                ++p;
-                            }
-                            p += width;
-                        }
+                        get_depth_frame_sum(f, roi_start_w, roi_start_h, roi_w, roi_h, counter, tmp);
 
                         if (counter && (frame_num + 1) == average_step_count)
                         {
@@ -1255,7 +1264,7 @@ namespace rs2
                 ss << "{\n \"depth\":" << -1 << "}";
 
                 std::string json = ss.str();
-                _new_calib = calib_dev.run_tare_calibration(ground_truth, json, health, [&](const float progress) {_progress = int(progress); }, 5000);
+                _new_calib = calib_dev.run_tare_calibration(ground_truth, json, health, [&](const float progress) {_progress = progress; }, 5000);
                 _progress = 100;
             }
             else if (action == RS2_CALIB_ACTION_ON_CHIP_OB_CALIB)
@@ -1475,12 +1484,12 @@ namespace rs2
                 }
 
                 int prev_frame_counter = total_frames;
-                int cur_progress = _progress;
+                int cur_progress = int(_progress);
                 while (frame_counter < total_frames)
                 {
                     if (frame_counter != prev_frame_counter)
                     {
-                        _progress = cur_progress + static_cast<int>(frame_counter * 60 / total_frames);
+                        _progress = static_cast<float>(cur_progress + static_cast<int>(frame_counter * 60 / total_frames));
 
                         const uint16_t* p = reinterpret_cast<const uint16_t*>(f.get_data());
                         p += from * height + roi_start_w;
@@ -1520,7 +1529,7 @@ namespace rs2
 
                 _progress = 80;
                 std::string json = ss.str();
-                _new_calib = calib_dev.run_on_chip_calibration(json, &_health, [&](const float progress) {_progress = int(progress); }, occ_timeout_ms);
+                _new_calib = calib_dev.run_on_chip_calibration(json, &_health, [&](const float progress) {_progress = progress; }, occ_timeout_ms);
                 _progress = 100;
             }
         }
@@ -2573,8 +2582,6 @@ namespace rs2
                 ImGui::Text("%s", "Calibration Health-Check");
             else if (update_state == RS2_CALIB_STATE_UVMAPPING_INPUT)
                 ImGui::Text("%s", "UV-Mapping Calibration");
-            else if (update_state == RS2_CALIB_STATE_FL_PLUS_INPUT)
-                ImGui::Text("%s", "Focal Length Plus Calibration");
             else if (update_state == RS2_CALIB_STATE_CALIB_IN_PROCESS ||
                      update_state == RS2_CALIB_STATE_CALIB_COMPLETE ||
                      update_state == RS2_CALIB_STATE_SELF_INPUT)
@@ -2589,8 +2596,6 @@ namespace rs2
                    ImGui::Text("%s", "Focal Length Calibration");
                else if (get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_UVMAPPING_CALIB)
                    ImGui::Text("%s", "UV-Mapping Calibration");
-               else if (get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_FL_PLUS_CALIB)
-                   ImGui::Text("%s", "Focal Length Plus Calibration");
                else
                    ImGui::Text("%s", "On-Chip Calibration");
             }
@@ -4121,7 +4126,6 @@ namespace rs2
                     get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_FL_CALIB) return 190;
                 else if (get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_TARE_CALIB) return 140;
                 else if (get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_UVMAPPING_CALIB) return 160;
-                else if (get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_FL_PLUS_CALIB) return 230;
             }
                 else return 170;
             }
