@@ -19,10 +19,10 @@ import numpy as np
 
 
 class Device:
-    def __init__(self, pipeline, pipeline_profile):
+    def __init__(self, pipeline, pipeline_profile, product_line):
         self.pipeline = pipeline
         self.pipeline_profile = pipeline_profile
-
+        self.product_line = product_line
 
 def enumerate_connected_devices(context):
     """
@@ -38,12 +38,21 @@ def enumerate_connected_devices(context):
     connect_device : array
                      Array of enumerated devices which are connected to the PC
 
+    connect_device_product_line : array
+                     Array of enumerated devices (serial_number, product_line) which are connected to the PC
+
     """
     connect_device = []
+    connect_device_product_line = []
+
     for d in context.devices:
         if d.get_info(rs.camera_info.name).lower() != 'platform camera':
-            connect_device.append(d.get_info(rs.camera_info.serial_number))
-    return connect_device
+            serial = d.get_info(rs.camera_info.serial_number)
+            product_line = d.get_info(rs.camera_info.product_line)
+            connect_device.append(serial)
+            device_info = (serial, product_line) # (serial_number, product_line)
+            connect_device_product_line.append( device_info )
+    return connect_device, connect_device_product_line
 
 
 def post_process_depth_frame(depth_frame, decimation_magnitude=1.0, spatial_magnitude=2.0, spatial_smooth_alpha=0.5,
@@ -133,27 +142,31 @@ class DeviceManager:
         assert isinstance(D400_pipeline_configuration, type(rs.config()))
         assert isinstance(L500_pipeline_configuration, type(rs.config()))
         self._context = context
-        self._available_devices = enumerate_connected_devices(context)
-        self._enabled_devices = {}
+        self._available_devices, self._available_devices_product_line = enumerate_connected_devices(context)
+        self._enabled_devices = {} #serial numbers of te enabled devices
         self.D400_config = D400_pipeline_configuration
         self.L500_config = L500_pipeline_configuration
         self._frame_counter = 0
 
-    def enable_device(self, device_serial, enable_ir_emitter):
+    def enable_device(self, device_info, enable_ir_emitter):
         """
         Enable an Intel RealSense Device
 
         Parameters:
         -----------
-        device_serial     : string
-                            Serial number of the realsense device
+        device_info     : Pair of strings (serial_number, product_line)
+                            Serial number and product line of the realsense device
         enable_ir_emitter : bool
                             Enable/Disable the IR-Emitter of the device
 
         """
         pipeline = rs.pipeline()
-        if device_serial.startswith("f"): #need to find a better way to discover product line from serial number
-            # Enable L515 device (L515)
+
+        device_serial = device_info[0]
+        product_line = device_info[1]
+
+        if product_line == "L500":
+            # Enable L515 device
             self.L500_config.enable_device(device_serial)
             pipeline_profile = pipeline.start(self.L500_config)
         else: 
@@ -166,7 +179,7 @@ class DeviceManager:
         sensor = pipeline_profile.get_device().first_depth_sensor()
         if sensor.supports(rs.option.emitter_enabled):
             sensor.set_option(rs.option.emitter_enabled, 1 if enable_ir_emitter else 0)
-        self._enabled_devices[device_serial] = (Device(pipeline, pipeline_profile))
+        self._enabled_devices[device_serial] = (Device(pipeline, pipeline_profile, product_line))
 
     def enable_all_devices(self, enable_ir_emitter=False):
         """
@@ -175,8 +188,8 @@ class DeviceManager:
         """
         print(str(len(self._available_devices)) + " devices have been found")
 
-        for serial in self._available_devices:
-            self.enable_device(serial, enable_ir_emitter)
+        for device_info in self._available_devices_product_line:
+            self.enable_device(device_info, enable_ir_emitter)
 
     def enable_emitter(self, enable_ir_emitter=True):
         """
@@ -221,7 +234,8 @@ class DeviceManager:
                 streams = device.pipeline_profile.get_streams()
                 frameset = device.pipeline.poll_for_frames() #frameset will be a pyrealsense2.composite_frame object
                 if frameset.size() == len(streams):
-                    frames[serial] = {}
+                    dev_info = (serial, device.product_line)
+                    frames[dev_info] = {}
                     for stream in streams:
                         if (rs.stream.infrared == stream.stream_type()):
                             frame = frameset.get_infrared_frame(stream.stream_index())
@@ -229,7 +243,7 @@ class DeviceManager:
                         else:
                             frame = frameset.first_or_default(stream.stream_type())
                             key_ = stream.stream_type()
-                        frames[serial][key_] = frame
+                        frames[dev_info][key_] = frame
 
         return frames
 
@@ -269,7 +283,8 @@ class DeviceManager:
                 Intrinsics of the corresponding device
         """
         device_intrinsics = {}
-        for (serial, frameset) in frames.items():
+        for (dev_info, frameset) in frames.items():
+            serial = dev_info[0]
             device_intrinsics[serial] = {}
             for key, value in frameset.items():
                 device_intrinsics[serial][key] = value.get_profile().as_video_stream_profile().get_intrinsics()
@@ -293,7 +308,8 @@ class DeviceManager:
                 Extrinsics of the corresponding device
         """
         device_extrinsics = {}
-        for (serial, frameset) in frames.items():
+        for (dev_info, frameset) in frames.items():
+            serial = dev_info[0]
             device_extrinsics[serial] = frameset[
                 rs.stream.depth].get_profile().as_video_stream_profile().get_extrinsics_to(
                 frameset[rs.stream.color].get_profile())
