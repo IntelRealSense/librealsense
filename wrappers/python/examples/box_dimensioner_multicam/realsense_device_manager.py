@@ -38,21 +38,16 @@ def enumerate_connected_devices(context):
     connect_device : array
                      Array of enumerated devices which are connected to the PC
 
-    connect_device_product_line : array
-                     Array of enumerated devices (serial_number, product_line) which are connected to the PC
-
     """
     connect_device = []
-    connect_device_product_line = []
 
     for d in context.devices:
         if d.get_info(rs.camera_info.name).lower() != 'platform camera':
             serial = d.get_info(rs.camera_info.serial_number)
             product_line = d.get_info(rs.camera_info.product_line)
-            connect_device.append(serial)
             device_info = (serial, product_line) # (serial_number, product_line)
-            connect_device_product_line.append( device_info )
-    return connect_device, connect_device_product_line
+            connect_device.append( device_info )
+    return connect_device
 
 
 def post_process_depth_frame(depth_frame, decimation_magnitude=1.0, spatial_magnitude=2.0, spatial_smooth_alpha=0.5,
@@ -142,7 +137,7 @@ class DeviceManager:
         assert isinstance(D400_pipeline_configuration, type(rs.config()))
         assert isinstance(L500_pipeline_configuration, type(rs.config()))
         self._context = context
-        self._available_devices, self._available_devices_product_line = enumerate_connected_devices(context)
+        self._available_devices = enumerate_connected_devices(context)
         self._enabled_devices = {} #serial numbers of te enabled devices
         self.D400_config = D400_pipeline_configuration
         self.L500_config = L500_pipeline_configuration
@@ -188,7 +183,7 @@ class DeviceManager:
         """
         print(str(len(self._available_devices)) + " devices have been found")
 
-        for device_info in self._available_devices_product_line:
+        for device_info in self._available_devices:
             self.enable_device(device_info, enable_ir_emitter)
 
     def enable_emitter(self, enable_ir_emitter=True):

@@ -82,7 +82,8 @@ def run_demo():
 			transformation_result_kabsch  = pose_estimator.perform_pose_estimation()
 			object_point = pose_estimator.get_chessboard_corners_in3d()
 			calibrated_device_count = 0
-			for device in device_manager._available_devices:
+			for device_info in device_manager._available_devices:
+				device = device_info[0]
 				if not transformation_result_kabsch[device][0]:
 					print("Place the chessboard on the plane where the object needs to be detected..")
 				else:
@@ -91,7 +92,8 @@ def run_demo():
 		# Save the transformation object for all devices in an array to use for measurements
 		transformation_devices={}
 		chessboard_points_cumulative_3d = np.array([-1,-1,-1]).transpose()
-		for device in device_manager._available_devices:
+		for device_info in device_manager._available_devices:
+			device = device_info[0]
 			transformation_devices[device] = transformation_result_kabsch[device][1].inverse()
 			points3D = object_point[device][2][:,object_point[device][3]]
 			points3D = transformation_devices[device].apply_transformation(points3D)
