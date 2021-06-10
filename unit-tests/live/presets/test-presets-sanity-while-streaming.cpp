@@ -28,7 +28,10 @@ TEST_CASE( "presets sanity while streaming", "[l500][live]" )
         depth_sens,
         expected_values,
         expected_defs,
-        [&]( preset_mode_pair preset_mode ) { set_mode_preset( depth_sens, preset_mode ); } );
+        [&]( preset_mode_pair preset_mode ) {
+            set_mode_preset( depth_sens, preset_mode );
+        }
+    );
 
     // set preset and mode after stream start
     check_presets_values_while_streaming(
@@ -37,7 +40,11 @@ TEST_CASE( "presets sanity while streaming", "[l500][live]" )
         expected_values,
         expected_defs,
         []( preset_mode_pair preset_mode ) {},
-        [&]( preset_mode_pair preset_mode ) { 
-        REQUIRE_NOTHROW(depth_sens.set_option(RS2_OPTION_VISUAL_PRESET, (float)preset_mode.first));
-        CHECK(depth_sens.get_option(RS2_OPTION_VISUAL_PRESET) == (float)preset_mode.first); });
+        [&]( preset_mode_pair preset_mode ) {
+            // We don't want to change the sensor mode while streaming (it's read-only)!
+            //set_mode_preset( depth_sens, preset_mode );
+            REQUIRE_NOTHROW(depth_sens.set_option(RS2_OPTION_VISUAL_PRESET, (float)preset_mode.first));
+            CHECK(depth_sens.get_option(RS2_OPTION_VISUAL_PRESET) == (float)preset_mode.first);
+        }
+    );
 }
