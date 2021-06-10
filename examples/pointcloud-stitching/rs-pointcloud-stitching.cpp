@@ -616,7 +616,7 @@ void CPointcloudStitcher::CloseSensors()
 void CPointcloudStitcher::frame_callback(rs2::frame frame, const string& serial)
 {
     rs2::frameset fset = frame.as<rs2::frameset>();
-    if (fset.size() == 2)
+    if (fset.size() == _wanted_profiles[serial].size())
     {
         _frames[serial].enqueue(std::move(fset));
     }
@@ -1078,7 +1078,7 @@ int main(int argc, char* argv[]) try
     unsigned tiles_in_row = 4;
     unsigned tiles_in_col = 3;
 
-    window app(1920, 1200, "RealSense Pointcloud-Stitching Example", tiles_in_row, tiles_in_col);
+    window app(1920, 1100, "RealSense Pointcloud-Stitching Example", tiles_in_row, tiles_in_col);
     //window app(1280, 720, "RealSense Pointcloud-Stitching Example", tiles_in_row, tiles_in_col);
     ImGui_ImplGlfw_Init(app, false);
 
