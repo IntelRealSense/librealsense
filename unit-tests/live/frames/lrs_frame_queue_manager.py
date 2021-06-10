@@ -1,3 +1,6 @@
+# License: Apache 2.0. See LICENSE file in root directory.
+# Copyright(c) 2021 Intel Corporation. All Rights Reserved.
+
 import collections
 import csv
 import logging
@@ -75,6 +78,7 @@ class LRSFrameQueueManager:
         initialize the producer-consumer threads.
         """
 
+        self.unblock()
         self._terminate_producer_event.clear()
 
         if self.lrs_queue is None:

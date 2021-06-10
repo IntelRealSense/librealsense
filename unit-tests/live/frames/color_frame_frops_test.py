@@ -36,7 +36,6 @@ lrs_fq.register_callback(cb)
 pipe = rs.pipeline()
 for i in range(iterations):
     lrs_fq.start()
-    lrs_fq.unblock()
     print ('iteration #{}'.format(i))
     hw_ts = []
     print ('\tStart stream'.format(i))
