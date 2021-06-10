@@ -7,6 +7,7 @@
 import time
 import threading
 from queue import Queue
+from rspy import test
 import pyrealsense2 as rs
 
 # Run RGB stream with 90 fps and find frame drops by checking HW timestamp of each frame
@@ -14,6 +15,7 @@ import pyrealsense2 as rs
 if __name__ == '__main__':
     ctx = rs.context()
     device = ctx.query_devices()[0]
+    product_line = device.get_info(rs.camera_info.product_line)
     sn = device.get_info(rs.camera_info.serial_number)
     fw = device.get_info(rs.camera_info.firmware_version)
     print ('found device {}, fw {}'.format(sn, fw))
@@ -92,6 +94,11 @@ if __name__ == '__main__':
             for k, v in self.frame_drops_info:
                 print("Number of dropped frame before frame ", k, ", is :", v)
 
+            test.check(self.count_drops == 0)
+            test.finish()
+
+
+    test.start("Testing D455 frame drops on " + product_line + " device ")
     for ii in range(60):
         print("================ Iteration {} ================".format(ii))
         test = Test(rgb_sensor)

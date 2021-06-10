@@ -9,6 +9,7 @@
 import logging
 import time
 import pyrealsense2 as rs
+from rspy import test
 from lrs_frame_queue_manager import LRSFrameQueueManager
 
 logging.basicConfig(level=logging.INFO)
@@ -20,6 +21,7 @@ _format = rs.format.rgb8
 
 ctx = rs.context()
 dev = ctx.query_devices()[0]  # type: rs.device
+product_line = dev.get_info(rs.camera_info.product_line)
 color_sensor = dev.first_color_sensor()  # type: rs.sensor
 if color_sensor.supports(rs.option.auto_exposure_priority):
     color_sensor.set_option(rs.option.auto_exposure_priority, 0)
@@ -34,6 +36,7 @@ lrs_fq = LRSFrameQueueManager()
 lrs_fq.register_callback(cb)
 
 pipe = rs.pipeline()
+test.start("Testing color frame drops on " + product_line + " device ")
 for i in range(iterations):
     lrs_fq.start()
     print ('iteration #{}'.format(i))
@@ -48,7 +51,12 @@ for i in range(iterations):
 
     expected_delta = 1000 / fps
     deltas_ms = [(ts1 - ts2) / 1000 for ts1, ts2 in zip(hw_ts[1:], hw_ts[:-1])]
+    count_drops = False
     for idx, delta in enumerate(deltas_ms, 1):
         if delta > (expected_delta * 1.95):
+            count_drops = True
             print ('\tFound drop #{} actual delta {} vs expected delta: {}'.format(idx, delta, expected_delta))
     lrs_fq.stop()
+
+    test.check(not count_drops)
+    test.finish()
