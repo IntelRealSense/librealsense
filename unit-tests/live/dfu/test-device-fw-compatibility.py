@@ -16,7 +16,7 @@ d400_fw_min_version_1_prev = 'Signed_Image_UVC_5_8_14_0.bin'
 d400_fw_min_version_2_prev = 'Signed_Image_UVC_5_12_6_0.bin'
 d400_fw_min_version_3_prev = 'Signed_Image_UVC_5_12_11_0.bin'
 
-l500_fw_min_version_valid = 'L5XX_FW_Image-1.5.1.3.bin'
+l500_fw_min_version_valid = 'Signed_Image_UVC_1_5_1_3.bin'
 l500_fw_min_version_invalid = 'Signed_Image_UVC_1_4_1_0.bin'
 
 sr300_fw_min_version_1 = 'Signed_Image_UVC_3_21_0_0.bin'
