@@ -35,7 +35,7 @@ TEST_CASE("Syncer dynamic FPS - throughput test", "[live]")
             std::cout << "==============================================" << std::endl;
             std::string cfg = test == IR_ONLY ? "IR Only" : "IR + RGB";
             std::cout << "Configuration: " << cfg << std::endl << std::endl;
-            
+
             start_streaming(test);
             process_validate_frames(test);
             stop_streaming(test);
@@ -146,7 +146,7 @@ TEST_CASE("Syncer dynamic FPS - throughput test", "[live]")
                 float fps_ratio = calc_fps / actual_fps;
                 CAPTURE(stream_type, actual_fps, calc_fps, v.size());
                 CHECK(fps_ratio > 0.9);
-                CHECK(fps_ratio < 1.1);
+                CHECK(fps_ratio < 1.3);
                 check_frame_drops(v);
                 i += 1;
             }
@@ -155,6 +155,7 @@ TEST_CASE("Syncer dynamic FPS - throughput test", "[live]")
         {
             float prev_frame_time = 0.0f;
             bool first = true;
+            int count_drops = 0;
             for (auto& frame : frames)
             {
                 auto actual_fps = frame.second;
@@ -163,11 +164,13 @@ TEST_CASE("Syncer dynamic FPS - throughput test", "[live]")
                 float calc_dt_msec = ((float)frame_time - prev_frame_time)/1000; //convert usec -> msec
                 float dt_msec_ratio = calc_dt_msec / expected_dt_ms;
                 CAPTURE(expected_dt_ms, calc_dt_msec, dt_msec_ratio, frame_time, prev_frame_time);
-                if (!first)
-                    CHECK(dt_msec_ratio < 1.5);
+                if (!first && dt_msec_ratio > 1.5)
+                    count_drops++;
                 prev_frame_time = frame_time;
                 first = false;
             }
+            float count_drops_ratio = (float)count_drops / frames.size();
+            CHECK(count_drops_ratio < 0.1);
         }
 
         sensor _rgb_sensor;
