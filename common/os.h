@@ -5,7 +5,7 @@
 #include <vector>
 #include <string>
 #include <rendering.h>
-#include "fs.h"
+#include "filesystem.h"
 
 struct GLFWmonitor;
 struct GLFWwindow;

@@ -12,7 +12,7 @@
 #include <sstream>
 #include <iostream>
 #include <iomanip>
-#include <fs.h>
+#include <filesystem.h>
 
 // Helper function for dispaying time conveniently
 std::string pretty_time(std::chrono::nanoseconds duration);
