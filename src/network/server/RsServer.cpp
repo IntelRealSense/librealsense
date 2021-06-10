@@ -28,12 +28,18 @@ using namespace TCLAP;
 
 void server::doUpgrade() {
     // start the update
-    if (!m_dev.is<rs2::updatable>() || !(m_dev.supports(RS2_CAMERA_INFO_SERIAL_NUMBER) && m_dev.supports(RS2_CAMERA_INFO_FIRMWARE_UPDATE_ID))) {
-        LOG_ERROR("Device is not updatable");
-    } else {
-        auto update_serial_number = m_dev.get_info(RS2_CAMERA_INFO_FIRMWARE_UPDATE_ID);
-        auto sn = m_dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER);
-        auto fw = m_dev.get_info(RS2_CAMERA_INFO_FIRMWARE_VERSION);
+    // if (!m_dev.is<rs2::updatable>() || !(m_dev.supports(RS2_CAMERA_INFO_SERIAL_NUMBER) && m_dev.supports(RS2_CAMERA_INFO_FIRMWARE_UPDATE_ID))) {
+    //     LOG_ERROR("Device is not updatable");
+    // } else {
+    {
+        // First, shutdown the RTSP server
+        m_progress = "shutting down the RTSP server";
+        srv->close(srv->envir(), srv->name());
+        std::this_thread::sleep_for(std::chrono::seconds(1));
+
+        // auto update_serial_number = m_dev.get_info(RS2_CAMERA_INFO_FIRMWARE_UPDATE_ID);
+        // auto sn = m_dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER);
+        // auto fw = m_dev.get_info(RS2_CAMERA_INFO_FIRMWARE_VERSION);
 
         #if 0
         if (backup_arg.isSet()) {
@@ -51,31 +57,37 @@ void server::doUpgrade() {
         #endif
 
         std::vector<uint8_t> fw_image(m_image.begin(), m_image.end()); 
+        m_progress = "starting to update the device";
         std::cout << std::endl << "starting to update the device" << std::endl;
+        std::this_thread::sleep_for(std::chrono::seconds(1));
 
         rs2::context ctx;
         rs2::update_device new_fw_update_device;
         std::condition_variable cv;
         std::mutex mutex;
 
-        // Update device
-        ctx.set_devices_changed_callback([&](rs2::event_information& info) {
-            if (info.get_new_devices().size() == 0) return;
+        if (m_dev.is<rs2::updatable>()) {
+            // Update device
+            ctx.set_devices_changed_callback([&](rs2::event_information& info) {
+                if (info.get_new_devices().size() == 0) return;
 
-            for (auto&& d : info.get_new_devices()) {
-                std::lock_guard<std::mutex> lk(mutex);
-                if (d.is<rs2::update_device>())
-                    new_fw_update_device = d;
+                for (auto&& d : info.get_new_devices()) {
+                    std::lock_guard<std::mutex> lk(mutex);
+                    if (d.is<rs2::update_device>())
+                        new_fw_update_device = d;
+                }
+
+                if (new_fw_update_device) cv.notify_one();
+            });
+
+            m_dev.as<rs2::updatable>().enter_update_state();
+            std::unique_lock<std::mutex> lk(mutex);
+            if (!cv.wait_for(lk, std::chrono::seconds( /* WAIT_FOR_DEVICE_TIMEOUT */ 10), [&] { return new_fw_update_device; })) {
+                std::cout << std::endl << "failed to locate a device in FW update mode" << std::endl;
+                return;
             }
-
-            if (new_fw_update_device) cv.notify_one();
-        });
-
-        m_dev.as<rs2::updatable>().enter_update_state();
-        std::unique_lock<std::mutex> lk(mutex);
-        if (!cv.wait_for(lk, std::chrono::seconds( /* WAIT_FOR_DEVICE_TIMEOUT */ 10), [&] { return new_fw_update_device; })) {
-            std::cout << std::endl << "failed to locate a device in FW update mode" << std::endl;
-            return;
+        } else {
+            new_fw_update_device = m_dev;
         }
 
         std::cout << std::endl << "firmware update started" << std::endl << std::endl;
@@ -276,10 +288,6 @@ void server::doHTTP() {
                     return true;
                 });
                 res.set_content(m_image, "application/octet-stream");
-
-                // std::ofstream ofs_package("/tmp/rsfw.bin", std::ofstream::out | std::ofstream::binary | std::ofstream::trunc);
-                // ofs_package.write(package.c_str(), package.size());
-                // ofs_package.close(); 
                 LOG_INFO("Received the image of " << std::dec << m_image.size() << " bytes to perform the upgrade.");
 
                 m_upgrade = std::thread( [this](){ doUpgrade(); } ); 

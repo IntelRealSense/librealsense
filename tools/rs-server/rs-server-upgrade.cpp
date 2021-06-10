@@ -65,7 +65,7 @@ int main(int argc, char** argv) {
     while (ifs.get(byte)) fdata += byte;
     ifs.close();
 
-    std::cout << "Sending " << fdata.size() << " bytes to " << addr << ":" << port << path << std::endl;
+    std::cout << "Sending " << fdata.size() << " bytes to " << addr << std::endl;
     httplib::Client client(addr, port);
     httplib::Result res = client.Post(path.c_str(), fdata, "application/octet-stream");
     switch (res.error()) {
@@ -77,16 +77,16 @@ int main(int argc, char** argv) {
                         if (res) {
                             if (res->status == 200) {
                                 // std::cout << res->body << std::endl;
-                                printf("firmware upgrade: %s\r", res->body.c_str());
-                                // std::this_thread::sleep_for(std::chrono::milliseconds(100));
+                                printf("Firmware upgrade: %s          \r", res->body.c_str());
+                                std::this_thread::sleep_for(std::chrono::milliseconds(100));
                             }
                         } else {
-                            std::cout << "firmware upgrade is done" << std::endl;
+                            std::cout << "Firmware upgrade is done          " << std::endl;
                             break;
                         }
                     }
                 } else {
-                    std::cout << "Done" << std::endl;
+                    std::cout << "Software upgrade is done" << std::endl;
                 }
             } else {
                 std::cout << "Failed: " << res->reason << std::endl;

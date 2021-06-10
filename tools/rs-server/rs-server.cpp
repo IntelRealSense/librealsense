@@ -123,7 +123,7 @@ int main(int argc, char** argv)
     }
 
     if (dev_found) {
-        std::cout << "Using " << dev.get_info(RS2_CAMERA_INFO_NAME) << ", serial number " << dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER) << std::endl;
+        // TODO // std::cout << "Using " << dev.get_info(RS2_CAMERA_INFO_NAME) << ", serial number " << dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER) << std::endl;
         
         // Create the server using supplied parameters
         rs_server_params params = { strdup(addr.c_str()), port, 0 };
