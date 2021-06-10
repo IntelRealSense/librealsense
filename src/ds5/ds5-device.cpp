@@ -396,6 +396,14 @@ namespace librealsense
             synthetic_sensor::close();
         }
 
+        rs2_intrinsics get_color_intrinsics(const stream_profile& profile) const
+        {
+            return get_intrinsic_by_resolution(
+                *_owner->_color_calib_table_raw,
+                ds::calibration_table_id::rgb_calibration_id,
+                profile.width, profile.height);
+        }
+
         /*
         Infrared profiles are initialized with the following logic:
         - If device has color sensor (D415 / D435), infrared profile is chosen with Y8 format
@@ -430,8 +438,23 @@ namespace librealsense
                 }
                 auto&& vid_profile = dynamic_cast<video_stream_profile_interface*>(p.get());
 
+                // used when color stream comes from depth sensor (as in D405)
+                if (p->get_stream_type() == RS2_STREAM_COLOR)
+                {
+                    const auto&& profile = to_profile(p.get());
+                    std::weak_ptr<ds5_depth_sensor> wp =
+                        std::dynamic_pointer_cast<ds5_depth_sensor>(this->shared_from_this());
+                    vid_profile->set_intrinsics([profile, wp]()
+                        {
+                            auto sp = wp.lock();
+                            if (sp)
+                                return sp->get_color_intrinsics(profile);
+                            else
+                                return rs2_intrinsics{};
+                        });
+                }
                 // Register intrinsics
-                if (p->get_format() != RS2_FORMAT_Y16) // Y16 format indicate unrectified images, no intrinsics are available for these
+                else if (p->get_format() != RS2_FORMAT_Y16) // Y16 format indicate unrectified images, no intrinsics are available for these
                 {
                     const auto&& profile = to_profile(p.get());
                     std::weak_ptr<ds5_depth_sensor> wp =
@@ -638,6 +661,9 @@ namespace librealsense
             val |= d400_caps::CAP_ROLLING_SHUTTER;  // e.g. ASRC
         if (0x2 == gvd_buf[depth_sensor_type])
             val |= d400_caps::CAP_GLOBAL_SHUTTER;   // e.g. AWGC
+        // Option INTER_CAM_SYNC_MODE is not enabled in D405
+        if (_pid != ds::RS405_PID)
+            val |= d400_caps::CAP_INTERCAM_HW_SYNC;
 
         return val;
     }
@@ -698,6 +724,11 @@ namespace librealsense
         auto&& backend = ctx->get_backend();
         auto& raw_sensor = get_raw_depth_sensor();
         auto pid = group.uvc_devices.front().pid;
+
+        _color_calib_table_raw = [this]()
+        {
+            return get_raw_calibration_table(rgb_calibration_id);
+        };
 
         if (((hw_mon_over_xu) && (RS400_IMU_PID != pid)) || (!group.usb_devices.size()))
         {
@@ -973,24 +1004,26 @@ namespace librealsense
         {
             depth_sensor.register_option(RS2_OPTION_EMITTER_ON_OFF, std::make_shared<emitter_on_and_off_option>(*_hw_monitor, &raw_depth_sensor));
         }
-     
-        if (_fw_version >= firmware_version("5.12.12.100") && (_device_capabilities & d400_caps::CAP_GLOBAL_SHUTTER) == d400_caps::CAP_GLOBAL_SHUTTER)
+
+        if ((_device_capabilities & d400_caps::CAP_INTERCAM_HW_SYNC) == d400_caps::CAP_INTERCAM_HW_SYNC)
         {
-            depth_sensor.register_option(RS2_OPTION_INTER_CAM_SYNC_MODE,
-                std::make_shared<external_sync_mode>(*_hw_monitor, &raw_depth_sensor, 3));
-        }
-        else if (_fw_version >= firmware_version("5.12.4.0") && (_device_capabilities & d400_caps::CAP_GLOBAL_SHUTTER) == d400_caps::CAP_GLOBAL_SHUTTER)
-        {
-            depth_sensor.register_option(RS2_OPTION_INTER_CAM_SYNC_MODE,
-                std::make_shared<external_sync_mode>(*_hw_monitor, &raw_depth_sensor, 2));
-        }
-        else if (_fw_version >= firmware_version("5.9.15.1"))
-        {
-            depth_sensor.register_option(RS2_OPTION_INTER_CAM_SYNC_MODE,
-                std::make_shared<external_sync_mode>(*_hw_monitor, &raw_depth_sensor, 1));
+            if (_fw_version >= firmware_version("5.12.12.100") && (_device_capabilities & d400_caps::CAP_GLOBAL_SHUTTER) == d400_caps::CAP_GLOBAL_SHUTTER)
+            {
+                depth_sensor.register_option(RS2_OPTION_INTER_CAM_SYNC_MODE,
+                    std::make_shared<external_sync_mode>(*_hw_monitor, &raw_depth_sensor, 3));
+            }
+            else if (_fw_version >= firmware_version("5.12.4.0") && (_device_capabilities & d400_caps::CAP_GLOBAL_SHUTTER) == d400_caps::CAP_GLOBAL_SHUTTER)
+            {
+                depth_sensor.register_option(RS2_OPTION_INTER_CAM_SYNC_MODE,
+                    std::make_shared<external_sync_mode>(*_hw_monitor, &raw_depth_sensor, 2));
+            }
+            else if (_fw_version >= firmware_version("5.9.15.1"))
+            {
+                depth_sensor.register_option(RS2_OPTION_INTER_CAM_SYNC_MODE,
+                    std::make_shared<external_sync_mode>(*_hw_monitor, &raw_depth_sensor, 1));
+            }
         }
 
-        
         roi_sensor_interface* roi_sensor = dynamic_cast<roi_sensor_interface*>(&depth_sensor);
         if (roi_sensor)
             roi_sensor->set_roi_method(std::make_shared<ds5_auto_exposure_roi_method>(*_hw_monitor));

@@ -16,8 +16,8 @@ d400_fw_min_version_1_prev = 'Signed_Image_UVC_5_8_14_0.bin'
 d400_fw_min_version_2_prev = 'Signed_Image_UVC_5_12_6_0.bin'
 d400_fw_min_version_3_prev = 'Signed_Image_UVC_5_12_11_0.bin'
 
-l500_fw_min_version = 'Signed_Image_UVC_1_4_1_0.bin'
-l500_fw_min_version_prev = 'Signed_Image_UVC_1_4_0_10.bin'
+l500_fw_min_version_valid = 'Signed_Image_UVC_1_5_1_3.bin'
+l500_fw_min_version_invalid = 'Signed_Image_UVC_1_4_1_0.bin'
 
 sr300_fw_min_version_1 = 'Signed_Image_UVC_3_21_0_0.bin'
 sr300_fw_min_version_2 = 'Signed_Image_UVC_3_27_0_0.bin'
@@ -45,18 +45,18 @@ pid_to_min_fw_version = {  # D400 product line:
     '0B3A': d400_fw_min_version_2,  # D435I
     '0B49': d400_fw_min_version_1,  # D416
     '0B4B': d400_fw_min_version_1,  # D430I
-    '0B4D': d400_fw_min_version_1,  # D465
+    '0B4D': d400_fw_min_version_2,  # D465
     '0B52': d400_fw_min_version_1,  # D416_RGB
     '0B5B': d400_fw_min_version_3,  # D405
     '0B5C': d400_fw_min_version_2,  # D455
     # L500 product line:
-    '0B55': l500_fw_min_version,  # L500_RECOVERY
-    '0B72': l500_fw_min_version,  # L535_RECOVERY
-    '0ADC': l500_fw_min_version,  # L500_USB2_RECOVERY_OLD
-    '0B0D': l500_fw_min_version,  # L500
-    '0B3D': l500_fw_min_version,  # L515_PRE_PRQ
-    '0B64': l500_fw_min_version,  # L515
-    '0B68': l500_fw_min_version,  # L535
+    '0B55': l500_fw_min_version_valid,  # L500_RECOVERY
+    '0B72': l500_fw_min_version_valid,  # L535_RECOVERY
+    '0ADC': l500_fw_min_version_valid,  # L500_USB2_RECOVERY_OLD
+    '0B0D': l500_fw_min_version_valid,  # L500
+    '0B3D': l500_fw_min_version_valid,  # L515_PRE_PRQ
+    '0B64': l500_fw_min_version_valid,  # L515
+    '0B68': l500_fw_min_version_valid,  # L535
     # SR300 product line:
     '0AA5': sr300_fw_min_version_1,  # SR300
     '0AB3': sr300_fw_min_version_1,  # SR300_RECOVERY
@@ -75,7 +75,7 @@ pid_to_max_fw_version = {  # SR300 product line:
 fw_previous_version = {d400_fw_min_version_1: d400_fw_min_version_1_prev,
                        d400_fw_min_version_2: d400_fw_min_version_2_prev,
                        d400_fw_min_version_3: d400_fw_min_version_3_prev,
-                       l500_fw_min_version: l500_fw_min_version_prev,
+                       l500_fw_min_version_valid: l500_fw_min_version_invalid,
                        # sr300_fw_min_version_1:sr300_fw_min_version_1_prev, no version before exists
                        sr300_fw_min_version_2: sr300_fw_min_version_2_prev,
                        sr300_fw_min_version_3: sr300_fw_min_version_3_prev
@@ -115,10 +115,11 @@ if pid in pid_to_min_fw_version:
         fw_image = bytearray(binary_file.read())
         check_firmware_compatible(updatable_device, fw_image)
 
+    # Negative
     if min_fw_version in fw_previous_version:
         one_before_min_fw_version = fw_previous_version[min_fw_version]
         one_before_min_fw_version_path = get_fw_version_path(product_line_dir, one_before_min_fw_version)
-        print("one before: " + one_before_min_fw_version)
+        print("firware version defined as non-compatible: " + one_before_min_fw_version)
         with open(one_before_min_fw_version_path, 'rb') as binary_file:
             fw_image = bytearray(binary_file.read())
             check_firmware_not_compatible(updatable_device, fw_image)

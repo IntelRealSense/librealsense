@@ -6,6 +6,9 @@
 #include "../../../include/librealsense2/rs.h"
 #include "../../../include/librealsense2/h/rs_pipeline.h"
 
+#include "jni_logging.h"
+#include "frame_callback.h"
+
 extern "C" JNIEXPORT jlong JNICALL
 Java_com_intel_realsense_librealsense_Pipeline_nCreate(JNIEnv *env, jclass type,
                                                        jlong context) {
@@ -23,6 +26,23 @@ Java_com_intel_realsense_librealsense_Pipeline_nStart(JNIEnv *env, jclass type, 
     return reinterpret_cast<jlong>(rv);
 }
 
+static frame_callback_data pdata = {NULL, 0, JNI_FALSE, NULL, NULL};
+
+extern "C" JNIEXPORT jlong JNICALL
+Java_com_intel_realsense_librealsense_Pipeline_nStartWithCallback(JNIEnv *env, jclass type, jlong handle, jobject jcb) {
+    rs2_error* e = NULL;
+
+    if (rs_jni_callback_init(env, jcb, &pdata) != true) return NULL;
+
+    auto cb = [&](rs2::frame f) {
+        rs_jni_cb(f, &pdata);
+    };
+
+    auto rv = rs2_pipeline_start_with_callback_cpp(reinterpret_cast<rs2_pipeline *>(handle), new rs2::frame_callback<decltype(cb)>(cb), &e);
+    handle_error(env, e);
+    return reinterpret_cast<jlong>(rv);
+}
+
 extern "C" JNIEXPORT jlong JNICALL
 Java_com_intel_realsense_librealsense_Pipeline_nStartWithConfig(JNIEnv *env, jclass type,
                                                                 jlong handle, jlong configHandle) {
@@ -33,9 +53,27 @@ Java_com_intel_realsense_librealsense_Pipeline_nStartWithConfig(JNIEnv *env, jcl
     return reinterpret_cast<jlong>(rv);
 }
 
+extern "C" JNIEXPORT jlong JNICALL
+Java_com_intel_realsense_librealsense_Pipeline_nStartWithConfigAndCallback(JNIEnv *env, jclass type,
+                                                                jlong handle, jlong configHandle, jobject jcb) {
+    rs2_error *e = NULL;
+
+    if (rs_jni_callback_init(env, jcb, &pdata) != true) return NULL;
+
+    auto cb = [&](rs2::frame f) {
+        rs_jni_cb(f, &pdata);
+    };
+
+    auto rv = rs2_pipeline_start_with_config_and_callback_cpp(reinterpret_cast<rs2_pipeline *>(handle),
+                                             reinterpret_cast<rs2_config *>(configHandle), new rs2::frame_callback<decltype(cb)>(cb), &e);
+    handle_error(env, e);
+    return reinterpret_cast<jlong>(rv);
+}
+
 extern "C" JNIEXPORT void JNICALL
 Java_com_intel_realsense_librealsense_Pipeline_nStop(JNIEnv *env, jclass type, jlong handle) {
     rs2_error* e = NULL;
+    rs_jni_cleanup(env, &pdata);
     rs2_pipeline_stop(reinterpret_cast<rs2_pipeline *>(handle), &e);
     handle_error(env, e);
 }

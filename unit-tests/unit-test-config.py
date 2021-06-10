@@ -172,7 +172,11 @@ def process_cpp( dir, builddir ):
         testdir = os.path.splitext( f )[0]                          # "log/internal/test-all"  <-  "log/internal/test-all.cpp"
         testparent = os.path.dirname(testdir)                       # "log/internal"
         # We need the project name unique: keep the path but make it nicer:
-        testname = 'test-' + testparent.replace( '/', '-' ) + '-' + os.path.basename(testdir)[5:]   # "test-log-internal-all"
+        if testparent:
+            testname = 'test-' + testparent.replace( '/', '-' ) + '-' + os.path.basename( testdir )[
+                                                                        5:]  # "test-log-internal-all"
+        else:
+            testname = testdir  # no parent folder so we get "test-all"
 
         if regex and not pattern.search( testname ):
             continue
@@ -201,10 +205,11 @@ def process_cpp( dir, builddir ):
             # Any files listed are relative to $dir
             shared = False
             static = False
-            for add_file_directive in file.grep( '^//#cmake:\s*', dir + '/' + f ):
-                m = add_file_directive['match']
-                index = add_file_directive['index']
-                cmd, *rest = add_file_directive['line'][m.end():].split()
+            custom_main = False
+            for cmake_directive in file.grep( '^//#cmake:\s*', dir + '/' + f ):
+                m = cmake_directive['match']
+                index = cmake_directive['index']
+                cmd, *rest = cmake_directive['line'][m.end():].split()
                 if cmd == 'add-file':
                     for additional_file in rest:
                         files = additional_file
@@ -239,10 +244,17 @@ def process_cpp( dir, builddir ):
                     else:
                         log.d( 'shared!' )
                         shared = True
+                elif cmd == 'custom-main':
+                    custom_main = True
                 else:
                     log.e( f + '+' + str(index) + ': unknown cmd \'' + cmd + '\' (should be \'add-file\', \'static!\', or \'shared!\')' )
             for include in includes:
                 filelist.append( include )
+
+            # 'cmake:custom-main' indicates that the test is defining its own main() function.
+            # If not specified we use a default main() which lives in its own .cpp:
+            if not custom_main:
+                filelist.append( root + "/unit-tests/unit-test-default-main.cpp" )
 
             if list_only:
                 continue

@@ -89,7 +89,9 @@ inline void reset_camera_preset_mode_to_defaults( const rs2::sensor & sens )
 {
     REQUIRE_NOTHROW(
         sens.set_option(RS2_OPTION_VISUAL_PRESET, sens.get_option_range(RS2_OPTION_VISUAL_PRESET).def));
-    REQUIRE_NOTHROW(sens.set_option(RS2_OPTION_SENSOR_MODE, sens.get_option_range(RS2_OPTION_SENSOR_MODE).def));
+    if (!sens.is_option_read_only(RS2_OPTION_SENSOR_MODE)) {
+        REQUIRE_NOTHROW(sens.set_option(RS2_OPTION_SENSOR_MODE, sens.get_option_range(RS2_OPTION_SENSOR_MODE).def));
+    }
 }
 
 inline preset_mode_pair get_camera_preset_mode_defaults(const rs2::sensor & sens)
@@ -422,7 +424,9 @@ void stop_depth( const rs2::sensor & sens )
 
 void set_mode_preset( const rs2::sensor & sens, preset_mode_pair preset_mode)
 {
-    REQUIRE_NOTHROW( sens.set_option( RS2_OPTION_SENSOR_MODE, (float)preset_mode.second) );
+    if (!sens.is_option_read_only(RS2_OPTION_SENSOR_MODE)) {
+        REQUIRE_NOTHROW(sens.set_option(RS2_OPTION_SENSOR_MODE, (float)preset_mode.second));
+    }
     REQUIRE_NOTHROW( sens.set_option( RS2_OPTION_VISUAL_PRESET, (float)preset_mode.first) );
     CHECK( sens.get_option( RS2_OPTION_VISUAL_PRESET ) == (float)preset_mode.first);
 }

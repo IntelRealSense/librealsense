@@ -9,8 +9,6 @@
 INITIALIZE_EASYLOGGINGPP
 #endif
 
-// Let Catch define its own main() function
-#define CATCH_CONFIG_MAIN
 #include "../catch.h"
 
 #include "../approx.h"
