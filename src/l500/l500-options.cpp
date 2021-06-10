@@ -247,7 +247,7 @@ namespace librealsense
                     = static_cast< float >( usb3mode ? RS2_SENSOR_MODE_VGA : RS2_SENSOR_MODE_QVGA );
 
                 auto resolution_option = std::make_shared< sensor_mode_option >(
-                    this,
+                    this, &depth_sensor,
                     option_range{ RS2_SENSOR_MODE_VGA,
                                   RS2_SENSOR_MODE_COUNT - 1,
                                   1,
@@ -791,6 +791,9 @@ namespace librealsense
 
     void sensor_mode_option::set(float value)
     {
+        if (is_read_only())
+            throw std::runtime_error("Cannot change sensor mode while streaming!");
+
         if (_value == value) return;
 
         // Restrictions for sensor mode option as required on [RS5-8358]
