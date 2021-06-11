@@ -28,18 +28,21 @@ def usage():
     print( '        --debug          Turn on debugging information' )
     print( '        -v, --verbose    Errors will dump the log to stdout' )
     print( '        -q, --quiet      Suppress output; rely on exit status (0=no failures)' )
-    print( '        -r, --regex      run all tests that fit the following regular expression' )
-    print( '        -s, --stdout     do not redirect stdout to logs' )
-    print( '        -t, --tag        run all tests with the following tag. If used multiple times runs all tests matching' )
+    print( '        -r, --regex      Run all tests that fit the following regular expression' )
+    print( '        -s, --stdout     Do not redirect stdout to logs' )
+    print( '        -t, --tag        Run all tests with the following tag. If used multiple times runs all tests matching' )
     print( '                         all tags. e.g. -t tag1 -t tag2 will run tests who have both tag1 and tag2' )
     print( '                         tests automatically get tagged with \'exe\' or \'py\' and based on their location' )
     print( '                         inside unit-tests/, e.g. unit-tests/func/test-hdr.py gets [func, py]' )
-    print( '        --list-tags      print out all available tags. This option will not run any tests' )
-    print( '        --list-tests     print out all available tests. This option will not run any tests' )
+    print( '        --list-tags      Print out all available tags. This option will not run any tests' )
+    print( '        --list-tests     Print out all available tests. This option will not run any tests' )
     print( '                         if both list-tags and list-tests are specified each test will be printed along' )
     print( '                         with what tags it has' )
-    print( '        --no-exceptions  do not load the LibCI/exceptions.specs file' )
-    print( '        --context        The context to use for test configuration' )
+    print( '        --no-exceptions  Do not load the LibCI/exceptions.specs file' )
+    print( '        --context <>     The context to use for test configuration' )
+    print( '        --repeat <#>     Repeat each test <#> times' )
+    print( '        --config <>      Ignore test configurations; use the one provided' )
+    print( '        --no-reset       Do not try to reset any devices, with or without Acroname' )
     sys.exit( 2 )
 
 
@@ -55,7 +58,7 @@ else:
 try:
     opts, args = getopt.getopt( sys.argv[1:], 'hvqr:st:',
                                 longopts=['help', 'verbose', 'debug', 'quiet', 'regex=', 'stdout', 'tag=', 'list-tags',
-                                          'list-tests', 'no-exceptions', 'context='] )
+                                          'list-tests', 'no-exceptions', 'context=', 'repeat=', 'config=', 'no-reset'] )
 except getopt.GetoptError as err:
     log.e( err )  # something like "option -a not recognized"
     usage()
@@ -66,6 +69,9 @@ list_tags = False
 list_tests = False
 no_exceptions = False
 context = None
+repeat = 1
+forced_configurations = None
+no_reset = False
 for opt, arg in opts:
     if opt in ('-h', '--help'):
         usage()
@@ -87,6 +93,15 @@ for opt, arg in opts:
         no_exceptions = True
     elif opt == '--context':
         context = arg
+    elif opt == '--repeat':
+        if not arg.isnumeric()  or  int(arg) < 1:
+            log.e( "--repeat must be a number greater than 0" )
+            usage()
+        repeat = int(arg)
+    elif opt == '--config':
+        forced_configurations = [[arg]]
+    elif opt == '--no-reset':
+        no_reset = True
 
 if len( args ) > 1:
     usage()
@@ -151,14 +166,16 @@ if pyrs:
     os.environ["PYTHONPATH"] += os.pathsep + pyrs_path
 
 
-def configuration_str( configuration, prefix = '', suffix = '' ):
+def configuration_str( configuration, repetition = 1, prefix = '', suffix = '' ):
     """ Return a string repr (with a prefix and/or suffix) of the configuration or '' if it's None """
     if configuration is None:
         return ''
+    if repetition:
+        suffix = '[' + str(repetition+1) + ']' + suffix
     return prefix + '[' + ' '.join( configuration ) + ']' + suffix
 
 
-def check_log_for_fails( path_to_log, testname, configuration = None ):
+def check_log_for_fails( path_to_log, testname, configuration = None, repetition = 1 ):
     # Normal logs are expected to have in last line:
     #     "All tests passed (11 assertions in 1 test case)"
     # Tests that have failures, however, will show:
@@ -191,13 +208,13 @@ def check_log_for_fails( path_to_log, testname, configuration = None ):
             desc = str( total - passed ) + ' of ' + str( total ) + ' failed'
 
         if log.is_verbose_on():
-            log.e( log.red + testname + log.reset + ': ' + configuration_str( configuration, suffix=' ' ) + desc )
+            log.e( log.red + testname + log.reset + ': ' + configuration_str( configuration, repetition, suffix=' ' ) + desc )
             log.i( 'Log: >>>' )
             log.out()
             file.cat( path_to_log )
             log.out( '<<<' )
         else:
-            log.e( log.red + testname + log.reset + ': ' + configuration_str( configuration,
+            log.e( log.red + testname + log.reset + ': ' + configuration_str( configuration, repetition,
                                                                               suffix=' ' ) + desc + '; see ' + path_to_log )
         return True
     return False
@@ -281,7 +298,8 @@ def devices_by_test_config( test, exceptions ):
 
     :param test: The test (of class type Test) we're interested in
     """
-    for configuration in test.config.configurations:
+    global forced_configurations
+    for configuration in ( forced_configurations  or  test.config.configurations ):
         try:
             for serial_numbers in devices.by_configuration( configuration, exceptions ):
                 yield configuration, serial_numbers
@@ -293,25 +311,25 @@ def devices_by_test_config( test, exceptions ):
             continue
 
 
-def test_wrapper( test, configuration = None ):
+def test_wrapper( test, configuration = None, repetition = 1 ):
     global n_tests
     n_tests += 1
     #
     if not log.is_debug_on() or log.is_color_on():
-        log.progress( configuration_str( configuration, suffix=' ' ) + test.name, '...' )
+        log.progress( configuration_str( configuration, repetition, suffix=' ' ) + test.name, '...' )
     #
     log_path = test.get_log()
     try:
         test.run_test( configuration=configuration, log_path=log_path )
     except FileNotFoundError as e:
-        log.e( log.red + test.name + log.reset + ':', str( e ) + configuration_str( configuration, prefix=' ' ) )
+        log.e( log.red + test.name + log.reset + ':', str( e ) + configuration_str( configuration, repetition, prefix=' ' ) )
     except subprocess.TimeoutExpired:
-        log.e( log.red + test.name + log.reset + ':', configuration_str( configuration, suffix=' ' ) + 'timed out' )
+        log.e( log.red + test.name + log.reset + ':', configuration_str( configuration, repetition, suffix=' ' ) + 'timed out' )
     except subprocess.CalledProcessError as cpe:
-        if not check_log_for_fails( log_path, test.name, configuration ):
+        if not check_log_for_fails( log_path, test.name, configuration, repetition ):
             # An unexpected error occurred
             log.e( log.red + test.name + log.reset + ':',
-                   configuration_str( configuration, suffix=' ' ) + 'exited with non-zero value (' + str(
+                   configuration_str( configuration, repetition, suffix=' ' ) + 'exited with non-zero value (' + str(
                        cpe.returncode ) + ')' )
 
 
@@ -376,16 +394,18 @@ for test in prioritize_tests( get_tests() ):
             continue
         #
         for configuration, serial_numbers in devices_by_test_config( test, exceptions ):
-            try:
-                log.d( 'configuration:', configuration )
-                log.debug_indent()
-                devices.enable_only( serial_numbers, recycle=True )
-            except RuntimeError as e:
-                log.w( log.red + test.name + log.reset + ': ' + str( e ) )
-            else:
-                test_wrapper( test, configuration )
-            finally:
-                log.debug_unindent()
+            for repetition in range(repeat):
+                try:
+                    log.d( 'configuration:', configuration )
+                    log.debug_indent()
+                    if not no_reset:
+                        devices.enable_only( serial_numbers, recycle=True )
+                except RuntimeError as e:
+                    log.w( log.red + test.name + log.reset + ': ' + str( e ) )
+                else:
+                    test_wrapper( test, configuration, repetition )
+                finally:
+                    log.debug_unindent()
         #
     finally:
         log.debug_unindent()
