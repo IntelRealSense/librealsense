@@ -34,6 +34,7 @@ private:
 
     void doOptions();
     std::thread m_options;
+    bool m_running;
 
     std::map<StreamPair, rs2_extrinsics> m_extrinsics_map;
     void doExtrinsics();

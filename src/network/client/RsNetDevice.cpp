@@ -26,7 +26,7 @@
 using namespace std::placeholders;
 
 rs_net_device::rs_net_device(rs2::software_device sw_device, std::string ip_address)
-    : m_device(sw_device)
+    : m_device(sw_device), m_running(true)
 {
     // parse the parameters and set address and port
     int colon = ip_address.find(":");
@@ -247,6 +247,7 @@ rs_net_device::rs_net_device(rs2::software_device sw_device, std::string ip_addr
 }
 
 rs_net_device::~rs_net_device() {
+    m_running = false;
     // if (m_extrinsics.joinable()) m_extrinsics.join();
     if (m_options.joinable()) m_options.join();
 }
@@ -336,7 +337,7 @@ void rs_net_device::doOptions() {
 
     std::string options_prev;
 
-    while (1) {
+    while (m_running) {
         std::string options;
         for (auto netsensor : sensors) {
             options += netsensor->get_name();
