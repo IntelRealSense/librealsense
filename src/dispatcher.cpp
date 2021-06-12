@@ -104,8 +104,7 @@ bool dispatcher::flush()
     if( _was_stopped )
         return true;  // Nothing to do - so success (no timeout)
 
-#if 1
-    waiting_on< bool > invoked( false );
+    utilities::time::waiting_on< bool > invoked( false );
     invoke( [invoked = invoked.in_thread()]( cancellable_timer ) {
         invoked.signal( true );
     } );
@@ -113,35 +112,4 @@ bool dispatcher::flush()
         return invoked || _was_stopped;
     } );
     return invoked;
-#else
-
-    // We want to watch out for a timeout -- in which case this function will exit but the invoked
-    // block is still not dispatched so alive! I.e., we cannot access m/cv/invoked then!
-    struct wait_state_t
-    {
-        bool invoked = false;
-        std::condition_variable cv;
-    };
-    auto wait_state = std::make_shared< wait_state_t >();
-
-    // Add a function to the dispatcher that will set a flag and notify us when we get to it
-    invoke( [still_waiting = std::weak_ptr< wait_state_t >( wait_state )]( cancellable_timer t ) {
-        if( auto state = still_waiting.lock() )
-        {
-            state->invoked = true;
-            state->cv.notify_one();
-        }
-    } );
-
-    // Wait until 'invoked'
-    std::mutex m;
-    std::unique_lock< std::mutex > locker( m );
-    wait_state->cv.wait_for( locker, std::chrono::seconds( 10 ), [&]() {
-        return wait_state->invoked || _was_stopped;
-    } );
-
-    // If a timeout occurred: invoked will be false, _still_waiting will go out of scope and our
-    // function, when invoked, would not try to reference any of the locals here
-    return wait_state->invoked;
-#endif
 }

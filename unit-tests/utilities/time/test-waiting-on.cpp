@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2020 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2021 Intel Corporation. All Rights Reserved.
 
 #include <easylogging++.h>
 #ifdef BUILD_SHARED_LIBS
@@ -11,6 +11,8 @@ INITIALIZE_EASYLOGGINGPP
 
 #include <unit-tests/catch.h>
 #include <common/utilities/time/waiting-on.h>
+
+using utilities::time::waiting_on;
 
 bool invoke( size_t delay_in_thread, size_t timeout )
 {

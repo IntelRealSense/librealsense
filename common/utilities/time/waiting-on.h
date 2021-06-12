@@ -1,9 +1,16 @@
+// License: Apache 2.0. See LICENSE file in root directory.
+// Copyright(c) 2021 Intel Corporation. All Rights Reserved.
+
 #pragma once
 
 #include <mutex>
 #include <condition_variable>
 #include <thread>
 #include <atomic>
+
+
+namespace utilities {
+namespace time {
 
 // Helper class -- encapsulate a variable of type T that we want to wait on: another thread will set
 // it and signal when we can continue...
@@ -123,3 +130,5 @@ public:
 };
 
 
+}  // namespace time
+}  // namespace utilities
