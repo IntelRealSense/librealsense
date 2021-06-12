@@ -1,8 +1,9 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2021 Intel Corporation. All Rights Reserved.
 
-#include <iostream>
 #include "concurrency.h"
+#include "types.h"
+#include "../common/utilities/time/waiting-on.h"
 
 
 dispatcher::dispatcher( unsigned int cap, std::function< void( action ) > on_drop_callback )
@@ -28,13 +29,13 @@ dispatcher::dispatcher( unsigned int cap, std::function< void( action ) > on_dro
                     std::lock_guard< std::mutex > lock( _dispatch_mutex );
                     item( time );
                 }
-                catch (const std::exception &e)
+                catch( const std::exception & e )
                 {
-                    std::cout << "dispatcher exception! - " << e.what() << std::endl;
+                    LOG_ERROR( "Dispatcher [" << this << "] exception caught: " << e.what() );
                 }
                 catch( ... )
                 {
-                    std::cout << "dispatcher unknown exception!";
+                    LOG_ERROR( "Dispatcher [" << this << "] unknown exception caught!" );
                 }
             }
         }
@@ -89,37 +90,58 @@ void dispatcher::stop()
     // Wait until any dispatched is done...
     {
         std::lock_guard< std::mutex > lock( _dispatch_mutex );
-        if (!_queue.empty())
-            std::cout << "dispatcher queue not empty after stop!!" << std::endl;
         assert( _queue.empty() );
     }
 }
 
 
-// Return when all items in the queue are finished (within a timeout).
+// Return when all current items in the queue are finished (within a timeout).
 // If additional items are added while we're waiting, those will not be waited on!
+// Returns false if a timeout occurred before we were done
 //
 bool dispatcher::flush()
 {
-    if ( _was_stopped )
-    {
-        return true;
-    }
+    if( _was_stopped )
+        return true;  // Nothing to do - so success (no timeout)
 
-    std::mutex m;
-    std::condition_variable cv;
-    bool invoked = false;
-    invoke([&](cancellable_timer t)
-    {
-        {
-            std::lock_guard<std::mutex> locker(m);
-            invoked = true;
-        }
-        cv.notify_one();
-    });
-
-    std::unique_lock<std::mutex> locker(m);
-    cv.wait_for(locker, std::chrono::seconds(10), [&]() { return invoked || _was_stopped; });
-
+#if 1
+    waiting_on< bool > invoked( false );
+    invoke( [invoked = invoked.in_thread()]( cancellable_timer ) {
+        invoked.signal( true );
+    } );
+    invoked.wait_until( std::chrono::seconds( 10 ), [&]() {
+        return invoked || _was_stopped;
+    } );
     return invoked;
+#else
+
+    // We want to watch out for a timeout -- in which case this function will exit but the invoked
+    // block is still not dispatched so alive! I.e., we cannot access m/cv/invoked then!
+    struct wait_state_t
+    {
+        bool invoked = false;
+        std::condition_variable cv;
+    };
+    auto wait_state = std::make_shared< wait_state_t >();
+
+    // Add a function to the dispatcher that will set a flag and notify us when we get to it
+    invoke( [still_waiting = std::weak_ptr< wait_state_t >( wait_state )]( cancellable_timer t ) {
+        if( auto state = still_waiting.lock() )
+        {
+            state->invoked = true;
+            state->cv.notify_one();
+        }
+    } );
+
+    // Wait until 'invoked'
+    std::mutex m;
+    std::unique_lock< std::mutex > locker( m );
+    wait_state->cv.wait_for( locker, std::chrono::seconds( 10 ), [&]() {
+        return wait_state->invoked || _was_stopped;
+    } );
+
+    // If a timeout occurred: invoked will be false, _still_waiting will go out of scope and our
+    // function, when invoked, would not try to reference any of the locals here
+    return wait_state->invoked;
+#endif
 }
