@@ -579,7 +579,7 @@ namespace rs2
 
             // Device D405 is for short range, therefore, its units are in cm - for better UX
             bool use_cm_units = false;
-            std::string device_pid = dev->s->get_info(RS2_CAMERA_INFO_PRODUCT_ID);
+            std::string device_pid = dev->dev.get_info(RS2_CAMERA_INFO_PRODUCT_ID);
             if (device_pid == "0B5B" && val_in_range(opt, { RS2_OPTION_MIN_DISTANCE, RS2_OPTION_MAX_DISTANCE, RS2_OPTION_DEPTH_UNITS }))
             {
                 use_cm_units = true;
