@@ -11,13 +11,10 @@
 
 using namespace librealsense;
 
-
 static bool is_video_stream( rs2_stream stream )
 {
     return stream != RS2_STREAM_GYRO && stream != RS2_STREAM_ACCEL && stream != RS2_STREAM_POSE;
 }
-
-
 
 playback_device::playback_device(std::shared_ptr<context> ctx, std::shared_ptr<device_serializer::reader> serializer) :
     m_read_thread([]() {return std::make_shared<dispatcher>(std::numeric_limits<unsigned int>::max()); }),
@@ -65,6 +62,7 @@ std::map<uint32_t, std::shared_ptr<playback_sensor>> playback_device::create_pla
         {
             (*m_read_thread)->invoke([this, id, user_callback](dispatcher::cancellable_timer c)
             {
+                std::lock_guard<std::mutex> locker(_active_sensors_mutex);
                 auto it = m_active_sensors.find(id);
                 if (it == m_active_sensors.end())
                 {
@@ -85,6 +83,7 @@ std::map<uint32_t, std::shared_ptr<playback_sensor>> playback_device::create_pla
 
             auto action = [this, id]()
             {
+                std::lock_guard<std::mutex> locker(_active_sensors_mutex);
                 auto it = m_active_sensors.find(id);
                 if (it != m_active_sensors.end())
                 {
@@ -154,17 +153,22 @@ playback_device::~playback_device()
 {
     (*m_read_thread)->invoke([this](dispatcher::cancellable_timer c)
     {
+        std::lock_guard<std::mutex> locker(_active_sensors_mutex);
         for (auto&& sensor : m_active_sensors)
         {
             if (sensor.second != nullptr)
+            {
                 sensor.second->stop();
+            }
         }
     });
+
     if((*m_read_thread)->flush() == false)
     {
         LOG_ERROR("Error - timeout waiting for flush, possible deadlock detected");
         assert(0); //Detect this immediately in debug
     }
+
     (*m_read_thread)->stop();
 }
 
@@ -506,21 +510,40 @@ void playback_device::do_loop(T action)
         }
 
         //On failure, exit thread
-        if(action_succeeded == false)
+        if(action_succeeded == false && m_is_started)
         {
-            for (auto s : m_active_sensors)
-                s.second->flush_pending_frames();
+            std::vector<std::shared_ptr<playback_sensor>> playback_sensors_copy;
+            {
+                std::lock_guard<std::mutex> locker(_active_sensors_mutex);
+                {
+                    for (auto s : m_active_sensors)
+                    {
+                        playback_sensors_copy.push_back(s.second);
+                    }
+                }
+            }
+
+
+            for (auto& psc : playback_sensors_copy)
+            {
+                if (psc)
+                {
+                    psc->flush_pending_frames();
+                    psc->stop(false);
+                }
+            }
 
             //Go over the sensors and stop them
-            size_t active_sensors_count = m_active_sensors.size();
-            for (size_t i = 0; i<active_sensors_count; i++)
-            {
-                if (m_active_sensors.size() == 0)
-                    break;
+            //size_t active_sensors_count = m_active_sensors.size();
+            //for
+            //for (size_t i = 0; i<active_sensors_count; i++)
+            //{
+            //    if (m_active_sensors.size() == 0)
+            //        break;
 
-                //NOTE: calling stop will remove the sensor from m_active_sensors
-                m_active_sensors.begin()->second->stop(false);
-            }
+            //    //NOTE: calling stop will remove the sensor from m_active_sensors
+            //    m_active_sensors.begin()->second->stop(false);
+            //}
 
             m_last_published_timestamp = device_serializer::nanoseconds(0);
 
@@ -540,6 +563,7 @@ void playback_device::do_loop(T action)
 // Return should indicate whether any frames are available: if there are, we need to sleep before proceeding
 bool playback_device::prefetch_done()
 {
+    std::lock_guard<std::mutex> locker(_active_sensors_mutex);
     for (auto s : m_active_sensors)
     {
         if (s.second->streams_contains_one_frame_or_more())
@@ -617,15 +641,29 @@ void playback_device::try_looping()
                 LOG_WARNING("Bad frame from reader, ignoring");
                 return true;
             }
-            //Dispatch frame to the relevant sensor (see handle_frame definition for more details)
-            m_active_sensors.at(frame->stream_id.sensor_index)->handle_frame(std::move(frame->frame), m_real_time,
-                [this, timestamp]() { return calc_sleep_time(timestamp); },
-                [this]() { return m_is_paused == true; },
-                [this, timestamp]()
+            {
+                std::lock_guard< std::mutex > locker( _active_sensors_mutex );
+                auto it = m_active_sensors.find( frame->stream_id.sensor_index );
+                if( it == m_active_sensors.end() )
                 {
-                    std::lock_guard<std::mutex> locker(m_last_published_timestamp_mutex);
-                    m_last_published_timestamp = timestamp;
-                });
+                    LOG_DEBUG( "stream " << frame->stream_id.sensor_index
+                                         << " is not longer active, frame dropped!" );
+                    return true;
+                }
+
+
+                // Dispatch frame to the relevant sensor (see handle_frame definition for more
+                // details)
+                it->second->handle_frame(
+                    std::move( frame->frame ),
+                    m_real_time,
+                    [this, timestamp]() { return calc_sleep_time( timestamp ); },
+                    [this]() { return m_is_paused == true; },
+                    [this, timestamp]() {
+                        std::lock_guard< std::mutex > locker( m_last_published_timestamp_mutex );
+                        m_last_published_timestamp = timestamp;
+                    } );
+            }
             return true;
         }
 
