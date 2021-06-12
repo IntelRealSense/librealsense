@@ -196,14 +196,16 @@ std::vector<rs2::frameset> get_composite_frames(std::vector<rs2::sensor> sensors
     {
         auto sensor_name = rs2::sensor_from_frame(f)->get_info(RS2_CAMERA_INFO_NAME);
 
-        std::lock_guard<std::mutex> lock(frame_processor_lock);
-        sensor_to_frames[sensor_name].push_back(f);
+        std::lock_guard< std::mutex > lock( frame_processor_lock );
+        auto & frames = sensor_to_frames[sensor_name];
+        frames.push_back( f );
 
         // if we got a color and a depth frame, create a composite frame from it and dispatch it
-        if (sensor_to_frames[sensor_name].size() == 2)
+        if( frames.size() == 2 )
         {
-            sensor_to_framesets[sensor_name] = source.allocate_composite_frame(sensor_to_frames[sensor_name]);
-            sensor_to_framesets[sensor_name].keep();
+            auto frameset = source.allocate_composite_frame( frames );
+            frameset.keep();
+            sensor_to_framesets[sensor_name] = frameset;
             all_pairs = true;
         }
         else
@@ -211,41 +213,33 @@ std::vector<rs2::frameset> get_composite_frames(std::vector<rs2::sensor> sensors
     });
 
     for (auto s : sensors)
-    {
         s.open(s.get_stream_profiles());
-    }
 
     for (auto s : sensors)
     {
-        s.start([&](rs2::frame f)
-        {
+        s.start( [&]( rs2::frame f ) {
             f.keep();
-            frame_processor.invoke(f);
-        });
+            frame_processor.invoke( f );
+        } );
     }
 
-    while (true)
+    while( true )
     {
         {
-            std::lock_guard<std::mutex> lock(frame_processor_lock);
-            if (sensor_to_framesets.size() >= sensors.size() && all_pairs)
+            std::lock_guard< std::mutex > lock( frame_processor_lock );
+            if( sensor_to_framesets.size() >= sensors.size() && all_pairs )
                 break;
         }
-        std::this_thread::sleep_for(std::chrono::microseconds(100));
+        std::this_thread::sleep_for( std::chrono::microseconds( 100 ) );
     }
 
     for (auto sf : sensor_to_framesets)
         composite_frames.push_back(sf.second);
 
     for (auto s : sensors)
-    {
         s.stop();
-    }
-
     for (auto s : sensors)
-    {
         s.close();
-    }
 
     return composite_frames;
 }
