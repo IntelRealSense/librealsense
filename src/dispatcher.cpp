@@ -1,6 +1,7 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2021 Intel Corporation. All Rights Reserved.
 
+#include <iostream>
 #include "concurrency.h"
 
 
@@ -27,8 +28,13 @@ dispatcher::dispatcher( unsigned int cap, std::function< void( action ) > on_dro
                     std::lock_guard< std::mutex > lock( _dispatch_mutex );
                     item( time );
                 }
+                catch (const std::exception &e)
+                {
+                    std::cout << "dispatcher exception! - " << e.what() << std::endl;
+                }
                 catch( ... )
                 {
+                    std::cout << "dispatcher unknown exception!";
                 }
             }
         }
@@ -83,6 +89,8 @@ void dispatcher::stop()
     // Wait until any dispatched is done...
     {
         std::lock_guard< std::mutex > lock( _dispatch_mutex );
+        if (!_queue.empty())
+            std::cout << "dispatcher queue not empty after stop!!" << std::endl;
         assert( _queue.empty() );
     }
 }
@@ -93,23 +101,25 @@ void dispatcher::stop()
 //
 bool dispatcher::flush()
 {
+    if ( _was_stopped )
+    {
+        return true;
+    }
+
     std::mutex m;
     std::condition_variable cv;
     bool invoked = false;
-    auto wait_sucess = std::make_shared<std::atomic_bool>(true);
-    invoke([&, wait_sucess](cancellable_timer t)
+    invoke([&](cancellable_timer t)
     {
-        ///TODO: use _queue to flush, and implement properly
-        if (_was_stopped || !(*wait_sucess))
-            return;
-
         {
             std::lock_guard<std::mutex> locker(m);
             invoked = true;
         }
         cv.notify_one();
     });
+
     std::unique_lock<std::mutex> locker(m);
-    *wait_sucess = cv.wait_for(locker, std::chrono::seconds(10), [&]() { return invoked || _was_stopped; });
-    return *wait_sucess;
+    cv.wait_for(locker, std::chrono::seconds(10), [&]() { return invoked || _was_stopped; });
+
+    return invoked;
 }
