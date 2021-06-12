@@ -11,6 +11,14 @@
 
 using namespace librealsense;
 
+
+static bool is_video_stream( rs2_stream stream )
+{
+    return stream != RS2_STREAM_GYRO && stream != RS2_STREAM_ACCEL && stream != RS2_STREAM_POSE;
+}
+
+
+
 playback_device::playback_device(std::shared_ptr<context> ctx, std::shared_ptr<device_serializer::reader> serializer) :
     m_read_thread([]() {return std::make_shared<dispatcher>(std::numeric_limits<unsigned int>::max()); }),
     m_context(ctx),
@@ -194,10 +202,31 @@ bool playback_device::extend_to(rs2_extension extension_type, void** ext)
 
 std::shared_ptr<matcher> playback_device::create_matcher(const frame_holder& frame) const
 {
-    //TOOD: Use future implementation of matcher factory with the device's name (or other unique identifier)
-    LOG_WARNING("Playback device does not provide a matcher");
-    auto s = frame.frame->get_stream();
-    return std::make_shared<identity_matcher>(s->get_unique_id(), s->get_stream_type());
+    std::vector<std::shared_ptr<matcher>> sync_matchers;
+    std::vector<std::shared_ptr<matcher>> non_sync_matchers;
+
+    for (auto const& sensor : m_sensors)
+    {
+        auto stream_profiles = sensor.second->get_stream_profiles(); 
+
+        for( auto const & stream_profile : stream_profiles )
+        {
+            if(is_video_stream(stream_profile->get_stream_type()))
+                sync_matchers.push_back(std::make_shared<identity_matcher>(stream_profile->get_unique_id(), stream_profile->get_stream_type()));
+            else
+                non_sync_matchers.push_back(std::make_shared<identity_matcher>(stream_profile->get_unique_id(), stream_profile->get_stream_type()));
+        }
+    }
+    
+    std::vector<std::shared_ptr<matcher>> all_matchers;
+
+    if (!sync_matchers.empty())
+       all_matchers.push_back(std::make_shared<timestamp_composite_matcher>(sync_matchers));
+
+    if (!non_sync_matchers.empty())
+        all_matchers.insert(all_matchers.end(), non_sync_matchers.begin(), non_sync_matchers.end());
+
+    return std::make_shared<composite_identity_matcher>(all_matchers);
 }
 
 void playback_device::set_frame_rate(double rate)
