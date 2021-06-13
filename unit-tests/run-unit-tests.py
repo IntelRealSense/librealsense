@@ -43,6 +43,17 @@ def usage():
     print( '        --repeat <#>     Repeat each test <#> times' )
     print( '        --config <>      Ignore test configurations; use the one provided' )
     print( '        --no-reset       Do not try to reset any devices, with or without Acroname' )
+    print()
+    print( 'Examples:' )
+    print( 'Running: python run-unit-tests.py -s' )
+    print( '    Runs all tests, but direct their output to the console rather than log files' )
+    print( 'Running: python run-unit-tests.py --list-tests --list-tags' )
+    print( "    Will find all tests and print for each one what tags it has in the following format:" )
+    print( '        <test-name> has tags: <tags-separated-by-spaces>' )
+    print( 'Running: python run-unit-tests.py -r name -t log ~/my-build-directory' )
+    print( "    Will run all tests whose name contains 'name' and who have the tag 'log' while searching for the" )
+    print( "    exe files in the provided directory. Each test will create its own .log file to which its" )
+    print( "    output will be written." )
     sys.exit( 2 )
 
 
