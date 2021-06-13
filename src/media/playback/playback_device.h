@@ -92,6 +92,7 @@ namespace librealsense
         std::map<int, std::pair<uint32_t, rs2_extrinsics>> m_extrinsics_map;
         device_serializer::nanoseconds m_last_published_timestamp;
         std::mutex m_last_published_timestamp_mutex;
+        std::mutex _active_sensors_mutex;
     };
 
     MAP_EXTENSION(RS2_EXTENSION_PLAYBACK, playback_device);

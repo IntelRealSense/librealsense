@@ -55,6 +55,11 @@ namespace librealsense
             LOG_DEBUG( "--> syncing " << frame_holder_to_string( frame ));
             {
                 std::lock_guard<std::mutex> lock(_mutex);
+                if( ! _matcher->get_active() )
+                {
+                    LOG_DEBUG( "matcher was stopped: NOT DISPATCHING FRAME!" );
+                    return;
+                }
                 _matcher->dispatch(std::move(frame), { source, _matches, log });
             }
 
