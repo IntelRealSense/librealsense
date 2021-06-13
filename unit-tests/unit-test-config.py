@@ -90,7 +90,7 @@ project( ''' + testname + ''' )
 set( SRC_FILES ''' + filelist + '''
 )
 add_executable( ''' + testname + ''' ${SRC_FILES} )
-source_group( "Common Files" FILES ${ELPP_FILES} ${CATCH_FILES}''' )
+source_group( "Common Files" FILES ${ELPP_FILES} ${CATCH_FILES} ''' + dir + '''/test.cpp''' )
     if not custom_main:
         handle.write( ' ' + dir + '/unit-test-default-main.cpp' )
     handle.write( ''' )
@@ -253,6 +253,9 @@ def process_cpp( dir, builddir ):
                     log.e( f + '+' + str(index) + ': unknown cmd \'' + cmd + '\' (should be \'add-file\', \'static!\', or \'shared!\')' )
             for include in includes:
                 filelist.append( include )
+
+            # all tests use the common test.cpp file
+            filelist.append( root + "/unit-tests/test.cpp" )
 
             # 'cmake:custom-main' indicates that the test is defining its own main() function.
             # If not specified we use a default main() which lives in its own .cpp:

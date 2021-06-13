@@ -23,7 +23,7 @@ See below for each of the custom options...
 #include <librealsense2/rs.hpp>  // rs2::log_to_console
 
 namespace test {
-    std::string context;
+    extern std::string context;
 }
 
 using namespace Catch::clara;
