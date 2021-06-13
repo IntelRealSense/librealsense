@@ -11,6 +11,7 @@ INITIALIZE_EASYLOGGINGPP
 
 #include <unit-tests/catch.h>
 #include <common/utilities/time/waiting-on.h>
+#include <queue>
 
 using utilities::time::waiting_on;
 
@@ -83,4 +84,48 @@ TEST_CASE( "Struct usage" )
     REQUIRE( output->i < 30 );
     output.wait_until( std::chrono::seconds( 3 ), [&]() { return false; } );
     REQUIRE( output->i == 30 );
+}
+
+TEST_CASE( "Not invoked but still notified" )
+{
+    // Emulate some dispatcher
+    typedef std::function< void () > func;
+    auto dispatcher = new std::queue< func >;
+
+    // Push some stuff onto it (not important what)
+    int i = 0;
+    dispatcher->push( [&]() { ++i; } );
+    dispatcher->push( [&]() { ++i; } );
+    
+    // Add something we'll be waiting on
+    utilities::time::waiting_on< bool > invoked( false );
+    dispatcher->push( [invoked_in_thread = invoked.in_thread()]() {
+        invoked_in_thread.signal( true );
+    } );
+
+    // Destroy the dispatcher while we're waiting on the invocation!
+    std::atomic_bool stopped( false );
+    std::thread( [&]() {
+        std::this_thread::sleep_for( std::chrono::seconds( 2 ));
+        stopped = true;
+        delete dispatcher;
+        } ).detach();
+
+    // Wait for it -- we'd expect that, when 'invoked_in_thread' is destroyed, it'll wake us up and
+    // not wait for the timeout
+    auto wait_start = std::chrono::high_resolution_clock::now();
+    invoked.wait_until( std::chrono::seconds( 5 ), [&]() {
+        return invoked || stopped;  // Without stopped, invoked will be false and we'll wait again
+                                    // even after we're signalled!
+        } );
+    auto wait_end = std::chrono::high_resolution_clock::now();
+    auto waited_ms = std::chrono::duration_cast<std::chrono::milliseconds>( wait_end - wait_start ).count();
+#if 1
+    // TODO: the requires below depend on the commented-out ~waiting_on::in_frame_(), but it also
+    // causes unintended slowdowns when the playback is done
+    REQUIRE( waited_ms > 4990 );
+#else
+    REQUIRE( waited_ms > 1990 );
+    REQUIRE( waited_ms < 3000 );    // Up to a second buffer
+#endif
 }

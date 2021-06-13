@@ -512,38 +512,22 @@ void playback_device::do_loop(T action)
         //On failure, exit thread
         if(action_succeeded == false && m_is_started)
         {
-            std::vector<std::shared_ptr<playback_sensor>> playback_sensors_copy;
+            // Stopping the sensor will call another function which will remove the sensor from the
+            // list of active sensors, which will cause issues -- so we copy it first
+            std::vector< std::shared_ptr< playback_sensor > > playback_sensors_copy;
             {
-                std::lock_guard<std::mutex> locker(_active_sensors_mutex);
-                {
-                    for (auto s : m_active_sensors)
-                    {
-                        playback_sensors_copy.push_back(s.second);
-                    }
-                }
+                std::lock_guard< std::mutex > locker( _active_sensors_mutex );
+                for (auto s : m_active_sensors)
+                    playback_sensors_copy.push_back( s.second );
             }
-
-
-            for (auto& psc : playback_sensors_copy)
+            for( auto & psc : playback_sensors_copy )
             {
-                if (psc)
+                if( psc )
                 {
                     psc->flush_pending_frames();
-                    psc->stop(false);
+                    psc->stop( false );
                 }
             }
-
-            //Go over the sensors and stop them
-            //size_t active_sensors_count = m_active_sensors.size();
-            //for
-            //for (size_t i = 0; i<active_sensors_count; i++)
-            //{
-            //    if (m_active_sensors.size() == 0)
-            //        break;
-
-            //    //NOTE: calling stop will remove the sensor from m_active_sensors
-            //    m_active_sensors.begin()->second->stop(false);
-            //}
 
             m_last_published_timestamp = device_serializer::nanoseconds(0);
 

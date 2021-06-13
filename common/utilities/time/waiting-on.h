@@ -14,6 +14,10 @@ namespace time {
 
 // Helper class -- encapsulate a variable of type T that we want to wait on: another thread will set
 // it and signal when we can continue...
+// 
+// We use the least amount of synchronization mechanisms: no effort is made to synchronize (usually,
+// it's not needed: only one thread will be writing to T, and the owner of T will be waiting on it)
+// so it's the responsibility of the user to do so if needed.
 //
 template< class T >
 class waiting_on
@@ -54,6 +58,10 @@ public:
         {
             _cv.notify_one();
         }
+        void signal_all()
+        {
+            _cv.notify_all();
+        }
     };
 private:
     std::shared_ptr< wait_state_t > _ptr;
@@ -75,6 +83,16 @@ public:
             : _ptr( local._ptr )
         {
         }
+#if 0 // TODO this causes major slowdowns! left in here for Eran to break his head against...
+        ~in_thread_()
+        {
+            // We get here when the lambda we're in is destroyed -- so either we've already run
+            // (and signalled once) or we've never run. We signal anyway -- if anything's waiting
+            // they'll get woken up; otherwise nothing'll happen...
+            if( auto wait_state = still_alive() )
+                wait_state->signal_all();
+        }
+#endif
 
         std::shared_ptr< wait_state_t > still_alive() const { return _ptr.lock(); }
 
@@ -100,7 +118,7 @@ public:
     // Convert to the in-thread representation
     in_thread_ in_thread() const { return in_thread_( *this ); }
 
-    operator T const &() const { return _ptr->_value; }
+    operator T const &() const { return *_ptr; }
     
     // struct value_t { double x; int k; };
     // waiting_on< value_t > output({ 1., -1 });
