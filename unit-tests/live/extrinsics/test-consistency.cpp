@@ -36,7 +36,7 @@ struct position_and_rotation {
     // rotation tolerance - units are in cosinus of radians
     const double rotation_tolerance = 0.00001;
     // translation tolerance - units are in meters
-    const double translation_tolerance = 0.00001; // 0.01mm
+    const double translation_tolerance = 0.0001; // 0.1mm
 
     position_and_rotation operator* (const position_and_rotation& other)
     {
