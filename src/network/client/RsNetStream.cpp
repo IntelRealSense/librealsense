@@ -25,7 +25,8 @@ class rs_inframe {
 public:
     rs_inframe(uint32_t size) : m_size(0), m_offset(0), m_total_size(0) 
     {
-        m_fb = new uint8_t[size];
+        // The size of the frame returned by LRS is 1K more than needed. 
+        m_fb = new uint8_t[size + 1024];
     };
 
    ~rs_inframe() {};
@@ -291,16 +292,20 @@ private:
         uint32_t ret = 0;
         chunk_header_t* ch = (chunk_header_t*)chunk;
 
-        // TODO: HANDLE UNCOMPRESSED CHUNKS!!!
-
-        try {
-            ret = ZSTD_decompress((void*)(m_fb + m_offset), CHUNK_SIZE, (void*)(chunk + CHUNK_HLEN), ch->size - CHUNK_HLEN);
+        // handle uncompressed chunk
+        if ((ch->status & 3) == 0) {
+            ret = ch->size - CHUNK_HLEN;
+            memcpy((void*)(m_fb + m_offset), (void*)(chunk + CHUNK_HLEN), ret);
+        } else {
+            try {
+                ret = ZSTD_decompress((void*)(m_fb + m_offset), CHUNK_SIZE, (void*)(chunk + CHUNK_HLEN), ch->size - CHUNK_HLEN);
+            }
+            catch (...) {
+                LOG_ERROR("Error decompressing frame.");
+                ret = 0;
+            }
+            return ret;
         }
-        catch (...) {
-            LOG_ERROR("Error decompressing frame.");
-            ret = 0;
-        }
-        return ret;
     };
 };
 
@@ -381,7 +386,7 @@ void rs_net_stream::doFrames() {
             m_sw_sensor->on_video_frame(
                 { 
                     (void*)final_frame, 
-                    [] (void* f) { delete [] (uint8_t*)f; }, 
+                    [] (void* f) { if (f) delete [] (uint8_t*)f; }, 
                     vsp.width() * slib::get_bpp(vsp),
                     slib::get_bpp(vsp),                                                  
                     (double)time(NULL), 
@@ -395,7 +400,7 @@ void rs_net_stream::doFrames() {
             m_sw_sensor->on_motion_frame(
                 { 
                     (void*)final_frame, 
-                    [] (void* f) { delete [] (uint8_t*)f; }, 
+                    [] (void* f) { if (f) delete [] (uint8_t*)f; }, 
                     (double)time(NULL), 
                     RS2_TIMESTAMP_DOMAIN_SYSTEM_TIME, 
                     ++frame_count, 
