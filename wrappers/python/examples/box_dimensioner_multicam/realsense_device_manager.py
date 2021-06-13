@@ -209,6 +209,8 @@ class DeviceManager:
         	json_text = file.read().strip()
 
         for (device_serial, device) in self._enabled_devices.items():
+            if device.product_line == "L500":
+                continue
             # Get the active profile and load the json file which contains settings readable by the realsense
             device = device.pipeline_profile.get_device()
             advanced_mode = rs.rs400_advanced_mode(device)
