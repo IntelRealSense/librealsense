@@ -7,7 +7,6 @@ set (unit_tests_sources
     unit-tests-common.h
     unit-tests-post-processing-from-bag.cpp
     unit-test-long.cpp
-    unit-tests-rsutil.cpp
     catch.h
     approx.h
 )
