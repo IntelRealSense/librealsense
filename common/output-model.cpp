@@ -1000,8 +1000,8 @@ void stream_dashboard::draw_dashboard(ux_window& win, rect& r)
         ImGui::SetCursorPos(ImVec2( 10, y_pixel ));
         ImGui::Text("%s", y_label.c_str());
 
-        ImGui::GetWindowDrawList()->AddLine({ pos.x + max_y_label_width + 15, pos.y + y_pixel + 5 },
-                 { pos.x + r.w - 10, pos.y + y_pixel + 5 }, ImColor(light_grey));
+        ImGui::GetWindowDrawList()->AddLine({ pos.x + max_y_label_width + 15.f, pos.y + y_pixel + 5.f },
+                 { pos.x + r.w - 10.f, pos.y + y_pixel + 5.f }, ImColor(light_grey));
     }
 
     auto graph_width = r.w - max_y_label_width - 25;

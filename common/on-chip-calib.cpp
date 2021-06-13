@@ -3124,7 +3124,7 @@ namespace rs2
         {
             ret = 1;
             reset_counter = 0;
-            _rec_idx = (++_rec_idx) % _frame_num;
+            _rec_idx = ((++_rec_idx) % _frame_num);
             ++_rec_num;
 
             if (_rec_num == _frame_num)
