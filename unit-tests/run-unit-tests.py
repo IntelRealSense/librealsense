@@ -179,11 +179,14 @@ if pyrs:
 
 def configuration_str( configuration, repetition = 1, prefix = '', suffix = '' ):
     """ Return a string repr (with a prefix and/or suffix) of the configuration or '' if it's None """
-    if configuration is None:
-        return ''
+    s = ''
+    if configuration is not None:
+        s += '[' + ' '.join( configuration ) + ']'
     if repetition:
-        suffix = '[' + str(repetition+1) + ']' + suffix
-    return prefix + '[' + ' '.join( configuration ) + ']' + suffix
+        s += '[' + str(repetition+1) + ']'
+    if s:
+        s = prefix + s + suffix
+    return s
 
 
 def check_log_for_fails( path_to_log, testname, configuration = None, repetition = 1 ):
@@ -397,7 +400,8 @@ for test in prioritize_tests( get_tests() ):
             continue
         #
         if not test.is_live():
-            test_wrapper( test )
+            for repetition in range(repeat):
+                test_wrapper( test, repetition = repetition )
             continue
         #
         if skip_live_tests:
