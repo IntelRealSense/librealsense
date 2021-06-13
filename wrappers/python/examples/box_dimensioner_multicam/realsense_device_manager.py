@@ -36,7 +36,7 @@ def enumerate_connected_devices(context):
     Return:
     -----------
     connect_device : array
-                     Array of enumerated devices which are connected to the PC
+                     Array of (serial, product-line) tuples of devices which are connected to the PC
 
     """
     connect_device = []
@@ -127,7 +127,6 @@ class DeviceManager:
                                   The context created for using the realsense library
         D400_pipeline_configuration  : rs.config()
                                   The realsense library configuration to be used for the application when D400 product is attached.
-                                  Pass "rs.config()" if no D400 product attached
 
         L500_pipeline_configuration  : rs.config()
                                   The realsense library configuration to be used for the application when L500 product is attached.
@@ -149,7 +148,7 @@ class DeviceManager:
 
         Parameters:
         -----------
-        device_info     : Pair of strings (serial_number, product_line)
+        device_info     : Tuple of strings (serial_number, product_line)
                             Serial number and product line of the realsense device
         enable_ir_emitter : bool
                             Enable/Disable the IR-Emitter of the device

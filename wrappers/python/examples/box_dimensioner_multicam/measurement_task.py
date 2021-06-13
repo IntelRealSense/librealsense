@@ -18,7 +18,7 @@ def calculate_cumulative_pointcloud(frames_devices, calibration_info_devices, ro
 	-----------
 	frames_devices : dict
 		The frames from the different devices
-		keys: str (serial, product)
+		keys: Tuple of (serial, product-line)
 			Serial number and product line of the device
 		values: [frame]
 			frame: rs.frame()
@@ -153,7 +153,7 @@ def visualise_measurements(frames_devices, bounding_box_points_devices, length, 
 	-----------
 	frames_devices : dict
 		The frames from the different devices
-		keys: str (serial, product)
+		keys: Tuple of (serial, product-line)
 			Serial number and product line of the device
 		values: [frame]
 			frame: rs.frame()
