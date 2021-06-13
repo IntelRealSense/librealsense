@@ -75,7 +75,7 @@ if not os.path.isdir( dir ) or not os.path.isdir( builddir ):
 root = repo.root.replace( '\\' , '/' )
 src = root + '/src'
 
-def generate_cmake( builddir, testdir, testname, filelist ):
+def generate_cmake( builddir, testdir, testname, filelist, custom_main ):
     makefile = builddir + '/' + testdir + '/CMakeLists.txt'
     log.d( '   creating:', makefile )
     handle = open( makefile, 'w' )
@@ -90,7 +90,10 @@ project( ''' + testname + ''' )
 set( SRC_FILES ''' + filelist + '''
 )
 add_executable( ''' + testname + ''' ${SRC_FILES} )
-source_group( "Common Files" FILES ${ELPP_FILES} ${CATCH_FILES} )
+source_group( "Common Files" FILES ${ELPP_FILES} ${CATCH_FILES}''' )
+    if not custom_main:
+        handle.write( ' ' + dir + '/unit-test-default-main.cpp' )
+    handle.write( ''' )
 set_property(TARGET ''' + testname + ''' PROPERTY CXX_STANDARD 11)
 target_link_libraries( ''' + testname + ''' ${DEPENDENCIES})
 
@@ -261,7 +264,7 @@ def process_cpp( dir, builddir ):
 
             # Each CMakeLists.txt sits in its own directory
             os.makedirs( builddir + '/' + testdir, exist_ok=True )  # "build/log/internal/test-all"
-            generate_cmake( builddir, testdir, testname, filelist )
+            generate_cmake( builddir, testdir, testname, filelist, custom_main )
             if static:
                 statics.append( testdir )
             elif shared:
