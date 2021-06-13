@@ -774,9 +774,13 @@ namespace rs2
                             // computing the number of decimal digits taken from the step options' property
                             // this will then be used to format the displayed value
                             auto num_of_decimal_digits = [](float f) {
-                                float f_0 = std::abs(f - (int)f);
+                                float f_0 = std::fabs(f - (int)f);
                                 std::string s = std::to_string(f_0);
-                                return s.length() - 2;
+                                size_t cur_len = s.length();
+                                //removing trailing zeros
+                                while (cur_len > 3 && s[cur_len - 1] == '0')
+                                    cur_len--;
+                                return cur_len - 2;
                             };
                             int num_of_decimal_digits_displayed = num_of_decimal_digits(range.step);
 
