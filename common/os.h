@@ -5,7 +5,6 @@
 #include <vector>
 #include <string>
 #include <rendering.h>
-#include "filesystem.h"
 
 struct GLFWmonitor;
 struct GLFWwindow;
@@ -18,7 +17,9 @@ namespace rs2
 
     std::string truncate_string(const std::string& str, size_t width);
 
-    void open_url(const char* url);    
+    void open_url(const char* url);
+
+    bool directory_exists(const char* dir);
 
     std::vector<std::string> split_string(std::string& input, char delim);
 
@@ -32,6 +33,8 @@ namespace rs2
     // that most of the application is presented on
     int pick_scale_factor(GLFWwindow* window);
 
+    std::string get_file_name(const std::string& path);
+
     // Wrapper for cross-platform dialog control
     enum file_dialog_mode {
         open_file       = (1 << 0),
@@ -44,7 +47,19 @@ namespace rs2
     int save_to_png(const char* filename,
         size_t pixel_width, size_t pixels_height, size_t bytes_per_pixel,
         const void* raster_data, size_t stride_bytes);
-   
+
+    enum special_folder
+    {
+        user_desktop,
+        user_documents,
+        user_pictures,
+        user_videos,
+        temp_folder,
+        app_data
+    };
+
+    std::string get_timestamped_file_name();
+    std::string get_folder_path(special_folder f);
 
     std::string url_encode(const std::string &value);
 
