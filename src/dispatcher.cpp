@@ -2,6 +2,8 @@
 // Copyright(c) 2021 Intel Corporation. All Rights Reserved.
 
 #include "concurrency.h"
+#include "types.h"
+#include "../common/utilities/time/waiting-on.h"
 
 
 dispatcher::dispatcher( unsigned int cap, std::function< void( action ) > on_drop_callback )
@@ -27,8 +29,13 @@ dispatcher::dispatcher( unsigned int cap, std::function< void( action ) > on_dro
                     std::lock_guard< std::mutex > lock( _dispatch_mutex );
                     item( time );
                 }
+                catch( const std::exception & e )
+                {
+                    LOG_ERROR( "Dispatcher [" << this << "] exception caught: " << e.what() );
+                }
                 catch( ... )
                 {
+                    LOG_ERROR( "Dispatcher [" << this << "] unknown exception caught!" );
                 }
             }
         }
@@ -88,28 +95,21 @@ void dispatcher::stop()
 }
 
 
-// Return when all items in the queue are finished (within a timeout).
+// Return when all current items in the queue are finished (within a timeout).
 // If additional items are added while we're waiting, those will not be waited on!
+// Returns false if a timeout occurred before we were done
 //
 bool dispatcher::flush()
 {
-    std::mutex m;
-    std::condition_variable cv;
-    bool invoked = false;
-    auto wait_sucess = std::make_shared<std::atomic_bool>(true);
-    invoke([&, wait_sucess](cancellable_timer t)
-    {
-        ///TODO: use _queue to flush, and implement properly
-        if (_was_stopped || !(*wait_sucess))
-            return;
+    if( _was_stopped )
+        return true;  // Nothing to do - so success (no timeout)
 
-        {
-            std::lock_guard<std::mutex> locker(m);
-            invoked = true;
-        }
-        cv.notify_one();
-    });
-    std::unique_lock<std::mutex> locker(m);
-    *wait_sucess = cv.wait_for(locker, std::chrono::seconds(10), [&]() { return invoked || _was_stopped; });
-    return *wait_sucess;
+    utilities::time::waiting_on< bool > invoked( false );
+    invoke( [invoked = invoked.in_thread()]( cancellable_timer ) {
+        invoked.signal( true );
+    } );
+    invoked.wait_until( std::chrono::seconds( 10 ), [&]() {
+        return invoked || _was_stopped;
+    } );
+    return invoked;
 }

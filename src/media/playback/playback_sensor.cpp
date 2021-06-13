@@ -162,7 +162,14 @@ void playback_sensor::stop(bool invoke_required)
 }
 void playback_sensor::stop()
 {
-    stop(true);
+    // This stop is "from the user" -- as opposed to a stop that's called when we reach EOF, from
+    // playback_device::do_loop, which calls stop(false) directly.
+    // 
+    // If we send stop(true), the stop will be placed on the device's dispatcher but only after
+    // setting m_is_started to false and stopping our own dispatchers. Each sensor will place its
+    // own stop dispatch, and the whole thing is a mess...
+    //
+    stop( false );
 }
 
 bool playback_sensor::is_streaming() const
