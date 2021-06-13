@@ -12,12 +12,24 @@
 #include <sstream>
 #include <iostream>
 #include <iomanip>
-
+#include <filesystem.h>
 
 // Helper function for dispaying time conveniently
 std::string pretty_time(std::chrono::nanoseconds duration);
 // Helper function for rendering a seek bar
 void draw_seek_bar(rs2::playback& playback, int* seek_pos, float2& location, float width);
+
+
+// Helper function to get bag file in temp folder
+std::string get_bag_file_path()
+{
+    std::string bag = "a.bag";
+    std::string tmp_path = rs2::get_folder_path( rs2::special_folder::temp_folder );
+    if( tmp_path.empty() )
+        return bag;
+    return tmp_path + bag;
+}
+
 
 int main(int argc, char * argv[]) try
 {
@@ -50,6 +62,7 @@ int main(int argc, char * argv[]) try
 
     // Create a variable to control the seek bar
     int seek_pos;
+    std::string const bag_file = get_bag_file_path();
 
     // While application is running
     while(app) {
@@ -91,8 +104,8 @@ int main(int argc, char * argv[]) try
                 {
                     pipe->stop(); // Stop the pipeline with the default configuration
                     pipe = std::make_shared<rs2::pipeline>();
-                    rs2::config cfg; // Declare a new configuration
-                    cfg.enable_record_to_file("a.bag");
+                    rs2::config cfg; // Declare a new configuration                    
+                    cfg.enable_record_to_file(bag_file);
                     pipe->start(cfg); //File will be opened at this point
                     device = pipe->get_active_profile().get_device();
                 }
@@ -111,7 +124,8 @@ int main(int argc, char * argv[]) try
                 if (recording)
                 {
                     ImGui::SetCursorPos({ app.width() / 2 - 100, 3 * app.height() / 5 + 60 });
-                    ImGui::TextColored({ 255 / 255.f, 64 / 255.f, 54 / 255.f, 1 }, "Recording to file 'a.bag'");
+                    auto info = "Recording to file '" + bag_file + "'";
+                    ImGui::TextColored({ 255 / 255.f, 64 / 255.f, 54 / 255.f, 1 }, info.c_str());
                 }
 
                 // Pause the playback if button is clicked
@@ -147,7 +161,7 @@ int main(int argc, char * argv[]) try
                     pipe->stop(); // Stop streaming with default configuration
                     pipe = std::make_shared<rs2::pipeline>();
                     rs2::config cfg;
-                    cfg.enable_device_from_file("a.bag");
+                    cfg.enable_device_from_file(bag_file);
                     pipe->start(cfg); //File will be opened in read mode at this point
                     device = pipe->get_active_profile().get_device();
                 }
@@ -208,7 +222,6 @@ catch (const std::exception& e)
     std::cerr << e.what() << std::endl;
     return EXIT_FAILURE;
 }
-
 
 std::string pretty_time(std::chrono::nanoseconds duration)
 {
