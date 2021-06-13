@@ -252,7 +252,23 @@ namespace librealsense
         fr->set_stream(profile);
 
         // generate additional data
-        frame_additional_data additional_data(0,
+        _additional_data.timestamp = 0;
+        _additional_data.frame_number = 0;
+        _additional_data.system_time = system_time;
+        _additional_data.metadata_size = static_cast<uint8_t>(fo.metadata_size);
+        //_additional_data.metadata_blob = (const uint8_t*)fo.metadata;
+        _additional_data.backend_timestamp = fo.backend_time;
+        _additional_data.last_timestamp = last_timestamp;
+        _additional_data.last_frame_number = last_frame_number;
+        _additional_data.is_blocking = false;
+        _additional_data.depth_units = depth_units;
+        _additional_data.raw_size = (uint32_t)fo.frame_size;
+
+        // Copy up to 255 bytes to preserve metadata as raw data
+        if (_additional_data.metadata_size)
+            std::copy((const uint8_t*)fo.metadata, (const uint8_t*)fo.metadata + std::min(_additional_data.metadata_size, MAX_META_DATA_SIZE), _additional_data.metadata_blob.begin());
+
+        /*frame_additional_data additional_data(0,
             0,
             system_time,
             static_cast<uint8_t>(fo.metadata_size),
@@ -263,13 +279,13 @@ namespace librealsense
             false,
             depth_units,
             (uint32_t)fo.frame_size);
-        fr->additional_data = additional_data;
+        fr->additional_data = _additional_data;*/
 
         // update additional data
-        additional_data.timestamp = timestamp_reader->get_frame_timestamp(fr);
-        additional_data.last_frame_number = last_frame_number;
-        additional_data.frame_number = timestamp_reader->get_frame_counter(fr);
-        fr->additional_data = additional_data;
+        _additional_data.timestamp = timestamp_reader->get_frame_timestamp(fr);
+        _additional_data.last_frame_number = last_frame_number;
+        _additional_data.frame_number = timestamp_reader->get_frame_counter(fr);
+        fr->additional_data = _additional_data;
 
         return fr;
     }

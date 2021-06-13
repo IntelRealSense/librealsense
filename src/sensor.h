@@ -86,6 +86,7 @@ namespace librealsense
         rs2_stream fourcc_to_rs2_stream(uint32_t fourcc_format) const;
 
     protected:
+        virtual void update_params(std::function<void(bool)> callback) {}
         void raise_on_before_streaming_changes(bool streaming);
         void set_active_streams(const stream_profiles& requests);
 
@@ -122,6 +123,7 @@ namespace librealsense
         stream_profiles _active_profiles;
         mutable std::mutex _active_profile_mutex;
         signal<sensor_base, bool> on_before_streaming_changes;
+        frame_additional_data _additional_data;
     };
 
     class processing_block;
