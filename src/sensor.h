@@ -30,6 +30,7 @@ namespace librealsense
     class option;
 
     typedef std::function<void(std::vector<platform::stream_profile>)> on_open;
+    typedef std::function<void(float &val)> on_frame_md;
 
     struct frame_timestamp_reader
     {
@@ -68,6 +69,7 @@ namespace librealsense
         {
             _on_open = callback;
         }
+        virtual void update_params(on_frame_md callback) {}
         device_interface& get_device() override;
 
         // Make sensor inherit its owning device info by default
@@ -86,7 +88,6 @@ namespace librealsense
         rs2_stream fourcc_to_rs2_stream(uint32_t fourcc_format) const;
 
     protected:
-        virtual void update_params(std::function<void(bool)> callback) {}
         void raise_on_before_streaming_changes(bool streaming);
         void set_active_streams(const stream_profiles& requests);
 
@@ -99,8 +100,7 @@ namespace librealsense
             frame_timestamp_reader* timestamp_reader,
             const rs2_time_t& last_timestamp,
             const unsigned long long& last_frame_number,
-            std::shared_ptr<stream_profile_interface> profile,
-            float depth_units);
+            std::shared_ptr<stream_profile_interface> profile);
 
         std::vector<platform::stream_profile> _internal_config;
 
@@ -108,6 +108,7 @@ namespace librealsense
         std::atomic<bool> _is_opened;
         std::shared_ptr<notifications_processor> _notifications_processor;
         on_open _on_open;
+        on_frame_md _on_frame;
         std::shared_ptr<metadata_parser_map> _metadata_parsers = nullptr;
 
         sensor_base* _source_owner = nullptr;
@@ -123,7 +124,6 @@ namespace librealsense
         stream_profiles _active_profiles;
         mutable std::mutex _active_profile_mutex;
         signal<sensor_base, bool> on_before_streaming_changes;
-        frame_additional_data _additional_data;
     };
 
     class processing_block;
@@ -340,7 +340,6 @@ namespace librealsense
         void stop() override;
         void register_xu(platform::extension_unit xu);
         void register_pu(rs2_option id);
-        void set_depth_units(float value);
 
         std::vector<platform::stream_profile> get_configuration() const { return _internal_config; }
         std::shared_ptr<platform::uvc_device> get_uvc_device() { return _device; }
@@ -355,6 +354,10 @@ namespace librealsense
             return action(*_device);
         }
 
+        void update_params(on_frame_md callback) override
+        {
+            _on_frame = callback;
+        }
     protected:
         stream_profiles init_stream_profiles() override;
         rs2_extension stream_to_frame_types(rs2_stream stream) const;
@@ -398,7 +401,6 @@ namespace librealsense
         std::vector<platform::extension_unit> _xus;
         std::unique_ptr<power> _power;
         std::unique_ptr<frame_timestamp_reader> _timestamp_reader;
-        mutable std::atomic<float> _depth_units;
     };
 
     processing_blocks get_color_recommended_proccesing_blocks();

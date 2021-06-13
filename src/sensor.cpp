@@ -31,6 +31,7 @@ namespace librealsense
         _is_opened(false),
         _notifications_processor(std::shared_ptr<notifications_processor>(new notifications_processor())),
         _on_open(nullptr),
+        _on_frame(nullptr),
         _metadata_parsers(std::make_shared<metadata_parser_map>()),
         _owner(dev),
         _profiles([this]() {
@@ -241,8 +242,7 @@ namespace librealsense
         frame_timestamp_reader* timestamp_reader,
         const rs2_time_t& last_timestamp,
         const unsigned long long& last_frame_number,
-        std::shared_ptr<stream_profile_interface> profile,
-        float depth_units = -1)
+        std::shared_ptr<stream_profile_interface> profile)
     {
         auto system_time = environment::get_instance().get_time_service()->get_time();
         auto fr = std::make_shared<frame>();
@@ -251,24 +251,10 @@ namespace librealsense
         fr->data = pixels;
         fr->set_stream(profile);
 
-        // generate additional data
-        _additional_data.timestamp = 0;
-        _additional_data.frame_number = 0;
-        _additional_data.system_time = system_time;
-        _additional_data.metadata_size = static_cast<uint8_t>(fo.metadata_size);
-        //_additional_data.metadata_blob = (const uint8_t*)fo.metadata;
-        _additional_data.backend_timestamp = fo.backend_time;
-        _additional_data.last_timestamp = last_timestamp;
-        _additional_data.last_frame_number = last_frame_number;
-        _additional_data.is_blocking = false;
-        _additional_data.depth_units = depth_units;
-        _additional_data.raw_size = (uint32_t)fo.frame_size;
-
-        // Copy up to 255 bytes to preserve metadata as raw data
-        if (_additional_data.metadata_size)
-            std::copy((const uint8_t*)fo.metadata, (const uint8_t*)fo.metadata + std::min(_additional_data.metadata_size, MAX_META_DATA_SIZE), _additional_data.metadata_blob.begin());
-
-        /*frame_additional_data additional_data(0,
+        float depth_units = 0;
+        if(_on_frame)
+            _on_frame(depth_units);//_additional_data.depth_units;
+        frame_additional_data additional_data(0,
             0,
             system_time,
             static_cast<uint8_t>(fo.metadata_size),
@@ -279,13 +265,13 @@ namespace librealsense
             false,
             depth_units,
             (uint32_t)fo.frame_size);
-        fr->additional_data = _additional_data;*/
+        fr->additional_data = additional_data;
 
         // update additional data
-        _additional_data.timestamp = timestamp_reader->get_frame_timestamp(fr);
-        _additional_data.last_frame_number = last_frame_number;
-        _additional_data.frame_number = timestamp_reader->get_frame_counter(fr);
-        fr->additional_data = _additional_data;
+        additional_data.timestamp = timestamp_reader->get_frame_timestamp(fr);
+        additional_data.last_frame_number = last_frame_number;
+        additional_data.frame_number = timestamp_reader->get_frame_counter(fr);
+        fr->additional_data = additional_data;
 
         return fr;
     }
@@ -336,7 +322,7 @@ namespace librealsense
                     [this, req_profile_base, req_profile, last_frame_number, last_timestamp](platform::stream_profile p, platform::frame_object f, std::function<void()> continuation) mutable
                 {
                     const auto&& system_time = environment::get_instance().get_time_service()->get_time();
-                    const auto&& fr = generate_frame_from_data(f, _timestamp_reader.get(), last_timestamp, last_frame_number, req_profile_base, _depth_units);
+                    const auto&& fr = generate_frame_from_data(f, _timestamp_reader.get(), last_timestamp, last_frame_number, req_profile_base);
                     const auto&& requires_processing = true; // TODO - Ariel add option
                     const auto&& timestamp_domain = _timestamp_reader->get_frame_timestamp_domain(fr);
                     const auto&& bpp = get_image_bpp(req_profile_base->get_format());
@@ -664,11 +650,6 @@ namespace librealsense
         register_option(id, std::make_shared<uvc_pu_option>(*this, id));
     }
 
-    void uvc_sensor::set_depth_units(float value) // TODO for refactoring
-    {
-        _depth_units = value;
-    }
-
     //////////////////////////////////////////////////////
     /////////////////// HID Sensor ///////////////////////
     //////////////////////////////////////////////////////
@@ -958,7 +939,6 @@ namespace librealsense
         : sensor_base(name, dev, (recommended_proccesing_blocks_interface*)this),
         _device(move(uvc_device)),
         _user_count(0),
-        _depth_units(-1),
         _timestamp_reader(std::move(timestamp_reader))
     {
         register_metadata(RS2_FRAME_METADATA_BACKEND_TIMESTAMP, make_additional_data_parser(&frame_additional_data::backend_timestamp));

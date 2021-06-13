@@ -373,11 +373,18 @@ namespace librealsense
             }
         }
 
+        void update_params(on_frame_md callback) override
+        {
+            _on_frame = callback;
+            auto s = get_raw_sensor().get();
+            As< librealsense::uvc_sensor >(s)->update_params(callback);
+        }
+
         void open(const stream_profiles& requests) override
         {
             _depth_units = get_option(RS2_OPTION_DEPTH_UNITS).query();
-            auto s = get_raw_sensor().get();
-            As< librealsense::uvc_sensor >(s)->set_depth_units(_depth_units);
+            update_params([&](float& du) {du = _depth_units.load(); });
+           
 
             synthetic_sensor::open(requests);
 
@@ -463,8 +470,7 @@ namespace librealsense
         void set_depth_scale(float val)
         {
             _depth_units = val;
-            auto s = get_raw_sensor().get();
-            As< librealsense::uvc_sensor >(s)->set_depth_units(val);
+            update_params([&](float& du) {du = _depth_units; });
         }
 
         void init_hdr_config(const option_range& exposure_range, const option_range& gain_range)
