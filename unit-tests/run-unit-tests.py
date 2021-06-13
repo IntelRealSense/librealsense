@@ -48,12 +48,12 @@ def usage():
     print( 'Running: python run-unit-tests.py -s' )
     print( '    Runs all tests, but direct their output to the console rather than log files' )
     print( 'Running: python run-unit-tests.py --list-tests --list-tags' )
-    print( "    Will find all test source files and print for each one what tags it has in the following format " )
-    print( '    <test-name> has tags: <tags-separated-by-spaces>' )
+    print( "    Will find all tests and print for each one what tags it has in the following format:" )
+    print( '        <test-name> has tags: <tags-separated-by-spaces>' )
     print( 'Running: python run-unit-tests.py -r name -t log ~/my-build-directory' )
-    print( "    Will run all tests whose name contain 'name' and who have the tag 'log' while searching for the " )
-    print( "    exe files in the provided directory. Each test will create it's own .log file to which it's " )
-    print( "    output will be written. The output to stdout will have the names of all the tests that ran." )
+    print( "    Will run all tests whose name contains 'name' and who have the tag 'log' while searching for the" )
+    print( "    exe files in the provided directory. Each test will create its own .log file to which its" )
+    print( "    output will be written." )
     sys.exit( 2 )
 
 
