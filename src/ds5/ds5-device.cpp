@@ -384,7 +384,6 @@ namespace librealsense
         {
             _depth_units = get_option(RS2_OPTION_DEPTH_UNITS).query();
             update_params([&](float& du) {du = _depth_units.load(); });
-           
 
             synthetic_sensor::open(requests);
 
