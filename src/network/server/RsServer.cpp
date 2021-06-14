@@ -27,80 +27,72 @@
 using namespace TCLAP;
 
 void server::doUpgrade() {
-    // start the update
-    // if (!m_dev.is<rs2::updatable>() || !(m_dev.supports(RS2_CAMERA_INFO_SERIAL_NUMBER) && m_dev.supports(RS2_CAMERA_INFO_FIRMWARE_UPDATE_ID))) {
-    //     LOG_ERROR("Device is not updatable");
-    // } else {
-    {
-        // First, shutdown the RTSP server
-        m_progress = "shutting down the RTSP server";
-        srv->close(srv->envir(), srv->name());
-        std::this_thread::sleep_for(std::chrono::seconds(1));
+    // First, shutdown the RTSP server
+    m_progress = "shutting down the RTSP server";
+    srv->close(srv->envir(), srv->name());
+    std::this_thread::sleep_for(std::chrono::seconds(1));
 
-        // auto update_serial_number = m_dev.get_info(RS2_CAMERA_INFO_FIRMWARE_UPDATE_ID);
-        // auto sn = m_dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER);
-        // auto fw = m_dev.get_info(RS2_CAMERA_INFO_FIRMWARE_VERSION);
+    #if 0
+    if (backup_arg.isSet()) {
+        std::cout << std::endl << "backing-up device flash: " << std::endl;
 
-        #if 0
-        if (backup_arg.isSet()) {
-            std::cout << std::endl << "backing-up device flash: " << std::endl;
-
-            auto flash = d.as<rs2::updatable>().create_flash_backup([&](const float progress)
-            {
-                printf("\rflash backup progress: %d[%%]", (int)(progress * 100));
-            });
-
-            auto temp = backup_arg.getValue();
-            std::ofstream file(temp.c_str(), std::ios::binary);
-            file.write((const char*)flash.data(), flash.size());
-        }
-        #endif
-
-        std::vector<uint8_t> fw_image(m_image.begin(), m_image.end()); 
-        m_progress = "starting to update the device";
-        std::cout << std::endl << "starting to update the device" << std::endl;
-        std::this_thread::sleep_for(std::chrono::seconds(1));
-
-        rs2::context ctx;
-        rs2::update_device new_fw_update_device;
-        std::condition_variable cv;
-        std::mutex mutex;
-
-        if (m_dev.is<rs2::updatable>()) {
-            // Update device
-            ctx.set_devices_changed_callback([&](rs2::event_information& info) {
-                if (info.get_new_devices().size() == 0) return;
-
-                for (auto&& d : info.get_new_devices()) {
-                    std::lock_guard<std::mutex> lk(mutex);
-                    if (d.is<rs2::update_device>())
-                        new_fw_update_device = d;
-                }
-
-                if (new_fw_update_device) cv.notify_one();
-            });
-
-            m_dev.as<rs2::updatable>().enter_update_state();
-            std::unique_lock<std::mutex> lk(mutex);
-            if (!cv.wait_for(lk, std::chrono::seconds( /* WAIT_FOR_DEVICE_TIMEOUT */ 10), [&] { return new_fw_update_device; })) {
-                std::cout << std::endl << "failed to locate a device in FW update mode" << std::endl;
-                return;
-            }
-        } else {
-            new_fw_update_device = m_dev;
-        }
-
-        std::cout << std::endl << "firmware update started" << std::endl << std::endl;
-        new_fw_update_device.update(fw_image, [&](const float progress) {
-            std::stringstream ss;
-            ss << (int)(progress * 100) << "%";
-            m_progress = ss.str();
-            printf("\rfirmware update progress: %s", m_progress.c_str());
+        auto flash = d.as<rs2::updatable>().create_flash_backup([&](const float progress)
+        {
+            printf("\rflash backup progress: %d[%%]", (int)(progress * 100));
         });
-        std::cout << std::endl << std::endl << "firmware update done" << std::endl;
 
-        exit(EXIT_SUCCESS);
+        auto temp = backup_arg.getValue();
+        std::ofstream file(temp.c_str(), std::ios::binary);
+        file.write((const char*)flash.data(), flash.size());
     }
+    #endif
+
+    std::vector<uint8_t> fw_image(m_image.begin(), m_image.end()); 
+    m_progress = "Starting to update the device";
+    LOG_INFO(m_progress);
+    std::this_thread::sleep_for(std::chrono::seconds(1));
+
+    rs2::context ctx;
+    rs2::update_device new_fw_update_device;
+    std::condition_variable cv;
+    std::mutex mutex;
+
+    if (m_dev.is<rs2::updatable>()) {
+        // Update device
+        ctx.set_devices_changed_callback([&](rs2::event_information& info) {
+            if (info.get_new_devices().size() == 0) return;
+
+            for (auto&& d : info.get_new_devices()) {
+                std::lock_guard<std::mutex> lk(mutex);
+                if (d.is<rs2::update_device>())
+                    new_fw_update_device = d;
+            }
+
+            if (new_fw_update_device) cv.notify_one();
+        });
+
+        m_dev.as<rs2::updatable>().enter_update_state();
+        std::unique_lock<std::mutex> lk(mutex);
+        if (!cv.wait_for(lk, std::chrono::seconds( /* WAIT_FOR_DEVICE_TIMEOUT */ 10), [&] { return new_fw_update_device; })) {
+            LOG_ERROR("Failed to locate a device in firmware update mode");
+            return;
+        }
+    } else {
+        new_fw_update_device = m_dev;
+    }
+
+    m_progress = "Firmware update started";
+    LOG_INFO(m_progress);
+    new_fw_update_device.update(fw_image, [&](const float progress) {
+        std::stringstream ss;
+        ss << "Firmware update progress: " << (int)(progress * 100) << "%";
+        m_progress = ss.str();
+        LOG_INFO(m_progress);
+    });
+    m_progress = "Firmware update done";
+    LOG_INFO(m_progress);
+
+    exit(EXIT_SUCCESS);
 }
 
 void server::doHTTP() {
@@ -267,8 +259,10 @@ void server::doHTTP() {
                 ofs_package.close(); 
                 LOG_INFO("Received the package of " << std::dec << package.size() << " bytes to perform the upgrade.");
 
-        		FILE* upgrade = popen("/usr/bin/systemd-run --on-active=10 /usr/bin/dpkg -i /tmp/lrs.deb", "r");
-		        pclose(upgrade);
+        		system("/usr/bin/systemd-run --on-active=10 /usr/bin/dpkg -i /tmp/lrs.deb");
+
+        		// FILE* upgrade = popen("/usr/bin/systemd-run --on-active=10 /usr/bin/dpkg -i /tmp/lrs.deb", "r");
+		        // pclose(upgrade);
             }
         }
     );

@@ -69,7 +69,7 @@ int main(int argc, char** argv)
 #endif 
 #endif
 
-    std::cout << "Rs-server is running\n";
+    std::cout << "Rs-server is running.\n";
 
     // Handle the command-line parameters
     TCLAP::CmdLine cmd("LRS Network Extentions Server", ' ', RS2_API_VERSION_STR);
@@ -123,7 +123,11 @@ int main(int argc, char** argv)
     }
 
     if (dev_found) {
-        // TODO // std::cout << "Using " << dev.get_info(RS2_CAMERA_INFO_NAME) << ", serial number " << dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER) << std::endl;
+        try {
+            std::cout << "Using " << dev.get_info(RS2_CAMERA_INFO_NAME) << ", serial number " << dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER) << "." << std::endl;
+        } catch (...) {
+            std::cout << "Using device in the recovery mode.";
+        }
         
         // Create the server using supplied parameters
         rs_server_params params = { strdup(addr.c_str()), port, 0 };
@@ -131,7 +135,7 @@ int main(int argc, char** argv)
 
         // Install the exit handler
         shutdown_handler = [&](int signal) {
-            std::cout << "Exiting\n";
+            std::cout << "Exiting.\n";
             rs_server.stop();
             exit(signal);
         };
@@ -140,7 +144,7 @@ int main(int argc, char** argv)
         // Start the server
         rs_server.start(); // Never returns
     } else {
-        std::cout << "Cannot find device" << std::endl;
+        std::cout << "Cannot find device." << std::endl;
     }
     return 0;
 }

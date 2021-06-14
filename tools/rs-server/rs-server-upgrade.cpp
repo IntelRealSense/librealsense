@@ -8,7 +8,7 @@
 #include "tclap/CmdLine.h"
 #include "tclap/ValueArg.h"
 
-int main(int argc, char** argv) {
+int main(int argc, char** argv) try {
     std::cout << "LRS-Net server software upgrade utility.\n";
 
     // Handle the command-line parameters
@@ -28,36 +28,33 @@ int main(int argc, char** argv) {
     cmd.parse(argc, argv);
 
     if ( (!arg_sw.isSet() && !arg_fw.isSet()) || (arg_sw.isSet() && arg_fw.isSet()) ) {
-        std::cout << "Please specify either software or firmware update." << std::endl;
-        return EXIT_FAILURE;
+        throw std::runtime_error("Specify either software or firmware update mode.");
     }
 
     std::string path = arg_sw.isSet() ? "/sw_upgrade" : "/fw_upgrade";
 
     std::string addr = arg_address.getValue();
     if (addr.empty()) {
-        std::cout << "Please specify the server address." << std::endl;
-        return EXIT_FAILURE;
+        throw std::runtime_error("Server address is not specified.");
     }
 
     int port = 8080;
     if (arg_port.isSet()) {
         port = arg_port.getValue();
     } else {
-        std::cout << "Using default port number of 8554." << std::endl;
+        std::cout << "Using default port number." << std::endl;
     }
 
     std::string fname = arg_file.getValue();
     if (fname.empty()) {
-        std::cout << "Please specify the file name." << std::endl;
+        throw std::runtime_error("File name is not specified.");
         return EXIT_FAILURE;
     }
-    std::cout << "Reading " << fname << ".\n";
+    std::cout << "Reading " << fname << std::endl;
 
     std::ifstream ifs(fname, std::ifstream::in | std::ifstream::binary);
     if (!ifs.is_open()) {
-        std::cout << "Cannot open the file." << std::endl;
-        return EXIT_FAILURE;
+        throw std::runtime_error("Cannot open the file.");
     }
 
     char byte;
@@ -68,64 +65,35 @@ int main(int argc, char** argv) {
     std::cout << "Sending " << fdata.size() << " bytes to " << addr << std::endl;
     httplib::Client client(addr, port);
     httplib::Result res = client.Post(path.c_str(), fdata, "application/octet-stream");
-    switch (res.error()) {
-        case httplib::Error::Success:
-            if (res->status == 200) {
-                if (arg_fw.isSet()) {
-                    while(true) {
-                        res = client.Get("/fw_upgrade_status");
-                        if (res) {
-                            if (res->status == 200) {
-                                // std::cout << res->body << std::endl;
-                                printf("Firmware upgrade: %s          \r", res->body.c_str());
-                                std::this_thread::sleep_for(std::chrono::milliseconds(100));
-                            }
-                        } else {
-                            std::cout << "Firmware upgrade is done          " << std::endl;
-                            break;
+    if (res) {
+        if (res->status == 200) {
+            if (arg_fw.isSet()) {
+                std::string status;
+                time_t now, start = time(NULL);
+                do {
+                    res = client.Get("/fw_upgrade_status");
+                    if (res) {
+                        if (res->status == 200) {
+                            status = res->body;
+                            std::cout << status << ".                    \r" << std::flush;
+                            // printf("%s\r                    ", status.c_str());
+                            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+                        } else throw std::runtime_error("Error server response: firmware upgrade status.");
+                    } else {
+                        if (status.find("done") != std::string::npos) {
+                            std::cout << std::endl << "Firmware upgrade is done." << std::endl;
+                            return EXIT_SUCCESS;
                         }
                     }
-                } else {
-                    std::cout << "Software upgrade is done" << std::endl;
-                }
-            } else {
-                std::cout << "Failed: " << res->reason << std::endl;
-                return EXIT_FAILURE;
-            }
-            break;
-        case httplib::Error::Unknown:
-            std::cout << "Unknown error" << std::endl;
-            return EXIT_FAILURE;
-        case httplib::Error::Connection:
-            std::cout << "Connection error" << std::endl;
-            return EXIT_FAILURE;
-        case httplib::Error::BindIPAddress:
-            std::cout << "Cannot bind" << std::endl;
-            return EXIT_FAILURE;
-        case httplib::Error::Read:
-            std::cout << "Cannot read" << std::endl;
-            return EXIT_FAILURE;
-        case httplib::Error::Write:
-            std::cout << "Cannot write" << std::endl;
-            return EXIT_FAILURE;
-        case httplib::Error::ExceedRedirectCount:
-            std::cout << "Exceed redirect count" << std::endl;
-            return EXIT_FAILURE;
-        case httplib::Error::Canceled:
-            std::cout << "Canceled" << std::endl;
-            return EXIT_FAILURE;
-        case httplib::Error::SSLConnection:
-        case httplib::Error::SSLLoadingCerts:
-        case httplib::Error::SSLServerVerification:
-            std::cout << "SSL error" << std::endl;
-            return EXIT_FAILURE;
-        case httplib::Error::UnsupportedMultipartBoundaryChars:
-            std::cout << "Unsupported multipart boundary charecters" << std::endl;
-            return EXIT_FAILURE;
-        case httplib::Error::Compression:
-            std::cout << "Compression error" << std::endl;
-            return EXIT_FAILURE;
-    }
+                    now = time(NULL);
+                } while (now - start < 300); // five minutes timeout
+                throw std::runtime_error("Timeout while upgrating the firmware.");
+            } else std::cout << "Software upgrade is done." << std::endl;
+        } else throw std::runtime_error("Error server response: upgrade.");
+    } else throw std::runtime_error("Error connecting to the server.");
 
     return EXIT_SUCCESS;
+} catch (const std::exception& e) {
+    std::cerr << std::endl << "ERROR: " << e.what() << std::endl;
+    return EXIT_FAILURE;
 }
