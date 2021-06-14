@@ -57,7 +57,6 @@ struct Header_ : public std_msgs::Header_<ContainerAllocator>
     this->seq = rhs.seq;
     this->stamp = rhs.stamp;
     this->frame_id = rhs.frame_id;
-    this->depth_units = rhs.depth_units;
     return *this;
   }
 
@@ -67,7 +66,6 @@ struct Header_ : public std_msgs::Header_<ContainerAllocator>
     h.seq = this->seq;
     h.stamp = this->stamp;
     h.frame_id = this->frame_id;
-    h.depth_units = this->depth_units;
     return h;
   }
 
@@ -114,7 +112,6 @@ public:
     rs2rosinternal::serialization::serialize(stream, this->seq);
     rs2rosinternal::serialization::serialize(stream, this->stamp);
     rs2rosinternal::serialization::serialize(stream, this->frame_id);
-    rs2rosinternal::serialization::serialize(stream, this->depth_units);
     return stream.getData();
   }
 
@@ -124,7 +121,6 @@ public:
     rs2rosinternal::serialization::deserialize(stream, this->seq);
     rs2rosinternal::serialization::deserialize(stream, this->stamp);
     rs2rosinternal::serialization::deserialize(stream, this->frame_id);
-    rs2rosinternal::serialization::deserialize(stream, this->depth_units);
     return stream.getData();
   }
 
@@ -134,7 +130,6 @@ public:
     size += rs2rosinternal::serialization::serializationLength(this->seq);
     size += rs2rosinternal::serialization::serializationLength(this->stamp);
     size += rs2rosinternal::serialization::serializationLength(this->frame_id);
-    size += rs2rosinternal::serialization::deserialize(stream, this->depth_units);
     return size;
   }
 
@@ -222,7 +217,6 @@ template<class ContainerAllocator> struct Serializer< ::roslib::Header_<Containe
     stream.next(m.seq);
     stream.next(m.stamp);
     stream.next(m.frame_id);
-    stream.next(m.depth_units);
   }
 
   ROS_DECLARE_ALLINONE_SERIALIZER
@@ -246,8 +240,6 @@ struct Printer< ::roslib::Header_<ContainerAllocator> >
     Printer<rs2rosinternal::Time>::stream(s, indent + "  ", v.stamp);
     s << indent << "frame_id: ";
     Printer<std::basic_string<char, std::char_traits<char>, typename ContainerAllocator::template rebind<char>::other > >::stream(s, indent + "  ", v.frame_id);
-    s << indent << "depth units: ";
-    Printer<float>::stream(s, indent + "  ", v.depth_units);
   }
 };
 

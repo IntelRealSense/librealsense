@@ -48,6 +48,7 @@ struct Header_
 
 
 
+
   typedef std::shared_ptr< ::std_msgs::Header_<ContainerAllocator> > Ptr;
   typedef std::shared_ptr< ::std_msgs::Header_<ContainerAllocator> const> ConstPtr;
 
