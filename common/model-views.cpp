@@ -2114,7 +2114,8 @@ namespace rs2
         try {
             s->start([&, syncer](frame f)
             {
-                if (viewer.synchronization_enable && is_synchronized_frame(viewer, f))
+                // The condition here must match the condition inside render_loop()!
+                if( viewer.synchronization_enable )
                 {
                     syncer->invoke(f);
                 }
