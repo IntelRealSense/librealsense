@@ -251,27 +251,42 @@ void server::doHTTP() {
 
     // SW upgrade
     // TODO: Add CRC validation
+    bool ongoing = false;
     svr.Post("/sw_upgrade",
         [&](const httplib::Request &req, httplib::Response &res, const httplib::ContentReader &content_reader) {
             if (req.is_multipart_form_data()) {
                 LOG_ERROR("No support for multipart messages");
             } else {
-                std::string package;
-                content_reader([&](const char *data, size_t data_length) {
-                    package.append(data, data_length);
-                    return true;
-                });
-                res.set_content(package, "application/octet-stream");
+                if (ongoing) {
+                    return;
+                } else {
+                    ongoing = true;
 
-                std::ofstream ofs_package("/tmp/lrs.deb", std::ofstream::out | std::ofstream::binary | std::ofstream::trunc);
-                ofs_package.write(package.c_str(), package.size());
-                ofs_package.close(); 
-                LOG_INFO("Received the package of " << std::dec << package.size() << " bytes to perform the upgrade.");
+                    std::string package;
+                    content_reader([&](const char *data, size_t data_length) {
+                        package.append(data, data_length);
+                        return true;
+                    });
+                    res.set_content(package, "application/octet-stream");
 
-        		system("/usr/bin/systemd-run --on-active=10 /usr/bin/dpkg -i /tmp/lrs.deb");
+                    char fname[] = "/tmp/XXXXXX";
+                    int file = mkstemp(fname);
+                    write(file, package.c_str(), package.size());
+                    close(file);
 
-        		// FILE* upgrade = popen("/usr/bin/systemd-run --on-active=10 /usr/bin/dpkg -i /tmp/lrs.deb", "r");
-		        // pclose(upgrade);
+                    // std::ofstream ofs_package("/tmp/lrs.deb", std::ofstream::out | std::ofstream::binary | std::ofstream::trunc);
+                    // ofs_package.write(package.c_str(), package.size());
+                    // ofs_package.close(); 
+
+                    LOG_INFO("Received the package " << file << " of " << std::dec << package.size() << " bytes to perform the software upgrade. ");
+
+                    std::stringstream cmd;
+                    cmd << "/usr/bin/systemd-run --on-active=1 /usr/bin/dpkg -i " << file;
+                    system(cmd.str().c_str());
+
+                    // FILE* upgrade = popen("/usr/bin/systemd-run --on-active=10 /usr/bin/dpkg -i /tmp/lrs.deb", "r");
+                    // pclose(upgrade);
+                }
             }
         }
     );
@@ -283,8 +298,7 @@ void server::doHTTP() {
             if (req.is_multipart_form_data()) {
                 LOG_ERROR("No support for multipart messages");
             } else {
-                // std::string image;
-                m_progress = "started";
+                m_progress = "Started";
                 m_image.clear();
                 content_reader([&](const char *data, size_t data_length) {
                     m_image.append(data, data_length);
