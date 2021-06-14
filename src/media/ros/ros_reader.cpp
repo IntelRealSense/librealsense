@@ -412,7 +412,7 @@ namespace librealsense
         additional_data.timestamp = timestamp_ms.count();
         additional_data.frame_number = msg->header.seq;
         additional_data.fisheye_ae_mode = false;
-        additional_data.depth_units = msg->header.depth_units;
+        additional_data.depth_units = msg->depth_units;
 
         stream_identifier stream_id;
         if (m_version == legacy_file_format::file_version())

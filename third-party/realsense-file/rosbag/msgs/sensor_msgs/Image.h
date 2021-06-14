@@ -25,24 +25,26 @@ struct Image_
   typedef Image_<ContainerAllocator> Type;
 
   Image_()
-    : header()
-    , height(0)
-    , width(0)
-    , encoding()
-    , is_bigendian(0)
-    , step(0)
-    , data()  {
-    }
+      : header()
+      , height(0)
+      , width(0)
+      , encoding()
+      , is_bigendian(0)
+      , step(0)
+      , depth_units(0)
+      , data() {
+  }
   Image_(const ContainerAllocator& _alloc)
-    : header(_alloc)
-    , height(0)
-    , width(0)
-    , encoding(_alloc)
-    , is_bigendian(0)
-    , step(0)
-    , data(_alloc)  {
-  (void)_alloc;
-    }
+      : header(_alloc)
+      , height(0)
+      , width(0)
+      , encoding(_alloc)
+      , is_bigendian(0)
+      , step(0)
+      , depth_units(0)
+      , data(_alloc) {
+      (void)_alloc;
+  }
 
 
 
@@ -67,6 +69,8 @@ struct Image_
    typedef std::vector<uint8_t, typename ContainerAllocator::template rebind<uint8_t>::other >  _data_type;
   _data_type data;
 
+  typedef float _depth_units_type;
+  _depth_units_type depth_units;
 
 
 
@@ -238,6 +242,14 @@ namespace serialization
       stream.next(m.is_bigendian);
       stream.next(m.step);
       stream.next(m.data);
+      try
+      {
+          stream.next(m.depth_units);
+      }
+      catch (...)
+      {
+          LOG_WARNING("Old rosbag file doesn't contain Depth Units for each frame!");
+      }
     }
 
     ROS_DECLARE_ALLINONE_SERIALIZER
@@ -275,6 +287,8 @@ struct Printer< ::sensor_msgs::Image_<ContainerAllocator> >
       s << indent << "  data[" << i << "]: ";
       Printer<uint8_t>::stream(s, indent + "  ", v.data[i]);
     }
+    s << indent << "depth_units: ";
+    Printer<float>::stream(s, indent + "  ", v.depth_units);
   }
 };
 

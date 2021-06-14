@@ -26,13 +26,11 @@ struct Header_
   Header_()
     : seq(0)
     , stamp()
-    , depth_units(-1)
     , frame_id()  {
     }
   Header_(const ContainerAllocator& _alloc)
     : seq(0)
     , stamp()
-    , depth_units(-1)
     , frame_id(_alloc)  {
   (void)_alloc;
     }
@@ -47,9 +45,6 @@ struct Header_
 
    typedef std::basic_string<char, std::char_traits<char>, typename ContainerAllocator::template rebind<char>::other >  _frame_id_type;
   _frame_id_type frame_id;
-
-  typedef float _depth_units_type;
-  _depth_units_type depth_units;
 
 
 
@@ -187,7 +182,6 @@ namespace serialization
       stream.next(m.seq);
       stream.next(m.stamp);
       stream.next(m.frame_id);
-      stream.next(m.depth_units);
     }
 
     ROS_DECLARE_ALLINONE_SERIALIZER
@@ -212,8 +206,6 @@ struct Printer< ::std_msgs::Header_<ContainerAllocator> >
     Printer<rs2rosinternal::Time>::stream(s, indent + "  ", v.stamp);
     s << indent << "frame_id: ";
     Printer<std::basic_string<char, std::char_traits<char>, typename ContainerAllocator::template rebind<char>::other > >::stream(s, indent + "  ", v.frame_id);
-    s << indent << "depth units: ";
-    Printer<float>::stream(s, indent + "  ", v.depth_units);
   }
 };
 

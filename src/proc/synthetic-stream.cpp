@@ -72,6 +72,19 @@ namespace librealsense
             {
                 if (should_process(f))
                 {
+                    // For old playback sensors
+                    if (!((depth_frame*)f.get())->get_units())
+                    {
+                        auto snr = ((frame_interface*)f.get())->get_sensor().get();
+                        auto depth_sensor = As< librealsense::depth_sensor >(snr);
+                        auto extendable = As< librealsense::extendable_interface >(snr);
+                        if (extendable && extendable->extend_to(TypeToExtension< librealsense::depth_sensor >::value, (void**)(&depth_sensor)))
+                        {
+                            auto du = depth_sensor->get_depth_scale();
+                            ((depth_frame*)f.get())->set_units(du);
+                        }
+                    }
+
                     auto res = process_frame(source, f);
                     if (!res) continue;
                     if (auto composite = res.as<rs2::frameset>())
