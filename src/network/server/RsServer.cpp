@@ -75,7 +75,7 @@ void server::doUpgrade() {
         std::unique_lock<std::mutex> lk(mutex);
         if (!cv.wait_for(lk, std::chrono::seconds( /* WAIT_FOR_DEVICE_TIMEOUT */ 10), [&] { return new_fw_update_device; })) {
             LOG_ERROR("Failed to locate a device in firmware update mode");
-            return;
+            exit(EXIT_FAILURE);
         }
     } else {
         new_fw_update_device = m_dev;
@@ -83,15 +83,24 @@ void server::doUpgrade() {
 
     m_progress = "Firmware update started";
     LOG_INFO(m_progress);
-    new_fw_update_device.update(fw_image, [&](const float progress) {
-        std::stringstream ss;
-        ss << "Firmware update progress: " << (int)(progress * 100) << "%";
-        m_progress = ss.str();
+    try {
+        new_fw_update_device.update(fw_image, [&](const float progress) {
+            std::stringstream ss;
+            ss << "Firmware update progress: " << (int)(progress * 100) << "%";
+            m_progress = ss.str();
+            std::cout << m_progress << "\r";
+        });
+        m_progress = "Firmware update done";
+        std::cout << std::endl;
         LOG_INFO(m_progress);
-    });
-    m_progress = "Firmware update done";
-    LOG_INFO(m_progress);
+    } catch (const std::exception& e) {
+        m_progress = e.what();
+        LOG_ERROR(std::endl << "ERROR: " << m_progress << std::endl);
+        std::this_thread::sleep_for(std::chrono::seconds(1));
+        exit(EXIT_FAILURE);
+    }
 
+    std::this_thread::sleep_for(std::chrono::seconds(1));
     exit(EXIT_SUCCESS);
 }
 
