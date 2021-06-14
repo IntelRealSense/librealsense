@@ -30,9 +30,14 @@ private:
     std::thread m_httpd;
     void doHTTP();
 
-    std::thread m_upgrade;
-    void doUpgrade();
+    std::thread m_sw_upgrade;
+    void doSW_Upgrade();
+    std::string m_package;
+
+    std::thread m_fw_upgrade;
+    void doFW_Upgrade();
     std::string m_image;
+    
     std::string m_progress;
 
     std::string m_sensors_desc; // sensors description

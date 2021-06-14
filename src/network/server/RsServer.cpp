@@ -26,11 +26,31 @@
 
 using namespace TCLAP;
 
-void server::doUpgrade() {
+void server::doSW_Upgrade() {
     // First, shutdown the RTSP server
     m_progress = "shutting down the RTSP server";
     srv->close(srv->envir(), srv->name());
     std::this_thread::sleep_for(std::chrono::seconds(1));
+
+    char fname[] = "/tmp/XXXXXX";
+    int file = mkstemp(fname);
+    write(file, m_package.c_str(), m_package.size());
+    close(file);
+
+    LOG_INFO("Received the package " << fname << " of " << std::dec << m_package.size() << " bytes to perform the software upgrade. ");
+
+    std::stringstream cmd;
+    cmd << "/usr/bin/systemd-run --on-active=1 /usr/bin/dpkg -i " << fname;
+    system(cmd.str().c_str());
+}
+
+void server::doFW_Upgrade() {
+    // First, shutdown the RTSP server
+    m_progress = "shutting down the RTSP server";
+    srv->close(srv->envir(), srv->name());
+    std::this_thread::sleep_for(std::chrono::seconds(1));
+
+    LOG_INFO("Received the image of " << std::dec << m_image.size() << " bytes to perform the firmware upgrade.");
 
     #if 0
     if (backup_arg.isSet()) {
@@ -262,30 +282,13 @@ void server::doHTTP() {
                 } else {
                     ongoing = true;
 
-                    std::string package;
                     content_reader([&](const char *data, size_t data_length) {
-                        package.append(data, data_length);
+                        m_package.append(data, data_length);
                         return true;
                     });
-                    res.set_content(package, "application/octet-stream");
+                    res.set_content(m_package, "application/octet-stream");
 
-                    char fname[] = "/tmp/XXXXXX";
-                    int file = mkstemp(fname);
-                    write(file, package.c_str(), package.size());
-                    close(file);
-
-                    // std::ofstream ofs_package("/tmp/lrs.deb", std::ofstream::out | std::ofstream::binary | std::ofstream::trunc);
-                    // ofs_package.write(package.c_str(), package.size());
-                    // ofs_package.close(); 
-
-                    LOG_INFO("Received the package " << file << " of " << std::dec << package.size() << " bytes to perform the software upgrade. ");
-
-                    std::stringstream cmd;
-                    cmd << "/usr/bin/systemd-run --on-active=1 /usr/bin/dpkg -i " << file;
-                    system(cmd.str().c_str());
-
-                    // FILE* upgrade = popen("/usr/bin/systemd-run --on-active=10 /usr/bin/dpkg -i /tmp/lrs.deb", "r");
-                    // pclose(upgrade);
+                    m_sw_upgrade = std::thread( [this](){ doSW_Upgrade(); } ); 
                 }
             }
         }
@@ -305,9 +308,8 @@ void server::doHTTP() {
                     return true;
                 });
                 res.set_content(m_image, "application/octet-stream");
-                LOG_INFO("Received the image of " << std::dec << m_image.size() << " bytes to perform the upgrade.");
 
-                m_upgrade = std::thread( [this](){ doUpgrade(); } ); 
+                m_fw_upgrade = std::thread( [this](){ doFW_Upgrade(); } ); 
             }
         }
     );
