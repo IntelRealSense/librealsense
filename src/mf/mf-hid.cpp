@@ -476,6 +476,8 @@ namespace librealsense
 
                             SysFreeString(fName);
                         }
+                        //Releasing resources
+                        safe_release(pSensor);
                     }
                 }
             }

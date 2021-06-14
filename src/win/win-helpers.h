@@ -19,6 +19,16 @@ namespace librealsense
 {
     namespace platform
     {
+        template <class T>
+        static void safe_release(T& ppT)
+        {
+            if (ppT)
+            {
+                ppT.Release();
+                ppT = NULL;
+            }
+        }
+
         bool check(const char * call, HRESULT hr, bool to_throw = true);
 #define CHECK_HR(x) check(#x, x);
 #define LOG_HR(x) check(#x, x, false);

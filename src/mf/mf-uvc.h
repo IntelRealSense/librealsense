@@ -58,15 +58,6 @@ namespace librealsense
             stream_profile profile;
         } mf_profile;
 
-        template <class T>
-        static void safe_release(T &ppT)
-        {
-            if (ppT)
-            {
-                ppT.Release();
-                ppT = NULL;
-            }
-        }
 
         class wmf_uvc_device : public std::enable_shared_from_this<wmf_uvc_device>,
             public uvc_device
