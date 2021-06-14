@@ -75,15 +75,19 @@ int main(int argc, char** argv) try {
                     if (res) {
                         if (res->status == 200) {
                             status = res->body;
+                            // Unite multiline status into the oneliner
+                            std::string::size_type pos = 0;
+                            while ((pos = status.find ("\n", pos)) != std::string::npos) {
+                                status[pos] = ' ';
+                            }
                             std::cout << status << ".                    \r" << std::flush;
-                            // printf("%s\r                    ", status.c_str());
                             std::this_thread::sleep_for(std::chrono::milliseconds(100));
-                        } else throw std::runtime_error("Error server response: firmware upgrade status.");
+                        }
                     } else {
                         if (status.find("done") != std::string::npos) {
-                            std::cout << std::endl << "Firmware upgrade is done." << std::endl;
+                            std::cout << std::endl;
                             return EXIT_SUCCESS;
-                        }
+                        } else throw std::runtime_error("Server closed the connection.");
                     }
                     now = time(NULL);
                 } while (now - start < 300); // five minutes timeout

@@ -90,7 +90,7 @@ void server::doUpgrade() {
             m_progress = ss.str();
             std::cout << m_progress << "\r";
         });
-        m_progress = "Firmware update done";
+        m_progress = "Firmware update is done";
         std::cout << std::endl;
         LOG_INFO(m_progress);
     } catch (const std::exception& e) {
