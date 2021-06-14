@@ -2,7 +2,7 @@
 # Copyright(c) 2021 Intel Corporation. All Rights Reserved.
 
 #test:device D400*
-#test:nightly
+#test:!nightly
 
 import time
 import threading
