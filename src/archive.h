@@ -339,11 +339,6 @@ namespace librealsense
             return additional_data.depth_units;
         }
 
-        void set_units(float depth_units)
-        {
-            additional_data.depth_units = depth_units;
-        }
-
         void set_original(frame_holder h)
         {
             _original = std::move(h);

@@ -69,7 +69,7 @@ namespace librealsense
         {
             _on_open = callback;
         }
-        virtual void modify_frame_metadata(on_frame_md callback) {}
+        virtual void modify_frame_metadata(on_frame_md callback) { _metadata_modifier = callback; }
         device_interface& get_device() override;
 
         // Make sensor inherit its owning device info by default
@@ -352,11 +352,6 @@ namespace librealsense
         {
             power on(std::dynamic_pointer_cast<uvc_sensor>(shared_from_this()));
             return action(*_device);
-        }
-
-        void modify_frame_metadata(on_frame_md callback) override
-        {
-            _metadata_modifier = callback;
         }
     protected:
         stream_profiles init_stream_profiles() override;

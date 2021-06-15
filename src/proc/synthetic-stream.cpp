@@ -81,7 +81,7 @@ namespace librealsense
                         if (extendable && extendable->extend_to(TypeToExtension< librealsense::depth_sensor >::value, (void**)(&depth_sensor)))
                         {
                             auto du = depth_sensor->get_depth_scale();
-                            ((depth_frame*)f.get())->set_units(du);
+                            //As<sensor_base>(snr)->modify_frame_metadata([&](frame_additional_data& data) {data.depth_units = du; });
                         }
                     }
 
