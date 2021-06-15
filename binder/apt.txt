@@ -1,2 +1,2 @@
 libusb-1.0.0-dev
-install ffmpeg libsm6 libxext6 -y
+ffmpeg
