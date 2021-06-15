@@ -44,7 +44,7 @@ namespace rs2
             {
                 constexpr int MINIMAL_MATCH_SECTIONS = 4;
                 constexpr int MATCH_SECTIONS_INC_BUILD_NUM = 5;
-                std::regex rgx("^(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,5})?$");
+                std::regex rgx("^(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})(\\.\\d{1,5})?$");
                 std::smatch match;
 
                 if (std::regex_search(str.begin(), str.end(), match, rgx) && match.size() >= MINIMAL_MATCH_SECTIONS)
@@ -53,7 +53,11 @@ namespace rs2
                     mnor = atoi(std::string(match[2]).c_str());
                     patch = atoi(std::string(match[3]).c_str());
                     if (match.size() == MATCH_SECTIONS_INC_BUILD_NUM)
-                        build = atoi(std::string(match[4]).c_str());
+                    {
+                        auto build_str = std::string(match[4]);
+                        if (build_str.size() >= 2)
+                            build = atoi(&build_str[1]);
+                    }
                 }
             }
 
