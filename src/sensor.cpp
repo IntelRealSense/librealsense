@@ -31,7 +31,7 @@ namespace librealsense
         _is_opened(false),
         _notifications_processor(std::shared_ptr<notifications_processor>(new notifications_processor())),
         _on_open(nullptr),
-        _on_frame(nullptr),
+        _metadata_modifier(nullptr),
         _metadata_parsers(std::make_shared<metadata_parser_map>()),
         _owner(dev),
         _profiles([this]() {
@@ -251,9 +251,6 @@ namespace librealsense
         fr->data = pixels;
         fr->set_stream(profile);
 
-        float depth_units = 0;
-        if(_on_frame)
-            _on_frame(depth_units);//_additional_data.depth_units;
         frame_additional_data additional_data(0,
             0,
             system_time,
@@ -263,8 +260,11 @@ namespace librealsense
             last_timestamp,
             last_frame_number,
             false,
-            depth_units,
+            0,
             (uint32_t)fo.frame_size);
+
+        if (_metadata_modifier)
+            _metadata_modifier(additional_data);
         fr->additional_data = additional_data;
 
         // update additional data

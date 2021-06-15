@@ -242,14 +242,8 @@ namespace serialization
       stream.next(m.is_bigendian);
       stream.next(m.step);
       stream.next(m.data);
-      try
-      {
+      if (!m.header.frame_id.compare("1"))
           stream.next(m.depth_units);
-      }
-      catch (...)
-      {
-          LOG_WARNING("Old rosbag file doesn't contain Depth Units for each frame!");
-      }
     }
 
     ROS_DECLARE_ALLINONE_SERIALIZER

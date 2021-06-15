@@ -188,8 +188,8 @@ namespace librealsense
         image.header.seq = static_cast<uint32_t>(vid_frame->get_frame_number());
         std::chrono::duration<double, std::milli> timestamp_ms(vid_frame->get_frame_timestamp());
         image.header.stamp = rs2rosinternal::Time(std::chrono::duration<double>(timestamp_ms).count());
-        std::string TODO_CORRECT_ME = "0";
-        image.header.frame_id = TODO_CORRECT_ME;
+        std::string NEW_ROSBAG = "1";
+        image.header.frame_id = NEW_ROSBAG;
         image.depth_units = static_cast<float>(((depth_frame*)vid_frame)->get_units());
         auto image_topic = ros_topic::frame_data_topic(stream_id);
         write_message(image_topic, timestamp, image);
