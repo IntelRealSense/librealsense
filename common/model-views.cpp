@@ -3255,7 +3255,18 @@ namespace rs2
                 {
                     if (ds.get_option(RS2_OPTION_ENABLE_IR_REFLECTIVITY) == 1.0f)
                     {
-                        if ((0.2f == roi_percentage) && roi_display_rect.contains(mouse.cursor))
+                        rect roi_for_reflectivity{
+                            (float)dev->algo_roi.min_x,
+                            (float)dev->algo_roi.min_y,
+                            (float)( dev->algo_roi.max_x - dev->algo_roi.min_x ),
+                            (float)( dev->algo_roi.max_y - dev->algo_roi.min_y ) };
+
+                        auto normalized_roi = roi_for_reflectivity
+                                                  .normalize( _normalized_zoom.unnormalize( get_original_stream_bounds() ) )
+                                                  .unnormalize( stream_rect )
+                                                  .cut_by( stream_rect );
+
+                        if ((0.2f == roi_percentage) && normalized_roi.contains(mouse.cursor))
                         {
                             // Add reflectivity information on frame, if max usable range is displayed, display reflectivity on the same line
                             show_reflectivity = draw_reflectivity(x, y, ds, streams, ss, show_max_range);
@@ -3276,7 +3287,18 @@ namespace rs2
                         bool lf_exist = texture->get_last_frame();
                         if (is_stream_alive() && texture->get_last_frame().get_profile().stream_type() == RS2_STREAM_INFRARED)
                         {
-                            if ((0.2f == roi_percentage) && roi_display_rect.contains(mouse.cursor))
+                            rect roi_for_reflectivity{
+                                (float)dev->algo_roi.min_x,
+                                (float)dev->algo_roi.min_y,
+                                (float)(dev->algo_roi.max_x - dev->algo_roi.min_x),
+                                (float)(dev->algo_roi.max_y - dev->algo_roi.min_y) };
+
+                            auto normalized_roi = roi_for_reflectivity
+                                                      .normalize( _normalized_zoom.unnormalize( get_original_stream_bounds() ) )
+                                                      .unnormalize( stream_rect )
+                                                      .cut_by( stream_rect );
+
+                            if ((0.2f == roi_percentage) && normalized_roi.contains(mouse.cursor))
                             {
                                 show_reflectivity = draw_reflectivity(x, y, ds, streams, ss, show_max_range);
                             }
