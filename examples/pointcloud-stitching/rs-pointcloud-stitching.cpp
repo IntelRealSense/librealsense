@@ -416,13 +416,8 @@ bool CPointcloudStitcher::OpenSensors(std::shared_ptr<rs2::device> dev)
     }
 }
 
-bool CPointcloudStitcher::Init()
+bool CPointcloudStitcher::GetDevices()
 {
-    {
-        std::stringstream filename;
-        filename << _working_dir << "/" << "virtual_dev.cfg";
-        parse_virtual_device_config_file(filename.str());
-    }
     rs2::context ctx;
     rs2::device_list list;
 
@@ -438,6 +433,18 @@ bool CPointcloudStitcher::Init()
     {
         _devices.push_back(std::make_shared<rs2::device>(dev_info));
     }
+    return true;
+}
+
+bool CPointcloudStitcher::Init()
+{
+    {
+        std::stringstream filename;
+        filename << _working_dir << "/" << "virtual_dev.cfg";
+        parse_virtual_device_config_file(filename.str());
+    }
+    if (!GetDevices())
+        return false;
 
     std::vector<std::string> serials;
     for (auto dev : _devices)
@@ -533,10 +540,7 @@ void CPointcloudStitcher::CreateVirtualDevice()
 
     _soft_dev.register_info(RS2_CAMERA_INFO_SERIAL_NUMBER, _serial_vir);
     auto depth_sensor = _soft_dev.add_sensor("Depth"); // Define single sensor
-    _active_software_sensors.insert(std::pair<std::string, rs2::software_sensor>("Depth", depth_sensor));
     auto color_sensor = _soft_dev.add_sensor("Color"); // Define single sensor
-    _active_software_sensors.insert(std::pair<std::string, rs2::software_sensor>("Color", color_sensor));
-
     auto depth_stream = depth_sensor.add_video_stream({ RS2_STREAM_DEPTH, 0, 0,
                                 _virtual_depth_frame.x, _virtual_depth_frame.y, 30, _virtual_depth_frame.bpp,
                                 RS2_FORMAT_Z16, depth_intrinsics });
@@ -652,10 +656,12 @@ void CPointcloudStitcher::ProjectFramesOnOtherDevice(rs2::frameset frames, const
     float virtual_depth_pixel[2] = { 0 };
     float virtual_color_pixel[2] = { 0 };
 
-    rs2::software_sensor virtual_depth_sensor = _active_software_sensors.at("Depth");
+    auto virtual_sensors = _soft_dev.query_sensors();
+    rs2::sensor virtual_depth_sensor = *(std::find_if(virtual_sensors.begin(), virtual_sensors.end(), [](const auto& sns) { return "Depth" == std::string(sns.get_info(RS2_CAMERA_INFO_NAME)); }));
+    rs2::sensor virtual_color_sensor = *(std::find_if(virtual_sensors.begin(), virtual_sensors.end(), [](const auto& sns) { return "Color" == std::string(sns.get_info(RS2_CAMERA_INFO_NAME)); }));
     const rs2_extrinsics& extrinsics(_ir_extrinsics[from_serial][to_serial]);
     const rs2_intrinsics& virtual_depth_intinsics(virtual_depth_sensor.get_active_streams()[0].as<rs2::video_stream_profile>().get_intrinsics());
-    rs2::software_sensor virtual_color_sensor = _active_software_sensors.at("Color");
+
     const rs2_intrinsics& virtual_color_intinsics(virtual_color_sensor.get_active_streams()[0].as<rs2::video_stream_profile>().get_intrinsics());
 
     rs2_intrinsics color_intinsics;
@@ -986,9 +992,10 @@ void CPointcloudStitcher::Run(window& app)
             }
         }
 
+        auto virtual_sensors = _soft_dev.query_sensors();
         {
             rs2::frame aframe = frames_sets.begin()->second;
-            rs2::software_sensor virtual_depth_sensor = _active_software_sensors.at("Depth");
+            rs2::software_sensor virtual_depth_sensor = *(static_cast<rs2::software_sensor*>(&(*std::find_if(virtual_sensors.begin(), virtual_sensors.end(), [](const auto& sns) { return "Depth" == std::string(sns.get_info(RS2_CAMERA_INFO_NAME)); }))));
             virtual_depth_sensor.on_video_frame({ _virtual_depth_frame.frame.data(), // Frame pixels from capture API
                 [](void*) {}, // Custom deleter (if required)
                 _virtual_depth_frame.x * _virtual_depth_frame.bpp, _virtual_depth_frame.bpp, // Stride and Bytes-per-pixel
@@ -999,7 +1006,7 @@ void CPointcloudStitcher::Run(window& app)
         rs2::frame color = aframe.as<rs2::frameset>().first_or_default(RS2_STREAM_COLOR);
         if (color)
         {
-            rs2::software_sensor virtual_color_sensor = _active_software_sensors.at("Color");
+            rs2::software_sensor virtual_color_sensor = *(static_cast<rs2::software_sensor*>(&(*std::find_if(virtual_sensors.begin(), virtual_sensors.end(), [](const auto& sns) { return "Color" == std::string(sns.get_info(RS2_CAMERA_INFO_NAME)); }))));
             virtual_color_sensor.on_video_frame({ _virtual_color_frame.frame.data(), // Frame pixels from capture API
                 [](void*) {}, // Custom deleter (if required)
                 _virtual_color_frame.x * _virtual_color_frame.bpp, _virtual_color_frame.bpp, // Stride and Bytes-per-pixel

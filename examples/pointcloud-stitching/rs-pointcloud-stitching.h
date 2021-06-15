@@ -186,6 +186,7 @@ namespace rs_pointcloud_stitching
     public:
 	    CPointcloudStitcher(const std::string& working_dir, const std::string& calibration_file);
         bool Init();
+        bool GetDevices();
         bool Start();
         void CloseSensors();
         void StopSensors();
@@ -212,7 +213,6 @@ namespace rs_pointcloud_stitching
         std::string _left_device;
         std::vector<std::shared_ptr<rs2::device> > _devices;
         std::map<std::string, std::vector<rs2::sensor> >    _active_sensors;
-        std::map<std::string, rs2::software_sensor> _active_software_sensors;
         std::map<std::string, std::vector<stream_request> > _wanted_profiles;
         std::map<std::string, PipelineSyncer> _syncer;
         rs2::syncer _soft_sync;
