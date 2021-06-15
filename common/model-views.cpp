@@ -1356,10 +1356,14 @@ namespace rs2
                     // Watch out for read-only options in the playback sensor!
                     try
                     {
-                        s->set_option( RS2_OPTION_SENSOR_MODE,
-                            static_cast< float >( resolution_from_width_height(
-                                res_values[ui.selected_res_id].first,
-                                res_values[ui.selected_res_id].second ) ) );
+                        auto requested_sensor_mode = static_cast<float>(resolution_from_width_height(
+                            res_values[ui.selected_res_id].first,
+                            res_values[ui.selected_res_id].second));
+
+                        auto currest_sensor_mode = s->get_option(RS2_OPTION_SENSOR_MODE);
+
+                        if (requested_sensor_mode != currest_sensor_mode)
+                            s->set_option(RS2_OPTION_SENSOR_MODE, requested_sensor_mode);
                     }
                     catch( not_implemented_error const &)
                     {
@@ -1467,7 +1471,9 @@ namespace rs2
                     res = true;
                     _options_invalidated = true;
 
-                    if (s->supports(RS2_OPTION_SENSOR_MODE))
+                    // Set sensor mode only at the Viewer app,
+                    // DQT app will handle the sensor mode when the streaming is off (while reseting the stream)
+                    if (s->supports(RS2_OPTION_SENSOR_MODE) && !allow_change_resolution_while_streaming)
                     {
                         auto width = res_values[tmp_selected_res_id].first;
                         auto height = res_values[tmp_selected_res_id].second;
