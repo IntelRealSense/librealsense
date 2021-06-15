@@ -768,6 +768,26 @@ void CPointcloudStitcher::SaveOriginImages(const std::map<std::string, rs2::fram
         png_file << "/" << "img_" << first_frame_number << ".png";
         stbi_write_png(png_file.str().c_str(), vf.get_width(), vf.get_height(),
             vf.get_bytes_per_pixel(), vf.get_data(), vf.get_stride_in_bytes());
+        {
+            // Save intrinsics to file:
+            std::stringstream filename;
+            filename << _working_dir << "/" << "intrinsics_" << frames.first << ".txt";
+
+            std::ofstream csv(filename.str());
+
+            auto intrinsics = vf.get_profile().as<rs2::video_stream_profile>().get_intrinsics();
+            csv << "sizeX, sizeY, fx, fy, ppx, ppy, distortion" << std::fixed << std::setprecision(6) << std::endl;
+            csv << intrinsics.width << ", ";
+            csv << intrinsics.height << ", ";
+            csv << intrinsics.fx << ", ";
+            csv << intrinsics.fy << ", ";
+            csv << intrinsics.ppx << ", ";
+            csv << intrinsics.ppy << ", ";
+            for (int i = 0; i < 5; i++)
+                csv << intrinsics.coeffs[0] << ", ";
+            csv << std::endl;
+
+        }
         std::cout << "Saved " << png_file.str() << std::endl;
     }
 }
