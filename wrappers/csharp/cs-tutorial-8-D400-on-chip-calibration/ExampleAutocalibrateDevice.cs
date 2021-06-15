@@ -148,8 +148,9 @@ namespace Intel.RealSense
                     var timeout = _timeoutForCalibrationSpeed[calibrationSpeed];
                     float health = 100;
                     var succeedOnChipCalibration = false;
+                    var abortRequested = false;
                     byte[] calTableAfter = null;
-                    while (!succeedOnChipCalibration)
+                    while (!succeedOnChipCalibration && !abortRequested)
                     {
                         Console.WriteLine($"{Environment.NewLine}2. Runs the on-chip self-calibration routine that returns pointer to new calibration table.");
                         Console.WriteLine($"\t Format                    : {depthProfile.Format}");
@@ -192,9 +193,12 @@ namespace Intel.RealSense
                             Console.WriteLine($"\t Time spend: {sw.Elapsed.ToString(@"mm\:ss\.fff")}  (min:sec.millisec)");
                             Console.WriteLine($"\t Device health: {health} ({_deviceHealthDescription[GetDeviceHealth(health)]})");
 
-                            if (ConsoleKey.Y == ConsoleGetKey(new[] { ConsoleKey.Y, ConsoleKey.N },
-                                                      @"Accept calibration? (Y\N)"))
-                                succeedOnChipCalibration = true;
+                            var res = ConsoleGetKey(new[] { ConsoleKey.Y, ConsoleKey.N, ConsoleKey.A }, @"Accept calibration ? Yes/No/Abort");
+                            Console.WriteLine("User's selection = {0}", res);
+                            if (res == ConsoleKey.A)
+                                abortRequested = true;
+                            else
+                                succeedOnChipCalibration = (res == ConsoleKey.Y);
                         }
                     }
 
