@@ -185,6 +185,7 @@ namespace openvino_helpers
             openvino_helpers::error_listener error_listener;
             engine.SetLogCallback( error_listener );
     */
+#ifdef OPENVINO2019
     class error_listener : public InferenceEngine::IErrorListener
     {
         void onError( char const * msg ) noexcept override
@@ -192,4 +193,5 @@ namespace openvino_helpers
             LOG(DEBUG) << "[InferenceEngine] " << msg;
         }
     };
+#endif
 }

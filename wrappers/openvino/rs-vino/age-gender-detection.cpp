@@ -66,19 +66,33 @@ namespace openvino_helpers
     CNNNetwork age_gender_detection::read_network()
     {
         LOG(INFO) << "Loading " << topoName << " model from: " << pathToModel;
-        
-        CNNNetReader netReader;
-        netReader.ReadNetwork(pathToModel);
-        netReader.getNetwork().setBatchSize(maxBatch);
 
-        // Extract model name and load its weights
+        CNNNetwork network;
+
+#ifdef OPENVINO2019
+        CNNNetReader netReader;
+
+        /** Read network model **/
+        netReader.ReadNetwork( pathToModel );
+        network = netReader.getNetwork();
+
+        /** Extract model name and load its weights **/
         std::string binFileName = remove_ext( pathToModel ) + ".bin";
         netReader.ReadWeights( binFileName );
+#else
+        InferenceEngine::Core netReader;
+        /** Read network model **/
+        network = netReader.ReadNetwork(pathToModel);
+#endif
+
+        /** Set batch size **/
+        //LOG(DEBUG) << "Batch size is set to " << maxBatch;
+        network.setBatchSize(maxBatch);
 
         // Age/Gender Recognition network should have one input and two outputs
 
         LOG(DEBUG) << "Checking Age/Gender Recognition network inputs";
-        InputsDataMap inputInfo(netReader.getNetwork().getInputsInfo());
+        InputsDataMap inputInfo(network.getInputsInfo());
         if (inputInfo.size() != 1)
             throw std::logic_error("Age/Gender Recognition network should have only one input");
         InputInfo::Ptr& inputInfoFirst = inputInfo.begin()->second;
@@ -86,7 +100,7 @@ namespace openvino_helpers
         input = inputInfo.begin()->first;
 
         LOG(DEBUG) << "Checking Age/Gender Recognition network outputs";
-        OutputsDataMap outputInfo(netReader.getNetwork().getOutputsInfo());
+        OutputsDataMap outputInfo(network.getOutputsInfo());
         if (outputInfo.size() != 2)
             throw std::logic_error("Age/Gender Recognition network should have two output layers");
         auto it = outputInfo.begin();
@@ -99,6 +113,7 @@ namespace openvino_helpers
         if (!ptrGenderOutput)
             throw std::logic_error("Gender output data pointer is not valid");
 
+#ifdef OPENVINO2019
         auto genderCreatorLayer = ptrGenderOutput->getCreatorLayer().lock();
         auto ageCreatorLayer = ptrAgeOutput->getCreatorLayer().lock();
 
@@ -118,16 +133,18 @@ namespace openvino_helpers
         if (ptrGenderOutput->getCreatorLayer().lock()->type != "SoftMax")
             throw std::logic_error("In Age/Gender Recognition network, gender layer (" + genderCreatorLayer->name +
                                     ") should be a SoftMax, but was: " + genderCreatorLayer->type);
+
         if( doRawOutputMessages )
         {
             LOG(DEBUG) << "Age layer: " << ageCreatorLayer->name;
             LOG(DEBUG) << "Gender layer: " << genderCreatorLayer->name;
         }
+#endif
 
         outputAge = ptrAgeOutput->getName();
         outputGender = ptrGenderOutput->getName();
 
         _enabled = true;
-        return netReader.getNetwork();
+        return network;
     }
 }

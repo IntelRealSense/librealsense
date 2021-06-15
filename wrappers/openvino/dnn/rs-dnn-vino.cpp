@@ -214,13 +214,18 @@ int main(int argc, char * argv[]) try
     // Start the inference engine, needed to accomplish anything. We also add a CPU extension, allowing
     // us to run the inference on the CPU. A GPU solution may be possible but, at least without a GPU,
     // a CPU-bound process is faster. To change to GPU, use "GPU" instead (and remove AddExtension()):
+
     openvino::Core engine;
+
+#ifdef OPENVINO2019
     openvino_helpers::error_listener error_listener;
     engine.SetLogCallback( error_listener );
+#endif
+
     std::string const device_name { "CPU" };
 
 #ifdef OPENVINO2019
-	engine.AddExtension(std::make_shared< openvino::Extensions::Cpu::CpuExtensions >(), device_name);
+    engine.AddExtension(std::make_shared< openvino::Extensions::Cpu::CpuExtensions >(), device_name);
 #endif
 
     std::vector< detector_and_labels > detectors;
