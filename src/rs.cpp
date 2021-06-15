@@ -3641,4 +3641,4 @@ void rs2_project_color_pixel_to_depth_pixel(float to_pixel[2],
         }
     }
 }
-NOEXCEPT_RETURN(, to_pixel, data)
+NOEXCEPT_RETURN(, to_pixel, data, depth_min, depth_max)
