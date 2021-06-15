@@ -151,7 +151,8 @@ inline void slider_float(std::string& error_message, const char* id, T* val, S T
             }
             else
             {
-                if ((new_value > max) || (new_value<min))
+                // min != max added in order to step over this check for controls which do not have min and max values
+                if ((min != max) && ((new_value > max) || (new_value < min)))
                 {
                     std::stringstream ss;
                     ss << "New value " << new_value << " must be within [" << min << ", " << max << "] range";
