@@ -151,7 +151,8 @@ inline void slider_float(std::string& error_message, const char* id, T* val, S T
             }
             else
             {
-                // min != max added in order to step over this check for controls which do not have min and max values
+                // min != max added in order to step over this check for controls 
+                // for which min and max have been set equal to actual value
                 if ((min != max) && ((new_value > max) || (new_value < min)))
                 {
                     std::stringstream ss;
