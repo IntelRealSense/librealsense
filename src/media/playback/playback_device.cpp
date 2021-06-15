@@ -510,7 +510,7 @@ void playback_device::do_loop(T action)
         }
 
         //On failure, exit thread
-        if(action_succeeded == false && m_is_started)
+        if(action_succeeded == false /*&& m_is_started*/ )
         {
             // Stopping the sensor will call another function which will remove the sensor from the
             // list of active sensors, which will cause issues -- so we copy it first
