@@ -251,7 +251,7 @@ class Test( ABC ):  # Abstract Base Class
         self._ran = False
 
     @abstractmethod
-    def run_test( self, configuration = None, log_path = None ):
+    def run_test( self, configuration = None, log_path = None, opts = set() ):
         pass
 
     def debug_dump( self ):
@@ -371,9 +371,12 @@ class PyTest( Test ):
                 cmd += ['--context', self.config.context]
         return cmd
 
-    def run_test( self, configuration = None, log_path = None ):
+    def run_test( self, configuration = None, log_path = None, opts = set() ):
         try:
-            run( self.command, stdout=log_path, append=self.ran, timeout=self.config.timeout )
+            cmd = self.command
+            if opts:
+                cmd += [opt for opt in opts]
+            run( cmd, stdout=log_path, append=self.ran, timeout=self.config.timeout )
         finally:
             self._ran = True
 
@@ -417,10 +420,13 @@ class ExeTest( Test ):
                 cmd += ['--context', self.config.context]
         return cmd
 
-    def run_test( self, configuration = None, log_path = None ):
+    def run_test( self, configuration = None, log_path = None, opts = set() ):
         if not self.exe:
             raise RuntimeError("Tried to run test " + self.name + " with no exe file provided")
         try:
-            run( self.command, stdout=log_path, append=self.ran, timeout=self.config.timeout )
+            cmd = self.command
+            if opts:
+                cmd += [opt for opt in opts]
+            run( cmd, stdout=log_path, append=self.ran, timeout=self.config.timeout )
         finally:
             self._ran = True
