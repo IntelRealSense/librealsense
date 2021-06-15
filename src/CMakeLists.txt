@@ -77,6 +77,7 @@ target_sources(${LRS_TARGET}
         "${CMAKE_CURRENT_LIST_DIR}/context.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/device.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/device_hub.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/dispatcher.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/environment.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/error-handling.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/firmware_logger_device.cpp"
@@ -96,7 +97,6 @@ target_sources(${LRS_TARGET}
         "${CMAKE_CURRENT_LIST_DIR}/terminal-parser.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/types.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/verify.c"
-        "${CMAKE_CURRENT_LIST_DIR}/depth-to-rgb-calibration.cpp"
 
         "${CMAKE_CURRENT_LIST_DIR}/algo.h"
         "${CMAKE_CURRENT_LIST_DIR}/api.h"
@@ -131,7 +131,6 @@ target_sources(${LRS_TARGET}
         "${CMAKE_CURRENT_LIST_DIR}/device-calibration.h"
         "${CMAKE_CURRENT_LIST_DIR}/calibrated-sensor.h"
         "${CMAKE_CURRENT_LIST_DIR}/serializable-interface.h"
-        "${CMAKE_CURRENT_LIST_DIR}/depth-to-rgb-calibration.h"
         "${CMAKE_CURRENT_LIST_DIR}/max-usable-range-sensor.h"
         "${CMAKE_CURRENT_LIST_DIR}/debug-stream-sensor.h"
 )

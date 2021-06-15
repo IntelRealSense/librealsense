@@ -264,7 +264,9 @@ namespace librealsense
             INTERCAM_SYNC_MASTER     = 1,
             INTERCAM_SYNC_SLAVE      = 2,
             INTERCAM_SYNC_FULL_SLAVE = 3,
-            INTERCAM_SYNC_MAX        = 258 // 4-258 are for Genlock with burst count of 1-255 frames for each trigger
+            INTERCAM_SYNC_MAX = 260  // 4-258 are for Genlock with burst count of 1-255 frames for each trigger.
+                                     // 259 for Sending two frame - First with laser ON, and the other with laser OFF.
+                                     // 260 for Sending two frame - First with laser OFF, and the other with laser ON.
         };
 
         enum class d400_caps : uint16_t
@@ -278,6 +280,7 @@ namespace librealsense
             CAP_ROLLING_SHUTTER         = (1u << 5),
             CAP_BMI_055                 = (1u << 6),
             CAP_BMI_085                 = (1u << 7),
+            CAP_INTERCAM_HW_SYNC        = (1u << 8),
             CAP_MAX
         };
 
@@ -697,6 +700,33 @@ namespace librealsense
             { res_576_576,{ 576, 576 } },
             { res_720_720,{ 720, 720 } },
             { res_1152_1152,{ 1152, 1152 } },
+        };
+
+        static std::map<uint16_t, std::string> device_to_fw_min_version = {
+            {RS400_PID, "5.8.15.0"},
+            {RS410_PID, "5.8.15.0"},
+            {RS415_PID, "5.8.15.0"},
+            {RS430_PID, "5.8.15.0"},
+            {RS430_MM_PID, "5.8.15.0"},
+            {RS_USB2_PID, "5.8.15.0"},
+            {RS_RECOVERY_PID, "5.8.15.0"},
+            {RS_USB2_RECOVERY_PID, "5.8.15.0"},
+            {RS400_IMU_PID, "5.8.15.0"},
+            {RS420_PID, "5.8.15.0"},
+            {RS420_MM_PID, "5.8.15.0"},
+            {RS410_MM_PID, "5.8.15.0"},
+            {RS400_MM_PID, "5.8.15.0" },
+            {RS430_MM_RGB_PID, "5.8.15.0" },
+            {RS460_PID, "5.8.15.0" },
+            {RS435_RGB_PID, "5.8.15.0" },
+            {RS405U_PID, "5.8.15.0" },
+            {RS435I_PID, "5.12.7.100" },
+            {RS416_PID, "5.8.15.0" },
+            {RS430I_PID, "5.8.15.0" },
+            {RS465_PID, "5.12.7.100" },
+            {RS416_RGB_PID, "5.8.15.0" },
+            {RS405_PID, "5.12.11.8" },
+            {RS455_PID, "5.12.7.100" }
         };
 
 

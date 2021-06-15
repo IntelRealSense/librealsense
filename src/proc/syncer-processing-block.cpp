@@ -14,16 +14,16 @@ namespace librealsense
         : processing_block("syncer"), _matcher((new composite_identity_matcher({})))
         , _enable_opts(enable_opts.begin(), enable_opts.end())
     {
-        _matcher->set_callback([this](frame_holder f, syncronization_environment env)
-        {
-            if (env.log)
+        _matcher->set_callback( [this]( frame_holder f, syncronization_environment env ) {
+            if( env.log )
             {
-                LOG_DEBUG("SYNCED: " << frame_holder_to_string(f));
+                LOG_DEBUG( "<-- queueing " << frame_holder_to_string( f ) );
             }
 
-        // We get here from within a dispatch() call, already protected by a mutex -- so only one thread can enqueue!
-            env.matches.enqueue(std::move(f));
-        });
+            // We get here from within a dispatch() call, already protected by a mutex -- so only
+            // one thread can enqueue!
+            env.matches.enqueue( std::move( f ) );
+        } );
 
         // This callback gets called by the previous processing block when it is done with a frame. We
         // call the matchers with the frame and eventually call the next callback in the list using frame_ready().
@@ -52,9 +52,14 @@ namespace librealsense
                 get_source().frame_ready(std::move(frame));
                 return;
             }
-
+            LOG_DEBUG( "--> syncing " << frame_holder_to_string( frame ));
             {
                 std::lock_guard<std::mutex> lock(_mutex);
+                if( ! _matcher->get_active() )
+                {
+                    LOG_DEBUG( "matcher was stopped: NOT DISPATCHING FRAME!" );
+                    return;
+                }
                 _matcher->dispatch(std::move(frame), { source, _matches, log });
             }
 
@@ -68,6 +73,7 @@ namespace librealsense
 
                 while (_matches.try_dequeue(&f))
                 {
+                    LOG_DEBUG( "--> frame ready: " << *f.frame );
                     get_source().frame_ready(std::move(f));
                 }
             }

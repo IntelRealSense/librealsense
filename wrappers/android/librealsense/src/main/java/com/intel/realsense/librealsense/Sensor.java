@@ -35,8 +35,24 @@ public class Sensor extends Options {
         return nIsSensorExtendableTo(mHandle, extension.value());
     }
 
+    public void open(StreamProfile sp) {
+        nOpen(mHandle, sp.getHandle());
+    }
+
+    public void start(FrameCallback cb) {
+        nStart(mHandle, cb);
+    }
+
+    public void stop() {
+        nStop(mHandle);
+    }
+
     @Override
     public void close() {
+        nClose(mHandle);
+    }
+
+    public void delete() {
         if(mOwner)
             nRelease(mHandle);
     }
@@ -44,4 +60,8 @@ public class Sensor extends Options {
     private static native long[] nGetStreamProfiles(long handle);
     private static native void nRelease(long handle);
     private static native boolean nIsSensorExtendableTo(long handle, int extension);
+    private static native void nOpen(long handle, long sp);
+    private static native void nStart(long handle, FrameCallback callback);
+    private static native void nStop(long handle);
+    private static native void nClose(long handle);
 }

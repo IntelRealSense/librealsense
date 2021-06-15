@@ -2,7 +2,7 @@
 // Copyright(c) 2020 Intel Corporation. All Rights Reserved.
 
 #include "../algo-common.h"
-#include "algo/thermal-loop/l500-thermal-loop.h"
+#include <src/algo/thermal-loop/l500-thermal-loop.h>
 
 namespace thermal = librealsense::algo::thermal_loop::l500;
 

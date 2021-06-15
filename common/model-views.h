@@ -27,7 +27,6 @@
 #include "fw-update-helper.h"
 #include "updates-model.h"
 #include "calibration-model.h"
-#include "cah-model.h"
 #include <utilities/time/periodic_timer.h>
 #include "reflectivity/reflectivity.h"
 #include <utilities/number/stabilized-value.h>
@@ -261,6 +260,7 @@ namespace rs2
         static const textual_icon mail                     { u8"\uF01C" };
         static const textual_icon cube                     { u8"\uf1b2" };
         static const textual_icon measure                  { u8"\uf545" };
+        static const textual_icon wifi                     { u8"\uf1eb" };
     }
 
     class subdevice_model;
@@ -386,16 +386,45 @@ namespace rs2
             stop();
             std::lock_guard<std::mutex> lock(_mutex);
             auto shared_syncer = std::make_shared<rs2::asynchronous_syncer>();
-            rs2::frame_queue q;
 
-           _syncers.push_back({shared_syncer,q});
-           shared_syncer->start([this, q](rs2::frame f)
-           {
-               q.enqueue(f);
-               on_frame();
-           });
-           start();
-           return shared_syncer;
+            // This queue stores the output from the syncer, and has to be large enough to deal with
+            // slowdowns on the processing/rendering threads of the Viewer to avoid frame drops. Frame
+            // drops can be pretty noticeable to the user!
+            //
+            // The syncer may also give out frames in bursts. This commonly happens, for example, when
+            // streams have different FPS, and is a known issue. Even with same-FPS streams, the actual
+            // FPS may change depending on a number of variables (e.g., exposure). When FPS is not the
+            // same between the streams, a latency is introduced and bursts from the syncer are the
+            // result.
+            //
+            // Bursts are so fast the other threads will never have a chance to pull them in time. For
+            // example, the syncer output can be the following, all one after the other:
+            //
+            //     [Color: timestamp 100 (arrived @ 105), Infrared: timestamp 100 (arrived at 150)]
+            //     [Color: timestamp 116 (arrived @ 120)]
+            //     [Color: timestamp 132 (arrived @ 145)]
+            //
+            // They are received one at a time & pushed into the syncer, which will wait and keep all of
+            // them inside until a match with Infrared is possible. Once that happens, it will output
+            // everything it has as a burst.
+            //
+            // The queue size must therefore be big enough to deal with expected latency: the more
+            // latency, the bigger the burst.
+            //
+            // Another option is to use an aggregator, similar to the behavior inside the pipeline.
+            // But this still doesn't solve the issue of the bursts: we'll get frame drops in the fast
+            // stream instead of the slow.
+            //
+            rs2::frame_queue q(10);
+
+            _syncers.push_back({shared_syncer,q});
+            shared_syncer->start([this, q](rs2::frame f)
+            {
+                q.enqueue(f);
+                on_frame();
+            });
+            start();
+            return shared_syncer;
         }
 
         void remove_syncer(std::shared_ptr<rs2::asynchronous_syncer> s)
@@ -561,7 +590,7 @@ namespace rs2
         bool is_selected_combination_supported();
         std::vector<stream_profile> get_selected_profiles();
         std::vector<stream_profile> get_supported_profiles();
-        void stop(viewer_model& viewer);
+        void stop(std::shared_ptr<notifications_model> not_model);
         void play(const std::vector<stream_profile>& profiles, viewer_model& viewer, std::shared_ptr<rs2::asynchronous_syncer>);
         bool is_synchronized_frame(viewer_model& viewer, const frame& f);
         void update(std::string& error_message, notifications_model& model);
@@ -766,8 +795,11 @@ namespace rs2
         void stop_recording(viewer_model& viewer);
         void pause_record();
         void resume_record();
-
+        
         void refresh_notifications(viewer_model& viewer);
+        bool check_for_bundled_fw_update( const rs2::context & ctx,
+                                          std::shared_ptr< notifications_model > not_model,
+                                          bool reset_delay = false );
 
         int draw_playback_panel(ux_window& window, ImFont* font, viewer_model& view);
         bool draw_advanced_controls(viewer_model& view, ux_window& window, std::string& error_message);
@@ -784,11 +816,10 @@ namespace rs2
         void begin_update(std::vector<uint8_t> data,
             viewer_model& viewer, std::string& error_message);
         void begin_update_unsigned(viewer_model& viewer, std::string& error_message);
-        void check_for_device_updates(rs2::context& ctx, std::shared_ptr<updates_model> updates);
+        void check_for_device_updates(viewer_model& viewer, bool activated_by_user = false);
 
 
         std::shared_ptr< atomic_objects_in_frame > get_detected_objects() const { return _detected_objects; }
-        bool is_cah_model_enabled() const { return _accuracy_health_model ? true : false; }
 
         std::vector<std::shared_ptr<subdevice_model>> subdevices;
         std::shared_ptr<syncer_model> syncer;
@@ -814,16 +845,10 @@ namespace rs2
 
         std::vector<std::shared_ptr<notification_model>> related_notifications;
 
-        bool show_trigger_camera_accuracy_health_popup = false;
-        bool show_reset_camera_accuracy_health_popup = false;
-
     private:
         // This class is in charge of camera accuracy health window parameters,
         // Needed as a member for reseting the window memory on device disconnection.
        
-
-        std::unique_ptr< cah_model > _accuracy_health_model;  // If this device does not support CAH feature,
-                                                              // the pointer will point to nullptr
 
         void draw_info_icon(ux_window& window, ImFont* font, const ImVec2& size);
         int draw_seek_bar();
@@ -850,7 +875,16 @@ namespace rs2
 
         void load_viewer_configurations(const std::string& json_str);
         void save_viewer_configurations(std::ofstream& outfile, nlohmann::json& j);
+        void handle_online_sw_update(
+            std::shared_ptr< notifications_model > nm,
+            std::shared_ptr< sw_update::dev_updates_profile::update_profile > update_profile,
+            bool reset_delay = false );
 
+        bool handle_online_fw_update(
+            const context & ctx,
+            std::shared_ptr< notifications_model > nm,
+            std::shared_ptr< sw_update::dev_updates_profile::update_profile > update_profile,
+            bool reset_delay = false );
 
         std::shared_ptr<recorder> _recorder;
         std::vector<std::shared_ptr<subdevice_model>> live_subdevices;

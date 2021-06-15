@@ -240,19 +240,6 @@ namespace librealsense
 #undef CASE
     }
 
-    const char* get_string( rs2_cah_trigger value )
-    {
-#define CASE(X) STRCASE(CAH_TRIGGER, X)
-        switch( value )
-        {
-        CASE( MANUAL )
-        CASE( NOW )
-        CASE( AUTO )
-        default: assert( !is_valid( value ) ); return UNKNOWN_VALUE;
-        }
-#undef CASE
-    }
-
     const char* get_string(rs2_host_perf_mode value)
     {
 #define CASE(X) STRCASE(HOST_PERF, X)
@@ -455,6 +442,8 @@ namespace librealsense
             case RS2_OPTION_ENABLE_IR_REFLECTIVITY: return "Enable IR Reflectivity";
             CASE(AUTO_EXPOSURE_LIMIT)
             CASE(AUTO_GAIN_LIMIT)
+            CASE(AUTO_RX_SENSITIVITY)
+            CASE(TRANSMITTER_FREQUENCY)
         default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
 #undef CASE

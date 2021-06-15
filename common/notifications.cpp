@@ -1014,4 +1014,138 @@ namespace rs2
         std::string str = to_string() << "notifications." << delay_id << ".next";
         config_file::instance().set(str.c_str(), (long long)(rawtime + days * 60 * 60 * 24));
     }
+    void notification_model::reset_delay()
+    {
+        if( is_delayed() )
+        {
+            std::string str = to_string() << "notifications." << delay_id << ".next";
+            config_file::instance().remove( str.c_str());
+        }
+    }
+
+    sw_recommended_update_alert_model::sw_recommended_update_alert_model(const std::string& current_version, const std::string& recommended_version, const std::string& recommended_version_link)
+        : notification_model(), _current_version(current_version), _recommended_version(recommended_version), _recommended_version_link(recommended_version_link)
+    {
+        enable_expand = false;
+        enable_dismiss = true;
+        pinned = true;
+        forced = true;
+        severity = RS2_LOG_SEVERITY_INFO;
+        message = "Current SW version: " + _current_version +"\n" +
+            "Recommended SW version: " + _recommended_version;
+    }
+
+    void sw_recommended_update_alert_model::set_color_scheme(float t) const
+    {
+        notification_model::set_color_scheme(t);
+        ImGui::PopStyleColor(1);
+        auto c = alpha(sensor_bg, 1 - t);
+        ImGui::PushStyleColor(ImGuiCol_WindowBg, c);
+    }
+
+    void sw_recommended_update_alert_model::draw_content(
+        ux_window& win, int x, int y, float t, std::string& error_message)
+    {
+        ImGui::SetCursorScreenPos({ float(x + 9), float(y + 4) });
+
+        ImVec4 shadow{ 1.f, 1.f, 1.f, 0.1f };
+        ImGui::GetWindowDrawList()->AddRectFilled({ float(x), float(y) },
+            { float(x + width), float(y + 25) },
+            ImColor(shadow));
+
+        ImGui::Text("Software Update Recommended!");
+
+        ImGui::SetCursorScreenPos({ float(x + 5), float(y + 27) });
+
+        draw_text(get_title().c_str(), x, y , height - 50);
+
+        ImGui::SetCursorScreenPos({ float(x + 9), float(y + height - 77) });
+
+        ImGui::PushStyleColor(ImGuiCol_Text, alpha(light_grey, 1.f - t));
+        ImGui::Text("We strongly recommend you upgrade \nyour software\n");
+        ImGui::PopStyleColor();
+        
+        ImGui::SetCursorScreenPos({ float(x + 5), float(y + height - 25) });
+
+        auto sat = 1.f
+            + sin(duration_cast<milliseconds>(system_clock::now() - created_time).count()
+                / 700.f)
+            * 0.1f;
+        ImGui::PushStyleColor(ImGuiCol_Button, saturate(sensor_header_light_blue, sat));
+        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, saturate(sensor_header_light_blue, 1.5f));
+
+        const auto bar_width = width - 115;
+
+        ImGui::PushStyleColor(ImGuiCol_Text, alpha(white, 1.f - t));
+        std::string button_name = to_string() << "Learn More..." << "##" << index;
+        if (ImGui::Button(button_name.c_str(), { float(bar_width), 20.f }))
+        {
+            bool should_dismiss = true;
+            try 
+            {
+                open_url(_recommended_version_link.c_str());
+            }
+            catch (const exception& e)
+            {
+                error_message = e.what();
+                should_dismiss = false;
+            }
+            if (should_dismiss) dismiss(false);
+        }
+        ImGui::PopStyleColor();
+        if (ImGui::IsItemHovered())
+        {
+            win.link_hovered();
+            ImGui::SetTooltip("Internet connection required");
+        }
+        ImGui::PopStyleColor(2);
+    }
+
+    sw_update_up_to_date_model::sw_update_up_to_date_model()
+        : notification_model()
+    {
+        enable_expand = false;
+        enable_dismiss = false;
+        pinned = false;
+        forced = true;
+        severity = RS2_LOG_SEVERITY_INFO;
+        message = "SW/FW versions up to date";
+    }
+
+    void sw_update_up_to_date_model::set_color_scheme(float t) const
+    {
+        notification_model::set_color_scheme(t);
+        ImGui::PopStyleColor();
+
+        ImVec4 c;
+        c = alpha(saturate(light_blue, 0.7f), 1 - t);
+        ImGui::PushStyleColor(ImGuiCol_WindowBg, c);
+    }
+
+
+    void sw_update_up_to_date_model::draw_content(ux_window& win, int x, int y, float t, std::string& error_message)
+    {
+        using namespace std;
+        using namespace chrono;
+
+        ImGui::SetCursorScreenPos({ float(x + 9), float(y + 4) });
+
+        ImVec4 shadow{ 1.f, 1.f, 1.f, 0.1f };
+        ImGui::GetWindowDrawList()->AddRectFilled({ float(x), float(y) },
+            { float(x + width), float(y + 25) }, ImColor(shadow));
+
+        ImGui::Text("Updates Status");
+
+        ImGui::SetCursorScreenPos({ float(x + 10), float(y + 35) });
+        ImGui::PushFont(win.get_large_font());
+        std::string txt = to_string() << textual_icons::throphy;
+        ImGui::Text("%s", txt.c_str());
+        ImGui::PopFont();
+
+        ImGui::SetCursorScreenPos({ float(x + 40), float(y + 35) });
+        ImGui::Text("SW/FW Versions All Up To Date");
+        
+        ImGui::SetCursorScreenPos({ float(x + 5), float(y + height - 25) });
+    }
+
 }

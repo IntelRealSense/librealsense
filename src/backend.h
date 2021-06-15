@@ -27,9 +27,10 @@
 #include <fstream>
 
 
-const uint16_t MAX_RETRIES                = 100;
-const uint8_t  DEFAULT_V4L2_FRAME_BUFFERS = 4;
-const uint16_t DELAY_FOR_RETRIES          = 50;
+const uint16_t MAX_RETRIES                 = 100;
+const uint8_t  DEFAULT_V4L2_FRAME_BUFFERS  = 4;
+const uint16_t DELAY_FOR_RETRIES           = 50;
+const int      POLLING_DEVICES_INTERVAL_MS = 5000;
 
 const uint8_t MAX_META_DATA_SIZE          = 0xff; // UVC Metadata total length
                                             // is limited by (UVC Bulk) design to 255 bytes

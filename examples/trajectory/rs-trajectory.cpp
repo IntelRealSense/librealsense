@@ -439,6 +439,10 @@ private:
 // In this example, we show how to track the camera's motion using a T265 device
 int main(int argc, char * argv[]) try
 {
+    std::string serial;
+    if (!device_with_streams({ RS2_STREAM_POSE }, serial))
+        return EXIT_SUCCESS;
+
     // Initialize window for rendering
     window app(1280, 720, "RealSense Trajectory Example");
 
@@ -456,6 +460,8 @@ int main(int argc, char * argv[]) try
     rs2::pipeline pipe;
     // Create a configuration for configuring the pipeline with a non default profile
     rs2::config cfg;
+    if (!serial.empty())
+        cfg.enable_device(serial);
     // Add pose stream
     cfg.enable_stream(RS2_STREAM_POSE, RS2_FORMAT_6DOF);
 

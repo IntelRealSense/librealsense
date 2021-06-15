@@ -8,10 +8,8 @@
 #include "fw-update/fw-update-unsigned.h"
 #include "context.h"
 #include "core/video.h"
-#include "depth-to-rgb-calibration.h"
 #include "log.h"
 #include <chrono>
-#include "algo/depth-to-rgb-calibration/debug.h"
 
 using namespace std;
 
@@ -33,7 +31,6 @@ namespace librealsense
             
             assert( sizeof( pose ) == sizeof( rs2_extrinsics ) );
             auto res = *(rs2_extrinsics*)raw_data.data();
-            AC_LOG( DEBUG, "raw extrinsics data from camera:\n" << std::setprecision(15) << res );
             
             return from_raw_extrinsics(res);
         }

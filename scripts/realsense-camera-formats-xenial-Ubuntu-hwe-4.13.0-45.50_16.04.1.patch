@@ -84,7 +84,7 @@ diff --git a/drivers/media/usb/uvc/uvcvideo.h b/drivers/media/usb/uvc/uvcvideo.h
 index 15e415e..1ade6ee 100644
 --- a/drivers/media/usb/uvc/uvcvideo.h
 +++ b/drivers/media/usb/uvc/uvcvideo.h
-@@ -152,6 +155,40 @@
+@@ -152,6 +155,43 @@
  #define UVC_GUID_FORMAT_INVI \
  	{ 'I',  'N',  'V',  'I', 0xdb, 0x57, 0x49, 0x5e, \
  	 0x8e, 0x3f, 0xf4, 0x79, 0x53, 0x2b, 0x94, 0x6f}

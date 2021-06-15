@@ -6,6 +6,7 @@
 #include <string>
 #include <atomic>
 #include <mutex>
+#include <deque>
 
 namespace utilities {
 namespace number {

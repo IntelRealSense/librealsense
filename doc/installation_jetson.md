@@ -88,7 +88,7 @@ Note that this method provides binary installation compiled using the `-DFORCE_R
  
  **Use the V4L Native backend by applying the kernel patching**
  
-   The method was verified with **Jetson AGX** boards with JetPack **4.2.3**[L4T 32.4.3], **4.3**[L4T 32.3.1] and **4.4**[L4T 32.2.1]. 
+   The method was verified with **Jetson AGX** boards with JetPack **4.2.3**[L4T 32.2.1,32.2.3], **4.3**[L4T 32.3.1] and **4.4**[L4T 32.4.3].
    
    The medhoe has not yet been verified on the **Jetson Nano** board.
   

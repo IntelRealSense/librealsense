@@ -5,8 +5,6 @@
 
 #include <librealsense2/rs.hpp>   // Include RealSense Cross Platform API
 
-// Let Catch define its own main() function
-#define CATCH_CONFIG_MAIN
 #include "../catch.h"
 
 #include <easylogging++.h>

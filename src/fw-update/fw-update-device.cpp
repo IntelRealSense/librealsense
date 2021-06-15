@@ -110,7 +110,7 @@ namespace librealsense
     }
 
     update_device::update_device(const std::shared_ptr<context>& ctx, bool register_device_notifications, std::shared_ptr<platform::usb_device> usb_device)
-        : _context(ctx), _usb_device(usb_device)
+        : _context(ctx), _usb_device(usb_device), _physical_port( usb_device->get_info().id )
     {
         if (auto messenger = _usb_device->open(FW_UPDATE_INTERFACE_NUMBER))
         {
@@ -168,6 +168,8 @@ namespace librealsense
                 auto sn = get_serial_number();
                 if(_is_dfu_locked)
                     throw std::runtime_error("Device: " + sn  + " is locked for update.\nUse firmware version higher than: " + _highest_fw_version);
+                else if (state == RS2_DFU_STATE_DFU_ERROR)
+                    throw std::runtime_error("Device: " + sn + " failed to update firmware\nImage is unsupported for this device or corrupted");
                 else
                     throw std::runtime_error("Device: " + sn + " failed to download firmware\nPlease verify that no other librealsense application is running");
             }
@@ -271,9 +273,10 @@ namespace librealsense
     {
         switch (info)
         {
-        case RS2_CAMERA_INFO_FIRMWARE_UPDATE_ID: return get_serial_number();
-        case RS2_CAMERA_INFO_NAME: return get_name();
-        case RS2_CAMERA_INFO_PRODUCT_LINE: return get_product_line();
+        case RS2_CAMERA_INFO_FIRMWARE_UPDATE_ID:    return get_serial_number();
+        case RS2_CAMERA_INFO_NAME:                  return get_name();
+        case RS2_CAMERA_INFO_PRODUCT_LINE:          return get_product_line();
+        case RS2_CAMERA_INFO_PHYSICAL_PORT:         return _physical_port;
         default:
             throw std::runtime_error("update_device does not support " + std::string(rs2_camera_info_to_string(info)));
         }
@@ -285,8 +288,12 @@ namespace librealsense
         {
         case RS2_CAMERA_INFO_FIRMWARE_UPDATE_ID:
         case RS2_CAMERA_INFO_NAME:
-        case RS2_CAMERA_INFO_PRODUCT_LINE:return true;
-        default: return false;
+        case RS2_CAMERA_INFO_PRODUCT_LINE:
+        case RS2_CAMERA_INFO_PHYSICAL_PORT:
+            return true;
+        
+        default:
+            return false;
         }
     }
 

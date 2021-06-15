@@ -2,10 +2,10 @@
 // Copyright(c) 2017 Intel Corporation. All Rights Reserved.
 
 #pragma once
-#include <core/roi.h>
-#include <core/extension.h>
-#include <core/serialization.h>
-#include "core/streaming.h"
+#include "../../core/roi.h"
+#include "../../core/extension.h"
+#include "../../core/serialization.h"
+#include "../../core/streaming.h"
 #include "archive.h"
 #include "concurrency.h"
 #include "sensor.h"
@@ -118,7 +118,7 @@ namespace librealsense
                 {
                     device_serializer::nanoseconds sleep_for = calc_sleep();
                     if (sleep_for.count() > 0)
-                        t.try_sleep(sleep_for.count() * 1e-6);
+                        t.try_sleep( sleep_for );
 
                     LOG_DEBUG("callback--> "<< frame_holder_to_string(*pf));
                     if(is_paused())

@@ -249,7 +249,7 @@ namespace librealsense
     {
         update_diff_time();
         unsigned int time_to_sleep = _poll_intervals_ms + _coefs.is_full() * (9 * _poll_intervals_ms);
-        if (!cancellable_timer.try_sleep(time_to_sleep))
+        if (!cancellable_timer.try_sleep( std::chrono::milliseconds( time_to_sleep )))
         {
             LOG_DEBUG("Notification: time_diff_keeper polling loop is being shut-down");
         }

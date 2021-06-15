@@ -6,7 +6,6 @@
 #include <easylogging++.h>
 // Catch also defines CHECK(), and so we have to undefine it or we get compilation errors!
 #undef CHECK
-#define CATCH_CONFIG_MAIN
 #include "../catch.h"
  
 // With Catch2, turn this into SCOPED_INFO (right now, does not work)
@@ -18,7 +17,7 @@
 #define TRACE(X) do {} while(0)
 #endif
 
-#include "../src/log.h"
+#include <src/log.h>
 
 
 using namespace librealsense;

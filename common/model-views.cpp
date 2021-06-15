@@ -37,6 +37,7 @@
 
 #include "metadata-helper.h"
 #include "calibration-model.h"
+#include "sw-update/http-downloader.h"
 
 using namespace rs400;
 using namespace nlohmann;
@@ -548,6 +549,13 @@ namespace rs2
         }
         return option;
     }
+    std::string adjust_description(const std::string& str_in, const std::string& to_be_replaced, const std::string& to_replace)
+    {
+        std::string adjusted_string(str_in);
+        auto pos = adjusted_string.find(to_be_replaced);
+        adjusted_string.replace(pos, to_be_replaced.size(), to_replace);
+        return adjusted_string;
+    }
 
     bool option_model::draw(std::string& error_message, notifications_model& model, bool new_line, bool use_option_name)
     {
@@ -559,7 +567,26 @@ namespace rs2
             if (opt == RS2_OPTION_HOLES_FILL)
                 use_option_name = false;
 
-            auto desc = endpoint->get_option_description(opt);
+            // lambda function used to convert meters to cm - while the number is a string
+            auto convert_float_str = [](std::string float_str, float conversion_factor) {
+                if (float_str.size() == 0)
+                    return float_str;
+                float number_float = std::stof(float_str);
+                return std::to_string(number_float * conversion_factor);
+            };
+
+            std::string desc_str (endpoint->get_option_description(opt));
+
+            // Device D405 is for short range, therefore, its units are in cm - for better UX
+            bool use_cm_units = false;
+            std::string device_pid = dev->dev.get_info(RS2_CAMERA_INFO_PRODUCT_ID);
+            if (device_pid == "0B5B" && val_in_range(opt, { RS2_OPTION_MIN_DISTANCE, RS2_OPTION_MAX_DISTANCE, RS2_OPTION_DEPTH_UNITS }))
+            {
+                use_cm_units = true;
+                desc_str = adjust_description(desc_str, "meters", "cm");
+            }
+
+            auto desc = desc_str.c_str();
 
             // remain option to append to the current line
             if (!new_line)
@@ -674,16 +701,29 @@ namespace rs2
                         }
                         else if (edit_mode)
                         {
+                            std::string buff_str = edit_value;
+
+                            // when cm must be used instead of meters
+                            if (use_cm_units)
+                                buff_str = convert_float_str(buff_str, 100.f);
+
                             char buff[TEXT_BUFF_SIZE];
                             memset(buff, 0, TEXT_BUFF_SIZE);
-                            strcpy(buff, edit_value.c_str());
+                            strcpy(buff, buff_str.c_str());
+
                             if (ImGui::InputText(id.c_str(), buff, TEXT_BUFF_SIZE,
                                 ImGuiInputTextFlags_EnterReturnsTrue))
                             {
-                                float new_value;
-                                if (!string_to_int(buff, new_value))
+                                if (use_cm_units)
                                 {
-                                    error_message = "Invalid numeric input!";
+                                    buff_str = convert_float_str(std::string(buff), 0.01f);
+                                    memset(buff, 0, TEXT_BUFF_SIZE);
+                                    strcpy(buff, buff_str.c_str());
+                                }
+                                float new_value;
+                                if(!utilities::string::string_to_value<float>(buff, new_value))
+                                {
+                                    error_message = "Invalid float input!";
                                 }
                                 else if (new_value < range.min || new_value > range.max)
                                 {
@@ -695,8 +735,13 @@ namespace rs2
                                 {
                                     set_option(opt, new_value, error_message);
                                 }
-
                                 edit_mode = false;
+                            }
+                            else if (use_cm_units)
+                            {
+                                buff_str = convert_float_str(buff_str, 0.01f);
+                                memset(buff, 0, TEXT_BUFF_SIZE);
+                                strcpy(buff, buff_str.c_str());
                             }
                             edit_value = buff;
                         }
@@ -719,9 +764,42 @@ namespace rs2
                         else
                         {
                             float tmp_value = value;
-                            if (ImGui::SliderFloat(id.c_str(), &tmp_value,
-                                range.min, range.max, "%.4f"))
+                            float temp_value_displayed = tmp_value;
+                            float min_range_displayed = range.min;
+                            float max_range_displayed = range.max;
+
+                            // computing the number of decimal digits taken from the step options' property
+                            // this will then be used to format the displayed value
+                            auto num_of_decimal_digits = [](float f) {
+                                int res = 0;
+                                while (f && (int)f == 0)
+                                {
+                                    f *= 10.f;
+                                    ++res;
+                                }
+                                return res;
+                            };
+                            int num_of_decimal_digits_displayed = num_of_decimal_digits(range.step);
+
+                            // displaying in cm instead of meters for D405
+                            if (use_cm_units)
                             {
+                                temp_value_displayed *= 100.f;
+                                min_range_displayed *= 100.f;
+                                max_range_displayed *= 100.f;
+                                int updated_num_of_decimal_digits_displayed = num_of_decimal_digits_displayed - 2;
+                                if (updated_num_of_decimal_digits_displayed > 0)
+                                    num_of_decimal_digits_displayed = updated_num_of_decimal_digits_displayed;
+                            }
+
+                            std::stringstream formatting_ss;
+                            formatting_ss << "%." << num_of_decimal_digits_displayed << "f";
+
+                            if (ImGui::SliderFloat(id.c_str(), &temp_value_displayed,
+                                min_range_displayed, max_range_displayed, formatting_ss.str().c_str()))
+                            {
+                                if (use_cm_units)
+                                    tmp_value = temp_value_displayed / 100.f;
                                 auto loffset = std::abs(fmod(tmp_value, range.step));
                                 auto roffset = range.step - loffset;
                                 if (tmp_value >= 0)
@@ -1278,10 +1356,14 @@ namespace rs2
                     // Watch out for read-only options in the playback sensor!
                     try
                     {
-                        s->set_option( RS2_OPTION_SENSOR_MODE,
-                            static_cast< float >( resolution_from_width_height(
-                                res_values[ui.selected_res_id].first,
-                                res_values[ui.selected_res_id].second ) ) );
+                        auto requested_sensor_mode = static_cast<float>(resolution_from_width_height(
+                            res_values[ui.selected_res_id].first,
+                            res_values[ui.selected_res_id].second));
+
+                        auto currest_sensor_mode = s->get_option(RS2_OPTION_SENSOR_MODE);
+
+                        if (requested_sensor_mode != currest_sensor_mode)
+                            s->set_option(RS2_OPTION_SENSOR_MODE, requested_sensor_mode);
                     }
                     catch( not_implemented_error const &)
                     {
@@ -1389,7 +1471,9 @@ namespace rs2
                     res = true;
                     _options_invalidated = true;
 
-                    if (s->supports(RS2_OPTION_SENSOR_MODE))
+                    // Set sensor mode only at the Viewer app,
+                    // DQT app will handle the sensor mode when the streaming is off (while reseting the stream)
+                    if (s->supports(RS2_OPTION_SENSOR_MODE) && !allow_change_resolution_while_streaming)
                     {
                         auto width = res_values[tmp_selected_res_id].first;
                         auto height = res_values[tmp_selected_res_id].second;
@@ -1927,9 +2011,10 @@ namespace rs2
         return results;
     }
 
-    void subdevice_model::stop(viewer_model& viewer)
+    void subdevice_model::stop(std::shared_ptr<notifications_model> not_model)
     {
-        viewer.not_model->add_log("Stopping streaming");
+        if ( not_model )
+            not_model->add_log("Stopping streaming");
 
         for_each(stream_display_names.begin(), stream_display_names.end(), [this](std::pair<int, std::string> kvp)
         {
@@ -2035,7 +2120,8 @@ namespace rs2
         try {
             s->start([&, syncer](frame f)
             {
-                if (viewer.synchronization_enable && is_synchronized_frame(viewer, f))
+                // The condition here must match the condition inside render_loop()!
+                if( viewer.synchronization_enable )
                 {
                     syncer->invoke(f);
                 }
@@ -2811,7 +2897,7 @@ namespace rs2
             label = to_string() << textual_icons::times << "##Stop " << profile.unique_id();
             if (ImGui::Button(label.c_str(), { 24, top_bar_height }))
             {
-                dev->stop(viewer);
+                dev->stop(viewer.not_model);
             }
             if (ImGui::IsItemHovered())
             {
@@ -3117,7 +3203,22 @@ namespace rs2
                 auto meters = texture->get_last_frame().as<depth_frame>().get_distance(x, y);             
 
                 if (viewer.metric_system)
-                    ss << std::dec << " = " << std::setprecision(3) << meters << " meters";
+                {
+                    // depth is displayed in mm when distance is below 20 cm and gets back to meters when above 30 cm
+                    static bool display_in_mm = false;
+                    if (!display_in_mm && meters > 0.f && meters < 0.2f)
+                    {
+                        display_in_mm = true;
+                    }
+                    else if (display_in_mm && meters > 0.3f)
+                    {
+                        display_in_mm = false;
+                    }
+                    if (display_in_mm)
+                        ss << std::dec << " = " << std::setprecision(3) << meters * 1000 << " millimeters";
+                    else
+                        ss << std::dec << " = " << std::setprecision(3) << meters << " meters";
+                }
                 else
                     ss << std::dec << " = " << std::setprecision(3) << meters / FEET_TO_METER << " feet";
 
@@ -3154,7 +3255,18 @@ namespace rs2
                 {
                     if (ds.get_option(RS2_OPTION_ENABLE_IR_REFLECTIVITY) == 1.0f)
                     {
-                        if ((0.2f == roi_percentage) && roi_display_rect.contains(mouse.cursor))
+                        rect roi_for_reflectivity{
+                            (float)dev->algo_roi.min_x,
+                            (float)dev->algo_roi.min_y,
+                            (float)( dev->algo_roi.max_x - dev->algo_roi.min_x ),
+                            (float)( dev->algo_roi.max_y - dev->algo_roi.min_y ) };
+
+                        auto normalized_roi = roi_for_reflectivity
+                                                  .normalize( _normalized_zoom.unnormalize( get_original_stream_bounds() ) )
+                                                  .unnormalize( stream_rect )
+                                                  .cut_by( stream_rect );
+
+                        if ((0.2f == roi_percentage) && normalized_roi.contains(mouse.cursor))
                         {
                             // Add reflectivity information on frame, if max usable range is displayed, display reflectivity on the same line
                             show_reflectivity = draw_reflectivity(x, y, ds, streams, ss, show_max_range);
@@ -3175,7 +3287,18 @@ namespace rs2
                         bool lf_exist = texture->get_last_frame();
                         if (is_stream_alive() && texture->get_last_frame().get_profile().stream_type() == RS2_STREAM_INFRARED)
                         {
-                            if ((0.2f == roi_percentage) && roi_display_rect.contains(mouse.cursor))
+                            rect roi_for_reflectivity{
+                                (float)dev->algo_roi.min_x,
+                                (float)dev->algo_roi.min_y,
+                                (float)(dev->algo_roi.max_x - dev->algo_roi.min_x),
+                                (float)(dev->algo_roi.max_y - dev->algo_roi.min_y) };
+
+                            auto normalized_roi = roi_for_reflectivity
+                                                      .normalize( _normalized_zoom.unnormalize( get_original_stream_bounds() ) )
+                                                      .unnormalize( stream_rect )
+                                                      .cut_by( stream_rect );
+
+                            if ((0.2f == roi_percentage) && normalized_roi.contains(mouse.cursor))
                             {
                                 show_reflectivity = draw_reflectivity(x, y, ds, streams, ss, show_max_range);
                             }
@@ -3645,7 +3768,6 @@ namespace rs2
 
             glColor3f(1.f, 1.f, 1.f);
             roi_percentage = dev->roi_percentage;
-            roi_display_rect = r;
         }
 
         update_ae_roi_rect(stream_rect, g, error_message);
@@ -3691,6 +3813,87 @@ namespace rs2
         _updates->set_device_status(*_updates_profile, false);
     }
 
+    bool device_model::check_for_bundled_fw_update(const rs2::context &ctx, std::shared_ptr<notifications_model> not_model , bool reset_delay )
+    {
+        // LibRS can have a "bundled" FW binary downloaded during CMake. That's the version
+        // "available" to us, but it may not be there (e.g., no internet connection to download
+        // it). Lacking an available version, we try to let the user choose a "recommended"
+        // version for download. The recommended version is defined by the device (and comes
+        // from a #define).
+        if( dev.supports( RS2_CAMERA_INFO_FIRMWARE_VERSION )
+            && dev.supports( RS2_CAMERA_INFO_RECOMMENDED_FIRMWARE_VERSION )
+            && dev.supports( RS2_CAMERA_INFO_PRODUCT_LINE ) )
+        {
+            std::string fw = dev.get_info( RS2_CAMERA_INFO_FIRMWARE_VERSION );
+            std::string recommended_fw_ver
+                = dev.get_info( RS2_CAMERA_INFO_RECOMMENDED_FIRMWARE_VERSION );
+
+            int product_line
+                = parse_product_line( dev.get_info( RS2_CAMERA_INFO_PRODUCT_LINE ) );
+
+            bool allow_rc_firmware = config_file::instance().get_or_default(
+                configurations::update::allow_rc_firmware,
+                false );
+            bool is_rc = ( product_line == RS2_PRODUCT_LINE_D400 ) && allow_rc_firmware;
+            std::string available_fw_ver = get_available_firmware_version( product_line );
+
+            std::shared_ptr< firmware_update_manager > manager = nullptr;
+
+            if( is_upgradeable( fw, available_fw_ver) )
+            {
+                recommended_fw_ver = available_fw_ver;
+
+                static auto table = create_default_fw_table();
+
+                manager = std::make_shared< firmware_update_manager >( not_model,
+                                                                       *this,
+                                                                       dev,
+                                                                       ctx,
+                                                                       table[product_line],
+                                                                       true );
+            }
+
+            auto dev_name = get_device_name(dev);
+            if( is_upgradeable( fw, recommended_fw_ver) )
+            {
+                std::stringstream msg;
+                msg << dev_name.first << " (S/N " << dev_name.second << ")\n"
+                    << "Current Version: " << fw << "\n";
+
+                if( is_rc )
+                    msg << "Release Candidate: " << recommended_fw_ver << " Pre-Release";
+                else
+                    msg << "Recommended Version: " << recommended_fw_ver;
+
+                auto n = std::make_shared< fw_update_notification_model >( msg.str(),
+                                                                           manager,
+                                                                           false );
+                // The FW update delay ID include the dismissed recommended version and the device serial number
+                // This way a newer FW recommended version will not be dismissed 
+                n->delay_id = "fw_update_alert." + recommended_fw_ver + "." + dev_name.second;
+                n->enable_complex_dismiss = true;
+
+                if( reset_delay ) n->reset_delay();
+
+                if( ! n->is_delayed() )
+                {
+                    not_model->add_notification( n );
+                    related_notifications.push_back( n );
+                    return true;
+                }
+            }
+            else
+            {
+                std::stringstream msg;
+                msg << "Current FW >= Bundled FW for: " << dev_name.first << " (S/N " << dev_name.second << ")\n"
+                    << "Current Version: " << fw << "\n" 
+                    << "Recommended Version: " << recommended_fw_ver;
+
+                not_model->add_log(msg.str(), RS2_LOG_SEVERITY_DEBUG);
+            }
+        }
+        return false;
+    }
 
     void device_model::refresh_notifications(viewer_model& viewer)
     {
@@ -3698,68 +3901,9 @@ namespace rs2
 
         auto name = get_device_name(dev);
 
-        check_for_device_updates(viewer.ctx, viewer.updates);
-
-        // Inhibit for DQT
-        if ((bool)config_file::instance().get(configurations::update::recommend_updates) && _allow_remove)
-        {
-            bool fw_update_required = false;
-            for (auto&& sub : dev.query_sensors())
-            {
-                if (sub.supports(RS2_CAMERA_INFO_FIRMWARE_VERSION) &&
-                    sub.supports(RS2_CAMERA_INFO_RECOMMENDED_FIRMWARE_VERSION) &&
-                    sub.supports(RS2_CAMERA_INFO_PRODUCT_LINE))
-                {
-                    std::string fw = sub.get_info(RS2_CAMERA_INFO_FIRMWARE_VERSION);
-                    std::string recommended = sub.get_info(RS2_CAMERA_INFO_RECOMMENDED_FIRMWARE_VERSION);
-
-                    int product_line = parse_product_line(sub.get_info(RS2_CAMERA_INFO_PRODUCT_LINE));
-
-                    bool allow_rc_firmware = config_file::instance().get_or_default(configurations::update::allow_rc_firmware, false);
-                    bool is_rc = (product_line == RS2_PRODUCT_LINE_D400) && allow_rc_firmware;
-                    std::string available = get_available_firmware_version(product_line);
-
-                    std::shared_ptr<firmware_update_manager> manager = nullptr;
-
-                    if (is_upgradeable(fw, available))
-                    {
-                        recommended = available;
-
-                        static auto table = create_default_fw_table();
-
-                        manager = std::make_shared<firmware_update_manager>(viewer, *this, dev, viewer.ctx, table[product_line], true);
-                    }
-
-                    if (is_upgradeable(fw, recommended))
-                    {
-                        std::stringstream msg;
-                        msg << name.first << " (S/N " << name.second << ")\n"
-                            << "Current Version: " << fw << "\n";
-
-                        if (is_rc)
-                            msg << "Release Candidate: " << recommended << " Pre-Release";
-                        else
-                            msg << "Recommended Version: " << recommended;
-
-                        if (!fw_update_required)
-                        {
-                            auto n = std::make_shared<fw_update_notification_model>(
-                                msg.str(), manager, false);
-                            n->delay_id = "dfu." + name.second;
-                            n->enable_complex_dismiss = true;
-                            if (!n->is_delayed())
-                            {
-                                viewer.not_model->add_notification(n);
-
-                                fw_update_required = true;
-
-                                related_notifications.push_back(n);
-                            }
-                        }
-                    }
-                }
-            }
-        }
+        // Inhibit on DQT / Playback device
+        if( _allow_remove && ( ! dev.is< playback >() ) )
+            check_for_device_updates(viewer);
 
         if ((bool)config_file::instance().get(configurations::update::recommend_calibration))
         {
@@ -3804,12 +3948,6 @@ namespace rs2
         _updates_profile(std::make_shared<dev_updates_profile::update_profile>()),
         _allow_remove(remove)
     {
-
-        if( dev.supports( RS2_CAMERA_INFO_FIRMWARE_VERSION ) && dev.is< device_calibration >() )
-        {
-            _accuracy_health_model = std::unique_ptr< cah_model >( new cah_model( *this, viewer ) );
-        }
-
         auto name = get_device_name(dev);
         id = to_string() << name.first << ", " << name.second;
 
@@ -4791,11 +4929,10 @@ namespace rs2
 
             else return; // Aborted by the user
 
-            auto manager = std::make_shared<firmware_update_manager>(viewer, *this, dev, viewer.ctx, data, false);
+            auto manager = std::make_shared<firmware_update_manager>(viewer.not_model, *this, dev, viewer.ctx, data, false);
 
             auto n = std::make_shared<fw_update_notification_model>(
                 "Manual Update requested", manager, true);
-            n->forced = true;
             viewer.not_model->add_notification(n);
 
             for (auto&& n : related_notifications)
@@ -4841,12 +4978,11 @@ namespace rs2
                 else return; // Aborted by the user
             }
 
-            auto manager = std::make_shared<firmware_update_manager>(viewer, *this, dev, viewer.ctx, data, true);
+            auto manager = std::make_shared<firmware_update_manager>(viewer.not_model, *this, dev, viewer.ctx, data, true);
 
             auto n = std::make_shared<fw_update_notification_model>(
                 "Manual Update requested", manager, true);
             viewer.not_model->add_notification(n);
-            n->forced = true;
 
             for (auto&& n : related_notifications)
                 n->dismiss(false);
@@ -4866,57 +5002,159 @@ namespace rs2
             error_message = e.what();
         }
     }
-    void device_model::check_for_device_updates(rs2::context& ctx, std::shared_ptr<updates_model> updates)
+    void device_model::check_for_device_updates(viewer_model& viewer, bool activated_by_user )
     {
-        std::weak_ptr<updates_model> updates_model_protected(updates);
-        std::weak_ptr<dev_updates_profile::update_profile >update_profile_protected(_updates_profile);
-        std::thread check_for_device_updates_thread([ctx, updates_model_protected, this, update_profile_protected]()
-        {
+        std::weak_ptr< updates_model > updates_model_protected( viewer.updates );
+        std::weak_ptr< dev_updates_profile::update_profile > update_profile_protected(
+            _updates_profile );
+        std::weak_ptr< notifications_model > notification_model_protected( viewer.not_model );
+        const context & ctx( viewer.ctx );
+        std::thread check_for_device_updates_thread( [ctx,
+                                                      updates_model_protected,
+                                                      notification_model_protected,
+                                                      this,
+                                                      update_profile_protected,
+                                                      activated_by_user]() {
             try
             {
-
-                std::string server_url = config_file::instance().get(configurations::update::sw_updates_url);
+                bool need_to_check_bundle = true;
+                std::string server_url
+                    = config_file::instance().get( configurations::update::sw_updates_url );
                 bool use_local_file = false;
                 const std::string local_file_prefix = "file://";
 
-                // If URL contain a "file://"  prefix, we open it as local file and not downloading it from a server
+                // If URL contain a "file://"  prefix, we open it as local file and not downloading
+                // it from a server
                 if( server_url.find( local_file_prefix ) == 0 )
                 {
                     use_local_file = true;
                     server_url.erase( 0, local_file_prefix.length() );
                 }
-                sw_update::dev_updates_profile updates_profile(dev, server_url, use_local_file);
+                sw_update::dev_updates_profile updates_profile( dev, server_url, use_local_file );
 
-                bool sw_update_required = updates_profile.retrieve_updates(versions_db_manager::LIBREALSENSE);
-                bool fw_update_required = updates_profile.retrieve_updates(versions_db_manager::FIRMWARE);
-
-                if (auto update_profile = update_profile_protected.lock())
+                bool fail_access_db = false;
+                bool sw_online_update_available = updates_profile.retrieve_updates( sw_update::LIBREALSENSE, fail_access_db);
+                bool fw_online_update_available = updates_profile.retrieve_updates( sw_update::FIRMWARE, fail_access_db);
+                bool fw_bundled_update_available = false;
+                if (sw_online_update_available || fw_online_update_available)
                 {
-                    *update_profile = updates_profile.get_update_profile();
-                    updates_model::update_profile_model updates_profile_model(*update_profile, ctx, this);
-
-
-                    if (sw_update_required || fw_update_required)
+                    if (auto update_profile = update_profile_protected.lock())
                     {
-                        if (auto viewer_updates = updates_model_protected.lock())
+                        *update_profile = updates_profile.get_update_profile();
+                        updates_model::update_profile_model updates_profile_model(*update_profile,
+                            ctx,
+                            this);
+
+                        dev_updates_profile::version_info sw_update_info, fw_update_info;
+                        bool essential_sw_update_found = update_profile->get_sw_update(sw_update::ESSENTIAL, sw_update_info);
+                        bool essential_fw_update_found = update_profile->get_fw_update(sw_update::ESSENTIAL, fw_update_info);
+                        if (essential_sw_update_found || essential_fw_update_found)
                         {
-                            viewer_updates->add_profile(updates_profile_model);
+                            if (auto viewer_updates = updates_model_protected.lock())
+                            {
+                                viewer_updates->add_profile(updates_profile_model);
+                                need_to_check_bundle = false;
+
+                                // Log the essential updates
+                                if (auto nm = notification_model_protected.lock())
+                                {
+                                    if( essential_sw_update_found )
+                                        nm->add_log(
+                                            to_string()
+                                                << update_profile->device_name << " (S/N "
+                                                << update_profile->serial_number << ")\n"
+                                                << "Current SW version: " << std::string( update_profile->software_version )
+                                                << "\nEssential SW version: "
+                                                << std::string( sw_update_info.ver ),
+                                            RS2_LOG_SEVERITY_WARN );
+                                    
+                                    if( essential_fw_update_found )
+                                        nm->add_log(
+                                            to_string()
+                                                << update_profile->device_name << " (S/N "
+                                                << update_profile->serial_number << ")\n"
+                                                << "Current FW version: " << std::string( update_profile->firmware_version )
+                                                << "\nEssential FW version: "
+                                                << std::string( fw_update_info.ver ),
+                                            RS2_LOG_SEVERITY_WARN );
+                                }
+                            }
                         }
-                    }
-                    else
-                    {   // For updating current device profile if exists (Could update firmware version)
-                        if (auto viewer_updates = updates_model_protected.lock())
+                        else 
                         {
-                            viewer_updates->update_profile(updates_profile_model);
+                            if (auto viewer_updates = updates_model_protected.lock())
+                            {
+                                // Do not create pop ups if the viewer updates windows is on
+                                if (viewer_updates->has_updates())
+                                {
+                                    need_to_check_bundle = false;
+                                }
+                                else
+                                {
+                                    if (sw_online_update_available)
+                                    {
+                                        if (auto nm = notification_model_protected.lock())
+                                        {
+                                            handle_online_sw_update( nm, update_profile, activated_by_user);
+                                        }
+                                    }
+                                    if (fw_online_update_available)
+                                    {
+                                        if (auto nm = notification_model_protected.lock())
+                                        {
+                                            need_to_check_bundle = !handle_online_fw_update( ctx, nm, update_profile , activated_by_user);
+                                        }
+                                    }
+                                }
+                            }
+                            // For updating current device profile if exists (Could update firmware version)
+                            if (auto viewer_updates = updates_model_protected.lock())
+                            {
+                                viewer_updates->update_profile(updates_profile_model);
+                            }
                         }
                     }
                 }
+                else if( auto nm = notification_model_protected.lock() )
+                {
+                    if ( activated_by_user && fail_access_db )
+                        nm->add_notification( { to_string() << textual_icons::wifi << "  Unable to retrieve updates.\nPlease check your network connection.\n",
+                                                RS2_LOG_SEVERITY_ERROR,
+                                                RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR } );
+                    else
+                        nm->add_log( "No online SW / FW updates available" );
+                }
+
+                // If no on-line updates notification, offer bundled FW update if needed
+                if( need_to_check_bundle
+                    && (bool)config_file::instance().get( configurations::update::recommend_updates ) )
+                {
+                    if( auto nm = notification_model_protected.lock() )
+                    {
+                        fw_bundled_update_available = check_for_bundled_fw_update( ctx, nm , activated_by_user);
+                    }
+                }
+
+                // When no updates available (on-line + bundled), add a notification to indicate "all up to date"
+                if( activated_by_user && ! fail_access_db && ! sw_online_update_available
+                    && ! fw_online_update_available && ! fw_bundled_update_available )
+                {
+                    auto n = std::make_shared< sw_update_up_to_date_model >();
+                    auto name = get_device_name(dev);
+                    n->delay_id = "no_updates_alert." + name.second;
+                   
+                    if (auto nm = notification_model_protected.lock())
+                    {
+                        nm->add_notification(n);
+                        related_notifications.push_back(n);
+                    }
+                }
             }
-            catch (const std::exception& e)
+            catch( const std::exception & e )
             {
                 auto error = e.what();
             }
-        });
+        } );
 
         check_for_device_updates_thread.detach();
     }
@@ -5195,28 +5433,27 @@ namespace rs2
                         ImGui::SetTooltip("%s", tooltip.c_str());
                     }
 
-                    if (dev.supports(RS2_CAMERA_INFO_PRODUCT_LINE) && is_recommended_fw_available(dev.get_info(RS2_CAMERA_INFO_PRODUCT_LINE)))
+
+                    if( dev.supports( RS2_CAMERA_INFO_PRODUCT_LINE )
+                        && ( dev.get_info( RS2_CAMERA_INFO_PRODUCT_LINE ) ) )
                     {
-                        
-                        if (ImGui::Selectable("Install Recommended Firmware ", false, updateFwFlags))
+                        if( ImGui::Selectable( "Check For Updates", false, updateFwFlags ) )
                         {
-                            auto sensors = dev.query_sensors();
-                            auto product_line_str = "";
-                            if (dev.supports(RS2_CAMERA_INFO_PRODUCT_LINE))
-                                product_line_str = dev.get_info(RS2_CAMERA_INFO_PRODUCT_LINE);
-                            if (sensors.size() && sensors.front().supports(RS2_CAMERA_INFO_PRODUCT_LINE))
-                                product_line_str = sensors.front().get_info(RS2_CAMERA_INFO_PRODUCT_LINE);
-                            int product_line = parse_product_line(product_line_str);
+                            // Remove all previous SW/FW update notifications before triggering checking for updates logic
+                            for( auto && n : related_notifications )
+                            {
+                                if( n->is< fw_update_notification_model >()
+                                    || n->is< sw_recommended_update_alert_model >() )
+                                    n->dismiss( false ); // No need for snooze, if needed a new notification will be popped 
+                            }
 
-                            auto table = create_default_fw_table();
-
-                            begin_update(table[product_line], viewer, error_message);
+                            check_for_device_updates( viewer , true);
                         }
                     }
 
                     if (ImGui::IsItemHovered())
                     {
-                        std::string tooltip = to_string() <<"Install default recommended firmware for this device" << (is_streaming ? " (Disabled while streaming)" : "");
+                        std::string tooltip = to_string() << "Check for SW / FW updates";
                         ImGui::SetTooltip("%s", tooltip.c_str());
                     }
                 }
@@ -5418,22 +5655,6 @@ namespace rs2
         }
 
 
-        if (show_trigger_camera_accuracy_health_popup)
-        {
-            if (_accuracy_health_model)
-            {
-                show_trigger_camera_accuracy_health_popup = _accuracy_health_model->prompt_trigger_popup(window, error_message);
-            }
-        }
-
-        if (show_reset_camera_accuracy_health_popup)
-        {
-            if (_accuracy_health_model)
-            {
-                show_reset_camera_accuracy_health_popup = _accuracy_health_model->prompt_reset_popup(window, error_message);
-            }
-        }
-
         if (keep_showing_advanced_mode_modal)
         {
             const bool is_advanced_mode_enabled = dev.as<advanced_mode>().is_enabled();
@@ -5524,6 +5745,108 @@ namespace rs2
                 }
             }
         }
+    }
+
+    void rs2::device_model::handle_online_sw_update(
+        std::shared_ptr< notifications_model > nm,
+        std::shared_ptr< dev_updates_profile::update_profile > update_profile,
+        bool reset_delay )
+    {
+        dev_updates_profile::version_info recommended_sw_update_info;
+        update_profile->get_sw_update(sw_update::RECOMMENDED, recommended_sw_update_info);
+        auto n = std::make_shared< sw_recommended_update_alert_model >(
+            RS2_API_FULL_VERSION_STR,
+            recommended_sw_update_info.ver,
+            recommended_sw_update_info.download_link);
+
+        auto dev_name = get_device_name(dev);
+        // The SW update delay ID include the dismissed recommended version and the device serial number
+        // This way a newer SW recommended version will not be dismissed. 
+        n->delay_id = "sw_update_alert." + std::string(recommended_sw_update_info.ver) + "." + dev_name.second;
+        n->enable_complex_dismiss = true;  // allow advanced dismiss menu
+
+        if ( reset_delay ) n->reset_delay();
+
+        if (!n->is_delayed())
+        {
+            nm->add_notification(n);
+            related_notifications.push_back(n);
+        }
+    }
+
+    bool rs2::device_model::handle_online_fw_update(
+        const context & ctx,
+        std::shared_ptr< notifications_model > nm,
+        std::shared_ptr< dev_updates_profile::update_profile > update_profile,
+        bool reset_delay )
+    {
+        bool fw_update_notification_raised = false;
+        std::shared_ptr< firmware_update_manager > manager = nullptr;
+
+        std::vector< uint8_t > fw_data;
+        http::http_downloader downloader;
+
+        // Try to download the recommended FW binary file
+        int download_retries = 3;
+        dev_updates_profile::version_info recommended_fw_update_info;
+        update_profile->get_fw_update(sw_update::RECOMMENDED, recommended_fw_update_info);
+
+        while (download_retries > 0)
+        {
+            if (downloader.download_to_bytes_vector(
+                recommended_fw_update_info.download_link,
+                fw_data))
+                download_retries = 0;
+            else
+                --download_retries;
+        }
+
+        // If the download process finished successfully, pop up a
+        // notification for the FW update process
+        if (!fw_data.empty())
+        {
+            manager = std::make_shared< firmware_update_manager >(nm,
+                *this,
+                dev,
+                ctx,
+                fw_data,
+                true);
+
+            auto dev_name = get_device_name(dev);
+            std::stringstream msg;
+            msg << dev_name.first << " (S/N " << dev_name.second << ")\n"
+                << "Current Version: "
+                << std::string(update_profile->firmware_version) << "\n";
+
+            msg << "Recommended Version: "
+                << std::string(recommended_fw_update_info.ver);
+
+            auto n = std::make_shared< fw_update_notification_model >(
+                msg.str(),
+                manager,
+                false);
+            n->delay_id = "fw_update_alert." +  std::string(recommended_fw_update_info.ver) + "." +  dev_name.second;
+            n->enable_complex_dismiss = true;
+
+            if ( reset_delay ) n->reset_delay();
+
+            if (!n->is_delayed())
+            {
+                nm->add_notification(n);
+                related_notifications.push_back(n);
+                fw_update_notification_raised = true;
+            }
+        }
+        else
+            nm->output.add_log(
+                RS2_LOG_SEVERITY_WARN,
+                __FILE__,
+                __LINE__,
+                to_string()
+                << "Error in downloading FW binary file: "
+                << recommended_fw_update_info.download_link);
+
+        return fw_update_notification_raised;
     }
 
     // Load viewer configuration for stereo module (depth/infrared streams) only
@@ -5866,7 +6189,7 @@ namespace rs2
                                     model.add_log(to_string() << "Setting " << opt_model.opt << " to "
                                         << new_val << " (" << labels[selected] << ")");
 
-                                    opt_model.set_option(opt_model.opt, new_val, error_message);
+                                    opt_model.set_option(opt_model.opt, static_cast<float>(new_val), error_message);
 
                                     // Only apply preset to GUI if set_option was succesful
                                     selected_file_preset = "";
@@ -6162,7 +6485,7 @@ namespace rs2
                 for (auto&& sub : subdevices)
                 {
                     if (sub->streaming)
-                        sub->stop(viewer);
+                        sub->stop(viewer.not_model);
                 }
                 device_to_remove = this;
             }
@@ -6417,7 +6740,7 @@ namespace rs2
 
                         if (ImGui::Button(label.c_str(), { 30,30 }))
                         {
-                            sub->stop(viewer);
+                            sub->stop(viewer.not_model);
                             std::string friendly_name = sub->s->get_info(RS2_CAMERA_INFO_NAME);
                             if ((friendly_name.find("Tracking") != std::string::npos) ||
                                 (friendly_name.find("Motion") != std::string::npos))

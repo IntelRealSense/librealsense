@@ -11,8 +11,10 @@ find_package(Threads REQUIRED)
 
 add_executable(${RS_TARGET} rs-convert.cpp
     converter.hpp
+    converter.cpp
     converters/converter-bin.hpp
     converters/converter-csv.hpp
+    converters/converter-csv.cpp
     converters/converter-ply.hpp
     converters/converter-png.hpp
     converters/converter-raw.hpp

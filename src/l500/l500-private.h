@@ -3,11 +3,11 @@
 
 #pragma once
 
-#include "backend.h"
-#include "types.h"
-#include "option.h"
-#include "core/extension.h"
-#include "fw-update/fw-update-unsigned.h"
+#include "../backend.h"
+#include "../types.h"
+#include "../option.h"
+#include "../core/extension.h"
+#include "../fw-update/fw-update-unsigned.h"
 
 static const int MAX_NUM_OF_RGB_RESOLUTIONS = 5;
 static const int MAX_NUM_OF_DEPTH_RESOLUTIONS = 5; 
@@ -256,6 +256,16 @@ namespace librealsense
             { L515_PID,                     "Intel RealSense L515"},
             { L535_PID,                     "Intel RealSense L535"},
 
+        };
+
+        static std::map<uint16_t, std::pair<std::string, std::string>> device_to_fw_min_max_version = {
+            { L500_RECOVERY_PID,            { "1.5.1.3", "1.99.99.99"}},
+            { L535_RECOVERY_PID,            { "1.5.1.3", "1.99.99.99"}},
+            { L500_USB2_RECOVERY_PID_OLD,   { "1.5.1.3", "1.99.99.99"}},
+            { L500_PID,                     { "1.5.1.3", "1.99.99.99"}},
+            { L515_PID_PRE_PRQ,             { "1.5.1.3", "1.99.99.99"}},
+            { L515_PID,                     { "1.5.1.3", "1.99.99.99"}},
+            { L535_PID,                     { "1.5.1.3", "1.99.99.99"}}
         };
 
         // Known FW error codes, if we poll for errors (RS2_OPTION_ERROR_POLLING_ENABLED)

@@ -229,6 +229,15 @@ namespace rs2
             return results;
         }
 
+        // check firmware compatibility with sku
+        bool check_firmware_compatibility(const std::vector<uint8_t>& image) const
+        {
+            rs2_error* e = nullptr;
+            auto res = !!rs2_check_firmware_compatibility(_dev.get(), image.data(), (int)image.size(), &e);
+            error::handle(e);
+            return res;
+        }
+
         // Update an updatable device to the provided unsigned firmware. This call is executed on the caller's thread.
         void update_unsigned(const std::vector<uint8_t>& image, int update_mode = RS2_UNSIGNED_UPDATE_MODE_UPDATE) const
         {

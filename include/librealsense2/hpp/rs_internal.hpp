@@ -520,7 +520,7 @@ namespace rs2
             rs2_error* e = nullptr;
             rs2_firmware_log_message* m = msg.get_message().get();
             bool fw_log_pulling_status =
-                rs2_get_fw_log(_dev.get(), m, &e);
+                !!rs2_get_fw_log(_dev.get(), m, &e);
 
             error::handle(e);
 
@@ -532,7 +532,7 @@ namespace rs2
             rs2_error* e = nullptr;
             rs2_firmware_log_message* m = msg.get_message().get();
             bool flash_log_pulling_status =
-                rs2_get_flash_log(_dev.get(), m, &e);
+                !!rs2_get_flash_log(_dev.get(), m, &e);
 
             error::handle(e);
 
@@ -543,7 +543,7 @@ namespace rs2
         {
             rs2_error* e = nullptr;
 
-            bool parser_initialized = rs2_init_fw_log_parser(_dev.get(), xml_content.c_str(), &e);
+            bool parser_initialized = !!rs2_init_fw_log_parser(_dev.get(), xml_content.c_str(), &e);
             error::handle(e);
 
             return parser_initialized;
@@ -553,7 +553,7 @@ namespace rs2
         {
             rs2_error* e = nullptr;
 
-            bool parsingResult = rs2_parse_firmware_log(_dev.get(), msg.get_message().get(), parsed_msg.get_message().get(), &e);
+            bool parsingResult = !!rs2_parse_firmware_log(_dev.get(), msg.get_message().get(), parsed_msg.get_message().get(), &e);
             error::handle(e);
 
             return parsingResult;

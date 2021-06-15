@@ -26,6 +26,8 @@ public class Updatable extends Device {
         return createFlashBackup(mListener);
     }
 
+    public boolean checkFirmwareCompatibility(byte[] image) { return nCheckFirmwareCompatibility(mHandle, image);}
+
     Updatable(long handle){
         super(handle);
         mOwner = false;
@@ -38,4 +40,5 @@ public class Updatable extends Device {
     private static native void nEnterUpdateState(long handle);
     private native byte[] nCreateFlashBackup(long handle);
     private native void nUpdateFirmwareUnsigned(long handle, byte[] image, int update_mode);
+    private native boolean nCheckFirmwareCompatibility(long handle, byte[] image);
 }

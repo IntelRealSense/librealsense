@@ -51,7 +51,8 @@ else:
     def out( *args, sep = ' ', end = '\n' ):
         print( *args, sep = sep, end = end )
     def progress(*args):
-        print( *args )
+        if args:
+            print( *args )
 
 def is_color_on():
     global _have_color

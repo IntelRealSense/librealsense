@@ -199,7 +199,7 @@ namespace librealsense
             {
                 try
                 {
-                    auto dev = dev_info->create_device(true);
+                    auto dev = dev_info->create_device();
                     _resolved_profile = resolve(dev);
                     return _resolved_profile;
                 }
@@ -256,7 +256,7 @@ namespace librealsense
                 }
             }
 
-            return ctx->add_device(file)->create_device(false);
+            return ctx->add_device(file)->create_device();
         }
 
         std::shared_ptr<device_interface> config::resolve_device_requests(std::shared_ptr<pipeline> pipe, const std::chrono::milliseconds& timeout)

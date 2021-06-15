@@ -117,7 +117,9 @@ void librealsense::record_device::write_data(size_t sensor_index, librealsense::
 {
     //write_data is called from the sensors, when the live sensor raises a frame
 
-    LOG_DEBUG("write frame " << (frame ? std::to_string(frame.frame->get_frame_number()) : "") <<  " from sensor " << sensor_index);
+    LOG_DEBUG( "write frame: " << ( frame ? std::to_string( frame.frame->get_frame_number() ) : "" )
+                              << ", stream: " << (frame ? rs2_stream_to_string( frame.frame->get_stream()->get_stream_type() ) : "")
+                              << ", sensor: " << sensor_index );
 
     std::call_once(m_first_call_flag, [this]()
     {

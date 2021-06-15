@@ -24,7 +24,7 @@ namespace rs2
 
             invoke([&](){
                 // Stop viewer UI
-                _sub->stop(_viewer);
+                _sub->stop(_viewer.not_model);
             });
 
             // Wait until frames from all active profiles stop arriving
@@ -1206,7 +1206,7 @@ namespace rs2
                     }
                     else
                     {
-                        ImGui::Text("%s", (get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_FL_CALIB ? "OCC FL calibraton cannot work with this camera!" : "OCC ALL calibraton cannot work with this camera!"));
+                        ImGui::Text("%s", (get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_FL_CALIB ? "OCC FL calibraton cannot work with this camera!" : "OCC Extended calibraton cannot work with this camera!"));
                     }
                 }
                 else
