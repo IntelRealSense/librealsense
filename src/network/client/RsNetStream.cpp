@@ -77,6 +77,8 @@ class rs_inframe_jpeg : public rs_inframe {
 
 #define RSTPER   1
 #define HEAD_LEN 41
+#define MARKERSZ (256 * (RSTPER + 1))
+#define DATASIZE (sizeof(uint32_t))
 
 public:
     rs_inframe_jpeg(uint32_t width, uint32_t height) : rs_inframe(width * height * 2) {
@@ -99,22 +101,34 @@ public:
         uint32_t rst_num = (w * h) / 256 / RSTPER; // MCU size = ((8*size_v) * (8*size_h)) = 256 because size_v = size_h = 2
 
         markers.resize(rst_num);
-        for (int i = 0; i < rst_num; i++) markers[i] = 0;
+        for (int i = 0; i < markers.size(); i++) {
+            markers[i] = new uint8_t[MARKERSZ];
+            memset(markers[i], 0, MARKERSZ);
+        }
+
+        fb_size = m_width * m_height * 2;
+        fb_raw = new uint8_t[fb_size];
     };
 
-   ~rs_inframe_jpeg() {};
+   ~rs_inframe_jpeg() {
+        for (int i = 0; i < markers.size(); i++) {
+            if (markers[i]) delete [] markers[i];
+        }
+
+        if (fb_raw) delete [] fb_raw;
+    };
 
 private:
     virtual uint32_t copy_data(uint8_t* chunk) {
         chunk_header_t* ch = (chunk_header_t*)chunk;
         uint32_t ret = ch->size - CHUNK_HLEN;
+        uint32_t marker_size_org = 0;
 
         // build the array of RST markers
         rst = ch->index; // the index of starting RST marker
         off = chunk + CHUNK_HLEN; // skip the header
         ptr = off;
         ptr++;
-        marker_buffer = NULL;
 
         // find next markers
         while (ptr - chunk < ch->size + CHUNK_HLEN) {
@@ -129,16 +143,17 @@ private:
                 case 0xD4: 
                 case 0xD5: 
                 case 0xD6: 
-                case 0xD7: 
-                    marker_buffer = new uint8_t[ptr - off  + sizeof(uint32_t)];
-                    marker_size = (uint32_t*)marker_buffer;
-                    marker_data = marker_buffer + sizeof(uint32_t);
-
-                    *marker_size = ptr - off;
-                    memcpy(marker_data, off, ptr - off);
-
-                    if (markers[rst]) delete [] markers[rst];
-                    markers[rst] = marker_buffer;
+                case 0xD7:
+                    marker_size_org = ptr - off;
+                    marker_size_ptr = (uint32_t*)markers[rst];
+                    marker_data_ptr = markers[rst] + DATASIZE;
+                    if (marker_size_org + DATASIZE < MARKERSZ) {
+                        *marker_size_ptr = marker_size_org;
+                        memcpy(marker_data_ptr, off, marker_size_org);
+                    } else {
+                        *marker_size_ptr = 0;
+                        LOG_ERROR("Marker size is too large:" << marker_size_org + DATASIZE);
+                    }
                     off = ptr;
                     rst++;
                 }
@@ -146,15 +161,16 @@ private:
             ptr++;
         }
 
-        marker_buffer = new uint8_t[ptr - off  + sizeof(uint32_t)];
-        marker_size = (uint32_t*)marker_buffer;
-        marker_data = marker_buffer + sizeof(uint32_t);
-
-        *marker_size = ptr - off;
-        memcpy(marker_data, off, ptr - off);
-
-        if (markers[rst]) delete [] markers[rst];
-        markers[rst] = marker_buffer;
+        marker_size_org = ptr - off;
+        marker_size_ptr = (uint32_t*)markers[rst];
+        marker_data_ptr = markers[rst] + DATASIZE;
+        if (marker_size_org + DATASIZE < MARKERSZ) {
+            *marker_size_ptr = marker_size_org;
+            memcpy(marker_data_ptr, off, marker_size_org);
+        } else {
+            *marker_size_ptr = 0;
+            LOG_ERROR("Marker size is too large:" << marker_size_org + DATASIZE);
+        }
         off = ptr;
         rst++;
 
@@ -163,18 +179,10 @@ private:
 
 public:
     virtual int decompress() {
-        uint32_t fb_size = m_width * m_height * 2;
-        uint8_t* fb_raw = new uint8_t[fb_size];
-
         // recreate missing headers
-
         u_char *p = fb_raw;
-        u_char *start = p;
 
         /* convert from blocks to pixels */
-        int w = m_width;
-        int h = m_height;
-
         *p++ = 0xff;
         *p++ = 0xd8;            /* SOI */
 
@@ -183,10 +191,10 @@ public:
         *p++ = 0;               /* length msb */
         *p++ = 17;              /* length lsb */
         *p++ = 8;               /* 8-bit precision */
-        *p++ = h >> 8;          /* height msb */
-        *p++ = h;               /* height lsb */
-        *p++ = w >> 8;          /* width msb */
-        *p++ = w;               /* wudth lsb */
+        *p++ = m_height >> 8;   /* height msb */
+        *p++ = m_height;        /* height lsb */
+        *p++ = m_width >> 8;    /* width msb */
+        *p++ = m_width;         /* width lsb */
         *p++ = 3;               /* number of components */
         *p++ = 0;               /* comp 0, should be 1? */ 
         *p++ = 0x22;            /* hsamp = 2, vsamp = 2 */
@@ -222,8 +230,12 @@ public:
         *p++ = 0;               /* sucessive approx. */
 
         for (int i = 0; i < markers.size(); i++) {
-            marker_buffer = markers[i];
-            if (marker_buffer == NULL) {
+            marker_size_ptr = (uint32_t*)markers[i];
+            marker_data_ptr = markers[i] + DATASIZE;
+            if (*marker_size_ptr && *marker_size_ptr < 300) {
+                memcpy(p, marker_data_ptr, *marker_size_ptr);
+                p += *marker_size_ptr;
+            } else {
                 if (i != 0) {
                     int val = 0xd0 | (i%8);
                     *p++ = 0xff;
@@ -231,12 +243,6 @@ public:
                 }
 
                 for (int j = 0; j < 256 * RSTPER; j++) *p++ = 0;
-            } else {
-                marker_size = (uint32_t*)marker_buffer;
-                marker_data = marker_buffer + sizeof(uint32_t);
-
-                memcpy(p, marker_data, *marker_size);
-                p += *marker_size;
             }
         }
 
@@ -245,16 +251,16 @@ public:
 
         // decompress the JPEG
         try {
-            jpeg::decompress(fb_raw, m_total_size + (p - start), m_fb, fb_size);
+            jpeg::decompress(fb_raw, m_total_size + (p - fb_raw), m_fb, fb_size);
             m_size = fb_size;
-            memset(fb_raw, 0, fb_size);
+
+            // // zero the targer frame buffer for debugging purposes
+            // memset(fb_raw, 0, fb_size);
 
             // // clean the markers array for debugging purposes
             // for (int i = 0; i < markers.size(); i++) {
-            //     if (markers[i]) {
-            //         delete [] markers[i];
-            //         markers[i] = NULL;
-            //     }
+            //    marker_size_ptr = (uint32_t*)markers[rst];
+            //    *marker_size_ptr = 0;
             // }
 
         } catch (...) {
@@ -275,11 +281,13 @@ private:
     uint8_t*  sos;
     bool sos_flag;
 
-    uint8_t*  marker_buffer;
-    uint8_t*  marker_data;
-    uint32_t* marker_size;
+    uint8_t*  marker_data_ptr;
+    uint32_t* marker_size_ptr;
 
     std::vector<uint8_t*> markers;
+
+    uint32_t fb_size;
+    uint8_t* fb_raw;
 };
 
 class rs_inframe_data : public rs_inframe {
