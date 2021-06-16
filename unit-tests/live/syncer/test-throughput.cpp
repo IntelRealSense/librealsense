@@ -11,6 +11,8 @@
 
 using namespace rs2;
 constexpr int RECEIVE_FRAMES_TIME = 10;
+constexpr float LOW_FPS = 30;
+constexpr float HIGH_FPS = 60;
 
 TEST_CASE("Syncer dynamic FPS - throughput test", "[live]")
 {
@@ -118,13 +120,13 @@ TEST_CASE("Syncer dynamic FPS - throughput test", "[live]")
             if (frames_arrival_info.empty())
                 return;
             std::vector<std::pair<float, float>>  vec[2]; // separate frames according to fps (before and after setting exposure)
-            std::vector<std::pair<float, float>> extra_frames;
+            std::vector<std::pair<float, float>> extra_frames; // frames with unstable fps are received after changing exposure
             for (auto& frm : frames_arrival_info)
             { 
                 // used ratio instead of precised fps because syncer doesn't change fps to exact value when running RGB
-                if (frm.second / 60.0 > 0.9)
+                if (frm.second / HIGH_FPS > 0.9)
                     vec[0].push_back(frm);
-                else if (frm.second / 30.0 > 0.9)
+                else if (frm.second / LOW_FPS > 0.9)
                     vec[1].push_back(frm);
                 else
                     extra_frames.push_back(frm);
@@ -138,7 +140,7 @@ TEST_CASE("Syncer dynamic FPS - throughput test", "[live]")
                 auto dt = (v.back().first - v.front().first)/ 1000000;
                 auto actual_fps = v.front().second;
                 float calc_fps = (float)v.size() / dt;
-                float fps_ratio = abs(1 - calc_fps / actual_fps);
+                float fps_ratio = fabs(1 - calc_fps / actual_fps);
                 CAPTURE(stream_type, actual_fps, calc_fps, v.size());
                 CHECK(fps_ratio < 0.1);
                 check_frame_drops(v);
