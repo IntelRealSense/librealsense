@@ -118,7 +118,7 @@ TEST_CASE("Syncer dynamic FPS - throughput test", "[live]")
             if (frames_arrival_info.empty())
                 return;
             float fps = 0.0f;
-            while (!frames_arrival_info.empty() && fps < 10) // skip unstable frames at the beginning
+            while (!frames_arrival_info.empty() && fps < 25) // skip unstable frames at the beginning
             {
                 fps = frames_arrival_info.front().second;
                 frames_arrival_info.erase(frames_arrival_info.begin());
