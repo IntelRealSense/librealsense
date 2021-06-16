@@ -576,8 +576,8 @@ int main(int argc, const char** argv) try
                         {
                             is_ip_device_connected = add_remote_device(ctx, ip_address);;
                             refresh_devices(m, ctx, devices_connection_changes, connected_devs, device_names, *device_models, viewer_model, error_message);
-                            auto dev = connected_devs[connected_devs.size() - 1];
-                            device_models->emplace_back(new device_model(dev, error_message, viewer_model));
+                            // auto dev = connected_devs[connected_devs.size() - 1];
+                            // device_models->emplace_back(new device_model(dev, error_message, viewer_model));
                             config_file::instance().set(configurations::viewer::last_ip, ip_address);
                         }
                         catch (std::runtime_error e)
