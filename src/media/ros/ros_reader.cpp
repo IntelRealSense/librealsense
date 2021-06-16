@@ -1023,9 +1023,11 @@ namespace librealsense
                 std::vector<sensor_snapshot> sensor_descriptions;
                 auto sensor_indices = read_sensor_indices(get_device_index());
                 std::map<stream_identifier, std::pair<uint32_t, rs2_extrinsics>> extrinsics_map;
-
+                int cnt = 0;
                 for (auto sensor_index : sensor_indices)
                 {
+                    std::cout << "CRASH:read_device_description start " << ++cnt << std::endl;
+
                     snapshot_collection sensor_extensions;
                     auto streams_snapshots = read_stream_info(get_device_index(), sensor_index);
                     for (auto stream_profile : streams_snapshots)
@@ -1049,6 +1051,7 @@ namespace librealsense
                     {
                         sensor_info = read_info_snapshot(ros_topic::sensor_info_topic({ get_device_index(), sensor_index }));
                     }
+
                     sensor_extensions[RS2_EXTENSION_INFO] = sensor_info;
                     //Update options
                     update_sensor_options(m_file, sensor_index, time, m_version, sensor_extensions, m_version);
@@ -1067,6 +1070,8 @@ namespace librealsense
                     update_l500_depth_sensor(m_file, sensor_index, time, m_version, sensor_extensions, m_version, pid, sensor_name);
 
                     sensor_descriptions.emplace_back(sensor_index, sensor_extensions, streams_snapshots);
+                    std::cout << "CRASH:read_device_description end " << cnt << std::endl;
+
                 }
 
                 m_initial_device_description = device_snapshot(device_extensions, sensor_descriptions, extrinsics_map);

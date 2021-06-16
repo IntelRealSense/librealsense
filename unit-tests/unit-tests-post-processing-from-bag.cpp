@@ -212,8 +212,12 @@ std::vector<rs2::frameset> get_composite_frames(std::vector<rs2::sensor> sensors
             all_pairs = false;
     });
 
+    std::cout << "CRASH:open sensors " << std::endl;
+
     for (auto s : sensors)
         s.open(s.get_stream_profiles());
+
+    std::cout << "CRASH: start sensors" << std::endl;
 
     for (auto s : sensors)
     {
@@ -223,6 +227,10 @@ std::vector<rs2::frameset> get_composite_frames(std::vector<rs2::sensor> sensors
         } );
     }
 
+    std::cout << "CRASH: wait for all frames start" << std::endl;
+
+    std::this_thread::sleep_for(std::chrono::seconds(5));
+    std::cout << "CRASH: wait for all frames end" << std::endl;
     while( true )
     {
         {
@@ -230,14 +238,22 @@ std::vector<rs2::frameset> get_composite_frames(std::vector<rs2::sensor> sensors
             if( sensor_to_framesets.size() >= sensors.size() && all_pairs )
                 break;
         }
-        std::this_thread::sleep_for( std::chrono::microseconds( 100 ) );
+        std::this_thread::sleep_for( std::chrono::milliseconds( 1 ) );
     }
+    std::cout << "CRASH:stop sensors " << std::endl;
 
     for (auto sf : sensor_to_framesets)
         composite_frames.push_back(sf.second);
 
+    int cnt = 0;
+    std::cout << "CRASH:stop sensors start  " << cnt << std::endl;
     for (auto s : sensors)
+    {
         s.stop();
+        std::cout << "***  " << ++cnt << std::endl;
+    }
+    std::cout << "CRASH: close sensors" << std::endl;
+
     for (auto s : sensors)
         s.close();
 
@@ -397,9 +413,12 @@ void compare_processed_frames_vs_recorded_frames(processing_recordable_block& re
         return;
 
     std::string folder_name = get_folder_path(special_folder::temp_folder);
+    std::cout << "CRASH:load device " << std::endl;
 
     auto dev = ctx.load_device(folder_name + "all_combinations_depth_color.bag");
     dev.set_real_time(false);
+
+    std::cout << "CRASH: query sensors" << std::endl;
 
     std::vector<rs2::sensor> sensors = dev.query_sensors();
     auto frames = get_composite_frames(sensors);
@@ -540,6 +559,8 @@ TEST_CASE("Record point cloud software-device all resolutions", "[record-bag][po
 
 TEST_CASE("Test align color to depth from recording", "[software-device][align]")
 {
+    std::cout << "CRASH: test start" << std::endl;
+
     auto record_block = align_record_block(RS2_STREAM_DEPTH, RS2_STREAM_COLOR);
     compare_processed_frames_vs_recorded_frames(record_block, "[aligned_2d]_all_combinations_depth_color.bag");
 }

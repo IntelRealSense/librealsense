@@ -88,9 +88,13 @@ std::map<uint32_t, std::shared_ptr<playback_sensor>> playback_device::create_pla
                 if (it != m_active_sensors.end())
                 {
                     m_active_sensors.erase(it);
-                    if (m_active_sensors.size() == 0)
+                    if (m_active_sensors.size() == 0 && m_is_started)
                     {
+                        std::cout << "CRASH:stop internal start " << std::endl;
+
                         stop_internal();
+                        std::cout << "CRASH:stop internal end" << std::endl;
+
                     }
                 }
             };
@@ -476,9 +480,12 @@ void playback_device::stop()
 void playback_device::stop_internal()
 {
     //stop_internal() is called from within the reading thread
+    std::cout << "CRASH:stop internal 1" << std::endl;
+
     if (m_is_started == false)
         return; //nothing to do
 
+    std::cout << "CRASH:stop internal 2" << std::endl;
 
     m_is_started = false;
     m_is_paused = false;
@@ -486,10 +493,18 @@ void playback_device::stop_internal()
     {
         //sensor.second->flush_pending_frames();
     }
+    std::cout << "CRASH:stop internal 3" << std::endl;
+
     m_reader->reset();
+    std::cout << "CRASH:stop internal 4" << std::endl;
+
     m_prev_timestamp = std::chrono::nanoseconds(0);
     catch_up();
+    std::cout << "CRASH:stop internal 5" << std::endl;
+
     playback_status_changed(RS2_PLAYBACK_STATUS_STOPPED);
+    std::cout << "CRASH:stop internal 6" << std::endl;
+
 }
 
 template <typename T>
@@ -510,7 +525,7 @@ void playback_device::do_loop(T action)
         }
 
         //On failure, exit thread
-        if(action_succeeded == false /*&& m_is_started*/ )
+        if(action_succeeded == false && m_is_started )
         {
             // Stopping the sensor will call another function which will remove the sensor from the
             // list of active sensors, which will cause issues -- so we copy it first

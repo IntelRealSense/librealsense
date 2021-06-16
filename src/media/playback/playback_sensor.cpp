@@ -39,6 +39,8 @@ playback_sensor::playback_sensor(device_interface& parent_device, const device_s
 }
 playback_sensor::~playback_sensor()
 {
+    std::cout << "CRASH: ~playback_sensor() " << std::endl;
+
 }
 
 bool playback_sensor::streams_contains_one_frame_or_more()
