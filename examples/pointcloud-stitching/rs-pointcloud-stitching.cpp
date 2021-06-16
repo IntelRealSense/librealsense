@@ -44,7 +44,7 @@ bool dirExists(const std::string& dirName_in)
 // |_  (1x3)   |    (1x1)    _|
 //
 struct position_and_rotation {
-    double pos_and_rot[4][4];
+    double pos_and_rot[4][4] = { { 0 }, { 0 },{ 0 },{ 0 } };
     // rotation tolerance - units are in cosinus of radians
     const double rotation_tolerance = 0.000001;
     // translation tolerance - units are in meters
@@ -189,7 +189,7 @@ std::vector<stream_request> parse_profiles_file(const std::string& config_filena
 
         for (auto i = 0; i < user_requests.size() - 1; i++)
         {
-            if ((user_requests[i]._stream_type == user_requests[i + 1]._stream_type) && ((user_requests[i]._stream_idx == user_requests[i + 1]._stream_idx)))
+            if ((user_requests[i]._stream_type == user_requests[i + (size_t)1]._stream_type) && ((user_requests[i]._stream_idx == user_requests[i + (size_t)1]._stream_idx)))
                 throw runtime_error(stringify() << "Invalid configuration file - multiple requests for the same sensor:\n"
                     << user_requests[i] << user_requests[+i]);
         }
@@ -346,11 +346,11 @@ CPointcloudStitcher::CPointcloudStitcher(const std::string& working_dir, const s
     //meaning if there are two frames: frame1 with priority=-1 and frame2 with priority=0, both with { 0,0,1,1 } as property,
     //frame2 will be drawn on top of frame1
     _frames_map[COLOR1] = frame_and_tile_property(frame, { 0,0,1,1,Priority::high });
-    _frames_map[COLOR_UNITED] = frame_and_tile_property(frame, { 1,0,2,2,Priority::high });
+    _frames_map[COLOR_UNITED] = frame_and_tile_property(frame, { 1,0,2,1,Priority::high });
     _frames_map[COLOR2] = frame_and_tile_property(frame, { 3,0,1,1,Priority::high });
-    _frames_map[DEPTH1] = frame_and_tile_property(frame, { 0,2,1,1,Priority::high });
-    _frames_map[DEPTH_UNITED] = frame_and_tile_property(frame, { 1,2,2,2,Priority::high });
-    _frames_map[DEPTH2] = frame_and_tile_property(frame, { 3,2,1,1,Priority::high });
+    _frames_map[DEPTH1] = frame_and_tile_property(frame, { 0,1,1,1,Priority::high });
+    _frames_map[DEPTH_UNITED] = frame_and_tile_property(frame, { 1,1,2,1,Priority::high });
+    _frames_map[DEPTH2] = frame_and_tile_property(frame, { 3,1,1,1,Priority::high });
 }
 
 bool CPointcloudStitcher::OpenSensors(std::shared_ptr<rs2::device> dev)
@@ -746,7 +746,7 @@ void CPointcloudStitcher::ProjectFramesOnOtherDevice(rs2::frameset frames, const
 
                     memcpy(virtual_color_ptr + 1 * (_virtual_color_frame.bpp * sizeof(uint8_t)), (uint8_t*)(color.get_data()) + offset_src, color_bpp * sizeof(uint8_t));
                     memcpy(virtual_color_ptr + _virtual_color_frame.x * (_virtual_color_frame.bpp * sizeof(uint8_t)), (uint8_t*)(color.get_data()) + offset_src, color_bpp * sizeof(uint8_t));
-                    memcpy(virtual_color_ptr + (1 + _virtual_color_frame.x) * (_virtual_color_frame.bpp * sizeof(uint8_t)), (uint8_t*)(color.get_data()) + offset_src, color_bpp * sizeof(uint8_t));
+                    memcpy(virtual_color_ptr + (1 + (size_t)_virtual_color_frame.x) * (_virtual_color_frame.bpp * sizeof(uint8_t)), (uint8_t*)(color.get_data()) + offset_src, color_bpp * sizeof(uint8_t));
                 }
             }
         }
@@ -824,7 +824,42 @@ void CPointcloudStitcher::StopRecording()
     std::cout << "Saved recording to:\n" << saved_to_filename << std::endl;
 }
 
-void CPointcloudStitcher::DrawTitles(const double fps, const ImVec2& window_size)
+std::string CPointcloudStitcher::PrintCursorRange(window& app)
+{
+    std::string value_str;
+
+    ImVec2 pos(ImGui::GetMousePos());
+    frame_pixel pos_on_rect = app.get_pos_on_current_image({ pos.x, pos.y }, _frames_map);
+    if (pos_on_rect.frame_idx >= 0)
+    {
+        std::stringstream value_sstr;
+        value_sstr << std::fixed << std::setw(4) << std::setprecision(2);
+        rs2::frame frame = _frames_map[pos_on_rect.frame_idx].first;
+
+        uint16_t value(0);
+        switch (pos_on_rect.frame_idx)
+        {
+        case (DEPTH1):
+        case (DEPTH2):
+        case (DEPTH_UNITED):
+        {
+            if (auto as_depth = frame.as<rs2::depth_frame>())
+            {
+                const uint16_t* ptr = (const uint16_t*)(as_depth.get_data());
+                value = *(ptr + static_cast<int>((float)pos_on_rect.pixel.y * (float)as_depth.get_width() + (float)pos_on_rect.pixel.x));
+                value_sstr << (int)pos_on_rect.pixel.x << ", " << (int)pos_on_rect.pixel.y << " : " << double(value)*1e-3 << "(m)";
+                value_str = value_sstr.str();
+            }
+        }
+        break;
+        default:
+            break;
+        }
+    }
+    return value_str;
+}
+
+void CPointcloudStitcher::DrawTitles(const double fps, const string& value_str, const ImVec2& window_size)
 {
     ImGui::SetNextWindowSize({ 200, 25 });
     float tile_width(window_size.x / 4);
@@ -847,9 +882,15 @@ void CPointcloudStitcher::DrawTitles(const double fps, const ImVec2& window_size
     ImGui::End();
 
     ImGui::SetNextWindowSize({ 200, 25 });
-    ImGui::SetNextWindowPos({ 20, 40 });
+    ImGui::SetNextWindowPos({ 20, 60 });
     ImGui::Begin("fps", nullptr, ImGuiWindowFlags_NoTitleBar);
     ImGui::Text("FPS: %.2f", fps);
+    ImGui::End();
+
+    ImGui::SetNextWindowSize({ 200, 25 });
+    ImGui::SetNextWindowPos({ 160, 60 });
+    ImGui::Begin("value", nullptr, ImGuiWindowFlags_NoTitleBar);
+    ImGui::Text("Value: %s", value_str.c_str());
     ImGui::End();
 }
 
@@ -936,7 +977,6 @@ void CPointcloudStitcher::Run(window& app)
         if (diff.count() >= 1.0)
         {
             fps = count / diff.count();
-            std::cout << "FPS: " << fps << std::endl;
             count = 0;
             start_time = end_time;
         }
@@ -981,13 +1021,8 @@ void CPointcloudStitcher::Run(window& app)
                     if (frame.is<rs2::depth_frame>())
                     {
                         offset += 3;
-
-                        _frames_map[offset].first = frame.apply_filter(_colorizer);
                     }
-                    else
-                    {
-                        _frames_map[offset].first = frame;
-                    }
+                    _frames_map[offset].first = frame;
                 }
             }
         }
@@ -1040,7 +1075,7 @@ void CPointcloudStitcher::Run(window& app)
             rs2::frame depth = fset.first_or_default(RS2_STREAM_DEPTH);
             rs2::frame color = fset.first_or_default(RS2_STREAM_COLOR);
             if (depth)
-                _frames_map[DEPTH_UNITED].first = depth.apply_filter(_colorizer);
+                _frames_map[DEPTH_UNITED].first = depth;
 
             if (color)
                 _frames_map[COLOR_UNITED].first = color;
@@ -1054,7 +1089,8 @@ void CPointcloudStitcher::Run(window& app)
             
             RecordButton({ app.width(), app.height() });
             SaveFramesButton(frames_sets, { app.width(), app.height() });
-            DrawTitles(fps, { app.width(), app.height() });
+            string value_str = PrintCursorRange(app);
+            DrawTitles(fps, value_str, { app.width(), app.height() });
 
             ImGui::Render();
         }
@@ -1104,10 +1140,11 @@ int main(int argc, char* argv[]) try
         return -1;
 
     unsigned tiles_in_row = 4;
-    unsigned tiles_in_col = 3;
+    unsigned tiles_in_col = 2;
 
-    window app(1920, 1100, "RealSense Pointcloud-Stitching Example", tiles_in_row, tiles_in_col);
+    // window app(1920, 1100, "RealSense Pointcloud-Stitching Example", tiles_in_row, tiles_in_col);
     //window app(1280, 720, "RealSense Pointcloud-Stitching Example", tiles_in_row, tiles_in_col);
+    window app(640, 480, "RealSense Pointcloud-Stitching Example", tiles_in_row, tiles_in_col);
     ImGui_ImplGlfw_Init(app, false);
 
     pc_stitcher.Run(app);

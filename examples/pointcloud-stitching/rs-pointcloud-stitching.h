@@ -201,7 +201,8 @@ namespace rs_pointcloud_stitching
         void ProjectFramesOnOtherDevice(rs2::frameset frames, const string& from_serial, const string& to_serial);
         void RecordButton(const ImVec2& window_size);
         void SaveFramesButton(const std::map<std::string, rs2::frame>& frames_sets, const ImVec2& window_size);
-        void DrawTitles(const double fps, const ImVec2& window_size);
+        void DrawTitles(const double fps, const string& value_str, const ImVec2& window_size);
+        std::string PrintCursorRange(window& app);
         void StartRecording(const std::string& path);
         void StopRecording();
         void SaveOriginImages(const std::map<std::string, rs2::frame>& frames_sets);
@@ -220,7 +221,6 @@ namespace rs_pointcloud_stitching
         std::mutex              _frames_mutex;
         std::condition_variable _frame_cv;
         frames_mosaic _frames_map;
-        rs2::colorizer _colorizer;
         rs2::pointcloud _pc;
         std::map< std::string, std::map<std::string, rs2_extrinsics > > _ir_extrinsics;
         rs2::software_device _soft_dev; // Create software-only device
