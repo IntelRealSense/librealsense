@@ -5,6 +5,9 @@
 #include <common/utilities/time/timer.h>
 #include <src/concurrency.h>
 
+#include <algorithm>
+#include <vector>
+
 using namespace utilities::time;
 
 TEST_CASE( "dequeue wait after stop" )
@@ -99,6 +102,55 @@ TEST_CASE( "blocking enqueue" )
 
     dequeue_thread.join();  // verify clean exit with no threads alive.
 }
+
+TEST_CASE("verify mutex protection")
+{
+    single_consumer_queue< int > scq;
+    stopwatch sw;
+
+    const int MAX_SIZE_FOR_THREAD = 20;
+    std::thread enqueue_thread1( [&]() {
+        for( int i = 0; i < MAX_SIZE_FOR_THREAD; ++i )
+        {
+            std::this_thread::sleep_for( std::chrono::milliseconds( 100 ) );
+            scq.blocking_enqueue(std::move(i));
+        }
+    } );
+
+    std::thread enqueue_thread2( [&]() {
+        for( int i = 0; i < MAX_SIZE_FOR_THREAD; ++i )
+        {
+            std::this_thread::sleep_for( std::chrono::milliseconds( 100 ) );
+            scq.blocking_enqueue(std::move(20 + i));
+        }
+    } );
+
+    std::vector<int> all_values;
+    for( int i = 0; i < MAX_SIZE_FOR_THREAD * 2; ++i )
+    {
+        int val;
+        scq.dequeue( &val, 1000 );
+        all_values.push_back(val);
+    }
+
+    REQUIRE(all_values.size() == MAX_SIZE_FOR_THREAD * 2);
+
+    std::sort(all_values.begin(), all_values.end());
+
+    for (int i = 0; i < all_values.size(); ++i)
+    {
+        REQUIRE(all_values[i] == i);
+    }
+
+    std::this_thread::sleep_for(std::chrono::seconds(1));
+
+    enqueue_thread1.join();
+    enqueue_thread2.join();
+
+
+
+}
+
 
 
 
