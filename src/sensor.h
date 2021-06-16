@@ -69,7 +69,7 @@ namespace librealsense
         {
             _on_open = callback;
         }
-        virtual void modify_frame_metadata(on_frame_md callback) { _metadata_modifier = callback; }
+        virtual void set_frame_metadata_modifier(on_frame_md callback) { _metadata_modifier = callback; }
         device_interface& get_device() override;
 
         // Make sensor inherit its owning device info by default

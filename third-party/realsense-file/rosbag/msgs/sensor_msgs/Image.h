@@ -242,7 +242,7 @@ namespace serialization
       stream.next(m.is_bigendian);
       stream.next(m.step);
       stream.next(m.data);
-      if (!m.header.frame_id.compare("1"))
+      if (!m.header.version.compare("1"))
           stream.next(m.depth_units);
     }
 
@@ -281,8 +281,11 @@ struct Printer< ::sensor_msgs::Image_<ContainerAllocator> >
       s << indent << "  data[" << i << "]: ";
       Printer<uint8_t>::stream(s, indent + "  ", v.data[i]);
     }
-    s << indent << "depth_units: ";
-    Printer<float>::stream(s, indent + "  ", v.depth_units);
+    if (v.depth_units)
+    {
+        s << indent << "depth_units: ";
+        Printer<float>::stream(s, indent + "  ", v.depth_units);
+    }
   }
 };
 

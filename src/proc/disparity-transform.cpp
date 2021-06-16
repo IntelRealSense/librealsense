@@ -96,7 +96,6 @@ namespace librealsense
 
             auto info = disparity_info::update_info_from_frame(f);
             _stereoscopic_depth = info.stereoscopic_depth;
-            _depth_units = info.depth_units;
             _d2d_convert_factor = info.d2d_convert_factor;
 
             auto vp = _source_stream_profile.as<rs2::video_stream_profile>();
