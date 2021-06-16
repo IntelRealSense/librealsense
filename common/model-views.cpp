@@ -801,8 +801,7 @@ namespace rs2
                             if (ImGui::SliderFloat(id.c_str(), &temp_value_displayed,
                                 min_range_displayed, max_range_displayed, formatting_ss.str().c_str()))
                             {
-                                if (use_cm_units)
-                                    tmp_value = temp_value_displayed / 100.f;
+                                tmp_value = use_cm_units ? temp_value_displayed / 100.f : temp_value_displayed;
                                 auto loffset = std::abs(fmod(tmp_value, range.step));
                                 auto roffset = range.step - loffset;
                                 if (tmp_value >= 0)
