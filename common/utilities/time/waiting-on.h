@@ -31,6 +31,7 @@ public:
     {
         T _value;
         std::condition_variable _cv;
+        std::atomic_bool _valid{ true };
 
         friend class waiting_on;
 
@@ -58,9 +59,13 @@ public:
         {
             _cv.notify_one();
         }
-        void signal_all()
+        void invalidate()
         {
-            _cv.notify_all();
+            if ( _valid )
+            {
+                _valid = false;
+                _cv.notify_all();
+            }
         }
     };
 private:
@@ -76,21 +81,30 @@ private:
 public:
     class in_thread_
     {
-        std::weak_ptr< class wait_state_t > const _ptr;
+        std::weak_ptr< wait_state_t > const _ptr;
+        std::shared_ptr< std::nullptr_t > const _invalidator;
 
     public:
         in_thread_( waiting_on const& local )
             : _ptr( local._ptr )
+            , _invalidator(nullptr, [ weak_ptr = std::weak_ptr< wait_state_t >(local._ptr)]( std::nullptr_t )
+                {
+                // We get here when the lambda we're in is destroyed -- so either we've already run
+                // (and signalled once) or we've never run. We signal anyway -- if anything's
+                // waiting they'll get woken up; otherwise nothing'll happen...
+                if( auto wait_state = weak_ptr.lock() )
+                    wait_state->invalidate();
+                })
         {
         }
-#if 0 // TODO this causes major slowdowns! left in here for Eran to break his head against...
+#if 1 // TODO this causes major slowdowns! left in here for Eran to break his head against...
         ~in_thread_()
         {
             // We get here when the lambda we're in is destroyed -- so either we've already run
             // (and signalled once) or we've never run. We signal anyway -- if anything's waiting
             // they'll get woken up; otherwise nothing'll happen...
-            if( auto wait_state = still_alive() )
-                wait_state->signal_all();
+            //if( auto wait_state = still_alive() )
+            //    wait_state->invalidate();
         }
 #endif
 
@@ -143,7 +157,11 @@ public:
         // Following will issue (from CppCheck):
         //     warning: The lock is ineffective because the mutex is locked at the same scope as the mutex itself. [localMutex]
         std::unique_lock< std::mutex > locker( m );
-        _ptr->_cv.wait_for( locker, timeout, pred );
+        _ptr->_cv.wait_for(locker, timeout, [&]() -> bool {
+            if ( !_ptr->_valid )
+                return true;
+            return pred();
+            });
     }
 };
 
