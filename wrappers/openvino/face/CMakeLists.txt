@@ -46,6 +46,13 @@ install(
 
 # Download model files -- these will go into build/wrappers/openvino/face, which is also where the sample
 # is run from in Visual Studio
+if(OPENVINO2019)
 dl_vino_model( "README.txt"                    "789e144d6cafa379c8437d2a6860829b6d935a8d" )
 dl_vino_model( "face-detection-adas-0001.bin"  "1625f05ada1d8e78e36856def7124f78cd0a6c2a" )
 dl_vino_model( "face-detection-adas-0001.xml"  "11c36f6e4488b2f5437ccff9f330d02545087ab3" )
+else()
+# Newer model files with v10 IR, 2020.1 and later
+# dl_vino_model( "README.txt"                    "789e144d6cafa379c8437d2a6860829b6d935a8d" )
+# dl_vino_model( "face-detection-adas-0001.bin"  "065E9015297C7ADBC650EBFC17176477CD0A4279" )
+# dl_vino_model( "face-detection-adas-0001.xml"  "331BE642A248213F586EC1D1B71C223435A437E3" )
+endif()

@@ -134,11 +134,20 @@ if(DEFINED INTEL_OPENVINO_DIR  AND  IS_DIRECTORY ${INTEL_OPENVINO_DIR})
     include(../../wrappers/openvino/dl_vino_model.cmake)
     # Download model files -- these will go into build/tools/realsense-viewer, which is also
     # where the sample is run from in Visual Studio
+    if(OPENVINO2019)
     dl_vino_model( "README.txt"                              "789e144d6cafa379c8437d2a6860829b6d935a8d" )
     dl_vino_model( "face-detection-adas-0001.bin"            "1625f05ada1d8e78e36856def7124f78cd0a6c2a" )
     dl_vino_model( "face-detection-adas-0001.xml"            "11c36f6e4488b2f5437ccff9f330d02545087ab3" )
     dl_vino_model( "age-gender-recognition-retail-0013.bin"  "206f6e97e53cd600fcac7d31e1c56accbbe461b9" )
     dl_vino_model( "age-gender-recognition-retail-0013.xml"  "2654d7f1638d575b8d1886f8128deae2ea79ee55" )
+    else()
+    # Newer model files with v10 IR, 2020.1 and later
+    # dl_vino_model( "README.txt"                              "789e144d6cafa379c8437d2a6860829b6d935a8d" )
+    # dl_vino_model( "face-detection-adas-0001.bin"  "065E9015297C7ADBC650EBFC17176477CD0A4279" )
+    # dl_vino_model( "face-detection-adas-0001.xml"  "331BE642A248213F586EC1D1B71C223435A437E3" )
+    # dl_vino_model( "age-gender-recognition-retail-0013.bin"  "206F6E97E53CD600FCAC7D31E1C56ACCBBE461B9" )
+    # dl_vino_model( "age-gender-recognition-retail-0013.xml"  "36BDE5D4D42D29515ABE871F69097FFCF4FF6414" )
+    endif()
 
     list(APPEND DELAYED
         cpu_extension.dll
