@@ -86,9 +86,9 @@ namespace openvino_helpers
         std::string binFileName = remove_ext( pathToModel ) + ".bin";
         netReader.ReadWeights( binFileName );
 #else
-        InferenceEngine::Core netReader;
+        InferenceEngine::Core ie;
         /** Read network model **/
-        network = netReader.ReadNetwork( pathToModel );
+        network = ie.ReadNetwork( pathToModel );
 #endif
 
         /** Set batch size **/
