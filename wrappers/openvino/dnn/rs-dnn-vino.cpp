@@ -72,6 +72,8 @@ void load_detectors_into(
     fs::glob_relative( ".", "*.xml", xmls );
     for( auto path_to_xml : xmls )
     {
+        if (path_to_xml == "plugins.xml") continue; // skip the plugin xml if exist
+
         detector_and_labels detector { path_to_xml };
         try
         {
