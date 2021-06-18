@@ -109,6 +109,7 @@ private:
         LOG(INFO) << "Loading CPU extensions...";
         std::string const device_name{ "CPU" };
 
+    // Cpu extensions library was removed in OpenVINO >= 2020.1, extensions were merged into the cpu plugin.
 #ifdef OPENVINO2019
         _ie.AddExtension(std::make_shared< openvino::Extensions::Cpu::CpuExtensions >(), device_name);
 #endif
