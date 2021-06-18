@@ -46,6 +46,7 @@ install(
 
 # Download model files -- these will go into build/wrappers/openvino/dnn, which is also where the sample
 # is run from in Visual Studio
+
 if(OPENVINO2019)
 dl_vino_model( "README.txt"                    "789e144d6cafa379c8437d2a6860829b6d935a8d" )
 dl_vino_model( "mobilenet-ssd.xml"             "483ba684dd53ba138550377075e928b2008418bb" )
@@ -54,7 +55,7 @@ dl_vino_model( "mobilenet-ssd.labels"          "b11e85afe8cff3172ad9b62d904bbc80
 else()
 # Newer model files with v10 IR, 2020.1 and later
 # dl_vino_model( "README.txt"                    "789e144d6cafa379c8437d2a6860829b6d935a8d" )
-# dl_vino_model( "mobilenet-ssd.xml"             "6FF55A36497B379C16E12B5ECC1C663282565349" )
-# dl_vino_model( "mobilenet-ssd.bin"             "3DBA75BC8A2BF53396B5B785F79564A63216AD9E" )
-# dl_vino_model( "mobilenet-ssd.labels"          "b11e85afe8cff3172ad9b62d904bbc8013b3ddbf" )
+dl_vino_model( "mobilenet-ssd.xml"             "bb605aad10060524876d8f76fef356dc086c5a64" )
+dl_vino_model( "mobilenet-ssd.bin"             "3DBA75BC8A2BF53396B5B785F79564A63216AD9E" )
+dl_vino_model( "mobilenet-ssd.labels"          "b11e85afe8cff3172ad9b62d904bbc8013b3ddbf" )
 endif()
