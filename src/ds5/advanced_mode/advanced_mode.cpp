@@ -113,8 +113,8 @@ namespace librealsense
         case RS2_RS400_VISUAL_PRESET_HAND:
             hand_gesture(p);
             // depth units for D405
-            if (device_pid == 0xb5b)
-                p.depth_table.depthUnits = 100;
+            if (device_pid == ds::RS405_PID)
+                p.depth_table.depthUnits = 100; // 0.1mm
             break;
         case RS2_RS400_VISUAL_PRESET_HIGH_ACCURACY:
             switch (res)
