@@ -279,6 +279,9 @@ namespace Intel.RealSense
         auto_rx_sensitivity = 87,
 
         /// <summary>Change transmitter frequency, increasing effective range over sharpness</summary>
-        transmitter_frequency = 88
+        transmitter_frequency = 88,
+
+        /// <summary>Change transmitter frequency, increasing effective range over sharpness</summary>
+        vertical_binning = 89
     }
 }

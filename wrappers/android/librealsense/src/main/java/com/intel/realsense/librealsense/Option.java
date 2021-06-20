@@ -91,6 +91,7 @@ public enum Option {
     AUTO_GAIN_LIMIT(86),
     AUTO_RX_SENSITIVITY(87),
     OPTION_TRANSMITTER_FREQUENCY(88);
+    RS2_OPTION_VERTICAL_BINNING(88);
 
     private final int mValue;
 
