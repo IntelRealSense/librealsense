@@ -20,7 +20,8 @@ namespace l535 {
         invalidation_bypass = 7,
         alternate_ir = 8,
         auto_rx_sensitivity = 9,
-        transmitter_frequency = 10
+        transmitter_frequency = 10,
+        vertical_binning = 11
     };
 
     enum amc_command
