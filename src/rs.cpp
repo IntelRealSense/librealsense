@@ -1961,7 +1961,7 @@ void rs2_config_enable_device_from_file_repeat_option(rs2_config* config, const 
     VALIDATE_NOT_NULL(config);
     VALIDATE_NOT_NULL(file);
 
-    config->config->enable_device_from_file(file, repeat_playback);
+    config->config->enable_device_from_file(file, repeat_playback != 0);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, config, file)
 
@@ -2523,7 +2523,7 @@ rs2_stream_profile* rs2_software_sensor_add_video_stream_ex(rs2_sensor* sensor, 
 {
     VALIDATE_NOT_NULL(sensor);
     auto bs = VALIDATE_INTERFACE(sensor->sensor, librealsense::software_sensor);
-    return bs->add_video_stream(video_stream, is_default)->get_c_wrapper();
+    return bs->add_video_stream(video_stream, is_default != 0 )->get_c_wrapper();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, sensor, video_stream.type, video_stream.index, video_stream.fmt, video_stream.width, video_stream.height, video_stream.uid, is_default)
 
@@ -2539,7 +2539,7 @@ rs2_stream_profile* rs2_software_sensor_add_motion_stream_ex(rs2_sensor* sensor,
 {
     VALIDATE_NOT_NULL(sensor);
     auto bs = VALIDATE_INTERFACE(sensor->sensor, librealsense::software_sensor);
-    return bs->add_motion_stream(motion_stream, is_default)->get_c_wrapper();
+    return bs->add_motion_stream(motion_stream, is_default != 0)->get_c_wrapper();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, sensor, motion_stream.type, motion_stream.index, motion_stream.fmt, motion_stream.uid, is_default)
 
@@ -2555,7 +2555,7 @@ rs2_stream_profile* rs2_software_sensor_add_pose_stream_ex(rs2_sensor* sensor, r
 {
     VALIDATE_NOT_NULL(sensor);
     auto bs = VALIDATE_INTERFACE(sensor->sensor, librealsense::software_sensor);
-    return bs->add_pose_stream(pose_stream, is_default)->get_c_wrapper();
+    return bs->add_pose_stream(pose_stream, is_default != 0)->get_c_wrapper();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, sensor, pose_stream.type, pose_stream.index, pose_stream.fmt, pose_stream.uid, is_default)
 
@@ -2582,7 +2582,7 @@ void rs2_software_sensor_add_option(rs2_sensor* sensor, rs2_option option, float
     VALIDATE_LE(0, step);
     VALIDATE_NOT_NULL(sensor);
     auto bs = VALIDATE_INTERFACE(sensor->sensor, librealsense::software_sensor);
-    return bs->add_option(option, option_range{ min, max, step, def }, bool(is_writable));
+    return bs->add_option(option, option_range{ min, max, step, def }, bool(is_writable != 0));
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, sensor, option, min, max, step, def, is_writable)
 

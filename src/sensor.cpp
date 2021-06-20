@@ -187,8 +187,8 @@ namespace librealsense
     stream_profiles sensor_base::get_stream_profiles( int tag ) const
     {
         stream_profiles results;
-        bool const need_debug = tag & profile_tag::PROFILE_TAG_DEBUG;
-        bool const need_any = tag & profile_tag::PROFILE_TAG_ANY;
+        bool const need_debug = (tag & profile_tag::PROFILE_TAG_DEBUG) != 0;
+        bool const need_any = (tag & profile_tag::PROFILE_TAG_ANY) != 0;
         for( auto p : *_profiles )
         {
             auto curr_tag = p->get_tag();
