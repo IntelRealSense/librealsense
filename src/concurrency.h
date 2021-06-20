@@ -126,14 +126,23 @@ public:
         return true;
     }
 
-    bool peek(T** item)
+    template< class Fn >
+    bool peek( Fn fn ) const
     {
         std::lock_guard< std::mutex > lock( _mutex );
-
-        if (_queue.empty())
+        if( _queue.empty() )
             return false;
+        fn( _queue.front() );
+        return true;
+    }
 
-        *item = &_queue.front();
+    template< class Fn >
+    bool peek( Fn fn )
+    {
+        std::lock_guard< std::mutex > lock( _mutex );
+        if( _queue.empty() )
+            return false;
+        fn( _queue.front() );
         return true;
     }
 
@@ -203,14 +212,21 @@ public:
         return _queue.dequeue(item, timeout_ms);
     }
 
-    bool peek(T** item)
-    {
-        return _queue.peek(item);
-    }
-
     bool try_dequeue(T* item)
     {
         return _queue.try_dequeue(item);
+    }
+
+    template< class Fn >
+    bool peek( Fn fn ) const
+    {
+        return _queue.peek( fn );
+    }
+
+    template< class Fn >
+    bool peek( Fn fn )
+    {
+        return _queue.peek( fn );
     }
 
     void clear()

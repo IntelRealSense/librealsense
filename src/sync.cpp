@@ -278,17 +278,16 @@ namespace librealsense
         std::string str;
         for( auto m : matchers )
         {
-            frame_holder* f;
-            if( _frames_queue[m].peek( &f ) )
-                str += frame_to_string( *f->frame );
+            auto const & q = _frames_queue[m];
+            q.peek( [&str]( frame_holder const & fh ) {
+                str += frame_to_string( *fh.frame );
+                } );
         }
         return str;
     }
 
     void composite_matcher::sync(frame_holder f, const syncronization_environment& env)
     {
-        //LOG_IF_ENABLE( "SYNC " << _name, env );
-
         auto matcher = find_matcher(f);
         if (!matcher)
         {
@@ -319,14 +318,11 @@ namespace librealsense
             for (auto s = _frames_queue.begin(); s != _frames_queue.end(); s++)
             {
                 librealsense::matcher * const m = s->first;
-                frame_holder* f;
-                if (s->second.peek(&f))
-                {
-                    LOG_IF_ENABLE( "... have " << *f->frame, env );
-                    frames_arrived.push_back( f );
-                    frames_arrived_matchers.push_back( m );
-                }
-                else
+                if( ! s->second.peek( [&]( frame_holder & fh ) {
+                        LOG_IF_ENABLE( "... have " << *fh.frame, env );
+                        frames_arrived.push_back( &fh );
+                        frames_arrived_matchers.push_back( m );
+                    } ) )
                 {
                     missing_streams.push_back( m );
                 }
@@ -482,7 +478,7 @@ namespace librealsense
          if(!missing->get_active())
              return true;
 
-        _frames_queue[synced[0]].peek(&synced_frame);
+        _frames_queue[synced[0]].peek( [&]( frame_holder & fh ) { synced_frame = &fh; } );
 
         auto next_expected = _next_expected[missing];
 
@@ -599,35 +595,40 @@ namespace librealsense
         if(!missing->get_active())
             return true;
 
-        frame_holder* synced_frame;
-
         //LOG_IF_ENABLE( "...     matcher " << synced[0]->get_name(), env );
-        _frames_queue[synced[0]].peek(&synced_frame);
-        //LOG_IF_ENABLE( "...     frame   " << *synced_frame->frame, env );
+        rs2_time_t timestamp;
+        rs2_timestamp_domain domain;
+        unsigned int fps;
+        _frames_queue[synced[0]].peek( [&]( frame_holder & fh ) {
+            // LOG_IF_ENABLE( "...     frame   " << fh->frame, env );
+
+            timestamp = fh->get_frame_timestamp();
+            domain = fh->get_frame_timestamp_domain();
+            fps = get_fps( fh );
+        } );
 
         auto next_expected = _next_expected[missing];
-        //LOG_IF_ENABLE( "...     next    " << std::fixed << next_expected, env );
+        // LOG_IF_ENABLE( "...     next    " << std::fixed << next_expected, env );
 
-        auto it = _next_expected_domain.find(missing);
-        if (it != _next_expected_domain.end())
+        auto it = _next_expected_domain.find( missing );
+        if( it != _next_expected_domain.end() )
         {
-            if (it->second != (*synced_frame)->get_frame_timestamp_domain())
+            if( it->second != domain )
             {
-                //LOG_IF_ENABLE( "...     not the same domain: frameset not ready!", env );
+                // LOG_IF_ENABLE( "...     not the same domain: frameset not ready!", env );
                 return false;
             }
         }
-        //next expected of the missing stream didn't updated yet
-        auto timestamp = (*synced_frame)->get_frame_timestamp();
+        // next expected of the missing stream didn't updated yet
         if( timestamp > next_expected )
         {
-            // Wait up to 10*gap for the missing stream frame to arrive -- anything more and we let
-            // the frameset be ready without it...
-            auto gap = 1000.f / (float)get_fps( *synced_frame );
+            // Wait up to 10*gap for the missing stream frame to arrive -- anything more and we
+            // let the frameset be ready without it...
+            auto gap = 1000.f / fps;
             auto threshold = 10 * gap;
             if( timestamp - next_expected < threshold )
             {
-                //LOG_IF_ENABLE( "...     next expected of the missing stream didn't updated yet", env );
+                // LOG_IF_ENABLE( "...     next expected of the missing stream didn't updated yet", env );
                 return false;
             }
             LOG_IF_ENABLE( "...     exceeded threshold of {10*gap}" << threshold << "; deactivating matcher!", env );
@@ -641,10 +642,10 @@ namespace librealsense
             missing->set_active( false );
         }
 
-        return ! are_equivalent( timestamp, next_expected, get_fps( *synced_frame ) );
+        return ! are_equivalent( timestamp, next_expected, fps );
     }
 
-    bool timestamp_composite_matcher::are_equivalent(double a, double b, int fps)
+    bool timestamp_composite_matcher::are_equivalent( double a, double b, unsigned int fps )
     {
         float gap = 1000.f / fps;
         return abs(a - b) < (gap / 2);

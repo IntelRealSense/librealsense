@@ -214,7 +214,7 @@ namespace librealsense
 
     private:
         unsigned int get_fps(const frame_holder & f);
-        bool are_equivalent(double a, double b, int fps);
+        bool are_equivalent( double a, double b, unsigned int fps );
         std::map<matcher*, double> _last_arrived;
         std::map<matcher*, unsigned int> _fps;
 
