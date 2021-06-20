@@ -167,21 +167,24 @@ namespace Intel.RealSense
                         try
                         {
                             sw.Start();
-                            calTableAfter = aCalibratedDevice.RunOnChipCalibration(calibrationConfig, out health, timeout);
+                            ProgressCallback pc = (x) => { Console.WriteLine("Progress: {0} percents",x); };
+                            // The following line performs the same calibration flow but does not report progress"
+                            //calTableAfter = aCalibratedDevice.RunOnChipCalibration(calibrationConfig, out health, timeout);
+                            calTableAfter = aCalibratedDevice.RunOnChipCalibration(calibrationConfig, out health, pc,  timeout);
                             sw.Stop();
                         }
                         catch (Exception ex)
                         {
                             sw.Stop();
                             thisCalibrationfault = true;
-                            Console.WriteLine($"\t Error during calibration: {ex.Message.Replace("\n", "\t")}");
+                            Console.WriteLine($"\n\t Error during calibration: {ex.Message.Replace("\n", "\t")}");
                             Console.WriteLine($"\t Please try to change distance to target or light conditions{Environment.NewLine}");
                             if (ConsoleKey.N == ConsoleGetKey(new[] { ConsoleKey.Y, ConsoleKey.N },
                                                                 @"Let's try calibrate one more time? (Y\N)"
                                                                 ))
                             {
                                 Console.WriteLine("");
-                                Console.WriteLine($"Calibration fault");
+                                Console.WriteLine($"Calibration aborted");
                                 Console.WriteLine($"Stopping calibration pipeline...");
                                 pipeline.Stop();
                                 return;
@@ -190,7 +193,7 @@ namespace Intel.RealSense
 
                         if (!thisCalibrationfault)
                         {
-                            Console.WriteLine($"\t Time spend: {sw.Elapsed.ToString(@"mm\:ss\.fff")}  (min:sec.millisec)");
+                            Console.WriteLine($"\n\t Time spend: {sw.Elapsed.ToString(@"mm\:ss\.fff")}  (min:sec.millisec)");
                             Console.WriteLine($"\t Device health: {health} ({_deviceHealthDescription[GetDeviceHealth(health)]})");
 
                             var res = ConsoleGetKey(new[] { ConsoleKey.Y, ConsoleKey.N, ConsoleKey.A }, @"Accept calibration ? Yes/No/Abort");

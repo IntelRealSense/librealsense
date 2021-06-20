@@ -57,6 +57,12 @@ namespace Intel.RealSense
                 using (var ctx = new Context())
                 {
                     var devices = ctx.QueryDevices();
+                    if (0==devices.Count)
+                    {
+                        Console.WriteLine("The tutorial {0} requires Realsense D400 device to run.\nConnect a device and rerun",
+                            System.Diagnostics.Process.GetCurrentProcess().ProcessName);
+                        Environment.Exit(0);
+                    }
                     var dev = devices[0];
 
                     Console.WriteLine("Using device 0, an {0}", dev.Info[CameraInfo.Name]);
@@ -90,7 +96,7 @@ namespace Intel.RealSense
                     SetupWindow(pp, out updateDepth, out updateColor);
                 }
 
-                // Redndering task
+                // Rendering task
                 var renderingPause = false;
                 var rendering = Task.Factory.StartNew(() =>
                 {
@@ -119,7 +125,7 @@ namespace Intel.RealSense
                             {
                                 String depth_dev_sn = depthFrame.Sensor.Info[CameraInfo.SerialNumber];
                                 txtTimeStamp.Text = $"{depth_dev_sn} : {depthFrame.Timestamp,-20:0.00}({depthFrame.TimestampDomain})" +
-                                $"{Environment.NewLine}If you want to start calibration mode, switch to opened application console and press C";
+                                $"{Environment.NewLine}To start Auto-Calibration flow, switch focus to the application console and press C";
                             }));
                         }
                     }
@@ -131,7 +137,7 @@ namespace Intel.RealSense
                     while (!tokenSource.Token.IsCancellationRequested)
                     {
                         if (ConsoleKey.C == ExampleAutocalibrateDevice.ConsoleGetKey(new[] { ConsoleKey.C},
-                                         "If you want to start calibration mode, switch to opened application console and press C"))
+                                         "To start Auto-Calibration flow, switch focus to the application console and press C"))
                         {
                             renderingPause = true;
                             Console.WriteLine($"{Environment.NewLine}Stopping rendering pipeline...");
