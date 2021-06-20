@@ -132,6 +132,7 @@ namespace librealsense
     };
 
     void default_400(preset& p);
+    void default_405u(preset& p);
     void default_405(preset& p);
     void default_410(preset& p);
     void default_420(preset& p);
