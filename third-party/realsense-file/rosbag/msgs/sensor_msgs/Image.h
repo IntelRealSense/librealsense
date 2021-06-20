@@ -281,7 +281,7 @@ struct Printer< ::sensor_msgs::Image_<ContainerAllocator> >
       s << indent << "  data[" << i << "]: ";
       Printer<uint8_t>::stream(s, indent + "  ", v.data[i]);
     }
-    if (v.depth_units)
+    if (v.depth_units != 0)
     {
         s << indent << "depth_units: ";
         Printer<float>::stream(s, indent + "  ", v.depth_units);

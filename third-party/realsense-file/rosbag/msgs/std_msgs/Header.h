@@ -44,7 +44,7 @@ struct Header_
   _stamp_type stamp;
 
    typedef std::basic_string<char, std::char_traits<char>, typename ContainerAllocator::template rebind<char>::other >  _frame_id_type;
-  _frame_id_type version;
+  _frame_id_type version; // the field is used for ROSbag versions control
 
 
 

@@ -377,7 +377,9 @@ namespace librealsense
         {
             _metadata_modifier = callback;
             auto s = get_raw_sensor().get();
-            As< librealsense::uvc_sensor >(s)->set_frame_metadata_modifier(callback);
+            auto uvc = As< librealsense::uvc_sensor >(s);
+            if(uvc)
+                uvc->set_frame_metadata_modifier(callback);
         }
 
         void open(const stream_profiles& requests) override

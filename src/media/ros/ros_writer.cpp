@@ -188,7 +188,7 @@ namespace librealsense
         image.header.seq = static_cast<uint32_t>(vid_frame->get_frame_number());
         std::chrono::duration<double, std::milli> timestamp_ms(vid_frame->get_frame_timestamp());
         image.header.stamp = rs2rosinternal::Time(std::chrono::duration<double>(timestamp_ms).count());
-        image.header.version = "1"; // used to distinguish between old rosbag and new rosbag that contains depth units in frame metadata
+        image.header.version = "1"; // the field is unused and therefore assigned for ROSbag versions control
         auto df = dynamic_cast<librealsense::depth_frame*>(frame.frame);
         if(df)
             image.depth_units = df->get_units();
@@ -208,7 +208,7 @@ namespace librealsense
         imu_msg.header.seq = static_cast<uint32_t>(frame.frame->get_frame_number());
         std::chrono::duration<double, std::milli> timestamp_ms(frame.frame->get_frame_timestamp());
         imu_msg.header.stamp = rs2rosinternal::Time(std::chrono::duration<double>(timestamp_ms).count());
-        imu_msg.header.version = "1"; // used to distinguish between old rosbag and new rosbag that contains depth units in frame metadata
+        imu_msg.header.version = "1"; // the field is unused and therefore assigned for ROSbag versions control
         auto data_ptr = reinterpret_cast<const float*>(frame.frame->get_frame_data());
         if (stream_id.stream_type == RS2_STREAM_ACCEL)
         {
