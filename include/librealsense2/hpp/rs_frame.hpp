@@ -92,7 +92,7 @@ namespace rs2
         bool is() const
         {
             T extension(*this);
-            return extension;
+            return extension != 0;
         }
 
         /**
