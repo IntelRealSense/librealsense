@@ -413,7 +413,6 @@ namespace librealsense
         p.depth_gain.gain = 16.f;
     }
 
-   
     void high_res_high_accuracy(preset& p)
     {
         p.depth_controls.deepSeaMedianThreshold = 796;
