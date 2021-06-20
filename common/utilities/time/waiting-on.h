@@ -59,6 +59,7 @@ public:
         {
             _cv.notify_one();
         }
+        // Invalidate the wait_state_t so the user will not use destroyed objects
         void invalidate()
         {
             if ( _valid )
@@ -82,12 +83,13 @@ public:
     class in_thread_
     {
         std::weak_ptr< wait_state_t > const _ptr;
+        // We use an invalidator for invalidating the class when reference count is equal to Zero.
         std::shared_ptr< std::nullptr_t > const _invalidator;
 
     public:
         in_thread_( waiting_on const& local )
             : _ptr( local._ptr )
-            , _invalidator(nullptr, [ weak_ptr = std::weak_ptr< wait_state_t >(local._ptr)]( std::nullptr_t )
+            , _invalidator(nullptr, [ weak_ptr = std::weak_ptr< wait_state_t >(local._ptr)]( std::nullptr_t * )
                 {
                 // We get here when the lambda we're in is destroyed -- so either we've already run
                 // (and signalled once) or we've never run. We signal anyway -- if anything's
@@ -97,16 +99,6 @@ public:
                 })
         {
         }
-#if 1 // TODO this causes major slowdowns! left in here for Eran to break his head against...
-        ~in_thread_()
-        {
-            // We get here when the lambda we're in is destroyed -- so either we've already run
-            // (and signalled once) or we've never run. We signal anyway -- if anything's waiting
-            // they'll get woken up; otherwise nothing'll happen...
-            //if( auto wait_state = still_alive() )
-            //    wait_state->invalidate();
-        }
-#endif
 
         std::shared_ptr< wait_state_t > still_alive() const { return _ptr.lock(); }
 

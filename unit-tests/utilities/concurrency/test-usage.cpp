@@ -1,6 +1,8 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2021 Intel Corporation. All Rights Reserved.
 
+//#cmake:add-file ../../../src/dispatcher.cpp
+
 #include "../../test.h"
 #include <common/utilities/time/timer.h>
 #include <src/concurrency.h>
@@ -9,6 +11,13 @@
 #include <vector>
 
 using namespace utilities::time;
+
+// We use this function as a CPU stress test function
+int fibo(int num)
+{
+    if (num < 2) return 1;
+    return fibo(num - 1) + fibo(num - 2);
+}
 
 TEST_CASE( "dequeue wait after stop" )
 {
@@ -147,14 +156,39 @@ TEST_CASE("verify mutex protection")
     enqueue_thread1.join();
     enqueue_thread2.join();
 
-
-
 }
 
+TEST_CASE("verify stop() not consuming high CPU usage")
+{
+    // using shared_ptr because no copy constructor is allowed for a dispatcher.
+    std::cout << "starting dispatchers()\n";
+    std::vector<std::shared_ptr<dispatcher>> dispatchers;
+    stopwatch sw;
 
 
+    for (int i = 0 ; i < 32; ++i)
+    {
+        dispatchers.push_back(std::make_shared<dispatcher>(10));
+    }
 
+    for (auto &&dispatcher : dispatchers)
+    {
+        dispatcher->start();
+    }
 
+    for (auto&& dispatcher : dispatchers)
+    {
+        dispatcher->stop();
+    }
 
+  
+    // Allow some time for all threads to do some work
+    std::this_thread::sleep_for(std::chrono::seconds(5));
 
+    sw.reset();
 
+    // Do some stress work
+    REQUIRE(fibo(40) == 165580141);
+    // Verify the stress test did not take too long.
+    REQUIRE(sw.get_elapsed_ms() < 5000);
+}
