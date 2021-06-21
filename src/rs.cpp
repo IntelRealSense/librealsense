@@ -1671,7 +1671,7 @@ rs2_device* rs2_create_record_device_ex(const rs2_device* device, const char* fi
     return new rs2_device({
         device->ctx,
         device->info,
-        std::make_shared<record_device>(device->device, std::make_shared<ros_writer>(file, compression_enabled))
+        std::make_shared<record_device>(device->device, std::make_shared<ros_writer>(file, compression_enabled != 0))
         });
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, device, file)
