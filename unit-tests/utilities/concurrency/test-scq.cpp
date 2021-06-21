@@ -35,7 +35,7 @@ TEST_CASE( "dequeue wait after stop" )
 
     timer t( std::chrono::seconds( 1 ) );
     t.start();
-    scq.dequeue( &f, 10000 );
+    scq.dequeue( &f, 2000 );
     REQUIRE_FALSE( t.has_expired() );  // Verify no timeout, dequeue return in less than 10 seconds
 }
 
