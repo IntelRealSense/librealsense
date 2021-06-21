@@ -373,9 +373,20 @@ namespace librealsense
             }
         }
 
+        void set_frame_metadata_modifier(on_frame_md callback) override
+        {
+            _metadata_modifier = callback;
+            auto s = get_raw_sensor().get();
+            auto uvc = As< librealsense::uvc_sensor >(s);
+            if(uvc)
+                uvc->set_frame_metadata_modifier(callback);
+        }
+
         void open(const stream_profiles& requests) override
         {
             _depth_units = get_option(RS2_OPTION_DEPTH_UNITS).query();
+            set_frame_metadata_modifier([&](frame_additional_data& data) {data.depth_units = _depth_units.load(); });
+
             synthetic_sensor::open(requests);
 
             // needed in order to restore the HDR sub-preset when streaming is turned off and on
@@ -480,7 +491,11 @@ namespace librealsense
             return _depth_units;
         }
 
-        void set_depth_scale(float val){ _depth_units = val; }
+        void set_depth_scale(float val)
+        {
+            _depth_units = val;
+            set_frame_metadata_modifier([&](frame_additional_data& data) {data.depth_units = _depth_units.load(); });
+        }
 
         void init_hdr_config(const option_range& exposure_range, const option_range& gain_range)
         {

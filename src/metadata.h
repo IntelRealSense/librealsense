@@ -111,7 +111,7 @@ namespace librealsense
         roi_attribute                   = (1u << 5),
         preset_attribute                = (1u << 6),
         emitter_mode_attribute          = (1u << 7),
-        led_power_attribute             = (1u << 8) 
+        led_power_attribute             = (1u << 8)
     };
 
     /**\brief md_depth_control_attributes - bit mask to find active attributes,

@@ -58,7 +58,6 @@ namespace librealsense
         bool                    _update_target;
         bool                    _stereoscopic_depth;
         float                   _stereo_baseline_meter; // in meters
-        float                   _depth_units;
         float                   _d2d_convert_factor;
         size_t                  _width, _height;
         size_t                  _bpp;
@@ -70,7 +69,6 @@ namespace librealsense
     public:
         struct info {
             bool stereoscopic_depth = false;
-            float depth_units = 0;
             float d2d_convert_factor = 0;
         };
 
@@ -90,7 +88,6 @@ namespace librealsense
                 if ((info.stereoscopic_depth = a->extend_to(TypeToExtension<librealsense::depth_stereo_sensor>::value, (void**)&ptr)))
                 {
                     dss = ptr;
-                    info.depth_units = dss->get_depth_scale();
                     stereo_baseline_meter = dss->get_stereo_baseline_mm()*0.001f;
                 }
             }
@@ -100,7 +97,6 @@ namespace librealsense
                 if (info.stereoscopic_depth)
                 {
                     dss = As<librealsense::depth_stereo_sensor>(snr);
-                    info.depth_units = dss->get_depth_scale();
                     stereo_baseline_meter = dss->get_stereo_baseline_mm()* 0.001f;
                 }
             }
@@ -111,7 +107,10 @@ namespace librealsense
                 auto focal_lenght_mm = vp.get_intrinsics().fx;
                 const uint8_t fractional_bits = 5;
                 const uint8_t fractions = 1 << fractional_bits;
-                info.d2d_convert_factor = (stereo_baseline_meter * focal_lenght_mm * fractions) / info.depth_units;
+                float depth_units = 0.001f;
+                if (f.as<rs2::depth_frame>())
+                    depth_units = ((depth_frame*)f.get())->get_units();
+                info.d2d_convert_factor = (stereo_baseline_meter * focal_lenght_mm * fractions) / depth_units;
             }
 
             return info;
