@@ -929,11 +929,11 @@ namespace librealsense
             auto usb_spec = get_usb_spec();
             bool usb3mode = (usb_spec >= platform::usb3_type || usb_spec == platform::usb_undefined);
 
-            int depth_width  = usb3mode ?      848 : 640;
-            int depth_height = usb3mode ?      480 : 480;
-            int color_width = usb3mode ?       848 : 640;
-            int color_height = usb3mode ?      480 : 480;
-            int fps    = usb3mode ?            30 :  15;
+            int depth_width = 848;
+            int depth_height = 480;
+            int color_width = 848;
+            int color_height = 480;
+            int fps = usb3mode ?  30 : 10;
 
             tags.push_back({ RS2_STREAM_COLOR, -1, color_width, color_height, RS2_FORMAT_RGB8, fps, profile_tag::PROFILE_TAG_SUPERSET | profile_tag::PROFILE_TAG_DEFAULT });
             tags.push_back({ RS2_STREAM_DEPTH, -1, depth_width, depth_height, RS2_FORMAT_Z16, fps, profile_tag::PROFILE_TAG_SUPERSET | profile_tag::PROFILE_TAG_DEFAULT });

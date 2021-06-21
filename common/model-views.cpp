@@ -721,15 +721,18 @@ namespace rs2
                                     strcpy(buff, buff_str.c_str());
                                 }
                                 float new_value;
-                                if(!utilities::string::string_to_value<float>(buff, new_value))
+                                if (!utilities::string::string_to_value<float>(buff, new_value))
                                 {
                                     error_message = "Invalid float input!";
                                 }
                                 else if (new_value < range.min || new_value > range.max)
                                 {
-                                    error_message = to_string() << new_value
-                                        << " is out of bounds [" << range.min << ", "
-                                        << range.max << "]";
+                                    float val = use_cm_units ? new_value * 100.f : new_value;
+                                    float min = use_cm_units ? range.min * 100.f : range.min;
+                                    float max = use_cm_units ? range.max * 100.f : range.max;
+                                    
+                                    error_message = to_string() << val
+                                        << " is out of bounds [" << min << ", " << max << "]";
                                 }
                                 else
                                 {
@@ -771,13 +774,13 @@ namespace rs2
                             // computing the number of decimal digits taken from the step options' property
                             // this will then be used to format the displayed value
                             auto num_of_decimal_digits = [](float f) {
-                                int res = 0;
-                                while (f && (int)f == 0)
-                                {
-                                    f *= 10.f;
-                                    ++res;
-                                }
-                                return res;
+                                float f_0 = std::fabs(f - (int)f);
+                                std::string s = std::to_string(f_0);
+                                size_t cur_len = s.length();
+                                //removing trailing zeros
+                                while (cur_len > 3 && s[cur_len - 1] == '0')
+                                    cur_len--;
+                                return cur_len - 2;
                             };
                             int num_of_decimal_digits_displayed = num_of_decimal_digits(range.step);
 
@@ -798,8 +801,7 @@ namespace rs2
                             if (ImGui::SliderFloat(id.c_str(), &temp_value_displayed,
                                 min_range_displayed, max_range_displayed, formatting_ss.str().c_str()))
                             {
-                                if (use_cm_units)
-                                    tmp_value = temp_value_displayed / 100.f;
+                                tmp_value = use_cm_units ? temp_value_displayed / 100.f : temp_value_displayed;
                                 auto loffset = std::abs(fmod(tmp_value, range.step));
                                 auto roffset = range.step - loffset;
                                 if (tmp_value >= 0)
