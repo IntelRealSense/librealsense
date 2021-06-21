@@ -158,10 +158,7 @@ TEST_CASE("verify mutex protection")
 TEST_CASE("verify stop() not consuming high CPU usage")
 {
     // using shared_ptr because no copy constructor is allowed for a dispatcher.
-    std::cout << "starting dispatchers()\n";
     std::vector<std::shared_ptr<dispatcher>> dispatchers;
-    stopwatch sw;
-
 
     for (int i = 0 ; i < 32; ++i)
     {
@@ -182,7 +179,7 @@ TEST_CASE("verify stop() not consuming high CPU usage")
     // Allow some time for all threads to do some work
     std::this_thread::sleep_for(std::chrono::seconds(5));
 
-    sw.reset();
+    stopwatch sw;
 
     // Do some stress work
     REQUIRE(fibo(40) == 165580141);

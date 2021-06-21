@@ -71,7 +71,7 @@ void playback_sensor::open(const stream_profiles& requests)
     //Playback can only play the streams that were recorded.
     //Go over the requested profiles and see if they are available
     LOG_DEBUG("Open Sensor " << m_sensor_id);
-
+    std::lock_guard<std::mutex> l(m_mutex);
     for (auto&& r : requests)
     {
         if (std::find_if(std::begin(m_available_profiles),
@@ -94,6 +94,7 @@ void playback_sensor::open(const stream_profiles& requests)
             std::make_shared< dispatcher >( _default_queue_size, on_drop_callback ) ) );
 
         m_dispatchers[profile->get_unique_id()]->start();
+
         device_serializer::stream_identifier f{ get_device_index(), m_sensor_id, profile->get_stream_type(), static_cast<uint32_t>(profile->get_stream_index()) };
         opened_streams.push_back(f);
     }
@@ -104,6 +105,7 @@ void playback_sensor::open(const stream_profiles& requests)
 void playback_sensor::close()
 {
     LOG_DEBUG("Close sensor " << m_sensor_id);
+    std::lock_guard<std::mutex> l(m_mutex);
     std::vector<device_serializer::stream_identifier> closed_streams;
     for (auto&& dispatcher : m_dispatchers)
     {
