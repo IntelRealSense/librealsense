@@ -57,7 +57,7 @@ namespace Intel.RealSense
                 using (var ctx = new Context())
                 {
                     var devices = ctx.QueryDevices();
-                    if (0==devices.Count)
+                    if ( 0 == devices.Count )
                     {
                         Console.WriteLine("The tutorial {0} requires Realsense D400 device to run.\nConnect a device and rerun",
                             System.Diagnostics.Process.GetCurrentProcess().ProcessName);
@@ -112,21 +112,25 @@ namespace Intel.RealSense
                             var colorFrame = frames.ColorFrame.DisposeWith(frames);
                             var depthFrame = frames.DepthFrame.DisposeWith(frames);
 
-                            // We colorize the depth frame for visualization purposes
-                            var colorizedDepth = colorizer.Process<VideoFrame>(depthFrame).DisposeWith(frames);
-
                             // Render the frames.
-                            if (colorFrame != null)
-                                Dispatcher.Invoke(DispatcherPriority.Render, updateDepth, colorizedDepth);
                             if (depthFrame != null)
+                            {
+                                // We colorize the depth frame for visualization purposes
+                                var colorizedDepth = colorizer.Process<VideoFrame>(depthFrame).DisposeWith(frames);
+                                Dispatcher.Invoke(DispatcherPriority.Render, updateDepth, colorizedDepth);
+                            }
+                            if (colorFrame != null)
                                 Dispatcher.Invoke(DispatcherPriority.Render, updateColor, colorFrame);
 
-                            Dispatcher.Invoke(new Action(() =>
+                            if (depthFrame != null)
                             {
-                                String depth_dev_sn = depthFrame.Sensor.Info[CameraInfo.SerialNumber];
-                                txtTimeStamp.Text = $"{depth_dev_sn} : {depthFrame.Timestamp,-20:0.00}({depthFrame.TimestampDomain})" +
-                                $"{Environment.NewLine}To start Auto-Calibration flow, switch focus to the application console and press C";
-                            }));
+                                Dispatcher.Invoke(new Action(() =>
+                                {
+                                    String depth_dev_sn = depthFrame.Sensor.Info[CameraInfo.SerialNumber];
+                                    txtTimeStamp.Text = $"{depth_dev_sn} : {depthFrame.Timestamp,-20:0.00}({depthFrame.TimestampDomain})" +
+                                    $"{Environment.NewLine}To start Auto-Calibration flow, switch focus to the application console and press C";
+                                }));
+                            }
                         }
                     }
                 }, tokenSource.Token);

@@ -184,7 +184,7 @@ namespace Intel.RealSense
                                                                 ))
                             {
                                 Console.WriteLine("");
-                                Console.WriteLine($"Calibration aborted");
+                                Console.WriteLine($"Calibration failed");
                                 Console.WriteLine($"Stopping calibration pipeline...");
                                 pipeline.Stop();
                                 return;
@@ -460,6 +460,15 @@ namespace Intel.RealSense
         {
             get
             {
+                //Spec https://docs.microsoft.com/en-us/dotnet/api/system.platformid?view=net-5
+                //MacOSX  6
+                //Other   7
+                //Unix    4
+                //Win32NT 2
+                //Win32S  0
+                //Win32Windows    1
+                //WinCE   3
+                //Xbox    5
                 int p = (int)Environment.OSVersion.Platform;
                 return (p == 4) || (p == 6) || (p == 128);
             }
@@ -524,9 +533,13 @@ namespace Intel.RealSense
         }
         public static bool IsTheDeviceD400Series(Device dev)
         {
-            var res = Regex.IsMatch(dev.Info[CameraInfo.Name].ToString(), @"(D4\d\d)");
-            if (!res)
-                Console.WriteLine($"{Environment.NewLine}The devices of D400 series can be calibrated only!");
+            bool res = false;
+            if (null != dev)
+            {
+                res = Regex.IsMatch(dev.Info[CameraInfo.Name].ToString(), @"(D4\d\d)");
+                if (!res)
+                    Console.WriteLine($"{Environment.NewLine}The devices of D400 series can be calibrated only!");
+            }
             return res;
         }
         private void PrintStartProdures()
