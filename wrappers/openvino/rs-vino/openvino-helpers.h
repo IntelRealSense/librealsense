@@ -17,6 +17,11 @@
 #ifdef OPENVINO2019
 #   include <ext_list.hpp>              // Required for CPU extension usage
 #endif
+
+#ifdef OPENVINO_NGRAPH
+#include <ngraph/ngraph.hpp>
+#endif
+
 #pragma warning(pop)
 
 #include <opencv2/opencv.hpp>

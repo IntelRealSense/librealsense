@@ -96,6 +96,9 @@ if(DEFINED INTEL_OPENVINO_DIR  AND  IS_DIRECTORY ${INTEL_OPENVINO_DIR})
     check_vino_version()
     if(OPENVINO2019)
         set(DEPENDENCIES ${deps} ${InferenceEngine_LIBRARIES} ie_cpu_extension)
+    elseif(OPENVINO_NGRAPH)
+        include(${INTEL_OPENVINO_DIR}/deployment_tools/ngraph/cmake/ngraphConfig.cmake)
+        set(DEPENDENCIES ${deps} ${InferenceEngine_LIBRARIES} ${NGRAPH_LIBRARIES})
     else()
         set(DEPENDENCIES ${deps} ${InferenceEngine_LIBRARIES})
     endif()
@@ -107,6 +110,8 @@ if(DEFINED INTEL_OPENVINO_DIR  AND  IS_DIRECTORY ${INTEL_OPENVINO_DIR})
     if(OPENVINO2019)
     # We need additional access to ext_list.hpp, for CPU extension support:
     include_directories( "${IE_ROOT_DIR}/src/extension" )
+    elseif(OPENVINO_NGRAPH)
+    include_directories( "${INTEL_OPENVINO_DIR}/deployment_tools/ngraph/include" )
     endif()
 
     set(OPENVINO_FILES
@@ -142,12 +147,12 @@ if(DEFINED INTEL_OPENVINO_DIR  AND  IS_DIRECTORY ${INTEL_OPENVINO_DIR})
     dl_vino_model( "age-gender-recognition-retail-0013.bin"  "206f6e97e53cd600fcac7d31e1c56accbbe461b9" )
     dl_vino_model( "age-gender-recognition-retail-0013.xml"  "2654d7f1638d575b8d1886f8128deae2ea79ee55" )
     else()
-    # Newer model files with v10 IR, 2020.1 and later
- # dl_vino_model( "README.txt"                              "789e144d6cafa379c8437d2a6860829b6d935a8d" )
-    dl_vino_model( "face-detection-adas-0001.bin"  "43dd6c8512bc578671733b03f2ea80d292b93d92" )
-    dl_vino_model( "face-detection-adas-0001.xml"  "a86d67dafe3b9c9bc16b88a1357edce0e5f78ce9" )
-    dl_vino_model( "age-gender-recognition-retail-0013.bin"  "252a60879a066ae09bb5959aaca4b57cab6a98c6" )
-    dl_vino_model( "age-gender-recognition-retail-0013.xml"  "9b99a163614a8f59bf90d5b094a98f0d3f63eb3c" )
+    # Newer model files with IRv10, 2020.1 and later
+    dl_vino_model( "README.txt"                              "789e144d6cafa379c8437d2a6860829b6d935a8d" )
+    dl_vino_model( "face-detection-adas-0001.bin"  "065e9015297c7adbc650ebfc17176477cd0a4279" )
+    dl_vino_model( "face-detection-adas-0001.xml"  "331be642a248213f586ec1d1b71c223435a437e3" )
+    dl_vino_model( "age-gender-recognition-retail-0013.bin"  "206f6e97e53cd600fcac7d31e1c56accbbe461b9" )
+    dl_vino_model( "age-gender-recognition-retail-0013.xml"  "36bde5d4d42d29515abe871f69097ffcf4ff6414" )
     endif()
 
     list(APPEND DELAYED
@@ -204,6 +209,10 @@ endif()
 
 if(OPENVINO2019)
     target_compile_definitions(realsense-viewer PRIVATE OPENVINO2019)
+endif()
+
+if(OPENVINO_NGRAPH)
+    target_compile_definitions(realsense-viewer PRIVATE OPENVINO_NGRAPH)
 endif()
 
 source_group("EasyLogging++" FILES ${ELPP_FILES})

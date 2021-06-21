@@ -6,7 +6,6 @@
 #include <rs-vino/openvino-helpers.h>
 #include <easylogging++.h>
 
-
 using namespace InferenceEngine;
 
 
@@ -133,16 +132,36 @@ namespace openvino_helpers
         _output_layer_name = outputInfo.begin()->first;
         DataPtr & outputDataPtr = outputInfo.begin()->second;
 
+        // Checking if layer names are as expected
 #ifdef OPENVINO2019
-        const CNNLayerPtr outputLayer = network.getLayerByName( _output_layer_name.c_str() );
-        if( outputLayer->type != "DetectionOutput" )
+        const CNNLayerPtr outputLayer = network.getLayerByName(_output_layer_name.c_str());
+        if (outputLayer->type != "DetectionOutput")
             throw std::logic_error(
                 "Object detection network output layer(" + outputLayer->name +
-                ") should be DetectionOutput, but was " + outputLayer->type );
-        if( outputLayer->params.find( "num_classes" ) == outputLayer->params.end() )
+                ") should be DetectionOutput, but was " + outputLayer->type);
+        if (outputLayer->params.find("num_classes") == outputLayer->params.end())
             throw std::logic_error(
                 "Object detection network output layer (" +
-                _output_layer_name + ") should have num_classes integer attribute" );
+                _output_layer_name + ") should have num_classes integer attribute");
+#else
+#ifdef OPENVINO_NGRAPH
+        // Inference Engine integrates the nGraph Core in OpenVINO >= 2020.1
+        if (auto ngraphFunction = network.getFunction()) {
+            for (const auto& out : outputInfo) {
+                for (const auto& op : ngraphFunction->get_ops()) {
+                    if (op->get_type_name() == ngraph::op::DetectionOutput::type_info.name) {
+                        if (op->get_friendly_name() != out.second->getName()) {
+                            std::string output_name = out.first;
+                            std::string output_type = op->get_type_name();
+                            throw std::logic_error(
+                                "Object detection network output layer (" + output_name +
+                                ") should be DetectionOutput, but was " + output_type);
+                        }
+                    }
+                }
+            }
+        }
+#endif
 #endif
 
         /*
