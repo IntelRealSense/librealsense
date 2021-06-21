@@ -12,13 +12,6 @@
 
 using namespace utilities::time;
 
-// We use this function as a CPU stress test function
-int fibo(int num)
-{
-    if (num < 2) return 1;
-    return fibo(num - 1) + fibo(num - 2);
-}
-
 TEST_CASE( "dequeue wait after stop" )
 {
     single_consumer_queue< std::function< void( void ) > > scq;
@@ -153,38 +146,4 @@ TEST_CASE("verify mutex protection")
 
     enqueue_thread1.join();
     enqueue_thread2.join();
-}
-
-TEST_CASE("verify stop() not consuming high CPU usage")
-{
-    // using shared_ptr because no copy constructor is allowed for a dispatcher.
-    std::vector<std::shared_ptr<dispatcher>> dispatchers;
-
-    for (int i = 0 ; i < 32; ++i)
-    {
-        dispatchers.push_back(std::make_shared<dispatcher>(10));
-    }
-
-    for (auto &&dispatcher : dispatchers)
-    {
-        dispatcher->start();
-    }
-
-    for (auto&& dispatcher : dispatchers)
-    {
-        dispatcher->stop();
-    }
-
-  
-    // Allow some time for all threads to do some work
-    std::this_thread::sleep_for(std::chrono::seconds(5));
-
-    stopwatch sw;
-
-    // Do some stress work
-    REQUIRE(fibo(40) == 165580141);
-    // Verify the stress test did not take too long.
-    // We had an issue that stop() call cause a high CPU usage and therefore other operations stall, 
-    // This test took > 9 seconds on an 8 cores PC, after the fix it took ~1.5 sec on 1 core run.
-    REQUIRE(sw.get_elapsed_ms() < 5000);
 }
