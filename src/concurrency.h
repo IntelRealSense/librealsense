@@ -357,7 +357,7 @@ public:
 
 private:
     // Return true if dispatcher is started (within a timeout).
-    // false if not (after a timeout)
+    // false if not or the dispatcher is no longer alive
     //
     bool _wait_for_start( int timeout_ms );
 

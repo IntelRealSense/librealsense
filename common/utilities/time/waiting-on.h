@@ -87,16 +87,17 @@ public:
         std::shared_ptr< std::nullptr_t > const _invalidator;
 
     public:
-        in_thread_( waiting_on const& local )
+        in_thread_( waiting_on const & local )
             : _ptr( local._ptr )
-            , _invalidator(nullptr, [ weak_ptr = std::weak_ptr< wait_state_t >(local._ptr)]( std::nullptr_t * )
-                {
-                // We get here when the lambda we're in is destroyed -- so either we've already run
-                // (and signalled once) or we've never run. We signal anyway -- if anything's
-                // waiting they'll get woken up; otherwise nothing'll happen...
-                if( auto wait_state = weak_ptr.lock() )
-                    wait_state->invalidate();
-                })
+            , _invalidator(
+                  nullptr,
+                  [weak_ptr = std::weak_ptr< wait_state_t >( local._ptr )]( std::nullptr_t * ) {
+                      // We get here when the lambda we're in is destroyed -- so either we've
+                      // already run (and signalled once) or we've never run. We signal anyway
+                      // if anything's waiting they'll get woken up; otherwise nothing'll happen...
+                      if( auto wait_state = weak_ptr.lock() )
+                          wait_state->invalidate();
+                  } )
         {
         }
 
@@ -149,11 +150,11 @@ public:
         // Following will issue (from CppCheck):
         //     warning: The lock is ineffective because the mutex is locked at the same scope as the mutex itself. [localMutex]
         std::unique_lock< std::mutex > locker( m );
-        _ptr->_cv.wait_for(locker, timeout, [&]() -> bool {
-            if ( !_ptr->_valid )
+        _ptr->_cv.wait_for( locker, timeout, [&]() -> bool {
+            if( ! _ptr->_valid )
                 return true;
             return pred();
-            });
+        } );
     }
 };
 

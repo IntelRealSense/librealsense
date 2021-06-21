@@ -3,7 +3,7 @@
 
 //#cmake:add-file ../../../src/dispatcher.cpp
 
-#include "../../test.h"
+#include <unit-tests/test.h>
 #include <common/utilities/time/timer.h>
 #include <src/concurrency.h>
 
@@ -22,7 +22,6 @@ int fibo(int num)
 TEST_CASE( "dequeue wait after stop" )
 {
     single_consumer_queue< std::function< void( void ) > > scq;
-    timer t( std::chrono::seconds( 1 ) );
     std::function< void( void ) > f;
     std::function< void( void ) > * f_ptr = &f;
 
@@ -41,13 +40,14 @@ TEST_CASE( "dequeue wait after stop" )
 
     REQUIRE( scq.empty() );
 
+    timer t( std::chrono::seconds( 1 ) );
     t.start();
     scq.dequeue( &f, 10000 );
     REQUIRE_FALSE( t.has_expired() );  // Verify no timeout, dequeue return in less than 10 seconds
 }
 
 
-TEST_CASE( "dequeue don't wait when queue is not empty" )
+TEST_CASE( "dequeue doesn't wait when queue is not empty" )
 {
     single_consumer_queue< std::function< void( void ) > > scq;
     timer t( std::chrono::seconds( 1 ) );
@@ -63,12 +63,12 @@ TEST_CASE( "dequeue don't wait when queue is not empty" )
 TEST_CASE( "dequeue wait when queue is empty" )
 {
     single_consumer_queue< std::function< void( void ) > > scq;
-    timer t( std::chrono::seconds( 1 ) );
+    timer t( std::chrono::milliseconds( 2900 ) );
 
     std::function< void( void ) > f;
 
     t.start();
-    scq.dequeue( &f, 3000 );
+    REQUIRE_FALSE( scq.dequeue( &f, 3000 ) );
     REQUIRE( t.has_expired() );  // Verify timeout, dequeue return after >= 3 seconds
 }
 
@@ -151,11 +151,8 @@ TEST_CASE("verify mutex protection")
         REQUIRE(all_values[i] == i);
     }
 
-    std::this_thread::sleep_for(std::chrono::seconds(1));
-
     enqueue_thread1.join();
     enqueue_thread2.join();
-
 }
 
 TEST_CASE("verify stop() not consuming high CPU usage")
@@ -190,5 +187,7 @@ TEST_CASE("verify stop() not consuming high CPU usage")
     // Do some stress work
     REQUIRE(fibo(40) == 165580141);
     // Verify the stress test did not take too long.
+    // We had an issue that stop() call cause a high CPU usage and therefore other operations stall, 
+    // This test took > 9 seconds on an 8 cores PC, after the fix it took ~1.5 sec on 1 core run.
     REQUIRE(sw.get_elapsed_ms() < 5000);
 }
