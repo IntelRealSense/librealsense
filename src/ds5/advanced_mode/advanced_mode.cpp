@@ -89,11 +89,13 @@ namespace librealsense
             case ds::RS435_RGB_PID:
             case ds::RS435I_PID:
             case ds::RS465_PID:
-            case ds::RS405_PID:
             case ds::RS455_PID:
                 default_430(p);
                 break;
             case ds::RS405U_PID:
+                default_405u(p);
+                break;
+            case ds::RS405_PID:
                 default_405(p);
                 break;
             case ds::RS400_PID:
@@ -110,6 +112,9 @@ namespace librealsense
             break;
         case RS2_RS400_VISUAL_PRESET_HAND:
             hand_gesture(p);
+            // depth units for D405
+            if (device_pid == ds::RS405_PID)
+                p.depth_table.depthUnits = 100; // 0.1mm
             break;
         case RS2_RS400_VISUAL_PRESET_HIGH_ACCURACY:
             switch (res)
