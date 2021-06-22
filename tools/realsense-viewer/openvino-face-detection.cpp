@@ -205,7 +205,7 @@ private:
     {
         auto fs = f.as< rs2::frameset >();
         auto cf = f;
-        rs2::depth_frame df = NULL;
+        rs2::depth_frame df = rs2::frame{};
         if (fs)
         {
             cf = fs.get_color_frame();
