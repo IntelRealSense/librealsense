@@ -208,7 +208,7 @@ namespace librealsense
                     snr = &(As<librealsense::device>(handle)->get_sensor(0));
 
                     if (snr->supports_option(RS2_OPTION_THERMAL_COMPENSATION))
-                        restart_tl = static_cast<bool>(snr->get_option(RS2_OPTION_THERMAL_COMPENSATION).query());
+                        restart_tl = static_cast<bool>(snr->get_option(RS2_OPTION_THERMAL_COMPENSATION).query() != 0);
                     if (restart_tl)
                     {
                         snr->get_option(RS2_OPTION_THERMAL_COMPENSATION).set(0.f);

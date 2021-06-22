@@ -343,7 +343,7 @@ namespace librealsense
                 auto extendable = As<librealsense::extendable_interface>(sensor);
                 if (extendable && extendable->extend_to(TypeToExtension<librealsense::l500_depth_sensor_interface>::value, (void**)(&l5)))
                 {
-                    return l5->read_baseline();
+                    return l5->read_baseline() != 0;
                 }
             }
         }
@@ -436,7 +436,7 @@ namespace librealsense
         auto depth_intrinsics = depth_frame.get_profile().as<rs2::video_stream_profile>().get_intrinsics();
 
         auto depth_output = (uint16_t*)depth_out.get_data();
-        uint8_t* confidence_output;
+        uint8_t* confidence_output = nullptr;
 
         if (confidence_frame)
         {
