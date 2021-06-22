@@ -153,7 +153,7 @@ namespace rosbag_inspector
         {
             auto image = data;
             os << "Header       : \n";
-            os << "  frame_id           : " << image->header.frame_id << std::endl;
+            os << "  frame_id           : " << image->header.version << std::endl;
             os << "  Frame Number (seq) : " << image->header.seq << std::endl;
             os << "  stamp              : " << image->header.stamp << std::endl;
             os << "Encoding     : " << image->encoding << std::endl;
