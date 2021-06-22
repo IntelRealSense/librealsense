@@ -6,6 +6,26 @@
 #include <string>
 
 namespace utilities {
+    std::string char2hex(unsigned char n)
+    {
+        std::string res;
+
+        do
+        {
+            res += "0123456789ABCDEF"[n % 16];
+            n >>= 4;
+        } while (n);
+
+        std::reverse(res.begin(), res.end());
+
+        if (res.size() == 1)
+        {
+            res.insert(0, "0");
+        }
+
+        return res;
+    }
+
 namespace string {
 
 

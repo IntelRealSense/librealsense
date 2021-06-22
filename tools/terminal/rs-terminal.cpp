@@ -8,7 +8,7 @@
 #include <algorithm>
 
 #include <librealsense2/rs.hpp>
-
+#include <utilities/string/string-utilities.h>
 #include "tclap/CmdLine.h"
 #include "parser.hpp"
 #include "auto-complete.h"
@@ -17,26 +17,6 @@
 using namespace std;
 using namespace TCLAP;
 
-
-string char2hex(unsigned char n)
-{
-    string res;
-
-    do
-    {
-        res += "0123456789ABCDEF"[n % 16];
-        n >>= 4;
-    } while (n);
-
-    reverse(res.begin(), res.end());
-
-    if (res.size() == 1)
-    {
-        res.insert(0, "0");
-    }
-
-    return res;
-}
 
 // While working from files, convert the file content into rectognized raw format
 void preprocess_data_payload(vector<string>& params)
@@ -61,7 +41,7 @@ void preprocess_data_payload(vector<string>& params)
                 std::istreambuf_iterator<char>());
             modified_params.clear();
             modified_params.resize(params.size() - 1 + data.size());
-            std::transform(data.begin(), data.end(), modified_params.begin()+(params.size() - 1), [](uint8_t c) { return char2hex(c); });
+            std::transform(data.begin(), data.end(), modified_params.begin()+(params.size() - 1), [](uint8_t c) { return utilities::char2hex(c); });
 
         }
         else
