@@ -5,7 +5,6 @@
 #include <rs-vino/age-gender-detection.h>
 #include <rs-vino/openvino-helpers.h>
 #include <easylogging++.h>
-#include "types.h"
 
 using namespace InferenceEngine;
 
