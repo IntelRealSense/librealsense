@@ -5,7 +5,7 @@
 #include <rs-vino/age-gender-detection.h>
 #include <rs-vino/openvino-helpers.h>
 #include <easylogging++.h>
-
+#include "types.h"
 
 using namespace InferenceEngine;
 
@@ -113,6 +113,7 @@ namespace openvino_helpers
         if (!ptrGenderOutput)
             throw std::logic_error("Gender output data pointer is not valid");
 
+
 #ifdef OPENVINO2019
         auto genderCreatorLayer = ptrGenderOutput->getCreatorLayer().lock();
         auto ageCreatorLayer = ptrAgeOutput->getCreatorLayer().lock();
@@ -128,17 +129,72 @@ namespace openvino_helpers
 
         if (ptrAgeOutput->getCreatorLayer().lock()->type != "Convolution")
             throw std::logic_error("In Age/Gender Recognition network, age layer (" + ageCreatorLayer->name +
-                                    ") should be a Convolution, but was: " + ageCreatorLayer->type);
+                ") should be a Convolution, but was: " + ageCreatorLayer->type);
 
         if (ptrGenderOutput->getCreatorLayer().lock()->type != "SoftMax")
             throw std::logic_error("In Age/Gender Recognition network, gender layer (" + genderCreatorLayer->name +
-                                    ") should be a SoftMax, but was: " + genderCreatorLayer->type);
+                ") should be a SoftMax, but was: " + genderCreatorLayer->type);
 
-        if( doRawOutputMessages )
+        if (doRawOutputMessages)
         {
             LOG(DEBUG) << "Age layer: " << ageCreatorLayer->name;
             LOG(DEBUG) << "Gender layer: " << genderCreatorLayer->name;
         }
+#else
+#ifdef OPENVINO_NGRAPH
+        if (auto ngraphFunction = network.getFunction()) {
+
+                for (const auto& op : ngraphFunction->get_ops()) {
+                    std::string friendly_name = op->get_friendly_name();
+                    std::string output_type = op->get_type_name();
+
+                    if ((friendly_name.find(ptrGenderOutput->getName()) != std::string::npos) && (output_type == "Convolution")) {
+                         std::swap(ptrAgeOutput, ptrGenderOutput);
+                        break;
+                    }
+                }
+
+                bool outputAgeOk = false;
+
+                for (const auto& op : ngraphFunction->get_ops()) {
+                    std::string friendly_name = op->get_friendly_name();
+                    std::string output_type = op->get_type_name();
+
+                    if ((friendly_name.find(ptrAgeOutput->getName()) != std::string::npos) && (output_type == "Convolution")) {
+                        outputAgeOk = true;
+                        break;
+                    }
+                }
+
+                if (!outputAgeOk)
+                {
+                    throw std::logic_error("In Age/Gender Recognition network, Age layer (" + ptrAgeOutput->getName() + ") should be a Convolution");
+                }
+
+                bool outputGenderOk = false;
+
+                for (const auto& op : ngraphFunction->get_ops()) {
+                    std::string friendly_name = op->get_friendly_name();
+                    std::string output_type = op->get_type_name();
+
+                    if ((friendly_name.find(ptrGenderOutput->getName()) != std::string::npos) && (output_type == "Softmax")) {
+                        outputGenderOk = true;
+                        break;
+                    }
+                }
+
+                if (!outputGenderOk)
+                {
+                    throw std::logic_error("In Age/Gender Recognition network, Gender layer (" + ptrGenderOutput->getName() + ") should be a Softmax");
+                }
+        }
+
+        if (doRawOutputMessages)
+        {
+            LOG(DEBUG) << "Age layer: " << ptrAgeOutput->getName();
+            LOG(DEBUG) << "Gender layer: " << ptrGenderOutput->getName();
+        }
+#endif
 #endif
 
         outputAge = ptrAgeOutput->getName();
