@@ -1,20 +1,77 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
-#include <librealsense2/rs.hpp>
 #include <iostream>
 #include <fstream>
+#include <string>
+#include <regex>
+#include <algorithm>
+
+#include <librealsense2/rs.hpp>
 
 #include "tclap/CmdLine.h"
 #include "parser.hpp"
 #include "auto-complete.h"
 
-#include <string>
-
 
 using namespace std;
 using namespace TCLAP;
 
+
+string char2hex(unsigned char n)
+{
+    string res;
+
+    do
+    {
+        res += "0123456789ABCDEF"[n % 16];
+        n >>= 4;
+    } while (n);
+
+    reverse(res.begin(), res.end());
+
+    if (res.size() == 1)
+    {
+        res.insert(0, "0");
+    }
+
+    return res;
+}
+
+// While working from files, convert the file content into rectognized raw format
+void preprocess_data_payload(vector<string>& params)
+{
+    if (!params.size())
+        return;
+
+    //The last parameter provided by the user can represent a fully-qualified file path
+    vector<string> modified_params = params;
+
+    std::string str_param = params.back();
+    //std::regex fp("(*)(.*)"); // Represents a file path with extension
+    std::regex fp(".*\\.*$");
+
+    if (regex_match(str_param, fp))
+    {
+        std::ifstream file(str_param, std::ios::binary | std::ios::in);
+
+        if (file.good())
+        {
+            auto data = std::vector<uint8_t>((std::istreambuf_iterator<char>(file)),
+                std::istreambuf_iterator<char>());
+            modified_params.clear();
+            modified_params.resize(params.size() - 1 + data.size());
+            std::transform(data.begin(), data.end(), modified_params.begin()+(params.size() - 1), [](uint8_t c) { return char2hex(c); });
+
+        }
+        else
+        {
+            throw std::runtime_error("Can't read binary file '" + str_param + "'");
+        }
+    }
+
+    params = modified_params; // substitute original params with raw data
+}
 
 vector<uint8_t> build_raw_command_data(const command& command, const vector<string>& params)
 {
@@ -55,12 +112,15 @@ void xml_mode(const string& line, const commands_xml& cmd_xml, rs2::device& dev,
     auto command_str = tokens.front();
     auto it = cmd_xml.commands.find(command_str);
     if (it == cmd_xml.commands.end())
-        throw runtime_error("Command not found!");
+        throw runtime_error("Command " + command_str + " was not found!");
 
     auto command = it->second;
     vector<string> params;
     for (auto i = 1; i < tokens.size(); ++i)
         params.push_back(tokens[i]);
+
+    // In case of sending data from file, the data will be retrieved and converted into raw format
+    preprocess_data_payload(params);
 
     auto raw_data = build_raw_command_data(command, params);
 
@@ -132,7 +192,7 @@ void read_script_file(const string& full_file_path, vector<string>& hex_lines)
     ifstream myfile(full_file_path);
     if (myfile.is_open())
     {
-        string line;
+        string line{};
         while (getline(myfile, line))
             hex_lines.push_back(line);
 
@@ -157,7 +217,7 @@ rs2::device wait_for_device(const rs2::device_hub& hub, bool print_info = true)
 
 int main(int argc, char** argv)
 {
-    CmdLine cmd("librealsense rs-terminal example tool", ' ', RS2_API_VERSION_STR);
+    CmdLine cmd("librealsense rs-terminal tool", ' ', RS2_API_VERSION_STR);
     ValueArg<string> xml_arg("l", "load", "Full file path of commands XML file", false, "", "Load commands XML file");
     ValueArg<int> device_id_arg("d", "deviceId", "Device ID could be obtain from rs-enumerate-devices example", false, 0, "Select a device to work with");
     ValueArg<string> specific_SN_arg("n", "serialNum", "Serial Number can be obtain from rs-enumerate-devices example", false, "", "Select a device serial number to work with");
@@ -219,13 +279,13 @@ int main(int argc, char** argv)
 
         update_format_type_to_lambda(format_type_to_lambda);
         is_application_in_hex_mode = false;
-        cout << "Commands XML file - " << xml_full_file_path << " was loaded successfully. Type commands by name (e.g.'gvd'`).\n";
+        cout << "Commands XML file - " << xml_full_file_path << " was loaded successfully.\n Type commands by name (e.g.'gvd'`).\n";
     }
     else
     {
         cout << "Commands XML file not provided.\nyou still can send raw data to device in hexadecimal\nseparated by spaces.\n";
-        cout << "Example GVD command for the SR300:\n14 00 ab cd 3b 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00\n";
-        cout << "Example GVD command for the RS4xx:\n14 00 ab cd 10 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00\n";
+        cout << "Example GVD command for the SR3XX:\n14 00 ab cd 3b 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00\n";
+        cout << "Example GVD command for the D4XX:\n14 00 ab cd 10 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00\n";
     }
     auto auto_comp = get_auto_complete_obj(is_application_in_hex_mode, cmd_xml.commands);
 
@@ -323,11 +383,17 @@ int main(int argc, char** argv)
         }
 
         if (!script_file.empty())
+        {
             read_script_file(script_file, script_lines);
+            cout << "Executing the following command from script file " << script_file << endl;
+            for (auto& ln : script_lines)
+                cout << ln << endl;
+            cout << endl;
+        }
 
         if (hex_script_arg.isSet())
         {
-            for (auto dev : selected_rs_devices) {
+            for (auto& dev : selected_rs_devices) {
                 try
                 {
                     for (auto& elem : script_lines)
@@ -341,9 +407,6 @@ int main(int argc, char** argv)
             }
             return EXIT_SUCCESS;
         }
-
-
-
 
         if (commands_script_arg.isSet())
         {
@@ -413,4 +476,3 @@ int main(int argc, char** argv)
 
     }
 }
-
