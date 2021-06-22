@@ -6,6 +6,7 @@
 #include "ds5-private.h"
 #include "ds5-thermal-monitor.h"
 #include "ds5-auto-calibration.h"
+#include "librealsense2/rsutil.h"
 
 namespace librealsense
 {
@@ -869,5 +870,586 @@ namespace librealsense
     {
         command cmd(ds::fw_cmd::CAL_RESTORE_DFLT);
         _hw_monitor->send(cmd);
+    }
+
+    void auto_calibrated::get_target_rect_info(rs2_frame_queue* frames, float rect_sides[4], float& fx, float& fy, int progress, update_progress_callback_ptr progress_callback)
+    {
+        fx = -1.0f;
+        std::vector<std::array<float, 4>> rect_sides_arr;
+
+        rs2_error* e = nullptr;
+        rs2_frame* f = nullptr;
+        while (rs2_poll_for_frame(frames, &f, &e))
+        {
+            rs2::frame ff(f);
+            if (ff.get_data())
+            {
+                if (fx < 0.0f)
+                {
+                    auto p = ff.get_profile();
+                    auto vsp = p.as<rs2::video_stream_profile>();
+                    rs2_intrinsics intrin = vsp.get_intrinsics();
+                    fx = intrin.fx;
+                    fy = intrin.fy;
+                }
+
+                std::array<float, 4> rec_sides_cur;
+                rs2_extract_target_dimensions(f, RS2_CALIB_TARGET_ROI_RECT_GAUSSIAN_DOT_VERTICES, rec_sides_cur.data(), 4, &e);
+                if (e)
+                    throw std::runtime_error("Failed to extract target information\nfrom the image captured!");
+                rect_sides_arr.emplace_back(rec_sides_cur);
+            }
+
+            rs2_release_frame(f);
+
+            if (progress_callback)
+                progress_callback->on_update_progress(++progress);
+        }
+
+        for (int i = 0; i < 4; ++i)
+            rect_sides[i] = rect_sides_arr[0][i];
+
+        for (int j = 1; j < rect_sides_arr.size(); ++j)
+        {
+            for (int i = 0; i < 4; ++i)
+                rect_sides[i] += rect_sides_arr[j][i];
+        }
+
+        for (int i = 0; i < 4; ++i)
+            rect_sides[i] /= rect_sides_arr.size();
+    }
+
+    std::vector<uint8_t> auto_calibrated::run_fl_calibration(rs2_frame_queue* left, rs2_frame_queue* right, float target_w, float target_h, 
+        int adjust_both_sides, float *ratio, float * angle, update_progress_callback_ptr progress_callback)
+    {
+        float fx[2] = { -1.0f, -1.0f };
+        float fy[2] = { -1.0f, -1.0f };
+
+        float left_rect_sides[4];     
+        get_target_rect_info(left, left_rect_sides, fx[0], fy[0], 50, progress_callback);
+
+        float right_rect_sides[4];
+        get_target_rect_info(right, right_rect_sides, fx[1], fy[1], 75, progress_callback);
+
+        std::vector<uint8_t> ret;
+        const float correction_factor = 0.50f;
+
+        auto calib_table = get_calibration_table();
+        auto table = (librealsense::ds::coefficients_table*)calib_table.data();
+
+        float ar[2] = { 0 };
+        float tmp = left_rect_sides[2] + left_rect_sides[3];
+        if (tmp > 0.1f)
+            ar[0] = (left_rect_sides[0] + left_rect_sides[1]) / tmp;
+
+        tmp = right_rect_sides[2] + right_rect_sides[3];
+        if (tmp > 0.1f)
+            ar[1] = (right_rect_sides[0] + right_rect_sides[1]) / tmp;
+
+        float align = 0.0f;
+        if (ar[0] > 0.0f)
+            align = ar[1] / ar[0] - 1.0f;
+
+        float ta[2] = { 0 };
+        float gt[4] = { 0 };
+        float ave_gt = 0.0f;
+
+        if (left_rect_sides[0] > 0)
+            gt[0] = fx[0] * target_w / left_rect_sides[0];
+
+        if (left_rect_sides[1] > 0)
+            gt[1] = fx[0] * target_w / left_rect_sides[1];
+
+        if (left_rect_sides[2] > 0)
+            gt[2] = fy[0] * target_h / left_rect_sides[2];
+
+        if (left_rect_sides[3] > 0)
+            gt[3] = fy[0] * target_h / left_rect_sides[3];
+
+        ave_gt = 0.0f;
+        for (int i = 0; i < 4; ++i)
+            ave_gt += gt[i];
+        ave_gt /= 4.0;
+
+        ta[0] = atanf(align * ave_gt / abs(table->baseline));
+        ta[0] = rad2deg(ta[0]);
+
+        if (right_rect_sides[0] > 0)
+            gt[0] = fx[1] * target_w / right_rect_sides[0];
+
+        if (right_rect_sides[1] > 0)
+            gt[1] = fx[1] * target_w / right_rect_sides[1];
+
+        if (right_rect_sides[2] > 0)
+            gt[2] = fy[1] * target_h / right_rect_sides[2];
+
+        if (right_rect_sides[3] > 0)
+            gt[3] = fy[1] * target_h / right_rect_sides[3];
+
+        ave_gt = 0.0f;
+        for (int i = 0; i < 4; ++i)
+            ave_gt += gt[i];
+        ave_gt /= 4.0;
+
+        ta[1] = atanf(align * ave_gt / abs(table->baseline));
+        ta[1] = rad2deg(ta[1]);
+
+        *angle = (ta[0] + ta[1]) / 2;
+
+        align *= 100;
+
+        float r[4] = { 0 };
+        float c = fx[0] / fx[1];
+
+        if (left_rect_sides[0] > 0.1f)
+            r[0] = c * right_rect_sides[0] / left_rect_sides[0];
+
+        if (left_rect_sides[1] > 0.1f)
+            r[1] = c * right_rect_sides[1] / left_rect_sides[1];
+
+        c = fy[0] / fy[1];
+        if (left_rect_sides[2] > 0.1f)
+            r[2] = c * right_rect_sides[2] / left_rect_sides[2];
+
+        if (left_rect_sides[3] > 0.1f)
+            r[3] = c * right_rect_sides[3] / left_rect_sides[3];
+
+        float ra = 0.0f;
+        for (int i = 0; i < 4; ++i)
+            ra += r[i];
+        ra /= 4;
+
+        ra -= 1.0f;
+        ra *= 100;
+
+        *ratio = ra - correction_factor * align;
+        float ratio_to_apply = *ratio / 100.0f + 1.0f;
+
+        if (adjust_both_sides)
+        {
+            float ratio_to_apply_2 = sqrtf(ratio_to_apply);
+            table->intrinsic_left.x.x /= ratio_to_apply_2;
+            table->intrinsic_left.x.y /= ratio_to_apply_2;
+            table->intrinsic_right.x.x *= ratio_to_apply_2;
+            table->intrinsic_right.x.y *= ratio_to_apply_2;
+        }
+        else
+        {
+            table->intrinsic_right.x.x *= ratio_to_apply;
+            table->intrinsic_right.x.y *= ratio_to_apply;
+        }
+
+        auto actual_data = calib_table.data() + sizeof(librealsense::ds::table_header);
+        auto actual_data_size = calib_table.size() - sizeof(librealsense::ds::table_header);
+        auto crc = librealsense::calc_crc32(actual_data, actual_data_size);
+        table->header.crc32 = crc;
+
+        return calib_table;
+    }
+
+    void auto_calibrated::undistort(uint8_t* img, const rs2_intrinsics& intrin, int roi_ws, int roi_hs, int roi_we, int roi_he)
+    {
+        assert(intrin.model == RS2_DISTORTION_INVERSE_BROWN_CONRADY);
+        
+        int width = intrin.width;
+        int height = intrin.height;
+
+        if (roi_ws < 0) roi_ws = 0;
+        if (roi_hs < 0) roi_hs = 0;
+        if (roi_we > width) roi_we = width;
+        if (roi_he > height) roi_he = height;
+
+        int size3 = width * height * 3;
+        std::vector<uint8_t> tmp(size3);
+        memset(tmp.data(), 0, size3);
+
+        float x = 0;
+        float y = 0;
+        int m = 0;
+        int n = 0;
+
+        int width3 = width * 3;
+        int idx_from = 0;
+        int idx_to = 0;
+        for (int j = roi_hs; j < roi_he; ++j)
+        {
+            for (int i = roi_ws; i < roi_we; ++i)
+            {
+                x = static_cast<float>(i);
+                y = static_cast<float>(j);
+
+                if (abs(intrin.fx) > 0.00001f && abs(intrin.fy) > 0.0001f)
+                {
+                    x = (x - intrin.ppx) / intrin.fx;
+                    y = (y - intrin.ppy) / intrin.fy;
+
+                    float r2 = x * x + y * y;
+                    float f = 1 + intrin.coeffs[0] * r2 + intrin.coeffs[1] * r2 * r2 + intrin.coeffs[4] * r2 * r2 * r2;
+                    float ux = x * f + 2 * intrin.coeffs[2] * x * y + intrin.coeffs[3] * (r2 + 2 * x * x);
+                    float uy = y * f + 2 * intrin.coeffs[3] * x * y + intrin.coeffs[2] * (r2 + 2 * y * y);
+                    x = ux;
+                    y = uy;
+
+                    x = x * intrin.fx + intrin.ppx;
+                    y = y * intrin.fy + intrin.ppy;
+                }
+
+                m = static_cast<int>(x + 0.5f);
+                if (m >= 0 && m < width)
+                {
+                    n = static_cast<int>(y + 0.5f);
+                    if (n >= 0 && n < height)
+                    {
+                        idx_from = j * width3 + i * 3;
+                        idx_to = n * width3 + m * 3;
+                        tmp[idx_to++] = img[idx_from++];
+                        tmp[idx_to++] = img[idx_from++];
+                        tmp[idx_to++] = img[idx_from++];
+                    }
+                }
+            }
+        }
+
+        memmove(img, tmp.data(), size3);
+    }
+
+    void auto_calibrated::get_target_dots_info(rs2_frame_queue* frames, float dots_x[4], float dots_y[4], rs2::stream_profile& profile, rs2_intrinsics& intrin, int progress, update_progress_callback_ptr progress_callback)
+    {
+        bool got_intrinsics = false;
+        std::vector<std::array<float, 4>> dots_x_arr;
+        std::vector<std::array<float, 4>> dots_y_arr;
+
+        rs2_error* e = nullptr;
+        rs2_frame* f = nullptr;
+        while (rs2_poll_for_frame(frames, &f, &e))
+        {
+            rs2::frame ff(f);
+            if (ff.get_data())
+            {
+                if (!got_intrinsics)
+                {
+                    profile = ff.get_profile();
+                    auto vsp = profile.as<rs2::video_stream_profile>();
+                    intrin = vsp.get_intrinsics();
+                    got_intrinsics = true;
+                }
+
+                if (ff.get_profile().format() == RS2_FORMAT_RGB8)
+                {
+                    undistort(const_cast<uint8_t *>(static_cast<const uint8_t *>(ff.get_data())), intrin,
+                            librealsense::_roi_ws - librealsense::_patch_size, librealsense::_roi_hs - librealsense::_patch_size,
+                            librealsense::_roi_we + librealsense::_patch_size, librealsense::_roi_he + librealsense::_patch_size);
+                }
+
+                float dots[8] = { 0 };
+                rs2_extract_target_dimensions(f, RS2_CALIB_TARGET_POS_GAUSSIAN_DOT_VERTICES, dots, 8, &e);
+                if (e)
+                    throw std::runtime_error("Failed to extract target information\nfrom the image captured!");
+
+                std::array<float, 4> dots_x_cur;
+                std::array<float, 4> dots_y_cur;
+                int j = 0;
+                for (int i = 0; i < 4; ++i)
+                {
+                    j = i << 1;
+                    dots_x_cur[i] = dots[j];
+                    dots_y_cur[i] = dots[j + 1];
+                }
+                dots_x_arr.emplace_back(dots_x_cur);
+                dots_y_arr.emplace_back(dots_y_cur);
+            }
+
+            rs2_release_frame(f);
+
+            if (progress_callback)
+                progress_callback->on_update_progress(++progress);
+        }
+
+        for (int i = 0; i < 4; ++i)
+        {
+            dots_x[i] = dots_x_arr[0][i];
+            dots_y[i] = dots_y_arr[0][i];
+        }
+
+        for (int j = 1; j < dots_x_arr.size(); ++j)
+        {
+            for (int i = 0; i < 4; ++i)
+            {
+                dots_x[i] += dots_x_arr[j][i];
+                dots_y[i] += dots_y_arr[j][i];
+            }
+        }
+
+        for (int i = 0; i < 4; ++i)
+        {
+            dots_x[i] /= dots_x_arr.size();
+            dots_y[i] /= dots_y_arr.size();
+        }
+    }
+
+    void auto_calibrated::find_z_at_corners(float left_x[4], float left_y[4], rs2_frame_queue* frames, float left_z[4])
+    {
+        int x1[4] = { 0 };
+        int y1[4] = { 0 };
+        int x2[4] = { 0 };
+        int y2[4] = { 0 };
+        int pos_tl[4] = { 0 };
+        int pos_tr[4] = { 0 };
+        int pos_bl[4] = { 0 };
+        int pos_br[4] = { 0 };
+
+        float left_z_tl[4] = { 0 };
+        float left_z_tr[4] = { 0 };
+        float left_z_bl[4] = { 0 };
+        float left_z_br[4] = { 0 };
+
+        bool got_width = false;
+        int width = 0;
+        int counter = 0;
+        rs2_error* e = nullptr;
+        rs2_frame* f = nullptr;
+        while (rs2_poll_for_frame(frames, &f, &e))
+        {
+            rs2::frame ff(f);
+            if (ff.get_data())
+            {
+                if (!got_width)
+                {
+                    auto p = ff.get_profile();
+                    auto vsp = p.as<rs2::video_stream_profile>();
+                    width = vsp.get_intrinsics().width;
+                    got_width = true;
+
+                    for (int i = 0; i < 4; ++i)
+                    {
+                        x1[i] = static_cast<int>(left_x[i]);
+                        y1[i] = static_cast<int>(left_y[i]);
+
+                        x2[i] = static_cast<int>(left_x[i] + 1.0f);
+                        y2[i] = static_cast<int>(left_y[i] + 1.0f);
+
+                        pos_tl[i] = y1[i] * width + x1[i];
+                        pos_tr[i] = y1[i] * width + x2[i];
+                        pos_bl[i] = y2[i] * width + x1[i];
+                        pos_br[i] = y2[i] * width + x2[i];
+                    }
+                }
+
+                const uint16_t* depth = reinterpret_cast<const uint16_t*>(ff.get_data());
+                for (int i = 0; i < 4; ++i)
+                {
+                    left_z_tl[i] += static_cast<float>(depth[pos_tl[i]]);
+                    left_z_tr[i] += static_cast<float>(depth[pos_tr[i]]);
+                    left_z_bl[i] += static_cast<float>(depth[pos_bl[i]]);
+                    left_z_br[i] += static_cast<float>(depth[pos_br[i]]);
+                }
+
+                ++counter;
+            }
+
+            rs2_release_frame(f);
+        }
+
+        for (int i = 0; i < 4; ++i)
+        {
+            left_z_tl[i] /= counter;
+            left_z_tr[i] /= counter;
+            left_z_bl[i] /= counter;
+            left_z_br[i] /= counter;
+        }
+
+        float z_1 = 0.0f;
+        float z_2 = 0.0f;
+        float s = 0.0f;
+        for (int i = 0; i < 4; ++i)
+        {
+            s = left_x[i] - x1[i];
+            z_1 = (1.0f - s) * left_z_bl[i] + s * left_z_br[i];
+            z_2 = (1.0f - s) * left_z_tl[i] + s * left_z_tr[i];
+
+            s = left_y[i] - y1[i];
+            left_z[i] = (1.0f - s) * z_2 + s * z_1;
+            left_z[i] *= 0.001f;
+        }
+    }
+
+    std::vector<uint8_t> auto_calibrated::run_uvmapping_calibration(rs2_frame_queue* left, rs2_frame_queue* color, rs2_frame_queue* depth, int py_px_only,
+        float* health, int helath_size, update_progress_callback_ptr progress_callback)
+    {
+        float left_dots_x[4];
+        float left_dots_y[4];
+        rs2_intrinsics left_intrin;
+        rs2::stream_profile left_profile;
+        get_target_dots_info(left, left_dots_x, left_dots_y, left_profile, left_intrin, 50, progress_callback);
+
+        float color_dots_x[4];
+        float color_dots_y[4];
+        rs2_intrinsics color_intrin;
+        rs2::stream_profile color_profile;
+        get_target_dots_info(color, color_dots_x, color_dots_y, color_profile, color_intrin, 75, progress_callback);
+
+        float z[4] = { 0 };
+        find_z_at_corners(left_dots_x, left_dots_y, depth, z);
+
+        rs2_extrinsics extrin = left_profile.get_extrinsics_to(color_profile);
+
+        float pixel_left[4][2] = { 0 };
+        float point_left[4][3] = { 0 };
+
+        float pixel_color[4][2] = { 0 };
+        float pixel_color_norm[4][2] = { 0 };
+        float point_color[4][3] = { 0 };
+
+        for (int i = 0; i < 4; ++i)
+        {
+            pixel_left[i][0] = left_dots_x[i];
+            pixel_left[i][1] = left_dots_y[i];
+
+            rs2_deproject_pixel_to_point(point_left[i], &left_intrin, pixel_left[i], z[i]);
+            rs2_transform_point_to_point(point_color[i], &extrin, point_left[i]);
+
+            pixel_color_norm[i][0] = point_color[i][0] / point_color[i][2];
+            pixel_color_norm[i][1] = point_color[i][1] / point_color[i][2];
+            pixel_color[i][0] = pixel_color_norm[i][0] * color_intrin.fx + color_intrin.ppx;
+            pixel_color[i][1] = pixel_color_norm[i][1] * color_intrin.fy + color_intrin.ppy;
+        }
+
+        float diff[4] = { 0 };
+        float tmp = 0.0f;
+        for (int i = 0; i < 4; ++i)
+        {
+            tmp = (pixel_color[i][0] - color_dots_x[i]);
+            tmp *= tmp;
+            diff[i] = tmp;
+
+            tmp = (pixel_color[i][1] - color_dots_y[i]);
+            tmp *= tmp;
+            diff[i] += tmp;
+
+            diff[i] = sqrtf(diff[i]);
+        }
+
+        float err_before = 0.0f;
+        for (int i = 0; i < 4; ++i)
+            err_before += diff[i];
+        err_before /= 4;
+
+        float ppx = 0.0f;
+        float ppy = 0.0f;
+        float fx = 0.0f; 
+        float fy = 0.0f;
+
+        if (py_px_only)
+        {
+            fx = color_intrin.fx;
+            fy = color_intrin.fy;
+
+            ppx = 0.0f;
+            ppy = 0.0f;
+            for (int i = 0; i < 4; ++i)
+            {
+                ppx += color_dots_x[i] - pixel_color_norm[i][0] * fx;
+                ppy += color_dots_y[i] - pixel_color_norm[i][1] * fy;
+            }
+            ppx /= 4.0f;
+            ppy /= 4.0f;
+        }
+        else
+        {
+            double x = 0;
+            double y = 0;
+            double c_x = 0;
+            double c_y = 0;
+            double x_2 = 0;
+            double y_2 = 0;
+            double c_xc = 0;
+            double c_yc = 0;
+            for (int i = 0; i < 4; ++i)
+            {
+                x += pixel_color_norm[i][0];
+                y += pixel_color_norm[i][1];
+                c_x += color_dots_x[i];
+                c_y += color_dots_y[i];
+                x_2 += pixel_color_norm[i][0] * pixel_color_norm[i][0];
+                y_2 += pixel_color_norm[i][1] * pixel_color_norm[i][1];
+                c_xc += color_dots_x[i] * pixel_color_norm[i][0];
+                c_yc += color_dots_y[i] * pixel_color_norm[i][1];
+            }
+
+            double d_x = 4 * x_2 - x * x;
+            if (d_x > 0.01)
+            {
+                d_x = 1 / d_x;
+                fx = static_cast<float>(d_x * (4 * c_xc - x * c_x));
+                ppx = static_cast<float>(d_x * (x_2 * c_x - x * c_xc));
+            }
+
+            double d_y = 4 * y_2 - y * y;
+            if (d_y > 0.01)
+            {
+                d_y = 1 / d_y;
+                fy = static_cast<float>(d_y * (4 * c_yc - y * c_y));
+                ppy = static_cast<float>(d_y * (y_2 * c_y - y * c_yc));
+            }
+        }
+
+        float err_after = 0.0f;
+        float tmpx = 0;
+        float tmpy = 0;
+        for (int i = 0; i < 4; ++i)
+        {
+            tmpx = pixel_color_norm[i][0] * fx + ppx - color_dots_x[i];
+            tmpx *= tmpx;
+
+            tmpy = pixel_color_norm[i][1] * fy + ppy - color_dots_y[i];
+            tmpy *= tmpy;
+
+            err_after += sqrtf(tmpx + tmpy);
+        }
+
+        err_after /= 4.0f;
+
+        std::vector<uint8_t> ret;
+        const float max_change = 16.0f;
+        if (fabs(color_intrin.ppx - ppx) < max_change && fabs(color_intrin.ppy - ppy) < max_change && fabs(color_intrin.fx - fx) < max_change && fabs(color_intrin.fy - fy) < max_change)
+        {
+            ret = _hw_monitor->send(command{ds::GETINTCAL, ds::rgb_calibration_id });
+            auto table = reinterpret_cast<librealsense::ds::rgb_calibration_table*>(ret.data());
+
+            health[0] = table->intrinsic(2, 0); // px
+            health[1] = table->intrinsic(2, 1); // py
+            health[2] = table->intrinsic(0, 0); // fx
+            health[3] = table->intrinsic(1, 1); // fy
+
+            table->intrinsic(2, 0) = 2.0f * ppx / color_intrin.width - 1;  // ppx
+            table->intrinsic(2, 1) = 2.0f * ppy / color_intrin.height - 1; // ppy
+            table->intrinsic(0, 0) = 2.0f * fx / color_intrin.width;       // fx
+            table->intrinsic(1, 1) = 2.0f * fy / color_intrin.height;      // fy
+
+            float calib_aspect_ratio = 9.f / 16.f; // shall be overwritten with the actual calib resolution
+            if (table->calib_width && table->calib_height)
+                calib_aspect_ratio = float(table->calib_height) / float(table->calib_width);
+
+            float actual_aspect_ratio = color_intrin.height / (float)color_intrin.width;
+            if (actual_aspect_ratio < calib_aspect_ratio)
+            {
+                table->intrinsic(1, 1) /= calib_aspect_ratio / actual_aspect_ratio; // fy
+                table->intrinsic(2, 1) /= calib_aspect_ratio / actual_aspect_ratio; // ppy
+            }
+            else
+            {
+                table->intrinsic(0, 0) /= actual_aspect_ratio / calib_aspect_ratio; // fx
+                table->intrinsic(2, 0) /= actual_aspect_ratio / calib_aspect_ratio; // ppx
+            }
+
+            table->header.crc32 = calc_crc32(ret.data() + sizeof(librealsense::ds::table_header), ret.size() - sizeof(librealsense::ds::table_header));
+
+            health[0] = (abs(table->intrinsic(2, 0) / health[0]) - 1) * 100; // px
+            health[1] = (abs(table->intrinsic(2, 1) / health[1]) - 1) * 100; // py
+            health[2] = (abs(table->intrinsic(0, 0) / health[2]) - 1) * 100; // fx
+            health[3] = (abs(table->intrinsic(1, 1) / health[3]) - 1) * 100; // fy
+        }
+
+        return ret;
     }
 }
