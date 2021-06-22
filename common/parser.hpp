@@ -15,7 +15,7 @@
 
 #include "../third-party/rapidxml/rapidxml.hpp"
 #include "./utilities/string/string-utilities.h"
-using namespace utilities;
+using namespace utilities::strings;
 
 #define MAX_PARAMS 4
 

@@ -130,7 +130,7 @@ int main(int argc, char* argv[])
                         std::vector<uint8_t> msg_data = log_message.data();
                         for (int i = 0; i < msg_data.size(); ++i)
                         {
-                        sstr << utilities::hexify(msg_data[i]) << " ";
+                        sstr << utilities::strings::hexify(msg_data[i]) << " ";
                         }
                         fw_log_lines.push_back(sstr.str());
                     }

@@ -11,6 +11,7 @@
 #include <librealsense2/hpp/rs_internal.hpp>
 
 using namespace rs2;
+using namespace utilities::strings;
 
 void output_model::thread_loop()
 {

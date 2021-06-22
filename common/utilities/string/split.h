@@ -8,7 +8,7 @@
 #include <sstream>
 
 namespace utilities {
-namespace string {
+namespace strings {
 
 
 // Split input text to vector of strings according to input delimiter

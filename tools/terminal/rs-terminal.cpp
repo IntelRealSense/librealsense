@@ -41,7 +41,7 @@ void preprocess_data_payload(vector<string>& params)
                 std::istreambuf_iterator<char>());
             modified_params.clear();
             modified_params.resize(params.size() - 1 + data.size());
-            std::transform(data.begin(), data.end(), modified_params.begin()+(params.size() - 1), [](uint8_t c) { return utilities::hexify(c); });
+            std::transform(data.begin(), data.end(), modified_params.begin()+(params.size() - 1), [](uint8_t c) { return utilities::strings::hexify(c); });
 
         }
         else
