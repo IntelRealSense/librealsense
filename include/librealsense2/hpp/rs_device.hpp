@@ -558,6 +558,132 @@ namespace rs2
             rs2_set_calibration_table(_dev.get(), calibration.data(), static_cast< int >( calibration.size() ), &e);
             error::handle(e);
         }
+
+        /**
+        *  Target based focal length calibration.
+        * \param[in]    left: the frame queue for 25 left frames with resoluton of 1289x720 and the target in the middle od 320x240 region of interest.
+        * \param[in]    right: the frame queue for 25 right frames with resoluton of 1289x720 and the target in the middle od 320x240 region of interest, which are captured at the same time of left frame queue
+        * \param[in]    target_w: the rectangle width in mm on the target
+        * \param[in]    target_h: the rectangle height in mm on the target
+        * \param[in]    adjust_both_sides: 1 for adjusting both left and right camera calibration tables and 0 for adjusting right camera calibraion table only
+        * \param[out]   ratio: the corrected ratio from the calibration
+        * \param[out]   angle: the target tile angle
+        * \return       New calibration table
+        */
+        std::vector<uint8_t> run_fl_calibration(rs2_frame_queue* left, rs2_frame_queue* right, float target_w, float target_h, int adjust_both_sides, 
+            float* ratio, float* angle)
+        {
+            std::vector<uint8_t> results;
+
+            rs2_error* e = nullptr;
+            std::shared_ptr<const rs2_raw_data_buffer> list(rs2_run_fl_calibration_cpp(_dev.get(), left, right, target_w, target_h, adjust_both_sides, ratio, angle, nullptr, &e));
+            error::handle(e);
+
+            auto size = rs2_get_raw_data_size(list.get(), &e);
+            error::handle(e);
+
+            auto start = rs2_get_raw_data(list.get(), &e);
+
+            results.insert(results.begin(), start, start + size);
+
+            return results;
+        }
+
+        /**
+        *  Target based focal length calibration.
+        * \param[in]    left: the frame queue for 25 left frames with resoluton of 1289x720 and the target in the middle od 320x240 region of interest.
+        * \param[in]    right: the frame queue for 25 right frames with resoluton of 1289x720 and the target in the middle od 320x240 region of interest, which are captured at the same time of left frame queue
+        * \param[in]    target_w: the rectangle width in mm on the target
+        * \param[in]    target_h: the rectangle height in mm on the target
+        * \param[in]    adjust_both_sides: 1 for adjusting both left and right camera calibration tables and 0 for adjusting right camera calibraion table only
+        * \param[out]   ratio: the corrected ratio from the calibration
+        * \param[out]   angle: the target tile angle
+        * \return       New calibration table
+        */
+        template<class T>
+        std::vector<uint8_t> run_fl_calibration(rs2_frame_queue* left, rs2_frame_queue* right, float target_w, float target_h, int adjust_both_sides, 
+            float* ratio, float* angle, T callback)
+        {
+            std::vector<uint8_t> results;
+
+            rs2_error* e = nullptr;
+            std::shared_ptr<const rs2_raw_data_buffer> list(rs2_run_fl_calibration_cpp(_dev.get(), left, right, target_w, target_h, adjust_both_sides, 
+                ratio, angle, new update_progress_callback<T>(std::move(callback)), &e));
+            error::handle(e);
+
+            auto size = rs2_get_raw_data_size(list.get(), &e);
+            error::handle(e);
+
+            auto start = rs2_get_raw_data(list.get(), &e);
+
+            results.insert(results.begin(), start, start + size);
+
+            return results;
+        }
+
+        /**
+        *  UV-Mapping calibration.
+        * \param[in]    left: the frame queue for 25 left frames with resoluton of 1289x720 and the target in the middle od 320x240 region of interest.
+        * \param[in]    color: the frame queue for 25 rgb frames with resoluton of 1289x720 and the target in the middle od 320x240 region of interest, which are captured at the same time of left frame queue
+        * \param[in]    depth: the frame queue for 25 depth frames with resoluton of 1289x720, which are captured at the same time of left frame queue
+        * \param[in]    py_px_only: 1 for calibrating color camera py and px only, 1 for calibrating color camera py, px, fy, and fx.
+        * \param[out]   health: The four health check numbers int the oorder of px, py, fx, fy for the calibration
+        * \param[in]    health_size: number of health check numbers, which is 4 by default
+        * \param[in]    callback: Optional callback for update progress notifications, the progress value is normailzed to 1
+        * \return       New calibration table
+        */
+        std::vector<uint8_t> run_uvmapping_calibration_cpp(rs2_frame_queue* left, rs2_frame_queue* color, rs2_frame_queue* depth, int py_px_only,
+            float* health, int helath_size)
+        {
+            std::vector<uint8_t> results;
+
+            rs2_error* e = nullptr;
+            std::shared_ptr<const rs2_raw_data_buffer> list(rs2_run_uvmapping_calibration_cpp(_dev.get(), left, color, depth,
+                py_px_only, health, helath_size, nullptr, &e));
+            error::handle(e);
+
+            auto size = rs2_get_raw_data_size(list.get(), &e);
+            error::handle(e);
+
+            auto start = rs2_get_raw_data(list.get(), &e);
+
+            results.insert(results.begin(), start, start + size);
+
+            return results;
+        }
+
+        /**
+        *  UV-Mapping calibration.
+        * \param[in]    left: the frame queue for 25 left frames with resoluton of 1289x720 and the target in the middle od 320x240 region of interest.
+        * \param[in]    color: the frame queue for 25 rgb frames with resoluton of 1289x720 and the target in the middle od 320x240 region of interest, which are captured at the same time of left frame queue
+        * \param[in]    depth: the frame queue for 25 depth frames with resoluton of 1289x720, which are captured at the same time of left frame queue
+        * \param[in]    py_px_only: 1 for calibrating color camera py and px only, 1 for calibrating color camera py, px, fy, and fx.
+        * \param[out]   health: The four health check numbers int the oorder of px, py, fx, fy for the calibration
+        * \param[in]    health_size: number of health check numbers, which is 4 by default
+        * \param[in]    callback: Optional callback for update progress notifications, the progress value is normailzed to 1
+        * \param[in]    client_data: Optional client data for the callback
+        * \return       New calibration table
+        */
+        template<class T>
+        std::vector<uint8_t> run_uvmapping_calibration(rs2_frame_queue* left, rs2_frame_queue* color, rs2_frame_queue* depth, int py_px_only,
+            float* health, int helath_size, T callback)
+        {
+            std::vector<uint8_t> results;
+
+            rs2_error* e = nullptr;
+            std::shared_ptr<const rs2_raw_data_buffer> list(rs2_run_uvmapping_calibration_cpp(_dev.get(), left, color, depth, py_px_only, 
+                health, helath_size, new update_progress_callback<T>(std::move(callback)), &e));
+            error::handle(e);
+
+            auto size = rs2_get_raw_data_size(list.get(), &e);
+            error::handle(e);
+
+            auto start = rs2_get_raw_data(list.get(), &e);
+
+            results.insert(results.begin(), start, start + size);
+
+            return results;
+        }
     };
 
     /*

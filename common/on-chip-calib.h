@@ -85,10 +85,6 @@ namespace rs2
         int retry_times = 0;
         bool toggle = false;
 
-        float ratio = 0.0f;
-        float align = 0.0f;
-
-        const float correction_factor = 0.50f;
         float corrected_ratio = 0.0f;
         float tilt_angle = 0.0f;
 
@@ -151,11 +147,6 @@ namespace rs2
         void stop_viewer(invoker invoke);
         bool start_viewer(int w, int h, int fps, invoker invoke);
         void try_start_viewer(int w, int h, int fps, invoker invoke);
-
-        inline void fill_missing_data(uint16_t data[256], int size);
-        void undistort(uint8_t* img, int width, int height, const rs2_intrinsics& intrin, int roi_ws, int roi_hs, int roi_we, int roi_he);
-        void find_z_at_corners(float left_x[4], float left_y[4], int width, int num, std::vector<std::vector<uint16_t>> & depth, float left_z[4]);
-        void get_and_update_color_intrinsics(uint32_t width, uint32_t height, float ppx, float ppy, float fx, float fy);
     };
 
     // Auto-calib notification model is managing the UI state-machine
@@ -220,54 +211,5 @@ namespace rs2
         const int _reset_limit = 10;
 
         bool _roi = false;
-    };
-
-    // Class for calculating the four Gaussian dot center locations on the specific target
-    class dots_calculator
-    {
-    public:
-        dots_calculator() {}
-        virtual ~dots_calculator() {}
-
-        int calculate(const rs2_frame* frame_ref, float dots_x[4], float dots_y[4]); // return 0 if the target is not in the center, 1 if found, 2 if dots positions are updated
-
-    public:
-        static const int _frame_num = 25;
-
-    private:
-        void calculate_dots_position(float dots_x[4], float dots_y[4]);
-
-        int _width = 0;
-        int _height = 0;
-
-        float _dots_x[_frame_num][4];
-        float _dots_y[_frame_num][4];
-        int _rec_idx = 0;
-        int _rec_num = 0;
-        const int _reset_limit = 10;
-    };
-
-    class uvmapping_calib
-    {
-    public:
-        uvmapping_calib(int pt_num, const float* left_x, const float* left_y, const float* left_z, const float* color_x, const float* color_y, const rs2_intrinsics& left_intrin, const rs2_intrinsics& color_intrin, rs2_extrinsics& extrin);
-        virtual ~uvmapping_calib() {}
-
-        bool calibrate(float & err_before, float & err_after, float& ppx, float& ppy, float& fx, float& fy, bool py_px_only);
-
-    private:
-        const float _max_change = 16.0f;
-
-        int _pt_num;
-
-        std::vector<float> _left_x;
-        std::vector<float> _left_y;
-        std::vector<float> _left_z;
-        std::vector<float> _color_x;
-        std::vector<float> _color_y;        
-        
-        rs2_intrinsics _left_intrin;
-        rs2_intrinsics _color_intrin;
-        rs2_extrinsics _extrin;
     };
 }

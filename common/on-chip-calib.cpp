@@ -13,7 +13,6 @@
 #include <viewer.h>
 #include "calibration-model.h"
 #include "../src/algo.h"
-#include "../src/ds5/ds5-private.h"
 #include "../tools/depth-quality/depth-metrics.h"
 
 namespace rs2
@@ -763,48 +762,6 @@ namespace rs2
         config_file::instance().set(id.c_str(), (long long)rawtime);
     }
 
-    void on_chip_calib_manager::fill_missing_data(uint16_t data[256], int size)
-    {
-        int counter = 0;
-        int start = 0;
-        while (data[start++] == 0)
-            ++counter;
-
-        if (start + 2 > size)
-            throw std::runtime_error(to_string() << "There is no enought valid data in the array!");
-
-        for (int i = 0; i < counter; ++i)
-            data[i] = data[counter];
-
-        start = 0;
-        int end = 0;
-        float tmp = 0;
-        for (int i = 0; i < size; ++i)
-        {
-            if (data[i] == 0)
-                start = i;
-
-            if (start != 0 && data[i] != 0)
-                end = i;
-
-            if (start != 0 && end != 0)
-            {
-                tmp = static_cast<float>(data[end] - data[start - 1]);
-                tmp /= end - start + 1;
-                for (int j = start; j < end; ++j)
-                    data[j] = static_cast<uint16_t>(tmp * (j - start + 1) + data[start - 1] + 0.5f);
-                start = 0;
-                end = 0;
-            }
-        }
-
-        if (start != 0 && end == 0)
-        {
-            for (int i = start; i < size; ++i)
-                data[i] = data[start - 1];
-        }
-    }
-
     void on_chip_calib_manager::calibrate()
     {
         int occ_timeout_ms = 9000;
@@ -927,162 +884,52 @@ namespace rs2
     {
         try
         {
-            auto sensor = _sub->s->as<rs2::depth_stereo_sensor>();
-            float stereo_baseline = 0.0f;
-            if (sensor)
-                stereo_baseline = sensor.get_option(RS2_OPTION_STEREO_BASELINE);
+            const int frame_num = 25;
 
-            std::shared_ptr<rect_calculator> gt_calculator[2];
-            bool created[2] = { false, false };
+            rs2_error* e = nullptr;
+            std::shared_ptr<rs2_frame_queue> left(rs2_create_frame_queue(frame_num, &e), rs2_delete_frame_queue);
+            std::shared_ptr<rs2_frame_queue> right(rs2_create_frame_queue(frame_num, &e), rs2_delete_frame_queue);
 
             int counter = 0;
-            int limit = rect_calculator::_frame_num << 1;
-            int step = 50 / rect_calculator::_frame_num;
-
-            int ret = { 0 };
-            int id[2] = { _uid, _uid2 };
-            float fx[2] = { 0 };
-            float fy[2] = { 0 };
-            float rec_sides[2][4] = { 0 };
-            float target_fw[2] = { 0 };
-            float target_fh[2] = { 0 };
-
+            int limit = frame_num << 1;
             rs2::frame f;
-            bool done[2] = { false, false };
             while (counter < limit)
             {
-                for (int i = 0; i < 2; ++i)
+                f = _viewer.ppf.frames_queue[_uid].wait_for_frame(); // left
+                if (f)
                 {
-                    if (!done[i])
-                    {
-                        f = _viewer.ppf.frames_queue[id[i]].wait_for_frame();
-                        if (f)
-                        {
-                            if (!created[i])
-                            {
-                                stream_profile profile = f.get_profile();
-                                auto vsp = profile.as<video_stream_profile>();
-
-                                gt_calculator[i] = std::make_shared<rect_calculator>(true);
-                                fx[i] = vsp.get_intrinsics().fx;
-                                fy[i] = vsp.get_intrinsics().fy;
-                                target_fw[i] = vsp.get_intrinsics().fx * config_file::instance().get_or_default(configurations::viewer::target_width_r, 175.0f);
-                                target_fh[i] = vsp.get_intrinsics().fy * config_file::instance().get_or_default(configurations::viewer::target_height_r, 100.0f);
-                                created[i] = true;
-                            }
-
-                            ret = gt_calculator[i]->calculate(f.get(), rec_sides[i]);
-                            if (ret == 0)
-                                ++counter;
-                            else if (ret == 1)
-                                _progress += step;
-                            else if (ret == 2)
-                            {
-                                _progress += step;
-                                done[i] = true;
-                            }
-                        }
-                    }
+                    f.keep();
+                    rs2_frame_add_ref(f.get(), &e);
+                    rs2_enqueue_frame(f.get(), left.get());
+                    ++_progress;
                 }
 
-                if (done[0] && done[1])
-                    break;
+                f = _viewer.ppf.frames_queue[_uid2].wait_for_frame(); // right
+                if (f)
+                {
+                    f.keep();
+                    rs2_frame_add_ref(f.get(), &e);
+                    rs2_enqueue_frame(f.get(), right.get());
+                    ++_progress;
+                }
+
+                counter += 2;
             }
 
-            if (done[0] && done[1] && fx[1] > 0.1f && fy[1] > 0.1f)
+            if (counter == limit)
             {
-                float ar[2] = { 0 };
-                float tmp = rec_sides[0][2] + rec_sides[0][3];
-                if (tmp > 0.1f)
-                    ar[0] = (rec_sides[0][0] + rec_sides[0][1]) / tmp;
-
-                tmp = rec_sides[1][2] + rec_sides[1][3];
-                if (tmp > 0.1f)
-                    ar[1] = (rec_sides[1][0] + rec_sides[1][1]) / tmp;
-
-                if (ar[0] > 0.0f)
-                    align = ar[1] / ar[0] - 1.0f;
-
-                float ta[2] = { 0 };
-                float gt[4] = { 0 };
-                float ave_gt = 0.0f;
-                for (int i = 0; i < 2; ++i)
-                {
-                    if (rec_sides[i][0] > 0)
-                        gt[0] = target_fw[i] / rec_sides[i][0];
-
-                    if (rec_sides[i][1] > 0)
-                        gt[1] = target_fw[i] / rec_sides[i][1];
-
-                    if (rec_sides[i][2] > 0)
-                        gt[2] = target_fh[i] / rec_sides[i][2];
-
-                    if (rec_sides[i][3] > 0)
-                        gt[3] = target_fh[i] / rec_sides[i][3];
-
-                    ave_gt = 0.0f;
-                    for (int i = 0; i < 4; ++i)
-                        ave_gt += gt[i];
-                    ave_gt /= 4.0;
-
-                    ta[i] = atanf(align * ave_gt / stereo_baseline);
-                    ta[i] = rad2deg(ta[i]);
-                }
-
-                tilt_angle = (ta[0] + ta[1]) / 2;
-
-                align *= 100;
-
-                float r[4] = { 0 };
-                float c = fx[0] / fx[1];
-
-                if (rec_sides[0][0] > 0.1f)
-                    r[0] = c * rec_sides[1][0] / rec_sides[0][0];
-
-                if (rec_sides[0][1] > 0.1f)
-                    r[1] = c * rec_sides[1][1] / rec_sides[0][1];
-
-                c = fy[0] / fy[1];
-                if (rec_sides[0][2] > 0.1f)
-                    r[2] = c * rec_sides[1][2] / rec_sides[0][2];
-
-                if (rec_sides[0][3] > 0.1f)
-                    r[3] = c * rec_sides[1][3] / rec_sides[0][3];
-
-                ratio = 0.0f;
-                for (int i = 0; i < 4; ++i)
-                    ratio += r[i];
-                ratio /= 4;
-
-                ratio -= 1.0f;
-                ratio *= 100;
-
-                corrected_ratio = ratio - correction_factor * align;
-
-                float ratio_to_apply = corrected_ratio / 100.0f + 1.0f;
-                _new_calib = _old_calib;
-                auto table = (librealsense::ds::coefficients_table*)_new_calib.data();
-                if (adjust_both_sides)
-                {
-                    float ratio_to_apply_2 = sqrtf(ratio_to_apply);
-                    table->intrinsic_left.x.x /= ratio_to_apply_2;
-                    table->intrinsic_left.x.y /= ratio_to_apply_2;
-                    table->intrinsic_right.x.x *= ratio_to_apply_2;
-                    table->intrinsic_right.x.y *= ratio_to_apply_2;
-                }
-                else
-                {
-                    table->intrinsic_right.x.x *= ratio_to_apply;
-                    table->intrinsic_right.x.y *= ratio_to_apply;
-                }
-
-                auto actual_data = _new_calib.data() + sizeof(librealsense::ds::table_header);
-                auto actual_data_size = _new_calib.size() - sizeof(librealsense::ds::table_header);
-                auto crc = helpers::calc_crc32(actual_data, actual_data_size);
-                table->header.crc32 = crc;
+                auto calib_dev = _dev.as<auto_calibrated_device>();
+                _new_calib = calib_dev.run_fl_calibration(left.get(), 
+                                                          right.get(), 
+                                                          config_file::instance().get_or_default(configurations::viewer::target_width_r, 175.0f), 
+                                                          config_file::instance().get_or_default(configurations::viewer::target_height_r, 100.0f),
+                                                          adjust_both_sides, 
+                                                          &corrected_ratio, 
+                                                          &tilt_angle, 
+                                                          [&](const float progress) {_progress = int(progress); });
             }
             else
-                fail("Please adjust the camera position \nand make sure the specific target is \nin the middle of the camera image!");
+                fail("Filed to capture enough frames!");
         }
         catch (const std::runtime_error& error)
         {
@@ -1090,322 +937,69 @@ namespace rs2
         }
         catch (...)
         {
-            fail("Focal length calibration failed!");
+            fail("Focal length calibration failed!\nPlease adjust the camera position \nand make sure the specific target is \nin the middle of the camera image");
         }
-    }
-
-    void on_chip_calib_manager::undistort(uint8_t* img, int width, int height, const rs2_intrinsics & intrin, int roi_ws, int roi_hs, int roi_we, int roi_he)
-    {
-        assert(intrin.model == RS2_DISTORTION_INVERSE_BROWN_CONRADY);
-
-        if (roi_ws < 0) roi_ws = 0;
-        if (roi_hs < 0) roi_hs = 0;
-        if (roi_we > width) roi_we = width;
-        if (roi_he > height) roi_he = height;
-
-        int size3 = width * height * 3;
-        std::vector<uint8_t> tmp(size3);
-        memset(tmp.data(), 0, size3);
-
-        float x = 0;
-        float y = 0;
-        int m = 0;
-        int n = 0;
-
-        int width3 = width * 3;
-        int idx_from = 0;
-        int idx_to = 0;
-        for (int j = roi_hs; j < roi_he; ++j)
-        {
-            for (int i = roi_ws; i < roi_we; ++i)
-            {
-                x = static_cast<float>(i);
-                y = static_cast<float>(j);
-
-                if (abs(intrin.fx) > 0.00001f && abs(intrin.fy) > 0.0001f)
-                {
-                    x = (x - intrin.ppx) / intrin.fx;
-                    y = (y - intrin.ppy) / intrin.fy;
-
-                    float r2 = x * x + y * y;
-                    float f = 1 + intrin.coeffs[0] * r2 + intrin.coeffs[1] * r2 * r2 + intrin.coeffs[4] * r2 * r2 * r2;
-                    float ux = x * f + 2 * intrin.coeffs[2] * x * y + intrin.coeffs[3] * (r2 + 2 * x * x);
-                    float uy = y * f + 2 * intrin.coeffs[3] * x * y + intrin.coeffs[2] * (r2 + 2 * y * y);
-                    x = ux;
-                    y = uy;
-
-                    x = x * intrin.fx + intrin.ppx;
-                    y = y * intrin.fy + intrin.ppy;
-                }
-
-                m = static_cast<int>(x + 0.5f);
-                if (m >= 0 && m < width)
-                {
-                    n = static_cast<int>(y + 0.5f);
-                    if (n >= 0 && n < height)
-                    {
-                        idx_from = j * width3 + i * 3;
-                        idx_to = n * width3 + m * 3;
-                        tmp[idx_to++] = img[idx_from++];
-                        tmp[idx_to++] = img[idx_from++];
-                        tmp[idx_to++] = img[idx_from++];
-                    }
-                }
-            }
-        }
-
-        memmove(img, tmp.data(), size3);
-    }
-
-    void on_chip_calib_manager::find_z_at_corners(float left_x[4], float left_y[4], int width, int num, std::vector<std::vector<uint16_t>>& depth, float left_z[4])
-    {
-        int x1[4] = { 0 };
-        int y1[4] = { 0 };
-        int x2[4] = { 0 };
-        int y2[4] = { 0 };
-        int pos_tl[4] = { 0 };
-        int pos_tr[4] = { 0 };
-        int pos_bl[4] = { 0 };
-        int pos_br[4] = { 0 };
-        for (int i = 0; i < 4; ++i)
-        {
-            x1[i] = static_cast<int>(left_x[i]);
-            y1[i] = static_cast<int>(left_y[i]);
-
-            x2[i] = static_cast<int>(left_x[i] + 1.0f);
-            y2[i] = static_cast<int>(left_y[i] + 1.0f);
-
-            pos_tl[i] = y1[i] * width + x1[i];
-            pos_tr[i] = y1[i] * width + x2[i];
-            pos_bl[i] = y2[i] * width + x1[i];
-            pos_br[i] = y2[i] * width + x2[i];
-        }
-
-        float left_z_tl[4] = { 0 };
-        float left_z_tr[4] = { 0 };
-        float left_z_bl[4] = { 0 };
-        float left_z_br[4] = { 0 };
-        for (int j = 0; j < num; ++j)
-        {
-            for (int i = 0; i < 4; ++i)
-            {
-                left_z_tl[i] += static_cast<float>(depth[j][pos_tl[i]]);
-                left_z_tr[i] += static_cast<float>(depth[j][pos_tr[i]]);
-                left_z_bl[i] += static_cast<float>(depth[j][pos_bl[i]]);
-                left_z_br[i] += static_cast<float>(depth[j][pos_br[i]]);
-            }
-        }
-
-        for (int i = 0; i < 4; ++i)
-        {
-            left_z_tl[i] /= num;
-            left_z_tr[i] /= num;
-            left_z_bl[i] /= num;
-            left_z_br[i] /= num;
-        }
-
-        float z_1 = 0.0f;
-        float z_2 = 0.0f;
-        float s = 0.0f;
-        for (int i = 0; i < 4; ++i)
-        {
-            s = left_x[i] - x1[i];
-            z_1 = (1.0f - s) * left_z_bl[i] + s * left_z_br[i];
-            z_2 = (1.0f - s) * left_z_tl[i] + s * left_z_tr[i];
-
-            s = left_y[i] - y1[i];
-            left_z[i] = (1.0f - s) * z_2 + s * z_1;
-            left_z[i] *= 0.001f;
-        }
-    }
-
-    void on_chip_calib_manager::get_and_update_color_intrinsics(uint32_t width, uint32_t height, float ppx, float ppy, float fx, float fy)
-    {
-        std::vector<uint8_t> cmd =
-        {
-            0x14, 0x00, 0xab, 0xcd,
-            0x15, 0x00, 0x00, 0x00,
-            0x20, 0x00, 0x00, 0x00,
-            0x00, 0x00, 0x00, 0x00,
-            0x00, 0x00, 0x00, 0x00,
-            0x00, 0x00, 0x00, 0x00
-        };
-
-        rs2_error* e = nullptr;
-        const rs2_raw_data_buffer* raw_data_buf = rs2_send_and_receive_raw_data(_dev.get().get(), cmd.data(), static_cast<unsigned int>(cmd.size()), &e);
-        int raw_data_size = rs2_get_raw_data_size(raw_data_buf, &e);
-        const unsigned char* raw_data = rs2_get_raw_data(raw_data_buf, &e);
-        color_intrin_raw_data.insert(color_intrin_raw_data.begin(), raw_data + 4, raw_data + raw_data_size);
-
-        auto table = reinterpret_cast<librealsense::ds::rgb_calibration_table*>(color_intrin_raw_data.data());
-
-        _health_nums[0] = table->intrinsic(2, 0); // px
-        _health_nums[1] = table->intrinsic(2, 1); // py
-        _health_nums[2] = table->intrinsic(0, 0); // fx
-        _health_nums[3] = table->intrinsic(1, 1); // fy
-
-        table->intrinsic(2, 0) = 2.0f * ppx / width - 1;  // ppx
-        table->intrinsic(2, 1) = 2.0f * ppy / height - 1; // ppy
-        table->intrinsic(0, 0) = 2.0f * fx / width;       // fx
-        table->intrinsic(1, 1) = 2.0f * fy / height;      // fy
-
-        float calib_aspect_ratio = 9.f / 16.f; // shall be overwritten with the actual calib resolution
-        if (table->calib_width && table->calib_height)
-            calib_aspect_ratio = float(table->calib_height) / float(table->calib_width);
-
-        float actual_aspect_ratio = height / (float)width;
-        if (actual_aspect_ratio < calib_aspect_ratio)
-        {
-            table->intrinsic(1, 1) /= calib_aspect_ratio / actual_aspect_ratio; // fy
-            table->intrinsic(2, 1) /= calib_aspect_ratio / actual_aspect_ratio; // ppy
-        }
-        else
-        {
-            table->intrinsic(0, 0) /= actual_aspect_ratio / calib_aspect_ratio; // fx
-            table->intrinsic(2, 0) /= actual_aspect_ratio / calib_aspect_ratio; // ppx
-        }
-
-        table->header.crc32 = helpers::calc_crc32(color_intrin_raw_data.data() + sizeof(librealsense::ds::table_header), color_intrin_raw_data.size() - sizeof(librealsense::ds::table_header));
-
-        _health_nums[0] = (abs(table->intrinsic(2, 0) / _health_nums[0]) - 1) * 100; // px
-        _health_nums[1] = (abs(table->intrinsic(2, 1) / _health_nums[1]) - 1) * 100; // py
-        _health_nums[2] = (abs(table->intrinsic(0, 0) / _health_nums[2]) - 1) * 100; // fx
-        _health_nums[3] = (abs(table->intrinsic(1, 1) / _health_nums[3]) - 1) * 100; // fy
-
-        rs2_delete_raw_data(raw_data_buf);
     }
 
     void on_chip_calib_manager::calibrate_uvmapping()
     {
         try
         {
-            std::shared_ptr<dots_calculator> gt_calculator[2];
-            bool created[3] = { false, false, false };
+            const int frame_num = 25;
+
+            rs2_error* e = nullptr;
+            std::shared_ptr<rs2_frame_queue> left(rs2_create_frame_queue(frame_num, &e), rs2_delete_frame_queue);
+            std::shared_ptr<rs2_frame_queue> color(rs2_create_frame_queue(frame_num, &e), rs2_delete_frame_queue);
+            std::shared_ptr<rs2_frame_queue> depth(rs2_create_frame_queue(frame_num, &e), rs2_delete_frame_queue);
 
             int counter = 0;
-            int limit = dots_calculator::_frame_num << 1;
-            int step = 50 / dots_calculator::_frame_num;
-
-            int ret = { 0 };
-            int id[3] = { _uid, _uid_color, _uid2 }; // 0 for left, 1 for color, and 2 for depth
-            rs2_intrinsics intrin[2];
-            stream_profile profile[2];
-            float dots_x[2][4] = { 0 };
-            float dots_y[2][4] = { 0 };
-
-            int idx = 0;
-            int depth_frame_size = 0;
-            std::vector<std::vector<uint16_t>> depth(dots_calculator::_frame_num);
-
+            int limit = frame_num * 3;
             rs2::frame f;
-            int width = 0;
-            int height = 0;
-            bool done[3] = { false, false, false };
             while (counter < limit)
             {
-                if (!done[2])
+                f = _viewer.ppf.frames_queue[_uid].wait_for_frame(); // left
+                if (f)
                 {
-                    f = _viewer.ppf.frames_queue[id[2]].wait_for_frame();
-
-                    if (!created[2])
-                    {
-                        auto p = f.get_profile();
-                        auto vsp = p.as<video_stream_profile>();
-                        width = vsp.width();
-                        depth_frame_size = vsp.width() * vsp.height() * sizeof(uint16_t);
-                        created[2] = true;
-                    }
-
-                    depth[idx].resize(depth_frame_size);
-                    memmove(depth[idx++].data(), f.get_data(), depth_frame_size);
-
-                    if (idx == dots_calculator::_frame_num)
-                        done[2] = true;
+                    f.keep();
+                    rs2_frame_add_ref(f.get(), &e);
+                    rs2_enqueue_frame(f.get(), left.get());
+                    ++_progress;
                 }
 
-                if (!done[0])
+                f = _viewer.ppf.frames_queue[_uid2].wait_for_frame(); // depth
+                if (f)
                 {
-                    f = _viewer.ppf.frames_queue[id[0]].wait_for_frame();
-
-                    if (!created[0])
-                    {
-                        profile[0] = f.get_profile();
-                        auto vsp = profile[0].as<video_stream_profile>();
-
-                        gt_calculator[0] = std::make_shared<dots_calculator>();
-                        intrin[0] = vsp.get_intrinsics();
-                        created[0] = true;
-                    }
-
-                    ret = gt_calculator[0]->calculate(f.get(), dots_x[0], dots_y[0]);
-                    if (ret == 0)
-                        ++counter;
-                    else if (ret == 1)
-                        _progress += step;
-                    else if (ret == 2)
-                    {
-                        _progress += step;
-                        done[0] = true;
-                    }
+                    f.keep();
+                    rs2_frame_add_ref(f.get(), &e);
+                    rs2_enqueue_frame(f.get(), depth.get());
                 }
 
-                if (!done[1])
+
+                f = _viewer.ppf.frames_queue[_uid_color].wait_for_frame(); // rgb
+                if (f)
                 {
-                    f = _viewer.ppf.frames_queue[id[1]].wait_for_frame();
-
-                    if (!created[1])
-                    {
-                        profile[1] = f.get_profile();
-                        auto vsp = profile[1].as<video_stream_profile>();
-                        width = vsp.width();
-                        height = vsp.height();
-
-                        gt_calculator[1] = std::make_shared<dots_calculator>();
-                        intrin[1] = vsp.get_intrinsics();
-                        created[1] = true;
-                    }
-
-                    undistort(const_cast<uint8_t *>(static_cast<const uint8_t *>(f.get_data())), width, height, intrin[1], 
-                        librealsense::_roi_ws - librealsense::_patch_size, librealsense::_roi_hs - librealsense::_patch_size,
-                        librealsense::_roi_we + librealsense::_patch_size, librealsense::_roi_he + librealsense::_patch_size);
-                    ret = gt_calculator[1]->calculate(f.get(), dots_x[1], dots_y[1]);
-                    if (ret == 0)
-                        ++counter;
-                    else if (ret == 1)
-                        _progress += step;
-                    else if (ret == 2)
-                    {
-                        _progress += step;
-                        done[1] = true;
-                    }
+                    f.keep();
+                    rs2_frame_add_ref(f.get(), &e);
+                    rs2_enqueue_frame(f.get(), color.get());
+                    ++_progress;
                 }
 
-                if (done[0] && done[1] && done[2])
-                    break;
+                counter += 3;
             }
 
-            if (done[0] && done[1] && done[2])
+            if (counter == limit)
             {
-                rs2_extrinsics extrin = profile[0].get_extrinsics_to(profile[1]);
-
-                float z[4] = { 0 };
-                find_z_at_corners(dots_x[0], dots_y[0], width, dots_calculator::_frame_num, depth, z);
-
-                uvmapping_calib calib(4, dots_x[0], dots_y[0], z, dots_x[1], dots_y[1], intrin[0], intrin[1], extrin);
-
-                bool ret = calib.calibrate(_health_1, _health_2, _ppx, _ppy, _fx, _fy, py_px_only);
-                if (!ret)
-                    fail("Please adjust the camera position\nand make sure the specific target is\ninsid the ROI of the camera images!");
-
-                _viewer.not_model->add_log(to_string() << "PX: " << intrin[1].ppx << " ---> " << _ppx);
-                _viewer.not_model->add_log(to_string() << "PY: " << intrin[1].ppy << " ---> " << _ppy);
-                _viewer.not_model->add_log(to_string() << "FX: " << intrin[1].fx << " ---> " << _fx);
-                _viewer.not_model->add_log(to_string() << "FY: " << intrin[1].fy << " ---> " << _fy);
-
-                get_and_update_color_intrinsics(width, height, _ppx, _ppy, _fx, _fy);
+                auto calib_dev = _dev.as<auto_calibrated_device>();
+                _new_calib = calib_dev.run_uvmapping_calibration(left.get(),
+                                                                 color.get(),
+                                                                 depth.get(),
+                                                                 py_px_only, 
+                                                                 _health_nums, 
+                                                                 4, 
+                                                                 [&](const float progress) {_progress = int(progress); });
             }
             else
-                fail("Please adjust the camera position\nand make sure the specific target is\ninsid the ROI of the camera images!");
+                fail("Filed to capture enough frames!");
         }
         catch (const std::runtime_error& error)
         {
@@ -1413,7 +1007,7 @@ namespace rs2
         }
         catch (...)
         {
-            fail("UV-Mapping calibration failed!");
+            fail("UV-Mapping calibration failed!\nPlease adjust the camera position\nand make sure the specific target is\ninsid the ROI of the camera images!");
         }
     }
 
@@ -1600,7 +1194,7 @@ namespace rs2
         if (action == RS2_CALIB_ACTION_TARE_GROUND_TRUTH)
             log(to_string() << "Tare ground truth is got: " << ground_truth);
         else if (action == RS2_CALIB_ACTION_FL_CALIB)
-            log(to_string() << "Focal length ratio is got: " << ratio);
+            log(to_string() << "Focal length ratio is got: " << corrected_ratio);
         else if (action == RS2_CALIB_ACTION_UVMAPPING_CALIB)
             log(to_string() << "UV-Mapping calibration completed.");
         else
@@ -3153,204 +2747,5 @@ namespace rs2
 
         for (int i = 0; i < 4; ++i)
             rect_sides[i] /= _frame_num;
-    }
-
-    int dots_calculator::calculate(const rs2_frame* frame_ref, float dots_x[4], float dots_y[4])
-    {
-        static int reset_counter = 0;
-        if (reset_counter > _reset_limit)
-        {
-            reset_counter = 0;
-            _rec_idx = 0;
-            _rec_num = 0;
-        }
-
-        int ret = 0;
-        rs2_error* e = nullptr;
-        float dim[8] = { 0 };
-        rs2_extract_target_dimensions(frame_ref, RS2_CALIB_TARGET_POS_GAUSSIAN_DOT_VERTICES, dim, 8, &e);
-        if (e == nullptr)
-        {
-            ret = 1;
-            int j = 0;
-            for (int i = 0; i < 4; ++i)
-            {
-                j = i << 1;
-                _dots_x[_rec_idx][i] = dim[j];
-                _dots_y[_rec_idx][i] = dim[j + 1];
-            }
-
-            reset_counter = 0;
-            _rec_idx = (++_rec_idx) % _frame_num;
-            ++_rec_num;
-
-            if (_rec_num == _frame_num)
-            {
-                ret = 2;
-                calculate_dots_position(dots_x, dots_y);
-                --_rec_num;
-            }
-        }
-        else
-            ++reset_counter;
-
-        return ret;
-    }
-
-    void dots_calculator::calculate_dots_position(float dots_x[4], float dots_y[4])
-    {
-        for (int i = 0; i < 4; ++i)
-        {
-            dots_x[i] = _dots_x[0][i];
-            dots_y[i] = _dots_y[0][i];
-        }
-
-        for (int j = 1; j < _frame_num; ++j)
-        {
-            for (int i = 0; i < 4; ++i)
-            {
-                dots_x[i] += _dots_x[j][i];
-                dots_y[i] += _dots_y[j][i];
-            }
-        }
-
-        for (int i = 0; i < 4; ++i)
-        {
-            dots_x[i] /= _frame_num;
-            dots_y[i] /= _frame_num;
-        }
-    }
-
-    uvmapping_calib::uvmapping_calib(int pt_num, const float* left_x, const float* left_y, const float* left_z, const float* color_x, const float* color_y, const rs2_intrinsics& left_intrin, const rs2_intrinsics& color_intrin, rs2_extrinsics& extrin)
-        : _pt_num(pt_num)
-    {
-        for (int i = 0; i < pt_num; ++i)
-        {
-            _left_x.emplace_back(left_x[i]);
-            _left_y.emplace_back(left_y[i]);
-            _left_z.emplace_back(left_z[i]);
-            _color_x.emplace_back(color_x[i]);
-            _color_y.emplace_back(color_y[i]);
-        }
-
-        memmove(&_left_intrin, &left_intrin, sizeof(rs2_intrinsics));
-        memmove(&_color_intrin, &color_intrin, sizeof(rs2_intrinsics));
-        memmove(&_extrin, &extrin, sizeof(rs2_extrinsics));
-    }
-
-    bool uvmapping_calib::calibrate(float& err_before, float& err_after, float& ppx, float& ppy, float& fx, float& fy, bool py_px_only)
-    {
-        float pixel_left[4][2] = { 0 };
-        float point_left[4][3] = {0};
-
-        float pixel_color[4][2] = { 0 };
-        float pixel_color_norm[4][2] = { 0 };
-        float point_color[4][3] = { 0 };
-
-        for (int i = 0; i < 4; ++i)
-        {
-            pixel_left[i][0] = _left_x[i];
-            pixel_left[i][1] = _left_y[i];
-
-            rs2_deproject_pixel_to_point(point_left[i], &_left_intrin, pixel_left[i], _left_z[i]);
-            rs2_transform_point_to_point(point_color[i], &_extrin, point_left[i]);
-
-            pixel_color_norm[i][0] = point_color[i][0] / point_color[i][2];
-            pixel_color_norm[i][1] = point_color[i][1] / point_color[i][2];
-            pixel_color[i][0] = pixel_color_norm[i][0] * _color_intrin.fx + _color_intrin.ppx;
-            pixel_color[i][1] = pixel_color_norm[i][1] * _color_intrin.fy + _color_intrin.ppy;
-        }
-
-        float diff[4] = { 0 };
-        float tmp = 0.0f;
-        for (int i = 0; i < 4; ++i)
-        {
-            tmp = (pixel_color[i][0] - _color_x[i]);
-            tmp *= tmp;
-            diff[i] = tmp;
-
-            tmp = (pixel_color[i][1] - _color_y[i]);
-            tmp *= tmp;
-            diff[i] += tmp;
-
-            diff[i] = sqrtf(diff[i]);
-        }
-
-        err_before = 0.0f;
-        for (int i = 0; i < 4; ++i)
-            err_before += diff[i];
-        err_before /= 4;
-
-        if (py_px_only)
-        {
-            fx = _color_intrin.fx;
-            fy = _color_intrin.fy;
-
-            ppx = 0.0f;
-            ppy = 0.0f;
-            for (int i = 0; i < 4; ++i)
-            {
-                ppx += _color_x[i] - pixel_color_norm[i][0] * _color_intrin.fx;
-                ppy += _color_y[i] - pixel_color_norm[i][1] * _color_intrin.fy;
-            }
-            ppx /= 4.0f;
-            ppy /= 4.0f;
-        }
-        else
-        {
-            double x = 0;
-            double y = 0;
-            double c_x = 0;
-            double c_y = 0;
-            double x_2 = 0;
-            double y_2 = 0;
-            double c_xc = 0;
-            double c_yc = 0;
-            for (int i = 0; i < 4; ++i)
-            {
-                x += pixel_color_norm[i][0];
-                y += pixel_color_norm[i][1];
-                c_x += _color_x[i];
-                c_y += _color_y[i];
-                x_2 += pixel_color_norm[i][0] * pixel_color_norm[i][0];
-                y_2 += pixel_color_norm[i][1] * pixel_color_norm[i][1];
-                c_xc += _color_x[i] * pixel_color_norm[i][0];
-                c_yc += _color_y[i] * pixel_color_norm[i][1];
-            }
-
-            double d_x = 4 * x_2 - x * x;
-            if (d_x > 0.01)
-            {
-                d_x = 1 / d_x;
-                fx = static_cast<float>(d_x * (4 * c_xc - x * c_x));
-                ppx = static_cast<float>(d_x * (x_2 * c_x - x * c_xc));
-            }
-
-            double d_y = 4 * y_2 - y * y;
-            if (d_y > 0.01)
-            {
-                d_y = 1 / d_y;
-                fy = static_cast<float>(d_y * (4 * c_yc - y * c_y));
-                ppy = static_cast<float>(d_y * (y_2 * c_y - y * c_yc));
-            }
-        }
-
-        err_after = 0.0f;
-        float tmpx = 0;
-        float tmpy = 0;
-        for (int i = 0; i < 4; ++i)
-        {
-            tmpx = pixel_color_norm[i][0] * fx + ppx - _color_x[i];
-            tmpx *= tmpx;
-
-            tmpy = pixel_color_norm[i][1] * fy + ppy - _color_y[i];
-            tmpy *= tmpy;
-
-            err_after += sqrtf(tmpx + tmpy);
-        }
-
-        err_after /= 4.0f;
-
-        return fabs(_color_intrin.ppx - ppx) < _max_change && fabs(_color_intrin.ppy - ppy) < _max_change && fabs(_color_intrin.fx - fx) < _max_change && fabs(_color_intrin.fy - fy) < _max_change;
     }
 }
