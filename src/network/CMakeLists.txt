@@ -82,6 +82,7 @@ add_library(${PROJECT_NAME} ${REALSENSE_NET_CPP} ${LIVE555_CPP} ./realsense-net.
 
 add_dependencies(${PROJECT_NAME} 
     libjpeg-turbo
+    zstd
 )
 
 set(REALSENSE_NET_PUBLIC_HEADERS
