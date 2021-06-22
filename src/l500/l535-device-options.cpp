@@ -6,6 +6,7 @@
 #include "l535-preset-option.h"
 #include "l500-private.h"
 #include "l500-depth.h"
+#include "../common/fw/firmware-version.h"
 
 using librealsense::ivcam2::l535::device_options;
 
@@ -73,4 +74,7 @@ device_options::device_options( std::shared_ptr< librealsense::context > ctx,
 
         depth_sensor.register_option( RS2_OPTION_VISUAL_PRESET, preset );
     } );
+
+    firmware_version recommended_fw_version(L53X_RECOMMENDED_FIRMWARE_VERSION);
+    register_info(RS2_CAMERA_INFO_RECOMMENDED_FIRMWARE_VERSION, recommended_fw_version);
 }

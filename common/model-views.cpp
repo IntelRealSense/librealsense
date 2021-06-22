@@ -3837,9 +3837,12 @@ namespace rs2
                 configurations::update::allow_rc_firmware,
                 false );
             bool is_rc = ( product_line == RS2_PRODUCT_LINE_D400 ) && allow_rc_firmware;
-            std::string available_fw_ver = get_available_firmware_version( product_line );
+            std::string PID = product_line == RS2_PRODUCT_LINE_L500 ? dev.get_info(RS2_CAMERA_INFO_PRODUCT_ID) : "";
+
+            std::string available_fw_ver = get_available_firmware_version( product_line, PID);
 
             std::shared_ptr< firmware_update_manager > manager = nullptr;
+
 
             if( is_upgradeable( fw, available_fw_ver) )
             {
@@ -3851,7 +3854,7 @@ namespace rs2
                                                                        *this,
                                                                        dev,
                                                                        ctx,
-                                                                       table[product_line],
+                                                                       table[{product_line, PID}],
                                                                        true );
             }
 
