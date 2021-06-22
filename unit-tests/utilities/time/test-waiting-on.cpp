@@ -18,6 +18,7 @@ using utilities::time::waiting_on;
 bool invoke( size_t delay_in_thread, size_t timeout )
 {
     waiting_on< bool > invoked( false );
+
     auto lambda = [delay_in_thread, invoked = invoked.in_thread()]() {
         //std::cout << "In thread" << std::endl;
         std::this_thread::sleep_for( std::chrono::seconds( delay_in_thread ));
@@ -120,12 +121,7 @@ TEST_CASE( "Not invoked but still notified" )
         } );
     auto wait_end = std::chrono::high_resolution_clock::now();
     auto waited_ms = std::chrono::duration_cast<std::chrono::milliseconds>( wait_end - wait_start ).count();
-#if 1
-    // TODO: the requires below depend on the commented-out ~waiting_on::in_frame_(), but it also
-    // causes unintended slowdowns when the playback is done
-    REQUIRE( waited_ms > 4990 );
-#else
+
     REQUIRE( waited_ms > 1990 );
     REQUIRE( waited_ms < 3000 );    // Up to a second buffer
-#endif
 }
