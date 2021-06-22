@@ -17,25 +17,27 @@ dispatcher::dispatcher( unsigned int cap, std::function< void( action ) > on_dro
         int timeout_ms = 5000;
         while( _is_alive )
         {
-            std::function< void( cancellable_timer ) > item;
-
-            if( _queue.dequeue( &item, timeout_ms ) )
+            if( _wait_for_start( timeout_ms ) )
             {
-                cancellable_timer time(this);
+                std::function< void(cancellable_timer) > item;
+                if (_queue.dequeue(&item, timeout_ms))
+                {
+                    cancellable_timer time(this);
 
-                try
-                {
-                    // While we're dispatching the item, we cannot stop!
-                    std::lock_guard< std::mutex > lock( _dispatch_mutex );
-                    item( time );
-                }
-                catch( const std::exception & e )
-                {
-                    LOG_ERROR( "Dispatcher [" << this << "] exception caught: " << e.what() );
-                }
-                catch( ... )
-                {
-                    LOG_ERROR( "Dispatcher [" << this << "] unknown exception caught!" );
+                    try
+                    {
+                        // While we're dispatching the item, we cannot stop!
+                        std::lock_guard< std::mutex > lock(_dispatch_mutex);
+                        item(time);
+                    }
+                    catch (const std::exception& e)
+                    {
+                        LOG_ERROR("Dispatcher [" << this << "] exception caught: " << e.what());
+                    }
+                    catch (...)
+                    {
+                        LOG_ERROR("Dispatcher [" << this << "] unknown exception caught!");
+                    }
                 }
             }
         }
@@ -59,10 +61,14 @@ dispatcher::~dispatcher()
 
 void dispatcher::start()
 {
-    std::lock_guard< std::mutex > lock( _was_stopped_mutex );
-    _was_stopped = false;
-
+    {
+        std::lock_guard< std::mutex > lock(_was_stopped_mutex);
+        _was_stopped = false;
+    }
     _queue.start();
+    // Wake up all threads that wait for the dispatcher to start
+    _was_stopped_cv.notify_all();
+
 }
 
 
@@ -84,8 +90,8 @@ void dispatcher::stop()
     {
         std::lock_guard< std::mutex > lock( _was_stopped_mutex );
         _was_stopped = true;
-        _was_stopped_cv.notify_all();
     }
+    _was_stopped_cv.notify_all();
 
     // Wait until any dispatched is done...
     {
@@ -113,3 +119,17 @@ bool dispatcher::flush()
     } );
     return invoked;
 }
+
+// Return true if dispatcher is started (within a timeout).
+// false if not or the dispatcher is no longer alive
+//
+bool dispatcher::_wait_for_start( int timeout_ms )
+{
+    // If the dispatcher is not started wait for a start event, if not such event within given timeout do nothing.
+    // If during the wait the thread destructor is called (_is_aliva = false) do nothing as well.
+    std::unique_lock< std::mutex > lock(_was_stopped_mutex);
+    return _was_stopped_cv.wait_for(lock, std::chrono::milliseconds(timeout_ms), [this]() {
+        return !_was_stopped.load() || !_is_alive;
+        } ) && _is_alive;
+}
+
