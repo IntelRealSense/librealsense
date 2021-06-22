@@ -41,7 +41,7 @@ void preprocess_data_payload(vector<string>& params)
                 std::istreambuf_iterator<char>());
             modified_params.clear();
             modified_params.resize(params.size() - 1 + data.size());
-            std::transform(data.begin(), data.end(), modified_params.begin()+(params.size() - 1), [](uint8_t c) { return utilities::char2hex(c); });
+            std::transform(data.begin(), data.end(), modified_params.begin()+(params.size() - 1), [](uint8_t c) { return utilities::hexify(c); });
 
         }
         else
@@ -367,7 +367,7 @@ int main(int argc, char** argv)
             read_script_file(script_file, script_lines);
             cout << "Executing the following command from script file " << script_file << endl;
             for (auto& ln : script_lines)
-                cout << ln << endl;
+                cout << to_upper(ln) << endl;
             cout << endl;
         }
 

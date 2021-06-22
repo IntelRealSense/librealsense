@@ -14,6 +14,8 @@
 #endif
 
 #include "../third-party/rapidxml/rapidxml.hpp"
+#include "./utilities/string/string-utilities.h"
+using namespace utilities;
 
 #define MAX_PARAMS 4
 
@@ -193,52 +195,6 @@ struct commands_xml
     std::map<std::string, command_from_xml> commands;
     std::map<std::string, custom_formatter> custom_formatters;
 };
-
-inline std::string hexify(unsigned char n)
-{
-    std::string res;
-
-    do
-    {
-        res += "0123456789ABCDEF"[n % 16];
-        n >>= 4;
-    } while (n);
-
-    std::reverse(res.begin(), res.end());
-
-    if (res.size() == 1)
-    {
-        res.insert(0, "0");
-    }
-
-    return res;
-}
-
-inline std::string to_lower(std::string x)
-{
-    transform(x.begin(), x.end(), x.begin(), tolower);
-    return x;
-}
-
-inline bool string_to_bool(const std::string& x)
-{
-    return (to_lower(x) == "true");
-}
-
-inline unsigned int string_to_hex(std::string str)
-{
-    std::string delimiter = "x";
-
-    auto pos = str.find(delimiter);
-    str.erase(0, pos + delimiter.length());
-
-    std::stringstream ss;
-    unsigned int value;
-    ss << str;
-    ss >> std::hex >> value;
-
-    return value;
-}
 
 inline void parse_xml_from_memory(const char * content, commands_xml& cmd_xml)
 {

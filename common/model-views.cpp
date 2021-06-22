@@ -721,7 +721,7 @@ namespace rs2
                                     strcpy(buff, buff_str.c_str());
                                 }
                                 float new_value;
-                                if (!utilities::string::string_to_value<float>(buff, new_value))
+                                if (!utilities::string_to_value<float>(buff, new_value))
                                 {
                                     error_message = "Invalid float input!";
                                 }
