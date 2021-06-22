@@ -354,8 +354,15 @@ public:
     //
     bool flush();
 
+
 private:
+    // Return true if dispatcher is started (within a timeout).
+    // false if not or the dispatcher is no longer alive
+    //
+    bool _wait_for_start( int timeout_ms );
+
     friend cancellable_timer;
+
     single_consumer_queue<std::function<void(cancellable_timer)>> _queue;
     std::thread _thread;
 
