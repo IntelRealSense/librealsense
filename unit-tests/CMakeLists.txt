@@ -6,7 +6,11 @@ project(RealsenseUnitTests)
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
 
-set(DEPENDENCIES realsense2 realsense2-net)
+if(BUILD_NETWORK_DEVICE)
+	set(DEPENDENCIES realsense2 realsense2-net)
+else()
+	set(DEPENDENCIES realsense2)
+endif()
 
 find_package (Python3 COMPONENTS Interpreter Development)
 if (NOT ${BUILD_EASYLOGGINGPP})
