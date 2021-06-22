@@ -37,12 +37,12 @@ public:
     {
     }
 
-    void detected_face::update_age( float value )
+    void update_age( float value )
     {
         _age = (_age == -1) ? value : 0.95f * _age + 0.05f * value;
     }
     
-    void detected_face::update_gender( float value )
+    void update_gender( float value )
     {
         if( value >= 0 )
         {
