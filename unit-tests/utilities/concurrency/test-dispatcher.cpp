@@ -22,15 +22,20 @@ int fibo( int num )
 
 TEST_CASE( "dispatcher main flow" )
 {
-    dispatcher d(2);
+    dispatcher d(3);
     std::atomic_bool run = { false };
     auto func = [&](dispatcher::cancellable_timer c) 
     {
+        c.try_sleep(std::chrono::seconds(1));
         run = true;
     };
 
     d.start();
     REQUIRE(d.empty());
+    // We want to make sure that if we invoke some functions, the dispatcher is not empty.
+    // We add 2 functions that take some time so that even if the first one pop,
+    // the second will still be in the queue and it will not be empty
+    d.invoke(func);
     d.invoke(func);
     REQUIRE_FALSE(d.empty());
     REQUIRE(d.flush());
@@ -86,6 +91,7 @@ TEST_CASE("verify stop() not consuming high CPU usage")
     REQUIRE(fibo(40) == 165580141);
     // Verify the stress test did not take too long.
     // We had an issue that stop() call cause a high CPU usage and therefore other operations stall, 
-    // This test took > 9 seconds on an 8 cores PC, after the fix it took ~1.5 sec on 1 core run.
-    REQUIRE(sw.get_elapsed_ms() < 5000);
+    // This test took > 9 seconds on an 8 cores PC, after the fix it took ~1.5 sec on 1 core run (on release configuration).
+    // We allow 9 seconds to support debug configuration as well
+    REQUIRE(sw.get_elapsed_ms() < 9000);
 }

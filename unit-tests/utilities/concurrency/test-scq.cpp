@@ -12,7 +12,7 @@
 
 using namespace utilities::time;
 
-TEST_CASE( "dequeue wait after stop" )
+TEST_CASE( "dequeue doesn't wait after stop" )
 {
     single_consumer_queue< std::function< void( void ) > > scq;
     std::function< void( void ) > f;
