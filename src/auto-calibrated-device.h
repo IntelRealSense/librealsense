@@ -17,6 +17,10 @@ namespace librealsense
         virtual std::vector<uint8_t> get_calibration_table() const = 0;
         virtual void set_calibration_table(const std::vector<uint8_t>& calibration) = 0;
         virtual void reset_to_factory_calibration() const = 0;
+        virtual std::vector<uint8_t> run_fl_calibration(rs2_frame_queue* left, rs2_frame_queue* right, float target_w, float target_h, 
+            int adjust_both_sides, float* ratio, float* angle, update_progress_callback_ptr progress_callback) = 0;
+        virtual std::vector<uint8_t> run_uvmapping_calibration(rs2_frame_queue* left, rs2_frame_queue* color, rs2_frame_queue* depth, int py_px_only,
+            float* health, int helath_size, update_progress_callback_ptr progress_callback) = 0;
     };
     MAP_EXTENSION(RS2_EXTENSION_AUTO_CALIBRATED_DEVICE, auto_calibrated_interface);
 }

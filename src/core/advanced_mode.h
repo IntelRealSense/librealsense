@@ -252,6 +252,8 @@ namespace librealsense
                                             uint32_t p3 = 0,
                                             uint32_t p4 = 0,
                                             std::vector<uint8_t> data = std::vector<uint8_t>()) const;
+
+
     };
 
 
