@@ -4,7 +4,6 @@
 #include <iostream>
 #include <fstream>
 #include <string>
-#include <regex>
 #include <algorithm>
 
 #include <librealsense2/rs.hpp>
@@ -18,40 +17,6 @@ using namespace std;
 using namespace TCLAP;
 
 
-// While working from files, convert the file content into rectognized raw format
-void preprocess_data_payload(vector<string>& params)
-{
-    if (!params.size())
-        return;
-
-    //The last parameter provided by the user can represent a fully-qualified file path
-    vector<string> modified_params = params;
-
-    std::string str_param = params.back();
-    //std::regex fp("(*)(.*)"); // Represents a file path with extension
-    std::regex fp(".*\\.*$");
-
-    if (regex_match(str_param, fp))
-    {
-        std::ifstream file(str_param, std::ios::binary | std::ios::in);
-
-        if (file.good())
-        {
-            auto data = std::vector<uint8_t>((std::istreambuf_iterator<char>(file)),
-                std::istreambuf_iterator<char>());
-            modified_params.clear();
-            modified_params.resize(params.size() - 1 + data.size());
-            std::transform(data.begin(), data.end(), modified_params.begin()+(params.size() - 1), [](uint8_t c) { return utilities::strings::hexify(c); });
-
-        }
-        else
-        {
-            throw std::runtime_error("Can't read binary file '" + str_param + "'");
-        }
-    }
-
-    params = modified_params; // substitute original params with raw data
-}
 
 vector<uint8_t> build_raw_command_data(const command& command, const vector<string>& params)
 {

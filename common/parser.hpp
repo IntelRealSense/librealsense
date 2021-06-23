@@ -3,6 +3,7 @@
 
 #include <string>
 #include <map>
+#include <regex>
 #include <fstream>
 #include <sstream>
 #include <vector>
@@ -195,6 +196,39 @@ struct commands_xml
     std::map<std::string, command_from_xml> commands;
     std::map<std::string, custom_formatter> custom_formatters;
 };
+
+// While working from files, convert the file content into recognized raw format
+inline void preprocess_data_payload(std::vector<std::string>& params)
+{
+    if (!params.size())
+        return;
+
+    //The last parameter provided by the user can represent a fully-qualified file path
+    std::vector<std::string> modified_params = params;
+
+    std::string str_param = params.back();
+
+    if (regex_match(str_param, std::regex(".*\\.*$")))
+    {
+        std::ifstream file(str_param, std::ios::binary | std::ios::in);
+
+        if (file.good())
+        {
+            auto data = std::vector<uint8_t>((std::istreambuf_iterator<char>(file)),
+                std::istreambuf_iterator<char>());
+            modified_params.clear();
+            modified_params.resize(params.size() - 1 + data.size());
+            std::transform(data.begin(), data.end(), modified_params.begin() + (params.size() - 1), [](uint8_t c) { return utilities::strings::hexify(c); });
+
+        }
+        else
+        {
+            throw std::runtime_error("Can't read binary file '" + str_param + "'");
+        }
+    }
+
+    params = modified_params; // substitute original params with raw data
+}
 
 inline void parse_xml_from_memory(const char * content, commands_xml& cmd_xml)
 {

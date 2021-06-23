@@ -26,6 +26,9 @@ namespace librealsense
 
         get_command_and_params_from_input(line, command, params);
 
+        // In case of receiving input from file, the data will be retrieved and converted into raw format
+        preprocess_data_payload(params);
+
         auto raw_data = build_raw_command_data(command, params);
 
         for (auto b : raw_data)
