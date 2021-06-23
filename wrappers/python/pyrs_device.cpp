@@ -45,8 +45,11 @@ void init_device(py::module &m) {
                 ss << " (FW update id: " << self.get_info(RS2_CAMERA_INFO_FIRMWARE_UPDATE_ID);
             if (self.supports(RS2_CAMERA_INFO_FIRMWARE_VERSION))
                 ss << "  FW: " << self.get_info(RS2_CAMERA_INFO_FIRMWARE_VERSION);
-            if (self.supports(RS2_CAMERA_INFO_CAMERA_LOCKED))
-                ss << "  LOCKED: " << self.get_info(RS2_CAMERA_INFO_CAMERA_LOCKED);
+            if( self.supports( RS2_CAMERA_INFO_CAMERA_LOCKED )
+                && strcmp( "YES", self.get_info( RS2_CAMERA_INFO_CAMERA_LOCKED ) ) )
+                ss << "  UNLOCKED";
+            if( self.supports( RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR ) )
+                ss << "  on USB" << self.get_info( RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR );
             ss << ")>";
             return ss.str();
         });
