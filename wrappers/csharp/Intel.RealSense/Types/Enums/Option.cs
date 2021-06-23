@@ -281,7 +281,7 @@ namespace Intel.RealSense
         /// <summary>Change transmitter frequency, increasing effective range over sharpness</summary>
         transmitter_frequency = 88,
 
-        /// <summary>Change transmitter frequency, increasing effective range over sharpness</summary>
+        /// <summary>Enables vertical binning which increases the maximal sensed distance</summary>
         vertical_binning = 89
     }
 }
