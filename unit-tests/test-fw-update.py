@@ -103,7 +103,7 @@ if device.is_update_device():
         image_mask = '(^|/)' + image_name + '(\d+\.){4}bin$'
         image_file = None
         for image in file.find( repo.root, image_mask ):
-            image_file = image
+            image_file = os.path.join( repo.root, image)
         if not image_file:
             log.f( "Could not find image file for", product_line, "recovery device" )
 
