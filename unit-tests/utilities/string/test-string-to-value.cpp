@@ -4,7 +4,7 @@
 #include "common.h"
 #include <common/utilities/string/string-utilities.h>
 #include <ostream>
-using namespace utilities::string;
+using namespace utilities::strings;
 
 template <typename T, typename std::enable_if <std::is_arithmetic<T>::value>::type* = nullptr> // check if T is arithmetic during compile
 std::string to_str(const T& t)

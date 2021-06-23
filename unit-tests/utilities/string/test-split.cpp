@@ -6,7 +6,7 @@
 #include "common.h"
 #include "../../../common/utilities/string/split.h"
 
-using namespace utilities::string;
+using namespace utilities::strings;
 
 TEST_CASE("split_string_by_newline", "[string]")
 {
