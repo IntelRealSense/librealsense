@@ -52,9 +52,9 @@ void xml_mode(const string& line, const commands_xml& cmd_xml, rs2::device& dev,
     }
 
     if (tokens.empty())
-        throw runtime_error("Wrong input!");
+        throw runtime_error("Invald input! - no arguments provided");
 
-    auto command_str = tokens.front();
+    auto command_str = utilities::strings::to_lower(tokens.front());
     auto it = cmd_xml.commands.find(command_str);
     if (it == cmd_xml.commands.end())
         throw runtime_error("Command " + command_str + " was not found!");

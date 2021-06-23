@@ -106,16 +106,15 @@ namespace librealsense
         }
 
         if (tokens.empty())
-            throw runtime_error("Wrong input!");
+            throw runtime_error("Invald input! - no arguments provided");
 
-        auto command_str = tokens.front();
+        auto command_str = utilities::strings::to_lower(tokens.front());
         auto it = _cmd_xml.commands.find(command_str);
         if (it == _cmd_xml.commands.end())
-            throw runtime_error("Command not found!");
+            throw runtime_error(to_string() << "Command " << command_str << " was not found!");
 
         command = it->second;
         for (auto i = 1; i < tokens.size(); ++i)
             params.push_back(tokens[i]);
     }
-
 }
