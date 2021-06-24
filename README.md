@@ -16,6 +16,13 @@ This branch offers various [Jupyter notebooks](http://jupyter.org/) showcasing I
 |----------|-------------|
 | [Depth under water](https://github.com/IntelRealSense/librealsense/blob/jupyter/notebooks/depth_under_water.ipynb) [![Binder](https://mybinder.org/badge.svg)](https://mybinder.org/v2/gh/IntelRealSense/librealsense/jupyter?filepath=notebooks/depth_under_water.ipynb) | Minimal notebook showcasing depth under water recording |
 
+## Quick Start
+
+| **Notebook** | **Description** |
+|----------|-------------|
+| [Device from Record](https://github.com/nohayassin/librealsense/blob/quick_start/notebooks/quick_start_rosbag.ipynb) [![Binder](https://mybinder.org/badge.svg)](https://mybinder.org/v2/gh/nohayassin/librealsense/quick_start?filepath=notebooks/quick_start_rosbag.ipynb) | Quick start for RealSense™ device from record |
+| [Live Camera](https://github.com/nohayassin/librealsense/blob/quick_start/notebooks/quick_start_live.ipynb) [![Binder](https://mybinder.org/badge.svg)](https://mybinder.org/v2/gh/nohayassin/librealsense/quick_start?filepath=notebooks/quick_start_live.ipynb) | Quick start for RealSense™ live cameras |
+
 ## Issue Answers
 
 | **Notebook** | **Description** |

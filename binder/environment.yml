@@ -14,7 +14,6 @@ dependencies:
   - numba
   - pythreejs
   - python=3.9
-  - pip
   - pip:
     - laspy
     - appmode
