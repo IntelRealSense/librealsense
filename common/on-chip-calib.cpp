@@ -929,7 +929,7 @@ namespace rs2
                                                           [&](const float progress) {_progress = int(progress); });
             }
             else
-                fail("Filed to capture enough frames!");
+                fail("Failed to capture enough frames!");
         }
         catch (const std::runtime_error& error)
         {
@@ -999,7 +999,7 @@ namespace rs2
                                                                  [&](const float progress) {_progress = int(progress); });
             }
             else
-                fail("Filed to capture enough frames!");
+                fail("Failed to capture enough frames!");
         }
         catch (const std::runtime_error& error)
         {
