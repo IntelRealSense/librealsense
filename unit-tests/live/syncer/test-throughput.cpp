@@ -229,6 +229,11 @@ TEST_CASE("Syncer dynamic FPS - throughput test", "[live]")
         std::cout << "ERROR : sensors are not valid!" << std::endl;
         exit(EXIT_FAILURE);
     }
+    if (ir_sensor.supports(RS2_OPTION_ENABLE_AUTO_EXPOSURE))
+        ir_sensor.set_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE, false);
+    if (rgb_sensor.supports(RS2_OPTION_ENABLE_AUTO_EXPOSURE))
+        rgb_sensor.set_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE, false);
+
     // test configurations
     configuration tests[2] = { IR_ONLY, IR_RGB_EXPOSURE }; // {cfg, exposure}
     for (auto& test : tests)
