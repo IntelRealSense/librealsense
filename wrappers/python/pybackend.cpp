@@ -187,6 +187,7 @@ PYBIND11_MODULE(NAME, m) {
         .value("auto_gain_limit", RS2_OPTION_AUTO_GAIN_LIMIT)
         .value("auto_rx_sensitivity", RS2_OPTION_AUTO_RX_SENSITIVITY)
         .value("transmitter_frequency", RS2_OPTION_TRANSMITTER_FREQUENCY)
+        .value("vertical_binning", RS2_OPTION_VERTICAL_BINNING)
         .value("count", RS2_OPTION_COUNT);
 
     py::enum_<platform::power_state> power_state(m, "power_state");
