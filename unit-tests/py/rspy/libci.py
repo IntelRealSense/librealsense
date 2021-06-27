@@ -359,6 +359,9 @@ class PyTest( Test ):
         #     -S     : don't imply 'import site' on initialization
         # NOTE: exit() is defined in site.py and works only if the site module is imported!
         cmd += ['-S']
+        # '-u' --> Force stdin, stdout and stderr to be totally unbuffered
+        # We saw that with stdout buffing, it a test would exit on an access violation, no log can be found since it was buffered. 
+        cmd += ['-u']
         if sys.flags.verbose:
             cmd += ["-v"]
         cmd += [self.path_to_script]
