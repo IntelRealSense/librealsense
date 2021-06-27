@@ -45,14 +45,14 @@ namespace rs2
         RS2_FWU_STATE_FAILED = 3,
     };
 
-    bool is_recommended_fw_available(std::string id, std::string PID)
+    bool is_recommended_fw_available(const std::string& id, const std::string& PID)
     {
         auto pl = parse_product_line(id);
         auto fv = get_available_firmware_version(pl, PID);
         return !(fv == "");
     }
 
-    int parse_product_line(std::string id)
+    int parse_product_line(const std::string& id)
     {
         if (id == "D400") return RS2_PRODUCT_LINE_D400;
         else if (id == "SR300") return RS2_PRODUCT_LINE_SR300;
@@ -60,7 +60,7 @@ namespace rs2
         else return -1;
     }
 
-    std::string get_available_firmware_version(int product_line, std::string PID)
+    std::string get_available_firmware_version(int product_line, const std::string& PID)
     {
         if (product_line == RS2_PRODUCT_LINE_D400) return FW_D4XX_FW_IMAGE_VERSION;
         //else if (product_line == RS2_PRODUCT_LINE_SR300) return FW_SR3XX_FW_IMAGE_VERSION;
