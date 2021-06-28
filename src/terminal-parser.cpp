@@ -106,9 +106,9 @@ namespace librealsense
         }
 
         if (tokens.empty())
-            throw runtime_error("Invald input! - no arguments provided");
+            throw runtime_error("Invalid input! - no arguments provided");
 
-        auto command_str = utilities::strings::to_lower(tokens.front());
+        auto command_str = utilities::string::to_lower(tokens.front());
         auto it = _cmd_xml.commands.find(command_str);
         if (it == _cmd_xml.commands.end())
             throw runtime_error(to_string() << "Command " << command_str << " was not found!");

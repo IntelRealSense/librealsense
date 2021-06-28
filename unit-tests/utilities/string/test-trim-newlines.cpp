@@ -4,7 +4,7 @@
 #include "common.h"
 #include "../common/utilities/string/trim-newlines.h"
 
-using namespace utilities::strings;
+using namespace utilities::string;
 
 TEST_CASE( "trim-newlines", "[string]" )
 {

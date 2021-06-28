@@ -12,10 +12,10 @@ After installing `librealsense` run `rs-terminal` to launch the tool in HEX mode
 * `-d <number>` - choose device by device number
 * `-n <serial>` - choose device by serial number
 * `-a` - broadcast to all connected devices
-* `-c` - execute a sequence of FW commands listed in a file. (The file must be ANSI/UTF-8  format)
+* `-c` - execute a sequence of FW commands listed in a file. (The file must be ANSI/UTF-8)
 
 Example:  
->`rs-terminal -l cmd.xml-c sequence.txt`
+>`rs-terminal -l cmd.xml -c sequence.txt`
 
 Run the tool, load the FW command specifications/mapping file and then iterate over and execute the FW commands listed in `sequence.txt` file
 

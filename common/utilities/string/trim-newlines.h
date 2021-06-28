@@ -6,7 +6,7 @@
 #include <string>
 
 namespace utilities {
-namespace strings {
+namespace string {
 
 
 // Prepare a block of text for word-wrap by removing newlines:
