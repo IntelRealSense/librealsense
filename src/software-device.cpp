@@ -264,6 +264,7 @@ namespace librealsense
         data.timestamp = software_frame.timestamp;
         data.timestamp_domain = software_frame.domain;
         data.frame_number = software_frame.frame_number;
+        data.depth_units = software_frame.depth_units;
 
         data.metadata_size = 0;
         for (auto i : _metadata_map)
