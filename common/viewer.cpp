@@ -359,7 +359,7 @@ namespace rs2
         ImGui::PopFont();
         hovered = hovered || ImGui::IsItemHovered();
 
-        if (hovered && !disabled)
+        if (hovered)
         {
             win.link_hovered();
             ImGui::SetTooltip("%s", description);
