@@ -798,7 +798,7 @@ namespace librealsense
         }
 
         // find depth units from old rosbag
-        auto depth_sensor = As<librealsense::depth_sensor>(sensor_extensions.find(RS2_EXTENSION_DEPTH_STEREO_SENSOR)).get();
+        auto depth_sensor = As<librealsense::depth_sensor>(sensor_extensions.find(RS2_EXTENSION_DEPTH_SENSOR)).get();
         if(depth_sensor)
             m_legacy_depth_units = depth_sensor->get_depth_scale();
 
