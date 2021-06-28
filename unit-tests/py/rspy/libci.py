@@ -359,6 +359,10 @@ class PyTest( Test ):
         #     -S     : don't imply 'import site' on initialization
         # NOTE: exit() is defined in site.py and works only if the site module is imported!
         cmd += ['-S']
+        #     -u     : force the stdout and stderr streams to be unbuffered; same as PYTHONUNBUFFERED=1
+        # With buffering we may end up losing output in case of crashes! (in Python 3.7 the text layer of the
+        # streams is unbuffered, but we assume 3.6)
+        cmd += ['-u']
         if sys.flags.verbose:
             cmd += ["-v"]
         cmd += [self.path_to_script]
