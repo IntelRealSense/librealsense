@@ -11,6 +11,7 @@ https://www.digitalocean.com/community/tutorials/how-to-install-and-use-docker-o
 - Support for Python bindings (python not included) and networking
 - Binaries are stripped during build stage to minimize image size
 - Support scripts for building and running the image are also included
+Add python version, openGL?, self info to be printed
 
 ## Getting librealsense docker
 
@@ -26,6 +27,7 @@ Now running the command: docker images, the docker librealsense/librealsense sho
 
 ### Default Command
 Then run the container with default command:
+
 docker run -it --rm \
     -v /dev:/dev \
     --device-cgroup-rule "c 81:* rmw" \
@@ -36,6 +38,7 @@ The default command that will run is: rs-enumerate-devices --compact
 
 ### Custom Command
 In order to run another command, one can run for example:
+
 docker run -it --rm \
     -v /dev:/dev \
     --device-cgroup-rule "c 81:* rmw" \
@@ -44,6 +47,7 @@ docker run -it --rm \
 
 ### Running shell
 Or, in order to open bash inside the container:
+
 docker run -it --rm \
     -v /dev:/dev \
     --device-cgroup-rule "c 81:* rmw" \
