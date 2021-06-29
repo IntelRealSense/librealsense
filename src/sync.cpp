@@ -152,7 +152,6 @@ namespace librealsense
             LOG_ERROR( "didn't find any matcher; releasing unsynchronized frame " << *f.frame );
             _callback(std::move(f), env);
         }
-        
     }
 
     std::shared_ptr<matcher> composite_matcher::find_matcher(const frame_holder& frame)
@@ -256,9 +255,17 @@ namespace librealsense
 
     void composite_matcher::stop()
     {
+        // We don't want to stop while dispatching!
+        std::lock_guard<std::mutex> lock( _mutex );
+
+        // Mark ourselves inactive, so we don't get new dispatches
         set_active( false );
+
+        // Stop all our queues to wake up anyone waiting on them
         for( auto & fq : _frames_queue )
             fq.second.stop();
+
+        // Trickle the stop down to any children
         for( auto m : _matchers )
             m.second->stop();
     }
@@ -297,7 +304,9 @@ namespace librealsense
         }
         update_next_expected( matcher, f );
 
-        _frames_queue[matcher.get()].enqueue(std::move(f));
+        if( ! _frames_queue[matcher.get()].enqueue( std::move( f ) ) )
+            // If we get stopped, nothing to do!
+            return;
 
         // We have a queue for each known stream we want to sync.
         // E.g., for (Depth Color), we need to sync two frames, one from each.
@@ -315,100 +324,107 @@ namespace librealsense
             frames_arrived_matchers.clear();
             frames_arrived.clear();
 
-            for (auto s = _frames_queue.begin(); s != _frames_queue.end(); s++)
+            std::vector< frame_holder > match;
             {
-                librealsense::matcher * const m = s->first;
-                if( ! s->second.peek( [&]( frame_holder & fh ) {
-                        LOG_IF_ENABLE( "... have " << *fh.frame, env );
-                        frames_arrived.push_back( &fh );
-                        frames_arrived_matchers.push_back( m );
-                    } ) )
+                // We don't want to stop while syncing!
+                std::lock_guard< std::mutex > lock( _mutex );
+
+                for( auto s = _frames_queue.begin(); s != _frames_queue.end(); s++ )
                 {
-                    missing_streams.push_back( m );
+                    librealsense::matcher * const m = s->first;
+                    if( ! s->second.peek( [&]( frame_holder & fh ) {
+                            LOG_IF_ENABLE( "... have " << *fh.frame, env );
+                            frames_arrived.push_back( &fh );
+                            frames_arrived_matchers.push_back( m );
+                        } ) )
+                    {
+                        missing_streams.push_back( m );
+                    }
                 }
-            }
 
-            if( frames_arrived.empty() )
-            {
-                //LOG_IF_ENABLE( "... nothing more to do", env );
-                break;
-            }
-
-            // Check that everything we have matches together
-
-            frame_holder * curr_sync = frames_arrived[0];
-            synced_frames.clear();
-            synced_frames.push_back( frames_arrived_matchers[0] );
-
-            auto old_frames = false;
-            for (auto i = 1; i < frames_arrived.size(); i++)
-            {
-                if (are_equivalent(*curr_sync, *frames_arrived[i]))
+                if( frames_arrived.empty() )
                 {
-                    synced_frames.push_back(frames_arrived_matchers[i]);
+                    // LOG_IF_ENABLE( "... nothing more to do", env );
+                    break;
                 }
-                else if (is_smaller_than(*frames_arrived[i], *curr_sync))
+
+                // Check that everything we have matches together
+
+                frame_holder * curr_sync = frames_arrived[0];
+                synced_frames.clear();
+                synced_frames.push_back( frames_arrived_matchers[0] );
+
+                auto old_frames = false;
+                for( auto i = 1; i < frames_arrived.size(); i++ )
                 {
-                    old_frames = true;
-                    synced_frames.clear();
-                    synced_frames.push_back(frames_arrived_matchers[i]);
-                    curr_sync = frames_arrived[i];
+                    if( are_equivalent( *curr_sync, *frames_arrived[i] ) )
+                    {
+                        synced_frames.push_back( frames_arrived_matchers[i] );
+                    }
+                    else if( is_smaller_than( *frames_arrived[i], *curr_sync ) )
+                    {
+                        old_frames = true;
+                        synced_frames.clear();
+                        synced_frames.push_back( frames_arrived_matchers[i] );
+                        curr_sync = frames_arrived[i];
+                    }
+                    else
+                    {
+                        old_frames = true;
+                    }
+                }
+                bool release_synced_frames = ( synced_frames.size() != 0 );
+                if( ! old_frames )
+                {
+                    // Everything (could be only one!) matches together... but if we also have
+                    // something missing, we can't release anything yet...
+                    for( auto i : missing_streams )
+                    {
+                        LOG_IF_ENABLE( "... missing " << i->get_name() << ", next expected "
+                                                      << _next_expected[i],
+                                       env );
+                        if( skip_missing_stream( synced_frames, i, env ) )
+                        {
+                            LOG_IF_ENABLE( "...     ignoring it", env );
+                            continue;
+                        }
+
+                        LOG_IF_ENABLE( "...     waiting for it", env );
+                        release_synced_frames = false;
+                    }
                 }
                 else
                 {
-                    old_frames = true;
+                    LOG_IF_ENABLE( "old frames; ignoring missing "
+                                       << matchers_to_string( missing_streams ),
+                                   env );
                 }
-            }
-            bool release_synced_frames = ( synced_frames.size() != 0 );
-            if (!old_frames)
-            {
-                // Everything (could be only one!) matches together... but if we also have something missing, we can't
-                // release anything yet...
-                for (auto i : missing_streams)
+                if( ! release_synced_frames )
+                    break;
+
+                match.reserve( synced_frames.size() );
+
+                for( auto index : synced_frames )
                 {
-                    LOG_IF_ENABLE( "... missing " << i->get_name() << ", next expected " << _next_expected[i], env );
-                    if( skip_missing_stream( synced_frames, i, env ) )
+                    frame_holder frame;
+                    int timeout_ms = 5000;
+                    _frames_queue[index].dequeue( &frame, timeout_ms );
+                    if( old_frames )
                     {
-                        LOG_IF_ENABLE( "...     ignoring it", env );
-                        continue;
+                        LOG_IF_ENABLE( "--> " << frame_holder_to_string( frame ), env );
                     }
-
-                    LOG_IF_ENABLE( "...     waiting for it", env );
-                    release_synced_frames = false;
+                    match.push_back( std::move( frame ) );
                 }
-            }
-            else
-            {
-                LOG_IF_ENABLE( "old frames; ignoring missing "
-                                   << matchers_to_string( missing_streams ),
-                               env );
-            }
-            if( ! release_synced_frames )
-                break;
-
-            std::vector<frame_holder> match;
-            match.reserve(synced_frames.size());
-
-            for (auto index : synced_frames)
-            {
-                frame_holder frame;
-                int timeout_ms = 5000;
-                _frames_queue[index].dequeue(&frame, timeout_ms);
-                if (old_frames)
-                {
-                    LOG_IF_ENABLE("--> " << frame_holder_to_string(frame), env);
-                }
-                match.push_back(std::move(frame));
             }
 
             // The frameset should always be with the same order of streams (the first stream carries extra
             // meaning because it decides the frameset properties) -- so we sort them...
             std::sort( match.begin(),
-                        match.end(),
-                        []( const frame_holder & f1, const frame_holder & f2 ) {
-                            return ( (frame_interface *)f1 )->get_stream()->get_unique_id()
+                       match.end(),
+                       []( const frame_holder & f1, const frame_holder & f2 ) {
+                           return ( (frame_interface *)f1 )->get_stream()->get_unique_id()
                                 > ( (frame_interface *)f2 )->get_stream()->get_unique_id();
-                        } );
+                       } );
 
 
             frame_holder composite = env.source->allocate_composite_frame(std::move(match));

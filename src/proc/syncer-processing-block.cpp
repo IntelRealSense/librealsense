@@ -88,8 +88,6 @@ namespace librealsense
     // pending dispatch will be lost!
     void syncer_process_unit::stop()
     {
-        // We don't want to stop while dispatching!
-        std::lock_guard<std::mutex> lock( _mutex );
         _matcher->stop();
     }
 }

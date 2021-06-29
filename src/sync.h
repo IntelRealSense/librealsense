@@ -152,6 +152,8 @@ namespace librealsense
         std::map<stream_id, std::shared_ptr<matcher>> _matchers;
         std::map<matcher*, double> _next_expected;
         std::map<matcher*, rs2_timestamp_domain> _next_expected_domain;
+
+        std::mutex _mutex;
     };
 
     // composite matcher that does not synchronize between any frames, and instead just passes them on to callback
