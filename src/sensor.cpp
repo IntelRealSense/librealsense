@@ -31,6 +31,7 @@ namespace librealsense
         _is_opened(false),
         _notifications_processor(std::shared_ptr<notifications_processor>(new notifications_processor())),
         _on_open(nullptr),
+        _metadata_modifier(nullptr),
         _metadata_parsers(std::make_shared<metadata_parser_map>()),
         _owner(dev),
         _profiles([this]() {
@@ -187,8 +188,8 @@ namespace librealsense
     stream_profiles sensor_base::get_stream_profiles( int tag ) const
     {
         stream_profiles results;
-        bool const need_debug = tag & profile_tag::PROFILE_TAG_DEBUG;
-        bool const need_any = tag & profile_tag::PROFILE_TAG_ANY;
+        bool const need_debug = (tag & profile_tag::PROFILE_TAG_DEBUG) != 0;
+        bool const need_any = (tag & profile_tag::PROFILE_TAG_ANY) != 0;
         for( auto p : *_profiles )
         {
             auto curr_tag = p->get_tag();
@@ -250,7 +251,6 @@ namespace librealsense
         fr->data = pixels;
         fr->set_stream(profile);
 
-        // generate additional data
         frame_additional_data additional_data(0,
             0,
             system_time,
@@ -260,7 +260,11 @@ namespace librealsense
             last_timestamp,
             last_frame_number,
             false,
-            (uint32_t)fo.frame_size );
+            0,
+            (uint32_t)fo.frame_size);
+
+        if (_metadata_modifier)
+            _metadata_modifier(additional_data);
         fr->additional_data = additional_data;
 
         // update additional data

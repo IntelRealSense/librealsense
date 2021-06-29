@@ -183,16 +183,14 @@ try:
 except Exception:
     test.unexpected_exception()
 finally: # we must remove all references to the file so we can use it again in the next test
-    if recorder:
-        recorder.pause()
-        recorder = None
-    if playback:
-        playback.pause()
-        playback = None
     stop_sensor( depth_sensor )
     depth_sensor = None
     stop_sensor( color_sensor )
     color_sensor = None
+    if recorder:
+        recorder = None
+    if playback:
+        playback = None
 
 test.finish()
 
@@ -240,16 +238,14 @@ try:
 except Exception:
     test.unexpected_exception()
 finally: # we must remove all references to the file so the temporary folder can be deleted
-    if recorder:
-        recorder.pause()
-        recorder = None
-    if playback:
-        playback.pause()
-        playback = None
     stop_sensor( depth_sensor )
     depth_sensor = None
     stop_sensor( color_sensor )
     color_sensor = None
+    if recorder:
+        recorder = None
+    if playback:
+        playback = None
 
 test.finish()
 

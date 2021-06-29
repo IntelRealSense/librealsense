@@ -429,7 +429,7 @@ namespace librealsense
                     "ambient.",
                     this );
 
-                _preset->set_value( (float)preset );
+                _preset->set( (float)preset );
 
                 depth_sensor.register_option( RS2_OPTION_VISUAL_PRESET, _preset );
 

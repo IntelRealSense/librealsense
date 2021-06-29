@@ -47,7 +47,10 @@ device_options::device_options( std::shared_ptr< librealsense::context > ctx,
             { RS2_OPTION_AUTO_RX_SENSITIVITY, 
               { auto_rx_sensitivity, "Enable receiver sensitivity according to ambient light, bounded by the Receiver Gain control" } },
             { RS2_OPTION_TRANSMITTER_FREQUENCY,
-              { transmitter_frequency, "Change transmitter frequency, increasing effective range over sharpness" } }
+              { transmitter_frequency, "Change transmitter frequency, increasing effective range over sharpness" } },
+            { RS2_OPTION_VERTICAL_BINNING,
+              { vertical_binning, "Enables vertical binning which increases the maximal sensed distance" } }
+
         };
 
         for( auto i : options )

@@ -43,6 +43,7 @@ def usage():
     print( '        --repeat <#>     Repeat each test <#> times' )
     print( '        --config <>      Ignore test configurations; use the one provided' )
     print( '        --no-reset       Do not try to reset any devices, with or without Acroname' )
+    print( '        --rslog          Enable LibRS logging (LOG_DEBUG etc.) to console in each test' )
     print()
     print( 'Examples:' )
     print( 'Running: python run-unit-tests.py -s' )
@@ -69,7 +70,8 @@ else:
 try:
     opts, args = getopt.getopt( sys.argv[1:], 'hvqr:st:',
                                 longopts=['help', 'verbose', 'debug', 'quiet', 'regex=', 'stdout', 'tag=', 'list-tags',
-                                          'list-tests', 'no-exceptions', 'context=', 'repeat=', 'config=', 'no-reset'] )
+                                          'list-tests', 'no-exceptions', 'context=', 'repeat=', 'config=', 'no-reset',
+                                          'rslog'] )
 except getopt.GetoptError as err:
     log.e( err )  # something like "option -a not recognized"
     usage()
@@ -83,6 +85,7 @@ context = None
 repeat = 1
 forced_configurations = None
 no_reset = False
+rslog = False
 for opt, arg in opts:
     if opt in ('-h', '--help'):
         usage()
@@ -113,6 +116,8 @@ for opt, arg in opts:
         forced_configurations = [[arg]]
     elif opt == '--no-reset':
         no_reset = True
+    elif opt == '--rslog':
+        rslog = True
 
 if len( args ) > 1:
     usage()
@@ -326,15 +331,19 @@ def devices_by_test_config( test, exceptions ):
 
 
 def test_wrapper( test, configuration = None, repetition = 1 ):
-    global n_tests
+    global n_tests, rslog
     n_tests += 1
     #
     if not log.is_debug_on() or log.is_color_on():
         log.progress( configuration_str( configuration, repetition, suffix=' ' ) + test.name, '...' )
     #
     log_path = test.get_log()
+    #
+    opts = set()
+    if rslog:
+        opts.add( '--rslog' )
     try:
-        test.run_test( configuration=configuration, log_path=log_path )
+        test.run_test( configuration = configuration, log_path = log_path, opts = opts )
     except FileNotFoundError as e:
         log.e( log.red + test.name + log.reset + ':', str( e ) + configuration_str( configuration, repetition, prefix=' ' ) )
     except subprocess.TimeoutExpired:

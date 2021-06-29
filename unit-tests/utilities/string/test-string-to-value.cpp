@@ -1,10 +1,8 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2020 Intel Corporation. All Rights Reserved.
 
-//#cmake:add-file ../../../common/utilities/string/string-utilities.h
-
 #include "common.h"
-#include "../../../common/utilities/string/string-utilities.h"
+#include <common/utilities/string/string-utilities.h>
 #include <ostream>
 using namespace utilities::string;
 

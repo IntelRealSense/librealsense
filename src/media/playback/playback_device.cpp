@@ -151,7 +151,6 @@ rs2_extrinsics playback_device::calc_extrinsic(const rs2_extrinsics& from, const
 
 playback_device::~playback_device()
 {
-    (*m_read_thread)->invoke([this](dispatcher::cancellable_timer c)
     {
         std::lock_guard<std::mutex> locker(_active_sensors_mutex);
         for (auto&& sensor : m_active_sensors)
@@ -161,12 +160,6 @@ playback_device::~playback_device()
                 sensor.second->stop();
             }
         }
-    });
-
-    if((*m_read_thread)->flush() == false)
-    {
-        LOG_ERROR("Error - timeout waiting for flush, possible deadlock detected");
-        assert(0); //Detect this immediately in debug
     }
 
     (*m_read_thread)->stop();
@@ -454,8 +447,8 @@ void playback_device::start()
     catch_up();
     try_looping();
     LOG_INFO("Playback started");
-
 }
+
 void playback_device::stop()
 {
     LOG_DEBUG("playback stop called");
@@ -469,8 +462,8 @@ void playback_device::stop()
         LOG_ERROR("Error - timeout waiting for flush, possible deadlock detected");
         assert(0); //Detect this immediately in debug
     }
-    LOG_INFO("Playback stoped");
 
+    LOG_INFO("Playback stopped");
 }
 
 void playback_device::stop_internal()
@@ -482,10 +475,7 @@ void playback_device::stop_internal()
 
     m_is_started = false;
     m_is_paused = false;
-    for (auto sensor : m_sensors)
-    {
-        //sensor.second->flush_pending_frames();
-    }
+
     m_reader->reset();
     m_prev_timestamp = std::chrono::nanoseconds(0);
     catch_up();
@@ -524,7 +514,6 @@ void playback_device::do_loop(T action)
             {
                 if( psc )
                 {
-                    psc->flush_pending_frames();
                     psc->stop( false );
                 }
             }

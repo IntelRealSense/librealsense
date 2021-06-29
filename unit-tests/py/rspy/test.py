@@ -36,6 +36,14 @@ if '--context' in sys.argv:
         log.f( "Received context flag but no context" )
     sys.argv.pop( context_index )
 
+# If --rslog flag was sent, enable LibRS logging (LOG_DEBUG, etc.)
+try:
+    sys.argv.remove( '--rslog' )
+    import pyrealsense2 as rs
+    rs.log_to_console( rs.log_severity.debug )
+except ValueError as e:
+    pass  # No --rslog passed in
+
 
 def set_env_vars( env_vars ):
     """

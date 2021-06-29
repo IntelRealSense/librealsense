@@ -11,6 +11,8 @@
 
 using namespace rs2;
 constexpr int RECEIVE_FRAMES_TIME = 10;
+constexpr float LOW_FPS = 30;
+constexpr float HIGH_FPS = 60;
 
 TEST_CASE("Syncer dynamic FPS - throughput test", "[live]")
 {
@@ -101,7 +103,7 @@ TEST_CASE("Syncer dynamic FPS - throughput test", "[live]")
             {
                 if (!exposure_set && delta > RECEIVE_FRAMES_TIME / 2)
                 {
-                    set_ir_exposure(); // set exposure to 18000 after 5 sec, set to 60000 to get fps = 15
+                    set_ir_exposure(); // set exposure to 18000 after 5 sec to get fps = 30, set to 60000 to get fps = 15
                     exposure_set = true;
                 }
                 auto fs = _sync.wait_for_frames();
@@ -117,39 +119,34 @@ TEST_CASE("Syncer dynamic FPS - throughput test", "[live]")
         {
             if (frames_arrival_info.empty())
                 return;
-            float fps = 0.0f;
-            while (!frames_arrival_info.empty() && fps < 10) // skip unstable frames at the beginning
-            {
-                fps = frames_arrival_info.front().second;
-                frames_arrival_info.erase(frames_arrival_info.begin());
-            }
-            if (frames_arrival_info.size() < 10 || fps < 1.0f)
-                return;
             std::vector<std::pair<float, float>>  vec[2]; // separate frames according to fps (before and after setting exposure)
+            std::vector<std::pair<float, float>> extra_frames; // frames with unstable fps are received after changing exposure
             for (auto& frm : frames_arrival_info)
             { 
-                auto fps_ratio = frm.second / fps; // used ratio instead of precised fps because syncer doesn't change fps to exact value when running RGB
-                if (fps_ratio > 0.9)
+                // used ratio instead of precised fps because syncer doesn't change fps to exact value when running RGB
+                if (frm.second / HIGH_FPS > 0.9)
                     vec[0].push_back(frm);
-                else
+                else if (frm.second / LOW_FPS > 0.9)
                     vec[1].push_back(frm);
+                else
+                    extra_frames.push_back(frm);
             }
 
             int i = 0;
             for (auto& v : vec)
             {
-                if (v.empty())
+                if (v.size() < 10)
                     continue;
                 auto dt = (v.back().first - v.front().first)/ 1000000;
                 auto actual_fps = v.front().second;
                 float calc_fps = (float)v.size() / dt;
-                float fps_ratio = calc_fps / actual_fps;
+                float fps_ratio = fabs(1 - calc_fps / actual_fps);
                 CAPTURE(stream_type, actual_fps, calc_fps, v.size());
-                CHECK(fps_ratio > 0.9);
-                CHECK(fps_ratio < 1.3);
+                CHECK(fps_ratio < 0.1);
                 check_frame_drops(v);
                 i += 1;
             }
+            CHECK(extra_frames.size() / frames_arrival_info.size() < 0.1);
         }
         void check_frame_drops(std::vector<std::pair<float, float>> frames)
         {
@@ -232,6 +229,11 @@ TEST_CASE("Syncer dynamic FPS - throughput test", "[live]")
         std::cout << "ERROR : sensors are not valid!" << std::endl;
         exit(EXIT_FAILURE);
     }
+    if (ir_sensor.supports(RS2_OPTION_ENABLE_AUTO_EXPOSURE))
+        ir_sensor.set_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE, false);
+    if (rgb_sensor.supports(RS2_OPTION_ENABLE_AUTO_EXPOSURE))
+        rgb_sensor.set_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE, false);
+
     // test configurations
     configuration tests[2] = { IR_ONLY, IR_RGB_EXPOSURE }; // {cfg, exposure}
     for (auto& test : tests)
