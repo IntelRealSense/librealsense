@@ -14,20 +14,21 @@ using namespace utilities::time;
 
 TEST_CASE( "dequeue doesn't wait after stop" )
 {
-    single_consumer_queue< std::function< void( void ) > > scq;
-    std::function< void( void ) > f;
-    std::function< void( void ) > * f_ptr = &f;
+    typedef std::function< void( void ) > scq_value_t;
+    single_consumer_queue< scq_value_t > scq;
+    scq_value_t f;
+    scq_value_t * f_ptr = &f;
 
     scq.enqueue( []() {} );
     REQUIRE( scq.size() == 1 );
-    REQUIRE( scq.peek( &f_ptr ) );
+    REQUIRE( scq.peek( [&]( scq_value_t const & ) {} ));
 
     REQUIRE( scq.started() );
     REQUIRE_FALSE( scq.stopped() );
 
     scq.stop();
 
-    REQUIRE_FALSE( scq.peek( &f_ptr ) );
+    REQUIRE_FALSE( scq.peek( [&]( scq_value_t const& ) {} ) );
     REQUIRE( scq.stopped() );
     REQUIRE_FALSE( scq.started() );
 
