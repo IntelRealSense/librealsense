@@ -6,6 +6,7 @@ import java.util.List;
 public class Sensor extends Options {
 
     Sensor(long h) {
+        mOwner = false;
         mHandle = h;
     }
 
@@ -35,8 +36,17 @@ public class Sensor extends Options {
         return nIsSensorExtendableTo(mHandle, extension.value());
     }
 
-    public void open(StreamProfile sp) {
+    public void openSensor(StreamProfile sp) {
         nOpen(mHandle, sp.getHandle());
+    }
+
+    public void openSensor(List<StreamProfile> sp_list) {
+        int size = sp_list.size();
+        long[] profiles_array = new long[size];
+        for (int i = 0; i < size; ++i) {
+            profiles_array[i] = sp_list.get(i).mHandle;
+        }
+        nOpenMultiple(mHandle, profiles_array, sp_list.size());
     }
 
     public void start(FrameCallback cb) {
@@ -47,20 +57,22 @@ public class Sensor extends Options {
         nStop(mHandle);
     }
 
+    // release resources - from AutoCloseable interface
     @Override
     public void close() {
-        nClose(mHandle);
+        if (mOwner)
+            nRelease(mHandle);
     }
 
-    public void delete() {
-        if(mOwner)
-            nRelease(mHandle);
+    public void closeSensor(){
+        nClose(mHandle);
     }
 
     private static native long[] nGetStreamProfiles(long handle);
     private static native void nRelease(long handle);
     private static native boolean nIsSensorExtendableTo(long handle, int extension);
     private static native void nOpen(long handle, long sp);
+    private static native void nOpenMultiple(long handle, long[] sp_list, int num_of_profiles);
     private static native void nStart(long handle, FrameCallback callback);
     private static native void nStop(long handle);
     private static native void nClose(long handle);

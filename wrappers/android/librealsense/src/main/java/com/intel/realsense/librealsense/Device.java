@@ -63,7 +63,7 @@ public class Device extends LrsClass {
     @Override
     public void close() {
         for (Sensor s : _sensors)
-            s.delete();
+            s.close();
         if(mOwner)
             nRelease(mHandle);
     }

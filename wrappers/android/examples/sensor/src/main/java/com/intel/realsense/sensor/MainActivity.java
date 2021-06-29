@@ -12,6 +12,7 @@ import android.util.Log;
 import android.view.View;
 import android.widget.TextView;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import com.intel.realsense.librealsense.Colorizer;
@@ -181,12 +182,18 @@ public class MainActivity extends AppCompatActivity {
             }
         }
 
+        boolean depth_profile_found = false;
+        boolean ir_profile_found = false;
+
         if (depth_sensor != null) {
             List<StreamProfile> sps = depth_sensor.getStreamProfiles();
-            StreamProfile sp = sps.get(0);
+            StreamProfile depth_profile = sps.get(0);
+            StreamProfile ir_profile = sps.get(0);
 
             for (StreamProfile sp2 : sps) {
-                if (sp2.getType().compareTo(StreamType.DEPTH) == 0) {
+                if (depth_profile_found && ir_profile_found)
+                    break;
+                if (!depth_profile_found && sp2.getType().compareTo(StreamType.DEPTH) == 0) {
 
                     if (sp2.is(Extension.VIDEO_PROFILE)) {
                         VideoStreamProfile video_stream_profile = sp2.as(Extension.VIDEO_PROFILE);
@@ -203,14 +210,40 @@ public class MainActivity extends AppCompatActivity {
                         if (w == 640 && fps == 30 && (sf.compareTo(StreamFormat.Z16) == 0)) {
                             Log.d(TAG, "depth stream: " + index + ":" + st.name() + ":" + sf.name() + ":" + w + "x" + h + "@" + fps + "HZ");
 
-                            sp = sp2;
-                            break;
+                            depth_profile = sp2;
+                            depth_profile_found = true;
+                        }
+                    }
+                }
+                if (!ir_profile_found && sp2.getType().compareTo(StreamType.INFRARED) == 0 && sp2.getIndex() == 1 ) {
+
+                    if (sp2.is(Extension.VIDEO_PROFILE)) {
+                        VideoStreamProfile video_stream_profile = sp2.as(Extension.VIDEO_PROFILE);
+
+                        // After using the "as" method we can use the new data type
+                        //  for additional operations:
+                        StreamFormat sf = video_stream_profile.getFormat();
+                        int index = sp2.getIndex();
+                        StreamType st = sp2.getType();
+                        int w = video_stream_profile.getWidth();
+                        int h = video_stream_profile.getHeight();
+                        int fps = video_stream_profile.getFrameRate();
+
+                        if (w == 640 && fps == 30 && (sf.compareTo(StreamFormat.Y8) == 0)) {
+                            Log.d(TAG, "ir stream: " + index + ":" + st.name() + ":" + sf.name() + ":" + w + "x" + h + "@" + fps + "HZ");
+
+                            ir_profile = sp2;
+                            ir_profile_found = true;
                         }
                     }
                 }
             }
 
-            depth_sensor.open(sp);
+            List<StreamProfile> requested_profiles = new ArrayList<StreamProfile>();
+            requested_profiles.add(depth_profile);
+            requested_profiles.add(ir_profile);
+
+            depth_sensor.openSensor(requested_profiles);
             depth_sensor.start(mDepthFrameHandler);
         }
     }
@@ -241,7 +274,7 @@ public class MainActivity extends AppCompatActivity {
             if (depth_sensor != null) depth_sensor.stop();
 
             if (mColorizer != null) mColorizer.close();
-            if (depth_sensor != null) {depth_sensor.close();}
+            if (depth_sensor != null) {depth_sensor.closeSensor();}
 
             if (mDevice != null) mDevice.close();
 
