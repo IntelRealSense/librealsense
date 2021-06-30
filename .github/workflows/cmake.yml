@@ -13,8 +13,8 @@ env:
   LRS_RUN_CONFIG: Release
 
 jobs:
-  
-  Linux Testing - cpp:
+
+  Linux_testing_cpp:
       runs-on: ubuntu-18.04      
       env: 
         RS_CPP_TEST: true
@@ -31,7 +31,7 @@ jobs:
   
   
   
-  Windows - C#:
+  Windows_CSharp:
     # The CMake configure and build commands are platform agnostic and should work equally
     # well on Windows or Mac.  You can convert this to a matrix build if you need
     # cross-platform coverage.
