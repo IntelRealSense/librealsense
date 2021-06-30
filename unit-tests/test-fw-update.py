@@ -8,6 +8,8 @@
 
 import pyrealsense2 as rs, sys, os, subprocess
 from rspy import devices, log, test, file, repo
+import re
+
 
 if not devices.acroname:
     log.i( "No Acroname library found; skipping device FW update" )
@@ -72,6 +74,27 @@ def reset_update_counter( device ):
 
     send_hardware_monitor_command( device, cmd )
 
+def find_image_or_exit( product_name, image_mask ):
+    pattern = re.compile('Intel RealSense ')
+    match = pattern.search(product_name)
+    if not match:
+        # Didn't find 'Intel RealSense ' in product_name
+        log.f(product_name, " is not valid")
+
+    # finding file containing image for FW update
+    x = 'X'
+    for i in range(1, 3):
+        image_name = '(^|/)' + product_name[match.end():match.end() + 4 - i] + x + "_FW_Image-" + image_mask + ".bin" + '$'
+        image_file = None
+        for image in file.find(repo.root, image_name):
+            image_file = os.path.join(repo.root, image)
+        if image_file:
+            break
+        x = x + 'X'
+    if not image_file:
+        log.f("Could not find image file for " + product_line)
+
+    return image_file
 
 # find the update tool exe
 fw_updater_exe = None
@@ -88,10 +111,13 @@ if len( sn_list ) != 1:
 device = devices.get_first( sn_list ).handle
 log.d( 'found:', device )
 product_line = device.get_info( rs.camera_info.product_line )
+product_name = device.get_info( rs.camera_info.name )
 log.d( 'product line:', product_line )
-
+log.d( 'product name:', product_name )
 ###############################################################################
 #
+
+
 test.start( "Update FW" )
 # check if recovery. If so recover
 recovered = False
@@ -99,13 +125,7 @@ if device.is_update_device():
     log.d( "recovering device ..." )
     try:
         # TODO: this needs to improve for L535
-        image_name = product_line[:-2] + "XX_FW_Image-"
-        image_mask = '(^|/)' + image_name + '(\d+\.){4}bin$'
-        image_file = None
-        for image in file.find( repo.root, image_mask ):
-            image_file = os.path.join( repo.root, image)
-        if not image_file:
-            log.f( "Could not find image file for", product_line, "recovery device" )
+        image_file = find_image_or_exit(product_name, '(\d+\.){3}(\d+)')
 
         cmd = [fw_updater_exe, '-r', '-f', image_file]
         log.d( 'running:', cmd )
@@ -160,14 +180,8 @@ if update_counter >= 19:
     reset_update_counter( device )
     update_counter = 0
 
+image_file = find_image_or_exit(product_name, bundled_fw_version)
 # finding file containing image for FW update
-image_name = product_line[0:2] + "XX_FW_Image-" + bundled_fw_version + ".bin"
-image_mask = '(^|/)' + image_name + '$'
-image_file = None
-for image in file.find( repo.root, image_mask ):
-    image_file = os.path.join( repo.root, image)
-if not image_file:
-    log.f( "Could not find image file for " + product_line + " device with FW version: " + bundled_fw_version )
 
 cmd = [fw_updater_exe, '-f', image_file]
 log.d( 'running:', cmd )

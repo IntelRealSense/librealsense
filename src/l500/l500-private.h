@@ -248,9 +248,9 @@ namespace librealsense
         };
 
         static const std::map<std::uint16_t, std::string> rs500_sku_names = {
-            { L500_RECOVERY_PID,            "Intel RealSense L5xx Recovery"},
-            { L535_RECOVERY_PID,            "Intel RealSense L5xx Recovery"},
-            { L500_USB2_RECOVERY_PID_OLD,   "Intel RealSense L5xx Recovery"},
+            { L500_RECOVERY_PID,            "Intel RealSense L51X Recovery"},
+            { L535_RECOVERY_PID,            "Intel RealSense L53X Recovery"},
+            { L500_USB2_RECOVERY_PID_OLD,   "Intel RealSense L51X Recovery"},
             { L500_PID,                     "Intel RealSense L500"},
             { L515_PID_PRE_PRQ,             "Intel RealSense L515 (pre-PRQ)"},
             { L515_PID,                     "Intel RealSense L515"},
