@@ -9,7 +9,7 @@
 1. Install CommantLineTools `sudo xcode-select --install` or download XCode 6.0+ via the AppStore
 2. Install the Homebrew package manager via terminal - [link](http://brew.sh/)
 3. Install the following packages via brew:
-  * `brew install cmake libusb pkg-config`
+  * `brew install cmake libusb openssl pkg-config`
   * `brew cask install apenngrace/vulkan/vulkan-sdk`
 
 **Note** *librealsense* requires CMake version 3.8+ that can also be obtained via the [official CMake site](https://cmake.org/download/).  
@@ -18,7 +18,7 @@
 4. Generate XCode project:
   * `mkdir build && cd build`
   * `sudo xcode-select --reset`
-  * `cmake .. -DBUILD_EXAMPLES=true -DBUILD_WITH_OPENMP=false -DHWM_OVER_XU=false`
+  * `cmake .. -DBUILD_EXAMPLES=true -DBUILD_WITH_OPENMP=false -DHWM_OVER_XU=false -DOPENSSL_ROOT_DIR=$(brew --prefix openssl)`
 5. Build the Project
   * `make -j2`
 
