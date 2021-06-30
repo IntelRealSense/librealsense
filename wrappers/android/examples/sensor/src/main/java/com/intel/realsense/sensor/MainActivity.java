@@ -11,6 +11,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import android.util.Log;
 import android.view.View;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -186,65 +187,77 @@ public class MainActivity extends AppCompatActivity {
         boolean ir_profile_found = false;
 
         if (depth_sensor != null) {
-            List<StreamProfile> sps = depth_sensor.getStreamProfiles();
-            StreamProfile depth_profile = sps.get(0);
-            StreamProfile ir_profile = sps.get(0);
+            List<StreamProfile> stream_profiles = depth_sensor.getStreamProfiles();
+            StreamProfile depth_profile = stream_profiles.get(0);
+            StreamProfile ir_profile = stream_profiles.get(0);
 
-            for (StreamProfile sp2 : sps) {
+            for (StreamProfile stream_profile : stream_profiles) {
                 if (depth_profile_found && ir_profile_found)
                     break;
-                if (!depth_profile_found && sp2.getType().compareTo(StreamType.DEPTH) == 0) {
+                if (!depth_profile_found && stream_profile.getType().compareTo(StreamType.DEPTH) == 0) {
 
-                    if (sp2.is(Extension.VIDEO_PROFILE)) {
-                        VideoStreamProfile video_stream_profile = sp2.as(Extension.VIDEO_PROFILE);
+                    if (stream_profile.is(Extension.VIDEO_PROFILE)) {
+                        VideoStreamProfile video_stream_profile = stream_profile.as(Extension.VIDEO_PROFILE);
 
                         // After using the "as" method we can use the new data type
                         //  for additional operations:
                         StreamFormat sf = video_stream_profile.getFormat();
-                        int index = sp2.getIndex();
-                        StreamType st = sp2.getType();
+                        int index = stream_profile.getIndex();
+                        StreamType st = stream_profile.getType();
                         int w = video_stream_profile.getWidth();
                         int h = video_stream_profile.getHeight();
                         int fps = video_stream_profile.getFrameRate();
 
-                        if (w == 640 && fps == 30 && (sf.compareTo(StreamFormat.Z16) == 0)) {
+                        if (w == 640 && h == 480 && fps == 30 && (sf.compareTo(StreamFormat.Z16) == 0)) {
                             Log.d(TAG, "depth stream: " + index + ":" + st.name() + ":" + sf.name() + ":" + w + "x" + h + "@" + fps + "HZ");
 
-                            depth_profile = sp2;
+                            depth_profile = stream_profile;
                             depth_profile_found = true;
                         }
                     }
                 }
-                if (!ir_profile_found && sp2.getType().compareTo(StreamType.INFRARED) == 0 && sp2.getIndex() == 1 ) {
+                if (!ir_profile_found && stream_profile.getType().compareTo(StreamType.INFRARED) == 0 && stream_profile.getIndex() == 1 ) {
 
-                    if (sp2.is(Extension.VIDEO_PROFILE)) {
-                        VideoStreamProfile video_stream_profile = sp2.as(Extension.VIDEO_PROFILE);
+                    if (stream_profile.is(Extension.VIDEO_PROFILE)) {
+                        VideoStreamProfile video_stream_profile = stream_profile.as(Extension.VIDEO_PROFILE);
 
                         // After using the "as" method we can use the new data type
                         //  for additional operations:
                         StreamFormat sf = video_stream_profile.getFormat();
-                        int index = sp2.getIndex();
-                        StreamType st = sp2.getType();
+                        int index = stream_profile.getIndex();
+                        StreamType st = stream_profile.getType();
                         int w = video_stream_profile.getWidth();
                         int h = video_stream_profile.getHeight();
                         int fps = video_stream_profile.getFrameRate();
 
-                        if (w == 640 && fps == 30 && (sf.compareTo(StreamFormat.Y8) == 0)) {
+                        if (w == 640 && h == 480 && fps == 30 && (sf.compareTo(StreamFormat.Y8) == 0)) {
                             Log.d(TAG, "ir stream: " + index + ":" + st.name() + ":" + sf.name() + ":" + w + "x" + h + "@" + fps + "HZ");
 
-                            ir_profile = sp2;
+                            ir_profile = stream_profile;
                             ir_profile_found = true;
                         }
                     }
                 }
             }
 
-            List<StreamProfile> requested_profiles = new ArrayList<StreamProfile>();
-            requested_profiles.add(depth_profile);
-            requested_profiles.add(ir_profile);
+            if (!depth_profile_found && !ir_profile_found) {
+                Toast.makeText(this, "The requested profiles are not available in this device ", Toast.LENGTH_LONG).show();
+            }
+            else {
+                List<StreamProfile> requested_profiles = new ArrayList<StreamProfile>();
+                if (depth_profile_found)
+                    requested_profiles.add(depth_profile);
+                else
+                    Toast.makeText(this, "The depth requested profile is not available in this device ", Toast.LENGTH_LONG).show();
 
-            depth_sensor.openSensor(requested_profiles);
-            depth_sensor.start(mDepthFrameHandler);
+                if (ir_profile_found)
+                    requested_profiles.add(ir_profile);
+                else
+                    Toast.makeText(this, "The infrared requested profile is not available in this device ", Toast.LENGTH_LONG).show();
+
+                depth_sensor.openSensor(requested_profiles);
+                depth_sensor.start(mDepthFrameHandler);
+            }
         }
     }
 
