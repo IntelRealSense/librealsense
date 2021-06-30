@@ -32,7 +32,7 @@ namespace rs2
         rs2_notification_category category)
         : _description(description),
           _severity(severity),
-          _category(category) 
+          _category(category)
     {
         _timestamp = (double)std::chrono::high_resolution_clock::now().time_since_epoch().count();
     }
@@ -308,12 +308,12 @@ namespace rs2
         }
     }
 
-    std::function<void()> notification_model::draw(ux_window& win, int w, int y, 
+    std::function<void()> notification_model::draw(ux_window& win, int w, int y,
         std::shared_ptr<notification_model>& selected, std::string& error_message)
     {
         std::function<void()> action;
         while(dispatch_queue.try_dequeue(&action)) action();
-        
+
         std::function<void()> follow_up = []{};
 
         if (visible)
@@ -440,7 +440,7 @@ namespace rs2
             {
                 draw_dismiss(win, x, y);
             }
-            
+
             unset_color_scheme();
         }
 
@@ -448,7 +448,7 @@ namespace rs2
         {
             draw_expanded(win, error_message);
         }
-        
+
 
         return follow_up;
     }
@@ -495,7 +495,7 @@ namespace rs2
                 m->enable_expand = false;
                 m->enable_dismiss = false;
             }
-            
+
             pending_notifications.push_back(m);
 
             if (pending_notifications.size() > (size_t)MAX_SIZE)
@@ -561,7 +561,7 @@ namespace rs2
                         n->to_close = false;
                         return true;
                     }
-                    return ((n->get_age_in_ms() > n->get_max_lifetime_ms() && 
+                    return ((n->get_age_in_ms() > n->get_max_lifetime_ms() &&
                             !n->pinned && !n->expanded) || n->to_close);
                 }), end(pending_notifications));
 
@@ -569,7 +569,7 @@ namespace rs2
                 for (auto& noti : pending_notifications)
                 {
                     modal_notification_found = modal_notification_found || noti->expanded;
-                    if (pinned_drawn && noti->pinned && !noti->forced) 
+                    if (pinned_drawn && noti->pinned && !noti->forced)
                     {
                         continue;
                     }
@@ -609,7 +609,7 @@ namespace rs2
                     << std::fixed << selected->timestamp
                     << "\nSeverity: " << selected->severity
                     << "\nDescription: ";
-                    
+
                 for (auto&& part : parts) ss << part << "\n";
 
                 auto s = ss.str();
@@ -661,13 +661,13 @@ namespace rs2
             }
             catch (...) {}
         }
-        
+
         ImGui::PopFont();
 
         return modal_notification_found;
     }
 
-    version_upgrade_model::version_upgrade_model(int version) 
+    version_upgrade_model::version_upgrade_model(int version)
         : process_notification_model(nullptr), _version(version)
     {
         enable_expand = false;
@@ -675,7 +675,7 @@ namespace rs2
         update_state = 2;
         //pinned = true;
         _progress_bar.last_progress_time = system_clock::now();
-    } 
+    }
 
     void version_upgrade_model::set_color_scheme(float t) const
     {
@@ -707,7 +707,7 @@ namespace rs2
 
         ImGui::SetCursorScreenPos({ float(x + 17), float(y + 41) });
 
-        std::string link = to_string() << "https://github.com/IntelRealSense/librealsense/wiki/Release-Notes#release-" << _version; 
+        std::string link = to_string() << "https://github.com/IntelRealSense/librealsense/wiki/Release-Notes#release-" << _version;
 
         ImGui::PushStyleColor(ImGuiCol_Text, alpha(white, 1.f - t));
         if (ImGui::Button("What's new"))
@@ -1061,7 +1061,7 @@ namespace rs2
         ImGui::PushStyleColor(ImGuiCol_Text, alpha(light_grey, 1.f - t));
         ImGui::Text("We strongly recommend you upgrade \nyour software\n");
         ImGui::PopStyleColor();
-        
+
         ImGui::SetCursorScreenPos({ float(x + 5), float(y + height - 25) });
 
         auto sat = 1.f
@@ -1078,7 +1078,7 @@ namespace rs2
         if (ImGui::Button(button_name.c_str(), { float(bar_width), 20.f }))
         {
             bool should_dismiss = true;
-            try 
+            try
             {
                 open_url(_recommended_version_link.c_str());
             }
@@ -1141,7 +1141,7 @@ namespace rs2
 
         ImGui::SetCursorScreenPos({ float(x + 40), float(y + 35) });
         ImGui::Text("SW/FW Versions All Up To Date");
-        
+
         ImGui::SetCursorScreenPos({ float(x + 5), float(y + height - 25) });
     }
 

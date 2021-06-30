@@ -20,21 +20,21 @@ namespace rs2
         // Get current platform
         constexpr const char* PLATFORM =
 
-#ifdef _WIN64 
+#ifdef _WIN64
             "Windows amd64";
-#elif _WIN32 
+#elif _WIN32
             "Windows x86";
-#elif __linux__ 
-#ifdef __arm__ 
+#elif __linux__
+#ifdef __arm__
             "Linux arm";
-#else 
+#else
             "Linux amd64";
 #endif
-#elif __APPLE__ 
+#elif __APPLE__
             "Mac OS";
-#elif __ANDROID__  
+#elif __ANDROID__
             "Linux arm";
-#else 
+#else
             "";
 #endif
 
@@ -208,7 +208,7 @@ namespace rs2
             std::unordered_map<std::string, std::function<bool(const std::string&)>> schema;
             build_schema(schema);
 
-            // Validate json file has a versions array 
+            // Validate json file has a versions array
             if (j.begin().key() == "versions" && j.begin().value().is_array())
             {
                 // Iterate through the versions

@@ -39,7 +39,7 @@ namespace rs2
 
         // Restore Viewer UI to how it was before auto-calib
         void restore_workspace(invoker invoke);
-        
+
         // Ask the firmware to use one of the before/after calibration tables
         void apply_calib(bool use_new);
 
@@ -81,7 +81,7 @@ namespace rs2
         int fl_scan_location = 0;
         int fy_scan_direction = 0;
         int white_wall_mode = 0;
-        
+ 
         int retry_times = 0;
         bool toggle = false;
 

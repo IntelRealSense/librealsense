@@ -471,12 +471,12 @@ namespace rs2
                                 {
                                     sm->stop(fw_update_manager->get_protected_notification_model());
                                 }
-                                catch (...) 
-                                { 
+                                catch (...)
+                                {
                                     // avoiding exception that can be sent by stop method
-                                    // this could happen if the sensor is not streaming and the stop method is called - for example 
+                                    // this could happen if the sensor is not streaming and the stop method is called - for example
                                 }
-                            }   
+                            }
                         });
 
                     auto _this = shared_from_this();
@@ -484,7 +484,7 @@ namespace rs2
                         _this->invoke(action);
                     };
 
-                    if (!update_manager->started()) 
+                    if (!update_manager->started())
                         update_manager->start(invoke);
 
                     update_state = RS2_FWU_STATE_IN_PROGRESS;
