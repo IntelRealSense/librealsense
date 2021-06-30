@@ -259,7 +259,7 @@ namespace librealsense
         int keep_new_value_after_sucessful_scan = DEFAULT_KEEP_NEW_VALUE_AFTER_SUCESSFUL_SCAN;
         int fl_data_sampling = DEFAULT_FL_SAMPLING;
         int adjust_both_sides = DEFAULT_ADJUST_BOTH_SIDES;
-        
+
         int fl_scan_location = DEFAULT_OCC_FL_SCAN_LOCATION;
         int fy_scan_direction = DEFAULT_FY_SCAN_DIRECTION;
         int white_wall_mode = DEFAULT_WHITE_WALL_MODE;
@@ -555,7 +555,7 @@ namespace librealsense
             h |= sign << 24;
             *health = static_cast<float>(h);
         }
-            
+
         return res;
     }
 
@@ -640,7 +640,7 @@ namespace librealsense
             throw std::runtime_error("Operation timed-out!\nCalibration state did not converged in time");
 
         auto status = (rs2_dsc_status)result.status;
-                
+
         // Handle errors from firmware
         if (status != RS2_DSC_STATUS_SUCCESS)
             handle_calibration_error(status);
@@ -903,7 +903,7 @@ namespace librealsense
             rs2_release_frame(f);
 
             if (progress_callback)
-                progress_callback->on_update_progress(++progress);
+                progress_callback->on_update_progress(static_cast<float>(++progress));
         }
 
         for (int i = 0; i < 4; ++i)
@@ -919,13 +919,13 @@ namespace librealsense
             rect_sides[i] /= rect_sides_arr.size();
     }
 
-    std::vector<uint8_t> auto_calibrated::run_fl_calibration(rs2_frame_queue* left, rs2_frame_queue* right, float target_w, float target_h, 
+    std::vector<uint8_t> auto_calibrated::run_fl_calibration(rs2_frame_queue* left, rs2_frame_queue* right, float target_w, float target_h,
         int adjust_both_sides, float *ratio, float * angle, update_progress_callback_ptr progress_callback)
     {
         float fx[2] = { -1.0f, -1.0f };
         float fy[2] = { -1.0f, -1.0f };
 
-        float left_rect_sides[4];     
+        float left_rect_sides[4];
         get_target_rect_info(left, left_rect_sides, fx[0], fy[0], 50, progress_callback);
 
         float right_rect_sides[4];
@@ -1050,7 +1050,7 @@ namespace librealsense
     void auto_calibrated::undistort(uint8_t* img, const rs2_intrinsics& intrin, int roi_ws, int roi_hs, int roi_we, int roi_he)
     {
         assert(intrin.model == RS2_DISTORTION_INVERSE_BROWN_CONRADY);
-        
+
         int width = intrin.width;
         int height = intrin.height;
 
@@ -1162,7 +1162,7 @@ namespace librealsense
             rs2_release_frame(f);
 
             if (progress_callback)
-                progress_callback->on_update_progress(++progress);
+                progress_callback->on_update_progress(static_cast<float>(++progress));
         }
 
         for (int i = 0; i < 4; ++i)
@@ -1336,7 +1336,7 @@ namespace librealsense
 
         float ppx = 0.0f;
         float ppy = 0.0f;
-        float fx = 0.0f; 
+        float fx = 0.0f;
         float fy = 0.0f;
 
         if (py_px_only)

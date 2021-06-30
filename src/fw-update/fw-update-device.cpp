@@ -38,7 +38,7 @@ namespace librealsense
             throw backend_exception("Permission Denied!\n"
                 "This is often an indication of outdated or missing udev-rules.\n"
                 "If using Debian package, run sudo apt-get install librealsense2-dkms\n"
-                "If building from source, run ./scripts/setup_udev_rules.sh", 
+                "If building from source, run ./scripts/setup_udev_rules.sh",
                 RS2_EXCEPTION_TYPE_BACKEND);
         return res == platform::RS2_USB_STATUS_SUCCESS ? (rs2_dfu_state)state : RS2_DFU_STATE_DFU_ERROR;
     }
@@ -78,7 +78,7 @@ namespace librealsense
         LOG_INFO("DFU status: " << lock_status << " , DFU version is: " << payload.dfu_version);
     }
 
-    bool update_device::wait_for_state(std::shared_ptr<platform::usb_messenger> messenger, const rs2_dfu_state state, size_t timeout) const 
+    bool update_device::wait_for_state(std::shared_ptr<platform::usb_messenger> messenger, const rs2_dfu_state state, size_t timeout) const
     {
         std::chrono::milliseconds elapsed_milliseconds;
         auto start = std::chrono::system_clock::now();
@@ -150,7 +150,7 @@ namespace librealsense
         uint32_t transferred = 0;
         int retries = 10;
 
-        while (remaining_bytes > 0) 
+        while (remaining_bytes > 0)
         {
             size_t chunk_size = std::min(transfer_size, remaining_bytes);
 
@@ -210,7 +210,7 @@ namespace librealsense
     }
 
     sensor_interface& update_device::get_sensor(size_t i)
-    { 
+    {
         throw std::runtime_error("try to get sensor from fw loader device");
     }
 
@@ -261,7 +261,7 @@ namespace librealsense
 
     void update_device::tag_profiles(stream_profiles profiles) const
     {
-    
+
     }
 
     bool update_device::compress_while_record() const
@@ -291,7 +291,7 @@ namespace librealsense
         case RS2_CAMERA_INFO_PRODUCT_LINE:
         case RS2_CAMERA_INFO_PHYSICAL_PORT:
             return true;
-        
+
         default:
             return false;
         }
@@ -299,10 +299,10 @@ namespace librealsense
 
     void update_device::create_snapshot(std::shared_ptr<info_interface>& snapshot) const
     {
-        
+
     }
     void update_device::enable_recording(std::function<void(const info_interface&)> record_action)
     {
-        
+
     }
 }
