@@ -44,7 +44,7 @@ jobs:
   
   
   Linux_static_cpp:
-      runs-on: ubuntu-latest
+      runs-on: ubuntu-18.04
       steps:
       - uses: actions/checkout@v2
 
@@ -57,7 +57,7 @@ jobs:
   
   
   Linux_python_nodejs:
-      runs-on: ubuntu-latest      
+      runs-on: ubuntu-18.04      
       env: 
         LRS_BUILD_NODEJS: true
       steps:
@@ -88,7 +88,7 @@ jobs:
           wget https://librealsense.intel.com/rs-tests/nodejs_records.rec
   
   Mac_cpp:
-    runs-on: macos-latest
+    runs-on: macos-10.15
     
     steps:
     - uses: actions/checkout@v2
@@ -107,7 +107,7 @@ jobs:
         ls
   
   Android_cpp:
-    runs-on: ubuntu-latest      
+    runs-on: ubuntu-18.04      
     env: 
       LRS_BUILD_ANDROID: true
     steps:
