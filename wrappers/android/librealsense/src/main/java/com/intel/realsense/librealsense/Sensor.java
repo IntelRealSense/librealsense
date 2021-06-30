@@ -36,6 +36,8 @@ public class Sensor extends Options {
         return nIsSensorExtendableTo(mHandle, extension.value());
     }
 
+    // this method's name is not open() so that the user will call the
+    // closeSensor to close the sensor (and not the close() method which has another aim)
     public void openSensor(StreamProfile sp) {
         nOpen(mHandle, sp.getHandle());
     }
@@ -64,6 +66,8 @@ public class Sensor extends Options {
             nRelease(mHandle);
     }
 
+    // this method's name is not close() because this is already
+    // taken by the inherited method from AutoCloseable interface
     public void closeSensor(){
         nClose(mHandle);
     }
