@@ -565,7 +565,7 @@ namespace rs2
                 profiles_color = _sub_color->get_selected_profiles();
             }
 
-            invoke([&]() 
+            invoke([&]()
                 {
                     if (!_model.dev_syncer)
                         _model.dev_syncer = _viewer.syncer->create_syncer();
@@ -634,7 +634,7 @@ namespace rs2
         auto f = fetch_depth_frame(invoke);
         auto sensor = _sub->s->as<rs2::depth_stereo_sensor>();
         auto intr = f.get_profile().as<rs2::video_stream_profile>().get_intrinsics();
-        rs2::region_of_interest roi { (int)(f.get_width() * 0.45f), (int)(f.get_height()  * 0.45f), 
+        rs2::region_of_interest roi { (int)(f.get_width() * 0.45f), (int)(f.get_height()  * 0.45f),
                                       (int)(f.get_width() * 0.55f), (int)(f.get_height() * 0.55f) };
         std::vector<single_metric_data> v;
 
@@ -821,7 +821,7 @@ namespace rs2
                   ",\n \"fy scan range\":" << fy_scan_range <<
                   ",\n \"keep new value after sucessful scan\":" << keep_new_value_after_sucessful_scan <<
                   ",\n \"fl data sampling\":" << fl_data_sampling <<
-                  ",\n \"adjust both sides\":" << adjust_both_sides <<  
+                  ",\n \"adjust both sides\":" << adjust_both_sides <<
                   ",\n \"fl scan location\":" << fl_scan_location <<
                   ",\n \"fy scan direction\":" << fy_scan_direction <<
                   ",\n \"white wall mode\":" << white_wall_mode <<
@@ -838,7 +838,7 @@ namespace rs2
                   ",\n \"adjust both sides\":" << adjust_both_sides <<
                   ",\n \"fl scan location\":" << fl_scan_location <<
                   ",\n \"fy scan direction\":" << fy_scan_direction <<
-                  ",\n \"white wall mode\":" << white_wall_mode << 
+                  ",\n \"white wall mode\":" << white_wall_mode <<
                   ",\n \"speed\":" << speed <<
                   ",\n \"average step count\":" << average_step_count <<
                   ",\n \"scan parameter\":" << (intrinsic_scan ? 0 : 1) <<
@@ -919,13 +919,13 @@ namespace rs2
             if (counter == limit)
             {
                 auto calib_dev = _dev.as<auto_calibrated_device>();
-                _new_calib = calib_dev.run_fl_calibration(left.get(), 
-                                                          right.get(), 
-                                                          config_file::instance().get_or_default(configurations::viewer::target_width_r, 175.0f), 
+                _new_calib = calib_dev.run_fl_calibration(left.get(),
+                                                          right.get(),
+                                                          config_file::instance().get_or_default(configurations::viewer::target_width_r, 175.0f),
                                                           config_file::instance().get_or_default(configurations::viewer::target_height_r, 100.0f),
-                                                          adjust_both_sides, 
-                                                          &corrected_ratio, 
-                                                          &tilt_angle, 
+                                                          adjust_both_sides,
+                                                          &corrected_ratio,
+                                                          &tilt_angle,
                                                           [&](const float progress) {_progress = int(progress); });
             }
             else
@@ -993,9 +993,9 @@ namespace rs2
                 _new_calib = calib_dev.run_uvmapping_calibration(left.get(),
                                                                  color.get(),
                                                                  depth.get(),
-                                                                 py_px_only, 
-                                                                 _health_nums, 
-                                                                 4, 
+                                                                 py_px_only,
+                                                                 _health_nums,
+                                                                 4,
                                                                  [&](const float progress) {_progress = int(progress); });
             }
             else
@@ -1306,7 +1306,7 @@ namespace rs2
         using namespace std;
         using namespace chrono;
 
-        auto recommend_keep = false;  
+        auto recommend_keep = false;
         if (get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_OB_CALIB)
         {
             float health_1 = get_manager().get_health_1();
@@ -1370,7 +1370,7 @@ namespace rs2
         using namespace std;
         using namespace chrono;
 
-        if (update_state == RS2_CALIB_STATE_UVMAPPING_INPUT || 
+        if (update_state == RS2_CALIB_STATE_UVMAPPING_INPUT ||
             update_state == RS2_CALIB_STATE_FL_INPUT ||
             update_state == RS2_CALIB_STATE_GET_TARE_GROUND_TRUTH ||
             update_state == RS2_CALIB_STATE_GET_TARE_GROUND_TRUTH_IN_PROCESS ||
@@ -1582,7 +1582,7 @@ namespace rs2
                 get_manager().action = on_chip_calib_manager::RS2_CALIB_ACTION_TARE_CALIB;
                 update_state = update_state_prev;
                 if (get_manager()._sub->s->supports(RS2_OPTION_EMITTER_ENABLED))
-                    get_manager()._sub->s->set_option(RS2_OPTION_EMITTER_ENABLED, get_manager().laser_status_prev);          
+                    get_manager()._sub->s->set_option(RS2_OPTION_EMITTER_ENABLED, get_manager().laser_status_prev);
             }
             else if (update_state == RS2_CALIB_STATE_GET_TARE_GROUND_TRUTH_FAILED)
             {
@@ -1828,7 +1828,7 @@ namespace rs2
                         ImGui::SetTooltip("%s", "check = adjust both sides, uncheck = adjust right side only");
                 }
 
-                float tmp_y = (get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_OB_CALIB ? 
+                float tmp_y = (get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_OB_CALIB ?
                     float(y + 45 + 3 * ImGui::GetTextLineHeightWithSpacing()) : float(y + 41 + 2 * ImGui::GetTextLineHeightWithSpacing()));
 
                 ImGui::SetCursorScreenPos({ float(x + 9), tmp_y });
@@ -1911,7 +1911,7 @@ namespace rs2
             {
                 if (get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_FL_CALIB
                     || get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_OB_CALIB)
-                {           
+                {
                     if (get_manager().retry_times < 3)
                     {
                         get_manager().restore_workspace([](std::function<void()> a){ a(); });
@@ -2545,7 +2545,7 @@ namespace rs2
     {
         get_manager().update_last_used();
 
-        if (!use_new_calib && get_manager().done()) 
+        if (!use_new_calib && get_manager().done())
             get_manager().apply_calib(false);
 
         get_manager().restore_workspace([](std::function<void()> a){ a(); });
@@ -2561,7 +2561,7 @@ namespace rs2
 
     void autocalib_notification_model::draw_expanded(ux_window& win, std::string& error_message)
     {
-        if (update_manager->started() && update_state == RS2_CALIB_STATE_INITIAL_PROMPT) 
+        if (update_manager->started() && update_state == RS2_CALIB_STATE_INITIAL_PROMPT)
             update_state = RS2_CALIB_STATE_CALIB_IN_PROCESS;
 
         auto flags = ImGuiWindowFlags_NoResize |

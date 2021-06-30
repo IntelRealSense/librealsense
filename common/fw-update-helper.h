@@ -28,7 +28,7 @@ namespace rs2
         std::shared_ptr<notifications_model> get_protected_notification_model() { return _not_model.lock(); };
 
     private:
-        void process_flow(std::function<void()> cleanup, 
+        void process_flow(std::function<void()> cleanup,
             invoker invoke) override;
         bool check_for(
             std::function<bool()> action, std::function<void()> cleanup,

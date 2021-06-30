@@ -99,7 +99,7 @@ namespace rs2
         class versions_db_manager
         {
         public:
-           
+
             explicit versions_db_manager(const std::string &url, const bool use_url_as_local_path = false, http::user_callback_func_type download_callback = http::user_callback_func_type())
                 : _dev_info_url(url), _local_source_file(use_url_as_local_path), _server_versions_vec(), _server_versions_loaded(false), _download_cb_func(download_callback) {};
 
@@ -138,7 +138,7 @@ namespace rs2
             void parse_versions_data(const std::stringstream &ver_data);
             bool get_version_data_common(const component_part_type component, const version& version, const std::string& req_field, std::string& out);
             bool is_device_name_equal(const std::string &str_from_db, const std::string &str_compared, bool allow_wildcard);
-            
+
 
             bool init();
             void build_schema(std::unordered_map<std::string, std::function<bool(const std::string&)>>& verifier);

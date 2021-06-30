@@ -22,7 +22,7 @@ void updates_model::draw(std::shared_ptr<notifications_model> not_model, ux_wind
     }
 
     const auto window_name = "Updates Window";
-     
+
     //Main window pop up only if essential updates exists
     if (updates_copy.size())
     {
@@ -86,7 +86,7 @@ void updates_model::draw(std::shared_ptr<notifications_model> not_model, ux_wind
             fw_update_needed = draw_firmware_section(not_model, window_name, update, positions, window, error_message);
 
         }
-        else 
+        else
         {
             ImGui::PushFont(window.get_large_font());
             ImGui::PushStyleColor(ImGuiCol_Text, white);
@@ -101,7 +101,7 @@ void updates_model::draw(std::shared_ptr<notifications_model> not_model, ux_wind
             ImGui::Text("%s", static_cast<const char *>(textual_icons::lock));
             ImGui::SetWindowFontScale(1.);
             ImGui::PopStyleColor();
-            
+
 
         }
         // ===========================================================================
@@ -232,7 +232,7 @@ bool updates_model::draw_software_section(const char * window_name, update_profi
                 if (it != software_updates.end())
                     software_updates.erase(it);
             }
-            
+
             if (essential_sw_update_needed || recommended_sw_update_needed)
             {
                 selected_software_update = software_updates[selected_software_update_index];
@@ -561,8 +561,8 @@ bool updates_model::draw_firmware_section(std::shared_ptr<notifications_model> n
     auto current_fw_ver_str = std::string(selected_profile.profile.firmware_version);
     ImGui::Text("%s", current_fw_ver_str.c_str());
 
-    
-    
+
+
     if (essential_fw_update_needed)
     {
         ImGui::SameLine();

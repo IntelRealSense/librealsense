@@ -115,7 +115,7 @@ namespace rs2
         {
             x = clamp((x - min) / (max - min), 0.0, 1.0);
         }
-        
+
         return x*x*(3 - 2 * x);
     }
 
@@ -276,7 +276,7 @@ namespace rs2
         operator float*() const
         {
             return (float*)&mat;
-        } 
+        }
 
         static matrix4 identity()
         {
@@ -841,7 +841,7 @@ namespace rs2
                 [](std::pair<clock::time_point, bool> pair) {
                 return pair.second;
             });
-            return size_t(trues) / (float)_measurements.size(); 
+            return size_t(trues) / (float)_measurements.size();
         }
 
         void reset()
@@ -964,7 +964,7 @@ namespace rs2
             {
                 if (!frame.is<gl::gpu_frame>())
                 {
-                    // Points can be uploaded as two different 
+                    // Points can be uploaded as two different
                     // formats: XYZ for verteces and UV for texture coordinates
                     if (prefered_format == RS2_FORMAT_XYZ32F)
                     {
@@ -1017,13 +1017,13 @@ namespace rs2
                                 if (!colorized_frame.is<gl::gpu_frame>())
                                 {
                                     data = colorized_frame.get_data();
-                                    
+
                                     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB,
                                         colorized_frame.get_width(),
                                         colorized_frame.get_height(),
                                         0, GL_RGB, GL_UNSIGNED_BYTE,
                                         data);
-                                    
+
                                 }
                                 rendered_frame = colorized_frame;
                             }
@@ -1351,7 +1351,7 @@ namespace rs2
             glLineWidth(1);
             glBegin(GL_LINES);
             glColor4f(0.1f, 0.1f, 0.1f, 0.8f);
-            
+
             for (float x = -1.5; x < 1.5; x += step)
             {
                 for (float y = -1.5; y < 1.5; y += step)
@@ -1647,7 +1647,7 @@ namespace rs2
     }
 
     // convert 3d points into 2d viewport coordinates
-    inline	float2 translate_3d_to_2d(float3 point, matrix4 p, matrix4 v, matrix4 f, int32_t vp[4])
+    inline float2 translate_3d_to_2d(float3 point, matrix4 p, matrix4 v, matrix4 f, int32_t vp[4])
     {
         //
         // retrieve model view and projection matrix
@@ -1669,9 +1669,9 @@ namespace rs2
         // when use matrix4 in glUniformMatrix4fv, transpose option is GL_FALSE so data is passed into
         // shader as column major order
         //
-        //			rs2::matrix4 p = get_matrix(RS2_GL_MATRIX_PROJECTION);
-        //			rs2::matrix4 v = get_matrix(RS2_GL_MATRIX_CAMERA);
-        //			rs2::matrix4 f = get_matrix(RS2_GL_MATRIX_TRANSFORMATION);
+        //          rs2::matrix4 p = get_matrix(RS2_GL_MATRIX_PROJECTION);
+        //          rs2::matrix4 v = get_matrix(RS2_GL_MATRIX_CAMERA);
+        //          rs2::matrix4 f = get_matrix(RS2_GL_MATRIX_TRANSFORMATION);
 
         // matrix * operation in column major, transpose matrix
         //   0   4    8   12
