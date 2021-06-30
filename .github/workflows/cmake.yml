@@ -9,17 +9,34 @@ on:
 env:
   # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
   BUILD_TYPE: Release
+  LRS_BUILD_CONFIG: Debug
+  LRS_RUN_CONFIG: Release
 
 jobs:
-  build:
+  
+  Linux Testing - cpp:
+      runs-on: ubuntu-18.04      
+      env: 
+        RS_CPP_TEST: true
+      steps:
+      - uses: actions/checkout@v2
+      
+      - name: Build
+        run: | 
+          cmake .. -DBUILD_UNIT_TESTS=false -DBUILD_LEGACY_LIVE_TEST=true -DBUILD_EXAMPLES=false -DBUILD_TOOLS=false -DBUILD_WITH_TM2=false -DCHECK_FOR_UPDATES=true
+          cmake --build . --config ${{env.LRS_RUN_CONFIG}} -- -j4
+          ./unit-tests/live-test -d yes -i [software-device]
+          for i in ./records/single_cam/*; do ./unit-tests/live-test -d yes -i ~[multicam] from "$i"; done
+          for i in ./records/multi_cam/*; do ./unit-tests/live-test -d yes -i [multicam] from "$i"; done
+  
+  
+  
+  Windows - C#:
     # The CMake configure and build commands are platform agnostic and should work equally
     # well on Windows or Mac.  You can convert this to a matrix build if you need
     # cross-platform coverage.
     # See: https://docs.github.com/en/free-pro-team@latest/actions/learn-github-actions/managing-complex-workflows#using-a-build-matrix
-    runs-on: windows-2016
-    env:
-      LRS_BUILD_CONFIG: Debug
-      LRS_RUN_CONFIG: Release
+    runs-on: windows-2016   
       
     steps:
     - uses: actions/checkout@v2
@@ -38,6 +55,4 @@ jobs:
     - name: Build
       # Build your program with the given configuration
       run: |
-        cmake --build . --config ${{env.LRS_BUILD_CONFIG}} -- -m
-        ls libcurl\src\libcurl-build\lib\${{env.LRS_BUILD_CONFIG}}
-      
+        cmake --build . --config ${{env.LRS_BUILD_CONFIG}} -- -m     
