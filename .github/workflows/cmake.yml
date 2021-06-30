@@ -38,6 +38,6 @@ jobs:
     - name: Build
       # Build your program with the given configuration
       run: |
-        cmake --build . --config $LRS_BUILD_CONFIG -- -m
+        cmake --build . --config ${env.LRS_BUILD_CONFIG} -- -m
         ls ${env.LRS_BUILD_CONFIG}
       
