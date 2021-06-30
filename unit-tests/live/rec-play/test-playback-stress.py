@@ -10,11 +10,11 @@ from rspy.timer import Timer
 
 file_name = os.path.join( repo.build, 'unit-tests', 'recordings', 'all_combinations_depth_color.bag' )
 log.d( 'deadlock file:', file_name )
-frames_in_bag_file = 32
+frames_in_bag_file = 64
 
 frames_count = 0
 
-def frame_callback():
+def frame_callback( f ):
     global frames_count
     frames_count += 1
 
