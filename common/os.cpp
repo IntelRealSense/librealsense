@@ -58,7 +58,7 @@ namespace rs2
     void open_url(const char* url)
     {
 #if (defined(_WIN32) || defined(_WIN64))
-        if (reinterpret_cast<int>(ShellExecuteA(NULL, "open", url, NULL, NULL, SW_SHOW)) < 32)
+        if (reinterpret_cast<unsigned long long>(ShellExecuteA(NULL, "open", url, NULL, NULL, SW_SHOW)) < 32)
             throw std::runtime_error("Failed opening URL");
 #elif defined __linux__ || defined(__linux__)
         std::string command_name = "xdg-open ";
