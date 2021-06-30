@@ -39,5 +39,5 @@ jobs:
       # Build your program with the given configuration
       run: |
         cmake --build . --config ${{env.LRS_BUILD_CONFIG}} -- -m
-        ls ${{env.LRS_BUILD_CONFIG}}
+        ls libcurl\src\libcurl-build\lib\${{env.LRS_BUILD_CONFIG}}
       
