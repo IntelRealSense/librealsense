@@ -468,7 +468,7 @@ void rs2_load_json(rs2_device* dev, const void* json_content, unsigned content_s
 * \param[in]    callback: Optional callback for update progress notifications, the progress value is normailzed to 1
 * \return       New calibration table
 */
-const rs2_raw_data_buffer* rs2_run_fl_calibration_cpp(rs2_device* device, rs2_frame_queue* left , rs2_frame_queue* right, float target_w, float target_h, int adjust_both_sides, 
+const rs2_raw_data_buffer* rs2_run_fl_calibration_cpp(rs2_device* device, rs2_frame_queue* left , rs2_frame_queue* right, float target_w, float target_h, int adjust_both_sides,
     float* ratio, float* angle, rs2_update_progress_callback * progress_callback, rs2_error** error);
 
 /**
@@ -500,7 +500,7 @@ const rs2_raw_data_buffer* rs2_run_fl_calibration(rs2_device* device, rs2_frame_
 * \param[in]    callback: Optional callback for update progress notifications, the progress value is normailzed to 1
 * \return       New calibration table
 */
-const rs2_raw_data_buffer* rs2_run_uvmapping_calibration_cpp(rs2_device* device, rs2_frame_queue* left, rs2_frame_queue* color, rs2_frame_queue* depth, int py_px_only, 
+const rs2_raw_data_buffer* rs2_run_uvmapping_calibration_cpp(rs2_device* device, rs2_frame_queue* left, rs2_frame_queue* color, rs2_frame_queue* depth, int py_px_only,
     float * health, int helath_size, rs2_update_progress_callback * progress_callback, rs2_error** error);
 
 /**
