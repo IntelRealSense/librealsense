@@ -6,6 +6,7 @@
 
 import pyrealsense2 as rs, os, time
 from rspy import log, test, repo
+from rspy.timer import Timer
 
 file_name = os.path.join( repo.build, 'unit-tests', 'recordings', 'all_combinations_depth_color.bag' )
 log.d( 'deadlock file:', file_name )
@@ -22,19 +23,20 @@ def frame_callback():
 test.start( "Playback stress test" )
 
 log.d( "Playing back: " + file_name )
+wait_for_stop_timer = Timer(10)
 for i in range(250):
     try:
         log.d("Starting iteration # " , i)
         ctx = rs.context()
         dev = ctx.load_device( file_name )
-        dev.set_real_time( True )
+        dev.set_real_time( False )
         sensors = dev.query_sensors()
         frames_count = 0
         for sensor in sensors:
             sensor.open( sensor.get_stream_profiles() )
             
         for sensor in sensors:
-            sensor.start( frame_callback() )
+            sensor.start( frame_callback )
     
         while( True ):
             if dev.current_status() != rs.playback_status.playing:
@@ -44,8 +46,12 @@ for i in range(250):
                 break
         
         test.check_equal( dev.current_status(), rs.playback_status.playing )
-    
-        while( True ):
+        
+        wait_for_stop_timer.start()
+        
+        # We allow 10 seconds to each iteration to verify the playback_stopped event.
+        while( not wait_for_stop_timer.has_expired() ):
+        
             status = dev.current_status()
             
             if status == rs.playback_status.stopped:
@@ -55,6 +61,9 @@ for i in range(250):
                 log.d( "status =", status )
                 
             time.sleep( 1 )
+            
+        test.check(not wait_for_stop_timer.has_expired())
+        
         for sensor in sensors:
             sensor.stop()
             sensor.close()
