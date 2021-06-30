@@ -6,6 +6,7 @@
 #include "auto-calibrated-device.h"
 #include "../core/advanced_mode.h"
 
+
 namespace librealsense
 {
     class auto_calibrated : public auto_calibrated_interface
@@ -21,7 +22,8 @@ namespace librealsense
         std::vector<uint8_t> run_fl_calibration(rs2_frame_queue* left, rs2_frame_queue* right, float target_w, float target_h, 
             int adjust_both_sides, float* ratio, float* angle, update_progress_callback_ptr progress_callback) override;
         std::vector<uint8_t> run_uvmapping_calibration(rs2_frame_queue* left, rs2_frame_queue* color, rs2_frame_queue* depth, int py_px_only,
-            float* health, int helath_size, update_progress_callback_ptr progress_callback) override;
+            float* health, int health_size, update_progress_callback_ptr progress_callback) override;
+        float distance_to_target(rs2_frame_queue* queue, float target_width, float target_height, update_progress_callback_ptr progress_callback) override;
 
     private:
         std::vector<uint8_t> get_calibration_results(float* health = nullptr) const;
@@ -41,5 +43,4 @@ namespace librealsense
         std::vector<uint8_t> _curr_calibration;
         std::shared_ptr<hw_monitor>& _hw_monitor;
     };
-
 }

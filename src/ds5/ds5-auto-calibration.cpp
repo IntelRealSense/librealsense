@@ -7,6 +7,7 @@
 #include "ds5-thermal-monitor.h"
 #include "ds5-auto-calibration.h"
 #include "librealsense2/rsutil.h"
+#include "../algo.h"
 
 namespace librealsense
 {
@@ -1274,7 +1275,7 @@ namespace librealsense
     }
 
     std::vector<uint8_t> auto_calibrated::run_uvmapping_calibration(rs2_frame_queue* left, rs2_frame_queue* color, rs2_frame_queue* depth, int py_px_only,
-        float* health, int helath_size, update_progress_callback_ptr progress_callback)
+        float* health, int health_size, update_progress_callback_ptr progress_callback)
     {
         float left_dots_x[4];
         float left_dots_y[4];
@@ -1452,4 +1453,99 @@ namespace librealsense
 
         return ret;
     }
+
+    float auto_calibrated::distance_to_target(rs2_frame_queue* queue, float target_w, float target_h, update_progress_callback_ptr progress_callback)
+    {
+        try
+        {
+            rect_calculator gt_calculator(true);
+            bool created = false;
+
+            int counter1 = 0;
+
+            float rect_sides[4] = { 0 };
+            float target_fw = 0;
+            float target_fh = 0;
+
+            float gt_distance = -1.f;
+
+            int ret = 0;
+            int progress = 0;
+            rs2_error* e = nullptr;
+            rs2_frame* f = nullptr;
+            while (rs2_poll_for_frame(queue, &f, &e))
+            {
+                rs2::frame ff(f);
+                if (ff.get_data())
+                {
+                    if (!created)
+                    {
+                        auto vsp = ff.get_profile().as<rs2::video_stream_profile>();
+
+                        target_fw = vsp.get_intrinsics().fx * target_w;
+                        target_fh = vsp.get_intrinsics().fy * target_h;
+                        created = true;
+                    }
+
+                    ret = gt_calculator.calculate(f, rect_sides);
+                }
+
+                rs2_release_frame(f);
+
+                if (progress_callback && (progress < 100))
+                    progress_callback->on_update_progress(static_cast<float>(progress));
+
+            //if (ret == 0)
+            //    ++counter;
+            //else if (ret == 1)
+            //    //_progress += step;
+            //else
+                if (ret == 2)
+                {
+                    //_progress += step;
+                    break;
+                }
+            }
+
+            if (ret != 2)
+                //fail("Please adjust the camera position \nand make sure the specific target is \nin the middle of the camera image!");
+            else
+            {
+                float gt[4] = { 0 };
+
+                if (rect_sides[0] > 0)
+                    gt[0] = target_fw / rect_sides[0];
+
+                if (rect_sides[1] > 0)
+                    gt[1] = target_fw / rect_sides[1];
+
+                if (rect_sides[2] > 0)
+                    gt[2] = target_fh / rect_sides[2];
+
+                if (rect_sides[3] > 0)
+                    gt[3] = target_fh / rect_sides[3];
+
+                if (gt[0] <= 0.1f || gt[1] <= 0.1f || gt[2] <= 0.1f || gt[3] <= 0.1f)
+                    fail("Bad target rectangle side sizes returned!");
+
+                ground_truth = 0.0;
+                for (int i = 0; i < 4; ++i)
+                    ground_truth += gt[i];
+                ground_truth /= 4.0;
+
+                config_file::instance().set(configurations::viewer::ground_truth_r, ground_truth);
+            }
+
+            return gt_distance;
+        }
+        catch (const std::runtime_error& error)
+        {
+            fail(error.what());
+        }
+        catch (...)
+        {
+            fail("Getting ground truth failed!");
+        }
+    }
+
 }

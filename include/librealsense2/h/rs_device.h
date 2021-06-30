@@ -456,10 +456,10 @@ rs2_raw_data_buffer* rs2_serialize_json(rs2_device* dev, rs2_error** error);
 void rs2_load_json(rs2_device* dev, const void* json_content, unsigned content_size, rs2_error** error);
 
 /**
-*  Target based focal length calibration.
+*  Target-based focal length calibration.
 * \param[in]    device: device to calibrate
-* \param[in]    left: the frame queue for 25 left frames with resoluton of  1289x720.
-* \param[in]    right: the frame queue for 25 right frames with resoluton of  1289x720, which are captured at the same time of left frame queue
+* \param[in]    left: the frame queue for 25 left frames with resoluton of  1280x720.
+* \param[in]    right: the frame queue for 25 right frames with resoluton of  1280x720, which are captured at the same time of left frame queue
 * \param[in]    target_w: the rectangle width in mm on the target
 * \param[in]    target_h: the rectangle height in mm on the target
 * \param[in]    adjust_both_sides: 1 for adjusting both left and right camera calibration tables, and 0 for adjusting right camera calibraion table only
@@ -472,10 +472,10 @@ const rs2_raw_data_buffer* rs2_run_fl_calibration_cpp(rs2_device* device, rs2_fr
     float* ratio, float* angle, rs2_update_progress_callback * progress_callback, rs2_error** error);
 
 /**
-*  Target based focal length calibration.
+*  Target-based focal length calibration.
 * \param[in]    device: device to calibrate
-* \param[in]    left: the frame queue for 25 left frames with resoluton of 1289x720 and the target in the middle od 320x240 region of interest.
-* \param[in]    right: the frame queue for 25 right frames with resoluton of 1289x720 and the target in the middle od 320x240 region of interest, which are captured at the same time of left frame queue
+* \param[in]    left: the frame queue for 25 left frames with resoluton of 1280x720 and the target in the middle od 320x240 region of interest.
+* \param[in]    right: the frame queue for 25 right frames with resoluton of 1280x720 and the target in the middle od 320x240 region of interest, which are captured at the same time of left frame queue
 * \param[in]    target_w: the rectangle width in mm on the target
 * \param[in]    target_h: the rectangle height in mm on the target
 * \param[in]    adjust_both_sides: 1 for adjusting both left and right camera calibration tables, and 0 for adjusting right camera calibraion table only
@@ -491,9 +491,9 @@ const rs2_raw_data_buffer* rs2_run_fl_calibration(rs2_device* device, rs2_frame_
 /**
 *  UV-Mapping calibration.
 * \param[in]    device: device to calibrate
-* \param[in]    left: the frame queue for 25 left frames with resoluton of 1289x720 and the target in the middle od 320x240 region of interest.
-* \param[in]    color: the frame queue for 25 rgb frames with resoluton of 1289x720 and the target in the middle od 320x240 region of interest, which are captured at the same time of left frame queue
-* \param[in]    depth: the frame queue for 25 depth frames with resoluton of 1289x720, which are captured at the same time of left frame queue
+* \param[in]    left: the frame queue for 25 left frames with resoluton of 1280x720 and the target in the middle od 320x240 region of interest.
+* \param[in]    color: the frame queue for 25 rgb frames with resoluton of 1280x720 and the target in the middle od 320x240 region of interest, which are captured at the same time of left frame queue
+* \param[in]    depth: the frame queue for 25 depth frames with resoluton of 1280x720, which are captured at the same time of left frame queue
 * \param[in]    py_px_only: 1 for calibrating color camera py and px only, 1 for calibrating color camera py, px, fy, and fx.
 * \param[out]   health: The four health check numbers int the oorder of px, py, fx, fy for the calibration
 * \param[in]    health_size: number of health check numbers, which is 4 by default
@@ -501,14 +501,14 @@ const rs2_raw_data_buffer* rs2_run_fl_calibration(rs2_device* device, rs2_frame_
 * \return       New calibration table
 */
 const rs2_raw_data_buffer* rs2_run_uvmapping_calibration_cpp(rs2_device* device, rs2_frame_queue* left, rs2_frame_queue* color, rs2_frame_queue* depth, int py_px_only,
-    float * health, int helath_size, rs2_update_progress_callback * progress_callback, rs2_error** error);
+    float * health, int health_size, rs2_update_progress_callback * progress_callback, rs2_error** error);
 
 /**
 *  UV-Mapping calibration.
 * \param[in]    device: device to calibrate
-* \param[in]    left: the frame queue for 25 left frames with resoluton of 1289x720 and the target in the middle od 320x240 region of interest.
-* \param[in]    color: the frame queue for 25 rgb frames with resoluton of 1289x720 and the target in the middle od 320x240 region of interest, which are captured at the same time of left frame queue
-* \param[in]    depth: the frame queue for 25 depth frames with resoluton of 1289x720, which are captured at the same time of left frame queue
+* \param[in]    left: the frame queue for 25 left frames with resoluton of 1280x720 and the target in the middle od 320x240 region of interest.
+* \param[in]    color: the frame queue for 25 rgb frames with resoluton of 1280x720 and the target in the middle od 320x240 region of interest, which are captured at the same time of left frame queue
+* \param[in]    depth: the frame queue for 25 depth frames with resoluton of 1280x720, which are captured at the same time of left frame queue
 * \param[in]    py_px_only: 1 for calibrating color camera py and px only, 1 for calibrating color camera py, px, fy, and fx.
 * \param[out]   health: The four health check numbers int the oorder of px, py, fx, fy for the calibration
 * \param[in]    health_size: number of health check numbers, which is 4 by default
@@ -517,7 +517,15 @@ const rs2_raw_data_buffer* rs2_run_uvmapping_calibration_cpp(rs2_device* device,
 * \return       New calibration table
 */
 const rs2_raw_data_buffer* rs2_run_uvmapping_calibration(rs2_device* device, rs2_frame_queue* left, rs2_frame_queue* color, rs2_frame_queue* depth, int py_px_only,
-    float* health, int helath_size, rs2_update_progress_callback_ptr callback, void* client_data, rs2_error** error);
+    float* health, int health_size, rs2_update_progress_callback_ptr callback, void* client_data, rs2_error** error);
+
+/**
+*  Calculate Ground Truth distance to target
+* \param[in]    queue: A frame queue of raw images used to calculate and extract the ground truth distance
+* \return       Calculated ground truth distance in millimeter, or negative number if failed
+*/
+float rs2_distance_to_target(rs2_device* device, rs2_frame_queue* queue,
+    float target_width, float target_height, rs2_update_progress_callback_ptr callback, rs2_error** error);
 
 #ifdef __cplusplus
 }

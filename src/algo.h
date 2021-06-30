@@ -245,4 +245,33 @@ namespace librealsense
         int _full_width;
         int _full_height;
     };
+
+    // Utility class for calculating the rectangle sides on the specific target
+    class rect_calculator
+    {
+    public:
+        rect_calculator(bool roi = false) : _roi(roi) {}
+        virtual ~rect_calculator() {}
+
+        // return 0 if the target is not in the center, 1 if found, 2 if found and the rectangle sides are updated
+        int calculate(const rs2_frame* frame_ref, float rect_sides[4]);
+
+    public:
+
+
+    private:
+        void calculate_rect_sides(float rect_sides[4]);
+
+        static const int _frame_num = 25;
+        int _width = 0;
+        int _height = 0;
+
+        float _rec_sides[_frame_num][4];
+        int _rec_idx = 0;
+        int _rec_num = 0;
+        const int _reset_limit = 10;
+
+        bool _roi = false;
+    };
+
 }

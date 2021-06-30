@@ -380,6 +380,7 @@ EXPORTS
     rs2_run_fl_calibration
     rs2_run_uvmapping_calibration_cpp
     rs2_run_uvmapping_calibration
+    rs2_distance_to_target
 
     rs2_create_fw_log_message
     rs2_delete_fw_log_message
