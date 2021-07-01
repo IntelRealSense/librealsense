@@ -359,7 +359,7 @@ namespace rs2
         ImGui::PopFont();
         hovered = hovered || ImGui::IsItemHovered();
 
-        if (hovered && !disabled)
+        if (hovered)
         {
             win.link_hovered();
             ImGui::SetTooltip("%s", description);
@@ -717,7 +717,7 @@ namespace rs2
         // -------------------- Measure ----------------
 
         std::string measure_tooltip = "Measure distance between points";
-        if (!glsl_available) measure_tooltip += "\nRequires GLSL acceleration!";
+        if (!glsl_available) measure_tooltip += "\nRequires GLSL acceleration! \nEnable 2 checkboxes in Settings - Performance:  \n- Use GLSL for Rendering \n- Use GLSL for Processing ";
         if (_measurements.is_enabled())
         {
             bool active = true;
