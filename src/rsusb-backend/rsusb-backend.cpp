@@ -34,7 +34,7 @@ namespace librealsense
             LOG_DEBUG("Creating UVC Device from path: " << info.device_path.c_str());
             auto dev = create_rsuvc_device(info);
             if (!dev)
-                return nullptr;
+                throw std::runtime_error("Unable to create UVC device");
             return std::make_shared<retry_controls_work_around>(dev);
         }
 
