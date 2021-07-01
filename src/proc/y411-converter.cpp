@@ -26,23 +26,28 @@ namespace librealsense
 #undef clamp
     }
 
-    // The bytes alignment on y411:
-    // Y is luminance and U,V are chrome
-    // each U,V are duplicated for 4 pixels
+    // The bytes alignment on y411: 
+    // Y is luminance and U,V are chrome 
+    // Each 4 pixels share a single U,V 
+    // 
+    // So, for a source image of pixels numbered: 
+    // P0 P1 P4 P5 P8 P9 ... 
+    // P2 P3 P6 P7 P10 P11 ... 
+    // The encoding takes: 
+    // [y0 u0-3 v0-3] [y1 u0-3 v0-3] [y4 u4-7 v4-7] [y5 u4-7 v4-7] [y8 u8-11 v8-11] [y9 u8-11 v8-11] 
+    // [y2 u0-3 v0-3] [y3 u0-3 v0-3] [y6 u4-7 v4-7] [y7 u4-7 v4-7] [y10 u8-11 v8-11] [y11 u8-11 v8-11] 
+    // And arranges them as sequential bytes: 
+    // [u0-3 y0 y1 v0-3 y2 y3] [u4-7 y4 y5 v4-7 y6 y7] [u8-11 y8 y9 v8-11 y10 y11] 
+    // So decoding happens in reverse. 
+    // 
+    // The destination bytes we write are in RGB8. 
+    // 
+    // See https://www.fourcc.org/pixel-format/yuv-y411/ 
     //
-    // [u1 y1 y2 v1 y3 y4]    [u2 y5 y6 v2 y7 y8]   [u3 y9 y10 v3 y11 y12]
-    //
-    // Before converting to RGB we unpack the y411 to yuv and then convert it to RBG
-    // After the transformation to yuv the bytes alignment looks like this:
-    //
-    // [y1 u1 v1][y2 u1 v1]     [y5 u2 v2][y6 u2 v2]    [y9 u3 v3][y10 u3 v3]
-    // [y3 u1 v1][y4 u1 v1]     [y7 u2 v2][y7 u2 v2]    [y11 u3 v3][y12 u3 v3]
-    //
-    //https://www.fourcc.org/pixel-format/yuv-y411/
 
-    void inline unpack_y411_sse(byte * const dest, const byte * s, int w, int h, int actual_size)
-    {
 #if defined __SSSE3__ && ! defined ANDROID
+    void unpack_y411_sse(byte * const dest, const byte * const s, int w, int h, int actual_size)
+    {
         auto n = w * h;
         // working each iteration on 8 y411 pixels, and extract 4 rgb pixels from each one
         // so we get 32 rgb pixels
@@ -253,36 +258,35 @@ namespace librealsense
             _mm_storeu_si128(&dst[(line*2  + 1) * reg_num_on_line + j * 3 + 1], _mm_alignr_epi8(rgb2_l1, rgb1_l1, 8));
             _mm_storeu_si128(&dst[(line*2  + 1) * reg_num_on_line + j * 3 + 2], _mm_alignr_epi8(rgb3_l1, rgb2_l1, 12));
         }
-#endif
     }
-    void unpack_y411_native(byte * const dest, const byte * s, int w, int h, int actual_size)
-    {
-        auto out = dest;
+#endif
 
+    void unpack_y411_native(byte * const dest, const byte * const s, int w, int h, int actual_size)
+    {
         auto index_source = 0;
         for (auto i = 0; i < h; i += 2)
         {
             for (auto j = 0; j < w; j += 2)
             {
                 auto y411_pix = &s[index_source];
-                auto l0_u0 = y411_pix[0];
+                auto u = y411_pix[0];
                 auto l0_y0 = y411_pix[1];
                 auto l0_y1 = y411_pix[2];
-                auto l0_v0 = y411_pix[3];
+                auto v = y411_pix[3];
                 auto l1_y0 = y411_pix[4];
                 auto l1_y1 = y411_pix[5];
 
-                byte yuv0_0[3] = { l0_y0, l0_u0, l0_v0 };
-                convert_yuv_to_rgb(yuv0_0, &out[i * w * 3 + j * 3]);
+                byte yuv0_0[3] = { l0_y0, u, v };
+                convert_yuv_to_rgb(yuv0_0, &dest[i * w * 3 + j * 3]);
 
-                byte yuv0_1[3] = { l0_y1, l0_u0, l0_v0 };
-                convert_yuv_to_rgb(yuv0_1, &out[i * w * 3 + j * 3 + 3]);
+                byte yuv0_1[3] = { l0_y1, u, v };
+                convert_yuv_to_rgb(yuv0_1, &dest[i * w * 3 + j * 3 + 3]);
 
-                byte yuv1_0[3] = { l1_y0, l0_u0, l0_v0 };
-                convert_yuv_to_rgb(yuv1_0, &out[(i + 1) * w * 3 + j * 3]);
+                byte yuv1_0[3] = { l1_y0, u, v };
+                convert_yuv_to_rgb(yuv1_0, &dest[(i + 1) * w * 3 + j * 3]);
 
-                byte yuv1_1[3] = { l1_y1, l0_u0, l0_v0 };
-                convert_yuv_to_rgb(yuv1_1, &out[(i + 1) * w * 3 + j * 3 + 3]);
+                byte yuv1_1[3] = { l1_y1, u, v };
+                convert_yuv_to_rgb(yuv1_1, &dest[(i + 1) * w * 3 + j * 3 + 3]);
 
                 index_source += 6;
             }
@@ -290,9 +294,10 @@ namespace librealsense
     }
 
     // This function unpacks Y411 format into RGB8 using SSE if defined
-    void unpack_y411( byte * const dest[], const byte * s, int w, int h, int actual_size )
+    // The size of the frame must be bigger than 4 pixels and product of 32
+    void unpack_y411( byte * const dest[], const byte * const s, int w, int h, int actual_size )
     {
-#if defined __SSSE3__
+#if defined __SSSE3__ && ! defined ANDROID
         unpack_y411_sse(dest[0], s, w, h, actual_size);
 #else
         unpack_y411_native(dest[0], s, w, h, actual_size);

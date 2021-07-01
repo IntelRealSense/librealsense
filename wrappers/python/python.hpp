@@ -149,7 +149,7 @@ MAP_FMT_TO_TYPE(RS2_FORMAT_Y8I, uint8_t);
 MAP_FMT_TO_TYPE(RS2_FORMAT_INVI, uint8_t);
 //MAP_FMT_TO_TYPE(RS2_FORMAT_W10, );
 MAP_FMT_TO_TYPE(RS2_FORMAT_FG, uint16_t);
-//MAP_FMT_TO_TYPE(RS2_FORMAT_Y411, uint16_t);
+//MAP_FMT_TO_TYPE(RS2_FORMAT_Y411, ); // RS2_FORMAT_Y411 is 12 bit per pixel and don't fit to any type
 template <rs2_format FMT> struct itemsize {
     static constexpr size_t func() { return sizeof(typename FmtToType<FMT>::type); }
 };

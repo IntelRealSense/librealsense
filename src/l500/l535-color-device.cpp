@@ -1,7 +1,7 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2018 Intel Corporation. All Rights Reserved.
 
-#include "l535-color.h"
+#include "l535-color-device.h"
 #include "proc/y411-converter.h"
 
 using librealsense::ivcam2::l535::color_device;

@@ -3989,12 +3989,12 @@ const format = {
   * String literal of <code>'FG'</code>.
   * <br>16-bit per-pixel frame grabber format.
   */
-  format_FG: 'FG',
+  FORMAT_FG: 'FG',
   /**
   * String literal of <code>'Y411'</code>.
   * <br>12-bit per-pixel. 6 pixel data stream taking 4 bytes.
   */
-  format_Y411: 'Y411',
+  FORMAT_Y411: 'Y411',
   /**
    * When passed to enable stream, librealsense will try to provide best suited
    * format. <br>Equivalent to its lowercase counterpart.
@@ -4146,13 +4146,13 @@ const format = {
   */
   FORMAT_FG: RS2.RS2_FORMAT_FG,
   /**
-   * Number of enumeration values. Not a valid input: intended to be used in for-loops.
-   * <br>Equivalent to its lowercase counterpart.
-   * @type {Integer}
-   */
-   FORMAT_Y411: RS2.RS2_FORMAT_Y411,
-  /**
   * 12-bit per-pixel. 4 pixel data stream taking 6 bytes.
+  * @type {Integer}
+  */
+  FORMAT_Y411: RS2.RS2_FORMAT_Y411,
+  /**
+  * Number of enumeration values. Not a valid input: intended to be used in for-loops.
+  * <br>Equivalent to its lowercase counterpart.
   * @type {Integer}
   */
   FORMAT_COUNT: RS2.RS2_FORMAT_COUNT,

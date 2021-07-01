@@ -361,18 +361,7 @@ namespace librealsense
 
                     if (fh.frame)
                     {
-                        if (expected_size != sizeof(byte)*fr->data.size())
-                        {
-                            if (expected_size > sizeof(byte)*fr->data.size())
-                            {
-                                // if we got less data from what expected we drop the frame 
-                                LOG_DEBUG(expected_size << "expected size is bigger than " << sizeof(byte)*fr->data.size() << "actual size");
-                                return;
-                            }
-                            // TODO: remove the if when FW will fix the bug of wrong size reported-
-                            else if(req_profile ->get_format() != RS2_FORMAT_Y411)
-                                LOG_DEBUG(expected_size << "expected size is smaller than " << sizeof(byte)*fr->data.size() << "actual size");
-                        }
+                        assert(expected_size == sizeof(byte)*fr->data.size());
 
                         memcpy((void*)fh->get_frame_data(), fr->data.data(), expected_size);
                         auto&& video = (video_frame*)fh.frame;
