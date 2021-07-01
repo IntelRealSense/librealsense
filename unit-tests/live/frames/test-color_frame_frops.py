@@ -4,7 +4,7 @@
 #test:device D400*
 #test:device L500*
 #test:device SR300*
-#test:!nightly
+#test:donotrun
 
 import logging
 import time

@@ -1,8 +1,8 @@
 # License: Apache 2.0. See LICENSE file in root directory.
 # Copyright(c) 2021 Intel Corporation. All Rights Reserved.
 
-#test:device D400*
-#test:!nightly
+#test:device D455
+#test:donotrun
 
 import time
 import threading
@@ -10,7 +10,7 @@ from queue import Queue
 from rspy import test
 import pyrealsense2 as rs
 
-# Run RGB stream with 90 fps and find frame drops by checking HW timestamp of each frame
+# Run RGB stream in D455 with 90 fps and find frame drops by checking HW timestamp of each frame
 
 if __name__ == '__main__':
     ctx = rs.context()

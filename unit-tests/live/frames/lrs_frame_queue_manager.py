@@ -1,5 +1,6 @@
 # License: Apache 2.0. See LICENSE file in root directory.
 # Copyright(c) 2021 Intel Corporation. All Rights Reserved.
+# This library is part of validation testing wrapper
 
 import collections
 import csv
