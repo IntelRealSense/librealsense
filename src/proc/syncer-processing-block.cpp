@@ -83,4 +83,12 @@ namespace librealsense
         set_processing_callback(std::shared_ptr<rs2_frame_processor_callback>(
             new internal_frame_processor_callback<decltype(f)>(f)));
     }
+
+    // Stopping the syncer means no more frames will be enqueued, and any existing frames
+    // pending dispatch will be lost!
+    void syncer_process_unit::stop()
+    {
+        _matcher->stop();
+    }
 }
+

@@ -36,14 +36,14 @@ public:
 
     // Enqueue an item onto the queue.
     // If the queue grows beyond capacity, the front will be removed, losing whatever was there!
-    void enqueue(T&& item)
+    bool enqueue(T&& item)
     {
         std::unique_lock<std::mutex> lock(_mutex);
         if( ! _accepting )
         {
             if( _on_drop_callback )
                 _on_drop_callback( item );
-            return;
+            return false;
         }
 
         _queue.push_back(std::move(item));
@@ -59,6 +59,8 @@ public:
 
         // We pushed something -- let others know there's something to dequeue
         _deq_cv.notify_one();
+
+        return true;
     }
 
 
@@ -126,14 +128,23 @@ public:
         return true;
     }
 
-    bool peek(T** item)
+    template< class Fn >
+    bool peek( Fn fn ) const
     {
         std::lock_guard< std::mutex > lock( _mutex );
-
-        if (_queue.empty())
+        if( _queue.empty() )
             return false;
+        fn( _queue.front() );
+        return true;
+    }
 
-        *item = &_queue.front();
+    template< class Fn >
+    bool peek( Fn fn )
+    {
+        std::lock_guard< std::mutex > lock( _mutex );
+        if( _queue.empty() )
+            return false;
+        fn( _queue.front() );
         return true;
     }
 
@@ -190,12 +201,12 @@ class single_consumer_frame_queue
 public:
     single_consumer_frame_queue<T>(unsigned int cap = QUEUE_MAX_SIZE) : _queue(cap) {}
 
-    void enqueue(T&& item)
+    bool enqueue( T && item )
     {
-        if (item.is_blocking())
-            _queue.blocking_enqueue(std::move(item));
+        if( item.is_blocking() )
+            return _queue.blocking_enqueue( std::move( item ) );
         else
-            _queue.enqueue(std::move(item));
+            return _queue.enqueue( std::move( item ) );
     }
 
     bool dequeue(T* item, unsigned int timeout_ms)
@@ -203,14 +214,21 @@ public:
         return _queue.dequeue(item, timeout_ms);
     }
 
-    bool peek(T** item)
-    {
-        return _queue.peek(item);
-    }
-
     bool try_dequeue(T* item)
     {
         return _queue.try_dequeue(item);
+    }
+
+    template< class Fn >
+    bool peek( Fn fn ) const
+    {
+        return _queue.peek( fn );
+    }
+
+    template< class Fn >
+    bool peek( Fn fn )
+    {
+        return _queue.peek( fn );
     }
 
     void clear()
