@@ -23,7 +23,7 @@ extern "C"
 JNIEXPORT void JNICALL
 Java_com_intel_realsense_librealsense_Sensor_nOpenMultiple(JNIEnv *env, jclass type, jlong device_handle,
         jlongArray profiles_handle, int num_of_profiles) {
-    // retreiving profiles from array
+    // retrieving profiles from array
     jboolean isCopy = 0;
     jlong* profiles = env->GetLongArrayElements(profiles_handle, &isCopy);
     // building C++ profiles vector
