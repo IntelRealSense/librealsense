@@ -3989,12 +3989,12 @@ const format = {
   * String literal of <code>'FG'</code>.
   * <br>16-bit per-pixel frame grabber format.
   */
-  FORMAT_FG: 'FG',
+  format_FG: 'FG',
   /**
   * String literal of <code>'Y411'</code>.
   * <br>12-bit per-pixel. 6 pixel data stream taking 4 bytes.
   */
-  FORMAT_Y411: 'Y411',
+  format_Y411: 'Y411',
   /**
    * When passed to enable stream, librealsense will try to provide best suited
    * format. <br>Equivalent to its lowercase counterpart.
@@ -4206,19 +4206,19 @@ const format = {
       case this.FORMAT_6DOF:
         return this.format_6dof;
       case this.FORMAT_DISPARITY32:
-		return this.format_disparity32;
-	  case this.RS2_FORMAT_MJPEG:
-		return this.format_mjpeg;
-	  case this.RS2_FORMAT_Y8I:
-		return this.format_y8i;
-	  case this.RS2_FORMAT_Y12I:
-		return this.format_y12i;
-	  case this.RS2_FORMAT_INZI:
-		return this.format_inzi;
-	  case this.RS2_FORMAT_INVI:
-		return this.format_invi;
-	  case this.RS2_FORMAT_W10:
-		return this.format_w10;
+        return this.format_disparity32;
+      case this.RS2_FORMAT_MJPEG:
+        return this.format_mjpeg;
+      case this.RS2_FORMAT_Y8I:
+        return this.format_y8i;
+      case this.RS2_FORMAT_Y12I:
+        return this.format_y12i;
+      case this.RS2_FORMAT_INZI:
+        return this.format_inzi;
+      case this.RS2_FORMAT_INVI:
+        return this.format_invi;
+      case this.RS2_FORMAT_W10:
+        return this.format_w10;
       case this.RS2_FORMAT_FG:
         return this.format_FG;
       case this.RS2_FORMAT_Y411:
