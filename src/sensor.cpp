@@ -316,7 +316,7 @@ namespace librealsense
                     const auto&& fr = generate_frame_from_data(f, _timestamp_reader.get(), last_timestamp, last_frame_number, req_profile_base);
                     const auto&& requires_processing = true; // TODO - Ariel add option
                     const auto&& timestamp_domain = _timestamp_reader->get_frame_timestamp_domain(fr);
-                    auto&& bpp = get_image_bpp(req_profile_base->get_format());
+                    auto bpp = get_image_bpp( req_profile_base->get_format() );
                     auto&& frame_counter = fr->additional_data.frame_number;
                     auto&& timestamp = fr->additional_data.timestamp;
 
@@ -347,21 +347,25 @@ namespace librealsense
                     int width = vsp ? vsp->get_width() : 0;
                     int height = vsp ? vsp->get_height() : 0;
 
-                    assert((width * height) % 8 == 0);
+                    assert( (width * height) % 8 == 0 );
 
                     // TODO: remove when adding confidence format
-                    if (req_profile->get_stream_type() == RS2_STREAM_CONFIDENCE)
+                    if( req_profile->get_stream_type() == RS2_STREAM_CONFIDENCE )
                         bpp = 4;
 
                     auto expected_size = (width * height * bpp) >> 3;
-                    frame_holder fh = _source.alloc_frame(stream_to_frame_types(req_profile_base->get_stream_type()), expected_size, fr->additional_data, requires_processing);
+                    frame_holder fh = _source.alloc_frame(
+                        stream_to_frame_types( req_profile_base->get_stream_type() ),
+                        expected_size,
+                        fr->additional_data,
+                        requires_processing );
                     auto diff = environment::get_instance().get_time_service()->get_time() - system_time;
-                    if (diff >10 )
+                    if( diff > 10 )
                         LOG_DEBUG("!! Frame allocation took " << diff << " msec");
 
                     if (fh.frame)
                     {
-                        assert(expected_size == sizeof(byte)*fr->data.size());
+                        assert( expected_size == sizeof(byte) * fr->data.size() );
 
                         memcpy((void*)fh->get_frame_data(), fr->data.data(), expected_size);
                         auto&& video = (video_frame*)fh.frame;
