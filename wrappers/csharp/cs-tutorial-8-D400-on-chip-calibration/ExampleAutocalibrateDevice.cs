@@ -538,7 +538,7 @@ namespace Intel.RealSense
             {
                 res = Regex.IsMatch(dev.Info[CameraInfo.Name].ToString(), @"(D4\d\d)");
                 if (!res)
-                    Console.WriteLine($"{Environment.NewLine}The devices of D400 series can be calibrated only!");
+                    Console.WriteLine($"{Environment.NewLine}Device is not a D400 series model");
             }
             return res;
         }
