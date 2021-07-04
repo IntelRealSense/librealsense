@@ -20,8 +20,8 @@ This branch offers various [Jupyter notebooks](http://jupyter.org/) showcasing I
 
 | **Notebook** | **Description** |
 |----------|-------------|
-| [Device from Record](https://github.com/intelRealSense/librealsense/blob/quick_start/notebooks/quick_start_rosbag.ipynb) [![Binder](https://mybinder.org/badge.svg)](https://mybinder.org/v2/gh/intelRealSense/librealsense/quick_start?filepath=notebooks/quick_start_rosbag.ipynb) | Quick start for RealSense™ device from record |
-| [Live Camera](https://github.com/intelRealSense/librealsense/blob/quick_start/notebooks/quick_start_live.ipynb) [![Binder](https://mybinder.org/badge.svg)](https://mybinder.org/v2/gh/intelRealSense/librealsense/quick_start?filepath=notebooks/quick_start_live.ipynb) | Quick start for RealSense™ live cameras |
+| [Device from Record](https://github.com/intelRealSense/librealsense/blob/quick_start/notebooks/quick_start_rosbag.ipynb) [![Binder](https://mybinder.org/badge.svg)](https://mybinder.org/v2/gh/intelRealSense/librealsense/jupyter?filepath=notebooks/quick_start_rosbag.ipynb) | Quick start for RealSense™ device from record |
+| [Live Camera](https://github.com/intelRealSense/librealsense/blob/quick_start/notebooks/quick_start_live.ipynb) [![Binder](https://mybinder.org/badge.svg)](https://mybinder.org/v2/gh/intelRealSense/librealsense/jupyter?filepath=notebooks/quick_start_live.ipynb) | Quick start for RealSense™ live cameras |
 
 ## Issue Answers
 
