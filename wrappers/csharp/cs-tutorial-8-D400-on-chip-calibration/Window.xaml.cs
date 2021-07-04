@@ -57,15 +57,15 @@ namespace Intel.RealSense
                 using (var ctx = new Context())
                 {
                     var devices = ctx.QueryDevices();
-                    var dev = devices[0];
 
-                    if ( 1 != devices.Count || (!ExampleAutocalibrateDevice.IsTheDeviceD400Series(dev)) )
+                    if (( devices.Count != 1) || (!ExampleAutocalibrateDevice.IsTheDeviceD400Series(devices[0])))
                     {
                         Console.WriteLine("The tutorial {0} requires a single Realsense D400 device to run.\nFix the setup and rerun",
                             System.Diagnostics.Process.GetCurrentProcess().ProcessName);
-                        Environment.Exit(0);
+                        Environment.Exit(1);
                     }
 
+                    var dev = devices[0];
                     Console.WriteLine("Using device 0, an {0}", dev.Info[CameraInfo.Name]);
                     Console.WriteLine("    Serial number: {0}", dev.Info[CameraInfo.SerialNumber]);
                     Console.WriteLine("    Firmware version: {0}", dev.Info[CameraInfo.FirmwareVersion]);
