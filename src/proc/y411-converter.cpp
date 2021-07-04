@@ -26,18 +26,17 @@ namespace librealsense
 #undef clamp
     }
 
-    // The bytes alignment on y411: 
     // Y is luminance and U,V are chrome 
     // Each 4 pixels share a single U,V 
     // 
     // So, for a source image of pixels numbered: 
-    // P0 P1 P4 P5 P8 P9 ... 
-    // P2 P3 P6 P7 P10 P11 ... 
+    //     P0 P1 P4 P5 P8 P9 ... 
+    //     P2 P3 P6 P7 P10 P11 ... 
     // The encoding takes: 
-    // [y0 u0-3 v0-3] [y1 u0-3 v0-3] [y4 u4-7 v4-7] [y5 u4-7 v4-7] [y8 u8-11 v8-11] [y9 u8-11 v8-11] 
-    // [y2 u0-3 v0-3] [y3 u0-3 v0-3] [y6 u4-7 v4-7] [y7 u4-7 v4-7] [y10 u8-11 v8-11] [y11 u8-11 v8-11] 
+    //     [y0 u0-3 v0-3] [y1 u0-3 v0-3] [y4 u4-7 v4-7] [y5 u4-7 v4-7] [y8 u8-11 v8-11] [y9 u8-11 v8-11] 
+    //     [y2 u0-3 v0-3] [y3 u0-3 v0-3] [y6 u4-7 v4-7] [y7 u4-7 v4-7] [y10 u8-11 v8-11] [y11 u8-11 v8-11] 
     // And arranges them as sequential bytes: 
-    // [u0-3 y0 y1 v0-3 y2 y3] [u4-7 y4 y5 v4-7 y6 y7] [u8-11 y8 y9 v8-11 y10 y11] 
+    //     [u0-3 y0 y1 v0-3 y2 y3] [u4-7 y4 y5 v4-7 y6 y7] [u8-11 y8 y9 v8-11 y10 y11] 
     // So decoding happens in reverse. 
     // 
     // The destination bytes we write are in RGB8. 
@@ -269,6 +268,7 @@ namespace librealsense
             for (auto j = 0; j < w; j += 2)
             {
                 auto y411_pix = &s[index_source];
+                // [u y0 y1 v y2 y3]
                 auto u = y411_pix[0];
                 auto l0_y0 = y411_pix[1];
                 auto l0_y1 = y411_pix[2];
