@@ -19,6 +19,28 @@ Java_com_intel_realsense_librealsense_Sensor_nOpen(JNIEnv *env, jclass type, jlo
     handle_error(env, e);
 }
 
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_intel_realsense_librealsense_Sensor_nOpenMultiple(JNIEnv *env, jclass type, jlong device_handle,
+        jlongArray profiles_handle, int num_of_profiles) {
+    // retrieving profiles from array
+    jboolean isCopy = 0;
+    jlong* profiles = env->GetLongArrayElements(profiles_handle, &isCopy);
+    // building C++ profiles vector
+    rs2_error* e = nullptr;
+    std::vector<const rs2_stream_profile*> profs;
+    profs.reserve(num_of_profiles);
+    for (int i = 0; i < num_of_profiles; ++i)
+    {
+        auto p = reinterpret_cast<const rs2_stream_profile*>(profiles[i]);
+        profs.push_back(p);
+    }
+    // API call
+    rs2_open_multiple(reinterpret_cast<rs2_sensor *>(device_handle),
+                      profs.data(), static_cast<int>(num_of_profiles), &e);
+    handle_error(env, e);
+}
+
 static frame_callback_data sdata = {NULL, 0, JNI_FALSE, NULL, NULL};
 
 extern "C"
