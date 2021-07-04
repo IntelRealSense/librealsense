@@ -84,20 +84,29 @@ void updates_model::draw(std::shared_ptr<notifications_model> not_model, ux_wind
             // Draw Firmware update Pane
             // ===========================================================================
             fw_update_needed = draw_firmware_section(not_model, window_name, update, positions, window, error_message);
-
         }
         else 
         {
-            ImGui::PushFont(window.get_large_font());
             ImGui::PushStyleColor(ImGuiCol_Text, white);
-            ImGui::SetCursorPos({ positions.orig_pos.x, positions.y0 - 100 });
             ImGui::SetWindowFontScale(1.5);
-            ImGui::Text("%s","THE DEVICE HAS BEEN DISCONNECTED,");
-            ImGui::SetCursorPos({ positions.orig_pos.x - 100, positions.y0 - 70 });
-            ImGui::Text("%s", "PLEASE RECONNECT IT OR CLOSE THE UPDATES WINDOW.");
-            ImGui::PopFont();
-            ImGui::SetCursorPos({ positions.orig_pos.x + 230, positions.y0 });
+            std::string disconnected_text = "THE DEVICE HAS BEEN DISCONNECTED,";
+            auto disconnected_text_size = ImGui::CalcTextSize(disconnected_text.c_str());
+            auto disconnected_text_x_pixel = positions.w / 2 - disconnected_text_size.x / 2; // Align 2 center
+            auto vertical_padding = 100.f;
+            ImGui::SetCursorPos({ disconnected_text_x_pixel, vertical_padding });
+            ImGui::Text("%s", disconnected_text.c_str());
+
+            std::string reconnect_text = "PLEASE RECONNECT IT OR CLOSE THE UPDATES WINDOW.";
+            auto reconnect_text_size = ImGui::CalcTextSize(reconnect_text.c_str());
+            auto reconnect_text_x_pixel = positions.w / 2 - reconnect_text_size.x / 2; // Align 2 center
+            ImGui::SetCursorPosX(reconnect_text_x_pixel);
+            ImGui::Text("%s", reconnect_text.c_str());
+
             ImGui::SetWindowFontScale(3.);
+
+            auto disconnect_icon_size = ImGui::CalcTextSize(textual_icons::lock);
+            auto disconnect_icon_x_pixel = (positions.w / 2.f) -  (disconnect_icon_size.x / 2); // Align 2 center
+            ImGui::SetCursorPosX( disconnect_icon_x_pixel );
             ImGui::Text("%s", static_cast<const char *>(textual_icons::lock));
             ImGui::SetWindowFontScale(1.);
             ImGui::PopStyleColor();
@@ -711,7 +720,7 @@ bool updates_model::draw_firmware_section(std::shared_ptr<notifications_model> n
     }
     else if (_fw_update_state == fw_update_states::downloading)
     {
-        ImGui::SetCursorScreenPos({ pos.orig_pos.x + 150, pos.orig_pos.y + pos.h - 95 });
+        ImGui::SetCursorScreenPos({ pos.orig_pos.x , pos.orig_pos.y + pos.h - 95 });
         _progress.draw(window, static_cast<int>(pos.w) - 170, _fw_download_progress / 3);
         if (_fw_download_progress == 100 && !_fw_image.empty())
         {
@@ -727,7 +736,7 @@ bool updates_model::draw_firmware_section(std::shared_ptr<notifications_model> n
     }
     else if (_fw_update_state == fw_update_states::started)
     {
-        ImGui::SetCursorScreenPos({ pos.orig_pos.x + 150, pos.orig_pos.y + pos.h - 95 });
+        ImGui::SetCursorScreenPos({ pos.orig_pos.x, pos.orig_pos.y + pos.h - 95 });
         _progress.draw(window, static_cast<int>(pos.w) - 170, static_cast<int>(_update_manager->get_progress() * 0.66 + 33));
         if (_update_manager->done()) {
             _fw_update_state = fw_update_states::completed;
