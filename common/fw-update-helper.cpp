@@ -247,7 +247,7 @@ namespace rs2
             {
                 auto flash = upd.create_flash_backup([&](const float progress)
                 {
-                    _progress = int((ceil(progress * 5) / 5) * (30 - next_progress)) + next_progress;
+                    _progress = ((ceil(progress * 5) / 5) * (30 - next_progress)) + next_progress;
                 });
 
                 auto temp = get_folder_path(special_folder::app_data);
@@ -339,13 +339,13 @@ namespace rs2
 
         if (dfu)
         {
-            _progress = next_progress;
+            _progress = float(next_progress);
 
             log("Recovery device connected, starting update");
 
             dfu.update(_fw, [&](const float progress)
             {
-                _progress = int((ceil(progress * 10) / 10 * (90 - next_progress)) + next_progress);
+                _progress = ((ceil(progress * 10) / 10 * (90 - next_progress)) + next_progress);
             });
 
             log("Firmware Download completed, await DFU transition event");
@@ -357,7 +357,7 @@ namespace rs2
             auto upd = _dev.as<updatable>();
             upd.update_unsigned(_fw, [&](const float progress)
             {
-                _progress = int((ceil(progress * 10) / 10 * (90 - next_progress)) + next_progress);
+                _progress = (ceil(progress * 10) / 10 * (90 - next_progress)) + next_progress;
             });
             log("Firmware Update completed, waiting for device to reconnect");
         }

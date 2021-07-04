@@ -1007,51 +1007,17 @@ double rect_gaussian_dots_target_calculator::subpixel_agj(double* f, int s)
     return (left_mv + right_mv) / 2;
 }
 
-int rect_calculator::calculate(const rs2_frame* frame_ref, float rect_sides[4])
+// return 1 if target pattern is found and its location is calculated, zero otherwise.
+int rect_calculator::extract_target_dims(const rs2_frame* frame_ref, float4& rect_sides)
 {
-    static int reset_counter = 0;
-    if (reset_counter > _reset_limit)
-    {
-        reset_counter = 0;
-        _rec_idx = 0;
-        _rec_num = 0;
-    }
-
     int ret = 0;
     rs2_error* e = nullptr;
-    //TODO requires future refactoring
-    rs2_extract_target_dimensions(frame_ref, _roi ? RS2_CALIB_TARGET_ROI_RECT_GAUSSIAN_DOT_VERTICES : RS2_CALIB_TARGET_RECT_GAUSSIAN_DOT_VERTICES, _rec_sides[_rec_idx], 4, &e);
+
+    rs2_extract_target_dimensions(frame_ref, _roi ? RS2_CALIB_TARGET_ROI_RECT_GAUSSIAN_DOT_VERTICES : RS2_CALIB_TARGET_RECT_GAUSSIAN_DOT_VERTICES, reinterpret_cast<float*>(&rect_sides), sizeof(float4), &e);
     if (e == nullptr)
     {
         ret = 1;
-        reset_counter = 0;
-        _rec_idx = ((++_rec_idx) % _frame_num);
-        ++_rec_num;
-
-        if (_rec_num == _frame_num)
-        {
-            ret = 2;
-            calculate_rect_sides(rect_sides);
-            --_rec_num;
-        }
     }
-    else
-        ++reset_counter;
 
     return ret;
-}
-
-void rect_calculator::calculate_rect_sides(float rect_sides[4])
-{
-    for (int i = 0; i < 4; ++i)
-        rect_sides[i] = _rec_sides[0][i];
-
-    for (int j = 1; j < _frame_num; ++j)
-    {
-        for (int i = 0; i < 4; ++i)
-            rect_sides[i] += _rec_sides[j][i];
-    }
-
-    for (int i = 0; i < 4; ++i)
-        rect_sides[i] /= _frame_num;
 }

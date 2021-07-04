@@ -636,7 +636,7 @@ namespace rs2
         * \param[in]    callback: Optional callback for update progress notifications, the progress value is normailzed to 1
         * \return       New calibration table
         */
-        std::vector<uint8_t> run_uvmapping_calibration_cpp(rs2_frame_queue* left, rs2_frame_queue* color, rs2_frame_queue* depth, int py_px_only,
+        std::vector<uint8_t> run_uvmapping_calibration(rs2_frame_queue* left, rs2_frame_queue* color, rs2_frame_queue* depth, int py_px_only,
             float* health, int health_size)
         {
             std::vector<uint8_t> results;
@@ -670,7 +670,7 @@ namespace rs2
         * \return       New calibration table
         */
         template<class T>
-        std::vector<uint8_t> run_uvmapping_calibration(rs2_frame_queue* left, rs2_frame_queue* color, rs2_frame_queue* depth, int py_px_only,
+        std::vector<uint8_t> run_uvmapping_calibration_cpp(rs2_frame_queue* left, rs2_frame_queue* color, rs2_frame_queue* depth, int py_px_only,
             float* health, int health_size, T callback)
         {
             std::vector<uint8_t> results;
@@ -693,18 +693,18 @@ namespace rs2
         }
 
         /**
-        *  Calculate Ground Truth distance to target
+        *  Calculate Z for calibration target - distance to the target's plane
         * \param[in]    queue: A frame queue of raw images used to calculate and extract the ground truth
-        * \param[out]   Calculated ground truth distance in millimeter, or negative number if failed
-        * \return       New calibration table
+        * \param[in]    target_width: Expected target's horizontal dimension in mm
+        * \param[in]    target_height: Expected target's vertical dimension in mm
+        * \param[in]    callback: Optional callback for reporting progress status
+        * \return       Calculated distance (Z) to target in millimeter, or negative number if failed
         */
         template<class T>
-        float distance_to_target(rs2_frame_queue* queue, float target_width, float target_height, T callback)
+        float calculate_target_z(rs2_frame_queue* queue, float target_width, float target_height, T callback)
         {
-            float result;
             rs2_error* e = nullptr;
-
-            result = rs2_distance_to_target(_dev.get(), queue, target_width, target_height,
+            float result = rs2_calculate_target_z_cpp(_dev.get(), queue, target_width, target_height,
                 new update_progress_callback<T>(std::move(callback)), &e);
             error::handle(e);
 

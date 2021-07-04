@@ -1,6 +1,7 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2016 Intel Corporation. All Rights Reserved.
 
+#include <numeric>
 #include "../third-party/json.hpp"
 #include "ds5-device.h"
 #include "ds5-private.h"
@@ -1454,98 +1455,91 @@ namespace librealsense
         return ret;
     }
 
-    float auto_calibrated::distance_to_target(rs2_frame_queue* queue, float target_w, float target_h, update_progress_callback_ptr progress_callback)
+    float auto_calibrated::calculate_target_z(rs2_frame_queue* queue, float target_w, float target_h, update_progress_callback_ptr progress_callback)
     {
-        try
+        rect_calculator target_z_calculator(true);
+        bool created = false;
+
+        float4 rect_sides{};
+        float target_fw = 0;
+        float target_fh = 0;
+
+        float target_z_value = -1.f;
+        std::vector<float4>  rec_sides_data;
+
+
+        int frm_idx = 0;
+        int progress = 0;
+        rs2_error* e = nullptr;
+        rs2_frame* f = nullptr;
+        while (rs2_poll_for_frame(queue, &f, &e))
         {
-            rect_calculator gt_calculator(true);
-            bool created = false;
-
-            int counter1 = 0;
-
-            float rect_sides[4] = { 0 };
-            float target_fw = 0;
-            float target_fh = 0;
-
-            float gt_distance = -1.f;
-
-            int ret = 0;
-            int progress = 0;
-            rs2_error* e = nullptr;
-            rs2_frame* f = nullptr;
-            while (rs2_poll_for_frame(queue, &f, &e))
+            rs2::frame ff(f);
+            if (ff.get_data())
             {
-                rs2::frame ff(f);
-                if (ff.get_data())
+                if (!created)
                 {
-                    if (!created)
-                    {
-                        auto vsp = ff.get_profile().as<rs2::video_stream_profile>();
+                    auto vsp = ff.get_profile().as<rs2::video_stream_profile>();
 
-                        target_fw = vsp.get_intrinsics().fx * target_w;
-                        target_fh = vsp.get_intrinsics().fy * target_h;
-                        created = true;
-                    }
-
-                    ret = gt_calculator.calculate(f, rect_sides);
+                    target_fw = vsp.get_intrinsics().fx * target_w;
+                    target_fh = vsp.get_intrinsics().fy * target_h;
+                    created = true;
                 }
 
-                rs2_release_frame(f);
-
-                if (progress_callback && (progress < 100))
-                    progress_callback->on_update_progress(static_cast<float>(progress));
-
-            //if (ret == 0)
-            //    ++counter;
-            //else if (ret == 1)
-            //    //_progress += step;
-            //else
-                if (ret == 2)
+                // retirieve target size and accumulate results, skip frame if target could not be found
+                if (target_z_calculator.extract_target_dims(f, rect_sides))
                 {
-                    //_progress += step;
-                    break;
+                    rec_sides_data.push_back(rect_sides);
                 }
+
+                frm_idx++;
             }
 
-            if (ret != 2)
-                //fail("Please adjust the camera position \nand make sure the specific target is \nin the middle of the camera image!");
-            else
-            {
-                float gt[4] = { 0 };
+            rs2_release_frame(f);
 
-                if (rect_sides[0] > 0)
-                    gt[0] = target_fw / rect_sides[0];
+            if (progress_callback && (++progress < 100))
+                progress_callback->on_update_progress(static_cast<float>(progress));
 
-                if (rect_sides[1] > 0)
-                    gt[1] = target_fw / rect_sides[1];
-
-                if (rect_sides[2] > 0)
-                    gt[2] = target_fh / rect_sides[2];
-
-                if (rect_sides[3] > 0)
-                    gt[3] = target_fh / rect_sides[3];
-
-                if (gt[0] <= 0.1f || gt[1] <= 0.1f || gt[2] <= 0.1f || gt[3] <= 0.1f)
-                    fail("Bad target rectangle side sizes returned!");
-
-                ground_truth = 0.0;
-                for (int i = 0; i < 4; ++i)
-                    ground_truth += gt[i];
-                ground_truth /= 4.0;
-
-                config_file::instance().set(configurations::viewer::ground_truth_r, ground_truth);
-            }
-
-            return gt_distance;
         }
-        catch (const std::runtime_error& error)
+
+        // Verify that at least TBD Evgeni valid extractions were made
+        if (!frm_idx || (float(rec_sides_data.size())/frm_idx) < 0.5f)
+            throw std::runtime_error("Please re-adjust the camera position \nand make sure the specific target is \nin the middle of the camera image!");
+        else
         {
-            fail(error.what());
+            rect_sides = {};
+            auto avg_data = std::accumulate(rec_sides_data.begin(), rec_sides_data.end(), rect_sides);
+            for (auto i=0UL; i<sizeof(float4); i++)
+                avg_data[i] /= rec_sides_data.size();
+            
+            float gt[4] = { 0 };
+
+            if (rect_sides[0] > 0)
+                gt[0] = target_fw / rect_sides[0];
+
+            if (rect_sides[1] > 0)
+                gt[1] = target_fw / rect_sides[1];
+
+            if (rect_sides[2] > 0)
+                gt[2] = target_fh / rect_sides[2];
+
+            if (rect_sides[3] > 0)
+                gt[3] = target_fh / rect_sides[3];
+
+            if (gt[0] <= 0.1f || gt[1] <= 0.1f || gt[2] <= 0.1f || gt[3] <= 0.1f)
+                throw std::runtime_error("Target rectangle side sizes calculation failed!");
+
+
+            // Target's plane Z value is the average of the four calculated corners
+            target_z_value = 0.f;
+            for (int i = 0; i < 4; ++i)
+                target_z_value += gt[i];
+            target_z_value /= 4.f;
+
+            //TODO Evgeni
+            //config_file::instance().set(configurations::viewer::ground_truth_r, ground_truth);
         }
-        catch (...)
-        {
-            fail("Getting ground truth failed!");
-        }
+
+        return target_z_value;
     }
-
 }

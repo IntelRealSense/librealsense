@@ -520,12 +520,27 @@ const rs2_raw_data_buffer* rs2_run_uvmapping_calibration(rs2_device* device, rs2
     float* health, int health_size, rs2_update_progress_callback_ptr callback, void* client_data, rs2_error** error);
 
 /**
-*  Calculate Ground Truth distance to target
-* \param[in]    queue: A frame queue of raw images used to calculate and extract the ground truth distance
-* \return       Calculated ground truth distance in millimeter, or negative number if failed
+* Calculate Z for calibration target - distance to the target's plane
+* \param[in]    queue: A frame queue of raw images used to calculate and extract the ground truth
+* \param[in]    target_width: Expected target's horizontal dimension in mm
+* \param[in]    target_height: Expected target's vertical dimension in mm
+* \param[in]    callback: Optional callback for reporting progress status
+* \return       Calculated distance (Z) to target in millimeter, or negative number if failed
 */
-float rs2_distance_to_target(rs2_device* device, rs2_frame_queue* queue,
-    float target_width, float target_height, rs2_update_progress_callback_ptr callback, rs2_error** error);
+float rs2_calculate_target_z_cpp(rs2_device* device, rs2_frame_queue* queue, float target_width, float target_height,
+    rs2_update_progress_callback* callback, rs2_error** error);
+
+/**
+* Calculate Z for calibration target - distance to the target's plane
+* \param[in]    queue: A frame queue of raw images used to calculate and extract the ground truth
+* \param[in]    target_width: Expected target's horizontal dimension in mm
+* \param[in]    target_height: Expected target's vertical dimension in mm
+* \param[in]    callback: Optional callback for reporting progress status
+* \param[in]    client_data: Optional client data for the callback
+* \return       Calculated distance (Z) to target in millimeter, or negative number if failed
+*/
+float rs2_calculate_target_z(rs2_device* device, rs2_frame_queue* queue, float target_width, float target_height,
+    rs2_update_progress_callback_ptr callback, void* client_data, rs2_error** error);
 
 #ifdef __cplusplus
 }

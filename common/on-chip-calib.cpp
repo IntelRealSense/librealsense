@@ -859,9 +859,9 @@ namespace rs2
 
         auto calib_dev = _dev.as<auto_calibrated_device>();
         if (action == RS2_CALIB_ACTION_TARE_CALIB)
-            _new_calib = calib_dev.run_tare_calibration(ground_truth, json, [&](const float progress) {_progress = int(progress);}, 5000);
+            _new_calib = calib_dev.run_tare_calibration(ground_truth, json, [&](const float progress) {_progress = progress;}, 5000);
         else if (action == RS2_CALIB_ACTION_ON_CHIP_CALIB || action == RS2_CALIB_ACTION_ON_CHIP_FL_CALIB || action == RS2_CALIB_ACTION_ON_CHIP_OB_CALIB)
-            _new_calib = calib_dev.run_on_chip_calibration(json, &_health, [&](const float progress) {_progress = int(progress);}, occ_timeout_ms);
+            _new_calib = calib_dev.run_on_chip_calibration(json, &_health, [&](const float progress) {_progress = progress;}, occ_timeout_ms);
 
         if (action == RS2_CALIB_ACTION_ON_CHIP_OB_CALIB)
         {
@@ -926,7 +926,7 @@ namespace rs2
                                                           adjust_both_sides,
                                                           &corrected_ratio,
                                                           &tilt_angle,
-                                                          [&](const float progress) {_progress = int(progress); });
+                                                          [&](const float progress) {_progress = progress; });
             }
             else
                 fail("Failed to capture enough frames!");
@@ -990,13 +990,13 @@ namespace rs2
             if (counter == limit)
             {
                 auto calib_dev = _dev.as<auto_calibrated_device>();
-                _new_calib = calib_dev.run_uvmapping_calibration(left.get(),
+                _new_calib = calib_dev.run_uvmapping_calibration_cpp(left.get(),
                                                                  color.get(),
                                                                  depth.get(),
                                                                  py_px_only,
                                                                  _health_nums,
                                                                  4,
-                                                                 [&](const float progress) {_progress = int(progress); });
+                                                                 [&](const float progress) {_progress = progress; });
             }
             else
                 fail("Failed to capture enough frames!");
@@ -1015,76 +1015,49 @@ namespace rs2
     {
         try
         {
-            std::shared_ptr<rect_calculator> gt_calculator;
-            bool created = false;
-
             int counter = 0;
-            int limit = rect_calculator::_frame_num << 1;
-            int step = 100 / rect_calculator::_frame_num;
+            int frm_idx = 0;
+            int limit = 50; // input frames required to calculate the target
+            float step = 50.f / limit;  // frames gathering is 50% of the process, the rest is the internal data extraction and algo processing
+            
+            rs2_error* e = nullptr;
+            std::shared_ptr<rs2_frame_queue> fq(rs2_create_frame_queue(limit, &e), rs2_delete_frame_queue);
 
-            float rect_sides[4] = { 0 };
-            float target_fw = 0;
-            float target_fh = 0;
-
-            int ret = 0;
             rs2::frame f;
-            while (counter < limit)
+            // Collect sufficient amount of frames (up to 50) to extract target pattern and calculate distance to it
+            while ((counter < limit) && (++frm_idx < limit*2))
             {
                 f = _viewer.ppf.frames_queue[_uid].wait_for_frame();
                 if (f)
                 {
-                    if (!created)
-                    {
-                        stream_profile profile = f.get_profile();
-                        auto vsp = profile.as<video_stream_profile>();
-
-                        gt_calculator = std::make_shared<rect_calculator>(true);
-                        target_fw = vsp.get_intrinsics().fx * config_file::instance().get_or_default(configurations::viewer::target_width_r, 175.0f);
-                        target_fh = vsp.get_intrinsics().fy * config_file::instance().get_or_default(configurations::viewer::target_height_r, 100.0f);
-                        created = true;
-                    }
-
-                    ret = gt_calculator->calculate(f.get(), rect_sides);
-                    if (ret == 0)
-                        ++counter;
-                    else if (ret == 1)
-                        _progress += step;
-                    else if (ret == 2)
-                    {
-                        _progress += step;
-                        break;
-                    }
+                    f.keep();
+                    rs2_frame_add_ref(f.get(), &e);
+                    rs2_enqueue_frame(f.get(), fq.get());
+                    ++counter;
+                    _progress += step;
                 }
             }
 
-            if (ret != 2)
-                fail("Please adjust the camera position \nand make sure the specific target is \nin the middle of the camera image!");
-            else
+            // Having sufficient number of frames allows to run the algorithm for target distance estimation
+            if (counter >= limit)
             {
-                float gt[4] = { 0 };
+                auto calib_dev = _dev.as<auto_calibrated_device>();
+                float target_z_mm = calib_dev.calculate_target_z(fq.get(),
+                    config_file::instance().get_or_default(configurations::viewer::target_width_r, 175.0f),
+                    config_file::instance().get_or_default(configurations::viewer::target_height_r, 100.0f),
+                    [&](const float progress) { _progress = std::min(100.f, _progress+step); });
 
-                if (rect_sides[0] > 0)
-                    gt[0] = target_fw / rect_sides[0];
-
-                if (rect_sides[1] > 0)
-                    gt[1] = target_fw / rect_sides[1];
-
-                if (rect_sides[2] > 0)
-                    gt[2] = target_fh / rect_sides[2];
-
-                if (rect_sides[3] > 0)
-                    gt[3] = target_fh / rect_sides[3];
-
-                if (gt[0] <= 0.1f || gt[1] <= 0.1f || gt[2] <= 0.1f || gt[3] <= 0.1f)
-                    fail("Bad target rectangle side sizes returned!");
-
-                ground_truth = 0.0;
-                for (int i = 0; i < 4; ++i)
-                    ground_truth += gt[i];
-                ground_truth /= 4.0;
-
-                config_file::instance().set(configurations::viewer::ground_truth_r, ground_truth);
+                // Update the stored value with algo-calculated
+                if (target_z_mm > 0.f)
+                {
+                    log(to_string() << "Target Z distance calculated - " << target_z_mm << " mm");
+                    config_file::instance().set(configurations::viewer::ground_truth_r, target_z_mm);
+                }
+                else
+                    fail("Failed to calculate target ground truth");
             }
+            else
+                fail("Failed to capture enough frames to calculate target'z Z distance !");
         }
         catch (const std::runtime_error& error)
         {
@@ -1092,7 +1065,7 @@ namespace rs2
         }
         catch (...)
         {
-            fail("Getting ground truth failed!");
+            fail("Calculating target's Z distance failed");
         }
     }
 
