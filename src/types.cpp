@@ -484,6 +484,7 @@ namespace librealsense
             CASE(W10)
             CASE(Z16H)
             CASE(FG)
+            CASE(Y411)
         default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
 #undef CASE
