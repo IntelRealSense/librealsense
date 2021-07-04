@@ -2902,6 +2902,12 @@ namespace rs2
                     if (ImGui::RadioButton("Custom Server", !official_url))
                     {
                         official_url = false;
+                        temp_cfg.set(configurations::update::sw_updates_official_server, false);
+                        
+                        // Load last saved custom URL
+                        url_str = custom_url;
+                        temp_cfg.set(configurations::update::sw_updates_url, url_str);
+
                     }
                     if (ImGui::IsItemHovered())
                     {
@@ -2913,12 +2919,7 @@ namespace rs2
                         if (ImGui::InputText("##custom_server_url", custom_url, 255))
                         {
                             url_str = custom_url;
-                        }
-                        ImGui::SameLine();
-                        if (ImGui::Button("Update URL", ImVec2(80, 20)))
-                        {
                             temp_cfg.set(configurations::update::sw_updates_url, url_str);
-                            temp_cfg.set(configurations::update::sw_updates_official_server, false);
                         }
                     }
 #endif
