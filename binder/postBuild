@@ -8,9 +8,11 @@ jupyter nbextension     enable --py --sys-prefix appmode
 jupyter serverextension enable --py --sys-prefix appmode
 
 # fetch sample data
-wget -N http://realsense-hw-public.s3.amazonaws.com/rs-tests/TestData/object_detection.bag
-wget -N https://raw.githubusercontent.com/chuanqi305/MobileNet-SSD/f5d072ccc7e3dcddaa830e9805da4bf1000b2836/MobileNetSSD_deploy.prototxt
-wget -N http://realsense-hw-public.s3.amazonaws.com/rs-tests/TestData/MobileNetSSD_deploy.caffemodel
+mkdir $HOME/downloads
+wget --no-check-certificate -N https://librealsense.intel.com/rs-tests/TestData/object_detection.bag
+wget --no-check-certificate -N https://raw.githubusercontent.com/chuanqi305/MobileNet-SSD/f5d072ccc7e3dcddaa830e9805da4bf1000b2836/MobileNetSSD_deploy.prototxt
+wget --no-check-certificate -N https://librealsense.intel.com/rs-tests/TestData/MobileNetSSD_deploy.caffemodel
+wget --no-check-certificate -N https://librealsense.intel.com/rs-tests/TestData/bear.bag -P $HOME/downloads/
 
 # install the SDK
 pip install opencv-python
