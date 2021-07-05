@@ -72,8 +72,12 @@ void updates_model::draw(std::shared_ptr<notifications_model> not_model, ux_wind
 
         bool sw_update_needed(false), fw_update_needed(false);
 
-        // Verify Device Exists
-        if (update.profile.dev_active || _fw_update_state == fw_update_states::started)
+        bool fw_update_in_process = _fw_update_state == fw_update_states::started
+                                 || _fw_update_state == fw_update_states::failed_updating
+                                 || _fw_update_state == fw_update_states::failed_downloading;
+
+        // Verify Device Exists or a FW update process
+        if (update.profile.dev_active || fw_update_in_process)
         {
             // ===========================================================================
             // Draw Software update Pane
@@ -86,7 +90,7 @@ void updates_model::draw(std::shared_ptr<notifications_model> not_model, ux_wind
             fw_update_needed = draw_firmware_section(not_model, window_name, update, positions, window, error_message);
         }
         else 
-        {
+        { // Indicate device disconnected to the user
             ImGui::PushStyleColor(ImGuiCol_Text, white);
             ImGui::SetWindowFontScale(1.5);
             std::string disconnected_text = "THE DEVICE HAS BEEN DISCONNECTED,";
