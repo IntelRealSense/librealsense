@@ -513,7 +513,9 @@ bool updates_model::draw_firmware_section(std::shared_ptr<notifications_model> n
 
     }
 
-    ImVec2 fw_text_pos(pos.orig_pos.x + 10, pos.mid_y + 15);
+    auto left_padding = 10;
+    auto top_padding = 15;
+    ImVec2 fw_text_pos(pos.orig_pos.x + left_padding, pos.mid_y + top_padding);
     ImGui::SetCursorScreenPos(fw_text_pos);
 
     ImGui::PushFont(window.get_large_font());
@@ -724,8 +726,8 @@ bool updates_model::draw_firmware_section(std::shared_ptr<notifications_model> n
     }
     else if (_fw_update_state == fw_update_states::downloading)
     {
-        ImGui::SetCursorScreenPos({ pos.orig_pos.x , pos.orig_pos.y + pos.h - 95 });
-        _progress.draw(window, static_cast<int>(pos.w) - 170, _fw_download_progress / 3);
+        ImGui::SetCursorScreenPos({ pos.orig_pos.x + left_padding, pos.orig_pos.y + pos.h - 95 });
+        _progress.draw(window, static_cast<int>(pos.w) - 170 - left_padding, _fw_download_progress / 3);
         if (_fw_download_progress == 100 && !_fw_image.empty())
         {
             _fw_download_progress = 0;
@@ -740,8 +742,8 @@ bool updates_model::draw_firmware_section(std::shared_ptr<notifications_model> n
     }
     else if (_fw_update_state == fw_update_states::started)
     {
-        ImGui::SetCursorScreenPos({ pos.orig_pos.x, pos.orig_pos.y + pos.h - 95 });
-        _progress.draw(window, static_cast<int>(pos.w) - 170, static_cast<int>(_update_manager->get_progress() * 0.66 + 33));
+        ImGui::SetCursorScreenPos({ pos.orig_pos.x + left_padding, pos.orig_pos.y + pos.h - 95 });
+        _progress.draw(window, static_cast<int>(pos.w) - 170 - left_padding, static_cast<int>(_update_manager->get_progress() * 0.66 + 33));
         if (_update_manager->done()) {
             _fw_update_state = fw_update_states::completed;
             _fw_image.clear();
@@ -763,12 +765,12 @@ bool updates_model::draw_firmware_section(std::shared_ptr<notifications_model> n
     else if (_fw_update_state == fw_update_states::failed_downloading ||
         _fw_update_state == fw_update_states::failed_updating)
     {
-        ImGui::SetCursorScreenPos({ pos.orig_pos.x + 150, pos.orig_pos.y + pos.h - 95 });
+        ImGui::SetCursorScreenPos({ pos.orig_pos.x + left_padding, pos.orig_pos.y + pos.h - 95 });
         ImGui::PushStyleColor(ImGuiCol_Text, white);
         std::string text = _fw_update_state == fw_update_states::failed_downloading ?
             "Firmware download failed, check connection and press to retry" :
             "Firmware update process failed, press to retry";
-        if (ImGui::Button(text.c_str(), ImVec2(pos.w - 170, 25)))
+        if (ImGui::Button(text.c_str(), ImVec2(pos.w - 170 - left_padding, 25)))
         {
             _fw_update_state = fw_update_states::ready;
             _update_manager.reset();
