@@ -3,10 +3,7 @@
 
 #pragma once
 
-#include <librealsense2/rs.hpp>   // Include RealSense Cross Platform API
-
-#include "../catch.h"
-
+#include <unit-tests/test.h>
 #include <easylogging++.h>
 
 

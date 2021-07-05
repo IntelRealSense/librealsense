@@ -18,13 +18,7 @@ See below for each of the custom options...
 
 // We are not using the main from catch2
 #define CATCH_CONFIG_RUNNER
-#include <unit-tests/catch/catch.hpp>
-#include <string>
-#include <librealsense2/rs.hpp>  // rs2::log_to_console
-
-namespace test {
-    extern std::string context;
-}
+#include <unit-tests/test.h>
 
 using namespace Catch::clara;
 
