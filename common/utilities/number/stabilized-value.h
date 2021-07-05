@@ -7,6 +7,7 @@
 #include <atomic>
 #include <mutex>
 #include <deque>
+#include <unordered_map>
 
 namespace utilities {
 namespace number {

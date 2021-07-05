@@ -1,7 +1,6 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2020 Intel Corporation. All Rights Reserved.
 
-//#cmake:add-file log-common.h
 #include "log-common.h"
 
 
@@ -19,7 +18,7 @@ void c_callback( rs2_log_severity severity, rs2_log_message const* msg, void * a
 }
 
 
-TEST_CASE( "Logging C ALL", "[log]" ) {
+TEST_CASE( "Logging C ALL" ) {
     c_n_callbacks = 0;
 
     // ALL == will log everything
