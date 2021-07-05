@@ -573,7 +573,15 @@ bool updates_model::draw_firmware_section(std::shared_ptr<notifications_model> n
     ImGui::Text("%s", "Current FW version:");
     ImGui::SameLine();
     ImGui::PopStyleColor();
-    auto current_fw_ver_str = std::string(selected_profile.profile.firmware_version);
+
+    // During FW update do not take the version from the device because a recovery device version is 0.0.0.0.
+    // Instead display an update in progress label
+    std::string current_fw_ver_str;
+    if (_fw_update_state != fw_update_states::started)
+        current_fw_ver_str = std::string(selected_profile.profile.firmware_version);
+    else
+        current_fw_ver_str = "Update in progress..";
+
     ImGui::Text("%s", current_fw_ver_str.c_str());
 
     
