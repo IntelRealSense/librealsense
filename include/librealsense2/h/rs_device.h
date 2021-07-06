@@ -458,13 +458,13 @@ void rs2_load_json(rs2_device* dev, const void* json_content, unsigned content_s
 /**
 *  Run target-based focal length calibration
 * \param[in]    device: device to calibrate
-* \param[in]    left_queue: the frame queue for frames for left IR sensor with resoluton of  1280x720.
-* \param[in]    right_queue: the frame queue for frames for right IR sensor with resoluton of  1280x720
+* \param[in]    left_queue: container for left IR frames with resoluton of  1280x720 and the target in the center of 320x240 pixels ROI.
+* \param[in]    right_queue: container for right IR frames with resoluton of  1280x720 and the target in the center of 320x240 pixels ROI
 * \param[in]    target_width: the rectangle width in mm on the target
 * \param[in]    target_height: the rectangle height in mm on the target
 * \param[in]    adjust_both_sides: 1 for adjusting both left and right camera calibration tables, and 0 for adjusting right camera calibraion table only
 * \param[out]   ratio: the corrected ratio from the calibration
-* \param[out]   angle: the target tile angle
+* \param[out]   angle: the target's tilt angle
 * \param[in]    callback: Optional callback for update progress notifications, the progress value is normailzed to 1
 * \return       New calibration table
 */
@@ -474,13 +474,13 @@ const rs2_raw_data_buffer* rs2_run_focal_length_calibration_cpp(rs2_device* devi
 /**
 *  Run target-based focal length calibration
 * \param[in]    device: device to calibrate
-* \param[in]    left_queue: the frame queue for frames for left IR sensor with resoluton of  1280x720 and the target in the center of 320x240 pixels ROI.
-* \param[in]    right_queue: the frame queue for frames for right IR sensor with resoluton of  1280x720and the target in the center of 320x240 pixels ROI
+* \param[in]    left_queue: container for left IR frames with resoluton of  1280x720 and the target in the center of 320x240 pixels ROI.
+* \param[in]    right_queue: container for right IR frames with resoluton of  1280x720 and the target in the center of 320x240 pixels ROI
 * \param[in]    target_width: the rectangle width in mm on the target
 * \param[in]    target_height: the rectangle height in mm on the target
 * \param[in]    adjust_both_sides: 1 for adjusting both left and right camera calibration tables, and 0 for adjusting right camera calibraion table only
 * \param[out]   ratio: the corrected ratio from the calibration
-* \param[out]   angle: the target tile angle
+* \param[out]   angle: the target's tilt angle
 * \param[in]    callback: Optional callback for update progress notifications, the progress value is normailzed to 1
 * \param[in]    client_data: Optional client data for the callback
 * \return       New calibration table
@@ -489,39 +489,39 @@ const rs2_raw_data_buffer* rs2_run_focal_length_calibration(rs2_device* device, 
     float* ratio, float* angle, rs2_update_progress_callback_ptr callback, void* client_data, rs2_error** error);
 
 /**
-*  UV-Mapping calibration.
+*  Depth-RGB UV-Map calibration. Applicable for D400 cameras
 * \param[in]    device: device to calibrate
 * \param[in]    left_queue: the frame queue for left IR frames with resoluton of 1280x720 and the target captured in the center of 320x240 pixels ROI.
 * \param[in]    color_queue: the frame queue for RGB frames with resoluton of 1280x720 and the target in the center of 320x240 pixels ROI
 * \param[in]    depth_queue: the frame queue for Depth frames with resoluton of 1280x720
 * \param[in]    py_px_only: 1 for calibrating color camera py and px only, 1 for calibrating color camera py, px, fy, and fx.
-* \param[out]   health: The four health check numbers int the oorder of px, py, fx, fy for the calibration
+* \param[out]   health: The four health check numbers in order of px, py, fx, fy for the calibration
 * \param[in]    health_size: number of health check numbers, which is 4 by default
 * \param[in]    callback: Optional callback for update progress notifications, the progress value is normailzed to 1
 * \return       New calibration table
 */
-const rs2_raw_data_buffer* rs2_run_uvmapping_calibration_cpp(rs2_device* device, rs2_frame_queue* left_queue, rs2_frame_queue* color_queue, rs2_frame_queue* depth_queue, int py_px_only,
+const rs2_raw_data_buffer* rs2_run_uv_map_calibration_cpp(rs2_device* device, rs2_frame_queue* left_queue, rs2_frame_queue* color_queue, rs2_frame_queue* depth_queue, int py_px_only,
     float * health, int health_size, rs2_update_progress_callback * progress_callback, rs2_error** error);
 
 /**
-*  UV-Mapping calibration.
+*  Depth-RGB UV-Map calibration. Applicable for D400 cameras
 * \param[in]    device: device to calibrate
-* \param[in]    left: the frame queue for 25 left frames with resoluton of 1280x720 and the target in the middle od 320x240 region of interest.
-* \param[in]    color: the frame queue for 25 rgb frames with resoluton of 1280x720 and the target in the middle od 320x240 region of interest, which are captured at the same time of left frame queue
-* \param[in]    depth: the frame queue for 25 depth frames with resoluton of 1280x720, which are captured at the same time of left frame queue
+* \param[in]    left_queue: the frame queue for left IR frames with resoluton of 1280x720 and the target captured in the center of 320x240 pixels ROI.
+* \param[in]    color_queue: the frame queue for RGB frames with resoluton of 1280x720 and the target in the center of 320x240 pixels ROI
+* \param[in]    depth_queue: the frame queue for Depth frames with resoluton of 1280x720
 * \param[in]    py_px_only: 1 for calibrating color camera py and px only, 1 for calibrating color camera py, px, fy, and fx.
-* \param[out]   health: The four health check numbers int the oorder of px, py, fx, fy for the calibration
+* \param[out]   health: The four health check numbers in order of px, py, fx, fy for the calibration
 * \param[in]    health_size: number of health check numbers, which is 4 by default
 * \param[in]    callback: Optional callback for update progress notifications, the progress value is normailzed to 1
 * \param[in]    client_data: Optional client data for the callback
 * \return       New calibration table
 */
-const rs2_raw_data_buffer* rs2_run_uvmapping_calibration(rs2_device* device, rs2_frame_queue* left, rs2_frame_queue* color, rs2_frame_queue* depth, int py_px_only,
-    float* health, int health_size, rs2_update_progress_callback_ptr callback, void* client_data, rs2_error** error);
+const rs2_raw_data_buffer* rs2_run_uv_map_calibration(rs2_device* device, rs2_frame_queue* left_queue, rs2_frame_queue* color_queue, rs2_frame_queue* depth_queue,
+    int py_px_only, float* health, int health_size, rs2_update_progress_callback_ptr callback, void* client_data, rs2_error** error);
 
 /**
 * Calculate Z for calibration target - distance to the target's plane
-* \param[in]    queue: A frame queue of raw images used to calculate and extract the ground truth
+* \param[in]    queue: A frame queue of raw images used to calculate and extract the distance to a predefined target pattern
 * \param[in]    target_width: Expected target's horizontal dimension in mm
 * \param[in]    target_height: Expected target's vertical dimension in mm
 * \param[in]    callback: Optional callback for reporting progress status

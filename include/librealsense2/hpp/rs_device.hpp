@@ -229,7 +229,7 @@ namespace rs2
             return results;
         }
 
-        // check firmware compatibility with sku
+        // check firmware compatibility with SKU
         bool check_firmware_compatibility(const std::vector<uint8_t>& image) const
         {
             rs2_error* e = nullptr;
@@ -336,7 +336,7 @@ namespace rs2
         }
 
         /**
-         * This will improve the depth noise.
+         * On-chip calibration intended to reduce the Depth noise. Applies to D400 Depth cameras
          * \param[in] json_content      Json string to configure regular speed on chip calibration parameters:
                                             {
                                               "calib type" : 0,
@@ -390,7 +390,7 @@ namespace rs2
         }
 
         /**
-         * This will improve the depth noise.
+         * On-chip calibration intended to reduce the Depth noise. Applies to D400 Depth cameras
          * \param[in] json_content      Json string to configure regular speed on chip calibration parameters:
                                             {
                                               "focal length" : 0,
@@ -441,7 +441,8 @@ namespace rs2
         }
 
         /**
-        * This will adjust camera absolute distance to flat target. User needs to enter the known ground truth.
+         * Tare calibration adjusts the camera absolute distance to flat target. Applies to D400 Depth cameras
+         * User needs to enter the known ground truth.
         * \param[in] ground_truth_mm     Ground truth in mm must be between 60 and 10000
         * \param[in] json_content        Json string to configure tare calibration parameters:
                                             {
@@ -484,7 +485,8 @@ namespace rs2
         }
 
         /**
-         * This will adjust camera absolute distance to flat target. User needs to enter the known ground truth.
+         * Tare calibration adjusts the camera absolute distance to flat target. Applies to D400 Depth cameras
+         * User needs to enter the known ground truth.
          * \param[in] ground_truth_mm     Ground truth in mm must be between 60 and 10000
          * \param[in] json_content        Json string to configure tare calibration parameters:
                                              {
@@ -560,24 +562,24 @@ namespace rs2
         }
 
         /**
-        *  Target based focal length calibration.
-        * \param[in]    left: the frame queue for 25 left frames with resoluton of 1289x720 and the target in the middle od 320x240 region of interest.
-        * \param[in]    right: the frame queue for 25 right frames with resoluton of 1289x720 and the target in the middle od 320x240 region of interest, which are captured at the same time of left frame queue
+        *  Run target-based focal length calibration for D400 Stereo Cameras
+        * \param[in]    left_queue: container for left IR frames with resoluton of 1280x720 and the target in the center of 320x240 pixels ROI.
+        * \param[in]    right_queue: container for right IR frames with resoluton of 1280x720 and the target in the center of 320x240 pixels ROI
         * \param[in]    target_w: the rectangle width in mm on the target
         * \param[in]    target_h: the rectangle height in mm on the target
         * \param[in]    adjust_both_sides: 1 for adjusting both left and right camera calibration tables and 0 for adjusting right camera calibraion table only
         * \param[out]   ratio: the corrected ratio from the calibration
-        * \param[out]   angle: the target tile angle
+        * \param[out]   angle: the target's tilt angle
         * \return       New calibration table
         */
-        std::vector<uint8_t> run_focal_length_calibration(rs2_frame_queue* left, rs2_frame_queue* right, float target_w, float target_h, int adjust_both_sides,
-            float* ratio, float* angle)
+        std::vector<uint8_t> run_focal_length_calibration(rs2::frame_queue left, rs2::frame_queue right, float target_w, float target_h, int adjust_both_sides,
+            float* ratio, float* angle) const
         {
             std::vector<uint8_t> results;
 
             rs2_error* e = nullptr;
             std::shared_ptr<const rs2_raw_data_buffer> list(
-                rs2_run_focal_length_calibration_cpp(_dev.get(), left, right, target_w, target_h, adjust_both_sides, ratio, angle, nullptr, &e),
+                rs2_run_focal_length_calibration_cpp(_dev.get(), left.get().get(), right.get().get(), target_w, target_h, adjust_both_sides, ratio, angle, nullptr, &e),
                 rs2_delete_raw_data);
             error::handle(e);
 
@@ -592,25 +594,25 @@ namespace rs2
         }
 
         /**
-        *  Target based focal length calibration.
-        * \param[in]    left: the frame queue for 25 left frames with resoluton of 1289x720 and the target in the middle od 320x240 region of interest.
-        * \param[in]    right: the frame queue for 25 right frames with resoluton of 1289x720 and the target in the middle od 320x240 region of interest, which are captured at the same time of left frame queue
+        *  Run target-based focal length calibration for D400 Stereo Cameras
+        * \param[in]    left_queue: container for left IR frames with resoluton of 1280x720 and the target in the center of 320x240 pixels ROI.
+        * \param[in]    right_queue: container for right IR frames with resoluton of 1280x720 and the target in the center of 320x240 pixels ROI
         * \param[in]    target_w: the rectangle width in mm on the target
         * \param[in]    target_h: the rectangle height in mm on the target
         * \param[in]    adjust_both_sides: 1 for adjusting both left and right camera calibration tables and 0 for adjusting right camera calibraion table only
         * \param[out]   ratio: the corrected ratio from the calibration
-        * \param[out]   angle: the target tile angle
+        * \param[out]   angle: the target's tilt angle
         * \return       New calibration table
         */
         template<class T>
-        std::vector<uint8_t> run_focal_length_calibration(rs2_frame_queue* left, rs2_frame_queue* right, float target_w, float target_h, int adjust_both_sides,
-            float* ratio, float* angle, T callback)
+        std::vector<uint8_t> run_focal_length_calibration(rs2::frame_queue left, rs2::frame_queue right, float target_w, float target_h, int adjust_both_sides,
+            float* ratio, float* angle, T callback) const
         {
             std::vector<uint8_t> results;
 
             rs2_error* e = nullptr;
             std::shared_ptr<const rs2_raw_data_buffer> list(
-                rs2_run_focal_length_calibration_cpp(_dev.get(), left, right, target_w, target_h, adjust_both_sides, ratio, angle,
+                rs2_run_focal_length_calibration_cpp(_dev.get(), left.get().get(), right.get().get(), target_w, target_h, adjust_both_sides, ratio, angle,
                     new update_progress_callback<T>(std::move(callback)), &e),
                 rs2_delete_raw_data);
             error::handle(e);
@@ -626,24 +628,24 @@ namespace rs2
         }
 
         /**
-        *  UV-Mapping calibration.
-        * \param[in]    left: the frame queue for 25 left frames with resoluton of 1289x720 and the target in the middle od 320x240 region of interest.
-        * \param[in]    color: the frame queue for 25 rgb frames with resoluton of 1289x720 and the target in the middle od 320x240 region of interest, which are captured at the same time of left frame queue
-        * \param[in]    depth: the frame queue for 25 depth frames with resoluton of 1289x720, which are captured at the same time of left frame queue
+        *  Depth-RGB UV-Map calibration. Applicable for D400 cameras
+        * \param[in]    left: container for left IR frames with resoluton of 1280x720 and the target in the center of 320x240 pixels ROI.
+        * \param[in]    color: container for RGB frames with resoluton of 1280x720 and the target in the center of 320x240 pixels ROI
+        * \param[in]    depth: container for Depth frames with resoluton of 1280x720 and the target in the center of 320x240 pixels ROI
         * \param[in]    py_px_only: 1 for calibrating color camera py and px only, 1 for calibrating color camera py, px, fy, and fx.
         * \param[out]   health: The four health check numbers int the oorder of px, py, fx, fy for the calibration
         * \param[in]    health_size: number of health check numbers, which is 4 by default
         * \param[in]    callback: Optional callback for update progress notifications, the progress value is normailzed to 1
         * \return       New calibration table
         */
-        std::vector<uint8_t> run_uvmapping_calibration(rs2_frame_queue* left, rs2_frame_queue* color, rs2_frame_queue* depth, int py_px_only,
-            float* health, int health_size)
+        std::vector<uint8_t> run_uv_map_calibration(rs2::frame_queue left, rs2::frame_queue color, rs2::frame_queue depth, int py_px_only,
+            float* health, int health_size) const
         {
             std::vector<uint8_t> results;
 
             rs2_error* e = nullptr;
             std::shared_ptr<const rs2_raw_data_buffer> list(
-                rs2_run_uvmapping_calibration_cpp(_dev.get(), left, color, depth, py_px_only, health, health_size, nullptr, &e),
+                rs2_run_uv_map_calibration_cpp(_dev.get(), left.get().get(), color.get().get(), depth.get().get(), py_px_only, health, health_size, nullptr, &e),
                 rs2_delete_raw_data);
             error::handle(e);
 
@@ -658,26 +660,26 @@ namespace rs2
         }
 
         /**
-        *  UV-Mapping calibration.
-        * \param[in]    left: the frame queue for 25 left frames with resoluton of 1289x720 and the target in the middle od 320x240 region of interest.
-        * \param[in]    color: the frame queue for 25 rgb frames with resoluton of 1289x720 and the target in the middle od 320x240 region of interest, which are captured at the same time of left frame queue
-        * \param[in]    depth: the frame queue for 25 depth frames with resoluton of 1289x720, which are captured at the same time of left frame queue
+        *  Depth-RGB UV-Map calibration. Applicable for D400 cameras
+        * \param[in]    left: container for left IR frames with resoluton of 1280x720 and the target in the center of 320x240 pixels ROI.
+        * \param[in]    color: container for RGB frames with resoluton of 1280x720 and the target in the center of 320x240 pixels ROI
+        * \param[in]    depth: container for Depth frames with resoluton of 1280x720 and the target in the center of 320x240 pixels ROI
         * \param[in]    py_px_only: 1 for calibrating color camera py and px only, 1 for calibrating color camera py, px, fy, and fx.
-        * \param[out]   health: The four health check numbers int the oorder of px, py, fx, fy for the calibration
+        * \param[out]   health: The four health check numbers in order of px, py, fx, fy for the calibration
         * \param[in]    health_size: number of health check numbers, which is 4 by default
         * \param[in]    callback: Optional callback for update progress notifications, the progress value is normailzed to 1
         * \param[in]    client_data: Optional client data for the callback
         * \return       New calibration table
         */
         template<class T>
-        std::vector<uint8_t> run_uvmapping_calibration_cpp(rs2_frame_queue* left, rs2_frame_queue* color, rs2_frame_queue* depth, int py_px_only,
-            float* health, int health_size, T callback)
+        std::vector<uint8_t> run_uv_map_calibration(rs2::frame_queue left, rs2::frame_queue color, rs2::frame_queue depth, int py_px_only,
+            float* health, int health_size, T callback) const
         {
             std::vector<uint8_t> results;
 
             rs2_error* e = nullptr;
             std::shared_ptr<const rs2_raw_data_buffer> list(
-                rs2_run_uvmapping_calibration_cpp(_dev.get(), left, color, depth, py_px_only, health, health_size,
+                rs2_run_uv_map_calibration_cpp(_dev.get(), left.get().get(), color.get().get(), depth.get().get(), py_px_only, health, health_size,
                     new update_progress_callback<T>(std::move(callback)), &e),
                 rs2_delete_raw_data);
             error::handle(e);
@@ -694,17 +696,17 @@ namespace rs2
 
         /**
         *  Calculate Z for calibration target - distance to the target's plane
-        * \param[in]    queue: A frame queue of raw images used to calculate and extract the ground truth
-        * \param[in]    target_width: Expected target's horizontal dimension in mm
-        * \param[in]    target_height: Expected target's vertical dimension in mm
+        * \param[in]    queue: frame queue of raw images that capture the predefined target pattern
+        * \param[in]    target_width: expected target's horizontal dimension in mm
+        * \param[in]    target_height: expected target's vertical dimension in mm
         * \param[in]    callback: Optional callback for reporting progress status
-        * \return       Calculated distance (Z) to target in millimeter, or negative number if failed
+        * \return       Calculated distance (Z) to target in millimeter, return negative number on failure
         */
         template<class T>
-        float calculate_target_z(rs2_frame_queue* queue, float target_width, float target_height, T callback)
+        float calculate_target_z(rs2::frame_queue queue, float target_width, float target_height, T callback)
         {
             rs2_error* e = nullptr;
-            float result = rs2_calculate_target_z_cpp(_dev.get(), queue, target_width, target_height,
+            float result = rs2_calculate_target_z_cpp(_dev.get(), queue.get().get(), target_width, target_height,
                 new update_progress_callback<T>(std::move(callback)), &e);
             error::handle(e);
 
