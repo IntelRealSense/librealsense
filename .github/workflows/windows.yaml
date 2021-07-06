@@ -54,6 +54,7 @@ jobs:
       # Build your program with the given configuration
       shell: bash
       run: |
+        cd build
         pwd
         ls
         cmake --build . --config ${{env.LRS_RUN_CONFIG}} -- -m    
@@ -102,6 +103,7 @@ jobs:
       # Build your program with the given configuration
       shell: bash
       run: |
+        cd build
         cmake --build . --config ${{env.LRS_BUILD_CONFIG}} -- -m    
        
   Windows_CSharp:
@@ -143,4 +145,5 @@ jobs:
       # Build your program with the given configuration
       shell: bash
       run: |
+        cd build
         cmake --build . --config ${{env.LRS_BUILD_CONFIG}} -- -m     
