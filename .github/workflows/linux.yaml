@@ -90,21 +90,12 @@ jobs:
         LRS_BUILD_NODEJS: true
       steps:
       - uses: actions/checkout@v2   
-
-      - name: Change Workspace
-        shell: bash
-        run: |
-          mkdir /tmp/lrs
-          mv * /tmp/lrs/
-          ls /tmp/lrs
           
         
       - name: Prebuild
         shell: bash
         run: |
-          export GITHUB_WORKSPACE=/tmp/lrs
-          cd $GITHUB_WORKSPACE
-          ls
+          set -x
           cd ./scripts && ./api_check.sh && cd ..
           # Workaround for nvm failure: https://github.com/appleboy/ssh-action/issues/70
           export NVM_DIR="$HOME/.nvm"
