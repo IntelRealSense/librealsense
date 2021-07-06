@@ -23,7 +23,7 @@ from rspy import log, file, repo, libci
 def usage():
     ourname = os.path.basename( sys.argv[0] )
     print( 'Syntax: ' + ourname + ' [options] [dir]' )
-    print( '        dir: the directory holding the executable tests to run (default to the build directory' )
+    print( '        dir: the directory holding the executable tests to run (default to the build directory)' )
     print( 'Options:' )
     print( '        --debug          Turn on debugging information' )
     print( '        -v, --verbose    Errors will dump the log to stdout' )
@@ -119,25 +119,75 @@ for opt, arg in opts:
     elif opt == '--rslog':
         rslog = True
 
+def find_build_dir( dir ):
+    """
+    Given a file we know must be within the build directory, go up in the tree until we find
+    a file we know must be in the build directory itself...
+    """
+    build_dir = dir
+    while True:
+        if os.path.isfile( os.path.join( build_dir, 'CMakeCache.txt' )):
+            log.d( 'assuming build dir path:', build_dir )
+            return build_dir
+        base = os.path.dirname( build_dir )
+        if base == build_dir:
+            log.d( 'could not find CMakeCache.txt; cannot assume build dir from', dir )
+            break
+        build_dir = base
+
 if len( args ) > 1:
     usage()
-target = None
+target = None                 # the directory in which we expect to find exes
 if len( args ) == 1:
-    if os.path.isdir( args[0] ):
-        target = args[0]
+    target = args[0]
+    if not os.path.isdir( target ):
+        log.f( 'Not a directory:', target )
+    build_dir = find_build_dir( target )
+else:
+    build_dir = repo.build    # may not actually contain exes
+    log.d( 'repo.build:', build_dir )
+
+# Python scripts should be able to find the pyrealsense2 .pyd or else they won't work. We don't know
+# if the user (Travis included) has pyrealsense2 installed but even if so, we want to use the one we compiled.
+# we search the librealsense repository for the .pyd file (.so file in linux)
+pyrs = ""
+if linux:
+    for so in file.find( target or build_dir or repo.root, '(^|/)pyrealsense2.*\.so$' ):
+        pyrs = so
+else:
+    for pyd in file.find( target or build_dir or repo.root, '(^|/)pyrealsense2.*\.pyd$' ):
+        pyrs = pyd
+
+if pyrs:
+    # After use of find, pyrs contains the path from the repo root to the pyrealsense that was found
+    # We append it to the root path to get an absolute path and add to PYTHONPATH so it can be found by the tests
+    pyrs_path = os.path.join( target or build_dir or repo.root, pyrs )
+    # We need to add the directory not the file itself
+    pyrs_path = os.path.dirname( pyrs_path )
+    log.d( 'found pyrealsense pyd in:', pyrs_path )
+    if not target:
+        build_dir = find_build_dir( pyrs_path )
+        if linux:
+            target = build_dir
+        else:
+            target = pyrs_path
+
+# Try to assume target directory from inside build directory. Only works if there is only one location with tests
+if not target and build_dir:
+    mask = r'(^|/)test-[^/.]*'
+    if linux:
+        mask += r'$'
     else:
-        usage()
-# Trying to assume target directory from inside build directory. Only works if there is only one location with tests
-if not target:
-    build = repo.root + os.sep + 'build'
-    for executable in file.find( build, '(^|/)test-.*' ):
+        mask += r'\.exe'
+    for executable in file.find( build_dir, mask ):
+        executable = os.path.join( build_dir, executable )
+        #log.d( 'found exe=', executable )
         if not file.is_executable( executable ):
             continue
-        dir_with_test = build + os.sep + os.path.dirname( executable )
+        dir_with_test = os.path.dirname( executable )
         if target and target != dir_with_test:
-            log.e( "Found executable tests in 2 directories:", target, "and", dir_with_test,
-                   ". Can't default to directory" )
-            usage()
+            log.f( "Ambiguous executable tests in 2 directories:\n\t", target, "\n\t", dir_with_test,
+                    "\n\tSpecify the directory manually..." )
         target = dir_with_test
 
 if not to_stdout:
@@ -148,28 +198,6 @@ if not to_stdout:
     os.makedirs( logdir, exist_ok=True )
     libci.logdir = logdir
 n_tests = 0
-
-# Python scripts should be able to find the pyrealsense2 .pyd or else they won't work. We don't know
-# if the user (Travis included) has pyrealsense2 installed but even if so, we want to use the one we compiled.
-# we search the librealsense repository for the .pyd file (.so file in linux)
-pyrs = ""
-if linux:
-    for so in file.find( repo.root, '(^|/)pyrealsense2.*\.so$' ):
-        pyrs = so
-else:
-    for pyd in file.find( repo.root, '(^|/)pyrealsense2.*\.pyd$' ):
-        pyrs = pyd
-
-if pyrs:
-    # After use of find, pyrs contains the path from librealsense to the pyrealsense that was found
-    # We append it to the librealsense path to get an absolute path to the file to add to PYTHONPATH so it can be found by the tests
-    pyrs_path = repo.root + os.sep + pyrs
-    # We need to add the directory not the file itself
-    pyrs_path = os.path.dirname( pyrs_path )
-    log.d( 'found pyrealsense pyd in:', pyrs_path )
-    if not target:
-        target = pyrs_path
-        log.d( 'assuming executable path same as pyd path' )
 
 # Figure out which sys.path we want the tests to see, assuming we have Python tests
 #     PYTHONPATH is what Python will ADD to sys.path for the child processes
@@ -262,10 +290,9 @@ def get_tests():
         # In Linux, the build targets are located elsewhere than on Windows
         # Go over all the tests from a "manifest" we take from the result of the last CMake
         # run (rather than, for example, looking for test-* in the build-directory):
+        manifestfile = os.path.join( build_dir, 'CMakeFiles', 'TargetDirectories.txt' )
         if linux:
             manifestfile = target + '/CMakeFiles/TargetDirectories.txt'
-        else:
-            manifestfile = target + '/../CMakeFiles/TargetDirectories.txt'
         # log.d( manifestfile )
         for manifest_ctx in file.grep( r'(?<=unit-tests/build/)\S+(?=/CMakeFiles/test-\S+.dir$)', manifestfile ):
             # We need to first create the test name so we can see if it fits the regex
