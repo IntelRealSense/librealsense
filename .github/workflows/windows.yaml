@@ -17,6 +17,7 @@ jobs:
     
   Windows_testing_cpp_USB_Win7:
     runs-on: windows-2016
+    timeout-minutes: 60
     env:
       VS15: false
       RS_CPP_TEST: true
@@ -67,6 +68,7 @@ jobs:
   
   Windows_cpp:
     runs-on: windows-2016
+    timeout-minutes: 60
     env:
       VS15: true
     steps:
@@ -106,6 +108,7 @@ jobs:
     # cross-platform coverage.
     # See: https://docs.github.com/en/free-pro-team@latest/actions/learn-github-actions/managing-complex-workflows#using-a-build-matrix
     runs-on: windows-2016   
+    timeout-minutes: 60
     env:
       VS15: true  
     steps:
