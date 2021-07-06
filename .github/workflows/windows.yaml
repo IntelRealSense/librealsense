@@ -33,13 +33,15 @@ jobs:
     - name: PreBuild
       run: |
        cd scripts && ./api_check.sh && cd ..
-       mkdir build && cd build
+       mkdir build
     
     - name: Configure CMake
     # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
     # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
       run: |        
         cd build
+        pwd
+        ls
         cmake .. -G "Visual Studio 15 2017 Win64" -DPYTHON_EXECUTABLE="C:/Python38/python.exe" -DBUILD_PYTHON_BINDINGS=true -DPYBIND11_PYTHON_VERSION=3.8 -DBUILD_UNIT_TESTS=false -DBUILD_LEGACY_LIVE_TEST=true -DBUILD_EXAMPLES=false -DBUILD_TOOLS=false -DBUILD_WITH_TM2=false -DFORCE_RSUSB_BACKEND=true
 
     - name: Build
@@ -75,13 +77,15 @@ jobs:
     - name: PreBuild
       run: |
        cd scripts && ./api_check.sh && cd ..
-       mkdir build && cd build
+       mkdir build
 
     - name: Configure CMake
     # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
     # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
       run: |        
         cd build
+        pwd
+        ls
         cmake .. -G "Visual Studio 15 2017 Win64" -DBUILD_EXAMPLES=true -DBUILD_WITH_TM2=true -DCHECK_FOR_UPDATES=true
 
     - name: Build
@@ -111,13 +115,15 @@ jobs:
     - name: PreBuild
       run: |
        cd scripts && ./api_check.sh && cd ..
-       mkdir build && cd build
+       mkdir build
 
     - name: Configure CMake
       # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
       # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
       run: |        
         cd build
+        pwd
+        ls
         cmake .. -G "Visual Studio 15 2017 Win64" -DBUILD_EXAMPLES=false -DBUILD_TOOLS=false -DBUILD_CSHARP_BINDINGS=true -DDOTNET_VERSION_LIBRARY="4.5" -DDOTNET_VERSION_EXAMPLES="4.5" -DCHECK_FOR_UPDATES=true    
 
     - name: Build
