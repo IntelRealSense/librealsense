@@ -3814,7 +3814,7 @@ const rs2_raw_data_buffer* rs2_run_focal_length_calibration(rs2_device* device, 
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, device, left, right, ratio, angle)
 
-const rs2_raw_data_buffer* rs2_run_uvmapping_calibration_cpp(rs2_device* device, rs2_frame_queue* left, rs2_frame_queue* color, rs2_frame_queue* depth, int py_px_only,
+const rs2_raw_data_buffer* rs2_run_uv_map_calibration_cpp(rs2_device* device, rs2_frame_queue* left, rs2_frame_queue* color, rs2_frame_queue* depth, int py_px_only,
     float* health, int health_size, rs2_update_progress_callback* progress_callback, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(device);
@@ -3822,19 +3822,20 @@ const rs2_raw_data_buffer* rs2_run_uvmapping_calibration_cpp(rs2_device* device,
     VALIDATE_NOT_NULL(color);
     VALIDATE_NOT_NULL(depth);
     VALIDATE_NOT_NULL(health);
+    VALIDATE_GT(health_size, 0);
 
     auto auto_calib = VALIDATE_INTERFACE(device->device, librealsense::auto_calibrated_interface);
     std::vector<uint8_t> buffer;
     if (progress_callback == nullptr)
-        buffer = auto_calib->run_uvmapping_calibration(left, color, depth, py_px_only, health, health_size, nullptr);
+        buffer = auto_calib->run_uv_map_calibration(left, color, depth, py_px_only, health, health_size, nullptr);
     else
-        buffer = auto_calib->run_uvmapping_calibration(left, color, depth, py_px_only, health, health_size, { progress_callback, [](rs2_update_progress_callback* p) { p->release(); } });
+        buffer = auto_calib->run_uv_map_calibration(left, color, depth, py_px_only, health, health_size, { progress_callback, [](rs2_update_progress_callback* p) { p->release(); } });
 
     return new rs2_raw_data_buffer{ buffer };
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, device, left, color, depth, health)
 
-const rs2_raw_data_buffer* rs2_run_uvmapping_calibration(rs2_device* device, rs2_frame_queue* left, rs2_frame_queue* color, rs2_frame_queue* depth, int py_px_only,
+const rs2_raw_data_buffer* rs2_run_uv_map_calibration(rs2_device* device, rs2_frame_queue* left, rs2_frame_queue* color, rs2_frame_queue* depth, int py_px_only,
     float* health, int health_size, rs2_update_progress_callback_ptr callback, void* client_data, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(device);
@@ -3842,15 +3843,16 @@ const rs2_raw_data_buffer* rs2_run_uvmapping_calibration(rs2_device* device, rs2
     VALIDATE_NOT_NULL(color);
     VALIDATE_NOT_NULL(depth);
     VALIDATE_NOT_NULL(health);
+    VALIDATE_GT(health_size, 0);
 
     auto auto_calib = VALIDATE_INTERFACE(device->device, librealsense::auto_calibrated_interface);
     std::vector<uint8_t> buffer;
     if (callback == nullptr)
-        buffer = auto_calib->run_uvmapping_calibration(left, color, depth, py_px_only, health, health_size, nullptr);
+        buffer = auto_calib->run_uv_map_calibration(left, color, depth, py_px_only, health, health_size, nullptr);
     else
     {
         librealsense::update_progress_callback_ptr cb(new librealsense::update_progress_callback(callback, client_data), [](update_progress_callback* p) { delete p; });
-        buffer = auto_calib->run_uvmapping_calibration(left, color, depth, py_px_only, health, health_size, cb);
+        buffer = auto_calib->run_uv_map_calibration(left, color, depth, py_px_only, health, health_size, cb);
     }
 
     return new rs2_raw_data_buffer{ buffer };

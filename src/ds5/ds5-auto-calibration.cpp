@@ -1275,7 +1275,7 @@ namespace librealsense
         }
     }
 
-    std::vector<uint8_t> auto_calibrated::run_uvmapping_calibration(rs2_frame_queue* left, rs2_frame_queue* color, rs2_frame_queue* depth, int py_px_only,
+    std::vector<uint8_t> auto_calibrated::run_uv_map_calibration(rs2_frame_queue* left, rs2_frame_queue* color, rs2_frame_queue* depth, int py_px_only,
         float* health, int health_size, update_progress_callback_ptr progress_callback)
     {
         float left_dots_x[4];

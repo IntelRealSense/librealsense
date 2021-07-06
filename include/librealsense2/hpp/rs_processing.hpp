@@ -221,6 +221,12 @@ namespace rs2
         */
         bool keep_frames() const { return _keep; }
 
+        /**
+        * Provide a getter for underlying rs2_frame_queue object. Used to invoke C-API that require C-type parameters in signature
+        * \return keeping frames
+        */
+        std::shared_ptr<rs2_frame_queue> get() { return _queue; }
+
     private:
         std::shared_ptr<rs2_frame_queue> _queue;
         size_t _capacity;

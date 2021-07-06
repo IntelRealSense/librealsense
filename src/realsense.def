@@ -377,8 +377,8 @@ EXPORTS
     rs2_run_tare_calibration_cpp
     rs2_run_focal_length_calibration
     rs2_run_focal_length_calibration_cpp
-    rs2_run_uvmapping_calibration
-    rs2_run_uvmapping_calibration_cpp
+    rs2_run_uv_map_calibration
+    rs2_run_uv_map_calibration_cpp
     rs2_calculate_target_z
     rs2_calculate_target_z_cpp
     rs2_get_calibration_table
