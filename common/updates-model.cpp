@@ -72,8 +72,12 @@ void updates_model::draw(std::shared_ptr<notifications_model> not_model, ux_wind
 
         bool sw_update_needed(false), fw_update_needed(false);
 
-        // Verify Device Exists
-        if (update.profile.dev_active || _fw_update_state == fw_update_states::started)
+        bool fw_update_in_process = _fw_update_state == fw_update_states::started
+                                 || _fw_update_state == fw_update_states::failed_updating
+                                 || _fw_update_state == fw_update_states::failed_downloading;
+
+        // Verify Device Exists or a FW update process
+        if (update.profile.dev_active || fw_update_in_process)
         {
             // ===========================================================================
             // Draw Software update Pane
@@ -84,20 +88,29 @@ void updates_model::draw(std::shared_ptr<notifications_model> not_model, ux_wind
             // Draw Firmware update Pane
             // ===========================================================================
             fw_update_needed = draw_firmware_section(not_model, window_name, update, positions, window, error_message);
-
         }
         else 
-        {
-            ImGui::PushFont(window.get_large_font());
+        { // Indicate device disconnected to the user
             ImGui::PushStyleColor(ImGuiCol_Text, white);
-            ImGui::SetCursorPos({ positions.orig_pos.x, positions.y0 - 100 });
             ImGui::SetWindowFontScale(1.5);
-            ImGui::Text("%s","THE DEVICE HAS BEEN DISCONNECTED,");
-            ImGui::SetCursorPos({ positions.orig_pos.x - 100, positions.y0 - 70 });
-            ImGui::Text("%s", "PLEASE RECONNECT IT OR CLOSE THE UPDATES WINDOW.");
-            ImGui::PopFont();
-            ImGui::SetCursorPos({ positions.orig_pos.x + 230, positions.y0 });
+            std::string disconnected_text = "THE DEVICE HAS BEEN DISCONNECTED,";
+            auto disconnected_text_size = ImGui::CalcTextSize(disconnected_text.c_str());
+            auto disconnected_text_x_pixel = positions.w / 2 - disconnected_text_size.x / 2; // Align 2 center
+            auto vertical_padding = 100.f;
+            ImGui::SetCursorPos({ disconnected_text_x_pixel, vertical_padding });
+            ImGui::Text("%s", disconnected_text.c_str());
+
+            std::string reconnect_text = "PLEASE RECONNECT IT OR CLOSE THE UPDATES WINDOW.";
+            auto reconnect_text_size = ImGui::CalcTextSize(reconnect_text.c_str());
+            auto reconnect_text_x_pixel = positions.w / 2 - reconnect_text_size.x / 2; // Align 2 center
+            ImGui::SetCursorPosX(reconnect_text_x_pixel);
+            ImGui::Text("%s", reconnect_text.c_str());
+
             ImGui::SetWindowFontScale(3.);
+
+            auto disconnect_icon_size = ImGui::CalcTextSize(textual_icons::lock);
+            auto disconnect_icon_x_pixel = (positions.w / 2.f) -  (disconnect_icon_size.x / 2); // Align 2 center
+            ImGui::SetCursorPosX( disconnect_icon_x_pixel );
             ImGui::Text("%s", static_cast<const char *>(textual_icons::lock));
             ImGui::SetWindowFontScale(1.);
             ImGui::PopStyleColor();
@@ -500,7 +513,9 @@ bool updates_model::draw_firmware_section(std::shared_ptr<notifications_model> n
 
     }
 
-    ImVec2 fw_text_pos(pos.orig_pos.x + 10, pos.mid_y + 15);
+    auto left_padding = 10;
+    auto top_padding = 15;
+    ImVec2 fw_text_pos(pos.orig_pos.x + left_padding, pos.mid_y + top_padding);
     ImGui::SetCursorScreenPos(fw_text_pos);
 
     ImGui::PushFont(window.get_large_font());
@@ -558,7 +573,15 @@ bool updates_model::draw_firmware_section(std::shared_ptr<notifications_model> n
     ImGui::Text("%s", "Current FW version:");
     ImGui::SameLine();
     ImGui::PopStyleColor();
-    auto current_fw_ver_str = std::string(selected_profile.profile.firmware_version);
+
+    // During FW update do not take the version from the device because a recovery device version is 0.0.0.0.
+    // Instead display an update in progress label
+    std::string current_fw_ver_str;
+    if (_fw_update_state != fw_update_states::started)
+        current_fw_ver_str = std::string(selected_profile.profile.firmware_version);
+    else
+        current_fw_ver_str = "Update in progress..";
+
     ImGui::Text("%s", current_fw_ver_str.c_str());
 
     
@@ -711,8 +734,8 @@ bool updates_model::draw_firmware_section(std::shared_ptr<notifications_model> n
     }
     else if (_fw_update_state == fw_update_states::downloading)
     {
-        ImGui::SetCursorScreenPos({ pos.orig_pos.x + 150, pos.orig_pos.y + pos.h - 95 });
-        _progress.draw(window, static_cast<int>(pos.w) - 170, _fw_download_progress / 3);
+        ImGui::SetCursorScreenPos({ pos.orig_pos.x + left_padding, pos.orig_pos.y + pos.h - 95 });
+        _progress.draw(window, static_cast<int>(pos.w) - 170 - left_padding, _fw_download_progress / 3);
         if (_fw_download_progress == 100 && !_fw_image.empty())
         {
             _fw_download_progress = 0;
@@ -727,8 +750,8 @@ bool updates_model::draw_firmware_section(std::shared_ptr<notifications_model> n
     }
     else if (_fw_update_state == fw_update_states::started)
     {
-        ImGui::SetCursorScreenPos({ pos.orig_pos.x + 150, pos.orig_pos.y + pos.h - 95 });
-        _progress.draw(window, static_cast<int>(pos.w) - 170, static_cast<int>(_update_manager->get_progress() * 0.66 + 33));
+        ImGui::SetCursorScreenPos({ pos.orig_pos.x + left_padding, pos.orig_pos.y + pos.h - 95 });
+        _progress.draw(window, static_cast<int>(pos.w) - 170 - left_padding, static_cast<int>(_update_manager->get_progress() * 0.66 + 33));
         if (_update_manager->done()) {
             _fw_update_state = fw_update_states::completed;
             _fw_image.clear();
@@ -750,12 +773,12 @@ bool updates_model::draw_firmware_section(std::shared_ptr<notifications_model> n
     else if (_fw_update_state == fw_update_states::failed_downloading ||
         _fw_update_state == fw_update_states::failed_updating)
     {
-        ImGui::SetCursorScreenPos({ pos.orig_pos.x + 150, pos.orig_pos.y + pos.h - 95 });
+        ImGui::SetCursorScreenPos({ pos.orig_pos.x + left_padding, pos.orig_pos.y + pos.h - 95 });
         ImGui::PushStyleColor(ImGuiCol_Text, white);
         std::string text = _fw_update_state == fw_update_states::failed_downloading ?
             "Firmware download failed, check connection and press to retry" :
             "Firmware update process failed, press to retry";
-        if (ImGui::Button(text.c_str(), ImVec2(pos.w - 170, 25)))
+        if (ImGui::Button(text.c_str(), ImVec2(pos.w - 170 - left_padding, 25)))
         {
             _fw_update_state = fw_update_states::ready;
             _update_manager.reset();
