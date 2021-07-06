@@ -11,7 +11,7 @@ env:
   BUILD_TYPE: Release
   LRS_BUILD_CONFIG: Debug
   LRS_RUN_CONFIG: Release
-  PYTHON_PATH: C:\hostedtoolcache\windows\Python\3.8.1\x64\python.exe
+  PYTHON_PATH: C:\\hostedtoolcache\\windows\Python\\3.8.1\\x64\\python.exe
 
 jobs:
     
@@ -45,12 +45,12 @@ jobs:
         cd build
         pwd
         ls
-        echo PYTHONPATH= $PYTHONPATH
-        echo 'MY PYTHON VER IS:'
-        python --version
+        #echo PYTHONPATH= $PYTHONPATH
+        #echo 'MY PYTHON VER IS:'
+        #python --version
         #echo $PYTHONPATH >> $GITHUB_PATH
-        echo $GITHUB_PATH | grep -i python
-        cmake .. -G "Visual Studio 15 2017 Win64" -DPYTHON_EXECUTABLE=$PYTHONPATH/python.exe -DBUILD_PYTHON_BINDINGS=true -DPYBIND11_PYTHON_VERSION=3.8 -DBUILD_UNIT_TESTS=false -DBUILD_LEGACY_LIVE_TEST=true -DBUILD_EXAMPLES=false -DBUILD_TOOLS=false -DBUILD_WITH_TM2=false -DFORCE_RSUSB_BACKEND=true
+        #echo $GITHUB_PATH | grep -i python
+        cmake .. -G "Visual Studio 15 2017 Win64" -DPYTHON_EXECUTABLE=${{env.PYTHON_PATH}} -DBUILD_PYTHON_BINDINGS=true -DPYBIND11_PYTHON_VERSION=3.8 -DBUILD_UNIT_TESTS=false -DBUILD_LEGACY_LIVE_TEST=true -DBUILD_EXAMPLES=false -DBUILD_TOOLS=false -DBUILD_WITH_TM2=false -DFORCE_RSUSB_BACKEND=true
 
     - name: Build
       # Build your program with the given configuration
