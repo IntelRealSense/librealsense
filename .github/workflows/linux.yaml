@@ -15,7 +15,8 @@ env:
 jobs:
 
    Linux_testing_cpp:
-      runs-on: ubuntu-18.04      
+      runs-on: ubuntu-18.04    
+      timeout-minutes: 60
       env: 
         RS_CPP_TEST: true
       steps:
@@ -46,7 +47,8 @@ jobs:
       - name: Build
         shell: bash
         run: | 
-          cmake . -DBUILD_UNIT_TESTS=false -DBUILD_LEGACY_LIVE_TEST=true -DBUILD_EXAMPLES=false -DBUILD_TOOLS=false -DBUILD_WITH_TM2=false -DCHECK_FOR_UPDATES=true
+          cd build
+          cmake .. -DBUILD_UNIT_TESTS=false -DBUILD_LEGACY_LIVE_TEST=true -DBUILD_EXAMPLES=false -DBUILD_TOOLS=false -DBUILD_WITH_TM2=false -DCHECK_FOR_UPDATES=true
           cmake --build . --config ${{env.LRS_RUN_CONFIG}} -- -j4
           ./unit-tests/live-test -d yes -i [software-device]
           for i in ./records/single_cam/*; do ./unit-tests/live-test -d yes -i ~[multicam] from "$i"; done
@@ -55,6 +57,7 @@ jobs:
   
    Linux_static_cpp:
       runs-on: ubuntu-18.04
+      timeout-minutes: 60
       steps:
       - uses: actions/checkout@v2
 
@@ -64,12 +67,13 @@ jobs:
           cd scripts && ./api_check.sh && cd ..
           mkdir build && cd build
           cd ./scripts && ./pr_check.sh && cd ./build
-          cmake . -DBUILD_EXAMPLES=true -DBUILD_WITH_TM2=true -DBUILD_SHARED_LIBS=false -DCHECK_FOR_UPDATES=true -DBUILD_PYTHON_BINDINGS=true -DPYBIND11_PYTHON_VERSION=3.5
+          cmake .. -DBUILD_EXAMPLES=true -DBUILD_WITH_TM2=true -DBUILD_SHARED_LIBS=false -DCHECK_FOR_UPDATES=true -DBUILD_PYTHON_BINDINGS=true -DPYBIND11_PYTHON_VERSION=3.5
           cmake --build . --config ${{env.LRS_BUILD_CONFIG}} -- -j4
   
   
    Linux_python_nodejs:
-      runs-on: ubuntu-18.04      
+      runs-on: ubuntu-18.04     
+      timeout-minutes: 60
       env: 
         LRS_BUILD_NODEJS: true
       steps:
@@ -96,8 +100,9 @@ jobs:
       - name: Build
         shell: bash
         run: | 
+          cd build
           python ./wrappers/nodejs/tools/enums.py -i ./include/librealsense2 -a ./wrappers/nodejs/src -v
-          cmake . -DBUILD_PYTHON_BINDINGS=true -DBUILD_NODEJS_BINDINGS=true -DPYBIND11_PYTHON_VERSION=2.7 -DCHECK_FOR_UPDATES=true
+          cmake .. -DBUILD_PYTHON_BINDINGS=true -DBUILD_NODEJS_BINDINGS=true -DPYBIND11_PYTHON_VERSION=2.7 -DCHECK_FOR_UPDATES=true
           cmake --build . --config $LRS_BUILD_CONFIG -- -j4
           cd ./wrappers/nodejs/
           npm install
