@@ -884,43 +884,35 @@ namespace rs2
     {
         try
         {
-            const int frame_num = 25;
+            constexpr int frames_required = 25;
 
-            rs2_error* e = nullptr;
-            std::shared_ptr<rs2_frame_queue> left(rs2_create_frame_queue(frame_num, &e), rs2_delete_frame_queue);
-            std::shared_ptr<rs2_frame_queue> right(rs2_create_frame_queue(frame_num, &e), rs2_delete_frame_queue);
+            rs2::frame_queue left;
+            rs2::frame_queue right;
 
             int counter = 0;
-            int limit = frame_num << 1;
-            rs2::frame f;
-            while (counter < limit)
+
+            float step = 50.f / frames_required; // The first stage represents 50% of the calibration process
+
+            // Stage 1 : Gather frames from Left/Right IR sensors
+            while (counter < frames_required) // TODO timeout Evgeni
             {
-                f = _viewer.ppf.frames_queue[_uid].wait_for_frame(); // left
-                if (f)
+                auto fl = _viewer.ppf.frames_queue[_uid].wait_for_frame();    // left
+                auto fr = _viewer.ppf.frames_queue[_uid2].wait_for_frame();   // right
+                if (fl && fr)
                 {
-                    f.keep();
-                    rs2_frame_add_ref(f.get(), &e);
-                    rs2_enqueue_frame(f.get(), left.get());
-                    ++_progress;
+                    left.enqueue(fl);
+                    right.enqueue(fr);
+                    _progress += step;
+                    counter++;
                 }
 
-                f = _viewer.ppf.frames_queue[_uid2].wait_for_frame(); // right
-                if (f)
-                {
-                    f.keep();
-                    rs2_frame_add_ref(f.get(), &e);
-                    rs2_enqueue_frame(f.get(), right.get());
-                    ++_progress;
-                }
-
-                counter += 2;
             }
 
-            if (counter == limit)
+            if (counter >= frames_required)
             {
+                // Stage 2 : Perform focal length calibration correction routine
                 auto calib_dev = _dev.as<auto_calibrated_device>();
-                _new_calib = calib_dev.run_focal_length_calibration(left.get(),
-                                                          right.get(),
+                _new_calib = calib_dev.run_focal_length_calibration(left, right,
                                                           config_file::instance().get_or_default(configurations::viewer::target_width_r, 175.0f),
                                                           config_file::instance().get_or_default(configurations::viewer::target_height_r, 100.0f),
                                                           adjust_both_sides,
@@ -941,65 +933,44 @@ namespace rs2
         }
     }
 
-    void on_chip_calib_manager::calibrate_uvmapping()
+    void on_chip_calib_manager::calibrate_uv_mapping()
     {
         try
         {
-            const int frame_num = 25;
+            constexpr int frames_required = 25;
 
-            rs2_error* e = nullptr;
-            std::shared_ptr<rs2_frame_queue> left(rs2_create_frame_queue(frame_num, &e), rs2_delete_frame_queue);
-            std::shared_ptr<rs2_frame_queue> color(rs2_create_frame_queue(frame_num, &e), rs2_delete_frame_queue);
-            std::shared_ptr<rs2_frame_queue> depth(rs2_create_frame_queue(frame_num, &e), rs2_delete_frame_queue);
+            rs2::frame_queue left;
+            rs2::frame_queue color;
+            rs2::frame_queue depth;
 
             int counter = 0;
-            int limit = frame_num * 3;
-            rs2::frame f;
-            while (counter < limit)
+            float step = 50.f / frames_required; // The first stage represents 50% of the calibration process
+
+            // Stage 1 : Gather frames from Depth/Left IR and RGB streams
+            while (counter < frames_required) // TODO timeout Evgeni
             {
-                f = _viewer.ppf.frames_queue[_uid].wait_for_frame(); // left
-                if (f)
+                auto fl = _viewer.ppf.frames_queue[_uid].wait_for_frame(1000); // left
+                auto fd = _viewer.ppf.frames_queue[_uid2].wait_for_frame(1000); // depth
+                auto fc = _viewer.ppf.frames_queue[_uid_color].wait_for_frame(1000); // rgb
+
+                if (fl && fd && fc)
                 {
-                    f.keep();
-                    rs2_frame_add_ref(f.get(), &e);
-                    rs2_enqueue_frame(f.get(), left.get());
-                    ++_progress;
+                    left.enqueue(fl);
+                    depth.enqueue(fd);
+                    color.enqueue(fc);
+                    counter++;
                 }
-
-                f = _viewer.ppf.frames_queue[_uid2].wait_for_frame(); // depth
-                if (f)
-                {
-                    f.keep();
-                    rs2_frame_add_ref(f.get(), &e);
-                    rs2_enqueue_frame(f.get(), depth.get());
-                }
-
-
-                f = _viewer.ppf.frames_queue[_uid_color].wait_for_frame(); // rgb
-                if (f)
-                {
-                    f.keep();
-                    rs2_frame_add_ref(f.get(), &e);
-                    rs2_enqueue_frame(f.get(), color.get());
-                    ++_progress;
-                }
-
-                counter += 3;
+                _progress += step;
             }
 
-            if (counter == limit)
+            if (counter >= frames_required)
             {
                 auto calib_dev = _dev.as<auto_calibrated_device>();
-                _new_calib = calib_dev.run_uvmapping_calibration_cpp(left.get(),
-                                                                 color.get(),
-                                                                 depth.get(),
-                                                                 py_px_only,
-                                                                 _health_nums,
-                                                                 4,
-                                                                 [&](const float progress) {_progress = progress; });
+                _new_calib = calib_dev.run_uv_map_calibration(left, color, depth, py_px_only, _health_nums, 4,
+                                                            [&](const float progress) {_progress = progress; });
             }
             else
-                fail("Failed to capture enough frames!");
+                fail("Failed to capture sufficient amount of frames to run UV-Map calibration!");
         }
         catch (const std::runtime_error& error)
         {
@@ -1021,7 +992,8 @@ namespace rs2
             float step = 50.f / limit;  // frames gathering is 50% of the process, the rest is the internal data extraction and algo processing
             
             rs2_error* e = nullptr;
-            std::shared_ptr<rs2_frame_queue> fq(rs2_create_frame_queue(limit, &e), rs2_delete_frame_queue);
+            //std::shared_ptr<rs2_frame_queue> queue(rs2_create_frame_queue(limit, &e), rs2_delete_frame_queue);
+            rs2::frame_queue queue;
 
             rs2::frame f;
             // Collect sufficient amount of frames (up to 50) to extract target pattern and calculate distance to it
@@ -1030,9 +1002,10 @@ namespace rs2
                 f = _viewer.ppf.frames_queue[_uid].wait_for_frame();
                 if (f)
                 {
-                    f.keep();
+                    queue.enqueue(f);
+                    /*f.keep();
                     rs2_frame_add_ref(f.get(), &e);
-                    rs2_enqueue_frame(f.get(), fq.get());
+                    rs2_enqueue_frame(f.get(), queue.get());*/
                     ++counter;
                     _progress += step;
                 }
@@ -1042,10 +1015,10 @@ namespace rs2
             if (counter >= limit)
             {
                 auto calib_dev = _dev.as<auto_calibrated_device>();
-                float target_z_mm = calib_dev.calculate_target_z(fq.get(),
-                    config_file::instance().get_or_default(configurations::viewer::target_width_r, 175.0f),
-                    config_file::instance().get_or_default(configurations::viewer::target_height_r, 100.0f),
-                    [&](const float progress) { _progress = std::min(100.f, _progress+step); });
+                float target_z_mm = calib_dev.calculate_target_z(queue,
+                                                    config_file::instance().get_or_default(configurations::viewer::target_width_r, 175.0f),
+                                                    config_file::instance().get_or_default(configurations::viewer::target_height_r, 100.0f),
+                                                    [&](const float progress) { _progress = std::min(100.f, _progress+step); });
 
                 // Update the stored value with algo-calculated
                 if (target_z_mm > 0.f)
@@ -1140,7 +1113,7 @@ namespace rs2
                 if (action == RS2_CALIB_ACTION_FL_CALIB)
                     calibrate_fl();
                 else if (action == RS2_CALIB_ACTION_UVMAPPING_CALIB)
-                    calibrate_uvmapping();
+                    calibrate_uv_mapping();
                 else
                     calibrate();
             }
