@@ -45,9 +45,10 @@ jobs:
         cd build
         pwd
         ls
-        echo 'PYTHONPATH= $PYTHONPATH'
+        echo PYTHONPATH= $PYTHONPATH
         echo 'MY PYTHON VER IS:'
         python --version
+        echo $PYTHONPATH >> $GITHUB_PATH
         cmake .. -G "Visual Studio 15 2017 Win64" -DPYTHON_EXECUTABLE=$PYTHONPATH/python.exe -DBUILD_PYTHON_BINDINGS=true -DPYBIND11_PYTHON_VERSION=3.8 -DBUILD_UNIT_TESTS=false -DBUILD_LEGACY_LIVE_TEST=true -DBUILD_EXAMPLES=false -DBUILD_TOOLS=false -DBUILD_WITH_TM2=false -DFORCE_RSUSB_BACKEND=true
 
     - name: Build
