@@ -13,8 +13,8 @@ import pyrealsense2_net as rsnet
 
 
 if len(sys.argv) == 1:
- print ('To run example: python net_viewer <server ip address>')
- quit()
+    print( 'syntax: python net_viewer <server-ip-address>' )
+    sys.exit(1)
 
 ip = sys.argv[1]
 
