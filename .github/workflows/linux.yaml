@@ -14,7 +14,7 @@ env:
 
 jobs:
 
-Linux_testing_cpp:
+   Linux_testing_cpp:
       runs-on: ubuntu-18.04      
       env: 
         RS_CPP_TEST: true
@@ -53,7 +53,7 @@ Linux_testing_cpp:
           for i in ./records/multi_cam/*; do ./unit-tests/live-test -d yes -i [multicam] from "$i"; done
   
   
-  Linux_static_cpp:
+   Linux_static_cpp:
       runs-on: ubuntu-18.04
       steps:
       - uses: actions/checkout@v2
@@ -68,7 +68,7 @@ Linux_testing_cpp:
           cmake --build . --config ${{env.LRS_BUILD_CONFIG}} -- -j4
   
   
-  Linux_python_nodejs:
+   Linux_python_nodejs:
       runs-on: ubuntu-18.04      
       env: 
         LRS_BUILD_NODEJS: true
