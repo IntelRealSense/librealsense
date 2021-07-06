@@ -59,13 +59,13 @@ namespace rs2
 
         enum auto_calib_action
         {
-            RS2_CALIB_ACTION_ON_CHIP_OB_CALIB,  // On-Chip calibration extended
-            RS2_CALIB_ACTION_ON_CHIP_CALIB,     // On-Chip calibration
-            RS2_CALIB_ACTION_ON_CHIP_FL_CALIB,  // On-Chip focal length calibration
-            RS2_CALIB_ACTION_TARE_CALIB,        // Tare calibration
-            RS2_CALIB_ACTION_TARE_GROUND_TRUTH, // Tare ground truth
-            RS2_CALIB_ACTION_FL_CALIB,          // Focal length calibration
-            RS2_CALIB_ACTION_UVMAPPING_CALIB,   // UVMapping calibration
+            RS2_CALIB_ACTION_ON_CHIP_OB_CALIB,      // On-Chip calibration extended
+            RS2_CALIB_ACTION_ON_CHIP_CALIB,         // On-Chip calibration
+            RS2_CALIB_ACTION_ON_CHIP_FL_CALIB,      // On-Chip focal length calibration
+            RS2_CALIB_ACTION_TARE_CALIB,            // Tare calibration
+            RS2_CALIB_ACTION_TARE_GROUND_TRUTH,     // Tare ground truth
+            RS2_CALIB_ACTION_FL_CALIB,              // Focal length calibration
+            RS2_CALIB_ACTION_UVMAPPING_CALIB,       // UVMapping calibration
         };
 
         auto_calib_action action = RS2_CALIB_ACTION_ON_CHIP_CALIB;

@@ -116,6 +116,25 @@ void init_device(py::module &m) {
         {
             return self.run_tare_calibration(ground_truth_mm, json_content, callback, timeout_ms);
         }, "This will adjust camera absolute distance to flat target. This call is executed on the caller's thread.", "ground_truth_mm"_a, "json_content"_a, "callback"_a, "timeout_ms"_a, py::call_guard<py::gil_scoped_release>())
+
+        .def("run_focal_length_calibration", [](const rs2::auto_calibrated_device& self, rs2::frame_queue left_queue, rs2::frame_queue right_queue,
+                float target_width_mm, float target_heigth_mm, int adjust_both_sides)
+        {
+            float ratio;
+            float angle;
+            return py::make_tuple(self.run_focal_length_calibration(left_queue, right_queue, target_width_mm, target_heigth_mm, adjust_both_sides, &ratio, &angle), ratio, angle);
+        }, "Run target-based focal length calibration. This call is executed on the caller's thread and it supports progress notifications via the callback.",
+            "left_queue"_a, "right_queue"_a, "target_width_mm"_a, "target_heigth_mm"_a, "adjust_both_sides"_a)
+
+        .def("run_focal_length_calibration", [](const rs2::auto_calibrated_device& self, rs2::frame_queue left_queue, rs2::frame_queue right_queue,
+                float target_width_mm, float target_heigth_mm, int adjust_both_sides, std::function<void(float)> callback)
+        {
+            float ratio;
+            float angle;
+            return py::make_tuple(self.run_focal_length_calibration(left_queue, right_queue, target_width_mm, target_heigth_mm, adjust_both_sides, &ratio, &angle, callback), ratio, angle);
+        }, "Run target-based focal length calibration. This call is executed on the caller's thread.",
+            "left_queue"_a, "right_queue"_a, "target_width_mm"_a, "target_heigth_mm"_a, "adjust_both_sides"_a, py::call_guard<py::gil_scoped_release>())
+
         .def("get_calibration_table", &rs2::auto_calibrated_device::get_calibration_table, "Read current calibration table from flash.")
         .def("set_calibration_table", &rs2::auto_calibrated_device::set_calibration_table, "Set current table to dynamic area.")
         .def("reset_to_factory_calibration", &rs2::auto_calibrated_device::reset_to_factory_calibration, "Reset device to factory calibration.");

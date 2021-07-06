@@ -921,7 +921,7 @@ namespace librealsense
             rect_sides[i] /= rect_sides_arr.size();
     }
 
-    std::vector<uint8_t> auto_calibrated::run_fl_calibration(rs2_frame_queue* left, rs2_frame_queue* right, float target_w, float target_h,
+    std::vector<uint8_t> auto_calibrated::run_focal_length_calibration(rs2_frame_queue* left, rs2_frame_queue* right, float target_w, float target_h,
         int adjust_both_sides, float *ratio, float * angle, update_progress_callback_ptr progress_callback)
     {
         float fx[2] = { -1.0f, -1.0f };

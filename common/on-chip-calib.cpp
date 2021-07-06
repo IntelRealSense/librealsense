@@ -919,7 +919,7 @@ namespace rs2
             if (counter == limit)
             {
                 auto calib_dev = _dev.as<auto_calibrated_device>();
-                _new_calib = calib_dev.run_fl_calibration(left.get(),
+                _new_calib = calib_dev.run_focal_length_calibration(left.get(),
                                                           right.get(),
                                                           config_file::instance().get_or_default(configurations::viewer::target_width_r, 175.0f),
                                                           config_file::instance().get_or_default(configurations::viewer::target_height_r, 100.0f),

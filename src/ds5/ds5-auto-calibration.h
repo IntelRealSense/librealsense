@@ -19,7 +19,7 @@ namespace librealsense
         std::vector<uint8_t> get_calibration_table() const override;
         void set_calibration_table(const std::vector<uint8_t>& calibration) override;
         void reset_to_factory_calibration() const override;
-        std::vector<uint8_t> run_fl_calibration(rs2_frame_queue* left, rs2_frame_queue* right, float target_w, float target_h, 
+        std::vector<uint8_t> run_focal_length_calibration(rs2_frame_queue* left, rs2_frame_queue* right, float target_w, float target_h, 
             int adjust_both_sides, float* ratio, float* angle, update_progress_callback_ptr progress_callback) override;
         std::vector<uint8_t> run_uvmapping_calibration(rs2_frame_queue* left, rs2_frame_queue* color, rs2_frame_queue* depth, int py_px_only,
             float* health, int health_size, update_progress_callback_ptr progress_callback) override;

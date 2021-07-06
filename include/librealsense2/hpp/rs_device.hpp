@@ -570,14 +570,14 @@ namespace rs2
         * \param[out]   angle: the target tile angle
         * \return       New calibration table
         */
-        std::vector<uint8_t> run_fl_calibration(rs2_frame_queue* left, rs2_frame_queue* right, float target_w, float target_h, int adjust_both_sides, 
+        std::vector<uint8_t> run_focal_length_calibration(rs2_frame_queue* left, rs2_frame_queue* right, float target_w, float target_h, int adjust_both_sides,
             float* ratio, float* angle)
         {
             std::vector<uint8_t> results;
 
             rs2_error* e = nullptr;
             std::shared_ptr<const rs2_raw_data_buffer> list(
-                rs2_run_fl_calibration_cpp(_dev.get(), left, right, target_w, target_h, adjust_both_sides, ratio, angle, nullptr, &e),
+                rs2_run_focal_length_calibration_cpp(_dev.get(), left, right, target_w, target_h, adjust_both_sides, ratio, angle, nullptr, &e),
                 rs2_delete_raw_data);
             error::handle(e);
 
@@ -603,14 +603,14 @@ namespace rs2
         * \return       New calibration table
         */
         template<class T>
-        std::vector<uint8_t> run_fl_calibration(rs2_frame_queue* left, rs2_frame_queue* right, float target_w, float target_h, int adjust_both_sides,
+        std::vector<uint8_t> run_focal_length_calibration(rs2_frame_queue* left, rs2_frame_queue* right, float target_w, float target_h, int adjust_both_sides,
             float* ratio, float* angle, T callback)
         {
             std::vector<uint8_t> results;
 
             rs2_error* e = nullptr;
             std::shared_ptr<const rs2_raw_data_buffer> list(
-                rs2_run_fl_calibration_cpp(_dev.get(), left, right, target_w, target_h, adjust_both_sides, ratio, angle,
+                rs2_run_focal_length_calibration_cpp(_dev.get(), left, right, target_w, target_h, adjust_both_sides, ratio, angle,
                     new update_progress_callback<T>(std::move(callback)), &e),
                 rs2_delete_raw_data);
             error::handle(e);

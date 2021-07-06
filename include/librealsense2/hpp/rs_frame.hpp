@@ -709,7 +709,7 @@ namespace rs2
         int get_bytes_per_pixel() const { return get_bits_per_pixel() / 8; }
 
         /**
-        * Extract the target dimensions on the specific target
+        * Extract the dimensions on the specific target
         * \param[in] frame            Left or right camera frame of specified size based on the target type
         * \param[in] calib_type       Calibration target type
         * \param[in] target_dims_size Target dimension array size. 4 for RS2_CALIB_TARGET_RECT_GAUSSIAN_DOT_VERTICES and 8 for RS2_CALIB_TARGET_POS_GAUSSIAN_DOT_VERTICES
