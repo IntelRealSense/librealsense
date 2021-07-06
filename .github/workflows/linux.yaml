@@ -89,7 +89,8 @@ jobs:
       env: 
         LRS_BUILD_NODEJS: true
       steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v2   
+
       
       - name: Prebuild
         shell: bash
@@ -103,7 +104,8 @@ jobs:
           npm install -g node-gyp;
           npm install -g mocha;
           git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git;
-          export OLDPATH=$PATH && export PATH=$PATH:$(pwd)/depot_tools;
+          export OLDPATH=$PATH  
+          export PATH=$PATH:$(pwd)/depot_tools;
           cd wrappers/nodejs/tools && npm install && cd ..;
           node ./tools/linter.js;
           export PATH=$OLDPATH && unset OLDPATH && cd ../../;
