@@ -105,7 +105,9 @@ jobs:
           npm install -g mocha;
           git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git;
           export OLDPATH=$PATH  
+          echo OLDPATH=$OLDPATH
           export PATH=$PATH:$(pwd)/depot_tools;
+          echo PATH=$PATH
           cd wrappers/nodejs/tools && npm install && cd ..;
           node ./tools/linter.js;
           export PATH=$OLDPATH && unset OLDPATH && cd ../../;
