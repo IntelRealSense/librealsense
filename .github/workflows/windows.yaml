@@ -11,7 +11,7 @@ env:
   BUILD_TYPE: Release
   LRS_BUILD_CONFIG: Debug
   LRS_RUN_CONFIG: Release
-  PYTHON_PATH: C:\\hostedtoolcache\\windows\Python\\3.8\\x64\\python.exe
+  PYTHON_PATH: C:\\hostedtoolcache\\windows\\Python\\3.8.1\\x64\\python.exe
 
 jobs:
     
@@ -24,7 +24,7 @@ jobs:
     - uses: actions/checkout@v2
     - uses: actions/setup-python@v2
       with:
-       python-version: '3.8'
+       python-version: '3.8.1'
 
     - name: Enable Long Paths
       shell: powershell
