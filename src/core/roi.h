@@ -4,8 +4,8 @@
 
 #include <memory>
 
-#include "core/extension.h"
-#include "types.h"              // exception
+#include "extension.h"
+#include "../types.h"           // exception
 
 namespace librealsense
 {

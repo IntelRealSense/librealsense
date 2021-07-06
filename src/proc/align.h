@@ -5,10 +5,10 @@
 
 #include <map>
 #include <utility>
-#include "core/processing.h"
-#include "proc/synthetic-stream.h"
-#include "image.h"
-#include "source.h"
+#include "../core/processing.h"
+#include "synthetic-stream.h"
+#include "../image.h"
+#include "../source.h"
 
 namespace librealsense
 {
