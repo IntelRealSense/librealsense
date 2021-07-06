@@ -65,7 +65,7 @@ jobs:
         shell: bash
         run: |
           cd scripts && ./api_check.sh && cd ..
-          mkdir build && cd build
+          mkdir build
           cd ./scripts && ./pr_check.sh && cd ./build
           cmake .. -DBUILD_EXAMPLES=true -DBUILD_WITH_TM2=true -DBUILD_SHARED_LIBS=false -DCHECK_FOR_UPDATES=true -DBUILD_PYTHON_BINDINGS=true -DPYBIND11_PYTHON_VERSION=3.5
           cmake --build . --config ${{env.LRS_BUILD_CONFIG}} -- -j4
@@ -95,7 +95,7 @@ jobs:
           cd wrappers/nodejs/tools && npm install && cd ..;
           node ./tools/linter.js;
           export PATH=$OLDPATH && unset OLDPATH && cd ../../;
-          mkdir build && cd build
+          mkdir build
       
       - name: Build
         shell: bash
