@@ -32,6 +32,7 @@ jobs:
        New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name "LongPathsEnabled" -Value 1 -PropertyType DWORD -Force
     
     - name: PreBuild
+      shell: bash
       run: |
        cd scripts && ./api_check.sh && cd ..
        mkdir build
@@ -39,6 +40,7 @@ jobs:
     - name: Configure CMake
     # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
     # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
+      shell: bash
       run: |        
         cd build
         pwd
@@ -47,14 +49,16 @@ jobs:
 
     - name: Build
       # Build your program with the given configuration
+      shell: bash
       run: |
         pwd
         ls
         cmake --build . --config ${{env.LRS_RUN_CONFIG}} -- -m    
      
     - name: Test
+      shell: bash
       run: |
-       cd $LRS_RUN_CONFIG
+       cd ${{env.LRS_RUN_CONFIG}}
        ls
        ./live-test.exe -d yes -i [software-device]  
   
@@ -76,6 +80,7 @@ jobs:
        New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name "LongPathsEnabled" -Value 1 -PropertyType DWORD -Force
 
     - name: PreBuild
+      shell: bash
       run: |
        cd scripts && ./api_check.sh && cd ..
        mkdir build
@@ -83,6 +88,7 @@ jobs:
     - name: Configure CMake
     # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
     # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
+      shell: bash
       run: |        
         cd build
         pwd
@@ -91,6 +97,7 @@ jobs:
 
     - name: Build
       # Build your program with the given configuration
+      shell: bash
       run: |
         cmake --build . --config ${{env.LRS_BUILD_CONFIG}} -- -m    
        
@@ -114,6 +121,7 @@ jobs:
        New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name "LongPathsEnabled" -Value 1 -PropertyType DWORD -Force
 
     - name: PreBuild
+      shell: bash
       run: |
        cd scripts && ./api_check.sh && cd ..
        mkdir build
@@ -121,6 +129,7 @@ jobs:
     - name: Configure CMake
       # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
       # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
+      shell: bash
       run: |        
         cd build
         pwd
@@ -129,5 +138,6 @@ jobs:
 
     - name: Build
       # Build your program with the given configuration
+      shell: bash
       run: |
         cmake --build . --config ${{env.LRS_BUILD_CONFIG}} -- -m     
