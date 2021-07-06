@@ -59,7 +59,7 @@ jobs:
     - name: Test
       shell: bash
       run: |
-       cd ${{env.LRS_RUN_CONFIG}}
+       cd build/${{env.LRS_RUN_CONFIG}}
        ls
        ./live-test.exe -d yes -i [software-device]  
   
