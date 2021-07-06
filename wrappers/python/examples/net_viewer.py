@@ -1,5 +1,5 @@
 ## License: Apache 2.0. See LICENSE file in root directory.
-## Copyright(c) 2015-2021 Intel Corporation. All Rights Reserved.
+## Copyright(c) 2021 Intel Corporation. All Rights Reserved.
 
 ###############################################
 ##      Network viewer                       ##
@@ -62,12 +62,11 @@ try:
         cv2.namedWindow('RealSense', cv2.WINDOW_AUTOSIZE)
         cv2.imshow('RealSense', images)
         k = cv2.waitKey(1) & 0xFF
-        if k == 27:         
-         cv2.destroyAllWindows()
-         break
+        if k == 27:    # Escape
+            cv2.destroyAllWindows()
+            break
 
 finally:
-
     # Stop streaming
     pipeline.stop()
 
