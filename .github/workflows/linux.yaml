@@ -1,0 +1,105 @@
+name: LinuxCI
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+env:
+  # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
+  BUILD_TYPE: Release
+  LRS_BUILD_CONFIG: Debug
+  LRS_RUN_CONFIG: Release
+
+jobs:
+
+Linux_testing_cpp:
+      runs-on: ubuntu-18.04      
+      env: 
+        RS_CPP_TEST: true
+      steps:
+      - uses: actions/checkout@v2
+      
+      - name: Prebuild
+        shell: bash
+        run: |
+          cd scripts && ./api_check.sh && cd ..
+          mkdir build && cd build
+          export LRS_LOG_LEVEL="DEBUG";
+          url_records_path="https://librealsense.intel.com/rs-tests/lrs_2.8.3/";
+          records_name="records_test.txt";
+          url_records_list=$url_records_path$records_name;
+          wget $url_records_path$records_name;
+          tests_list=`cat $records_name`;
+          for record in $tests_list; do echo $url_records_path$record; wget $url_records_path$record -P "records/"$(echo $record | cut -d '/' -f 1); done;
+          
+          sudo add-apt-repository --yes ppa:ubuntu-toolchain-r/test;
+          sudo apt-get update;
+          sudo apt-get install -qq build-essential xorg-dev libgl1-mesa-dev libglu1-mesa-dev libglew-dev libglm-dev;
+          sudo apt-get install -qq libusb-1.0-0-dev;
+          sudo apt-get install -qq libgtk-3-dev;
+          sudo apt-get install gcc-5 g++-5;
+          sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-5 60 --slave /usr/bin/g++ g++ /usr/bin/g++-5;
+          sudo apt-get install libglfw3-dev libglfw3;
+      
+      - name: Build
+        shell: bash
+        run: | 
+          cmake . -DBUILD_UNIT_TESTS=false -DBUILD_LEGACY_LIVE_TEST=true -DBUILD_EXAMPLES=false -DBUILD_TOOLS=false -DBUILD_WITH_TM2=false -DCHECK_FOR_UPDATES=true
+          cmake --build . --config ${{env.LRS_RUN_CONFIG}} -- -j4
+          ./unit-tests/live-test -d yes -i [software-device]
+          for i in ./records/single_cam/*; do ./unit-tests/live-test -d yes -i ~[multicam] from "$i"; done
+          for i in ./records/multi_cam/*; do ./unit-tests/live-test -d yes -i [multicam] from "$i"; done
+  
+  
+  Linux_static_cpp:
+      runs-on: ubuntu-18.04
+      steps:
+      - uses: actions/checkout@v2
+
+      - name: Build
+        shell: bash
+        run: |
+          cd scripts && ./api_check.sh && cd ..
+          mkdir build && cd build
+          cd ./scripts && ./pr_check.sh && cd ./build
+          cmake . -DBUILD_EXAMPLES=true -DBUILD_WITH_TM2=true -DBUILD_SHARED_LIBS=false -DCHECK_FOR_UPDATES=true -DBUILD_PYTHON_BINDINGS=true -DPYBIND11_PYTHON_VERSION=3.5
+          cmake --build . --config ${{env.LRS_BUILD_CONFIG}} -- -j4
+  
+  
+  Linux_python_nodejs:
+      runs-on: ubuntu-18.04      
+      env: 
+        LRS_BUILD_NODEJS: true
+      steps:
+      - uses: actions/checkout@v2
+      
+      - name: Prebuild
+        shell: bash
+        run: |
+          cd scripts && ./api_check.sh && cd ..
+          # Workaround for nvm failure: https://github.com/appleboy/ssh-action/issues/70
+          export NVM_DIR="$HOME/.nvm"
+          [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+          nvm install 10.15.3;
+          nvm use 10.15.3;
+          npm install -g node-gyp;
+          npm install -g mocha;
+          git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git;
+          export OLDPATH=$PATH && export PATH=$PATH:$(pwd)/depot_tools;
+          cd wrappers/nodejs/tools && npm install && cd ..;
+          node ./tools/linter.js;
+          export PATH=$OLDPATH && unset OLDPATH && cd ../../;
+          mkdir build && cd build
+      
+      - name: Build
+        shell: bash
+        run: | 
+          python ./wrappers/nodejs/tools/enums.py -i ./include/librealsense2 -a ./wrappers/nodejs/src -v
+          cmake . -DBUILD_PYTHON_BINDINGS=true -DBUILD_NODEJS_BINDINGS=true -DPYBIND11_PYTHON_VERSION=2.7 -DCHECK_FOR_UPDATES=true
+          cmake --build . --config $LRS_BUILD_CONFIG -- -j4
+          cd ./wrappers/nodejs/
+          npm install
+          cd test
+          wget https://librealsense.intel.com/rs-tests/nodejs_records.rec
