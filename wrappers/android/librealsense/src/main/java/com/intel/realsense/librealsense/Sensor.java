@@ -72,6 +72,36 @@ public class Sensor extends Options {
         nClose(mHandle);
     }
 
+    public StreamProfile getProfile(StreamType type, int index, int width, int height, StreamFormat format, int fps) {
+        List<StreamProfile> profiles = getStreamProfiles();
+        StreamProfile rv = null;
+
+        for (StreamProfile profile : profiles) {
+            if (profile.getType().compareTo(type) == 0) {
+
+                if (profile.is(Extension.VIDEO_PROFILE)) {
+                    VideoStreamProfile video_stream_profile = profile.as(Extension.VIDEO_PROFILE);
+
+                    // After using the "as" method we can use the new data type
+                    //  for additional operations:
+                    StreamFormat sf = video_stream_profile.getFormat();
+                    int idx = profile.getIndex();
+                    int w = video_stream_profile.getWidth();
+                    int h = video_stream_profile.getHeight();
+                    int frameRate = video_stream_profile.getFrameRate();
+
+                    if ((index == -1 || idx == index) &&
+                            w == width && h == height &&
+                            frameRate == fps && (sf.compareTo(format) == 0)) {
+                        rv = profile;
+                        break;
+                    }
+                }
+            }
+        }
+        return rv;
+    }
+
     private static native long[] nGetStreamProfiles(long handle);
     private static native void nRelease(long handle);
     private static native boolean nIsSensorExtendableTo(long handle, int extension);
