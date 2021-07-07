@@ -40,7 +40,11 @@ try:
     #
     # Have to add site-packages, just in case: if -S was used, or parent script played with
     # sys.path (as run-unit-tests does), then we may not have it!
-    sys.path += [os.path.join( os.path.dirname( sys.executable ), 'lib', 'site-packages')]
+    #
+    # (we mainly do this for acroname and its brainstem dependency that usually lives in site
+    # packages, and its own platform dependency -- in /usr/lib/)
+    #from site import getsitepackages  # don't want exit(), quit(), etc.!
+    #sys.path += [p for p in getsitepackages() if 'packages' in p and os.path.isdir(p)]
     #
     try:
         from rspy import acroname
