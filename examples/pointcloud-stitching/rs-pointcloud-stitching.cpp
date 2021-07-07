@@ -710,15 +710,16 @@ void CPointcloudStitcher::ProjectFramesOnOtherDevice(rs2::frameset frames, const
                 int offset((int)(virtual_depth_pixel[1]) * _virtual_depth_frame.x + (int)(virtual_depth_pixel[0]));
                 uint16_t crnt_depth_val(((uint16_t*)_virtual_depth_frame.frame.data())[offset]);
                 uint8_t* virtual_color_ptr(NULL);
+                uint16_t v_depth(sqrt(pow(virtual_point[0], 2) + pow(virtual_point[1], 2) + pow(virtual_point[2], 2)) *1e3);
 
-                bool is_filling_depth(!crnt_depth_val || crnt_depth_val > *ptr);
+                bool is_filling_depth(!crnt_depth_val || crnt_depth_val > v_depth);
                 if (is_filling_depth)
                 {
-                    ((uint16_t*)_virtual_depth_frame.frame.data())[offset] = *ptr;
+                    ((uint16_t*)_virtual_depth_frame.frame.data())[offset] = v_depth;
                     // Padding is backwards so not creating the appearance of an existing depth value to consider when testing next pixel.
-                    ((uint16_t*)_virtual_depth_frame.frame.data())[offset - 1] = *ptr;
-                    ((uint16_t*)_virtual_depth_frame.frame.data())[offset - _virtual_depth_frame.x] = *ptr;
-                    ((uint16_t*)_virtual_depth_frame.frame.data())[offset - (_virtual_depth_frame.x + 1)] = *ptr;
+                    ((uint16_t*)_virtual_depth_frame.frame.data())[offset - 1] = v_depth;
+                    ((uint16_t*)_virtual_depth_frame.frame.data())[offset - _virtual_depth_frame.x] = v_depth;
+                    ((uint16_t*)_virtual_depth_frame.frame.data())[offset - (_virtual_depth_frame.x + 1)] = v_depth;
                 }
 
                 bool missing_color(false);
@@ -836,7 +837,6 @@ std::string CPointcloudStitcher::PrintCursorRange(window& app)
         value_sstr << std::fixed << std::setw(4) << std::setprecision(2);
         rs2::frame frame = _frames_map[pos_on_rect.frame_idx].first;
 
-        uint16_t value(0);
         switch (pos_on_rect.frame_idx)
         {
         case (DEPTH1):
@@ -845,9 +845,8 @@ std::string CPointcloudStitcher::PrintCursorRange(window& app)
         {
             if (auto as_depth = frame.as<rs2::depth_frame>())
             {
-                const uint16_t* ptr = (const uint16_t*)(as_depth.get_data());
-                value = *(ptr + static_cast<int>((float)pos_on_rect.pixel.y * (float)as_depth.get_width() + (float)pos_on_rect.pixel.x));
-                value_sstr << (int)pos_on_rect.pixel.x << ", " << (int)pos_on_rect.pixel.y << " : " << double(value)*1e-3 << "(m)";
+                auto value = as_depth.get_distance((int)pos_on_rect.pixel.x, (int)pos_on_rect.pixel.y);
+                value_sstr << (int)pos_on_rect.pixel.x << ", " << (int)pos_on_rect.pixel.y << " : " << value << "(m)";
                 value_str = value_sstr.str();
             }
         }
@@ -1142,9 +1141,9 @@ int main(int argc, char* argv[]) try
     unsigned tiles_in_row = 4;
     unsigned tiles_in_col = 2;
 
-    // window app(1920, 1100, "RealSense Pointcloud-Stitching Example", tiles_in_row, tiles_in_col);
+    window app(1920, 1100, "RealSense Pointcloud-Stitching Example", tiles_in_row, tiles_in_col);
     //window app(1280, 720, "RealSense Pointcloud-Stitching Example", tiles_in_row, tiles_in_col);
-    window app(640, 480, "RealSense Pointcloud-Stitching Example", tiles_in_row, tiles_in_col);
+    //window app(640, 480, "RealSense Pointcloud-Stitching Example", tiles_in_row, tiles_in_col);
     ImGui_ImplGlfw_Init(app, false);
 
     pc_stitcher.Run(app);
