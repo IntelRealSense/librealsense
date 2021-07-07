@@ -6,3 +6,6 @@ project(':librealsense').projectDir = new File('../librealsense')
 include ':sensor_api'
 project(':sensor_api').projectDir = new File('sensor_api')
 
+include ':pipe_api'
+project(':pipe_api').projectDir = new File('pipe_api')
+
