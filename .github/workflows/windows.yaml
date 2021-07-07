@@ -2,9 +2,11 @@ name: WindowsCI
 
 on:
   #push:
-   #branches: [ master, development ]
+   #branches: [ master ]
   pull_request:
-    branches: [ master, development ]
+    branches:  
+      - master 
+      - development
 
 env:
   # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
