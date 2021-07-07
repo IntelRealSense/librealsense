@@ -1,0 +1,8 @@
+//library
+include ':librealsense'
+project(':librealsense').projectDir = new File('../librealsense')
+
+//testing environments
+include ':sensor_api'
+project(':sensor_api').projectDir = new File('sensor_api')
+
