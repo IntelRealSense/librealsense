@@ -2835,7 +2835,7 @@ HANDLE_EXCEPTIONS_AND_RETURN(, device)
 
 rs2_processing_block_list* rs2_get_recommended_processing_blocks(rs2_sensor* sensor, rs2_error** error) BEGIN_API_CALL
 {
-    VALIDATE_NOT_NULL(sensor);                            
+    VALIDATE_NOT_NULL(sensor);
     return new rs2_processing_block_list{ sensor->sensor->get_recommended_processing_blocks() };
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, sensor)
@@ -3277,6 +3277,7 @@ void rs2_set_calibration_table(const rs2_device* device, const void* calibration
 {
     VALIDATE_NOT_NULL(device);
     VALIDATE_NOT_NULL(calibration);
+    VALIDATE_GT(calibration_size, 0);
 
     auto auto_calib = VALIDATE_INTERFACE(device->device, librealsense::auto_calibrated_interface);
 

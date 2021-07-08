@@ -860,12 +860,23 @@ namespace librealsense
         using namespace ds;
 
         table_header* hd = (table_header*)(calibration.data());
-        uint8_t* table = (uint8_t*)(calibration.data() + sizeof(table_header));
-        command write_calib(ds::CALIBRECALC, 0, 0, 0, 0xcafecafe);
-        write_calib.data.insert(write_calib.data.end(), (uint8_t*)table, ((uint8_t*)table) + hd->table_size);
-        _hw_monitor->send(write_calib);
+        ds::calibration_table_id tbl_id = static_cast<ds::calibration_table_id>(hd->table_type);
 
-        _curr_calibration = calibration;
+        switch (tbl_id)
+        {
+            case coefficients_table_id:
+            {
+                uint8_t* table = (uint8_t*)(calibration.data() + sizeof(table_header));
+                command write_calib(ds::CALIBRECALC, 0, 0, 0, 0xcafecafe);
+                write_calib.data.insert(write_calib.data.end(), (uint8_t*)table, ((uint8_t*)table) + hd->table_size);
+                _hw_monitor->send(write_calib);
+            }
+            case rgb_calibration_id: // case fall-through by design
+                _curr_calibration = calibration;
+                break;
+            default:
+                throw std::runtime_error(to_string() << "the operation is not defined for calibration table type " << tbl_id);
+        }
     }
 
     void auto_calibrated::reset_to_factory_calibration() const

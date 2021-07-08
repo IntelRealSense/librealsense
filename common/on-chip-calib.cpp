@@ -1978,7 +1978,10 @@ namespace rs2
                     std::string button_name = to_string() << "Apply" << "##apply" << index;
                     if (ImGui::Button(button_name.c_str(), { float(bar_width - 60), 20.f }))
                     {
-                        get_manager().keep_uvmapping_calib();
+                        //Evgeni - this is buggy code
+                        //get_manager().keep_uvmapping_calib();
+                        get_manager().apply_calib(true); // Store the new calib internally, for depth - also load into FW RAM for immediate effect evaluation
+                        get_manager().keep();            // Store the new calibration in Flash
                         update_state = RS2_CALIB_STATE_COMPLETE;
                         pinned = false;
                         enable_dismiss = false;

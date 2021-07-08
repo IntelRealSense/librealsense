@@ -703,7 +703,7 @@ namespace rs2
         * \return       Calculated distance (Z) to target in millimeter, return negative number on failure
         */
         template<class T>
-        float calculate_target_z(rs2::frame_queue queue, float target_width, float target_height, T callback)
+        float calculate_target_z(rs2::frame_queue queue, float target_width, float target_height, T callback) const
         {
             rs2_error* e = nullptr;
             float result = rs2_calculate_target_z_cpp(_dev.get(), queue.get().get(), target_width, target_height,
