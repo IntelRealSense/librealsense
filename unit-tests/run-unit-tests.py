@@ -387,108 +387,116 @@ def test_wrapper( test, configuration = None, repetition = 1 ):
 
 
 # Run all tests
-list_only = list_tags or list_tests
-if not list_only:
-    if pyrs:
-        sys.path.insert( 1, pyrs_path )
-    from rspy import devices
+try:
+    list_only = list_tags or list_tests
+    if not list_only:
+        if pyrs:
+            sys.path.insert( 1, pyrs_path )  # Make sure we pick up the right pyrealsense2!
+        from rspy import devices
 
-    devices.query()
-    devices.map_unknown_ports()
-    #
-    # Under Travis, we'll have no devices and no acroname
-    skip_live_tests = len( devices.all() ) == 0 and not devices.acroname
-    #
-    if not skip_live_tests:
-        if not to_stdout:
-            log.i( 'Logs in:', libci.logdir )
-        exceptions = None
-        if not no_exceptions and os.path.isfile( libci.exceptionsfile ):
-            try:
-                log.d( 'loading device exceptions from:', libci.exceptionsfile )
-                log.debug_indent()
-                exceptions = devices.load_specs_from_file( libci.exceptionsfile )
-                exceptions = devices.expand_specs( exceptions )
-                log.d( '==>', exceptions )
-            finally:
-                log.debug_unindent()
-#
-log.reset_errors()
-available_tags = set()
-tests = []
-if context:
-    log.d( 'running under context:', context )
-for test in prioritize_tests( get_tests() ):
-    #
-    log.d( 'found', test.name, '...' )
-    try:
-        log.debug_indent()
-        test.debug_dump()
+        devices.query()
+        devices.map_unknown_ports()
         #
-        if test.config.donotrun:
-            continue
+        # Under Travis, we'll have no devices and no acroname
+        skip_live_tests = len( devices.all() ) == 0 and not devices.acroname
         #
-        if required_tags and not all( tag in test.config.tags for tag in required_tags ):
-            log.d( 'does not fit --tag:', test.config.tags )
-            continue
-        #
-        available_tags.update( test.config.tags )
-        tests.append( test )
-        if list_only:
-            n_tests += 1
-            continue
-        #
-        if not test.is_live():
-            for repetition in range(repeat):
-                test_wrapper( test, repetition = repetition )
-            continue
-        #
-        if skip_live_tests:
-            log.w( test.name + ':', 'is live and there are no cameras; skipping' )
-            continue
-        #
-        for configuration, serial_numbers in devices_by_test_config( test, exceptions ):
-            for repetition in range(repeat):
+        if not skip_live_tests:
+            if not to_stdout:
+                log.i( 'Logs in:', libci.logdir )
+            exceptions = None
+            if not no_exceptions and os.path.isfile( libci.exceptionsfile ):
                 try:
-                    log.d( 'configuration:', configuration )
+                    log.d( 'loading device exceptions from:', libci.exceptionsfile )
                     log.debug_indent()
-                    if not no_reset:
-                        devices.enable_only( serial_numbers, recycle=True )
-                except RuntimeError as e:
-                    log.w( log.red + test.name + log.reset + ': ' + str( e ) )
-                else:
-                    test_wrapper( test, configuration, repetition )
+                    exceptions = devices.load_specs_from_file( libci.exceptionsfile )
+                    exceptions = devices.expand_specs( exceptions )
+                    log.d( '==>', exceptions )
                 finally:
                     log.debug_unindent()
+    #
+    log.reset_errors()
+    available_tags = set()
+    tests = []
+    if context:
+        log.d( 'running under context:', context )
+    for test in prioritize_tests( get_tests() ):
         #
-    finally:
-        log.debug_unindent()
+        log.d( 'found', test.name, '...' )
+        try:
+            log.debug_indent()
+            test.debug_dump()
+            #
+            if test.config.donotrun:
+                continue
+            #
+            if required_tags and not all( tag in test.config.tags for tag in required_tags ):
+                log.d( 'does not fit --tag:', test.config.tags )
+                continue
+            #
+            available_tags.update( test.config.tags )
+            tests.append( test )
+            if list_only:
+                n_tests += 1
+                continue
+            #
+            if not test.is_live():
+                for repetition in range(repeat):
+                    test_wrapper( test, repetition = repetition )
+                continue
+            #
+            if skip_live_tests:
+                log.w( test.name + ':', 'is live and there are no cameras; skipping' )
+                continue
+            #
+            for configuration, serial_numbers in devices_by_test_config( test, exceptions ):
+                for repetition in range(repeat):
+                    try:
+                        log.d( 'configuration:', configuration )
+                        log.debug_indent()
+                        if not no_reset:
+                            devices.enable_only( serial_numbers, recycle=True )
+                    except RuntimeError as e:
+                        log.w( log.red + test.name + log.reset + ': ' + str( e ) )
+                    else:
+                        test_wrapper( test, configuration, repetition )
+                    finally:
+                        log.debug_unindent()
+            #
+        finally:
+            log.debug_unindent()
 
-log.progress()
-#
-if not n_tests:
-    log.f( 'No unit-tests found!' )
-#
-if list_only:
-    if list_tags and list_tests:
-        for t in sorted( tests, key= lambda x: x.name ):
-            print( t.name, "has tags:", ' '.join( t.config.tags ) )
+    log.progress()
     #
-    elif list_tags:
-        for t in sorted( list( available_tags ) ):
-            print( t )
+    if not n_tests:
+        log.f( 'No unit-tests found!' )
     #
-    elif list_tests:
-        for t in sorted( tests, key= lambda x: x.name ):
-            print( t.name )
+    if list_only:
+        if list_tags and list_tests:
+            for t in sorted( tests, key= lambda x: x.name ):
+                print( t.name, "has tags:", ' '.join( t.config.tags ) )
+        #
+        elif list_tags:
+            for t in sorted( list( available_tags ) ):
+                print( t )
+        #
+        elif list_tests:
+            for t in sorted( tests, key= lambda x: x.name ):
+                print( t.name )
+    #
+    else:
+        n_errors = log.n_errors()
+        if n_errors:
+            log.out( log.red + str( n_errors ) + log.reset, 'of', n_tests, 'test(s)',
+                     log.red + 'failed!' + log.reset + log.clear_eos )
+            sys.exit( 1 )
+        #
+        log.out( str( n_tests ) + ' unit-test(s) completed successfully' + log.clear_eos )
 #
-else:
-    n_errors = log.n_errors()
-    if n_errors:
-        log.out( log.red + str( n_errors ) + log.reset, 'of', n_tests, 'test(s)',
-                 log.red + 'failed!' + log.reset + log.clear_eos )
-        sys.exit( 1 )
+finally:
     #
-    log.out( str( n_tests ) + ' unit-test(s) completed successfully' + log.clear_eos )
+    # Disconnect from the Acroname -- if we don't it'll crash on Linux...
+    if not list_only:
+        if devices.acroname:
+            devices.acroname.disconnect()
 #
 sys.exit( 0 )
