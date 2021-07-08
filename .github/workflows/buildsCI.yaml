@@ -2,13 +2,9 @@ name: Build_CI
 
 on:
   push:
-    branches: 
-     - master
-     - development
+    branches: ['**']
   pull_request:
-    branches:  
-     - master 
-     - development
+    branches: ['**']
      
 env:
   # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)  
