@@ -3866,7 +3866,7 @@ float rs2_calculate_target_z_cpp(rs2_device* device, rs2_frame_queue* queue, flo
     VALIDATE_NOT_NULL(device);
     VALIDATE_NOT_NULL(queue);
     VALIDATE_GT(target_width, 0.f);
-    VALIDATE_LT(target_height, 0.f);
+    VALIDATE_GT(target_height, 0.f);
 
     auto auto_calib = VALIDATE_INTERFACE(device->device, librealsense::auto_calibrated_interface);
 
@@ -3885,7 +3885,7 @@ float rs2_calculate_target_z(rs2_device* device, rs2_frame_queue* queue, float t
     VALIDATE_NOT_NULL(device);
     VALIDATE_NOT_NULL(queue);
     VALIDATE_GT(target_width, 0.f);
-    VALIDATE_LT(target_height, 0.f);
+    VALIDATE_GT(target_height, 0.f);
 
     auto auto_calib = VALIDATE_INTERFACE(device->device, librealsense::auto_calibrated_interface);
 

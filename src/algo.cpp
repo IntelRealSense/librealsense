@@ -1013,7 +1013,10 @@ int rect_calculator::extract_target_dims(const rs2_frame* frame_ref, float4& rec
     int ret = 0;
     rs2_error* e = nullptr;
 
-    rs2_extract_target_dimensions(frame_ref, _roi ? RS2_CALIB_TARGET_ROI_RECT_GAUSSIAN_DOT_VERTICES : RS2_CALIB_TARGET_RECT_GAUSSIAN_DOT_VERTICES, reinterpret_cast<float*>(&rect_sides), sizeof(float4), &e);
+    //Target dimension array size is predefined. 4 for RS2_CALIB_TARGET_RECT_GAUSSIAN_DOT_VERTICES and 8 for RS2_CALIB_TARGET_POS_GAUSSIAN_DOT_VERTICES.
+    int dim_size = _roi ? 4 : 8;
+    rs2_calib_target_type tgt_type = _roi ? RS2_CALIB_TARGET_ROI_RECT_GAUSSIAN_DOT_VERTICES : RS2_CALIB_TARGET_RECT_GAUSSIAN_DOT_VERTICES;
+    rs2_extract_target_dimensions(frame_ref, tgt_type, reinterpret_cast<float*>(&rect_sides), dim_size, &e);
     if (e == nullptr)
     {
         ret = 1;

@@ -886,8 +886,8 @@ namespace rs2
         {
             constexpr int frames_required = 25;
 
-            rs2::frame_queue left;
-            rs2::frame_queue right;
+            rs2::frame_queue left(frames_required,true);
+            rs2::frame_queue right(frames_required, true);
 
             int counter = 0;
 
@@ -939,9 +939,9 @@ namespace rs2
         {
             constexpr int frames_required = 25;
 
-            rs2::frame_queue left;
-            rs2::frame_queue color;
-            rs2::frame_queue depth;
+            rs2::frame_queue left(frames_required, true);
+            rs2::frame_queue color(frames_required, true);
+            rs2::frame_queue depth(frames_required, true);
 
             int counter = 0;
             float step = 50.f / frames_required; // The first stage represents 50% of the calibration process
@@ -993,7 +993,7 @@ namespace rs2
             
             rs2_error* e = nullptr;
             //std::shared_ptr<rs2_frame_queue> queue(rs2_create_frame_queue(limit, &e), rs2_delete_frame_queue);
-            rs2::frame_queue queue;
+            rs2::frame_queue queue(limit*2,true);
 
             rs2::frame f;
             // Collect sufficient amount of frames (up to 50) to extract target pattern and calculate distance to it
@@ -1515,13 +1515,13 @@ namespace rs2
 
                 if (ImGui::IsItemHovered())
                 {
-                    ImGui::SetTooltip("%s", "Begin Calculating Tare Calibration Ground Truth");
+                    ImGui::SetTooltip("%s", "Begin calculating Tare Calibration/Distance to Target");
                 }
             }
             else if (update_state == RS2_CALIB_STATE_GET_TARE_GROUND_TRUTH_IN_PROCESS)
             {
                 enable_dismiss = false;
-                ImGui::Text("%s", "Calculating ground truth is in process...\nKeep camera stationary pointing at the target");
+                ImGui::Text("%s", "Distance to Target calculation is in process...\nKeep camera stationary pointing at the target");
             }
             else if (update_state == RS2_CALIB_STATE_GET_TARE_GROUND_TRUTH_COMPLETE)
             {
