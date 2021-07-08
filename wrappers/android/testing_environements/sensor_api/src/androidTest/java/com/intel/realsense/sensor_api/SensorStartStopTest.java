@@ -39,6 +39,8 @@ import java.util.List;
 @LargeTest
 public class SensorStartStopTest {
 
+    private static final String TAG = "librs_sensor_api_test";
+
     public ActivityTestRule<MainActivity> mActivityRule =
             new ActivityTestRule(MainActivity.class, true, true);
     private MainActivity mActivity;
@@ -65,14 +67,15 @@ public class SensorStartStopTest {
     }
 
     @Test
-    public void testStartTopMany() {
+    public void testStartStopMany() {
         mActivity = mActivityRule.getActivity();
-        int iterations = 200;
-        while (--iterations > 0) {
+        int iterations = 0;
+        while (++iterations < 200) {
+            Log.i(TAG, "iteration: " + iterations);
             mActivity.start();
-            try{Thread.sleep(5000);} catch(Exception e){}
+            try{Thread.sleep(3000);} catch(Exception e){}
             mActivity.stop();
-            try{Thread.sleep(2000);} catch(Exception e){}
+            try{Thread.sleep(500);} catch(Exception e){}
         }
     }
 
