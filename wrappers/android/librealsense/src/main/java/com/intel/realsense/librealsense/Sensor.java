@@ -72,7 +72,7 @@ public class Sensor extends Options {
         nClose(mHandle);
     }
 
-    public StreamProfile getProfile(StreamType type, int index, int width, int height, StreamFormat format, int fps) {
+    public StreamProfile findProfile(StreamType type, int index, int width, int height, StreamFormat format, int fps) {
         List<StreamProfile> profiles = getStreamProfiles();
         StreamProfile rv = null;
 

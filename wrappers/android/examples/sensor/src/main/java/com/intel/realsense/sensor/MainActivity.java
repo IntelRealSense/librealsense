@@ -258,8 +258,8 @@ public class MainActivity extends AppCompatActivity {
     }
     private void assignProfiles() {
         if (mDepthSensor != null) {
-            mDepthProfile = mDepthSensor.getProfile(StreamType.DEPTH, -1, 640, 480, StreamFormat.Z16, 30);
-            mIrProfile = mDepthSensor.getProfile(StreamType.INFRARED, -1, 640, 480, StreamFormat.Y8, 30);
+            mDepthProfile = mDepthSensor.findProfile(StreamType.DEPTH, -1, 640, 480, StreamFormat.Z16, 30);
+            mIrProfile = mDepthSensor.findProfile(StreamType.INFRARED, -1, 640, 480, StreamFormat.Y8, 30);
         }
     }
 }
