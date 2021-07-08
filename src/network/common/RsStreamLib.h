@@ -160,10 +160,10 @@ public:
         std::stringstream vss;
 
         switch (pstream->type) {
-        case RS2_STREAM_DEPTH    :
-        case RS2_STREAM_COLOR    :
-        case RS2_STREAM_INFRARED :
-        case RS2_STREAM_FISHEYE  :
+        case RS2_STREAM_DEPTH      :
+        case RS2_STREAM_COLOR      :
+        case RS2_STREAM_INFRARED   :
+        case RS2_STREAM_CONFIDENCE :
             ss << std::setw(10) << pstream->type << std::setw(2);
             if (pstream->index) ss << pstream->index;
             else ss << "";
@@ -171,8 +171,8 @@ public:
             vss << pstream->width << "x" << pstream->height;
             ss << std::setw(10) << vss.str() << ":" << pstream->fps;
             break;
-        case RS2_STREAM_GYRO     :
-        case RS2_STREAM_ACCEL    :
+        case RS2_STREAM_GYRO       :
+        case RS2_STREAM_ACCEL      :
             ss << std::setw(10) << pmstream->type << std::setw(2);
             if (pmstream->index) ss << pmstream->index;
             else ss << "";
@@ -227,20 +227,37 @@ public:
 
     static rs2_video_stream key2stream(uint64_t key) {
         convert_t t;
+        streams_t s;
+
         t.key = key;
+        memset((void*)&s, 0, sizeof(rs2_video_stream));
 
-        rs2_video_stream stream;
-        stream.type   = (rs2_stream)t.values.type;
-        stream.index  = t.values.index;
-        stream.uid    = t.values.uid;
-        stream.width  = t.values.width;
-        stream.height = t.values.height;
-        stream.fps    = t.values.fps;
-        stream.fmt    = (rs2_format)t.values.format;
+        s.video.type   = (rs2_stream)t.values.type;
+        switch (s.video.type) {
+        case RS2_STREAM_DEPTH      :
+        case RS2_STREAM_COLOR      :
+        case RS2_STREAM_INFRARED   :
+        case RS2_STREAM_CONFIDENCE :
+            s.video.index  = t.values.index;
+            s.video.uid    = t.values.uid;
+            s.video.width  = t.values.width;
+            s.video.height = t.values.height;
+            s.video.fps    = t.values.fps;
+            s.video.fmt    = (rs2_format)t.values.format;
+            s.video.bpp    = (s.video.type == RS2_STREAM_INFRARED) ? 1 : 2;
+            break;
+        case RS2_STREAM_GYRO       :
+        case RS2_STREAM_ACCEL      :
+            s.motion.index  = t.values.index;
+            s.motion.uid    = t.values.uid;
+            s.motion.fps    = t.values.fps;
+            s.motion.fmt    = (rs2_format)t.values.format;
+            break;
+        default:
+            LOG_ERROR("Unknown stream type");
+        };
 
-        stream.bpp    = (stream.type == RS2_STREAM_INFRARED) ? 1 : 2;
-
-        return stream;
+        return s.video;
     };
 
     static bool is_default(uint64_t key) {
@@ -251,18 +268,25 @@ public:
 
 private:
 #pragma pack (push, 1)
+
     typedef union convert {
         uint64_t key;
         struct vals {
-            uint8_t  def   : 2;
-            uint8_t  type  : 4;
+            uint8_t  def   : 1;
+            uint8_t  type  : 5;
             uint8_t  index : 2;
             uint8_t  uid   ;
             uint16_t width ;
             uint16_t height;
-            uint8_t  fps   ;
-            uint8_t  format;
+            uint16_t fps   : 10;
+            uint16_t format: 6;
         } values;
     } convert_t;
+
+    typedef union streams {
+        rs2_video_stream  video;
+        rs2_motion_stream motion;
+    } streams_t;
+
 #pragma pack(pop)
 };

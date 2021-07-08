@@ -33,6 +33,10 @@ public:
     void add_profile(uint64_t key, rs2_intrinsics intrinsics) { 
         rs2_video_stream  vstream = slib::key2stream(key);
         rs2_motion_stream mstream;
+
+        std::stringstream ss_profile;
+        ss_profile << "Profile : " << slib::print_stream(&vstream);
+
         switch (vstream.type) {
         case RS2_STREAM_DEPTH      :
         case RS2_STREAM_COLOR      :
@@ -69,6 +73,8 @@ public:
         default:
             throw std::runtime_error("Unsupported stream type");
         }
+
+        LOG_INFO(ss_profile.str());
     };
 
     void add_option(uint32_t idx, float val, rs2::option_range range) {
