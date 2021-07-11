@@ -13,47 +13,61 @@ https://www.digitalocean.com/community/tutorials/how-to-install-and-use-docker-o
 - Support scripts for building and running the image are also included
 Add python version, openGL?, self info to be printed
 
-## Getting librealsense docker
+# Getting librealsense docker - pre-built
 
 As long as the repo is private, login is needed:
 1. add the password in some password.txt file
-2. run: cat password.txt | docker login –username=“…” –password-stdin
+2. run: 
+```
+cat password.txt | docker login –username=“…” –password-stdin
+```
 
 Then run the command:
+```
 docker pull librealsense/librealsense
+```
 
 ## Running the Container
 Now running the command: docker images, the docker librealsense/librealsense should appear.
 
 ### Default Command
 Then run the container with default command:
-
+```
 docker run -it --rm \
     -v /dev:/dev \
     --device-cgroup-rule "c 81:* rmw" \
     --device-cgroup-rule "c 189:* rmw" \
     librealsense/librealsense
+```
 
 The default command that will run is: rs-enumerate-devices --compact
 
 ### Custom Command
 In order to run another command, one can run for example:
-
+```
 docker run -it --rm \
     -v /dev:/dev \
     --device-cgroup-rule "c 81:* rmw" \
     --device-cgroup-rule "c 189:* rmw" \
     librealsense/librealsense rs-depth
+```
 
 ### Running shell
 Or, in order to open bash inside the container:
-
+```
 docker run -it --rm \
     -v /dev:/dev \
     --device-cgroup-rule "c 81:* rmw" \
     --device-cgroup-rule "c 189:* rmw" \
     librealsense/librealsense /bin/bash
+```
 
+# Building librealsense docker image
+
+The librealsense's docker image can be built locally using the [Dockerfile](Dockerfile). 
+This  is done by running the [image building script](build_image.sh).
+
+Then, running the container is done as described [above](#Running-the-Container) .
 
 
 
