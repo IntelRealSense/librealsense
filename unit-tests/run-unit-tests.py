@@ -16,31 +16,31 @@ from rspy import log, file, repo, libci
 #
 # Rather than rebuilding the whole sys.path, we instead remove:
 from site import getusersitepackages   # not the other stuff, like quit(), exit(), etc.!
-log.d( 'site packages=', getusersitepackages() )
-log.d( 'sys.path=', sys.path )
-log.d( 'removing', [p for p in sys.path if file.is_inside( p, getusersitepackages() )])
+#log.d( 'site packages=', getusersitepackages() )
+#log.d( 'sys.path=', sys.path )
+#log.d( 'removing', [p for p in sys.path if file.is_inside( p, getusersitepackages() )])
 sys.path = [p for p in sys.path if not file.is_inside( p, getusersitepackages() )]
-log.d( 'modified=', sys.path )
+#log.d( 'modified=', sys.path )
 
 
 def usage():
     ourname = os.path.basename( sys.argv[0] )
     print( 'Syntax: ' + ourname + ' [options] [dir]' )
-    print( '        dir: the directory holding the executable tests to run (default to the build directory)' )
+    print( '        dir: location of executable tests to run' )
     print( 'Options:' )
-    print( '        --debug          Turn on debugging information' )
+    print( '        --debug          Turn on debugging information (does not include LibRS debug logs; see --rslog)' )
     print( '        -v, --verbose    Errors will dump the log to stdout' )
     print( '        -q, --quiet      Suppress output; rely on exit status (0=no failures)' )
-    print( '        -r, --regex      Run all tests that fit the following regular expression' )
     print( '        -s, --stdout     Do not redirect stdout to logs' )
+    print( '        -r, --regex      Run all tests whose name matches the following regular expression' )
     print( '        -t, --tag        Run all tests with the following tag. If used multiple times runs all tests matching' )
     print( '                         all tags. e.g. -t tag1 -t tag2 will run tests who have both tag1 and tag2' )
     print( '                         tests automatically get tagged with \'exe\' or \'py\' and based on their location' )
     print( '                         inside unit-tests/, e.g. unit-tests/func/test-hdr.py gets [func, py]' )
     print( '        --list-tags      Print out all available tags. This option will not run any tests' )
     print( '        --list-tests     Print out all available tests. This option will not run any tests' )
-    print( '                         if both list-tags and list-tests are specified each test will be printed along' )
-    print( '                         with what tags it has' )
+    print( '                         If both list-tags and list-tests are specified each test will be printed along' )
+    print( '                         with its tags' )
     print( '        --no-exceptions  Do not load the LibCI/exceptions.specs file' )
     print( '        --context <>     The context to use for test configuration' )
     print( '        --repeat <#>     Repeat each test <#> times' )
@@ -124,8 +124,10 @@ for opt, arg in opts:
 
 def find_build_dir( dir ):
     """
-    Given a file we know must be within the build directory, go up in the tree until we find
-    a file we know must be in the build directory itself...
+    Given a directory we know must be within the build tree, go up the tree until we find
+    a file we know must be in the root build directory...
+
+    :return: the build directory if found, or None otherwise
     """
     build_dir = dir
     while True:
@@ -140,43 +142,41 @@ def find_build_dir( dir ):
 
 if len( args ) > 1:
     usage()
-target = None                 # the directory in which we expect to find exes
+exe_dir = None                 # the directory in which we expect to find exes
 if len( args ) == 1:
-    target = args[0]
-    if not os.path.isdir( target ):
-        log.f( 'Not a directory:', target )
-    build_dir = find_build_dir( target )
+    exe_dir = args[0]
+    if not os.path.isdir( exe_dir ):
+        log.f( 'Not a directory:', exe_dir )
+    build_dir = find_build_dir( exe_dir )
 else:
     build_dir = repo.build    # may not actually contain exes
-    log.d( 'repo.build:', build_dir )
+    #log.d( 'repo.build:', build_dir )
 
 # Python scripts should be able to find the pyrealsense2 .pyd or else they won't work. We don't know
 # if the user (Travis included) has pyrealsense2 installed but even if so, we want to use the one we compiled.
 # we search the librealsense repository for the .pyd file (.so file in linux)
 pyrs = ""
 if linux:
-    for so in file.find( target or build_dir or repo.root, '(^|/)pyrealsense2.*\.so$' ):
+    for so in file.find( exe_dir or build_dir or repo.root, '(^|/)pyrealsense2.*\.so$' ):
         pyrs = so
 else:
-    for pyd in file.find( target or build_dir or repo.root, '(^|/)pyrealsense2.*\.pyd$' ):
+    for pyd in file.find( exe_dir or build_dir or repo.root, '(^|/)pyrealsense2.*\.pyd$' ):
         pyrs = pyd
-
 if pyrs:
-    # After use of find, pyrs contains the path from the repo root to the pyrealsense that was found
-    # We append it to the root path to get an absolute path and add to PYTHONPATH so it can be found by the tests
-    pyrs_path = os.path.join( target or build_dir or repo.root, pyrs )
+    # The path is relative; make it absolute and add to PYTHONPATH so it can be found by tests
+    pyrs_path = os.path.join( exe_dir or build_dir or repo.root, pyrs )
     # We need to add the directory not the file itself
     pyrs_path = os.path.dirname( pyrs_path )
     log.d( 'found pyrealsense pyd in:', pyrs_path )
-    if not target:
+    if not exe_dir:
         build_dir = find_build_dir( pyrs_path )
         if linux:
-            target = build_dir
+            exe_dir = build_dir
         else:
-            target = pyrs_path
+            exe_dir = pyrs_path
 
-# Try to assume target directory from inside build directory. Only works if there is only one location with tests
-if not target and build_dir:
+# Try to assume exe directory from inside build directory. Only works if there is only one location with tests
+if not exe_dir and build_dir:
     mask = r'(^|/)test-[^/.]*'
     if linux:
         mask += r'$'
@@ -188,14 +188,14 @@ if not target and build_dir:
         if not file.is_executable( executable ):
             continue
         dir_with_test = os.path.dirname( executable )
-        if target and target != dir_with_test:
-            log.f( "Ambiguous executable tests in 2 directories:\n\t", target, "\n\t", dir_with_test,
+        if exe_dir and exe_dir != dir_with_test:
+            log.f( "Ambiguous executable tests in 2 directories:\n\t", exe_dir, "\n\t", dir_with_test,
                     "\n\tSpecify the directory manually..." )
-        target = dir_with_test
+        exe_dir = dir_with_test
 
 if not to_stdout:
-    if target:
-        logdir = target + os.sep + 'unit-tests'
+    if exe_dir:
+        logdir = exe_dir + os.sep + 'unit-tests'
     else:  # no test executables were found. We put the logs directly in build directory
         logdir = os.path.join( repo.root, 'build', 'unit-tests' )
     os.makedirs( logdir, exist_ok=True )
@@ -271,7 +271,7 @@ def check_log_for_fails( path_to_log, testname, configuration = None, repetition
 
 
 def get_tests():
-    global regex, target, pyrs, current_dir, linux, context, list_only
+    global regex, exe_dir, pyrs, current_dir, linux, context, list_only
     if regex:
         pattern = re.compile( regex )
     if list_only:
@@ -289,13 +289,13 @@ def get_tests():
                 continue
 
             yield libci.ExeTest( testname )
-    elif target:
+    elif exe_dir:
         # In Linux, the build targets are located elsewhere than on Windows
         # Go over all the tests from a "manifest" we take from the result of the last CMake
         # run (rather than, for example, looking for test-* in the build-directory):
         manifestfile = os.path.join( build_dir, 'CMakeFiles', 'TargetDirectories.txt' )
         if linux:
-            manifestfile = target + '/CMakeFiles/TargetDirectories.txt'
+            manifestfile = exe_dir + '/CMakeFiles/TargetDirectories.txt'
         # log.d( manifestfile )
         for manifest_ctx in file.grep( r'(?<=unit-tests/build/)\S+(?=/CMakeFiles/test-\S+.dir$)', manifestfile ):
             # We need to first create the test name so we can see if it fits the regex
@@ -312,9 +312,9 @@ def get_tests():
                 continue
 
             if linux:
-                exe = target + '/unit-tests/build/' + testdir + '/' + testname
+                exe = exe_dir + '/unit-tests/build/' + testdir + '/' + testname
             else:
-                exe = target + '/' + testname + '.exe'
+                exe = exe_dir + '/' + testname + '.exe'
 
             yield libci.ExeTest( testname, exe, context )
 

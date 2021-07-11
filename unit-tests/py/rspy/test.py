@@ -92,6 +92,7 @@ def find_first_device_or_exit():
         log.f("No device found")
     dev = c.devices[0]
     log.d( 'found', dev )
+    log.d( 'in', rs )
     return dev
 
 
@@ -108,6 +109,7 @@ def find_devices_by_product_line_or_exit( product_line ):
     if devices_list.size() == 0:
         log.f( "No device of the", product_line, "product line was found" )
     log.d( 'found', devices_list.size(), product_line, 'devices:', [dev for dev in devices_list] )
+    log.d( 'in', rs )
     return devices_list
 
 

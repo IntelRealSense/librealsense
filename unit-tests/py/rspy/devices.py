@@ -29,7 +29,7 @@ except ModuleNotFoundError:
     # And where to look for pyrealsense2
     from rspy import repo
     pyrs_dir = repo.find_pyrs_dir()
-    sys.path.append( pyrs_dir )
+    sys.path.insert( 1, pyrs_dir )
 
 
 # We need both pyrealsense2 and acroname. We can work without acroname, but
@@ -37,14 +37,6 @@ except ModuleNotFoundError:
 try:
     import pyrealsense2 as rs
     log.d( rs )
-    #
-    # Have to add site-packages, just in case: if -S was used, or parent script played with
-    # sys.path (as run-unit-tests does), then we may not have it!
-    #
-    # (we mainly do this for acroname and its brainstem dependency that usually lives in site
-    # packages, and its own platform dependency -- in /usr/lib/)
-    #from site import getsitepackages  # don't want exit(), quit(), etc.!
-    #sys.path += [p for p in getsitepackages() if 'packages' in p and os.path.isdir(p)]
     #
     try:
         from rspy import acroname
