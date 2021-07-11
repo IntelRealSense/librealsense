@@ -542,14 +542,14 @@ void CPointcloudStitcher::CreateVirtualDevice()
     auto depth_sensor = _soft_dev.add_sensor("Depth"); // Define single sensor
     auto color_sensor = _soft_dev.add_sensor("Color"); // Define single sensor
     auto depth_stream = depth_sensor.add_video_stream({ RS2_STREAM_DEPTH, 0, 0,
-                                _virtual_depth_frame.x, _virtual_depth_frame.y, 30, _virtual_depth_frame.bpp,
+                                _virtual_depth_frame.x, _virtual_depth_frame.y, 10, _virtual_depth_frame.bpp,
                                 RS2_FORMAT_Z16, depth_intrinsics });
 
     depth_sensor.add_read_only_option(RS2_OPTION_DEPTH_UNITS, 0.001f);
 
 
     auto color_stream = color_sensor.add_video_stream({ RS2_STREAM_COLOR, 0, 1, 
-                                _virtual_color_frame.x, _virtual_color_frame.y, 30, _virtual_color_frame.bpp,
+                                _virtual_color_frame.x, _virtual_color_frame.y, 10, _virtual_color_frame.bpp,
                                 RS2_FORMAT_RGBA8, color_intrinsics });
 
     depth_stream.register_extrinsics_to(color_stream, { { 1,0,0,0,1,0,0,0,1 },{ 0,0,0 } });
@@ -675,6 +675,7 @@ void CPointcloudStitcher::ProjectFramesOnOtherDevice(rs2::frameset frames, const
 
     if (auto as_depth = depth.as<rs2::depth_frame>())
     {
+        as_depth = _hole_filling_filter.process(as_depth);
         const rs2_intrinsics& depth_intinsics(as_depth.get_profile().as<rs2::video_stream_profile>().get_intrinsics());
         //{
         //    float HFOV = (2 * atan(depth_intinsics.width / (2 * depth_intinsics.fx))) * 180.0 / PI;
@@ -1027,8 +1028,8 @@ void CPointcloudStitcher::Run(window& app)
         }
 
         auto virtual_sensors = _soft_dev.query_sensors();
+        rs2::frame aframe = frames_sets.begin()->second;
         {
-            rs2::frame aframe = frames_sets.begin()->second;
             rs2::software_sensor virtual_depth_sensor = *(static_cast<rs2::software_sensor*>(&(*std::find_if(virtual_sensors.begin(), virtual_sensors.end(), [](const auto& sns) { return "Depth" == std::string(sns.get_info(RS2_CAMERA_INFO_NAME)); }))));
             virtual_depth_sensor.on_video_frame({ _virtual_depth_frame.frame.data(), // Frame pixels from capture API
                 [](void*) {}, // Custom deleter (if required)
@@ -1036,7 +1037,6 @@ void CPointcloudStitcher::Run(window& app)
                 aframe.get_timestamp(), aframe.get_frame_timestamp_domain(), _frame_number, // Timestamp, Frame# for potential sync services
                 *(virtual_depth_sensor.get_active_streams().begin()) });
         }
-        rs2::frame aframe = frames_sets.begin()->second;
         rs2::frame color = aframe.as<rs2::frameset>().first_or_default(RS2_STREAM_COLOR);
         if (color)
         {
@@ -1044,7 +1044,7 @@ void CPointcloudStitcher::Run(window& app)
             virtual_color_sensor.on_video_frame({ _virtual_color_frame.frame.data(), // Frame pixels from capture API
                 [](void*) {}, // Custom deleter (if required)
                 _virtual_color_frame.x * _virtual_color_frame.bpp, _virtual_color_frame.bpp, // Stride and Bytes-per-pixel
-                color.get_timestamp(), color.get_frame_timestamp_domain(), _frame_number, // Timestamp, Frame# for potential sync services
+                aframe.get_timestamp(), aframe.get_frame_timestamp_domain(), _frame_number, // Timestamp, Frame# for potential sync services
                 *(virtual_color_sensor.get_active_streams().begin()) });
         }
         rs2::frameset fset;
