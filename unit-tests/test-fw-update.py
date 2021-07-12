@@ -75,16 +75,22 @@ def reset_update_counter( device ):
     send_hardware_monitor_command( device, cmd )
 
 def find_image_or_exit( product_name, image_mask ):
-    pattern = re.compile('Intel RealSense ')
+    pattern = re.compile(r'^Intel RealSense ((\S+?)(\d+)(\S*))')
     match = pattern.search(product_name)
     if not match:
-        # Didn't find 'Intel RealSense ' in product_name
-        log.f(product_name, " is not valid")
+        log.f(product_name, " is not valid - Didn't find 'Intel RealSense ' in product_name")
 
-    # finding file containing image for FW update
+    # Finding file containing image for FW update
+    # For example: for 'Intel RealSense L53X Recovery'
+    # Take the 'L53' and try to concatenate it 'X' + postfix and than "XX" + postfix
+    # Until find file or exit if not find.
     x = 'X'
+    r = match.regs[1]
+
     for i in range(1, 3):
-        image_name = '(^|/)' + product_name[match.end():match.end() + 4 - i] + x + "_FW_Image-" + image_mask + ".bin" + '$'
+        pn = product_name[r[0]:r[1]]
+
+        image_name = '(^|/)' + product_name[r[0]:r[1]-i] + x + "_FW_Image-" + image_mask + ".bin" + '$'
         image_file = None
         for image in file.find(repo.root, image_name):
             image_file = os.path.join(repo.root, image)
@@ -92,6 +98,7 @@ def find_image_or_exit( product_name, image_mask ):
             break
         x = x + 'X'
     if not image_file:
+        global product_line
         log.f("Could not find image file for " + product_line)
 
     return image_file
@@ -113,7 +120,6 @@ log.d( 'found:', device )
 product_line = device.get_info( rs.camera_info.product_line )
 product_name = device.get_info( rs.camera_info.name )
 log.d( 'product line:', product_line )
-log.d( 'product name:', product_name )
 ###############################################################################
 #
 
