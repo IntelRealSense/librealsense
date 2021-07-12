@@ -83,15 +83,22 @@ std::map<uint32_t, std::shared_ptr<playback_sensor>> playback_device::create_pla
 
             auto action = [this, id]()
             {
-                std::lock_guard<std::mutex> locker(_active_sensors_mutex);
-                auto it = m_active_sensors.find(id);
-                if (it != m_active_sensors.end())
+                bool need_to_stop_device = false;
                 {
-                    m_active_sensors.erase(it);
-                    if (m_active_sensors.size() == 0)
+                    std::lock_guard<std::mutex> locker(_active_sensors_mutex);
+                    auto it = m_active_sensors.find(id);
+                    if (it != m_active_sensors.end())
                     {
-                        stop_internal();
+                        m_active_sensors.erase(it);
+                        if (m_active_sensors.size() == 0)
+                        {
+                            need_to_stop_device = true;
+                        }
                     }
+                }
+                if (need_to_stop_device)
+                {
+                    stop_internal();
                 }
             };
             if (invoke_required)
@@ -151,14 +158,19 @@ rs2_extrinsics playback_device::calc_extrinsic(const rs2_extrinsics& from, const
 
 playback_device::~playback_device()
 {
+    std::vector< std::shared_ptr< playback_sensor > > playback_sensors_copy;
     {
-        std::lock_guard<std::mutex> locker(_active_sensors_mutex);
-        for (auto&& sensor : m_active_sensors)
+        std::lock_guard< std::mutex > locker(_active_sensors_mutex);
+        for (auto s : m_active_sensors)
+            playback_sensors_copy.push_back(s.second);
+    }
+
+
+    for (auto&& sensor : playback_sensors_copy)
+    {
+        if (sensor)
         {
-            if (sensor.second != nullptr)
-            {
-                sensor.second->stop();
-            }
+            sensor->stop();
         }
     }
 
@@ -469,6 +481,7 @@ void playback_device::stop()
 void playback_device::stop_internal()
 {
     //stop_internal() is called from within the reading thread
+    LOG_DEBUG("stop_internal() called");
     if (m_is_started == false)
         return; //nothing to do
 
@@ -480,6 +493,7 @@ void playback_device::stop_internal()
     m_prev_timestamp = std::chrono::nanoseconds(0);
     catch_up();
     playback_status_changed(RS2_PLAYBACK_STATUS_STOPPED);
+    LOG_DEBUG("stop_internal() end");
 }
 
 template <typename T>
@@ -514,6 +528,7 @@ void playback_device::do_loop(T action)
             {
                 if( psc )
                 {
+                    psc->flush_pending_frames();
                     psc->stop( false );
                 }
             }
