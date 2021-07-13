@@ -148,7 +148,7 @@ namespace rs2
             y411_decoder() : rs2::y411_decoder(init()) { }
 
         private:
-            std::shared_ptr<rs2_processing_block> init()
+            static std::shared_ptr<rs2_processing_block> init()
             {
                 rs2_error* e = nullptr;
                 auto block = std::shared_ptr<rs2_processing_block>(
