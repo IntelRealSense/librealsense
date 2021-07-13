@@ -8,7 +8,6 @@
 #include <mutex>
 #include <array>
 #include <imgui.h>
-#include <librealsense2/rsutil.h>
 #include <librealsense2/rs.hpp>
 #include "rendering.h"
 

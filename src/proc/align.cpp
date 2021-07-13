@@ -3,7 +3,6 @@
 
 #include "../include/librealsense2/hpp/rs_sensor.hpp"
 #include "../include/librealsense2/hpp/rs_processing.hpp"
-#include "../include/librealsense2/rsutil.h"
 
 #include "core/video.h"
 #include "proc/synthetic-stream.h"

@@ -4,7 +4,6 @@
 #pragma once
 
 #include <librealsense2/rs.hpp>
-#include <librealsense2/rsutil.h>  // for projection utilities
 #include <model-views.h>
 #include <viewer.h>
 
