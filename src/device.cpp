@@ -311,15 +311,16 @@ void device::tag_profiles(stream_profiles profiles) const
 
 bool device::contradicts(const stream_profile_interface* a, const std::vector<stream_profile>& others) const
 {
+    bool is_d405 = (get_info(RS2_CAMERA_INFO_PRODUCT_ID) == "0B5B");
     if (auto vid_a = dynamic_cast<const video_stream_profile_interface*>(a))
     {
         for (auto request : others)
         {
             if (a->get_framerate() != 0 && request.fps != 0 && (a->get_framerate() != request.fps))
                 return true;
-            if (vid_a->get_width() != 0 && request.width != 0 && (vid_a->get_width() != request.width))
+            if (vid_a->get_width() != 0 && request.width != 0 && (vid_a->get_width() != request.width) && (!(is_d405 && vid_a->get_width() == 1280 && request.width == 1288)))
                 return true;
-            if (vid_a->get_height() != 0 && request.height != 0 && (vid_a->get_height() != request.height))
+            if (vid_a->get_height() != 0 && request.height != 0 && (vid_a->get_height() != request.height) && (!(is_d405 && vid_a->get_height() == 720 && request.height == 808)))
                 return true;
         }
     }
