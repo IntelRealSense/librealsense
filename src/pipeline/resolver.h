@@ -419,36 +419,6 @@ namespace librealsense
 
                     if (targets.size() > 0) // if subdevice is handling any streams
                     {
-                        // moving the infrared profile to first position if it is requested
-                        if (dev->get_info(RS2_CAMERA_INFO_PRODUCT_ID) == "0B5B" && targets.size() > 1)
-                        {
-                            // moving the infrared profile to first position if it is requested
-                            int ir_index = -1;
-                            for (int i = 0; i < targets.size(); ++i)
-                            {
-                                if (targets[i].stream == RS2_STREAM_INFRARED)
-                                {
-                                    ir_index = i;
-                                    break;
-                                }
-                            }
-                            // ir_index not -1: means that the ir profile has been found in targets
-                            // ir_index not 0: means that the ir profile is not in targets's first position
-                            if (ir_index != -1 && ir_index != 0) 
-                            {
-                                std::swap(targets[0], targets[ir_index]);
-                            }
-                            /*auto it = std::find(targets.begin(), targets.end(), [&](const stream_profile& sp) {
-                                return sp.stream == RS2_STREAM_INFRARED;
-                                });
-                            if (it != targets.end()) // means that the ir profile has been found in targets
-                            {
-                                stream_profile ir_sp = *it;
-                                targets.erase(it);
-                                targets.
-                            }*/
-                        }
-
                         auto_complete(targets, profiles, dev);
 
                         for (auto && t : targets)

@@ -943,6 +943,19 @@ namespace librealsense
         }
 
         bool compress_while_record() const override { return false; }
+
+        bool contradicts(const stream_profile_interface* a, const std::vector<stream_profile>& others) const override
+        {
+            if (auto vid_a = dynamic_cast<const video_stream_profile_interface*>(a))
+            {
+                for (auto request : others)
+                {
+                    if (a->get_framerate() != 0 && request.fps != 0 && (a->get_framerate() != request.fps))
+                        return true;
+                }
+            }
+            return false;
+        }
     };
 
     class rs455_device  :      public ds5_nonmonochrome,
