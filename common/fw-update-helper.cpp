@@ -45,9 +45,9 @@ namespace rs2
         RS2_FWU_STATE_FAILED = 3,
     };
 
-    bool is_recommended_fw_available(const std::string& id, const std::string& PID)
+    bool is_recommended_fw_available(const std::string& product_line, const std::string& PID)
     {
-        auto pl = parse_product_line(id);
+        auto pl = parse_product_line(product_line);
         auto fv = get_available_firmware_version(pl, PID);
         return !(fv == "");
     }

@@ -18,7 +18,7 @@ namespace rs2
     std::map<std::pair<int, std::string>, std::vector<uint8_t>> create_default_fw_table();
     std::vector<int> parse_fw_version(const std::string& fw);
     bool is_upgradeable(const std::string& curr, const std::string& available);
-    bool is_recommended_fw_available(const std::string& version, const std::string& PID);
+    bool is_recommended_fw_available(const std::string& product_line, const std::string& PID);
 
     class firmware_update_manager : public process_manager
     {

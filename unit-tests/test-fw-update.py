@@ -74,7 +74,13 @@ def reset_update_counter( device ):
 
     send_hardware_monitor_command( device, cmd )
 
-def find_image_or_exit( product_name, image_mask ):
+def find_image_or_exit( product_name, fw_version ):
+    """
+    Description...
+    :param product_name: the name of the camera
+    :param fw_version: fw version
+    :return: the image file corresponding to product_name and fw_version if exist, otherwise exit
+    """
     pattern = re.compile(r'^Intel RealSense ((\S+?)(\d+)(\S*))')
     match = pattern.search(product_name)
     if not match:
@@ -84,13 +90,13 @@ def find_image_or_exit( product_name, image_mask ):
     # For example: for 'Intel RealSense L53X Recovery'
     # Take the 'L53' and try to concatenate it 'X' + postfix and than "XX" + postfix
     # Until find file or exit if not find.
-    x = 'X'
-    r = match.regs[1]
+    x = ''
+    start_index, end_index = match.span(1)
 
-    for i in range(1, 3):
-        pn = product_name[r[0]:r[1]]
+    for i in range(0, end_index-start_index):
+        pn = product_name[start_index:end_index-i]
 
-        image_name = '(^|/)' + product_name[r[0]:r[1]-i] + x + "_FW_Image-" + image_mask + ".bin" + '$'
+        image_name = '(^|/)' + pn + x + "_FW_Image-" + fw_version + ".bin" + '$'
         image_file = None
         for image in file.find(repo.root, image_name):
             image_file = os.path.join(repo.root, image)
