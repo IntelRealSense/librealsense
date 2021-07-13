@@ -1668,48 +1668,8 @@ namespace rs2
 
     bool subdevice_model::is_selected_combination_supported()
     {
-        std::vector<stream_profile> results;
-
-        for (auto&& f : formats)
-        {
-            auto stream = f.first;
-            if (stream_enabled[stream])
-            {
-                auto fps = 0;
-                if (show_single_fps_list)
-                    fps = shared_fps_values[ui.selected_shared_fps_id];
-                else
-                    fps = fps_values_per_stream[stream][ui.selected_fps_id[stream]];
-
-                auto format = format_values[stream][ui.selected_format_id[stream]];
-
-                for (auto&& p : profiles)
-                {
-                    if (auto vid_prof = p.as<video_stream_profile>())
-                    {
-                        if (res_values.size() > 0)
-                        {
-                            auto width = res_values[ui.selected_res_id].first;
-                            auto height = res_values[ui.selected_res_id].second;
-
-                            if (vid_prof.width() == width &&
-                                vid_prof.height() == height &&
-                                p.unique_id() == stream &&
-                                p.fps() == fps &&
-                                p.format() == format)
-                                results.push_back(p);
-                        }
-                    }
-                    else
-                    {
-                        if (p.fps() == fps &&
-                            p.unique_id() == stream &&
-                            p.format() == format)
-                            results.push_back(p);
-                    }
-                }
-            }
-        }
+        bool throw_exception_flag = false;
+        std::vector<stream_profile> results = get_selected_profiles(throw_exception_flag);
 
         if (results.size() == 0)
             return false;
@@ -1952,7 +1912,7 @@ namespace rs2
         return results;
     }
 
-    std::vector<stream_profile> subdevice_model::get_selected_profiles()
+    std::vector<stream_profile> subdevice_model::get_selected_profiles(bool throw_exception_flag)
     {
         std::vector<stream_profile> results;
 
@@ -2006,7 +1966,7 @@ namespace rs2
                 }
             }
         }
-        if (results.size() == 0)
+        if (results.size() == 0 && throw_exception_flag)
         {
             error_message << " is unsupported!";
             throw std::runtime_error(error_message.str());

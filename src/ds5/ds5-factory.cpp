@@ -946,12 +946,24 @@ namespace librealsense
 
         bool contradicts(const stream_profile_interface* a, const std::vector<stream_profile>& others) const override
         {
+            auto it = std::find_if(others.begin(), others.end(), [](const stream_profile& sp) {
+                return sp.format == RS2_FORMAT_Y16;
+                });
+            bool unrectified_ir_requested = (it != others.end());
+
             if (auto vid_a = dynamic_cast<const video_stream_profile_interface*>(a))
             {
                 for (auto request : others)
                 {
                     if (a->get_framerate() != 0 && request.fps != 0 && (a->get_framerate() != request.fps))
                         return true;
+                    if (!unrectified_ir_requested)
+                    {
+                        if (vid_a->get_width() != 0 && request.width != 0 && (vid_a->get_width() != request.width))
+                            return true;
+                        if (vid_a->get_height() != 0 && request.height != 0 && (vid_a->get_height() != request.height))
+                            return true;
+                    }
                 }
             }
             return false;

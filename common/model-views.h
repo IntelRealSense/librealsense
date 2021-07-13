@@ -588,7 +588,7 @@ namespace rs2
         bool supports_on_chip_calib();
         bool draw_stream_selection(std::string& error_message);
         bool is_selected_combination_supported();
-        std::vector<stream_profile> get_selected_profiles();
+        std::vector<stream_profile> get_selected_profiles(bool throw_exception_flag = true);
         std::vector<stream_profile> get_supported_profiles();
         void stop(std::shared_ptr<notifications_model> not_model);
         void play(const std::vector<stream_profile>& profiles, viewer_model& viewer, std::shared_ptr<rs2::asynchronous_syncer>);
