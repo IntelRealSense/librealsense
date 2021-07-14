@@ -4,7 +4,7 @@
 #include "api.h"
 #include "synthetic-stream-gl.h"
 #include "yuy2rgb-gl.h"
-#include "y411-2rgb-gl.h"
+#include "y4112rgb-gl.h"
 #include "align-gl.h"
 #include "pointcloud-gl.h"
 #include "../include/librealsense2/h/rs_types.h"

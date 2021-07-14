@@ -1,25 +1,21 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2017 Intel Corporation. All Rights Reserved.
 
-#include "../include/librealsense2/hpp/rs_sensor.hpp"
-#include "../include/librealsense2/hpp/rs_processing.hpp"
-#include "../include/librealsense2-gl/rs_processing_gl.hpp"
+#include <../include/librealsense2/hpp/rs_sensor.hpp>
+#include <../include/librealsense2/hpp/rs_processing.hpp>
+#include <../include/librealsense2-gl/rs_processing_gl.hpp>
 
-#include "proc/synthetic-stream.h"
-#include "y411-2rgb-gl.h"
-#include "option.h"
+#include "../proc/synthetic-stream.h"
+#include "y4112rgb-gl.h"
+#include "../option.h"
 
 #ifndef NOMINMAX
 #define NOMINMAX
 #endif // NOMINMAX
 
 #include <glad/glad.h>
-
 #include <iostream>
-
 #include <chrono>
-#include <strstream>
-
 #include "synthetic-stream-gl.h"
 
 static const char* fragment_shader_text =
