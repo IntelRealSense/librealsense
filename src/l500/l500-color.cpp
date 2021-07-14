@@ -21,6 +21,13 @@ namespace librealsense
         {rs_fourcc('Y','U','Y','2'), RS2_FORMAT_YUYV},
         {rs_fourcc('Y','U','Y','V'), RS2_FORMAT_YUYV},
         {rs_fourcc('U','Y','V','Y'), RS2_FORMAT_UYVY},
+
+        // A format in which all Y samples are found first in memory as an array of unsigned char with an even number of lines 
+        // (possibly with a larger stride for memory alignment), followed immediately by an array of unsigned char containing
+        // interleaved Cb and Cr samples (such that if addressed as a little-endian WORD type, Cb would be in the LSBs and Cr
+        // would be in the MSBs) with the same total stride as the Y samples.
+
+        // We use NV12 as Y411 because they both same size (12 bpp) and this format (unlike Y411) familiar to both Windows and Linux
         {rs_fourcc('N','V','1','2'), RS2_FORMAT_Y411}
     };
 
