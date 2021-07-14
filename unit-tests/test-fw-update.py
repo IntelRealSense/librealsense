@@ -81,7 +81,7 @@ def find_image_or_exit( product_name, fw_version_regex ):
     :param fw_version_regex: a regular expression specifying which FW version image to find
     :return: the image file corresponding to product_name and fw_version if exist, otherwise exit
     """
-    pattern = re.compile(r'^Intel RealSense ((\S+?)(\d+)(\S*))')
+    pattern = re.compile(r'^Intel RealSense (((\S+?)(\d+))(\S*))')
     match = pattern.search(product_name)
     if not match:
         log.f(product_name, " is not valid - Didn't find 'Intel RealSense ' in product_name")
@@ -90,23 +90,26 @@ def find_image_or_exit( product_name, fw_version_regex ):
     # For example: for 'Intel RealSense L53X Recovery'
     # Take the 'L53' and try to concatenate it 'X' + postfix and than "XX" + postfix
     # Until find file or exit if not find.
-    x = 'X'
-    start_index, end_index = match.span(1)
+    for j in range(1, pattern.groups+1):
+        x = ''
+        start_index, end_index = match.span(j)
 
-    for i in range(1, end_index-start_index):
-        pn = product_name[start_index:end_index-i]
+        for i in range(0, end_index-start_index):
+            pn = product_name[start_index:end_index-i]
 
-        image_name = '(^|/)' + pn + x + "_FW_Image-" + fw_version_regex + r'\.bin' + '$'
-        image_file = None
-        for image in file.find(repo.root, image_name):
-            image_file = os.path.join(repo.root, image)
+            image_name = '(^|/)' + pn + x + "_FW_Image-" + fw_version_regex + r'\.bin' + '$'
+            image_file = None
+            for image in file.find(repo.root, image_name):
+                image_file = os.path.join(repo.root, image)
+            if image_file:
+                break
+            x = x + 'X'
+
         if image_file:
             break
-        x = x + 'X'
     if not image_file:
         global product_line
         log.f("Could not find image file for " + product_line)
-
     return image_file
 
 # find the update tool exe
