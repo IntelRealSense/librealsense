@@ -1912,12 +1912,30 @@ namespace rs2
         return results;
     }
 
+    bool is_resolution_max(const std::vector<std::pair<int, int>>& res_values, int width, int height, const std::pair<int, int>& calibration_res)
+    {
+        auto size = res_values.size();
+        int max_width = (res_values[size - 1].first != calibration_res.first) ? res_values[size - 1].first : res_values[size - 2].first;
+        int max_height = (res_values[size - 1].second != calibration_res.second) ? res_values[size - 1].second : res_values[size - 2].second;
+        return width == max_width && height == max_height;
+    }
+
     std::vector<stream_profile> subdevice_model::get_selected_profiles(bool throw_exception_flag)
     {
         std::vector<stream_profile> results;
 
         std::stringstream error_message;
         error_message << "The profile ";
+
+
+        const int d405_calibration_width = 1288;
+        const int d405_calibration_height = 808;
+
+        int ir_stream = 1;
+        auto width = res_values[ui.selected_res_id].first;
+        auto height = res_values[ui.selected_res_id].second;
+        bool is_oem_cal_profile = (stream_enabled[ir_stream] && format_values[ir_stream][ui.selected_format_id[ir_stream]] == RS2_FORMAT_Y16 &&
+            width == d405_calibration_width && height == d405_calibration_height);
 
         for (auto&& f : formats)
         {
@@ -1945,12 +1963,23 @@ namespace rs2
                                 << width << "x" << height << " at " << fps << "Hz, "
                                 << rs2_format_to_string(format) << "} ";
 
-                            if (vid_prof.width() == width &&
-                                vid_prof.height() == height &&
-                                p.unique_id() == stream &&
-                                p.fps() == fps &&
-                                p.format() == format)
-                                results.push_back(p);
+                            if (p.unique_id() == stream && p.fps() == fps && p.format() == format)
+                            {
+                                // permitting to add color stream profile to depth sensor
+                                // when infrared pofile is already active with resolution 1288x808
+                                // needed for D405 calibration
+                                if (is_oem_cal_profile)
+                                {
+                                    if (p.stream_type() == RS2_STREAM_INFRARED ||
+                                        (p.stream_type() == RS2_STREAM_COLOR && 
+                                            is_resolution_max(res_values, vid_prof.width(), vid_prof.height(), 
+                                                std::pair<int, int>(d405_calibration_width, d405_calibration_height))))
+                                        results.push_back(p);
+                                }
+                                else if (vid_prof.width() == width &&
+                                    vid_prof.height() == height)
+                                    results.push_back(p);
+                            }
                         }
                     }
                     else
