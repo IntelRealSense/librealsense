@@ -74,11 +74,11 @@ def reset_update_counter( device ):
 
     send_hardware_monitor_command( device, cmd )
 
-def find_image_or_exit( product_name, fw_version ):
+def find_image_or_exit( product_name, fw_version_regex ):
     """
     Description...
     :param product_name: the name of the camera
-    :param fw_version: fw version
+    :param fw_version_regex: a regular expression specifying which FW version image to find
     :return: the image file corresponding to product_name and fw_version if exist, otherwise exit
     """
     pattern = re.compile(r'^Intel RealSense ((\S+?)(\d+)(\S*))')
@@ -96,7 +96,7 @@ def find_image_or_exit( product_name, fw_version ):
     for i in range(0, end_index-start_index):
         pn = product_name[start_index:end_index-i]
 
-        image_name = '(^|/)' + pn + x + "_FW_Image-" + fw_version + ".bin" + '$'
+        image_name = '(^|/)' + pn + x + "_FW_Image-" + fw_version_regex + r'\.bin' + '$'
         image_file = None
         for image in file.find(repo.root, image_name):
             image_file = os.path.join(repo.root, image)
