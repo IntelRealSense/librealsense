@@ -3493,7 +3493,7 @@ void rs2_project_point_to_pixel(float pixel[2], const struct rs2_intrinsics* int
     pixel[0] = x * intrin->fx + intrin->ppx;
     pixel[1] = y * intrin->fy + intrin->ppy;
 }
-NOEXCEPT_RETURN(, intrin)
+NOEXCEPT_RETURN(, pixel)
 
 void rs2_deproject_pixel_to_point(float point[3], const struct rs2_intrinsics* intrin, const float pixel[2], float depth) BEGIN_API_CALL
 {
@@ -3578,7 +3578,7 @@ void rs2_deproject_pixel_to_point(float point[3], const struct rs2_intrinsics* i
     point[1] = depth * y;
     point[2] = depth;
 }
-NOEXCEPT_RETURN(, intrin)
+NOEXCEPT_RETURN(, point)
 
 void rs2_transform_point_to_point(float to_point[3], const struct rs2_extrinsics* extrin, const float from_point[3]) BEGIN_API_CALL
 {
@@ -3586,14 +3586,47 @@ void rs2_transform_point_to_point(float to_point[3], const struct rs2_extrinsics
     to_point[1] = extrin->rotation[1] * from_point[0] + extrin->rotation[4] * from_point[1] + extrin->rotation[7] * from_point[2] + extrin->translation[1];
     to_point[2] = extrin->rotation[2] * from_point[0] + extrin->rotation[5] * from_point[1] + extrin->rotation[8] * from_point[2] + extrin->translation[2];
 }
-NOEXCEPT_RETURN(, extrin)
+NOEXCEPT_RETURN(, to_point)
 
 void rs2_fov(const struct rs2_intrinsics* intrin, float to_fov[2]) BEGIN_API_CALL
 {
     to_fov[0] = (atan2f(intrin->ppx + 0.5f, intrin->fx) + atan2f(intrin->width - (intrin->ppx + 0.5f), intrin->fx)) * 57.2957795f;
     to_fov[1] = (atan2f(intrin->ppy + 0.5f, intrin->fy) + atan2f(intrin->height - (intrin->ppy + 0.5f), intrin->fy)) * 57.2957795f;
 }
-NOEXCEPT_RETURN(, intrin)
+NOEXCEPT_RETURN(, to_fov)
+
+/* Helper inner function (not part of the API) */
+void next_pixel_in_line(float curr[2], const float start[2], const float end[2])
+{
+    float line_slope = (end[1] - start[1]) / (end[0] - start[0]);
+    if (fabs(end[0] - curr[0]) > fabs(end[1] - curr[1]))
+    {
+        curr[0] = end[0] > curr[0] ? curr[0] + 1 : curr[0] - 1;
+        curr[1] = end[1] - line_slope * (end[0] - curr[0]);
+    }
+    else
+    {
+        curr[1] = end[1] > curr[1] ? curr[1] + 1 : curr[1] - 1;
+        curr[0] = end[0] - ((end[1] + curr[1]) / line_slope);
+    }
+}
+
+/* Helper inner function (not part of the API) */
+bool is_pixel_in_line(const float curr[2], const float start[2], const float end[2])
+{
+    return ((end[0] >= start[0] && end[0] >= curr[0] && curr[0] >= start[0]) || (end[0] <= start[0] && end[0] <= curr[0] && curr[0] <= start[0])) &&
+        ((end[1] >= start[1] && end[1] >= curr[1] && curr[1] >= start[1]) || (end[1] <= start[1] && end[1] <= curr[1] && curr[1] <= start[1]));
+}
+
+/* Helper inner function (not part of the API) */
+void adjust_2D_point_to_boundary(float p[2], int width, int height)
+{
+    if (p[0] < 0) p[0] = 0;
+    if (p[0] > width) p[0] = (float)width;
+    if (p[1] < 0) p[1] = 0;
+    if (p[1] > height) p[1] = (float)height;
+}
+
 
 void rs2_project_color_pixel_to_depth_pixel(float to_pixel[2],
     const uint16_t* data, float depth_scale,
@@ -3640,4 +3673,4 @@ void rs2_project_color_pixel_to_depth_pixel(float to_pixel[2],
         }
     }
 }
-NOEXCEPT_RETURN(, to_pixel, data, depth_min, depth_max)
+NOEXCEPT_RETURN(, to_pixel)
