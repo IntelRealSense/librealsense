@@ -90,10 +90,10 @@ def find_image_or_exit( product_name, fw_version_regex ):
     # For example: for 'Intel RealSense L53X Recovery'
     # Take the 'L53' and try to concatenate it 'X' + postfix and than "XX" + postfix
     # Until find file or exit if not find.
-    x = ''
+    x = 'X'
     start_index, end_index = match.span(1)
 
-    for i in range(0, end_index-start_index):
+    for i in range(1, end_index-start_index):
         pn = product_name[start_index:end_index-i]
 
         image_name = '(^|/)' + pn + x + "_FW_Image-" + fw_version_regex + r'\.bin' + '$'
