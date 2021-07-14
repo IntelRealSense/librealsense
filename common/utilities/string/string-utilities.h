@@ -5,6 +5,7 @@
 
 #include <algorithm>
 #include <string>
+#include <cmath> // std::isfinite
 
 namespace utilities {
 namespace string {
