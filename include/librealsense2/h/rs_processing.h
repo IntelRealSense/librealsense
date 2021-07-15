@@ -43,12 +43,14 @@ rs2_processing_block* rs2_create_sync_processing_block(rs2_error** error);
 rs2_processing_block* rs2_create_pointcloud(rs2_error** error);
 
 /**
-* Creates YUY decoder processing block. This block accepts raw YUY frames and outputs frames of other formats.
-* YUY is a common video format used by a variety of web-cams. It benefits from packing pixels into 2 bytes per pixel
-* without signficant quality drop. YUY representation can be converted back to more usable RGB form,
-* but this requires somewhat costly conversion.
+* Creates y411 decoder processing block. This block accepts raw y411 frames and outputs frames in RGB8.
+*     https://www.fourcc.org/pixel-format/yuv-y411/
+* Y411 is disguised as NV12 to allow Linux compatibility. Both are 12bpp encodings that allow high-resolution
+* modes in the camera to still fit within the USB3 limits (YUY wasn't enough).
+*
 * The SDK will automatically try to use SSE2 and AVX instructions and CUDA where available to get
 * best performance. Other implementations (using GLSL, OpenCL, Neon and NCS) should follow.
+*
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 */
 rs2_processing_block* rs2_create_yuy_decoder(rs2_error** error);
