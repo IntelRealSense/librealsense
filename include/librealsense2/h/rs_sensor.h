@@ -88,6 +88,7 @@ typedef enum rs2_format
     RS2_FORMAT_W10             , /**< Grey-scale image as a bit-packed array. 4 pixel data stream taking 5 bytes */
     RS2_FORMAT_Z16H            , /**< Variable-length Huffman-compressed 16-bit depth values. */
     RS2_FORMAT_FG              , /**< 16-bit per-pixel frame grabber format. */
+    RS2_FORMAT_Y411            , /**< 12-bit per-pixel. */
     RS2_FORMAT_COUNT             /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
 } rs2_format;
 const char* rs2_format_to_string(rs2_format format);
