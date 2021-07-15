@@ -37,23 +37,6 @@ void init_util(py::module &m) {
         return to_fow;
     }, "Calculate horizontal and vertical field of view, based on video intrinsics", "intrin"_a);
 
-    m.def("next_pixel_in_line", [](std::array<float, 2> curr, const std::array<float, 2> start, const std::array<float, 2> end)->std::array<float, 2>
-    {
-        next_pixel_in_line(curr.data(), start.data(), end.data());
-        return curr;
-    }, "curr"_a, "start"_a, "end"_a);
-
-    m.def("is_pixel_in_line", [](std::array<float, 2> curr, const std::array<float, 2> start, const std::array<float, 2> end)->bool
-    {
-        return is_pixel_in_line(curr.data(), start.data(), end.data());
-    }, "curr"_a, "start"_a, "end"_a); // Wrapping needed because raw arrays
-
-    m.def("adjust_2D_point_to_boundary", [](std::array<float, 2> p, int width, int height)->std::array<float, 2>
-    {
-        adjust_2D_point_to_boundary(p.data(), width, height);
-        return p;
-    }, "p"_a, "width"_a, "height"_a);
-
     auto cp_to_dp = [](BufData data, float depth_scale, float depth_min, float depth_max,
             const rs2_intrinsics& depth_intrin, const rs2_intrinsics& color_intrin,
             const rs2_extrinsics& color_to_depth, const rs2_extrinsics& depth_to_color,

@@ -2,7 +2,6 @@
 // Copyright(c) 2017 Intel Corporation. All Rights Reserved.
 
 #include <librealsense2/rs.hpp>
-#include <librealsense2/rsutil.h>
 
 #include "../synthetic-stream.h"
 #include "../../environment.h"

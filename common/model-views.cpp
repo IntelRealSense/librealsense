@@ -15,7 +15,6 @@
 #include <opengl3.h>
 
 #include <librealsense2/rs_advanced_mode.hpp>
-#include <librealsense2/rsutil.h>
 #include <librealsense2/rs.hpp>
 
 #include "model-views.h"

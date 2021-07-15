@@ -2,10 +2,9 @@
 // Copyright(c) 2018 Intel Corporation. All Rights Reserved.
 
 #include "../include/librealsense2/rs.hpp"
-#include "../include/librealsense2/rsutil.h"
 #include "proc/synthetic-stream.h"
 #include "proc/occlusion-filter.h"
-//#include  "../../common/tiny-profiler.h"
+
 #include <vector>
 #include <cmath>
 

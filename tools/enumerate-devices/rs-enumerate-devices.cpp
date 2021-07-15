@@ -2,7 +2,6 @@
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
 #include <librealsense2/rs.hpp>
-#include <librealsense2/rsutil.h>
 #include <iostream>
 #include <iomanip>
 #include <map>
