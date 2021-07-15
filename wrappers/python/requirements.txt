@@ -1,3 +1,0 @@
-wheel
-twine
-setuptools
