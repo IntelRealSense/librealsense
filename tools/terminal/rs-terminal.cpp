@@ -217,7 +217,7 @@ int main(int argc, char** argv)
         auto sts = parse_xml_from_file(xml_full_file_path, cmd_xml);
         if (!sts)
         {
-            cout << "Provided XML not found!\n";
+            cout << "Commands dictionary " << xml_full_file_path << " is invalid, aborting!\n";
             return EXIT_FAILURE;
         }
 

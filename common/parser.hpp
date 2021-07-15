@@ -337,7 +337,7 @@ inline bool parse_xml_from_file(const std::string& xml_full_file_path, commands_
 {
     std::ifstream fin(xml_full_file_path);
 
-    if (!fin)
+    if (!fin.good())
         return false;
 
     std::stringstream ss;
