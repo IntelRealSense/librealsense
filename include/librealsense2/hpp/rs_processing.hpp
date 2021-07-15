@@ -512,17 +512,15 @@ namespace rs2
     {
     public:
         /**
-        * Creates y411 decoder processing block. This block accepts raw y411 frames and outputs frames of other formats.
-        * y411 is a common video format used by a variety of web-cams. It benefits from packing pixels into 12 bits per pixel
-        * without signficant quality drop. y411 representation can be converted back to more usable RGB form,
-        * but this requires somewhat costly conversion.
-        * The SDK will automatically try to use SSE2 and AVX instructions and CUDA where available to get
-        * best performance. Other implementations (using GLSL, OpenCL, Neon and NCS) should follow.
-        */
-        y411_decoder() : filter(init(), 1) { }
+         * Creates y411 decoder processing block. This block accepts raw y411 frames and outputs frames in RGB8.
+         *     https://www.fourcc.org/pixel-format/yuv-y411/
+         * Y411 is disguised as NV12 to allow Linux compatibility. Both are 12bpp encodings that allow high-resolution
+         * modes in the camera to still fit within the USB3 limits (YUY wasn't enough).
+         */
+        y411_decoder() : filter(init()) { }
 
     protected:
-        y411_decoder(std::shared_ptr<rs2_processing_block> block) : filter(block, 1) {}
+        y411_decoder(std::shared_ptr<rs2_processing_block> block) : filter(block) {}
 
     private:
         static std::shared_ptr<rs2_processing_block> init()
