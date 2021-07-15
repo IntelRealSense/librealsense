@@ -6,7 +6,7 @@
 #include <librealsense2-gl/rs_processing_gl.hpp>
 
 #include "../proc/synthetic-stream.h"
-#include "yuy2rgb-gl.h"
+#include "y4112rgb-gl.h"
 #include "../option.h"
 
 #ifndef NOMINMAX
@@ -14,12 +14,8 @@
 #endif // NOMINMAX
 
 #include <glad/glad.h>
-
 #include <iostream>
-
 #include <chrono>
-#include <strstream>
-
 #include "synthetic-stream-gl.h"
 
 static const char* fragment_shader_text =
@@ -36,42 +32,62 @@ static const char* fragment_shader_text =
 "    float u = 0.0;\n"
 "    float v = 0.0;\n"
 "    float tex_y = 1.0 - textCoords.y;\n"
-"    if (mod(floor(gl_FragCoord.x), 2.0) == 0.0){\n"
-"        vec2 tx1 = vec2(textCoords.x, tex_y);\n"
-"        vec4 px1 = texture2D(textureSampler, tx1);\n"
-"        vec2 tx2 = vec2(textCoords.x + pixel_width, tex_y);\n"
-"        vec4 px2 = texture2D(textureSampler, tx2);\n"
-"        y = px1.x; u = px1.y; v = px2.y;\n"
+"    if (mod(floor(gl_FragCoord.y), 2.0) == 0.0)\n"
+"    {\n"
+"       if (mod(floor(gl_FragCoord.x), 2.0) == 0.0)\n"
+"       {\n"
+"          vec2 tuyy1 = vec2(textCoords.x, tex_y); \n"
+"          vec4 puyy1 = texture2D(textureSampler, tuyy1);\n"
+"          vec2 tvyy1 = vec2(textCoords.x + pixel_width, tex_y);\n"
+"          vec4 pvyy1 = texture2D(textureSampler, tvyy1);\n"
+"          y = puyy1.y; u = puyy1.x; v =pvyy1.x;\n"
+"       }\n"
+"       else\n"
+"       {\n"
+"          vec2 tuyy1 = vec2(textCoords.x - pixel_width, tex_y); \n"
+"          vec4 puyy1 = texture2D(textureSampler, tuyy1);\n"
+"          vec2 tvyy1 = vec2(textCoords.x, tex_y);\n"
+"          vec4 pvyy1 = texture2D(textureSampler, tvyy1);\n"
+"          y = puyy1.z; u = puyy1.x; v = pvyy1.x; \n"
+"       }\n"
 "    }\n"
 "    else\n"
 "    {\n"
-"        vec2 tx1 = vec2(textCoords.x - pixel_width, tex_y);\n"
-"        vec4 px1 = texture2D(textureSampler, tx1);\n"
-"        vec2 tx2 = vec2(textCoords.x, tex_y);\n"
-"        vec4 px2 = texture2D(textureSampler, tx2);\n"
-"        y = px2.x; u = px1.y; v = px2.y;\n"
+"       if (mod(floor(gl_FragCoord.x), 2.0) == 0.0)\n"
+"       {\n"
+"          vec2 tuyy1 = vec2(textCoords.x, tex_y-pixel_height); \n"
+"          vec4 puyy1 = texture2D(textureSampler, tuyy1);\n"
+"          vec2 tvyy1 = vec2(textCoords.x + pixel_width, tex_y-pixel_height);\n"
+"          vec4 pvyy1 = texture2D(textureSampler, tvyy1);\n"
+"          y = pvyy1.y; u = puyy1.x; v =pvyy1.x;\n"
+"       }\n"
+"       else\n"
+"       {\n"
+"          vec2 tuyy1 = vec2(textCoords.x - pixel_width, tex_y-pixel_height); \n"
+"          vec4 puyy1 = texture2D(textureSampler, tuyy1);\n"
+"          vec2 tvyy1 = vec2(textCoords.x, tex_y-pixel_height);\n"
+"          vec4 pvyy1 = texture2D(textureSampler, tvyy1);\n"
+"          y = pvyy1.z; u = puyy1.x; v = pvyy1.x; \n"
+"       }\n"
 "    }\n"
-"    //y *= 256.0; u *= 256.0; v *= 256.0;\n"
 "    float c = y - (16.0 / 256.0);\n"
 "    float d = u - 0.5;\n"
 "    float e = v - 0.5;\n"
 "    vec3 color = vec3(0.0);\n"
-"    //color.x = clamp(((298.0 / 256.0) * c + (409.0 / 256.0) * e + 0.5), 0.0, 1.0);\n"
-"    //color.y = clamp(((298.0 / 256.0) * c - (100.0 / 256.0) * d - (208.0/256.0) * e + 0.5), 0.0, 1.0);\n"
-"    //color.z = clamp(((298.0 / 256.0) * c + (516.0 / 256.0) * d + 0.5), 0.0, 1.0);\n"
 "    color.x = clamp((y + 1.40200 * (v - 0.5)), 0.0, 1.0);\n"
 "    color.y = clamp((y - 0.34414 * (u - 0.5) - 0.71414 * (v - 0.5)), 0.0, 1.0);\n"
 "    color.z = clamp((y + 1.77200 * (u - 0.5)), 0.0, 1.0);\n"
+
 "    gl_FragColor = vec4(color.xyz, opacity);\n"
 "}";
 
 using namespace rs2;
 using namespace librealsense::gl;
 
-class yuy2rgb_shader : public texture_2d_shader
+class y411_2rgb_shader : public texture_2d_shader
 {
 public:
-    yuy2rgb_shader()
+    y411_2rgb_shader()
         : texture_2d_shader(shader_program::load(
             texture_2d_shader::default_vertex_shader(), 
             fragment_shader_text, "position", "textureCoords"))
@@ -91,22 +107,22 @@ private:
     uint32_t _height_location;
 };
 
-void yuy2rgb::cleanup_gpu_resources()
+void y411_2rgb::cleanup_gpu_resources()
 {
     _viz.reset();
     _fbo.reset();
     _enabled = 0;
 }
 
-void yuy2rgb::create_gpu_resources()
+void y411_2rgb::create_gpu_resources()
 {
-    _viz = std::make_shared<visualizer_2d>(std::make_shared<yuy2rgb_shader>());
+    _viz = std::make_shared<visualizer_2d>(std::make_shared<y411_2rgb_shader>());
     _fbo = std::make_shared<fbo>(_width, _height);
     _enabled = glsl_enabled() ? 1 : 0;
 }
 
-yuy2rgb::yuy2rgb()
-    : stream_filter_processing_block("YUY Converter (GLSL)")
+y411_2rgb::y411_2rgb()
+    : stream_filter_processing_block("Y411 Converter (GLSL)")
 {
     _source.add_extension<gpu_video_frame>(RS2_EXTENSION_VIDEO_FRAME_GL);
 
@@ -117,7 +133,7 @@ yuy2rgb::yuy2rgb()
     initialize();
 }
 
-yuy2rgb::~yuy2rgb()
+y411_2rgb::~y411_2rgb()
 {
     perform_gl_action([&]()
     {
@@ -125,7 +141,7 @@ yuy2rgb::~yuy2rgb()
     }, []{});
 }
 
-rs2::frame yuy2rgb::process_frame(const rs2::frame_source& src, const rs2::frame& f)
+rs2::frame y411_2rgb::process_frame(const rs2::frame_source& src, const rs2::frame& f)
 {
     //scoped_timer t("yuy2rgb");
 
@@ -167,7 +183,7 @@ rs2::frame yuy2rgb::process_frame(const rs2::frame_source& src, const rs2::frame
         {
             glGenTextures(1, &yuy_texture);
             glBindTexture(GL_TEXTURE_2D, yuy_texture);
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RG8, _width, _height, 0, GL_RG, GL_UNSIGNED_BYTE, f.get_data());
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, _width, _height/2, 0, GL_RGB, GL_UNSIGNED_BYTE, f.get_data());
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
         }
@@ -191,7 +207,7 @@ rs2::frame yuy2rgb::process_frame(const rs2::frame_source& src, const rs2::frame
         glClearColor(1, 0, 0, 1);
         glClear(GL_COLOR_BUFFER_BIT);
 
-        auto& shader = (yuy2rgb_shader&)_viz->get_shader();
+        auto& shader = (y411_2rgb_shader&)_viz->get_shader();
         shader.begin();
         shader.set_size(_width, _height);
         shader.end();

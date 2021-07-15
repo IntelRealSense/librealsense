@@ -30,6 +30,7 @@
 #include "proc/zero-order.h"
 #include "proc/hole-filling-filter.h"
 #include "proc/color-formats-converter.h"
+#include "proc/y411-converter.h"
 #include "proc/rates-printer.h"
 #include "proc/hdr-merge.h"
 #include "proc/sequence-id-filter.h"
@@ -2193,6 +2194,12 @@ NOARGS_HANDLE_EXCEPTIONS_AND_RETURN(nullptr)
 rs2_processing_block* rs2_create_yuy_decoder(rs2_error** error) BEGIN_API_CALL
 {
     return new rs2_processing_block { std::make_shared<yuy2_converter>(RS2_FORMAT_RGB8) };
+}
+NOARGS_HANDLE_EXCEPTIONS_AND_RETURN(nullptr)
+
+rs2_processing_block* rs2_create_y411_decoder(rs2_error** error) BEGIN_API_CALL
+{
+    return new rs2_processing_block{ std::make_shared<y411_converter>(RS2_FORMAT_RGB8) };
 }
 NOARGS_HANDLE_EXCEPTIONS_AND_RETURN(nullptr)
 
