@@ -5,6 +5,7 @@
 
 #include <algorithm>
 #include <string>
+#include <sstream>
 #include <cmath> // std::isfinite
 
 namespace utilities {
@@ -46,7 +47,8 @@ namespace string {
         return (to_lower(x) == "true");
     }
 
-    inline unsigned int string_to_hex(std::string str)
+    // Pass by-value to perform in-place modifications
+    inline unsigned int ascii_hex_string_to_uint(std::string str)
     {
         std::string delimiter = "x";
 

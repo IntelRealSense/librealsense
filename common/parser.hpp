@@ -197,7 +197,7 @@ struct commands_xml
 };
 
 // While working from files, convert the file content into recognized raw format
-inline void preprocess_data_payload(std::vector<std::string>& params)
+inline void file_argument_to_blob(std::vector<std::string>& params)
 {
     if (!params.size())
         return;
@@ -209,9 +209,12 @@ inline void preprocess_data_payload(std::vector<std::string>& params)
         auto data = std::vector<uint8_t>((std::istreambuf_iterator<char>(file)),
             std::istreambuf_iterator<char>());
 
-        std::vector<std::string> modified_params(params.size() - 1 + data.size());
-        std::transform(data.begin(), data.end(), modified_params.begin() + (params.size() - 1), [](uint8_t c) { return utilities::string::hexify(c); });
-        params = modified_params; // substitute original params with raw data
+        size_t unmodified_params = params.size() - 1; // non-negative due to the file parameter
+        std::vector<std::string> modified_params(unmodified_params + data.size());
+        if (unmodified_params)                        // copy leading parameters
+            std::copy(modified_params.begin(), modified_params.begin() + unmodified_params - 1,params.begin());
+        std::transform(data.begin(), data.end(), modified_params.begin() + unmodified_params, [](uint8_t c) { return utilities::string::hexify(c); });
+        params = modified_params; // substitute original params with modified data
     }
 }
 
@@ -234,7 +237,7 @@ inline void parse_xml_from_memory(const char * content, commands_xml& cmd_xml)
                 std::string value = AttI->value();
                 std::string att_name = AttI->name();
                 if (att_name == "Name") { cmd.name = value; }
-                else if (att_name == "Opcode") { cmd.op_code = utilities::string::string_to_hex(value); }
+                else if (att_name == "Opcode") { cmd.op_code = utilities::string::ascii_hex_string_to_uint(value); }
                 else if (att_name == "IsWriteOnly") { cmd.is_write_only = utilities::string::string_to_bool(value); }
                 else if (att_name == "ReadFormat") { cmd.read_format = value; }
                 else if (att_name == "IsReadCommand") { cmd.is_read_command = utilities::string::string_to_bool(value); }

@@ -64,7 +64,7 @@ void xml_mode(const string& line, const commands_xml& cmd_xml, rs2::device& dev,
         params.push_back(tokens[i]);
 
     // In case of sending data from file, the data will be retrieved and converted into raw format
-    preprocess_data_payload(params);
+    file_argument_to_blob(params);
 
     auto raw_data = build_raw_command_data(command, params);
 
@@ -136,7 +136,7 @@ void read_script_file(const string& full_file_path, vector<string>& hex_lines)
     ifstream myfile(full_file_path);
     if (myfile.is_open())
     {
-        string line{};
+        string line;
         while (getline(myfile, line))
             hex_lines.push_back(line);
 
