@@ -139,13 +139,12 @@ namespace rs2
         };
 
         /**
-        * yuy_decoder can be used for YUY->RGB conversion
-        * Similar in functionality to rs2::y411_decoder but performed on the GPU
-        */
+         * Similar in functionality (Y411->RGB8 conversion) to rs2::y411_decoder but performed on the GPU.
+         */
         class y411_decoder : public rs2::y411_decoder
         {
         public:
-            y411_decoder() : rs2::y411_decoder(init()) { }
+            y411_decoder() : rs2::y411_decoder( init() ) {}
 
         private:
             static std::shared_ptr<rs2_processing_block> init()
