@@ -74,43 +74,39 @@ def reset_update_counter( device ):
 
     send_hardware_monitor_command( device, cmd )
 
-def find_image_or_exit( product_name, fw_version_regex ):
+def find_image_or_exit( product_name, fw_version_regex = r'(\d+\.){3}(\d+)' ):
     """
-    Description...
-    :param product_name: the name of the camera
-    :param fw_version_regex: a regular expression specifying which FW version image to find
+    Searches for a FW image file for the given camera name and optional version. If none are
+    found, exits with an error!
+    
+    :param product_name: the name of the camera, from get_info(rs.camera_info.name)
+    :param fw_version_regex: optional regular expression specifying which FW version image to find
+    
     :return: the image file corresponding to product_name and fw_version if exist, otherwise exit
     """
-    pattern = re.compile(r'^Intel RealSense (((\S+?)(\d+))(\S*))')
-    match = pattern.search(product_name)
+    pattern = re.compile( r'^Intel RealSense (((\S+?)(\d+))(\S*))' )
+    match = pattern.search( product_name )
     if not match:
-        log.f(product_name, " is not valid - Didn't find 'Intel RealSense ' in product_name")
+        raise RuntimeError( "Failed to parse product name '" + product_name + "'" )
 
-    # Finding file containing image for FW update
-    # For example: for 'Intel RealSense L53X Recovery'
-    # Take the 'L53' and try to concatenate it 'X' + postfix and than "XX" + postfix
-    # Until find file or exit if not find.
-    for j in range(1, pattern.groups+1):
-        x = ''
+    # For a product 'PR567abc', we want to search, in order, these combinations:
+    #     PR567abc
+    #     PR306abX
+    #     PR306aXX
+    #     PR306
+    #     PR30X
+    #     PR3XX
+    # Each of the above, combined with the FW version, should yield an image name like:
+    #     PR567aXX_FW_Image-<fw-version>.bin
+    suffix = 5             # the suffix
+    for j in range(1, 3):  # with suffix, then without
         start_index, end_index = match.span(j)
-
-        for i in range(0, end_index-start_index):
+        for i in range(0, len(match.group(suffix))):
             pn = product_name[start_index:end_index-i]
-
-            image_name = '(^|/)' + pn + x + "_FW_Image-" + fw_version_regex + r'\.bin' + '$'
-            image_file = None
+            image_name = '(^|/)' + pn + i*'X' + "_FW_Image-" + fw_version_regex + r'\.bin$'
             for image in file.find(repo.root, image_name):
-                image_file = os.path.join(repo.root, image)
-            if image_file:
-                break
-            x = x + 'X'
-
-        if image_file:
-            break
-    if not image_file:
-        global product_line
-        log.f("Could not find image file for " + product_line)
-    return image_file
+                return os.path.join( repo.root, image )
+        suffix -= 1
 
 # find the update tool exe
 fw_updater_exe = None
@@ -140,7 +136,7 @@ if device.is_update_device():
     log.d( "recovering device ..." )
     try:
         # TODO: this needs to improve for L535
-        image_file = find_image_or_exit(product_name, '(\d+\.){3}(\d+)')
+        image_file = find_image_or_exit( product_name )
 
         cmd = [fw_updater_exe, '-r', '-f', image_file]
         log.d( 'running:', cmd )
@@ -195,7 +191,7 @@ if update_counter >= 19:
     reset_update_counter( device )
     update_counter = 0
 
-image_file = find_image_or_exit(product_name, bundled_fw_version)
+image_file = find_image_or_exit(product_name, re.escape( bundled_fw_version ))
 # finding file containing image for FW update
 
 cmd = [fw_updater_exe, '-f', image_file]
