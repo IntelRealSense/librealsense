@@ -22,12 +22,21 @@ namespace librealsense
         {rs_fourcc('Y','U','Y','V'), RS2_FORMAT_YUYV},
         {rs_fourcc('U','Y','V','Y'), RS2_FORMAT_UYVY},
 
-        // A format in which all Y samples are found first in memory as an array of unsigned char with an even number of lines 
-        // (possibly with a larger stride for memory alignment), followed immediately by an array of unsigned char containing
-        // interleaved Cb and Cr samples (such that if addressed as a little-endian WORD type, Cb would be in the LSBs and Cr
-        // would be in the MSBs) with the same total stride as the Y samples.
-
-        // We use NV12 as Y411 because they both same size (12 bpp) and this format (unlike Y411) familiar to both Windows and Linux
+        // Description of NV12 on fourcc.org:
+        //     https://www.fourcc.org/pixel-format/yuv-nv12/
+        // NV12 format on Linux kernel spac :
+        //     https://www.kernel.org/doc/html/v4.12/media/uapi/v4l/pixfmt-nv12.html
+        //
+        // WE DO NOT ENCODE WITH Y12!
+        //
+        // The encoding is actually Y411:
+        //     https://www.fourcc.org/pixel-format/yuv-y411/
+        // Unfortunately, Y411 is unsupported in the Linux kernel. Instead, we diguise it as 'NV12' but the
+        // actual encoding is still Y11.
+        //
+        // Both Y411 and NV12 are 12bpp encodings that allow high-resolution modes in the camera to still
+        // fit within the USB3 limits (YUY wasn't enough).
+        //
         {rs_fourcc('N','V','1','2'), RS2_FORMAT_Y411}
     };
 
