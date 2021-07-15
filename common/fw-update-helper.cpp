@@ -18,14 +18,18 @@
 #ifdef INTERNAL_FW
 #include "common/fw/D4XX_FW_Image.h"
 #include "common/fw/SR3XX_FW_Image.h"
-#include "common/fw/L5XX_FW_Image.h"
+#include "common/fw/L51X_FW_Image.h"
+#include "common/fw/L53X_FW_Image.h"
 #else
 #define FW_D4XX_FW_IMAGE_VERSION ""
 #define FW_SR3XX_FW_IMAGE_VERSION ""
-#define FW_L5XX_FW_IMAGE_VERSION ""
+#define FW_L51X_FW_IMAGE_VERSION ""
+#define FW_L53X_FW_IMAGE_VERSION ""
 const char* fw_get_D4XX_FW_Image(int) { return NULL; }
 const char* fw_get_SR3XX_FW_Image(int) { return NULL; }
-const char* fw_get_L5XX_FW_Image(int) { return NULL; }
+const char* fw_get_L51X_FW_Image(int) { return NULL; }
+const char* fw_get_L53X_FW_Image(int) { return NULL; }
+
 
 #endif // INTERNAL_FW
 
@@ -41,14 +45,14 @@ namespace rs2
         RS2_FWU_STATE_FAILED = 3,
     };
 
-    bool is_recommended_fw_available(std::string id)
+    bool is_recommended_fw_available(const std::string& product_line, const std::string& PID)
     {
-        auto pl = parse_product_line(id);
-        auto fv = get_available_firmware_version(pl);
+        auto pl = parse_product_line(product_line);
+        auto fv = get_available_firmware_version(pl, PID);
         return !(fv == "");
     }
 
-    int parse_product_line(std::string id)
+    int parse_product_line(const std::string& id)
     {
         if (id == "D400") return RS2_PRODUCT_LINE_D400;
         else if (id == "SR300") return RS2_PRODUCT_LINE_SR300;
@@ -56,26 +60,27 @@ namespace rs2
         else return -1;
     }
 
-    std::string get_available_firmware_version(int product_line)
+    std::string get_available_firmware_version(int product_line, const std::string& PID)
     {
         if (product_line == RS2_PRODUCT_LINE_D400) return FW_D4XX_FW_IMAGE_VERSION;
         //else if (product_line == RS2_PRODUCT_LINE_SR300) return FW_SR3XX_FW_IMAGE_VERSION;
-        else if (product_line == RS2_PRODUCT_LINE_L500) return FW_L5XX_FW_IMAGE_VERSION;
+        else if (product_line == RS2_PRODUCT_LINE_L500 && PID == "0B64") return FW_L51X_FW_IMAGE_VERSION;
+        else if (product_line == RS2_PRODUCT_LINE_L500 && PID == "0B68") return FW_L53X_FW_IMAGE_VERSION;
         else return "";
     }
 
-    std::map<int, std::vector<uint8_t>> create_default_fw_table()
+    std::map<std::pair<int, std::string>, std::vector<uint8_t>> create_default_fw_table()
     {
         bool allow_rc_firmware = config_file::instance().get_or_default(configurations::update::allow_rc_firmware, false);
 
-        std::map<int, std::vector<uint8_t>> rv;
+        std::map<std::pair<int, std::string>, std::vector<uint8_t>> rv;
 
         if (strlen(FW_D4XX_FW_IMAGE_VERSION) && !allow_rc_firmware)
         {
             int size = 0;
             auto hex = fw_get_D4XX_FW_Image(size);
             auto vec = std::vector<uint8_t>(hex, hex + size);
-            rv[RS2_PRODUCT_LINE_D400] = vec;
+            rv[{RS2_PRODUCT_LINE_D400, ""}] = vec;
         }
 
         if (strlen(FW_SR3XX_FW_IMAGE_VERSION))
@@ -83,15 +88,22 @@ namespace rs2
             int size = 0;
             auto hex = fw_get_SR3XX_FW_Image(size);
             auto vec = std::vector<uint8_t>(hex, hex + size);
-            rv[RS2_PRODUCT_LINE_SR300] = vec;
+            rv[{RS2_PRODUCT_LINE_SR300, ""}] = vec;
         }
 
-        if (strlen(FW_L5XX_FW_IMAGE_VERSION))
+        if (strlen(FW_L51X_FW_IMAGE_VERSION))
         {
             int size = 0;
-            auto hex = fw_get_L5XX_FW_Image(size);
+            auto hex = fw_get_L51X_FW_Image(size);
             auto vec = std::vector<uint8_t>(hex, hex + size);
-            rv[RS2_PRODUCT_LINE_L500] = vec;
+            rv[{RS2_PRODUCT_LINE_L500, "0B64"}] = vec;
+        }
+        if (strlen(FW_L53X_FW_IMAGE_VERSION))
+        {
+            int size = 0;
+            auto hex = fw_get_L53X_FW_Image(size);
+            auto vec = std::vector<uint8_t>(hex, hex + size);
+            rv[{RS2_PRODUCT_LINE_L500, "0B68"}] = vec;
         }
 
         return rv;
