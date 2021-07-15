@@ -1279,6 +1279,7 @@ namespace rs2
                     res << vid_prof.width() << " x " << vid_prof.height();
                     push_back_if_not_exists(res_values, std::pair<int, int>(vid_prof.width(), vid_prof.height()));
                     push_back_if_not_exists(resolutions, res.str());
+                    push_back_if_not_exists(resolutions_per_stream[profile.stream_type()], std::pair<int, int>(vid_prof.width(), vid_prof.height()));
                 }
 
                 std::stringstream fps;
@@ -1314,6 +1315,10 @@ namespace rs2
                 sort_together(fps_list.second, fpses_per_stream[fps_list.first]);
             }
             sort_together(shared_fps_values, shared_fpses);
+            for (auto&& res_list : resolutions_per_stream)
+            {
+                sort_resolutions(res_list.second);
+            }
             sort_together(res_values, resolutions);
 
             show_single_fps_list = is_there_common_fps();
@@ -1390,6 +1395,16 @@ namespace rs2
     {
         if (zero_order_artifact_fix)
             viewer.zo_sensors--;
+    }
+
+    void subdevice_model::sort_resolutions(std::vector<std::pair<int, int>>& resolutions) const
+    {
+        std::sort(resolutions.begin(), resolutions.end(),
+            [](const std::pair<int, int>& a, const std::pair<int, int>& b) {
+                if (a.first != b.first)
+                    return (a.first < b.first);
+                return (a.second <= b.second);
+            });
     }
 
     bool subdevice_model::is_there_common_fps()
@@ -1912,30 +1927,51 @@ namespace rs2
         return results;
     }
 
-    bool is_resolution_max(const std::vector<std::pair<int, int>>& res_values, int width, int height, const std::pair<int, int>& calibration_res)
+    bool subdevice_model::is_d405_oem_cal_profile(int d405_calibration_width, int d405_calibration_height) const
     {
-        auto size = res_values.size();
-        int max_width = (res_values[size - 1].first != calibration_res.first) ? res_values[size - 1].first : res_values[size - 2].first;
-        int max_height = (res_values[size - 1].second != calibration_res.second) ? res_values[size - 1].second : res_values[size - 2].second;
-        return width == max_width && height == max_height;
+        // checking format
+        bool is_cal_format = false;
+        for (auto it = stream_enabled.begin(); it != stream_enabled.end(); ++it)
+        {
+            if (it->second)
+            {
+                auto format = format_values.at(it->first)[ui.selected_format_id.at(it->first)];
+                if (format == RS2_FORMAT_Y16)
+                {
+                    is_cal_format = true;
+                    break;
+                }
+            }
+        }
+        if (is_cal_format)
+        {
+            // checking resolution
+            auto width = res_values[ui.selected_res_id].first;
+            auto height = res_values[ui.selected_res_id].second;
+            bool is_cal_res = (width == d405_calibration_width && height == d405_calibration_height);
+            return is_cal_format && is_cal_res;
+        }
+        return false;        
     }
 
-    std::vector<stream_profile> subdevice_model::get_selected_profiles(bool throw_exception_flag)
+    std::pair<int, int> subdevice_model::get_max_resolution(rs2_stream stream) const
+    {
+        if (resolutions_per_stream.count(stream) > 0)
+            return resolutions_per_stream.at(stream).back();
+        throw std::runtime_error("No such stream in this sensor");
+    }
+
+    std::vector<stream_profile> subdevice_model::get_selected_profiles(bool enforce_interstream_policies)
     {
         std::vector<stream_profile> results;
 
         std::stringstream error_message;
         error_message << "The profile ";
 
-
         const int d405_calibration_width = 1288;
         const int d405_calibration_height = 808;
 
-        int ir_stream = 1;
-        auto width = res_values[ui.selected_res_id].first;
-        auto height = res_values[ui.selected_res_id].second;
-        bool is_oem_cal_profile = (stream_enabled[ir_stream] && format_values[ir_stream][ui.selected_format_id[ir_stream]] == RS2_FORMAT_Y16 &&
-            width == d405_calibration_width && height == d405_calibration_height);
+        bool is_oem_cal_profile = is_d405_oem_cal_profile(d405_calibration_width, d405_calibration_height);
 
         for (auto&& f : formats)
         {
@@ -1970,11 +2006,14 @@ namespace rs2
                                 // needed for D405 calibration
                                 if (is_oem_cal_profile)
                                 {
-                                    if (p.stream_type() == RS2_STREAM_INFRARED ||
-                                        (p.stream_type() == RS2_STREAM_COLOR && 
-                                            is_resolution_max(res_values, vid_prof.width(), vid_prof.height(), 
-                                                std::pair<int, int>(d405_calibration_width, d405_calibration_height))))
+                                    if (p.stream_type() == RS2_STREAM_INFRARED)
                                         results.push_back(p);
+                                    else if (p.stream_type() == RS2_STREAM_COLOR)
+                                    {
+                                        auto max_color_res = get_max_resolution(RS2_STREAM_COLOR);
+                                        if (vid_prof.width() == max_color_res.first && vid_prof.height() == max_color_res.second)
+                                            results.push_back(p);
+                                    }                                        
                                 }
                                 else if (vid_prof.width() == width &&
                                     vid_prof.height() == height)
@@ -1995,7 +2034,7 @@ namespace rs2
                 }
             }
         }
-        if (results.size() == 0 && throw_exception_flag)
+        if (results.size() == 0 && enforce_interstream_policies)
         {
             error_message << " is unsupported!";
             throw std::runtime_error(error_message.str());

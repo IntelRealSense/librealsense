@@ -351,20 +351,10 @@ namespace librealsense
                     if (!has_wildcards(request)) continue;
                     for (auto candidate : candidates)
                     {
-                        //if (match(candidate.get(), request) && !dev->contradicts(candidate.get(), requests))
-                        if (match(candidate.get(), request))
+                        if (match(candidate.get(), request) && !dev->contradicts(candidate.get(), requests))
                         {
-                            if (candidate.get()->get_stream_type() == RS2_STREAM_COLOR &&
-                                candidate.get()->get_format() == RS2_FORMAT_RGB8 &&
-                                candidate.get()->get_framerate() == 15)
-                            {
-                                int a = 1;
-                            }
-                            if (!dev->contradicts(candidate.get(), requests))
-                            {
-                                request = to_request(candidate.get());
-                                break;
-                            }
+                            request = to_request(candidate.get());
+                            break;
                         }
                     }
                     if (has_wildcards(request))
