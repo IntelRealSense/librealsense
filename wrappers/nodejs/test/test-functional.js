@@ -3,7 +3,7 @@
 // that can be found in the LICENSE file.
 
 'use strict';
-
+/* eslint-disable no-invalid-this */
 /* global describe, it, before, after, afterEach */
 const assert = require('assert');
 const fs = require('fs');
@@ -228,7 +228,6 @@ describe('Frame test', function() {
 });
 
 if (!(isRecord || isPlayback)) {
-  
   describe('Colorizer test', function() {
     let pipe;
     let frameset;
@@ -890,7 +889,7 @@ describe('filter tests', function() {
     let out = temporalFilter.process(depthFrame);
     assert.equal(out instanceof rs2.DepthFrame, true);
     assert.equal(typeof out.width, 'number');
-  })
+  });
 
   it('spatial filter', () => {
     let frameset = pipeline.waitForFrames();
