@@ -242,6 +242,7 @@ jobs:
           echo PATH=$PATH
           cd wrappers/nodejs/tools && npm install && cd ..;
           node ./tools/linter.js;
+          python ./tools/enums.py -i ../../include/librealsense2 -a ./src -v
           export PATH=$OLDPATH && unset OLDPATH && cd ../../;
           mkdir build
           sudo add-apt-repository --yes ppa:ubuntu-toolchain-r/test;
@@ -260,8 +261,7 @@ jobs:
           python ./wrappers/nodejs/tools/enums.py -i ./include/librealsense2 -a ./wrappers/nodejs/src -v
           cmake .. -DBUILD_PYTHON_BINDINGS=true -DBUILD_NODEJS_BINDINGS=true -DPYBIND11_PYTHON_VERSION=2.7 -DCHECK_FOR_UPDATES=true
           cmake --build . --config $LRS_BUILD_CONFIG -- -j4
-          cd ./wrappers/nodejs/
-          npm install
+          cd ../wrappers/nodejs/ && npm install
       
       - name: Test
         shell: bash
