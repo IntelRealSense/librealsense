@@ -27,7 +27,7 @@ namespace librealsense
         // NV12 format on Linux kernel spac :
         //     https://www.kernel.org/doc/html/v4.12/media/uapi/v4l/pixfmt-nv12.html
         //
-        // WE DO NOT ENCODE WITH Y12!
+        // WE DO NOT ENCODE WITH NV12!
         //
         // The encoding is actually Y411:
         //     https://www.fourcc.org/pixel-format/yuv-y411/
