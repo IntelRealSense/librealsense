@@ -107,6 +107,10 @@ def find_image_or_exit( product_name, fw_version_regex = r'(\d+\.){3}(\d+)' ):
             for image in file.find(repo.root, image_name):
                 return os.path.join( repo.root, image )
         suffix -= 1
+    #
+    # If we get here, we didn't find any image...
+    global product_line
+    log.f( "Could not find image file for", product_line )
 
 # find the update tool exe
 fw_updater_exe = None
