@@ -8,20 +8,21 @@
 #include "../../../include/librealsense2/rs.h"
 #include "../../../include/librealsense2/hpp/rs_frame.hpp"
 
+#define RELEASE_SENSOR_CALLBACK_REF 0
+
 // Java user frame callback data
 struct frame_callback_data
 {
+    jlong handle;          // sensor handle
     JavaVM *jvm;           // Java VM interface
     jint version;          // Java VM version
-    bool attached;         // if Java JVM is attached to current thread
     jobject frame_cb;      // Java user frame callback with OnFrame interface
     jclass frameclass;     // librealsense Java Frame class
 };
 
 typedef struct frame_callback_data  frame_callback_data;
 
-bool rs_jni_callback_init(JNIEnv *env, jobject jcb, frame_callback_data* ud);
+bool rs_jni_callback_init(JNIEnv *env, jlong handle, jobject jcb, frame_callback_data* ud);
 bool rs_jni_cb(rs2::frame f, frame_callback_data* ud);
 void rs_jni_cleanup(JNIEnv *env, frame_callback_data* ud);
-
 #endif

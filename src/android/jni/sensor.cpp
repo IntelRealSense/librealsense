@@ -41,17 +41,27 @@ Java_com_intel_realsense_librealsense_Sensor_nOpenMultiple(JNIEnv *env, jclass t
     handle_error(env, e);
 }
 
-static frame_callback_data sdata = {NULL, 0, JNI_FALSE, NULL, NULL};
+#if RELEASE_SENSOR_CALLBACK_REF
+static std::vector<frame_callback_data> sdata;
+#endif
 
 extern "C"
 JNIEXPORT void JNICALL
 Java_com_intel_realsense_librealsense_Sensor_nStart(JNIEnv *env, jclass type, jlong handle, jobject jcb) {
     rs2_error* e = nullptr;
+    frame_callback_data cbdata = {handle, NULL, 0, NULL, NULL};
 
-    if (rs_jni_callback_init(env, jcb, &sdata) != true) return;
+    if (rs_jni_callback_init(env, handle, jcb, &cbdata) != true) return;
 
-    auto cb = [&](rs2::frame f) {
-        rs_jni_cb(f, &sdata);
+#if RELEASE_SENSOR_CALLBACK_REF
+    // save data for releasing the global java references later
+    sdata.push_back(cbdata);
+#endif
+
+    auto cb = [=](rs2::frame f) {
+        frame_callback_data callback_data = cbdata;
+
+        rs_jni_cb(f, &callback_data);
     };
 
     rs2_start_cpp(reinterpret_cast<rs2_sensor *>(handle), new rs2::frame_callback<decltype(cb)>(cb), &e);
@@ -63,9 +73,20 @@ extern "C"
 JNIEXPORT void JNICALL
 Java_com_intel_realsense_librealsense_Sensor_nStop(JNIEnv *env, jclass type, jlong handle) {
     rs2_error* e = nullptr;
-    rs_jni_cleanup(env, &sdata);
+
     rs2_stop(reinterpret_cast<rs2_sensor *>(handle), &e);
     handle_error(env, e);
+
+#if RELEASE_SENSOR_CALLBACK_REF
+    // release the java global references
+    for (int i = 0; i < sdata.size(); i++) {
+        if (sdata[i].handle == handle) {
+            rs_jni_cleanup(env, &sdata[i]);
+            sdata.erase(sdata.begin() + i);
+            LRS_JNI_LOGE("nstop %d", i);
+        }
+    }
+#endif
 }
 
 extern "C"
