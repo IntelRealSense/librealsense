@@ -363,6 +363,9 @@ namespace librealsense
                         bpp = 4;
 
                     auto expected_size = (width * height * bpp) >> 3;
+                    // For compressed formats copy the raw data
+                    if (val_in_range(req_profile_base->get_format(), { RS2_FORMAT_MJPEG, RS2_FORMAT_Z16H }))
+                        expected_size = f.frame_size;
                     frame_holder fh = _source.alloc_frame(
                         stream_to_frame_types( req_profile_base->get_stream_type() ),
                         expected_size,
