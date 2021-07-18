@@ -214,7 +214,6 @@ jobs:
   
   
   Linux_python_nodejs:
-      if: ${{ false }}  # disable for now
       runs-on: ubuntu-18.04     
       timeout-minutes: 60
       env: 
