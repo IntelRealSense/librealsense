@@ -52,17 +52,13 @@ class Device {
     sensors.forEach((s) => {
       if (s.is(RS2.RS2_EXTENSION_DEPTH_SENSOR)) {
         array.push(new DepthSensor(s));
-      }
-      else if (s.is(RS2.RS2_EXTENSION_COLOR_SENSOR)) {
+      } else if (s.is(RS2.RS2_EXTENSION_COLOR_SENSOR)) {
         array.push(new ColorSensor(s));
-      }
-      else if (s.is(RS2.RS2_EXTENSION_MOTION_SENSOR)) {
+      } else if (s.is(RS2.RS2_EXTENSION_MOTION_SENSOR)) {
         array.push(new MotionSensor(s));
-      }
-      else if (s.is(RS2.RS2_EXTENSION_FISHEYE_SENSOR)) {
+      } else if (s.is(RS2.RS2_EXTENSION_FISHEYE_SENSOR)) {
         array.push(new FisheyeSensor(s));
-      }
-      else {
+      } else {
         array.push(new Sensor(s));
       }
     });
@@ -2617,23 +2613,52 @@ class Pipeline {
     }
 
     if (ownCtx === true) {
-      this.ctx = new Context();    
+      this.ctx = new Context();
       // get existing sensors params
       let sensores = this.ctx.querySensors();
       if (sensores.length>=2) {
         let depthSensor = sensores[0];
         let colorSensor = sensores[1];
         let cfg = new Config();
-        let depthProfiles = depthSensor.getStreamProfiles().filter(s=>s.streamType == stream.STREAM_DEPTH);
-        let depthProfile = depthProfiles.find(x=>x.width == 640 && x.height==480) || depthProfiles[depthProfiles.length-1];
-        let colorProfiles = colorSensor.getStreamProfiles().filter(s=>s.streamType == stream.STREAM_COLOR);
-        let colorProfile = colorProfiles.find(x=>x.width == 640 && x.height==480) ||colorProfiles[colorProfiles.length-1];
-        console.log(`depth: w: ${depthProfile.width}, h: ${depthProfile.height}, format: ${depthProfile.format}, fps: ${depthProfile.fps}`);
-        console.log(`color: w: ${colorProfile.width}, h: ${colorProfile.height}, format: ${colorProfile.format}, fps: ${colorProfile.fps}`);
-        cfg.enableStream(stream.STREAM_DEPTH, -1, depthProfile.width, depthProfile.height, depthProfile.format, depthProfile.fps);
-        cfg.enableStream(stream.STREAM_COLOR, -1, colorProfile.width, colorProfile.height, format.FORMAT_RGB8, colorProfile.fps);        
+        let depthProfiles = depthSensor
+          .getStreamProfiles()
+          .filter( (s) => s.streamType == stream.STREAM_DEPTH);
+        let depthProfile = depthProfiles
+          .find( (x) => x.width == 640 && x.height==480) ||
+          depthProfiles[depthProfiles.length-1];
+        let colorProfiles = colorSensor
+          .getStreamProfiles()
+          .filter( (s) => s.streamType == stream.STREAM_COLOR);
+        let colorProfile = colorProfiles
+          .find( (x) => x.width == 640 && x.height==480) ||
+          colorProfiles[colorProfiles.length-1];
+        console.log('depth: w: ' + depthProfile.width +
+            ', h: ' + depthProfile.height +
+            ', format: ' + depthProfile.format +
+            ', fps: ' + depthProfile.fps
+        );
+        console.log('color: w: ' + colorProfile.width +
+            ', h: ' + colorProfile.height +
+            ', format: ' + colorProfile.format +
+            ', fps: ' + colorProfile.fps
+        );
+        cfg.enableStream(
+          stream.STREAM_DEPTH,
+          -1,
+          depthProfile.width,
+          depthProfile.height,
+          depthProfile.format,
+          depthProfile.fps);
+        cfg.enableStream(
+          stream.STREAM_COLOR,
+          -1,
+          colorProfile.width,
+          colorProfile.height,
+          format.FORMAT_RGB8,
+          colorProfile.fps
+        );
         this.autoConfig = cfg;
-      }            
+      }
     }
 
     this.cxxPipeline = new RS2.RSPipeline();
@@ -2692,7 +2717,7 @@ class Pipeline {
     } else {
       checkArgumentType(arguments, Config, 0, funcName);
       this.started = true;
-      console.log(`Pipeline started with config`);
+      console.log('Pipeline started with config');
       return new PipelineProfile(this.cxxPipeline.startWithConfig(arguments[0].cxxConfig));
     }
   }
@@ -3969,7 +3994,8 @@ const format = {
   format_y8i: 'y8i',
    /**
    * String literal of <code>'y12i'</code>.
-   * <br>12-bit per pixel interleaved. 12-bit left, 12-bit right. Each pixel is stored in a 24-bit word in little-endian order.
+   * <br>12-bit per pixel interleaved. 12-bit left, 12-bit right.
+   * Each pixel is stored in a 24-bit word in little-endian order.
    */
   format_y12i: 'y12i',
    /**
@@ -4121,7 +4147,8 @@ const format = {
    */
   FORMAT_Y8I: RS2.RS2_FORMAT_Y8I,
    /**
-   * 12-bit per pixel interleaved. 12-bit left, 12-bit right. Each pixel is stored in a 24-bit word in little-endian order.
+   * 12-bit per pixel interleaved. 12-bit left, 12-bit right.
+   * Each pixel is stored in a 24-bit word in little-endian order.
    * @type {Integer}
    */
   FORMAT_Y12I: RS2.RS2_FORMAT_Y12I,
@@ -6080,7 +6107,8 @@ const timestamp_domain = {
  */
 const calib_target_type = {
     /**
-     * String literal of <code>'rect-gaussian-dot-vertices'</code>. <br>Target with rectangle vertices as 
+     * String literal of <code>'rect-gaussian-dot-vertices'</code>.
+     * <br>Target with rectangle vertices as 
      * the centers of gaussuian dots <br>Equivalent to its uppercase counterpart.
      */
     calib_target_rect_gaussian_dot_vertices: 'rect-gaussian-dot-vertices',
@@ -6097,7 +6125,7 @@ const calib_target_type = {
      */
     CALIB_TARGET_COUNT: RS2.RS2_CALIB_TARGET_COUNT,
 
-    calibTargetTypeToString: function (domainVal) {
+    calibTargetTypeToString: function(domainVal) {
         const funcName = 'calib_target_type.calibTargetTypeToString()';
         checkArgumentLength(1, 1, arguments.length, funcName);
         const i = checkArgumentType(arguments, constants.calib_target_type, 0, funcName);

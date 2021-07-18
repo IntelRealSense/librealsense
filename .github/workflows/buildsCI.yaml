@@ -214,7 +214,6 @@ jobs:
   
   
   Linux_python_nodejs:
-      if: ${{ false }}  # disable for now
       runs-on: ubuntu-18.04     
       timeout-minutes: 60
       env: 
@@ -242,6 +241,7 @@ jobs:
           echo PATH=$PATH
           cd wrappers/nodejs/tools && npm install && cd ..;
           node ./tools/linter.js;
+          python ./tools/enums.py -i ../../include/librealsense2 -a ./src -v
           export PATH=$OLDPATH && unset OLDPATH && cd ../../;
           mkdir build
           sudo add-apt-repository --yes ppa:ubuntu-toolchain-r/test;
@@ -256,19 +256,13 @@ jobs:
       - name: Build
         shell: bash
         run: | 
-          cd build
           python ./wrappers/nodejs/tools/enums.py -i ./include/librealsense2 -a ./wrappers/nodejs/src -v
+          cd build
           cmake .. -DBUILD_PYTHON_BINDINGS=true -DBUILD_NODEJS_BINDINGS=true -DPYBIND11_PYTHON_VERSION=2.7 -DCHECK_FOR_UPDATES=true
           cmake --build . --config $LRS_BUILD_CONFIG -- -j4
-          cd ./wrappers/nodejs/
-          npm install
-      
-      - name: Test
-        shell: bash
-        run: | 
-          cd build 
-          cd test
-          wget https://librealsense.intel.com/rs-tests/nodejs_records.rec
+          cd ../wrappers/nodejs/ && npm install && cd -
+
+
   Mac_cpp:
     runs-on: macos-latest
     timeout-minutes: 60
