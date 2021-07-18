@@ -212,7 +212,7 @@ inline void file_argument_to_blob(std::vector<std::string>& params)
         size_t unmodified_params = params.size() - 1; // non-negative due to the file parameter
         std::vector<std::string> modified_params(unmodified_params + data.size());
         if (unmodified_params)                        // copy leading parameters
-            std::copy(modified_params.begin(), modified_params.begin() + unmodified_params - 1,params.begin());
+            std::copy(modified_params.begin(), modified_params.begin() + unmodified_params, params.begin());
         std::transform(data.begin(), data.end(), modified_params.begin() + unmodified_params, [](uint8_t c) { return utilities::string::hexify(c); });
         params = modified_params; // substitute original params with modified data
     }
