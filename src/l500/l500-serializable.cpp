@@ -2,6 +2,7 @@
 //// Copyright(c) 2020 Intel Corporation. All Rights Reserved.
 
 #include "l500-serializable.h"
+#include "serializable-utilities.h"
 #include "../../../third-party/json.hpp"
 #include <set>
 #include "l500-options.h"
@@ -18,9 +19,10 @@ namespace librealsense
 
     std::vector<uint8_t> l500_serializable::serialize_json() const
     {
+        json j = json::parse( serializable_utilities::get_connected_device_info( _depth_sensor.get_device() ) );
+
         return ivcam2::group_multiple_fw_calls( _depth_sensor, [&]() {
 
-            json j;
             auto options = _depth_sensor.get_supported_options();
 
             for( auto o : options )
@@ -38,8 +40,12 @@ namespace librealsense
 
     void l500_serializable::load_json( const std::string & json_content )
     {
+        // TODO, what to do with old json files? (not having "Camera Name" element)
+        (void)serializable_utilities::get_pre_configured_device_info( _depth_sensor.get_device(), json_content);
+
+        json j = json::parse( json_content );
+        
         return ivcam2::group_multiple_fw_calls(_depth_sensor, [&]() {
-            json j = json::parse( json_content );
 
             // Set of options that should not be set in the loop
             std::set< rs2_option > options_to_ignore{ RS2_OPTION_SENSOR_MODE,
