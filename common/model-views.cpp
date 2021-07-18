@@ -6301,7 +6301,7 @@ namespace rs2
 
         if (ImGui::IsItemHovered())
         {
-            std::string tooltip = to_string() << "Load pre-configured stereo module settings" << (is_streaming && !load_json_if_streaming ? " (Disabled while streaming)" : "");
+            std::string tooltip = to_string() << "Load pre-configured device settings" << (is_streaming && !load_json_if_streaming ? " (Disabled while streaming)" : "");
             ImGui::SetTooltip("%s", tooltip.c_str());
         }
 
@@ -6330,7 +6330,7 @@ namespace rs2
         }
         if (ImGui::IsItemHovered())
         {
-            ImGui::SetTooltip("Save current stereo module settings to file");
+            ImGui::SetTooltip("Save current device settings to file");
         }
         ImGui::PopStyleColor(2);
         ImGui::SameLine();
