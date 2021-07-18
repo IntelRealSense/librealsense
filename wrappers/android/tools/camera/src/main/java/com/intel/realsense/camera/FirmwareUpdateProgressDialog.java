@@ -61,7 +61,11 @@ public class FirmwareUpdateProgressDialog extends DialogFragment {
             switch (pl){
                 case D400: return R.raw.fw_d4xx;
                 case SR300: return R.raw.fw_sr3xx;
-                case L500: return  R.raw.fw_l5xx;
+                case L500:
+                    if( device.getInfo(CameraInfo.PRODUCT_ID) == "0B68" )
+                        return R.raw.fw_l53x;
+                    else
+                        return  R.raw.fw_l51x;
             }
         }
         throw new RuntimeException("FW update is not supported for the connected device");
