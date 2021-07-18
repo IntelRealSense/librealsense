@@ -397,7 +397,7 @@ namespace librealsense
             auto header = reinterpret_cast<const table_header*>(raw_data.data());
             if(raw_data.size() < sizeof(table_header))
             {
-                throw invalid_value_exception(to_string() << "Calibration data invald, buffer too small : expected " << sizeof(table_header) << " , actual: " << raw_data.size());
+                throw invalid_value_exception(to_string() << "Calibration data invalid, buffer too small : expected " << sizeof(table_header) << " , actual: " << raw_data.size());
             }
             // verify the parsed table
             if (table->header.crc32 != calc_crc32(raw_data.data() + sizeof(table_header), raw_data.size() - sizeof(table_header)))

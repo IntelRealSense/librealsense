@@ -5224,7 +5224,7 @@ TEST_CASE("Projection from recording", "[software-device][using_pipeline][projec
                 &depth_intrin, &color_intrin,
                 &color_extrin_to_depth, &depth_extrin_to_color, from_pixel);
 
-            float dist = sqrt(pow((depth_pixel[1] - to_pixel[1]), 2) + pow((depth_pixel[0] - to_pixel[0]), 2));
+            float dist = static_cast<float>(sqrt(pow((depth_pixel[1] - to_pixel[1]), 2) + pow((depth_pixel[0] - to_pixel[0]), 2)));
             if (dist > 1)
                 count++;
             if (dist > 2)

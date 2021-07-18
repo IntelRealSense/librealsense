@@ -1,37 +1,18 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
-#include "librealsense2/rs.hpp"
-#include "librealsense2/hpp/rs_internal.hpp"
+#include <librealsense2/rs.hpp>
+#include <librealsense2/hpp/rs_internal.hpp>
+#include <utilities/string/string-utilities.h>
 #include <fstream>
 #include <thread>
 #include "tclap/CmdLine.h"
-
 
 
 using namespace std;
 using namespace TCLAP;
 using namespace rs2;
 
-string char2hex(unsigned char n)
-{
-    string res;
-
-    do
-    {
-        res += "0123456789ABCDEF"[n % 16];
-        n >>= 4;
-    } while (n);
-
-    reverse(res.begin(), res.end());
-
-    if (res.size() == 1)
-    {
-        res.insert(0, "0");
-    }
-
-    return res;
-}
 
 string datetime_string()
 {
@@ -149,7 +130,7 @@ int main(int argc, char* argv[])
                         std::vector<uint8_t> msg_data = log_message.data();
                         for (int i = 0; i < msg_data.size(); ++i)
                         {
-                        sstr << char2hex(msg_data[i]) << " ";
+                        sstr << utilities::string::hexify(msg_data[i]) << " ";
                         }
                         fw_log_lines.push_back(sstr.str());
                     }

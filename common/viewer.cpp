@@ -264,7 +264,7 @@ namespace rs2
                         }
 
                         std::string fname(ret);
-                        if (!ends_with(to_lower(fname), curr_exporter->second.extension)) fname += curr_exporter->second.extension;
+                        if (!ends_with(utilities::string::to_lower(fname), curr_exporter->second.extension)) fname += curr_exporter->second.extension;
 
                         std::unique_ptr<rs2::filter> exporter;
                         if (tab == export_type::ply)
@@ -1091,7 +1091,7 @@ namespace rs2
             std::string wrapped_msg;
             try
             {
-                auto trimmed_msg = utilities::string::trim_newlines(msg);  
+                auto trimmed_msg = utilities::string::trim_newlines(msg);
                 wrapped_msg = utilities::imgui::wrap(trimmed_msg, 500);
             }
             catch (...)
@@ -2841,7 +2841,7 @@ namespace rs2
                             try
                             {
                                 std::string filename = ret;
-                                filename = to_lower(filename);
+                                filename = utilities::string::to_lower(filename);
                                 if (!ends_with(filename, ".json")) filename += ".json";
                                 temp_cfg.save(filename.c_str());
                             }
