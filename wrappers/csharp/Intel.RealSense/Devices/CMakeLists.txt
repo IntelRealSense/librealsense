@@ -1,6 +1,7 @@
 target_sources(${LRS_DOTNET_TARGET}
     PRIVATE
         "${CMAKE_CURRENT_LIST_DIR}/AdvancedDevice.cs"
+        "${CMAKE_CURRENT_LIST_DIR}/SerializableDevice.cs"
         "${CMAKE_CURRENT_LIST_DIR}/AutoCalibratedDevice.cs"
         "${CMAKE_CURRENT_LIST_DIR}/CalibratedDevice.cs"
         "${CMAKE_CURRENT_LIST_DIR}/DebugDevice.cs"
