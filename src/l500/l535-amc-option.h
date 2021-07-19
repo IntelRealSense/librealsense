@@ -14,7 +14,7 @@ namespace l535 {
         post_processing_sharpness = 1,
         pre_processing_sharpness = 2,
         noise_filtering = 3,
-        apd = 4,
+        receiver_sensitivity = 4,
         laser_gain = 5,
         min_distance = 6,
         invalidation_bypass = 7,

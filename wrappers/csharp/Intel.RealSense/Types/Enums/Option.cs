@@ -283,5 +283,8 @@ namespace Intel.RealSense
 
         /// <summary>Enables vertical binning which increases the maximal sensed distance</summary>
         vertical_binning = 89
+
+        /// <summary>Control the receiver sensitivity to incoming light, both projected and ambient</summary>
+        receiver_sensitivity = 90
     }
 }
