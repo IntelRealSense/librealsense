@@ -1,7 +1,7 @@
 # License: Apache 2.0. See LICENSE file in root directory.
 # Copyright(c) 2021 Intel Corporation. All Rights Reserved.
 
-import re, os, subprocess, time, sys
+import re, os, subprocess, time, sys, platform
 from abc import ABC, abstractmethod
 
 from rspy import log, file
@@ -16,7 +16,10 @@ logdir = None
 # This is always a directory called "LibCI", but may be in different locations, in this order of priority:
 #     1. C:\LibCI  (on the LibCI machine)
 #     2. ~/LibCI   (in Windows, ~ is likely C:\Users\<username>)
-home = 'C:\\LibCI'
+if platform.system() == 'Linux':
+    home = '/usr/local/lib/ci'
+else:
+    home = 'C:\\LibCI'
 if not os.path.isdir( home ):
     home = os.path.normpath( os.path.expanduser( '~/LibCI' ))
 #
