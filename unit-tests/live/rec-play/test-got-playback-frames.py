@@ -193,7 +193,8 @@ try:
 
     # if record and playback worked we will receive frames, the callback functions will be called and got-frames
     # will be True. If the record and playback failed it will be false
-    test.check( got_frames_depth and got_frames_rgb )
+    test.check( got_frames_depth )
+    test.check( got_frames_rgb )
 except Exception:
     test.unexpected_exception()
 finally: # we must remove all references to the file so we can use it again in the next test
