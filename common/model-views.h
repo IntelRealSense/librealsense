@@ -653,7 +653,6 @@ namespace rs2
 
         std::map<int, option_model> options_metadata;
         std::vector<std::string> resolutions;
-        std::map<rs2_stream, std::vector<std::pair<int, int>>> resolutions_per_stream;
         std::map<int, std::vector<std::string>> fpses_per_stream;
         std::vector<std::string> shared_fpses;
         std::map<int, std::vector<std::string>> formats;
@@ -711,7 +710,10 @@ namespace rs2
     private:
         std::pair<int, int> get_max_resolution(rs2_stream stream) const;
         void sort_resolutions(std::vector<std::pair<int, int>>& resolutions) const;
-        bool is_oem_cal_profile() const;
+        bool is_ir_calibration_profile() const;
+        
+        // used in method get_max_resolution per stream
+        std::map<rs2_stream, std::vector<std::pair<int, int>>> resolutions_per_stream;
 
         const float SHORT_RANGE_MIN_DISTANCE = 0.05f; // 5 cm
         const float SHORT_RANGE_MAX_DISTANCE = 4.0f;  // 4 meters

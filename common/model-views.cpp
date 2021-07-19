@@ -1927,7 +1927,7 @@ namespace rs2
         return results;
     }
 
-    bool subdevice_model::is_oem_cal_profile() const
+    bool subdevice_model::is_ir_calibration_profile() const
     {
         // checking format
         bool is_cal_format = false;
@@ -1950,7 +1950,13 @@ namespace rs2
     {
         if (resolutions_per_stream.count(stream) > 0)
             return resolutions_per_stream.at(stream).back();
-        throw std::runtime_error("No such stream in this sensor");
+
+        std::stringstream error_message;
+        error_message << "The stream ";
+        error_message << rs2_stream_to_string(stream);
+        error_message << " is not available with this sensor ";
+        error_message << s->get_info(RS2_CAMERA_INFO_NAME);
+        throw std::runtime_error(error_message.str());
     }
 
     std::vector<stream_profile> subdevice_model::get_selected_profiles(bool enforce_inter_stream_policies)
@@ -1960,7 +1966,7 @@ namespace rs2
         std::stringstream error_message;
         error_message << "The profile ";
 
-        bool is_cal_profile = is_oem_cal_profile();
+        bool is_cal_profile = is_ir_calibration_profile();
 
         for (auto&& f : formats)
         {
@@ -1991,8 +1997,7 @@ namespace rs2
                             if (p.unique_id() == stream && p.fps() == fps && p.format() == format)
                             {
                                 // permitting to add color stream profile to depth sensor
-                                // when infrared pofile is already active with resolution 1288x808
-                                // needed for D405 calibration
+                                // when infrared calibration is active
                                 if (is_cal_profile && p.stream_type() == RS2_STREAM_COLOR)
                                 {
                                     auto max_color_res = get_max_resolution(RS2_STREAM_COLOR);
