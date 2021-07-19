@@ -91,6 +91,7 @@ classdef option < int64
         auto_rx_sensitivity             (87)
         transmitter_frequency           (88)
         vertical_binning                (89)
-        count                           (90)
+        receiver_sensitivity            (90)
+        count                           (91)
     end
 end

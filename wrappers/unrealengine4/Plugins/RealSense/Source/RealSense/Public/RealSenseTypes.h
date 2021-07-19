@@ -144,6 +144,7 @@ enum class ERealSenseOptionType : uint8
     AUTO_RX_SENSITIVITY                        , /**< Set and get auto receiver sensitivity.*/
     TRANSMITTER_FREQUENCY                      , /**< Change transmitter frequency, increasing effective range over sharpness. */
     VERTICAL_BINNING                           , /**< Enables vertical binning which increases the maximal sensed distance. */
+    RECEIVER_SENSITIVITY                       , /**< Control the receiver sensitivity to incoming light, both projected and ambient. */
 };
 
 UENUM(Blueprintable)

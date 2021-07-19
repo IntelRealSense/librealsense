@@ -282,6 +282,9 @@ namespace Intel.RealSense
         transmitter_frequency = 88,
 
         /// <summary>Enables vertical binning which increases the maximal sensed distance</summary>
-        vertical_binning = 89
+        vertical_binning = 89,
+
+        /// <summary>Control the receiver sensitivity to incoming light, both projected and ambient</summary>
+        receiver_sensitivity = 90
     }
 }
