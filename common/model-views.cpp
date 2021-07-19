@@ -1683,8 +1683,8 @@ namespace rs2
 
     bool subdevice_model::is_selected_combination_supported()
     {
-        bool throw_exception_flag = false;
-        std::vector<stream_profile> results = get_selected_profiles(throw_exception_flag);
+        bool enforce_inter_stream_policies = false;
+        std::vector<stream_profile> results = get_selected_profiles(enforce_inter_stream_policies);
 
         if (results.size() == 0)
             return false;
@@ -1927,7 +1927,7 @@ namespace rs2
         return results;
     }
 
-    bool subdevice_model::is_d405_oem_cal_profile(int d405_calibration_width, int d405_calibration_height) const
+    bool subdevice_model::is_oem_cal_profile() const
     {
         // checking format
         bool is_cal_format = false;
@@ -1943,15 +1943,7 @@ namespace rs2
                 }
             }
         }
-        if (is_cal_format)
-        {
-            // checking resolution
-            auto width = res_values[ui.selected_res_id].first;
-            auto height = res_values[ui.selected_res_id].second;
-            bool is_cal_res = (width == d405_calibration_width && height == d405_calibration_height);
-            return is_cal_format && is_cal_res;
-        }
-        return false;        
+        return is_cal_format;   
     }
 
     std::pair<int, int> subdevice_model::get_max_resolution(rs2_stream stream) const
@@ -1961,17 +1953,14 @@ namespace rs2
         throw std::runtime_error("No such stream in this sensor");
     }
 
-    std::vector<stream_profile> subdevice_model::get_selected_profiles(bool enforce_interstream_policies)
+    std::vector<stream_profile> subdevice_model::get_selected_profiles(bool enforce_inter_stream_policies)
     {
         std::vector<stream_profile> results;
 
         std::stringstream error_message;
         error_message << "The profile ";
 
-        const int d405_calibration_width = 1288;
-        const int d405_calibration_height = 808;
-
-        bool is_oem_cal_profile = is_d405_oem_cal_profile(d405_calibration_width, d405_calibration_height);
+        bool is_cal_profile = is_oem_cal_profile();
 
         for (auto&& f : formats)
         {
@@ -2004,19 +1993,13 @@ namespace rs2
                                 // permitting to add color stream profile to depth sensor
                                 // when infrared pofile is already active with resolution 1288x808
                                 // needed for D405 calibration
-                                if (is_oem_cal_profile)
+                                if (is_cal_profile && p.stream_type() == RS2_STREAM_COLOR)
                                 {
-                                    if (p.stream_type() == RS2_STREAM_INFRARED)
+                                    auto max_color_res = get_max_resolution(RS2_STREAM_COLOR);
+                                    if (vid_prof.width() == max_color_res.first && vid_prof.height() == max_color_res.second)
                                         results.push_back(p);
-                                    else if (p.stream_type() == RS2_STREAM_COLOR)
-                                    {
-                                        auto max_color_res = get_max_resolution(RS2_STREAM_COLOR);
-                                        if (vid_prof.width() == max_color_res.first && vid_prof.height() == max_color_res.second)
-                                            results.push_back(p);
-                                    }                                        
                                 }
-                                else if (vid_prof.width() == width &&
-                                    vid_prof.height() == height)
+                                else if (vid_prof.width() == width && vid_prof.height() == height)
                                     results.push_back(p);
                             }
                         }
@@ -2034,7 +2017,7 @@ namespace rs2
                 }
             }
         }
-        if (results.size() == 0 && enforce_interstream_policies)
+        if (results.size() == 0 && enforce_inter_stream_policies)
         {
             error_message << " is unsupported!";
             throw std::runtime_error(error_message.str());

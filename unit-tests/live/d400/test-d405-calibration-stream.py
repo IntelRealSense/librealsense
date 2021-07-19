@@ -72,7 +72,6 @@ try:
         color_stream_found = False
         for f in frames:
             profile = f.get_profile()
-            print(repr(profile))
             if profile.stream_type() == rs.stream.infrared:
                 if profile.stream_index() == 1:
                     ir_1_stream_found = True
