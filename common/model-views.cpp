@@ -1279,6 +1279,7 @@ namespace rs2
                     res << vid_prof.width() << " x " << vid_prof.height();
                     push_back_if_not_exists(res_values, std::pair<int, int>(vid_prof.width(), vid_prof.height()));
                     push_back_if_not_exists(resolutions, res.str());
+                    push_back_if_not_exists(resolutions_per_stream[profile.stream_type()], std::pair<int, int>(vid_prof.width(), vid_prof.height()));
                 }
 
                 std::stringstream fps;
@@ -1314,6 +1315,10 @@ namespace rs2
                 sort_together(fps_list.second, fpses_per_stream[fps_list.first]);
             }
             sort_together(shared_fps_values, shared_fpses);
+            for (auto&& res_list : resolutions_per_stream)
+            {
+                sort_resolutions(res_list.second);
+            }
             sort_together(res_values, resolutions);
 
             show_single_fps_list = is_there_common_fps();
@@ -1390,6 +1395,16 @@ namespace rs2
     {
         if (zero_order_artifact_fix)
             viewer.zo_sensors--;
+    }
+
+    void subdevice_model::sort_resolutions(std::vector<std::pair<int, int>>& resolutions) const
+    {
+        std::sort(resolutions.begin(), resolutions.end(),
+            [](const std::pair<int, int>& a, const std::pair<int, int>& b) {
+                if (a.first != b.first)
+                    return (a.first < b.first);
+                return (a.second <= b.second);
+            });
     }
 
     bool subdevice_model::is_there_common_fps()
@@ -1668,48 +1683,8 @@ namespace rs2
 
     bool subdevice_model::is_selected_combination_supported()
     {
-        std::vector<stream_profile> results;
-
-        for (auto&& f : formats)
-        {
-            auto stream = f.first;
-            if (stream_enabled[stream])
-            {
-                auto fps = 0;
-                if (show_single_fps_list)
-                    fps = shared_fps_values[ui.selected_shared_fps_id];
-                else
-                    fps = fps_values_per_stream[stream][ui.selected_fps_id[stream]];
-
-                auto format = format_values[stream][ui.selected_format_id[stream]];
-
-                for (auto&& p : profiles)
-                {
-                    if (auto vid_prof = p.as<video_stream_profile>())
-                    {
-                        if (res_values.size() > 0)
-                        {
-                            auto width = res_values[ui.selected_res_id].first;
-                            auto height = res_values[ui.selected_res_id].second;
-
-                            if (vid_prof.width() == width &&
-                                vid_prof.height() == height &&
-                                p.unique_id() == stream &&
-                                p.fps() == fps &&
-                                p.format() == format)
-                                results.push_back(p);
-                        }
-                    }
-                    else
-                    {
-                        if (p.fps() == fps &&
-                            p.unique_id() == stream &&
-                            p.format() == format)
-                            results.push_back(p);
-                    }
-                }
-            }
-        }
+        bool enforce_inter_stream_policies = false;
+        std::vector<stream_profile> results = get_selected_profiles(enforce_inter_stream_policies);
 
         if (results.size() == 0)
             return false;
@@ -1952,12 +1927,46 @@ namespace rs2
         return results;
     }
 
-    std::vector<stream_profile> subdevice_model::get_selected_profiles()
+    bool subdevice_model::is_ir_calibration_profile() const
+    {
+        // checking format
+        bool is_cal_format = false;
+        for (auto it = stream_enabled.begin(); it != stream_enabled.end(); ++it)
+        {
+            if (it->second)
+            {
+                auto format = format_values.at(it->first)[ui.selected_format_id.at(it->first)];
+                if (format == RS2_FORMAT_Y16)
+                {
+                    is_cal_format = true;
+                    break;
+                }
+            }
+        }
+        return is_cal_format;   
+    }
+
+    std::pair<int, int> subdevice_model::get_max_resolution(rs2_stream stream) const
+    {
+        if (resolutions_per_stream.count(stream) > 0)
+            return resolutions_per_stream.at(stream).back();
+
+        std::stringstream error_message;
+        error_message << "The stream ";
+        error_message << rs2_stream_to_string(stream);
+        error_message << " is not available with this sensor ";
+        error_message << s->get_info(RS2_CAMERA_INFO_NAME);
+        throw std::runtime_error(error_message.str());
+    }
+
+    std::vector<stream_profile> subdevice_model::get_selected_profiles(bool enforce_inter_stream_policies)
     {
         std::vector<stream_profile> results;
 
         std::stringstream error_message;
         error_message << "The profile ";
+
+        bool is_cal_profile = is_ir_calibration_profile();
 
         for (auto&& f : formats)
         {
@@ -1985,12 +1994,19 @@ namespace rs2
                                 << width << "x" << height << " at " << fps << "Hz, "
                                 << rs2_format_to_string(format) << "} ";
 
-                            if (vid_prof.width() == width &&
-                                vid_prof.height() == height &&
-                                p.unique_id() == stream &&
-                                p.fps() == fps &&
-                                p.format() == format)
-                                results.push_back(p);
+                            if (p.unique_id() == stream && p.fps() == fps && p.format() == format)
+                            {
+                                // permitting to add color stream profile to depth sensor
+                                // when infrared calibration is active
+                                if (is_cal_profile && p.stream_type() == RS2_STREAM_COLOR)
+                                {
+                                    auto max_color_res = get_max_resolution(RS2_STREAM_COLOR);
+                                    if (vid_prof.width() == max_color_res.first && vid_prof.height() == max_color_res.second)
+                                        results.push_back(p);
+                                }
+                                else if (vid_prof.width() == width && vid_prof.height() == height)
+                                    results.push_back(p);
+                            }
                         }
                     }
                     else
@@ -2006,7 +2022,7 @@ namespace rs2
                 }
             }
         }
-        if (results.size() == 0)
+        if (results.size() == 0 && enforce_inter_stream_policies)
         {
             error_message << " is unsupported!";
             throw std::runtime_error(error_message.str());
