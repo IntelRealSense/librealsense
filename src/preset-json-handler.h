@@ -40,7 +40,7 @@ namespace librealsense
             // C'tor may throw
 			preset_json_handler( const std::string &json_content );
 			bool check_device_compatibility( const device_interface& device ) const;
-			bool write_header();
+			std::string write_header( const device_interface& device );
 			json::const_iterator find(const std::string& key) const;
 			void ignore_device_info(const std::string& key);
 			json::const_iterator end() const;

@@ -10,6 +10,8 @@ using json = nlohmann::json;
 namespace librealsense {
 namespace serializable_utilities {
 
+static const char* SCHEMA_VERSION = "1.0";
+
 preset_json_handler::preset_json_handler( const std::string & json_content )
 {
     _presets_file = json::parse( json_content );
@@ -17,12 +19,24 @@ preset_json_handler::preset_json_handler( const std::string & json_content )
     _header = read_header();
 }
 
-bool preset_json_handler::write_header()
+std::string preset_json_handler::write_header( const device_interface& device )
 {
-   throw librealsense::invalid_value_exception("preset file was not loaded");
-    // TODO continue
+   json j;
 
-    return false;
+   j["schema version"] = SCHEMA_VERSION;
+   j["parameters"] = json::object();
+   j["device"] = json::object();
+   
+   auto &device_section = j["device"];
+
+   for (auto &&val : std::map<std::string, rs2_camera_info>{ { "name", RS2_CAMERA_INFO_NAME }, { "product line", RS2_CAMERA_INFO_PRODUCT_LINE }, { "fw version", RS2_CAMERA_INFO_FIRMWARE_VERSION } })
+   {
+       if (device.supports_info(val.second))
+       {
+           device_section[val.first] = device.get_info(val.second);
+       }
+   }
+   return j.dump(4);
 }
 
 preset_header preset_json_handler::read_header() const 

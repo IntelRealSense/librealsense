@@ -19,9 +19,11 @@ namespace librealsense
 
     std::vector<uint8_t> l500_serializable::serialize_json() const
     {
-        // Write device information first
-        //serializable_utilities::preset_json_handler preset_handler(_depth_sensor.get_device());
-        json j;
+        std::string json_content;
+        serializable_utilities::preset_json_handler writer(json_content);
+        writer.write_header(_depth_sensor.get_device());
+        //writer.write();
+
         return ivcam2::group_multiple_fw_calls( _depth_sensor, [&]() {
 
             auto options = _depth_sensor.get_supported_options();
