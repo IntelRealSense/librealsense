@@ -2,7 +2,7 @@
 //// Copyright(c) 2020 Intel Corporation. All Rights Reserved.
 
 #include "l500-serializable.h"
-#include "serializable-utilities.h"
+#include <preset-json-handler.h>
 #include "../../../third-party/json.hpp"
 #include <set>
 #include "l500-options.h"
@@ -19,8 +19,9 @@ namespace librealsense
 
     std::vector<uint8_t> l500_serializable::serialize_json() const
     {
-        json j = json::parse( serializable_utilities::get_connected_device_info( _depth_sensor.get_device() ) );
-
+        // Write device information first
+        //serializable_utilities::preset_json_handler preset_handler(_depth_sensor.get_device());
+        json j;
         return ivcam2::group_multiple_fw_calls( _depth_sensor, [&]() {
 
             auto options = _depth_sensor.get_supported_options();
@@ -40,10 +41,9 @@ namespace librealsense
 
     void l500_serializable::load_json( const std::string & json_content )
     {
-        // TODO, what to do with old json files? (not having "Camera Name" element)
-        (void)serializable_utilities::get_pre_configured_device_info( _depth_sensor.get_device(), json_content);
+        serializable_utilities::preset_json_handler reader(_depth_sensor.get_device(), json_content);
 
-        json j = json::parse( json_content );
+        const std::string s("controls-autoexposure-auto");
         
         return ivcam2::group_multiple_fw_calls(_depth_sensor, [&]() {
 
@@ -56,8 +56,8 @@ namespace librealsense
             if (_depth_sensor.supports_option(RS2_OPTION_SENSOR_MODE))
             {
                 auto & sensor_mode = _depth_sensor.get_option(RS2_OPTION_SENSOR_MODE);
-                auto found_sensor_mode = j.find(get_string(RS2_OPTION_SENSOR_MODE));
-                if (found_sensor_mode != j.end())
+                auto found_sensor_mode = reader.find(get_string(RS2_OPTION_SENSOR_MODE));
+                if (found_sensor_mode != reader.end())
                 {
                     float sensor_mode_val = found_sensor_mode.value();
                     sensor_mode.set(sensor_mode_val);
@@ -66,8 +66,8 @@ namespace librealsense
 
             // If a non custom preset is used, we should ignore all the settings that are
             // automatically set by the preset
-            auto found_iterator = j.find( get_string( RS2_OPTION_VISUAL_PRESET ) );
-            if( found_iterator != j.end() )
+            auto found_iterator = reader.find( get_string( RS2_OPTION_VISUAL_PRESET ) );
+            if( found_iterator != reader.end() )
             {
                 auto found_preset = rs2_l500_visual_preset( int( found_iterator.value() ) );
                 if( found_preset != RS2_L500_VISUAL_PRESET_CUSTOM
@@ -97,8 +97,8 @@ namespace librealsense
                     continue;
 
                 auto key = get_string( o );
-                auto it = j.find( key );
-                if( it != j.end() )
+                auto it = reader.find( key );
+                if( it != reader.end() )
                 {
                     float val = it.value();
                     if( o == RS2_OPTION_VISUAL_PRESET
