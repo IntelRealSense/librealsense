@@ -41,7 +41,10 @@ namespace librealsense
 
     void l500_serializable::load_json( const std::string & json_content )
     {
-        serializable_utilities::preset_json_handler reader(_depth_sensor.get_device(), json_content);
+        serializable_utilities::preset_json_handler reader( json_content );
+
+        // Verify if device information in preset file is compatible with the connected device.
+        reader.check_device_compatibility(_depth_sensor.get_device());
 
         const std::string s("controls-autoexposure-auto");
         

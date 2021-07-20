@@ -25,28 +25,36 @@ namespace librealsense
 
 	namespace serializable_utilities
 	{
+		struct preset_header
+		{
+			std::string schema_version;
+			std::string name;
+			std::string product_line;
+			std::string fw_version;
+		};
+
 		class preset_json_handler
 		{
 		public:
-            // C'tor may throw
-			preset_json_handler(const device_interface& device, const std::string &json_content);
 
+            // C'tor may throw
+			preset_json_handler( const std::string &json_content );
+			bool check_device_compatibility( const device_interface& device ) const;
 			bool write_header();
 			json::const_iterator find(const std::string& key) const;
-
-            json::const_iterator end() const
-            {
-                return _presets_file.end();
-            }
+			void ignore_device_info(const std::string& key);
+			json::const_iterator end() const;
 
 				
 		protected:
-			bool verify_header() const;
-
-			const device_interface& _device;
+			preset_header read_header() const; 
+			std::string get_value( const std::string& parent_key, const std::string& field_key ) const;
+			bool compare_header_field(const device_interface& device, const std::string& file_value, rs2_camera_info camera_info) const;
+			bool validate_schema() const;
+			preset_header _header;
 			json _presets_file;
-			enum class status {UNLOADED, LOADED_FLAT_FORMAT, LOADED_SCHEME_FORMAT};
-			status _status;
+			json _parameters;
+			json::iterator _parameters_end;
 		};
 	}
 }
