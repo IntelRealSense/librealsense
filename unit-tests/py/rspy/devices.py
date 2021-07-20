@@ -1,7 +1,7 @@
 # License: Apache 2.0. See LICENSE file in root directory.
 # Copyright(c) 2021 Intel Corporation. All Rights Reserved.
 
-import sys, os, re
+import sys, os, re, platform
 try:
     from rspy import log
 except ModuleNotFoundError:
@@ -512,6 +512,12 @@ def _wait_for( serial_numbers, timeout = 5 ):
     :return: True if all have come online; False if timeout was reached
     """
     did_some_waiting = False
+    #
+    # In Linux, we don't have an active notification mechanism - we query devices every 5 seconds
+    # (see POLLING_DEVICES_INTERVAL_MS) - so we add extra timeout
+    if timeout and platform.system() == 'Linux':
+        timeout += 5
+    #
     while True:
         #
         have_all_devices = True
