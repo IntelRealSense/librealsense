@@ -203,10 +203,9 @@ if not to_stdout:
 n_tests = 0
 
 # Figure out which sys.path we want the tests to see, assuming we have Python tests
-#     PYTHONPATH is what Python will ADD to sys.path for the child processes
+# PYTHONPATH is what Python will ADD to sys.path for child processes BEFORE any standard python paths
 # (We can simply change `sys.path` but any child python scripts won't see it; we change the environment instead)
 #
-# We also need to add the path to the python packages that the tests use
 os.environ["PYTHONPATH"] = current_dir + os.sep + "py"
 #
 if pyrs:
