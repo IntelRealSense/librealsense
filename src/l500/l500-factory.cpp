@@ -17,6 +17,7 @@
 #include "l500-depth.h"
 #include "l500-motion.h"
 #include "l500-color.h"
+#include "l535-color-device.h"
 #include "l500-serializable.h"
 #include "l535-device-options.h"
 #include "../firmware_logger_device.h"
@@ -66,7 +67,7 @@ namespace librealsense
 
     class l535_device : public l500_depth,
         public l535::device_options,
-        public l500_color,
+        public l535::color_device,
         public l500_motion,
         public l500_serializable,
         public firmware_logger_device
@@ -79,7 +80,7 @@ namespace librealsense
             l500_device(ctx, group),
             l500_depth(ctx, group),
             device_options(ctx, group),
-            l500_color(ctx, group),
+            color_device(ctx, group),
             l500_motion(ctx, group),
             l500_serializable(l500_device::_hw_monitor, get_depth_sensor()),
             firmware_logger_device(ctx, group, l500_device::_hw_monitor,

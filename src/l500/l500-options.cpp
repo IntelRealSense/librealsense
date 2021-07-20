@@ -4,6 +4,7 @@
 #include "l500-options.h"
 #include "l500-private.h"
 #include "l500-depth.h"
+#include "../common/fw/firmware-version.h"
 
 const std::string MIN_CONTROLS_FW_VERSION("1.3.9.0");
 const std::string MIN_GET_DEFAULT_FW_VERSION( "1.5.4.0" );
@@ -429,11 +430,14 @@ namespace librealsense
                     "ambient.",
                     this );
 
-                _preset->set_value( (float)preset );
+                _preset->set( (float)preset );
 
                 depth_sensor.register_option( RS2_OPTION_VISUAL_PRESET, _preset );
 
                 _advanced_options = get_advanced_controls();
+
+                firmware_version recommended_fw_version(L51X_RECOMMENDED_FIRMWARE_VERSION);
+                register_info(RS2_CAMERA_INFO_RECOMMENDED_FIRMWARE_VERSION, recommended_fw_version);
             }
         } );
     }

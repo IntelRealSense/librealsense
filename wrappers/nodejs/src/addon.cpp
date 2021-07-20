@@ -27,7 +27,8 @@ class DictBase {
   ~DictBase() {}
 
   v8::Local<v8::Value> GetMember(const char* name) const {
-    return v8obj_->Get(Nan::GetCurrentContext(), Nan::New(name).ToLocalChecked()).ToLocalChecked();
+    return v8obj_->Get(Nan::GetCurrentContext(),
+        Nan::New(name).ToLocalChecked()).ToLocalChecked();
   }
 
   v8::Local<v8::Value> GetMember(const std::string& name) const {
@@ -35,7 +36,8 @@ class DictBase {
   }
 
   void SetMemberUndefined(const char* name) {
-    v8obj_->Set(Nan::GetCurrentContext(), Nan::New(name).ToLocalChecked(), Nan::Undefined());
+    v8obj_->Set(Nan::GetCurrentContext(),
+        Nan::New(name).ToLocalChecked(), Nan::Undefined());
   }
 
   void DeleteMember(const char* name) {
@@ -48,7 +50,8 @@ class DictBase {
   }
 
   void SetMember(const char* name, v8::Local<v8::Value> value) {
-    v8obj_->Set(Nan::GetCurrentContext(), Nan::New(name).ToLocalChecked(), value);
+    v8obj_->Set(Nan::GetCurrentContext(),
+        Nan::New(name).ToLocalChecked(), value);
   }
 
   void SetMember(const char* name, const std::string& value) {
@@ -72,7 +75,8 @@ class DictBase {
   }
 
   bool IsMemberPresent(const char* name) const {
-    v8::Local<v8::Value> v = v8obj_->Get(Nan::GetCurrentContext(), Nan::New(name).ToLocalChecked()).ToLocalChecked();
+    v8::Local<v8::Value> v = v8obj_->Get(Nan::GetCurrentContext(),
+        Nan::New(name).ToLocalChecked()).ToLocalChecked();
     return !(v->IsUndefined() || v->IsNull());
   }
 
@@ -133,7 +137,8 @@ class ErrorUtil {
   static void UpdateJSErrorCallback(
       const Nan::FunctionCallbackInfo<v8::Value>& info) {
     v8::Local<v8::Context> context = info.GetIsolate()->GetCurrentContext();
-    singleton_->js_error_container_.Reset(info[0]->ToObject(context).ToLocalChecked());
+    singleton_->js_error_container_.Reset(
+        info[0]->ToObject(context).ToLocalChecked());
     Nan::Utf8String value(info[1]->ToString(context).ToLocalChecked());
     singleton_->js_error_callback_name_ = std::string(*value);
   }
@@ -174,7 +179,8 @@ class ErrorUtil {
     v8::Local<v8::Value> args[1] = { GetJSErrorObject() };
     auto container = Nan::New<v8::Object>(js_error_container_);
     Nan::AsyncResource resource("js_error_callback_name_");
-    resource.runInAsyncScope(container, js_error_callback_name_.c_str(), 1, args);
+    resource.runInAsyncScope(container, js_error_callback_name_.c_str(),
+       1, args);
     // Nan::MakeCallback(container, ,
     //     1, args);
   }
@@ -570,7 +576,8 @@ class RSStreamProfile : public Nan::ObjectWrap {
     info.GetReturnValue().Set(Nan::Undefined());
     v8::Local<v8::Context> context = info.GetIsolate()->GetCurrentContext();
     auto me = Nan::ObjectWrap::Unwrap<RSStreamProfile>(info.Holder());
-    auto to = Nan::ObjectWrap::Unwrap<RSStreamProfile>(info[0]->ToObject(context).ToLocalChecked());
+    auto to = Nan::ObjectWrap::Unwrap<RSStreamProfile>(
+        info[0]->ToObject(context).ToLocalChecked());
     if (!me || !to) return;
 
     rs2_extrinsics res;
@@ -776,24 +783,32 @@ class RSFrame : public Nan::ObjectWrap {
     auto mapper_confidence_name = Nan::New("mapperConfidence").ToLocalChecked();
 
     auto translation_obj = Nan::GetRealNamedProperty(
-        obj, translation_name).ToLocalChecked()->ToObject(Nan::GetCurrentContext());
+        obj, translation_name).ToLocalChecked()
+        ->ToObject(Nan::GetCurrentContext());
     auto velocity_obj = Nan::GetRealNamedProperty(
-        obj, velocity_name).ToLocalChecked()->ToObject(Nan::GetCurrentContext());
+        obj, velocity_name).ToLocalChecked()
+        ->ToObject(Nan::GetCurrentContext());
     auto acceleration_obj = Nan::GetRealNamedProperty(
-        obj, acceleration_name).ToLocalChecked()->ToObject(Nan::GetCurrentContext());
+        obj, acceleration_name).ToLocalChecked()
+        ->ToObject(Nan::GetCurrentContext());
     auto rotation_obj = Nan::GetRealNamedProperty(
-        obj, rotation_name).ToLocalChecked()->ToObject(Nan::GetCurrentContext());
+        obj, rotation_name).ToLocalChecked()
+        ->ToObject(Nan::GetCurrentContext());
     auto angular_velocity_obj = Nan::GetRealNamedProperty(
-        obj, angular_velocity_name).ToLocalChecked()->ToObject(Nan::GetCurrentContext());
+        obj, angular_velocity_name).ToLocalChecked()
+        ->ToObject(Nan::GetCurrentContext());
     auto angular_acceleration_obj = Nan::GetRealNamedProperty(
-        obj, angular_acceleration_name).ToLocalChecked()->ToObject(Nan::GetCurrentContext());
+        obj, angular_acceleration_name).ToLocalChecked()
+        ->ToObject(Nan::GetCurrentContext());
 
     FillAFloatVector(translation_obj.ToLocalChecked(), pose.translation);
     FillAFloatVector(velocity_obj.ToLocalChecked(), pose.velocity);
     FillAFloatVector(acceleration_obj.ToLocalChecked(), pose.acceleration);
     FillAFloatQuaternion(rotation_obj.ToLocalChecked(), pose.rotation);
-    FillAFloatVector(angular_velocity_obj.ToLocalChecked(), pose.angular_velocity);
-    FillAFloatVector(angular_acceleration_obj.ToLocalChecked(), pose.angular_acceleration);
+    FillAFloatVector(
+        angular_velocity_obj.ToLocalChecked(), pose.angular_velocity);
+    FillAFloatVector(
+        angular_acceleration_obj.ToLocalChecked(), pose.angular_acceleration);
 
     Nan::Set(obj, tracker_confidence_name, Nan::New(pose.tracker_confidence));
     Nan::Set(obj, mapper_confidence_name, Nan::New(pose.mapper_confidence));
@@ -1404,7 +1419,8 @@ class RSFrameQueue : public Nan::ObjectWrap {
   static NAN_METHOD(EnqueueFrame) {
     v8::Local<v8::Context> context = info.GetIsolate()->GetCurrentContext();
     auto me = Nan::ObjectWrap::Unwrap<RSFrameQueue>(info.Holder());
-    auto frame = Nan::ObjectWrap::Unwrap<RSFrame>(info[0]->ToObject(context).ToLocalChecked());
+    auto frame = Nan::ObjectWrap::Unwrap<RSFrame>(
+        info[0]->ToObject(context).ToLocalChecked());
 
     if (me && frame) {
       rs2_enqueue_frame(frame->frame_, me->frame_queue_);
@@ -1669,7 +1685,8 @@ class RSFrameSet : public Nan::ObjectWrap {
     auto me = Nan::ObjectWrap::Unwrap<RSFrameSet>(info.Holder());
     if (!me || !me->frames_) return;
 
-    rs2_stream stream = static_cast<rs2_stream>(Nan::To<int64_t>(info[0]).FromJust());
+    rs2_stream stream =
+        static_cast<rs2_stream>(Nan::To<int64_t>(info[0]).FromJust());
     auto stream_index = Nan::To<int64_t>(info[1]).FromJust();
     // if RS2_STREAM_ANY is used, we return the first frame.
     if (stream == RS2_STREAM_ANY && me->frame_count_) {
@@ -1704,9 +1721,11 @@ class RSFrameSet : public Nan::ObjectWrap {
   static NAN_METHOD(ReplaceFrame) {
     info.GetReturnValue().Set(Nan::False());
     auto me = Nan::ObjectWrap::Unwrap<RSFrameSet>(info.Holder());
-    rs2_stream stream = static_cast<rs2_stream>(Nan::To<int64_t>(info[0]).FromJust());
+    rs2_stream stream =
+        static_cast<rs2_stream>(Nan::To<int64_t>(info[0]).FromJust());
     auto stream_index = Nan::To<int64_t>(info[1]).FromJust();
-    auto target_frame = Nan::ObjectWrap::Unwrap<RSFrame>(Nan::To<v8::Object>(info[2]).ToLocalChecked());
+    auto target_frame = Nan::ObjectWrap::Unwrap<RSFrame>(
+        Nan::To<v8::Object>(info[2]).ToLocalChecked());
 
     if (!me || !me->frames_) return;
 
@@ -1884,7 +1903,8 @@ class RSSyncer : public Nan::ObjectWrap {
   static NAN_METHOD(WaitForFrames) {
     info.GetReturnValue().Set(Nan::False());
     auto me = Nan::ObjectWrap::Unwrap<RSSyncer>(info.Holder());
-    auto frameset = Nan::ObjectWrap::Unwrap<RSFrameSet>(Nan::To<v8::Object>(info[0]).ToLocalChecked());
+    auto frameset = Nan::ObjectWrap::Unwrap<RSFrameSet>(
+        Nan::To<v8::Object>(info[0]).ToLocalChecked());
     auto timeout = Nan::To<int64_t>(info[1]).FromJust();
     if (!me || !frameset) return;
 
@@ -1907,7 +1927,8 @@ class RSSyncer : public Nan::ObjectWrap {
   static NAN_METHOD(PollForFrames) {
     info.GetReturnValue().Set(Nan::False());
     auto me = Nan::ObjectWrap::Unwrap<RSSyncer>(info.Holder());
-    auto frameset = Nan::ObjectWrap::Unwrap<RSFrameSet>(Nan::To<v8::Object>(info[0]).ToLocalChecked());
+    auto frameset = Nan::ObjectWrap::Unwrap<RSFrameSet>(
+        Nan::To<v8::Object>(info[0]).ToLocalChecked());
     if (!me || !frameset) return;
 
     rs2_frame* frame_ref = nullptr;
@@ -2192,7 +2213,8 @@ class RSSensor : public Nan::ObjectWrap, Options {
 
   static NAN_METHOD(StartWithSyncer) {
     info.GetReturnValue().Set(Nan::Undefined());
-    auto syncer = Nan::ObjectWrap::Unwrap<RSSyncer>(Nan::To<v8::Object>(info[0]).ToLocalChecked());
+    auto syncer = Nan::ObjectWrap::Unwrap<RSSyncer>(
+      Nan::To<v8::Object>(info[0]).ToLocalChecked());
     auto me = Nan::ObjectWrap::Unwrap<RSSensor>(info.Holder());
     if (!me || !syncer) return;
 
@@ -2201,12 +2223,18 @@ class RSSensor : public Nan::ObjectWrap, Options {
   }
 
   static NAN_METHOD(StartWithCallback) {
-    auto frame = Nan::ObjectWrap::Unwrap<RSFrame>(Nan::To<v8::Object>(info[1]).ToLocalChecked());
-    auto depth_frame = Nan::ObjectWrap::Unwrap<RSFrame>(Nan::To<v8::Object>(info[2]).ToLocalChecked());
-    auto video_frame = Nan::ObjectWrap::Unwrap<RSFrame>(Nan::To<v8::Object>(info[3]).ToLocalChecked());
-    auto disparity_frame = Nan::ObjectWrap::Unwrap<RSFrame>(Nan::To<v8::Object>(info[4]).ToLocalChecked());
-    auto motion_frame = Nan::ObjectWrap::Unwrap<RSFrame>(Nan::To<v8::Object>(info[5]).ToLocalChecked());
-    auto pose_frame = Nan::ObjectWrap::Unwrap<RSFrame>(Nan::To<v8::Object>(info[6]).ToLocalChecked());
+    auto frame = Nan::ObjectWrap::Unwrap<RSFrame>(
+        Nan::To<v8::Object>(info[1]).ToLocalChecked());
+    auto depth_frame = Nan::ObjectWrap::Unwrap<RSFrame>(
+        Nan::To<v8::Object>(info[2]).ToLocalChecked());
+    auto video_frame = Nan::ObjectWrap::Unwrap<RSFrame>(
+        Nan::To<v8::Object>(info[3]).ToLocalChecked());
+    auto disparity_frame = Nan::ObjectWrap::Unwrap<RSFrame>(
+        Nan::To<v8::Object>(info[4]).ToLocalChecked());
+    auto motion_frame = Nan::ObjectWrap::Unwrap<RSFrame>(
+        Nan::To<v8::Object>(info[5]).ToLocalChecked());
+    auto pose_frame = Nan::ObjectWrap::Unwrap<RSFrame>(
+        Nan::To<v8::Object>(info[6]).ToLocalChecked());
     auto me = Nan::ObjectWrap::Unwrap<RSSensor>(info.Holder());
     if (me && frame && depth_frame && video_frame && disparity_frame &&
         motion_frame && pose_frame) {
@@ -2235,8 +2263,8 @@ class RSSensor : public Nan::ObjectWrap, Options {
   static NAN_METHOD(OpenStream) {
     info.GetReturnValue().Set(Nan::Undefined());
     auto me = Nan::ObjectWrap::Unwrap<RSSensor>(info.Holder());
-    auto profile =
-        Nan::ObjectWrap::Unwrap<RSStreamProfile>(Nan::To<v8::Object>(info[0]).ToLocalChecked());
+    auto profile = Nan::ObjectWrap::Unwrap<RSStreamProfile>(
+        Nan::To<v8::Object>(info[0]).ToLocalChecked());
     if (!me || !profile) return;
 
     CallNativeFunc(rs2_open, &me->error_, me->sensor_, profile->profile_,
@@ -2253,8 +2281,9 @@ class RSSensor : public Nan::ObjectWrap, Options {
     std::vector<const rs2_stream_profile*> profs;
     v8::Local<v8::Context> context = info.GetIsolate()->GetCurrentContext();
     for (uint32_t i=0; i < len; i++) {
-      auto profile =
-          Nan::ObjectWrap::Unwrap<RSStreamProfile>(Nan::To<v8::Object>(array->Get(context, i).ToLocalChecked()).ToLocalChecked());
+      auto profile = Nan::ObjectWrap::Unwrap<RSStreamProfile>(
+          Nan::To<v8::Object>(
+              array->Get(context, i).ToLocalChecked()).ToLocalChecked());
       profs.push_back(profile->profile_);
     }
     CallNativeFunc(rs2_open_multiple, &me->error_, me->sensor_, profs.data(),
@@ -2370,7 +2399,8 @@ class RSSensor : public Nan::ObjectWrap, Options {
     if (!me) return;
 
     bool is_ok = GetNativeResult<int>(rs2_is_sensor_extendable_to,
-        &me->error_, me->sensor_, static_cast<rs2_extension>(stype), &me->error_);
+        &me->error_, me->sensor_,
+        static_cast<rs2_extension>(stype), &me->error_);
     if (me->error_) return;
 
     info.GetReturnValue().Set(Nan::New(is_ok));
@@ -2863,9 +2893,11 @@ void FrameCallbackInfo::Run() {
   sensor_->ReplaceFrame(frame_);
 
   Nan::AsyncResource resource("frame_callback_name_");
-  resource.runInAsyncScope(sensor_->handle(), sensor_->frame_callback_name_.c_str(), 0, nullptr);
-  // Nan::MakeCallback(sensor_->handle(), sensor_->frame_callback_name_.c_str(), 0,
-  //     nullptr);
+  resource.runInAsyncScope(
+      sensor_->handle(), sensor_->frame_callback_name_.c_str(), 0, nullptr);
+  // Nan::MakeCallback(
+  //     sensor_->handle(), sensor_->frame_callback_name_.c_str(),
+  //     0, nullptr);
 }
 
 void NotificationCallbackInfo::Run() {
@@ -2877,7 +2909,8 @@ void NotificationCallbackInfo::Run() {
   };
 
   Nan::AsyncResource resource("notification_callback_name_");
-  resource.runInAsyncScope(sensor_->handle(), sensor_->notification_callback_name_.c_str(), 1, args);
+  resource.runInAsyncScope(
+      sensor_->handle(), sensor_->notification_callback_name_.c_str(), 1, args);
   // Nan::MakeCallback(sensor_->handle(),
   //     sensor_->notification_callback_name_.c_str(), 1, args);
 }
@@ -2887,7 +2920,9 @@ void PlaybackStatusCallbackInfo::Run() {
   Nan::HandleScope scope;
   v8::Local<v8::Value> args[1] = { Nan::New(status_) };
   Nan::AsyncResource resource("status_changed_callback_method_name_");
-  resource.runInAsyncScope(dev_->handle(), dev_->status_changed_callback_method_name_.c_str(), 1, args);
+  resource.runInAsyncScope(
+      dev_->handle(), dev_->status_changed_callback_method_name_.c_str(),
+      1, args);
   // Nan::MakeCallback(dev_->handle(),
   //     dev_->status_changed_callback_method_name_.c_str(), 1, args);
 }
@@ -2967,8 +3002,10 @@ class RSPointCloud : public Nan::ObjectWrap, Options {
   static NAN_METHOD(Calculate) {
     info.GetReturnValue().Set(Nan::False());
     auto me = Nan::ObjectWrap::Unwrap<RSPointCloud>(info.Holder());
-    auto frame = Nan::ObjectWrap::Unwrap<RSFrame>(Nan::To<v8::Object>(info[0]).ToLocalChecked());
-    auto target_frame = Nan::ObjectWrap::Unwrap<RSFrame>(Nan::To<v8::Object>(info[1]).ToLocalChecked());
+    auto frame = Nan::ObjectWrap::Unwrap<RSFrame>(
+        Nan::To<v8::Object>(info[0]).ToLocalChecked());
+    auto target_frame = Nan::ObjectWrap::Unwrap<RSFrame>(
+        Nan::To<v8::Object>(info[1]).ToLocalChecked());
     if (!me || !frame || !frame->frame_ || !target_frame) return;
 
     // rs2_process_frame will release the input frame, so we need to addref
@@ -2989,7 +3026,8 @@ class RSPointCloud : public Nan::ObjectWrap, Options {
 
   static NAN_METHOD(MapTo) {
     auto me = Nan::ObjectWrap::Unwrap<RSPointCloud>(info.Holder());
-    auto frame = Nan::ObjectWrap::Unwrap<RSFrame>(Nan::To<v8::Object>(info[0]).ToLocalChecked());
+    auto frame = Nan::ObjectWrap::Unwrap<RSFrame>(
+        Nan::To<v8::Object>(info[0]).ToLocalChecked());
     info.GetReturnValue().Set(Nan::Undefined());
     if (!me || !frame) return;
 
@@ -3147,7 +3185,8 @@ class RSDeviceList : public Nan::ObjectWrap {
   static NAN_METHOD(Contains) {
     info.GetReturnValue().Set(Nan::Undefined());
     auto me = Nan::ObjectWrap::Unwrap<RSDeviceList>(info.Holder());
-    auto dev = Nan::ObjectWrap::Unwrap<RSDevice>(Nan::To<v8::Object>(info[0]).ToLocalChecked());
+    auto dev = Nan::ObjectWrap::Unwrap<RSDevice>(
+        Nan::To<v8::Object>(info[0]).ToLocalChecked());
     if (!me && dev) return;
 
     bool contains = GetNativeResult<int>(rs2_device_list_contains, &me->error_,
@@ -3289,7 +3328,8 @@ class RSContext : public Nan::ObjectWrap {
       obj->section_ = std::string(*section);
     }
     if (type == kRecording)
-      obj->mode_ = static_cast<rs2_recording_mode>(Nan::To<int64_t>(info[3]).FromJust());
+      obj->mode_ =
+          static_cast<rs2_recording_mode>(Nan::To<int64_t>(info[3]).FromJust());
     obj->Wrap(info.This());
     info.GetReturnValue().Set(info.This());
   }
@@ -3362,7 +3402,8 @@ class RSContext : public Nan::ObjectWrap {
 
   static NAN_METHOD(CreateDeviceFromSensor) {
     info.GetReturnValue().Set(Nan::Undefined());
-    auto sensor = Nan::ObjectWrap::Unwrap<RSSensor>(Nan::To<v8::Object>(info[0]).ToLocalChecked());
+    auto sensor = Nan::ObjectWrap::Unwrap<RSSensor>(
+        Nan::To<v8::Object>(info[0]).ToLocalChecked());
     if (!sensor) return;
 
     rs2_error* error = nullptr;
@@ -3428,7 +3469,9 @@ class DevicesChangedCallbackInfo : public MainThreadCallbackInfo {
     v8::Local<v8::Value> args[2] = {rmlist, addlist};
 
     Nan::AsyncResource resource("device_changed_callback_name_");
-    resource.runInAsyncScope(ctx_->handle(), ctx_->device_changed_callback_name_.c_str(), 2, args);
+    resource.runInAsyncScope(
+        ctx_->handle(), ctx_->device_changed_callback_name_.c_str(),
+        2, args);
     // Nan::MakeCallback(ctx_->handle(),
     //     ctx_->device_changed_callback_name_.c_str(), 2, args);
   }
@@ -3526,8 +3569,8 @@ class RSDeviceHub : public Nan::ObjectWrap {
   static void New(const Nan::FunctionCallbackInfo<v8::Value>& info) {
     if (info.IsConstructCall()) {
       RSDeviceHub* obj = new RSDeviceHub();
-      RSContext* ctx =
-      Nan::ObjectWrap::Unwrap<RSContext>(Nan::To<v8::Object>(info[0]).ToLocalChecked());
+      RSContext* ctx = Nan::ObjectWrap::Unwrap<RSContext>(
+          Nan::To<v8::Object>(info[0]).ToLocalChecked());
       obj->ctx_ = ctx->ctx_;
       obj->hub_ = GetNativeResult<rs2_device_hub*>(rs2_create_device_hub,
           &obj->error_, obj->ctx_, &obj->error_);
@@ -3551,7 +3594,8 @@ class RSDeviceHub : public Nan::ObjectWrap {
   static NAN_METHOD(IsConnected) {
     info.GetReturnValue().Set(Nan::Undefined());
     auto me = Nan::ObjectWrap::Unwrap<RSDeviceHub>(info.Holder());
-    auto dev = Nan::ObjectWrap::Unwrap<RSDevice>(Nan::To<v8::Object>(info[0]).ToLocalChecked());
+    auto dev = Nan::ObjectWrap::Unwrap<RSDevice>(
+        Nan::To<v8::Object>(info[0]).ToLocalChecked());
     if (!me || !dev) return;
 
     auto res = GetNativeResult<int>(rs2_device_hub_is_device_connected,
@@ -3915,7 +3959,8 @@ class RSPipeline : public Nan::ObjectWrap {
   static NAN_METHOD(Create) {
     info.GetReturnValue().Set(Nan::Undefined());
     auto me = Nan::ObjectWrap::Unwrap<RSPipeline>(info.Holder());
-    auto rsctx = Nan::ObjectWrap::Unwrap<RSContext>(Nan::To<v8::Object>(info[0]).ToLocalChecked());
+    auto rsctx = Nan::ObjectWrap::Unwrap<RSContext>(
+        Nan::To<v8::Object>(info[0]).ToLocalChecked());
     if (!me || !rsctx) return;
 
     me->pipeline_ = GetNativeResult<rs2_pipeline*>(rs2_create_pipeline,
@@ -3927,7 +3972,8 @@ class RSPipeline : public Nan::ObjectWrap {
     auto me = Nan::ObjectWrap::Unwrap<RSPipeline>(info.Holder());
     if (!me || !me->pipeline_) return;
 
-    RSConfig* config = Nan::ObjectWrap::Unwrap<RSConfig>(Nan::To<v8::Object>(info[0]).ToLocalChecked());
+    RSConfig* config = Nan::ObjectWrap::Unwrap<RSConfig>(
+        Nan::To<v8::Object>(info[0]).ToLocalChecked());
     rs2_pipeline_profile* prof = GetNativeResult<rs2_pipeline_profile*>(
         rs2_pipeline_start_with_config, &me->error_, me->pipeline_,
         config->config_, &me->error_);
@@ -3959,7 +4005,8 @@ class RSPipeline : public Nan::ObjectWrap {
   static NAN_METHOD(WaitForFrames) {
     info.GetReturnValue().Set(Nan::False());
     auto me = Nan::ObjectWrap::Unwrap<RSPipeline>(info.Holder());
-    auto frameset = Nan::ObjectWrap::Unwrap<RSFrameSet>(Nan::To<v8::Object>(info[0]).ToLocalChecked());
+    auto frameset = Nan::ObjectWrap::Unwrap<RSFrameSet>(
+        Nan::To<v8::Object>(info[0]).ToLocalChecked());
     if (!me || !frameset) return;
 
     auto timeout = Nan::To<int64_t>(info[1]).FromJust();
@@ -3975,7 +4022,8 @@ class RSPipeline : public Nan::ObjectWrap {
   static NAN_METHOD(PollForFrames) {
     info.GetReturnValue().Set(Nan::False());
     auto me = Nan::ObjectWrap::Unwrap<RSPipeline>(info.Holder());
-    auto frameset = Nan::ObjectWrap::Unwrap<RSFrameSet>(Nan::To<v8::Object>(info[0]).ToLocalChecked());
+    auto frameset = Nan::ObjectWrap::Unwrap<RSFrameSet>(
+        Nan::To<v8::Object>(info[0]).ToLocalChecked());
     if (!me || !frameset) return;
 
     rs2_frame* frames = nullptr;
@@ -4014,7 +4062,8 @@ NAN_METHOD(RSConfig::Resolve) {
   auto me = Nan::ObjectWrap::Unwrap<RSConfig>(info.Holder());
   if (!me) return;
 
-  RSPipeline* pipe = Nan::ObjectWrap::Unwrap<RSPipeline>(Nan::To<v8::Object>(info[0]).ToLocalChecked());
+  RSPipeline* pipe = Nan::ObjectWrap::Unwrap<RSPipeline>(
+      Nan::To<v8::Object>(info[0]).ToLocalChecked());
   auto pipeline_profile = GetNativeResult<rs2_pipeline_profile*>(
       rs2_config_resolve, &me->error_, me->config_, pipe->pipeline_,
       &me->error_);
@@ -4028,7 +4077,8 @@ NAN_METHOD(RSConfig::CanResolve) {
   auto me = Nan::ObjectWrap::Unwrap<RSConfig>(info.Holder());
   if (!me) return;
 
-  RSPipeline* pipe = Nan::ObjectWrap::Unwrap<RSPipeline>(Nan::To<v8::Object>(info[0]).ToLocalChecked());
+  RSPipeline* pipe = Nan::ObjectWrap::Unwrap<RSPipeline>(
+      Nan::To<v8::Object>(info[0]).ToLocalChecked());
   auto can_resolve = GetNativeResult<int>(rs2_config_can_resolve, &me->error_,
       me->config_, pipe->pipeline_, &me->error_);
   if (me->error_) return;
@@ -4132,8 +4182,10 @@ class RSColorizer : public Nan::ObjectWrap, Options {
   static NAN_METHOD(Colorize) {
     info.GetReturnValue().Set(Nan::False());
     auto me = Nan::ObjectWrap::Unwrap<RSColorizer>(info.Holder());
-    RSFrame* depth = Nan::ObjectWrap::Unwrap<RSFrame>(Nan::To<v8::Object>(info[0]).ToLocalChecked());
-    RSFrame* target = Nan::ObjectWrap::Unwrap<RSFrame>(Nan::To<v8::Object>(info[1]).ToLocalChecked());
+    RSFrame* depth = Nan::ObjectWrap::Unwrap<RSFrame>(
+        Nan::To<v8::Object>(info[0]).ToLocalChecked());
+    RSFrame* target = Nan::ObjectWrap::Unwrap<RSFrame>(
+        Nan::To<v8::Object>(info[1]).ToLocalChecked());
     if (!me || !depth || !depth->frame_ || !target) return;
 
     // rs2_process_frame will release the input frame, so we need to addref
@@ -4288,8 +4340,10 @@ class RSAlign : public Nan::ObjectWrap {
   static NAN_METHOD(Process) {
     info.GetReturnValue().Set(Nan::False());
     auto me = Nan::ObjectWrap::Unwrap<RSAlign>(info.Holder());
-    auto frameset = Nan::ObjectWrap::Unwrap<RSFrameSet>(Nan::To<v8::Object>(info[0]).ToLocalChecked());
-    auto target_fs = Nan::ObjectWrap::Unwrap<RSFrameSet>(Nan::To<v8::Object>(info[1]).ToLocalChecked());
+    auto frameset = Nan::ObjectWrap::Unwrap<RSFrameSet>(
+        Nan::To<v8::Object>(info[0]).ToLocalChecked());
+    auto target_fs = Nan::ObjectWrap::Unwrap<RSFrameSet>(
+        Nan::To<v8::Object>(info[1]).ToLocalChecked());
     if (!me || !frameset || !target_fs) return;
 
     // rs2_process_frame will release the input frame, so we need to addref
@@ -4429,8 +4483,10 @@ class RSFilter : public Nan::ObjectWrap, Options {
 
   static NAN_METHOD(Process) {
     auto me = Nan::ObjectWrap::Unwrap<RSFilter>(info.Holder());
-    auto input_frame = Nan::ObjectWrap::Unwrap<RSFrame>(Nan::To<v8::Object>(info[0]).ToLocalChecked());
-    auto out_frame = Nan::ObjectWrap::Unwrap<RSFrame>(Nan::To<v8::Object>(info[1]).ToLocalChecked());
+    auto input_frame = Nan::ObjectWrap::Unwrap<RSFrame>(
+        Nan::To<v8::Object>(info[0]).ToLocalChecked());
+    auto out_frame = Nan::ObjectWrap::Unwrap<RSFrame>(
+        Nan::To<v8::Object>(info[1]).ToLocalChecked());
     info.GetReturnValue().Set(Nan::False());
     if (!me || !input_frame || !out_frame) return;
 
@@ -4559,13 +4615,17 @@ void InitModule(v8::Local<v8::Object> exports) {
   v8::Local<v8::Context> context = exports->CreationContext();
 
   exports->Set(context, Nan::New("globalCleanup").ToLocalChecked(),
-      Nan::New<v8::FunctionTemplate>(GlobalCleanup)->GetFunction(context).ToLocalChecked());
+      Nan::New<v8::FunctionTemplate>(GlobalCleanup)
+      ->GetFunction(context).ToLocalChecked());
   exports->Set(context, Nan::New("getTime").ToLocalChecked(),
-      Nan::New<v8::FunctionTemplate>(GetTime)->GetFunction(context).ToLocalChecked());
+      Nan::New<v8::FunctionTemplate>(GetTime)
+      ->GetFunction(context).ToLocalChecked());
   exports->Set(context, Nan::New("registerErrorCallback").ToLocalChecked(),
-      Nan::New<v8::FunctionTemplate>(RegisterErrorCallback)->GetFunction(context).ToLocalChecked());
+      Nan::New<v8::FunctionTemplate>(RegisterErrorCallback)
+      ->GetFunction(context).ToLocalChecked());
   exports->Set(context, Nan::New("getError").ToLocalChecked(),
-      Nan::New<v8::FunctionTemplate>(GetError)->GetFunction(context).ToLocalChecked());
+      Nan::New<v8::FunctionTemplate>(GetError)
+      ->GetFunction(context).ToLocalChecked());
   // rs2_error* error = nullptr;
   // rs2_log_to_console(RS2_LOG_SEVERITY_DEBUG, &error);
 
@@ -4642,6 +4702,7 @@ void InitModule(v8::Local<v8::Object> exports) {
   _FORCE_SET_ENUM(RS2_FORMAT_W10);
   _FORCE_SET_ENUM(RS2_FORMAT_Z16H);
   _FORCE_SET_ENUM(RS2_FORMAT_FG);
+  _FORCE_SET_ENUM(RS2_FORMAT_Y411);
   _FORCE_SET_ENUM(RS2_FORMAT_COUNT);
 
   // rs2_frame_metadata_value
@@ -4740,8 +4801,8 @@ void InitModule(v8::Local<v8::Object> exports) {
   _FORCE_SET_ENUM(RS2_OPTION_STREAM_FORMAT_FILTER);
   _FORCE_SET_ENUM(RS2_OPTION_STREAM_INDEX_FILTER);
   _FORCE_SET_ENUM(RS2_OPTION_EMITTER_ON_OFF);
-  _FORCE_SET_ENUM(RS2_OPTION_ZERO_ORDER_POINT_X); // Deprecated
-  _FORCE_SET_ENUM(RS2_OPTION_ZERO_ORDER_POINT_Y); // Deprecated
+  _FORCE_SET_ENUM(RS2_OPTION_ZERO_ORDER_POINT_X);  // Deprecated
+  _FORCE_SET_ENUM(RS2_OPTION_ZERO_ORDER_POINT_Y);  // Deprecated
   _FORCE_SET_ENUM(RS2_OPTION_LLD_TEMPERATURE);
   _FORCE_SET_ENUM(RS2_OPTION_MC_TEMPERATURE);
   _FORCE_SET_ENUM(RS2_OPTION_MA_TEMPERATURE);
@@ -4754,7 +4815,7 @@ void InitModule(v8::Local<v8::Object> exports) {
   _FORCE_SET_ENUM(RS2_OPTION_ENABLE_DYNAMIC_CALIBRATION);
   _FORCE_SET_ENUM(RS2_OPTION_DEPTH_OFFSET);
   _FORCE_SET_ENUM(RS2_OPTION_LED_POWER);
-  _FORCE_SET_ENUM(RS2_OPTION_ZERO_ORDER_ENABLED); // Deprecated
+  _FORCE_SET_ENUM(RS2_OPTION_ZERO_ORDER_ENABLED);  // Deprecated
   _FORCE_SET_ENUM(RS2_OPTION_ENABLE_MAP_PRESERVATION);
   _FORCE_SET_ENUM(RS2_OPTION_FREEFALL_DETECTION_ENABLED);
   _FORCE_SET_ENUM(RS2_OPTION_AVALANCHE_PHOTO_DIODE);
@@ -4783,6 +4844,8 @@ void InitModule(v8::Local<v8::Object> exports) {
   _FORCE_SET_ENUM(RS2_OPTION_AUTO_GAIN_LIMIT);
   _FORCE_SET_ENUM(RS2_OPTION_AUTO_RX_SENSITIVITY);
   _FORCE_SET_ENUM(RS2_OPTION_TRANSMITTER_FREQUENCY);
+  _FORCE_SET_ENUM(RS2_OPTION_VERTICAL_BINNING);
+  _FORCE_SET_ENUM(RS2_OPTION_RECEIVER_SENSITIVITY);
   _FORCE_SET_ENUM(RS2_OPTION_COUNT);
 
   // rs2_camera_info

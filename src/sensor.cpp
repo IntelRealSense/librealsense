@@ -31,6 +31,7 @@ namespace librealsense
         _is_opened(false),
         _notifications_processor(std::shared_ptr<notifications_processor>(new notifications_processor())),
         _on_open(nullptr),
+        _metadata_modifier(nullptr),
         _metadata_parsers(std::make_shared<metadata_parser_map>()),
         _owner(dev),
         _profiles([this]() {
@@ -187,8 +188,8 @@ namespace librealsense
     stream_profiles sensor_base::get_stream_profiles( int tag ) const
     {
         stream_profiles results;
-        bool const need_debug = tag & profile_tag::PROFILE_TAG_DEBUG;
-        bool const need_any = tag & profile_tag::PROFILE_TAG_ANY;
+        bool const need_debug = (tag & profile_tag::PROFILE_TAG_DEBUG) != 0;
+        bool const need_any = (tag & profile_tag::PROFILE_TAG_ANY) != 0;
         for( auto p : *_profiles )
         {
             auto curr_tag = p->get_tag();
@@ -250,7 +251,6 @@ namespace librealsense
         fr->data = pixels;
         fr->set_stream(profile);
 
-        // generate additional data
         frame_additional_data additional_data(0,
             0,
             system_time,
@@ -260,7 +260,11 @@ namespace librealsense
             last_timestamp,
             last_frame_number,
             false,
-            (uint32_t)fo.frame_size );
+            0,
+            (uint32_t)fo.frame_size);
+
+        if (_metadata_modifier)
+            _metadata_modifier(additional_data);
         fr->additional_data = additional_data;
 
         // update additional data
@@ -321,7 +325,7 @@ namespace librealsense
                     const auto&& fr = generate_frame_from_data(f, _timestamp_reader.get(), last_timestamp, last_frame_number, req_profile_base);
                     const auto&& requires_processing = true; // TODO - Ariel add option
                     const auto&& timestamp_domain = _timestamp_reader->get_frame_timestamp_domain(fr);
-                    const auto&& bpp = get_image_bpp(req_profile_base->get_format());
+                    auto bpp = get_image_bpp( req_profile_base->get_format() );
                     auto&& frame_counter = fr->additional_data.frame_number;
                     auto&& timestamp = fr->additional_data.timestamp;
 
@@ -352,14 +356,30 @@ namespace librealsense
                     int width = vsp ? vsp->get_width() : 0;
                     int height = vsp ? vsp->get_height() : 0;
 
-                    frame_holder fh = _source.alloc_frame(stream_to_frame_types(req_profile_base->get_stream_type()), width * height * bpp / 8, fr->additional_data, requires_processing);
+                    assert( (width * height) % 8 == 0 );
+
+                    // TODO: remove when adding confidence format
+                    if( req_profile->get_stream_type() == RS2_STREAM_CONFIDENCE )
+                        bpp = 4;
+
+                    auto expected_size = (width * height * bpp) >> 3;
+                    // For compressed formats copy the raw data as is
+                    if (val_in_range(req_profile_base->get_format(), { RS2_FORMAT_MJPEG, RS2_FORMAT_Z16H }))
+                        expected_size = static_cast<int>(f.frame_size);
+                    frame_holder fh = _source.alloc_frame(
+                        stream_to_frame_types( req_profile_base->get_stream_type() ),
+                        expected_size,
+                        fr->additional_data,
+                        requires_processing );
                     auto diff = environment::get_instance().get_time_service()->get_time() - system_time;
-                    if (diff >10 )
+                    if( diff > 10 )
                         LOG_DEBUG("!! Frame allocation took " << diff << " msec");
 
                     if (fh.frame)
                     {
-                        memcpy((void*)fh->get_frame_data(), fr->data.data(), sizeof(byte)*fr->data.size());
+                        assert( expected_size == sizeof(byte) * fr->data.size() );
+
+                        memcpy((void*)fh->get_frame_data(), fr->data.data(), expected_size);
                         auto&& video = (video_frame*)fh.frame;
                         video->assign(width, height, width * bpp / 8, bpp);
                         video->set_timestamp_domain(timestamp_domain);

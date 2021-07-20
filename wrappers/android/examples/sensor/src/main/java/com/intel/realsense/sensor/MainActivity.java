@@ -11,7 +11,9 @@ import androidx.appcompat.app.AppCompatActivity;
 import android.util.Log;
 import android.view.View;
 import android.widget.TextView;
+import android.widget.Toast;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import com.intel.realsense.librealsense.Colorizer;
@@ -27,7 +29,6 @@ import com.intel.realsense.librealsense.StreamFormat;
 import com.intel.realsense.librealsense.StreamType;
 import com.intel.realsense.librealsense.Extension;
 
-import com.intel.realsense.librealsense.VideoStreamProfile;
 import com.intel.realsense.librealsense.FrameCallback;
 import com.intel.realsense.librealsense.GLRsSurfaceView;
 import com.intel.realsense.librealsense.RsContext;
@@ -47,7 +48,9 @@ public class MainActivity extends AppCompatActivity {
     private RsContext mRsContext;
 
     private Device mDevice;
-    DepthSensor depth_sensor = null;
+    DepthSensor mDepthSensor = null;
+    StreamProfile mDepthProfile = null;
+    StreamProfile mIrProfile = null;
 
 
     @Override
@@ -103,9 +106,10 @@ public class MainActivity extends AppCompatActivity {
     protected void onPause() {
         super.onPause();
         stop();
+        releaseContext();
     }
 
-    private FrameCallback mDepthFrameHandler = new FrameCallback()
+    private FrameCallback mFrameHandler = new FrameCallback()
     {
         @Override
         public void onFrame(final Frame f) {
@@ -144,6 +148,8 @@ public class MainActivity extends AppCompatActivity {
             if( num_devices> 0) {
                 mDevice = dl.createDevice(0);
                 showConnectLabel(false);
+                assignDepthSensor();
+                assignProfiles();
                 start();
             }
         }
@@ -172,46 +178,25 @@ public class MainActivity extends AppCompatActivity {
     };
 
     private void configAndStart() throws Exception {
-        List<Sensor> sensors = mDevice.querySensors();
-
-        for(Sensor s : sensors)
-        {
-            if (s.is(Extension.DEPTH_SENSOR)) {
-                depth_sensor = s.as(Extension.DEPTH_SENSOR);
+        if (mDepthSensor != null) {
+            if (mDepthProfile == null && mIrProfile == null) {
+                Toast.makeText(this, "The requested profiles are not available in this device ", Toast.LENGTH_LONG).show();
             }
-        }
+            else {
+                List<StreamProfile> requested_profiles = new ArrayList<StreamProfile>();
+                if (mDepthProfile != null)
+                    requested_profiles.add(mDepthProfile);
+                else
+                    Toast.makeText(this, "The depth requested profile is not available in this device ", Toast.LENGTH_LONG).show();
 
-        if (depth_sensor != null) {
-            List<StreamProfile> sps = depth_sensor.getStreamProfiles();
-            StreamProfile sp = sps.get(0);
+                if (mIrProfile != null)
+                    requested_profiles.add(mIrProfile);
+                else
+                    Toast.makeText(this, "The infrared requested profile is not available in this device ", Toast.LENGTH_LONG).show();
 
-            for (StreamProfile sp2 : sps) {
-                if (sp2.getType().compareTo(StreamType.DEPTH) == 0) {
-
-                    if (sp2.is(Extension.VIDEO_PROFILE)) {
-                        VideoStreamProfile video_stream_profile = sp2.as(Extension.VIDEO_PROFILE);
-
-                        // After using the "as" method we can use the new data type
-                        //  for additional operations:
-                        StreamFormat sf = video_stream_profile.getFormat();
-                        int index = sp2.getIndex();
-                        StreamType st = sp2.getType();
-                        int w = video_stream_profile.getWidth();
-                        int h = video_stream_profile.getHeight();
-                        int fps = video_stream_profile.getFrameRate();
-
-                        if (w == 640 && fps == 30 && (sf.compareTo(StreamFormat.Z16) == 0)) {
-                            Log.d(TAG, "depth stream: " + index + ":" + st.name() + ":" + sf.name() + ":" + w + "x" + h + "@" + fps + "HZ");
-
-                            sp = sp2;
-                            break;
-                        }
-                    }
-                }
+                mDepthSensor.openSensor(requested_profiles);
+                mDepthSensor.start(mFrameHandler);
             }
-
-            depth_sensor.open(sp);
-            depth_sensor.start(mDepthFrameHandler);
         }
     }
 
@@ -238,23 +223,43 @@ public class MainActivity extends AppCompatActivity {
             Log.d(TAG, "try stop streaming");
             mIsStreaming = false;
 
-            if (depth_sensor != null) depth_sensor.stop();
-
-            if (mColorizer != null) mColorizer.close();
-            if (depth_sensor != null) {depth_sensor.close();}
-
-            if (mDevice != null) mDevice.close();
-
-            if(mRsContext != null) {
-                mRsContext.removeDevicesChangedCallback();
-                mRsContext.close();
-                mRsContext = null;
+            if (mDepthSensor != null){
+                mDepthSensor.stop();
+                mDepthSensor.closeSensor();
             }
 
             mGLSurfaceView.clear();
             Log.d(TAG, "streaming stopped successfully");
         } catch (Exception e) {
             Log.e(TAG, "failed to stop streaming");
+        }
+    }
+
+    private void releaseContext() {
+        if (mDevice != null) mDevice.close();
+        if (mColorizer != null) mColorizer.close();
+
+        if(mRsContext != null) {
+            mRsContext.removeDevicesChangedCallback();
+            mRsContext.close();
+            mRsContext = null;
+        }
+    }
+
+    private void assignDepthSensor() {
+        List<Sensor> sensors = mDevice.querySensors();
+
+        for(Sensor s : sensors)
+        {
+            if (s.is(Extension.DEPTH_SENSOR)) {
+                mDepthSensor = s.as(Extension.DEPTH_SENSOR);
+            }
+        }
+    }
+    private void assignProfiles() {
+        if (mDepthSensor != null) {
+            mDepthProfile = mDepthSensor.findProfile(StreamType.DEPTH, -1, 640, 480, StreamFormat.Z16, 30);
+            mIrProfile = mDepthSensor.findProfile(StreamType.INFRARED, -1, 640, 480, StreamFormat.Y8, 30);
         }
     }
 }

@@ -18,28 +18,30 @@ See below for each of the custom options...
 
 // We are not using the main from catch2
 #define CATCH_CONFIG_RUNNER
-#include <unit-tests/catch/catch.hpp>
-#include <string>
-
-namespace test {
-    std::string context;
-}
+#include <unit-tests/test.h>
 
 using namespace Catch::clara;
 
 int main( int argc, char * argv[] )
 {
     Catch::Session session;
-    /*
-        --context <context>
-        
-        Define the context for the test. This is usually left blank but can be set if you want to
-        emulate test operation in the 'nightly' context, for example.
-        
-        We write the value directly to 'test::context'.
-    */
+    bool rslog = false;
     auto cli = session.cli()
-             | Opt( test::context, "context" )["--context"]( "Context in which to run the tests" );
+             /*
+                 --context <context>
+
+                 Define the context for the test. This is usually left blank but can be set if you
+                 want to emulate test operation in the 'nightly' context, for example.
+
+                 We write the value directly to 'test::context'.
+             */
+             | Opt( test::context, "context" )["--context"]( "Context in which to run the tests" )
+             /*
+                 --rslog
+
+                 Enable logging of LibRS log messages (LOG_DEBUG, etc.) to console.
+             */
+             | Opt( rslog )["--rslog"]( "Enable LibRS logging (LOG_DEBUG, etc.) via rs2::log_to_console()" );
     
     // Use '|' to add additional options:
     //       | Opt( test::flag, "flag" )["-f"]["--flag"]("Switch something on")
@@ -49,9 +51,10 @@ int main( int argc, char * argv[] )
 
     auto ret = session.applyCommandLine( argc, argv );
     if( ret )
-    {
-        return ret;
-    }
+        return ret;  // >0 == Error code
+
+    if( rslog )
+        rs2::log_to_console( RS2_LOG_SEVERITY_DEBUG );
 
     return session.run();
 }

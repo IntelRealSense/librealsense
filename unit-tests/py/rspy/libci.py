@@ -251,7 +251,7 @@ class Test( ABC ):  # Abstract Base Class
         self._ran = False
 
     @abstractmethod
-    def run_test( self, configuration = None, log_path = None ):
+    def run_test( self, configuration = None, log_path = None, opts = set() ):
         pass
 
     def debug_dump( self ):
@@ -359,6 +359,10 @@ class PyTest( Test ):
         #     -S     : don't imply 'import site' on initialization
         # NOTE: exit() is defined in site.py and works only if the site module is imported!
         cmd += ['-S']
+        #     -u     : force the stdout and stderr streams to be unbuffered; same as PYTHONUNBUFFERED=1
+        # With buffering we may end up losing output in case of crashes! (in Python 3.7 the text layer of the
+        # streams is unbuffered, but we assume 3.6)
+        cmd += ['-u']
         if sys.flags.verbose:
             cmd += ["-v"]
         cmd += [self.path_to_script]
@@ -371,9 +375,12 @@ class PyTest( Test ):
                 cmd += ['--context', self.config.context]
         return cmd
 
-    def run_test( self, configuration = None, log_path = None ):
+    def run_test( self, configuration = None, log_path = None, opts = set() ):
         try:
-            run( self.command, stdout=log_path, append=self.ran, timeout=self.config.timeout )
+            cmd = self.command
+            if opts:
+                cmd += [opt for opt in opts]
+            run( cmd, stdout=log_path, append=self.ran, timeout=self.config.timeout )
         finally:
             self._ran = True
 
@@ -417,10 +424,13 @@ class ExeTest( Test ):
                 cmd += ['--context', self.config.context]
         return cmd
 
-    def run_test( self, configuration = None, log_path = None ):
+    def run_test( self, configuration = None, log_path = None, opts = set() ):
         if not self.exe:
             raise RuntimeError("Tried to run test " + self.name + " with no exe file provided")
         try:
-            run( self.command, stdout=log_path, append=self.ran, timeout=self.config.timeout )
+            cmd = self.command
+            if opts:
+                cmd += [opt for opt in opts]
+            run( cmd, stdout=log_path, append=self.ran, timeout=self.config.timeout )
         finally:
             self._ran = True

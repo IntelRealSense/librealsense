@@ -44,23 +44,15 @@ This guide comes with a script that allows to modify the kernel modules with Lib
 Note that this method provides binary installation compiled using the `-DFORCE_RSUSB_BACKEND=true` option elaborated above.
 
   1. Register the server's public key:  
-  ```
-  sudo apt-key adv --keyserver keys.gnupg.net --recv-key F6E65AC044F831AC80A06380C8B3A55A6F3EFCDE || sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-key F6E65AC044F831AC80A06380C8B3A55A6F3EFCDE
+  ```sh
+  sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-key F6E65AC044F831AC80A06380C8B3A55A6F3EFCDE || sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-key F6E65AC044F831AC80A06380C8B3A55A6F3EFCDE
   ```
 
     > In case the public key cannot be retrieved, check and specify proxy settings: `export http_proxy="http://<proxy>:<port>"`, and rerun the command. See additional methods in the following [link](https://unix.stackexchange.com/questions/361213/unable-to-add-gpg-key-with-apt-key-behind-a-proxy).  
 
-  2. Add the server to the list of repositories:
-
-  * Ubuntu 16:  
-  ```
-  sudo add-apt-repository "deb https://librealsense.intel.com/Debian/apt-repo xenial main" -u
-  ```
-
-  * Ubuntu 18:
-  ```
-  sudo add-apt-repository "deb https://librealsense.intel.com/Debian/apt-repo bionic main" -u
-  ```
+  2. Add the server to the list of repositories:  
+```sh
+sudo add-apt-repository "deb https://librealsense.intel.com/Debian/apt-repo $(lsb_release -cs) main" -u```
 
   3. Install the SDK:
   ```

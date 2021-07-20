@@ -13,6 +13,7 @@
 extern "C" {
 #endif
 
+#include "rsutil.h"
 #include "h/rs_types.h"
 #include "h/rs_context.h"
 #include "h/rs_device.h"

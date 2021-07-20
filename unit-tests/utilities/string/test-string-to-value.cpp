@@ -1,10 +1,8 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2020 Intel Corporation. All Rights Reserved.
 
-//#cmake:add-file ../../../common/utilities/string/string-utilities.h
-
 #include "common.h"
-#include "../../../common/utilities/string/string-utilities.h"
+#include <common/utilities/string/string-utilities.h>
 #include <ostream>
 using namespace utilities::string;
 
@@ -31,12 +29,21 @@ template<typename T>
 void check_tests(std::vector<string_checker<T>>& tests)
 {
     T value;
-    for (const auto& test : tests)
+    for (const auto test : tests)
     {
+        CAPTURE(test.str);
+        CAPTURE(test.expected_res);
         CHECK(string_to_value<T>(test.str, value) == test.expected_res);
         if (test.expected_res)
         {
-            CHECK(value == test.value);
+            CAPTURE(value);
+            CAPTURE(test.value);
+            if (std::is_integral<T>::value)
+                CHECK(value == test.value);
+            else // floating-point
+            {
+                CHECK(value == Approx(test.value));
+            }
         }
     }
 }
@@ -129,14 +136,14 @@ TEST_CASE("string to value", "[string]")
     f_tests.push_back(string_checker<float>{ to_str(std::numeric_limits<float>::lowest())+"0", 0.f, false });
     f_tests.push_back(string_checker<float>{ "NaN", 0.f, false });
     f_tests.push_back(string_checker<float>{ "abc", 0.f, false });
-    
+
     check_tests<float>(f_tests);
 
     // double
     std::vector<string_checker<double>> d_tests;
-    d_tests.push_back(string_checker<double>{ "1.2345", 1.2345, true });
+    d_tests.push_back(string_checker<double>{ "9.876543", 9.876543, true });
     d_tests.push_back(string_checker<double>{ "2.12121212", 2.12121212, true });
-    d_tests.push_back(string_checker<double>{ "-1.2345", -1.2345, true });
+    d_tests.push_back(string_checker<double>{ "-1.234598765", -1.234598765, true });
     d_tests.push_back(string_checker<double>{ "-2.12121212", -2.12121212, true });
     d_tests.push_back(string_checker<double>{ "INF", 0., false });
     d_tests.push_back(string_checker<double>{ "-INF", 0., false });
@@ -150,10 +157,9 @@ TEST_CASE("string to value", "[string]")
 
     // long double
     std::vector<string_checker<long double>> ld_tests;
-    ld_tests.push_back(string_checker<long double>{ "1.23456789", 1.23456789, true });
-    ld_tests.push_back(string_checker<long double>{ "-1.23456789", -1.23456789, true });
-    ld_tests.push_back(string_checker<long double>{ "2.12121212", 2.12121212, true });
-    ld_tests.push_back(string_checker<long double>{ "-2.12121212", -2.12121212, true });
+    ld_tests.push_back(string_checker<long double>{ "12345.6789123456789", 12345.6789123456789, true });
+    ld_tests.push_back(string_checker<long double>{ "5432.123456789", 5432.123456789, true });
+    ld_tests.push_back(string_checker<long double>{ "-12345678.23456789", -12345678.23456789, true });
     ld_tests.push_back(string_checker<long double>{ "INF", 0., false });
     ld_tests.push_back(string_checker<long double>{ "-INF", 0., false });
     ld_tests.push_back(string_checker<long double>{ to_str(std::numeric_limits<long double>::max())+"0", 0., false });

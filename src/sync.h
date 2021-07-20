@@ -152,6 +152,8 @@ namespace librealsense
         std::map<stream_id, std::shared_ptr<matcher>> _matchers;
         std::map<matcher*, double> _next_expected;
         std::map<matcher*, rs2_timestamp_domain> _next_expected_domain;
+
+        std::mutex _mutex;
     };
 
     // composite matcher that does not synchronize between any frames, and instead just passes them on to callback
@@ -214,7 +216,7 @@ namespace librealsense
 
     private:
         unsigned int get_fps(const frame_holder & f);
-        bool are_equivalent(double a, double b, int fps);
+        bool are_equivalent( double a, double b, unsigned int fps );
         std::map<matcher*, double> _last_arrived;
         std::map<matcher*, unsigned int> _fps;
 

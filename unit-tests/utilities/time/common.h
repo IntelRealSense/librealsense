@@ -3,13 +3,7 @@
 
 #include "../../catch.h"
 
-#include <easylogging++.h>
-#ifdef BUILD_SHARED_LIBS
-// With static linkage, ELPP is initialized by librealsense, so doing it here will
-// create errors. When we're using the shared .so/.dll, the two are separate and we have
-// to initialize ours if we want to use the APIs!
-INITIALIZE_EASYLOGGINGPP
-#endif
+#include <thread>
 
 const auto TEST_DELTA_TIME_MS = 500;
 const auto TEST_DELTA_TIME = std::chrono::milliseconds(TEST_DELTA_TIME_MS);

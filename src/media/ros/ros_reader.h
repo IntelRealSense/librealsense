@@ -143,5 +143,6 @@ namespace librealsense
         std::vector<std::string>                m_enabled_streams_topics;
         std::shared_ptr<context>                m_context;
         uint32_t                                m_version;
+        float                                   m_legacy_depth_units;
     };
 }

@@ -10,14 +10,6 @@
 #include "../../catch.h"
 #include "../../unit-tests-common.h"
 
-#include <easylogging++.h>
-#ifdef BUILD_SHARED_LIBS
-// With static linkage, ELPP is initialized by librealsense, so doing it here will
-// create errors. When we're using the shared .so/.dll, the two are separate and we have
-// to initialize ours if we want to use the APIs!
-INITIALIZE_EASYLOGGINGPP
-#endif
-
 using namespace rs2;
 
 // HDR CONFIGURATION TESTS
@@ -459,8 +451,11 @@ TEST_CASE("Emitter on/off - checking sequence id", "[hdr][live][using_pipeline]"
                 rs2::pipeline pipe;
                 pipe.start(cfg);
 
-                depth_sensor.set_option(RS2_OPTION_EMITTER_ON_OFF, 1);
-                REQUIRE(depth_sensor.get_option(RS2_OPTION_EMITTER_ON_OFF) == 1.f);
+                if (depth_sensor.supports(RS2_OPTION_EMITTER_ON_OFF))
+                {
+                    depth_sensor.set_option(RS2_OPTION_EMITTER_ON_OFF, 1);
+                    REQUIRE(depth_sensor.get_option(RS2_OPTION_EMITTER_ON_OFF) == 1.f);
+                }
 
                 int iteration = 0;
                 int sequence_id = -1;
@@ -676,7 +671,11 @@ TEST_CASE("HDR Active - set locked options", "[hdr][live]") {
             if (depth_sensor && depth_sensor.supports(RS2_OPTION_HDR_ENABLED))
             {
                 //setting laser ON
-                REQUIRE_NOTHROW(depth_sensor.set_option(RS2_OPTION_EMITTER_ENABLED, 1.f));
+                if (depth_sensor.supports(RS2_OPTION_EMITTER_ENABLED))
+                {
+                    REQUIRE_NOTHROW(depth_sensor.set_option(RS2_OPTION_EMITTER_ENABLED, 1.f));
+                }
+                REQUIRE(depth_sensor.supports(RS2_OPTION_LASER_POWER));
                 auto laser_power_before_hdr = depth_sensor.get_option(RS2_OPTION_LASER_POWER);
 
                 std::this_thread::sleep_for((std::chrono::milliseconds)(1500));
@@ -685,15 +684,25 @@ TEST_CASE("HDR Active - set locked options", "[hdr][live]") {
                 REQUIRE(depth_sensor.get_option(RS2_OPTION_HDR_ENABLED) == 1.f);
 
                 // the following calls should not be performed and should send a LOG_WARNING
-                REQUIRE_NOTHROW(depth_sensor.set_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE, 1.f));
-                REQUIRE(depth_sensor.get_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE) == 0.f);
+                if (depth_sensor.supports(RS2_OPTION_ENABLE_AUTO_EXPOSURE))
+                {
+                    REQUIRE_NOTHROW(depth_sensor.set_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE, 1.f));
+                    REQUIRE(depth_sensor.get_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE) == 0.f);
+                }
 
-                REQUIRE_NOTHROW(depth_sensor.set_option(RS2_OPTION_EMITTER_ENABLED, 0.f));
-                REQUIRE(depth_sensor.get_option(RS2_OPTION_EMITTER_ENABLED) == 1.f);
+                if (depth_sensor.supports(RS2_OPTION_EMITTER_ENABLED))
+                {
+                    REQUIRE_NOTHROW(depth_sensor.set_option(RS2_OPTION_EMITTER_ENABLED, 0.f));
+                    REQUIRE(depth_sensor.get_option(RS2_OPTION_EMITTER_ENABLED) == 1.f);
+                }
 
-                REQUIRE_NOTHROW(depth_sensor.set_option(RS2_OPTION_EMITTER_ON_OFF, 1.f));
-                REQUIRE(depth_sensor.get_option(RS2_OPTION_EMITTER_ON_OFF) == 0.f);
+                if (depth_sensor.supports(RS2_OPTION_EMITTER_ON_OFF))
+                {
+                    REQUIRE_NOTHROW(depth_sensor.set_option(RS2_OPTION_EMITTER_ON_OFF, 1.f));
+                    REQUIRE(depth_sensor.get_option(RS2_OPTION_EMITTER_ON_OFF) == 0.f);
+                }
 
+                // Control's presence verified in the beginning of the block
                 REQUIRE_NOTHROW(depth_sensor.set_option(RS2_OPTION_LASER_POWER, laser_power_before_hdr - 30.f));
                 REQUIRE(depth_sensor.get_option(RS2_OPTION_LASER_POWER) == laser_power_before_hdr);
             }

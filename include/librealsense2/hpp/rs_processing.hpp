@@ -508,6 +508,32 @@ namespace rs2
         }
     };
 
+    class y411_decoder : public filter
+    {
+    public:
+        /**
+         * Creates y411 decoder processing block. This block accepts raw y411 frames and outputs frames in RGB8.
+         *     https://www.fourcc.org/pixel-format/yuv-y411/
+         * Y411 is disguised as NV12 to allow Linux compatibility. Both are 12bpp encodings that allow high-resolution
+         * modes in the camera to still fit within the USB3 limits (YUY wasn't enough).
+         */
+        y411_decoder() : filter(init()) { }
+
+    protected:
+        y411_decoder(std::shared_ptr<rs2_processing_block> block) : filter(block) {}
+
+    private:
+        static std::shared_ptr<rs2_processing_block> init()
+        {
+            rs2_error* e = nullptr;
+            auto block = std::shared_ptr<rs2_processing_block>(
+                rs2_create_y411_decoder(&e),
+                rs2_delete_processing_block);
+            error::handle(e);
+
+            return block;
+        }
+    };
   class threshold_filter : public filter
     {
     public:

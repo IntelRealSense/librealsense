@@ -83,15 +83,22 @@ std::map<uint32_t, std::shared_ptr<playback_sensor>> playback_device::create_pla
 
             auto action = [this, id]()
             {
-                std::lock_guard<std::mutex> locker(_active_sensors_mutex);
-                auto it = m_active_sensors.find(id);
-                if (it != m_active_sensors.end())
+                bool need_to_stop_device = false;
                 {
-                    m_active_sensors.erase(it);
-                    if (m_active_sensors.size() == 0)
+                    std::lock_guard<std::mutex> locker(_active_sensors_mutex);
+                    auto it = m_active_sensors.find(id);
+                    if (it != m_active_sensors.end())
                     {
-                        stop_internal();
+                        m_active_sensors.erase(it);
+                        if (m_active_sensors.size() == 0)
+                        {
+                            need_to_stop_device = true;
+                        }
                     }
+                }
+                if (need_to_stop_device)
+                {
+                    stop_internal();
                 }
             };
             if (invoke_required)
@@ -151,22 +158,20 @@ rs2_extrinsics playback_device::calc_extrinsic(const rs2_extrinsics& from, const
 
 playback_device::~playback_device()
 {
-    (*m_read_thread)->invoke([this](dispatcher::cancellable_timer c)
+    std::vector< std::shared_ptr< playback_sensor > > playback_sensors_copy;
     {
-        std::lock_guard<std::mutex> locker(_active_sensors_mutex);
-        for (auto&& sensor : m_active_sensors)
-        {
-            if (sensor.second != nullptr)
-            {
-                sensor.second->stop();
-            }
-        }
-    });
+        std::lock_guard< std::mutex > locker(_active_sensors_mutex);
+        for (auto s : m_active_sensors)
+            playback_sensors_copy.push_back(s.second);
+    }
 
-    if((*m_read_thread)->flush() == false)
+
+    for (auto&& sensor : playback_sensors_copy)
     {
-        LOG_ERROR("Error - timeout waiting for flush, possible deadlock detected");
-        assert(0); //Detect this immediately in debug
+        if (sensor)
+        {
+            sensor->stop();
+        }
     }
 
     (*m_read_thread)->stop();
@@ -454,8 +459,8 @@ void playback_device::start()
     catch_up();
     try_looping();
     LOG_INFO("Playback started");
-
 }
+
 void playback_device::stop()
 {
     LOG_DEBUG("playback stop called");
@@ -469,27 +474,26 @@ void playback_device::stop()
         LOG_ERROR("Error - timeout waiting for flush, possible deadlock detected");
         assert(0); //Detect this immediately in debug
     }
-    LOG_INFO("Playback stoped");
 
+    LOG_INFO("Playback stopped");
 }
 
 void playback_device::stop_internal()
 {
     //stop_internal() is called from within the reading thread
+    LOG_DEBUG("stop_internal() called");
     if (m_is_started == false)
         return; //nothing to do
 
 
     m_is_started = false;
     m_is_paused = false;
-    for (auto sensor : m_sensors)
-    {
-        //sensor.second->flush_pending_frames();
-    }
+
     m_reader->reset();
     m_prev_timestamp = std::chrono::nanoseconds(0);
     catch_up();
     playback_status_changed(RS2_PLAYBACK_STATUS_STOPPED);
+    LOG_DEBUG("stop_internal() end");
 }
 
 template <typename T>

@@ -36,6 +36,14 @@ if '--context' in sys.argv:
         log.f( "Received context flag but no context" )
     sys.argv.pop( context_index )
 
+# If --rslog flag was sent, enable LibRS logging (LOG_DEBUG, etc.)
+try:
+    sys.argv.remove( '--rslog' )
+    import pyrealsense2 as rs
+    rs.log_to_console( rs.log_severity.debug )
+except ValueError as e:
+    pass  # No --rslog passed in
+
 
 def set_env_vars( env_vars ):
     """
@@ -84,6 +92,7 @@ def find_first_device_or_exit():
         log.f("No device found")
     dev = c.devices[0]
     log.d( 'found', dev )
+    log.d( 'in', rs )
     return dev
 
 
@@ -100,6 +109,7 @@ def find_devices_by_product_line_or_exit( product_line ):
     if devices_list.size() == 0:
         log.f( "No device of the", product_line, "product line was found" )
     log.d( 'found', devices_list.size(), product_line, 'devices:', [dev for dev in devices_list] )
+    log.d( 'in', rs )
     return devices_list
 
 
@@ -268,7 +278,7 @@ def check_exception(exception, expected_type, expected_msg = None, abort_if_fail
     return True
 
 
-def check_frame_drops(frame, previous_frame_number, allowed_drops = 1, is_d400 = 0):
+def check_frame_drops(frame, previous_frame_number, allowed_drops = 1, allow_frame_counter_reset = False):
     """
     Used for checking frame drops while streaming
     :param frame: Current frame being checked
@@ -282,7 +292,7 @@ def check_frame_drops(frame, previous_frame_number, allowed_drops = 1, is_d400 =
     frame_number = frame.get_frame_number()
     failed = False
     # special case for D400, because the depth sensor may reset itself
-    if previous_frame_number > 0 and not (is_d400 and frame_number < 5):
+    if previous_frame_number > 0 and not (allow_frame_counter_reset and frame_number < 5):
         dropped_frames = frame_number - (previous_frame_number + 1)
         if dropped_frames > allowed_drops:
             print( dropped_frames, "frame(s) starting from frame", previous_frame_number + 1, "were dropped" )

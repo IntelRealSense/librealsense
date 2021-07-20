@@ -132,8 +132,8 @@ namespace librealsense
             { RS430_PID,            "Intel RealSense D430"},
             { RS430_MM_PID,         "Intel RealSense D430 with Tracking Module"},
             { RS_USB2_PID,          "Intel RealSense USB2" },
-            { RS_RECOVERY_PID,      "Intel RealSense D4xx Recovery"},
-            { RS_USB2_RECOVERY_PID, "Intel RealSense USB2 D4xx Recovery"},
+            { RS_RECOVERY_PID,      "Intel RealSense D4XX Recovery"},
+            { RS_USB2_RECOVERY_PID, "Intel RealSense D4XX USB2 Recovery"},
             { RS400_IMU_PID,        "Intel RealSense IMU" },
             { RS420_PID,            "Intel RealSense D420"},
             { RS420_MM_PID,         "Intel RealSense D420 with Tracking Module"},
@@ -397,7 +397,7 @@ namespace librealsense
             auto header = reinterpret_cast<const table_header*>(raw_data.data());
             if(raw_data.size() < sizeof(table_header))
             {
-                throw invalid_value_exception(to_string() << "Calibration data invald, buffer too small : expected " << sizeof(table_header) << " , actual: " << raw_data.size());
+                throw invalid_value_exception(to_string() << "Calibration data invalid, buffer too small : expected " << sizeof(table_header) << " , actual: " << raw_data.size());
             }
             // verify the parsed table
             if (table->header.crc32 != calc_crc32(raw_data.data() + sizeof(table_header), raw_data.size() - sizeof(table_header)))

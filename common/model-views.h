@@ -588,7 +588,7 @@ namespace rs2
         bool supports_on_chip_calib();
         bool draw_stream_selection(std::string& error_message);
         bool is_selected_combination_supported();
-        std::vector<stream_profile> get_selected_profiles();
+        std::vector<stream_profile> get_selected_profiles(bool enforce_inter_stream_policies = true);
         std::vector<stream_profile> get_supported_profiles();
         void stop(std::shared_ptr<notifications_model> not_model);
         void play(const std::vector<stream_profile>& profiles, viewer_model& viewer, std::shared_ptr<rs2::asynchronous_syncer>);
@@ -699,6 +699,7 @@ namespace rs2
 
         std::shared_ptr<rs2::colorizer> depth_colorizer;
         std::shared_ptr<rs2::yuy_decoder> yuy2rgb;
+        std::shared_ptr<rs2::y411_decoder> y411;
         std::shared_ptr<processing_block_model> zero_order_artifact_fix;
         std::shared_ptr<rs2::depth_huffman_decoder> depth_decoder;
 
@@ -707,6 +708,13 @@ namespace rs2
         std::vector<std::shared_ptr<processing_block_model>> const_effects;
 
     private:
+        std::pair<int, int> get_max_resolution(rs2_stream stream) const;
+        void sort_resolutions(std::vector<std::pair<int, int>>& resolutions) const;
+        bool is_ir_calibration_profile() const;
+        
+        // used in method get_max_resolution per stream
+        std::map<rs2_stream, std::vector<std::pair<int, int>>> resolutions_per_stream;
+
         const float SHORT_RANGE_MIN_DISTANCE = 0.05f; // 5 cm
         const float SHORT_RANGE_MAX_DISTANCE = 4.0f;  // 4 meters
     };

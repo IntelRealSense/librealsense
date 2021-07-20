@@ -40,11 +40,18 @@ task downloadFirmware() {
         new URL('https://librealsense.intel.com/Releases/RS4xx/FW/D4XX_FW_Image-' + d4xxFwVersion + '.bin').withInputStream{ i -> d4xxFile.withOutputStream{ it << i }}
     }
     
-    def l5xxFwVersion = getFwVersion('L5XX_RECOMMENDED_FIRMWARE_VERSION')
-    def l5xxFile = new File("$projectDir/src/main/res/raw/fw_l5xx.bin")
-    if (!l5xxFile.exists()) {
-        println("downloading L5xx fw: " + l5xxFwVersion)
-        new URL('https://librealsense.intel.com/Releases/L5xx/FW/L5XX_FW_Image-' + l5xxFwVersion + '.bin').withInputStream{ i -> l5xxFile.withOutputStream{ it << i }}
+    def l51xFwVersion = getFwVersion('L51X_RECOMMENDED_FIRMWARE_VERSION')
+    def l51xFile = new File("$projectDir/src/main/res/raw/fw_l51x.bin")
+    if (!l51xFile.exists()) {
+        println("downloading L51x fw: " + l51xFwVersion)
+        new URL('https://librealsense.intel.com/Releases/L5xx/FW/L51X_FW_Image-' + l51xFwVersion + '.bin').withInputStream{ i -> l51xFile.withOutputStream{ it << i }}
+    }
+
+    def l53xFwVersion = getFwVersion('L53X_RECOMMENDED_FIRMWARE_VERSION')
+    def l53xFile = new File("$projectDir/src/main/res/raw/fw_l53x.bin")
+    if (!l53xFile.exists()) {
+        println("downloading L53x fw: " + l53xFwVersion)
+        new URL('https://librealsense.intel.com/Releases/L5xx/FW/L53X_FW_Image-' + l53xFwVersion + '.bin').withInputStream{ i -> l53xFile.withOutputStream{ it << i }}
     }
 
     def sr3xxFwVersion = getFwVersion('SR3XX_RECOMMENDED_FIRMWARE_VERSION')

@@ -71,7 +71,7 @@ namespace sql
         statement stmt(*this, "SELECT COUNT(name) FROM sqlite_master WHERE type=? AND name=?");
         stmt.bind(1, "table");
         stmt.bind(2, name);
-        return stmt()[0].get_bool();
+        return stmt()[0].get_bool() != 0;
     }
 
     void connection::transaction(std::function<void()> transaction) const

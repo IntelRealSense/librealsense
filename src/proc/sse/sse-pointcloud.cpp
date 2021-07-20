@@ -2,7 +2,6 @@
 // Copyright(c) 2017 Intel Corporation. All Rights Reserved.
 
 #include <librealsense2/rs.hpp>
-#include <librealsense2/rsutil.h>
 
 #include "../synthetic-stream.h"
 #include "../../environment.h"
@@ -56,8 +55,7 @@ namespace librealsense
 
     const float3* pointcloud_sse::depth_to_points(rs2::points output,
             const rs2_intrinsics &depth_intrinsics, 
-            const rs2::depth_frame& depth_frame,
-            float depth_scale)
+            const rs2::depth_frame& depth_frame)
     {
 #ifdef __SSSE3__
 
@@ -76,7 +74,7 @@ namespace librealsense
         const __m128i mask1 = _mm_set_epi8((char)0xff, (char)0xff, (char)15, (char)14, (char)0xff, (char)0xff, (char)13, (char)12,
             (char)0xff, (char)0xff, (char)11, (char)10, (char)0xff, (char)0xff, (char)9, (char)8);
 
-        auto scale = _mm_set_ps1(depth_scale);
+        auto scale = _mm_set_ps1(depth_frame.get_units());
 
         auto mapx = pre_compute_x;
         auto mapy = pre_compute_y;

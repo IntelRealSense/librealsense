@@ -4,7 +4,7 @@
 #test:device L500*
 #test:device D400*
 
-import pyrealsense2 as rs, os, time, tempfile, sys
+import pyrealsense2 as rs, os, time, tempfile, platform, sys
 from rspy import devices, log, test
 
 cp = dp = None
@@ -14,11 +14,22 @@ color_width = depth_width = None
 color_height = depth_height = None
 previous_depth_frame_number = -1
 previous_color_frame_number = -1
-got_frames = False
+got_frames_rgb = False
+got_frames_depth = False
 
 dev = test.find_first_device_or_exit()
 depth_sensor = dev.first_depth_sensor()
 color_sensor = dev.first_color_sensor()
+
+# The test also checks frame drops, therefore D400-specific relaxation must apply
+# The follow code is borrowed fro test-drops-on-set.py and later can be merged/refactored
+product_line = dev.get_info(rs.camera_info.product_line)
+is_d400 = False
+if product_line == "D400":
+    is_d400 = True   # Allow for frame counter reset while streaming
+
+# Our KPI is to prevent sequential frame drops, therefore single frame drop is allowed.
+allowed_drops = 1
 
 # finding the wanted profile settings. We want to use default settings except for color fps where we want
 # the lowest value available
@@ -43,20 +54,23 @@ for p in depth_sensor.profiles:
         depth_height = p.as_video_stream_profile().height()
         break
 
-def got_frame():
-    global got_frames
-    got_frames = True
-
 def color_frame_call_back( frame ):
     global previous_color_frame_number
-    got_frame()
-    test.check_frame_drops( frame, previous_color_frame_number )
+    global is_d400
+    global allowed_drops
+    global got_frames_rgb
+    got_frames_rgb = True
+    test.check_frame_drops( frame, previous_color_frame_number, allowed_drops, is_d400 )
     previous_color_frame_number = frame.get_frame_number()
 
 def depth_frame_call_back( frame ):
     global previous_depth_frame_number
-    got_frame()
-    test.check_frame_drops( frame, previous_depth_frame_number )
+    global is_d400
+    global allowed_drops
+    global got_frames_depth
+
+    got_frames_depth = True
+    test.check_frame_drops( frame, previous_depth_frame_number, allowed_drops, is_d400 )
     previous_depth_frame_number = frame.get_frame_number()
 
 def restart_profiles():
@@ -179,20 +193,19 @@ try:
 
     # if record and playback worked we will receive frames, the callback functions will be called and got-frames
     # will be True. If the record and playback failed it will be false
-    test.check( got_frames )
+    test.check( got_frames_depth )
+    test.check( got_frames_rgb )
 except Exception:
     test.unexpected_exception()
 finally: # we must remove all references to the file so we can use it again in the next test
-    if recorder:
-        recorder.pause()
-        recorder = None
-    if playback:
-        playback.pause()
-        playback = None
     stop_sensor( depth_sensor )
     depth_sensor = None
     stop_sensor( color_sensor )
     color_sensor = None
+    if recorder:
+        recorder = None
+    if playback:
+        playback = None
 
 test.finish()
 
@@ -240,16 +253,14 @@ try:
 except Exception:
     test.unexpected_exception()
 finally: # we must remove all references to the file so the temporary folder can be deleted
-    if recorder:
-        recorder.pause()
-        recorder = None
-    if playback:
-        playback.pause()
-        playback = None
     stop_sensor( depth_sensor )
     depth_sensor = None
     stop_sensor( color_sensor )
     color_sensor = None
+    if recorder:
+        recorder = None
+    if playback:
+        playback = None
 
 test.finish()
 

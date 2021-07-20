@@ -12,6 +12,7 @@
   * `brew install cmake libusb pkg-config`
   * `brew install apenngrace/vulkan/vulkan-sdk --cask`
 
+
 **Note** *librealsense* requires CMake version 3.8+ that can also be obtained via the [official CMake site](https://cmake.org/download/).  
 
 

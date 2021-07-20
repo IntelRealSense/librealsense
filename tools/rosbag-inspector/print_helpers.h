@@ -153,15 +153,13 @@ namespace rosbag_inspector
         {
             auto image = data;
             os << "Header       : \n";
-            os << "  frame_id           : " << image->header.frame_id << std::endl;
+            os << "  frame_id           : " << image->header.version << std::endl;
             os << "  Frame Number (seq) : " << image->header.seq << std::endl;
             os << "  stamp              : " << image->header.stamp << std::endl;
             os << "Encoding     : " << image->encoding << std::endl;
             os << "Width        : " << image->width << std::endl;
             os << "Height       : " << image->height << std::endl;
             os << "Step         : " << image->step << std::endl;
-            //os << "Frame Number : " << image->header.seq << std::endl;
-            //os << "Timestamp    : " << pretty_time(std::chrono::nanoseconds(image->header.stamp.toNSec())) << std::endl;
         }
         else if (auto data = try_instantiate<sensor_msgs::Imu>(m))
         {

@@ -6,9 +6,9 @@
 #include <vector>
 
 #include "align.h"
-#include "types.h"
+#include "../types.h"
 
-#include "proc/identity-processing-block.h"
+#include "identity-processing-block.h"
 
 namespace librealsense
 {

@@ -6,12 +6,6 @@
 //#test:device SR300*
 
 #include <easylogging++.h>
-#ifdef BUILD_SHARED_LIBS
-// With static linkage, ELPP is initialized by librealsense, so doing it here will
-// create errors. When we're using the shared .so/.dll, the two are separate and we have
-// to initialize ours if we want to use the APIs!
-INITIALIZE_EASYLOGGINGPP
-#endif
 
 #include "../../catch.h"
 
@@ -36,7 +30,7 @@ struct position_and_rotation {
     // rotation tolerance - units are in cosinus of radians
     const double rotation_tolerance = 0.00001;
     // translation tolerance - units are in meters
-    const double translation_tolerance = 0.00001; // 0.001mm
+    const double translation_tolerance = 0.0001; // 0.1mm
 
     position_and_rotation operator* (const position_and_rotation& other)
     {
@@ -61,7 +55,9 @@ struct position_and_rotation {
 
                 if (fabs(pos_and_rot[i][j] - other.pos_and_rot[i][j]) > tolerance)
                 {
-                    std::cout << "i,j = " << i << "," << j << ", pos_and_rot[i][j] = " << pos_and_rot[i][j] << ", tolerance = " << tolerance << std::endl;
+                    std::cout << "i,j = " << i << "," << j << ", pos_and_rot[i][j] = " << pos_and_rot[i][j] << std::endl;
+                    std::cout << "required value = " << other.pos_and_rot[i][j] << std::endl;
+                    std::cout << "tolerance = " << tolerance << std::endl;
                     return false;
                 }
             }
@@ -82,7 +78,9 @@ struct position_and_rotation {
 
                 if (fabs(pos_and_rot[i][j] - target) > tolerance)
                 {
-                    std::cout << "i,j = " << i << "," << j << ", pos_and_rot[i][j] = " << pos_and_rot[i][j] << ", target = " << target << ", tolerance = " << tolerance << std::endl;
+                    std::cout << "i,j = " << i << "," << j << ", pos_and_rot[i][j] = " << pos_and_rot[i][j] << std::endl;
+                    std::cout << "required value = " << target << std::endl;
+                    std::cout << "tolerance = " << tolerance << std::endl;
                     return false;
                 }
             }

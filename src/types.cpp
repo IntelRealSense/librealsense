@@ -444,6 +444,8 @@ namespace librealsense
             CASE(AUTO_GAIN_LIMIT)
             CASE(AUTO_RX_SENSITIVITY)
             CASE(TRANSMITTER_FREQUENCY)
+            CASE(VERTICAL_BINNING)
+            CASE(RECEIVER_SENSITIVITY)
         default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
 #undef CASE
@@ -484,6 +486,7 @@ namespace librealsense
             CASE(W10)
             CASE(Z16H)
             CASE(FG)
+            CASE(Y411)
         default: assert(!is_valid(value)); return UNKNOWN_VALUE;
         }
 #undef CASE

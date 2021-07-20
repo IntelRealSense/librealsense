@@ -110,15 +110,15 @@ namespace rs2
         bool use_glsl = false;
 
         // Absolutely arbitrary list of manufacturers that are likely to benefit from GLSL optimisation
-        if (starts_with(to_lower(vendor), "intel") ||
-            starts_with(to_lower(vendor), "ati") ||
-            starts_with(to_lower(vendor), "nvidia"))
+        if (starts_with(utilities::string::to_lower(vendor), "intel") ||
+            starts_with(utilities::string::to_lower(vendor), "ati") ||
+            starts_with(utilities::string::to_lower(vendor), "nvidia"))
         {
             use_glsl = true;
         }
 
         // Double-check that GLSL 1.3+ is supported
-        if (starts_with(to_lower(vendor), "1.1") || starts_with(to_lower(vendor), "1.2"))
+        if (starts_with(utilities::string::to_lower(vendor), "1.1") || starts_with(utilities::string::to_lower(vendor), "1.2"))
         {
             use_glsl = false;
         }

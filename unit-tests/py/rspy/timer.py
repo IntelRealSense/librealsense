@@ -23,6 +23,6 @@ class Timer:
 
     # Force time expiration
     def set_expired(self):
-        self._sw.reset(time.perf_counter() - (self._delta + 0.00001));
+        self._sw.reset(time.perf_counter() - (self._delta + 0.00001))
 
 

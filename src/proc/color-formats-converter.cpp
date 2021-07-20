@@ -701,5 +701,4 @@ namespace librealsense
     {
         unpack_rgb_from_bgr(dest, source, width, height, actual_size);
     }
-
 }

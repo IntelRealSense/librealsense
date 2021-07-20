@@ -5224,7 +5224,7 @@ TEST_CASE("Projection from recording", "[software-device][using_pipeline][projec
                 &depth_intrin, &color_intrin,
                 &color_extrin_to_depth, &depth_extrin_to_color, from_pixel);
 
-            float dist = sqrt(pow((depth_pixel[1] - to_pixel[1]), 2) + pow((depth_pixel[0] - to_pixel[0]), 2));
+            float dist = static_cast<float>(sqrt(pow((depth_pixel[1] - to_pixel[1]), 2) + pow((depth_pixel[0] - to_pixel[0]), 2)));
             if (dist > 1)
                 count++;
             if (dist > 2)
@@ -5238,6 +5238,12 @@ TEST_CASE("Projection from recording", "[software-device][using_pipeline][projec
     const double MAX_ERROR_PERCENTAGE = 0.1;
     CAPTURE(count);
     REQUIRE(count * 100 / (depth_intrin.width * depth_intrin.height) < MAX_ERROR_PERCENTAGE);
+
+    for (auto s : sensors)
+    {
+        s.stop();
+        s.close();
+    }
 }
 
 TEST_CASE("software-device pose stream", "[software-device]")
@@ -5304,44 +5310,53 @@ TEST_CASE("Record software-device", "[software-device][record][!mayfail]")
     std::string folder_name = get_folder_path(special_folder::temp_folder);
     const std::string filename = folder_name + "recording.bag";
 
-    //Software device, streams and frames definition
-    rs2::software_device dev;
-
-    auto sensor = dev.add_sensor("Synthetic");
-    rs2_intrinsics depth_intrinsics = { W, H, (float)W / 2, H / 2, (float)W, (float)H,
-        RS2_DISTORTION_BROWN_CONRADY ,{ 0,0,0,0,0 } };
-    rs2_video_stream video_stream = { RS2_STREAM_DEPTH, 0, 0, W, H, 60, BPP, RS2_FORMAT_Z16, depth_intrinsics };
-    auto depth_stream_profile = sensor.add_video_stream(video_stream);
-
-    rs2_motion_device_intrinsic motion_intrinsics = { { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 },{ 2, 2, 2 },{ 3, 3 ,3 } };
-    rs2_motion_stream motion_stream = { RS2_STREAM_ACCEL, 0, 1, 200, RS2_FORMAT_MOTION_RAW, motion_intrinsics };
-    auto motion_stream_profile = sensor.add_motion_stream(motion_stream);
-
-    rs2_pose_stream pose_stream = { RS2_STREAM_POSE, 0, 2, 200, RS2_FORMAT_6DOF };
-    auto pose_stream_profile = sensor.add_pose_stream(pose_stream);
-
-    rs2::syncer sync;
-    std::vector<stream_profile> stream_profiles;
-    stream_profiles.push_back(depth_stream_profile);
-    stream_profiles.push_back(motion_stream_profile);
-    stream_profiles.push_back(pose_stream_profile);
+    rs2_software_video_frame video_frame;
+    rs2_software_motion_frame motion_frame;
+    rs2_software_pose_frame pose_frame;
 
     std::vector<uint8_t> pixels(W * H * BPP, 100);
-    rs2_software_video_frame video_frame = { pixels.data(), [](void*) {},W*BPP, BPP, 10000, RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK, 0, depth_stream_profile };
     float motion_data[3] = { 1, 1, 1 };
-    rs2_software_motion_frame motion_frame = { motion_data, [](void*) {}, 20000, RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK, 0, motion_stream_profile };
     rs2_software_pose_frame::pose_frame_info pose_info = { { 1, 1, 1 },{ 2, 2, 2 },{ 3, 3, 3 },{ 4, 4 ,4 ,4 },{ 5, 5, 5 },{ 6, 6 ,6 }, 0, 0 };
-    rs2_software_pose_frame pose_frame = { &pose_info, [](void*) {}, 30000, RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK , 0, pose_stream_profile };
-
-    //Record software device
+    //Software device, streams and frames definition
     {
-        recorder recorder(filename, dev);
-        sensor.open(stream_profiles);
-        sensor.start(sync);
-        sensor.on_video_frame(video_frame);
-        sensor.on_motion_frame(motion_frame);
-        sensor.on_pose_frame(pose_frame);
+        rs2::software_device dev;
+
+        auto sensor = dev.add_sensor("Synthetic");
+        rs2_intrinsics depth_intrinsics = { W, H, (float)W / 2, H / 2, (float)W, (float)H,
+            RS2_DISTORTION_BROWN_CONRADY ,{ 0,0,0,0,0 } };
+        rs2_video_stream video_stream = { RS2_STREAM_DEPTH, 0, 0, W, H, 60, BPP, RS2_FORMAT_Z16, depth_intrinsics };
+        auto depth_stream_profile = sensor.add_video_stream(video_stream);
+
+        rs2_motion_device_intrinsic motion_intrinsics = { { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 },{ 2, 2, 2 },{ 3, 3 ,3 } };
+        rs2_motion_stream motion_stream = { RS2_STREAM_ACCEL, 0, 1, 200, RS2_FORMAT_MOTION_RAW, motion_intrinsics };
+        auto motion_stream_profile = sensor.add_motion_stream(motion_stream);
+
+        rs2_pose_stream pose_stream = { RS2_STREAM_POSE, 0, 2, 200, RS2_FORMAT_6DOF };
+        auto pose_stream_profile = sensor.add_pose_stream(pose_stream);
+
+        rs2::syncer sync;
+        std::vector<stream_profile> stream_profiles;
+        stream_profiles.push_back(depth_stream_profile);
+        stream_profiles.push_back(motion_stream_profile);
+        stream_profiles.push_back(pose_stream_profile);
+
+        video_frame = { pixels.data(), [](void*) {},W * BPP, BPP, 10000, RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK, 0, depth_stream_profile };
+        motion_frame = { motion_data, [](void*) {}, 20000, RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK, 0, motion_stream_profile };
+        pose_frame = { &pose_info, [](void*) {}, 30000, RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK , 0, pose_stream_profile };
+
+        //Record software device
+        {
+            recorder recorder(filename, dev);
+            sensor.open(stream_profiles);
+            sensor.start(sync);
+            sensor.on_video_frame(video_frame);
+            sensor.on_motion_frame(motion_frame);
+            sensor.on_pose_frame(pose_frame);
+            sensor.stop();
+            sensor.close();
+        }
     }
+
 
     //Playback software device
     rs2::context ctx;
@@ -5385,6 +5400,9 @@ TEST_CASE("Record software-device", "[software-device][record][!mayfail]")
         pose_frame.frame_number == recorded_pose.get_frame_number() &&
         pose_frame.domain == recorded_pose.get_frame_timestamp_domain() &&
         pose_frame.timestamp == recorded_pose.get_timestamp()));
+
+    s.stop();
+    s.close();
 }
 
 void compare(filter first, filter second)
