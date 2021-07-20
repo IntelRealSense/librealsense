@@ -1,8 +1,8 @@
 # License: Apache 2.0. See LICENSE file in root directory.
 # Copyright(c) 2021 Intel Corporation. All Rights Reserved.
 
-# test:device D405
-
+# test:device D400*
+import sys
 
 import pyrealsense2 as rs
 from rspy import test
@@ -11,6 +11,9 @@ ctx = rs.context()
 dev = ctx.query_devices()[0]
 pid = dev.get_info(rs.camera_info.product_id)
 print(dev.get_info(rs.camera_info.name) + " found")
+if pid != "0B5B":
+    print("This test is dedicated to run with D405 only - stepping over test")
+    sys.exit(0)
 
 #############################################################################################
 test.start("D405 explicit configuration - IR calibration, Color in HD")
