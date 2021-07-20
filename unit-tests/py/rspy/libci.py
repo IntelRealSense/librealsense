@@ -357,23 +357,30 @@ class PyTest( Test ):
     @property
     def command( self ):
         cmd = [sys.executable]
-        # The unit-tests should only find module we've specifically added -- but Python may have site packages
-        # that are automatically made available. We want to avoid those:
-        #     -S     : don't imply 'import site' on initialization
-        # NOTE: exit() is defined in site.py and works only if the site module is imported!
-        cmd += ['-S']
+        #
+        # PYTHON FLAGS
+        #
         #     -u     : force the stdout and stderr streams to be unbuffered; same as PYTHONUNBUFFERED=1
         # With buffering we may end up losing output in case of crashes! (in Python 3.7 the text layer of the
         # streams is unbuffered, but we assume 3.6)
         cmd += ['-u']
+        #
         if sys.flags.verbose:
             cmd += ["-v"]
+        #
         cmd += [self.path_to_script]
+        #
+        # SCRIPT FLAGS
+        #
+        # If the script has a custom-arguments flag, then we don't pass any of the standard options
         if 'custom-args' not in self.config.flags:
+            #
             if log.is_debug_on():
                 cmd += ['--debug']
+            #
             if log.is_color_on():
                 cmd += ['--color']
+            #
             if self.config.context:
                 cmd += ['--context', self.config.context]
         return cmd
