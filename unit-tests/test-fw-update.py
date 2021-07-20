@@ -8,7 +8,7 @@
 
 import pyrealsense2 as rs, sys, os, subprocess
 from rspy import devices, log, test, file, repo
-import re
+import re, platform
 
 
 if not devices.acroname:
@@ -114,7 +114,11 @@ def find_image_or_exit( product_name, fw_version_regex = r'(\d+\.){3}(\d+)' ):
 
 # find the update tool exe
 fw_updater_exe = None
-for tool in file.find( repo.build, '(^|/)rs-fw-update.exe$' ):
+fw_updater_exe_regex = r'(^|/)rs-fw-update'
+if platform.system() == 'Windows':
+    fw_updater_exe_regex += r'\.exe'
+fw_updater_exe_regex += '$'
+for tool in file.find( repo.build, fw_updater_exe_regex ):
     fw_updater_exe = os.path.join( repo.build, tool )
 if not fw_updater_exe:
     log.f( "Could not find the update tool file (rs-fw-update.exe)" )
