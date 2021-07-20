@@ -265,24 +265,24 @@ public class MainActivity extends AppCompatActivity {
     }
     private void assignDefaultProfiles() {
         if (mDepthSensor != null) {
-            mDepthProfile = mDepthSensor.getProfile(StreamType.DEPTH, -1, 640, 480, StreamFormat.Z16, 30);
+            mDepthProfile = mDepthSensor.findProfile(StreamType.DEPTH, -1, 640, 480, StreamFormat.Z16, 30);
         }
 
         if (mColorSensor != null) {
-            mColorProfile = mColorSensor.getProfile(StreamType.COLOR, -1, 640, 480, StreamFormat.RGB8, 30);
+            mColorProfile = mColorSensor.findProfile(StreamType.COLOR, -1, 640, 480, StreamFormat.RGB8, 30);
         }
     }
 
     public void changeProfile(StreamType type, int index, int width, int height, StreamFormat format, int fps)
     {
         if (type == StreamType.DEPTH) {
-            mDepthProfile = mDepthSensor.getProfile(type, index, width, height, format, fps);
+            mDepthProfile = mDepthSensor.findProfile(type, index, width, height, format, fps);
             Log.i(TAG, "Depth format changed to: width = " + width + ", height = " + height +
                     ", format = " + format.toString() + ", fps = " + fps);
         }
         else
         if (type == StreamType.COLOR) {
-            mColorProfile = mColorSensor.getProfile(type, index, width, height, format, fps);
+            mColorProfile = mColorSensor.findProfile(type, index, width, height, format, fps);
             Log.i(TAG, "Color format changed to: width = " +  width + ", height = " + height +
                     ", format = " + format.toString() + ", fps = " + fps);
         }
