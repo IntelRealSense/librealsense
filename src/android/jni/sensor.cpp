@@ -79,11 +79,14 @@ Java_com_intel_realsense_librealsense_Sensor_nStop(JNIEnv *env, jclass type, jlo
 
 #if RELEASE_SENSOR_CALLBACK_REF
     // release the java global references
+    // stop is not blocking so occasionally the last native callback will still running
+    // after stop is completed, wait a bit before cleanup the java references
+    std::this_thread::sleep_for(std::chrono::milliseconds(100) );
+
     for (int i = 0; i < sdata.size(); i++) {
         if (sdata[i].handle == handle) {
             rs_jni_cleanup(env, &sdata[i]);
             sdata.erase(sdata.begin() + i);
-            LRS_JNI_LOGE("nstop %d", i);
         }
     }
 #endif

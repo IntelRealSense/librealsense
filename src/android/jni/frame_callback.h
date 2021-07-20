@@ -8,7 +8,11 @@
 #include "../../../include/librealsense2/rs.h"
 #include "../../../include/librealsense2/hpp/rs_frame.hpp"
 
-#define RELEASE_SENSOR_CALLBACK_REF 0
+#include <chrono>
+#include <thread>
+#include <ctime>
+
+#define RELEASE_SENSOR_CALLBACK_REF 1
 
 // Java user frame callback data
 struct frame_callback_data
