@@ -469,7 +469,15 @@ namespace librealsense
     {
         preset_param_group p = in_preset;
         serialized_utilities::json_preset_reader preset_reader(content);
+      
+        // On D400 device check only product line
+        auto dev_info = preset_reader.get_device_info();
+        dev_info.name.clear();
+        dev_info.fw_version.clear();
+        preset_reader.override_device_info(dev_info);
+
         preset_reader.check_device_info(dev);
+
         auto parameters = preset_reader.get_params();
         auto fields = initialize_field_parsers(p);
 

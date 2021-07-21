@@ -30,7 +30,8 @@ namespace librealsense
 			json_preset_reader( const std::string &json_content );
 			bool check_device_info( const device_interface& device ) const;
 			json::const_iterator find(const std::string& key) const;
-			void ignore_device_info(const std::string& key);
+			device_info get_device_info() const;
+			void override_device_info(const device_info& info);
 			json::const_iterator end() const;
 			json get_params() const { return *_parameters; };
 				

@@ -2,7 +2,6 @@
 // Copyright(c) 2021 Intel Corporation. All Rights Reserved.
 
 #include "serialized-utilities.h"
-#include <types.h>
 #include <device.h>
 
 using json = nlohmann::json;
@@ -88,7 +87,7 @@ json json_preset_reader::get_value(json j, const std::string& field_key) const
         return val_it.value();
     }
     
-    return json();
+    return json(); // if no value found return an empty object
 }
 
 bool json_preset_reader::compare_device_info_field(const device_interface& device, const std::string& file_value, rs2_camera_info camera_info) const
@@ -122,13 +121,14 @@ json::const_iterator json_preset_reader::end() const
     return _parameters->end();
 }
 
-void json_preset_reader::ignore_device_info( const std::string& key)
+device_info json_preset_reader::get_device_info() const
 {
-    auto dev_it = _root.find("device");
-    if (dev_it != _root.end())
-    {
-        dev_it->erase(key);
-    }
+    return _device_info;
+}
+
+void json_preset_reader::override_device_info(const device_info& info)
+{
+    _device_info = info;
 }
 
 json_preset_writer::json_preset_writer() : _parameters(nullptr)
