@@ -238,11 +238,12 @@ set_target_properties (realsense-viewer PROPERTIES
 target_include_directories(realsense-viewer PRIVATE ../../src)
 
 install(
-    TARGETS
-
-    realsense-viewer
-
-    RUNTIME DESTINATION
-    ${CMAKE_INSTALL_BINDIR}
+    TARGETS realsense-viewer
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+)
+#https://cmake.org/cmake/help/latest/command/install.html
+install(DIRECTORY presets/
+    DESTINATION $ENV{HOME}/Documents/librealsense2/presets
+    FILES_MATCHING PATTERN "*.preset"
 )
 endif()
