@@ -1,11 +1,11 @@
 //// License: Apache 2.0. See LICENSE file in root directory.
 //// Copyright(c) 2020 Intel Corporation. All Rights Reserved.
 
-#include "l500-serializable.h"
-#include <preset-json-handler.h>
-#include "../../../third-party/json.hpp"
 #include <set>
+#include "l500-serializable.h"
 #include "l500-options.h"
+#include "../../../third-party/json.hpp"
+#include "serialized-utilities.h"
 
 namespace librealsense
 {
@@ -19,7 +19,7 @@ namespace librealsense
 
     std::vector<uint8_t> l500_serializable::serialize_json() const
     {
-        serializable_utilities::preset_json_writer writer;
+        serialized_utilities::json_preset_writer writer;
         writer.set_device_info(_depth_sensor.get_device());
 
         return ivcam2::group_multiple_fw_calls( _depth_sensor, [&]() {
@@ -40,7 +40,7 @@ namespace librealsense
 
     void l500_serializable::load_json( const std::string & json_content )
     {
-        serializable_utilities::preset_json_reader reader( json_content );
+        serialized_utilities::json_preset_reader reader( json_content );
 
         // Verify if device information in preset file is compatible with the connected device.
         reader.check_device_info(_depth_sensor.get_device());

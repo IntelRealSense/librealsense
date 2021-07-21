@@ -13,7 +13,7 @@ namespace librealsense
 {
 	class device_interface;
 
-	namespace serializable_utilities
+	namespace serialized_utilities
 	{
 		struct device_info
 		{
@@ -22,12 +22,12 @@ namespace librealsense
 			std::string fw_version;
 		};
 
-		class preset_json_reader
+		class json_preset_reader
 		{
 		public:
 
             // C'tor may throw
-			preset_json_reader( const std::string &json_content );
+			json_preset_reader( const std::string &json_content );
 			bool check_device_info( const device_interface& device ) const;
 			json::const_iterator find(const std::string& key) const;
 			void ignore_device_info(const std::string& key);
@@ -45,10 +45,10 @@ namespace librealsense
 			json *_parameters;
 		};
 
-        class preset_json_writer
+        class json_preset_writer
         {
         public:
-            preset_json_writer(); 
+            json_preset_writer(); 
 
 			void set_device_info(const device_interface& device);
 			json get_params() const { return *_parameters; };

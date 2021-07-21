@@ -1,18 +1,18 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2021 Intel Corporation. All Rights Reserved.
 
-#include <preset-json-handler.h>
+#include "serialized-utilities.h"
 #include <types.h>
 #include <device.h>
 
 using json = nlohmann::json;
 
 namespace librealsense {
-namespace serializable_utilities {
+namespace serialized_utilities {
 
 static const char* SCHEMA_VERSION = "1.0";
 
-preset_json_reader::preset_json_reader( const std::string & json_content ) : _parameters(nullptr)
+json_preset_reader::json_preset_reader( const std::string & json_content ) : _parameters(nullptr)
 {
     _root = json::parse( json_content );
     if (validate_schema())
@@ -27,7 +27,7 @@ preset_json_reader::preset_json_reader( const std::string & json_content ) : _pa
     }
 }
 
-device_info preset_json_reader::read_device_info() const
+device_info json_preset_reader::read_device_info() const
 {
     device_info info;
     auto device = get_value( _root, "device" );
@@ -45,7 +45,7 @@ device_info preset_json_reader::read_device_info() const
     return info;
 }
 
-bool preset_json_reader::check_device_info( const device_interface & device ) const
+bool json_preset_reader::check_device_info( const device_interface & device ) const
 {
     // Looks for device information
     if( ! _device_info.product_line.empty()
@@ -80,7 +80,7 @@ bool preset_json_reader::check_device_info( const device_interface & device ) co
     return true;
 }
 
-json preset_json_reader::get_value(json j, const std::string& field_key) const
+json json_preset_reader::get_value(json j, const std::string& field_key) const
 {
     auto val_it = j.find(field_key);
     if (val_it != j.end())
@@ -91,7 +91,7 @@ json preset_json_reader::get_value(json j, const std::string& field_key) const
     return json();
 }
 
-bool preset_json_reader::compare_device_info_field(const device_interface& device, const std::string& file_value, rs2_camera_info camera_info) const
+bool json_preset_reader::compare_device_info_field(const device_interface& device, const std::string& file_value, rs2_camera_info camera_info) const
 {
     if (device.supports_info(camera_info))
     {
@@ -100,7 +100,7 @@ bool preset_json_reader::compare_device_info_field(const device_interface& devic
     return false;
 }
 
-bool librealsense::serializable_utilities::preset_json_reader::validate_schema() const
+bool json_preset_reader::validate_schema() const
 {
     auto schema_version_found = _root.find("schema version") != _root.end();
     //auto device_found = _root.find("device") != _root.end();
@@ -112,17 +112,17 @@ bool librealsense::serializable_utilities::preset_json_reader::validate_schema()
     throw librealsense::invalid_value_exception("preset file is corrupted , cannot validate schema.");
 }
 
-json::const_iterator preset_json_reader::find(const std::string& key) const
+json::const_iterator json_preset_reader::find(const std::string& key) const
 {
     return _parameters->find(key);
 }
 
-json::const_iterator preset_json_reader::end() const
+json::const_iterator json_preset_reader::end() const
 {
     return _parameters->end();
 }
 
-void preset_json_reader::ignore_device_info( const std::string& key)
+void json_preset_reader::ignore_device_info( const std::string& key)
 {
     auto dev_it = _root.find("device");
     if (dev_it != _root.end())
@@ -131,13 +131,13 @@ void preset_json_reader::ignore_device_info( const std::string& key)
     }
 }
 
-preset_json_writer::preset_json_writer() : _parameters(nullptr)
+json_preset_writer::json_preset_writer() : _parameters(nullptr)
 {
     write_schema();
     _parameters = &_root["parameters"];
 }
 
-void preset_json_writer::set_device_info(const device_interface& device)
+void json_preset_writer::set_device_info(const device_interface& device)
 {
     _root["device"] = json::object();
 
@@ -152,11 +152,11 @@ void preset_json_writer::set_device_info(const device_interface& device)
     }
 }
 
-void preset_json_writer::write_schema()
+void json_preset_writer::write_schema()
 {
     _root["schema version"] = SCHEMA_VERSION;
     _root["parameters"] = json::object();
 }
 
-}  // namespace serializable_utilities
 }  // namespace librealsense
+}  // namespace serialized_utilities

@@ -16,7 +16,7 @@
 #include <librealsense2/h/rs_advanced_mode_command.h>
 #include "types.h"
 #include "presets.h"
-#include <preset-json-handler.h>
+#include "serialized-utilities.h"
 
 namespace librealsense
 {
@@ -447,7 +447,7 @@ namespace librealsense
     {
         preset_param_group p = in_preset;
         auto fields = initialize_field_parsers(p);
-        serializable_utilities::preset_json_writer preset_writer;
+        serialized_utilities::json_preset_writer preset_writer;
         
         preset_writer.set_device_info(dev);
         
@@ -468,7 +468,7 @@ namespace librealsense
     inline void update_structs(const device_interface& dev, const std::string& content, preset& in_preset)
     {
         preset_param_group p = in_preset;
-        serializable_utilities::preset_json_reader preset_reader(content);
+        serialized_utilities::json_preset_reader preset_reader(content);
         preset_reader.check_device_info(dev);
         auto parameters = preset_reader.get_params();
         auto fields = initialize_field_parsers(p);
