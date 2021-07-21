@@ -19,10 +19,8 @@ namespace librealsense
 
     std::vector<uint8_t> l500_serializable::serialize_json() const
     {
-        std::string json_content;
-        serializable_utilities::preset_json_handler writer(json_content);
-        writer.write_header(_depth_sensor.get_device());
-        //writer.write();
+        serializable_utilities::preset_json_writer writer;
+        writer.set_device_info(_depth_sensor.get_device());
 
         return ivcam2::group_multiple_fw_calls( _depth_sensor, [&]() {
 
@@ -32,21 +30,20 @@ namespace librealsense
             {
                 auto && opt = _depth_sensor.get_option( o );
                 auto val = opt.query();
-                j[get_string( o )] = val;
+                writer.write_param(get_string(o), val);
             }
 
-            auto str = j.dump( 4 );
+            auto str = writer.get_root().dump( 4 );
             return std::vector< uint8_t >( str.begin(), str.end() );
         } );
-        
     }
 
     void l500_serializable::load_json( const std::string & json_content )
     {
-        serializable_utilities::preset_json_handler reader( json_content );
+        serializable_utilities::preset_json_reader reader( json_content );
 
         // Verify if device information in preset file is compatible with the connected device.
-        reader.check_device_compatibility(_depth_sensor.get_device());
+        reader.check_device_info(_depth_sensor.get_device());
 
         const std::string s("controls-autoexposure-auto");
         
