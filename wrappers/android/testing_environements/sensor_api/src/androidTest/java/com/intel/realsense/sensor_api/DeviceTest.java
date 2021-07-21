@@ -3,25 +3,20 @@ package com.intel.realsense.sensor_api;
 import android.Manifest;
 import android.util.Log;
 
-import androidx.lifecycle.Lifecycle;
-import androidx.test.core.app.ActivityScenario;
-import androidx.test.ext.junit.rules.ActivityScenarioRule;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.LargeTest;
 import androidx.test.rule.ActivityTestRule;
 import androidx.test.rule.GrantPermissionRule;
 
-import com.intel.realsense.librealsense.Device;
 import com.intel.realsense.librealsense.DeviceList;
 import com.intel.realsense.librealsense.RsContext;
 
-import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.junit.runner.RunWith;
 
-import java.util.List;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Instrumented test, which will execute on an Android device.
@@ -31,6 +26,8 @@ import java.util.List;
 @RunWith(AndroidJUnit4.class)
 @LargeTest
 public class DeviceTest {
+
+    private static final String TAG = "librs_sensor_device_test";
 
     public ActivityTestRule<MainActivity> mActivityRule =
             new ActivityTestRule(MainActivity.class, true, true);
@@ -43,10 +40,10 @@ public class DeviceTest {
     @Test
     public void testDeviceFound() {
         mActivity = mActivityRule.getActivity();
-        Log.i("remi", mActivity.getLifecycle().getCurrentState().toString());
+        Log.i(TAG, mActivity.getLifecycle().getCurrentState().toString());
         RsContext ctx = new RsContext();
         DeviceList devices = ctx.queryDevices();
         int numOfDevices = devices.getDeviceCount();
-        assert (numOfDevices > 0);
+        assertTrue (numOfDevices > 0);
     }
 }

@@ -3,23 +3,12 @@ package com.intel.realsense.sensor_api;
 import android.Manifest;
 import android.util.Log;
 
-import androidx.lifecycle.Lifecycle;
-import androidx.test.core.app.ActivityScenario;
-import androidx.test.ext.junit.rules.ActivityScenarioRule;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.LargeTest;
 import androidx.test.rule.ActivityTestRule;
 import androidx.test.rule.GrantPermissionRule;
 
-import com.intel.realsense.librealsense.Device;
-import com.intel.realsense.librealsense.DeviceList;
-import com.intel.realsense.librealsense.Extension;
-import com.intel.realsense.librealsense.Frame;
-import com.intel.realsense.librealsense.FrameCallback;
-import com.intel.realsense.librealsense.RsContext;
-import com.intel.realsense.librealsense.Sensor;
 import com.intel.realsense.librealsense.StreamFormat;
-import com.intel.realsense.librealsense.StreamProfile;
 import com.intel.realsense.librealsense.StreamType;
 
 import org.junit.Before;
@@ -27,8 +16,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.junit.runner.RunWith;
-
-import java.util.List;
 
 /**
  * Instrumented test, which will execute on an Android device.
@@ -57,6 +44,7 @@ public class SensorStartStopTest {
                 StreamFormat.Z16, 30);
     }
 
+    // test aim: check that no exception occurs
     @Test
     public void testStartStopOnce() {
         mActivity = mActivityRule.getActivity();
@@ -75,18 +63,7 @@ public class SensorStartStopTest {
             mActivity.start();
             try{Thread.sleep(3000);} catch(Exception e){}
             mActivity.stop();
-            try{Thread.sleep(500);} catch(Exception e){}
+            try{Thread.sleep(70);} catch(Exception e){}
         }
-    }
-
-    @Test
-    public void testDeviceNotNull() {
-        ActivityScenario<MainActivity> activityScenario =
-                ActivityScenario.launch(MainActivity.class);
-        assert(activityScenario != null);
-        activityScenario.onActivity(
-                activity -> {
-                    //assert(activity.getDevice() != null);
-                });
     }
 }
