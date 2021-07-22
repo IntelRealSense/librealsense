@@ -9,7 +9,7 @@ using json = nlohmann::json;
 namespace librealsense {
 namespace serialized_utilities {
 
-static const char* SCHEMA_VERSION = "1.0";
+static const char* const SCHEMA_VERSION = "1.0";
 
 json_preset_reader::json_preset_reader( const std::string & json_content ) : _parameters(nullptr)
 {
