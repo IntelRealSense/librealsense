@@ -16,6 +16,7 @@
 #include <librealsense2/h/rs_advanced_mode_command.h>
 #include "types.h"
 #include "presets.h"
+#include "serialized-utilities.h"
 
 namespace librealsense
 {
@@ -442,12 +443,14 @@ namespace librealsense
         return map;
     }
 
-    inline std::vector<uint8_t> generate_json(const preset& in_preset)
+    inline std::vector<uint8_t> generate_json(const device_interface& dev, const preset& in_preset)
     {
         preset_param_group p = in_preset;
         auto fields = initialize_field_parsers(p);
-
-        json j;
+        serialized_utilities::json_preset_writer preset_writer;
+        
+        preset_writer.set_device_info(dev);
+        
         for (auto&& f : fields)
         {
             if (f.second->is_duplicated) // Skip duplicated fields
@@ -455,29 +458,42 @@ namespace librealsense
 
             auto str = f.second->save();
             if (!str.empty()) // Ignored fields return empty string
-                j[f.first.c_str()] = str;
+                preset_writer.write_param(f.first.c_str(), str);
         }
 
-        auto str = j.dump(4);
+        auto str = preset_writer.to_string();
         return std::vector<uint8_t>(str.begin(), str.end());
     }
 
-    inline void update_structs(const std::string& content, preset& in_preset)
+    inline void update_structs(const device_interface& dev, const std::string& content, preset& in_preset)
     {
         preset_param_group p = in_preset;
-        json j = json::parse(content);
+        serialized_utilities::json_preset_reader preset_reader(content);
+      
+        // Allow cross-device compatibility (e.g., loading a D415 json to a D435) which would normally
+        // be disabled. We check only the product-line:
+        auto dev_info = preset_reader.get_device_info();
+        dev_info.name.clear();
+        dev_info.fw_version.clear();
+        preset_reader.override_device_info(dev_info);
+
+        preset_reader.check_device_info(dev);
+
+        auto parameters = preset_reader.get_params();
         auto fields = initialize_field_parsers(p);
 
-        for (auto it = j.begin(); it != j.end(); ++it)
+        for (auto it = parameters.begin(); it != parameters.end(); ++it)
         {
-            auto kvp = fields.find(it.key());
+            auto key = it.key();
+            auto value = it.value();
+            auto kvp = fields.find(key);
             if (kvp != fields.end())
             {
                 try
                 {
-                    if (it.value().type() != nlohmann::basic_json<>::value_t::string)
+                    if (value.type() != nlohmann::basic_json<>::value_t::string)
                     {
-                        float val = it.value();
+                        float val = value;
                         std::stringstream ss;
                         ss << val;
                         kvp->second->load(ss.str());
@@ -490,12 +506,12 @@ namespace librealsense
                 }
                 catch (...)
                 {
-                    throw invalid_value_exception(to_string() << "Couldn't set \"" << it.key());
+                    throw invalid_value_exception(to_string() << "Couldn't set \"" << key << "\"");
                 }
             }
             else
             {
-                throw invalid_value_exception(to_string() << it.key() << " key is not supported by the connected device!");
+                throw invalid_value_exception(to_string() << key << " key is not supported by the connected device!");
             }
         }
 

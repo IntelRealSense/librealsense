@@ -689,7 +689,7 @@ namespace librealsense
             throw wrong_api_call_sequence_exception(to_string() << "serialize_json() failed! Device is not in Advanced-Mode.");
 
         auto p = get_all();
-        return generate_json(p);
+        return generate_json(_depth_sensor.get_device(), p);
     }
 
     void ds5_advanced_mode_base::load_json(const std::string& json_content)
@@ -698,7 +698,7 @@ namespace librealsense
             throw wrong_api_call_sequence_exception(to_string() << "load_json(...) failed! Device is not in Advanced-Mode.");
 
         auto p = get_all();
-        update_structs(json_content, p);
+        update_structs(_depth_sensor.get_device(),  json_content, p);
         set_all(p);
         _preset_opt->set(RS2_RS400_VISUAL_PRESET_CUSTOM);
     }

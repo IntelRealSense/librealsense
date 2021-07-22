@@ -5883,7 +5883,14 @@ namespace rs2
     // Load viewer configuration for stereo module (depth/infrared streams) only
     void device_model::load_viewer_configurations(const std::string& json_str)
     {
-        json j = json::parse(json_str);
+        json j;
+        json raw_j = json::parse(json_str);
+
+        // If the viewer contain a viewer section, look inside it for the viewer parameters,
+        // for backward compatibility, if no viewer section exist, look at the root level
+        auto viewer_section = raw_j.find("viewer");
+        j = (viewer_section != raw_j.end()) ? viewer_section.value() : raw_j;
+
         struct video_stream
         {
             rs2_format format = RS2_FORMAT_ANY;
@@ -5893,6 +5900,7 @@ namespace rs2
         };
 
         std::map<std::pair<rs2_stream, int>, video_stream> requested_streams;
+        
         auto it = j.find("stream-depth-format");
         if (it != j.end())
         {
@@ -6116,13 +6124,25 @@ namespace rs2
         {
             if (!ends_with(utilities::string::to_lower(full_filename), ".json")) full_filename += ".json";
             std::ofstream outfile(full_filename);
-            json saved_configuraion;
+
+            json j;
+            json *saved_configuraion = nullptr;
+            
+            // place all of the viewer parameters under a viewer section
             if (serializable)
             {
-                saved_configuraion = json::parse(serializable.serialize_json());
+                j = json::parse(serializable.serialize_json());
+                j["viewer"] = json::object();
+                saved_configuraion = &j["viewer"]; // point to the viewer section inside the root
             }
-            save_viewer_configurations(outfile, saved_configuraion);
-            outfile << saved_configuraion.dump(4);
+            else
+            {
+                saved_configuraion = &j;
+            }
+
+
+            save_viewer_configurations(outfile, *saved_configuraion);
+            outfile << j.dump(4); // output all the data to the file (starting at the root)
             outfile.close();
             advanced_mode_settings_file_names.insert(full_filename);
             selected_file_preset = full_filename;
@@ -6317,7 +6337,7 @@ namespace rs2
 
         if (ImGui::IsItemHovered())
         {
-            std::string tooltip = to_string() << "Load pre-configured stereo module settings" << (is_streaming && !load_json_if_streaming ? " (Disabled while streaming)" : "");
+            std::string tooltip = to_string() << "Load pre-configured device settings" << (is_streaming && !load_json_if_streaming ? " (Disabled while streaming)" : "");
             ImGui::SetTooltip("%s", tooltip.c_str());
         }
 
@@ -6346,7 +6366,7 @@ namespace rs2
         }
         if (ImGui::IsItemHovered())
         {
-            ImGui::SetTooltip("Save current stereo module settings to file");
+            ImGui::SetTooltip("Save current device settings to file");
         }
         ImGui::PopStyleColor(2);
         ImGui::SameLine();
