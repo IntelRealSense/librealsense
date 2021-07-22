@@ -63,14 +63,14 @@ void json_preset_reader::check_device_info( const device_interface & device ) co
     if( ! _device_info.fw_version.empty()
         && device.supports_info( RS2_CAMERA_INFO_FIRMWARE_VERSION ) )
     {
-        // If we got a FW version but not a product name or FW version is smaller than the device FW
+        // If we got a FW version but not a product line name or FW version is smaller than the device FW
         // version
         // --> Throw
         if( _device_info.product_line.empty()
-            || firmware_version( _device_info.fw_version )
-                   < firmware_version( device.get_info( RS2_CAMERA_INFO_FIRMWARE_VERSION ) ) )
+            || firmware_version( device.get_info( RS2_CAMERA_INFO_FIRMWARE_VERSION ) )
+                   < firmware_version( _device_info.fw_version ) )
             throw librealsense::invalid_value_exception(
-                "preset device FW version is lower than the connected device FW version" );
+                "connected device FW version is lower than the preset device FW version" );
     }
 }
 
@@ -176,5 +176,5 @@ void json_preset_writer::write_param(const std::string& key, const json& value)
     (*_parameters)[key] = value;
 };
 
-}  // namespace librealsense
 }  // namespace serialized_utilities
+}  // namespace librealsense
