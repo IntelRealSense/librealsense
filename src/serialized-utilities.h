@@ -55,7 +55,7 @@ namespace librealsense
             device_info read_device_info() const;
             json get_value( const json& j, const std::string& field_key ) const;
             bool compare_device_info_field(const device_interface& device, const std::string& file_value, rs2_camera_info camera_info) const;
-            bool validate_schema() const;
+            bool init_schema();
             device_info _device_info;
             int _schema_version;
             json _root;

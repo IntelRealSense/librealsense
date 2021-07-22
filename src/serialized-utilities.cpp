@@ -9,19 +9,11 @@ namespace serialized_utilities {
 
 static const int SCHEMA_VERSION = 1;
 
-json_preset_reader::json_preset_reader( const std::string & json_content ) : _parameters(nullptr)
+json_preset_reader::json_preset_reader( const std::string & json_content ) : _parameters(nullptr), _schema_version(0)
 {
     _root = json::parse( json_content );
-    if (validate_schema())
+    if (init_schema())
     {
-        _schema_version = get_value(_root, "schema version").get<int>();
-        if (_schema_version != SCHEMA_VERSION)
-        {
-            throw librealsense::invalid_value_exception(to_string() << "mismatch on schema version, expecting: "
-                                                         << SCHEMA_VERSION
-                                                         << " got: " << _schema_version );
-        }
-
         _device_info = read_device_info();
         _parameters = &_root["parameters"];
     }
@@ -102,14 +94,29 @@ bool json_preset_reader::compare_device_info_field(const device_interface& devic
     return false;
 }
 
-bool json_preset_reader::validate_schema() const
+bool json_preset_reader::init_schema()
 {
-    auto schema_version_found = _root.find("schema version") != _root.end();
-    //auto device_found = _root.find("device") != _root.end();
+    bool schema_version_found = false;
+    auto schema_version_it = get_value(_root, "schema version");
+    
+    // If schema version found on json validate match to inner version
+    if (!schema_version_it.is_null())
+    {
+        _schema_version = schema_version_it;
+        if (_schema_version != SCHEMA_VERSION)
+        {
+            throw librealsense::invalid_value_exception(to_string() << "mismatch on schema version, expecting: "
+                << SCHEMA_VERSION
+                << " got: " << _schema_version);
+        }
+
+        schema_version_found = true;
+    }
+
     auto parameters_found = _root.find("parameters") != _root.end();
 
-    if (schema_version_found &&/* device_found &&*/ parameters_found) return true;
-    if (!schema_version_found && /*!device_found &&*/ !parameters_found) return false;
+    if( schema_version_found && parameters_found ) return true;
+    if( ! schema_version_found && ! parameters_found ) return false;
 
     throw librealsense::invalid_value_exception("preset file is corrupt, cannot validate schema");
 }
