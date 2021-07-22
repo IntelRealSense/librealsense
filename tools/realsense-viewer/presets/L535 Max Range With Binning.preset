@@ -1,6 +1,6 @@
 {
     "device": {
-        "fw version": "04.06.01.09",
+        "fw version": "03.06.01.02",
         "name": "Intel RealSense L535",
         "product line": "L500"
     },
@@ -12,12 +12,5 @@
         "Vertical Binning": 1,
         "Min Distance": 1000
     },
-    "schema version": 1,
-    "viewer": {
-        "stream-depth-format": "Z16",
-        "stream-fps": "30",
-        "stream-height": "480",
-        "stream-ir-format": "Y8",
-        "stream-width": "640"
-    }
+    "schema version": 1
 }
