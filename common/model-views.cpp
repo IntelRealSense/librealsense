@@ -37,6 +37,7 @@
 #include "metadata-helper.h"
 #include "calibration-model.h"
 #include "sw-update/http-downloader.h"
+#include "utilities/filesystem/glob.h"
 
 using namespace rs400;
 using namespace nlohmann;
@@ -4027,6 +4028,21 @@ namespace rs2
         }
 
         refresh_notifications(viewer);
+
+        auto path = get_folder_path(special_folder::user_documents);
+        try
+        {
+            glob(path + "realsense2\\presets", "*.preset", [&](std::string file) 
+            {
+                advanced_mode_settings_file_names.insert(file);
+            }, false);
+                
+        }
+        catch (const std::exception&)
+        {
+            std::string msg = "Failed to get Documents folder";
+            LOG_WARNING("Failed to presets files : " << path);
+        }
     }
     void device_model::play_defaults(viewer_model& viewer)
     {
