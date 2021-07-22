@@ -119,7 +119,7 @@ json::const_iterator json_preset_reader::end() const
     return _parameters->end();
 }
 
-device_info json_preset_reader::get_device_info() const
+const device_info& json_preset_reader::get_device_info() const
 {
     return _device_info;
 }

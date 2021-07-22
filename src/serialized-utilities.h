@@ -37,8 +37,9 @@ namespace librealsense
             // example of use:
             // if (reader.find(key) != reader.end())
             //    {....}
+            // Note: the find key is case-sensitive
             json::const_iterator find(const std::string& key) const;
-            device_info get_device_info() const;
+            const device_info& get_device_info() const;
 
             // Allow override device info to allow ignoring some fields when checking device comparability.
             void override_device_info(const device_info& info);
