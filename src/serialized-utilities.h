@@ -28,11 +28,25 @@ namespace librealsense
 
             // C'tor may throw
 			json_preset_reader( const std::string &json_content );
-			bool check_device_info( const device_interface& device ) const;
+
+			// Compares the device info fields on the preset json against the connected device.
+			// if not match, it throws an informative exception
+			void check_device_info( const device_interface& device ) const;
+
+			// search for a key, if found it returns an iterator to it, works together with the end() function
+			// example of use:
+			// if (reader.find(key) != reader.end())
+			//    {....}
 			json::const_iterator find(const std::string& key) const;
 			device_info get_device_info() const;
+
+			// Allow override device info to allow ignoring some fields when checking device comparability.
 			void override_device_info(const device_info& info);
+
+			// for use together with find() function, same use as on STL containers.
 			json::const_iterator end() const;
+
+			// return only the parameters section
 			json get_params() const { return *_parameters; };
 				
 		protected:
@@ -51,8 +65,13 @@ namespace librealsense
         public:
             json_preset_writer(); 
 
+			// sets and add a "device" section with the device information
 			void set_device_info(const device_interface& device);
+
+			// return only the parameters section
 			json get_params() const { return *_parameters; };
+
+			// return the root section (used to write all json to file)
 			json get_root() const { return _root; };
 
             template < typename T >

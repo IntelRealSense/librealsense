@@ -44,7 +44,7 @@ device_info json_preset_reader::read_device_info() const
     return info;
 }
 
-bool json_preset_reader::check_device_info( const device_interface & device ) const
+void json_preset_reader::check_device_info( const device_interface & device ) const
 {
     // Looks for device information
     if( ! _device_info.product_line.empty()
@@ -75,8 +75,6 @@ bool json_preset_reader::check_device_info( const device_interface & device ) co
             throw librealsense::invalid_value_exception(
                 "preset device FW version is lower than the connected device FW version" );
     }
-
-    return true;
 }
 
 json json_preset_reader::get_value(json j, const std::string& field_key) const
