@@ -68,11 +68,10 @@ namespace librealsense
 			// sets and add a "device" section with the device information
 			void set_device_info(const device_interface& device);
 
-			// return only the parameters section
-			json get_params() const { return *_parameters; };
-
 			// return the root section (used to write all json to file)
 			json get_root() const { return _root; };
+
+			std::string to_string() const { return _root.dump(4); }
 
             template < typename T >
 			void write_param(const std::string& key, T value)

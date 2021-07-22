@@ -33,7 +33,7 @@ namespace librealsense
                 writer.write_param(get_string(o), val);
             }
 
-            auto str = writer.get_root().dump( 4 );
+            auto str = writer.to_string();
             return std::vector< uint8_t >( str.begin(), str.end() );
         } );
     }

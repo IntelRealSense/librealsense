@@ -461,7 +461,7 @@ namespace librealsense
                 preset_writer.write_param(f.first.c_str(), str);
         }
 
-        auto str = preset_writer.get_root().dump(4);
+        auto str = preset_writer.to_string();
         return std::vector<uint8_t>(str.begin(), str.end());
     }
 
