@@ -4032,9 +4032,19 @@ namespace rs2
         auto path = get_folder_path(special_folder::user_documents);
         try
         {
-            glob(path + "realsense2\\presets", "*.preset", [&](std::string file) 
+            std::string name = dev.get_info(RS2_CAMERA_INFO_NAME);
+            std::regex sku_regex("Intel RealSense ([a-zA-z]+\\d+[a-zA-z]*)");
+            std::smatch match;
+
+            std::string sku_name;
+            if (std::regex_search(name, match, sku_regex))
+                sku_name = std::string(match[1]);
+
+            glob(path + "librealsense2/presets", "*.preset", [&](std::string file) 
             {
-                advanced_mode_settings_file_names.insert(file);
+                std::regex file_name_regex(sku_name + ".*.preset");
+                if (std::regex_search(file, match, file_name_regex))
+                    advanced_mode_settings_file_names.insert(path + "librealsense2/presets/" +file);
             }, false);
                 
         }
