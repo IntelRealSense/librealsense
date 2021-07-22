@@ -5,9 +5,8 @@
 #include <string>
 #include <map>
 #include <types.h>
-#include "../third-party/json.hpp"
+#include <../third-party/json.hpp>
 
-using json = nlohmann::json;
 
 namespace librealsense
 {
@@ -15,6 +14,8 @@ namespace librealsense
 
     namespace serialized_utilities
     {
+        using json = nlohmann::json;
+
         struct device_info
         {
             std::string name;

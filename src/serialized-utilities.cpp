@@ -4,8 +4,6 @@
 #include "serialized-utilities.h"
 #include <device.h>
 
-using json = nlohmann::json;
-
 namespace librealsense {
 namespace serialized_utilities {
 
