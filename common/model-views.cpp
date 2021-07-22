@@ -4050,7 +4050,6 @@ namespace rs2
         }
         catch (const std::exception&)
         {
-            std::string msg = "Failed to get Documents folder";
             LOG_WARNING("Failed to presets files : " << path);
         }
     }
