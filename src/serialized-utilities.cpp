@@ -7,14 +7,21 @@
 namespace librealsense {
 namespace serialized_utilities {
 
-static const char* const SCHEMA_VERSION = "1.0";
+static const int SCHEMA_VERSION = 1;
 
 json_preset_reader::json_preset_reader( const std::string & json_content ) : _parameters(nullptr)
 {
     _root = json::parse( json_content );
     if (validate_schema())
     {
-        _schema_version = get_value(_root, "schema version").get<std::string>();
+        _schema_version = get_value(_root, "schema version").get<int>();
+        if (_schema_version != SCHEMA_VERSION)
+        {
+            throw librealsense::invalid_value_exception(to_string() << "mismatch on schema version, expecting: "
+                                                         << SCHEMA_VERSION
+                                                         << " got: " << _schema_version );
+        }
+
         _device_info = read_device_info();
         _parameters = &_root["parameters"];
     }
@@ -75,7 +82,7 @@ void json_preset_reader::check_device_info( const device_interface & device ) co
     }
 }
 
-json json_preset_reader::get_value(json j, const std::string& field_key) const
+json json_preset_reader::get_value(const json& j, const std::string& field_key) const
 {
     auto val_it = j.find(field_key);
     if (val_it != j.end())
@@ -139,7 +146,10 @@ void json_preset_writer::set_device_info(const device_interface& device)
 
     auto& device_section = _root["device"];
 
-    for (auto&& val : std::map<std::string, rs2_camera_info>{ { "name", RS2_CAMERA_INFO_NAME }, { "product line", RS2_CAMERA_INFO_PRODUCT_LINE }, { "fw version", RS2_CAMERA_INFO_FIRMWARE_VERSION } })
+    for( auto && val : std::map< std::string, rs2_camera_info >{
+             { "name", RS2_CAMERA_INFO_NAME },
+             { "product line", RS2_CAMERA_INFO_PRODUCT_LINE },
+             { "fw version", RS2_CAMERA_INFO_FIRMWARE_VERSION } } )
     {
         if (device.supports_info(val.second))
         {
@@ -153,6 +163,11 @@ void json_preset_writer::write_schema()
     _root["schema version"] = SCHEMA_VERSION;
     _root["parameters"] = json::object();
 }
+
+void json_preset_writer::write_param(const std::string& key, const json& value)
+{
+    (*_parameters)[key] = value;
+};
 
 }  // namespace librealsense
 }  // namespace serialized_utilities

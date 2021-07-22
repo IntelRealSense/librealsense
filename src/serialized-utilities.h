@@ -53,11 +53,11 @@ namespace librealsense
                 
         protected:
             device_info read_device_info() const;
-            json get_value( json j, const std::string& field_key ) const;
+            json get_value( const json& j, const std::string& field_key ) const;
             bool compare_device_info_field(const device_interface& device, const std::string& file_value, rs2_camera_info camera_info) const;
             bool validate_schema() const;
             device_info _device_info;
-            std::string _schema_version;
+            int _schema_version;
             json _root;
             json *_parameters;
         };
@@ -75,11 +75,7 @@ namespace librealsense
 
             std::string to_string() const { return _root.dump(4); }
 
-            template < typename T >
-            void write_param(const std::string& key, T value)
-            {
-                (*_parameters)[key] = value;
-            };
+            void write_param(const std::string& key, const json& value);
 
         protected:
             void write_schema();
