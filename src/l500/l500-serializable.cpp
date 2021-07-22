@@ -4,7 +4,7 @@
 #include <set>
 #include "l500-serializable.h"
 #include "l500-options.h"
-#include "../../../third-party/json.hpp"
+#include <../../../third-party/json.hpp>
 #include "serialized-utilities.h"
 
 namespace librealsense
@@ -44,8 +44,6 @@ namespace librealsense
 
         // Verify if device information in preset file is compatible with the connected device.
         reader.check_device_info(_depth_sensor.get_device());
-
-        const std::string s("controls-autoexposure-auto");
         
         return ivcam2::group_multiple_fw_calls(_depth_sensor, [&]() {
 

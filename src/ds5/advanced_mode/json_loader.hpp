@@ -470,7 +470,8 @@ namespace librealsense
         preset_param_group p = in_preset;
         serialized_utilities::json_preset_reader preset_reader(content);
       
-        // On D400 device check only product line
+        // Allow cross-device compatibility (e.g., loading a D415 json to a D435) which would normally
+        // be disabled. We check only the product-line:
         auto dev_info = preset_reader.get_device_info();
         dev_info.name.clear();
         dev_info.fw_version.clear();
@@ -505,7 +506,7 @@ namespace librealsense
                 }
                 catch (...)
                 {
-                    throw invalid_value_exception(to_string() << "Couldn't set \"" << key);
+                    throw invalid_value_exception(to_string() << "Couldn't set \"" << key << "\"");
                 }
             }
             else

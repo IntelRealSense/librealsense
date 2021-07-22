@@ -106,7 +106,7 @@ bool json_preset_reader::validate_schema() const
     if (schema_version_found &&/* device_found &&*/ parameters_found) return true;
     if (!schema_version_found && /*!device_found &&*/ !parameters_found) return false;
 
-    throw librealsense::invalid_value_exception("preset file is corrupted , cannot validate schema.");
+    throw librealsense::invalid_value_exception("preset file is corrupt, cannot validate schema");
 }
 
 json::const_iterator json_preset_reader::find(const std::string& key) const
