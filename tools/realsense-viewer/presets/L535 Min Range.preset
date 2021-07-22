@@ -1,8 +1,22 @@
 {
-    "Laser Power": 0,
-    "Rx Sensitivity": 1,
-    "Receiver Sensitivity": 45,
-    "Transmitter Frequency": 3,
-    "Vertical Binning": 0,
-    "Min Distance": 100
+    "device": {
+        "fw version": "04.06.01.09",
+        "name": "Intel RealSense L535",
+        "product line": "L500"
+    },
+    "parameters": {
+        "Laser Power": 0.0,
+        "Auto Rx Sensitivity": 1,
+        "Receiver Sensitivity": 45,
+        "Transmitter Frequency": 3,
+        "Vertical Binning": 0.0,
+        "Min Distance": 100
+    },
+    "schema version": 1,
+    "viewer": {
+        "stream-depth-format": "Z16",
+        "stream-fps": "30",
+        "stream-height": "480",
+        "stream-width": "640"
+    }
 }
