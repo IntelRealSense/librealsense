@@ -37,6 +37,7 @@
 #include "metadata-helper.h"
 #include "calibration-model.h"
 #include "sw-update/http-downloader.h"
+#include "utilities/filesystem/glob.h"
 
 using namespace rs400;
 using namespace nlohmann;
@@ -4027,6 +4028,28 @@ namespace rs2
         }
 
         refresh_notifications(viewer);
+
+        auto path = get_folder_path( special_folder::user_documents );
+        path += "librealsense2/presets/";
+        try
+        {
+            std::string name = dev.get_info(RS2_CAMERA_INFO_NAME);
+            std::smatch match;
+            if( ! std::regex_search( name, match, std::regex( "^Intel RealSense (\\S+)" ) ) )
+                throw std::runtime_error( "cannot parse device name from '" + name + "'" );
+
+            glob(
+                path,
+                std::string( match[1] ) + " *.preset",
+                [&]( std::string const & file ) {
+                    advanced_mode_settings_file_names.insert( path + file );
+                },
+                false );  // recursive
+        }
+        catch( const std::exception & e )
+        {
+            LOG_WARNING( "Exception caught trying to detect presets: " << e.what() );
+        }
     }
     void device_model::play_defaults(viewer_model& viewer)
     {
