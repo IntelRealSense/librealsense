@@ -37,12 +37,12 @@ public:
     {
     }
 
-    void detected_face::update_age( float value )
+    void update_age( float value )
     {
         _age = (_age == -1) ? value : 0.95f * _age + 0.05f * value;
     }
     
-    void detected_face::update_gender( float value )
+    void update_gender( float value )
     {
         if( value >= 0 )
         {
@@ -109,6 +109,7 @@ private:
         LOG(INFO) << "Loading CPU extensions...";
         std::string const device_name{ "CPU" };
 
+    // Cpu extensions library was removed in OpenVINO >= 2020.1, extensions were merged into the cpu plugin.
 #ifdef OPENVINO2019
         _ie.AddExtension(std::make_shared< openvino::Extensions::Cpu::CpuExtensions >(), device_name);
 #endif
@@ -204,7 +205,7 @@ private:
     {
         auto fs = f.as< rs2::frameset >();
         auto cf = f;
-        rs2::depth_frame df = NULL;
+        rs2::depth_frame df = rs2::frame{};
         if (fs)
         {
             cf = fs.get_color_frame();
