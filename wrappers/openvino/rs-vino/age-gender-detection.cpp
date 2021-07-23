@@ -141,51 +141,56 @@ namespace openvino_helpers
         }
 #else
 #ifdef OPENVINO_NGRAPH
-        if (auto ngraphFunction = network.getFunction()) {
+        if (auto ngraphFunction = network.getFunction())
+        {
+            // Looking for the age and gender nodes in the ngraph: the age layer node should be Convolution type.
+            // If we find ptrGenderOutput is with Convolution type, swap them.
+            for (const auto& op : ngraphFunction->get_ops())
+            {
+                std::string friendly_name = op->get_friendly_name();
+                std::string output_type = op->get_type_name();
 
-                for (const auto& op : ngraphFunction->get_ops()) {
-                    std::string friendly_name = op->get_friendly_name();
-                    std::string output_type = op->get_type_name();
-
-                    if ((friendly_name.find(ptrGenderOutput->getName()) != std::string::npos) && (output_type == "Convolution")) {
-                         std::swap(ptrAgeOutput, ptrGenderOutput);
-                        break;
-                    }
-                }
-
-                bool outputAgeOk = false;
-
-                for (const auto& op : ngraphFunction->get_ops()) {
-                    std::string friendly_name = op->get_friendly_name();
-                    std::string output_type = op->get_type_name();
-
-                    if ((friendly_name.find(ptrAgeOutput->getName()) != std::string::npos) && (output_type == "Convolution")) {
-                        outputAgeOk = true;
-                        break;
-                    }
-                }
-
-                if (!outputAgeOk)
+                if ((friendly_name.find(ptrGenderOutput->getName()) != std::string::npos) && (output_type == "Convolution"))
                 {
-                    throw std::logic_error("In Age/Gender Recognition network, Age layer (" + ptrAgeOutput->getName() + ") should be a Convolution");
+                    std::swap(ptrAgeOutput, ptrGenderOutput);
+                    break;
                 }
+            }
 
-                bool outputGenderOk = false;
+            bool outputAgeOk = false;
 
-                for (const auto& op : ngraphFunction->get_ops()) {
-                    std::string friendly_name = op->get_friendly_name();
-                    std::string output_type = op->get_type_name();
+            for (const auto& op : ngraphFunction->get_ops())
+            {
+                std::string friendly_name = op->get_friendly_name();
+                std::string output_type = op->get_type_name();
 
-                    if ((friendly_name.find(ptrGenderOutput->getName()) != std::string::npos) && (output_type == "Softmax")) {
-                        outputGenderOk = true;
-                        break;
-                    }
+                if ((friendly_name.find(ptrAgeOutput->getName()) != std::string::npos) && (output_type == "Convolution")) {
+                    outputAgeOk = true;
+                    break;
                 }
+            }
 
-                if (!outputGenderOk)
-                {
-                    throw std::logic_error("In Age/Gender Recognition network, Gender layer (" + ptrGenderOutput->getName() + ") should be a Softmax");
+            if (!outputAgeOk)
+            {
+                throw std::logic_error("In Age/Gender Recognition network, Age layer (" + ptrAgeOutput->getName() + ") should be a Convolution");
+            }
+
+            bool outputGenderOk = false;
+
+            for (const auto& op : ngraphFunction->get_ops()) {
+                std::string friendly_name = op->get_friendly_name();
+                std::string output_type = op->get_type_name();
+
+                if ((friendly_name.find(ptrGenderOutput->getName()) != std::string::npos) && (output_type == "Softmax")) {
+                    outputGenderOk = true;
+                    break;
                 }
+            }
+
+            if (!outputGenderOk)
+            {
+                throw std::logic_error("In Age/Gender Recognition network, Gender layer (" + ptrGenderOutput->getName() + ") should be a Softmax");
+            }
         }
 
         if (doRawOutputMessages)
