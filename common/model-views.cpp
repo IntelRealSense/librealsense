@@ -4029,28 +4029,26 @@ namespace rs2
 
         refresh_notifications(viewer);
 
-        auto path = get_folder_path(special_folder::user_documents);
+        auto path = get_folder_path( special_folder::user_documents );
+        path += "librealsense2/presets/";
         try
         {
             std::string name = dev.get_info(RS2_CAMERA_INFO_NAME);
-            std::regex sku_regex("Intel RealSense ([a-zA-z]+\\d+[a-zA-z]*)");
             std::smatch match;
+            if( ! std::regex_search( name, match, std::regex( "^Intel RealSense (\\S+)" ) ) )
+                throw std::runtime_error( "cannot parse device name from '" + name + "'" );
 
-            std::string sku_name;
-            if (std::regex_search(name, match, sku_regex))
-                sku_name = std::string(match[1]);
-
-            glob(path + "librealsense2/presets", "*.preset", [&](std::string file) 
-            {
-                std::regex file_name_regex(sku_name + ".*.preset");
-                if (std::regex_search(file, match, file_name_regex))
-                    advanced_mode_settings_file_names.insert(path + "librealsense2/presets/" +file);
-            }, false);
-                
+            glob(
+                path,
+                std::string( match[1] ) + " *.preset",
+                [&]( std::string const & file ) {
+                    advanced_mode_settings_file_names.insert( path + file );
+                },
+                false );  // recursive
         }
-        catch (const std::exception&)
+        catch( const std::exception & e )
         {
-            LOG_WARNING("Failed to presets files : " << path);
+            LOG_WARNING( "Exception caught trying to detect presets: " << e.what() );
         }
     }
     void device_model::play_defaults(viewer_model& viewer)
