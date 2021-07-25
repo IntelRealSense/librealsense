@@ -1936,12 +1936,15 @@ namespace rs2
         {
             if (it->second)
             {
-                auto format = format_values.at(it->first)[ui.selected_format_id.at(it->first)];
-                if (format == RS2_FORMAT_Y16)
+                if (format_values.count(it->first) > 0 && ui.selected_format_id.count(it->first) > 0)
                 {
-                    is_cal_format = true;
-                    break;
-                }
+                    auto format = format_values.at(it->first)[ui.selected_format_id.at(it->first)];
+                    if (format == RS2_FORMAT_Y16)
+                    {
+                        is_cal_format = true;
+                        break;
+                    }
+                }                
             }
         }
         return is_cal_format;   
