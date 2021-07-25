@@ -505,7 +505,7 @@ namespace librealsense
         try
         {
             auto depth_units = get_option(RS2_OPTION_DEPTH_UNITS).query();
-            set_frame_metadata_modifier([&](frame_additional_data& data) {data.depth_units = depth_units; });
+            set_frame_metadata_modifier([&, depth_units](frame_additional_data& data) {data.depth_units = depth_units; });
 
             _user_requests = requests;
 
