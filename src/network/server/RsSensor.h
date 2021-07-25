@@ -29,8 +29,6 @@ using StreamFrameDataQ = std::map<uint64_t, std::shared_ptr<std::queue<FrameData
 using ConsumerQMap     = std::map<void*, StreamFrameDataQ>;
 using ConsumerQPair    = std::pair<void*, StreamFrameDataQ>;
 
-using MetaMap          = std::map<uint8_t, rs2_metadata_type>;
-
 ////////////////////////////////////////////////////////////
 
 class frames_queue {

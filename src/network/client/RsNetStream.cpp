@@ -48,9 +48,7 @@ bool rs_inframe::add_chunk(uint8_t* chunk) {
     if (ch->offset < m_offset) return false; // received the chunk from the new frame
 
     // set the metadata
-    if (m_stream) {
-        m_stream->m_sw_sensor->set_metadata((rs2_frame_metadata_value)(ch->meta_id), (rs2_metadata_type)(ch->meta_data));
-    }
+    meta_attrs.emplace(std::make_pair(ch->meta_id, (rs2_metadata_type)(ch->meta_data)));
 
     m_total_size += ch->size;
     m_offset      = ch->offset;
@@ -344,6 +342,14 @@ void rs_net_stream::doFrames() {
         uint8_t* final_frame = slib::convert(m_profile, inframe->get_fb());
         if (final_frame) delete [] inframe->get_fb();
         else final_frame = inframe->get_fb();
+
+        // set the metadata
+        MetaMap::iterator meta_attr = inframe->meta_begin();
+        while (meta_attr != inframe->meta_end()) {
+            LOG_DEBUG("Frame metadata " << std::setw(30) << (rs2_frame_metadata_value)(meta_attr->first) << " is " << (rs2_metadata_type)(meta_attr->second));
+            m_sw_sensor->set_metadata((rs2_frame_metadata_value)(meta_attr->first), (rs2_metadata_type)(meta_attr->second));
+            meta_attr++;
+        }
 
         // send it into device
         if (m_profile.is<rs2::video_stream_profile>()) {

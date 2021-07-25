@@ -14,6 +14,8 @@
 #include <list>
 #include <sstream>
 
+#include "RsNetCommon.h"
+
 #include "RsStreamLib.h"
 #include "RsSafeQueue.h"
 
@@ -25,6 +27,9 @@ public:
    ~rs_inframe() {};
 
     uint8_t* get_fb() { return m_fb; };
+
+    MetaMap::iterator meta_begin() { return meta_attrs.begin(); };
+    MetaMap::iterator meta_end()   { return meta_attrs.end();   };
 
 private:
     virtual uint32_t copy_data(uint8_t* chunk);
@@ -41,6 +46,8 @@ protected:
     uint32_t m_size;
     uint32_t m_offset;
     uint32_t m_total_size;
+
+    MetaMap meta_attrs;
 };
 
 class rs_inframe_jpeg : public rs_inframe {

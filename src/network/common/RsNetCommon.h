@@ -32,3 +32,4 @@ typedef struct chunk_header{
 using StreamIndex     = std::pair<rs2_stream, int>;
 using StreamPair      = std::pair<StreamIndex, StreamIndex>;
 
+using MetaMap         = std::map<uint8_t, rs2_metadata_type>;
