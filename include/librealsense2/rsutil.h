@@ -10,22 +10,23 @@
 #include <math.h>
 #include <float.h>
 #include "h/rs_types.h"
+#include "h/rs_sensor.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 /* Given a point in 3D space, compute the corresponding pixel coordinates in an image with no distortion or forward distortion coefficients produced by the same camera */
-void rs2_project_point_to_pixel(float pixel[2], const struct rs2_intrinsics* intrin, const float point[3]);
+void rs2_project_point_to_pixel(float pixel[2], const rs2_intrinsics* intrin, const float point[3]);
 
 /* Given pixel coordinates and depth in an image with no distortion or inverse distortion coefficients, compute the corresponding point in 3D space relative to the same camera */
-void rs2_deproject_pixel_to_point(float point[3], const struct rs2_intrinsics* intrin, const float pixel[2], float depth);
+void rs2_deproject_pixel_to_point(float point[3], const rs2_intrinsics* intrin, const float pixel[2], float depth);
 
 /* Transform 3D coordinates relative to one sensor to 3D coordinates relative to another viewpoint */
-void rs2_transform_point_to_point(float to_point[3], const struct rs2_extrinsics* extrin, const float from_point[3]);
+void rs2_transform_point_to_point(float to_point[3], const rs2_extrinsics* extrin, const float from_point[3]);
 
 /* Calculate horizontal and vertical feild of view, based on video intrinsics */
-void rs2_fov(const struct rs2_intrinsics* intrin, float to_fov[2]);
+void rs2_fov(const rs2_intrinsics* intrin, float to_fov[2]);
 
 /* Find projected pixel with unknown depth search along line. */
 void rs2_project_color_pixel_to_depth_pixel(float to_pixel[2],
