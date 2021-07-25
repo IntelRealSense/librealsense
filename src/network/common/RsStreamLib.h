@@ -154,34 +154,16 @@ public:
     };
 
     static std::string print_stream(rs2_video_stream* pstream) {
-        rs2_motion_stream* pmstream = (rs2_motion_stream*)pstream;
-
         std::stringstream ss;
         std::stringstream vss;
 
-        switch (pstream->type) {
-        case RS2_STREAM_DEPTH      :
-        case RS2_STREAM_COLOR      :
-        case RS2_STREAM_INFRARED   :
-        case RS2_STREAM_CONFIDENCE :
-            ss << std::setw(10) << pstream->type << std::setw(2);
-            if (pstream->index) ss << pstream->index;
-            else ss << "";
-            ss << std::setw(15) << rs2_format_to_string(pstream->fmt);
-            vss << pstream->width << "x" << pstream->height;
-            ss << std::setw(10) << vss.str() << ":" << pstream->fps;
-            break;
-        case RS2_STREAM_GYRO       :
-        case RS2_STREAM_ACCEL      :
-            ss << std::setw(10) << pmstream->type << std::setw(2);
-            if (pmstream->index) ss << pmstream->index;
-            else ss << "";
-            ss << std::setw(15) << rs2_format_to_string(pmstream->fmt);        
-            ss << std::setw(10) << vss.str() << ":" << pmstream->fps;
-            break;
-        default:
-            ss << "Unknown stream type";
-        }        
+        ss << std::setw(10) << pstream->type << std::setw(2);
+        if (pstream->index) ss << pstream->index;
+        else ss << "";
+        ss << std::setw(15) << rs2_format_to_string(pstream->fmt);
+        vss << pstream->width << "x" << pstream->height;
+        ss << std::setw(10) << vss.str() << ":" << pstream->fps;
+
         return ss.str();
     };
 
@@ -227,37 +209,21 @@ public:
 
     static rs2_video_stream key2stream(uint64_t key) {
         convert_t t;
-        streams_t s;
+        rs2_video_stream s;
 
         t.key = key;
         memset((void*)&s, 0, sizeof(rs2_video_stream));
 
-        s.video.type   = (rs2_stream)t.values.type;
-        switch (s.video.type) {
-        case RS2_STREAM_DEPTH      :
-        case RS2_STREAM_COLOR      :
-        case RS2_STREAM_INFRARED   :
-        case RS2_STREAM_CONFIDENCE :
-            s.video.index  = t.values.index;
-            s.video.uid    = t.values.uid;
-            s.video.width  = t.values.width;
-            s.video.height = t.values.height;
-            s.video.fps    = t.values.fps;
-            s.video.fmt    = (rs2_format)t.values.format;
-            s.video.bpp    = (s.video.type == RS2_STREAM_INFRARED) ? 1 : 2;
-            break;
-        case RS2_STREAM_GYRO       :
-        case RS2_STREAM_ACCEL      :
-            s.motion.index  = t.values.index;
-            s.motion.uid    = t.values.uid;
-            s.motion.fps    = t.values.fps;
-            s.motion.fmt    = (rs2_format)t.values.format;
-            break;
-        default:
-            LOG_ERROR("Unknown stream type");
-        };
+        s.type   = (rs2_stream)t.values.type;
+        s.index  = t.values.index;
+        s.uid    = t.values.uid;
+        s.width  = t.values.width;
+        s.height = t.values.height;
+        s.fps    = t.values.fps;
+        s.fmt    = (rs2_format)t.values.format;
+        s.bpp    = (s.type == RS2_STREAM_INFRARED) ? 1 : 2;
 
-        return s.video;
+        return s;
     };
 
     static bool is_default(uint64_t key) {

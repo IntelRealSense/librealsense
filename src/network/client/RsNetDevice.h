@@ -18,6 +18,8 @@
 #include "RsNetSensor.h"
 #include "RsNetStream.h"
 
+#include <httplib.h>
+
 class rs_net_device
 {
 public:
@@ -32,6 +34,7 @@ private:
 
     std::vector<NetSensor> sensors;
 
+    void getOptions(httplib::Client& client);
     void doOptions();
     std::thread m_options;
     bool m_running;

@@ -36,6 +36,7 @@ public:
 
         std::stringstream ss_profile;
         ss_profile << "Profile : " << slib::print_stream(&vstream);
+        LOG_INFO(ss_profile.str());
 
         switch (vstream.type) {
         case RS2_STREAM_DEPTH      :
@@ -73,21 +74,25 @@ public:
         default:
             throw std::runtime_error("Unsupported stream type");
         }
-
-        LOG_INFO(ss_profile.str());
     };
 
-    void add_option(uint32_t idx, float val, rs2::option_range range) {
+    void set_option(uint32_t idx, float val, rs2::option_range range, bool ro) {
         rs2_option opt = static_cast<rs2_option>(idx);
 
-        m_sw_sensor->add_option(opt, range);
+        if (!m_sw_sensor->supports(opt)) {
+            m_sw_sensor->add_option(opt, range, !ro);
+        }
 
         try {
-            m_sw_sensor->set_option(opt, val);
+            if (ro) {
+                m_sw_sensor->set_read_only_option(opt, val);
+            } else {
+                m_sw_sensor->set_option(opt, val);
+            }
         } catch (const rs2::error& e) {
             // Some options can only be set while the camera is streaming,
             // and generally the hardware might fail so it is good practice to catch exceptions from set_option
-            LOG_ERROR("Failed to set option " << opt << ". (" << e.what() << ")");
+            LOG_ERROR("Failed to set option " << opt << " #" << std::dec << idx << " to " << val << ". (" << e.what() << ")");
         }
     }
 

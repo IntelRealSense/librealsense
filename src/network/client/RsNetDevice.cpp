@@ -192,6 +192,7 @@ rs_net_device::rs_net_device(rs2::software_device sw_device, std::string ip_addr
         throw std::runtime_error("Error obtaining device profiles.");
     }
 
+#if 0
     // Obtain sensors options via HTTP and update the software device. 
     httplib::Result opt = client.Get("/options");
     if (opt) {
@@ -260,6 +261,9 @@ rs_net_device::rs_net_device(rs2::software_device sw_device, std::string ip_addr
     } else {
         throw std::runtime_error("Error obtaining device options.");
     }
+#else
+    getOptions(client);
+#endif    
 
     LOG_INFO("Software device is ready.");
 
@@ -277,6 +281,83 @@ rs_net_device::~rs_net_device() {
     if (m_options.joinable()) m_options.join();
 }
 
+void rs_net_device::getOptions(httplib::Client& client) {
+    // Obtain sensors options via HTTP and update the software device. 
+    httplib::Result opt = client.Get("/options");
+    if (opt) {
+        if (opt->status == 200) {
+            // parse the response in form:
+            // <sensor_name>|<opt1_index>,[n/a|<opt1_value>,<opt1_min>,<opt1_max>,<opt1_def>,<opt1_step>]|...|<optN_index>,[n/a|<optN_value>,<optN_min>,<optN_max>,<optN_def>,<optN_step>]>
+
+            std::string query = opt->body;
+            while (!query.empty()) {
+                // get the sensor line
+                uint32_t line_pos = query.find("\r\n");
+                std::string sensor = query.substr(0, line_pos) + "|";
+                query.erase(0, line_pos + 2);
+
+                // get the sensor name
+                uint32_t pos = sensor.find("|");
+                std::string sensor_name = sensor.substr(0, pos);
+                sensor.erase(0, pos + 1);
+
+                // locate the proper NetSensor
+                auto s = sensors.begin();
+                for (; s != sensors.end(); s++) {
+                    if (std::strcmp((*s)->get_name().c_str(), sensor_name.c_str()) == 0) {
+                        break;
+                    }
+                }
+
+                while (!sensor.empty()) {
+                    pos = sensor.find(",");
+                    uint32_t idx = std::stoul(sensor.substr(0, pos).c_str());
+                    sensor.erase(0, pos + 1);
+                    pos = sensor.find("|");
+                    std::string vals = sensor.substr(0, pos + 1);
+                    sensor.erase(0, pos + 1);
+                    if (std::strcmp(vals.c_str(), "n/a|") != 0) {
+                        float val = 0; 
+                        rs2::option_range range = {0};
+                        bool ro = false; 
+
+                        pos = vals.find(",");
+                        val = std::stof(vals.substr(0, pos).c_str());
+                        vals.erase(0, pos + 1);
+
+                        pos = vals.find(",");
+                        range.min = std::stof(vals.substr(0, pos).c_str());
+                        vals.erase(0, pos + 1);
+
+                        pos = vals.find(",");
+                        range.max = std::stof(vals.substr(0, pos).c_str());
+                        vals.erase(0, pos + 1);
+
+                        pos = vals.find(",");
+                        range.def = std::stof(vals.substr(0, pos).c_str());
+                        vals.erase(0, pos + 1);
+
+                        pos = vals.find(",");
+                        range.step = std::stof(vals.substr(0, pos).c_str());
+                        vals.erase(0, pos + 1);
+
+                        pos = vals.find("|");
+                        if (std::stoi(vals.substr(0, pos).c_str())) {
+                            ro = true;
+                        }
+                        vals.erase(0, pos + 1);
+
+                        (*s)->set_option(idx, val, range, ro);
+                    }
+                }
+            }
+        } else {
+            throw std::runtime_error("Error in server response: options.");
+        }
+    } else {
+        throw std::runtime_error("Error obtaining device options.");
+    }
+}
 
 void rs_net_device::doExtrinsics() {
     LOG_INFO("Extrinsics initialization thread started.");
@@ -392,10 +473,12 @@ void rs_net_device::doOptions() {
             options += "\r\n";
         }
 
+        httplib::Client client(m_ip_address, 8080);
         if (std::strcmp(options.c_str(), options_prev.c_str())) {
-            httplib::Client client(m_ip_address, 8080);
             client.Post("/options", options.c_str(), "text/plain");
             options_prev = options;
+        } else {
+            getOptions(client);
         }
 
         std::this_thread::sleep_for(std::chrono::milliseconds(100)); 

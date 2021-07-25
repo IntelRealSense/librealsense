@@ -282,38 +282,59 @@ void server::doHTTP() {
 
     // Return options
     svr.Get("/options", [&](const httplib::Request &, httplib::Response &res) {
+        LOG_DEBUG("GET /options");
         std::stringstream options;
 
         options_mutex.lock();
+        LOG_DEBUG("GET /options [lock]");
         for (rs2::sensor sensor : m_dev.query_sensors()) {
             std::string sensor_name(sensor.supports(RS2_CAMERA_INFO_NAME) ? sensor.get_info(RS2_CAMERA_INFO_NAME) : "Unknown");
+            LOG_DEBUG("GET /options [start] " << sensor_name);
             // Prepare options list
             options << sensor_name;
             for (int32_t i = 0; i < static_cast<int>(RS2_OPTION_COUNT); i++) {
                 rs2_option option_type = static_cast<rs2_option>(i);
                 options << "|" << std::to_string(i) << ","; // option index
-                if (sensor.supports(option_type)) {
+                try {
+                    std::stringstream ss;
+
                     // Get the current value of the option
-                    float current_value = sensor.get_option(option_type);
-                    options << current_value << ",";
-                    struct rs2::option_range current_range = sensor.get_option_range(option_type);
-                    options << current_range.min << ",";
-                    options << current_range.max << ",";
-                    options << current_range.def << ",";
-                    options << current_range.step;
-                } else {
+                    LOG_DEBUG("GET /options [before] " << option_type);
+                    float current_value = 0;
+                    current_value = sensor.get_option(option_type);
+                    LOG_DEBUG("GET /options [after ] " << option_type);
+                    ss << current_value << ",";
+
+                    struct rs2::option_range current_range = {0};
+                    current_range = sensor.get_option_range(option_type);
+                    LOG_DEBUG("GET /options [range ] " << option_type);
+                    ss << current_range.min << ",";
+                    ss << current_range.max << ",";
+                    ss << current_range.def << ",";
+                    ss << current_range.step << ',';
+
+                    if (sensor.is_option_read_only(option_type)){
+                        ss << '1';
+                    } else {
+                        ss << '0';
+                    }
+                    options << ss.str();
+                } catch(...) {
                     options << "n/a";
                 }
             }
             options << "\r\n";
+            LOG_DEBUG("GET /options [stop] " << sensor_name);
         }
         res.set_content(options.str(), "text/plain");
+        LOG_DEBUG("GET /options [unlock]");
         options_mutex.unlock();
     });
 
     // Set options
     svr.Post("/options",
         [&](const httplib::Request &req, httplib::Response &res, const httplib::ContentReader &content_reader) {
+            LOG_DEBUG("POST /options");
             if (req.is_multipart_form_data()) {
                 LOG_ERROR("No support for multipart messages");
             } else {
@@ -361,15 +382,17 @@ void server::doHTTP() {
                                 float val = std::stof(vals.substr(0, pos).c_str());
 
                                 options_mutex.lock();
-                                if (s->supports((rs2_option)idx))
-                                if (s->get_option((rs2_option)idx) != val) {
-                                    LOG_DEBUG("Setting option " << idx << " to " << val);
-                                    try {
+                                LOG_DEBUG("POST /options [lock]");
+                                try {
+                                    if (s->supports((rs2_option)idx))
+                                    if (s->get_option((rs2_option)idx) != val) {
+                                        LOG_DEBUG("Setting option " << idx << " to " << val);
                                         s->set_option((rs2_option)idx, val);
-                                    } catch(const rs2::error& e) {
-                                        LOG_WARNING("Failed to set option " << idx << ". (" << e.what() << ")");
                                     }
+                                } catch(...) {
+                                    LOG_WARNING("Failed to set option #" << idx);
                                 }
+                                LOG_DEBUG("POST /options [unlock]");
                                 options_mutex.unlock();
                             }
                         }
