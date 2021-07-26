@@ -369,9 +369,9 @@ TEST_CASE("HDR Running - restart hdr at restream", "[hdr][live][using_pipeline]"
     }
 }
 
-void stream_frames(rs2::pipeline& pipe, int num_of_frames, rs2::hdr_merge& merging_filter)
+bool stream_frames(rs2::pipeline& pipe, int num_of_frames, rs2::hdr_merge& merging_filter)
 {
-    auto min_counter = -1;
+    int min_counter = -1;
     bool min_counter_set = false;
     for (int i = 0; i < num_of_frames; ++i)
     {
@@ -380,13 +380,18 @@ void stream_frames(rs2::pipeline& pipe, int num_of_frames, rs2::hdr_merge& mergi
 
         //get depth frame data 
         auto depth_frame = data.get_depth_frame();
+        if (!depth_frame.supports_frame_metadata(RS2_FRAME_METADATA_SEQUENCE_ID))
+        {
+            std::cout << "Frame metadata not supported" << std::endl;
+            return false;
+        }
         auto depth_seq_id = depth_frame.get_frame_metadata(RS2_FRAME_METADATA_SEQUENCE_ID);
         auto depth_counter = depth_frame.get_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER);
         auto depth_ts = depth_frame.get_frame_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP);
 
         if (!min_counter_set)
         {
-            min_counter = depth_counter;
+            min_counter = static_cast<int>(depth_counter);
             min_counter_set = true;
         }
 
@@ -394,11 +399,17 @@ void stream_frames(rs2::pipeline& pipe, int num_of_frames, rs2::hdr_merge& mergi
         auto merged_frame = merging_filter.process(data);
 
         //get hdr frame data
+        if (!merged_frame.supports_frame_metadata(RS2_FRAME_METADATA_SEQUENCE_ID))
+        {
+            std::cout << "Frame metadata not supported" << std::endl;
+            return false;
+        }
         auto hdr_counter = merged_frame.get_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER);
         auto hdr_ts = merged_frame.get_frame_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP);
 
         REQUIRE(hdr_counter >= min_counter);
     }
+    return true;
 }
 
 // CHECKING HDR MERGE AFTER HDR RESTART
@@ -426,17 +437,25 @@ TEST_CASE("HDR Running - hdr merge after hdr restart", "[hdr][live][using_pipeli
                 rs2::pipeline pipe;
                 pipe.start(cfg);
 
-                stream_frames(pipe, 10, merging_filter);
+                bool frame_metadata_not_enabled = false;
+
+                if (!frame_metadata_not_enabled)
+                    if (!stream_frames(pipe, 10, merging_filter))
+                        frame_metadata_not_enabled = true;
 
                 depth_sensor.set_option(RS2_OPTION_HDR_ENABLED, 0);
                 REQUIRE(depth_sensor.get_option(RS2_OPTION_HDR_ENABLED) == 0.f);
 
-                stream_frames(pipe, 10, merging_filter);
+                if (!frame_metadata_not_enabled)
+                    if (!stream_frames(pipe, 10, merging_filter))
+                        frame_metadata_not_enabled = true;
 
                 depth_sensor.set_option(RS2_OPTION_HDR_ENABLED, 1);
                 REQUIRE(depth_sensor.get_option(RS2_OPTION_HDR_ENABLED) == 1.f);
                 
-                stream_frames(pipe, 10, merging_filter);
+                if (!frame_metadata_not_enabled)
+                    if (!stream_frames(pipe, 10, merging_filter))
+                        frame_metadata_not_enabled = true;
                 
                 pipe.stop();
             }
