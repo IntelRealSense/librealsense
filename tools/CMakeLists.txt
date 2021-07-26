@@ -19,10 +19,8 @@ add_subdirectory(terminal)
 add_subdirectory(recorder)
 add_subdirectory(fw-update)
 
-if(NOT WIN32)
-    if(BUILD_NETWORK_DEVICE)
-        add_subdirectory(rs-server)
-    endif()
+if(BUILD_NETWORK_DEVICE)
+    add_subdirectory(rs-server)
 endif()
 endif()
 

@@ -89,9 +89,19 @@ public:
 
                 // Record all the available metadata attributes
                 for (size_t i = 0; i < RS2_FRAME_METADATA_COUNT; i++) {
+#if 1                    
                     if (frame.supports_frame_metadata((rs2_frame_metadata_value)i)) {
                         meta_attrs.emplace(std::make_pair(i, frame.get_frame_metadata((rs2_frame_metadata_value)i)));
                     }
+#else                    
+                    try {
+                        meta_attrs.emplace(std::make_pair(i, frame.get_frame_metadata((rs2_frame_metadata_value)i)));
+                        LOG_INFO("Meta #" << i << "(" << (rs2_frame_metadata_value)i << ") is " << frame.get_frame_metadata((rs2_frame_metadata_value)i));
+                    } catch (...) {
+                        // Meta not supported
+                        LOG_INFO("Meta #" << i << "(" << (rs2_frame_metadata_value)i << ") is not supported");
+                    }
+#endif                    
                 }
                 MetaMap::iterator meta_attr = meta_attrs.begin();
 
