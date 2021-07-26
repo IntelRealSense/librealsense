@@ -723,6 +723,13 @@ namespace librealsense
         return std::make_shared<timestamp_composite_matcher>(matchers);
     }
 
+    void sr3xx_camera::sr300_depth_sensor::open(const stream_profiles& requests)
+    {
+        auto depth_units = get_option( RS2_OPTION_DEPTH_UNITS ).query();
+        set_frame_metadata_modifier( [&, depth_units]( frame_additional_data & data ) { data.depth_units = depth_units; } );
+        synthetic_sensor::open( requests );
+    }
+
     processing_blocks sr300_camera::sr300_depth_sensor::get_sr300_depth_recommended_proccesing_blocks()
     {
         auto res = get_depth_recommended_proccesing_blocks();
