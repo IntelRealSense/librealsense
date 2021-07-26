@@ -1943,7 +1943,7 @@ namespace rs2
                 if (format_values.count(it->first) > 0 && selected_format_index > -1)
                 {
                     auto formats = format_values.at(it->first);
-                    if (formats.size() > selected_format_index + 1)
+                    if (formats.size() > selected_format_index)
                     {
                         auto format = formats[selected_format_index];
                         if (format == RS2_FORMAT_Y16)
