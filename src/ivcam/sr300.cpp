@@ -730,6 +730,15 @@ namespace librealsense
         synthetic_sensor::open( requests );
     }
 
+    void sr3xx_camera::sr300_depth_sensor::set_frame_metadata_modifier( on_frame_md callback )
+    {
+        _metadata_modifier = callback;
+        auto s = get_raw_sensor().get();
+        auto uvc = As< librealsense::uvc_sensor >( s );
+        if( uvc )
+            uvc->set_frame_metadata_modifier( callback );
+    }
+
     processing_blocks sr300_camera::sr300_depth_sensor::get_sr300_depth_recommended_proccesing_blocks()
     {
         auto res = get_depth_recommended_proccesing_blocks();
