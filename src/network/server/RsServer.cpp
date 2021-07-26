@@ -138,27 +138,9 @@ mkstemp(char *tmpl)
 }
 #endif
 
-void server::doSW_Upgrade() {
-    // First, shutdown the RTSP server
-    m_progress = "shutting down the RTSP server";
-    srv->close(srv->envir(), srv->name());
-    std::this_thread::sleep_for(std::chrono::seconds(1));
-
-    char fname[] = "/tmp/XXXXXX";
-    int file = mkstemp(fname);
-    write(file, m_package.c_str(), m_package.size());
-    close(file);
-
-    LOG_INFO("Received the package " << fname << " of " << std::dec << m_package.size() << " bytes to perform the software upgrade. ");
-
-    std::stringstream cmd;
-    cmd << "/usr/bin/systemd-run --on-active=1 /usr/bin/dpkg -i " << fname;
-    system(cmd.str().c_str());
-}
-
 void server::doFW_Upgrade() {
     // First, shutdown the RTSP server
-    m_progress = "shutting down the RTSP server";
+    m_progress = "Shutting down the RTSP server";
     srv->close(srv->envir(), srv->name());
     std::this_thread::sleep_for(std::chrono::seconds(1));
 
@@ -406,25 +388,31 @@ void server::doHTTP() {
 
     // SW upgrade
     // TODO: Add CRC validation
-    bool ongoing = false;
     svr.Post("/sw_upgrade",
         [&](const httplib::Request &req, httplib::Response &res, const httplib::ContentReader &content_reader) {
             if (req.is_multipart_form_data()) {
                 LOG_ERROR("No support for multipart messages");
             } else {
-                if (ongoing) {
-                    return;
-                } else {
-                    ongoing = true;
+                std::string package;
 
-                    content_reader([&](const char *data, size_t data_length) {
-                        m_package.append(data, data_length);
-                        return true;
-                    });
-                    res.set_content(m_package, "application/octet-stream");
+                content_reader([&](const char *data, size_t data_length) {
+                    package.append(data, data_length);
+                    return true;
+                });
+                res.set_content(package, "application/octet-stream");
 
-                    m_sw_upgrade = std::thread( [this](){ doSW_Upgrade(); } ); 
-                }
+                char fname[] = "/tmp/XXXXXX";
+                int file = mkstemp(fname);
+                write(file, package.c_str(), package.size());
+                close(file);
+
+                package.clear();
+
+                LOG_INFO("Received the package " << fname << " of " << std::dec << package.size() << " bytes to perform the software upgrade. ");
+
+                std::stringstream cmd;
+                cmd << "/usr/bin/systemd-run --on-active=1 bash -c \"/usr/bin/dpkg -i " << fname << " && rm -fr " << fname << "\"";
+                system(cmd.str().c_str());
             }
         }
     );

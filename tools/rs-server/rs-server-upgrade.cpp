@@ -7,9 +7,31 @@
 #include <librealsense2-net/rs_net.hpp>
 
 #include <fstream>
+#include <iostream>
 
 #include "tclap/CmdLine.h"
 #include "tclap/ValueArg.h"
+
+std::ostream &operator << ( std::ostream& strm, httplib::Error err )
+{
+    const std::string name_error[] = { 
+        "Success",
+        "Unknown",
+        "Connection",
+        "Bind IP Address",
+        "Read",
+        "Write",
+        "Exceed Redirect Count",
+        "Canceled",
+        "SSL Connection",
+        "SSL Loading Certs",
+        "SSL Server Verification",
+        "Unsupported Multipart Boundary Chars",
+        "Compression",
+    };
+    return strm << name_error[err];
+}
+
 
 int main(int argc, char** argv) try {
     std::cout << "LRS-Net server software upgrade utility.\n";
@@ -72,6 +94,7 @@ int main(int argc, char** argv) try {
         if (res->status == 200) {
             if (arg_fw.isSet()) {
                 std::string status;
+                std::string prev_status;
                 time_t now, start = time(NULL);
                 do {
                     res = client.Get("/fw_upgrade_status");
@@ -82,6 +105,10 @@ int main(int argc, char** argv) try {
                             std::string::size_type pos = 0;
                             while ((pos = status.find ("\n", pos)) != std::string::npos) {
                                 status[pos] = ' ';
+                            }
+                            if (status.compare(prev_status)) {
+                                prev_status = status;
+                                std::cout << std::endl;
                             }
                             std::cout << status << ".                    \r" << std::flush;
                             std::this_thread::sleep_for(std::chrono::milliseconds(100));
@@ -95,9 +122,44 @@ int main(int argc, char** argv) try {
                     now = time(NULL);
                 } while (now - start < 300); // five minutes timeout
                 throw std::runtime_error("Timeout while upgrating the firmware.");
-            } else std::cout << "Software upgrade is done." << std::endl;
+            } else {
+#define FIRST_TIMEOUT  (10)                
+#define SECOND_TIMEOUT (5 * 60)                
+                std::cout << "Waiting for the software upgrade to start." << std::flush;
+                int seconds = 0;
+                while (seconds++ < FIRST_TIMEOUT) {
+                    httplib::Client client(addr, 8554);
+                    httplib::Result res = client.Get("/");
+                    if (res.error() == httplib::Error::Connection) break;
+                    std::cout << "." << std::flush;
+                    std::this_thread::sleep_for(std::chrono::seconds(1));
+                }
+                if (seconds >= FIRST_TIMEOUT) {
+                    throw std::runtime_error("Timeout while starting the software upgrade.");
+                }
+
+                std::cout << std::endl << "Software upgrade started." << std::flush;
+                seconds = 0;
+                while (seconds++ < SECOND_TIMEOUT) {
+                    httplib::Client client(addr, 8554);
+                    httplib::Result res = client.Get("/");
+                    if (res.error() != httplib::Error::Connection) {
+                        std::cout << std::endl << "Software upgrade is done." << std::endl;
+                        break;
+                    } 
+                    std::cout << "." << std::flush;
+                    std::this_thread::sleep_for(std::chrono::seconds(1));
+                }
+                if (seconds >= SECOND_TIMEOUT) {
+                    throw std::runtime_error("Timeout while upgrating the software.");
+                }
+            }
         } else throw std::runtime_error("Error server response: upgrade.");
-    } else throw std::runtime_error("Error connecting to the server.");
+    } else {
+        std::stringstream s;
+        s << res.error() << " error";
+        throw std::runtime_error(s.str());
+    }
 
     return EXIT_SUCCESS;
 } catch (const std::exception& e) {
