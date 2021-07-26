@@ -369,6 +369,85 @@ TEST_CASE("HDR Running - restart hdr at restream", "[hdr][live][using_pipeline]"
     }
 }
 
+void stream_frames(rs2::pipeline& pipe, int num_of_frames, rs2::hdr_merge& merging_filter)
+{
+    auto min_counter = -1;
+    bool min_counter_set = false;
+    for (int i = 0; i < num_of_frames; ++i)
+    {
+        rs2::frameset data;
+        REQUIRE_NOTHROW(data = pipe.wait_for_frames());
+
+        //get depth frame data 
+        auto depth_frame = data.get_depth_frame();
+        auto depth_seq_id = depth_frame.get_frame_metadata(RS2_FRAME_METADATA_SEQUENCE_ID);
+        auto depth_counter = depth_frame.get_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER);
+        auto depth_ts = depth_frame.get_frame_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP);
+
+        if (!min_counter_set)
+        {
+            min_counter = depth_counter;
+            min_counter_set = true;
+        }
+
+        // apply HDR Merge process
+        auto merged_frame = merging_filter.process(data);
+
+        //get hdr frame data
+        auto hdr_counter = merged_frame.get_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER);
+        auto hdr_ts = merged_frame.get_frame_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP);
+
+        REQUIRE(hdr_counter >= min_counter);
+    }
+}
+
+// CHECKING HDR MERGE AFTER HDR RESTART
+TEST_CASE("HDR Running - hdr merge after hdr restart", "[hdr][live][using_pipeline]")
+{
+    rs2::context ctx;
+    if (make_context(SECTION_FROM_TEST_NAME, &ctx, "2.39.0"))
+    {
+        rs2::device_list devices_list = ctx.query_devices();
+        size_t device_count = devices_list.size();
+        if (devices_list.size() != 0)
+        {
+            rs2::depth_sensor depth_sensor = restart_first_device_and_return_depth_sensor(ctx, devices_list);
+
+            if (depth_sensor && depth_sensor.supports(RS2_OPTION_HDR_ENABLED))
+            {
+                // initializing the merging filter
+                rs2::hdr_merge merging_filter;
+
+                depth_sensor.set_option(RS2_OPTION_HDR_ENABLED, 1);
+                REQUIRE(depth_sensor.get_option(RS2_OPTION_HDR_ENABLED) == 1.f);
+
+                rs2::config cfg;
+                cfg.enable_stream(RS2_STREAM_DEPTH);
+                rs2::pipeline pipe;
+                pipe.start(cfg);
+
+                stream_frames(pipe, 10, merging_filter);
+
+                depth_sensor.set_option(RS2_OPTION_HDR_ENABLED, 0);
+                REQUIRE(depth_sensor.get_option(RS2_OPTION_HDR_ENABLED) == 0.f);
+
+                stream_frames(pipe, 10, merging_filter);
+
+                depth_sensor.set_option(RS2_OPTION_HDR_ENABLED, 1);
+                REQUIRE(depth_sensor.get_option(RS2_OPTION_HDR_ENABLED) == 1.f);
+                
+                stream_frames(pipe, 10, merging_filter);
+                
+                pipe.stop();
+            }
+        }
+        else
+        {
+            std::cout << "No device was found - skipping test" << std::endl;
+        }
+    }
+}
+
 // CHECKING SEQUENCE ID WHILE STREAMING
 TEST_CASE("HDR Streaming - checking sequence id", "[hdr][live][using_pipeline]")
 {
