@@ -294,8 +294,9 @@ void CPointcloudStitcher::parse_calibration_file(const std::string& config_filen
     }
 }
 
-void CPointcloudStitcher::parse_virtual_device_config_file(const std::string& config_filename)
+std::map<std::string, double> CPointcloudStitcher::parse_virtual_device_config_file(const std::string& config_filename)
 {
+    std::map<std::string, double> virtual_dev_params;
     ifstream file(config_filename);
 
     if (!file.is_open())
@@ -314,18 +315,19 @@ void CPointcloudStitcher::parse_virtual_device_config_file(const std::string& co
             auto tokens = tokenize(line, '=');
             if (tokens.size() != 2)
                 continue;
-            _virtual_dev_params.insert(std::pair<std::string, double > (tokens[0], stod(tokens[1])));
+            virtual_dev_params.insert(std::pair<std::string, double > (tokens[0], stod(tokens[1])));
         }
     }
     // Test that all values where assigned:
     std::vector<std::string> needed_keys{ "depth_width", "depth_height", "depth_fov_x", "depth_fov_y", "color_width", "color_height", "color_fov_x", "color_fov_y" };
     for (auto key : needed_keys)
     {
-        if (_virtual_dev_params.find(key) == _virtual_dev_params.end())
+        if (virtual_dev_params.find(key) == virtual_dev_params.end())
         {
             throw runtime_error(stringify() << "Given .cfg configure file " << config_filename << " does not contain value for: " << key);
         }
     }
+    return virtual_dev_params;
 }
 
 
@@ -359,7 +361,7 @@ bool CPointcloudStitcher::OpenSensors(std::shared_ptr<rs2::device> dev)
     std::string serial(dev->get_info(RS2_CAMERA_INFO_SERIAL_NUMBER));
     std::vector<stream_request> dev_wanted_profiles = _wanted_profiles[serial];
     std::vector<stream_request> requests_to_go = dev_wanted_profiles;
-    std::vector<rs2::stream_profile> matches;
+    std::vector<rs2::stream_profile> match_profiles;
 
     // Configure and starts streaming
     for (auto&& sensor : dev->query_sensors())
@@ -371,7 +373,7 @@ bool CPointcloudStitcher::OpenSensors(std::shared_ptr<rs2::device> dev)
                 break;
 
             // Find profile matches
-            auto fulfilled_request = std::find_if(requests_to_go.begin(), requests_to_go.end(), [&matches, profile](const stream_request& req)
+            auto fulfilled_request = std::find_if(requests_to_go.begin(), requests_to_go.end(), [&match_profiles, profile](const stream_request& req)
                 {
                     bool res = false;
                     if ((profile.stream_type() == req._stream_type) &&
@@ -385,7 +387,7 @@ bool CPointcloudStitcher::OpenSensors(std::shared_ptr<rs2::device> dev)
                                 return false;
                         }
                         res = true;
-                        matches.push_back(profile);
+                        match_profiles.push_back(profile);
                     }
 
                     return res;
@@ -397,12 +399,12 @@ bool CPointcloudStitcher::OpenSensors(std::shared_ptr<rs2::device> dev)
         }
 
         // Aggregate resolved requests
-        if (matches.size())
+        if (match_profiles.size())
         {
-            profiles_found += matches.size();
-            sensor.open(matches);
+            profiles_found += match_profiles.size();
+            sensor.open(match_profiles);
             _active_sensors[serial].emplace_back(sensor);
-            matches.clear();
+            match_profiles.clear();
         }
     }
     if (profiles_found == dev_wanted_profiles.size())
@@ -438,11 +440,6 @@ bool CPointcloudStitcher::GetDevices()
 
 bool CPointcloudStitcher::Init()
 {
-    {
-        std::stringstream filename;
-        filename << _working_dir << "/" << "virtual_dev.cfg";
-        parse_virtual_device_config_file(filename.str());
-    }
     if (!GetDevices())
         return false;
 
@@ -459,7 +456,7 @@ bool CPointcloudStitcher::Init()
         _wanted_profiles[dev_serial] = parse_profiles_file(filename.str(), is_left);
         if (is_left)
         {
-            std::cout << "Device : " << dev_serial << " will be presented on the left side" << std::endl;
+            std::cout << "Device : " << dev_serial << " will be presented on the left side panel" << std::endl;
             _left_device = dev_serial;  // TODO: define left device based on transformation between devices.
         }
     }
@@ -468,25 +465,7 @@ bool CPointcloudStitcher::Init()
         filename << _working_dir << "/" << _calibration_file;
         parse_calibration_file(filename.str());
     }
-    // This is a rotation matrix of 30 degrees around z-axis:
-    //array([[ 0.8660254, -0.5, 0. ],
-    //    [0.5, 0.8660254, 0.],
-    //    [0., 0., 1.]] )
-
-    // This is a rotation matrix of 15 degrees around z-axis: (== virtual to left camera)
-    //array([[ 0.96592583, -0.25881905, 0. ],
-        //[0.25881905, 0.96592583, 0.],
-        //[0., 0., 1.]] )
     CreateVirtualDevice();
-
-    //_ir_extrinsics[serials[0]][_serial_vir] = rs2_extrinsics({ {0.96592583, 0,  0.25881905,  0,1,0,      -0.25881905, 0., 0.96592583}, {0,0,0} });   //15 Around Y axis ?
-    //_ir_extrinsics[serials[1]][_serial_vir] = rs2_extrinsics({ {0.96592583, 0, -0.25881905, 0,1,0,        0.25881905,  0., 0.96592583}, {0,0,0} });
-
-    //_ir_extrinsics[serials[0]][_serial_vir] = rs2_extrinsics({ {0.8660254, 0,  0.5,  0,1,0,      -0.5, 0., 0.8660254}, {0,0,0} });   //30 Around Y axis ?
-    //_ir_extrinsics[serials[1]][_serial_vir] = rs2_extrinsics({ {0.8660254, 0, -0.5, 0,1,0,        0.5,  0., 0.8660254}, {0,0,0} });
-
-    //_ir_extrinsics[serials[0]][_serial_vir] = rs2_extrinsics({ {1,0,0,   0,1,0,  0,0,1}, {0,0,0} });
-    //_ir_extrinsics[serials[1]][_serial_vir] = rs2_extrinsics({ {1,0,0,   0,1,0,  0,0,1}, {0,0,0} });
 
     return true;
 }
@@ -504,14 +483,14 @@ rs2_intrinsics CPointcloudStitcher::create_intrinsics(const synthetic_frame& _vi
 }
 
 
-void CPointcloudStitcher::InitializeVirtualFrames()
+void CPointcloudStitcher::InitializeVirtualFrames(const std::map<std::string, double>& virtual_dev_params)
 {
-    _virtual_depth_frame.x = static_cast<int>(_virtual_dev_params.at("depth_width"));
-    _virtual_depth_frame.y = static_cast<int>(_virtual_dev_params.at("depth_height"));
+    _virtual_depth_frame.x = static_cast<int>(virtual_dev_params.at("depth_width"));
+    _virtual_depth_frame.y = static_cast<int>(virtual_dev_params.at("depth_height"));
     _virtual_depth_frame.bpp = 2;
 
-    _virtual_color_frame.x = static_cast<int>(_virtual_dev_params.at("color_width"));
-    _virtual_color_frame.y = static_cast<int>(_virtual_dev_params.at("color_height"));
+    _virtual_color_frame.x = static_cast<int>(virtual_dev_params.at("color_width"));
+    _virtual_color_frame.y = static_cast<int>(virtual_dev_params.at("color_height"));
     _virtual_color_frame.bpp = 4;
 
 
@@ -525,13 +504,16 @@ void CPointcloudStitcher::InitializeVirtualFrames()
 
 void CPointcloudStitcher::CreateVirtualDevice()
 {
-    InitializeVirtualFrames();
+    std::stringstream filename;
+    filename << _working_dir << "/" << "virtual_dev.cfg";
+    std::map<std::string, double> virtual_dev_params = parse_virtual_device_config_file(filename.str());
+    InitializeVirtualFrames(virtual_dev_params);
 
-    float fov_x(float(_virtual_dev_params.at("color_fov_x") * PI / 180.0));
-    float fov_y(float(_virtual_dev_params.at("color_fov_y") * PI / 180.0));
+    float fov_x(float(virtual_dev_params.at("color_fov_x") * PI / 180.0));
+    float fov_y(float(virtual_dev_params.at("color_fov_y") * PI / 180.0));
     rs2_intrinsics color_intrinsics = create_intrinsics(_virtual_color_frame, fov_x, fov_y);
-    fov_x = float(_virtual_dev_params.at("depth_fov_x") * PI / 180.0);
-    fov_y = float(_virtual_dev_params.at("depth_fov_y") * PI / 180.0);
+    fov_x = float(virtual_dev_params.at("depth_fov_x") * PI / 180.0);
+    fov_y = float(virtual_dev_params.at("depth_fov_y") * PI / 180.0);
     rs2_intrinsics depth_intrinsics = create_intrinsics(_virtual_depth_frame, fov_x, fov_y);
 
     //==================================================//
@@ -558,7 +540,6 @@ void CPointcloudStitcher::CreateVirtualDevice()
 
 bool CPointcloudStitcher::Start()
 {
-    int count(0);
     for (auto dev : _devices)
     {
         if (!OpenSensors(dev))
@@ -580,7 +561,6 @@ bool CPointcloudStitcher::Start()
         {
             std::cout << "Starting sensor: " << sensor.get_info(RS2_CAMERA_INFO_NAME) << std::endl;
             sensor.start(_syncer[sensors.first]);
-            std::cout << "Ok:" << std::endl;
         }
     }
 
@@ -589,7 +569,6 @@ bool CPointcloudStitcher::Start()
     {
         sensor.open(sensor.get_stream_profiles());
         _active_sensors[serial].emplace_back(sensor);
-        std::cout << "ADD SENSOR TO SYNC" << std::endl;
         sensor.start(_soft_sync);
     }
     return true;
@@ -711,7 +690,7 @@ void CPointcloudStitcher::ProjectFramesOnOtherDevice(rs2::frameset frames, const
                 int offset((int)(virtual_depth_pixel[1]) * _virtual_depth_frame.x + (int)(virtual_depth_pixel[0]));
                 uint16_t crnt_depth_val(((uint16_t*)_virtual_depth_frame.frame.data())[offset]);
                 uint8_t* virtual_color_ptr(NULL);
-                uint16_t v_depth(sqrt(pow(virtual_point[0], 2) + pow(virtual_point[1], 2) + pow(virtual_point[2], 2)) *1e3);
+                uint16_t v_depth(static_cast<uint16_t>(sqrt(pow(virtual_point[0], 2) + pow(virtual_point[1], 2) + pow(virtual_point[2], 2)) *1e3));
 
                 bool is_filling_depth(!crnt_depth_val || crnt_depth_val > v_depth);
                 if (is_filling_depth)
@@ -962,10 +941,8 @@ void CPointcloudStitcher::SaveFramesButton(const std::map<std::string, rs2::fram
 
 void CPointcloudStitcher::Run(window& app)
 {
-    const auto SLEEP_TIME = std::chrono::milliseconds(30);
     bool display_original_images(true), display_output_images(true);
 
-    int frame_number(0);
     int count(0);
     double fps(0);
     auto start_time = std::chrono::system_clock::now();
@@ -1097,40 +1074,44 @@ void CPointcloudStitcher::Run(window& app)
 
 }
 
+void PrintHelp()
+{
+    std::cout << "USAGE: " << std::endl;
+    std::cout << "rs-pointcloud-stitching " << " <working_directory> <calibration_file>" << std::endl;
+    std::cout << std::endl;
+    std::cout << "Connect exactly 2 RS devices." << std::endl;
+    std::cout << "The following files are expected in <working_directory>:" << std::endl;
+    std::cout << "1. For every camera, a file named <serial_no>.cfg which contains the following:" << std::endl;
+    std::cout << "   DEPTH, WIDTH1, HEIGHT1, FPS1, FORMAT1, STREAM_INDEX1" << std::endl;
+    std::cout << "   COLOR, WIDTH2, HEIGHT2, FPS2, FORMAT2, STREAM_INDEX2 " << std::endl;
+    std::cout << "   left" << std::endl;
+    std::cout << "The last line should be added for the left camera only and used to decide which stream to show in the left side of the screen." << std::endl;
+    std::cout << std::endl;
+    std::cout << "2. <calibration_file> of the following format:" << std::endl;
+    std::cout << "   <serial_0>, <serial_1>, <t1, t2, t3, ...., t12>" << std::endl;
+    std::cout << "   <serial_1>, virtual_dev, <t1, t2, t3, ...., t12>" << std::endl;
+    std::cout << "The t1, t2,... t12 line represents transformation from 1 device to the other." << std::endl;
+    std::cout << "The second line represent the transformation from a device to the wanted virtual device. Possibly in the middle between the 2 devices." << std::endl;
+    std::cout << std::endl;
+}
+
 int main(int argc, char* argv[]) try
 {
-    rs2::log_to_file(RS2_LOG_SEVERITY_DEBUG, "C:\\projects\\librealsense\\build\\Debug\\lrs_log.txt");
-
-    std::string working_dir, calibration_file;
+    bool is_print_help(false);
     for (int c = 1; c < argc; ++c) {
         if (!std::strcmp(argv[c], "-h") || !std::strcmp(argv[c], "--help")) {
-            std::cout << "USAGE: " << std::endl;
-            std::cout << argv[0] << " <working_directory>" << std::endl;
-            std::cout << std::endl;
-            std::cout << "Connect exactly 2 RS devices." << std::endl;
-            std::cout << "For every camera, a file should be located in <working_directory> named <serial_no>.cfg" << std::endl;
-            std::cout << std::endl;
-            std::cout << "The <serial_no>.cfg file should contain the following:" << std::endl;
-            std::cout << "DEPTH, WIDTH1, HEIGHT1, FPS1, FORMAT1, STREAM_INDEX1" << std::endl;
-            std::cout << "COLOR, WIDTH2, HEIGHT2, FPS2, FORMAT2, STREAM_INDEX2 " << std::endl;
-            std::cout << std::endl;
-            std::cout << "In addition, there will be another transformations.cfg file, of the following format:" << std::endl;
-            std::cout << "<from_serial>, <to_serial>, <t1, t2, t3, ...., t12>" << std::endl;
-            std::cout << "The t1, t2,... t12 line represents transformation from 1 device to the other." << std::endl;
-            std::cout << std::endl;
-            return -1;
+            is_print_help = true;
+            break;
         }
     }
-    if (argc > 2)
+    if (argc <= 2) is_print_help = true;
+    if (is_print_help)
     {
-        working_dir = argv[1];
-        calibration_file = argv[2];
+        PrintHelp();
+        return -1;
     }
-    else
-    {
-        working_dir = ".";
-        calibration_file = "calibration_15.cfg";
-    }
+    string working_dir(argv[1]);
+    string calibration_file(argv[2]);
 
     CPointcloudStitcher pc_stitcher(working_dir, calibration_file);
     if (!pc_stitcher.Init())
@@ -1141,9 +1122,9 @@ int main(int argc, char* argv[]) try
     unsigned tiles_in_row = 4;
     unsigned tiles_in_col = 2;
 
-    window app(1920, 1100, "RealSense Pointcloud-Stitching Example", tiles_in_row, tiles_in_col);
-    //window app(1280, 720, "RealSense Pointcloud-Stitching Example", tiles_in_row, tiles_in_col);
-    //window app(640, 480, "RealSense Pointcloud-Stitching Example", tiles_in_row, tiles_in_col);
+    unsigned int window_width, window_height;
+    get_screen_resolution(window_width, window_height);
+    window app(window_width, window_height*0.9, "RealSense Pointcloud-Stitching Example", tiles_in_row, tiles_in_col);
     ImGui_ImplGlfw_Init(app, false);
 
     pc_stitcher.Run(app);

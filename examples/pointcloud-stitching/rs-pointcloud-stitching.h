@@ -20,9 +20,6 @@ struct synthetic_frame
 
 namespace rs_pointcloud_stitching
 {
-    const uint64_t  DEF_FRAMES_NUMBER = 100;
-    const std::string DEF_OUTPUT_FILE_NAME("frames_data.csv");
-
     std::string trim(const std::string& str,
         const std::string& whitespace = " \t")
     {
@@ -62,17 +59,6 @@ namespace rs_pointcloud_stitching
         template<class T> stringify& operator << (const T& val) { ss << val; return *this; }
         operator std::string() const { return ss.str(); }
     };
-
-    template <typename T>
-    inline bool val_in_range(const T& val, const std::initializer_list<T>& list)
-    {
-        for (const auto& i : list) {
-            if (val == i) {
-                return true;
-            }
-        }
-        return false;
-    }
 
     inline int parse_number(char const* s, int base = 0)
     {
@@ -124,22 +110,6 @@ namespace rs_pointcloud_stitching
         return parse_number(str.c_str());
     }
 
-    inline std::string get_profile_description(const rs2::stream_profile& profile)
-    {
-        std::stringstream ss;
-
-        ss << profile.stream_name() << ","
-            << profile.stream_type() << ","
-            << profile.format() << ","
-            << profile.fps();
-
-        if (auto vp = profile.as<rs2::video_stream_profile>())
-            ss << "," << vp.width() << "," << vp.height();
-
-        ss << std::endl;
-        return ss.str().c_str();
-    }
-
     struct stream_request
     {
         rs2_stream  _stream_type;
@@ -165,13 +135,6 @@ namespace rs_pointcloud_stitching
         e_stream_index
     };
 
-    enum application_stop : uint8_t {
-        stop_on_frame_num,
-        stop_on_timeout,
-        stop_on_user_frame_num,
-        stop_on_any
-    };
-
     class PipelineSyncer : public rs2::asynchronous_syncer
     {
     public:
@@ -186,17 +149,18 @@ namespace rs_pointcloud_stitching
     public:
 	    CPointcloudStitcher(const std::string& working_dir, const std::string& calibration_file);
         bool Init();
-        bool GetDevices();
         bool Start();
-        void CloseSensors();
-        void StopSensors();
         void Run(window& app);
+        void StopSensors();
+        void CloseSensors();
 
     private:
+        bool GetDevices();
         bool OpenSensors(std::shared_ptr<rs2::device> dev);
         void frame_callback(rs2::frame frame, const string& serial);
         rs2_intrinsics create_intrinsics(const synthetic_frame& _virtual_frame, const float fov_x, const float fov_y);    // fov_x, fov_y in radians.
-        void InitializeVirtualFrames();
+        std::map<std::string, double> parse_virtual_device_config_file(const std::string& config_filename);
+        void InitializeVirtualFrames(const std::map<std::string, double>& virtual_dev_params);
         void CreateVirtualDevice();
         void ProjectFramesOnOtherDevice(rs2::frameset frames, const string& from_serial, const string& to_serial);
         void RecordButton(const ImVec2& window_size);
@@ -207,7 +171,6 @@ namespace rs_pointcloud_stitching
         void StopRecording();
         void SaveOriginImages(const std::map<std::string, rs2::frame>& frames_sets);
         void parse_calibration_file(const std::string& config_filename);
-        void parse_virtual_device_config_file(const std::string& config_filename);
 
     private:
 	    std::string _working_dir, _calibration_file;
@@ -229,7 +192,6 @@ namespace rs_pointcloud_stitching
         int _frame_number;
         std::shared_ptr<rs2::recorder> _recorder;
         bool _is_recording;
-        std::map<std::string, double> _virtual_dev_params;
         rs2::hole_filling_filter _hole_filling_filter;
 
 

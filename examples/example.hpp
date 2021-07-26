@@ -1107,3 +1107,11 @@ void register_glfw_callbacks(window& app, glfw_state& app_state)
         }
     };
 }
+
+void get_screen_resolution(unsigned int& window_width, unsigned int& window_height) {
+    glfwInit();
+    const GLFWvidmode* mode = glfwGetVideoMode(glfwGetPrimaryMonitor());
+
+    window_width = mode->width;
+    window_height = mode->height;
+}
