@@ -242,6 +242,15 @@ namespace librealsense
             return get_l500_recommended_proccesing_blocks();
         };
 
+        void set_frame_metadata_modifier(on_frame_md callback) override
+        {
+            _metadata_modifier = callback;
+            auto s = get_raw_sensor().get();
+            auto uvc = As< librealsense::uvc_sensor >(s);
+            if (uvc)
+                uvc->set_frame_metadata_modifier(callback);
+        }
+
         float read_baseline() const override;
         float read_znorm();
 
