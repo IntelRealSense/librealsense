@@ -465,6 +465,19 @@ bool CPointcloudStitcher::Init()
         filename << _working_dir << "/" << _calibration_file;
         parse_calibration_file(filename.str());
     }
+    if (_left_device.empty())
+    {
+        if ((_ir_extrinsics.find(serials[0]) != _ir_extrinsics.end()) && (_ir_extrinsics.at(serials[0]).find(serials[1]) != _ir_extrinsics.at(serials[0]).end()))
+            if (_ir_extrinsics.at(serials[0]).at(serials[1]).translation[0] < 0)
+                _left_device = serials[0];
+            else
+                _left_device = serials[1];
+        else
+            if (_ir_extrinsics.at(serials[1]).at(serials[0]).translation[0] > 0)
+                _left_device = serials[0];
+            else
+                _left_device = serials[1];
+    }
     CreateVirtualDevice();
 
     return true;
@@ -932,6 +945,7 @@ void CPointcloudStitcher::SaveFramesButton(const std::map<std::string, rs2::fram
 void CPointcloudStitcher::Run(window& app)
 {
     bool display_original_images(true), display_output_images(true);
+    auto virtual_sensors = _soft_dev.query_sensors();
 
     int count(0);
     double fps(0);
@@ -991,7 +1005,6 @@ void CPointcloudStitcher::Run(window& app)
             }
         }
 
-        auto virtual_sensors = _soft_dev.query_sensors(); // TOD: Move out of loop 
         rs2::frame aframe = frames_sets.begin()->second;
         {
             rs2::software_sensor virtual_depth_sensor = *(static_cast<rs2::software_sensor*>(&(*std::find_if(virtual_sensors.begin(), virtual_sensors.end(), [](const auto& sns) { return "Depth" == std::string(sns.get_info(RS2_CAMERA_INFO_NAME)); }))));
@@ -1056,13 +1069,23 @@ void PrintHelp()
     std::cout << "   DEPTH, WIDTH1, HEIGHT1, FPS1, FORMAT1, STREAM_INDEX1" << std::endl;
     std::cout << "   COLOR, WIDTH2, HEIGHT2, FPS2, FORMAT2, STREAM_INDEX2 " << std::endl;
     std::cout << "   left" << std::endl;
-    std::cout << "The last line should be added for the left camera only and used to decide which stream to show in the left side of the screen." << std::endl;
+    std::cout << "The last line could be added for the left camera only and used to decide which stream to show in the left side of the screen. If omitted, the decision is based upon the translation between the cameras." << std::endl;
     std::cout << std::endl;
     std::cout << "2. <calibration_file> of the following format:" << std::endl;
     std::cout << "   <serial_0>, <serial_1>, <t1, t2, t3, ...., t12>" << std::endl;
     std::cout << "   <serial_1>, virtual_dev, <t1, t2, t3, ...., t12>" << std::endl;
     std::cout << "The t1, t2,... t12 line represents transformation from 1 device to the other." << std::endl;
     std::cout << "The second line represent the transformation from a device to the wanted virtual device. Possibly in the middle between the 2 devices." << std::endl;
+    std::cout << std::endl;
+    std::cout << "Example files:" << std::endl;
+    std::cout << "831612073525.cfg:" << std::endl;
+    std::cout << "DEPTH,640,480,30,Z16,0" << std::endl;
+    std::cout << "COLOR,640,480,30,RGB8,0" << std::endl;
+    std::cout << "#INFRARED,640,480,30,Y8,1" << std::endl;
+    std::cout << std::endl;
+    std::cout << "calibration_15.cfg:" << std::endl;
+    std::cout << "912112073098, 831612073525, 0.8660254, 0,  -0.5,  0,1,0,      0.5, 0., 0.8660254, 0.250841, 0.001128,0" << std::endl;
+    std::cout << "831612073525, virtual_dev, 0.96592583, 0,  0.25881905,  0,1,0,      -0.25881905, 0., 0.96592583, 0,0,0" << std::endl;
     std::cout << std::endl;
 }
 
