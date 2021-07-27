@@ -203,10 +203,10 @@ jobs:
       continue-on-error: true 
       run: | 
         export LRS_LOG_LEVEL="DEBUG";
-        cd build    
+        cd build   
         ./unit-tests/live-test -d yes -i [software-device]
-        for i in ./records/single_cam/*; do ./unit-tests/live-test -d yes -i ~[multicam] from "$i"; done
-        for i in ./records/multi_cam/*; do ./unit-tests/live-test -d yes -i [multicam] from "$i"; done
+        # for i in ./records/single_cam/*; do ./unit-tests/live-test -d yes -i ~[multicam] from "$i"; done
+        # for i in ./records/multi_cam/*; do ./unit-tests/live-test -d yes -i [multicam] from "$i"; done
         
 
     - name: Upload RS log artifact
