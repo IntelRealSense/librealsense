@@ -656,16 +656,6 @@ void CPointcloudStitcher::ProjectFramesOnOtherDevice(rs2::frameset frames, const
     {
         as_depth = _hole_filling_filter.process(as_depth);
         const rs2_intrinsics& depth_intinsics(as_depth.get_profile().as<rs2::video_stream_profile>().get_intrinsics());
-        //{
-        //    float HFOV = (2 * atan(depth_intinsics.width / (2 * depth_intinsics.fx))) * 180.0 / PI;
-        //    float VFOV = (2 * atan(depth_intinsics.height / (2 * depth_intinsics.fy))) * 180.0 / PI;
-        //    std::cout << "Depth Fov: " << HFOV << "x" << VFOV << std::endl;
-        //}
-        //{
-        //    float HFOV = (2 * atan(color_intinsics.width / (2 * color_intinsics.fx))) * 180.0 / PI;
-        //    float VFOV = (2 * atan(color_intinsics.height / (2 * color_intinsics.fy))) * 180.0 / PI;
-        //    std::cout << "Color Fov: " << HFOV << "x" << VFOV << std::endl;
-        //}
 
         uint8_t* zero_buf[3] = { 0,0,0 };
 
@@ -674,10 +664,10 @@ void CPointcloudStitcher::ProjectFramesOnOtherDevice(rs2::frameset frames, const
         {
             for (int x = 0; x < as_depth.get_width(); x++, ptr++)
             {
-                float pixel[] = { (float)x, (float)y };
                 if (as_depth.get_distance(x, y) <= 0)
                     continue;
 
+                float pixel[] = { (float)x, (float)y };
                 rs2_deproject_pixel_to_point(depth_point, &depth_intinsics, pixel, as_depth.get_distance(x, y));
                 rs2_transform_point_to_point(virtual_point, &extrinsics, depth_point);
                 rs2_project_point_to_pixel(virtual_depth_pixel, &virtual_depth_intinsics, virtual_point);
@@ -689,7 +679,6 @@ void CPointcloudStitcher::ProjectFramesOnOtherDevice(rs2::frameset frames, const
                 }
                 int offset((int)(virtual_depth_pixel[1]) * _virtual_depth_frame.x + (int)(virtual_depth_pixel[0]));
                 uint16_t crnt_depth_val(((uint16_t*)_virtual_depth_frame.frame.data())[offset]);
-                uint8_t* virtual_color_ptr(NULL);
                 uint16_t v_depth(static_cast<uint16_t>(sqrt(pow(virtual_point[0], 2) + pow(virtual_point[1], 2) + pow(virtual_point[2], 2)) *1e3));
 
                 bool is_filling_depth(!crnt_depth_val || crnt_depth_val > v_depth);
@@ -703,6 +692,7 @@ void CPointcloudStitcher::ProjectFramesOnOtherDevice(rs2::frameset frames, const
                 }
 
                 bool missing_color(false);
+                uint8_t* virtual_color_ptr(NULL);
                 if (color)
                 {
                     rs2_project_point_to_pixel(color_pixel, &color_intinsics, depth_point);
@@ -716,18 +706,18 @@ void CPointcloudStitcher::ProjectFramesOnOtherDevice(rs2::frameset frames, const
                             int offset_dest(((int)virtual_color_pixel[1] * _virtual_color_frame.x + (int)virtual_color_pixel[0]) * _virtual_color_frame.bpp);
                             virtual_color_ptr = (uint8_t*)_virtual_color_frame.frame.data() + offset_dest;
                             missing_color = (0 == memcmp(virtual_color_ptr, zero_buf, 3));
+
+                            if (is_filling_depth || missing_color)
+                            {
+                                int offset_src(((int)color_pixel[1] * color_intinsics.width + (int)color_pixel[0]) * color_bpp);
+                                memcpy(virtual_color_ptr, (uint8_t*)(color.get_data()) + offset_src, color_bpp * sizeof(uint8_t));
+
+                                memcpy(virtual_color_ptr + 1 * (_virtual_color_frame.bpp * sizeof(uint8_t)), (uint8_t*)(color.get_data()) + offset_src, color_bpp * sizeof(uint8_t));
+                                memcpy(virtual_color_ptr + _virtual_color_frame.x * (_virtual_color_frame.bpp * sizeof(uint8_t)), (uint8_t*)(color.get_data()) + offset_src, color_bpp * sizeof(uint8_t));
+                                memcpy(virtual_color_ptr + (1 + (size_t)_virtual_color_frame.x) * (_virtual_color_frame.bpp * sizeof(uint8_t)), (uint8_t*)(color.get_data()) + offset_src, color_bpp * sizeof(uint8_t));
+                            }
                         }
                     }
-                }
-
-                if (virtual_color_ptr && (is_filling_depth || missing_color))
-                {
-                    int offset_src(((int)color_pixel[1] * color_intinsics.width + (int)color_pixel[0]) * color_bpp);
-                    memcpy(virtual_color_ptr, (uint8_t*)(color.get_data()) + offset_src, color_bpp * sizeof(uint8_t));
-
-                    memcpy(virtual_color_ptr + 1 * (_virtual_color_frame.bpp * sizeof(uint8_t)), (uint8_t*)(color.get_data()) + offset_src, color_bpp * sizeof(uint8_t));
-                    memcpy(virtual_color_ptr + _virtual_color_frame.x * (_virtual_color_frame.bpp * sizeof(uint8_t)), (uint8_t*)(color.get_data()) + offset_src, color_bpp * sizeof(uint8_t));
-                    memcpy(virtual_color_ptr + (1 + (size_t)_virtual_color_frame.x) * (_virtual_color_frame.bpp * sizeof(uint8_t)), (uint8_t*)(color.get_data()) + offset_src, color_bpp * sizeof(uint8_t));
                 }
             }
         }
@@ -984,10 +974,7 @@ void CPointcloudStitcher::Run(window& app)
         for (auto frames : frames_sets)
         {
             rs2::frame frm = frames.second;    // Wait for next set of frames from the camera
-            auto start_project_time = std::chrono::system_clock::now();
             ProjectFramesOnOtherDevice(frm, frames.first, _serial_vir);
-            auto end_project_time = std::chrono::system_clock::now();
-            //std::cout << "Processing took: " << std::chrono::duration_cast<std::chrono::milliseconds>(end_project_time - start_project_time).count() << std::endl;
 
             // DISPLAY ORIGINAL IMAGES
             if (display_original_images)
@@ -1004,7 +991,7 @@ void CPointcloudStitcher::Run(window& app)
             }
         }
 
-        auto virtual_sensors = _soft_dev.query_sensors();
+        auto virtual_sensors = _soft_dev.query_sensors(); // TOD: Move out of loop 
         rs2::frame aframe = frames_sets.begin()->second;
         {
             rs2::software_sensor virtual_depth_sensor = *(static_cast<rs2::software_sensor*>(&(*std::find_if(virtual_sensors.begin(), virtual_sensors.end(), [](const auto& sns) { return "Depth" == std::string(sns.get_info(RS2_CAMERA_INFO_NAME)); }))));
@@ -1031,21 +1018,6 @@ void CPointcloudStitcher::Run(window& app)
             continue;
         }
 
-#if false
-        std::cout << "fset.size(): " << fset.size() << std::endl;
-        for (auto it = fset.begin(); it != fset.end(); ++it)
-        {
-            auto f = (*it);
-            auto stream_type = f.get_profile().stream_type();
-            auto stream_index = f.get_profile().stream_index();
-            auto stream_format = f.get_profile().format();
-
-            printf("Frameset contain (%s, %d, %s) frame. frame_number: %llu ; frame_TS: %f ; ros_TS(NSec)",
-                rs2_stream_to_string(stream_type), stream_index, rs2_format_to_string(stream_format), f.get_frame_number(), f.get_timestamp());
-            if (f.is<rs2::video_frame>())
-                std::cout << "frame: " << f.as<rs2::video_frame>().get_width() << " x " << f.as<rs2::video_frame>().get_height() << std::endl;
-        }
-#endif
         if (display_output_images)
         {
             rs2::frame depth = fset.first_or_default(RS2_STREAM_DEPTH);
@@ -1071,7 +1043,6 @@ void CPointcloudStitcher::Run(window& app)
             ImGui::Render();
         }
     }
-
 }
 
 void PrintHelp()
