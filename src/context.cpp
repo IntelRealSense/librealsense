@@ -100,7 +100,8 @@ namespace librealsense
                      const char* section,
                      rs2_recording_mode mode,
                      std::string min_api_version)
-        : _devices_changed_callback(nullptr, [](rs2_devices_changed_callback*){})
+        : _devices_changed_callback(nullptr, [](rs2_devices_changed_callback*){}),
+          _device_watcher_active(false)
     {
         static bool version_logged=false;
         if (!version_logged)
@@ -454,6 +455,18 @@ namespace librealsense
         auto callback_id = unique_id::generate_id();
         _devices_changed_callbacks.insert(std::make_pair(callback_id, std::move(callback)));
 
+        if (_device_watcher_active == false)
+        {
+            _device_watcher->stop();
+
+            _device_watcher->start([this](platform::backend_device_group old, platform::backend_device_group curr)
+            {
+                on_device_changed(old, curr, _playback_devices, _playback_devices);
+            });
+            _device_watcher_active = true;
+        }
+            
+
         return callback_id;
     }
 
@@ -461,17 +474,29 @@ namespace librealsense
     {
         std::lock_guard<std::mutex> lock(_devices_changed_callbacks_mtx);
         _devices_changed_callbacks.erase(cb_id);
+
+        if (_devices_changed_callback == nullptr && _devices_changed_callbacks.size() == 0)
+        {
+            _device_watcher->stop();
+            _device_watcher_active = false;
+        }
     }
 
     void context::set_devices_changed_callback(devices_changed_callback_ptr callback)
     {
-        _device_watcher->stop();
-
-        _devices_changed_callback = std::move(callback);
-        _device_watcher->start([this](platform::backend_device_group old, platform::backend_device_group curr)
+        std::lock_guard<std::mutex> lock(_devices_changed_callbacks_mtx);
+        if (_device_watcher_active == false)
         {
-            on_device_changed(old, curr, _playback_devices, _playback_devices);
-        });
+            _device_watcher->stop();
+
+            _devices_changed_callback = std::move(callback);
+            _device_watcher->start([this](platform::backend_device_group old, platform::backend_device_group curr)
+            {
+                on_device_changed(old, curr, _playback_devices, _playback_devices);
+            });
+            _device_watcher_active = true;
+        }
+      
     }
 
     std::vector<platform::uvc_device_info> filter_by_product(const std::vector<platform::uvc_device_info>& devices, const std::set<uint16_t>& pid_list)

@@ -144,6 +144,8 @@ namespace librealsense
 
         std::shared_ptr<platform::backend> _backend;
         std::shared_ptr<platform::device_watcher> _device_watcher;
+        bool _device_watcher_active;
+
         std::map<std::string, std::weak_ptr<device_info>> _playback_devices;
         std::map<uint64_t, devices_changed_callback_ptr> _devices_changed_callbacks;
 
