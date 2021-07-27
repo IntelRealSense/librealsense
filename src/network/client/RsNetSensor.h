@@ -79,10 +79,16 @@ public:
     void set_option(uint32_t idx, float val, rs2::option_range range, bool ro) {
         rs2_option opt = static_cast<rs2_option>(idx);
 
+        // workaround for HW misreports
+        if (range.def > range.max) range.def = range.max;
+        if (range.def < range.min) range.def = range.min;
         if (!m_sw_sensor->supports(opt)) {
             m_sw_sensor->add_option(opt, range, !ro);
         }
 
+        // workaround for HW misreports
+        if (val > range.max) val = range.max;
+        if (val < range.min) val = range.min;
         try {
             if (ro) {
                 m_sw_sensor->set_read_only_option(opt, val);
@@ -92,7 +98,9 @@ public:
         } catch (const rs2::error& e) {
             // Some options can only be set while the camera is streaming,
             // and generally the hardware might fail so it is good practice to catch exceptions from set_option
-            LOG_ERROR("Failed to set option " << opt << " #" << std::dec << idx << " to " << val << ". (" << e.what() << ")");
+            LOG_ERROR("Failed to set option " << opt << " #" << std::dec << idx << " to " << val 
+                << ". Range is [" << range.min << ", " << range.max << "], default value is " << range.def << ", step is " << range.step 
+                << "(" << e.what() << ")");
         }
     }
 

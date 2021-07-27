@@ -6,9 +6,13 @@
 #include <BasicUsageEnvironment.hh>
 #include <RTSPCommon.hh>
 
+#include <librealsense2/hpp/rs_internal.hpp>
 #include <librealsense2/rs.hpp>
 
 #include <string>
+
+#include "RsStreamLib.h"
+#include "RsNetCommon.h"
 
 class server
 {
@@ -38,4 +42,8 @@ private:
 
     std::string m_sensors_desc; // sensors description
     std::stringstream m_extrinsics;   // streams extrinsics
+
+    std::thread m_options;
+    void doOptions();
+    RsOptionsList m_options_list;
 };

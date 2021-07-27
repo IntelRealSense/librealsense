@@ -218,6 +218,17 @@ void server::doFW_Upgrade() {
     exit(EXIT_SUCCESS);
 }
 
+void server::doOptions() {
+    LOG_INFO("Options synchronization thread started.");
+
+    while (1) {
+        if (m_options_list.remote_changes()) m_options_list.set();
+        else m_options_list.scan();
+
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    }
+}
+
 void server::doHTTP() {
     LOG_INFO("Internal HTTP server started.");
 
@@ -264,59 +275,13 @@ void server::doHTTP() {
 
     // Return options
     svr.Get("/options", [&](const httplib::Request &, httplib::Response &res) {
-        LOG_DEBUG("GET /options");
-        std::stringstream options;
-
-        options_mutex.lock();
-        LOG_DEBUG("GET /options [lock]");
-        for (rs2::sensor sensor : m_dev.query_sensors()) {
-            std::string sensor_name(sensor.supports(RS2_CAMERA_INFO_NAME) ? sensor.get_info(RS2_CAMERA_INFO_NAME) : "Unknown");
-            LOG_DEBUG("GET /options [start] " << sensor_name);
-            // Prepare options list
-            options << sensor_name;
-            for (int32_t i = 0; i < static_cast<int>(RS2_OPTION_COUNT); i++) {
-                rs2_option option_type = static_cast<rs2_option>(i);
-                options << "|" << std::to_string(i) << ","; // option index
-                try {
-                    std::stringstream ss;
-
-                    // Get the current value of the option
-                    LOG_DEBUG("GET /options [before] " << option_type);
-                    float current_value = 0;
-                    current_value = sensor.get_option(option_type);
-                    LOG_DEBUG("GET /options [after ] " << option_type);
-                    ss << current_value << ",";
-
-                    struct rs2::option_range current_range = {0};
-                    current_range = sensor.get_option_range(option_type);
-                    LOG_DEBUG("GET /options [range ] " << option_type);
-                    ss << current_range.min << ",";
-                    ss << current_range.max << ",";
-                    ss << current_range.def << ",";
-                    ss << current_range.step << ',';
-
-                    if (sensor.is_option_read_only(option_type)){
-                        ss << '1';
-                    } else {
-                        ss << '0';
-                    }
-                    options << ss.str();
-                } catch(...) {
-                    options << "n/a";
-                }
-            }
-            options << "\r\n";
-            LOG_DEBUG("GET /options [stop] " << sensor_name);
-        }
-        res.set_content(options.str(), "text/plain");
-        LOG_DEBUG("GET /options [unlock]");
-        options_mutex.unlock();
+        std::string s = m_options_list.serialize_full();
+        res.set_content(s, "text/plain");
     });
 
     // Set options
     svr.Post("/options",
         [&](const httplib::Request &req, httplib::Response &res, const httplib::ContentReader &content_reader) {
-            LOG_DEBUG("POST /options");
             if (req.is_multipart_form_data()) {
                 LOG_ERROR("No support for multipart messages");
             } else {
@@ -327,61 +292,7 @@ void server::doHTTP() {
                 });
                 res.set_content(options, "text/plain");
 
-                // Parse the request, it is in form
-                // <sensor_name>|<opt1_index>,[<opt1_value>|n/a]|...|<optN_index>,[<optN_value>|n/a]
-                while (!options.empty()) {
-                    // get the sensor line
-                    uint32_t line_pos = options.find("\r\n");
-                    std::string sensor = options.substr(0, line_pos) + "|";
-                    options.erase(0, line_pos + 2);
-
-                    // get the sensor name
-                    uint32_t pos = sensor.find("|");
-                    std::string sensor_name = sensor.substr(0, pos);
-                    sensor.erase(0, pos + 1);
-
-                    // locate the proper sensor
-                    auto sensors = m_dev.query_sensors();
-                    auto s = sensors.begin();
-                    for (; s != sensors.end(); s++) {
-                        std::string sname(s->supports(RS2_CAMERA_INFO_NAME) ? s->get_info(RS2_CAMERA_INFO_NAME) : "Unknown");
-                        if (std::strcmp(sname.c_str(), sensor_name.c_str()) == 0) {
-                            break;
-                        }
-                    }
-
-                    // locate the option and update is changed
-                    if (s != sensors.end()) {
-                        while (!sensor.empty()) {
-                            pos = sensor.find(",");
-                            uint32_t idx = std::stoul(sensor.substr(0, pos).c_str());
-                            sensor.erase(0, pos + 1);
-                            pos = sensor.find("|");
-                            std::string vals = sensor.substr(0, pos + 1);
-                            sensor.erase(0, pos + 1);
-                            if (std::strcmp(vals.c_str(), "n/a|") != 0) {
-                                pos = vals.find("|");
-                                float val = std::stof(vals.substr(0, pos).c_str());
-
-                                options_mutex.lock();
-                                LOG_DEBUG("POST /options [lock]");
-                                try {
-                                    if (s->supports((rs2_option)idx))
-                                    if (s->get_option((rs2_option)idx) != val) {
-                                        LOG_DEBUG("Setting option " << idx << " to " << val);
-                                        s->set_option((rs2_option)idx, val);
-                                    }
-                                } catch(...) {
-                                    LOG_WARNING("Failed to set option #" << idx);
-                                }
-                                LOG_DEBUG("POST /options [unlock]");
-                                options_mutex.unlock();
-                            }
-                        }
-                    } else {
-                        LOG_ERROR("Unknown sensor specified: " << sensor_name);
-                    }
-                }
+                m_options_list.parse(options);
             }
         }
     );
@@ -445,7 +356,7 @@ void server::doHTTP() {
     svr.listen("0.0.0.0", 8080);
 }
 
-server::server(rs2::device dev, std::string addr, int port) : m_dev(dev), m_progress("not active")
+server::server(rs2::device dev, std::string addr, int port) : m_dev(dev), m_progress("not active"), m_options_list(dev)
 {
     ReceivingInterfaceAddr = inet_addr(addr.c_str());
 
@@ -563,6 +474,8 @@ server::server(rs2::device dev, std::string addr, int port) : m_dev(dev), m_prog
         }
     }
 
+    m_options = std::thread( [this](){ doOptions(); } ); 
+    
     m_httpd = std::thread( [this](){ doHTTP(); } ); 
 }
 
