@@ -15,6 +15,7 @@
 #include <sstream>
 
 #include "RsNetCommon.h"
+#include "RsOptions.h"
 #include "RsNetSensor.h"
 #include "RsNetStream.h"
 

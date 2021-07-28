@@ -192,7 +192,7 @@ rs_net_device::rs_net_device(rs2::software_device sw_device, std::string ip_addr
         throw std::runtime_error("Error obtaining device profiles.");
     }
 
-#if 1
+#if 0
     // Obtain sensors options via HTTP and update the software device. 
     httplib::Result opt = client.Get("/options");
     if (opt) {
@@ -271,12 +271,12 @@ rs_net_device::rs_net_device(rs2::software_device sw_device, std::string ip_addr
 
     LOG_INFO("Software device is ready.");
 
-    m_options = std::thread( [this](){ doOptions(); } ); 
-
     for (auto netsensor : sensors) netsensor->start();
 
     // m_extrinsics = std::thread( [this]() { doExtrinsics(); });
     doExtrinsics();
+
+    m_options = std::thread( [this](){ doOptions(); } ); 
 }
 
 rs_net_device::~rs_net_device() {
@@ -376,18 +376,18 @@ void rs_net_device::getOptions(httplib::Client& client) {
     if (opt) {
         if (opt->status == 200) {
             m_options_list.parse(opt->body);
-            m_options_list.set();
+            if (m_options_list.remote_changes()) m_options_list.set_sw(sensors);
         } else throw std::runtime_error("Error in server response: options.");
     } else throw std::runtime_error("Error obtaining device options.");
 }
 
 void rs_net_device::doOptions() {
     LOG_INFO("Options synchronization thread started.");
-
+    
     std::string options_prev;
 
     while (m_running) {
-        m_options_list.scan();
+        m_options_list.scan(false);
 
         httplib::Client client(m_ip_address, 8080);
         if (m_options_list.changes()) {
@@ -396,7 +396,7 @@ void rs_net_device::doOptions() {
             getOptions(client);
         }
 
-        std::this_thread::sleep_for(std::chrono::milliseconds(100)); 
+        std::this_thread::sleep_for(std::chrono::milliseconds(1000)); 
     }
 
     LOG_INFO("Options synchronization thread exited.");

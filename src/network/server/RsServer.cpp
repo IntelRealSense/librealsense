@@ -222,10 +222,10 @@ void server::doOptions() {
     LOG_INFO("Options synchronization thread started.");
 
     while (1) {
-        if (m_options_list.remote_changes()) m_options_list.set();
-        else m_options_list.scan();
+        if (m_options_list.remote_changes()) m_options_list.set_dev();
+        else m_options_list.scan(true);
 
-        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        std::this_thread::sleep_for(std::chrono::milliseconds(1000));
     }
 }
 

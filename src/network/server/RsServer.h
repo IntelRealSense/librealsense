@@ -13,6 +13,7 @@
 
 #include "RsStreamLib.h"
 #include "RsNetCommon.h"
+#include "RsOptions.h"
 
 class server
 {
