@@ -3892,7 +3892,7 @@ namespace rs2
                                                                        *this,
                                                                        dev,
                                                                        ctx,
-                                                                       table[{product_line, PID}],
+                                                                       image,
                                                                        true );
             }
 
