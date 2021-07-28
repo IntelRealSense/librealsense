@@ -166,7 +166,16 @@ public class GLRenderer implements GLSurfaceView.Renderer, AutoCloseable{
             mFrames.clear();
             mDeltaX = 0;
             mDeltaY = 0;
-            mPointcloud = null;
+
+            if (mPointcloud != null)
+            {
+                for(Pointcloud pc : mPointcloud.values()){
+                    pc.close();
+                }
+
+                mPointcloud = null;
+            }
+
             if(mPointsTexture != null) mPointsTexture.close();
             mPointsTexture = null;
         }
