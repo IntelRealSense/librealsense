@@ -465,7 +465,6 @@ namespace librealsense
             });
             _device_watcher_active = true;
         }
-            
 
         return callback_id;
     }
@@ -475,7 +474,7 @@ namespace librealsense
         std::lock_guard<std::mutex> lock(_devices_changed_callbacks_mtx);
         _devices_changed_callbacks.erase(cb_id);
 
-        if (_devices_changed_callback == nullptr && _devices_changed_callbacks.size() == 0)
+        if (_device_watcher_active && _devices_changed_callback == nullptr && _devices_changed_callbacks.size() == 0)
         {
             _device_watcher->stop();
             _device_watcher_active = false;
@@ -485,11 +484,12 @@ namespace librealsense
     void context::set_devices_changed_callback(devices_changed_callback_ptr callback)
     {
         std::lock_guard<std::mutex> lock(_devices_changed_callbacks_mtx);
+        _devices_changed_callback = std::move(callback);
+
         if (_device_watcher_active == false)
         {
             _device_watcher->stop();
 
-            _devices_changed_callback = std::move(callback);
             _device_watcher->start([this](platform::backend_device_group old, platform::backend_device_group curr)
             {
                 on_device_changed(old, curr, _playback_devices, _playback_devices);
