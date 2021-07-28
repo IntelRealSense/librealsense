@@ -12,8 +12,6 @@
 #include <thread>
 #include <ctime>
 
-#define RELEASE_SENSOR_CALLBACK_REF 1
-
 // Java user frame callback data
 struct frame_callback_data
 {

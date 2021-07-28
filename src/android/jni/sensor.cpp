@@ -41,9 +41,8 @@ Java_com_intel_realsense_librealsense_Sensor_nOpenMultiple(JNIEnv *env, jclass t
     handle_error(env, e);
 }
 
-#if RELEASE_SENSOR_CALLBACK_REF
+// global param used to save the active frame callbacks, and their params
 static std::vector<frame_callback_data> sdata;
-#endif
 
 extern "C"
 JNIEXPORT void JNICALL
@@ -53,10 +52,8 @@ Java_com_intel_realsense_librealsense_Sensor_nStart(JNIEnv *env, jclass type, jl
 
     if (rs_jni_callback_init(env, handle, jcb, &cbdata) != true) return;
 
-#if RELEASE_SENSOR_CALLBACK_REF
     // save data for releasing the global java references later
     sdata.push_back(cbdata);
-#endif
 
     auto cb = [=](rs2::frame f) {
         frame_callback_data callback_data = cbdata;
@@ -77,7 +74,6 @@ Java_com_intel_realsense_librealsense_Sensor_nStop(JNIEnv *env, jclass type, jlo
     rs2_stop(reinterpret_cast<rs2_sensor *>(handle), &e);
     handle_error(env, e);
 
-#if RELEASE_SENSOR_CALLBACK_REF
     // release the java global references
     // stop is not blocking so occasionally the last native callback will still running
     // after stop is completed, wait a bit before cleanup the java references
@@ -87,9 +83,9 @@ Java_com_intel_realsense_librealsense_Sensor_nStop(JNIEnv *env, jclass type, jlo
         if (sdata[i].handle == handle) {
             rs_jni_cleanup(env, &sdata[i]);
             sdata.erase(sdata.begin() + i);
+            break;
         }
     }
-#endif
 }
 
 extern "C"
