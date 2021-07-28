@@ -9,6 +9,8 @@
 #include <librealsense2/hpp/rs_internal.hpp>
 #include <librealsense2/rs.hpp>
 
+#include "RsNetSensor.h"
+
 #define RS2_NET_MAJOR_VERSION    2
 #define RS2_NET_MINOR_VERSION    0
 #define RS2_NET_PATCH_VERSION    0
@@ -48,7 +50,6 @@ using OptMap          = std::map<std::string, std::map<uint32_t, RsOption>>;
 class RsOptionsList {
 public:
     RsOptionsList(rs2::device dev) : m_dev(dev), m_remote_changed(false), m_local_changed(false) {};
-    RsOptionsList(rs2::software_device sw_dev) : m_dev(NULL), m_sw_dev(sw_dev), m_remote_changed(false), m_local_changed(false) {};
    ~RsOptionsList() {};
 
     std::string serialize_full() {
@@ -116,9 +117,7 @@ public:
 
         m_local_changed = false;
 
-        rs2::device dev = m_dev;
-        if (dev == NULL) dev = m_sw_dev;
-        for (rs2::sensor sensor : dev.query_sensors()) {
+        for (rs2::sensor sensor : m_dev.query_sensors()) {
             std::string sensor_name(sensor.supports(RS2_CAMERA_INFO_NAME) ? sensor.get_info(RS2_CAMERA_INFO_NAME) : "Unknown");
             // Prepare options list
             std::map<uint32_t, RsOption> opts;
@@ -212,14 +211,12 @@ public:
         }
     };
 
-    void set() {
+    void set_dev() {
         const std::lock_guard<std::mutex> local_lock(m_local_mutex);
         const std::lock_guard<std::mutex> remote_lock(m_remote_mutex);
 
         for (auto sensor : m_remote) {
             // locate the proper sensor
-            rs2::device dev = m_dev;
-            if (dev == NULL) dev = m_sw_dev;
             auto sensors = m_dev.query_sensors();
             auto s = sensors.begin();
             for (; s != sensors.end(); s++) {
@@ -232,14 +229,48 @@ public:
             for (auto option : sensor.second) {
                 if (m_local[sensor.first][option.first].value != option.second.value) {
                     try {
-                        if (m_dev == NULL) {
-                            LOG_ERROR("Setting option for software sensor" << (rs2_option)option.first << " #" << std::dec << option.first << " to " << option.second.value << ", old value is " << m_local[sensor.first][option.first].value);
-                        } else {
-                            if (!s->is_option_read_only((rs2_option)option.first)) {
-                                LOG_INFO("Setting option " << (rs2_option)option.first << " #" << std::dec << option.first << " to " << option.second.value << ", old value is " << m_local[sensor.first][option.first].value);
-                                s->set_option((rs2_option)option.first, option.second.value);
-                            }
+                        if (!s->is_option_read_only((rs2_option)option.first)) {
+                            LOG_INFO("Setting option " << (rs2_option)option.first << " #" << std::dec << option.first << " to " << option.second.value << ", old value is " << m_local[sensor.first][option.first].value);
+                            s->set_option((rs2_option)option.first, option.second.value);
                         }
+                        // update the local map
+                        m_local[sensor.first][option.first].value = option.second.value;
+                    } catch(const rs2::error& e) {
+                        // LOG_WARNING("Failed to set option #" << option.first);
+                        LOG_ERROR("Failed to set option " << (rs2_option)option.first << " #" << std::dec << option.first << " for sensor " << sensor.first << " to " << option.second.value 
+                            << ". Range is [" << option.second.range.min << ", " << option.second.range.max << "], default value is " << option.second.range.def << ", step is " << option.second.range.step 
+                            << "(" << e.what() << ")");
+                    } catch(...) {
+                        // LOG_WARNING("Failed to set option #" << option.first);
+                        LOG_ERROR("Failed to set option " << (rs2_option)option.first << " #" << std::dec << option.first << " for sensor " << sensor.first << " to " << option.second.value 
+                            << ". Range is [" << option.second.range.min << ", " << option.second.range.max << "], default value is " << option.second.range.def << ", step is " << option.second.range.step);
+                    }
+                }
+            }
+        }
+
+        m_remote_changed = false;
+    };
+
+    void set_sw(std::vector<NetSensor> &sensors) {
+        const std::lock_guard<std::mutex> local_lock(m_local_mutex);
+        const std::lock_guard<std::mutex> remote_lock(m_remote_mutex);
+
+        for (auto sensor : m_remote) {
+            // locate the proper sensor
+            auto s = sensors.begin();
+            for (; s != sensors.end(); ++s) {
+                if (std::strcmp( (*s)->get_name().c_str(), sensor.first.c_str()) == 0) {
+                    break;
+                }
+            }
+
+            for (auto option : sensor.second) {
+                if (m_local[sensor.first][option.first].value != option.second.value) {
+                    try {
+                        LOG_INFO("Setting option " << (rs2_option)option.first << " #" << std::dec << option.first << " to " << option.second.value << ", old value is " << m_local[sensor.first][option.first].value);
+                        (*s)->set_option((rs2_option)option.first, option.second.value, option.second.range, option.second.ro);
+
                         // update the local map
                         m_local[sensor.first][option.first].value = option.second.value;
                     } catch(const rs2::error& e) {
@@ -264,7 +295,6 @@ public:
 
 private:
     rs2::device m_dev;
-    rs2::software_device m_sw_dev;
 
     OptMap m_local_prev;
     OptMap m_local;
