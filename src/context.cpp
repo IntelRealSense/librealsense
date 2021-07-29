@@ -100,8 +100,7 @@ namespace librealsense
                      const char* section,
                      rs2_recording_mode mode,
                      std::string min_api_version)
-        : _devices_changed_callback(nullptr, [](rs2_devices_changed_callback*){}),
-          _device_watcher_active(false)
+        : _devices_changed_callback(nullptr, [](rs2_devices_changed_callback*){})
     {
         static bool version_logged=false;
         if (!version_logged)
@@ -127,6 +126,7 @@ namespace librealsense
        environment::get_instance().set_time_service(_backend->create_time_service());
 
        _device_watcher = _backend->create_device_watcher();
+       assert(_device_watcher->is_stopped());
     }
 
 
@@ -449,21 +449,24 @@ namespace librealsense
             }
         }
     }
+
+    void context::start_device_watcher()
+    {
+        _device_watcher->start([this](platform::backend_device_group old, platform::backend_device_group curr)
+        {
+            on_device_changed(old, curr, _playback_devices, _playback_devices);
+        });
+    }
+
     uint64_t context::register_internal_device_callback(devices_changed_callback_ptr callback)
     {
         std::lock_guard<std::mutex> lock(_devices_changed_callbacks_mtx);
         auto callback_id = unique_id::generate_id();
         _devices_changed_callbacks.insert(std::make_pair(callback_id, std::move(callback)));
 
-        if (_device_watcher_active == false)
+        if (_device_watcher->is_stopped())
         {
-            _device_watcher->stop();
-
-            _device_watcher->start([this](platform::backend_device_group old, platform::backend_device_group curr)
-            {
-                on_device_changed(old, curr, _playback_devices, _playback_devices);
-            });
-            _device_watcher_active = true;
+            start_device_watcher();
         }
 
         return callback_id;
@@ -474,10 +477,9 @@ namespace librealsense
         std::lock_guard<std::mutex> lock(_devices_changed_callbacks_mtx);
         _devices_changed_callbacks.erase(cb_id);
 
-        if (_device_watcher_active && _devices_changed_callback == nullptr && _devices_changed_callbacks.size() == 0)
+        if (_devices_changed_callback == nullptr && _devices_changed_callbacks.size() == 0) // There are no register callbacks any more _device_watcher can be stopped
         {
             _device_watcher->stop();
-            _device_watcher_active = false;
         }
     }
 
@@ -486,17 +488,10 @@ namespace librealsense
         std::lock_guard<std::mutex> lock(_devices_changed_callbacks_mtx);
         _devices_changed_callback = std::move(callback);
 
-        if (_device_watcher_active == false)
+        if (_device_watcher->is_stopped())
         {
-            _device_watcher->stop();
-
-            _device_watcher->start([this](platform::backend_device_group old, platform::backend_device_group curr)
-            {
-                on_device_changed(old, curr, _playback_devices, _playback_devices);
-            });
-            _device_watcher_active = true;
+            start_device_watcher();
         }
-      
     }
 
     std::vector<platform::uvc_device_info> filter_by_product(const std::vector<platform::uvc_device_info>& devices, const std::set<uint16_t>& pid_list)
