@@ -92,12 +92,12 @@ public:
         return options.str();
     };
 
-    void scan(bool server) {
+    void scan(std::vector<rs2::sensor> sensors, bool server) {
         const std::lock_guard<std::mutex> lock(m_local_mutex);
 
         m_local_changed = false;
 
-        for (rs2::sensor sensor : m_dev.query_sensors()) {
+        for (rs2::sensor sensor : sensors) {
             std::string sensor_name(sensor.supports(RS2_CAMERA_INFO_NAME) ? sensor.get_info(RS2_CAMERA_INFO_NAME) : "Unknown");
             // Prepare options list
             std::map<uint32_t, RsOption> opts;
@@ -120,6 +120,43 @@ public:
                         }
                     }
                 } catch(...) {
+                    ;
+                }
+                std::this_thread::sleep_for(std::chrono::milliseconds(10));
+            }
+            m_local[sensor_name] = opts;
+        }
+    };
+
+    void scan(std::vector<NetSensor> sensors, bool server) {
+        const std::lock_guard<std::mutex> lock(m_local_mutex);
+
+        m_local_changed = false;
+
+        for (auto sensor : sensors) {
+            std::string sensor_name = sensor->get_name();
+            // Prepare options list
+            std::map<uint32_t, RsOption> opts;
+            for (int32_t i = 0; i < static_cast<int>(RS2_OPTION_COUNT); i++) {
+                RsOption option;
+                rs2_option option_type = static_cast<rs2_option>(i);
+                try {
+                    // Get the current value of the option
+                    option.index = i;
+                    option.value = sensor->get_sensor()->get_option(option_type);
+                    option.range = sensor->get_sensor()->get_option_range(option_type);
+                    option.ro = sensor->get_sensor()->is_option_read_only(option_type);
+
+                    if (server || !option.ro) {
+                        opts[i] = option;
+
+                        if (m_local_prev[sensor_name][option.index].value != option.value) {
+                            m_local_changed = true;
+                            LOG_DEBUG("Local option change " << std::setw(30) << (rs2_option)option.index << " #" << std::dec << option.index << " to " << option.value << ", old value is " << m_local_prev[sensor_name][option.index].value);
+                        }
+                    }
+                }
+                catch (...) {
                     ;
                 }
             }
@@ -239,7 +276,7 @@ public:
         m_remote_changed = false;
     };
 
-    void set_sw(std::vector<NetSensor> &sensors) {
+    void set_sw(std::vector<NetSensor> sensors) {
         const std::lock_guard<std::mutex> local_lock(m_local_mutex);
         const std::lock_guard<std::mutex> remote_lock(m_remote_mutex);
 

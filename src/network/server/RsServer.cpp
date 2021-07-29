@@ -223,7 +223,7 @@ void server::doOptions() {
 
     while (1) {
         if (m_options_list.remote_changes()) m_options_list.set_dev();
-        else m_options_list.scan(true);
+        else m_options_list.scan(m_dev.query_sensors(), true);
 
         std::this_thread::sleep_for(std::chrono::milliseconds(1000));
     }

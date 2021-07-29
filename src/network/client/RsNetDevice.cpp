@@ -387,7 +387,7 @@ void rs_net_device::doOptions() {
     std::string options_prev;
 
     while (m_running) {
-        m_options_list.scan(false);
+        m_options_list.scan(sensors, false);
 
         httplib::Client client(m_ip_address, 8080);
         if (m_options_list.changes()) {
