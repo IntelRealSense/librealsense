@@ -336,7 +336,8 @@ CPointcloudStitcher::CPointcloudStitcher(const std::string& working_dir, const s
     _calibration_file(calibration_file),
     _serial_vir("12345678"),
     _frame_number(0),
-    _is_recording(false)
+    _is_recording(false),
+    _is_calibrated(true)
 {
     // init frames map
     //for initilize only - an empty frame with its properties
@@ -449,8 +450,15 @@ bool CPointcloudStitcher::Init()
         bool is_left;
         std::string dev_name = dev->get_info(RS2_CAMERA_INFO_NAME);
         std::string dev_serial = dev->get_info(RS2_CAMERA_INFO_SERIAL_NUMBER);
+        std::string usb_desc = dev->get_info(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR);
         serials.push_back(dev_serial);
-        std::cout << "Got Device: " << dev_name << " : " << dev_serial << std::endl;
+        std::cout << "Got Device: " << dev_name << " : " << dev_serial << " connected using " << usb_desc << std::endl;
+        if (usb_desc.find("3") == std::string::npos)
+        {
+            std::cerr << "Device will not perform well enough using usb type:" << usb_desc << std::endl;
+            std::cerr << "Please replace connection and rerun application." << std::endl;
+            return false;
+        }
         std::stringstream filename;
         filename << _working_dir << "/" << dev_serial << ".cfg";
         _wanted_profiles[dev_serial] = parse_profiles_file(filename.str(), is_left);
@@ -460,6 +468,24 @@ bool CPointcloudStitcher::Init()
             _left_device = dev_serial;  // TODO: define left device based on transformation between devices.
         }
     }
+    // Skip reading the rest of the input files if there is no depth input stream:
+    int num_depth_profiles(0);
+    for (auto dev_profiles : _wanted_profiles)
+        for (const auto& profile : dev_profiles.second)
+            if (profile._stream_type == RS2_STREAM_DEPTH)
+                num_depth_profiles++;
+    if (num_depth_profiles < _wanted_profiles.size())
+    {
+        _is_calibrated = false;
+        _left_device = serials[0];
+        return true;
+    }
+    if (_calibration_file.empty())
+    {
+        std::cerr << "Error: Calibration file is not set." << std::endl;
+        return false;
+    }
+
     {
         std::stringstream filename;
         filename << _working_dir << "/" << _calibration_file;
@@ -577,12 +603,15 @@ bool CPointcloudStitcher::Start()
         }
     }
 
-    std::string serial(_soft_dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER));
-    for (auto&& sensor : _soft_dev.query_sensors())
+    if (_soft_dev.supports(RS2_CAMERA_INFO_SERIAL_NUMBER))
     {
-        sensor.open(sensor.get_stream_profiles());
-        _active_sensors[serial].emplace_back(sensor);
-        sensor.start(_soft_sync);
+        std::string serial(_soft_dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER));
+        for (auto&& sensor : _soft_dev.query_sensors())
+        {
+            sensor.open(sensor.get_stream_profiles());
+            _active_sensors[serial].emplace_back(sensor);
+            sensor.start(_soft_sync);
+        }
     }
     return true;
 }
@@ -745,7 +774,13 @@ void CPointcloudStitcher::SaveOriginImages(const std::map<std::string, rs2::fram
         rs2::frame frame = frames.second.as<rs2::frameset>().first_or_default(RS2_STREAM_INFRARED);
         auto vf = frame.as<rs2::video_frame>();
         std::stringstream png_file;
-        png_file << _working_dir << "/" << frames.first;
+        png_file << _working_dir << "/calibration_input";
+        if (!dirExists(png_file.str()))
+        {
+            std::cout << "Create directory: " << png_file.str() << std::endl;
+            CreateDirectoryA(png_file.str().c_str(), NULL);
+        }
+        png_file << "/" << frames.first;
         if (!dirExists(png_file.str()))
         {
             std::cout << "Create directory: " << png_file.str() << std::endl;
@@ -761,7 +796,7 @@ void CPointcloudStitcher::SaveOriginImages(const std::map<std::string, rs2::fram
         {
             // Save intrinsics to file:
             std::stringstream filename;
-            filename << _working_dir << "/" << "intrinsics_" << frames.first << ".txt";
+            filename << _working_dir << "/calibration_input/" << "intrinsics_" << frames.first << ".txt";
 
             std::ofstream csv(filename.str());
 
@@ -899,9 +934,10 @@ void CPointcloudStitcher::RecordButton(const ImVec2& window_size)
         }
         else
         {
-            StartRecording("record.bag");
+            std::stringstream filename;
+            filename << _working_dir << "/record.bag";
+            StartRecording(filename.str());
         }
-        std::cout << "_is_recording: " << _is_recording << std::endl;
     }
     if (ImGui::IsItemHovered())
     {
@@ -962,8 +998,11 @@ void CPointcloudStitcher::Run(window& app)
             start_time = end_time;
         }
         int offset(0);
-        memset(_virtual_depth_frame.frame.data(), 0, (size_t)_virtual_depth_frame.x * _virtual_depth_frame.y * _virtual_depth_frame.bpp);
-        memset(_virtual_color_frame.frame.data(), 0, (size_t)_virtual_color_frame.x * _virtual_color_frame.y * _virtual_color_frame.bpp);
+        if (_is_calibrated)
+        {
+            memset(_virtual_depth_frame.frame.data(), 0, (size_t)_virtual_depth_frame.x * _virtual_depth_frame.y * _virtual_depth_frame.bpp);
+            memset(_virtual_color_frame.frame.data(), 0, (size_t)_virtual_color_frame.x * _virtual_color_frame.y * _virtual_color_frame.bpp);
+        }
         std::map<std::string, rs2::frame>     frames_sets;
         for (auto frames : _frames)
         {
@@ -1005,41 +1044,45 @@ void CPointcloudStitcher::Run(window& app)
             }
         }
 
-        rs2::frame aframe = frames_sets.begin()->second;
+        if (_is_calibrated)
         {
-            rs2::software_sensor virtual_depth_sensor = *(static_cast<rs2::software_sensor*>(&(*std::find_if(virtual_sensors.begin(), virtual_sensors.end(), [](const auto& sns) { return "Depth" == std::string(sns.get_info(RS2_CAMERA_INFO_NAME)); }))));
-            virtual_depth_sensor.on_video_frame({ _virtual_depth_frame.frame.data(), // Frame pixels from capture API
-                [](void*) {}, // Custom deleter (if required)
-                _virtual_depth_frame.x * _virtual_depth_frame.bpp, _virtual_depth_frame.bpp, // Stride and Bytes-per-pixel
-                aframe.get_timestamp(), aframe.get_frame_timestamp_domain(), _frame_number, // Timestamp, Frame# for potential sync services
-                *(virtual_depth_sensor.get_active_streams().begin()) });
-        }
-        rs2::frame color = aframe.as<rs2::frameset>().first_or_default(RS2_STREAM_COLOR);
-        if (color)
-        {
-            rs2::software_sensor virtual_color_sensor = *(static_cast<rs2::software_sensor*>(&(*std::find_if(virtual_sensors.begin(), virtual_sensors.end(), [](const auto& sns) { return "Color" == std::string(sns.get_info(RS2_CAMERA_INFO_NAME)); }))));
-            virtual_color_sensor.on_video_frame({ _virtual_color_frame.frame.data(), // Frame pixels from capture API
-                [](void*) {}, // Custom deleter (if required)
-                _virtual_color_frame.x * _virtual_color_frame.bpp, _virtual_color_frame.bpp, // Stride and Bytes-per-pixel
-                aframe.get_timestamp(), aframe.get_frame_timestamp_domain(), _frame_number, // Timestamp, Frame# for potential sync services
-                *(virtual_color_sensor.get_active_streams().begin()) });
-        }
-        rs2::frameset fset;
-        if (!_soft_sync.try_wait_for_frames(&fset))
-        {
-            std::cout << "Failed to get processed frame." << std::endl;
-            continue;
-        }
 
-        if (display_output_images)
-        {
-            rs2::frame depth = fset.first_or_default(RS2_STREAM_DEPTH);
-            rs2::frame color = fset.first_or_default(RS2_STREAM_COLOR);
-            if (depth)
-                _frames_map[DEPTH_UNITED].first = depth;
-
+            rs2::frame aframe = frames_sets.begin()->second;
+            {
+                rs2::software_sensor virtual_depth_sensor = *(static_cast<rs2::software_sensor*>(&(*std::find_if(virtual_sensors.begin(), virtual_sensors.end(), [](const auto& sns) { return "Depth" == std::string(sns.get_info(RS2_CAMERA_INFO_NAME)); }))));
+                virtual_depth_sensor.on_video_frame({ _virtual_depth_frame.frame.data(), // Frame pixels from capture API
+                    [](void*) {}, // Custom deleter (if required)
+                    _virtual_depth_frame.x * _virtual_depth_frame.bpp, _virtual_depth_frame.bpp, // Stride and Bytes-per-pixel
+                    aframe.get_timestamp(), aframe.get_frame_timestamp_domain(), _frame_number, // Timestamp, Frame# for potential sync services
+                    *(virtual_depth_sensor.get_active_streams().begin()) });
+            }
+            rs2::frame color = aframe.as<rs2::frameset>().first_or_default(RS2_STREAM_COLOR);
             if (color)
-                _frames_map[COLOR_UNITED].first = color;
+            {
+                rs2::software_sensor virtual_color_sensor = *(static_cast<rs2::software_sensor*>(&(*std::find_if(virtual_sensors.begin(), virtual_sensors.end(), [](const auto& sns) { return "Color" == std::string(sns.get_info(RS2_CAMERA_INFO_NAME)); }))));
+                virtual_color_sensor.on_video_frame({ _virtual_color_frame.frame.data(), // Frame pixels from capture API
+                    [](void*) {}, // Custom deleter (if required)
+                    _virtual_color_frame.x * _virtual_color_frame.bpp, _virtual_color_frame.bpp, // Stride and Bytes-per-pixel
+                    aframe.get_timestamp(), aframe.get_frame_timestamp_domain(), _frame_number, // Timestamp, Frame# for potential sync services
+                    *(virtual_color_sensor.get_active_streams().begin()) });
+            }
+            rs2::frameset fset;
+            if (!_soft_sync.try_wait_for_frames(&fset))
+            {
+                std::cout << "Failed to get processed frame." << std::endl;
+                continue;
+            }
+
+            if (display_output_images)
+            {
+                rs2::frame depth = fset.first_or_default(RS2_STREAM_DEPTH);
+                rs2::frame color = fset.first_or_default(RS2_STREAM_COLOR);
+                if (depth)
+                    _frames_map[DEPTH_UNITED].first = depth;
+
+                if (color)
+                    _frames_map[COLOR_UNITED].first = color;
+            }
         }
         if (display_output_images || display_original_images)
         {
@@ -1061,7 +1104,7 @@ void CPointcloudStitcher::Run(window& app)
 void PrintHelp()
 {
     std::cout << "USAGE: " << std::endl;
-    std::cout << "rs-pointcloud-stitching " << " <working_directory> <calibration_file>" << std::endl;
+    std::cout << "rs-pointcloud-stitching " << " <working_directory> [calibration_file]" << std::endl;
     std::cout << std::endl;
     std::cout << "Connect exactly 2 RS devices." << std::endl;
     std::cout << "The following files are expected in <working_directory>:" << std::endl;
@@ -1071,21 +1114,41 @@ void PrintHelp()
     std::cout << "   left" << std::endl;
     std::cout << "The last line could be added for the left camera only and used to decide which stream to show in the left side of the screen. If omitted, the decision is based upon the translation between the cameras." << std::endl;
     std::cout << std::endl;
-    std::cout << "2. <calibration_file> of the following format:" << std::endl;
+
+    std::cout << "2. virtual_dev.cfg" << std::endl;
+    std::cout << "   This file describes the intrinsics parameters of the united camera, created by stitching together 2 devices." << std::endl;
+    std::cout << "   It contains the FOV and image size for the virtual device." << std::endl;
+    std::cout << "   An example file is printed below." << std::endl;
+    std::cout << std::endl;
+
+    std::cout << "3. <calibration_file> of the following format:" << std::endl;
     std::cout << "   <serial_0>, <serial_1>, <t1, t2, t3, ...., t12>" << std::endl;
     std::cout << "   <serial_1>, virtual_dev, <t1, t2, t3, ...., t12>" << std::endl;
     std::cout << "The t1, t2,... t12 line represents transformation from 1 device to the other." << std::endl;
     std::cout << "The second line represent the transformation from a device to the wanted virtual device. Possibly in the middle between the 2 devices." << std::endl;
     std::cout << std::endl;
-    std::cout << "Example files:" << std::endl;
+    std::cout << "--- Example files: ---" << std::endl;
     std::cout << "831612073525.cfg:" << std::endl;
+    std::cout << "-----------------" << std::endl;
     std::cout << "DEPTH,640,480,30,Z16,0" << std::endl;
-    std::cout << "COLOR,640,480,30,RGB8,0" << std::endl;
+    std::cout << "COLOR,640,360,30,RGB8,0" << std::endl;
     std::cout << "#INFRARED,640,480,30,Y8,1" << std::endl;
     std::cout << std::endl;
     std::cout << "calibration_15.cfg:" << std::endl;
+    std::cout << "-------------------" << std::endl;
     std::cout << "912112073098, 831612073525, 0.8660254, 0,  -0.5,  0,1,0,      0.5, 0., 0.8660254, 0.250841, 0.001128,0" << std::endl;
     std::cout << "831612073525, virtual_dev, 0.96592583, 0,  0.25881905,  0,1,0,      -0.25881905, 0., 0.96592583, 0,0,0" << std::endl;
+    std::cout << std::endl;
+    std::cout << "virtual_dev.cfg:" << std::endl;
+    std::cout << "----------------" << std::endl;
+    std::cout << "depth_width=880" << std::endl;
+    std::cout << "depth_height=480" << std::endl;
+    std::cout << "depth_fov_x=110" << std::endl;
+    std::cout << "depth_fov_y=60" << std::endl;
+    std::cout << "color_width=720" << std::endl;
+    std::cout << "color_height=320" << std::endl;
+    std::cout << "color_fov_x=90" << std::endl;
+    std::cout << "color_fov_y=40" << std::endl;
     std::cout << std::endl;
 }
 
@@ -1098,14 +1161,14 @@ int main(int argc, char* argv[]) try
             break;
         }
     }
-    if (argc <= 2) is_print_help = true;
     if (is_print_help)
     {
         PrintHelp();
         return -1;
     }
     string working_dir(argv[1]);
-    string calibration_file(argv[2]);
+    string calibration_file("");
+    if (argc > 2) calibration_file = argv[2];
 
     CPointcloudStitcher pc_stitcher(working_dir, calibration_file);
     if (!pc_stitcher.Init())
@@ -1118,7 +1181,7 @@ int main(int argc, char* argv[]) try
 
     unsigned int window_width, window_height;
     get_screen_resolution(window_width, window_height);
-    window app(window_width, window_height*0.9, "RealSense Pointcloud-Stitching Example", tiles_in_row, tiles_in_col);
+    window app(window_width, static_cast<unsigned int>(window_height*0.9), "RealSense Pointcloud-Stitching Example", tiles_in_row, tiles_in_col);
     ImGui_ImplGlfw_Init(app, false);
 
     pc_stitcher.Run(app);

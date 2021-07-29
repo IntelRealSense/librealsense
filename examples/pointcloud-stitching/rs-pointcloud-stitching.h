@@ -193,6 +193,7 @@ namespace rs_pointcloud_stitching
         std::shared_ptr<rs2::recorder> _recorder;
         bool _is_recording;
         rs2::hole_filling_filter _hole_filling_filter;
+        bool _is_calibrated;
 
 
         enum frame_id { COLOR1, COLOR_UNITED, COLOR2, DEPTH1, DEPTH_UNITED, DEPTH2};
