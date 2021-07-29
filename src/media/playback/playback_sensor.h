@@ -131,9 +131,13 @@ namespace librealsense
                         return;
 
                     std::swap((*pf).frame, pframe);
-
-
-                    m_user_callback->on_frame((rs2_frame*)pframe);
+                    
+                    // We want to make sure that we have a valid reference to this shared_ptr so if
+                    // "reset()" it will not destroy the object
+                    auto user_callback = m_user_callback;
+                    if (user_callback)
+                        user_callback->on_frame((rs2_frame*)pframe);
+                    
                     update_last_pushed_frame();
                     
                 };
