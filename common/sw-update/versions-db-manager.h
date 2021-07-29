@@ -7,8 +7,8 @@
 #include <functional>
 #include <string>
 #include <vector>
-
 #include "http-downloader.h"
+#include <regex>
 
 namespace rs2
 {
