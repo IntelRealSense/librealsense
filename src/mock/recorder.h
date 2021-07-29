@@ -415,6 +415,7 @@ namespace librealsense
 
             void stop() override;
 
+            bool is_stopped() const override;
         private:
             const record_backend* _owner;
             std::shared_ptr<device_watcher> _source_watcher;
@@ -492,7 +493,7 @@ namespace librealsense
             ~playback_device_watcher();
             void start(device_changed_callback callback) override;
             void stop() override;
-
+            bool is_stopped() const override;
             void raise_callback(backend_device_group old, backend_device_group curr);
 
         private:
