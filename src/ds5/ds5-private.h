@@ -773,6 +773,10 @@ namespace librealsense
             stream_not_start_y,
             stream_not_start_cam,
             rec_error,
+            usb2_limit,
+            cold_laser_disable,
+            no_temperature_disable_laser,
+            isp_boot_data_upload_failed,
         };
 
         // Elaborate FW XU report. The reports may be consequently extended for PU/CTL/ISP
@@ -803,6 +807,10 @@ namespace librealsense
             { stream_not_start_y,           "IR stream start failure" },
             { stream_not_start_cam,         "Camera stream start failure" },
             { rec_error,                    "REC error" },
+            { usb2_limit,                   "USB2 Limit" },
+            { cold_laser_disable,           "Laser cold - disabled" },
+            { no_temperature_disable_laser, "Temperature read failure - laser disabled" },
+            { isp_boot_data_upload_failed,  "ISP boot data upload failure" },
         };
 
         std::vector<platform::uvc_device_info> filter_device_by_capability(const std::vector<platform::uvc_device_info>& devices, d400_caps caps);
