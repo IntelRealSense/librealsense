@@ -9,7 +9,7 @@
 > :pushpin: For other Intel® RealSense™ devices (F200, R200, LR200 and ZR300), please refer to the [latest legacy release](https://github.com/IntelRealSense/librealsense/tree/v1.12.1).
 
 The SDK allows depth and color streaming, and provides intrinsic and extrinsic calibration information.
-The library also offers synthetic streams (pointcloud, depth aligned to color and vise-versa), and a built-in support for [record and playback](./doc/record_and_playback.md) of streaming sessions.
+The library also offers synthetic streams (pointcloud, depth aligned to color and vise-versa), and a built-in support for [record and playback](./doc/record-and-playback.md) of streaming sessions.
 
 Developer kits containing the necessary hardware to use this library are available for purchase at [store.intelrealsense.com](https://store.intelrealsense.com/products.html).
 Information about the Intel® RealSense™ technology at [www.intelrealsense.com](https://www.intelrealsense.com/)
