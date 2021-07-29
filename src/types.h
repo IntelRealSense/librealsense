@@ -1625,6 +1625,11 @@ namespace librealsense
             _callback_inflight.wait_until_empty();
         }
 
+        bool is_stopped() const override
+        {
+            return !_active_object.is_active();
+        }
+
     private:
         active_object<> _active_object;
 

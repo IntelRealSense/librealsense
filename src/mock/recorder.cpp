@@ -649,6 +649,10 @@ namespace librealsense
             }, _entity_id, call_type::device_watcher_stop);
         }
 
+        bool record_device_watcher::is_stopped() const
+        {
+            return _source_watcher->is_stopped();
+        }
 
         void record_uvc_device::probe_and_commit(stream_profile profile, frame_callback callback, int buffers)
         {
@@ -1214,6 +1218,11 @@ namespace librealsense
                 _alive = false;
                 _dispatcher.stop();
             }
+        }
+
+        bool playback_device_watcher::is_stopped() const
+        {
+            return !_alive.load();
         }
 
         void playback_device_watcher::raise_callback(backend_device_group old, backend_device_group curr)
