@@ -47,7 +47,7 @@ RUN cd /usr/src/librealsense \
     -DBUILD_GRAPHICAL_EXAMPLES=OFF \
     -DBUILD_PYTHON_BINDINGS:bool=true \
     -DCMAKE_BUILD_TYPE=Release ../ \
-    && make -j4 all \
+    && make -j$(($(nproc)-1)) all \
     && make install 
 
 ######################################
