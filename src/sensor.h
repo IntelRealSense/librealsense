@@ -30,6 +30,7 @@ namespace librealsense
     class option;
 
     typedef std::function<void(std::vector<platform::stream_profile>)> on_open;
+    typedef std::function<void(frame_additional_data &data)> on_frame_md;
 
     struct frame_timestamp_reader
     {
@@ -68,6 +69,7 @@ namespace librealsense
         {
             _on_open = callback;
         }
+        virtual void set_frame_metadata_modifier(on_frame_md callback) { _metadata_modifier = callback; }
         device_interface& get_device() override;
 
         // Make sensor inherit its owning device info by default
@@ -89,6 +91,8 @@ namespace librealsense
         void raise_on_before_streaming_changes(bool streaming);
         void set_active_streams(const stream_profiles& requests);
 
+        void register_profile(std::shared_ptr<stream_profile_interface> target) const;
+
         void assign_stream(const std::shared_ptr<stream_interface>& stream,
                            std::shared_ptr<stream_profile_interface> target) const;
 
@@ -104,6 +108,7 @@ namespace librealsense
         std::atomic<bool> _is_opened;
         std::shared_ptr<notifications_processor> _notifications_processor;
         on_open _on_open;
+        on_frame_md _metadata_modifier;
         std::shared_ptr<metadata_parser_map> _metadata_parsers = nullptr;
 
         sensor_base* _source_owner = nullptr;
@@ -348,7 +353,6 @@ namespace librealsense
             power on(std::dynamic_pointer_cast<uvc_sensor>(shared_from_this()));
             return action(*_device);
         }
-
     protected:
         stream_profiles init_stream_profiles() override;
         rs2_extension stream_to_frame_types(rs2_stream stream) const;

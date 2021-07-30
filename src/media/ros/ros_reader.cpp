@@ -27,7 +27,8 @@ namespace librealsense
         m_total_duration(0),
         m_file_path(file),
         m_context(ctx),
-        m_version(0)
+        m_version(0),
+        m_legacy_depth_units(0)
     {
         try
         {
@@ -412,6 +413,10 @@ namespace librealsense
         additional_data.timestamp = timestamp_ms.count();
         additional_data.frame_number = msg->header.seq;
         additional_data.fisheye_ae_mode = false;
+        if (msg->depth_units)
+            additional_data.depth_units = msg->depth_units;
+        else
+            additional_data.depth_units = m_legacy_depth_units; // for old rosbag
 
         stream_identifier stream_id;
         if (m_version == legacy_file_format::file_version())
@@ -791,6 +796,12 @@ namespace librealsense
             LOG_DEBUG("Legacy file - processing blocks are not supported");
             return;
         }
+
+        // find depth units from old rosbag
+        auto depth_sensor = As<librealsense::depth_sensor>(sensor_extensions.find(RS2_EXTENSION_DEPTH_SENSOR)).get();
+        if(depth_sensor)
+            m_legacy_depth_units = depth_sensor->get_depth_scale();
+
         auto options_snapshot = sensor_extensions.find(RS2_EXTENSION_OPTIONS);
         if (options_snapshot == nullptr)
         {

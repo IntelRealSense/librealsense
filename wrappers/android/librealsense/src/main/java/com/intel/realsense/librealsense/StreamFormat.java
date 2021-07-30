@@ -30,7 +30,8 @@ public enum StreamFormat {
     INVI(26),
     W10(27),
     Z16H(28),
-    FG(29);
+    FG(29),
+    Y411(30);
     private final int mValue;
 
     private StreamFormat(int value) { mValue = value; }

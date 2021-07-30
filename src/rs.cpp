@@ -30,6 +30,7 @@
 #include "proc/zero-order.h"
 #include "proc/hole-filling-filter.h"
 #include "proc/color-formats-converter.h"
+#include "proc/y411-converter.h"
 #include "proc/rates-printer.h"
 #include "proc/hdr-merge.h"
 #include "proc/sequence-id-filter.h"
@@ -47,6 +48,7 @@
 #include "firmware_logger_device.h"
 #include "device-calibration.h"
 #include "calibrated-sensor.h"
+
 ////////////////////////
 // API implementation //
 ////////////////////////
@@ -1671,7 +1673,7 @@ rs2_device* rs2_create_record_device_ex(const rs2_device* device, const char* fi
     return new rs2_device({
         device->ctx,
         device->info,
-        std::make_shared<record_device>(device->device, std::make_shared<ros_writer>(file, compression_enabled))
+        std::make_shared<record_device>(device->device, std::make_shared<ros_writer>(file, compression_enabled != 0))
         });
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, device, file)
@@ -1961,7 +1963,7 @@ void rs2_config_enable_device_from_file_repeat_option(rs2_config* config, const 
     VALIDATE_NOT_NULL(config);
     VALIDATE_NOT_NULL(file);
 
-    config->config->enable_device_from_file(file, repeat_playback);
+    config->config->enable_device_from_file(file, repeat_playback != 0);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, config, file)
 
@@ -2193,6 +2195,12 @@ NOARGS_HANDLE_EXCEPTIONS_AND_RETURN(nullptr)
 rs2_processing_block* rs2_create_yuy_decoder(rs2_error** error) BEGIN_API_CALL
 {
     return new rs2_processing_block { std::make_shared<yuy2_converter>(RS2_FORMAT_RGB8) };
+}
+NOARGS_HANDLE_EXCEPTIONS_AND_RETURN(nullptr)
+
+rs2_processing_block* rs2_create_y411_decoder(rs2_error** error) BEGIN_API_CALL
+{
+    return new rs2_processing_block{ std::make_shared<y411_converter>(RS2_FORMAT_RGB8) };
 }
 NOARGS_HANDLE_EXCEPTIONS_AND_RETURN(nullptr)
 
@@ -2523,7 +2531,7 @@ rs2_stream_profile* rs2_software_sensor_add_video_stream_ex(rs2_sensor* sensor, 
 {
     VALIDATE_NOT_NULL(sensor);
     auto bs = VALIDATE_INTERFACE(sensor->sensor, librealsense::software_sensor);
-    return bs->add_video_stream(video_stream, is_default)->get_c_wrapper();
+    return bs->add_video_stream(video_stream, is_default != 0 )->get_c_wrapper();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, sensor, video_stream.type, video_stream.index, video_stream.fmt, video_stream.width, video_stream.height, video_stream.uid, is_default)
 
@@ -2539,7 +2547,7 @@ rs2_stream_profile* rs2_software_sensor_add_motion_stream_ex(rs2_sensor* sensor,
 {
     VALIDATE_NOT_NULL(sensor);
     auto bs = VALIDATE_INTERFACE(sensor->sensor, librealsense::software_sensor);
-    return bs->add_motion_stream(motion_stream, is_default)->get_c_wrapper();
+    return bs->add_motion_stream(motion_stream, is_default != 0)->get_c_wrapper();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, sensor, motion_stream.type, motion_stream.index, motion_stream.fmt, motion_stream.uid, is_default)
 
@@ -2555,7 +2563,7 @@ rs2_stream_profile* rs2_software_sensor_add_pose_stream_ex(rs2_sensor* sensor, r
 {
     VALIDATE_NOT_NULL(sensor);
     auto bs = VALIDATE_INTERFACE(sensor->sensor, librealsense::software_sensor);
-    return bs->add_pose_stream(pose_stream, is_default)->get_c_wrapper();
+    return bs->add_pose_stream(pose_stream, is_default != 0)->get_c_wrapper();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, sensor, pose_stream.type, pose_stream.index, pose_stream.fmt, pose_stream.uid, is_default)
 
@@ -2582,7 +2590,7 @@ void rs2_software_sensor_add_option(rs2_sensor* sensor, rs2_option option, float
     VALIDATE_LE(0, step);
     VALIDATE_NOT_NULL(sensor);
     auto bs = VALIDATE_INTERFACE(sensor->sensor, librealsense::software_sensor);
-    return bs->add_option(option, option_range{ min, max, step, def }, bool(is_writable));
+    return bs->add_option(option, option_range{ min, max, step, def }, bool(is_writable != 0));
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, sensor, option, min, max, step, def, is_writable)
 
@@ -3430,3 +3438,246 @@ rs2_raw_data_buffer* rs2_terminal_parse_response(rs2_terminal_parser* terminal_p
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, terminal_parser, command, response)
 
+void rs2_project_point_to_pixel(float pixel[2], const struct rs2_intrinsics* intrin, const float point[3]) BEGIN_API_CALL
+{
+    float x = point[0] / point[2], y = point[1] / point[2];
+
+    if ((intrin->model == RS2_DISTORTION_MODIFIED_BROWN_CONRADY) ||
+        (intrin->model == RS2_DISTORTION_INVERSE_BROWN_CONRADY))
+    {
+
+        float r2 = x * x + y * y;
+        float f = 1 + intrin->coeffs[0] * r2 + intrin->coeffs[1] * r2 * r2 + intrin->coeffs[4] * r2 * r2 * r2;
+        x *= f;
+        y *= f;
+        float dx = x + 2 * intrin->coeffs[2] * x * y + intrin->coeffs[3] * (r2 + 2 * x * x);
+        float dy = y + 2 * intrin->coeffs[3] * x * y + intrin->coeffs[2] * (r2 + 2 * y * y);
+        x = dx;
+        y = dy;
+    }
+
+    if (intrin->model == RS2_DISTORTION_BROWN_CONRADY)
+    {
+        float r2 = x * x + y * y;
+        float f = 1 + intrin->coeffs[0] * r2 + intrin->coeffs[1] * r2 * r2 + intrin->coeffs[4] * r2 * r2 * r2;
+
+        float xf = x * f;
+        float yf = y * f;
+
+        float dx = xf + 2 * intrin->coeffs[2] * x * y + intrin->coeffs[3] * (r2 + 2 * x * x);
+        float dy = yf + 2 * intrin->coeffs[3] * x * y + intrin->coeffs[2] * (r2 + 2 * y * y);
+
+        x = dx;
+        y = dy;
+    }
+
+    if (intrin->model == RS2_DISTORTION_FTHETA)
+    {
+        float r = sqrtf(x * x + y * y);
+        if (r < FLT_EPSILON)
+        {
+            r = FLT_EPSILON;
+        }
+        float rd = (float)(1.0f / intrin->coeffs[0] * atan(2 * r * tan(intrin->coeffs[0] / 2.0f)));
+        x *= rd / r;
+        y *= rd / r;
+    }
+    if (intrin->model == RS2_DISTORTION_KANNALA_BRANDT4)
+    {
+        float r = sqrtf(x * x + y * y);
+        if (r < FLT_EPSILON)
+        {
+            r = FLT_EPSILON;
+        }
+        float theta = atan(r);
+        float theta2 = theta * theta;
+        float series = 1 + theta2 * (intrin->coeffs[0] + theta2 * (intrin->coeffs[1] + theta2 * (intrin->coeffs[2] + theta2 * intrin->coeffs[3])));
+        float rd = theta * series;
+        x *= rd / r;
+        y *= rd / r;
+    }
+
+    pixel[0] = x * intrin->fx + intrin->ppx;
+    pixel[1] = y * intrin->fy + intrin->ppy;
+}
+NOEXCEPT_RETURN(, pixel)
+
+void rs2_deproject_pixel_to_point(float point[3], const struct rs2_intrinsics* intrin, const float pixel[2], float depth) BEGIN_API_CALL
+{
+    assert(intrin->model != RS2_DISTORTION_MODIFIED_BROWN_CONRADY); // Cannot deproject from a forward-distorted image
+    //assert(intrin->model != RS2_DISTORTION_BROWN_CONRADY); // Cannot deproject to an brown conrady model
+
+    float x = (pixel[0] - intrin->ppx) / intrin->fx;
+    float y = (pixel[1] - intrin->ppy) / intrin->fy;
+
+    float xo = x;
+    float yo = y;
+
+    if (intrin->model == RS2_DISTORTION_INVERSE_BROWN_CONRADY)
+    {
+        // need to loop until convergence 
+        // 10 iterations determined empirically
+        for (int i = 0; i < 10; i++)
+        {
+            float r2 = x * x + y * y;
+            float icdist = (float)1 / (float)(1 + ((intrin->coeffs[4] * r2 + intrin->coeffs[1]) * r2 + intrin->coeffs[0]) * r2);
+            float xq = x / icdist;
+            float yq = y / icdist;
+            float delta_x = 2 * intrin->coeffs[2] * xq * yq + intrin->coeffs[3] * (r2 + 2 * xq * xq);
+            float delta_y = 2 * intrin->coeffs[3] * xq * yq + intrin->coeffs[2] * (r2 + 2 * yq * yq);
+            x = (xo - delta_x) * icdist;
+            y = (yo - delta_y) * icdist;
+        }
+    }
+    if (intrin->model == RS2_DISTORTION_BROWN_CONRADY)
+    {
+        // need to loop until convergence 
+        // 10 iterations determined empirically
+        for (int i = 0; i < 10; i++)
+        {
+            float r2 = x * x + y * y;
+            float icdist = (float)1 / (float)(1 + ((intrin->coeffs[4] * r2 + intrin->coeffs[1]) * r2 + intrin->coeffs[0]) * r2);
+            float delta_x = 2 * intrin->coeffs[2] * x * y + intrin->coeffs[3] * (r2 + 2 * x * x);
+            float delta_y = 2 * intrin->coeffs[3] * x * y + intrin->coeffs[2] * (r2 + 2 * y * y);
+            x = (xo - delta_x) * icdist;
+            y = (yo - delta_y) * icdist;
+        }
+
+    }
+    if (intrin->model == RS2_DISTORTION_KANNALA_BRANDT4)
+    {
+        float rd = sqrtf(x * x + y * y);
+        if (rd < FLT_EPSILON)
+        {
+            rd = FLT_EPSILON;
+        }
+
+        float theta = rd;
+        float theta2 = rd * rd;
+        for (int i = 0; i < 4; i++)
+        {
+            float f = theta * (1 + theta2 * (intrin->coeffs[0] + theta2 * (intrin->coeffs[1] + theta2 * (intrin->coeffs[2] + theta2 * intrin->coeffs[3])))) - rd;
+            if (fabs(f) < FLT_EPSILON)
+            {
+                break;
+            }
+            float df = 1 + theta2 * (3 * intrin->coeffs[0] + theta2 * (5 * intrin->coeffs[1] + theta2 * (7 * intrin->coeffs[2] + 9 * theta2 * intrin->coeffs[3])));
+            theta -= f / df;
+            theta2 = theta * theta;
+        }
+        float r = tan(theta);
+        x *= r / rd;
+        y *= r / rd;
+    }
+    if (intrin->model == RS2_DISTORTION_FTHETA)
+    {
+        float rd = sqrtf(x * x + y * y);
+        if (rd < FLT_EPSILON)
+        {
+            rd = FLT_EPSILON;
+        }
+        float r = (float)(tan(intrin->coeffs[0] * rd) / atan(2 * tan(intrin->coeffs[0] / 2.0f)));
+        x *= r / rd;
+        y *= r / rd;
+    }
+
+    point[0] = depth * x;
+    point[1] = depth * y;
+    point[2] = depth;
+}
+NOEXCEPT_RETURN(, point)
+
+void rs2_transform_point_to_point(float to_point[3], const struct rs2_extrinsics* extrin, const float from_point[3]) BEGIN_API_CALL
+{
+    to_point[0] = extrin->rotation[0] * from_point[0] + extrin->rotation[3] * from_point[1] + extrin->rotation[6] * from_point[2] + extrin->translation[0];
+    to_point[1] = extrin->rotation[1] * from_point[0] + extrin->rotation[4] * from_point[1] + extrin->rotation[7] * from_point[2] + extrin->translation[1];
+    to_point[2] = extrin->rotation[2] * from_point[0] + extrin->rotation[5] * from_point[1] + extrin->rotation[8] * from_point[2] + extrin->translation[2];
+}
+NOEXCEPT_RETURN(, to_point)
+
+void rs2_fov(const struct rs2_intrinsics* intrin, float to_fov[2]) BEGIN_API_CALL
+{
+    to_fov[0] = (atan2f(intrin->ppx + 0.5f, intrin->fx) + atan2f(intrin->width - (intrin->ppx + 0.5f), intrin->fx)) * 57.2957795f;
+    to_fov[1] = (atan2f(intrin->ppy + 0.5f, intrin->fy) + atan2f(intrin->height - (intrin->ppy + 0.5f), intrin->fy)) * 57.2957795f;
+}
+NOEXCEPT_RETURN(, to_fov)
+
+/* Helper inner function (not part of the API) */
+void next_pixel_in_line(float curr[2], const float start[2], const float end[2])
+{
+    float line_slope = (end[1] - start[1]) / (end[0] - start[0]);
+    if (fabs(end[0] - curr[0]) > fabs(end[1] - curr[1]))
+    {
+        curr[0] = end[0] > curr[0] ? curr[0] + 1 : curr[0] - 1;
+        curr[1] = end[1] - line_slope * (end[0] - curr[0]);
+    }
+    else
+    {
+        curr[1] = end[1] > curr[1] ? curr[1] + 1 : curr[1] - 1;
+        curr[0] = end[0] - ((end[1] + curr[1]) / line_slope);
+    }
+}
+
+/* Helper inner function (not part of the API) */
+bool is_pixel_in_line(const float curr[2], const float start[2], const float end[2])
+{
+    return ((end[0] >= start[0] && end[0] >= curr[0] && curr[0] >= start[0]) || (end[0] <= start[0] && end[0] <= curr[0] && curr[0] <= start[0])) &&
+        ((end[1] >= start[1] && end[1] >= curr[1] && curr[1] >= start[1]) || (end[1] <= start[1] && end[1] <= curr[1] && curr[1] <= start[1]));
+}
+
+/* Helper inner function (not part of the API) */
+void adjust_2D_point_to_boundary(float p[2], int width, int height)
+{
+    if (p[0] < 0) p[0] = 0;
+    if (p[0] > width) p[0] = (float)width;
+    if (p[1] < 0) p[1] = 0;
+    if (p[1] > height) p[1] = (float)height;
+}
+
+
+void rs2_project_color_pixel_to_depth_pixel(float to_pixel[2],
+    const uint16_t* data, float depth_scale,
+    float depth_min, float depth_max,
+    const struct rs2_intrinsics* depth_intrin,
+    const struct rs2_intrinsics* color_intrin,
+    const struct rs2_extrinsics* color_to_depth,
+    const struct rs2_extrinsics* depth_to_color,
+    const float from_pixel[2]) BEGIN_API_CALL
+{
+    //Find line start pixel
+    float start_pixel[2] = { 0 }, min_point[3] = { 0 }, min_transformed_point[3] = { 0 };
+    rs2_deproject_pixel_to_point(min_point, color_intrin, from_pixel, depth_min);
+    rs2_transform_point_to_point(min_transformed_point, color_to_depth, min_point);
+    rs2_project_point_to_pixel(start_pixel, depth_intrin, min_transformed_point);
+    adjust_2D_point_to_boundary(start_pixel, depth_intrin->width, depth_intrin->height);
+
+    //Find line end depth pixel
+    float end_pixel[2] = { 0 }, max_point[3] = { 0 }, max_transformed_point[3] = { 0 };
+    rs2_deproject_pixel_to_point(max_point, color_intrin, from_pixel, depth_max);
+    rs2_transform_point_to_point(max_transformed_point, color_to_depth, max_point);
+    rs2_project_point_to_pixel(end_pixel, depth_intrin, max_transformed_point);
+    adjust_2D_point_to_boundary(end_pixel, depth_intrin->width, depth_intrin->height);
+
+    //search along line for the depth pixel that it's projected pixel is the closest to the input pixel
+    float min_dist = -1;
+    for (float p[2] = { start_pixel[0], start_pixel[1] }; is_pixel_in_line(p, start_pixel, end_pixel); next_pixel_in_line(p, start_pixel, end_pixel))
+    {
+        float depth = depth_scale * data[(int)p[1] * depth_intrin->width + (int)p[0]];
+        if (depth == 0)
+            continue;
+
+        float projected_pixel[2] = { 0 }, point[3] = { 0 }, transformed_point[3] = { 0 };
+        rs2_deproject_pixel_to_point(point, depth_intrin, p, depth);
+        rs2_transform_point_to_point(transformed_point, depth_to_color, point);
+        rs2_project_point_to_pixel(projected_pixel, color_intrin, transformed_point);
+
+        float new_dist = (float)(pow((projected_pixel[1] - from_pixel[1]), 2) + pow((projected_pixel[0] - from_pixel[0]), 2));
+        if (new_dist < min_dist || min_dist < 0)
+        {
+            min_dist = new_dist;
+            to_pixel[0] = p[0];
+            to_pixel[1] = p[1];
+        }
+    }
+}
+NOEXCEPT_RETURN(, to_pixel)

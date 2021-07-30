@@ -19,10 +19,10 @@ import numpy as np
 
 
 class Device:
-    def __init__(self, pipeline, pipeline_profile):
+    def __init__(self, pipeline, pipeline_profile, product_line):
         self.pipeline = pipeline
         self.pipeline_profile = pipeline_profile
-
+        self.product_line = product_line
 
 def enumerate_connected_devices(context):
     """
@@ -36,13 +36,17 @@ def enumerate_connected_devices(context):
     Return:
     -----------
     connect_device : array
-                     Array of enumerated devices which are connected to the PC
+                     Array of (serial, product-line) tuples of devices which are connected to the PC
 
     """
     connect_device = []
+
     for d in context.devices:
         if d.get_info(rs.camera_info.name).lower() != 'platform camera':
-            connect_device.append(d.get_info(rs.camera_info.serial_number))
+            serial = d.get_info(rs.camera_info.serial_number)
+            product_line = d.get_info(rs.camera_info.product_line)
+            device_info = (serial, product_line) # (serial_number, product_line)
+            connect_device.append( device_info )
     return connect_device
 
 
@@ -113,7 +117,7 @@ def post_process_depth_frame(depth_frame, decimation_magnitude=1.0, spatial_magn
 
 
 class DeviceManager:
-    def __init__(self, context, pipeline_configuration):
+    def __init__(self, context, D400_pipeline_configuration, L500_pipeline_configuration = rs.config()):
         """
         Class to manage the Intel RealSense devices
 
@@ -121,40 +125,55 @@ class DeviceManager:
         -----------
         context                 : rs.context()
                                   The context created for using the realsense library
-        pipeline_configuration  : rs.config()
-                                  The realsense library configuration to be used for the application
+        D400_pipeline_configuration  : rs.config()
+                                  The realsense library configuration to be used for the application when D400 product is attached.
+
+        L500_pipeline_configuration  : rs.config()
+                                  The realsense library configuration to be used for the application when L500 product is attached.
 
         """
         assert isinstance(context, type(rs.context()))
-        assert isinstance(pipeline_configuration, type(rs.config()))
+        assert isinstance(D400_pipeline_configuration, type(rs.config()))
+        assert isinstance(L500_pipeline_configuration, type(rs.config()))
         self._context = context
         self._available_devices = enumerate_connected_devices(context)
-        self._enabled_devices = {}
-        self._config = pipeline_configuration
+        self._enabled_devices = {} #serial numbers of te enabled devices
+        self.D400_config = D400_pipeline_configuration
+        self.L500_config = L500_pipeline_configuration
         self._frame_counter = 0
 
-    def enable_device(self, device_serial, enable_ir_emitter):
+    def enable_device(self, device_info, enable_ir_emitter):
         """
         Enable an Intel RealSense Device
 
         Parameters:
         -----------
-        device_serial     : string
-                            Serial number of the realsense device
+        device_info     : Tuple of strings (serial_number, product_line)
+                            Serial number and product line of the realsense device
         enable_ir_emitter : bool
                             Enable/Disable the IR-Emitter of the device
 
         """
         pipeline = rs.pipeline()
 
-        # Enable the device
-        self._config.enable_device(device_serial)
-        pipeline_profile = pipeline.start(self._config)
+        device_serial = device_info[0]
+        product_line = device_info[1]
+
+        if product_line == "L500":
+            # Enable L515 device
+            self.L500_config.enable_device(device_serial)
+            pipeline_profile = pipeline.start(self.L500_config)
+        else: 
+            # Enable D400 device
+            self.D400_config.enable_device(device_serial)
+            pipeline_profile = pipeline.start(self.D400_config)
+
 
         # Set the acquisition parameters
         sensor = pipeline_profile.get_device().first_depth_sensor()
-        sensor.set_option(rs.option.emitter_enabled, 1 if enable_ir_emitter else 0)
-        self._enabled_devices[device_serial] = (Device(pipeline, pipeline_profile))
+        if sensor.supports(rs.option.emitter_enabled):
+            sensor.set_option(rs.option.emitter_enabled, 1 if enable_ir_emitter else 0)
+        self._enabled_devices[device_serial] = (Device(pipeline, pipeline_profile, product_line))
 
     def enable_all_devices(self, enable_ir_emitter=False):
         """
@@ -163,8 +182,8 @@ class DeviceManager:
         """
         print(str(len(self._available_devices)) + " devices have been found")
 
-        for serial in self._available_devices:
-            self.enable_device(serial, enable_ir_emitter)
+        for device_info in self._available_devices:
+            self.enable_device(device_info, enable_ir_emitter)
 
     def enable_emitter(self, enable_ir_emitter=True):
         """
@@ -174,6 +193,8 @@ class DeviceManager:
         for (device_serial, device) in self._enabled_devices.items():
             # Get the active profile and enable the emitter for all the connected devices
             sensor = device.pipeline_profile.get_device().first_depth_sensor()
+            if not sensor.supports(rs.option.emitter_enabled):
+                continue
             sensor.set_option(rs.option.emitter_enabled, 1 if enable_ir_emitter else 0)
             if enable_ir_emitter:
                 sensor.set_option(rs.option.laser_power, 330)
@@ -188,6 +209,8 @@ class DeviceManager:
         	json_text = file.read().strip()
 
         for (device_serial, device) in self._enabled_devices.items():
+            if device.product_line == "L500":
+                continue
             # Get the active profile and load the json file which contains settings readable by the realsense
             device = device.pipeline_profile.get_device()
             advanced_mode = rs.rs400_advanced_mode(device)
@@ -207,7 +230,8 @@ class DeviceManager:
                 streams = device.pipeline_profile.get_streams()
                 frameset = device.pipeline.poll_for_frames() #frameset will be a pyrealsense2.composite_frame object
                 if frameset.size() == len(streams):
-                    frames[serial] = {}
+                    dev_info = (serial, device.product_line)
+                    frames[dev_info] = {}
                     for stream in streams:
                         if (rs.stream.infrared == stream.stream_type()):
                             frame = frameset.get_infrared_frame(stream.stream_index())
@@ -215,7 +239,7 @@ class DeviceManager:
                         else:
                             frame = frameset.first_or_default(stream.stream_type())
                             key_ = stream.stream_type()
-                        frames[serial][key_] = frame
+                        frames[dev_info][key_] = frame
 
         return frames
 
@@ -255,7 +279,8 @@ class DeviceManager:
                 Intrinsics of the corresponding device
         """
         device_intrinsics = {}
-        for (serial, frameset) in frames.items():
+        for (dev_info, frameset) in frames.items():
+            serial = dev_info[0]
             device_intrinsics[serial] = {}
             for key, value in frameset.items():
                 device_intrinsics[serial][key] = value.get_profile().as_video_stream_profile().get_intrinsics()
@@ -279,14 +304,16 @@ class DeviceManager:
                 Extrinsics of the corresponding device
         """
         device_extrinsics = {}
-        for (serial, frameset) in frames.items():
+        for (dev_info, frameset) in frames.items():
+            serial = dev_info[0]
             device_extrinsics[serial] = frameset[
                 rs.stream.depth].get_profile().as_video_stream_profile().get_extrinsics_to(
                 frameset[rs.stream.color].get_profile())
         return device_extrinsics
 
     def disable_streams(self):
-        self._config.disable_all_streams()
+        self.D400_config.disable_all_streams()
+        self.L500_config.disable_all_streams()
 
 
 """

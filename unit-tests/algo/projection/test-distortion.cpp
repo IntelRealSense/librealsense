@@ -6,9 +6,9 @@
 
 #include "../algo-common.h"
 #include <librealsense2/rsutil.h>
-#include "../src/proc/sse/sse-pointcloud.h"
-#include "../src/cuda/cuda-pointcloud.cuh"
-#include "../src/types.h"
+#include <src/proc/sse/sse-pointcloud.h>
+#include <src/cuda/cuda-pointcloud.cuh>
+#include <src/types.h>
 
 rs2_intrinsics intrin
 = { 1280,

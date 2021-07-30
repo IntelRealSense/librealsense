@@ -67,7 +67,7 @@ namespace librealsense
 
         _serial_number_buffer = std::vector<uint8_t>(sizeof(payload.serial_number));
         _serial_number_buffer.assign((uint8_t*)&payload.serial_number, (uint8_t*)&payload.serial_number + sizeof(payload.serial_number));
-        _is_dfu_locked = payload.dfu_is_locked;
+        _is_dfu_locked = payload.dfu_is_locked != 0;
         _highest_fw_version = get_formatted_fw_version(payload.fw_highest_version);
         _last_fw_version = get_formatted_fw_version(payload.fw_last_version);
 

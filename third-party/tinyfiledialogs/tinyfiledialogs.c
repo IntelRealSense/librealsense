@@ -736,7 +736,7 @@ static int dirExists(char const * const aDirPath)
 
 		if (!aDirPath)
 			return 0;
-		lDirLen = strlen(aDirPath);
+		lDirLen = (int)strlen(aDirPath);
 		if (!lDirLen)
 			return 1;
 		if ( (lDirLen == 2) && (aDirPath[1] == ':') )

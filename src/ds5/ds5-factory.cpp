@@ -929,11 +929,11 @@ namespace librealsense
             auto usb_spec = get_usb_spec();
             bool usb3mode = (usb_spec >= platform::usb3_type || usb_spec == platform::usb_undefined);
 
-            int depth_width  = usb3mode ?      848 : 640;
-            int depth_height = usb3mode ?      480 : 480;
-            int color_width = usb3mode ?       848 : 640;
-            int color_height = usb3mode ?      480 : 480;
-            int fps    = usb3mode ?            30 :  15;
+            int depth_width = 848;
+            int depth_height = 480;
+            int color_width = 848;
+            int color_height = 480;
+            int fps = usb3mode ?  30 : 10;
 
             tags.push_back({ RS2_STREAM_COLOR, -1, color_width, color_height, RS2_FORMAT_RGB8, fps, profile_tag::PROFILE_TAG_SUPERSET | profile_tag::PROFILE_TAG_DEFAULT });
             tags.push_back({ RS2_STREAM_DEPTH, -1, depth_width, depth_height, RS2_FORMAT_Z16, fps, profile_tag::PROFILE_TAG_SUPERSET | profile_tag::PROFILE_TAG_DEFAULT });
@@ -943,6 +943,31 @@ namespace librealsense
         }
 
         bool compress_while_record() const override { return false; }
+
+        bool contradicts(const stream_profile_interface* a, const std::vector<stream_profile>& others) const override
+        {
+            auto it = std::find_if(others.begin(), others.end(), [](const stream_profile& sp) {
+                return sp.format == RS2_FORMAT_Y16;
+                });
+            bool unrectified_ir_requested = (it != others.end());
+
+            if (auto vid_a = dynamic_cast<const video_stream_profile_interface*>(a))
+            {
+                for (auto request : others)
+                {
+                    if (a->get_framerate() != 0 && request.fps != 0 && (a->get_framerate() != request.fps))
+                        return true;
+                    if (!unrectified_ir_requested)
+                    {
+                        if (vid_a->get_width() != 0 && request.width != 0 && (vid_a->get_width() != request.width))
+                            return true;
+                        if (vid_a->get_height() != 0 && request.height != 0 && (vid_a->get_height() != request.height))
+                            return true;
+                    }
+                }
+            }
+            return false;
+        }
     };
 
     class rs455_device  :      public ds5_nonmonochrome,

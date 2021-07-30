@@ -150,9 +150,14 @@ class PoseEstimation:
 					Sequence with length N indicating which point in points3D has a valid depth value
 		"""
 		corners3D = {}
-		for (serial, frameset) in self.frames.items():
+		for (info, frameset) in self.frames.items():
+			serial = info[0]
+			product_line = info[1]
 			depth_frame = post_process_depth_frame(frameset[rs.stream.depth])
-			infrared_frame = frameset[(rs.stream.infrared, 1)]
+			if product_line == "L500":
+				infrared_frame = frameset[(rs.stream.infrared, 0)]
+			else: 
+				infrared_frame = frameset[(rs.stream.infrared, 1)]
 			depth_intrinsics = self.intrinsic[serial][rs.stream.depth]	
 			found_corners, points2D = cv_find_chessboard(depth_frame, infrared_frame, self.chessboard_params)
 			corners3D[serial] = [found_corners, None, None, None]
@@ -219,10 +224,14 @@ class PoseEstimation:
 	def find_chessboard_boundary_for_depth_image(self):
 		boundary = {}
 
-		for (serial, frameset) in self.frames.items():
-
+		for (info, frameset) in self.frames.items():
+			serial = info[0]
+			product_line = info[1]
 			depth_frame = post_process_depth_frame(frameset[rs.stream.depth])
-			infrared_frame = frameset[(rs.stream.infrared, 1)]
+			if product_line == "L500":
+				infrared_frame = frameset[(rs.stream.infrared, 0)]
+			else: 
+				infrared_frame = frameset[(rs.stream.infrared, 1)]
 			found_corners, points2D = cv_find_chessboard(depth_frame, infrared_frame, self.chessboard_params)
 			boundary[serial] = [np.floor(np.amin(points2D[0,:])).astype(int), np.floor(np.amax(points2D[0,:])).astype(int), np.floor(np.amin(points2D[1,:])).astype(int), np.floor(np.amax(points2D[1,:])).astype(int)]
 

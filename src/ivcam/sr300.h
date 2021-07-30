@@ -262,6 +262,10 @@ namespace librealsense
                 : synthetic_sensor("Coded-Light Depth Sensor", uvc_sensor, owner, sr300_depth_fourcc_to_rs2_format, sr300_depth_fourcc_to_rs2_stream), _owner(owner)
             {}
 
+            void open(const stream_profiles& requests) override;
+
+            void set_frame_metadata_modifier(on_frame_md callback) override;
+
             rs2_intrinsics get_intrinsics(const stream_profile& profile) const override
             {
                 return make_depth_intrinsics(*_owner->_camer_calib_params, { int(profile.width), int(profile.height) });

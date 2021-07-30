@@ -1,0 +1,359 @@
+name: Build_CI
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+    branches: ['**']
+     
+env:
+  # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)  
+  LRS_BUILD_CONFIG: Debug
+  LRS_RUN_CONFIG: Release
+  PYTHON_PATH: C:\\hostedtoolcache\\windows\\Python\\3.8.1\\x64\\python.exe
+  
+jobs:    
+  Windows_testing_cpp_USB_Win7:
+    runs-on: windows-2016
+    timeout-minutes: 60
+    env:
+      VS15: false
+      RS_CPP_TEST: true
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions/setup-python@v2
+      with:
+       python-version: '3.8.1'
+
+    - name: Enable Long Paths
+      shell: powershell
+      run: |
+       New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name "LongPathsEnabled" -Value 1 -PropertyType DWORD -Force
+    
+    - name: PreBuild
+      shell: bash
+      run: |
+       cd scripts && ./api_check.sh && cd ..
+       mkdir build
+    
+    - name: Configure CMake
+    # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
+    # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
+      shell: bash
+      run: |        
+        cd build
+        pwd
+        ls        
+        cmake .. -G "Visual Studio 15 2017 Win64" -DPYTHON_EXECUTABLE=${{env.PYTHON_PATH}} -DBUILD_PYTHON_BINDINGS=true -DPYBIND11_PYTHON_VERSION=3.8 -DBUILD_UNIT_TESTS=false -DBUILD_LEGACY_LIVE_TEST=true -DBUILD_EXAMPLES=false -DBUILD_TOOLS=false -DBUILD_WITH_TM2=false -DFORCE_RSUSB_BACKEND=true
+
+    - name: Build
+      # Build your program with the given configuration
+      shell: bash
+      run: |
+        cd build
+        pwd
+        ls
+        cmake --build . --config ${{env.LRS_RUN_CONFIG}} -- -m    
+     
+    - name: Test
+      shell: bash
+      id: test-step
+      # We set continue-on-error: true as a workaround for not skipping the upload log step on failure,
+      # The final step will check the return value from the test step and decide if to fail/pass the job
+      continue-on-error: true 
+      run: |
+       export LRS_LOG_LEVEL="DEBUG";
+       cd build/${{env.LRS_RUN_CONFIG}}
+       ls
+       ./live-test.exe -d yes -i [software-device]  
+       
+    - name: Upload RS log artifact
+      uses: actions/upload-artifact@v2
+      with: 
+        name: Log file - Windows_testing_cpp_USB_Win7
+        path: build/${{env.LRS_RUN_CONFIG}}/*.log
+        
+    - name: Provide correct exit status for job 
+      shell: bash
+      run: |
+        if [ ${{steps.test-step.outcome}} = "failure" ];then
+           echo "Test step failed, please open it to view the reported issue"
+           exit 1
+        else
+           exit 0
+        fi
+  
+  Windows_cpp:
+    runs-on: windows-2016
+    timeout-minutes: 60
+    env:
+      VS15: true
+    steps:
+    - uses: actions/checkout@v2    
+
+    - name: Enable Long Paths
+      shell: powershell
+      run: |
+       New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name "LongPathsEnabled" -Value 1 -PropertyType DWORD -Force
+
+    - name: PreBuild
+      shell: bash
+      run: |
+       cd scripts && ./api_check.sh && cd ..
+       mkdir build
+
+    - name: Configure CMake
+    # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
+    # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
+      shell: bash
+      run: |        
+        cd build
+        pwd
+        ls
+        cmake .. -G "Visual Studio 15 2017 Win64" -DBUILD_EXAMPLES=true -DBUILD_WITH_TM2=true -DCHECK_FOR_UPDATES=true
+
+    - name: Build
+      # Build your program with the given configuration
+      shell: bash
+      run: |
+        cd build
+        cmake --build . --config ${{env.LRS_BUILD_CONFIG}} -- -m    
+       
+  Windows_CSharp:
+    # The CMake configure and build commands are platform agnostic and should work equally
+    # well on Windows or Mac.  You can convert this to a matrix build if you need
+    # cross-platform coverage.
+    # See: https://docs.github.com/en/free-pro-team@latest/actions/learn-github-actions/managing-complex-workflows#using-a-build-matrix
+    runs-on: windows-2016   
+    timeout-minutes: 60
+    env:
+      VS15: true  
+    steps:
+    - uses: actions/checkout@v2       
+
+    - name: Enable Long Paths
+      shell: powershell
+      run: |
+       New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name "LongPathsEnabled" -Value 1 -PropertyType DWORD -Force
+
+    - name: PreBuild
+      shell: bash
+      run: |
+       cd scripts && ./api_check.sh && cd ..
+       mkdir build
+
+    - name: Configure CMake
+      # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
+      # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
+      shell: bash
+      run: |        
+        cd build
+        pwd
+        ls
+        cmake .. -G "Visual Studio 15 2017 Win64" -DBUILD_EXAMPLES=false -DBUILD_TOOLS=false -DBUILD_CSHARP_BINDINGS=true -DDOTNET_VERSION_LIBRARY="4.5" -DDOTNET_VERSION_EXAMPLES="4.5" -DCHECK_FOR_UPDATES=true    
+
+    - name: Build
+      # Build your program with the given configuration
+      shell: bash
+      run: |
+        cd build
+        cmake --build . --config ${{env.LRS_BUILD_CONFIG}} -- -m     
+  Linux_testing_cpp:
+    runs-on: ubuntu-18.04    
+    timeout-minutes: 60
+    env: 
+      RS_CPP_TEST: true
+    steps:
+    - uses: actions/checkout@v2
+    
+    - name: Prebuild
+      shell: bash
+      run: |
+        cd scripts && ./api_check.sh && cd ..
+        mkdir build && cd build
+        export LRS_LOG_LEVEL="DEBUG";
+        url_records_path="https://librealsense.intel.com/rs-tests/lrs_2.8.3/";
+        records_name="records_test.txt";
+        url_records_list=$url_records_path$records_name;
+        wget $url_records_path$records_name;
+        tests_list=`cat $records_name`;
+        for record in $tests_list; do echo $url_records_path$record; wget $url_records_path$record -P "records/"$(echo $record | cut -d '/' -f 1); done;
+        
+        sudo add-apt-repository --yes ppa:ubuntu-toolchain-r/test;
+        sudo apt-get update;
+        sudo apt-get install -qq build-essential xorg-dev libgl1-mesa-dev libglu1-mesa-dev libglew-dev libglm-dev;
+        sudo apt-get install -qq libusb-1.0-0-dev;
+        sudo apt-get install -qq libgtk-3-dev;
+        sudo apt-get install gcc-5 g++-5;
+        sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-5 60 --slave /usr/bin/g++ g++ /usr/bin/g++-5;
+        sudo apt-get install libglfw3-dev libglfw3;
+    
+    - name: Build
+      shell: bash
+      run: | 
+        cd build
+        cmake .. -DBUILD_UNIT_TESTS=false -DBUILD_LEGACY_LIVE_TEST=true -DBUILD_EXAMPLES=false -DBUILD_TOOLS=false -DBUILD_WITH_TM2=false -DCHECK_FOR_UPDATES=true
+        cmake --build . --config ${{env.LRS_RUN_CONFIG}} -- -j4
+        
+    - name: Test
+      shell: bash
+      id: test-step
+      # We set continue-on-error: true as a workaround for not skipping the upload log step on failure,
+      # The final step will check the return value from the test step and decide if to fail/pass the job
+      continue-on-error: true 
+      run: | 
+        export LRS_LOG_LEVEL="DEBUG";
+        cd build   
+        ./unit-tests/live-test -d yes -i [software-device]
+        # for i in ./records/single_cam/*; do ./unit-tests/live-test -d yes -i ~[multicam] from "$i"; done
+        # for i in ./records/multi_cam/*; do ./unit-tests/live-test -d yes -i [multicam] from "$i"; done
+        
+
+    - name: Upload RS log artifact
+      uses: actions/upload-artifact@v2
+      with: 
+        name: Log file - Linux_testing_cpp
+        path: build/*.log
+        
+        
+    - name: Provide correct exit status for job 
+      shell: bash
+      run: |
+        if [ ${{steps.test-step.outcome}} = "failure" ];then
+           echo "Test step failed, please open it to view the reported issue"
+           exit 1
+        else
+           exit 0
+        fi
+  
+  Linux_static_cpp:
+      runs-on: ubuntu-18.04
+      timeout-minutes: 60
+      steps:
+      - uses: actions/checkout@v2
+
+      - name: Prebuild
+        shell: bash
+        run: |
+          sudo add-apt-repository --yes ppa:ubuntu-toolchain-r/test;
+          sudo apt-get update;
+          sudo apt-get install -qq build-essential xorg-dev libgl1-mesa-dev libglu1-mesa-dev libglew-dev libglm-dev;
+          sudo apt-get install -qq libusb-1.0-0-dev;
+          sudo apt-get install -qq libgtk-3-dev;
+          sudo apt-get install gcc-5 g++-5;
+          sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-5 60 --slave /usr/bin/g++ g++ /usr/bin/g++-5;
+          sudo apt-get install libglfw3-dev libglfw3;
+
+      - name: Build
+        shell: bash
+        run: |
+          cd scripts && ./api_check.sh && cd ..
+          mkdir build
+          cd ./scripts && ./pr_check.sh && cd ../build
+          cmake .. -DBUILD_EXAMPLES=true -DBUILD_WITH_TM2=true -DBUILD_SHARED_LIBS=false -DCHECK_FOR_UPDATES=true -DBUILD_PYTHON_BINDINGS=true -DPYBIND11_PYTHON_VERSION=3.5
+          cmake --build . --config ${{env.LRS_BUILD_CONFIG}} -- -j4
+  
+  
+  Linux_python_nodejs:
+      runs-on: ubuntu-18.04     
+      timeout-minutes: 60
+      env: 
+        LRS_BUILD_NODEJS: true
+      steps:
+      - uses: actions/checkout@v2   
+          
+        
+      - name: Prebuild
+        shell: bash
+        run: |
+          set -x
+          cd ./scripts && ./api_check.sh && cd ..
+          # Workaround for nvm failure: https://github.com/appleboy/ssh-action/issues/70
+          export NVM_DIR="$HOME/.nvm"
+          [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+          nvm install 10.15.3;
+          nvm use 10.15.3;
+          npm install -g node-gyp;
+          npm install -g mocha;
+          git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git;
+          export OLDPATH=$PATH  
+          echo OLDPATH=$OLDPATH
+          export PATH=$PATH:$(pwd)/depot_tools;
+          echo PATH=$PATH
+          cd wrappers/nodejs/tools && npm install && cd ..;
+          node ./tools/linter.js;
+          python ./tools/enums.py -i ../../include/librealsense2 -a ./src -v
+          export PATH=$OLDPATH && unset OLDPATH && cd ../../;
+          mkdir build
+          sudo add-apt-repository --yes ppa:ubuntu-toolchain-r/test;
+          sudo apt-get update;
+          sudo apt-get install -qq build-essential xorg-dev libgl1-mesa-dev libglu1-mesa-dev libglew-dev libglm-dev;
+          sudo apt-get install -qq libusb-1.0-0-dev;
+          sudo apt-get install -qq libgtk-3-dev;
+          sudo apt-get install gcc-5 g++-5;
+          sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-5 60 --slave /usr/bin/g++ g++ /usr/bin/g++-5;
+          sudo apt-get install libglfw3-dev libglfw3;
+      
+      - name: Build
+        shell: bash
+        run: | 
+          python ./wrappers/nodejs/tools/enums.py -i ./include/librealsense2 -a ./wrappers/nodejs/src -v
+          cd build
+          cmake .. -DBUILD_PYTHON_BINDINGS=true -DBUILD_NODEJS_BINDINGS=true -DPYBIND11_PYTHON_VERSION=2.7 -DCHECK_FOR_UPDATES=true
+          cmake --build . --config $LRS_BUILD_CONFIG -- -j4
+          cd ../wrappers/nodejs/ && npm install && cd -
+
+
+  Mac_cpp:
+    runs-on: macos-latest
+    timeout-minutes: 60
+    
+    steps:
+    - uses: actions/checkout@v2
+    - name: Prebuild
+      run: |
+        cd scripts && ./api_check.sh && cd ..
+        mkdir build
+        #brew uninstall xctool;
+        #brew install xctool --HEAD;
+        brew install homebrew/core/glfw3;
+        brew list libusb || brew install libusb;
+        
+    - name: Build
+      run: |
+        cd build
+        export OPENSSL_ROOT_DIR=`brew --prefix openssl` # Used by libcurl for 'CHECK_FOR_UPDATES' capability
+        cmake .. -DBUILD_EXAMPLES=true -DBUILD_WITH_OPENMP=false -DHWM_OVER_XU=false -DCHECK_FOR_UPDATES=true
+        cmake --build . --config ${{env.LRS_BUILD_CONFIG}} -- -j4
+        ls
+  
+  Android_cpp:
+    runs-on: ubuntu-18.04   
+    timeout-minutes: 60
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Prebuild 
+      shell: bash
+      run: |
+        cd scripts && ./api_check.sh && cd ..
+        mkdir build
+        wget https://dl.google.com/android/repository/android-ndk-r20b-linux-x86_64.zip;
+        unzip -q android-ndk-r20b-linux-x86_64.zip -d ./;
+        sudo add-apt-repository --yes ppa:ubuntu-toolchain-r/test;
+        sudo apt-get update;
+        sudo apt-get install -qq build-essential xorg-dev libgl1-mesa-dev libglu1-mesa-dev libglew-dev libglm-dev;
+        sudo apt-get install -qq libusb-1.0-0-dev;
+        sudo apt-get install -qq libgtk-3-dev;
+        sudo apt-get install gcc-5 g++-5;
+        sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-5 60 --slave /usr/bin/g++ g++ /usr/bin/g++-5;
+        sudo apt-get install libglfw3-dev libglfw3;
+        
+    - name: Build
+      run: |
+       cd build
+       cmake .. -DCMAKE_TOOLCHAIN_FILE=../android-ndk-r20b/build/cmake/android.toolchain.cmake
+       cmake --build . --config ${{env.LRS_BUILD_CONFIG}} -- -j4
+       ls
+  
+  

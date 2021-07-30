@@ -72,6 +72,8 @@ void load_detectors_into(
     fs::glob_relative( ".", "*.xml", xmls );
     for( auto path_to_xml : xmls )
     {
+        if (path_to_xml == "plugins.xml") continue; // plugin.xml is not model file, skip it in model search if exist
+
         detector_and_labels detector { path_to_xml };
         try
         {
@@ -214,13 +216,19 @@ int main(int argc, char * argv[]) try
     // Start the inference engine, needed to accomplish anything. We also add a CPU extension, allowing
     // us to run the inference on the CPU. A GPU solution may be possible but, at least without a GPU,
     // a CPU-bound process is faster. To change to GPU, use "GPU" instead (and remove AddExtension()):
+
     openvino::Core engine;
-    openvino_helpers::error_listener error_listener;
-    engine.SetLogCallback( error_listener );
-    std::string const device_name { "CPU" };
 
 #ifdef OPENVINO2019
-	engine.AddExtension(std::make_shared< openvino::Extensions::Cpu::CpuExtensions >(), device_name);
+    openvino_helpers::error_listener error_listener;
+    engine.SetLogCallback( error_listener );
+#endif
+
+    std::string const device_name { "CPU" };
+
+    // Cpu extensions library was removed in OpenVINO >= 2020.1, extensions were merged into the cpu plugin.
+#ifdef OPENVINO2019
+    engine.AddExtension(std::make_shared< openvino::Extensions::Cpu::CpuExtensions >(), device_name);
 #endif
 
     std::vector< detector_and_labels > detectors;

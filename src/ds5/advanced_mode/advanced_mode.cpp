@@ -89,11 +89,13 @@ namespace librealsense
             case ds::RS435_RGB_PID:
             case ds::RS435I_PID:
             case ds::RS465_PID:
-            case ds::RS405_PID:
             case ds::RS455_PID:
                 default_430(p);
                 break;
             case ds::RS405U_PID:
+                default_405u(p);
+                break;
+            case ds::RS405_PID:
                 default_405(p);
                 break;
             case ds::RS400_PID:
@@ -110,6 +112,9 @@ namespace librealsense
             break;
         case RS2_RS400_VISUAL_PRESET_HAND:
             hand_gesture(p);
+            // depth units for D405
+            if (device_pid == ds::RS405_PID)
+                p.depth_table.depthUnits = 100; // 0.1mm
             break;
         case RS2_RS400_VISUAL_PRESET_HIGH_ACCURACY:
             switch (res)
@@ -684,7 +689,7 @@ namespace librealsense
             throw wrong_api_call_sequence_exception(to_string() << "serialize_json() failed! Device is not in Advanced-Mode.");
 
         auto p = get_all();
-        return generate_json(p);
+        return generate_json(_depth_sensor.get_device(), p);
     }
 
     void ds5_advanced_mode_base::load_json(const std::string& json_content)
@@ -693,7 +698,7 @@ namespace librealsense
             throw wrong_api_call_sequence_exception(to_string() << "load_json(...) failed! Device is not in Advanced-Mode.");
 
         auto p = get_all();
-        update_structs(json_content, p);
+        update_structs(_depth_sensor.get_device(),  json_content, p);
         set_all(p);
         _preset_opt->set(RS2_RS400_VISUAL_PRESET_CUSTOM);
     }

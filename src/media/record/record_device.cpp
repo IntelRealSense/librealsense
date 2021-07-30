@@ -41,7 +41,7 @@ std::vector<std::shared_ptr<librealsense::record_sensor>> librealsense::record_d
         auto recording_sensor = std::make_shared<librealsense::record_sensor>(*this, live_sensor);
         m_on_notification_token = recording_sensor->on_notification += [this, recording_sensor, sensor_index](const notification& n) { write_notification(sensor_index, n); };
         auto on_error = [recording_sensor](const std::string& s) {recording_sensor->stop_with_error(s); };
-        m_on_frame_token = recording_sensor->on_frame += [this, recording_sensor, sensor_index, on_error](frame_holder f) { 
+        m_on_frame_token = recording_sensor->on_frame += [this, recording_sensor, sensor_index, on_error](frame_holder f) {
             write_data(sensor_index, std::move(f), on_error);
         };
         m_on_extension_change_token = recording_sensor->on_extension_change += [this, recording_sensor, sensor_index, on_error](rs2_extension ext, std::shared_ptr<extension_snapshot> snapshot) { write_sensor_extension_snapshot(sensor_index, ext, snapshot, on_error); };
@@ -117,7 +117,9 @@ void librealsense::record_device::write_data(size_t sensor_index, librealsense::
 {
     //write_data is called from the sensors, when the live sensor raises a frame
 
-    LOG_DEBUG("write frame " << (frame ? std::to_string(frame.frame->get_frame_number()) : "") <<  " from sensor " << sensor_index);
+    LOG_DEBUG( "write frame: " << ( frame ? std::to_string( frame.frame->get_frame_number() ) : "" )
+                              << ", stream: " << (frame ? rs2_stream_to_string( frame.frame->get_stream()->get_stream_type() ) : "")
+                              << ", sensor: " << sensor_index );
 
     std::call_once(m_first_call_flag, [this]()
     {

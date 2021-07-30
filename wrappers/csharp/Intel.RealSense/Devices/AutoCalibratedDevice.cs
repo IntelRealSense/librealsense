@@ -29,10 +29,32 @@ namespace Intel.RealSense
             return GetByteArrayFromRawDataObject(rawDataBuffer);
         }
 
+        public byte[] RunOnChipCalibration(string json, out float health, ProgressCallback cb, int timeout_ms)
+        {
+            object error;
+            rs2_update_progress_callback cb2 = (float progress, IntPtr u) =>
+            {
+                cb((IntPtr)progress);
+            };
+            IntPtr rawDataBuffer = NativeMethods.rs2_run_on_chip_calibration(Handle, json, json.Length, out health, cb2, IntPtr.Zero, timeout_ms, out error);
+            return GetByteArrayFromRawDataObject(rawDataBuffer);
+        }
+
         public byte[] RunTareCalibration(float ground_truth_mm, string json, int timeout_ms)
         {
             object error;
             IntPtr rawDataBuffer = NativeMethods.rs2_run_tare_calibration(Handle, ground_truth_mm, json, json.Length, null, IntPtr.Zero, timeout_ms, out error);
+            return GetByteArrayFromRawDataObject(rawDataBuffer);
+        }
+
+        public byte[] RunTareCalibration(float ground_truth_mm, string json, ProgressCallback cb, int timeout_ms)
+        {
+            object error;
+            rs2_update_progress_callback cb2 = (float progress, IntPtr u) =>
+            {
+                cb((IntPtr)progress);
+            };
+            IntPtr rawDataBuffer = NativeMethods.rs2_run_tare_calibration(Handle, ground_truth_mm, json, json.Length, cb2, IntPtr.Zero, timeout_ms, out error);
             return GetByteArrayFromRawDataObject(rawDataBuffer);
         }
 

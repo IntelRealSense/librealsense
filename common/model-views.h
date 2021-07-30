@@ -386,16 +386,45 @@ namespace rs2
             stop();
             std::lock_guard<std::mutex> lock(_mutex);
             auto shared_syncer = std::make_shared<rs2::asynchronous_syncer>();
-            rs2::frame_queue q;
 
-           _syncers.push_back({shared_syncer,q});
-           shared_syncer->start([this, q](rs2::frame f)
-           {
-               q.enqueue(f);
-               on_frame();
-           });
-           start();
-           return shared_syncer;
+            // This queue stores the output from the syncer, and has to be large enough to deal with
+            // slowdowns on the processing/rendering threads of the Viewer to avoid frame drops. Frame
+            // drops can be pretty noticeable to the user!
+            //
+            // The syncer may also give out frames in bursts. This commonly happens, for example, when
+            // streams have different FPS, and is a known issue. Even with same-FPS streams, the actual
+            // FPS may change depending on a number of variables (e.g., exposure). When FPS is not the
+            // same between the streams, a latency is introduced and bursts from the syncer are the
+            // result.
+            //
+            // Bursts are so fast the other threads will never have a chance to pull them in time. For
+            // example, the syncer output can be the following, all one after the other:
+            //
+            //     [Color: timestamp 100 (arrived @ 105), Infrared: timestamp 100 (arrived at 150)]
+            //     [Color: timestamp 116 (arrived @ 120)]
+            //     [Color: timestamp 132 (arrived @ 145)]
+            //
+            // They are received one at a time & pushed into the syncer, which will wait and keep all of
+            // them inside until a match with Infrared is possible. Once that happens, it will output
+            // everything it has as a burst.
+            //
+            // The queue size must therefore be big enough to deal with expected latency: the more
+            // latency, the bigger the burst.
+            //
+            // Another option is to use an aggregator, similar to the behavior inside the pipeline.
+            // But this still doesn't solve the issue of the bursts: we'll get frame drops in the fast
+            // stream instead of the slow.
+            //
+            rs2::frame_queue q(10);
+
+            _syncers.push_back({shared_syncer,q});
+            shared_syncer->start([this, q](rs2::frame f)
+            {
+                q.enqueue(f);
+                on_frame();
+            });
+            start();
+            return shared_syncer;
         }
 
         void remove_syncer(std::shared_ptr<rs2::asynchronous_syncer> s)
@@ -559,7 +588,7 @@ namespace rs2
         bool supports_on_chip_calib();
         bool draw_stream_selection(std::string& error_message);
         bool is_selected_combination_supported();
-        std::vector<stream_profile> get_selected_profiles();
+        std::vector<stream_profile> get_selected_profiles(bool enforce_inter_stream_policies = true);
         std::vector<stream_profile> get_supported_profiles();
         void stop(std::shared_ptr<notifications_model> not_model);
         void play(const std::vector<stream_profile>& profiles, viewer_model& viewer, std::shared_ptr<rs2::asynchronous_syncer>);
@@ -670,6 +699,7 @@ namespace rs2
 
         std::shared_ptr<rs2::colorizer> depth_colorizer;
         std::shared_ptr<rs2::yuy_decoder> yuy2rgb;
+        std::shared_ptr<rs2::y411_decoder> y411;
         std::shared_ptr<processing_block_model> zero_order_artifact_fix;
         std::shared_ptr<rs2::depth_huffman_decoder> depth_decoder;
 
@@ -678,6 +708,13 @@ namespace rs2
         std::vector<std::shared_ptr<processing_block_model>> const_effects;
 
     private:
+        std::pair<int, int> get_max_resolution(rs2_stream stream) const;
+        void sort_resolutions(std::vector<std::pair<int, int>>& resolutions) const;
+        bool is_ir_calibration_profile() const;
+        
+        // used in method get_max_resolution per stream
+        std::map<rs2_stream, std::vector<std::pair<int, int>>> resolutions_per_stream;
+
         const float SHORT_RANGE_MIN_DISTANCE = 0.05f; // 5 cm
         const float SHORT_RANGE_MAX_DISTANCE = 4.0f;  // 4 meters
     };

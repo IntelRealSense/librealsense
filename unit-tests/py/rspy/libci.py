@@ -1,7 +1,7 @@
 # License: Apache 2.0. See LICENSE file in root directory.
 # Copyright(c) 2021 Intel Corporation. All Rights Reserved.
 
-import re, os, subprocess, time, sys
+import re, os, subprocess, time, sys, platform
 from abc import ABC, abstractmethod
 
 from rspy import log, file
@@ -16,7 +16,10 @@ logdir = None
 # This is always a directory called "LibCI", but may be in different locations, in this order of priority:
 #     1. C:\LibCI  (on the LibCI machine)
 #     2. ~/LibCI   (in Windows, ~ is likely C:\Users\<username>)
-home = 'C:\\LibCI'
+if platform.system() == 'Linux':
+    home = '/usr/local/lib/ci'
+else:
+    home = 'C:\\LibCI'
 if not os.path.isdir( home ):
     home = os.path.normpath( os.path.expanduser( '~/LibCI' ))
 #
@@ -85,8 +88,11 @@ class TestConfig( ABC ):  # Abstract Base Class
         self._flags = set()
         self._timeout = 200
         self._context = context
+        self._donotrun = False
 
     def debug_dump( self ):
+        if self._donotrun:
+            log.d( 'THIS TEST WILL BE SKIPPED (donotrun specified)' )
         if self._priority != 1000:
             log.d( 'priority:', self._priority )
         if self._timeout != 200:
@@ -123,6 +129,10 @@ class TestConfig( ABC ):  # Abstract Base Class
     def context( self ):
         return self._context
 
+    @property
+    def donotrun( self ):
+        return  self._donotrun
+
 class TestConfigFromText( TestConfig ):
     """
     Configuration for a test -- from any text-based syntax with a given prefix, e.g. for python:
@@ -139,6 +149,7 @@ class TestConfigFromText( TestConfig ):
         :param source: The absolute path to the text file
         :param line_prefix: A regex to denote a directive (must be first thing in a line), which will
             be immediately followed by the directive itself and optional arguments
+        :param context: context in which to configure the test
         """
         TestConfig.__init__( self, context )
 
@@ -204,6 +215,11 @@ class TestConfigFromText( TestConfig ):
                 self._tags.update( map( str.lower, params ))  # tags are case-insensitive
             elif directive == 'flag':
                 self._flags.update( params )
+            elif directive == 'donotrun':
+                if params:
+                    log.e( source + '+' + str( line['index'] ) + ': donotrun directive should not have parameters:',
+                           params )
+                self._donotrun = True
             else:
                 log.e( source + '+' + str( line['index'] ) + ': invalid directive "' + directive + '"; ignoring' )
 
@@ -238,7 +254,7 @@ class Test( ABC ):  # Abstract Base Class
         self._ran = False
 
     @abstractmethod
-    def run_test( self, configuration = None, log_path = None ):
+    def run_test( self, configuration = None, log_path = None, opts = set() ):
         pass
 
     def debug_dump( self ):
@@ -327,6 +343,7 @@ class PyTest( Test ):
         """
         :param testname: name of the test
         :param path_to_test: the relative path from the current directory to the path
+        :param context: context in which the test will run
         """
         global unit_tests_dir
         Test.__init__( self, testname )
@@ -340,26 +357,40 @@ class PyTest( Test ):
     @property
     def command( self ):
         cmd = [sys.executable]
-        # The unit-tests should only find module we've specifically added -- but Python may have site packages
-        # that are automatically made available. We want to avoid those:
-        #     -S     : don't imply 'import site' on initialization
-        # NOTE: exit() is defined in site.py and works only if the site module is imported!
-        cmd += ['-S']
+        #
+        # PYTHON FLAGS
+        #
+        #     -u     : force the stdout and stderr streams to be unbuffered; same as PYTHONUNBUFFERED=1
+        # With buffering we may end up losing output in case of crashes! (in Python 3.7 the text layer of the
+        # streams is unbuffered, but we assume 3.6)
+        cmd += ['-u']
+        #
         if sys.flags.verbose:
             cmd += ["-v"]
+        #
         cmd += [self.path_to_script]
+        #
+        # SCRIPT FLAGS
+        #
+        # If the script has a custom-arguments flag, then we don't pass any of the standard options
         if 'custom-args' not in self.config.flags:
+            #
             if log.is_debug_on():
                 cmd += ['--debug']
+            #
             if log.is_color_on():
                 cmd += ['--color']
+            #
             if self.config.context:
                 cmd += ['--context', self.config.context]
         return cmd
 
-    def run_test( self, configuration = None, log_path = None ):
+    def run_test( self, configuration = None, log_path = None, opts = set() ):
         try:
-            run( self.command, stdout=log_path, append=self.ran, timeout=self.config.timeout )
+            cmd = self.command
+            if opts:
+                cmd += [opt for opt in opts]
+            run( cmd, stdout=log_path, append=self.ran, timeout=self.config.timeout )
         finally:
             self._ran = True
 
@@ -369,13 +400,14 @@ class ExeTest( Test ):
     Class for c/cpp tests. Hold the path to the executable for the test
     """
 
-    def __init__( self, testname, exe, context = None ):
+    def __init__( self, testname, exe = None, context = None ):
         """
         :param testname: name of the test
         :param exe: full path to executable
+        :param context: context in which the test will run
         """
         global unit_tests_dir
-        if not os.path.isfile( exe ):
+        if exe and not os.path.isfile( exe ):
             log.d( "Tried to create exe test with invalid exe file: " + exe )
         Test.__init__( self, testname )
         self.exe = exe
@@ -384,7 +416,7 @@ class ExeTest( Test ):
         if relative_test_path:
             self._config = TestConfigFromCpp( unit_tests_dir + os.sep + relative_test_path, context )
         else:
-            self._config = TestConfig()
+            self._config = TestConfig(context)
 
     @property
     def command( self ):
@@ -398,10 +430,17 @@ class ExeTest( Test ):
                 # cmd += ['--success']  # show successful assertions in output
             # if log.is_color_on():
             #    cmd += ['--use-colour', 'yes']
+            if self.config.context:
+                cmd += ['--context', self.config.context]
         return cmd
 
-    def run_test( self, configuration = None, log_path = None ):
+    def run_test( self, configuration = None, log_path = None, opts = set() ):
+        if not self.exe:
+            raise RuntimeError("Tried to run test " + self.name + " with no exe file provided")
         try:
-            run( self.command, stdout=log_path, append=self.ran, timeout=self.config.timeout )
+            cmd = self.command
+            if opts:
+                cmd += [opt for opt in opts]
+            run( cmd, stdout=log_path, append=self.ran, timeout=self.config.timeout )
         finally:
             self._ran = True

@@ -1092,7 +1092,7 @@ namespace librealsense
         pose_frame_metadata frame_md = { 0 };
         frame_md.arrival_ts = duration_cast<std::chrono::nanoseconds>(ts.arrival_ts).count();
 
-        frame_additional_data additional_data(ts.device_ts.count(), frame_num++, ts.arrival_ts.count(), sizeof(frame_md), (uint8_t*)&frame_md, ts.global_ts.count(), 0, 0, false);
+        frame_additional_data additional_data(ts.device_ts.count(), frame_num++, ts.arrival_ts.count(), sizeof(frame_md), (uint8_t*)&frame_md, ts.global_ts.count(), 0, 0, false, 0.0);
 
         // Find the frame stream profile
         std::shared_ptr<stream_profile_interface> profile = nullptr;
@@ -1184,7 +1184,7 @@ namespace librealsense
         video_frame_metadata video_md{};
         video_md.arrival_ts = duration_cast<std::chrono::nanoseconds>(ts.arrival_ts).count();
         video_md.exposure_time = message->metadata.dwExposuretime;
-        frame_additional_data additional_data(ts.device_ts.count(), message->rawStreamHeader.dwFrameId, ts.arrival_ts.count(), sizeof(video_md), (uint8_t*)&video_md, ts.global_ts.count(), 0, 0, false);
+        frame_additional_data additional_data(ts.device_ts.count(), message->rawStreamHeader.dwFrameId, ts.arrival_ts.count(), sizeof(video_md), (uint8_t*)&video_md, ts.global_ts.count(), 0, 0, false, 0.0);
 
         last_exposure = message->metadata.dwExposuretime;
         last_gain = message->metadata.fGain;
@@ -1508,7 +1508,7 @@ namespace librealsense
         motion_frame_metadata motion_md{};
         motion_md.arrival_ts = duration_cast<std::chrono::nanoseconds>(ts.arrival_ts).count();
         motion_md.temperature = temperature;
-        frame_additional_data additional_data(ts.device_ts.count(), frame_number, ts.arrival_ts.count(), sizeof(motion_md), (uint8_t*)&motion_md, ts.global_ts.count(), 0, 0, false);
+        frame_additional_data additional_data(ts.device_ts.count(), frame_number, ts.arrival_ts.count(), sizeof(motion_md), (uint8_t*)&motion_md, ts.global_ts.count(), 0, 0, false, 0.0);
 
         // Find the frame stream profile
         std::shared_ptr<stream_profile_interface> profile = nullptr;

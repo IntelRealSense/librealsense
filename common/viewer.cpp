@@ -17,7 +17,6 @@
 #include <opengl3.h>
 
 #include <imgui_internal.h>
-#include <librealsense2/rsutil.h>
 
 #define ARCBALL_CAMERA_IMPLEMENTATION
 #include <arcball_camera.h>
@@ -265,7 +264,7 @@ namespace rs2
                         }
 
                         std::string fname(ret);
-                        if (!ends_with(to_lower(fname), curr_exporter->second.extension)) fname += curr_exporter->second.extension;
+                        if (!ends_with(utilities::string::to_lower(fname), curr_exporter->second.extension)) fname += curr_exporter->second.extension;
 
                         std::unique_ptr<rs2::filter> exporter;
                         if (tab == export_type::ply)
@@ -359,7 +358,7 @@ namespace rs2
         ImGui::PopFont();
         hovered = hovered || ImGui::IsItemHovered();
 
-        if (hovered && !disabled)
+        if (hovered)
         {
             win.link_hovered();
             ImGui::SetTooltip("%s", description);
@@ -717,7 +716,7 @@ namespace rs2
         // -------------------- Measure ----------------
 
         std::string measure_tooltip = "Measure distance between points";
-        if (!glsl_available) measure_tooltip += "\nRequires GLSL acceleration!";
+        if (!glsl_available) measure_tooltip += "\nRequires GLSL acceleration! \nEnable 2 checkboxes in Settings - Performance:  \n- Use GLSL for Rendering \n- Use GLSL for Processing ";
         if (_measurements.is_enabled())
         {
             bool active = true;
@@ -1092,7 +1091,7 @@ namespace rs2
             std::string wrapped_msg;
             try
             {
-                auto trimmed_msg = utilities::string::trim_newlines(msg);  
+                auto trimmed_msg = utilities::string::trim_newlines(msg);
                 wrapped_msg = utilities::imgui::wrap(trimmed_msg, 500);
             }
             catch (...)
@@ -2842,7 +2841,7 @@ namespace rs2
                             try
                             {
                                 std::string filename = ret;
-                                filename = to_lower(filename);
+                                filename = utilities::string::to_lower(filename);
                                 if (!ends_with(filename, ".json")) filename += ".json";
                                 temp_cfg.save(filename.c_str());
                             }
@@ -2902,6 +2901,12 @@ namespace rs2
                     if (ImGui::RadioButton("Custom Server", !official_url))
                     {
                         official_url = false;
+                        temp_cfg.set(configurations::update::sw_updates_official_server, false);
+                        
+                        // Load last saved custom URL
+                        url_str = custom_url;
+                        temp_cfg.set(configurations::update::sw_updates_url, url_str);
+
                     }
                     if (ImGui::IsItemHovered())
                     {
@@ -2913,12 +2918,7 @@ namespace rs2
                         if (ImGui::InputText("##custom_server_url", custom_url, 255))
                         {
                             url_str = custom_url;
-                        }
-                        ImGui::SameLine();
-                        if (ImGui::Button("Update URL", ImVec2(80, 20)))
-                        {
                             temp_cfg.set(configurations::update::sw_updates_url, url_str);
-                            temp_cfg.set(configurations::update::sw_updates_official_server, false);
                         }
                     }
 #endif

@@ -12,11 +12,16 @@
 #pragma warning(push)
 #pragma warning(disable:4251)
 #pragma warning(disable:4275)
-#   include <inference_engine.hpp>
-#   include <ie_iextension.h>
+#include <inference_engine.hpp>
+#include <ie_iextension.h>
 #ifdef OPENVINO2019
 #   include <ext_list.hpp>              // Required for CPU extension usage
 #endif
+
+#ifdef OPENVINO_NGRAPH
+#include <ngraph/ngraph.hpp>
+#endif
+
 #pragma warning(pop)
 
 #include <opencv2/opencv.hpp>
@@ -185,6 +190,7 @@ namespace openvino_helpers
             openvino_helpers::error_listener error_listener;
             engine.SetLogCallback( error_listener );
     */
+#ifdef OPENVINO2019
     class error_listener : public InferenceEngine::IErrorListener
     {
         void onError( char const * msg ) noexcept override
@@ -192,4 +198,5 @@ namespace openvino_helpers
             LOG(DEBUG) << "[InferenceEngine] " << msg;
         }
     };
+#endif
 }

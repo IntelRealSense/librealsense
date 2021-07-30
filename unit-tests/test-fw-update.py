@@ -8,6 +8,8 @@
 
 import pyrealsense2 as rs, sys, os, subprocess
 from rspy import devices, log, test, file, repo
+import re, platform
+
 
 if not devices.acroname:
     log.i( "No Acroname library found; skipping device FW update" )
@@ -72,10 +74,51 @@ def reset_update_counter( device ):
 
     send_hardware_monitor_command( device, cmd )
 
+def find_image_or_exit( product_name, fw_version_regex = r'(\d+\.){3}(\d+)' ):
+    """
+    Searches for a FW image file for the given camera name and optional version. If none are
+    found, exits with an error!
+    
+    :param product_name: the name of the camera, from get_info(rs.camera_info.name)
+    :param fw_version_regex: optional regular expression specifying which FW version image to find
+    
+    :return: the image file corresponding to product_name and fw_version if exist, otherwise exit
+    """
+    pattern = re.compile( r'^Intel RealSense (((\S+?)(\d+))(\S*))' )
+    match = pattern.search( product_name )
+    if not match:
+        raise RuntimeError( "Failed to parse product name '" + product_name + "'" )
+
+    # For a product 'PR567abc', we want to search, in order, these combinations:
+    #     PR567abc
+    #     PR306abX
+    #     PR306aXX
+    #     PR306
+    #     PR30X
+    #     PR3XX
+    # Each of the above, combined with the FW version, should yield an image name like:
+    #     PR567aXX_FW_Image-<fw-version>.bin
+    suffix = 5             # the suffix
+    for j in range(1, 3):  # with suffix, then without
+        start_index, end_index = match.span(j)
+        for i in range(0, len(match.group(suffix))):
+            pn = product_name[start_index:end_index-i]
+            image_name = '(^|/)' + pn + i*'X' + "_FW_Image-" + fw_version_regex + r'\.bin$'
+            for image in file.find(repo.root, image_name):
+                return os.path.join( repo.root, image )
+        suffix -= 1
+    #
+    # If we get here, we didn't find any image...
+    global product_line
+    log.f( "Could not find image file for", product_line )
 
 # find the update tool exe
 fw_updater_exe = None
-for tool in file.find( repo.build, '(^|/)rs-fw-update.exe$' ):
+fw_updater_exe_regex = r'(^|/)rs-fw-update'
+if platform.system() == 'Windows':
+    fw_updater_exe_regex += r'\.exe'
+fw_updater_exe_regex += '$'
+for tool in file.find( repo.build, fw_updater_exe_regex ):
     fw_updater_exe = os.path.join( repo.build, tool )
 if not fw_updater_exe:
     log.f( "Could not find the update tool file (rs-fw-update.exe)" )
@@ -88,10 +131,12 @@ if len( sn_list ) != 1:
 device = devices.get_first( sn_list ).handle
 log.d( 'found:', device )
 product_line = device.get_info( rs.camera_info.product_line )
+product_name = device.get_info( rs.camera_info.name )
 log.d( 'product line:', product_line )
-
 ###############################################################################
 #
+
+
 test.start( "Update FW" )
 # check if recovery. If so recover
 recovered = False
@@ -99,13 +144,7 @@ if device.is_update_device():
     log.d( "recovering device ..." )
     try:
         # TODO: this needs to improve for L535
-        image_name = product_line[:-2] + "XX_FW_Image-"
-        image_mask = '(^|/)' + image_name + '(\d+\.){4}bin$'
-        image_file = None
-        for image in file.find( repo.root, image_mask ):
-            image_file = image
-        if not image_file:
-            log.f( "Could not find image file for", product_line, "recovery device" )
+        image_file = find_image_or_exit( product_name )
 
         cmd = [fw_updater_exe, '-r', '-f', image_file]
         log.d( 'running:', cmd )
@@ -160,14 +199,8 @@ if update_counter >= 19:
     reset_update_counter( device )
     update_counter = 0
 
+image_file = find_image_or_exit(product_name, re.escape( bundled_fw_version ))
 # finding file containing image for FW update
-image_name = product_line[0:2] + "XX_FW_Image-" + bundled_fw_version + ".bin"
-image_mask = '(^|/)' + image_name + '$'
-image_file = None
-for image in file.find( repo.root, image_mask ):
-    image_file = os.path.join( repo.root, image)
-if not image_file:
-    log.f( "Could not find image file for " + product_line + " device with FW version: " + bundled_fw_version )
 
 cmd = [fw_updater_exe, '-f', image_file]
 log.d( 'running:', cmd )

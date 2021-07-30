@@ -34,6 +34,7 @@ namespace rs2
             {
                 std::string device_name;
                 std::string serial_number;
+                std::string fw_update_id;
 
                 sw_update::version software_version;
                 sw_update::version firmware_version;

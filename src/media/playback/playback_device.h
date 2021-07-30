@@ -3,13 +3,13 @@
 
 #pragma once
 #include <atomic>
-#include <core/roi.h>
-#include <core/extension.h>
-#include <core/serialization.h>
-#include "core/streaming.h"
-#include "archive.h"
-#include "concurrency.h"
-#include "sensor.h"
+#include "../../core/roi.h"
+#include "../../core/extension.h"
+#include "../../core/serialization.h"
+#include "../../core/streaming.h"
+#include "../../archive.h"
+#include "../../concurrency.h"
+#include "../../sensor.h"
 #include "playback_sensor.h"
 
 namespace librealsense
@@ -92,6 +92,7 @@ namespace librealsense
         std::map<int, std::pair<uint32_t, rs2_extrinsics>> m_extrinsics_map;
         device_serializer::nanoseconds m_last_published_timestamp;
         std::mutex m_last_published_timestamp_mutex;
+        std::mutex _active_sensors_mutex;
     };
 
     MAP_EXTENSION(RS2_EXTENSION_PLAYBACK, playback_device);

@@ -85,6 +85,7 @@ typedef struct rs2_software_video_frame
     rs2_timestamp_domain domain;
     int frame_number;
     const rs2_stream_profile* profile;
+    float depth_units;
 } rs2_software_video_frame;
 
 /** \brief All the parameters required to define a motion frame. */

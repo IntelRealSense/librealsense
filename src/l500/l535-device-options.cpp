@@ -6,6 +6,7 @@
 #include "l535-preset-option.h"
 #include "l500-private.h"
 #include "l500-depth.h"
+#include "../common/fw/firmware-version.h"
 
 using librealsense::ivcam2::l535::device_options;
 
@@ -30,8 +31,8 @@ device_options::device_options( std::shared_ptr< librealsense::context > ctx,
                 "Changes the amount of sharpening in the pre-processed image" } },
             { RS2_OPTION_NOISE_FILTERING,
               { noise_filtering, "Control edges and background noise" } },
-            { RS2_OPTION_AVALANCHE_PHOTO_DIODE,
-              { apd, "Changes the exposure time of Avalanche Photo Diode in the receiver" } },
+            { RS2_OPTION_RECEIVER_SENSITIVITY,
+              { receiver_sensitivity, "Control the receiver sensitivity to incoming light, both projected and ambient" } },
             { RS2_OPTION_CONFIDENCE_THRESHOLD,
               { confidence,
                 "The confidence level threshold to use to mark a pixel as valid by the depth "
@@ -47,7 +48,10 @@ device_options::device_options( std::shared_ptr< librealsense::context > ctx,
             { RS2_OPTION_AUTO_RX_SENSITIVITY, 
               { auto_rx_sensitivity, "Enable receiver sensitivity according to ambient light, bounded by the Receiver Gain control" } },
             { RS2_OPTION_TRANSMITTER_FREQUENCY,
-              { transmitter_frequency, "Change transmitter frequency, increasing effective range over sharpness" } }
+              { transmitter_frequency, "Change transmitter frequency, increasing effective range over sharpness" } },
+            { RS2_OPTION_VERTICAL_BINNING,
+              { vertical_binning, "Enables vertical binning which increases the maximal sensed distance" } }
+
         };
 
         for( auto i : options )
@@ -70,4 +74,7 @@ device_options::device_options( std::shared_ptr< librealsense::context > ctx,
 
         depth_sensor.register_option( RS2_OPTION_VISUAL_PRESET, preset );
     } );
+
+    firmware_version recommended_fw_version(L53X_RECOMMENDED_FIRMWARE_VERSION);
+    register_info(RS2_CAMERA_INFO_RECOMMENDED_FIRMWARE_VERSION, recommended_fw_version);
 }

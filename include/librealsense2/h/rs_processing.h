@@ -54,6 +54,19 @@ rs2_processing_block* rs2_create_pointcloud(rs2_error** error);
 rs2_processing_block* rs2_create_yuy_decoder(rs2_error** error);
 
 /**
+* Creates y411 decoder processing block. This block accepts raw y411 frames and outputs frames in RGB8.
+*     https://www.fourcc.org/pixel-format/yuv-y411/
+* Y411 is disguised as NV12 to allow Linux compatibility. Both are 12bpp encodings that allow high-resolution
+* modes in the camera to still fit within the USB3 limits (YUY wasn't enough).
+*
+* The SDK will automatically try to use SSE2 and AVX instructions and CUDA where available to get
+* best performance. Other implementations (using GLSL, OpenCL, Neon and NCS) should follow.
+*
+* \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+*/
+rs2_processing_block* rs2_create_y411_decoder(rs2_error** error);
+
+/**
 * Creates depth thresholding processing block
 * By controlling min and max options on the block, one could filter out depth values
 * that are either too large or too small, as a software post-processing step

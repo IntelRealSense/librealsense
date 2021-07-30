@@ -47,7 +47,6 @@ namespace librealsense
         ivcam2::intrinsic_rgb read_intrinsics_table() const;
         std::vector<uint8_t> get_raw_extrinsics_table() const;
     };
-
     class l500_color_sensor
         : public synthetic_sensor
         , public video_sensor_interface

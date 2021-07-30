@@ -151,8 +151,9 @@ namespace librealsense
             glGenTextures(1, &_cm_texture);
             auto& curr_map = _maps[_map_index]->get_cache();
             _last_selected_cm = _map_index;
+            auto size = static_cast<GLsizei>(curr_map.size());
             glBindTexture(GL_TEXTURE_2D, _cm_texture);
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, curr_map.size(), 1, 0, GL_RGB, GL_FLOAT, curr_map.data());
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, size, 1, 0, GL_RGB, GL_FLOAT, curr_map.data());
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 
@@ -190,6 +191,8 @@ namespace librealsense
 
         rs2::frame colorizer::process_frame(const rs2::frame_source& src, const rs2::frame& f)
         {
+            if(f.as<rs2::depth_frame>())
+                _depth_units = ((depth_frame*)f.get())->get_units();
             if (f.get_profile().get() != _source_stream_profile.get())
             {
                 _source_stream_profile = f.get_profile();
@@ -201,7 +204,6 @@ namespace librealsense
                 _width = vp.width(); _height = vp.height();
 
                 auto info = disparity_info::update_info_from_frame(f);
-                _depth_units = info.depth_units;
                 _d2d_convert_factor = info.d2d_convert_factor;
 
                 perform_gl_action([&]()
@@ -222,7 +224,8 @@ namespace librealsense
                 if (_last_selected_cm != _map_index)
                 {
                     glBindTexture(GL_TEXTURE_2D, _cm_texture);
-                    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, curr_map.size(), 1, 0, GL_RGB, GL_FLOAT, curr_map.data());
+                    auto size = static_cast<GLsizei>(curr_map.size());
+                    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, size, 1, 0, GL_RGB, GL_FLOAT, curr_map.data());
                     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
                     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 
@@ -235,7 +238,7 @@ namespace librealsense
 
                 auto fi = (frame_interface*)f.get();
                 auto df = dynamic_cast<librealsense::depth_frame*>(fi);
-                auto depth_units = df->get_units();
+                _depth_units = df->get_units();
                 bool disparity = f.get_profile().format() == RS2_FORMAT_DISPARITY32 ? true : false;
 
                 auto gf = dynamic_cast<gpu_addon_interface*>((frame_interface*)res.get());
@@ -316,9 +319,9 @@ namespace librealsense
                     auto __min = _min;
                     if (__min < 1e-6f) { __min = 1e-6f; } // Min value set to prevent zero division. only when _min is zero. 
                     max = (_d2d_convert_factor / (__min)) * _depth_units + .5f;
-                    min = (_d2d_convert_factor / (_max)) * depth_units + .5f;
+                    min = (_d2d_convert_factor / (_max)) * _depth_units + .5f;
                 }
-                shader.set_params(depth_units, min, max, MAX_DISPARITY, _equalize, disparity);
+                shader.set_params(_depth_units, min, max, MAX_DISPARITY, _equalize, disparity);
                 shader.end();
 
                 glActiveTexture(GL_TEXTURE0 + shader.histogram_slot());

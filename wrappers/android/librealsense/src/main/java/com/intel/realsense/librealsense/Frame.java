@@ -16,6 +16,7 @@ public class Frame extends LrsClass implements Cloneable{
             case DEPTH_FRAME: return (T) new DepthFrame(mHandle);
             case MOTION_FRAME: return (T) new MotionFrame(mHandle);
             case POINTS: return (T) new Points(mHandle);
+            case FRAMESET: return (T) new FrameSet(mHandle);
         }
         throw new RuntimeException("this profile is not extendable to " + extension.name());
     }

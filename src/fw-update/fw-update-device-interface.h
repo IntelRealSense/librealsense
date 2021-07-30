@@ -3,8 +3,8 @@
 
 #pragma once
 
-#include "types.h"
-#include "core/streaming.h"
+#include "../types.h"
+#include "../core/streaming.h"
 #include <cstddef>
 
 namespace librealsense

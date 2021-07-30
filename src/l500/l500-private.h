@@ -3,11 +3,11 @@
 
 #pragma once
 
-#include "backend.h"
-#include "types.h"
-#include "option.h"
-#include "core/extension.h"
-#include "fw-update/fw-update-unsigned.h"
+#include "../backend.h"
+#include "../types.h"
+#include "../option.h"
+#include "../core/extension.h"
+#include "../fw-update/fw-update-unsigned.h"
 
 static const int MAX_NUM_OF_RGB_RESOLUTIONS = 5;
 static const int MAX_NUM_OF_DEPTH_RESOLUTIONS = 5; 
@@ -248,9 +248,9 @@ namespace librealsense
         };
 
         static const std::map<std::uint16_t, std::string> rs500_sku_names = {
-            { L500_RECOVERY_PID,            "Intel RealSense L5xx Recovery"},
-            { L535_RECOVERY_PID,            "Intel RealSense L5xx Recovery"},
-            { L500_USB2_RECOVERY_PID_OLD,   "Intel RealSense L5xx Recovery"},
+            { L500_RECOVERY_PID,            "Intel RealSense L51X Recovery"},
+            { L535_RECOVERY_PID,            "Intel RealSense L53X Recovery"},
+            { L500_USB2_RECOVERY_PID_OLD,   "Intel RealSense L51X Recovery"},
             { L500_PID,                     "Intel RealSense L500"},
             { L515_PID_PRE_PRQ,             "Intel RealSense L515 (pre-PRQ)"},
             { L515_PID,                     "Intel RealSense L515"},
@@ -258,14 +258,14 @@ namespace librealsense
 
         };
 
-        static std::map<uint16_t, std::string> device_to_fw_min_version = {
-            { L500_RECOVERY_PID, "1.4.1.0"},
-            { L535_RECOVERY_PID, "1.4.1.0"},
-            { L500_USB2_RECOVERY_PID_OLD, "1.4.1.0"},
-            { L500_PID, "1.4.1.0"},
-            { L515_PID_PRE_PRQ, "1.4.1.0"},
-            { L515_PID, "1.4.1.0"},
-            { L535_PID, "1.4.1.0"}
+        static std::map<uint16_t, std::pair<std::string, std::string>> device_to_fw_min_max_version = {
+            { L500_RECOVERY_PID,            { "1.5.1.3", "1.99.99.99"}},
+            { L535_RECOVERY_PID,            { "3.5.5.1", "3.99.99.99"}},
+            { L500_USB2_RECOVERY_PID_OLD,   { "1.5.1.3", "1.99.99.99"}},
+            { L500_PID,                     { "1.5.1.3", "1.99.99.99"}},
+            { L515_PID_PRE_PRQ,             { "1.5.1.3", "1.99.99.99"}},
+            { L515_PID,                     { "1.5.1.3", "1.99.99.99"}},
+            { L535_PID,                     { "3.5.5.1", "3.99.99.99"}}
         };
 
         // Known FW error codes, if we poll for errors (RS2_OPTION_ERROR_POLLING_ENABLED)

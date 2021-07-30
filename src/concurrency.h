@@ -8,6 +8,7 @@
 #include <thread>
 #include <atomic>
 #include <functional>
+#include <cassert>
 
 const int QUEUE_MAX_SIZE = 10;
 // Simplest implementation of a blocking concurrent queue for thread messaging
@@ -15,133 +16,181 @@ template<class T>
 class single_consumer_queue
 {
     std::deque<T> _queue;
-    std::mutex _mutex;
+    mutable std::mutex _mutex;
     std::condition_variable _deq_cv; // not empty signal
-    std::condition_variable _enq_cv; // not empty signal
+    std::condition_variable _enq_cv; // not full signal
 
-    unsigned int _cap;
+    unsigned int const _cap;
     bool _accepting;
 
-    // flush mechanism is required to abort wait on cv
-    // when need to stop
-    std::atomic<bool> _need_to_flush;
-    std::atomic<bool> _was_flushed;
-    std::function<void(T const &)> _on_drop_callback;
+    std::function<void(T const &)> const _on_drop_callback;
+
 public:
-    explicit single_consumer_queue<T>(unsigned int cap = QUEUE_MAX_SIZE, std::function<void(T const &)> on_drop_callback = nullptr)
-        : _queue(), _mutex(), _deq_cv(), _enq_cv(), _cap(cap), _accepting(true), _need_to_flush(false), _was_flushed(false), _on_drop_callback(on_drop_callback)
-    {}
-
-    void enqueue(T&& item)
+    explicit single_consumer_queue< T >( unsigned int cap = QUEUE_MAX_SIZE,
+                                         std::function< void( T const & ) > on_drop_callback = nullptr )
+        : _cap( cap )
+        , _accepting( true )
+        , _on_drop_callback( on_drop_callback )
     {
-        std::unique_lock<std::mutex> lock(_mutex);
-        if (_accepting)
-        {
-            _queue.push_back(std::move(item));
-            if (_queue.size() > _cap)
-            {
-                if (_on_drop_callback)
-                {
-                    _on_drop_callback(_queue.front());
-                }
-                _queue.pop_front();
-            }
-        }
-        lock.unlock();
-        _deq_cv.notify_one();
     }
 
-    void blocking_enqueue(T&& item)
+    // Enqueue an item onto the queue.
+    // If the queue grows beyond capacity, the front will be removed, losing whatever was there!
+    bool enqueue(T&& item)
     {
-        auto pred = [this]()->bool { return _queue.size() < _cap || _need_to_flush; };
-
         std::unique_lock<std::mutex> lock(_mutex);
-        if (_accepting)
+        if( ! _accepting )
         {
-            _enq_cv.wait(lock, pred);
-            _queue.push_back(std::move(item));
+            if( _on_drop_callback )
+                _on_drop_callback( item );
+            return false;
         }
+
+        _queue.push_back(std::move(item));
+
+        if( _queue.size() > _cap )
+        {
+            if( _on_drop_callback )
+                _on_drop_callback( _queue.front() );
+            _queue.pop_front();
+        }
+
         lock.unlock();
+
+        // We pushed something -- let others know there's something to dequeue
         _deq_cv.notify_one();
+
+        return true;
     }
 
 
-    bool dequeue(T* item ,unsigned int timeout_ms)
+    // Enqueue an item, but wait for room if there isn't any
+    // Returns true if the enqueue succeeded
+    bool blocking_enqueue(T&& item)
     {
         std::unique_lock<std::mutex> lock(_mutex);
-        _accepting = true;
-        _was_flushed = false;
-        const auto ready = [this]() { return (_queue.size() > 0) || _need_to_flush; };
-        if (!ready() && !_deq_cv.wait_for(lock, std::chrono::milliseconds(timeout_ms), ready))
+        _enq_cv.wait( lock, [this]() {
+            return _queue.size() < _cap; } );
+        if( ! _accepting )
+        {
+            // We shouldn't be adding anything to the queue when we're stopping
+            if( _on_drop_callback )
+                _on_drop_callback( item );
+            return false;
+        }
+
+        _queue.push_back(std::move(item));
+        lock.unlock();
+
+        // We pushed something -- let another know there's something to dequeue
+        _deq_cv.notify_one();
+
+        return true;
+    }
+
+
+    // Remove one item; if unavailable, wait for it
+    // Return true if an item was removed -- otherwise, false
+    bool dequeue( T * item, unsigned int timeout_ms )
+    {
+        std::unique_lock<std::mutex> lock(_mutex);
+        if( ! _deq_cv.wait_for( lock,
+                                std::chrono::milliseconds( timeout_ms ),
+                                [this]() { return ! _accepting || ! _queue.empty(); } )
+            || _queue.empty() )
         {
             return false;
         }
 
-        if (_queue.size() <= 0)
-        {
-            return false;
-        }
         *item = std::move(_queue.front());
         _queue.pop_front();
+
+        // We've made room -- let whoever is waiting for room know about it
         _enq_cv.notify_one();
+
         return true;
     }
 
+    // Remove one item if available; do not wait for one
+    // Return true if an item was removed -- otherwise, false
     bool try_dequeue(T* item)
     {
-        std::unique_lock<std::mutex> lock(_mutex);
-        _accepting = true;
-        if (_queue.size() > 0)
-        {
-            auto val = std::move(_queue.front());
-            _queue.pop_front();
-            *item = std::move(val);
-            _enq_cv.notify_one();
-            return true;
-        }
-        return false;
+        std::lock_guard< std::mutex > lock( _mutex );
+        if( _queue.empty() )
+            return false;
+
+        *item = std::move(_queue.front());
+        _queue.pop_front();
+
+        // We've made room -- let whoever is waiting for room know about it
+        _enq_cv.notify_one();
+
+        return true;
     }
 
-    bool peek(T** item)
+    template< class Fn >
+    bool peek( Fn fn ) const
     {
-        std::unique_lock<std::mutex> lock(_mutex);
-
-        if (_queue.size() <= 0)
-        {
+        std::lock_guard< std::mutex > lock( _mutex );
+        if( _queue.empty() )
             return false;
-        }
-        *item = &_queue.front();
+        fn( _queue.front() );
         return true;
+    }
+
+    template< class Fn >
+    bool peek( Fn fn )
+    {
+        std::lock_guard< std::mutex > lock( _mutex );
+        if( _queue.empty() )
+            return false;
+        fn( _queue.front() );
+        return true;
+    }
+
+    void stop()
+    {
+        std::lock_guard< std::mutex > lock( _mutex );
+
+        // We no longer accept any more items!
+        _accepting = false;
+
+        _clear();
     }
 
     void clear()
     {
-        std::unique_lock<std::mutex> lock(_mutex);
+        std::lock_guard< std::mutex > lock( _mutex );
+        _clear();
+    }
 
-        _accepting = false;
-        _need_to_flush = true;
+protected:
+    void _clear()
+    {
+        _queue.clear();
 
+        // Wake up anyone who is waiting for room to enqueue, or waiting for something to dequeue -- there's nothing now
         _enq_cv.notify_all();
-        while (_queue.size() > 0)
-        {
-            auto item = std::move(_queue.front());
-            _queue.pop_front();
-        }
         _deq_cv.notify_all();
     }
 
+public:
     void start()
     {
-        std::unique_lock<std::mutex> lock(_mutex);
-        _need_to_flush = false;
+        std::lock_guard< std::mutex > lock( _mutex );
         _accepting = true;
     }
 
-    size_t size()
+    bool started() const { return _accepting; }
+    bool stopped() const { return ! started(); }
+
+    size_t size() const
     {
-        std::unique_lock<std::mutex> lock(_mutex);
+        std::lock_guard< std::mutex > lock( _mutex );
         return _queue.size();
     }
+
+    bool empty() const { return ! size(); }
 };
 
 template<class T>
@@ -152,12 +201,12 @@ class single_consumer_frame_queue
 public:
     single_consumer_frame_queue<T>(unsigned int cap = QUEUE_MAX_SIZE) : _queue(cap) {}
 
-    void enqueue(T&& item)
+    bool enqueue( T && item )
     {
-        if (item.is_blocking())
-            _queue.blocking_enqueue(std::move(item));
+        if( item.is_blocking() )
+            return _queue.blocking_enqueue( std::move( item ) );
         else
-            _queue.enqueue(std::move(item));
+            return _queue.enqueue( std::move( item ) );
     }
 
     bool dequeue(T* item, unsigned int timeout_ms)
@@ -165,14 +214,21 @@ public:
         return _queue.dequeue(item, timeout_ms);
     }
 
-    bool peek(T** item)
-    {
-        return _queue.peek(item);
-    }
-
     bool try_dequeue(T* item)
     {
         return _queue.try_dequeue(item);
+    }
+
+    template< class Fn >
+    bool peek( Fn fn ) const
+    {
+        return _queue.peek( fn );
+    }
+
+    template< class Fn >
+    bool peek( Fn fn )
+    {
+        return _queue.peek( fn );
     }
 
     void clear()
@@ -180,76 +236,92 @@ public:
         _queue.clear();
     }
 
+    void stop()
+    {
+        _queue.stop();
+    }
+
     void start()
     {
         _queue.start();
     }
 
-    size_t size()
+    size_t size() const
     {
         return _queue.size();
     }
+
+    bool empty() const
+    {
+        return _queue.empty();
+    }
+
+    bool started() const { return _queue.started(); }
+    bool stopped() const { return _queue.stopped(); }
 };
 
+// The dispatcher is responsible for dispatching generic 'actions': any thread can queue an action
+// (lambda) for dispatch, while the dispatcher maintains a single thread that runs these actions one
+// at a time.
+//
 class dispatcher
 {
 public:
+    // An action, when run, takes a 'cancellable_timer', which it may ignore. This class allows the
+    // action to perform some sleep and know that, if the dispatcher is shutting down, its sleep
+    // will still be interrupted.
+    //
     class cancellable_timer
     {
+        dispatcher* _owner;
+    
     public:
         cancellable_timer(dispatcher* owner)
             : _owner(owner)
         {}
 
-        bool try_sleep(std::chrono::milliseconds::rep ms)
+        // Replacement for sleep() -- try to sleep for a time, but stop if the
+        // dispatcher is stopped
+        // 
+        // Return false if the dispatcher was stopped, true otherwise
+        //
+        template< class Duration >
+        bool try_sleep( Duration sleep_time )
         {
             using namespace std::chrono;
 
             std::unique_lock<std::mutex> lock(_owner->_was_stopped_mutex);
-            auto good = [&]() { return _owner->_was_stopped.load(); };
-            return !(_owner->_was_stopped_cv.wait_for(lock, milliseconds(ms), good));
+            auto dispatcher_was_stopped = [&]() { return _owner->_was_stopped.load(); };
+            if( dispatcher_was_stopped() )
+                return false;
+            // wait_for() returns "false if the predicate pred still evaluates to false after the
+            // rel_time timeout expired, otherwise true"
+            return ! (
+                _owner->_was_stopped_cv.wait_for( lock, sleep_time, dispatcher_was_stopped ) );
         }
-
-    private:
-        dispatcher* _owner;
     };
+
+    // An action is any functor that accepts a cancellable timer
     typedef std::function<void(cancellable_timer const &)> action;
-    dispatcher(unsigned int cap, std::function <void(action)> on_drop_callback = nullptr)
-        : _queue(cap, on_drop_callback),
-          _was_stopped(true),
-          _was_flushed(false),
-          _is_alive(true)
-    {
-        _thread = std::thread([&]()
-        {
-            int timeout_ms = 5000;
-            while (_is_alive)
-            {
-                std::function<void(cancellable_timer)> item;
 
-                if (_queue.dequeue(&item, timeout_ms))
-                {
-                    cancellable_timer time(this);
+    // Certain conditions (see invoke()) may cause actions to be lost, e.g. when the queue gets full
+    // and we're non-blocking. The on_drop_callback allows caputring of these instances, if we
+    // want...
+    //
+    dispatcher( unsigned int queue_capacity,
+                std::function< void( action ) > on_drop_callback = nullptr );
 
-                    try
-                    {
-                        item(time);
-                    }
-                    catch(...){}
-                }
+    ~dispatcher();
 
-#ifndef ANDROID
-                std::unique_lock<std::mutex> lock(_was_flushed_mutex);
-#endif
-                _was_flushed = true;
-                _was_flushed_cv.notify_all();
-#ifndef ANDROID
-                lock.unlock();
-#endif
-            }
-        });
-    }
+    bool empty() const { return _queue.empty(); }
 
+    // Main invocation of an action: this will be called from any thread, and basically just queues
+    // up the actions for our dispatching thread to handle them.
+    // 
+    // A blocking invocation means that it will wait until there's room in the queue: if not
+    // blocking and the queue is full, the action will be queued at the expense of the next action
+    // in line (the oldest) for dispatch!
+    //
     template<class T>
     void invoke(T item, bool is_blocking = false)
     {
@@ -262,6 +334,8 @@ public:
         }
     }
 
+    // Like above, but synchronous: will return only when the action has actually been dispatched.
+    //
     template<class T>
     void invoke_and_wait(T item, std::function<bool()> exit_condition, bool is_blocking = false)
     {
@@ -283,78 +357,30 @@ public:
         _blocking_invoke_cv.wait(lk, [&](){ return done || exit_condition(); });
     }
 
-    void start()
-    {
-        std::unique_lock<std::mutex> lock(_was_stopped_mutex);
-        _was_stopped = false;
+    // Stops the dispatcher. This is not a pause: it will clear out the queue, losing any pending
+    // actions!
+    //
+    void stop();
 
-        _queue.start();
-    }
+    // A dispatcher starts out 'started' after construction. It can then be stopped and started
+    // again if needed.
+    //
+    void start();
 
-    void stop()
-    {
-        {
-            std::unique_lock<std::mutex> lock(_was_stopped_mutex);
+    // Return when all items in the queue are finished (within a timeout).
+    // If additional items are added while we're waiting, those will not be waited on!
+    //
+    bool flush();
 
-            if (_was_stopped.load()) return;
-
-            _was_stopped = true;
-            _was_stopped_cv.notify_all();
-        }
-
-        _queue.clear();
-
-        {
-            std::unique_lock<std::mutex> lock(_was_flushed_mutex);
-            _was_flushed = false;
-        }
-
-        std::unique_lock<std::mutex> lock_was_flushed(_was_flushed_mutex);
-        _was_flushed_cv.wait_for(lock_was_flushed, std::chrono::hours(999999), [&]() { return _was_flushed.load(); });
-
-        _queue.start();
-    }
-
-    ~dispatcher()
-    {
-        stop();
-        _queue.clear();
-        _is_alive = false;
-
-        if (_thread.joinable())
-        _thread.join();
-    }
-
-    bool flush()
-    {
-        std::mutex m;
-        std::condition_variable cv;
-        bool invoked = false;
-        auto wait_sucess = std::make_shared<std::atomic_bool>(true);
-        invoke([&, wait_sucess](cancellable_timer t)
-        {
-            ///TODO: use _queue to flush, and implement properly
-            if (_was_stopped || !(*wait_sucess))
-                return;
-
-            {
-                std::lock_guard<std::mutex> locker(m);
-                invoked = true;
-            }
-            cv.notify_one();
-        });
-        std::unique_lock<std::mutex> locker(m);
-        *wait_sucess = cv.wait_for(locker, std::chrono::seconds(10), [&]() { return invoked || _was_stopped; });
-        return *wait_sucess;
-    }
-
-    bool empty()
-    {
-        return _queue.size() == 0;
-    }
 
 private:
+    // Return true if dispatcher is started (within a timeout).
+    // false if not or the dispatcher is no longer alive
+    //
+    bool _wait_for_start( int timeout_ms );
+
     friend cancellable_timer;
+
     single_consumer_queue<std::function<void(cancellable_timer)>> _queue;
     std::thread _thread;
 
@@ -362,9 +388,7 @@ private:
     std::condition_variable _was_stopped_cv;
     std::mutex _was_stopped_mutex;
 
-    std::atomic<bool> _was_flushed;
-    std::condition_variable _was_flushed_cv;
-    std::mutex _was_flushed_mutex;
+    std::mutex _dispatch_mutex;
 
     std::condition_variable _blocking_invoke_cv;
     std::mutex _blocking_invoke_mutex;
@@ -432,7 +456,7 @@ public:
     {
         _watcher = std::make_shared<active_object<>>([this](dispatcher::cancellable_timer cancellable_timer)
         {
-            if(cancellable_timer.try_sleep(_timeout_ms))
+            if(cancellable_timer.try_sleep( std::chrono::milliseconds( _timeout_ms )))
             {
                 if(!_kicked)
                     _operation();

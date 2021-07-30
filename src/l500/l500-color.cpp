@@ -20,13 +20,31 @@ namespace librealsense
     std::map<uint32_t, rs2_format> l500_color_fourcc_to_rs2_format = {
         {rs_fourcc('Y','U','Y','2'), RS2_FORMAT_YUYV},
         {rs_fourcc('Y','U','Y','V'), RS2_FORMAT_YUYV},
-        {rs_fourcc('U','Y','V','Y'), RS2_FORMAT_UYVY}
+        {rs_fourcc('U','Y','V','Y'), RS2_FORMAT_UYVY},
+
+        // Description of NV12 on fourcc.org:
+        //     https://www.fourcc.org/pixel-format/yuv-nv12/
+        // NV12 format on Linux kernel spac :
+        //     https://www.kernel.org/doc/html/v4.12/media/uapi/v4l/pixfmt-nv12.html
+        //
+        // WE DO NOT ENCODE WITH NV12!
+        //
+        // The encoding is actually Y411:
+        //     https://www.fourcc.org/pixel-format/yuv-y411/
+        // Unfortunately, Y411 is unsupported in the Linux kernel. Instead, we diguise it as 'NV12' but the
+        // actual encoding is still Y11.
+        //
+        // Both Y411 and NV12 are 12bpp encodings that allow high-resolution modes in the camera to still
+        // fit within the USB3 limits (YUY wasn't enough).
+        //
+        {rs_fourcc('N','V','1','2'), RS2_FORMAT_Y411}
     };
 
     std::map<uint32_t, rs2_stream> l500_color_fourcc_to_rs2_stream = {
         {rs_fourcc('Y','U','Y','2'), RS2_STREAM_COLOR},
         {rs_fourcc('Y','U','Y','V'), RS2_STREAM_COLOR},
-        {rs_fourcc('U','Y','V','Y'), RS2_STREAM_COLOR}
+        {rs_fourcc('U','Y','V','Y'), RS2_STREAM_COLOR},
+        {rs_fourcc('N','V','1','2'), RS2_STREAM_COLOR}
     };
 
     std::shared_ptr<synthetic_sensor> l500_color::create_color_device(std::shared_ptr<context> ctx, const std::vector<platform::uvc_device_info>& color_devices_info)

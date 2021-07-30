@@ -41,6 +41,7 @@ namespace librealsense
         bool                is_blocking = false; // when running from recording, this bit indicates 
                                                  // if the recorder was configured to realtime mode or not
                                                  // if true, this will force any queue receiving this frame not to drop it
+        float               depth_units = 0.0f; // adding depth units to frame metadata is a temporary solution, it will be replaced by FW metadata
         uint32_t            raw_size = 0;   // The frame transmitted size (payload only)
 
         frame_additional_data() {}
@@ -54,6 +55,7 @@ namespace librealsense
             rs2_time_t last_timestamp,
             unsigned long long last_frame_number,
             bool in_is_blocking,
+            float in_depth_units = 0,
             uint32_t transmitted_size = 0)
             : timestamp(in_timestamp),
             frame_number(in_frame_number),
@@ -63,6 +65,7 @@ namespace librealsense
             last_timestamp(last_timestamp),
             last_frame_number(last_frame_number),
             is_blocking(in_is_blocking),
+            depth_units(in_depth_units),
             raw_size(transmitted_size)
         {
             // Copy up to 255 bytes to preserve metadata as raw data
@@ -298,13 +301,10 @@ namespace librealsense
     class depth_frame : public video_frame
     {
     public:
-        depth_frame() : video_frame(), _depth_units()
-        {
-        }
+        depth_frame() : video_frame() {}
 
         frame_interface* publish(std::shared_ptr<archive_interface> new_owner) override
         {
-            _depth_units = optional_value<float>();
             return video_frame::publish(new_owner);
         }
 
@@ -336,9 +336,7 @@ namespace librealsense
 
         float get_units() const
         {
-            if (!_depth_units)
-                _depth_units = query_units(get_sensor());
-            return _depth_units.value();
+            return additional_data.depth_units;
         }
 
         void set_original(frame_holder h)
@@ -392,7 +390,6 @@ namespace librealsense
         }
 
         frame_holder _original;
-        mutable optional_value<float> _depth_units;
     };
 
     MAP_EXTENSION(RS2_EXTENSION_DEPTH_FRAME, librealsense::depth_frame);

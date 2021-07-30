@@ -21,7 +21,6 @@
 #include "proc/zero-order.h"
 #include "proc/syncer-processing-block.h"
 #include "proc/rotation-transform.h"
-#include "fw-update/fw-update-unsigned.h"
 #include "../common/fw/firmware-version.h"
 #include "../common/utilities/time/periodic_timer.h"
 #include "../common/utilities/time/work_week.h"
@@ -95,7 +94,6 @@ namespace librealsense
         auto asic_serial = _hw_monitor->get_module_serial_string(gvd_buff, module_asic_serial_offset, module_asic_serial_size);
         auto fwv = _hw_monitor->get_firmware_version_string(gvd_buff, fw_version_offset);
         _fw_version = firmware_version(fwv);
-        firmware_version recommended_fw_version(L5XX_RECOMMENDED_FIRMWARE_VERSION);
 
         _is_locked = _hw_monitor->get_gvd_field<uint8_t>(gvd_buff, is_camera_locked_offset) != 0;
 
@@ -115,7 +113,6 @@ namespace librealsense
         register_info(RS2_CAMERA_INFO_ASIC_SERIAL_NUMBER, asic_serial);
         register_info(RS2_CAMERA_INFO_FIRMWARE_UPDATE_ID, asic_serial);
         register_info(RS2_CAMERA_INFO_FIRMWARE_VERSION, _fw_version);
-        register_info(RS2_CAMERA_INFO_RECOMMENDED_FIRMWARE_VERSION, recommended_fw_version);
         register_info(RS2_CAMERA_INFO_DEBUG_OP_CODE, std::to_string(static_cast<int>(fw_cmd::GLD)));
         register_info(RS2_CAMERA_INFO_PHYSICAL_PORT, group.uvc_devices.front().device_path);
         register_info(RS2_CAMERA_INFO_PRODUCT_ID, pid_hex_str);
@@ -697,11 +694,14 @@ namespace librealsense
     {
         std::string fw_version = extract_firmware_version_string((const void*)image.data(), image.size());
 
-        auto it = ivcam2::device_to_fw_min_version.find(_pid);
-        if (it == ivcam2::device_to_fw_min_version.end())
-            throw std::runtime_error("Minimum firmware version has not been defined for this device!");
+        auto min_max_fw_it = ivcam2::device_to_fw_min_max_version.find(_pid);
+        if (min_max_fw_it == ivcam2::device_to_fw_min_max_version.end())
+            throw std::runtime_error("Min and Max firmware versions have not been defined for this device!");
 
-        return (firmware_version(fw_version) >= firmware_version(it->second));
+        // Limit L515 to FW versions within the 1.5.1.3-1.99.99.99 range to differenciate from the other products
+        return (firmware_version(fw_version) >= firmware_version(min_max_fw_it->second.first)) &&
+               (firmware_version(fw_version) <= firmware_version(min_max_fw_it->second.second));
+
     }
 
     notification l500_notification_decoder::decode(int value)

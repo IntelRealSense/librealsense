@@ -1,7 +1,7 @@
 # License: Apache 2.0. See LICENSE file in root directory.
 # Copyright(c) 2021 Intel Corporation. All Rights Reserved.
 
-import sys, os, re
+import sys, os, re, platform
 try:
     from rspy import log
 except ModuleNotFoundError:
@@ -29,7 +29,7 @@ except ModuleNotFoundError:
     # And where to look for pyrealsense2
     from rspy import repo
     pyrs_dir = repo.find_pyrs_dir()
-    sys.path.append( pyrs_dir )
+    sys.path.insert( 1, pyrs_dir )
 
 
 # We need both pyrealsense2 and acroname. We can work without acroname, but
@@ -37,10 +37,6 @@ except ModuleNotFoundError:
 try:
     import pyrealsense2 as rs
     log.d( rs )
-    #
-    # Have to add site-packages, just in case: if -S was used, or parent script played with
-    # sys.path (as run-unit-tests does), then we may not have it!
-    sys.path += [os.path.join( os.path.dirname( sys.executable ), 'lib', 'site-packages')]
     #
     try:
         from rspy import acroname
@@ -516,6 +512,12 @@ def _wait_for( serial_numbers, timeout = 5 ):
     :return: True if all have come online; False if timeout was reached
     """
     did_some_waiting = False
+    #
+    # In Linux, we don't have an active notification mechanism - we query devices every 5 seconds
+    # (see POLLING_DEVICES_INTERVAL_MS) - so we add extra timeout
+    if timeout and platform.system() == 'Linux':
+        timeout += 5
+    #
     while True:
         #
         have_all_devices = True
@@ -654,39 +656,47 @@ if __name__ == '__main__':
         usage()
     if args:
         usage()
-    if acroname:
-        if not acroname.hub:
-            acroname.connect()
-    action = 'list'
-    for opt,arg in opts:
-        if opt in ('--list'):
-            action = 'list'
-        elif opt in ('--all'):
-            if not acroname:
-                log.f( 'No acroname available' )
-            acroname.enable_ports( sleep_on_change = 5 )
-        elif opt in ('--port'):
-            if not acroname:
-                log.f( 'No acroname available' )
-            all_ports = acroname.all_ports()
-            str_ports = arg.split(',')
-            ports = [int(port) for port in str_ports if port.isnumeric() and int(port) in all_ports]
-            if len(ports) != len(str_ports):
-                log.f( 'Invalid ports', str_ports )
-            acroname.enable_ports( ports, disable_other_ports = True, sleep_on_change = 5 )
-        elif opt in ('--recycle'):
-            action = 'recycle'
-    if action == 'list':
-        query()
-        for sn in all():
-            device = get( sn )
-            print( '{port} {name:30} {sn:20} {handle}'.format(
-                sn = sn,
-                name = device.name,
-                port = device.port is None and '?' or device.port,
-                handle = device.handle
-                ))
-    elif action == 'recycle':
-        log.f( 'Not implemented yet' )
+    try:
+        if acroname:
+            if not acroname.hub:
+                acroname.connect()
+        action = 'list'
+        for opt,arg in opts:
+            if opt in ('--list'):
+                action = 'list'
+            elif opt in ('--all'):
+                if not acroname:
+                    log.f( 'No acroname available' )
+                acroname.enable_ports( sleep_on_change = 5 )
+            elif opt in ('--port'):
+                if not acroname:
+                    log.f( 'No acroname available' )
+                all_ports = acroname.all_ports()
+                str_ports = arg.split(',')
+                ports = [int(port) for port in str_ports if port.isnumeric() and int(port) in all_ports]
+                if len(ports) != len(str_ports):
+                    log.f( 'Invalid ports', str_ports )
+                acroname.enable_ports( ports, disable_other_ports = True, sleep_on_change = 5 )
+            elif opt in ('--recycle'):
+                action = 'recycle'
+            else:
+                usage()
+        if action == 'list':
+            query()
+            for sn in all():
+                device = get( sn )
+                print( '{port} {name:30} {sn:20} {handle}'.format(
+                    sn = sn,
+                    name = device.name,
+                    port = device.port is None and '?' or device.port,
+                    handle = device.handle
+                    ))
+        elif action == 'recycle':
+            log.f( 'Not implemented yet' )
+    finally:
+        #
+        # Disconnect from the Acroname -- if we don't it'll crash on Linux...
+        if acroname:
+            acroname.disconnect()
 
 

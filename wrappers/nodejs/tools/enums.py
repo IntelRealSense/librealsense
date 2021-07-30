@@ -61,7 +61,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Ping script')
     parser.add_argument('-i', action='store', dest='include_folder_path', required=True)
     parser.add_argument('-a', action='store', dest='addon_folder_path', required=True)
-    parser.add_argument('-v', '--verbose', action='store_true', help='print not user enums')
+    parser.add_argument('-v', '--verbose', action='store_true', help='print missing enums')
 
     args = parser.parse_args()
 

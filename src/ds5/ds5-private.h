@@ -132,8 +132,8 @@ namespace librealsense
             { RS430_PID,            "Intel RealSense D430"},
             { RS430_MM_PID,         "Intel RealSense D430 with Tracking Module"},
             { RS_USB2_PID,          "Intel RealSense USB2" },
-            { RS_RECOVERY_PID,      "Intel RealSense D4xx Recovery"},
-            { RS_USB2_RECOVERY_PID, "Intel RealSense USB2 D4xx Recovery"},
+            { RS_RECOVERY_PID,      "Intel RealSense D4XX Recovery"},
+            { RS_USB2_RECOVERY_PID, "Intel RealSense D4XX USB2 Recovery"},
             { RS400_IMU_PID,        "Intel RealSense IMU" },
             { RS420_PID,            "Intel RealSense D420"},
             { RS420_MM_PID,         "Intel RealSense D420 with Tracking Module"},
@@ -280,6 +280,7 @@ namespace librealsense
             CAP_ROLLING_SHUTTER         = (1u << 5),
             CAP_BMI_055                 = (1u << 6),
             CAP_BMI_085                 = (1u << 7),
+            CAP_INTERCAM_HW_SYNC        = (1u << 8),
             CAP_MAX
         };
 
@@ -396,7 +397,7 @@ namespace librealsense
             auto header = reinterpret_cast<const table_header*>(raw_data.data());
             if(raw_data.size() < sizeof(table_header))
             {
-                throw invalid_value_exception(to_string() << "Calibration data invald, buffer too small : expected " << sizeof(table_header) << " , actual: " << raw_data.size());
+                throw invalid_value_exception(to_string() << "Calibration data invalid, buffer too small : expected " << sizeof(table_header) << " , actual: " << raw_data.size());
             }
             // verify the parsed table
             if (table->header.crc32 != calc_crc32(raw_data.data() + sizeof(table_header), raw_data.size() - sizeof(table_header)))
@@ -772,6 +773,10 @@ namespace librealsense
             stream_not_start_y,
             stream_not_start_cam,
             rec_error,
+            usb2_limit,
+            cold_laser_disable,
+            no_temperature_disable_laser,
+            isp_boot_data_upload_failed,
         };
 
         // Elaborate FW XU report. The reports may be consequently extended for PU/CTL/ISP
@@ -802,6 +807,10 @@ namespace librealsense
             { stream_not_start_y,           "IR stream start failure" },
             { stream_not_start_cam,         "Camera stream start failure" },
             { rec_error,                    "REC error" },
+            { usb2_limit,                   "USB2 Limit" },
+            { cold_laser_disable,           "Laser cold - disabled" },
+            { no_temperature_disable_laser, "Temperature read failure - laser disabled" },
+            { isp_boot_data_upload_failed,  "ISP boot data upload failure" },
         };
 
         std::vector<platform::uvc_device_info> filter_device_by_capability(const std::vector<platform::uvc_device_info>& devices, d400_caps caps);
