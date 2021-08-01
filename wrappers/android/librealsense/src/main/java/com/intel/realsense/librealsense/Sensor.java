@@ -6,7 +6,6 @@ import java.util.List;
 public class Sensor extends Options {
 
     Sensor(long h) {
-        mOwner = false;
         mHandle = h;
     }
 
