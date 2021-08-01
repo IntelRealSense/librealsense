@@ -45,10 +45,17 @@ void device_watcher_usbhost::start(librealsense::platform::device_changed_callba
 {
     std::lock_guard<std::mutex> lk(_mutex);
     _callback = callback;
+    _is_stopped = false;
 }
 
 void device_watcher_usbhost::stop()
 {
     std::lock_guard<std::mutex> lk(_mutex);
     _callback = nullptr;
+    _is_stopped = true;
+}
+
+bool device_watcher_usbhost::is_stopped() const
+{
+    return _is_stopped;
 }
