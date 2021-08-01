@@ -106,3 +106,63 @@ TEST_CASE("SW update test [version operator <=]")
     REQUIRE(false == (rs2::sw_update::version("1.2.4.4") <= rs2::sw_update::version("1.2.3.4")));
     REQUIRE(false == (rs2::sw_update::version("1.2.3.5") <= rs2::sw_update::version("1.2.3.4")));
 }
+
+TEST_CASE("SW update test [operator bool]")
+{
+    rs2::sw_update::version v1("01.02.03.04");
+    CHECK(v1);
+
+    rs2::sw_update::version v2("0.0.0.0");
+    CHECK(!v2);
+
+    rs2::sw_update::version v3(".2.3.4");
+    CHECK(!v3);
+}
+
+TEST_CASE("SW update test [is_between]")
+{
+    rs2::sw_update::version v1("01.02.03.04");
+    rs2::sw_update::version v2("01.03.03.04");
+    rs2::sw_update::version v3("02.01.03.04");
+
+    CHECK(v2.is_between(v1, v3));
+    CHECK(v3.is_between(v1, v3));
+    CHECK(v2.is_between(v2, v3));
+    CHECK(v2.is_between(v2, v2));
+}
+
+TEST_CASE("SW update test [version with zeros]")
+{
+    rs2::sw_update::version v("01.02.03.04");
+    std::string v_str = v;
+
+    CHECK(v_str == "1.2.3.4");
+}
+
+TEST_CASE("SW update test [version invalid]")
+{
+    rs2::sw_update::version v(".2.3.4");
+    std::string v_str = v;
+
+    CHECK(v_str == "0.0.0.0");
+
+    rs2::sw_update::version v1("1..3.4");
+    v_str = v1;
+
+    CHECK(v_str == "0.0.0.0");
+
+    rs2::sw_update::version v2("1.5000.3.4");
+    v_str = v1;
+
+    CHECK(v_str == "0.0.0.0");
+
+    rs2::sw_update::version v3("14567.2.3.4");
+    v_str = v3;
+
+    CHECK(v_str == "0.0.0.0");
+
+    rs2::sw_update::version v4("1.2.3.400000");
+    v_str = v4;
+
+    CHECK(v_str == "0.0.0.0");
+}
