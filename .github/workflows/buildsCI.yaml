@@ -172,13 +172,7 @@ jobs:
         cd scripts && ./api_check.sh && cd ..
         mkdir build && cd build
         export LRS_LOG_LEVEL="DEBUG";
-        url_records_path="https://librealsense.intel.com/rs-tests/lrs_2.8.3/";
-        records_name="records_test.txt";
-        url_records_list=$url_records_path$records_name;
-        wget $url_records_path$records_name;
-        tests_list=`cat $records_name`;
-        for record in $tests_list; do echo $url_records_path$record; wget $url_records_path$record -P "records/"$(echo $record | cut -d '/' -f 1); done;
-        
+       
         sudo add-apt-repository --yes ppa:ubuntu-toolchain-r/test;
         sudo apt-get update;
         sudo apt-get install -qq build-essential xorg-dev libgl1-mesa-dev libglu1-mesa-dev libglew-dev libglm-dev;
@@ -204,10 +198,7 @@ jobs:
       run: | 
         export LRS_LOG_LEVEL="DEBUG";
         cd build   
-        ./unit-tests/live-test -d yes -i [software-device]
-        # for i in ./records/single_cam/*; do ./unit-tests/live-test -d yes -i ~[multicam] from "$i"; done
-        # for i in ./records/multi_cam/*; do ./unit-tests/live-test -d yes -i [multicam] from "$i"; done
-        
+        ./unit-tests/live-test -d yes -i [software-device]        
 
     - name: Upload RS log artifact
       uses: actions/upload-artifact@v2
