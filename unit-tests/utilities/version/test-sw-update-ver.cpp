@@ -1,11 +1,11 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2020 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2021 Intel Corporation. All Rights Reserved.
 
 #include "common.h"
-#include "../../../common/sw-update/versions-db-manager.h"
+#include <common/sw-update/versions-db-manager.h>
 
 
-TEST_CASE("sw_update version string ctor", "[string]")
+TEST_CASE("sw_update version string ctor")
 {
     rs2::sw_update::version v("1.2.3.4");
     std::string v_str = v;
