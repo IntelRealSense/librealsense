@@ -13,16 +13,96 @@ TEST_CASE("sw_update version string ctor", "[string]")
     CHECK(v_str == "1.2.3.4");
 }
 
-TEST_CASE("sw_update version operator<=", "[string]")
+//////////////////////// TEST Description ////////////////////
+// Tests the version structure operators //
+//////////////////////////////////////////////////////////////
+TEST_CASE("SW update test [version operator >]")
 {
-    rs2::sw_update::version v1("1.2.3.4");
-    rs2::sw_update::version v2("1.2.3.5");
-    rs2::sw_update::version v3("1.2.4.4");
-    rs2::sw_update::version v4("1.3.3.4");
-    rs2::sw_update::version v5("2.2.3.4");
+    // Verify success
+    REQUIRE(rs2::sw_update::version("1.2.3.4") > rs2::sw_update::version("0.2.3.4"));
+    REQUIRE(rs2::sw_update::version("1.2.3.4") > rs2::sw_update::version("1.1.3.4"));
+    REQUIRE(rs2::sw_update::version("1.2.3.4") > rs2::sw_update::version("1.2.2.4"));
+    REQUIRE(rs2::sw_update::version("1.2.3.4") > rs2::sw_update::version("1.2.3.3"));
 
-    CHECK(v1 <= v2);
-    CHECK(v1 <= v3);
-    CHECK(v1 <= v4);
-    CHECK(v1 <= v5);
+    // Verify failure
+    REQUIRE(false == (rs2::sw_update::version("1.2.3.4") > rs2::sw_update::version("2.2.3.4")));
+    REQUIRE(false == (rs2::sw_update::version("1.2.3.4") > rs2::sw_update::version("1.3.3.4")));
+    REQUIRE(false == (rs2::sw_update::version("1.2.3.4") > rs2::sw_update::version("1.2.4.4")));
+    REQUIRE(false == (rs2::sw_update::version("1.2.3.4") > rs2::sw_update::version("1.2.3.5")));
+    REQUIRE(false == (rs2::sw_update::version("1.2.3.4") > rs2::sw_update::version("1.2.3.4")));
+}
+TEST_CASE("SW update test [version operator <]")
+{
+    // Verify success
+    REQUIRE(rs2::sw_update::version("1.2.3.4") < rs2::sw_update::version("2.2.3.4"));
+    REQUIRE(rs2::sw_update::version("1.2.3.4") < rs2::sw_update::version("1.3.3.4"));
+    REQUIRE(rs2::sw_update::version("1.2.3.4") < rs2::sw_update::version("1.2.4.4"));
+    REQUIRE(rs2::sw_update::version("1.2.3.4") < rs2::sw_update::version("1.2.3.5"));
+
+    // Verify failure
+    REQUIRE(false == (rs2::sw_update::version("1.2.3.4") < rs2::sw_update::version("0.2.3.4")));
+    REQUIRE(false == (rs2::sw_update::version("1.2.3.4") < rs2::sw_update::version("1.1.3.4")));
+    REQUIRE(false == (rs2::sw_update::version("1.2.3.4") < rs2::sw_update::version("1.2.2.4")));
+    REQUIRE(false == (rs2::sw_update::version("1.2.3.4") < rs2::sw_update::version("1.2.3.3")));
+
+    REQUIRE(false == (rs2::sw_update::version("1.2.3.4") < rs2::sw_update::version("1.2.3.4")));
+}
+TEST_CASE("SW update test [version operator ==]")
+{
+    // Verify success
+    REQUIRE(rs2::sw_update::version("1.2.3.4") == rs2::sw_update::version("1.2.3.4"));
+    REQUIRE(rs2::sw_update::version("0.0.0.10") == rs2::sw_update::version("0.0.0.10"));
+
+    // Verify failure
+    REQUIRE(false == (rs2::sw_update::version("1.2.3.4") == rs2::sw_update::version("0.2.3.4")));
+    REQUIRE(false == (rs2::sw_update::version("1.2.3.4") == rs2::sw_update::version("1.1.3.4")));
+    REQUIRE(false == (rs2::sw_update::version("1.2.3.4") == rs2::sw_update::version("1.2.2.4")));
+    REQUIRE(false == (rs2::sw_update::version("1.2.3.4") == rs2::sw_update::version("1.2.3.3")));
+}
+TEST_CASE("SW update test [version operator !=]")
+{
+    // Verify success
+    REQUIRE(rs2::sw_update::version("1.2.3.4") != rs2::sw_update::version("0.2.3.4"));
+    REQUIRE(rs2::sw_update::version("1.2.3.4") != rs2::sw_update::version("1.1.3.4"));
+    REQUIRE(rs2::sw_update::version("1.2.3.4") != rs2::sw_update::version("1.2.2.4"));
+    REQUIRE(rs2::sw_update::version("1.2.3.4") != rs2::sw_update::version("1.2.3.3"));
+
+    // Verify failure
+    REQUIRE(false == (rs2::sw_update::version("1.2.3.4") != rs2::sw_update::version("1.2.3.4")));
+    REQUIRE(false == (rs2::sw_update::version("0.0.0.10") != rs2::sw_update::version("0.0.0.10")));
+}
+
+TEST_CASE("SW update test [version operator >=]")
+{
+    // Verify success
+    REQUIRE(rs2::sw_update::version("1.2.3.4") >= rs2::sw_update::version("1.2.3.4"));
+
+    REQUIRE(rs2::sw_update::version("2.2.3.4") >= rs2::sw_update::version("1.2.3.4"));
+    REQUIRE(rs2::sw_update::version("1.3.3.4") >= rs2::sw_update::version("1.2.3.4"));
+    REQUIRE(rs2::sw_update::version("1.2.4.4") >= rs2::sw_update::version("1.2.3.4"));
+    REQUIRE(rs2::sw_update::version("1.2.3.5") >= rs2::sw_update::version("1.2.3.4"));
+
+    // Verify failure
+    REQUIRE(false == (rs2::sw_update::version("1.2.3.4") >= rs2::sw_update::version("2.2.3.4")));
+    REQUIRE(false == (rs2::sw_update::version("1.2.3.4") >= rs2::sw_update::version("1.3.3.4")));
+    REQUIRE(false == (rs2::sw_update::version("1.2.3.4") >= rs2::sw_update::version("1.2.4.4")));
+    REQUIRE(false == (rs2::sw_update::version("1.2.3.4") >= rs2::sw_update::version("1.2.3.5")));
+}
+
+TEST_CASE("SW update test [version operator <=]")
+{
+    /////////////////////// Test operator <= /////////////////////
+    // Verify success
+    REQUIRE(rs2::sw_update::version("1.2.3.4") <= rs2::sw_update::version("1.2.3.4"));
+
+    REQUIRE(rs2::sw_update::version("1.2.3.4") <= rs2::sw_update::version("2.2.3.4"));
+    REQUIRE(rs2::sw_update::version("1.2.3.4") <= rs2::sw_update::version("1.3.3.4"));
+    REQUIRE(rs2::sw_update::version("1.2.3.4") <= rs2::sw_update::version("1.2.4.4"));
+    REQUIRE(rs2::sw_update::version("1.2.3.4") <= rs2::sw_update::version("1.2.3.5"));
+
+    // Verify failure
+    REQUIRE(false == (rs2::sw_update::version("2.2.3.4") <= rs2::sw_update::version("1.2.3.4")));
+    REQUIRE(false == (rs2::sw_update::version("1.3.3.4") <= rs2::sw_update::version("1.2.3.4")));
+    REQUIRE(false == (rs2::sw_update::version("1.2.4.4") <= rs2::sw_update::version("1.2.3.4")));
+    REQUIRE(false == (rs2::sw_update::version("1.2.3.5") <= rs2::sw_update::version("1.2.3.4")));
 }
