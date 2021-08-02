@@ -369,7 +369,11 @@ TEST_CASE("HDR Running - restart hdr at restream", "[hdr][live][using_pipeline]"
     }
 }
 
-bool stream_frames(rs2::pipeline& pipe, int num_of_frames, rs2::hdr_merge& merging_filter)
+// helper method
+// checks that the frames resulting from the hdr_merge processing block are generated 
+// from frames streamed within this method (and not using old frames)
+// returned value: false if some metadata could not be read - otherwise, true
+bool check_hdr_frame_counter(rs2::pipeline& pipe, int num_of_frames, rs2::hdr_merge& merging_filter)
 {
     int min_counter = -1;
     bool min_counter_set = false;
@@ -437,26 +441,25 @@ TEST_CASE("HDR Running - hdr merge after hdr restart", "[hdr][live][using_pipeli
                 rs2::pipeline pipe;
                 pipe.start(cfg);
 
-                bool frame_metadata_not_enabled = false;
+                bool frame_metadata_enabled = true;
+                int number_frames_streamed = 10;
 
-                if (!frame_metadata_not_enabled)
-                    if (!stream_frames(pipe, 10, merging_filter))
-                        frame_metadata_not_enabled = true;
-
+                if (!check_hdr_frame_counter(pipe, number_frames_streamed, merging_filter))
+                    frame_metadata_enabled = false;
+                    
                 depth_sensor.set_option(RS2_OPTION_HDR_ENABLED, 0);
                 REQUIRE(depth_sensor.get_option(RS2_OPTION_HDR_ENABLED) == 0.f);
 
-                if (!frame_metadata_not_enabled)
-                    if (!stream_frames(pipe, 10, merging_filter))
-                        frame_metadata_not_enabled = true;
+                if (frame_metadata_enabled)
+                    if (!check_hdr_frame_counter(pipe, number_frames_streamed, merging_filter))
+                        frame_metadata_enabled = false;
 
                 depth_sensor.set_option(RS2_OPTION_HDR_ENABLED, 1);
                 REQUIRE(depth_sensor.get_option(RS2_OPTION_HDR_ENABLED) == 1.f);
                 
-                if (!frame_metadata_not_enabled)
-                    if (!stream_frames(pipe, 10, merging_filter))
-                        frame_metadata_not_enabled = true;
-                
+                if (frame_metadata_enabled)
+                    check_hdr_frame_counter(pipe, number_frames_streamed, merging_filter);
+                        
                 pipe.stop();
             }
         }
