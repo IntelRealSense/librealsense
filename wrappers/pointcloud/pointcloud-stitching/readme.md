@@ -2,7 +2,7 @@
 
 ## Overview
 
-This sample demonstrates stitching 2 pointclouds from 2 separate devices together. 
+This sample demonstrates how to stitch together 2 devices into a single, wide FOV, virtual device.
+`pointcloud-stitching` projects the 2 pointclouds on the same virtual device's image to create a stitched image which adhere to the pinhole camera model. This virtual device can then be loaded and viewed using realsense-viewer application. 
 
-
-`pointcloud-stitching` requires pre-calculated calibration between 2 fixed RealSense depth cameras. It stitches the 2 pointclouds together and presents live depth and color images produced by projecting the united pointcloud back onto an inner, predefined software device.
+For a complete explanation and example of setting the inpput files and the calibration process see [pointcloud-stitching-demo.md](doc\pointcloud-stitching-demo.md)
