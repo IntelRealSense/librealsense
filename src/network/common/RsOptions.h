@@ -120,6 +120,7 @@ public:
                         }
                     }
                 } catch(...) {
+                    LOG_DEBUG("Scan failed for option " << std::setw(30) << (rs2_option)option.index << " #" << std::dec << option.index << " to " << option.value << ", old value is " << m_local_prev[sensor_name][option.index].value);
                     ;
                 }
                 std::this_thread::sleep_for(std::chrono::milliseconds(10));
@@ -157,6 +158,7 @@ public:
                     }
                 }
                 catch (...) {
+                    LOG_DEBUG("Scan failed for option " << std::setw(30) << (rs2_option)option.index << " #" << std::dec << option.index << " to " << option.value << ", old value is " << m_local_prev[sensor_name][option.index].value);
                     ;
                 }
             }

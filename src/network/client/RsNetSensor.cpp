@@ -39,7 +39,7 @@ void rs_net_sensor::doRTP() {
     m_env = BasicUsageEnvironment::createNew(*scheduler);
 
     // Start the watch thread  
-    m_env->taskScheduler().scheduleDelayedTask(100000, doControl, this);
+    m_env->taskScheduler().scheduleDelayedTask(1000000, doControl, this);
 
     // Start the scheduler
     m_env->taskScheduler().doEventLoop(&m_eventLoopWatchVariable);
@@ -97,5 +97,5 @@ void rs_net_sensor::doControl() {
         }
     }
 
-    m_env->taskScheduler().scheduleDelayedTask(100000, doControl, this);
+    m_env->taskScheduler().scheduleDelayedTask(1000000, doControl, this);
 }
