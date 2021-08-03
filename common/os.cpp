@@ -261,12 +261,28 @@ Some auxillary functionalities might be affected. Please report this message if 
         else
         {
             GUID folder;
+            HRESULT hr;
             switch (f)
             {
             case user_desktop: folder = FOLDERID_Desktop;
                 break;
             case user_documents: folder = FOLDERID_Documents;
-                break;
+                // Use for documents with SHGetFolderPath instead of SHGetKnownFolderPath because SHGetKnownFolderPath 
+                // Doesn't give the path to intel one drive documents folder but to the local documents folder
+                TCHAR path[MAX_PATH];
+                hr = SHGetFolderPath(NULL, CSIDL_PERSONAL, NULL, 0, path);
+                if (SUCCEEDED(hr))
+                {
+                    std::wstring wstring_path(&path[0]);
+                    std::string string_path(wstring_path.begin(), wstring_path.end());
+                    res = string_path;
+                    res += "\\";
+                }
+                else
+                {
+                    throw std::runtime_error("Failed to get requested special folder");
+                }
+                return res;
             case user_pictures: folder = FOLDERID_Pictures;
                 break;
             case user_videos: folder = FOLDERID_Videos;
@@ -277,8 +293,9 @@ Some auxillary functionalities might be affected. Please report this message if 
                 throw std::invalid_argument(
                     std::string("Value of f (") + std::to_string(f) + std::string(") is not supported"));
             }
+
             PWSTR folder_path = NULL;
-            HRESULT hr = SHGetKnownFolderPath(folder, KF_FLAG_DEFAULT_PATH, NULL, &folder_path);
+            hr = SHGetKnownFolderPath(folder, KF_FLAG_DEFAULT_PATH, NULL, &folder_path);
             if (SUCCEEDED(hr))
             {
                 char str[1024];
