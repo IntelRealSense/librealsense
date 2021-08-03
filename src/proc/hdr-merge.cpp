@@ -131,11 +131,12 @@ namespace librealsense
             auto merged_d_profile = _depth_merged_frame.get_profile().as<rs2::video_stream_profile>();
             auto new_d_profile = f.get_profile().as<rs2::video_stream_profile>();
 
+            bool counter_diff_over_threshold_detected = ((input_frame_counter - depth_merged_frame_counter) >= SEQUENTIAL_FRAMES_THRESHOLD);
             bool restart_pipe_detected = (depth_merged_frame_counter > input_frame_counter);
             bool resolution_change_detected = (merged_d_profile.width() != new_d_profile.width()) ||
                 (merged_d_profile.height() != new_d_profile.height());
 
-            if (restart_pipe_detected || resolution_change_detected)
+            if (restart_pipe_detected || resolution_change_detected || counter_diff_over_threshold_detected)
             {
                 _depth_merged_frame = nullptr;
             }
