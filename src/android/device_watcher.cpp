@@ -18,6 +18,9 @@ using namespace librealsense::platform;
 std::shared_ptr<device_watcher_usbhost> device_watcher_usbhost::instance()
 {
     static std::shared_ptr<device_watcher_usbhost> instance = std::make_shared<device_watcher_usbhost>();
+    // w/a so that the device_watcher would be "stopped" after its creation
+    if (instance)
+        instance->stop();
     return instance;
 }
 
