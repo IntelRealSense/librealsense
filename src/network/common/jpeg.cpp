@@ -173,25 +173,30 @@ int jpeg::decompress(unsigned char* in, int in_size, unsigned char* out, uint32_
     // bypass the color conversion
     m_dinfo.out_color_space  = JCS_YCbCr;  
     m_dinfo.jpeg_color_space = JCS_YCbCr;
+    m_dinfo.dct_method       = JDCT_FASTEST;
 
-    std::vector<uint8_t> row(out_size);
-    JSAMPROW row_pointer[1];
-    row_pointer[0] = &row[0];
-
-    m_dinfo.dct_method = JDCT_FASTEST;
-    
     jpeg_start_decompress(&m_dinfo);
-    while(m_dinfo.output_scanline < m_dinfo.output_height)
-    {
-        int numLines = jpeg_read_scanlines(&m_dinfo, row_pointer, 1);
-        for(int i = 0; i < m_dinfo.output_width; i += 2)
+
+    // std::vector<uint8_t> row(out_size);
+    uint8_t* row = (uint8_t*)malloc(out_size);
+    if (row) {
+        JSAMPROW row_pointer[1];
+        row_pointer[0] = row;
+
+        while (m_dinfo.output_scanline < m_dinfo.output_height)
         {
-            out[i * 2 + 0] = row[i * 3 + 0]; // Y
-            out[i * 2 + 1] = row[i * 3 + 1]; // U
-            out[i * 2 + 2] = row[i * 3 + 3]; // Y
-            out[i * 2 + 3] = row[i * 3 + 2]; // V
+            int numLines = jpeg_read_scanlines(&m_dinfo, row_pointer, 1);
+            for (int i = 0; i < m_dinfo.output_width; i += 2)
+            {
+                out[i * 2 + 0] = row[i * 3 + 0]; // Y
+                out[i * 2 + 1] = row[i * 3 + 1]; // U
+                out[i * 2 + 2] = row[i * 3 + 3]; // Y
+                out[i * 2 + 3] = row[i * 3 + 2]; // V
+            }
+            out += m_dinfo.output_width * 2;
         }
-        out += m_dinfo.output_width * 2;
+
+        free(row);
     }
     jpeg_finish_decompress(&m_dinfo);
     jpeg_destroy_decompress(&m_dinfo);

@@ -45,6 +45,9 @@ public:
     static uint8_t* convert(rs2::stream_profile profile, uint8_t* data_in) {
         uint8_t* data_out = NULL;
 
+#define MAX(a,b) ((a > b) ? a : b)
+#define MIN(a,b) ((a > b) ? b : a)
+
         if (profile.is<rs2::video_stream_profile>()) {
 
             if (profile.format() == RS2_FORMAT_RGB8  || profile.format() == RS2_FORMAT_BGR8 || 
@@ -52,42 +55,44 @@ public:
 
                 rs2::video_stream_profile vsp = profile.as<rs2::video_stream_profile>();
                 int bpp = get_bpp(profile);
+                int h   = vsp.height();
+                int w   = vsp.width();
 
-                data_out = new uint8_t[vsp.width() * vsp.height() * bpp];
+                data_out = new uint8_t[w * h * bpp];
 
                 // convert the format if necessary
                 switch(vsp.format()) {
                 case RS2_FORMAT_RGB8  :
                 case RS2_FORMAT_BGR8  :
                     // perform the conversion
-                    for (int y = 0; y < vsp.height(); y++) {
-                        for (int x = 0; x < vsp.width(); x += 2) {                
+                    for (int y = 0; y < h; y++) {
+                        for (int x = 0; x < w; x += 2) {                
                             {
-                                uint8_t Y = data_in[y * vsp.width() * 2 + x * 2 + 0];
-                                uint8_t U = data_in[y * vsp.width() * 2 + x * 2 + 1];
-                                uint8_t V = data_in[y * vsp.width() * 2 + x * 2 + 3];
+                                uint8_t Y = data_in[y * w * 2 + x * 2 + 0];
+                                uint8_t U = data_in[y * w * 2 + x * 2 + 1];
+                                uint8_t V = data_in[y * w * 2 + x * 2 + 3];
+                                
+                                uint8_t R = MAX(0, MIN(255, Y + 1.402 * (V - 128)));
+                                uint8_t G = MAX(0, MIN(255, Y - 0.344 * (U - 128) - 0.714 * (V - 128)));
+                                uint8_t B = MAX(0, MIN(255, Y + 1.772 * (U - 128)));
 
-                                uint8_t R = fmax(0, fmin(255, Y + 1.402 * (V - 128)));
-                                uint8_t G = fmax(0, fmin(255, Y - 0.344 * (U - 128) - 0.714 * (V - 128)));
-                                uint8_t B = fmax(0, fmin(255, Y + 1.772 * (U - 128)));
-
-                                data_out[y * vsp.width() * bpp + x * bpp + 0] = R;
-                                data_out[y * vsp.width() * bpp + x * bpp + 1] = G;
-                                data_out[y * vsp.width() * bpp + x * bpp + 2] = B;
+                                data_out[y * w * bpp + x * bpp + 0] = R;
+                                data_out[y * w * bpp + x * bpp + 1] = G;
+                                data_out[y * w * bpp + x * bpp + 2] = B;
                             }
 
                             {
-                                uint8_t Y = data_in[y * vsp.width() * 2 + x * 2 + 2];
-                                uint8_t U = data_in[y * vsp.width() * 2 + x * 2 + 1];
-                                uint8_t V = data_in[y * vsp.width() * 2 + x * 2 + 3];
+                                uint8_t Y = data_in[y * w * 2 + x * 2 + 2];
+                                uint8_t U = data_in[y * w * 2 + x * 2 + 1];
+                                uint8_t V = data_in[y * w * 2 + x * 2 + 3];
 
-                                uint8_t R = fmax(0, fmin(255, Y + 1.402 * (V - 128)));
-                                uint8_t G = fmax(0, fmin(255, Y - 0.344 * (U - 128) - 0.714 * (V - 128)));
-                                uint8_t B = fmax(0, fmin(255, Y + 1.772 * (U - 128)));
+                                uint8_t R = MAX(0, MIN(255, Y + 1.402 * (V - 128)));
+                                uint8_t G = MAX(0, MIN(255, Y - 0.344 * (U - 128) - 0.714 * (V - 128)));
+                                uint8_t B = MAX(0, MIN(255, Y + 1.772 * (U - 128)));
 
-                                data_out[y * vsp.width() * bpp + x * bpp + 3] = R;
-                                data_out[y * vsp.width() * bpp + x * bpp + 4] = G;
-                                data_out[y * vsp.width() * bpp + x * bpp + 5] = B;
+                                data_out[y * w * bpp + x * bpp + 3] = R;
+                                data_out[y * w * bpp + x * bpp + 4] = G;
+                                data_out[y * w * bpp + x * bpp + 5] = B;
                             }                        
                         }
                     }
@@ -95,36 +100,36 @@ public:
                 case RS2_FORMAT_RGBA8 :
                 case RS2_FORMAT_BGRA8 :
                     // perform the conversion
-                    for (int y = 0; y < vsp.height(); y++) {
-                        for (int x = 0; x < vsp.width(); x += 2) {                
+                    for (uint8_t y = 0; y < h; y++) {
+                        for (uint8_t x = 0; x < w; x += 2) {                
                             {
-                                uint8_t Y = data_in[y * vsp.width() * 2 + x * 2 + 0];
-                                uint8_t U = data_in[y * vsp.width() * 2 + x * 2 + 1];
-                                uint8_t V = data_in[y * vsp.width() * 2 + x * 2 + 3];
+                                uint8_t Y = data_in[y * w * 2 + x * 2 + 0];
+                                uint8_t U = data_in[y * w * 2 + x * 2 + 1];
+                                uint8_t V = data_in[y * w * 2 + x * 2 + 3];
 
-                                uint8_t R = fmax(0, fmin(255, Y + 1.402 * (V - 128)));
-                                uint8_t G = fmax(0, fmin(255, Y - 0.344 * (U - 128) - 0.714 * (V - 128)));
-                                uint8_t B = fmax(0, fmin(255, Y + 1.772 * (U - 128)));
+                                uint8_t R = MAX(0, MIN(255, Y + 1.402 * (V - 128)));
+                                uint8_t G = MAX(0, MIN(255, Y - 0.344 * (U - 128) - 0.714 * (V - 128)));
+                                uint8_t B = MAX(0, MIN(255, Y + 1.772 * (U - 128)));
 
-                                data_out[y * vsp.width() * bpp + x * bpp + 0] = R;
-                                data_out[y * vsp.width() * bpp + x * bpp + 1] = G;
-                                data_out[y * vsp.width() * bpp + x * bpp + 2] = B;
-                                data_out[y * vsp.width() * bpp + x * bpp + 3] = 0xFF;
+                                data_out[y * w * bpp + x * bpp + 0] = R;
+                                data_out[y * w * bpp + x * bpp + 1] = G;
+                                data_out[y * w * bpp + x * bpp + 2] = B;
+                                data_out[y * w * bpp + x * bpp + 3] = 0xFF;
                             }
 
                             {
-                                uint8_t Y = data_in[y * vsp.width() * 2 + x * 2 + 2];
-                                uint8_t U = data_in[y * vsp.width() * 2 + x * 2 + 1];
-                                uint8_t V = data_in[y * vsp.width() * 2 + x * 2 + 3];
+                                uint8_t Y = data_in[y * w * 2 + x * 2 + 2];
+                                uint8_t U = data_in[y * w * 2 + x * 2 + 1];
+                                uint8_t V = data_in[y * w * 2 + x * 2 + 3];
 
-                                uint8_t R = fmax(0, fmin(255, Y + 1.402 * (V - 128)));
-                                uint8_t G = fmax(0, fmin(255, Y - 0.344 * (U - 128) - 0.714 * (V - 128)));
-                                uint8_t B = fmax(0, fmin(255, Y + 1.772 * (U - 128)));
+                                uint8_t R = MAX(0, MIN(255, Y + 1.402 * (V - 128)));
+                                uint8_t G = MAX(0, MIN(255, Y - 0.344 * (U - 128) - 0.714 * (V - 128)));
+                                uint8_t B = MAX(0, MIN(255, Y + 1.772 * (U - 128)));
 
-                                data_out[y * vsp.width() * bpp + x * bpp + 4] = R;
-                                data_out[y * vsp.width() * bpp + x * bpp + 5] = G;
-                                data_out[y * vsp.width() * bpp + x * bpp + 6] = B;
-                                data_out[y * vsp.width() * bpp + x * bpp + 7] = 0xFF;
+                                data_out[y * w * bpp + x * bpp + 4] = R;
+                                data_out[y * w * bpp + x * bpp + 5] = G;
+                                data_out[y * w * bpp + x * bpp + 6] = B;
+                                data_out[y * w * bpp + x * bpp + 7] = 0xFF;
                             }                        
                         }
                     }
