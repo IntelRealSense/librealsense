@@ -3868,9 +3868,8 @@ namespace rs2
                 configurations::update::allow_rc_firmware,
                 false );
             bool is_rc = ( product_line == RS2_PRODUCT_LINE_D400 ) && allow_rc_firmware;
-            std::string PID = dev.get_info(RS2_CAMERA_INFO_PRODUCT_ID);
 
-            std::string available_fw_ver = get_available_firmware_version( product_line, PID);
+            std::string available_fw_ver = get_available_firmware_version( product_line);
 
             std::shared_ptr< firmware_update_manager > manager = nullptr;
 
@@ -3881,18 +3880,11 @@ namespace rs2
 
                 static auto table = create_default_fw_table();
 
-                std::vector<uint8_t> image;
-
-                if (table.find({ product_line, PID }) != table.end())
-                    image = table[{product_line, PID}];
-                else
-                    image = table[{product_line, ""}];
-
                 manager = std::make_shared< firmware_update_manager >( not_model,
                                                                        *this,
                                                                        dev,
                                                                        ctx,
-                                                                       image,
+                                                                       table[product_line],
                                                                        true );
             }
 
