@@ -11,14 +11,12 @@ namespace rs2
     class viewer_model;
 
     int parse_product_line(const std::string& id);
-    std::string get_available_firmware_version(int product_line, const std::string& PID);
+    std::string get_available_firmware_version(int product_line);
 
-    // product line + PID to FW image data
-    // if PID doesn't make any difference (ds5, sr300) its will be ""
-    std::map<std::pair<int, std::string>, std::vector<uint8_t>> create_default_fw_table();
+    std::map<int, std::vector<uint8_t>> create_default_fw_table();
     std::vector<int> parse_fw_version(const std::string& fw);
     bool is_upgradeable(const std::string& curr, const std::string& available);
-    bool is_recommended_fw_available(const std::string& product_line, const std::string& PID);
+    bool is_recommended_fw_available(const std::string& product_line);
 
     class firmware_update_manager : public process_manager
     {
