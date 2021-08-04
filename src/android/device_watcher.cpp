@@ -18,6 +18,9 @@ using namespace librealsense::platform;
 std::shared_ptr<device_watcher_usbhost> device_watcher_usbhost::instance()
 {
     static std::shared_ptr<device_watcher_usbhost> instance = std::make_shared<device_watcher_usbhost>();
+    // w/a so that the device_watcher would be "stopped" after its creation
+    if (instance)
+        instance->stop();
     return instance;
 }
 
@@ -45,10 +48,17 @@ void device_watcher_usbhost::start(librealsense::platform::device_changed_callba
 {
     std::lock_guard<std::mutex> lk(_mutex);
     _callback = callback;
+    _is_stopped = false;
 }
 
 void device_watcher_usbhost::stop()
 {
     std::lock_guard<std::mutex> lk(_mutex);
     _callback = nullptr;
+    _is_stopped = true;
+}
+
+bool device_watcher_usbhost::is_stopped() const
+{
+    return _is_stopped;
 }
