@@ -3854,17 +3854,10 @@ namespace rs2
         // version for download. The recommended version is defined by the device (and comes
         // from a #define).
 
-        // Detect if fw_update notification is on to avoid displaying it during FW update process when
+        // 'notification_type_is_displayed()' is used to detect if fw_update notification is on to avoid displaying it during FW update process when
         // the device enters recovery mode
-        auto fw_update_notification_is_in
-            = std::any_of( related_notifications.cbegin(),
-                           related_notifications.cend(),
-                           []( const std::shared_ptr< notification_model > & rn ) {
-                               return rn->is< fw_update_notification_model >();
-                           } );
-
-
-        if ( !fw_update_notification_is_in && dev.is<updatable>() || dev.is<update_device>() )
+        if( ! not_model->notification_type_is_displayed< fw_update_notification_model >()
+            && ( dev.is< updatable >() || dev.is< update_device >() ) )
         {
             std::string fw;
             std::string recommended_fw_ver;
@@ -3882,19 +3875,15 @@ namespace rs2
             bool allow_rc_firmware = config_file::instance().get_or_default(
                 configurations::update::allow_rc_firmware,
                 false );
+
             bool is_rc = ( product_line == RS2_PRODUCT_LINE_D400 ) && allow_rc_firmware;
-
             std::string available_fw_ver = get_available_firmware_version( product_line);
-
             std::shared_ptr< firmware_update_manager > manager = nullptr;
-
 
             if( dev.is<update_device>() || is_upgradeable( fw, available_fw_ver) )
             {
                 recommended_fw_ver = available_fw_ver;
-
                 static auto table = create_default_fw_table();
-
                 manager = std::make_shared< firmware_update_manager >( not_model,
                                                                        *this,
                                                                        dev,
@@ -3911,22 +3900,18 @@ namespace rs2
                 if (dev.is<update_device>())
                 {
                     msg << dev_name.first << "\n(S/N " << dev.get_info(RS2_CAMERA_INFO_FIRMWARE_UPDATE_ID) << ")\n";
-
-                    if (is_rc)
-                        msg << "Release Candidate: " << recommended_fw_ver << " Pre-Release";
-                    else
-                        msg << "Recommended Version: " << recommended_fw_ver;
                 }
                 else
                 {
                     msg << dev_name.first << " (S/N " << dev_name.second << ")\n"
                         << "Current Version: " << fw << "\n";
-
-                    if (is_rc)
-                        msg << "Release Candidate: " << recommended_fw_ver << " Pre-Release";
-                    else
-                        msg << "Recommended Version: " << recommended_fw_ver;
                 }
+
+                if (is_rc)
+                    msg << "Release Candidate: " << recommended_fw_ver << " Pre-Release";
+                else
+                    msg << "Recommended Version: " << recommended_fw_ver;
+
                 auto n = std::make_shared< fw_update_notification_model >( msg.str(),
                                                                            manager,
                                                                            false );
@@ -3935,6 +3920,7 @@ namespace rs2
                 n->delay_id = "fw_update_alert." + recommended_fw_ver + "." + dev_name.second;
                 n->enable_complex_dismiss = true;
 
+                // If a delay request received in the past, reset it.
                 if( reset_delay ) n->reset_delay();
 
                 if( ! n->is_delayed() )
