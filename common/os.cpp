@@ -39,6 +39,7 @@
 #endif
 
 #include <GLFW/glfw3.h>
+#include "win/win-helpers.h"
 
 namespace rs2
 {
@@ -248,6 +249,8 @@ Some auxillary functionalities might be affected. Please report this message if 
     {
         std::string res;
 #ifdef _WIN32
+        using namespace librealsense::platform;
+
         if (f == temp_folder)
         {
             TCHAR buf[MAX_PATH];
@@ -267,21 +270,14 @@ Some auxillary functionalities might be affected. Please report this message if 
             case user_desktop: folder = FOLDERID_Desktop;
                 break;
             case user_documents: folder = FOLDERID_Documents;
-                // Use for documents with SHGetFolderPath instead of SHGetKnownFolderPath because SHGetKnownFolderPath 
-                // Doesn't give the path to intel one drive documents folder but to the local documents folder
-                TCHAR path[MAX_PATH];
-                hr = SHGetFolderPath(NULL, CSIDL_PERSONAL, NULL, 0, path);
-                if (SUCCEEDED(hr))
-                {
-                    std::wstring wstring_path(&path[0]);
-                    std::string string_path(wstring_path.begin(), wstring_path.end());
-                    res = string_path;
-                    res += "\\";
-                }
-                else
-                {
-                    throw std::runtime_error("Failed to get requested special folder");
-                }
+                // The user's Documents folder location may get overridden, as we know OneDrive does in certain circumstances.
+                // In such cases, the new function, SHGetKnownFolderPath, does not always return the new path, while the deprecated
+                // function does.
+                CHAR path[MAX_PATH];
+                CHECK_HR(SHGetFolderPathA(NULL, CSIDL_PERSONAL, NULL, 0, path));
+
+                res = path;
+                res += "\\";
                 return res;
             case user_pictures: folder = FOLDERID_Pictures;
                 break;
