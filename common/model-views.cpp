@@ -3853,16 +3853,31 @@ namespace rs2
         // it). Lacking an available version, we try to let the user choose a "recommended"
         // version for download. The recommended version is defined by the device (and comes
         // from a #define).
-        if( dev.supports( RS2_CAMERA_INFO_FIRMWARE_VERSION )
-            && dev.supports( RS2_CAMERA_INFO_RECOMMENDED_FIRMWARE_VERSION )
-            && dev.supports( RS2_CAMERA_INFO_PRODUCT_LINE ) )
-        {
-            std::string fw = dev.get_info( RS2_CAMERA_INFO_FIRMWARE_VERSION );
-            std::string recommended_fw_ver
-                = dev.get_info( RS2_CAMERA_INFO_RECOMMENDED_FIRMWARE_VERSION );
 
-            int product_line
-                = parse_product_line( dev.get_info( RS2_CAMERA_INFO_PRODUCT_LINE ) );
+        // Detect if fw_update notification is on to avoid displaying it during FW update process when
+        // the device enters recovery mode
+        auto fw_update_notification_is_in
+            = std::any_of( related_notifications.cbegin(),
+                           related_notifications.cend(),
+                           []( const std::shared_ptr< notification_model > & rn ) {
+                               return rn->is< fw_update_notification_model >();
+                           } );
+
+
+        if ( !fw_update_notification_is_in && dev.is<updatable>() || dev.is<update_device>() )
+        {
+            std::string fw;
+            std::string recommended_fw_ver;
+            int product_line = 0;
+
+            // Override with device info if info is available
+            if (dev.is<updatable>())
+            {
+                fw = dev.get_info(RS2_CAMERA_INFO_FIRMWARE_VERSION);
+                recommended_fw_ver = dev.get_info(RS2_CAMERA_INFO_RECOMMENDED_FIRMWARE_VERSION);
+            }
+
+            product_line = parse_product_line(dev.get_info(RS2_CAMERA_INFO_PRODUCT_LINE));
 
             bool allow_rc_firmware = config_file::instance().get_or_default(
                 configurations::update::allow_rc_firmware,
@@ -3874,7 +3889,7 @@ namespace rs2
             std::shared_ptr< firmware_update_manager > manager = nullptr;
 
 
-            if( is_upgradeable( fw, available_fw_ver) )
+            if( dev.is<update_device>() || is_upgradeable( fw, available_fw_ver) )
             {
                 recommended_fw_ver = available_fw_ver;
 
@@ -3889,17 +3904,29 @@ namespace rs2
             }
 
             auto dev_name = get_device_name(dev);
-            if( is_upgradeable( fw, recommended_fw_ver) )
+            if( dev.is<update_device>() || is_upgradeable( fw, recommended_fw_ver) )
             {
                 std::stringstream msg;
-                msg << dev_name.first << " (S/N " << dev_name.second << ")\n"
-                    << "Current Version: " << fw << "\n";
 
-                if( is_rc )
-                    msg << "Release Candidate: " << recommended_fw_ver << " Pre-Release";
+                if (dev.is<update_device>())
+                {
+                    msg << dev_name.first << "\n(S/N " << dev.get_info(RS2_CAMERA_INFO_FIRMWARE_UPDATE_ID) << ")\n";
+
+                    if (is_rc)
+                        msg << "Release Candidate: " << recommended_fw_ver << " Pre-Release";
+                    else
+                        msg << "Recommended Version: " << recommended_fw_ver;
+                }
                 else
-                    msg << "Recommended Version: " << recommended_fw_ver;
+                {
+                    msg << dev_name.first << " (S/N " << dev_name.second << ")\n"
+                        << "Current Version: " << fw << "\n";
 
+                    if (is_rc)
+                        msg << "Release Candidate: " << recommended_fw_ver << " Pre-Release";
+                    else
+                        msg << "Recommended Version: " << recommended_fw_ver;
+                }
                 auto n = std::make_shared< fw_update_notification_model >( msg.str(),
                                                                            manager,
                                                                            false );
