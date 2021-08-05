@@ -1,20 +1,20 @@
 # Viewer tool SW/FW updates
 
-`librealsense2 Viewer` supports several ways to notify the user on software/firmware updates.
-The update alerts logic "under the hood" When clicking on the `Check for updates`  button or connecting a new device button is described below.
+The `librealsense Viewer` supports several ways of notifying the user that a software or firmware update is available.
+Both manual (clicking the `Check for updates` button) and automatic (when connecting a new device) triggers are possible, and may or may not include online updates depending on how the Viewer was built.
 
 ## Online updates
 
-The Viewer will try to download and query a versions database from the Internet and will create a version update notification based on the connected device tailored recommended version.
+The Viewer will try to download and query a versions database from the Internet and will create a version update notification based on the connected device's recommended version.
 
-*The versions database online may be behind [GitHub SW releases webpage](https://github.com/IntelRealSense/librealsense/releases) or [RealSense FW releases webpage](https://dev.intelrealsense.com/docs/firmware-updates) ,
-we recommend checking those links for getting latest released versions.
+*The online versions database may be behind the [GitHub SW releases webpage](https://github.com/IntelRealSense/librealsense/releases) or [RealSense FW releases webpage](https://dev.intelrealsense.com/docs/firmware-updates).
+We recommend checking those links for getting the latest released versions.
 
 ## Offline updates
 
-`librealsense2` also contain a fallback recommended firmware version inside the compiled library.
+`librealsense` also contains a fallback "bundled" recommended firmware version inside the compiled library.
 
-When the device is in recovery mode and no suitable version will be found online (or no Internet access detected) the Viewer will notify the user to update the device firmware to a recommended version.
+When the device is in recovery mode and no suitable version can be found online (or no Internet access detected) the Viewer will notify the user to update the device firmware to a recommended version.
 
 ## Updates notifications logic flow
 
