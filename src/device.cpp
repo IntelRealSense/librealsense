@@ -20,10 +20,12 @@ std::shared_ptr<matcher> matcher_factory::create(rs2_matchers matcher, std::vect
         return create_DLR_C_matcher(profiles);
     case RS2_MATCHER_DLR:
         return create_DLR_matcher(profiles);
-    case RS2_MATCHER_DEFAULT:default:
-        LOG_DEBUG("Created default matcher");
+    case RS2_MATCHER_DIC:
+    case RS2_MATCHER_DIC_C:
+        throw not_implemented_exception( "DIC matchers are not implemented!" );
+    case RS2_MATCHER_DEFAULT:
+    default:
         return create_timestamp_matcher(profiles);
-        break;
     }
 }
 stream_interface* librealsense::find_profile(rs2_stream stream, int index, std::vector<stream_interface*> profiles)
