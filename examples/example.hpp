@@ -717,7 +717,6 @@ public:
                     return frame1.second.priority < frame2.second.priority;
                 });
             //create margin to the shown frame on tile
-            //float frame_width_size_from_tile_width = 0.98f;
             float frame_width_size_from_tile_width = 1.0f;
             //iterate over frames in ascending priority order (so that lower priority frame is drawn first, and can be over-written by higher priority frame )
             for (const auto& frame : vector_frames)
@@ -735,10 +734,21 @@ public:
         }
     }
 
+    /////////////////////////////////////////////////////////////
+    //     get_pos_on_current_image:
+    // There may be several windows displayed on the sceen, as described in the frames_mosaic structure.
+    // The windows are displayed in a reduced resolution, appropriate the amount of space allocated for them on the screen.
+    // This function converts from screen pixel to original image pixel.
+    // 
+    // Input:
+    // pos - pixel in screen coordinates.
+    // frames - structure of separate windows displayed on screen.
+    // Returns: 
+    // The index of the window the screen pixel is in and the pixel in that window in the original window's resolution.
     frame_pixel get_pos_on_current_image(float2 pos, const frames_mosaic& frames)
     {
         frame_pixel res{ -1, -1,-1 };
-        for (auto frame : frames)
+        for (auto& frame : frames)
         {
             if (auto vf = frame.second.first.as<rs2::video_frame>())
             {
@@ -750,10 +760,10 @@ public:
                 if (pos.x >= viewport_loc.x && pos.x < viewport_loc.x + viewport_loc.w &&
                     pos.y >= _height - (viewport_loc.y + viewport_loc.h) && pos.y < _height - viewport_loc.y)
                 {
-                    float image_rect_ration = (float)vf.get_width() / viewport_loc.w;   //Ratio for y-axis is the same.
+                    float image_rect_ratio = (float)vf.get_width() / viewport_loc.w;   //Ratio for y-axis is the same.
                     res.frame_idx = frame.first;
-                    res.pixel.x = (pos.x - viewport_loc.x) * image_rect_ration;
-                    res.pixel.y = (pos.y - (_height - (viewport_loc.y + viewport_loc.h))) * image_rect_ration;
+                    res.pixel.x = (pos.x - viewport_loc.x) * image_rect_ratio;
+                    res.pixel.y = (pos.y - (_height - (viewport_loc.y + viewport_loc.h))) * image_rect_ratio;
                     break;
                 }
             }

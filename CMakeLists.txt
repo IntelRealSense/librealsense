@@ -71,6 +71,7 @@ global_target_config()
 
 include(CMake/install_config.cmake)
 
+add_subdirectory(wrappers)
 if ( ( BUILD_EXAMPLES OR BUILD_PC_STITCHING ) AND BUILD_GLSL_EXTENSIONS )
     find_package(glfw3 3.3 QUIET)
     if(NOT TARGET glfw)
@@ -80,7 +81,6 @@ if ( ( BUILD_EXAMPLES OR BUILD_PC_STITCHING ) AND BUILD_GLSL_EXTENSIONS )
     endif()
     add_subdirectory(src/gl)
 endif()
-add_subdirectory(wrappers)
 
 if(BUILD_EXAMPLES)
     add_subdirectory(examples)

@@ -1,16 +1,19 @@
 # rs-pointcloud-stitching guide:
 
-`rs-pointcloud-stitching` is a demo showing how to stitch together depth and color images from 2 devices.</br>
-The application assumes the calibration matrix between the devices is known and the following guide will demonstrate how to use MATLAB's calibration tool to retrieve that matrix and then feed that calibration to rs-pointcloud-stitching tool.
+`rs-pointcloud-stitching` is a demo showing how to use depth projection to combine 2 devices into a single, wide FOV, **"virtual device"**.</br>
+The application constructs a new, virtual, device based on the user specifications: FOV, resolution, orientation relative to the 2 actual devices, etc. Then it converts the original depth images into points, translates them into the virtual device's coordinate system and projects them as images.
+The results is a virtual device, oriented according to the user's specification, containing the combined information from 2 devices.
+
+The application assumes the calibration matrix between the devices is known and the following guide will demonstrate how to use MATLAB's calibration tool to retrieve that matrix and then feed that calibration to `rs-pointcloud-stitching` tool.
 
 ## Agenda
 -	Mounting the cameras together.
 -	Calibrating the 2 cameras:
     - Setting configuration files
-    - Gathering images using rs-pointcloud-stitching.
+    - Gathering images using `rs-pointcloud-stitching`.
     - Calculating calibration matrix using MATLAB's® "Stereo Camera Calibrator"®
     - Converting calibration matrix to rs-pointcloud-stitching's units.
--	Running rs-pointcloud-stitching
+-	Running `rs-pointcloud-stitching`
     - Setting configuration files
     - Running the app.
 
@@ -31,18 +34,20 @@ Setting the cameras at 60 degrees apart gives around 15 degrees overlap in the d
 </br></br>
 
 ## Calibrating the 2 cameras
-In this demo we'll be using MATLAB's® "Stereo Camera Calibrator"® for calibrating the 2 devices. The complete guide can be found here: https://www.mathworks.com/help/vision/ug/stereo-camera-calibrator-app.html </br>
-The following sections demonstrate the above procedure and describe how to use rs-pointcloud-stitching for gathering the required images.
+In this demo we'll be using MATLAB's® "Stereo Camera Calibrator"® for calibrating the 2 devices. It is available in the "vision" toolbox.The complete guide can be found here: https://www.mathworks.com/help/vision/ug/stereo-camera-calibrator-app.html </br>
+The following sections demonstrate the above procedure and describe how to use `rs-pointcloud-stitching` for gathering the required images.
 ### __Preparing a checkerboard target.__
 - In matlab: `open checkerboardPattern.pdf`</br>
 I printed the checkerboard pattern on an A3 page and set Custom Scale: 160%</br>
 - Attach the printed pattern on a flat, solid surface.
 
-###	__Gathering images using rs-pointcloud-stitching.__
-rs-pointcloud-stitching expects a calibration matrix between the depth streams of the 2 devices. In the D400 series the depth stream is, by design, aligned with the infrared1 stream. Therefore, the calibration process will be done using the infrared1 images and we shell configure rs-pointcloud-stitching to gather images accordingly.
+###	__Gathering images for inter-cam calibration using rs-pointcloud-stitching.__
+`rs-pointcloud-stitching` expects a calibration matrix between the depth streams of the 2 devices. In the D400 series the depth stream is, by design, aligned with the infrared1 stream. Therefore, the calibration process will be done using the infrared1 images and we shell configure `rs-pointcloud-stitching` to gather images accordingly.
 
-Create a working directory for rs-pointcloud-stitching: For this example, we'll create `C:\pc_stitching_ws`
+Create a working directory for `rs-pointcloud-stitching`. Use OS conventional limitations. i.e. no spaces in name, no wildcards, etc. For this example, we'll create `C:\pc_stitching_ws`
 
+To configure each camera, a file with following name format is used: <serial_number>.cfg.
+Obtaining the serial number can be done using `rs-enumerate-devices -s`.</br>
 Assuming that the serial numbers of the connected devices are 912112073098 and 831612073525, Create the following files inside the designated working directory:</br>
 
 *912112073098.cfg*:</br>
@@ -58,17 +63,17 @@ INFRARED,640,480,30,Y8,1
 Make sure the INFRARED resolution is the same as the DEPTH resolution you wish to use later.
 
  
-Now, run rs-pointcloud-stitching:
+Now, run `rs-pointcloud-stitching`:
 ```
 rs-pointcloud-stitching C:\pc_stitching_ws
 ```
-Since no depth or color streams were specified, rs-pointcloud-stitching opens with only the IR frames show:
+Since no depth or color streams were specified, `rs-pointcloud-stitching` opens with only the IR frames show:
  
 
 ![rs-pointcloud-stitching ir only](https://user-images.githubusercontent.com/40540281/127966989-2474f2ab-475b-47be-bc16-547f3d2f43c9.png)
 
 
-Use the button marked **"Save Frames"** to save frames of the checkerboard target in different locations, according to the calibration program's needs (10 – 20 images according to MATLAB's® "Stereo Camera Calibrator"® guide)</br>
+Use the button marked **"Save Frames"** to save frames of the checkerboard target in different locations. For best results capture 10-20 pairs of images, covering as much of the overlapping area as possible at different distances. The target should always be visible in both images. Checkout [MATLAB's® "Stereo Camera Calibrator"® guide](https://www.mathworks.com/help/vision/ug/stereo-camera-calibrator-app.html), "capture images" section for complete review.</br>
 The images are saved in 2 separate folders, 1 for each camera, under the given `<working directory>/calibration_input` directory.</br>
 In our case, they are saved here: </br> `C:\pc_stitching_ws\calibration_input`</br>
 In addition, the application also creates 2 files in the calibration_input directory, describing the intrinsics of the cameras.
@@ -86,18 +91,19 @@ In addition, the application also creates 2 files in the calibration_input direc
 ```
 - Inside stereoCameraCalibrator:
     1. Use “Add Images” button to load the saved images:
-        - The images were saved in the working directory under "calibration_input/ <serial_number>".
-        - The app calculates calibration from camera1 to camera2. Remember which device you set for which index.
-        - Measure the size of a square on target – in our case: 36.8mm, and set the value in the "Size of checkerboard square" text box.
+        - The images were saved in the working directory under "calibration_input/<serial_number>".
+        - The app calculates calibration from camera1 to camera2. Remember which device you set for which index. In this example we load the images for camera1 from "912112073098" and for camera2 from "831612073525"
+        - Measure the size of a square on target using a ruler, a caliper or the most accurate option in your possession. I used a caliper to measure 36.8mm. Set the value in the "Size of checkerboard square" text box.
     - Load Intrinsics using the "Use fixed intrinsics->Load Intrinsics” button.
     - Use “Calibrate” button to calculate the calibration values.
+    - Evaluate the calibration: Follow the "Evaluate Calibration Results" section in [MATLAB's® "Stereo Camera Calibrator"® guide](https://www.mathworks.com/help/vision/ug/stereo-camera-calibrator-app.html)
     - Use “Export camera parameters” to export to workspace.
 
 ![stereoCameraCalibrator](https://user-images.githubusercontent.com/40540281/127968760-c0d9d5cd-2416-45cc-ab94-c5e698768f3d.png)
  
 ### __Converting calibration matrix to rs-pointcloud-stitching's units.__
 - Use the provided MATLAB function to create an rs-pointcloud-stiching calibration file from the calibration results:
-
+The name of the output calibration file is unimportant as you specify it later in `rs-pointcloud-stitching` command line.
 ```
 export_calibratrion(912112073098, 831612073525, stereoParams, 'C:\pc_stitching_ws\calibration_60m.cfg')
 ```
@@ -106,7 +112,7 @@ export_calibratrion(912112073098, 831612073525, stereoParams, 'C:\pc_stitching_w
 - stereoParams – the parameter exported by stereoCameraCalibrator
 - 'C:\pc_stitching_ws\calibration_60m.cfg' – The output calibration file.
 
-The function will create the calibration file needed for rs-pointcloud-stitching based on the calculated calibration. It will also place the united camera in the middle between the 2 input devices.
+The function will create the calibration file needed for `rs-pointcloud-stitching` based on the calculated calibration. It will also place the "virtual device" in the middle between the 2 input devices. You can alter "virtual device"'s transformation manually later if you wish. Position it aligned with one of the actual devices, for instance.
 
 ## Running rs-pointcloud-stitching
 
@@ -147,7 +153,7 @@ The function will create the calibration file needed for rs-pointcloud-stitching
     ```
     **Notice:** "virtual_dev" is a key word.
 
-    Following the suggested calibration process, a calibration file was already created by export_calibratrion.m (C:\pc_stitching_ws\calibration_60m.cfg in this example).
+    If you followed the suggested calibration process, a calibration file was already created by `export_calibratrion` provided function and was named : `C:\pc_stitching_ws\calibration_60m.cfg`:
 
     *calibration_60m.cfg:*
     ```
@@ -160,8 +166,7 @@ The function will create the calibration file needed for rs-pointcloud-stitching
  
 
 3.	**Defining the virtual device:**</br>
-rs-pointcloud-stitching requires a file defining the virtual device created by combining the other 2 devices.</br>
-It should contain wanted FOV and resolution for the virtual device.</br>
+`rs-pointcloud-stitching` project the depth and color images from the 2 actual devices onto a virtual device. The definitions of this "virtual device" are given using a file named `virtual_dev.cfg`. This file should contain the desired FOV and resolution for the virtual device's color and depth streams.</br>
 For example:
 
     *virtual_dev.cfg:*</br>
@@ -176,10 +181,11 @@ For example:
     color_fov_x=120
     color_fov_y=40
     ```
-    There is no hard limitation on the values given to the virtual device.
-    Some notes to bear in mind for appearance:
+    **Limitations:**</br>
+    The resulting pointcloud is projected using a pinhole camera model so FOV << 180 Deg is a hard limitation for the virtual device. </br>
+    Few other notes to bear in mind for appearance:
     -	Areas in the virtual device's FOV that are not covered by actual devices create empty spaces in the image.
-    -	Try to maintain the same width-height ration for color and depth images. 
+    -	Try to maintain the same width-height ratio for color and depth images. 
 
 ### __Running the app.__
 ```

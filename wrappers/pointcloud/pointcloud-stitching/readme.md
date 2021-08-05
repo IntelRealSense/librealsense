@@ -1,4 +1,4 @@
-# Software Device Sample
+# rs-pointcloud-stitching
 
 ## Overview
 
