@@ -191,7 +191,7 @@ For example:
 ```
 rs-pointcloud-stitching.exe C:\pc_stitching_ws calibration_60m.cfg
 ```
-![RealSensePointcloud-StitchingExample](https://librealsense.s3.eu-west-1.amazonaws.com/rs-tests/TestData/pc-stitching-demo-guide/RealSense%20Pointcloud-Stitching%20Example%202021-07-29%2010-09-44.gif)
+![RealSensePointcloud-StitchingExample](https://librealsense.intel.com/rs-tests/TestData/pc-stitching-demo-guide/RealSense Pointcloud-Stitching Example 2021-07-29 10-09-44.gif)
 </br>
 You can now see live depth and color images as if taken from the virtual device.
 The application project the original images onto the virtual device. You can record this device and play it back using Intel's realsense-viewer app.
