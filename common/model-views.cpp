@@ -3884,14 +3884,12 @@ namespace rs2
             if( dev.is<update_device>() || is_upgradeable( fw, available_fw_ver) )
             {
                 recommended_fw_ver = available_fw_ver;
-                static auto table = create_default_fw_table();
-
-                std::vector<uint8_t> image;
-
-                if (table.find({ product_line, pid }) != table.end())
-                    image = table[{product_line, pid}];
-                else
-                    image = table[{product_line, ""}];
+                auto image = get_default_fw_image(product_line, pid);
+                if (image.empty())
+                {
+                    not_model->add_log("could not detect a bundled FW version for the connected device", RS2_LOG_SEVERITY_WARN);
+                    return false;
+                }
 
                 manager = std::make_shared< firmware_update_manager >( not_model,
                                                                        *this,
