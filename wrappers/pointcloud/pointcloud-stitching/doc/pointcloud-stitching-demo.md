@@ -20,7 +20,11 @@ The application assumes the calibration matrix between the devices is known and 
 ### Mounting notes:
 1.	The application uses a precalculated calibration matrix. There is no realtime calibration. Therefore, the cameras should be fixed firmly in relation to each other.
 2.	Although the stitching process itself is invariant to the amount of overlapping between the cameras, the calibration process may be affected by it.
-3.	You can use your own mount. For the sake of this manual, we use the demonstration mount available here: <TBD></br>
+3.	You can use your own mount. For the sake of this manual, we use the demonstration mount available in 2 parts here:
+[Part4-base](https://librealsense.s3.eu-west-1.amazonaws.com/rs-tests/TestData/pc-stitching-demo-guide/Part4-base.STL)
+and here:
+[Part1-D435stand](https://librealsense.s3.eu-west-1.amazonaws.com/rs-tests/TestData/pc-stitching-demo-guide/Part1-D435stand.STL)
+</br>
 
 For this demonstration we used 2 x D435i cameras. At VGA resolution it provides Depth FOV of 75x62 degrees and Color FOV of 69x42 degrees.</br>
 Setting the cameras at 60 degrees apart gives around 15 degrees overlap in the depth field which should be enough for our calibration.
@@ -181,9 +185,13 @@ For example:
 ```
 rs-pointcloud-stitching.exe C:\pc_stitching_ws calibration_60m.cfg
 ```
+![RealSensePointcloud-StitchingExample](https://librealsense.s3.eu-west-1.amazonaws.com/rs-tests/TestData/pc-stitching-demo-guide/RealSense%20Pointcloud-Stitching%20Example%202021-07-29%2010-09-44.gif)
+</br>
 You can now see live depth and color images as if taken from the virtual device.
 The application project the original images onto the virtual device. You can record this device and play it back using Intel's realsense-viewer app.
 Use the "Record" button to start and stop a recording session. It starts recording when its caption is changed to "Stop Recording" suggesting that the next press on it will stop the recording process.
 The file saved is "record.bag" under the given working directory. In this example: `C:\pc_stitching_ws\record.bag`</br>
 You can now open realsense-viewer, choose "Add source->Load recorded sequence" and choose `C:\pc_stitching_ws\record.bag`. Switch to 3D view and watch the pointcloud of the extended scene.
+![bandicam 2021-08-01 11-58-39-294](https://librealsense.s3.eu-west-1.amazonaws.com/rs-tests/TestData/pc-stitching-demo-guide/bandicam%202021-08-01%2011-58-39-294.gif)
+
 
