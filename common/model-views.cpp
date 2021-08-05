@@ -3877,22 +3877,32 @@ namespace rs2
                 false );
 
             bool is_rc = ( product_line == RS2_PRODUCT_LINE_D400 ) && allow_rc_firmware;
-            std::string available_fw_ver = get_available_firmware_version( product_line);
+            std::string pid = dev.get_info(RS2_CAMERA_INFO_PRODUCT_ID);
+            std::string available_fw_ver = get_available_firmware_version( product_line, pid);
             std::shared_ptr< firmware_update_manager > manager = nullptr;
 
             if( dev.is<update_device>() || is_upgradeable( fw, available_fw_ver) )
             {
                 recommended_fw_ver = available_fw_ver;
                 static auto table = create_default_fw_table();
+
+                std::vector<uint8_t> image;
+
+                if (table.find({ product_line, pid }) != table.end())
+                    image = table[{product_line, pid}];
+                else
+                    image = table[{product_line, ""}];
+
                 manager = std::make_shared< firmware_update_manager >( not_model,
                                                                        *this,
                                                                        dev,
                                                                        ctx,
-                                                                       table[product_line],
+                                                                       image,
                                                                        true );
             }
 
             auto dev_name = get_device_name(dev);
+
             if( dev.is<update_device>() || is_upgradeable( fw, recommended_fw_ver) )
             {
                 std::stringstream msg;
