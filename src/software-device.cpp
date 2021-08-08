@@ -258,6 +258,10 @@ namespace librealsense
         data.timestamp_domain = software_frame.domain;
         data.frame_number = software_frame.frame_number;
 
+        if (software_frame.profile->profile->get_stream_type() == RS2_STREAM_DEPTH) {
+            data.depth_units = get_option(RS2_OPTION_DEPTH_UNITS).query();
+        }
+
         data.metadata_size = 0;
         for (auto i : _metadata_map)
         {

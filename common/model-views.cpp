@@ -1241,7 +1241,7 @@ namespace rs2
             << "/" << s->get_info(RS2_CAMERA_INFO_NAME)
             << "/" << (long long)this;
 
-        if (s->supports(RS2_CAMERA_INFO_PHYSICAL_PORT) && dev.supports(RS2_CAMERA_INFO_PRODUCT_LINE))
+        if (s->supports(RS2_CAMERA_INFO_PHYSICAL_PORT) && dev.supports(RS2_CAMERA_INFO_PRODUCT_LINE) && !dev.supports(RS2_CAMERA_INFO_IP_ADDRESS))
         {
             std::string product = dev.get_info(RS2_CAMERA_INFO_PRODUCT_LINE);
             std::string id = s->get_info(RS2_CAMERA_INFO_PHYSICAL_PORT);
@@ -3055,7 +3055,7 @@ namespace rs2
 
             const std::string no_md = "no md";
 
-            if (timestamp_domain == RS2_TIMESTAMP_DOMAIN_SYSTEM_TIME)
+            if (timestamp_domain == RS2_TIMESTAMP_DOMAIN_SYSTEM_TIME && !dev->s->supports(RS2_CAMERA_INFO_IP_ADDRESS))
             {
                 stream_details.push_back({ no_md, "", "" });
             }
