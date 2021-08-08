@@ -69,48 +69,48 @@ namespace rs2
         else return "";
     }
 
-    std::vector<uint8_t> get_default_fw_image(int product_line, const std::string& pid)
+    std::vector< uint8_t > get_default_fw_image( int product_line, const std::string & pid )
     {
-        std::vector<uint8_t> image;
+        std::vector< uint8_t > image;
 
-        switch (product_line)
+        switch( product_line )
         {
-        case RS2_PRODUCT_LINE_D400:
+        case RS2_PRODUCT_LINE_D400: 
         {
-            bool allow_rc_firmware = config_file::instance().get_or_default(configurations::update::allow_rc_firmware, false);
-            if (strlen(FW_D4XX_FW_IMAGE_VERSION) && !allow_rc_firmware)
+            bool allow_rc_firmware = config_file::instance().get_or_default( configurations::update::allow_rc_firmware, false );
+            if( strlen( FW_D4XX_FW_IMAGE_VERSION ) && ! allow_rc_firmware )
             {
                 int size = 0;
-                auto hex = fw_get_D4XX_FW_Image(size);
-                image = std::vector<uint8_t>(hex, hex + size);
+                auto hex = fw_get_D4XX_FW_Image( size );
+                image = std::vector< uint8_t >( hex, hex + size );
             }
         }
-            break;
+        break;
         case RS2_PRODUCT_LINE_SR300:
-            if (strlen(FW_SR3XX_FW_IMAGE_VERSION))
+            if( strlen( FW_SR3XX_FW_IMAGE_VERSION ) )
             {
                 int size = 0;
-                auto hex = fw_get_SR3XX_FW_Image(size);
-                image = std::vector<uint8_t>(hex, hex + size);
+                auto hex = fw_get_SR3XX_FW_Image( size );
+                image = std::vector< uint8_t >( hex, hex + size );
             }
             break;
         case RS2_PRODUCT_LINE_L500:
-            if (pid == "0B68") // L535
+            if( pid == "0B68" || pid == "0B72" )  // L535 || L535 Recovery
             {
-                if (strlen(FW_L53X_FW_IMAGE_VERSION))
+                if( strlen( FW_L53X_FW_IMAGE_VERSION ) )
                 {
                     int size = 0;
-                    auto hex = fw_get_L53X_FW_Image(size);
-                    image = std::vector<uint8_t>(hex, hex + size);
-                } 
+                    auto hex = fw_get_L53X_FW_Image( size );
+                    image = std::vector< uint8_t >( hex, hex + size );
+                }
             }
             else
-            { // default for all L515 use cases (include recovery usb2 old pid)
-                if (strlen(FW_L51X_FW_IMAGE_VERSION))
+            {  // default for all L515 use cases (include recovery usb2 old pid)
+                if( strlen( FW_L51X_FW_IMAGE_VERSION ) )
                 {
                     int size = 0;
-                    auto hex = fw_get_L51X_FW_Image(size);
-                    image = std::vector<uint8_t>(hex, hex + size);
+                    auto hex = fw_get_L51X_FW_Image( size );
+                    image = std::vector< uint8_t >( hex, hex + size );
                 }
             }
             break;
