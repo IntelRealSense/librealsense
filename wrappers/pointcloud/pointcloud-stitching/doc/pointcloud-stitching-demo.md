@@ -200,6 +200,6 @@ The application project the original images onto the virtual device. You can rec
 Use the "Record" button to start and stop a recording session. It starts recording when its caption is changed to "Stop Recording" suggesting that the next press on it will stop the recording process.
 The file ["record.bag"](https://librealsense.intel.com/rs-tests/TestData/pc-stitching-demo-guide/record.bag) is saved under the given working directory. In this example: `C:\pc_stitching_ws\record.bag`</br>
 You can now open realsense-viewer, choose "Add source->Load recorded sequence" and choose `C:\pc_stitching_ws\record.bag`. Switch to 3D view and watch the pointcloud of the extended scene.
-![realsense-viewer](https://librealsense.intel.com/rs-tests/TestData/pc-stitching-demo-guide/RealSense-Viewer.gif)
+![realsense-viewer](https://librealsense.intel.com/rs-tests/TestData/pc-stitching-demo-guide/RealSense-Viewer2.gif)
 </br>
-[Download Full Resolution video](https://librealsense.intel.com/rs-tests/TestData/pc-stitching-demo-guide/RealSense-Viewer2.mp4)
+[Download Full Resolution video](https://librealsense.intel.com/rs-tests/TestData/pc-stitching-demo-guide/RealSense-Viewer.mp4)
