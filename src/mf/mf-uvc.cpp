@@ -35,6 +35,7 @@ The library will be compiled without the metadata support!\n")
 #include <vidcap.h>
 #include <ksmedia.h>    // Metadata Extension
 #include <Mferror.h>
+#include "../../common/utilities/os/h_result.h"
 
 #pragma comment(lib, "Shlwapi.lib")
 #pragma comment(lib, "mf.lib")
@@ -54,6 +55,7 @@ namespace librealsense
 {
     namespace platform
     {
+        using namespace utilities::h_result;
 
 #ifdef METADATA_SUPPORT
 

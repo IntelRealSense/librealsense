@@ -18,6 +18,7 @@
 #include <string>
 #include <regex>
 #include <Sddl.h>
+#include "../../common/utilities/os/h_result.h"
 
 #pragma comment(lib, "cfgmgr32.lib")
 #pragma comment(lib, "setupapi.lib")
@@ -44,20 +45,13 @@ namespace librealsense
 {
     namespace platform
     {
+        using namespace utilities::h_result;
+
         template<typename T>
         size_t vector_bytes_size(const typename std::vector<T>& vec)
         {
             static_assert((std::is_arithmetic<T>::value), "vector_bytes_size requires numeric type for input data");
             return sizeof(T) * vec.size();
-        }
-
-        std::string hr_to_string(HRESULT hr)
-        {
-            _com_error err(hr);
-            std::wstring errorMessage = (err.ErrorMessage()) ? err.ErrorMessage() : L"";
-            std::stringstream ss;
-            ss << "HResult 0x" << std::hex << hr << ": \"" << win_to_utf(errorMessage.data()) << "\"";
-            return ss.str();
         }
 
         typedef ULONG(__stdcall* fnRtlGetVersion)(PRTL_OSVERSIONINFOW lpVersionInformation);
@@ -74,35 +68,6 @@ namespace librealsense
             }
             else
                 return false;
-        }
-
-        bool check(const char * call, HRESULT hr, bool to_throw)
-        {
-            if (FAILED(hr))
-            {
-                std::string descr = to_string() << call << " returned: " << hr_to_string(hr);
-                if (to_throw)
-                    throw windows_backend_exception(descr);
-                else
-                    LOG_DEBUG(descr);
-
-                return false;
-            }
-            return true;
-        }
-
-        std::string win_to_utf(const WCHAR * s)
-        {
-            auto len = WideCharToMultiByte(CP_UTF8, 0, s, -1, nullptr, 0, nullptr, nullptr);
-            if(len == 0)
-                throw std::runtime_error(to_string() << "WideCharToMultiByte(...) returned 0 and GetLastError() is " << GetLastError());
-
-            std::string buffer(len-1, ' ');
-            len = WideCharToMultiByte(CP_UTF8, 0, s, -1, &buffer[0], static_cast<int>(buffer.size())+1, nullptr, nullptr);
-            if(len == 0)
-                throw std::runtime_error(to_string() << "WideCharToMultiByte(...) returned 0 and GetLastError() is " << GetLastError());
-
-            return buffer;
         }
 
         std::vector<std::string> tokenize(std::string string, char separator)

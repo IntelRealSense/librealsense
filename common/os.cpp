@@ -39,7 +39,7 @@
 #endif
 
 #include <GLFW/glfw3.h>
-#include "win/win-helpers.h"
+#include "utilities/os/h_result.h"
 
 namespace rs2
 {
@@ -249,8 +249,8 @@ Some auxillary functionalities might be affected. Please report this message if 
     {
         std::string res;
 #ifdef _WIN32
-        using namespace librealsense::platform;
 
+        using namespace utilities::h_result;
         if (f == temp_folder)
         {
             TCHAR buf[MAX_PATH];
