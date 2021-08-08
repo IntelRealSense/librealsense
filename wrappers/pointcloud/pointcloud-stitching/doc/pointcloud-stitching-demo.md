@@ -2,9 +2,9 @@
 
 `rs-pointcloud-stitching` is a demo showing how to use depth projection to combine 2 devices into a single, wide FOV, **"virtual device"**.</br>
 The application constructs a new, virtual, device based on the user specifications: FOV, resolution, orientation relative to the 2 actual devices, etc. Then it converts the original depth images into points, translates them into the virtual device's coordinate system and projects them as images.
-The results is a virtual device, oriented according to the user's specification, containing the combined information from 2 devices.
+The result is a virtual device, oriented according to the user's specification, containing the combined information from 2 devices.
 
-The application assumes the calibration matrix between the devices is known and the following guide will demonstrate how to use MATLAB's calibration tool to retrieve that matrix and then feed that calibration to `rs-pointcloud-stitching` tool.
+The application assumes the calibration matrix between the devices is known and the following guide will demonstrate how to use MATLAB's calibration tool to retrieve that matrix and then feed that calibration to the `rs-pointcloud-stitching` tool.
 
 ## Agenda
 -	Mounting the cameras together.
@@ -21,7 +21,7 @@ The application assumes the calibration matrix between the devices is known and 
 
 ## Mounting the cameras together.
 ### Mounting notes:
-1.	The application uses a precalculated calibration matrix. There is no realtime calibration. Therefore, the cameras should be fixed firmly in relation to each other.
+1.	The application uses a precalculated calibration matrix. There is no real-time calibration. Therefore, the cameras should be fixed firmly in relation to each other.
 2.	Although the stitching process itself is invariant to the amount of overlapping between the cameras, the calibration process may be affected by it.
 3.	You can use your own mount. For the sake of this manual, we use the demonstration mount available in 2 parts here:
 [Part4-base](https://librealsense.intel.com/rs-tests/TestData/pc-stitching-demo-guide/Part4-base.STL)
@@ -42,13 +42,13 @@ I printed the checkerboard pattern on an A3 page and set Custom Scale: 160%</br>
 - Attach the printed pattern on a flat, solid surface.
 
 ###	__Gathering images for inter-cam calibration using rs-pointcloud-stitching.__
-`rs-pointcloud-stitching` expects a calibration matrix between the depth streams of the 2 devices. In the D400 series the depth stream is, by design, aligned with the infrared1 stream. Therefore, the calibration process will be done using the infrared1 images and we shell configure `rs-pointcloud-stitching` to gather images accordingly.
+`rs-pointcloud-stitching` expects a calibration matrix between the depth streams of the 2 devices. In the D400 series the depth stream is, by design, aligned with the infrared1 stream. Therefore, the calibration process will be done using the infrared1 images and we shall configure `rs-pointcloud-stitching` to gather images accordingly.
 
 Create a working directory for `rs-pointcloud-stitching`. Use OS conventional limitations. i.e. no spaces in name, no wildcards, etc. For this example, we'll create `C:\pc_stitching_ws`
 
-To configure each camera, a file with following name format is used: <serial_number>.cfg.
+To configure each camera, a file with the following name format is used: <serial_number>.cfg.
 Obtaining the serial number can be done using `rs-enumerate-devices -s`.</br>
-Assuming that the serial numbers of the connected devices are 912112073098 and 831612073525, Create the following files inside the designated working directory:</br>
+Assuming that the serial numbers of the connected devices are 912112073098 and 831612073525, create the following files inside the designated working directory:</br>
 
 *912112073098.cfg*:</br>
 ```
@@ -183,7 +183,7 @@ For example:
     ```
     **Limitations:**</br>
     The resulting pointcloud is projected using a pinhole camera model so FOV << 180 Deg is a hard limitation for the virtual device. </br>
-    Few other notes to bear in mind for appearance:
+    A Few additional notes to bear in mind for appearance:
     -	Areas in the virtual device's FOV that are not covered by actual devices create empty spaces in the image.
     -	Try to maintain the same width-height ratio for color and depth images. 
 
