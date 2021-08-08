@@ -29,7 +29,7 @@ namespace h_result {
     {
         _com_error err(hr);
         std::wstring errorMessage = (err.ErrorMessage()) ? err.ErrorMessage() : L"";
-        std::stringstream ss;
+        std::ostringstream ss;
         ss << "HResult 0x" << std::hex << hr << ": \"" << win_to_utf(errorMessage.data()) << "\"";
         return ss.str();
     }
@@ -49,8 +49,8 @@ namespace h_result {
         return true;
     }
 
-#define CHECK_HR(x) check(#x, x);
-#define LOG_HR(x) check(#x, x, false);
+#define CHECK_HR(x) check(#x, x)
+#define LOG_HR(x) check(#x, x, false)
 
 }
 }
