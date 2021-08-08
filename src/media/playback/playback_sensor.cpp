@@ -71,7 +71,7 @@ void playback_sensor::open(const stream_profiles& requests)
     //Playback can only play the streams that were recorded.
     //Go over the requested profiles and see if they are available
     LOG_DEBUG("Open Sensor " << m_sensor_id);
-    std::lock_guard<std::recursive_mutex> l(m_mutex);
+    std::lock_guard<std::mutex> l(m_mutex);
     for (auto&& r : requests)
     {
         if (std::find_if(std::begin(m_available_profiles),
@@ -105,7 +105,7 @@ void playback_sensor::open(const stream_profiles& requests)
 void playback_sensor::close()
 {
     LOG_DEBUG("Close sensor " << m_sensor_id);
-    std::lock_guard<std::recursive_mutex> l(m_mutex);
+    std::lock_guard<std::mutex> l(m_mutex);
     std::vector<device_serializer::stream_identifier> closed_streams;
     for (auto&& dispatcher : m_dispatchers)
     {
@@ -138,7 +138,7 @@ notifications_callback_ptr playback_sensor::get_notifications_callback() const
 void playback_sensor::start(frame_callback_ptr callback)
 {
     LOG_DEBUG("Start sensor " << m_sensor_id);
-    std::lock_guard<std::recursive_mutex> l(m_mutex);
+    std::lock_guard<std::mutex> l(m_mutex);
     if (m_is_started == false)
     {
         started(m_sensor_id, callback);
@@ -150,17 +150,25 @@ void playback_sensor::start(frame_callback_ptr callback)
 void playback_sensor::stop(bool invoke_required)
 {
     LOG_DEBUG("Stop sensor " << m_sensor_id);
-    std::lock_guard<std::recursive_mutex> l(m_mutex);
-    if (m_is_started == true)
+    bool was_stopped = false;
     {
-        m_is_started = false;
-        for (auto dispatcher : m_dispatchers)
+        std::lock_guard<std::mutex> l(m_mutex);
+
+        if (m_is_started == true)
         {
-            dispatcher.second->stop();
+            m_is_started = false;
+            was_stopped = true;
+            for (auto dispatcher : m_dispatchers)
+            {
+                dispatcher.second->stop();
+            }
+            m_user_callback.reset();
         }
-        m_user_callback.reset();
-        stopped(m_sensor_id, invoke_required);
     }
+
+    if(was_stopped)
+        stopped(m_sensor_id, invoke_required);
+
 }
 void playback_sensor::stop()
 {
