@@ -3866,11 +3866,18 @@ namespace rs2
             // Override with device info if info is available
             if (dev.is<updatable>())
             {
-                fw = dev.get_info(RS2_CAMERA_INFO_FIRMWARE_VERSION);
-                recommended_fw_ver = dev.get_info(RS2_CAMERA_INFO_RECOMMENDED_FIRMWARE_VERSION);
+                fw = dev.supports( RS2_CAMERA_INFO_FIRMWARE_VERSION )
+                       ? dev.get_info( RS2_CAMERA_INFO_FIRMWARE_VERSION )
+                       : "";
+
+                recommended_fw_ver = dev.supports(RS2_CAMERA_INFO_RECOMMENDED_FIRMWARE_VERSION)
+                    ? dev.get_info(RS2_CAMERA_INFO_RECOMMENDED_FIRMWARE_VERSION)
+                    : "";
             }
 
-            product_line = parse_product_line(dev.get_info(RS2_CAMERA_INFO_PRODUCT_LINE));
+            product_line = dev.supports(RS2_CAMERA_INFO_PRODUCT_LINE)
+                ? parse_product_line(dev.get_info(RS2_CAMERA_INFO_PRODUCT_LINE))
+                : -1; // invalid product line, will be handled later on
 
             bool allow_rc_firmware = config_file::instance().get_or_default(
                 configurations::update::allow_rc_firmware,
@@ -3940,12 +3947,15 @@ namespace rs2
             }
             else
             {
-                std::stringstream msg;
-                msg << "Current FW >= Bundled FW for: " << dev_name.first << " (S/N " << dev_name.second << ")\n"
-                    << "Current Version: " << fw << "\n" 
-                    << "Recommended Version: " << recommended_fw_ver;
+                if( ! fw.empty() && ! recommended_fw_ver.empty() )
+                {
+                    std::stringstream msg;
+                    msg << "Current FW >= Bundled FW for: " << dev_name.first << " (S/N " << dev_name.second << ")\n"
+                        << "Current Version: " << fw << "\n"
+                        << "Recommended Version: " << recommended_fw_ver;
 
-                not_model->add_log(msg.str(), RS2_LOG_SEVERITY_DEBUG);
+                    not_model->add_log(msg.str(), RS2_LOG_SEVERITY_DEBUG);
+                }
             }
         }
         return false;
