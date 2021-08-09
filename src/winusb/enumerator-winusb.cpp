@@ -21,7 +21,6 @@
 
 #include <Cfgmgr32.h>
 #include <SetupAPI.h>
-#include "../../common/utilities/os/hresult.h"
 
 #pragma comment(lib, "winusb.lib")
 
@@ -29,7 +28,6 @@ namespace librealsense
 {
     namespace platform
     {
-        using namespace utilities::hresult;
 
         //https://docs.microsoft.com/en-us/windows-hardware/drivers/usbcon/supported-usb-classes#microsoft-provided-usb-device-class-drivers
         const std::map<std::string, usb_class> guids = {

@@ -43,8 +43,6 @@
 
 namespace rs2
 {
-    using namespace utilities::hresult;
-
     // Use shortcuts for long names to avoid trimming of essential data
     std::string truncate_string(const std::string& str, size_t width)
     {
