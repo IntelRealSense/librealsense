@@ -1179,10 +1179,14 @@ void PrintHelp()
 int main(int argc, char* argv[]) try
 {
     bool is_print_help(false);
-    for (int c = 1; c < argc; ++c) {
-        if (!std::strcmp(argv[c], "-h") || !std::strcmp(argv[c], "--help")) {
-            is_print_help = true;
-            break;
+    if (argc < 2) is_print_help = true;
+    else
+    {
+        for (int c = 1; c < argc; ++c) {
+            if (!std::strcmp(argv[c], "-h") || !std::strcmp(argv[c], "--help")) {
+                is_print_help = true;
+                break;
+            }
         }
     }
     if (is_print_help)
@@ -1190,6 +1194,7 @@ int main(int argc, char* argv[]) try
         PrintHelp();
         return -1;
     }
+    std::cout << __LINE__ << ": " << argc << std::endl;
     string working_dir(argv[1]);
     string calibration_file("");
     if (argc > 2) calibration_file = argv[2];
