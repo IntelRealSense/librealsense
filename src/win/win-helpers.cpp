@@ -18,7 +18,7 @@
 #include <string>
 #include <regex>
 #include <Sddl.h>
-#include "../../common/utilities/os/h-result.h"
+
 
 #pragma comment(lib, "cfgmgr32.lib")
 #pragma comment(lib, "setupapi.lib")
@@ -45,7 +45,7 @@ namespace librealsense
 {
     namespace platform
     {
-        using namespace utilities::h_result;
+        using namespace utilities::hresult;
 
         template<typename T>
         size_t vector_bytes_size(const typename std::vector<T>& vec)

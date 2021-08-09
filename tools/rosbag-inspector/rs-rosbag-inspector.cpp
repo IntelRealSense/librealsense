@@ -31,16 +31,6 @@
 #include "rosbag_content.h"
 #include "files_container.h"
 
-#ifdef BUILD_EASYLOGGINGPP
-#include <easylogging++.h>
-#ifdef BUILD_SHARED_LIBS
-// With static linkage, ELPP is initialized by librealsense, so doing it here will
-// create errors. When we're using the shared .so/.dll, the two are separate and we have
-// to initialize ours if we want to use the APIs!
-INITIALIZE_EASYLOGGINGPP
-#endif
-#endif
-
 using namespace rosbag_inspector;
 
 files_container files; // Container of loaded files

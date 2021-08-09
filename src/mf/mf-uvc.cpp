@@ -35,7 +35,7 @@ The library will be compiled without the metadata support!\n")
 #include <vidcap.h>
 #include <ksmedia.h>    // Metadata Extension
 #include <Mferror.h>
-#include "../../common/utilities/os/h-result.h"
+#include "win/win-helpers.h"
 
 #pragma comment(lib, "Shlwapi.lib")
 #pragma comment(lib, "mf.lib")
@@ -55,7 +55,7 @@ namespace librealsense
 {
     namespace platform
     {
-        using namespace utilities::h_result;
+        using namespace utilities::hresult;
 
 #ifdef METADATA_SUPPORT
 
@@ -269,7 +269,7 @@ namespace librealsense
                 reinterpret_cast<void **>(&ks_topology_info)));
 
             DWORD nNodes=0;
-            check("get_NumNodes", ks_topology_info->get_NumNodes(&nNodes));
+            CHECK_HR_STR("get_NumNodes", ks_topology_info->get_NumNodes(&nNodes));
 
             CComPtr<IUnknown> unknown = nullptr;
             CHECK_HR(ks_topology_info->CreateNodeInstance(xu.node, IID_IUnknown,
@@ -1005,7 +1005,7 @@ namespace librealsense
                                 const auto timeout_ms = RS2_DEFAULT_TIMEOUT;
                                 if (_has_started.wait(timeout_ms))
                                 {
-                                    check("_reader->ReadSample(...)", _readsample_result);
+                                    CHECK_HR_STR("_reader->ReadSample(...)", _readsample_result);
                                 }
                                 else
                                 {

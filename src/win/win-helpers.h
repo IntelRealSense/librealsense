@@ -12,8 +12,21 @@
 
 #include <windows.h>
 #include <cfgmgr32.h>
+#include "../../common/utilities/os/hresult.h"
 
 #define WAIT_FOR_MUTEX_TIME_OUT  (5000)
+
+#define CHECK_HR_STR(s, x) utilities::hresult::check(s, x, [](std::string descr, bool to_throw)\
+{\
+    if (to_throw)\
+        throw librealsense::windows_backend_exception(descr);\
+    else\
+        LOG_DEBUG(descr);\
+});
+
+#define CHECK_HR(x) CHECK_HR_STR(#x, x)
+
+#define LOG_HR(x) utilities::hresult::check(#x, x, false)
 
 namespace librealsense
 {

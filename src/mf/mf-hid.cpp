@@ -25,7 +25,7 @@
 #include <propkeydef.h>
 #include <comutil.h>
 #include <string>
-#include "../../common/utilities/os/h-result.h"
+#include "win/win-helpers.h"
 
 #pragma comment(lib, "Sensorsapi.lib")
 #pragma comment(lib, "PortableDeviceGuids.lib")
@@ -38,7 +38,7 @@ namespace librealsense
 {
     namespace platform
     {
-        using namespace utilities::h_result;
+        using namespace utilities::hresult;
 
         class sensor_events : public ISensorEvents
         {

@@ -21,8 +21,6 @@ set(COMMON_SRC
         "${CMAKE_CURRENT_LIST_DIR}/rs-config.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/os.h"
         "${CMAKE_CURRENT_LIST_DIR}/os.cpp"
-        "${CMAKE_CURRENT_LIST_DIR}/utilities/os/h-result.h"
-        "${CMAKE_CURRENT_LIST_DIR}/utilities/os/h-result.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/fw-update-helper.h"
         "${CMAKE_CURRENT_LIST_DIR}/fw-update-helper.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/metadata-helper.h"

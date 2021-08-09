@@ -39,10 +39,11 @@
 #endif
 
 #include <GLFW/glfw3.h>
-#include "utilities/os/h-result.h"
+#include "utilities/os/hresult.h"
 
 namespace rs2
 {
+    using namespace utilities::hresult;
 
     // Use shortcuts for long names to avoid trimming of essential data
     std::string truncate_string(const std::string& str, size_t width)
@@ -250,7 +251,7 @@ Some auxillary functionalities might be affected. Please report this message if 
         std::string res;
 #ifdef _WIN32
 
-        using namespace utilities::h_result;
+        using namespace utilities::hresult;
         if (f == temp_folder)
         {
             TCHAR buf[MAX_PATH];
@@ -274,7 +275,7 @@ Some auxillary functionalities might be affected. Please report this message if 
                 // In such cases, the new function, SHGetKnownFolderPath, does not always return the new path, while the deprecated
                 // function does.
                 CHAR path[MAX_PATH];
-                CHECK_HR(SHGetFolderPathA(NULL, CSIDL_PERSONAL, NULL, 0, path));
+                CHECK_HR_THROWS(SHGetFolderPathA(NULL, CSIDL_PERSONAL, NULL, 0, path));
 
                 res = path;
                 res += "\\";

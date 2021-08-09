@@ -5,15 +5,6 @@ cmake_minimum_required(VERSION 2.8.3)
 
 project(RealsenseToolsRosbagInspector)
 
-if(${BUILD_EASYLOGGINGPP})
-set( ELPP_DIR ../../third-party/easyloggingpp/src )
-    include_directories( ${ELPP_DIR} )
-    set( ELPP_FILES
-        ${ELPP_DIR}/easylogging++.cc
-        ${ELPP_DIR}/easylogging++.h
-    )
-endif()
-
 
 if(BUILD_GRAPHICAL_EXAMPLES)
 
@@ -24,8 +15,6 @@ if(BUILD_GRAPHICAL_EXAMPLES)
             rosbag_content.h
             ../../common/os.h
             ../../common/os.cpp
-            ../../common/utilities/os/h-result.h
-            ../../common/utilities/os/h-result.cpp
             ../../third-party/glad/glad.c
             ../../third-party/imgui/imgui.cpp
             ../../third-party/imgui/imgui_draw.cpp
@@ -37,18 +26,15 @@ if(BUILD_GRAPHICAL_EXAMPLES)
         )
 
     if(WIN32)
-        add_executable(rs-rosbag-inspector WIN32 ${RS_ROSBAG_INSPECTOR_CPP} ${ELPP_FILES})
-
+        add_executable(rs-rosbag-inspector WIN32 ${RS_ROSBAG_INSPECTOR_CPP})
         include_directories(../../third-party/imgui ../../common ../../third-party/glad 
                                              ../../third-party/tinyfiledialogs ../../third-party ${CMAKE_CURRENT_SOURCE_DIR}/res/)
     else()
-        add_executable(rs-rosbag-inspector ${RS_ROSBAG_INSPECTOR_CPP} ${ELPP_FILES})
+        add_executable(rs-rosbag-inspector ${RS_ROSBAG_INSPECTOR_CPP})
         include_directories(../../third-party/imgui ../../common ../../third-party/glad 
                                              ../../third-party/tinyfiledialogs ../../third-party)
     endif()
     set_property(TARGET rs-rosbag-inspector PROPERTY CXX_STANDARD 11)
-
-    source_group("EasyLogging++" FILES ${ELPP_FILES})
 
     target_include_directories(rs-rosbag-inspector PRIVATE
         ${ROSBAG_HEADER_DIRS}
