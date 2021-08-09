@@ -1,28 +1,31 @@
 # Librealsense Docker
 
+This tutorial aim is to provide instructions for installation and use of Librealsense Docker. 
+Current version of the docker includes the following capabilities:
+- use of librealsense devices
+- use of librealsense API
+- installation of the basic examples for use of librealsense
+
+It does not include (may be enabled later on):
+- graphic examples
+- use of IMU devices
+
 ## Pre-Work: Docker Installation
-Install docker in the environemnt using the  following tutorial (adjust the OS):
+Install docker in the environemnt using the  following tutorial (adjust for the OS):
 https://www.digitalocean.com/community/tutorials/how-to-install-and-use-docker-on-ubuntu-16-04
 
 ## Dockerfile description
 - Ubuntu base system (Ubuntu 20.04 by default)
 - **librealsense-builder** stage - builds the binaries and has all the build dependencies 
-- **librealsense** stage -  contain only the built binaries and the required runtime dependencies (~60MB)
+- **librealsense** stage -  contains only the built binaries and the required runtime dependencies (~60MB)
 - Support for Python bindings (python not included) and networking
-- Binaries are stripped during build stage to minimize image size
+- Binaries are stripped from debug symbols during build stage to minimize image size
 - Support scripts for building and running the image are also included
-Add python version, openGL?, self info to be printed
+- Next steps - TODO: python version, openGL, self info to be printed
 
 # Getting librealsense docker - pre-built
 
-As long as the repo is private, login is needed:
-1. add the password in some password.txt file
-2. run: 
-```
-cat password.txt | docker login –username=“…” –password-stdin
-```
-
-Then run the command:
+Run the command:
 ```
 docker pull librealsense/librealsense
 ```
@@ -43,7 +46,7 @@ docker run -it --rm \
 The default command that will run is: rs-enumerate-devices --compact
 
 ### Custom Command
-In order to run another command, one can run for example:
+In order to run some arbitrary command (run of the rs-depth demo in the following example), one can run for example:
 ```
 docker run -it --rm \
     -v /dev:/dev \
@@ -53,7 +56,7 @@ docker run -it --rm \
 ```
 
 ### Running shell
-Or, in order to open bash inside the container:
+Use the following command in order to interact with the Docker via shell interface:
 ```
 docker run -it --rm \
     -v /dev:/dev \
