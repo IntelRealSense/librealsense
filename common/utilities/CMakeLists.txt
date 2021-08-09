@@ -12,4 +12,6 @@ target_sources(${LRS_TARGET}
         "${CMAKE_CURRENT_LIST_DIR}/time/work_week.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/time/l500/get-mfr-ww.h"
         "${CMAKE_CURRENT_LIST_DIR}/time/l500/get-mfr-ww.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/os/h-result.h"
+        "${CMAKE_CURRENT_LIST_DIR}/os/h-result.cpp"
 )

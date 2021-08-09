@@ -39,7 +39,7 @@
 #endif
 
 #include <GLFW/glfw3.h>
-#include "utilities/os/h_result.h"
+#include "utilities/os/h-result.h"
 
 namespace rs2
 {

@@ -94,6 +94,7 @@ endif()
 
 if(WIN32)
     list(APPEND RAW_RS
+        ../../common/utilities/os/h-result.cpp
         ../../src/win/win-helpers.cpp
         ../../src/winusb/interface-winusb.cpp
         ../../src/winusb/device-winusb.cpp
@@ -112,6 +113,7 @@ endif()
 
 if(${BACKEND} STREQUAL RS2_USE_WMF_BACKEND)
     list(APPEND RAW_RS
+        ../../common/utilities/os/h-result.cpp
         ../../src/win/win-helpers.cpp
         ../../src/mf/mf-uvc.cpp
         ../../src/mf/mf-hid.cpp

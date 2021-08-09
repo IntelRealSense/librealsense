@@ -21,7 +21,7 @@
 
 #include <Cfgmgr32.h>
 #include <SetupAPI.h>
-#include "../../common/utilities/os/h_result.h"
+#include "../../common/utilities/os/h-result.h"
 
 #pragma comment(lib, "winusb.lib")
 

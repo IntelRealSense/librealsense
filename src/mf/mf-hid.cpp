@@ -25,7 +25,7 @@
 #include <propkeydef.h>
 #include <comutil.h>
 #include <string>
-#include "../../common/utilities/os/h_result.h"
+#include "../../common/utilities/os/h-result.h"
 
 #pragma comment(lib, "Sensorsapi.lib")
 #pragma comment(lib, "PortableDeviceGuids.lib")

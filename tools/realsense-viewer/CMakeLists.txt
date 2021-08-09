@@ -53,6 +53,8 @@ if(BUILD_GRAPHICAL_EXAMPLES)
     ../../common/rs-config.cpp
     ../../common/os.h
     ../../common/os.cpp
+    ../../common/utilities/os/h-result.h
+    ../../common/utilities/os/h-result.cpp
 )
 
 SET(DELAYED 

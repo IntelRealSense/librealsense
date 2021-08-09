@@ -35,7 +35,7 @@ The library will be compiled without the metadata support!\n")
 #include <vidcap.h>
 #include <ksmedia.h>    // Metadata Extension
 #include <Mferror.h>
-#include "../../common/utilities/os/h_result.h"
+#include "../../common/utilities/os/h-result.h"
 
 #pragma comment(lib, "Shlwapi.lib")
 #pragma comment(lib, "mf.lib")
