@@ -304,6 +304,7 @@ namespace librealsense
         }
         update_next_expected( matcher, f );
 
+        auto const last_arrived = f.frame;
         if( ! _frames_queue[matcher.get()].enqueue( std::move( f ) ) )
             // If we get stopped, nothing to do!
             return;
@@ -383,7 +384,7 @@ namespace librealsense
                         LOG_IF_ENABLE( "... missing " << i->get_name() << ", next expected "
                                                       << _next_expected[i],
                                        env );
-                        if( skip_missing_stream( synced_frames, i, env ) )
+                        if( skip_missing_stream( synced_frames, i, last_arrived, env ) )
                         {
                             LOG_IF_ENABLE( "...     ignoring it", env );
                             continue;
@@ -487,6 +488,7 @@ namespace librealsense
     bool
     frame_number_composite_matcher::skip_missing_stream( std::vector< matcher * > const & synced,
                                                          matcher * missing,
+                                                         frame_interface const * last_arrived,
                                                          const syncronization_environment & env )
     {
         frame_holder* synced_frame;
@@ -563,12 +565,12 @@ namespace librealsense
         _last_arrived[m] = now;
     }
 
-    unsigned int timestamp_composite_matcher::get_fps(const frame_holder & f)
+    unsigned int timestamp_composite_matcher::get_fps( frame_interface const * f )
     {
         uint32_t fps = 0;
-        if(f.frame->supports_frame_metadata(RS2_FRAME_METADATA_ACTUAL_FPS))
+        if(f->supports_frame_metadata(RS2_FRAME_METADATA_ACTUAL_FPS))
         {
-            fps = (uint32_t)f.frame->get_frame_metadata(RS2_FRAME_METADATA_ACTUAL_FPS);
+            fps = (uint32_t)f->get_frame_metadata(RS2_FRAME_METADATA_ACTUAL_FPS);
         }
         if( fps )
         {
@@ -576,7 +578,7 @@ namespace librealsense
         }
         else
         {
-            fps = f.frame->get_stream()->get_framerate();
+            fps = f->get_stream()->get_framerate();
             //LOG_DEBUG( "fps " << fps << " from stream framerate" );
         }
         return fps;
@@ -603,6 +605,7 @@ namespace librealsense
 
     bool timestamp_composite_matcher::skip_missing_stream( std::vector< matcher * > const & synced,
                                                            matcher * missing,
+                                                           frame_interface const * last_arrived,
                                                            const syncronization_environment & env )
     {
         // true : frameset is ready despite the missing stream (no use waiting) -- "skip" it
@@ -616,12 +619,14 @@ namespace librealsense
         rs2_timestamp_domain domain;
         unsigned int fps;
         _frames_queue[synced[0]].peek( [&]( frame_holder & fh ) {
-            // LOG_IF_ENABLE( "...     frame   " << fh->frame, env );
+            //LOG_IF_ENABLE( "...     frame   " << frame_holder_to_string( fh ), env );
 
-            timestamp = fh->get_frame_timestamp();
-            domain = fh->get_frame_timestamp_domain();
+            // TODO the FPS is used for threshold calc and should be taken from MISSING stream
             fps = get_fps( fh );
         } );
+
+        timestamp = last_arrived->get_frame_timestamp();
+        domain = last_arrived->get_frame_timestamp_domain();
 
         auto next_expected = _next_expected[missing];
         // LOG_IF_ENABLE( "...     next    " << std::fixed << next_expected, env );
@@ -644,7 +649,7 @@ namespace librealsense
             auto threshold = 10 * gap;
             if( timestamp - next_expected < threshold )
             {
-                // LOG_IF_ENABLE( "...     next expected of the missing stream didn't updated yet", env );
+                //LOG_IF_ENABLE( "...     still below threshold of {10*gap}" << threshold, env );
                 return false;
             }
             LOG_IF_ENABLE( "...     exceeded threshold of {10*gap}" << threshold << "; deactivating matcher!", env );

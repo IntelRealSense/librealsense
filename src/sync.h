@@ -130,6 +130,7 @@ namespace librealsense
         virtual bool is_smaller_than(frame_holder& a, frame_holder& b) = 0;
         virtual bool skip_missing_stream( std::vector< matcher * > const & synced,
                                           matcher * missing,
+                                          frame_interface const * last_arrived,
                                           const syncronization_environment & env )
             = 0;
         virtual void clean_inactive_streams(frame_holder& f) = 0;
@@ -167,6 +168,7 @@ namespace librealsense
         virtual bool is_smaller_than(frame_holder& a, frame_holder& b) override { return false; }
         virtual bool skip_missing_stream( std::vector< matcher * > const & synced,
                                           matcher * missing,
+                                          frame_interface const * last_arrived,
                                           const syncronization_environment & env ) override
         {
             return false;
@@ -191,6 +193,7 @@ namespace librealsense
         bool is_smaller_than(frame_holder& a, frame_holder& b) override;
         bool skip_missing_stream( std::vector< matcher * > const & synced,
                                   matcher * missing,
+                                  frame_interface const * last_arrived,
                                   const syncronization_environment & env ) override;
         void clean_inactive_streams(frame_holder& f) override;
         void update_next_expected( std::shared_ptr< matcher > const & matcher,
@@ -210,12 +213,13 @@ namespace librealsense
         void clean_inactive_streams(frame_holder& f) override;
         bool skip_missing_stream( std::vector< matcher * > const & synced,
                                   matcher * missing,
+                                  frame_interface const * last_arrived,
                                   const syncronization_environment & env ) override;
         void update_next_expected( std::shared_ptr< matcher > const & matcher,
                                    const frame_holder & f ) override;
 
     private:
-        unsigned int get_fps(const frame_holder & f);
+        unsigned int get_fps( frame_interface const * f );
         bool are_equivalent( double a, double b, unsigned int fps );
         std::map<matcher*, double> _last_arrived;
         std::map<matcher*, unsigned int> _fps;
