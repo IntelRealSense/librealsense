@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2017 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2021 Intel Corporation. All Rights Reserved.
 
 #include <rs-pointcloud-stitching.h>
 #include <librealsense2/hpp/rs_internal.hpp>
@@ -127,7 +127,7 @@ bool parse_configuration(const std::string& line, const std::vector<std::string>
         if (tokens.size() < e_stream_index)
             return res;
 
-        // Convert string to uppercase
+        // Convert string to lowercase
         type = parse_stream_type(to_lower(tokens[e_stream_type]));
         width = parse_number(tokens[e_res_width].c_str());
         height = parse_number(tokens[e_res_height].c_str());
@@ -187,7 +187,7 @@ std::vector<stream_request> parse_profiles_file(const std::string& config_filena
         std::sort(user_requests.begin(), user_requests.end(),
             [](const stream_request& l, const stream_request& r) { return l._stream_type < r._stream_type; });
 
-        for (auto i = 0; i < user_requests.size() - 1; i++)
+        for (size_t i = 0; i < user_requests.size() - 1; i++)
         {
             if ((user_requests[i]._stream_type == user_requests[i + (size_t)1]._stream_type) && ((user_requests[i]._stream_idx == user_requests[i + (size_t)1]._stream_idx)))
                 throw runtime_error(stringify() << "Invalid configuration file - multiple requests for the same sensor:\n"
@@ -240,10 +240,13 @@ void CPointcloudStitcher::parse_calibration_file(const std::string& config_filen
             for (auto it = tokens.begin() + 2; it != tokens.end(); ++it, count++) {
                 std::string token = *it;
                 if (count <= 9)
+                    // The first 9 elements are the rotation matrix values.
                     crnt_extrinsics.rotation[count] = stof(token);
                 else
+                    // Elements 10-12 are the translation matrix.
                     crnt_extrinsics.translation[count-9] = stof(token);
                 if (count == 12)
+                    // Any element beyond the 12th is not looked at.
                     break;
             }
             if (count == 12)
@@ -251,20 +254,20 @@ void CPointcloudStitcher::parse_calibration_file(const std::string& config_filen
         }
     }
     if (_ir_extrinsics.empty())
-        throw runtime_error(stringify() << "Given .cfg configure file " << config_filename << " contains less then 1 full transformation!");
+        throw runtime_error(stringify() << "Given .cfg configure file " << config_filename << " contains less than 1 full transformation!");
     if (_ir_extrinsics.size() < 2)
-        throw runtime_error(stringify() << "Given .cfg configure file " << config_filename << " does not contain 2 full transformation!");
-    // Fill calibration from exery camera to the virtual one:
-
-    // Check that from every device there is, even passing through another, a transformation to virtual_dev
-    for (auto serial : serials)
+        throw runtime_error(stringify() << "Given .cfg configure file " << config_filename << " does not contain 2 full transformations!");
+    
+    // Fill a calibration from every device to the virtual one:
+    // Check that from every device there is a transformation to virtual_dev, possibly even passing through another device. 
+    for (auto& serial : serials)
     {
         try
         {
             std::map<std::string, rs2_extrinsics >& this_transformations = _ir_extrinsics.at(serial);
             if (this_transformations.find(_serial_vir) == this_transformations.end())
             {
-                for (auto trans_to_other : this_transformations)
+                for (auto & trans_to_other : this_transformations)
                 {
                     try
                     {
@@ -470,7 +473,7 @@ bool CPointcloudStitcher::Init()
     }
     // Skip reading the rest of the input files if there is no depth input stream:
     int num_depth_profiles(0);
-    for (auto dev_profiles : _wanted_profiles)
+    for (const auto& dev_profiles : _wanted_profiles)
         for (const auto& profile : dev_profiles.second)
             if (profile._stream_type == RS2_STREAM_DEPTH)
                 num_depth_profiles++;
@@ -728,6 +731,7 @@ void CPointcloudStitcher::ProjectFramesOnOtherDevice(rs2::frameset frames, const
                 {
                     ((uint16_t*)_virtual_depth_frame.frame.data())[offset] = v_depth;
                     // Padding is backwards so not creating the appearance of an existing depth value to consider when testing next pixel.
+                    // virtual_depth_pixel[0] >= 1 and virtual_depth_pixel[1] >= 1 so underflow is not possible.
                     ((uint16_t*)_virtual_depth_frame.frame.data())[offset - 1] = v_depth;
                     ((uint16_t*)_virtual_depth_frame.frame.data())[offset - _virtual_depth_frame.x] = v_depth;
                     ((uint16_t*)_virtual_depth_frame.frame.data())[offset - (_virtual_depth_frame.x + 1)] = v_depth;

@@ -32,6 +32,7 @@ list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR}/CMake)
 # include librealsense general configuration
 include(CMake/global_config.cmake)
 
+
 config_cxx_flags()
 
 # include os specific macros
@@ -44,7 +45,6 @@ os_set_flags()
 
 # set global configuration flags
 # macro definition located at "CMake/global_config.cmake"
-
 global_set_flags()
 
 if(BUILD_SHARED_LIBS)

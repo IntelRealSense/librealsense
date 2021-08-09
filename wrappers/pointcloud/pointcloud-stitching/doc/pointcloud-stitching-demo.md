@@ -38,7 +38,7 @@ In this demo we'll be using MATLAB's® "Stereo Camera Calibrator"® for calibrat
 The following sections demonstrate the above procedure and describe how to use `rs-pointcloud-stitching` for gathering the required images.
 ### __Preparing a checkerboard target.__
 - In matlab: `open checkerboardPattern.pdf`</br>
-I printed the checkerboard pattern on an A3 page and set Custom Scale: 160%</br>
+I printed the checkerboard pattern on an A3 page and set Custom Scale: 160% to have the squares as large as possible because I wanted the calibration to be at the maximal distance possible. You might choose differently as the MATLAB's guide says that it's best to match the calibration distance and the expected working distance.</br>
 - Attach the printed pattern on a flat, solid surface.
 
 ###	__Gathering images for inter-cam calibration using rs-pointcloud-stitching.__
