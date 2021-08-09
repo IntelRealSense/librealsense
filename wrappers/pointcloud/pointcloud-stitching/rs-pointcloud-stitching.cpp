@@ -14,25 +14,45 @@
 #include <fstream>
 #include <regex>
 #include <thread>
+#ifdef _WIN32
 #include <windows.h>
+#endif
+
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <stdio.h>
+#include <stdlib.h>
 
 using namespace std;
 using namespace rs_pointcloud_stitching;
 
-#define INVALID_FILE_ATTRIBUTES ((DWORD)-1)
-#define FILE_ATTRIBUTE_DIRECTORY            0x00000010  
 
-bool dirExists(const std::string& dirName_in)
+bool dirExists(const char *path)
 {
-    DWORD ftyp = GetFileAttributesA(dirName_in.c_str());
-    if (ftyp == INVALID_FILE_ATTRIBUTES)
-        return false;  //something is wrong with your path!
+    struct stat info;
 
-    if (ftyp & FILE_ATTRIBUTE_DIRECTORY)
-        return true;   // this is a directory!
-
-    return false;    // this is not a directory!
+    if(stat( path, &info ) != 0)
+        return false;
+    else if(info.st_mode & S_IFDIR)
+        return true;
+    else
+        return false;
 }
+
+#ifndef _WIN32
+bool CreateDirectoryA(const char *dirname, const mode_t*)
+{
+    int check = mkdir(dirname,0777);
+  
+    // check if directory is created or not
+    if (!check)
+        return true;
+    else {
+        printf("Unable to create directory %s\n", dirname);
+        return false;
+    }
+}
+#endif
 // structure of a matrix 4 X 4, representing rotation and translation as following:
 // pos_and_rot[i][j] is 
 //  _                        _ 
@@ -681,8 +701,8 @@ void CPointcloudStitcher::ProjectFramesOnOtherDevice(rs2::frameset frames, const
     float virtual_color_pixel[2] = { 0 };
 
     auto virtual_sensors = _soft_dev.query_sensors();
-    rs2::sensor virtual_depth_sensor = *(std::find_if(virtual_sensors.begin(), virtual_sensors.end(), [](const auto& sns) { return "Depth" == std::string(sns.get_info(RS2_CAMERA_INFO_NAME)); }));
-    rs2::sensor virtual_color_sensor = *(std::find_if(virtual_sensors.begin(), virtual_sensors.end(), [](const auto& sns) { return "Color" == std::string(sns.get_info(RS2_CAMERA_INFO_NAME)); }));
+    rs2::sensor virtual_depth_sensor = *(std::find_if(virtual_sensors.begin(), virtual_sensors.end(), [](const rs2::sensor& sns) { return "Depth" == std::string(sns.get_info(RS2_CAMERA_INFO_NAME)); }));
+    rs2::sensor virtual_color_sensor = *(std::find_if(virtual_sensors.begin(), virtual_sensors.end(), [](const rs2::sensor& sns) { return "Color" == std::string(sns.get_info(RS2_CAMERA_INFO_NAME)); }));
     const rs2_extrinsics& extrinsics(_ir_extrinsics[from_serial][to_serial]);
     const rs2_intrinsics& virtual_depth_intinsics(virtual_depth_sensor.get_active_streams()[0].as<rs2::video_stream_profile>().get_intrinsics());
 
@@ -779,13 +799,13 @@ void CPointcloudStitcher::SaveOriginImages(const std::map<std::string, rs2::fram
         auto vf = frame.as<rs2::video_frame>();
         std::stringstream png_file;
         png_file << _working_dir << "/calibration_input";
-        if (!dirExists(png_file.str()))
+        if (!dirExists(png_file.str().c_str()))
         {
             std::cout << "Create directory: " << png_file.str() << std::endl;
             CreateDirectoryA(png_file.str().c_str(), NULL);
         }
         png_file << "/" << frames.first;
-        if (!dirExists(png_file.str()))
+        if (!dirExists(png_file.str().c_str()))
         {
             std::cout << "Create directory: " << png_file.str() << std::endl;
             CreateDirectoryA(png_file.str().c_str(), NULL);
@@ -887,7 +907,7 @@ void CPointcloudStitcher::DrawTitles(const double fps, const string& value_str, 
     float text_width(200);
     ImGui::SetNextWindowPos({ 0.15f * window_size.x + 0 * tile_width + (tile_width - text_width) / 2, 40 });
     ImGui::Begin("left_title", nullptr, ImGuiWindowFlags_NoTitleBar);
-    ImGui::Text((std::string("Left Camera:") + _left_device).c_str());
+    ImGui::Text("%s", (std::string("Left Camera:") + _left_device).c_str());
     ImGui::End();
 
     ImGui::SetNextWindowSize({ 200, 25 });
@@ -1053,7 +1073,7 @@ void CPointcloudStitcher::Run(window& app)
 
             rs2::frame aframe = frames_sets.begin()->second;
             {
-                rs2::software_sensor virtual_depth_sensor = *(static_cast<rs2::software_sensor*>(&(*std::find_if(virtual_sensors.begin(), virtual_sensors.end(), [](const auto& sns) { return "Depth" == std::string(sns.get_info(RS2_CAMERA_INFO_NAME)); }))));
+                rs2::software_sensor virtual_depth_sensor = *(static_cast<rs2::software_sensor*>(&(*std::find_if(virtual_sensors.begin(), virtual_sensors.end(), [](const rs2::sensor& sns) { return "Depth" == std::string(sns.get_info(RS2_CAMERA_INFO_NAME)); }))));
                 virtual_depth_sensor.on_video_frame({ _virtual_depth_frame.frame.data(), // Frame pixels from capture API
                     [](void*) {}, // Custom deleter (if required)
                     _virtual_depth_frame.x * _virtual_depth_frame.bpp, _virtual_depth_frame.bpp, // Stride and Bytes-per-pixel
@@ -1063,7 +1083,7 @@ void CPointcloudStitcher::Run(window& app)
             rs2::frame color = aframe.as<rs2::frameset>().first_or_default(RS2_STREAM_COLOR);
             if (color)
             {
-                rs2::software_sensor virtual_color_sensor = *(static_cast<rs2::software_sensor*>(&(*std::find_if(virtual_sensors.begin(), virtual_sensors.end(), [](const auto& sns) { return "Color" == std::string(sns.get_info(RS2_CAMERA_INFO_NAME)); }))));
+                rs2::software_sensor virtual_color_sensor = *(static_cast<rs2::software_sensor*>(&(*std::find_if(virtual_sensors.begin(), virtual_sensors.end(), [](const rs2::sensor& sns) { return "Color" == std::string(sns.get_info(RS2_CAMERA_INFO_NAME)); }))));
                 virtual_color_sensor.on_video_frame({ _virtual_color_frame.frame.data(), // Frame pixels from capture API
                     [](void*) {}, // Custom deleter (if required)
                     _virtual_color_frame.x * _virtual_color_frame.bpp, _virtual_color_frame.bpp, // Stride and Bytes-per-pixel
