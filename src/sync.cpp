@@ -615,18 +615,9 @@ namespace librealsense
             return true;
 
         //LOG_IF_ENABLE( "...     matcher " << synced[0]->get_name(), env );
-        rs2_time_t timestamp;
-        rs2_timestamp_domain domain;
-        unsigned int fps;
-        _frames_queue[synced[0]].peek( [&]( frame_holder & fh ) {
-            //LOG_IF_ENABLE( "...     frame   " << frame_holder_to_string( fh ), env );
-
-            // TODO the FPS is used for threshold calc and should be taken from MISSING stream
-            fps = get_fps( fh );
-        } );
-
-        timestamp = last_arrived->get_frame_timestamp();
-        domain = last_arrived->get_frame_timestamp_domain();
+        rs2_time_t timestamp = last_arrived->get_frame_timestamp();;
+        rs2_timestamp_domain domain = last_arrived->get_frame_timestamp_domain();;
+        auto fps = _fps[missing];
 
         auto next_expected = _next_expected[missing];
         // LOG_IF_ENABLE( "...     next    " << std::fixed << next_expected, env );
