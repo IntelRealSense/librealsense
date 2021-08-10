@@ -26,6 +26,7 @@
 #include <wchar.h>
 #include <KnownFolders.h>
 #include <shlobj.h>
+#include "utilities/os/hresult.h"
 #endif
 
 #if (defined(_WIN32) || defined(_WIN64))
@@ -39,7 +40,6 @@
 #endif
 
 #include <GLFW/glfw3.h>
-#include "utilities/os/hresult.h"
 
 namespace rs2
 {
