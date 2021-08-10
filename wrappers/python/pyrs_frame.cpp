@@ -69,7 +69,7 @@ void init_frame(py::module &m) {
             std::stringstream ss;
             if (auto vf = self.as<rs2::video_stream_profile>())
             {
-                ss << "<" SNAME ".video_stream_profile: "
+                ss << "<" SNAME ".[video_]stream_profile: "
                     << vf.stream_type() << "(" << vf.stream_index() << ") " << vf.width()
                     << "x" << vf.height() << " @ " << vf.fps() << "fps "
                     << vf.format() << ">";
