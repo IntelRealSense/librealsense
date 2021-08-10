@@ -44,4 +44,5 @@ if(UNIX AND (NOT ANDROID_NDK_TOOLCHAIN_INCLUDED))
 else()
     option(ENABLE_EASYLOGGINGPP_ASYNC "Switch Logger to Asynchronous Mode (set OFF for Synchronous Mode)" OFF)
 endif()
+option(BUILD_PC_STITCHING "Build pointcloud-stitching example" OFF)
  
