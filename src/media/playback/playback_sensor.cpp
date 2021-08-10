@@ -196,6 +196,7 @@ void playback_sensor::update_option(rs2_option id, std::shared_ptr<option> optio
 
 void playback_sensor::flush_pending_frames()
 {
+    std::lock_guard<std::mutex> l(m_mutex);
     for (auto&& dispatcher : m_dispatchers)
     {
         dispatcher.second->flush();
