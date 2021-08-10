@@ -121,6 +121,8 @@ public class PreviewActivity extends AppCompatActivity {
                 mGLSurfaceView.clear();
                 clearLables();
                 mShow3D = !mShow3D;
+                mGLSurfaceView.showPointcloud(mShow3D);
+
                 m3dButton.setTextColor(mShow3D ? Color.YELLOW : Color.WHITE);
                 mGLSurfaceView.setVisibility(View.VISIBLE);
                 SharedPreferences sharedPref = getSharedPreferences(getString(R.string.app_settings), Context.MODE_PRIVATE);
