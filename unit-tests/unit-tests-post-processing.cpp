@@ -265,6 +265,9 @@ TEST_CASE("Post-Processing Filters sequence validation", "[software-device][post
                 // Compare the resulted frame versus input
                 validate_ppf_results(depth, filtered_depth, test_cfg, i);
             }
+
+            depth_sensor.stop();
+            depth_sensor.close();
         }
     }
 }
@@ -341,6 +344,9 @@ TEST_CASE("Post-Processing Filters metadata validation", "[software-device][post
                 // Compare the resulted frame metadata versus input
                 compare_frame_md(depth, filtered_depth);
             }
+
+            depth_sensor.stop();
+            depth_sensor.close();
         }
     }
 }

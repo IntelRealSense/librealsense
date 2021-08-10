@@ -503,9 +503,9 @@ void playback_device::do_loop(T action)
 {
     (*m_read_thread)->invoke([this, action](dispatcher::cancellable_timer c)
     {
+        bool action_succeeded = false;
         if (m_is_started)
         {
-            bool action_succeeded = false;
             try
             {
                 action_succeeded = action();
