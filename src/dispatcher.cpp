@@ -111,9 +111,8 @@ bool dispatcher::flush()
         return true;  // Nothing to do - so success (no timeout)
 
     utilities::time::waiting_on< bool > invoked( false );
-    invoke( [invoked = invoked.in_thread()]( cancellable_timer ) {
-        invoked.signal( true );
-    } );
+    invoke( [invoked = invoked.in_thread()]( cancellable_timer ) { invoked.signal( true ); },
+            true );
     invoked.wait_until( std::chrono::seconds( 10 ), [&]() {
         return invoked || _was_stopped;
     } );
