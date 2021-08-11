@@ -138,29 +138,42 @@ notifications_callback_ptr playback_sensor::get_notifications_callback() const
 void playback_sensor::start(frame_callback_ptr callback)
 {
     LOG_DEBUG("Start sensor " << m_sensor_id);
-    std::lock_guard<std::mutex> l(m_mutex);
-    if (m_is_started == false)
+    bool was_started = false;
     {
-        started(m_sensor_id, callback);
-        m_user_callback = callback ;
-        m_is_started = true;
+        std::lock_guard<std::mutex> l(m_mutex);
+        if (m_is_started == false)
+        {
+            m_is_started = true;
+            was_started = true;
+            m_user_callback = callback;
+        }
     }
+    if(was_started)
+        started(m_sensor_id, callback);
 }
 
 void playback_sensor::stop(bool invoke_required)
 {
     LOG_DEBUG("Stop sensor " << m_sensor_id);
-    std::lock_guard<std::mutex> l(m_mutex);
-    if (m_is_started == true)
+    bool was_stopped = false;
     {
-        m_is_started = false;
-        for (auto dispatcher : m_dispatchers)
+        std::lock_guard<std::mutex> l(m_mutex);
+
+        if (m_is_started == true)
         {
-            dispatcher.second->stop();
+            m_is_started = false;
+            was_stopped = true;
+            for (auto dispatcher : m_dispatchers)
+            {
+                dispatcher.second->stop();
+            }
+            m_user_callback.reset();
         }
-        m_user_callback.reset();
-        stopped(m_sensor_id, invoke_required);
     }
+
+    if(was_stopped)
+        stopped(m_sensor_id, invoke_required);
+
 }
 void playback_sensor::stop()
 {
@@ -196,6 +209,7 @@ void playback_sensor::update_option(rs2_option id, std::shared_ptr<option> optio
 
 void playback_sensor::flush_pending_frames()
 {
+    std::lock_guard<std::mutex> l(m_mutex);
     for (auto&& dispatcher : m_dispatchers)
     {
         dispatcher.second->flush();

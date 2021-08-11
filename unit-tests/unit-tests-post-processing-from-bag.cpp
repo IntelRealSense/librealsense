@@ -14,6 +14,7 @@
 #include <algorithm>
 #include <deque>
 #include <librealsense2/rsutil.h>
+#include "../common/utilities/time/timer.h"
 
 # define SECTION_FROM_TEST_NAME space_to_underscore(Catch::getCurrentContext().getResultCapture()->getCurrentTestName()).c_str()
 
@@ -269,7 +270,8 @@ std::vector<rs2::frame> get_frames(std::vector<rs2::sensor> sensors)
         });
     }
 
-    while (true)
+    utilities::time::timer t(std::chrono::seconds(30));
+    while (!t.has_expired())
     {
         {
             std::lock_guard<std::mutex> lock(frames_lock);
@@ -279,6 +281,7 @@ std::vector<rs2::frame> get_frames(std::vector<rs2::sensor> sensors)
         std::this_thread::sleep_for(std::chrono::microseconds(100));
     } 
 
+    REQUIRE(!t.has_expired()); // fail on timeout
 
     for (auto s : sensors)
     {
