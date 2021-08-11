@@ -110,7 +110,9 @@ struct rs2_pipeline_profile
 struct rs2_frame_queue
 {
     explicit rs2_frame_queue(int cap)
-        : queue(cap)
+        : queue( cap, [cap]( librealsense::frame_holder const & fh ) {
+            LOG_DEBUG( "DROPPED queue (capacity= " << cap << ") frame " << frame_holder_to_string( fh ) );
+        } )
     {
     }
 
