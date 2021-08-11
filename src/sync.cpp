@@ -667,7 +667,7 @@ namespace librealsense
         // our queue size and per-stream archive size allow.
         auto const fps = get_fps( waiting_to_be_released );
 
-        rs2_time_t now = last_arrived->get_frame_timestamp();;
+        rs2_time_t now = last_arrived->get_frame_timestamp();
         if( now > next_expected )
         {
             // Wait for the missing stream frame to arrive -- up to a cutout: anything more and we
