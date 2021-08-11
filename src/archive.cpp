@@ -190,7 +190,7 @@ namespace librealsense
 
     void frame::release()
     {
-        if (ref_count.fetch_sub(1) == 1)
+        if (ref_count.fetch_sub(1) == 1 && owner)
         {
             unpublish();
             on_release();
