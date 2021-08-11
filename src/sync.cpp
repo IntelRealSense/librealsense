@@ -679,7 +679,7 @@ namespace librealsense
             auto threshold = 7 * gap;  // really 7+1 because NE is already 1 away
             if( now - next_expected < threshold )
             {
-                //LOG_IF_ENABLE( "...     still below threshold of {10*gap}" << threshold, env );
+                //LOG_IF_ENABLE( "...     still below cutout of {NE+7*gap}" << ( next_expected + threshold ), env );
                 return false;
             }
             LOG_IF_ENABLE( "...     exceeded cutout of {NE+7*gap}" << ( next_expected + threshold ) << "; deactivating matcher!", env );
