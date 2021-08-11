@@ -96,6 +96,9 @@ std::map<uint32_t, std::shared_ptr<playback_sensor>> playback_device::create_pla
                         }
                     }
                 }
+
+                // If all sensors were stopped, we want to stop the device from dispatching frames.
+                // We invoke "stop_internal()" for concurrency reasons
                 if (need_to_stop_device)
                 {
                     ( *m_read_thread )->invoke( [this]( dispatcher::cancellable_timer c ) {
