@@ -125,7 +125,7 @@ def print_stack():
     #     File "C:/work/git/lrs\unit-tests\py\rspy\test.py", line 87, in print_stack
     #       stack = traceback.format_stack()
     stack = stack[:-2]
-    for line in reversed( stack ):
+    for line in stack:
         print( line, end = '' )  # format_stack() adds \n
 
 
@@ -189,8 +189,8 @@ def check_equal(result, expected, abort_if_failed = False):
     n_assertions += 1
     if result != expected:
         print_stack()
-        print( "    result  :", result )
-        print( "    expected:", expected )
+        print( "    left  :", result )
+        print( "    right :", expected )
         check_failed()
         if abort_if_failed:
             abort()
@@ -204,7 +204,12 @@ def unreachable( abort_if_failed = False ):
     Used to assert that a certain section of code (exp: an if block) is not reached
     :param abort_if_failed: If True and this function is reached the test will be aborted
     """
-    check(False, abort_if_failed)
+    global n_assertions
+    n_assertions += 1
+    print_stack()
+    check_failed()
+    if abort_if_failed:
+        abort()
 
 
 def unexpected_exception():
@@ -341,18 +346,20 @@ def reset_info(persistent = False):
     if persistent:
         test_info.clear()
     else:
+        new_info = test_info.copy()
         for name, information in test_info.items():
             if not information.persistent:
-                test_info.pop(name)
+                new_info.pop(name)
+        test_info = new_info
 
 
 def print_info():
     global test_info
     if not test_info: # No information is stored
         return
-    print("Printing information")
+    #print("Printing information")
     for name, information in test_info.items():
-        print("Name:", name, "        value:", information.value)
+        print( f"  {name} = {information.value}" )
     reset_info()
 
 
