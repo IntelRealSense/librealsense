@@ -138,19 +138,26 @@ void init_frame(py::module &m) {
         // No apply_filter?
         .def( "__repr__", []( const rs2::frame &self )
         {
-            std::stringstream ss;
+            std::ostringstream ss;
             ss << "<" << SNAME << ".frame";
-            if( auto fs = self.as< rs2::frameset >() )
+            if( ! self )
             {
-                ss << "set";
-                for( auto sf : fs )
-                    ss << " " << rs2_format_to_string( sf.get_profile().format() );
+                ss << " NULL";
             }
             else
             {
-                ss << " " << rs2_format_to_string( self.get_profile().format() );
+                if( auto fs = self.as< rs2::frameset >() )
+                {
+                    ss << "set";
+                    for( auto sf : fs )
+                        ss << " " << rs2_format_to_string( sf.get_profile().format() );
+                }
+                else
+                {
+                    ss << " " << rs2_format_to_string( self.get_profile().format() );
+                }
+                ss << " #" << self.get_frame_number();
             }
-            ss << " #" << self.get_frame_number();
             ss << ">";
             return ss.str();
         });
