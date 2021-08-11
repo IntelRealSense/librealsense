@@ -110,7 +110,20 @@ void init_internal(py::module &m) {
             },
             []( rs2_software_video_frame & self, rs2::video_stream_profile const & profile ) {
                 self.profile = profile.get();
-            } );
+            } )
+        .def( "__repr__", []( const rs2_software_video_frame& self ) {
+            std::ostringstream ss;
+            ss << "<" << SNAME << ".software_video_frame";
+            if( self.profile )
+            {
+                rs2::stream_profile profile( self.profile );
+                ss << " " << rs2_format_to_string( profile.format() );
+            }
+            ss << " #" << self.frame_number;
+            ss << " @" << self.timestamp;
+            ss << ">";
+            return ss.str();
+        } );
 
     py::class_<rs2_software_motion_frame> software_motion_frame(m, "software_motion_frame", "All the parameters "
                                                                 "required to define a motion frame.");
