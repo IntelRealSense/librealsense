@@ -1,16 +1,25 @@
 # License: Apache 2.0. See LICENSE file in root directory.
 # Copyright(c) 2021 Intel Corporation. All Rights Reserved.
 
-import os
+import os, platform
+from rspy import log
 
 # this script is located in librealsense/unit-tests/py/rspy, so main repository is:
 root = os.path.dirname( os.path.dirname( os.path.dirname( os.path.dirname( os.path.abspath( __file__ )))))
 
 # Usually we expect the build directory to be directly under the root, named 'build'
-build = os.path.join( root, 'win10', 'win64', 'static' )
+# ... but first check the expected LibCI build directories:
+#
+if platform.system() == 'Linux':
+    build = os.path.join( root, 'x86_64', 'static' )
+else:
+    build = os.path.join( root, 'win10', 'win64', 'static' )
 if not os.path.isdir( build ):
+    #
     build = os.path.join( root, 'build' )
     if not os.path.isdir( build ):
+        log.w( 'repo.build directory wasn\'t found' )
+        log.d( 'repo.root=', root )
         build = None
 
 
@@ -19,11 +28,8 @@ def find_pyrs():
     :return: the location (absolute path) of the pyrealsense2 .so (linux) or .pyd (windows)
     """
     global build
-    import platform
-    system = platform.system()
-    linux = ( system == 'Linux'  and  "microsoft" not in platform.uname()[3].lower() )
     from rspy import file
-    if linux:
+    if platform.system() == 'Linux':
         for so in file.find( build, '(^|/)pyrealsense2.*\.so$' ):
             return os.path.join( build, so )
     else:

@@ -3853,40 +3853,50 @@ namespace rs2
         // it). Lacking an available version, we try to let the user choose a "recommended"
         // version for download. The recommended version is defined by the device (and comes
         // from a #define).
-        if( dev.supports( RS2_CAMERA_INFO_FIRMWARE_VERSION )
-            && dev.supports( RS2_CAMERA_INFO_RECOMMENDED_FIRMWARE_VERSION )
-            && dev.supports( RS2_CAMERA_INFO_PRODUCT_LINE ) )
-        {
-            std::string fw = dev.get_info( RS2_CAMERA_INFO_FIRMWARE_VERSION );
-            std::string recommended_fw_ver
-                = dev.get_info( RS2_CAMERA_INFO_RECOMMENDED_FIRMWARE_VERSION );
 
-            int product_line
-                = parse_product_line( dev.get_info( RS2_CAMERA_INFO_PRODUCT_LINE ) );
+        // 'notification_type_is_displayed()' is used to detect if fw_update notification is on to avoid displaying it during FW update process when
+        // the device enters recovery mode
+        if( ! not_model->notification_type_is_displayed< fw_update_notification_model >()
+            && ( dev.is< updatable >() || dev.is< update_device >() ) )
+        {
+            std::string fw;
+            std::string recommended_fw_ver;
+            int product_line = 0;
+
+            // Override with device info if info is available
+            if (dev.is<updatable>())
+            {
+                fw = dev.supports( RS2_CAMERA_INFO_FIRMWARE_VERSION )
+                       ? dev.get_info( RS2_CAMERA_INFO_FIRMWARE_VERSION )
+                       : "";
+
+                recommended_fw_ver = dev.supports(RS2_CAMERA_INFO_RECOMMENDED_FIRMWARE_VERSION)
+                    ? dev.get_info(RS2_CAMERA_INFO_RECOMMENDED_FIRMWARE_VERSION)
+                    : "";
+            }
+
+            product_line = dev.supports(RS2_CAMERA_INFO_PRODUCT_LINE)
+                ? parse_product_line(dev.get_info(RS2_CAMERA_INFO_PRODUCT_LINE))
+                : -1; // invalid product line, will be handled later on
 
             bool allow_rc_firmware = config_file::instance().get_or_default(
                 configurations::update::allow_rc_firmware,
                 false );
+
             bool is_rc = ( product_line == RS2_PRODUCT_LINE_D400 ) && allow_rc_firmware;
-            std::string PID = dev.get_info(RS2_CAMERA_INFO_PRODUCT_ID);
-
-            std::string available_fw_ver = get_available_firmware_version( product_line, PID);
-
+            std::string pid = dev.get_info(RS2_CAMERA_INFO_PRODUCT_ID);
+            std::string available_fw_ver = get_available_firmware_version( product_line, pid);
             std::shared_ptr< firmware_update_manager > manager = nullptr;
 
-
-            if( is_upgradeable( fw, available_fw_ver) )
+            if( dev.is<update_device>() || is_upgradeable( fw, available_fw_ver) )
             {
                 recommended_fw_ver = available_fw_ver;
-
-                static auto table = create_default_fw_table();
-
-                std::vector<uint8_t> image;
-
-                if (table.find({ product_line, PID }) != table.end())
-                    image = table[{product_line, PID}];
-                else
-                    image = table[{product_line, ""}];
+                auto image = get_default_fw_image(product_line, pid);
+                if (image.empty())
+                {
+                    not_model->add_log("could not detect a bundled FW version for the connected device", RS2_LOG_SEVERITY_WARN);
+                    return false;
+                }
 
                 manager = std::make_shared< firmware_update_manager >( not_model,
                                                                        *this,
@@ -3897,13 +3907,22 @@ namespace rs2
             }
 
             auto dev_name = get_device_name(dev);
-            if( is_upgradeable( fw, recommended_fw_ver) )
+
+            if( dev.is<update_device>() || is_upgradeable( fw, recommended_fw_ver) )
             {
                 std::stringstream msg;
-                msg << dev_name.first << " (S/N " << dev_name.second << ")\n"
-                    << "Current Version: " << fw << "\n";
 
-                if( is_rc )
+                if (dev.is<update_device>())
+                {
+                    msg << dev_name.first << "\n(S/N " << dev.get_info(RS2_CAMERA_INFO_FIRMWARE_UPDATE_ID) << ")\n";
+                }
+                else
+                {
+                    msg << dev_name.first << " (S/N " << dev_name.second << ")\n"
+                        << "Current Version: " << fw << "\n";
+                }
+
+                if (is_rc)
                     msg << "Release Candidate: " << recommended_fw_ver << " Pre-Release";
                 else
                     msg << "Recommended Version: " << recommended_fw_ver;
@@ -3916,6 +3935,7 @@ namespace rs2
                 n->delay_id = "fw_update_alert." + recommended_fw_ver + "." + dev_name.second;
                 n->enable_complex_dismiss = true;
 
+                // If a delay request received in the past, reset it.
                 if( reset_delay ) n->reset_delay();
 
                 if( ! n->is_delayed() )
@@ -3927,12 +3947,15 @@ namespace rs2
             }
             else
             {
-                std::stringstream msg;
-                msg << "Current FW >= Bundled FW for: " << dev_name.first << " (S/N " << dev_name.second << ")\n"
-                    << "Current Version: " << fw << "\n" 
-                    << "Recommended Version: " << recommended_fw_ver;
+                if( ! fw.empty() && ! recommended_fw_ver.empty() )
+                {
+                    std::stringstream msg;
+                    msg << "Current FW >= Bundled FW for: " << dev_name.first << " (S/N " << dev_name.second << ")\n"
+                        << "Current Version: " << fw << "\n"
+                        << "Recommended Version: " << recommended_fw_ver;
 
-                not_model->add_log(msg.str(), RS2_LOG_SEVERITY_DEBUG);
+                    not_model->add_log(msg.str(), RS2_LOG_SEVERITY_DEBUG);
+                }
             }
         }
         return false;

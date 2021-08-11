@@ -818,6 +818,7 @@ namespace librealsense
         public:
             virtual void start(device_changed_callback callback) = 0;
             virtual void stop() = 0;
+            virtual bool is_stopped() const = 0;
             virtual ~device_watcher() {};
         };
     }

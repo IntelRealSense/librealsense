@@ -203,6 +203,14 @@ namespace rs2
             std::function<void()> custom_action,
             bool use_custom_action = true);
         void add_notification(std::shared_ptr<notification_model> model);
+        
+        // Check of a notification of type T is currently on the display queue.
+        template <typename T>
+        bool notification_type_is_displayed()
+        {
+           std::lock_guard<std::recursive_mutex> lock(m);
+           return std::any_of(pending_notifications.cbegin(), pending_notifications.cend(), [](const std::shared_ptr<notification_model>& nm) {return nm->is<T>(); });
+        }
         bool draw(ux_window& win, int w, int h, std::string& error_message);
 
         notifications_model() {}

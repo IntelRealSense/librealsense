@@ -1,6 +1,6 @@
 # Recorded Camera Data
 
-**Intel® RealSense™ SDK 2.0** supports working with pre-recorded data ([learn more](https://github.com/IntelRealSense/librealsense/blob/master/src/media/readme.md)).
+**Intel® RealSense™ SDK 2.0** supports working with pre-recorded data ([learn more](./record-and-playback.md)).
 
 All files below can be opened using the [RealSense Viewer](https://github.com/IntelRealSense/librealsense/releases/download/v2.8.0/Intel.RealSense.Viewer.exe) (`Add Source` > `Load Recorded Sequence` or just drag & drop into the Viewer) 
 In addition, you can make any of the provided [examples](https://github.com/IntelRealSense/librealsense/tree/master/examples) run from file, by replacing `pipe.start()` with:

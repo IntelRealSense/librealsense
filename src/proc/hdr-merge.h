@@ -28,6 +28,7 @@ namespace librealsense
         const int IR_OVER_SATURATED_VALUE_Y16 = 0x3eb; // 1003 (1023 - IR_UNDER_SATURATED_VALUE_Y16)
 
         const int NUMBER_OF_FRAMES_WITHOUT_METADATA_FOR_WARNING = 20;
+        const int SEQUENTIAL_FRAMES_THRESHOLD = 4; // avoids returning too old merged frame - frame counter jumps forward 
 
         void reset_warning_counter_on_pipe_restart(const rs2::depth_frame& depth_frame);
         void discard_depth_merged_frame_if_needed(const rs2::frame& f);

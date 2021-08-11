@@ -4,7 +4,6 @@ project(librealsense2 LANGUAGES CXX C)
 
 include(CMake/lrs_options.cmake)
 include(CMake/connectivity_check.cmake)
-
 #Deprecation message, should be removed in future releases
 if(${FORCE_LIBUVC} OR ${FORCE_WINUSB_UVC} OR ${ANDROID_USB_HOST_UVC})
     MESSAGE(DEPRECATION "FORCE_LIBUVC, FORCE_WINUSB_UVC and ANDROID_USB_HOST_UVC are deprecated, use FORCE_RSUSB_BACKEND instead")
@@ -21,6 +20,11 @@ endif()
 if(IMPORT_DEPTH_CAM_FW AND NOT INTERNET_CONNECTION)
     message(WARNING "No internet connection, disabling IMPORT_DEPTH_CAM_FW")
     set(IMPORT_DEPTH_CAM_FW OFF)
+endif()
+
+if (BUILD_PC_STITCHING AND NOT BUILD_GLSL_EXTENSIONS)
+    MESSAGE(STATUS "BUILD_PC_STITCHING explicitely depends on BUILD_GLSL_EXTENSIONS, set it ON")
+    SET(BUILD_GLSL_EXTENSIONS ON)
 endif()
 
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR}/CMake)
@@ -68,8 +72,7 @@ global_target_config()
 include(CMake/install_config.cmake)
 
 add_subdirectory(wrappers)
-
-if (BUILD_EXAMPLES AND BUILD_GLSL_EXTENSIONS)
+if ( ( BUILD_EXAMPLES OR BUILD_PC_STITCHING ) AND BUILD_GLSL_EXTENSIONS )
     find_package(glfw3 3.3 QUIET)
     if(NOT TARGET glfw)
         message(STATUS "GLFW 3.3 not found; using internal version")

@@ -126,6 +126,7 @@ namespace librealsense
        environment::get_instance().set_time_service(_backend->create_time_service());
 
        _device_watcher = _backend->create_device_watcher();
+       assert(_device_watcher->is_stopped());
     }
 
 
@@ -448,11 +449,25 @@ namespace librealsense
             }
         }
     }
+
+    void context::start_device_watcher()
+    {
+        _device_watcher->start([this](platform::backend_device_group old, platform::backend_device_group curr)
+        {
+            on_device_changed(old, curr, _playback_devices, _playback_devices);
+        });
+    }
+
     uint64_t context::register_internal_device_callback(devices_changed_callback_ptr callback)
     {
         std::lock_guard<std::mutex> lock(_devices_changed_callbacks_mtx);
         auto callback_id = unique_id::generate_id();
         _devices_changed_callbacks.insert(std::make_pair(callback_id, std::move(callback)));
+
+        if (_device_watcher->is_stopped())
+        {
+            start_device_watcher();
+        }
 
         return callback_id;
     }
@@ -461,17 +476,22 @@ namespace librealsense
     {
         std::lock_guard<std::mutex> lock(_devices_changed_callbacks_mtx);
         _devices_changed_callbacks.erase(cb_id);
+
+        if (_devices_changed_callback == nullptr && _devices_changed_callbacks.size() == 0) // There are no register callbacks any more _device_watcher can be stopped
+        {
+            _device_watcher->stop();
+        }
     }
 
     void context::set_devices_changed_callback(devices_changed_callback_ptr callback)
     {
-        _device_watcher->stop();
-
+        std::lock_guard<std::mutex> lock(_devices_changed_callbacks_mtx);
         _devices_changed_callback = std::move(callback);
-        _device_watcher->start([this](platform::backend_device_group old, platform::backend_device_group curr)
+
+        if (_device_watcher->is_stopped())
         {
-            on_device_changed(old, curr, _playback_devices, _playback_devices);
-        });
+            start_device_watcher();
+        }
     }
 
     std::vector<platform::uvc_device_info> filter_by_product(const std::vector<platform::uvc_device_info>& devices, const std::set<uint16_t>& pid_list)
