@@ -8,7 +8,7 @@ import pyrealsense2 as rs
 from rspy import test
 
 def close_resources(sensor):
-    if not sensor.get_active_streams():
+    if len(sensor.get_active_streams()) > 0:
         sensor.stop()
         sensor.close()
 
@@ -96,11 +96,11 @@ try:
 
         except:
             test.unexpected_exception()
-        finally:
-            close_resources(color_sensor)
             
 except:
     print("The device found has no color sensor")
+finally:
+    close_resources(color_sensor)
 
 test.finish()
 test.print_results_and_exit()
