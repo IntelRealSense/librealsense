@@ -12,6 +12,7 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.ProgressBar;
+import android.widget.Toast;
 
 import com.intel.realsense.librealsense.CameraInfo;
 import com.intel.realsense.librealsense.Device;
@@ -111,7 +112,17 @@ public class FirmwareUpdateProgressDialog extends DialogFragment {
                     }
                 }
             }catch (Exception e) {
-                Log.e(TAG, "firmware update failed, error: " + e.getMessage());
+                final String msg = "firmware update failed, error: " + e.getMessage();
+                Log.e(TAG, msg);
+
+                final Activity activity = getActivity();
+
+                activity.runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            Toast.makeText(activity, msg, Toast.LENGTH_LONG).show();
+                        }
+                    });
             }finally {
                 if(notify)
                     ((DetachedActivity)getActivity()).onFwUpdateStatus(done);
