@@ -152,7 +152,7 @@ def abort():
     sys.exit( 1 )
 
 
-def check(exp, abort_if_failed = False):
+def check( exp, description = None, abort_if_failed = False):
     """
     Basic function for asserting expressions.
     :param exp: An expression to be asserted, if false the assertion failed
@@ -163,7 +163,10 @@ def check(exp, abort_if_failed = False):
     n_assertions += 1
     if not exp:
         print_stack()
-        print( "    check failed; received", exp )
+        if description:
+            print( f"    {description}" )
+        else:
+            print( f"    check failed; received {exp}" )
         check_failed()
         if abort_if_failed:
             abort()
@@ -359,7 +362,7 @@ def print_info():
         return
     #print("Printing information")
     for name, information in test_info.items():
-        print( f"  {name} = {information.value}" )
+        print( f"    {name} : {information.value}" )
     reset_info()
 
 
