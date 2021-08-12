@@ -78,10 +78,10 @@ def bytes_to_uint(bytes_array, order='little'):
 
 class imu_wrapper:
     class Status(enum.Enum):
-        idle = 0,
-        rotate = 1,
-        wait_to_stable = 2,
-        collect_data = 3
+        idle = "0"
+        rotate = "1"
+        wait_to_stable = "2"
+        collect_data = "3"
 
     def __init__(self):
         self.pipeline = None
