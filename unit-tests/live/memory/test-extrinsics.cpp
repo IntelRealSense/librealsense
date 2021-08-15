@@ -207,7 +207,6 @@ TEST_CASE("Extrinsic memory leak detection", "[live]")
             bool condition = false;
             bool all_arrived = false;
             std::mutex mutex;
-            std::mutex cond_m;
             std::condition_variable cv;
 
             auto process_frame = [&](const rs2::frame& f)
@@ -278,7 +277,7 @@ TEST_CASE("Extrinsic memory leak detection", "[live]")
             }
             // to prevent FW issue, at least 20 frames per stream should arrive
 
-            std::unique_lock<std::mutex> lock(cond_m);
+            std::unique_lock<std::mutex> lock(mutex);
             auto pred = [&](){
                 return all_arrived;
             };
