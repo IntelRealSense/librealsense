@@ -22,20 +22,28 @@ namespace hresult {
     }
 
 
-#define CHECK_HR_STR( call, hr, to_throw )                                                         \
+#define CHECK_HR_STR_THROW( call, hr )                                                             \
     if( FAILED( hr ) )                                                                             \
     {                                                                                              \
         std::stringstream ss;                                                                      \
         ss << call << " returned: " << utilities::hresult::hr_to_string( hr );                     \
         std::string descr = ss.str();                                                              \
-        if( to_throw )                                                                             \
-            throw std::runtime_error( descr );                                                     \
-        else                                                                                       \
-           CLOG(DEBUG   ,"librealsense") << descr;                                                 \
+        throw std::runtime_error( descr );                                                         \
     }
 
-#define CHECK_HR( x ) CHECK_HR_STR( #x, x, true )
-#define LOG_HR( x ) CHECK_HR_STR( #x, x, false )
+#define CHECK_HR_STR_LOG( call, hr )                                                               \
+    if( FAILED( hr ) )                                                                             \
+    {                                                                                              \
+        std::stringstream ss;                                                                      \
+        ss << call << " returned: " << utilities::hresult::hr_to_string( hr );                     \
+        std::string descr = ss.str();                                                              \
+        CLOG( DEBUG, "librealsense" ) << descr;                                                    \
+    }
 
+#define CHECK_HR( x ) CHECK_HR_STR_THROW( #x, x )
+
+#if BUILD_EASYLOGGINGPP
+    #define LOG_HR( x ) CHECK_HR_STR_LOG( #x, x )
+#endif
 }
 }
