@@ -29,6 +29,10 @@
 #include "utilities/os/hresult.h"
 #endif
 
+#if BUILD_EASYLOGGINGPP
+#include "../third-party/easyloggingpp/src/easylogging++.h"
+#endif // BUILD_EASYLOGGINGPP
+
 #if (defined(_WIN32) || defined(_WIN64))
 #include "ShellAPI.h"
 #endif
@@ -273,7 +277,7 @@ Some auxillary functionalities might be affected. Please report this message if 
                 // In such cases, the new function, SHGetKnownFolderPath, does not always return the new path, while the deprecated
                 // function does.
                 CHAR path[MAX_PATH];
-                CHECK_HR_THROWS(SHGetFolderPathA(NULL, CSIDL_PERSONAL, NULL, 0, path));
+                CHECK_HR(SHGetFolderPathA(NULL, CSIDL_PERSONAL, NULL, 0, path));
 
                 res = path;
                 res += "\\";

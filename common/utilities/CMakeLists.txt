@@ -14,6 +14,4 @@ target_sources(${LRS_TARGET}
         "${CMAKE_CURRENT_LIST_DIR}/time/l500/get-mfr-ww.cpp"
 )
 
-if(WIN32)
-    include(${CMAKE_CURRENT_LIST_DIR}/os/CMakeLists.txt)
-endif()
+include(${CMAKE_CURRENT_LIST_DIR}/os/CMakeLists.txt)

@@ -8,7 +8,7 @@
 #include "usb/usb-enumerator.h"
 #include "device-winusb.h"
 #include "interface-winusb.h"
-#include "win/win-helpers.h"
+#include "../common/utilities/os/hresult.h"
 #include "types.h"
 
 #include <atlstr.h>
