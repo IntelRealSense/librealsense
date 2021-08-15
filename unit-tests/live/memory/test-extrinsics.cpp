@@ -334,7 +334,8 @@ TEST_CASE("Extrinsic memory leak detection", "[live]")
 
         }
         // 3. "most" iterations have time to first frame delay below a defined threshold
-        std::map<std::string, double> delay_thresholds;
+        // REMOVED : this part is a duplication of : test-t2ff-pipeline.py and test-t2ff-sensor.py
+        /*std::map<std::string, double> delay_thresholds;
         // D400
         delay_thresholds["Accel"] = 1200; // ms
         delay_thresholds["Color"] = 1200; // ms
@@ -378,7 +379,7 @@ TEST_CASE("Extrinsic memory leak detection", "[live]")
             for (auto it = stream_.second.begin(); it != stream_.second.end(); ++it) {
                 CHECK(*it <= delay_thresholds[stream]);
             }
-        }
+        }*/
 
     }
 }
