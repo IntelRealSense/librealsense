@@ -1274,6 +1274,7 @@ const char* rs2_log_severity_to_string(rs2_log_severity severity)               
 const char* rs2_exception_type_to_string(rs2_exception_type type)                         { return librealsense::get_string(type);         }
 const char* rs2_playback_status_to_string(rs2_playback_status status)                     { return librealsense::get_string(status);       }
 const char* rs2_extension_type_to_string(rs2_extension type)                              { return librealsense::get_string(type);         }
+const char* rs2_matchers_to_string(rs2_matchers matcher)                                  { return librealsense::get_string(matcher);      }
 const char* rs2_frame_metadata_to_string(rs2_frame_metadata_value metadata)               { return librealsense::get_string(metadata);     }
 const char* rs2_extension_to_string(rs2_extension type)                                   { return rs2_extension_type_to_string(type);     }
 const char* rs2_frame_metadata_value_to_string(rs2_frame_metadata_value metadata)         { return rs2_frame_metadata_to_string(metadata); }

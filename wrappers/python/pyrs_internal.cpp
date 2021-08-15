@@ -117,7 +117,7 @@ void init_internal(py::module &m) {
     
     /** rs_internal.hpp **/
     // rs2::software_sensor
-    py::class_<rs2::software_sensor> software_sensor(m, "software_sensor");
+    py::class_<rs2::software_sensor, rs2::sensor> software_sensor(m, "software_sensor");
     software_sensor.def("add_video_stream", &rs2::software_sensor::add_video_stream, "Add video stream to software sensor",
                         "video_stream"_a, "is_default"_a=false)
         .def("add_motion_stream", &rs2::software_sensor::add_motion_stream, "Add motion stream to software sensor",
@@ -137,7 +137,7 @@ void init_internal(py::module &m) {
         .def("on_notification", &rs2::software_sensor::on_notification, "notif"_a);
 
     // rs2::software_device
-    py::class_<rs2::software_device> software_device(m, "software_device");
+    py::class_<rs2::software_device, rs2::device> software_device(m, "software_device");
     software_device.def(py::init<>())
         .def("add_sensor", &rs2::software_device::add_sensor, "Add software sensor with given name "
             "to the software device.", "name"_a)
@@ -149,9 +149,9 @@ void init_internal(py::module &m) {
         .def("register_info", &rs2::software_device::register_info, "Add a new camera info value, like serial number",
              "info"_a, "val"_a)
         .def("update_info", &rs2::software_device::update_info, "Update an existing camera info value, like serial number",
-             "info"_a, "val"_a);
-        //.def("create_matcher", &rs2::software_device::create_matcher, "Set the wanted matcher type that will "
-        //     "be used by the syncer", "matcher"_a) // TODO: bind rs2_matchers enum.
+             "info"_a, "val"_a)
+        .def("create_matcher", &rs2::software_device::create_matcher, "Set the wanted matcher type that will "
+            "be used by the syncer", "matcher"_a);
 
     // rs2::firmware_log_message
     py::class_<rs2::firmware_log_message> firmware_log_message(m, "firmware_log_message");
