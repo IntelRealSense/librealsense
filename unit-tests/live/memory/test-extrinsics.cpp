@@ -279,7 +279,9 @@ TEST_CASE("Extrinsic memory leak detection", "[live]")
 
             std::unique_lock<std::mutex> lock(mutex);
             auto pred = [&](){
-                return all_arrived && (new_frame.size() <= cfg_size);
+                if (new_frame.size() > cfg_size)
+                    std::cout << "The number of active streams :"<< new_frame.size() <<" doesn't match the number of total streams:"<< cfg_size << std::endl;
+                return all_arrived;
             };
             REQUIRE(cv.wait_for(lock, std::chrono::seconds(5), pred));
 
