@@ -432,6 +432,13 @@ try:
                 log.d( 'does not fit --tag:', test.config.tags )
                 continue
             #
+            if 'Windows' in test.config.flags and linux:
+                log.d( 'test has Windows flag and OS is Linux' )
+                continue
+            if 'Linux' in test.config.flags and not linux:
+                log.d( 'test has Linux flag and OS is Windows' )
+                continue
+            #
             available_tags.update( test.config.tags )
             tests.append( test )
             if list_only:
