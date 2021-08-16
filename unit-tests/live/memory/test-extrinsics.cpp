@@ -279,9 +279,9 @@ TEST_CASE("Extrinsic memory leak detection", "[live]")
 
             std::unique_lock<std::mutex> lock(mutex);
             auto pred = [&](){
-                return all_arrived;
+                return all_arrived && (new_frame.size() <= cfg_size);
             };
-            cv.wait_for(lock, std::chrono::seconds(5), pred);
+            REQUIRE(cv.wait_for(lock, std::chrono::seconds(5), pred));
 
             if (is_pipe)
             {
