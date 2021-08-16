@@ -215,7 +215,6 @@ public class SettingsActivity extends AppCompatActivity {
                     }
                     case INDEX_UPDATE_UNSIGNED: {
                         Intent intent = new Intent();
-                        intent.setFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION);
                         intent.setType("*/*");
                         intent.setAction(Intent.ACTION_OPEN_DOCUMENT);
 
