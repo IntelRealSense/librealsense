@@ -25,7 +25,7 @@
 #include <propkeydef.h>
 #include <comutil.h>
 #include <string>
-#include "../common/utilities/string/string-utilities.h"
+#include "../common/utilities/string/windows/windows.h"
 
 #pragma comment(lib, "Sensorsapi.lib")
 #pragma comment(lib, "PortableDeviceGuids.lib")
@@ -38,8 +38,6 @@ namespace librealsense
 {
     namespace platform
     {
-        using namespace utilities::string;
-
         class sensor_events : public ISensorEvents
         {
         public:
@@ -428,8 +426,8 @@ namespace librealsense
                                         {
                                             if (IsEqualPropertyKey(propertyKey, SENSOR_PROPERTY_DEVICE_PATH))
                                             {
-                                                info.device_path = win_to_utf( propertyValue.pwszVal );
-                                                info.id = win_to_utf( fName );
+                                                info.device_path = utilities::string::windows::win_to_utf( propertyValue.pwszVal );
+                                                info.id = utilities::string::windows::win_to_utf( fName );
 
                                                 uint16_t vid, pid, mi;
                                                 std::string uid, guid;
@@ -464,7 +462,7 @@ namespace librealsense
                                             }
                                             if (IsEqualPropertyKey(propertyKey, SENSOR_PROPERTY_SERIAL_NUMBER))
                                             {
-                                                auto str = win_to_utf( propertyValue.pwszVal );
+                                                auto str = utilities::string::windows::win_to_utf( propertyValue.pwszVal );
                                                 std::transform(begin(str), end(str), begin(str), ::tolower);
                                                 info.serial_number = str;
                                             }

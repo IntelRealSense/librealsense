@@ -35,7 +35,7 @@ The library will be compiled without the metadata support!\n")
 #include <vidcap.h>
 #include <ksmedia.h>    // Metadata Extension
 #include <Mferror.h>
-#include "../common/utilities/string/string-utilities.h"
+#include "../common/utilities/os/hresult.h"
 
 #pragma comment(lib, "Shlwapi.lib")
 #pragma comment(lib, "mf.lib")
@@ -55,8 +55,6 @@ namespace librealsense
 {
     namespace platform
     {
-        using namespace utilities::string;
-
 #ifdef METADATA_SUPPORT
 
 #pragma pack(push, 1)
@@ -731,7 +729,7 @@ namespace librealsense
 
                     WCHAR * wchar_name = nullptr; UINT32 length;
                     CHECK_HR(pDevice->GetAllocatedString(MF_DEVSOURCE_ATTRIBUTE_SOURCE_TYPE_VIDCAP_SYMBOLIC_LINK, &wchar_name, &length));
-                    auto name = win_to_utf(wchar_name);
+                    auto name = utilities::string::windows::win_to_utf(wchar_name);
                     CoTaskMemFree(wchar_name);
 
                     uint16_t vid, pid, mi; std::string unique_id, guid;
@@ -893,7 +891,7 @@ namespace librealsense
                     {
                         safe_release(pMediaType);
                         if (hr != MF_E_NO_MORE_TYPES) // An object ran out of media types to suggest therefore the requested chain of streaming objects cannot be completed
-                            LOG_HR(hr);
+                            CHECK_HR_STR_LOG("_reader->GetNativeMediaType(sIndex, k, &pMediaType.p)",hr);
 
                         break;
                     }

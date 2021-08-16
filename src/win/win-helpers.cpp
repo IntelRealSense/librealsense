@@ -18,7 +18,7 @@
 #include <string>
 #include <regex>
 #include <Sddl.h>
-#include "../common/utilities/string/string-utilities.h"
+#include "../common/utilities/string/windows/windows.h"
 
 #pragma comment(lib, "cfgmgr32.lib")
 #pragma comment(lib, "setupapi.lib")
@@ -45,8 +45,6 @@ namespace librealsense
 {
     namespace platform
     {
-        using namespace utilities::string;
-
         template<typename T>
         size_t vector_bytes_size(const typename std::vector<T>& vec)
         {
@@ -325,7 +323,7 @@ namespace librealsense
                 {
                     if (handle_node(targetKey, h, i)) // exit condition
                     {
-                        return std::make_tuple(win_to_utf(fullPath.c_str()) + " " + std::to_string(i),
+                        return std::make_tuple(utilities::string::windows::win_to_utf(fullPath.c_str()) + " " + std::to_string(i),
                                                 static_cast<usb_spec>(pConInfo->DeviceDescriptor.bcdUSB));
                     }
                 }
@@ -349,7 +347,7 @@ namespace librealsense
                 std::vector<WCHAR> buf( cch_required + 1 );
                 if( CM_Get_Device_ID( devinst, buf.data(), cch_required, 0 ) != CR_SUCCESS )
                     return false;
-                *p_out_str = win_to_utf( buf.data() );
+                *p_out_str = utilities::string::windows::win_to_utf( buf.data() );
             }
 
             return true;
@@ -468,7 +466,7 @@ namespace librealsense
             str.reserve( cb );
             if( CM_Get_DevNode_Property( get(), &property, &type, (PBYTE) str.data(), &cb, 0 ) != CR_SUCCESS )
                 return std::string();
-            return win_to_utf( str.data() );
+            return utilities::string::windows::win_to_utf( str.data() );
         }
 
 
@@ -558,7 +556,7 @@ namespace librealsense
                 LOG_ERROR("CM_Get_Device_ID failed");
                 return false;
             }
-            std::string parent_id = win_to_utf( pInstID2.data() );
+            std::string parent_id = utilities::string::windows::win_to_utf( pInstID2.data() );
             //LOG_DEBUG( "...  parent device id " << parent_id );
             uint16_t parent_vid, parent_pid, parent_mi;
             parse_usb_path_from_device_id( parent_vid, parent_pid, parent_mi, parent_uid, parent_id );  // may fail -- but we try to get the parent_uid
@@ -608,7 +606,7 @@ namespace librealsense
             uint16_t mi = 0;
             std::string guid;
             std::wstring ws(detail_data->DevicePath);
-            std::string path( win_to_utf( detail_data->DevicePath ));
+            std::string path(utilities::string::windows::win_to_utf( detail_data->DevicePath ));
 
             /* Parse the following USB path format = \?usb#vid_vvvv&pid_pppp&mi_ii#aaaaaaaaaaaaaaaa#{gggggggg-gggg-gggg-gggg-gggggggggggg} */
             parse_usb_path_multiple_interface(vid, pid, mi, parent_uid, path, guid);

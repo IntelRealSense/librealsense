@@ -7,7 +7,7 @@
 #include <functional>
 #include <comdef.h>
 #include <sstream>
-#include "../string/string-utilities.h"
+#include "../string/windows/windows.h"
 
 namespace utilities {
 namespace hresult {
@@ -17,7 +17,7 @@ namespace hresult {
         _com_error err(hr);
         std::wstring errorMessage = (err.ErrorMessage()) ? err.ErrorMessage() : L"";
         std::ostringstream ss;
-        ss << "HResult 0x" << std::hex << hr << ": \"" << string::win_to_utf(errorMessage.data()) << "\"";
+        ss << "HResult 0x" << std::hex << hr << ": \"" << string::windows::win_to_utf(errorMessage.data()) << "\"";
         return ss.str();
     }
 
@@ -31,14 +31,16 @@ namespace hresult {
         throw std::runtime_error( descr );                                                         \
     }
 
+#if BUILD_EASYLOGGINGPP
 #define CHECK_HR_STR_LOG( call, hr )                                                               \
     if( FAILED( hr ) )                                                                             \
     {                                                                                              \
         std::stringstream ss;                                                                      \
         ss << call << " returned: " << utilities::hresult::hr_to_string( hr );                     \
         std::string descr = ss.str();                                                              \
-        CLOG( DEBUG, "librealsense" ) << descr;                                                    \
+        LOG_DEBUG(descr);                                                                          \
     }
+#endif
 
 #define CHECK_HR( x ) CHECK_HR_STR_THROW( #x, x )
 
