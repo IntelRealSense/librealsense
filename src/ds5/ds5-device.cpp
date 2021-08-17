@@ -1022,7 +1022,12 @@ namespace librealsense
 
         if ((_device_capabilities & d400_caps::CAP_INTERCAM_HW_SYNC) == d400_caps::CAP_INTERCAM_HW_SYNC)
         {
-            if (_fw_version >= firmware_version("5.12.12.100") && (_device_capabilities & d400_caps::CAP_GLOBAL_SHUTTER) == d400_caps::CAP_GLOBAL_SHUTTER)
+            if (_fw_version >= firmware_version("5.13.0.0") && (_device_capabilities & d400_caps::CAP_GLOBAL_SHUTTER) == d400_caps::CAP_GLOBAL_SHUTTER)
+            {
+                depth_sensor.register_option(RS2_OPTION_INTER_CAM_SYNC_MODE,
+                    std::make_shared<external_sync_mode>(*_hw_monitor, &raw_depth_sensor, 4));
+            }
+            else if (_fw_version >= firmware_version("5.12.12.100") && (_device_capabilities & d400_caps::CAP_GLOBAL_SHUTTER) == d400_caps::CAP_GLOBAL_SHUTTER)
             {
                 depth_sensor.register_option(RS2_OPTION_INTER_CAM_SYNC_MODE,
                     std::make_shared<external_sync_mode>(*_hw_monitor, &raw_depth_sensor, 3));

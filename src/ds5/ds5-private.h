@@ -264,9 +264,10 @@ namespace librealsense
             INTERCAM_SYNC_MASTER     = 1,
             INTERCAM_SYNC_SLAVE      = 2,
             INTERCAM_SYNC_FULL_SLAVE = 3,
-            INTERCAM_SYNC_MAX = 260  // 4-258 are for Genlock with burst count of 1-255 frames for each trigger.
+            INTERCAM_SYNC_MAX = 514  // 4-258 are for Genlock with burst count of 1-255 frames for each trigger.
                                      // 259 for Sending two frame - First with laser ON, and the other with laser OFF.
                                      // 260 for Sending two frame - First with laser OFF, and the other with laser ON.
+                                     // 261-514 for Sending 2-255 frames with laser ON for each trigge.
         };
 
         enum class d400_caps : uint16_t
