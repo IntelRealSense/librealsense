@@ -379,7 +379,7 @@ namespace librealsense
         _range = [this]()
         {
             return option_range{ ds::inter_cam_sync_mode::INTERCAM_SYNC_DEFAULT,
-                                 static_cast<float>(_ver == 4 ? ds::inter_cam_sync_mode::INTERCAM_SYNC_MAX : (_ver == 3? 260 : (_ver == 2 ? 258 : 2))),
+                                 static_cast<float>(_ver == 3 ? ds::inter_cam_sync_mode::INTERCAM_SYNC_MAX : (_ver == 2 ? 258 : 2)),
                                  1,
                                  ds::inter_cam_sync_mode::INTERCAM_SYNC_DEFAULT};
         };
@@ -491,10 +491,8 @@ namespace librealsense
 
     const char* external_sync_mode::get_description() const
     {
-        if (_ver == 4)
+        if (_ver == 3)
             return "Inter-camera synchronization mode:\n\t0:Default, 1:Master, 2:Slave, 3:Full Salve,\n\t4-258:Genlock with burst count of 1-255 frames for each trigger,\n\t259 and 260 for two frames per trigger with laser ON-OFF and OFF-ON,\n\t261-514: dropping first frame and 2-255 frames with laser ON per trigger.";
-        else if (_ver == 3)
-            return "Inter-camera synchronization mode:\n\t0:Default, 1:Master, 2:Slave, 3:Full Salve,\n\t4-258:Genlock with burst count of 1-255 frames for each trigger,\n\t259 and 260 for two frames per trigger with laser ON-OFF and OFF-ON.";
         else if (_ver == 2)
             return "Inter-camera synchronization mode:\n\t0:Default, 1:Master, 2:Slave, 3:Full Salve,\n\t4-258:Genlock with burst count of 1-255 frames for each trigger";
         else
