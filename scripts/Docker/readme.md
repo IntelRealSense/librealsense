@@ -66,7 +66,7 @@ Remark: In each of the alternative ways, the aim of the lines:
         librealsense/librealsense rs-depth
     ```
     Then, the realsense depth will be displayed as in the following video:
-    ![](https://github.com/IntelRealSense/librealsense/blob/master/scripts/Docker/LRS_Docker_Depth_example.gif)
+    ![](LRS_Docker_Depth_example.gif)
 
     
 
