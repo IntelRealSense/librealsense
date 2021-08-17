@@ -5,7 +5,7 @@ See documentation for brainstem here:
 https://acroname.com/reference/python/index.html
 """
 
-from rspy import log
+import log  # ('from rspy', but if you run this .py by itself it doesn't know about rspy)
 
 
 if __name__ == '__main__':
