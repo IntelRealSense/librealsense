@@ -112,7 +112,7 @@ namespace librealsense
     }
     void frame_source::invoke_callback(frame_holder frame) const
     {
-        if (frame)
+        if (frame && frame.frame && frame.frame->get_owner())
         {
             auto callback = frame.frame->get_owner()->begin_callback();
             try
