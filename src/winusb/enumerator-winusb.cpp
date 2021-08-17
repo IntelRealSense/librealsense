@@ -8,7 +8,7 @@
 #include "usb/usb-enumerator.h"
 #include "device-winusb.h"
 #include "interface-winusb.h"
-#include "win/win-helpers.h"
+#include "../common/utilities/os/hresult.h"
 #include "types.h"
 
 #include <atlstr.h>
@@ -28,6 +28,7 @@ namespace librealsense
 {
     namespace platform
     {
+
         //https://docs.microsoft.com/en-us/windows-hardware/drivers/usbcon/supported-usb-classes#microsoft-provided-usb-device-class-drivers
         const std::map<std::string, usb_class> guids = {
             {"{175695cd-30d9-4f87-8be3-5a8270f49a31}", RS2_USB_CLASS_VENDOR_SPECIFIC}, //Ivcam HWM
