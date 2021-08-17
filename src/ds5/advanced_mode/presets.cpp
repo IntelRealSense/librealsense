@@ -205,7 +205,7 @@ namespace librealsense
         p.ae.meanIntensitySetPoint = 1000;
         p.census.uDiameter = 9;
         p.census.vDiameter = 9;
-        p.depth_exposure.exposure = 32000.f
+        p.depth_exposure.exposure = 32000.f;
         p.depth_auto_exposure.auto_exposure = 1;
         p.depth_gain.gain = 16.f;
         p.amplitude_factor.amplitude = 0.f;
