@@ -10,13 +10,12 @@
 
 namespace utilities {
 namespace string {
-namespace windows
-{
+namespace windows {
 
         inline std::string win_to_utf(const WCHAR * s)
         {
             auto len = WideCharToMultiByte(CP_UTF8, 0, s, -1, nullptr, 0, nullptr, nullptr);
-            std::stringstream ss;
+            std::ostringstream ss;
 
             if (len == 0)
             {

@@ -25,7 +25,7 @@ namespace hresult {
 #define CHECK_HR_STR( call, hr )                                                                   \
     if( FAILED( hr ) )                                                                             \
     {                                                                                              \
-        std::stringstream ss;                                                                      \
+        std::ostringstream ss;                                                                      \
         ss << call << " returned: " << utilities::hresult::hr_to_string( hr );                     \
         std::string descr = ss.str();                                                              \
         throw std::runtime_error( descr );                                                         \
@@ -35,7 +35,7 @@ namespace hresult {
 #define LOG_HR_STR( call, hr )                                                                     \
     if( FAILED( hr ) )                                                                             \
     {                                                                                              \
-        std::stringstream ss;                                                                      \
+        std::ostringstream ss;                                                                      \
         ss << call << " returned: " << utilities::hresult::hr_to_string( hr );                     \
         std::string descr = ss.str();                                                              \
         LOG_DEBUG(descr);                                                                          \
