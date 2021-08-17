@@ -47,13 +47,8 @@ set(PYRS_CPP
     pyrs_sensor.cpp
     pyrs_types.cpp
     pyrsutil.cpp
+	../../common/metadata-helper.cpp
 )
-
-if(WIN32)
-    list(APPEND PYRS_CPP
-        ../../common/metadata-helper.cpp
-    )
-endif()
 
 pybind11_add_module(pyrealsense2 SHARED python.hpp ${PYRS_CPP})
 
