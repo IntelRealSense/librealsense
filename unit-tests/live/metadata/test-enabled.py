@@ -11,7 +11,7 @@ from rspy import test, log
 
 test.start("checking metadata is enabled")
 dev = test.find_first_device_or_exit()
-meta = dev.is_metadata_enabled()
-test.check(meta)
+test.check( dev.is_metadata_enabled() )
+
 test.finish()
 test.print_results_and_exit()
