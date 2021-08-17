@@ -67,13 +67,6 @@ namespace librealsense
                                               const firmware_version& fw_version)
     {
         auto p = get_all();
-        res_type res;
-
-        // configuration is empty before first streaming - so set default res
-        if (configuration.empty())
-            res = low_resolution;
-        else
-            res = get_res_type(configuration.front().width, configuration.front().height);
 
         switch (preset)
         {
@@ -89,8 +82,10 @@ namespace librealsense
             case ds::RS435_RGB_PID:
             case ds::RS435I_PID:
             case ds::RS465_PID:
-            case ds::RS455_PID:
                 default_430(p);
+                break;
+            case ds::RS455_PID:
+                default_450(p);
                 break;
             case ds::RS405U_PID:
                 default_405u(p);
@@ -117,46 +112,13 @@ namespace librealsense
                 p.depth_table.depthUnits = 100; // 0.1mm
             break;
         case RS2_RS400_VISUAL_PRESET_HIGH_ACCURACY:
-            switch (res)
-            {
-            case low_resolution:
-                low_res_high_accuracy(p);
-                break;
-            case medium_resolution:
-                mid_res_high_accuracy(p);
-                break;
-            case high_resolution:
-                high_res_high_accuracy(p);
-                break;
-            }
+            high_accuracy(p);
             break;
         case RS2_RS400_VISUAL_PRESET_HIGH_DENSITY:
-            switch (res)
-            {
-            case low_resolution:
-                low_res_high_density(p);
-                break;
-            case medium_resolution:
-                mid_res_high_density(p);
-                break;
-            case high_resolution:
-                high_res_high_density(p);
-                break;
-            }
+            high_density(p);
             break;
         case RS2_RS400_VISUAL_PRESET_MEDIUM_DENSITY:
-            switch (res)
-            {
-            case low_resolution:
-                low_res_mid_density(p);
-                break;
-            case medium_resolution:
-                mid_res_mid_density(p);
-                break;
-            case high_resolution:
-                high_res_mid_density(p);
-                break;
-            }
+            mid_density(p);
             break;
         case RS2_RS400_VISUAL_PRESET_REMOVE_IR_PATTERN:
         {
