@@ -29,10 +29,6 @@
 #include "utilities/os/hresult.h"
 #endif
 
-#if BUILD_EASYLOGGINGPP
-#include "../third-party/easyloggingpp/src/easylogging++.h"
-#endif // BUILD_EASYLOGGINGPP
-
 #if (defined(_WIN32) || defined(_WIN64))
 #include "ShellAPI.h"
 #endif
@@ -253,7 +249,6 @@ Some auxillary functionalities might be affected. Please report this message if 
         std::string res;
 #ifdef _WIN32
 
-        using namespace utilities::hresult;
         if (f == temp_folder)
         {
             TCHAR buf[MAX_PATH];

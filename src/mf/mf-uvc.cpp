@@ -267,7 +267,7 @@ namespace librealsense
                 reinterpret_cast<void **>(&ks_topology_info)));
 
             DWORD nNodes=0;
-            CHECK_HR_STR_LOG("get_NumNodes", ks_topology_info->get_NumNodes(&nNodes));
+            LOG_HR_STR("get_NumNodes", ks_topology_info->get_NumNodes(&nNodes));
 
             CComPtr<IUnknown> unknown = nullptr;
             CHECK_HR(ks_topology_info->CreateNodeInstance(xu.node, IID_IUnknown,
@@ -891,7 +891,7 @@ namespace librealsense
                     {
                         safe_release(pMediaType);
                         if (hr != MF_E_NO_MORE_TYPES) // An object ran out of media types to suggest therefore the requested chain of streaming objects cannot be completed
-                            CHECK_HR_STR_LOG("_reader->GetNativeMediaType(sIndex, k, &pMediaType.p)",hr);
+                            LOG_HR_STR("_reader->GetNativeMediaType(sIndex, k, &pMediaType.p)",hr);
 
                         break;
                     }
@@ -1003,7 +1003,7 @@ namespace librealsense
                                 const auto timeout_ms = RS2_DEFAULT_TIMEOUT;
                                 if (_has_started.wait(timeout_ms))
                                 {
-                                    CHECK_HR_STR_LOG("_reader->ReadSample(...)", _readsample_result);
+                                    LOG_HR_STR("_reader->ReadSample(...)", _readsample_result);
                                 }
                                 else
                                 {

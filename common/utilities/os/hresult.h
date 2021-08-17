@@ -7,7 +7,7 @@
 #include <functional>
 #include <comdef.h>
 #include <sstream>
-#include "../string/windows/windows.h"
+#include "../string/windows.h"
 
 namespace utilities {
 namespace hresult {
@@ -22,7 +22,7 @@ namespace hresult {
     }
 
 
-#define CHECK_HR_STR_THROW( call, hr )                                                             \
+#define CHECK_HR_STR( call, hr )                                                                   \
     if( FAILED( hr ) )                                                                             \
     {                                                                                              \
         std::stringstream ss;                                                                      \
@@ -31,8 +31,8 @@ namespace hresult {
         throw std::runtime_error( descr );                                                         \
     }
 
-#if BUILD_EASYLOGGINGPP
-#define CHECK_HR_STR_LOG( call, hr )                                                               \
+
+#define LOG_HR_STR( call, hr )                                                                     \
     if( FAILED( hr ) )                                                                             \
     {                                                                                              \
         std::stringstream ss;                                                                      \
@@ -40,12 +40,9 @@ namespace hresult {
         std::string descr = ss.str();                                                              \
         LOG_DEBUG(descr);                                                                          \
     }
-#endif
 
-#define CHECK_HR( x ) CHECK_HR_STR_THROW( #x, x )
+#define CHECK_HR( x ) CHECK_HR_STR( #x, x )
+#define LOG_HR( x ) LOG_HR_STR( #x, x )
 
-#if BUILD_EASYLOGGINGPP
-    #define LOG_HR( x ) CHECK_HR_STR_LOG( #x, x )
-#endif
 }
 }

@@ -18,7 +18,7 @@
 #include <string>
 #include <regex>
 #include <Sddl.h>
-#include "../common/utilities/string/windows/windows.h"
+#include "../common/utilities/string/windows.h"
 
 #pragma comment(lib, "cfgmgr32.lib")
 #pragma comment(lib, "setupapi.lib")

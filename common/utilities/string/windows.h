@@ -3,8 +3,6 @@
 
 #pragma once
 
-#include <algorithm>
-#include <string>
 #include <sstream>
 
 #ifdef WIN32
@@ -37,8 +35,7 @@ namespace windows
 
             return buffer;
         }
-#endif
-
-}  //windows
+}  // namespace windows
 }  // namespace string
 }  // namespace utilities
+#endif
