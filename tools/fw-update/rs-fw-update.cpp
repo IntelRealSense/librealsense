@@ -272,6 +272,12 @@ int main(int argc, char** argv) try
         return EXIT_FAILURE;
     }
 
+    if ( devs.size() == 1 && devs[0].is<rs2::update_device>() )
+    {
+        std::cout << std::endl << "device is in recovery mode, use -r to recover" << std::endl << std::endl;
+        return EXIT_FAILURE;
+    }
+
     bool device_found = false;
 
     for (auto&& d : devs)
