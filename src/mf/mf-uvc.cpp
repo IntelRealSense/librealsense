@@ -99,10 +99,15 @@ namespace librealsense
 
                     if (nullptr == pMetadata) // Bail, no data.
                         return false;
-
-                    if (pMetadata->MetadataId != MetadataId_UsbVideoHeader) // Wrong metadata type, bail.
+                    try
+                    {
+                        if (pMetadata->MetadataId != MetadataId_UsbVideoHeader) // Wrong metadata type, bail.
+                            return false;
+                    }
+                    catch (...)
+                    {
                         return false;
-
+                    }
                     // Microsoft converts the standard UVC (12-byte) header into MS proprietary 40-bytes struct
                     // Therefore we revert it to the original structure for uniform handling
                     static const uint8_t md_lenth_max = 0xff;
