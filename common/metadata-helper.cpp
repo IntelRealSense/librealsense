@@ -133,7 +133,13 @@ namespace rs2
                         {
                             std::wstring suffix = achKey;
                             device_id rdid;
-                            auto a = std::string(suffix.begin(), suffix.end());
+
+                            // converting suffix to string
+                            std::string a(suffix.length(), 0);
+                            std::transform(suffix.begin(), suffix.end(), a.begin(), [](wchar_t c) {
+                                return (char)c;
+                                });
+
                             if (parse_device_id(a, &rdid))
                             {
                                 for (auto&& did : kvp.second)
