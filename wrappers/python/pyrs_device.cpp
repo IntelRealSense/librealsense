@@ -60,7 +60,7 @@ void init_device(py::module &m) {
 
             if (!depth_sens.supports(RS2_CAMERA_INFO_PHYSICAL_PORT))
             {
-                throw librealsense::invalid_value_exception("Device does not support checking metadata with thi API");
+                throw librealsense::invalid_value_exception("Device does not support checking metadata with this API");
             }
             std::string id = depth_sens.get_info(RS2_CAMERA_INFO_PHYSICAL_PORT);
 

@@ -16,6 +16,7 @@
 #include <memory>
 
 #include <librealsense2/rs.hpp>
+#include "utilities/string/windows.h"
 
 #define MAX_KEY_LENGTH 255
 #define MAX_VALUE_NAME 16383
@@ -134,11 +135,7 @@ namespace rs2
                             std::wstring suffix = achKey;
                             device_id rdid;
 
-                            // converting suffix to string
-                            std::string a(suffix.length(), 0);
-                            std::transform(suffix.begin(), suffix.end(), a.begin(), [](wchar_t c) {
-                                return (char)c;
-                                });
+                            std::string a = utilities::string::windows::win_to_utf( suffix.c_str() );
 
                             if (parse_device_id(a, &rdid))
                             {
