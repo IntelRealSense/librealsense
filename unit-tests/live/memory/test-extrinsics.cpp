@@ -177,7 +177,8 @@ TEST_CASE("Extrinsic memory leak detection", "[live]")
             for (auto& profile : res.second)
             {
                 auto fps = profile.fps;
-                if (device_type == "D400" && profile.stream == RS2_STREAM_ACCEL) fps = 250;
+                if (profile.stream == RS2_STREAM_ACCEL || profile.stream == RS2_STREAM_GYRO) continue; // remove accel & gyro because they stuck other streams
+                //if (device_type == "D400" && profile.stream == RS2_STREAM_ACCEL) fps = 250;
                 cfg.enable_stream(profile.stream, profile.index, profile.width, profile.height, profile.format, fps); // all streams in cfg
                 cfg_size += 1;
                 // create stream profiles data structure to open streams per sensor when testing in sensor mode
@@ -187,7 +188,7 @@ TEST_CASE("Extrinsic memory leak detection", "[live]")
                     for (auto& sp : stream_profiles)
                     {
                         if (!(sp.stream_type() == profile.stream && sp.fps() == fps && sp.stream_index() == profile.index && sp.format() == profile.format)) continue;
-                        if (sp.stream_type() == RS2_STREAM_ACCEL || sp.stream_type() == RS2_STREAM_GYRO) sensor_stream_profiles[2].push_back(sp);
+                        //if (sp.stream_type() == RS2_STREAM_ACCEL || sp.stream_type() == RS2_STREAM_GYRO) sensor_stream_profiles[2].push_back(sp);
                         auto vid = sp.as<rs2::video_stream_profile>();
                         auto h = vid.height();
                         auto w = vid.width();
@@ -221,21 +222,6 @@ TEST_CASE("Extrinsic memory leak detection", "[live]")
                     new_frame[stream_type] = true;
                 }
                 new_frame[stream_type] += 1;
-                if (new_frame.size() == cfg_size)
-                {
-                    int completed = 0;
-                    for (auto it = new_frame.begin(); it != new_frame.end(); it++)
-                    {
-                        if (it->second >= INNER_ITERATIONS_PER_CONFIG)
-                            completed++;
-                    }
-                    // if all streams received more than 20 frames, stop waiting
-                    if (completed == cfg_size)
-                    {
-                        all_arrived = true;
-                        cv.notify_all();
-                    }
-                }
             };
             auto frame_callback = [&](const rs2::frame& f)
             {
@@ -252,6 +238,21 @@ TEST_CASE("Extrinsic memory leak detection", "[live]")
                 {
                     // Stream that bypass synchronization (such as IMU) will produce single frames
                     process_frame(f);
+                }
+                if (new_frame.size() == cfg_size)
+                {
+                    int completed = 0;
+                    for (auto it = new_frame.begin(); it != new_frame.end(); it++)
+                    {
+                        if (it->second >= INNER_ITERATIONS_PER_CONFIG)
+                            completed++;
+                    }
+                    // if all streams received more than 20 frames, stop waiting
+                    if (completed == cfg_size)
+                    {
+                        all_arrived = true;
+                        cv.notify_all();
+                    }
                 }
             };
             if (is_pipe)
