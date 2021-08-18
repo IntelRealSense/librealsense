@@ -9,6 +9,45 @@
 using namespace rs2;
 
 
+inline std::string repr( rs2::device const & self )
+{
+    // same as Python device repr() in pyrs_device.cpp
+    std::ostringstream ss;
+    ss << "<device: ";
+    if( ! self )
+        ss << "NULL";
+    else
+    {
+        ss << self.get_info( RS2_CAMERA_INFO_NAME );
+        if( self.supports( RS2_CAMERA_INFO_SERIAL_NUMBER ) )
+            ss << " (S/N: " << self.get_info( RS2_CAMERA_INFO_SERIAL_NUMBER );
+        else
+            ss << " (FW update id: " << self.get_info( RS2_CAMERA_INFO_FIRMWARE_UPDATE_ID );
+        if( self.supports( RS2_CAMERA_INFO_FIRMWARE_VERSION ) )
+            ss << "  FW: " << self.get_info( RS2_CAMERA_INFO_FIRMWARE_VERSION );
+        if( self.supports( RS2_CAMERA_INFO_CAMERA_LOCKED )
+            && strcmp( "YES", self.get_info( RS2_CAMERA_INFO_CAMERA_LOCKED ) ) )
+            ss << "  UNLOCKED";
+        if( self.supports( RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR ) )
+            ss << "  on USB" << self.get_info( RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR );
+        ss << ")";
+    }
+    ss << ">";
+    return ss.str();
+}
+
+
+inline std::string repr( rs2::device_list const & list )
+{
+    std::ostringstream ss;
+    ss << '[';
+    for( auto && dev : list )
+        ss << repr( dev );
+    ss << ']';
+    return ss.str();
+}
+
+
 inline rs2::device find_first_device_or_exit()
 {
     rs2::context ctx;
@@ -18,7 +57,9 @@ inline rs2::device find_first_device_or_exit()
         std::cout << "No device was found" << std::endl;
         exit( 1 );
     }
-    return devices_list[0];
+    rs2::device dev = devices_list[0];
+    test::log.d( "found", repr(dev) );
+    return dev;
 }
 
 inline rs2::device_list find_devices_by_product_line_or_exit( int product )
@@ -31,7 +72,7 @@ inline rs2::device_list find_devices_by_product_line_or_exit( int product )
                   << std::endl;
         exit( 1 );
     }
-
+    test::log.d( "found", devices_list.size(), "devices:", repr( devices_list ));
     return devices_list;
 }
 
@@ -65,6 +106,7 @@ inline rs2::device find_first_device_by_name_or_exit( const std::string & dev_na
 
     if( dev_iter != devices_list.end() )
     {
+        test::log.d( "found", repr( *dev_iter ) );
         return *dev_iter;
     }
 

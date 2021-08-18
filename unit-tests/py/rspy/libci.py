@@ -428,6 +428,7 @@ class ExeTest( Test ):
             if log.is_debug_on():
                 cmd += ['-d', 'yes']  # show durations for each test-case
                 # cmd += ['--success']  # show successful assertions in output
+                cmd += ['--debug']
             # if log.is_color_on():
             #    cmd += ['--use-colour', 'yes']
             if self.config.context:
