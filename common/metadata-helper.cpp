@@ -195,7 +195,7 @@ namespace rs2
                 return false;
             }
 
-            return result;
+            return bool(result);
         }
 
         bool elevate_to_admin()
