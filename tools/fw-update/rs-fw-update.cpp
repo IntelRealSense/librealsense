@@ -154,6 +154,14 @@ int main(int argc, char** argv) try
 
     cmd.parse(argc, argv);
 
+    if (!list_devices_arg.isSet() && !recover_arg.isSet() && !unsigned_arg.isSet() &&
+        !backup_arg.isSet() && !file_arg.isSet() && !serial_number_arg.isSet())
+    {
+        std::cout << std::endl << "nothing to do, run again with -h for help" << std::endl;
+        list_devices(ctx);
+        return EXIT_SUCCESS;
+    }
+
     bool recovery_request = recover_arg.getValue();
 
     if (list_devices_arg.isSet())
@@ -275,6 +283,12 @@ int main(int argc, char** argv) try
     if ( devs.size() == 1 && devs[0].is<rs2::update_device>() )
     {
         std::cout << std::endl << "device is in recovery mode, use -r to recover" << std::endl << std::endl;
+        return EXIT_FAILURE;
+    }
+
+    if (devs.size() == 0)
+    {
+        std::cout << std::endl << "no devices were found" << std::endl << std::endl;
         return EXIT_FAILURE;
     }
 
