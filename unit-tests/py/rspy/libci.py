@@ -51,7 +51,7 @@ def run( cmd, stdout = None, timeout = 200, append = False ):
             if append:
                 handle = open( stdout, "a" )
                 handle.write(
-                    "\n-----------------------------------TEST-SEPARATOR-----------------------------------\n\n" )
+                    "\n----------TEST-SEPARATOR----------\n\n" )
                 handle.flush()
             else:
                 handle = open( stdout, "w" )

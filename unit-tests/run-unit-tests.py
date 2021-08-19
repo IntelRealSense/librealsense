@@ -235,9 +235,10 @@ def check_log_for_fails( path_to_log, testname, configuration = None, repetition
     if path_to_log is None:
         return False
     results = None
-    for ctx in file.grep( r'^test cases:\s*(\d+) \|\s*(\d+) (passed|failed)|^-{35}TEST-SEPARATOR-{35}$', path_to_log ):
+    for ctx in file.grep( r'^test cases:\s*(\d+) \|\s*(\d+) (passed|failed)|^----------TEST-SEPARATOR----------$',
+                          path_to_log ):
         m = ctx['match']
-        if m.string == "-----------------------------------TEST-SEPARATOR-----------------------------------":
+        if m.string == "----------TEST-SEPARATOR----------":
             results = None
         else:
             results = m
