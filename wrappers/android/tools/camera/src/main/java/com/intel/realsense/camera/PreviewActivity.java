@@ -102,7 +102,7 @@ public class PreviewActivity extends AppCompatActivity {
             mGLSurfaceView.close();
         }
 
-        // setup preview layout labdscape or portrait automatically depends on orientation
+        // setup preview layout landscape or portrait automatically depends on orientation
         setContentView(R.layout.activity_preview);
 
         // update layout controls

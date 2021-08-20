@@ -32,9 +32,11 @@
             android:theme="@style/AppTheme.NoActionBar" />
         <activity
             android:name=".RecordingActivity"
+            android:configChanges="orientation|screenSize"
             android:theme="@style/AppTheme.NoActionBar" />
         <activity
             android:name=".PlaybackActivity"
+            android:configChanges="orientation|screenSize"
             android:theme="@style/AppTheme.NoActionBar" />
         <activity
             android:name=".FileBrowserActivity"

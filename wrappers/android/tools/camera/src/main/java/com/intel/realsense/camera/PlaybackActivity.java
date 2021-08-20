@@ -3,6 +3,7 @@ package com.intel.realsense.camera;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.res.Configuration;
 import android.graphics.Color;
 import android.graphics.Rect;
 import android.os.Bundle;
@@ -43,6 +44,29 @@ public class PlaybackActivity extends AppCompatActivity {
         setContentView(R.layout.activity_playback);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
+        setup_controls();
+    }
+
+    @Override
+    public void onConfigurationChanged(Configuration newConfig) {
+        super.onConfigurationChanged(newConfig);
+
+        // handling device orientation changes to avoid interruption during playback
+
+        // cleanup previous surface
+        if(mGLSurfaceView != null) {
+            mGLSurfaceView.clear();
+            mGLSurfaceView.close();
+        }
+
+        // setup playback layout landscape or portrait automatically depends on orientation
+        setContentView(R.layout.activity_playback);
+
+        // setup layout controls
+        setup_controls();
+    }
+
+    private void setup_controls() {
         mGLSurfaceView = findViewById(R.id.playbackGlSurfaceView);
         m3dButton = findViewById(R.id.playback_3d_button);
         m3dButton.setOnClickListener(new View.OnClickListener() {
