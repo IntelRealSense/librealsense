@@ -72,7 +72,9 @@ Note that this method provides binary installation compiled using the `-DFORCE_R
 
 4. Reconnect the RealSense device and run the following to verify the installation: `realsense-viewer`
 
-![d400](./img/jetson-d400.png) ![t265](./img/jetson-t265.png)
+![d400](./img/jetson-d400.png)
+
+![t265](./img/jetson-t265.png)
 
 You can also double-TAB after typing `rs-` to see the full list of SDK examples.
 
