@@ -68,7 +68,7 @@ Note that this method provides binary installation compiled using the `-DFORCE_R
 
     ![installation](./img/install-jetson.png)
 
-    > With `librealsense2-dev` package installed, you can compile an application with **librealsense** using `g++ -std=c++11 filename.cpp -lrealsense2` or an IDE of your choice. To get started with RealSense using **CMake** check out [librealsense/examples/cmake](https://github.com/IntelRealSense/librealsense/tree/master/examples/cmake)
+    With `librealsense2-dev` package installed, you can compile an application with **librealsense** using `g++ -std=c++11 filename.cpp -lrealsense2` or an IDE of your choice. To get started with RealSense using **CMake** check out [librealsense/examples/cmake](https://github.com/IntelRealSense/librealsense/tree/master/examples/cmake)
 
 4. Reconnect the RealSense device and run the following to verify the installation: `realsense-viewer`
 
