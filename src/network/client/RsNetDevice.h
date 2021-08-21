@@ -45,6 +45,8 @@ private:
             }
         }
 
+        if (s == m_sensors.end()) throw std::runtime_error("Error setting options: wrong sensor.");
+
         try {
             LOG_DEBUG("Setting option " << (rs2_option)option.index << " #" << std::dec << option.index << " to " << option.value); // << ", old value is " << m_sensor_options[sensor_num][option.index].value);
             (*s)->set_option((rs2_option)option.index, option.value, option.range, option.ro);

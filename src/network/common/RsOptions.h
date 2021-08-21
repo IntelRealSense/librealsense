@@ -183,7 +183,7 @@ public:
                 std::string name = m_sensor_options[sensor_index].get_name();
                 if (!name.empty()) {
                     if (name.compare(sensor_name) == 0) break;
-                } else throw std::runtime_error("Error in server response: sensor.");
+                } else throw std::runtime_error("Error in server response: wrong sensor.");
             }
 
             while (!sensor.empty()) {
