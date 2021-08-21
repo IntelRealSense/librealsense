@@ -218,17 +218,6 @@ void server::doFW_Upgrade() {
     exit(EXIT_SUCCESS);
 }
 
-void server::doOptions() {
-    LOG_INFO("Options synchronization thread started.");
-
-    while (1) {
-        if (m_options_list.remote_changes()) m_options_list.set_dev();
-        else m_options_list.scan(m_dev.query_sensors(), true);
-
-        std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-    }
-}
-
 void server::doHTTP() {
     LOG_INFO("Internal HTTP server started.");
 
@@ -275,7 +264,7 @@ void server::doHTTP() {
 
     // Return options
     svr.Get("/options", [&](const httplib::Request &, httplib::Response &res) {
-        std::string s = m_options_list.serialize_full();
+        std::string s = m_opts.get_opt_str();
         res.set_content(s, "text/plain");
     });
 
@@ -292,7 +281,7 @@ void server::doHTTP() {
                 });
                 res.set_content(options, "text/plain");
 
-                m_options_list.parse(options);
+                m_opts.set_opt_str(options);
             }
         }
     );
@@ -356,7 +345,7 @@ void server::doHTTP() {
     svr.listen("0.0.0.0", 8080);
 }
 
-server::server(rs2::device dev, std::string addr, int port) : m_dev(dev), m_progress("not active"), m_options_list(dev)
+server::server(rs2::device dev, std::string addr, int port) : m_dev(dev), m_progress("not active")
 {
     ReceivingInterfaceAddr = inet_addr(addr.c_str());
 
@@ -474,7 +463,7 @@ server::server(rs2::device dev, std::string addr, int port) : m_dev(dev), m_prog
         }
     }
 
-    m_options = std::thread( [this](){ doOptions(); } ); 
+    m_opts.init(m_dev.query_sensors());
     
     m_httpd = std::thread( [this](){ doHTTP(); } ); 
 }

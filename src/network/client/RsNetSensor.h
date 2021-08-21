@@ -92,8 +92,6 @@ public:
         try {
             if (ro) {
                 m_sw_sensor->set_read_only_option(opt, val);
-            } else {
-                m_sw_sensor->set_option(opt, val);
             }
         } catch (const rs2::error& e) {
             // Some options can only be set while the camera is streaming,

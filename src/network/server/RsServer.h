@@ -15,6 +15,45 @@
 #include "RsNetCommon.h"
 #include "RsOptions.h"
 
+class RsServerOptions : public RsOptions {
+public:
+    RsServerOptions() : RsOptions() {};
+    virtual ~RsServerOptions() {};
+
+    void init(std::vector<rs2::sensor> sensors) {
+        m_sensors = sensors;
+
+        for (int sensor_num = 0; sensor_num < m_sensors.size(); ++sensor_num) {
+            m_sensor_options[sensor_num].init(m_sensors[sensor_num]);
+        }
+    };
+
+private:
+    virtual void set_opt(std::string sensor_name, RsOption option) {
+        // find the sensor
+        auto s = m_sensors.begin();
+        for (; s != m_sensors.end(); s++) {
+            std::string sname(s->supports(RS2_CAMERA_INFO_NAME) ? s->get_info(RS2_CAMERA_INFO_NAME) : "Unknown");
+            if (sname.compare(sensor_name) == 0) {
+                break;
+            }
+        }
+
+        try {
+            if (!s->is_option_read_only((rs2_option)option.index)) {
+                LOG_INFO("Setting option " << (rs2_option)option.index << " #" << std::dec << option.index << " to " << option.value);
+                s->set_option((rs2_option)option.index, option.value);
+            }
+        } catch(...) {
+            LOG_ERROR("Failed to set option " << (rs2_option)option.index << " #" << std::dec << option.index << " for sensor " << sensor_name << " to " << option.value
+                << ". Range is [" << option.range.min << ", " << option.range.max << "], default value is " << option.range.def << ", step is " << option.range.step);
+        }
+    };
+
+private:
+    std::vector<rs2::sensor> m_sensors;
+};
+
 class server
 {
 public:
@@ -44,7 +83,5 @@ private:
     std::string m_sensors_desc; // sensors description
     std::stringstream m_extrinsics;   // streams extrinsics
 
-    std::thread m_options;
-    void doOptions();
-    RsOptionsList m_options_list;
+    RsServerOptions m_opts;
 };

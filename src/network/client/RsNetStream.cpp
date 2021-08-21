@@ -48,7 +48,9 @@ bool rs_inframe::add_chunk(uint8_t* chunk) {
     if (ch->offset < m_offset) return false; // received the chunk from the new frame
 
     // set the metadata
-    meta_attrs.emplace(std::make_pair(ch->meta_id, (rs2_metadata_type)(ch->meta_data)));
+    if (ch->meta_id < RS2_FRAME_METADATA_COUNT) {
+        meta_attrs.emplace(std::make_pair(ch->meta_id, (rs2_metadata_type)(ch->meta_data)));
+    }
 
     m_total_size += ch->size;
     m_offset      = ch->offset;
