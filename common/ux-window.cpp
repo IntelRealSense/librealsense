@@ -513,7 +513,7 @@ namespace rs2
         ImGui::Begin("Splash Screen Banner", nullptr, flags);
         ImGui::PushFont(_font_18);
 
-        ImGui::Text("%s  Loading %s...", hourglass.c_str(), _title_str.c_str());
+        ImGui::Text("%s   Loading %s...", hourglass.c_str(), _title_str.c_str());
     }
 
     // Check that the graphic subsystem is valid and start a new frame
