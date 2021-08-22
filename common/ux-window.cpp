@@ -484,7 +484,7 @@ namespace rs2
         if (_query_devices && do_200ms)
         {
             _missing_device = _ctx.query_devices(RS2_PRODUCT_LINE_ANY_INTEL).size() == 0;
-            _hourglass_index = (_hourglass_index + 1) % 5;
+            _hourglass_index = (_hourglass_index + 1) % 4;
 
             if (!_missing_device)
             {
@@ -513,7 +513,7 @@ namespace rs2
         ImGui::Begin("Splash Screen Banner", nullptr, flags);
         ImGui::PushFont(_font_18);
 
-        ImGui::Text("%s   Loading %s...", hourglass.c_str(), _title_str.c_str());
+        ImGui::Text("%s  Loading %s...", hourglass.c_str(), _title_str.c_str());
     }
 
     // Check that the graphic subsystem is valid and start a new frame
