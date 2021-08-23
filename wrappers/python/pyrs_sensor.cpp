@@ -78,7 +78,22 @@ void init_sensor(py::module &m) {
         .def(BIND_DOWNCAST(sensor, calibrated_sensor))
         .def(BIND_DOWNCAST(sensor, wheel_odometer))
         .def(BIND_DOWNCAST(sensor, max_usable_range_sensor))
-        .def(BIND_DOWNCAST(sensor, debug_stream_sensor));
+        .def(BIND_DOWNCAST(sensor, debug_stream_sensor))
+        .def_property_readonly( "name",
+                                []( const rs2::sensor & self ) {
+                                    std::string name;
+                                    if( self.supports( RS2_CAMERA_INFO_NAME ) )
+                                        name = self.get_info( RS2_CAMERA_INFO_NAME );
+                                    return name;
+                                } )
+        .def( "__repr__", []( const rs2::sensor & self ) {
+            std::ostringstream ss;
+            ss << "<" SNAME ".sensor";
+            if( self.supports( RS2_CAMERA_INFO_NAME ) )
+                ss << ": \"" << self.get_info( RS2_CAMERA_INFO_NAME ) << "\"";
+            ss << ">";
+            return ss.str();
+        } );
     // rs2::sensor_from_frame [frame.def("get_sensor", ...)?
     // rs2::sensor==sensor?
 

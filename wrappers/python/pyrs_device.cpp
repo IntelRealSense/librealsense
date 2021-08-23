@@ -38,7 +38,7 @@ void init_device(py::module &m) {
         .def(BIND_DOWNCAST(device, calibration_change_device))
         .def(BIND_DOWNCAST(device, firmware_logger))
         .def("__repr__", [](const rs2::device &self) {
-            std::stringstream ss;
+            std::ostringstream ss;
             ss << "<" SNAME ".device: " << self.get_info(RS2_CAMERA_INFO_NAME);
             if (self.supports(RS2_CAMERA_INFO_SERIAL_NUMBER))
                 ss << " (S/N: " << self.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER);
