@@ -174,7 +174,7 @@ void json_preset_writer::write_schema()
 void json_preset_writer::write_param(const std::string& key, const json& value)
 {
     (*_parameters)[key] = value;
-};
+}
 
 }  // namespace serialized_utilities
 }  // namespace librealsense
