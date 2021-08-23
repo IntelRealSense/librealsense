@@ -1400,10 +1400,10 @@ namespace rs2
             {
                 auto f = frame.second;
 
-                if( f.is< points >()
-                    && ! paused )  // find and store the 3d points frame for later use
+                if (f.is< points >())  // find and store the 3d points frame for later use
                 {
-                    p = f.as< points >();
+                    if (!paused)
+                        p = f.as< points >();
                     continue;
                 }
 
@@ -3273,7 +3273,10 @@ namespace rs2
     {
         auto profile = f.get_profile().as<video_stream_profile>();
         auto index = profile.unique_id();
-        auto mapped_index = streams_origin.at(index);
+        int mapped_index = -2;
+        auto iter = streams_origin.find(index);
+        if (iter != streams_origin.end())
+            mapped_index = iter->second;
 
         if (!is_rasterizeable(profile.format()))
             return false;
