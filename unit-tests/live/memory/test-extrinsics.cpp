@@ -2,7 +2,8 @@
 // Copyright(c) 2021 Intel Corporation. All Rights Reserved.
 
 //#cmake: static!
-//#test:device D400*
+//#test:device D465
+//#test:device D435
 //#test:donotrun:!nightly
 //#test:timeout 480
 
