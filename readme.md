@@ -16,6 +16,16 @@ Information about the Intel® RealSense™ technology at [www.intelrealsense.com
 
 > :open_file_folder: Don't have access to a RealSense camera? Check-out [sample data](./doc/sample-data.md)
 
+## Special notice from Intel® RealSense™ regarding the recent press announcement
+
+It is true that Intel has decided to wind down the "RealSense" business unit, and is announcing the EOL of LiDAR (L515), Facial Authentication (F450) and Tracking (T265) product lines this month. For these specific products, Intel plans to provide a 6 month EOL and Last Time Buy period for these EOL products.
+
+However, the Stereo Product Lines WILL continue with the following products: D410, D415, D430, D450 modules and D415, D435, D435i cameras to our current distribution customers (new distributors will be evaluated on a case by case basis). Support will be continued for the following Stereo products: D410, 415, 430, 450, modules and D415, 435, 435i integrated product lines.
+
+We will also continue the work to support and develop our LibRealSense open source SDK.
+
+In the coming future Intel and the RealSense team will focus our new development on advancing innovative technologies that better support our core businesses and IDM 2.0 strategy.
+
 ## Building librealsense - Using vcpkg
 
 You can download and install librealsense using the [vcpkg](https://github.com/Microsoft/vcpkg) dependency manager:
