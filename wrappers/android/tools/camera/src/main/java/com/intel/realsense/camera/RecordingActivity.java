@@ -36,7 +36,7 @@ public class RecordingActivity extends AppCompatActivity {
         setContentView(R.layout.activity_recording);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
-        setup_controls();
+        setupControls();
 
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, PermissionsUtils.PERMISSIONS_REQUEST_WRITE);
@@ -72,10 +72,10 @@ public class RecordingActivity extends AppCompatActivity {
         setContentView(R.layout.activity_recording);
 
         // setup layout controls
-        setup_controls();
+        setupControls();
     }
 
-    private void setup_controls() {
+    private void setupControls() {
         mGLSurfaceView = findViewById(R.id.recordingGlSurfaceView);
 
         mStopRecordFab = findViewById(R.id.stopRecordFab);

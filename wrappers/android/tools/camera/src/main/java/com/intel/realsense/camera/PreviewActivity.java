@@ -83,7 +83,7 @@ public class PreviewActivity extends AppCompatActivity {
 
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
-        setup_controls();
+        setupControls();
     }
 
     @Override
@@ -106,11 +106,11 @@ public class PreviewActivity extends AppCompatActivity {
         setContentView(R.layout.activity_preview);
 
         // update layout controls
-        setup_controls();
+        setupControls();
         updateStats();
     }
 
-    private void setup_controls()
+    private void setupControls()
     {
         mGLSurfaceView = findViewById(R.id.glSurfaceView);
 

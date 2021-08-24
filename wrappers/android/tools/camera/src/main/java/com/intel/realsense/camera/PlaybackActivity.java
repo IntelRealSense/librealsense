@@ -44,7 +44,7 @@ public class PlaybackActivity extends AppCompatActivity {
         setContentView(R.layout.activity_playback);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
-        setup_controls();
+        setupControls();
     }
 
     @Override
@@ -63,10 +63,10 @@ public class PlaybackActivity extends AppCompatActivity {
         setContentView(R.layout.activity_playback);
 
         // setup layout controls
-        setup_controls();
+        setupControls();
     }
 
-    private void setup_controls() {
+    private void setupControls() {
         mGLSurfaceView = findViewById(R.id.playbackGlSurfaceView);
         m3dButton = findViewById(R.id.playback_3d_button);
         m3dButton.setOnClickListener(new View.OnClickListener() {
