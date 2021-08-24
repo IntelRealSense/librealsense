@@ -16,6 +16,16 @@ Information about the Intel® RealSense™ technology at [www.intelrealsense.com
 
 > :open_file_folder: Don't have access to a RealSense camera? Check-out [sample data](./doc/sample-data.md)
 
+## Special notice from Intel® RealSense™ regarding the recent press announcement
+
+It is true that Intel has decided to wind down the "RealSense" business unit, and is announcing the EOL of LiDAR (L515), Facial Authentication (F450) and Tracking (T265) product lines this month. For these specific products, Intel plans to provide a 6 month EOL and Last Time Buy period for these EOL products.
+
+However, the Stereo Product Lines WILL continue with the following products: D410, D415, D430, D450 modules and D415, D435, D435i cameras to our current distribution customers (new distributors will be evaluated on a case by case basis). Support will be continued for the following Stereo products: D410, 415, 430, 450, modules and D415, 435, 435i integrated product lines.
+
+We will also continue the work to support and develop our LibRealSense open source SDK.
+
+In the coming future Intel and the RealSense team will focus our new development on advancing innovative technologies that better support our core businesses and IDM 2.0 strategy.
+
 ## Building librealsense - Using vcpkg
 
 You can download and install librealsense using the [vcpkg](https://github.com/Microsoft/vcpkg) dependency manager:
@@ -31,7 +41,7 @@ The librealsense port in vcpkg is kept up to date by Microsoft team members and 
 ## Download and Install
 * **Download** - The latest releases including the Intel RealSense SDK, Viewer and Depth Quality tools are available at: [**latest releases**](https://github.com/IntelRealSense/librealsense/releases). Please check the [**release notes**](https://github.com/IntelRealSense/librealsense/wiki/Release-Notes) for the supported platforms, new features and capabilities, known issues, how to upgrade the Firmware and more.
 
-* **Install** - You can also install or build from source the SDK (on [Linux](./doc/distribution_linux.md) \ [Windows](./doc/distribution_windows.md) \ [Mac OS](doc/installation_osx.md) \ [Android](./doc/android.md)), connect your D400 depth camera and you are ready to start writing your first application.
+* **Install** - You can also install or build from source the SDK (on [Linux](./doc/distribution_linux.md) \ [Windows](./doc/distribution_windows.md) \ [Mac OS](doc/installation_osx.md) \ [Android](./doc/android.md) \ [Docker](./scripts/Docker/readme.md)), connect your D400 depth camera and you are ready to start writing your first application.
 
 > **Support & Issues**: If you need product support (e.g. ask a question about / are having problems with the device), please check the [FAQ & Troubleshooting](https://github.com/IntelRealSense/librealsense/wiki/Troubleshooting-Q%26A) section.
 > If not covered there, please search our [Closed GitHub Issues](https://github.com/IntelRealSense/librealsense/issues?utf8=%E2%9C%93&q=is%3Aclosed) page,  [Community](https://communities.intel.com/community/tech/realsense) and [Support](https://www.intel.com/content/www/us/en/support/emerging-technologies/intel-realsense-technology.html) sites.

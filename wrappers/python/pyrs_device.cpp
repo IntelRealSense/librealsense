@@ -6,7 +6,6 @@ Copyright(c) 2017 Intel Corporation. All Rights Reserved. */
 #include <librealsense2/hpp/rs_device.hpp>
 #include <librealsense2/hpp/rs_record_playback.hpp> // for downcasts
 #include <../common/metadata-helper.h>
-#include <types.h>
 
 void init_device(py::module &m) {
     /** rs_device.hpp **/
@@ -60,7 +59,7 @@ void init_device(py::module &m) {
 
             if (!depth_sens.supports(RS2_CAMERA_INFO_PHYSICAL_PORT))
             {
-                throw librealsense::invalid_value_exception("Device does not support checking metadata with thi API");
+                throw std::runtime_error("Device does not support checking metadata with this API");
             }
             std::string id = depth_sens.get_info(RS2_CAMERA_INFO_PHYSICAL_PORT);
 
