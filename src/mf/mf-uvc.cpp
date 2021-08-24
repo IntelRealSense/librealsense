@@ -101,6 +101,8 @@ namespace librealsense
                         return false;
                     try
                     {
+                        // When accessing the value pMetadata->MetadataId, it throws an exception of accessing forbidden memory.
+                        // The pointer pMetadata has a valid value at this point.
                         if (pMetadata->MetadataId != MetadataId_UsbVideoHeader) // Wrong metadata type, bail.
                             return false;
                     }
