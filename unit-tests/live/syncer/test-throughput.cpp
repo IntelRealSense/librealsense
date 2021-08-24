@@ -2,7 +2,7 @@
 // Copyright(c) 2021 Intel Corporation. All Rights Reserved.
 
 //#cmake: static!
-//#test:device D400*
+//#test:device D435
 
 
 #include <unit-tests/test.h>
