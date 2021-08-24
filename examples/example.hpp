@@ -114,10 +114,11 @@ using frames_mosaic = std::map<int, frame_and_tile_property>;
 
 inline void draw_text(int x, int y, const char* text)
 {
-    std::vector<char> buffer; 
+    std::vector<char> buffer;
+    buffer.resize(60000); // ~300 chars
     glEnableClientState(GL_VERTEX_ARRAY);
-    glVertexPointer(2, GL_FLOAT, 16, &buffer);
-    glDrawArrays(GL_QUADS, 0, 4 * stb_easy_font_print((float)x, (float)(y - 7), (char*)text, nullptr, &buffer, sizeof(buffer)));
+    glVertexPointer(2, GL_FLOAT, 16, &(buffer[0]) );
+    glDrawArrays(GL_QUADS, 0, 4 * stb_easy_font_print((float)x, (float)(y - 7), (char*)text, nullptr, &(buffer[0]), sizeof(char) * buffer.size() ));
     glDisableClientState(GL_VERTEX_ARRAY);
 }
 
