@@ -2963,6 +2963,10 @@ namespace rs2
         ImGui::PushStyleColor(ImGuiCol_ButtonActive, header_window_bg);
 
         float line_y = curr_info_rect.y + 8;
+        float tail_w = curr_info_rect.w - 20;
+        float min_w = ImGui::CalcTextSize("0").x;
+        auto ctx = ImGui::GetCurrentContext();
+        float space_w = ctx->Style.ItemSpacing.x;
 
         if (show_stream_details && !show_metadata)
         {
@@ -2977,54 +2981,76 @@ namespace rs2
 
                 if (timestamp_domain == RS2_TIMESTAMP_DOMAIN_SYSTEM_TIME) label = to_string() << textual_icons::exclamation_triangle << label;
 
-                ImGui::Text("%s", label.c_str());
-
-                if (timestamp_domain == RS2_TIMESTAMP_DOMAIN_SYSTEM_TIME) ImGui::PopStyleColor();
-
-                if (ImGui::IsItemHovered())
+                tail_w -= ImGui::CalcTextSize(label.c_str()).x;
+                if (tail_w > min_w)
                 {
-                    if (timestamp_domain == RS2_TIMESTAMP_DOMAIN_SYSTEM_TIME)
+                    ImGui::Text("%s", label.c_str());
+
+                    if (timestamp_domain == RS2_TIMESTAMP_DOMAIN_SYSTEM_TIME) ImGui::PopStyleColor();
+
+                    if (ImGui::IsItemHovered())
                     {
-                        ImGui::BeginTooltip();
-                        ImGui::PushTextWrapPos(450.0f);
-                        ImGui::TextUnformatted("Timestamp Domain: System Time. Hardware Timestamps unavailable!\nPlease refer to frame_metadata.md for more information");
-                        ImGui::PopTextWrapPos();
-                        ImGui::EndTooltip();
+                        if (timestamp_domain == RS2_TIMESTAMP_DOMAIN_SYSTEM_TIME)
+                        {
+                            ImGui::BeginTooltip();
+                            ImGui::PushTextWrapPos(450.0f);
+                            ImGui::TextUnformatted("Timestamp Domain: System Time. Hardware Timestamps unavailable!\nPlease refer to frame_metadata.md for more information");
+                            ImGui::PopTextWrapPos();
+                            ImGui::EndTooltip();
+                        }
+                        else if (timestamp_domain == RS2_TIMESTAMP_DOMAIN_GLOBAL_TIME)
+                        {
+                            ImGui::SetTooltip("Timestamp: Global Time");
+                        }
+                        else
+                        {
+                            ImGui::SetTooltip("Timestamp: Hardware Clock");
+                        }
                     }
-                    else if (timestamp_domain == RS2_TIMESTAMP_DOMAIN_GLOBAL_TIME)
-                    {
-                        ImGui::SetTooltip("Timestamp: Global Time");
-                    }
-                    else
-                    {
-                        ImGui::SetTooltip("Timestamp: Hardware Clock");
-                    }
+
+                    ImGui::SameLine();
+                    tail_w -= space_w;
                 }
 
-                ImGui::SameLine();
-
-                label = to_string() << " Frame: " << std::left << frame_number;
-                ImGui::Text("%s", label.c_str());
-
-                ImGui::SameLine();
-
-                std::string res;
-                if (profile.as<rs2::video_stream_profile>())
-                    res = to_string() << size.x << "x" << size.y << ",  ";
-                label = to_string() << res << truncate_string(rs2_format_to_string(profile.format()), 9) << ", ";
-                ImGui::Text("%s", label.c_str());
-                if (ImGui::IsItemHovered())
+                if (tail_w > min_w)
                 {
-                    ImGui::SetTooltip("%s", "Stream Resolution, Format");
+                    label = to_string() << " Frame: " << std::left << frame_number;
+                    tail_w -= ImGui::CalcTextSize(label.c_str()).x;
+                    if (tail_w > min_w)
+                        ImGui::Text("%s", label.c_str());
+
+                    ImGui::SameLine();
+                    tail_w -= space_w;
                 }
 
-                ImGui::SameLine();
-
-                label = to_string() << "FPS: " << std::setprecision(2) << std::setw(7) << std::fixed << fps.get_fps();
-                ImGui::Text("%s", label.c_str());
-                if (ImGui::IsItemHovered())
+                if (tail_w > min_w)
                 {
-                    ImGui::SetTooltip("%s", "FPS is calculated based on timestamps and not viewer time");
+                    std::string res;
+                    if (profile.as<rs2::video_stream_profile>())
+                        res = to_string() << size.x << "x" << size.y << ",  ";
+                    label = to_string() << res << truncate_string(rs2_format_to_string(profile.format()), 9) << ", ";
+                    tail_w -= ImGui::CalcTextSize(label.c_str()).x;
+                    if (tail_w > min_w)
+                        ImGui::Text("%s", label.c_str());
+                    if (ImGui::IsItemHovered())
+                    {
+                        ImGui::SetTooltip("%s", "Stream Resolution, Format");
+                    }
+
+                    ImGui::SameLine();
+                    tail_w -= space_w;
+                }
+
+                if (tail_w > min_w)
+                {
+                    label = to_string() << "FPS: " << std::setprecision(2) << std::setw(7) << std::fixed << fps.get_fps();
+                    tail_w -= ImGui::CalcTextSize(label.c_str()).x;
+                    if (tail_w > min_w)
+                        ImGui::Text("%s", label.c_str());
+                    if (ImGui::IsItemHovered())
+                    {
+                        ImGui::SetTooltip("%s", "FPS is calculated based on timestamps and not viewer time");
+                    }
                 }
 
                 line_y += ImGui::GetTextLineHeight() + 5;
