@@ -94,6 +94,39 @@ Java_com_intel_realsense_librealsense_Pipeline_nWaitForFrames(JNIEnv *env, jclas
     return reinterpret_cast<jlong>(rv);
 }
 
+extern "C" JNIEXPORT jlongArray JNICALL
+Java_com_intel_realsense_librealsense_Pipeline_nGetActiveStreams(JNIEnv *env, jclass type,
+                                                       jlong handle) {
+    rs2_error* e = NULL;
+    rs2_pipeline_profile* profile = rs2_pipeline_get_active_profile(reinterpret_cast<rs2_pipeline *>(handle), &e);
+    handle_error(env, e);
+
+    std::shared_ptr<rs2_stream_profile_list> list(
+            rs2_pipeline_profile_get_streams(profile, &e),
+            rs2_delete_stream_profiles_list);
+    handle_error(env, e);
+
+    auto size = rs2_get_stream_profiles_count(list.get(), &e);
+    handle_error(env, e);
+
+    std::vector<const rs2_stream_profile*> profiles;
+
+    for (auto i = 0; i < size; i++)
+    {
+        auto sp = rs2_get_stream_profile(list.get(), i, &e);
+        handle_error(env, e);
+        profiles.push_back(sp);
+    }
+
+    // jlong is 64-bit, but pointer in profiles could be 32-bit, copy element by element
+    jlongArray rv = env->NewLongArray(profiles.size());
+    for (auto i = 0; i < size; i++)
+    {
+        env->SetLongArrayRegion(rv, i, 1, reinterpret_cast<const jlong *>(&profiles[i]));
+    }
+    return rv;
+}
+
 extern "C" JNIEXPORT void JNICALL
 Java_com_intel_realsense_librealsense_PipelineProfile_nDelete(JNIEnv *env, jclass type,
                                                               jlong handle) {
