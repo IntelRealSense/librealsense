@@ -27,9 +27,11 @@ import com.intel.realsense.librealsense.Extension;
 import com.intel.realsense.librealsense.FwLogger;
 import com.intel.realsense.librealsense.RsContext;
 import com.intel.realsense.librealsense.Sensor;
+import com.intel.realsense.librealsense.StreamFormat;
 import com.intel.realsense.librealsense.StreamProfile;
 import com.intel.realsense.librealsense.StreamType;
 import com.intel.realsense.librealsense.Updatable;
+import com.intel.realsense.librealsense.VideoStreamProfile;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -320,6 +322,68 @@ public class SettingsActivity extends AppCompatActivity {
         return rv;
     }
 
+    // set the stream profile from the device on/off in settings
+    public static void setProfileSetting(SharedPreferences sharedPref, Device device, StreamProfile p, boolean enabled)
+    {
+        Map<Integer, List<StreamProfile>> profilesMap = SettingsActivity.createProfilesMap(device);
+        SharedPreferences.Editor editor = sharedPref.edit();
+
+        String pid = device.getInfo(CameraInfo.PRODUCT_ID);
+
+        StreamType pType = p.getType();
+        int pIndex = p.getIndex();
+        StreamFormat pFormat = p.getFormat();
+        int pFps = p.getFrameRate();
+
+        int index = -1;
+
+        // find the profile settings index
+        for(Map.Entry e : profilesMap.entrySet()){
+
+            // found the profile index
+            if (index != -1) break;
+
+            List<StreamProfile> profiles = (List<StreamProfile>) e.getValue();
+            int i = 0;
+
+            for (StreamProfile sp : profiles) {
+                StreamType spType = sp.getType();
+                int spIndex = sp.getIndex();
+                StreamFormat spFormat = sp.getFormat();
+                int spFps = sp.getFrameRate();
+
+                if (p.is(Extension.VIDEO_PROFILE) && sp.is(Extension.VIDEO_PROFILE)) {
+                    VideoStreamProfile vp = p.as(Extension.VIDEO_PROFILE);
+                    VideoStreamProfile vsp = sp.as(Extension.VIDEO_PROFILE);
+
+                    // found the profile
+                    if (pType == spType && pIndex == spIndex && pFormat == spFormat && pFps == spFps &&
+                            vp.getWidth() == vsp.getWidth() && vp.getHeight() == vsp.getHeight()) {
+                        index = i;
+                        break;
+                    }
+                }
+                else if (p.is(Extension.MOTION_PROFILE) && sp.is(Extension.MOTION_PROFILE))
+                {
+                    // found the profile
+                    if (pType == spType && pIndex == spIndex && pFormat == spFormat && pFps == spFps) {
+                        index = i;
+                        break;
+                    }
+                }
+
+                i++;
+            }
+        }
+
+        // turn the profile on/off in settings
+        if (index != -1) {
+            editor.putBoolean(SettingsActivity.getEnabledDeviceConfigString(pid, p.getType(), p.getIndex()), enabled);
+            editor.putInt(SettingsActivity.getIndexdDeviceConfigString(pid, p.getType(), p.getIndex()), index);
+            editor.commit();
+        }
+    }
+
     private void loadStreamList(Device device, List<StreamProfileSelector> streamProfiles){
         if(device == null || streamProfiles.size() == 0)
             return;
@@ -335,7 +399,7 @@ public class SettingsActivity extends AppCompatActivity {
         ExpandableListView streamListView = findViewById(R.id.configuration_ex_list_view);
         HashMap<String, List<String>> expandableListDetail = new HashMap<String, List<String>>();
 
-        expandableListDetail.put("Configuration:(default-disable all)",settings_group);
+        expandableListDetail.put("Configuration:(turn off all to reset to default streams)",settings_group);
         List<String> expandableListTitle = new ArrayList<String>(expandableListDetail.keySet());
 
         final String pid = device.getInfo(CameraInfo.PRODUCT_ID);
