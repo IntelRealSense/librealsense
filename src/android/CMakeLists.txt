@@ -27,6 +27,7 @@ target_sources(${LRS_TARGET}
         "${CMAKE_CURRENT_LIST_DIR}/jni/advanced_mode.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/jni/utils.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/jni/frame_callback.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/jni/jni_common.cpp"
 
         "${CMAKE_CURRENT_LIST_DIR}/fw-logger/rs-fw-logger.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/../../tools/fw-logger/fw-log-data.cpp"

@@ -10,6 +10,7 @@
 
 #include "jni_logging.h"
 #include "frame_callback.h"
+#include "jni_common.h"
 
 extern "C"
 JNIEXPORT void JNICALL
@@ -111,24 +112,7 @@ Java_com_intel_realsense_librealsense_Sensor_nGetStreamProfiles(JNIEnv *env, jcl
             rs2_delete_stream_profiles_list);
     handle_error(env, e);
 
-    auto size = rs2_get_stream_profiles_count(list.get(), &e);
-    handle_error(env, e);
-
-    std::vector<const rs2_stream_profile*> profiles;
-
-    for (auto i = 0; i < size; i++)
-    {
-        auto sp = rs2_get_stream_profile(list.get(), i, &e);
-        handle_error(env, e);
-        profiles.push_back(sp);
-    }
-
-    // jlong is 64-bit, but pointer in profiles could be 32-bit, copy element by element
-    jlongArray rv = env->NewLongArray(profiles.size());
-    for (auto i = 0; i < size; i++)
-    {
-        env->SetLongArrayRegion(rv, i, 1, reinterpret_cast<const jlong *>(&profiles[i]));
-    }
+    jlongArray rv = rs_jni_convert_stream_profiles(env, list);
     return rv;
 }
 
@@ -190,7 +174,6 @@ Java_com_intel_realsense_librealsense_DepthSensor_nGetDepthScale(JNIEnv *env, jc
     return depthScale;
 }
 
-// get_active_streams
 extern "C"
 JNIEXPORT jlongArray JNICALL
 Java_com_intel_realsense_librealsense_Sensor_nGetActiveStreams(JNIEnv *env, jclass type,
@@ -201,23 +184,6 @@ Java_com_intel_realsense_librealsense_Sensor_nGetActiveStreams(JNIEnv *env, jcla
             rs2_delete_stream_profiles_list);
     handle_error(env, e);
 
-    auto size = rs2_get_stream_profiles_count(list.get(), &e);
-    handle_error(env, e);
-
-    std::vector<const rs2_stream_profile*> profiles;
-
-    for (auto i = 0; i < size; i++)
-    {
-        auto sp = rs2_get_stream_profile(list.get(), i, &e);
-        handle_error(env, e);
-        profiles.push_back(sp);
-    }
-
-    // jlong is 64-bit, but pointer in profiles could be 32-bit, copy element by element
-    jlongArray rv = env->NewLongArray(profiles.size());
-    for (auto i = 0; i < size; i++)
-    {
-        env->SetLongArrayRegion(rv, i, 1, reinterpret_cast<const jlong *>(&profiles[i]));
-    }
+    jlongArray rv = rs_jni_convert_stream_profiles(env, list);
     return rv;
 }
