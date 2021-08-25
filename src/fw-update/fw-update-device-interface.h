@@ -9,18 +9,15 @@
 
 namespace librealsense
 {
-    class updatable
+    class fw_checkable
     {
     public:
-        virtual void enter_update_state() const = 0;
-        virtual std::vector<uint8_t> backup_flash(update_progress_callback_ptr callback) = 0;
-        virtual void update_flash(const std::vector<uint8_t>& image, update_progress_callback_ptr callback, int update_mode) = 0;
         virtual bool check_fw_compatibility(const std::vector<uint8_t>& image) const = 0;
-        std::string extract_firmware_version_string(const void* fw_image, size_t fw_image_size) const
+        static std::string extract_firmware_version_string(const void* fw_image, size_t fw_image_size)
         {
             if (!fw_image)
                 throw std::runtime_error("Firmware binary image might be corrupted - null pointer");
-            
+
             auto version_offset = offsetof(platform::dfu_header, bcdDevice);
 
             if (fw_image_size < (version_offset + sizeof(size_t)))
@@ -40,7 +37,15 @@ namespace librealsense
         }
     };
 
-    class update_device_interface : public device_interface
+    class updatable : public fw_checkable
+    {
+    public:
+        virtual void enter_update_state() const = 0;
+        virtual std::vector<uint8_t> backup_flash(update_progress_callback_ptr callback) = 0;
+        virtual void update_flash(const std::vector<uint8_t>& image, update_progress_callback_ptr callback, int update_mode) = 0;
+    };
+
+    class update_device_interface : public device_interface, public fw_checkable
     {
     public:
         virtual void update(const void* fw_image, int fw_image_size, update_progress_callback_ptr = nullptr) const = 0;
