@@ -311,7 +311,7 @@ void server::doHTTP() {
                 LOG_INFO("Received the package " << fname << " of " << std::dec << package.size() << " bytes to perform the software upgrade. ");
 
                 std::stringstream cmd;
-                cmd << "/usr/bin/systemd-run --on-active=1 bash -c \"/usr/bin/dpkg -i " << fname << " && rm -fr " << fname << "\"";
+                cmd << "/usr/bin/systemd-run --on-active=10 bash -c \"/usr/bin/dpkg -i " << fname << " && rm -fr " << fname << "\"";
                 system(cmd.str().c_str());
             }
         }
