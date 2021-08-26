@@ -4,6 +4,17 @@
 import sys
 
 
+def _write( s ):
+    """
+    When s is long, write() doesn't seem to work right and only part of the string gets written!
+    """
+    x = 0
+    chunk = 8192
+    while( x < len(s) ):
+        sys.stdout.write( s[x:x+chunk] )
+        x += chunk
+
+
 # Set up the default output system; if not a terminal, disable colors!
 def _stream_has_color( stream ):
     if not hasattr(stream, "isatty"):
@@ -32,24 +43,33 @@ if _have_color:
     clear_eos = '\033[J'
     clear_eol = '\033[K'
     _progress = ''
-    def out( *args, sep = ' ', end = '\n' ):
-        global _progress
-        clear_to_eol = end  and  end[-1] == '\n'  and  len(_progress) > 0
+    def out( *args, sep = ' ', end = '\n', line_prefix = None, color = None ):
+        global _progress, reset
+        s = indent( sep.join( [str(s) for s in args] ), line_prefix )
+        if color:
+            s = color + s + reset
+        _write( s )
+        clear_to_eol = len(_progress) > 0  and  end  and  end[-1] == '\n'
         if clear_to_eol:
-            print( *args, sep = sep, end = clear_eol + end )
+            sys.stdout.write( clear_eol + end )
             progress( *_progress )
         else:
-            print( *args, sep = sep, end = end )
+            if end:
+                sys.stdout.write( end )
     def progress(*args):
         global _progress
+        sys.stdout.flush()
         sys.stdout.write( '\0337' )  # save cursor
         print( *args, end = clear_eol )
         sys.stdout.write( '\0338' )  # restore cursor
         _progress = args
 else:
     red = yellow = gray = reset = cr = clear_eos = ''
-    def out( *args, sep = ' ', end = '\n' ):
-        print( *args, sep = sep, end = end )
+    def out( *args, sep = ' ', end = '\n', line_prefix = None, color = None ):
+        s = indent( sep.join( [str(s) for s in args] ), line_prefix )
+        _write( s )
+        if end:
+            sys.stdout.write( end )
     def progress(*args):
         if args:
             print( *args )
@@ -63,6 +83,12 @@ def quiet_on():
     global out
     def out(*args):
         pass
+
+
+def indent( str, line_prefix = '    ' ):
+    if line_prefix:
+        str = line_prefix + str.replace( '\n', '\n' + line_prefix )
+    return str
 
 
 _verbose_on = False
@@ -87,9 +113,8 @@ def d(*args):
 def debug_on():
     global d, _debug_on, _debug_indent
     def d( *args ):
-        global gray, reset
-        out( gray, '-D- ', _debug_indent, sep = '', end = '' )  # continue in next statement
-        out( *args, end = reset + '\n' )
+        global gray
+        out( *args, line_prefix = "-D- " + _debug_indent, color = gray )
         return True
     _debug_on = True
 def is_debug_on():
@@ -119,7 +144,7 @@ def f( *args ):
 _n_errors = 0
 def e( *args ):
     global red, reset
-    out( red + '-E-' + reset, *args )
+    out( *args, line_prefix = red + '-E-' + reset + ' ' )
     global _n_errors
     _n_errors = _n_errors + 1
 
@@ -136,7 +161,7 @@ def reset_errors():
 _n_warnings = 0
 def w(*args):
     global red, reset
-    out( yellow + '-W-' + reset, *args )
+    out( *args, line_prefix = yellow + '-W-' + reset + ' ' )
     global _n_warnings
     _n_warnings = _n_warnings + 1
 
