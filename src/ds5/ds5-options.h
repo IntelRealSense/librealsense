@@ -378,23 +378,37 @@ namespace librealsense
         sensor_base* _sensor;
     };
 
-    // GAIN Limit toggle
-    class gain_limit_option : public option
+    // Limits Enable/ Disable
+    
+    class limits_option : public option
     {
     public:
 
-        gain_limit_option(uvc_sensor* depth_ep, rs2_option option, option_range range) : _sensor(depth_ep), _option(option), _range(range) 
+        limits_option(uvc_sensor* depth_ep, rs2_option option, option_range range) : _sensor(depth_ep), _option(option), _range(range)
         {
             _cached_limit = -1;
         };
-        virtual ~gain_limit_option() = default;
-        virtual void set(float value) override;
-        virtual float query() const override;
-        virtual option_range get_range() const override;
+        virtual ~limits_option() = default;
+        virtual void set(float value) override
+        {
+            _value = value; // 0: gain limit set by user is enabled, 1 : gain limit is disabled (all range 16-248 is valid)
+            if (value == 1) // disabled: save current limit
+                _cached_limit = _sensor->get_option(RS2_OPTION_AUTO_GAIN_LIMIT).query();
+            else if (_cached_limit >= 0)
+                _sensor->get_option(RS2_OPTION_AUTO_GAIN_LIMIT).set(_cached_limit);
+            _record_action(*this);
+        };
+        virtual float query() const override { return _value; };
+        virtual option_range get_range() const override { return _range; };
         virtual bool is_enabled() const override { return true; }
-        virtual const char* get_description() const override { return "Enable Gain Limit Option"; }
+        virtual const char* get_description() const override { return "Enable Limits Option"; };
         virtual void enable_recording(std::function<void(const option&)> record_action) override { _record_action = record_action; }
-        virtual const char* get_value_description(float) const override;
+        virtual const char* get_value_description(float val) const override
+        {
+            if (_description_per_value.find(val) != _description_per_value.end())
+                return _description_per_value.at(val).c_str();
+            return nullptr;
+        };
 
     private:
         std::function<void(const option&)> _record_action = [](const option&) {};
@@ -404,6 +418,22 @@ namespace librealsense
         option_range _range;
         uvc_sensor* _sensor;
         const std::map<float, std::string> _description_per_value;
+    };
+
+    // GAIN Limit toggle
+    class gain_limit_option : public limits_option
+    {
+    public:
+        gain_limit_option(uvc_sensor* depth_ep, rs2_option option, option_range range) : limits_option(depth_ep, option, range) {};
+        virtual const char* get_description() const override { return "Enable Gain Limit Option"; }
+    };
+
+    // Exposure Limit toggle
+    class exposure_limit_option : public limits_option
+    {
+    public:
+        exposure_limit_option(uvc_sensor* depth_ep, rs2_option option, option_range range) : limits_option(depth_ep, option, range) {};
+        virtual const char* get_description() const override { return "Enable Exposure Limit Option"; }
     };
 
     class ds5_thermal_monitor;

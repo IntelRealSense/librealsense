@@ -745,35 +745,6 @@ namespace librealsense
         return *_range;
     }
 
-    // GAIN Limit toggle
-
-    void gain_limit_option::set(float value)
-    {
-        _value = value; // 0: gain limit set by user is enabled, 1 : gain limit is disabled (all range 16-248 is valid)
-        if (value == 1) // disabled: save current limit
-            _cached_limit = _sensor->get_option(RS2_OPTION_AUTO_GAIN_LIMIT).query();
-        else if (_cached_limit >= 0)
-            _sensor->get_option(RS2_OPTION_AUTO_GAIN_LIMIT).set(_cached_limit);
-        _record_action(*this);
-    }
-
-    float gain_limit_option::query() const
-    {
-        return _value;
-    }
-
-    option_range gain_limit_option::get_range() const
-    {
-        return _range;
-    }
-
-    const char* gain_limit_option::get_value_description(float val) const
-    {
-        if (_description_per_value.find(val) != _description_per_value.end())
-            return _description_per_value.at(val).c_str();
-        return nullptr;
-    }
-
     librealsense::thermal_compensation::thermal_compensation(
         std::shared_ptr<ds5_thermal_monitor> monitor,
         std::shared_ptr<option> toggle) :

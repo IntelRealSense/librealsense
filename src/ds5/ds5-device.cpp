@@ -1088,21 +1088,30 @@ namespace librealsense
             auto_exposure_limit_enable_option = std::make_shared<auto_exposure_limit_option>(*_hw_monitor, &depth_sensor, exposure_range);
             auto_gain_limit_enable_option = std::make_shared<auto_gain_limit_option>(*_hw_monitor, &depth_sensor, gain_range);
 
-            depth_sensor.register_option(RS2_OPTION_AUTO_EXPOSURE_LIMIT, auto_exposure_limit_enable_option);
+            //depth_sensor.register_option(RS2_OPTION_AUTO_EXPOSURE_LIMIT, auto_exposure_limit_enable_option);
             //depth_sensor.register_option(RS2_OPTION_AUTO_GAIN_LIMIT, auto_gain_limit_enable_option);
 
-            // NOHA
+            option_range enable_range = { 0.f /*min*/, 1.f /*max*/, 1.f /*step*/, 0.f /*default*/ };
 
             //GAIN Limit
             std::shared_ptr<gain_limit_option> gain_limit_enable_option = nullptr;
-            option_range gain_enable_range = { 0.f /*min*/, 1.f /*max*/, 1.f /*step*/, 0.f /*default*/ };
-            gain_limit_enable_option = std::make_shared<gain_limit_option>(&get_raw_depth_sensor(), RS2_OPTION_ENABLE_GAIN_LIMIT, gain_enable_range);
+            gain_limit_enable_option = std::make_shared<gain_limit_option>(&get_raw_depth_sensor(), RS2_OPTION_ENABLE_GAIN_LIMIT, enable_range);
             depth_sensor.register_option(RS2_OPTION_ENABLE_GAIN_LIMIT, gain_limit_enable_option);
 
             depth_sensor.register_option(RS2_OPTION_AUTO_GAIN_LIMIT,
                 std::make_shared<auto_disabling_control>(
                     auto_gain_limit_enable_option,
                     gain_limit_enable_option));
+
+            // EXPOSURE Limit
+            std::shared_ptr<exposure_limit_option> exposure_limit_enable_option = nullptr;
+            exposure_limit_enable_option = std::make_shared<exposure_limit_option>(&get_raw_depth_sensor(), RS2_OPTION_ENABLE_EXPOSURE_LIMIT, enable_range);
+            depth_sensor.register_option(RS2_OPTION_ENABLE_EXPOSURE_LIMIT, exposure_limit_enable_option);
+
+            depth_sensor.register_option(RS2_OPTION_AUTO_EXPOSURE_LIMIT,
+                std::make_shared<auto_disabling_control>(
+                    auto_exposure_limit_enable_option,
+                    exposure_limit_enable_option));
         }
 
         // attributes of md_capture_timing

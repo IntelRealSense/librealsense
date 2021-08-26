@@ -26,7 +26,8 @@ extern "C" {
         RS2_OPTION_CONTRAST, /**< Color image contrast*/
         RS2_OPTION_EXPOSURE, /**< Controls exposure time of color camera. Setting any value will disable auto exposure*/
         RS2_OPTION_GAIN, /**< Color image gain*/
-        RS2_OPTION_ENABLE_GAIN_LIMIT, /**< Enable / disable color image auto-exposure*/
+        RS2_OPTION_ENABLE_EXPOSURE_LIMIT, /**< Enable / disable color image auto-exposure*/
+        RS2_OPTION_ENABLE_GAIN_LIMIT, /**< Enable / disable color image auto-gain*/
         RS2_OPTION_GAMMA, /**< Color image gamma setting*/
         RS2_OPTION_HUE, /**< Color image hue*/
         RS2_OPTION_SATURATION, /**< Color image saturation setting*/
