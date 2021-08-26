@@ -1096,7 +1096,7 @@ namespace librealsense
             //GAIN Limit
             std::shared_ptr<gain_limit_option> gain_limit_enable_option = nullptr;
             option_range gain_enable_range = { 0.f /*min*/, 1.f /*max*/, 1.f /*step*/, 0.f /*default*/ };
-            gain_limit_enable_option = std::make_shared<gain_limit_option>(&raw_depth_sensor, RS2_OPTION_ENABLE_GAIN_LIMIT, gain_enable_range);
+            gain_limit_enable_option = std::make_shared<gain_limit_option>(&get_raw_depth_sensor(), RS2_OPTION_ENABLE_GAIN_LIMIT, gain_enable_range);
             depth_sensor.register_option(RS2_OPTION_ENABLE_GAIN_LIMIT, gain_limit_enable_option);
 
             depth_sensor.register_option(RS2_OPTION_AUTO_GAIN_LIMIT,

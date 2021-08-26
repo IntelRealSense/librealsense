@@ -749,7 +749,11 @@ namespace librealsense
 
     void gain_limit_option::set(float value)
     {
-        _value = value;
+        _value = value; // 0: gain limit set by user is enabled, 1 : gain limit is disabled (all range 16-248 is valid)
+        if (value == 1) // disabled: save current limit
+            _cached_limit = _sensor->get_option(RS2_OPTION_AUTO_GAIN_LIMIT).query();
+        else if (_cached_limit >= 0)
+            _sensor->get_option(RS2_OPTION_AUTO_GAIN_LIMIT).set(_cached_limit);
         _record_action(*this);
     }
 
