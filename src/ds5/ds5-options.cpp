@@ -745,6 +745,31 @@ namespace librealsense
         return *_range;
     }
 
+    // GAIN Limit toggle
+
+    void gain_limit_option::set(float value)
+    {
+        _value = value;
+        _record_action(*this);
+    }
+
+    float gain_limit_option::query() const
+    {
+        return _value;
+    }
+
+    option_range gain_limit_option::get_range() const
+    {
+        return _range;
+    }
+
+    const char* gain_limit_option::get_value_description(float val) const
+    {
+        if (_description_per_value.find(val) != _description_per_value.end())
+            return _description_per_value.at(val).c_str();
+        return nullptr;
+    }
+
     librealsense::thermal_compensation::thermal_compensation(
         std::shared_ptr<ds5_thermal_monitor> monitor,
         std::shared_ptr<option> toggle) :

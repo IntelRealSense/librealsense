@@ -378,6 +378,31 @@ namespace librealsense
         sensor_base* _sensor;
     };
 
+    // GAIN Limit toggle
+    class gain_limit_option : public option
+    {
+    public:
+        // gain_set_option(std::shared_ptr<synthetic_sensor> depth_sensor, rs2_option option, float value)
+         //    : _depth(depth_sensor), _option(option), _value(value) {}
+
+        gain_limit_option(sensor_base* depth_ep, rs2_option option, option_range range) : _sensor(depth_ep), _option(option), _range(range) {};
+        virtual ~gain_limit_option() = default;
+        virtual void set(float value) override;
+        virtual float query() const override;
+        virtual option_range get_range() const override;
+        virtual bool is_enabled() const override { return true; }
+        virtual const char* get_description() const override { return "Gain Option"; }
+        virtual void enable_recording(std::function<void(const option&)> record_action) override { _record_action = record_action; }
+        virtual const char* get_value_description(float) const override;
+
+    private:
+        std::function<void(const option&)> _record_action = [](const option&) {};
+        rs2_option _option;
+        float _value;
+        option_range _range;
+        sensor_base* _sensor;
+        const std::map<float, std::string> _description_per_value;
+    };
 
     class ds5_thermal_monitor;
     class thermal_compensation : public option
