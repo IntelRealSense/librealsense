@@ -7013,6 +7013,10 @@ namespace rs2
                                 {
                                     pb->get_option(RS2_OPTION_MIN_DISTANCE).update_all_fields(error_message, *viewer.not_model);
                                 }
+                                else if (opt == RS2_OPTION_HISTOGRAM_EQUALIZATION_ENABLED)
+                                {
+                                    pb->get_option(RS2_OPTION_HISTOGRAM_EQUALIZATION_ENABLED).update_all_fields(error_message, *viewer.not_model);
+                                }
                             }
 
                             ImGui::TreePop();
