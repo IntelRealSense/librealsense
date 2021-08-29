@@ -333,6 +333,13 @@ TEST_CASE("Extrinsic memory leak detection", "[live]")
             // IMU streams have different threshold
             if (stream.first == "Accel" || stream.first == "Gyro") threshold = DELAY_INCREMENT_THRESHOLD_IMU;
             CAPTURE(stream.first, slope, threshold);
+            auto y_vec_it = stream.second.begin();
+            size_t n = stream.second.size();
+            for (auto i = 0; i < n; i++)
+            {
+                auto vec_i = *(y_vec_it + i);
+                CAPTURE(vec_i);
+            }
             CHECK(slope < threshold);
 
         }
