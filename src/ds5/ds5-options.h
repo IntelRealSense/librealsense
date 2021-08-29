@@ -378,28 +378,20 @@ namespace librealsense
         sensor_base* _sensor;
     };
 
-    // Limits Enable/ Disable
-    
+    // Auto-Limits Enable/ Disable
     class limits_option : public option
     {
     public:
 
-        limits_option(uvc_sensor* depth_ep, rs2_option option, option_range range) : _sensor(depth_ep), _option(option), _range(range)
+        limits_option(rs2_option option, option_range range) : _option(option), _toggle_range(range)
         {
-            _cached_limit = -1;
+            _value = 1;
         };
+        
         virtual ~limits_option() = default;
-        virtual void set(float value) override
-        {
-            _value = value; // 0: gain limit set by user is enabled, 1 : gain limit is disabled (all range 16-248 is valid)
-            if (value == 1) // disabled: save current limit
-                _cached_limit = _sensor->get_option(RS2_OPTION_AUTO_GAIN_LIMIT).query();
-            else if (_cached_limit >= 0)
-                _sensor->get_option(RS2_OPTION_AUTO_GAIN_LIMIT).set(_cached_limit);
-            _record_action(*this);
-        };
+        virtual void set(float) override = 0;
         virtual float query() const override { return _value; };
-        virtual option_range get_range() const override { return _range; };
+        virtual option_range get_range() const override { return _toggle_range; };
         virtual bool is_enabled() const override { return true; }
         virtual const char* get_description() const override { return "Enable Limits Option"; };
         virtual void enable_recording(std::function<void(const option&)> record_action) override { _record_action = record_action; }
@@ -410,13 +402,11 @@ namespace librealsense
             return nullptr;
         };
 
-    private:
+    protected:
         std::function<void(const option&)> _record_action = [](const option&) {};
         rs2_option _option;
         float _value;
-        float _cached_limit;
-        option_range _range;
-        uvc_sensor* _sensor;
+        option_range _toggle_range;
         const std::map<float, std::string> _description_per_value;
     };
 
@@ -424,16 +414,44 @@ namespace librealsense
     class gain_limit_option : public limits_option
     {
     public:
-        gain_limit_option(uvc_sensor* depth_ep, rs2_option option, option_range range) : limits_option(depth_ep, option, range) {};
-        virtual const char* get_description() const override { return "Enable Gain Limit Option"; }
+        gain_limit_option(rs2_option option, option_range toggle_range, auto_gain_limit_option *gain) : limits_option(option, toggle_range), _gain_limit(gain)
+        {
+            _cached_limit = _gain_limit->query();
+        };
+        virtual const char* get_description() const override { return "Enable Gain auto-Limit"; }
+        virtual void set(float value) override
+        {
+            _value = value; // 0: gain auto-limit is disabled, 1 : gain auto-limit is ensabled (all range 16-248 is valid)
+            if (value == 1) // auto-limit is enabled -> save last limit that was set by the user
+                _cached_limit = _gain_limit->query();
+            else if (_cached_limit >= _gain_limit->get_range().min && _cached_limit <= _gain_limit->get_range().max) // this condition is relevant to prevent setting cached val = 0
+                _gain_limit->set(_cached_limit);
+        };
+    private:
+        float _cached_limit;
+        auto_gain_limit_option *_gain_limit;
     };
 
     // Exposure Limit toggle
     class exposure_limit_option : public limits_option
     {
     public:
-        exposure_limit_option(uvc_sensor* depth_ep, rs2_option option, option_range range) : limits_option(depth_ep, option, range) {};
-        virtual const char* get_description() const override { return "Enable Exposure Limit Option"; }
+        exposure_limit_option(rs2_option option, option_range toggle_range, auto_exposure_limit_option *exposure) : limits_option(option, toggle_range), _exposure_limit(exposure)
+        {
+            _cached_limit = _exposure_limit->query();
+        };
+        virtual const char* get_description() const override { return "Enable Exposure auto-Limit"; }
+        virtual void set(float value) override
+        {
+            _value = value; // 0: exposure auto-limit is disabled, 1 : exposure auto-limit is ensabled (all range 16-248 is valid)
+            if (value == 1) // auto-limit is enabled -> save last limit that was set by the user
+                _cached_limit = _exposure_limit->query();
+            else if (_cached_limit >= _exposure_limit->get_range().min && _cached_limit <= _exposure_limit->get_range().max)
+                _exposure_limit->set(_cached_limit);
+        };
+    private:
+        float _cached_limit;
+        auto_exposure_limit_option* _exposure_limit;
     };
 
     class ds5_thermal_monitor;
