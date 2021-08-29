@@ -26,10 +26,10 @@ namespace librealsense
     bool sr300_update_device::check_fw_compatibility(const std::vector<uint8_t>& image) const
     {
         std::string fw_version = extract_firmware_version_string((const void*)image.data(), image.size());
-
-        auto min_max_fw_it = device_to_fw_min_max_version.find(_usb_device->get_info().pid);
+        auto device_pid = _usb_device->get_info().pid;
+        auto min_max_fw_it = device_to_fw_min_max_version.find(device_pid);
         if (min_max_fw_it == device_to_fw_min_max_version.end())
-            throw std::runtime_error("Min and Max firmware versions have not been defined for this device!");
+            throw std::runtime_error(to_string() << "Min and Max firmware versions have not been defined for this device: " << device_pid);
 
         // advanced SR3XX devices do not fit the "old" fw versions and 
         // legacy SR3XX devices do not fit the "new" fw versions

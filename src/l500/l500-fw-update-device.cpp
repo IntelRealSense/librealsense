@@ -22,10 +22,10 @@ namespace librealsense
     bool l500_update_device::check_fw_compatibility(const std::vector<uint8_t>& image) const
     {
         std::string fw_version = extract_firmware_version_string((const void*)image.data(), image.size());
-
+        auto device_pid = _usb_device->get_info().pid;
         auto min_max_fw_it = ivcam2::device_to_fw_min_max_version.find(_usb_device->get_info().pid);
         if (min_max_fw_it == ivcam2::device_to_fw_min_max_version.end())
-            throw std::runtime_error("Min and Max firmware versions have not been defined for this device!");
+            throw std::runtime_error(to_string() << "Min and Max firmware versions have not been defined for this device: " << device_pid);
 
         // Limit L515 to FW versions within the 1.5.1.3-1.99.99.99 range to differenciate from the other products
         return (firmware_version(fw_version) >= firmware_version(min_max_fw_it->second.first)) &&

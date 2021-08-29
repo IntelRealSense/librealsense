@@ -22,10 +22,10 @@ namespace librealsense
     bool ds_update_device::check_fw_compatibility(const std::vector<uint8_t>& image) const
     {
         std::string fw_version = extract_firmware_version_string((const void*)image.data(), image.size());
-
+        auto device_pid = _usb_device->get_info().pid;
         auto it = ds::device_to_fw_min_version.find(_usb_device->get_info().pid);
         if (it == ds::device_to_fw_min_version.end())
-            throw std::runtime_error("Minimum firmware version has not been defined for this device!");
+            throw std::runtime_error(to_string() << "Min and Max firmware versions have not been defined for this device: " << device_pid);
 
         return (firmware_version(fw_version) >= firmware_version(it->second));
     }
