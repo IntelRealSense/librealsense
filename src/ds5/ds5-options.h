@@ -421,7 +421,7 @@ namespace librealsense
         virtual const char* get_description() const override { return "Enable Gain auto-Limit"; }
         virtual void set(float value) override
         {
-            _value = value; // 0: gain auto-limit is disabled, 1 : gain auto-limit is ensabled (all range 16-248 is valid)
+            _value = value; // 0: gain auto-limit is disabled, 1 : gain auto-limit is ensabled (all range 1-165000 is valid)
             if (value == 1) // auto-limit is enabled -> save last limit that was set by the user
                 _cached_limit = _gain_limit->query();
             else if (_cached_limit >= _gain_limit->get_range().min && _cached_limit <= _gain_limit->get_range().max) // this condition is relevant to prevent setting cached val = 0
