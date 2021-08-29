@@ -219,7 +219,14 @@ namespace librealsense
 
                                 auto continuation = [buffer, this]()
                                 {
-                                    buffer->Unlock();
+                                    try
+                                    {
+                                        buffer->Unlock();
+                                    }
+                                    catch (...)
+                                    {
+                                        LOG_WARNING("Failed to unlock buffer");
+                                    }
                                 };
 
                                 stream.callback(profile, f, continuation);
