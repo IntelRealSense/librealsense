@@ -715,7 +715,7 @@ namespace rs2
 
         // -------------------- Measure ----------------
 
-        std::string measure_tooltip = "Measure distance between points";
+        std::string measure_tooltip = "Measure distance between points\nHold shift to connect more than 2 points and measure area";
         if (!glsl_available) measure_tooltip += "\nRequires GLSL acceleration! \nEnable 2 checkboxes in Settings - Performance:  \n- Use GLSL for Rendering \n- Use GLSL for Processing ";
         if (_measurements.is_enabled())
         {
