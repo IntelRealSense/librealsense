@@ -18,7 +18,7 @@
 using namespace librealsense;
 using namespace librealsense::platform;
 
-constexpr int DELAY_INCREMENT_THRESHOLD = 3; //[%]
+constexpr int DELAY_INCREMENT_THRESHOLD = 4; //[%]
 constexpr int DELAY_INCREMENT_THRESHOLD_IMU = 8; //[%]
 constexpr int SPIKE_THRESHOLD = 2; //[stdev]
 
@@ -334,13 +334,6 @@ TEST_CASE("Extrinsic memory leak detection", "[live]")
             if (stream.first == "Accel" || stream.first == "Gyro") threshold = DELAY_INCREMENT_THRESHOLD_IMU;
             CAPTURE(stream.first, slope, threshold);
             CAPTURE(stream.second);
-            /*auto y_vec_it = stream.second.begin();
-            size_t n = stream.second.size();
-            for (auto i = 0; i < n; i++)
-            {
-                auto vec_i = *(y_vec_it + i);
-                CAPTURE(stream.second);
-            }*/
             CHECK(slope < threshold);
 
         }
