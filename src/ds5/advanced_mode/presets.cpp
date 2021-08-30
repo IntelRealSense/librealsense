@@ -502,14 +502,14 @@ namespace librealsense
         p.cc.colorCorrection12 = -0.355469f;
         p.depth_table.depthClampMax = 65536;
         p.depth_table.depthClampMin = 0;
-        p.depth_table.depthUnits = 1000; 
-        p.depth_table.disparityShift = 0; 
-        p.ae.meanIntensitySetPoint = 1000; 
-        p.census.uDiameter = 9; 
-        p.census.vDiameter = 9; 
+        p.depth_table.depthUnits = 1000;
+        p.depth_table.disparityShift = 0;
+        p.ae.meanIntensitySetPoint = 1000;
+        p.census.uDiameter = 9;
+        p.census.vDiameter = 9;
         p.laser_state.laser_state = 1;
         p.laser_power.laser_power = 150.f;
-        p.depth_exposure.exposure = 8500.f; 
+        p.depth_exposure.exposure = 8500.f;
         p.depth_auto_exposure.auto_exposure = 1;
         p.color_auto_exposure.auto_exposure = 1;
         p.color_exposure.exposure = 156;
@@ -525,7 +525,7 @@ namespace librealsense
         p.color_auto_white_balance.auto_white_balance = 1;
         p.color_white_balance.white_balance = 4600;
         p.depth_gain.gain = 16.f;
-        p.hdad.ignoreSAD = 0; 
+        p.hdad.ignoreSAD = 0;
         p.amplitude_factor.amplitude = 0.f;
 
     }
@@ -546,7 +546,7 @@ namespace librealsense
         p.depth_controls.textureDifferenceThreshold = 1722;
         p.rsm.diffThresh = 1.65625f;
         p.rsm.removeThresh = 136;
-        p.rsm.rsmBypass = 0; 
+        p.rsm.rsmBypass = 0;
         p.rsm.sloRauDiffThresh = 0.785714f;
         p.rsvc.minEast = 6;
         p.rsvc.minNorth = 3;
@@ -588,12 +588,12 @@ namespace librealsense
         p.depth_controls.lrAgreeThreshold = 18;
         p.depth_controls.minusDecrement = 6;
         p.depth_controls.plusIncrement = 21;
-        p.depth_controls.scoreThreshA = 96; 
-        p.depth_controls.scoreThreshB = 1443; 
+        p.depth_controls.scoreThreshA = 96;
+        p.depth_controls.scoreThreshB = 1443;
         p.depth_controls.textureCountThreshold = 0;
         p.depth_controls.textureDifferenceThreshold = 2466;
         p.rsm.diffThresh = 1.21875f;
-        p.rsm.removeThresh = 82; 
+        p.rsm.removeThresh = 82;
         p.rsm.rsmBypass = 0;  // inverted field, should be the opposite in the json 
         p.rsm.sloRauDiffThresh = 0.28125f;
         p.rsvc.minEast = 2;
@@ -609,9 +609,9 @@ namespace librealsense
         p.color_control.disableSADNormalize = 0;
         p.color_control.disableSLOLeftColor = 0;
         p.color_control.disableSLORightColor = 0;
-        p.rctc.rauDiffThresholdBlue = 112; 
+        p.rctc.rauDiffThresholdBlue = 112;
         p.rctc.rauDiffThresholdGreen = 585;
-        p.rctc.rauDiffThresholdRed = 18; 
+        p.rctc.rauDiffThresholdRed = 18;
         p.sctc.diffThresholdBlue = 8;
         p.sctc.diffThresholdGreen = 200;
         p.sctc.diffThresholdRed = 279;
@@ -662,7 +662,7 @@ namespace librealsense
         p.rctc.rauDiffThresholdRed = 186;
         p.sctc.diffThresholdBlue = 16;
         p.sctc.diffThresholdGreen = 259;
-        p.sctc.diffThresholdRed = 896; 
+        p.sctc.diffThresholdRed = 896;
         p.spc.sloK1Penalty = 132;
         p.spc.sloK1PenaltyMod1 = 77;
         p.spc.sloK1PenaltyMod2 = 234;
