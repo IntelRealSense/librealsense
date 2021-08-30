@@ -31,8 +31,8 @@ test.start( "Init" )
 #    0  @0
 #
 sw.generate_depth_and_color( frame_number = 0, timestamp = 0 )
-sw.expect( depth_frame = 0 )                          # syncer doesn't know about color yet
-sw.expect( color_frame = 0, nothing_else = True )     # less than next expected of D
+sw.expect( depth_frame = 0 )                          # syncer doesn't know about C yet, so releases right away
+sw.expect( color_frame = 0, nothing_else = True )     # no hope for a match: D@0 is already out, so it's released
 #
 # NOTE: if the syncer queue wasn't 100 (see above) then we'd only get the color frame!
 # (it will output D to the queue, then C to the queue, but the queue size is 1 so we lose D)
