@@ -10,18 +10,37 @@ import time
 #
 domain = rs.timestamp_domain.hardware_clock       # For either depth/color
 #
-# To be set before init()
+# To be set before init() or playback()
 #
 fps_c = fps_d = 60
 w = 640
 h = 480
 bpp = 2  # bytes
 #
+# Set by init() or playback() -- don't set these unless you know what you're doing!
+#
+gap_c = gap_d = 0
+pixels = None
+device = None
+depth_sensor = None
+color_sensor = None
+depth_profile = None
+color_profile = None
+syncer = None
 playback_status = None
 
 
 def init():
     """
+    One of the two initialization functions:
+
+    Use init() to initialize a software device that will generate frames (as opposed to playback()
+    which will initialize a software device for reading from a rosbag and will NOT generate frames).
+
+    This should be followed by start() to actually start "streaming".
+
+    This sets multiple module variables that are used to generate software frames, and initializes
+    a syncer automatically.
     """
     global gap_c, gap_d
     gap_d = 1000 / fps_d
@@ -79,6 +98,18 @@ def playback_callback( status ):
 
 def playback( filename, use_syncer = True ):
     """
+    One of the two initialization functions:
+
+    Use playback() to initialize a software device for reading from a rosbag file. This device will
+    NOT generate frames! Only the expect() functions will be available.
+
+    If you use this function, it replaces init().
+
+    This should be followed by start() to actually start "streaming".
+
+    :param filename: The path to the file to open for playback
+    :param use_syncer: If True, a syncer will be used to attempt frame synchronization -- otherwise
+                       a regular queue will be used
     """
     ctx = rs.context()
     #
@@ -145,8 +176,11 @@ def reset():
 def generate_depth_frame( frame_number, timestamp ):
     """
     """
-    global depth_profile, domain, pixels, depth_sensor, w, bpp
+    global playback_status
+    if playback_status is not None:
+        raise RuntimeError( "cannot generate frames when playing back" )
     #
+    global depth_profile, domain, pixels, depth_sensor, w, bpp
     depth_frame = rs.software_video_frame()
     depth_frame.pixels = pixels
     depth_frame.stride = w * bpp
@@ -162,8 +196,11 @@ def generate_depth_frame( frame_number, timestamp ):
 def generate_color_frame( frame_number, timestamp ):
     """
     """
-    global color_profile, domain, pixels, color_sensor, w, bpp
+    global playback_status
+    if playback_status is not None:
+        raise RuntimeError( "cannot generate frames when playing back" )
     #
+    global color_profile, domain, pixels, color_sensor, w, bpp
     color_frame = rs.software_video_frame()
     color_frame.pixels = pixels
     color_frame.stride = w * bpp
@@ -195,7 +232,7 @@ def expect( depth_frame = None, color_frame = None, nothing_else = False ):
                 break
             time.sleep( 0.1 )
             f = syncer.poll_for_frame()
-    # NOTE: fs will never be None
+    # NOTE: f will never be None
     if not f:
         test.check( depth_frame is None, "expected a depth frame" )
         test.check( color_frame is None, "expected a color frame" )

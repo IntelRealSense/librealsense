@@ -14,6 +14,7 @@ Console app for converting ROS-bag files to various formats (currently supported
 |`-r <raw-path>`|convert to RAW, set output path to raw-path||
 |`-l <ply-path>`|convert to PLY, set output path to ply-path||
 |`-b <bin-path>`|convert to BIN (depth matrix), set output path to bin-path||
+|`-T`|convert to text (frame dump) output to standard out||
 |`-d`|convert depth frames only||
 |`-c`|convert color frames only||
 

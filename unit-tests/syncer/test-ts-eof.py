@@ -25,11 +25,20 @@ test.start( "Init" )
 # It can take a few frames for the syncer to actually produce a matched frameset (it doesn't
 # know what to match to in the beginning)
 
+# D  C  @timestamp  comment
+# -- -- ----------- ----------------
+# 0     @0          so next expected frame timestamp is at 0+16.67
+#    0  @0
+#
 sw.generate_depth_and_color( frame_number = 0, timestamp = 0 )
 sw.expect( depth_frame = 0 )                          # syncer doesn't know about color yet
 sw.expect( color_frame = 0, nothing_else = True )     # less than next expected of D
 #
 # NOTE: if the syncer queue wasn't 100 (see above) then we'd only get the color frame!
+# (it will output D to the queue, then C to the queue, but the queue size is 1 so we lose D)
+#
+# 1     @16
+#    1  @16
 #
 sw.generate_depth_and_color( 1, sw.gap_d * 1 )
 sw.expect( depth_frame = 1, color_frame = 1, nothing_else = True )  # frameset 1
@@ -40,6 +49,9 @@ test.finish()
 #
 test.start( "Keep going" )
 
+# 2     @33
+#    2  @33
+#
 sw.generate_depth_and_color( 2, sw.gap_d * 2 )
 sw.expect( depth_frame = 2, color_frame = 2, nothing_else = True )  # frameset 2
 
@@ -49,6 +61,8 @@ test.finish()
 #
 test.start( "Stop giving color; nothing output" )
 
+# 3     @50
+#
 sw.generate_depth_frame( 3, sw.gap_d * 3 )
 
 # The depth frame will be kept in the syncer, and never make it out (no matching color frame
