@@ -197,7 +197,7 @@ namespace librealsense
         p.cc.colorCorrection10 = -0.194336f;
         p.cc.colorCorrection11 = -0.194336f;
         p.cc.colorCorrection12 = -0.589844f;
-        p.depth_table.depthClampMax = 65536; 
+        p.depth_table.depthClampMax = 65536;
         p.depth_table.depthClampMin = 0;
         p.depth_table.depthUnits = 100;
         p.depth_table.disparityShift = 0;
@@ -255,18 +255,18 @@ namespace librealsense
         p.spc.sloK2PenaltyMod2 = 130;
         p.hdad.lambdaAD = 800.f;
         p.hdad.lambdaCensus = 26.f;
-        p.cc.colorCorrection1 = 0.4620000123978f;
-        p.cc.colorCorrection2 = 0.5400000214577f;
-        p.cc.colorCorrection3 = 0.5400000214577f;
-        p.cc.colorCorrection4 = 0.2080000042915f;
-        p.cc.colorCorrection5 = -0.3319999873638f;
-        p.cc.colorCorrection6 = -0.2129999995232f;
-        p.cc.colorCorrection7 = -0.2129999995232f;
-        p.cc.colorCorrection8 = 0.6850000023842f;
-        p.cc.colorCorrection9 = 0.930999994278f;
-        p.cc.colorCorrection10 = -0.5540000200272f;
-        p.cc.colorCorrection11 = -0.5540000200272f;
-        p.cc.colorCorrection12 = 0.04600000008941f;
+        p.cc.colorCorrection1 = 0.461914;
+        p.cc.colorCorrection2 = 0.540039;
+        p.cc.colorCorrection3 = 0.540039;
+        p.cc.colorCorrection4 = 0.208008;
+        p.cc.colorCorrection5 = -0.332031;
+        p.cc.colorCorrection6 = -0.212891f;
+        p.cc.colorCorrection7 = -0.212891f;
+        p.cc.colorCorrection8 = 0.68457f;
+        p.cc.colorCorrection9 = 0.930664f;
+        p.cc.colorCorrection10 = -0.553711;
+        p.cc.colorCorrection11 = -0.553711;
+        p.cc.colorCorrection12 = 0.0458984;
         p.depth_table.depthClampMax = 65536;
         p.depth_table.depthClampMin = 0;
         p.depth_table.depthUnits = 1000;
@@ -276,6 +276,19 @@ namespace librealsense
         p.census.vDiameter = 9;
         p.laser_state.laser_state = 1;
         p.laser_power.laser_power = 150.f;
+        p.color_auto_exposure.auto_exposure = 1;
+        p.color_exposure.exposure = 156;
+        p.color_backlight_compensation.backlight_compensation = 0;
+        p.color_brightness.brightness = 0;
+        p.color_contrast.contrast = 50;
+        p.color_gain.gain = 64;
+        p.color_gamma.gamma = 300;
+        p.color_hue.hue = 0;
+        p.color_power_line_frequency.power_line_frequency = 3;
+        p.color_saturation.saturation = 64;
+        p.color_sharpness.sharpness = 50;
+        p.color_auto_white_balance.auto_white_balance = 1;
+        p.color_white_balance.white_balance = 4600;
         p.depth_exposure.exposure = 33000.f;
         p.depth_auto_exposure.auto_exposure = 1;
         p.depth_gain.gain = 16.f;
@@ -347,8 +360,8 @@ namespace librealsense
         p.depth_auto_exposure.auto_exposure = 1;
         p.depth_gain.gain = 16.f;
     }
-
-    void default_430(preset& p)
+    
+    void default_430(preset& p) 
     {
         p.depth_controls.deepSeaMedianThreshold = 500;
         p.depth_controls.deepSeaNeighborThreshold = 7;
@@ -414,8 +427,22 @@ namespace librealsense
         p.laser_power.laser_power = 150.f;
         p.depth_exposure.exposure = 8500.f;
         p.depth_auto_exposure.auto_exposure = 1;
+        p.color_auto_exposure.auto_exposure = 1;
+        p.color_exposure.exposure = 156;
+        p.color_backlight_compensation.backlight_compensation = 0;
+        p.color_brightness.brightness = 0;
+        p.color_contrast.contrast = 50;
+        p.color_gain.gain = 64;
+        p.color_gamma.gamma = 300;
+        p.color_hue.hue = 0;
+        p.color_power_line_frequency.power_line_frequency = 3;
+        p.color_saturation.saturation = 64;
+        p.color_sharpness.sharpness = 50;
+        p.color_auto_white_balance.auto_white_balance = 1;
+        p.color_white_balance.white_balance = 4600;
         p.depth_gain.gain = 16.f;
         p.hdad.ignoreSAD = 0;
+        p.amplitude_factor.amplitude = 0.f;
     }
 
     void default_450(preset& p)
@@ -484,8 +511,22 @@ namespace librealsense
         p.laser_power.laser_power = 150.f;
         p.depth_exposure.exposure = 8500.f; 
         p.depth_auto_exposure.auto_exposure = 1;
+        p.color_auto_exposure.auto_exposure = 1;
+        p.color_exposure.exposure = 156;
+        p.color_backlight_compensation.backlight_compensation = 0;
+        p.color_brightness.brightness = 0;
+        p.color_contrast.contrast = 50;
+        p.color_gain.gain = 64;
+        p.color_gamma.gamma = 300;
+        p.color_hue.hue = 0;
+        p.color_power_line_frequency.power_line_frequency = 3;
+        p.color_saturation.saturation = 64;
+        p.color_sharpness.sharpness = 50;
+        p.color_auto_white_balance.auto_white_balance = 1;
+        p.color_white_balance.white_balance = 4600;
         p.depth_gain.gain = 16.f;
         p.hdad.ignoreSAD = 0; 
+        p.amplitude_factor.amplitude = 0.f;
 
     }
 
