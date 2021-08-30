@@ -146,7 +146,7 @@ namespace librealsense
                 auto callback_duration = callback_ended - callback_start_time;
 
                 LOG_DEBUG("Frame released - #" << std::dec << frame->get_frame_number() << " stream: " << rs2_stream_to_string(frame->get_stream()->get_stream_type()) 
-                    << " dispatched @" << callback_start_time << " was alive for: " << callback_duration);
+                    << " dispatched @" << callback_start_time << " was alive for: " << callback_duration << " [ms]");
             }
         }
 

@@ -318,7 +318,7 @@ namespace librealsense
     void frame::log_callback_start(rs2_time_t timestamp)
     {
         update_frame_callback_start_ts(timestamp);
-        LOG_DEBUG("CallbackStarted," << std::dec << librealsense::get_string(get_stream()->get_stream_type()) << "," << get_frame_number() << ",DispatchedAt," << std::fixed << timestamp);
+        LOG_DEBUG("CallbackStarted," << std::dec << librealsense::get_string(get_stream()->get_stream_type()) << ",#" << get_frame_number() << ",@" << std::fixed << timestamp);
     }
 
     void frame::log_callback_end(rs2_time_t timestamp) const
@@ -326,8 +326,8 @@ namespace librealsense
         auto callback_warning_duration = 1000.f / (get_stream()->get_framerate() + 1);
         auto callback_duration = timestamp - get_frame_callback_start_time_point();
 
-        LOG_DEBUG("CallbackFinished," << librealsense::get_string(get_stream()->get_stream_type()) << ","
-                    << std::dec << get_frame_number() << ",DispatchedAt," << std::fixed << timestamp);
+        LOG_DEBUG("CallbackFinished," << librealsense::get_string(get_stream()->get_stream_type()) << ",#"
+                    << std::dec << get_frame_number() << ",@" << std::fixed << timestamp);
 
         if (callback_duration > callback_warning_duration)
         {
