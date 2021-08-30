@@ -25,6 +25,7 @@ namespace librealsense
         std::weak_ptr<sensor_interface> _sensor;
         std::shared_ptr<sensor_interface> get_sensor() const override { return _sensor.lock(); }
         void set_sensor(std::shared_ptr<sensor_interface> s) override { _sensor = s; }
+        double get_time() const { return _time_service ? _time_service->get_time() : 0; }
 
         T alloc_frame(const size_t size, const frame_additional_data& additional_data, bool requires_memory)
         {
@@ -83,7 +84,7 @@ namespace librealsense
             if (frame)
             {
                 auto f = (T*)frame;
-                log_frame_callback_end(f);
+                log_frame_released(f);
                 std::unique_lock<std::recursive_mutex> lock(mutex);
 
                 frame->keep();
@@ -136,24 +137,16 @@ namespace librealsense
             return new_frame;
         }
 
-        void log_frame_callback_end(T* frame) const
+        void log_frame_released(T* frame) const
         {
             if (frame && frame->get_stream())
             {
-                auto callback_ended = _time_service ? _time_service->get_time() : 0;
-                auto callback_warning_duration = 1000 / (frame->get_stream()->get_framerate() + 1);
-                auto callback_duration = callback_ended - frame->get_frame_callback_start_time_point();
+                auto callback_ended = get_time();
+                auto callback_start_time = frame->get_frame_callback_start_time_point();
+                auto callback_duration = callback_ended - callback_start_time;
 
-                LOG_DEBUG("CallbackFinished," << rs2_stream_to_string(frame->get_stream()->get_stream_type()) << "," << std::dec << frame->get_frame_number()
-                    << ",DispatchedAt," << callback_ended);
-
-                if (callback_duration > callback_warning_duration)
-                {
-                    LOG_DEBUG("Frame Callback [" << rs2_stream_to_string(frame->get_stream()->get_stream_type())
-                        << "#" << std::dec << frame->additional_data.frame_number
-                        << "] overdue. (Duration: " << callback_duration
-                        << "ms, FPS: " << frame->get_stream()->get_framerate() << ", Max Duration: " << callback_warning_duration << "ms)");
-                }
+                LOG_DEBUG("Frame released - #" << std::dec << frame->get_frame_number() << " stream: " << rs2_stream_to_string(frame->get_stream()->get_stream_type()) 
+                    << " dispatched @" << callback_start_time << " was alive for: " << callback_duration);
             }
         }
 
