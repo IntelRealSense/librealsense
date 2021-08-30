@@ -6997,6 +6997,19 @@ namespace rs2
                         label = to_string() << pb->get_name() << "##" << id;
                         if (ImGui::TreeNode(label.c_str()))
                         {
+                            if (!viewer.is_option_skipped(RS2_OPTION_MIN_DISTANCE)) 
+                            {
+                                pb->get_option(RS2_OPTION_MIN_DISTANCE).update_all_fields(error_message, *viewer.not_model);
+                            }
+                            if (!viewer.is_option_skipped(RS2_OPTION_MAX_DISTANCE))
+                            {
+                                pb->get_option(RS2_OPTION_MAX_DISTANCE).update_all_fields(error_message, *viewer.not_model);
+                            }
+                            if (!viewer.is_option_skipped(RS2_OPTION_HISTOGRAM_EQUALIZATION_ENABLED))
+                            {
+                                pb->get_option(RS2_OPTION_HISTOGRAM_EQUALIZATION_ENABLED).update_all_fields(error_message, *viewer.not_model);
+                            }
+
                             for (auto i = 0; i < RS2_OPTION_COUNT; i++)
                             {
                                 auto opt = static_cast<rs2_option>(i);
@@ -7004,19 +7017,6 @@ namespace rs2
                                 pb->get_option(opt).draw_option(
                                     dev.is<playback>() || update_read_only_options,
                                     false, error_message, *viewer.not_model);
-
-                                if (opt == RS2_OPTION_MIN_DISTANCE)
-                                {
-                                    pb->get_option(RS2_OPTION_MAX_DISTANCE).update_all_fields(error_message, *viewer.not_model);
-                                }
-                                else if (opt == RS2_OPTION_MAX_DISTANCE)
-                                {
-                                    pb->get_option(RS2_OPTION_MIN_DISTANCE).update_all_fields(error_message, *viewer.not_model);
-                                }
-                                else if (opt == RS2_OPTION_HISTOGRAM_EQUALIZATION_ENABLED)
-                                {
-                                    pb->get_option(RS2_OPTION_HISTOGRAM_EQUALIZATION_ENABLED).update_all_fields(error_message, *viewer.not_model);
-                                }
                             }
 
                             ImGui::TreePop();
