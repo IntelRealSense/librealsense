@@ -18,9 +18,10 @@ Information about the Intel® RealSense™ technology at [www.intelrealsense.com
 
 ## Special notice from Intel® RealSense™ regarding the recent press announcement
 
-It is true that Intel has decided to wind down the "RealSense" business unit, and is announcing the EOL of LiDAR (L515), Facial Authentication (F450) and Tracking (T265) product lines this month. For these specific products, Intel plans to provide a 6 month EOL and Last Time Buy period for these EOL products.
+Intel has decided to wind down the RealSense business and is announcing the EOL of LiDAR, Facial Authentication, and Tracking product lines this month. Intel will continue to provide Stereo products to its current distribution customers.  Intel will focus our new development on advancing innovative technologies that better support our core businesses and IDM 2.0 strategy.
+The products identified in this notification will be discontinued and unavailable for additional orders after Feb 28, 2022.
 
-However, the Stereo Product Lines WILL continue with the following products: D410, D415, D430, D450 modules and D415, D435, D435i, D455 cameras to our current distribution customers (new distributors will be evaluated on a case by case basis). Support will be continued for the following Stereo products: D410, 415, 430, 450, modules and D415, 435, 435i integrated product lines.
+The following Stereo Product Lines WILL continue to be supported: D410, D415, D430, D450 modules and D415, D435, D435i, D455. 
 
 We will also continue the work to support and develop our LibRealSense open source SDK.
 
