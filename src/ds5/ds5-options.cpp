@@ -666,9 +666,12 @@ namespace librealsense
 
     void auto_exposure_limit_option::set(float value)
     {
-        if (!is_valid(value))
+        if (!is_valid(value) && value != 0)
             throw invalid_value_exception("set(enable_auto_exposure) failed! Invalid Auto-Exposure mode request " + std::to_string(value));
-
+        if (value != 0)
+            _cached_limit = value;
+        else
+            value = get_range().max;
         command cmd_get(ds::AUTO_CALIB);
         cmd_get.param1 = 5;
         std::vector<uint8_t> ret = _hwm.send(cmd_get);
@@ -711,9 +714,13 @@ namespace librealsense
 
     void auto_gain_limit_option::set(float value)
     {
-        if (!is_valid(value))
+        if (!is_valid(value) && value != 0)
             throw invalid_value_exception("set(enable_auto_gain) failed! Invalid Auto-Gain mode request " + std::to_string(value));
 
+        if (value != 0)
+            _cached_limit = value;
+        else
+            value = get_range().max;
         command cmd_get(ds::AUTO_CALIB);
         cmd_get.param1 = 5;
         std::vector<uint8_t> ret = _hwm.send(cmd_get);

@@ -347,12 +347,14 @@ namespace librealsense
             return "Exposure limit is in microseconds. Default is 0 which means full exposure range. If the requested exposure limit is greater than frame time, it will be set to frame time at runtime. Setting will not take effect until next streaming session.";
         }
         virtual void enable_recording(std::function<void(const option&)> record_action) override { _record_action = record_action; }
+        float get_cached_limit() { return _cached_limit; };
 
     private:
         std::function<void(const option&)> _record_action = [](const option&) {};
         lazy<option_range> _range;
         hw_monitor& _hwm;
         sensor_base* _sensor;
+        float _cached_limit;
     };
 
     class auto_gain_limit_option : public option_base
@@ -370,12 +372,14 @@ namespace librealsense
             return "Gain limits ranges from 16 to 248. Default is 0 which means full gain. If the requested gain limit is less than 16, it will be set to 16. If the requested gain limit is greater than 248, it will be set to 248. Setting will not take effect until next streaming session.";
         }
         virtual void enable_recording(std::function<void(const option&)> record_action) override { _record_action = record_action; }
+        float get_cached_limit() { return _cached_limit; };
 
     private:
         std::function<void(const option&)> _record_action = [](const option&) {};
         lazy<option_range> _range;
         hw_monitor& _hwm;
         sensor_base* _sensor;
+        float _cached_limit;
     };
 
     // Auto-Limits Enable/ Disable
@@ -416,19 +420,18 @@ namespace librealsense
     public:
         gain_limit_option(rs2_option option, option_range toggle_range, auto_gain_limit_option *gain) : limits_option(option, toggle_range), _gain_limit(gain)
         {
-            _cached_limit = _gain_limit->query();
+            _gain_limit->set(_gain_limit->get_range().max); // initialize to max range
         };
         virtual const char* get_description() const override { return "Enable Gain auto-Limit"; }
         virtual void set(float value) override
         {
             _value = value; // 0: gain auto-limit is disabled, 1 : gain auto-limit is ensabled (all range 16-248 is valid)
-            if (value == 0 && (_cached_limit >= _gain_limit->get_range().min && _cached_limit <= _gain_limit->get_range().max)) // this condition is relevant to prevent setting cached val = 0)
-                _gain_limit->set(_cached_limit);
+            if (value == 1)
+                _gain_limit->set(_gain_limit->get_cached_limit());
             else
-                _cached_limit = _gain_limit->query();
+                _gain_limit->set(0);
         };
     private:
-        float _cached_limit;
         auto_gain_limit_option *_gain_limit;
     };
 
@@ -438,19 +441,18 @@ namespace librealsense
     public:
         exposure_limit_option(rs2_option option, option_range toggle_range, auto_exposure_limit_option *exposure) : limits_option(option, toggle_range), _exposure_limit(exposure)
         {
-            _cached_limit = _exposure_limit->query();
+            _exposure_limit->set(_exposure_limit->get_range().max); // initialize to max range
         };
         virtual const char* get_description() const override { return "Enable Exposure auto-Limit"; }
         virtual void set(float value) override
         {
             _value = value; // 0: exposure auto-limit is disabled, 1 : exposure auto-limit is ensabled (all range 1-165000 is valid)
-            if (value == 0 && (_cached_limit >= _exposure_limit->get_range().min && _cached_limit <= _exposure_limit->get_range().max))
-                _exposure_limit->set(_cached_limit);
+            if (value == 1)
+                _exposure_limit->set(_exposure_limit->get_cached_limit());
             else
-                _cached_limit = _exposure_limit->query();
+                _exposure_limit->set(0);
         };
     private:
-        float _cached_limit;
         auto_exposure_limit_option* _exposure_limit;
     };
 
