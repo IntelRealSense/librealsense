@@ -303,11 +303,10 @@ def check_frame_drops(frame, previous_frame_number, allowed_drops = 1, allow_fra
     if previous_frame_number > 0 and not (allow_frame_counter_reset and frame_number < 5):
         dropped_frames = frame_number - (previous_frame_number + 1)
         if dropped_frames > allowed_drops:
-            log.out( dropped_frames, "frame(s) starting from frame", previous_frame_number + 1, "were dropped" )
+            log.out( dropped_frames, "frame(s) before", frame, "were dropped" )
             failed = True
         elif dropped_frames < 0:
-            log.out( "Frames repeated or out of order. Got frame", frame_number, "after frame",
-                   previous_frame_number)
+            log.out( "Frames repeated or out of order. Got", frame, "after frame", previous_frame_number )
             failed = True
     if failed:
         fail() 
