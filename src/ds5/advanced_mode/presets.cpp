@@ -289,7 +289,7 @@ namespace librealsense
         p.color_sharpness.sharpness = 50;
         p.color_auto_white_balance.auto_white_balance = 1;
         p.color_white_balance.white_balance = 4600;
-        p.depth_exposure.exposure = 33000.f;
+        p.depth_exposure.exposure = 32000.f;
         p.depth_auto_exposure.auto_exposure = 1;
         p.depth_gain.gain = 16.f;
     }
