@@ -406,9 +406,8 @@ namespace librealsense
                         // The frame will be released at the end of the scope if the user released it.
                         auto callback = fh->get_owner()->begin_callback();
                         fh->log_callback_start(environment::get_instance().get_time_service()->get_time());
-                        frame_holder clonned_frame = fh.clone();
-                        _source.invoke_callback(std::move(fh));
-                        clonned_frame->log_callback_end(environment::get_instance().get_time_service()->get_time());
+                        _source.invoke_callback(fh.clone());
+                        fh->log_callback_end(environment::get_instance().get_time_service()->get_time());
                     }
                 });
             }
@@ -884,9 +883,8 @@ namespace librealsense
             // The frame will be released at the end of the scope if the user released it.
             auto callback = frame->get_owner()->begin_callback();
             frame->log_callback_start(environment::get_instance().get_time_service()->get_time());
-            frame_holder clonned_frame = frame.clone();
-            _source.invoke_callback(std::move(frame));
-            clonned_frame->log_callback_end(environment::get_instance().get_time_service()->get_time());
+            _source.invoke_callback(frame.clone());
+            frame->log_callback_end(environment::get_instance().get_time_service()->get_time());
         });
         _is_streaming = true;
     }
