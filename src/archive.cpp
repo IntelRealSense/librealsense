@@ -332,8 +332,8 @@ namespace librealsense
         if (callback_duration > callback_warning_duration)
         {
             LOG_INFO("Frame Callback " << librealsense::get_string(get_stream()->get_stream_type())
-                << "#" << std::dec << get_frame_number()
-                << "overdue. (Duration: " << callback_duration
+                << " #" << std::dec << get_frame_number()
+                << " overdue. (Duration: " << callback_duration
                 << "ms, FPS: " << get_stream()->get_framerate() << ", Max Duration: " << callback_warning_duration << "ms)");
         }
     }

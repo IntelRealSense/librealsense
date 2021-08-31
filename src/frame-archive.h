@@ -144,9 +144,14 @@ namespace librealsense
                 auto callback_ended = get_time();
                 auto callback_start_time = frame->get_frame_callback_start_time_point();
                 auto callback_duration = callback_ended - callback_start_time;
-
-                LOG_DEBUG("Frame released - #" << std::dec << frame->get_frame_number() << " stream: " << rs2_stream_to_string(frame->get_stream()->get_stream_type()) 
-                    << " dispatched @" << callback_start_time << " was alive for: " << callback_duration << " [ms]");
+                if ( auto cf = dynamic_cast<composite_frame*>(frame))
+                { 
+                    LOG_DEBUG("Composite Frame Released (holding " << cf->get_embedded_frames_count() << " frames)");
+                }
+                else
+                {
+                    LOG_DEBUG("Frame Released - " << frame_to_string(*frame) << " was alive for: " << callback_duration << " [ms]");
+                }
             }
         }
 
