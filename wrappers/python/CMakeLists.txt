@@ -80,6 +80,9 @@ set(RAW_RS
     ../../src/backend.h
     ../../src/backend.cpp
     ../../src/dispatcher.cpp
+    ../../src/frame.cpp
+    ../../src/environment.cpp
+    ../../src/core/streaming.cpp
 )
 
 if(UNIX)
