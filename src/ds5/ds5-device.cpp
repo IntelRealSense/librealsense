@@ -1091,23 +1091,28 @@ namespace librealsense
             depth_sensor.register_option(RS2_OPTION_AUTO_GAIN_LIMIT, auto_gain_limit_enable_option);
 
             //GAIN Limit
-            std::shared_ptr<gain_limit_option> gain_limit_enable_option = std::make_shared<gain_limit_option>(RS2_OPTION_AUTO_GAIN_LIMIT_ON, enable_range, auto_gain_limit_enable_option.get());
-            depth_sensor.register_option(RS2_OPTION_AUTO_GAIN_LIMIT, auto_gain_limit_enable_option);
+            std::shared_ptr<limits_option> gain_limit_enable_option = std::make_shared<limits_option>(RS2_OPTION_AUTO_GAIN_LIMIT_ON, enable_range, auto_gain_limit_enable_option.get(), "Enable Gain auto-Limit");
+            //depth_sensor.register_option(RS2_OPTION_AUTO_GAIN_LIMIT, auto_gain_limit_enable_option);
 
             depth_sensor.register_option(RS2_OPTION_AUTO_GAIN_LIMIT_ON,
                 std::make_shared<auto_disabling_control>(
-                    gain_limit_enable_option,
-                    auto_gain_limit_enable_option
+                    std::shared_ptr<limits_option>(gain_limit_enable_option),
+                    std::shared_ptr<auto_gain_limit_option>(auto_gain_limit_enable_option)
+                    ));
+            depth_sensor.register_option(RS2_OPTION_AUTO_GAIN_LIMIT,
+                std::make_shared<auto_disabling_control>(
+                    std::shared_ptr<auto_gain_limit_option>(auto_gain_limit_enable_option),
+                    std::shared_ptr<limits_option>(gain_limit_enable_option)
                     ));
 
             // EXPOSURE Limit
-            std::shared_ptr<exposure_limit_option> exposure_limit_enable_option = std::make_shared<exposure_limit_option>(RS2_OPTION_AUTO_EXPOSURE_LIMIT_ON, enable_range, auto_exposure_limit_enable_option.get());
+            std::shared_ptr<limits_option> exposure_limit_enable_option = std::make_shared<limits_option>(RS2_OPTION_AUTO_EXPOSURE_LIMIT_ON, enable_range, auto_exposure_limit_enable_option.get(), "Enable Exposure auto-Limit");
             depth_sensor.register_option(RS2_OPTION_AUTO_EXPOSURE_LIMIT_ON, auto_exposure_limit_enable_option);
 
             depth_sensor.register_option(RS2_OPTION_AUTO_EXPOSURE_LIMIT_ON,
                 std::make_shared<auto_disabling_control>(
-                    exposure_limit_enable_option,
-                    auto_exposure_limit_enable_option
+                    std::shared_ptr<limits_option>(exposure_limit_enable_option),
+                    std::shared_ptr<auto_exposure_limit_option>(auto_exposure_limit_enable_option)
                     ));
         }
 

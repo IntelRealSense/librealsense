@@ -347,16 +347,13 @@ namespace librealsense
             return "Exposure limit is in microseconds. Default is 0 which means full exposure range. If the requested exposure limit is greater than frame time, it will be set to frame time at runtime. Setting will not take effect until next streaming session.";
         }
         virtual void enable_recording(std::function<void(const option&)> record_action) override { _record_action = record_action; }
-        float get_cached_limit() { return _cached_limit; };
-        void set_enable_limit(float value) { _enable_limit = value; };
+        hw_monitor& get_hwm() { return _hwm; };
 
     private:
         std::function<void(const option&)> _record_action = [](const option&) {};
         lazy<option_range> _range;
         hw_monitor& _hwm;
         sensor_base* _sensor;
-        float _cached_limit;
-        float _enable_limit;
     };
 
     class auto_gain_limit_option : public option_base
@@ -374,16 +371,13 @@ namespace librealsense
             return "Gain limits ranges from 16 to 248. Default is 0 which means full gain. If the requested gain limit is less than 16, it will be set to 16. If the requested gain limit is greater than 248, it will be set to 248. Setting will not take effect until next streaming session.";
         }
         virtual void enable_recording(std::function<void(const option&)> record_action) override { _record_action = record_action; }
-        float get_cached_limit() { return _cached_limit; };
-        void set_enable_limit(float value) { _enable_limit = value; };
+        hw_monitor& get_hwm() { return _hwm; };
 
     private:
         std::function<void(const option&)> _record_action = [](const option&) {};
         lazy<option_range> _range;
         hw_monitor& _hwm;
         sensor_base* _sensor;
-        float _cached_limit;
-        float _enable_limit;
     };
 
     // Auto-Limits Enable/ Disable
@@ -391,12 +385,28 @@ namespace librealsense
     {
     public:
 
-        limits_option(rs2_option option, option_range range) : _option(option), _toggle_range(range) {};
-        
+        limits_option(rs2_option option, option_range range, option_base* control, const char* description) : _option(option), _toggle_range(range), _control(control), _description(description)
+        {
+            _control->set(_control->get_range().max); // initialize to max range
+            _cached_limit = _control->get_range().max;
+        };
+        virtual void set(float value) override
+        {
+            _value = value; // 0: gain auto-limit is disabled, 1 : gain auto-limit is ensabled (all range 16-248 is valid)
+            if (value == 1)
+            {
+                _control->set(_cached_limit);
+            }
+            else
+            {
+                _cached_limit = _control->query(); // cache limit control value before turning it off
+                _control->set(_control->get_range().max);
+            }
+        };
         virtual float query() const override { return _value; };
         virtual option_range get_range() const override { return _toggle_range; };
         virtual bool is_enabled() const override { return true; }
-        virtual const char* get_description() const override { return "Enable Limits Option"; };
+        virtual const char* get_description() const override { return _description; };
         virtual void enable_recording(std::function<void(const option&)> record_action) override { _record_action = record_action; }
         virtual const char* get_value_description(float val) const override
         {
@@ -411,50 +421,9 @@ namespace librealsense
         float _value;
         option_range _toggle_range;
         const std::map<float, std::string> _description_per_value;
-    };
-
-    // GAIN Limit toggle
-    class gain_limit_option : public limits_option
-    {
-    public:
-        gain_limit_option(rs2_option option, option_range toggle_range, auto_gain_limit_option *gain) : limits_option(option, toggle_range), _gain_limit(gain)
-        {
-            _gain_limit->set(_gain_limit->get_range().max); // initialize to max range
-        };
-        virtual const char* get_description() const override { return "Enable Gain auto-Limit"; }
-        virtual void set(float value) override
-        {
-            _value = value; // 0: gain auto-limit is disabled, 1 : gain auto-limit is ensabled (all range 16-248 is valid)
-            _gain_limit->set_enable_limit(value);
-            if (value == 1)
-                _gain_limit->set(_gain_limit->get_cached_limit());
-            else
-                _gain_limit->set(_gain_limit->get_range().max);
-        };
-    private:
-        auto_gain_limit_option *_gain_limit;
-    };
-
-    // Exposure Limit toggle
-    class exposure_limit_option : public limits_option
-    {
-    public:
-        exposure_limit_option(rs2_option option, option_range toggle_range, auto_exposure_limit_option *exposure) : limits_option(option, toggle_range), _exposure_limit(exposure)
-        {
-            _exposure_limit->set(_exposure_limit->get_range().max); // initialize to max range
-        };
-        virtual const char* get_description() const override { return "Enable Exposure auto-Limit"; }
-        virtual void set(float value) override
-        {
-            _value = value; // 0: exposure auto-limit is disabled, 1 : exposure auto-limit is ensabled (all range 1-165000 is valid)
-            _exposure_limit->set_enable_limit(value);
-            if (value == 1)
-                _exposure_limit->set(_exposure_limit->get_cached_limit());
-            else
-                _exposure_limit->set(_exposure_limit->get_range().max);
-        };
-    private:
-        auto_exposure_limit_option* _exposure_limit;
+        float _cached_limit;
+        option_base* _control;
+        const char* _description;
     };
 
     class ds5_thermal_monitor;

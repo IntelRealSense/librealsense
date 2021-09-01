@@ -662,17 +662,12 @@ namespace librealsense
         {
             return range;
         };
-        _cached_limit = range.max;
-        _enable_limit = 0; // setting limit is disabled by default
     }
 
     void auto_exposure_limit_option::set(float value)
     {
-        if (!is_valid(value) && value != 0)
+        if (!is_valid(value))
             throw invalid_value_exception("set(enable_auto_exposure) failed! Invalid Auto-Exposure mode request " + std::to_string(value));
-        
-        if (_enable_limit != 0.f) // cache max limit only if setting limit is enabled
-            _cached_limit = value;
 
         command cmd_get(ds::AUTO_CALIB);
         cmd_get.param1 = 5;
@@ -712,17 +707,12 @@ namespace librealsense
         {
             return range;
         };
-        _cached_limit = range.max;
-        _enable_limit = 0; // setting limit is disabled by default
     }
 
     void auto_gain_limit_option::set(float value)
     {
         if (!is_valid(value))
             throw invalid_value_exception("set(enable_auto_gain) failed! Invalid Auto-Gain mode request " + std::to_string(value));
-
-        if(_enable_limit != 0.f) // cache max limit only if setting limit is enabled
-            _cached_limit = value;
 
         command cmd_get(ds::AUTO_CALIB);
         cmd_get.param1 = 5;
@@ -754,6 +744,25 @@ namespace librealsense
     {
         return *_range;
     }
+
+    /*void gain_limit_option::set(float value)
+    {
+        if (value != 0)
+            throw invalid_value_exception("set(enable_auto_exposure) failed! Invalid Auto-Exposure mode request " + std::to_string(value));
+
+        command cmd_get(ds::AUTO_CALIB);
+        cmd_get.param1 = 5;
+        std::vector<uint8_t> ret = _gain_limit->get_hwm().send(cmd_get);
+        if (ret.empty())
+            throw invalid_value_exception("auto_exposure_limit_option::query result is empty!");
+
+        command cmd(ds::AUTO_CALIB);
+        cmd.param1 = 4;
+        cmd.param2 = static_cast<int>(value);
+        cmd.param3 = *(reinterpret_cast<uint32_t*>(ret.data() + 4));
+        _gain_limit->get_hwm().send(cmd);
+        _record_action(*this);
+    }*/
 
     librealsense::thermal_compensation::thermal_compensation(
         std::shared_ptr<ds5_thermal_monitor> monitor,
