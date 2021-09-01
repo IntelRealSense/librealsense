@@ -113,9 +113,9 @@ extern "C" {
         RS2_OPTION_TRANSMITTER_FREQUENCY, /**<changes the transmitter frequencies increasing effective range over sharpness. */
         RS2_OPTION_VERTICAL_BINNING, /**< Enables vertical binning which increases the maximal sensed distance. */
         RS2_OPTION_RECEIVER_SENSITIVITY, /**< Control receiver sensitivity to incoming light, both projected and ambient (same as APD on L515). */
-        RS2_OPTION_COUNT, /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
         RS2_OPTION_AUTO_EXPOSURE_LIMIT_ON, /**< Enable / disable color image auto-exposure*/
-        RS2_OPTION_AUTO_GAIN_LIMIT_ON /**< Enable / disable color image auto-gain*/
+        RS2_OPTION_AUTO_GAIN_LIMIT_ON, /**< Enable / disable color image auto-gain*/
+        RS2_OPTION_COUNT /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
     } rs2_option;
 
     // This function is being deprecated. For existing options it will return option name, but for future API additions the user should call rs2_get_option_name instead.
