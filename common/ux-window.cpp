@@ -352,8 +352,8 @@ namespace rs2
         glfwSetWindowSizeCallback(_win, [](GLFWwindow* window, int width, int height)
         {
             config_file::instance().set(configurations::window::saved_size, true);
-            config_file::instance().set(configurations::window::width, width);
-            config_file::instance().set(configurations::window::height, height);
+            config_file::instance().set(configurations::window::width, width > 250? width : 250);
+            config_file::instance().set(configurations::window::height, height > 50? height : 50);
             config_file::instance().set(configurations::window::maximized, glfwGetWindowAttrib(window, GLFW_MAXIMIZED));
         });
 
