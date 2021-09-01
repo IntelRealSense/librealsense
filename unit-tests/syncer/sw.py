@@ -30,7 +30,7 @@ syncer = None
 playback_status = None
 
 
-def init():
+def init( syncer_matcher = rs.matchers.default ):
     """
     One of the two initialization functions:
 
@@ -40,7 +40,10 @@ def init():
     This should be followed by start() to actually start "streaming".
 
     This sets multiple module variables that are used to generate software frames, and initializes
-    a syncer automatically.
+    a syncer automatically if needed.
+
+    :param syncer_matcher: The matcher to use in the syncer (if None, no syncer will be used) --
+                           the default will compare all streams according to timestamp
     """
     global gap_c, gap_d
     gap_d = 1000 / fps_d
@@ -51,7 +54,8 @@ def init():
     #
     global device
     device = rs.software_device()
-    device.create_matcher( rs.matchers.default )  # Compare all streams according to timestamp
+    if syncer_matcher is not None:
+        device.create_matcher( syncer_matcher )
     #
     global depth_sensor, color_sensor
     depth_sensor = device.add_sensor( "Depth" )
@@ -81,8 +85,12 @@ def init():
     global color_profile
     color_profile = rs.video_stream_profile( color_sensor.add_video_stream( color_stream ))
     #
+    # We don't want to lose any frames so use a big queue size (default is 1)
     global syncer
-    syncer = rs.syncer( 100 )  # We don't want to lose any frames so uses a big queue size (default is 1)
+    if syncer_matcher is not None:
+        syncer = rs.syncer( 100 )  
+    else:
+        syncer = rs.frame_queue( 100 )
     #
     global playback_status
     playback_status = None
