@@ -5,11 +5,30 @@
 #include "metadata-parser.h"
 #include "core/streaming.h"
 #include "core/video.h"
+#include "environment.h"
 
 #define MIN_DISTANCE 1e-6
 
 namespace librealsense
 {
+
+    void log_frame_released(frame_interface* frame)
+    {
+        if (frame && frame->get_stream())
+        {
+            auto callback_ended = environment::get_instance().get_time_service()->get_time();
+            auto callback_start_time = frame->get_frame_callback_start_time_point();
+            auto callback_duration = callback_ended - callback_start_time;
+            if (auto cf = dynamic_cast<composite_frame*>(frame))
+            {
+                LOG_DEBUG("Composite Frame Released (holding " << cf->get_embedded_frames_count() << " frames)");
+            }
+            else
+            {
+                LOG_DEBUG("Frame Released - " << frame_to_string(*frame) << " was alive for: " << callback_duration << " [ms]");
+            }
+        }
+    }
 
     frame::frame(frame&& r)
         : ref_count(r.ref_count.exchange(0)), owner(r.owner), on_release(), _kept(r._kept.exchange(false))
@@ -184,6 +203,7 @@ namespace librealsense
         {
             unpublish();
             on_release();
+            log_frame_released(this);
             owner->unpublish_frame(this);
         }
     }

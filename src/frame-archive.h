@@ -25,7 +25,6 @@ namespace librealsense
         std::weak_ptr<sensor_interface> _sensor;
         std::shared_ptr<sensor_interface> get_sensor() const override { return _sensor.lock(); }
         void set_sensor(std::shared_ptr<sensor_interface> s) override { _sensor = s; }
-        double get_time() const { return _time_service ? _time_service->get_time() : 0; }
 
         T alloc_frame(const size_t size, const frame_additional_data& additional_data, bool requires_memory)
         {
@@ -84,7 +83,6 @@ namespace librealsense
             if (frame)
             {
                 auto f = (T*)frame;
-                log_frame_released(f);
                 std::unique_lock<std::recursive_mutex> lock(mutex);
 
                 frame->keep();
@@ -135,24 +133,6 @@ namespace librealsense
             *new_frame = std::move(*f);
 
             return new_frame;
-        }
-
-        void log_frame_released(T* frame) const
-        {
-            if (frame && frame->get_stream())
-            {
-                auto callback_ended = get_time();
-                auto callback_start_time = frame->get_frame_callback_start_time_point();
-                auto callback_duration = callback_ended - callback_start_time;
-                if ( auto cf = dynamic_cast<composite_frame*>(frame))
-                { 
-                    LOG_DEBUG("Composite Frame Released (holding " << cf->get_embedded_frames_count() << " frames)");
-                }
-                else
-                {
-                    LOG_DEBUG("Frame Released - " << frame_to_string(*frame) << " was alive for: " << callback_duration << " [ms]");
-                }
-            }
         }
 
         std::shared_ptr<metadata_parser_map> get_md_parsers() const override { return _metadata_parsers; };
