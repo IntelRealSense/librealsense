@@ -34,7 +34,7 @@ test.finish()
 #
 #############################################################################################
 #
-test.start( "Go past C.NE" )
+test.start( "Go past Color's Next Expected; get a lone Depth frame" )
 
 # 1     @7952 -> NE=7985; it's released because WAY past C.NE
 #
@@ -45,7 +45,7 @@ test.finish()
 #
 #############################################################################################
 #
-test.start( "Generate C which will wait" )
+test.start( "Generate a Color frame which will wait for Depth" )
 
 #    2  @7978 will wait, as it's ~= D.NE
 #
@@ -56,7 +56,7 @@ test.finish()
 #
 #############################################################################################
 #
-test.start( "Introduce D for release BEFORE C" )
+test.start( "Generate Depth for release BEFORE the waiting Color" )
 
 # 3     @7952 -> needs to be released BEFORE C2!!
 #
@@ -74,7 +74,7 @@ test.finish()
 #
 #############################################################################################
 #
-test.start( "And only then C" )
+test.start( "And only then get the Color when we generate a matching Depth" )
 
 sw.expect_nothing()  # C is still waiting for D.NE!
 
