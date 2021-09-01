@@ -1527,7 +1527,14 @@ namespace librealsense
 
         ~frame_continuation()
         {
-            continuation();
+            try
+            {
+                continuation();
+            }
+            catch (...)
+            {
+
+            }
         }
 
     };

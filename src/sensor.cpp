@@ -321,88 +321,100 @@ namespace librealsense
                 _device->probe_and_commit(req_profile_base->get_backend_profile(),
                     [this, req_profile_base, req_profile, last_frame_number, last_timestamp](platform::stream_profile p, platform::frame_object f, std::function<void()> continuation) mutable
                 {
-                    const auto&& system_time = environment::get_instance().get_time_service()->get_time();
-                    const auto&& fr = generate_frame_from_data(f, _timestamp_reader.get(), last_timestamp, last_frame_number, req_profile_base);
-                    const auto&& requires_processing = true; // TODO - Ariel add option
-                    const auto&& timestamp_domain = _timestamp_reader->get_frame_timestamp_domain(fr);
-                    auto bpp = get_image_bpp( req_profile_base->get_format() );
-                    auto&& frame_counter = fr->additional_data.frame_number;
-                    auto&& timestamp = fr->additional_data.timestamp;
+                        try
+                        {
+                            const auto&& system_time = environment::get_instance().get_time_service()->get_time();
+                            const auto&& fr = generate_frame_from_data(f, _timestamp_reader.get(), last_timestamp, last_frame_number, req_profile_base);
+                            const auto&& requires_processing = true; // TODO - Ariel add option
+                            const auto&& timestamp_domain = _timestamp_reader->get_frame_timestamp_domain(fr);
+                            auto bpp = get_image_bpp(req_profile_base->get_format());
+                            auto&& frame_counter = fr->additional_data.frame_number;
+                            auto&& timestamp = fr->additional_data.timestamp;
 
-                    if (!this->is_streaming())
-                    {
-                        LOG_WARNING("Frame received with streaming inactive,"
-                            << librealsense::get_string(req_profile_base->get_stream_type())
-                            << req_profile_base->get_stream_index()
-                            << ", Arrived," << std::fixed << f.backend_time << " " << system_time);
-                        return;
-                    }
+                            if (!this->is_streaming())
+                            {
+                                LOG_WARNING("Frame received with streaming inactive,"
+                                    << librealsense::get_string(req_profile_base->get_stream_type())
+                                    << req_profile_base->get_stream_index()
+                                    << ", Arrived," << std::fixed << f.backend_time << " " << system_time);
+                                return;
+                            }
 
-                    frame_continuation release_and_enqueue(continuation, f.pixels);
+                            frame_continuation release_and_enqueue(continuation, f.pixels);
 
-                    LOG_DEBUG("FrameAccepted," << librealsense::get_string(req_profile_base->get_stream_type())
-                        << ",Counter," << std::dec << fr->additional_data.frame_number
-                        << ",Index," << req_profile_base->get_stream_index()
-                        << ",BackEndTS," << std::fixed << f.backend_time
-                        << ",SystemTime," << std::fixed << system_time
-                        << " ,diff_ts[Sys-BE]," << system_time - f.backend_time
-                        << ",TS," << std::fixed << timestamp << ",TS_Domain," << rs2_timestamp_domain_to_string(timestamp_domain)
-                        << ",last_frame_number," << last_frame_number << ",last_timestamp," << last_timestamp);
+                            LOG_DEBUG("FrameAccepted," << librealsense::get_string(req_profile_base->get_stream_type())
+                                << ",Counter," << std::dec << fr->additional_data.frame_number
+                                << ",Index," << req_profile_base->get_stream_index()
+                                << ",BackEndTS," << std::fixed << f.backend_time
+                                << ",SystemTime," << std::fixed << system_time
+                                << " ,diff_ts[Sys-BE]," << system_time - f.backend_time
+                                << ",TS," << std::fixed << timestamp << ",TS_Domain," << rs2_timestamp_domain_to_string(timestamp_domain)
+                                << ",last_frame_number," << last_frame_number << ",last_timestamp," << last_timestamp);
 
-                    last_frame_number = frame_counter;
-                    last_timestamp = timestamp;
+                            last_frame_number = frame_counter;
+                            last_timestamp = timestamp;
 
-                    const auto&& vsp = As<video_stream_profile, stream_profile_interface>(req_profile);
-                    int width = vsp ? vsp->get_width() : 0;
-                    int height = vsp ? vsp->get_height() : 0;
+                            const auto&& vsp = As<video_stream_profile, stream_profile_interface>(req_profile);
+                            int width = vsp ? vsp->get_width() : 0;
+                            int height = vsp ? vsp->get_height() : 0;
 
-                    assert( (width * height) % 8 == 0 );
+                            assert((width * height) % 8 == 0);
 
-                    // TODO: remove when adding confidence format
-                    if( req_profile->get_stream_type() == RS2_STREAM_CONFIDENCE )
-                        bpp = 4;
+                            // TODO: remove when adding confidence format
+                            if (req_profile->get_stream_type() == RS2_STREAM_CONFIDENCE)
+                                bpp = 4;
 
-                    auto expected_size = (width * height * bpp) >> 3;
-                    // For compressed formats copy the raw data as is
-                    if (val_in_range(req_profile_base->get_format(), { RS2_FORMAT_MJPEG, RS2_FORMAT_Z16H }))
-                        expected_size = static_cast<int>(f.frame_size);
-                    frame_holder fh = _source.alloc_frame(
-                        stream_to_frame_types( req_profile_base->get_stream_type() ),
-                        expected_size,
-                        fr->additional_data,
-                        requires_processing );
-                    auto diff = environment::get_instance().get_time_service()->get_time() - system_time;
-                    if( diff > 10 )
-                        LOG_DEBUG("!! Frame allocation took " << diff << " msec");
+                            auto expected_size = (width * height * bpp) >> 3;
+                            // For compressed formats copy the raw data as is
+                            if (val_in_range(req_profile_base->get_format(), { RS2_FORMAT_MJPEG, RS2_FORMAT_Z16H }))
+                                expected_size = static_cast<int>(f.frame_size);
+                            frame_holder fh = _source.alloc_frame(
+                                stream_to_frame_types(req_profile_base->get_stream_type()),
+                                expected_size,
+                                fr->additional_data,
+                                requires_processing);
+                            auto diff = environment::get_instance().get_time_service()->get_time() - system_time;
+                            if (diff > 10)
+                                LOG_DEBUG("!! Frame allocation took " << diff << " msec");
 
-                    if (fh.frame)
-                    {
-                        assert( expected_size == sizeof(byte) * fr->data.size() );
+                            if (fh.frame)
+                            {
+                                assert(expected_size == sizeof(byte) * fr->data.size());
 
-                        memcpy((void*)fh->get_frame_data(), fr->data.data(), expected_size);
-                        auto&& video = (video_frame*)fh.frame;
-                        video->assign(width, height, width * bpp / 8, bpp);
-                        video->set_timestamp_domain(timestamp_domain);
-                        fh->set_stream(req_profile_base);
-                    }
-                    else
-                    {
-                        LOG_INFO("Dropped frame. alloc_frame(...) returned nullptr");
-                        return;
-                    }
+                                memcpy((void*)fh->get_frame_data(), fr->data.data(), expected_size);
+                                auto&& video = (video_frame*)fh.frame;
+                                video->assign(width, height, width * bpp / 8, bpp);
+                                video->set_timestamp_domain(timestamp_domain);
+                                fh->set_stream(req_profile_base);
+                            }
+                            else
+                            {
+                                LOG_INFO("Dropped frame. alloc_frame(...) returned nullptr");
+                                return;
+                            }
 
-                    diff = environment::get_instance().get_time_service()->get_time() - system_time;
-                    if (diff >10 )
-                        LOG_DEBUG("!! Frame memcpy took " << diff << " msec");
-                    if (!requires_processing)
-                    {
-                        fh->attach_continuation(std::move(release_and_enqueue));
-                    }
+                            diff = environment::get_instance().get_time_service()->get_time() - system_time;
+                            if (diff > 10)
+                                LOG_DEBUG("!! Frame memcpy took " << diff << " msec");
+                            if (!requires_processing)
+                            {
+                                fh->attach_continuation(std::move(release_and_enqueue));
+                            }
 
-                    if (fh->get_stream().get())
-                    {
-                        _source.invoke_callback(std::move(fh));
-                    }
+                            if (fh->get_stream().get())
+                            {
+                                try
+                                {
+                                    _source.invoke_callback(std::move(fh));
+                                }
+                                catch (...)
+                                {
+                                }
+                            }
+                        }
+                        catch (...)
+                        {
+                        }
                 });
             }
             catch (...)
