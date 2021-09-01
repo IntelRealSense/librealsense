@@ -307,7 +307,18 @@ namespace librealsense
         }
         update_next_expected( matcher, f );
 
-        auto const last_arrived = f.frame;
+        // We want to keep track of a "last-arrived" frame which is our current equivalent of "now" -- it contains the
+        // latest timestamp/frame-number/etc. that we can compare to. But we need to be careful as it could be released
+        // before we're done releasing the rest of the frames and then it'll no longer be valid. So we acquire().
+        // However, we should NOT acquire() a frameset: its content will get moved away when packaging into a new
+        // composite frame and we'll end up with an empty frameset in-hand. Rather, we acquire() the representative
+        // frame within it:
+        frame_interface * last_arrived_ = f.frame;
+        if( auto cf = dynamic_cast< composite_frame * >( last_arrived_ ) )
+            last_arrived_ = cf->first();
+        frame_holder last_arrived( last_arrived_ );
+        last_arrived_->acquire();  // because the previous line does not!
+
         if( ! _frames_queue[matcher.get()].enqueue( std::move( f ) ) )
             // If we get stopped, nothing to do!
             return;
@@ -430,8 +441,8 @@ namespace librealsense
             std::sort( match.begin(),
                        match.end(),
                        []( const frame_holder & f1, const frame_holder & f2 ) {
-                           return ( (frame_interface *)f1 )->get_stream()->get_unique_id()
-                                > ( (frame_interface *)f2 )->get_stream()->get_unique_id();
+                           return f1.frame->get_stream()->get_unique_id()
+                                > f2.frame->get_stream()->get_unique_id();
                        } );
 
 
