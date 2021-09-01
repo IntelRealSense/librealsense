@@ -1023,6 +1023,11 @@ namespace rs2
         return (_hidden_options.find(opt) != _hidden_options.end());
     }
 
+    void rs2::viewer_model::disable_measurements()
+    {
+        _measurements.disable();
+    }
+
     void rs2::viewer_model::show_popup(const ux_window& window, const popup& p)
     {
         auto font_14 = window.get_font();

@@ -2065,6 +2065,10 @@ namespace rs2
             detected_objects->clear();
             detected_objects->sensor_is_on = false;
         }
+        else if (profiles[0].stream_type() == RS2_STREAM_DEPTH)
+        {
+            viewer.disable_measurements();
+        }
 
         s->stop();
 

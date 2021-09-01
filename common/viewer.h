@@ -121,6 +121,8 @@ namespace rs2
 
         bool is_option_skipped(rs2_option opt) const;
 
+        void disable_measurements();
+
         std::mutex streams_mutex;
         std::map<int, stream_model> streams;
         std::map<int, int> streams_origin;
