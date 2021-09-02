@@ -18,29 +18,28 @@
 #include "global_timestamp_reader.h"
 #include "device-calibration.h"
 
-namespace librealsense
-{
+namespace librealsense {
+
 void log_callback_end( uint32_t fps,
                        rs2_time_t callback_start_time,
                        rs2_stream stream_type,
                        unsigned long long frame_number )
+{
+    auto current_time = environment::get_instance().get_time_service()->get_time();
+    auto callback_warning_duration = 1000.f / ( fps + 1 );
+    auto callback_duration = current_time - callback_start_time;
+
+    LOG_DEBUG( "CallbackFinished," << librealsense::get_string( stream_type ) << ",#" << std::dec
+                                   << frame_number << ",@" << std::fixed << current_time
+                                   << ", callback duration: " << callback_duration << " ms" );
+
+    if( callback_duration > callback_warning_duration )
     {
-        auto current_time = environment::get_instance().get_time_service()->get_time();
-        auto callback_warning_duration = 1000.f / (fps + 1);
-        auto callback_duration = current_time - callback_start_time;
-
-        LOG_DEBUG("CallbackFinished," << librealsense::get_string(stream_type)
-            << ",#" << std::dec << frame_number << ",@" << std::fixed
-            << current_time << ", callback duration: " << callback_duration << " ms");
-
-        if (callback_duration > callback_warning_duration)
-        {
-            LOG_INFO("Frame Callback " << librealsense::get_string(stream_type)
-                << " #" << std::dec << frame_number
-                << " overdue. (FPS: " << fps
-                << ", max duration: " << callback_warning_duration << " ms)");
-        }
+        LOG_INFO( "Frame Callback " << librealsense::get_string( stream_type ) << " #" << std::dec
+                                    << frame_number << " overdue. (FPS: " << fps
+                                    << ", max duration: " << callback_warning_duration << " ms)" );
     }
+}
 
     //////////////////////////////////////////////////////
     /////////////////// Sensor Base //////////////////////
@@ -430,7 +429,6 @@ void log_callback_end( uint32_t fps,
 
                         // Invoke first callback
                         auto callback_start_time = environment::get_instance().get_time_service()->get_time();
-                        fh->set_callback_start(callback_start_time);
                         auto callback = fh->get_owner()->begin_callback();
                         _source.invoke_callback(std::move(fh));
 
@@ -916,7 +914,6 @@ void log_callback_end( uint32_t fps,
 
             // Invoke first callback
             auto callback_start_time = environment::get_instance().get_time_service()->get_time();
-            frame->set_callback_start(callback_start_time);
             auto callback = frame->get_owner()->begin_callback();
             _source.invoke_callback(std::move(frame));
 

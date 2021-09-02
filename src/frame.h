@@ -35,7 +35,6 @@ struct frame_additional_data
     unsigned long long frame_number = 0;
     rs2_timestamp_domain timestamp_domain = RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK;
     rs2_time_t system_time = 0;  // sys-clock at the time the frame was received from the backend
-    rs2_time_t frame_callback_started = 0;  // time when the frame was sent to user callback
     uint32_t metadata_size = 0;
     bool fisheye_ae_mode = false;  // TODO: remove in future release
     std::array< uint8_t, MAX_META_DATA_SIZE > metadata_blob;
@@ -114,18 +113,12 @@ public:
     virtual std::shared_ptr< stream_profile_interface > get_stream() const = 0;
     virtual void set_stream( std::shared_ptr< stream_profile_interface > sp ) = 0;
 
-    virtual rs2_time_t get_frame_callback_start_time_point() const = 0;
-    virtual void update_frame_callback_start_ts( rs2_time_t ts ) = 0;
-
     virtual void acquire() = 0;
     virtual void release() = 0;
     virtual frame_interface * publish( std::shared_ptr< archive_interface > new_owner ) = 0;
     virtual void unpublish() = 0;
     virtual void attach_continuation( frame_continuation && continuation ) = 0;
     virtual void disable_continuation() = 0;
-
-    virtual void set_callback_start( rs2_time_t timestamp ) = 0;
-
     virtual archive_interface * get_owner() const = 0;
 
     virtual void mark_fixed() = 0;
@@ -219,9 +212,6 @@ public:
         stream = std::move( sp );
     }
 
-    rs2_time_t get_frame_callback_start_time_point() const override;
-    void update_frame_callback_start_ts( rs2_time_t ts ) override;
-
     void acquire() override { ref_count.fetch_add( 1 ); }
     void release() override;
     void keep() override;
@@ -238,7 +228,6 @@ public:
 
     std::shared_ptr< sensor_interface > get_sensor() const override;
     void set_sensor( std::shared_ptr< sensor_interface > s ) override;
-    void set_callback_start( rs2_time_t timestamp ) override;
 
     void mark_fixed() override { _fixed = true; }
     bool is_fixed() const override { return _fixed; }

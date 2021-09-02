@@ -176,21 +176,6 @@ rs2_time_t frame::get_frame_system_time() const
     return additional_data.system_time;
 }
 
-void frame::update_frame_callback_start_ts( rs2_time_t ts )
-{
-    additional_data.frame_callback_started = ts;
-}
-
-void frame::set_callback_start(rs2_time_t timestamp)
-{
-    update_frame_callback_start_ts(timestamp);
-}
-
-rs2_time_t frame::get_frame_callback_start_time_point() const
-{
-    return additional_data.frame_callback_started;
-}
-
 float depth_frame::get_distance( int x, int y ) const
 {
     // If this frame does not itself contain Z16 depth data,
