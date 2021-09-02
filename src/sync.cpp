@@ -308,16 +308,8 @@ namespace librealsense
         update_next_expected( matcher, f );
 
         // We want to keep track of a "last-arrived" frame which is our current equivalent of "now" -- it contains the
-        // latest timestamp/frame-number/etc. that we can compare to. But we need to be careful as it could be released
-        // before we're done releasing the rest of the frames and then it'll no longer be valid. So we acquire().
-        // However, we should NOT acquire() a frameset: its content will get moved away when packaging into a new
-        // composite frame and we'll end up with an empty frameset in-hand. Rather, we acquire() the representative
-        // frame within it:
-        frame_interface * last_arrived_ = f.frame;
-        if( auto cf = dynamic_cast< composite_frame * >( last_arrived_ ) )
-            last_arrived_ = cf->first();
-        frame_holder last_arrived( last_arrived_ );
-        last_arrived_->acquire();  // because the previous line does not!
+        // latest timestamp/frame-number/etc. that we can compare to.
+        auto const last_arrived = f->get_header();
 
         if( ! _frames_queue[matcher.get()].enqueue( std::move( f ) ) )
             // If we get stopped, nothing to do!
@@ -506,7 +498,7 @@ namespace librealsense
     bool
     frame_number_composite_matcher::skip_missing_stream( frame_interface const * const synced_frame,
                                                          matcher * missing,
-                                                         frame_interface const * last_arrived,
+                                                         frame_header const & last_arrived,
                                                          const syncronization_environment & env )
     {
          if(!missing->get_active())
@@ -619,7 +611,7 @@ namespace librealsense
 
     bool timestamp_composite_matcher::skip_missing_stream( frame_interface const * waiting_to_be_released,
                                                            matcher * missing,
-                                                           frame_interface const * last_arrived,
+                                                           frame_header const & last_arrived,
                                                            const syncronization_environment & env )
     {
         // true : frameset is ready despite the missing stream (no use waiting) -- "skip" it
@@ -636,7 +628,7 @@ namespace librealsense
         auto it = _next_expected_domain.find( missing );
         if( it != _next_expected_domain.end() )
         {
-            if( it->second != last_arrived->get_frame_timestamp_domain() )
+            if( it->second != last_arrived.timestamp_domain )
             {
                 // LOG_IF_ENABLE( "...     not the same domain: frameset not ready!", env );
                 return false;
@@ -685,7 +677,7 @@ namespace librealsense
         // our queue size and per-stream archive size allow.
         auto const fps = get_fps( waiting_to_be_released );
 
-        rs2_time_t now = last_arrived->get_frame_timestamp();
+        rs2_time_t now = last_arrived.timestamp;
         if( now > next_expected )
         {
             // Wait for the missing stream frame to arrive -- up to a cutout: anything more and we

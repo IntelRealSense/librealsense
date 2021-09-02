@@ -130,7 +130,7 @@ namespace librealsense
         virtual bool is_smaller_than(frame_holder& a, frame_holder& b) = 0;
         virtual bool skip_missing_stream( frame_interface const * waiting_to_be_released,
                                           matcher * missing,
-                                          frame_interface const * last_arrived,
+                                          frame_header const & last_arrived,
                                           const syncronization_environment & env )
             = 0;
         virtual void clean_inactive_streams(frame_holder& f) = 0;
@@ -168,7 +168,7 @@ namespace librealsense
         virtual bool is_smaller_than(frame_holder& a, frame_holder& b) override { return false; }
         virtual bool skip_missing_stream( frame_interface const * waiting_to_be_released,
                                           matcher * missing,
-                                          frame_interface const * last_arrived,
+                                          frame_header const & last_arrived,
                                           const syncronization_environment & env ) override
         {
             return false;
@@ -193,7 +193,7 @@ namespace librealsense
         bool is_smaller_than(frame_holder& a, frame_holder& b) override;
         bool skip_missing_stream( frame_interface const * waiting_to_be_released,
                                   matcher * missing,
-                                  frame_interface const * last_arrived,
+                                  frame_header const & last_arrived,
                                   const syncronization_environment & env ) override;
         void clean_inactive_streams(frame_holder& f) override;
         void update_next_expected( std::shared_ptr< matcher > const & matcher,
@@ -213,7 +213,7 @@ namespace librealsense
         void clean_inactive_streams(frame_holder& f) override;
         bool skip_missing_stream( frame_interface const * waiting_to_be_released,
                                   matcher * missing,
-                                  frame_interface const * last_arrived,
+                                  frame_header const & last_arrived,
                                   const syncronization_environment & env ) override;
         void update_next_expected( std::shared_ptr< matcher > const & matcher,
                                    const frame_holder & f ) override;
