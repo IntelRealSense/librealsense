@@ -429,8 +429,8 @@ void log_callback_end( uint32_t fps,
                         auto frame_number = fh->get_frame_number();
 
                         // Invoke first callback
-                        fh->set_callback_start(environment::get_instance().get_time_service()->get_time());
-                        auto callback_start_time = fh->get_frame_callback_start_time_point();
+                        auto callback_start_time = environment::get_instance().get_time_service()->get_time();
+                        fh->set_callback_start(callback_start_time);
                         auto callback = fh->get_owner()->begin_callback();
                         _source.invoke_callback(std::move(fh));
 
@@ -915,8 +915,8 @@ void log_callback_end( uint32_t fps,
             auto frame_number = frame->get_frame_number();
 
             // Invoke first callback
-            frame->set_callback_start(environment::get_instance().get_time_service()->get_time());
-            auto callback_start_time = frame->get_frame_callback_start_time_point();
+            auto callback_start_time = environment::get_instance().get_time_service()->get_time();
+            frame->set_callback_start(callback_start_time);
             auto callback = frame->get_owner()->begin_callback();
             _source.invoke_callback(std::move(frame));
 
