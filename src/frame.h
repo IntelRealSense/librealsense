@@ -124,8 +124,7 @@ public:
     virtual void attach_continuation( frame_continuation && continuation ) = 0;
     virtual void disable_continuation() = 0;
 
-    virtual void log_callback_start( rs2_time_t timestamp ) = 0;
-    virtual void log_callback_end( rs2_time_t timestamp ) const = 0;
+    virtual void set_callback_start( rs2_time_t timestamp ) = 0;
 
     virtual archive_interface * get_owner() const = 0;
 
@@ -239,10 +238,7 @@ public:
 
     std::shared_ptr< sensor_interface > get_sensor() const override;
     void set_sensor( std::shared_ptr< sensor_interface > s ) override;
-
-
-    void log_callback_start( rs2_time_t timestamp ) override;
-    void log_callback_end( rs2_time_t timestamp ) const override;
+    void set_callback_start( rs2_time_t timestamp ) override;
 
     void mark_fixed() override { _fixed = true; }
     bool is_fixed() const override { return _fixed; }

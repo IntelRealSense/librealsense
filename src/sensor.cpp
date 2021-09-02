@@ -20,6 +20,28 @@
 
 namespace librealsense
 {
+void log_callback_end( uint32_t fps,
+                       rs2_time_t callback_start_time,
+                       rs2_stream stream_type,
+                       unsigned long long frame_number )
+    {
+        auto current_time = environment::get_instance().get_time_service()->get_time();
+        auto callback_warning_duration = 1000.f / (fps + 1);
+        auto callback_duration = current_time - callback_start_time;
+
+        LOG_DEBUG("CallbackFinished," << librealsense::get_string(stream_type)
+            << ",#" << std::dec << frame_number << ",@" << std::fixed
+            << current_time << ", callback duration: " << callback_duration << " ms");
+
+        if (callback_duration > callback_warning_duration)
+        {
+            LOG_INFO("Frame Callback " << librealsense::get_string(stream_type)
+                << " #" << std::dec << frame_number
+                << " overdue. (FPS: " << fps
+                << ", max duration: " << callback_warning_duration << " ms)");
+        }
+    }
+
     //////////////////////////////////////////////////////
     /////////////////// Sensor Base //////////////////////
     //////////////////////////////////////////////////////
@@ -401,13 +423,22 @@ namespace librealsense
 
                     if (fh->get_stream().get())
                     {
-                        // We clone the frame in order to increase the ref count.
-                        // We want to log the callback ending with the frame information.
-                        // The frame will be released at the end of the scope if the user released it.
+                        // Gather info for logging the callback ended
+                        auto fps = fh->get_stream()->get_framerate();
+                        auto stream_type = fh->get_stream()->get_stream_type();
+                        auto frame_number = fh->get_frame_number();
+
+                        // Invoke first callback
+                        fh->set_callback_start(environment::get_instance().get_time_service()->get_time());
+                        auto callback_start_time = fh->get_frame_callback_start_time_point();
                         auto callback = fh->get_owner()->begin_callback();
-                        fh->log_callback_start(environment::get_instance().get_time_service()->get_time());
-                        _source.invoke_callback(fh.clone());
-                        fh->log_callback_end(environment::get_instance().get_time_service()->get_time());
+                        _source.invoke_callback(std::move(fh));
+
+                        // Log callback ended
+                        log_callback_end( fps,
+                                          callback_start_time,
+                                          stream_type,
+                                          frame_number );
                     }
                 });
             }
@@ -878,13 +909,19 @@ namespace librealsense
             frame->set_stream(request);
             frame->set_timestamp_domain(timestamp_domain);
 
-            // We clone the frame in order to increase the ref count.
-            // We want to log the callback ending with the frame information.
-            // The frame will be released at the end of the scope if the user released it.
+            // Gather info for logging the callback ended
+            auto fps = frame->get_stream()->get_framerate();
+            auto stream_type = frame->get_stream()->get_stream_type();
+            auto frame_number = frame->get_frame_number();
+
+            // Invoke first callback
+            frame->set_callback_start(environment::get_instance().get_time_service()->get_time());
+            auto callback_start_time = frame->get_frame_callback_start_time_point();
             auto callback = frame->get_owner()->begin_callback();
-            frame->log_callback_start(environment::get_instance().get_time_service()->get_time());
-            _source.invoke_callback(frame.clone());
-            frame->log_callback_end(environment::get_instance().get_time_service()->get_time());
+            _source.invoke_callback(std::move(frame));
+
+            // Log callback ended
+            log_callback_end( fps, callback_start_time, stream_type, frame_number );
         });
         _is_streaming = true;
     }

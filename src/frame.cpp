@@ -7,26 +7,6 @@
 
 namespace librealsense {
 
-void log_frame_released( frame_interface const * frame )
-{
-    if( frame && frame->get_stream() )
-    {
-        auto callback_ended = environment::get_instance().get_time_service()->get_time();
-        auto callback_start_time = frame->get_frame_callback_start_time_point();
-        auto callback_duration = callback_ended - callback_start_time;
-        if( auto cf = dynamic_cast< const composite_frame * >( frame ) )
-        {
-            LOG_DEBUG( "Composite Frame Released (holding " << cf->get_embedded_frames_count()
-                                                            << " frames)" );
-        }
-        else
-        {
-            LOG_DEBUG( "Frame Released - " << frame_to_string( *frame )
-                                           << " was alive for: " << callback_duration << " [ms]" );
-        }
-    }
-}
-
 frame::frame( frame && r )
     : ref_count( r.ref_count.exchange( 0 ) )
     , owner( r.owner )
@@ -82,7 +62,6 @@ void frame::release()
     {
         unpublish();
         on_release();
-        log_frame_released( this );
         owner->unpublish_frame( this );
     }
 }
@@ -202,37 +181,14 @@ void frame::update_frame_callback_start_ts( rs2_time_t ts )
     additional_data.frame_callback_started = ts;
 }
 
+void frame::set_callback_start(rs2_time_t timestamp)
+{
+    update_frame_callback_start_ts(timestamp);
+}
+
 rs2_time_t frame::get_frame_callback_start_time_point() const
 {
     return additional_data.frame_callback_started;
-}
-
-void frame::log_callback_start( rs2_time_t timestamp )
-{
-    update_frame_callback_start_ts( timestamp );
-    LOG_DEBUG( "CallbackStarted," << std::dec
-                                  << librealsense::get_string( get_stream()->get_stream_type() )
-                                  << ",#" << get_frame_number() << ",@" << std::fixed
-                                  << timestamp );
-}
-
-void frame::log_callback_end( rs2_time_t timestamp ) const
-{
-    auto callback_warning_duration = 1000.f / ( get_stream()->get_framerate() + 1 );
-    auto callback_duration = timestamp - get_frame_callback_start_time_point();
-
-    LOG_DEBUG( "CallbackFinished," << librealsense::get_string( get_stream()->get_stream_type() )
-                                   << ",#" << std::dec << get_frame_number() << ",@" << std::fixed
-                                   << timestamp );
-
-    if( callback_duration > callback_warning_duration )
-    {
-        LOG_INFO( "Frame Callback " << librealsense::get_string( get_stream()->get_stream_type() )
-                                    << " #" << std::dec << get_frame_number()
-                                    << " overdue. (Duration: " << callback_duration
-                                    << "ms, FPS: " << get_stream()->get_framerate()
-                                    << ", Max Duration: " << callback_warning_duration << "ms)" );
-    }
 }
 
 float depth_frame::get_distance( int x, int y ) const
