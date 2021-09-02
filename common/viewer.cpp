@@ -759,6 +759,7 @@ namespace rs2
         active = false;
         if (big_button(&active, win, 5 + left, 0, textual_icons::floppy, "Export", false, last_points, "Export 3D model to 3rd-party application"))
         {
+            _measurements.disable();
             temp_cfg = config_file::instance();
             ImGui::OpenPopup("Export");
         }
