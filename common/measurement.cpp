@@ -660,7 +660,7 @@ void measurement::draw(ux_window& win)
 
 void measurement::show_tooltip(ux_window& win)
 {
-    if (mouse_picked_event.eval())
+    if (mouse_picked_event.eval() && ImGui::IsWindowHovered())
     {
         if (display_mouse_picked_tooltip() && hovered_edge_id  < 0)
         {
