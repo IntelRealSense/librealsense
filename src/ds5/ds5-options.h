@@ -347,7 +347,6 @@ namespace librealsense
             return "Exposure limit is in microseconds. Default is 0 which means full exposure range. If the requested exposure limit is greater than frame time, it will be set to frame time at runtime. Setting will not take effect until next streaming session.";
         }
         virtual void enable_recording(std::function<void(const option&)> record_action) override { _record_action = record_action; }
-        hw_monitor& get_hwm() { return _hwm; };
 
     private:
         std::function<void(const option&)> _record_action = [](const option&) {};
@@ -355,11 +354,11 @@ namespace librealsense
         hw_monitor& _hwm;
         sensor_base* _sensor;
     };
-
+    class limits_option;
     class auto_gain_limit_option : public option_base
     {
     public:
-        auto_gain_limit_option(hw_monitor& hwm, sensor_base* depth_ep, option_range range);
+        auto_gain_limit_option(hw_monitor& hwm, sensor_base* depth_ep, option_range range);// , limits_option* gain_limit_enable);
         virtual ~auto_gain_limit_option() = default;
         virtual void set(float value) override;
         virtual float query() const override;
@@ -371,13 +370,13 @@ namespace librealsense
             return "Gain limits ranges from 16 to 248. Default is 0 which means full gain. If the requested gain limit is less than 16, it will be set to 16. If the requested gain limit is greater than 248, it will be set to 248. Setting will not take effect until next streaming session.";
         }
         virtual void enable_recording(std::function<void(const option&)> record_action) override { _record_action = record_action; }
-        hw_monitor& get_hwm() { return _hwm; };
 
     private:
         std::function<void(const option&)> _record_action = [](const option&) {};
         lazy<option_range> _range;
         hw_monitor& _hwm;
         sensor_base* _sensor;
+        //limits_option* _gain_limit_enable;
     };
 
     // Auto-Limits Enable/ Disable
@@ -385,7 +384,8 @@ namespace librealsense
     {
     public:
 
-        limits_option(rs2_option option, option_range range, option_base* control, const char* description) : _option(option), _toggle_range(range), _control(control), _description(description)
+        limits_option(rs2_option option, option_range range, option_base* control, const char* description) :
+            _option(option), _toggle_range(range), _description(description), _control(control)
         {
             _control->set(_control->get_range().max); // initialize to max range
             _cached_limit = _control->get_range().max;
@@ -414,8 +414,9 @@ namespace librealsense
                 return _description_per_value.at(val).c_str();
             return nullptr;
         };
+        void set_cached_limit(float value) { _cached_limit = value; };
 
-    protected:
+    private:
         std::function<void(const option&)> _record_action = [](const option&) {};
         rs2_option _option;
         float _value;

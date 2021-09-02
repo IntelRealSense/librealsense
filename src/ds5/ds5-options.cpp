@@ -700,8 +700,8 @@ namespace librealsense
         return *_range;
     }
 
-    auto_gain_limit_option::auto_gain_limit_option(hw_monitor& hwm, sensor_base* ep, option_range range)
-        : option_base(range), _hwm(hwm), _sensor(ep)
+    auto_gain_limit_option::auto_gain_limit_option(hw_monitor& hwm, sensor_base* ep, option_range range)//, limits_option* gain_limit_enable)
+        : option_base(range), _hwm(hwm), _sensor(ep)//, _gain_limit_enable(gain_limit_enable)
     {
         _range = [range]()
         {
@@ -744,25 +744,6 @@ namespace librealsense
     {
         return *_range;
     }
-
-    /*void gain_limit_option::set(float value)
-    {
-        if (value != 0)
-            throw invalid_value_exception("set(enable_auto_exposure) failed! Invalid Auto-Exposure mode request " + std::to_string(value));
-
-        command cmd_get(ds::AUTO_CALIB);
-        cmd_get.param1 = 5;
-        std::vector<uint8_t> ret = _gain_limit->get_hwm().send(cmd_get);
-        if (ret.empty())
-            throw invalid_value_exception("auto_exposure_limit_option::query result is empty!");
-
-        command cmd(ds::AUTO_CALIB);
-        cmd.param1 = 4;
-        cmd.param2 = static_cast<int>(value);
-        cmd.param3 = *(reinterpret_cast<uint32_t*>(ret.data() + 4));
-        _gain_limit->get_hwm().send(cmd);
-        _record_action(*this);
-    }*/
 
     librealsense::thermal_compensation::thermal_compensation(
         std::shared_ptr<ds5_thermal_monitor> monitor,
