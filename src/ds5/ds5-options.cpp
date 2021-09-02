@@ -697,7 +697,12 @@ namespace librealsense
         if (res.empty())
             throw invalid_value_exception("auto_exposure_limit_option::query result is empty!");
 
-        return static_cast<float>(*(reinterpret_cast<uint32_t*>(res.data())));
+        auto ret = static_cast<float>(*(reinterpret_cast<uint32_t*>(res.data())));
+        if (ret< get_range().min || ret > get_range().max)
+        {
+            return _exposure_limit_enable->get_cached_limit();
+        }
+        return ret;
     }
 
     option_range auto_exposure_limit_option::get_range() const
@@ -748,7 +753,12 @@ namespace librealsense
         if (res.empty())
             throw invalid_value_exception("auto_exposure_limit_option::query result is empty!");
 
-        return static_cast<float>(*(reinterpret_cast<uint32_t*>(res.data() + 4)));
+        auto ret = static_cast<float>(*(reinterpret_cast<uint32_t*>(res.data() + 4)));
+        if (ret< get_range().min || ret > get_range().max)
+        {
+            return _gain_limit_enable->get_cached_limit();
+        }
+        return ret;
     }
 
     option_range auto_gain_limit_option::get_range() const

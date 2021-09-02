@@ -427,6 +427,7 @@ namespace librealsense
             return nullptr;
         };
         void set_cached_limit(float value) { _cached_limit = value; };
+        float get_cached_limit() { return _cached_limit; };
 
     private:
         std::function<void(const option&)> _record_action = [](const option&) {};
@@ -435,7 +436,6 @@ namespace librealsense
         option_range _toggle_range;
         const std::map<float, std::string> _description_per_value;
         float _cached_limit;
-        //option_base* _control;
         const char* _description;
         hw_monitor& _hwm;
     };
