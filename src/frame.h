@@ -51,13 +51,7 @@ struct frame_header
     }
 };
 
-inline std::ostream& operator<<( std::ostream& os, frame_header const& header )
-{
-    os << "#" << header.frame_number;
-    os << " @" << header.timestamp;
-    if( header.timestamp_domain != RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK )
-        os << "/" << rs2_timestamp_domain_to_string( header.timestamp_domain );
-}
+std::ostream & operator<<( std::ostream & os, frame_header const & header );
 
 struct frame_additional_data : frame_header
 {
