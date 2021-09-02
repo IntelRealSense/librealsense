@@ -331,11 +331,11 @@ namespace librealsense
         std::shared_ptr<option> _uvc_option;
         std::shared_ptr<option> _hdr_option;
     };
-
+    class limits_option;
     class auto_exposure_limit_option : public option_base
     {
     public:
-        auto_exposure_limit_option(hw_monitor& hwm, sensor_base* depth_ep, option_range range);
+        auto_exposure_limit_option(hw_monitor& hwm, sensor_base* depth_ep, option_range range, limits_option* exposure_limit_enable);
         virtual ~auto_exposure_limit_option() = default;
         virtual void set(float value) override;
         virtual float query() const override;
@@ -353,12 +353,13 @@ namespace librealsense
         lazy<option_range> _range;
         hw_monitor& _hwm;
         sensor_base* _sensor;
+        limits_option* _exposure_limit_enable;
     };
-    class limits_option;
+
     class auto_gain_limit_option : public option_base
     {
     public:
-        auto_gain_limit_option(hw_monitor& hwm, sensor_base* depth_ep, option_range range);// , limits_option* gain_limit_enable);
+        auto_gain_limit_option(hw_monitor& hwm, sensor_base* depth_ep, option_range range, limits_option* gain_limit_enable);
         virtual ~auto_gain_limit_option() = default;
         virtual void set(float value) override;
         virtual float query() const override;
@@ -376,7 +377,7 @@ namespace librealsense
         lazy<option_range> _range;
         hw_monitor& _hwm;
         sensor_base* _sensor;
-        //limits_option* _gain_limit_enable;
+        limits_option* _gain_limit_enable;
     };
 
     // Auto-Limits Enable/ Disable
@@ -384,24 +385,35 @@ namespace librealsense
     {
     public:
 
-        limits_option(rs2_option option, option_range range, option_base* control, const char* description) :
-            _option(option), _toggle_range(range), _description(description), _control(control)
+        limits_option(rs2_option option, option_range range, const char* description, hw_monitor& hwm) :
+            _option(option), _toggle_range(range), _description(description), _hwm(hwm) 
         {
-            _control->set(_control->get_range().max); // initialize to max range
-            _cached_limit = _control->get_range().max;
+            _value = 0;
         };
+
         virtual void set(float value) override
         {
             _value = value; // 0: gain auto-limit is disabled, 1 : gain auto-limit is ensabled (all range 16-248 is valid)
-            if (value == 1)
+            auto set_limit = _cached_limit;
+            if (value == 0)
+                set_limit = 0;
+
+            command cmd_get(ds::AUTO_CALIB);
+            cmd_get.param1 = 5;
+            std::vector<uint8_t> ret = _hwm.send(cmd_get);
+            if (ret.empty())
+                throw invalid_value_exception("auto_exposure_limit_option::query result is empty!");
+
+            command cmd(ds::AUTO_CALIB);
+            cmd.param1 = 4;
+            cmd.param2 = *(reinterpret_cast<uint32_t*>(ret.data()));
+            cmd.param3 = static_cast<int>(set_limit);
+            if (_option == RS2_OPTION_AUTO_EXPOSURE_LIMIT_ON)
             {
-                _control->set(_cached_limit);
+                cmd.param2 = static_cast<int>(set_limit);
+                cmd.param3 = *(reinterpret_cast<uint32_t*>(ret.data() + 4));
             }
-            else
-            {
-                _cached_limit = _control->query(); // cache limit control value before turning it off
-                _control->set(_control->get_range().max);
-            }
+            _hwm.send(cmd);
         };
         virtual float query() const override { return _value; };
         virtual option_range get_range() const override { return _toggle_range; };
@@ -423,8 +435,9 @@ namespace librealsense
         option_range _toggle_range;
         const std::map<float, std::string> _description_per_value;
         float _cached_limit;
-        option_base* _control;
+        //option_base* _control;
         const char* _description;
+        hw_monitor& _hwm;
     };
 
     class ds5_thermal_monitor;

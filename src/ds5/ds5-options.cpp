@@ -655,19 +655,24 @@ namespace librealsense
             return _uvc_option->is_enabled();
     }
 
-    auto_exposure_limit_option::auto_exposure_limit_option(hw_monitor& hwm, sensor_base* ep, option_range range)
-        : option_base(range), _hwm(hwm), _sensor(ep)
+    auto_exposure_limit_option::auto_exposure_limit_option(hw_monitor& hwm, sensor_base* ep, option_range range, limits_option* exposure_limit_enable)
+        : option_base(range), _hwm(hwm), _sensor(ep), _exposure_limit_enable(exposure_limit_enable)
     {
         _range = [range]()
         {
             return range;
         };
+        set(get_range().max);
     }
 
     void auto_exposure_limit_option::set(float value)
     {
         if (!is_valid(value))
             throw invalid_value_exception("set(enable_auto_exposure) failed! Invalid Auto-Exposure mode request " + std::to_string(value));
+
+        _exposure_limit_enable->set_cached_limit(value);
+        if (value != get_range().max && _exposure_limit_enable->query() == 0.f)
+            _exposure_limit_enable->set(1);
 
         command cmd_get(ds::AUTO_CALIB);
         cmd_get.param1 = 5;
@@ -700,19 +705,25 @@ namespace librealsense
         return *_range;
     }
 
-    auto_gain_limit_option::auto_gain_limit_option(hw_monitor& hwm, sensor_base* ep, option_range range)//, limits_option* gain_limit_enable)
-        : option_base(range), _hwm(hwm), _sensor(ep)//, _gain_limit_enable(gain_limit_enable)
+    auto_gain_limit_option::auto_gain_limit_option(hw_monitor& hwm, sensor_base* ep, option_range range, limits_option* gain_limit_enable)
+        : option_base(range), _hwm(hwm), _sensor(ep), _gain_limit_enable(gain_limit_enable)
     {
         _range = [range]()
         {
             return range;
         };
+        set(get_range().max);
     }
 
     void auto_gain_limit_option::set(float value)
     {
         if (!is_valid(value))
             throw invalid_value_exception("set(enable_auto_gain) failed! Invalid Auto-Gain mode request " + std::to_string(value));
+
+        _gain_limit_enable->set_cached_limit(value);
+        if(value != get_range().max && _gain_limit_enable->query() == 0.f)
+            _gain_limit_enable->set(1);
+            
 
         command cmd_get(ds::AUTO_CALIB);
         cmd_get.param1 = 5;
