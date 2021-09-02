@@ -8,6 +8,7 @@
 
 #include "jni_logging.h"
 #include "frame_callback.h"
+#include "jni_common.h"
 
 extern "C" JNIEXPORT jlong JNICALL
 Java_com_intel_realsense_librealsense_Pipeline_nCreate(JNIEnv *env, jclass type,
@@ -92,6 +93,22 @@ Java_com_intel_realsense_librealsense_Pipeline_nWaitForFrames(JNIEnv *env, jclas
     rs2_frame *rv = rs2_pipeline_wait_for_frames(reinterpret_cast<rs2_pipeline *>(handle), timeout, &e);
     handle_error(env, e);
     return reinterpret_cast<jlong>(rv);
+}
+
+extern "C" JNIEXPORT jlongArray JNICALL
+Java_com_intel_realsense_librealsense_Pipeline_nGetActiveStreams(JNIEnv *env, jclass type,
+                                                       jlong handle) {
+    rs2_error* e = NULL;
+    rs2_pipeline_profile* profile = rs2_pipeline_get_active_profile(reinterpret_cast<rs2_pipeline *>(handle), &e);
+    handle_error(env, e);
+
+    std::shared_ptr<rs2_stream_profile_list> list(
+            rs2_pipeline_profile_get_streams(profile, &e),
+            rs2_delete_stream_profiles_list);
+    handle_error(env, e);
+
+    jlongArray rv = rs_jni_convert_stream_profiles(env, list);
+    return rv;
 }
 
 extern "C" JNIEXPORT void JNICALL
