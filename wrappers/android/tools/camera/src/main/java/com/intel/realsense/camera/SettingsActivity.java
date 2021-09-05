@@ -1,16 +1,20 @@
 package com.intel.realsense.camera;
 
 import android.app.ProgressDialog;
+import android.content.ContentResolver;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+
+import android.os.Environment;
 import android.util.Log;
 import android.util.Pair;
 import android.view.View;
@@ -34,6 +38,8 @@ import com.intel.realsense.librealsense.Updatable;
 import com.intel.realsense.librealsense.VideoStreamProfile;
 
 import java.io.File;
+import java.io.FileOutputStream;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -210,9 +216,15 @@ public class SettingsActivity extends AppCompatActivity {
                         break;
                     }
                     case INDEX_UPDATE_UNSIGNED: {
-                        Intent intent = new Intent(SettingsActivity.this, FileBrowserActivity.class);
-                        intent.putExtra(getString(R.string.browse_folder), getString(R.string.realsense_folder) + File.separator +  "firmware");
-                        startActivityForResult(intent, OPEN_FILE_REQUEST_CODE);
+                        Intent intent = new Intent();
+                        intent.setType("*/*");
+                        intent.setAction(Intent.ACTION_OPEN_DOCUMENT);
+
+                        if (intent.resolveActivity(getPackageManager()) != null) {
+                            startActivityForResult(Intent.createChooser(intent, "Choose unsigned firmware file"), OPEN_FILE_REQUEST_CODE);
+                        } else {
+                            Log.d(TAG, "Unable to resolve Intent.ACTION_OPEN_DOCUMENT");
+                        }
                         break;
                     }
                     case INDEX_TERMINAL: {
@@ -479,6 +491,43 @@ public class SettingsActivity extends AppCompatActivity {
         String filePath = data.getStringExtra(getString(R.string.intent_extra_file_path));
         switch (requestCode){
             case OPEN_FILE_REQUEST_CODE:{
+
+                // firmware file source location
+                Uri uri = data.getData();
+                Log.d(TAG, "uri: " + uri.getPath());
+
+                try {
+                    ContentResolver contentResolver = getContentResolver();
+
+                    // firmware file in app local storage, for example,
+                    // /storage/emulated/0/Android/data/com.intel.realsense.camera/files/Download
+                    File downloadDir = getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS);
+                    filePath = downloadDir.getAbsolutePath() +  File.separator + "tempfw";
+
+                    // copy firmware file from source to app local storage
+                    InputStream input =  contentResolver.openInputStream(uri);
+                    FileOutputStream output = new FileOutputStream(new File(filePath));
+
+                    byte[] buffer = new byte[1024];
+                    int len;
+                    while ((len = input.read(buffer)) > 0) {
+                        output.write(buffer, 0, len);
+                    }
+                    input.close();
+                    output.close();
+                }
+                catch (Exception e){
+                    final String msg = "Failed obtaining the firmware file: " + e.getMessage();
+                    Log.d(TAG, msg);
+
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            Toast.makeText(SettingsActivity.this, msg, Toast.LENGTH_LONG).show();
+                        }
+                    });
+                }
+
                 FirmwareUpdateProgressDialog fud = new FirmwareUpdateProgressDialog();
                 Bundle bundle = new Bundle();
                 bundle.putString(getString(R.string.firmware_update_file_path), filePath);
