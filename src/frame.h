@@ -154,10 +154,10 @@ struct LRS_EXTENSION_API frame_holder
     frame_holder( frame_holder && other ) { std::swap( frame, other.frame ); }
     // non-acquiring ctor: will assume the frame has already been acquired!
     frame_holder( frame_interface * const f ) { frame = f; }
-    frame_holder::~frame_holder() { reset(); }
+    ~frame_holder() { reset(); }
 
     // return a new holder after acquiring the frame
-    frame_holder frame_holder::clone() const { return acquire( frame ); }
+    frame_holder clone() const { return acquire( frame ); }
     static frame_holder acquire( frame_interface * const f ) { if( f ) f->acquire(); return frame_holder( f ); }
 
     operator frame_interface *() const { return frame; }
