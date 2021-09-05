@@ -67,6 +67,12 @@ namespace librealsense
                                               const firmware_version& fw_version)
     {
         auto p = get_all();
+        res_type res;
+        // configuration is empty before first streaming - so set default res
+        if (configuration.empty())
+            res = low_resolution;
+        else
+            res = get_res_type(configuration.front().width, configuration.front().height);
 
         switch (preset)
         {
@@ -80,13 +86,22 @@ namespace librealsense
             case ds::RS430_PID:
             case ds::RS430I_PID:
             case ds::RS435_RGB_PID:
-            case ds::RS435I_PID:
             case ds::RS465_PID:
+            //case ds::RS435I_PID:
                 default_430(p);
                 break;
-            case ds::RS455_PID:
-                default_450(p);
-                break;
+            //case ds::RS455_PID:
+            case ds::RS435I_PID:
+                switch (res)
+                {
+                case low_resolution:
+                case medium_resolution:
+                    default_450_mid_low_res(p);
+                    break;
+                case high_resolution:
+                    default_450_high_res(p);
+                    break;
+                }
             case ds::RS405U_PID:
                 default_405u(p);
                 break;
