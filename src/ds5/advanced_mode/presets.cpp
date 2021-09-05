@@ -444,8 +444,8 @@ namespace librealsense
         p.hdad.ignoreSAD = 0;
         p.amplitude_factor.amplitude = 0.f;
     }
-
-    void default_450(preset& p)
+    // the only different between high res to mid & low is the amplitude_factor value
+    void default_450_high_res(preset& p)
     {
         p.depth_controls.deepSeaMedianThreshold = 500;
         p.depth_controls.deepSeaNeighborThreshold = 7;
@@ -527,6 +527,91 @@ namespace librealsense
         p.depth_gain.gain = 16.f;
         p.hdad.ignoreSAD = 0;
         p.amplitude_factor.amplitude = 0.f;
+
+    }
+
+    void default_450_mid_low_res(preset& p)
+    {
+        p.depth_controls.deepSeaMedianThreshold = 500;
+        p.depth_controls.deepSeaNeighborThreshold = 7;
+        p.depth_controls.deepSeaSecondPeakThreshold = 325;
+        p.depth_controls.lrAgreeThreshold = 24;
+        p.depth_controls.minusDecrement = 10;
+        p.depth_controls.plusIncrement = 10;
+        p.depth_controls.scoreThreshA = 1;
+        p.depth_controls.scoreThreshB = 2047;
+        p.depth_controls.textureCountThreshold = 0;
+        p.depth_controls.textureDifferenceThreshold = 0;
+        p.rsm.diffThresh = 4.f;
+        p.rsm.removeThresh = 63;
+        p.rsm.rsmBypass = 0; // inverted field, should be the opposite in the json
+        p.rsm.sloRauDiffThresh = 1.f;
+        p.rsvc.minEast = 1;
+        p.rsvc.minNorth = 1;
+        p.rsvc.minNSsum = 3;
+        p.rsvc.minSouth = 1;
+        p.rsvc.minWest = 1;
+        p.rsvc.minWEsum = 3;
+        p.rsvc.uShrink = 3;
+        p.rsvc.vShrink = 1;
+        p.color_control.disableRAUColor = 0;
+        p.color_control.disableSADColor = 0;
+        p.color_control.disableSADNormalize = 0;
+        p.color_control.disableSLOLeftColor = 0;
+        p.color_control.disableSLORightColor = 0;
+        p.rctc.rauDiffThresholdBlue = 51;
+        p.rctc.rauDiffThresholdGreen = 51;
+        p.rctc.rauDiffThresholdRed = 51;
+        p.sctc.diffThresholdBlue = 72;
+        p.sctc.diffThresholdGreen = 72;
+        p.sctc.diffThresholdRed = 72;
+        p.spc.sloK1Penalty = 60;
+        p.spc.sloK1PenaltyMod1 = 105;
+        p.spc.sloK1PenaltyMod2 = 70;
+        p.spc.sloK2Penalty = 342;
+        p.spc.sloK2PenaltyMod1 = 190;
+        p.spc.sloK2PenaltyMod2 = 130;
+        p.hdad.lambdaAD = 800.f;
+        p.hdad.lambdaCensus = 26.f;
+        p.cc.colorCorrection1 = -0.493164f;
+        p.cc.colorCorrection2 = 0.831055f;
+        p.cc.colorCorrection3 = 0.831055f;
+        p.cc.colorCorrection4 = -0.368164f;
+        p.cc.colorCorrection5 = -0.133789f;
+        p.cc.colorCorrection6 = -0.323242f;
+        p.cc.colorCorrection7 = -0.323242f;
+        p.cc.colorCorrection8 = 1.19141f;
+        p.cc.colorCorrection9 = 0.90918f;
+        p.cc.colorCorrection10 = -0.272461f;
+        p.cc.colorCorrection11 = -0.272461f;
+        p.cc.colorCorrection12 = -0.355469f;
+        p.depth_table.depthClampMax = 65536;
+        p.depth_table.depthClampMin = 0;
+        p.depth_table.depthUnits = 1000;
+        p.depth_table.disparityShift = 0;
+        p.ae.meanIntensitySetPoint = 1000;
+        p.census.uDiameter = 9;
+        p.census.vDiameter = 9;
+        p.laser_state.laser_state = 1;
+        p.laser_power.laser_power = 150.f;
+        p.depth_exposure.exposure = 8500.f;
+        p.depth_auto_exposure.auto_exposure = 1;
+        p.color_auto_exposure.auto_exposure = 1;
+        p.color_exposure.exposure = 156;
+        p.color_backlight_compensation.backlight_compensation = 0;
+        p.color_brightness.brightness = 0;
+        p.color_contrast.contrast = 50;
+        p.color_gain.gain = 64;
+        p.color_gamma.gamma = 300;
+        p.color_hue.hue = 0;
+        p.color_power_line_frequency.power_line_frequency = 3;
+        p.color_saturation.saturation = 64;
+        p.color_sharpness.sharpness = 50;
+        p.color_auto_white_balance.auto_white_balance = 1;
+        p.color_white_balance.white_balance = 4600;
+        p.depth_gain.gain = 16.f;
+        p.hdad.ignoreSAD = 0;
+        p.amplitude_factor.amplitude = 0.08f;
 
     }
 
