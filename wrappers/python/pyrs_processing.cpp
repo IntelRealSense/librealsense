@@ -110,7 +110,7 @@ void init_processing(py::module &m) {
         auto success = self.try_wait_for_frames( &fs, timeout_ms );
         return std::make_tuple( success, fs );
     };
-        syncer.def( py::init< int >(), "queue_size"_a = 1 )
+    syncer.def( py::init< int >(), "queue_size"_a = 1 )
         .def( "wait_for_frames",
               &rs2::syncer::wait_for_frames,
               "Wait until a coherent set of frames becomes available",

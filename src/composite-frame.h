@@ -38,8 +38,8 @@ public:
 
     // In the next section we make the composite frame "look and feel" like the first of its
     // children
-    rs2_metadata_type
-    get_frame_metadata( const rs2_frame_metadata_value & frame_metadata ) const override
+    frame_header const & get_header() const override { return first()->get_header(); }
+    rs2_metadata_type get_frame_metadata( const rs2_frame_metadata_value & frame_metadata ) const override
     {
         return first()->get_frame_metadata( frame_metadata );
     }

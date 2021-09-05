@@ -29,16 +29,35 @@ typedef std::multimap< rs2_frame_metadata_value, std::shared_ptr< md_attribute_p
     frame-number, metadata, etc... Things shared between all frame extensions
     The point of this class is to be **fixed-sized**, avoiding per frame allocations
 */
-struct frame_additional_data
+struct frame_header
 {
-    rs2_time_t timestamp = 0;
-    unsigned long long frame_number = 0;
+    unsigned long long   frame_number = 0;
+    rs2_time_t           timestamp = 0;
     rs2_timestamp_domain timestamp_domain = RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK;
-    rs2_time_t system_time = 0;  // sys-clock at the time the frame was received from the backend
+    rs2_time_t           system_time = 0;       // sys-clock at the time the frame was received from the backend
+    rs2_time_t           backend_timestamp = 0; // time when the frame arrived to the backend (OS dependent)
+
+    frame_header() = default;
+    frame_header( frame_header const& ) = default;
+    frame_header( rs2_time_t in_timestamp,
+        unsigned long long in_frame_number,
+        rs2_time_t in_system_time,
+        rs2_time_t backend_time )
+        : timestamp( in_timestamp )
+        , frame_number( in_frame_number )
+        , system_time( in_system_time )
+        , backend_timestamp( backend_time )
+    {
+    }
+};
+
+std::ostream & operator<<( std::ostream & os, frame_header const & header );
+
+struct frame_additional_data : frame_header
+{
     uint32_t metadata_size = 0;
     bool fisheye_ae_mode = false;  // TODO: remove in future release
     std::array< uint8_t, MAX_META_DATA_SIZE > metadata_blob;
-    rs2_time_t backend_timestamp = 0;  // time when the frame arrived to the backend (OS dependent)
     rs2_time_t last_timestamp = 0;
     unsigned long long last_frame_number = 0;
     bool is_blocking  = false;  // when running from recording, this bit indicates
@@ -52,22 +71,19 @@ struct frame_additional_data
 
     frame_additional_data() {}
 
-    frame_additional_data( double in_timestamp,
+    frame_additional_data( rs2_time_t in_timestamp,
                            unsigned long long in_frame_number,
-                           double in_system_time,
+                           rs2_time_t in_system_time,
                            uint8_t md_size,
                            const uint8_t * md_buf,
-                           double backend_time,
+                           rs2_time_t backend_time,
                            rs2_time_t last_timestamp,
                            unsigned long long last_frame_number,
                            bool in_is_blocking,
                            float in_depth_units = 0,
                            uint32_t transmitted_size = 0 )
-        : timestamp( in_timestamp )
-        , frame_number( in_frame_number )
-        , system_time( in_system_time )
+        : frame_header( in_timestamp, in_frame_number, in_system_time, backend_time )
         , metadata_size( md_size )
-        , backend_timestamp( backend_time )
         , last_timestamp( last_timestamp )
         , last_frame_number( last_frame_number )
         , is_blocking( in_is_blocking )
@@ -76,9 +92,7 @@ struct frame_additional_data
     {
         // Copy up to 255 bytes to preserve metadata as raw data
         if( metadata_size )
-            std::copy( md_buf,
-                       md_buf + std::min( md_size, MAX_META_DATA_SIZE ),
-                       metadata_blob.begin() );
+            std::copy( md_buf, md_buf + std::min( md_size, MAX_META_DATA_SIZE ), metadata_blob.begin() );
     }
 };
 
@@ -97,10 +111,9 @@ class archive_interface;
 class frame_interface : public sensor_part
 {
 public:
-    virtual rs2_metadata_type
-    get_frame_metadata( const rs2_frame_metadata_value & frame_metadata ) const = 0;
-    virtual bool
-    supports_frame_metadata( const rs2_frame_metadata_value & frame_metadata ) const = 0;
+    virtual frame_header const & get_header() const = 0;
+    virtual rs2_metadata_type get_frame_metadata( const rs2_frame_metadata_value & frame_metadata ) const = 0;
+    virtual bool supports_frame_metadata( const rs2_frame_metadata_value & frame_metadata ) const = 0;
     virtual int get_frame_data_size() const = 0;
     virtual const byte * get_frame_data() const = 0;
     virtual rs2_time_t get_frame_timestamp() const = 0;
@@ -134,38 +147,39 @@ public:
 
 struct LRS_EXTENSION_API frame_holder
 {
-    frame_interface * frame;
+    frame_interface * frame = nullptr;
 
-    frame_interface * operator->() const { return frame; }
+    frame_holder() = default;
+    frame_holder( const frame_holder & other ) = delete;
+    frame_holder( frame_holder && other ) { std::swap( frame, other.frame ); }
+    // non-acquiring ctor: will assume the frame has already been acquired!
+    frame_holder( frame_interface * const f ) { frame = f; }
+    ~frame_holder() { reset(); }
 
-    operator bool() const { return frame != nullptr; }
+    // return a new holder after acquiring the frame
+    frame_holder clone() const { return acquire( frame ); }
+    static frame_holder acquire( frame_interface * const f ) { if( f ) f->acquire(); return frame_holder( f ); }
 
     operator frame_interface *() const { return frame; }
+    frame_interface * operator->() const { return frame; }
+    operator bool() const { return frame != nullptr; }
 
-    frame_holder( frame_interface * f ) { frame = f; }
-
-    ~frame_holder();
-
-    frame_holder( frame_holder && other )
-        : frame( other.frame )
-    {
-        other.frame = nullptr;
-    }
-
-    frame_holder()
-        : frame( nullptr )
-    {
-    }
-
-    frame_holder & operator=( frame_holder && other );
-
-    frame_holder clone() const;
-
-    bool is_blocking() const { return frame->is_blocking(); };
-
-private:
     frame_holder & operator=( const frame_holder & other ) = delete;
-    frame_holder( const frame_holder & other );
+    frame_holder & operator=( frame_holder && other )
+    {
+        reset();
+        std::swap( frame, other.frame );
+        return *this;
+    }
+
+    void reset()
+    {
+        if( frame )
+        {
+            frame->release();
+            frame = nullptr;
+        }
+    }
 };
 
 
@@ -190,8 +204,8 @@ public:
     frame & operator=( frame && r );
 
     virtual ~frame() { on_release.reset(); }
-    rs2_metadata_type
-    get_frame_metadata( const rs2_frame_metadata_value & frame_metadata ) const override;
+    frame_header const & get_header() const override { return additional_data; }
+    rs2_metadata_type get_frame_metadata( const rs2_frame_metadata_value & frame_metadata ) const override;
     bool supports_frame_metadata( const rs2_frame_metadata_value & frame_metadata ) const override;
     int get_frame_data_size() const override;
     const byte * get_frame_data() const override;

@@ -157,6 +157,7 @@ void init_frame(py::module &m) {
                     ss << " " << rs2_format_to_string( self.get_profile().format() );
                 }
                 ss << " #" << self.get_frame_number();
+                ss << " @" << std::fixed << self.get_timestamp();
             }
             ss << ">";
             return ss.str();

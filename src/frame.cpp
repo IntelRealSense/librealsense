@@ -7,6 +7,16 @@
 
 namespace librealsense {
 
+std::ostream & operator<<( std::ostream & os, frame_header const & header )
+{
+    os << "#" << header.frame_number;
+    os << " @" << ( std::string )( to_string() << std::fixed << std::setprecision( 2 ) << (double)header.timestamp );
+    if( header.timestamp_domain != RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK )
+        os << "/" << rs2_timestamp_domain_to_string( header.timestamp_domain );
+    return os;
+}
+
+
 frame::frame( frame && r )
     : ref_count( r.ref_count.exchange( 0 ) )
     , owner( r.owner )
