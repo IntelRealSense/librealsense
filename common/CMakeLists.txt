@@ -54,11 +54,17 @@ set(COMMON_SRC
 
     set(UTILITIES_FILES
         "${CMAKE_CURRENT_LIST_DIR}/utilities/number/stabilized-value.h"
-        "${CMAKE_CURRENT_LIST_DIR}/utilities/string/trim-newlines.h"
         "${CMAKE_CURRENT_LIST_DIR}/utilities/string/split.h"
+        "${CMAKE_CURRENT_LIST_DIR}/utilities/string/string-utilities.h"
+        "${CMAKE_CURRENT_LIST_DIR}/utilities/string/trim-newlines.h"
         "${CMAKE_CURRENT_LIST_DIR}/utilities/imgui/wrap.h"
         "${CMAKE_CURRENT_LIST_DIR}/utilities/imgui/wrap.cpp"
         )
+if (WIN32)
+    list(APPEND UTILITIES_FILES
+        "${CMAKE_CURRENT_LIST_DIR}/utilities/string/windows.h"
+        )
+endif()
 
     set(COMMON_SRC
         ${COMMON_SRC}
