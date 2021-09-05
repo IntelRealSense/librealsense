@@ -469,7 +469,7 @@ namespace librealsense
 
         for (auto&& f : holders)
         {
-            if (f.is_blocking())
+            if (f->is_blocking())
                 res->set_blocking(true);
         }
 

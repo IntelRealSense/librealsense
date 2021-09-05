@@ -193,6 +193,7 @@ public:
     bool empty() const { return ! size(); }
 };
 
+// A single_consumer_queue meant to hold frame_holder objects
 template<class T>
 class single_consumer_frame_queue
 {
@@ -207,7 +208,7 @@ public:
 
     bool enqueue( T && item )
     {
-        if( item.is_blocking() )
+        if( item->is_blocking() )
             return _queue.blocking_enqueue( std::move( item ) );
         else
             return _queue.enqueue( std::move( item ) );

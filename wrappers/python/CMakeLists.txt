@@ -82,6 +82,7 @@ set(RAW_RS
     ../../src/dispatcher.cpp
     ../../src/frame.cpp
     ../../src/environment.cpp
+    ../../src/to-string.cpp
     ../../src/core/streaming.cpp
 )
 

@@ -12,28 +12,38 @@ namespace utilities {
 namespace string {
 namespace windows {
 
-        inline std::string win_to_utf(const WCHAR * s)
-        {
-            auto len = WideCharToMultiByte(CP_UTF8, 0, s, -1, nullptr, 0, nullptr, nullptr);
-            std::ostringstream ss;
 
-            if (len == 0)
-            {
-                ss << "WideCharToMultiByte(...) returned 0 and GetLastError() is " << GetLastError();
-                throw std::runtime_error(ss.str());
-            }
+inline std::string win_to_utf( const WCHAR * s, size_t wlen = -1 )
+{
+    auto len = WideCharToMultiByte( CP_UTF8, 0, s, (int)wlen, nullptr, 0, nullptr, nullptr );
+    if( len == 0 )
+    {
+        std::ostringstream ss;
+        ss << "WideCharToMultiByte(...) returned 0 and GetLastError() is " << GetLastError();
+        throw std::runtime_error( ss.str() );
+    }
 
-            std::string buffer(len - 1, ' ');
-            len = WideCharToMultiByte(CP_UTF8, 0, s, -1, &buffer[0], static_cast<int>(buffer.size()) + 1, nullptr, nullptr);
-            if (len == 0)
-            {
-                ss.clear();
-                ss << "WideCharToMultiByte(...) returned 0 and GetLastError() is " << GetLastError();
-                throw std::runtime_error(ss.str());
-            }
+    std::string buffer;
+    buffer.reserve( len );
+    len = WideCharToMultiByte( CP_UTF8, 0, s, (int)wlen, &buffer[0], len, nullptr, nullptr );
+    if( len == 0 )
+    {
+        std::ostringstream ss;
+        ss << "WideCharToMultiByte(...) returned 0 and GetLastError() is " << GetLastError();
+        throw std::runtime_error( ss.str() );
+    }
+    buffer.resize( len );
 
-            return buffer;
-        }
+    return buffer;
+}
+
+
+inline std::string win_to_utf( std::wstring const & s )
+{
+    return win_to_utf( s.c_str(), s.length() );
+}
+
+
 }  // namespace windows
 }  // namespace string
 }  // namespace utilities
