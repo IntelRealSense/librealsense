@@ -308,6 +308,7 @@ public class GLRenderer implements GLSurfaceView.Renderer, AutoCloseable{
     @Override
     public void close() {
         clear();
-        mColorizer.close();
+        if (mColorizer != null) mColorizer.close();
+        if (mYuyDecoder != null) mYuyDecoder.close();
     }
 }
