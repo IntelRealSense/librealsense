@@ -141,7 +141,7 @@ namespace librealsense
         // checking fw compatibility (covering the case of recovery device with wrong product line fw )
         std::vector<uint8_t> buffer((uint8_t*)fw_image, (uint8_t*)fw_image + fw_image_size);
         if (!check_fw_compatibility(buffer))
-            throw std::runtime_error("Device: " + get_serial_number() + " failed to update firmware\nImage is unsupported for this device or corrupted");
+            throw librealsense::invalid_value_exception("Device: " + get_serial_number() + " failed to update firmware\nImage is unsupported for this device or corrupted");
 
         auto messenger = _usb_device->open(FW_UPDATE_INTERFACE_NUMBER);
 

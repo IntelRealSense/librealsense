@@ -7,6 +7,7 @@
 #include <chrono>
 #include <thread>
 
+
 namespace librealsense
 {
     sr300_update_device::sr300_update_device(std::shared_ptr<context> ctx, bool register_device_notifications, std::shared_ptr<platform::usb_device> usb_device)
@@ -25,16 +26,19 @@ namespace librealsense
 
     bool sr300_update_device::check_fw_compatibility(const std::vector<uint8_t>& image) const
     {
-        std::string fw_version = extract_firmware_version_string((const void*)image.data(), image.size());
-        auto device_pid = _usb_device->get_info().pid;
-        auto min_max_fw_it = device_to_fw_min_max_version.find(device_pid);
+        std::string fw_version = extract_firmware_version_string(image);
+        auto min_max_fw_it = device_to_fw_min_max_version.find(_usb_device->get_info().pid);
         if (min_max_fw_it == device_to_fw_min_max_version.end())
-            throw std::runtime_error(to_string() << "Min and Max firmware versions have not been defined for this device: " << device_pid);
+            throw librealsense::invalid_value_exception(to_string() << "Min and Max firmware versions have not been defined for this device: " << std::hex << _pid);
 
         // advanced SR3XX devices do not fit the "old" fw versions and 
         // legacy SR3XX devices do not fit the "new" fw versions
-        return (firmware_version(fw_version) >= firmware_version(min_max_fw_it->second.first)) &&
+        bool result = (firmware_version(fw_version) >= firmware_version(min_max_fw_it->second.first)) &&
             (firmware_version(fw_version) <= firmware_version(min_max_fw_it->second.second));
+        if (!result)
+            LOG_ERROR(fw_version);
+
+        return result;
     }
 
     std::string sr300_update_device::parse_serial_number(const std::vector<uint8_t>& buffer) const
