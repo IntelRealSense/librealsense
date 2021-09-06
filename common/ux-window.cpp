@@ -351,7 +351,7 @@ namespace rs2
 
         glfwSetWindowSizeCallback(_win, [](GLFWwindow* window, int width, int height)
         {
-            if( width > 0 && height > 0 )
+            if(width > 0 && height > 0)
             {
                 config_file::instance().set(configurations::window::saved_size, true);
                 config_file::instance().set(configurations::window::width, width);
