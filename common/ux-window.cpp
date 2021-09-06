@@ -349,17 +349,16 @@ namespace rs2
             config_file::instance().set(configurations::window::position_y, y);
         });
 
-        glfwSetWindowSizeCallback(_win, [](GLFWwindow* window, int width, int height)
-        {
-            if(width > 0 && height > 0)
+        glfwSetWindowSizeCallback( _win, []( GLFWwindow * window, int width, int height ) {
+            if( width > 0 && height > 0 )
             {
-                config_file::instance().set(configurations::window::saved_size, true);
-                config_file::instance().set(configurations::window::width, width);
-                config_file::instance().set(configurations::window::height, height);
-                config_file::instance().set(configurations::window::maximized,
-                                             glfwGetWindowAttrib(window, GLFW_MAXIMIZED));
+                config_file::instance().set( configurations::window::saved_size, true );
+                config_file::instance().set( configurations::window::width, width );
+                config_file::instance().set( configurations::window::height, height );
+                config_file::instance().set( configurations::window::maximized,
+                                             glfwGetWindowAttrib( window, GLFW_MAXIMIZED ) );
             }
-        });
+        } );
 
         setup_icon();
 
