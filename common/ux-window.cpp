@@ -349,7 +349,7 @@ namespace rs2
             config_file::instance().set(configurations::window::position_y, y);
         });
 
-        glfwSetWindowSizeCallback(_win, [](GLFWwindow *window, int width, int height)
+        glfwSetWindowSizeCallback(_win, [](GLFWwindow* window, int width, int height)
         {
             if( width > 0 && height > 0 )
             {
