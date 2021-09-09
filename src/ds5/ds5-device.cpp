@@ -765,8 +765,7 @@ namespace librealsense
         auto&& backend = ctx->get_backend();
         auto& raw_sensor = get_raw_depth_sensor();
         auto pid = group.uvc_devices.front().pid;
-        auto pid_hex_str = hexify(pid);
-        bool mipi_sensor= (RS431_PID ==pid);
+        bool mipi_sensor= (RS431_PID == pid);
 
         _color_calib_table_raw = [this]()
         {
@@ -927,11 +926,11 @@ namespace librealsense
                     ds::DS5_THERMAL_COMPENSATION, "Toggle Thermal Compensation Mechanism");
 
                 auto temperature_sensor = depth_sensor.get_option_handler(RS2_OPTION_ASIC_TEMPERATURE);
+
                 _thermal_monitor = std::make_shared<ds5_thermal_monitor>(temperature_sensor, thermal_compensation_toggle);
             
                 depth_sensor.register_option(RS2_OPTION_THERMAL_COMPENSATION,
-                    std::make_shared<thermal_compensation>(_thermal_monitor,thermal_compensation_toggle));
-
+                std::make_shared<thermal_compensation>(_thermal_monitor,thermal_compensation_toggle));
             }
 
 			// minimal firmware version in which hdr feature is supported
@@ -1062,18 +1061,18 @@ namespace librealsense
                 }
                 else
                 {
-			    	if (!mipi_sensor)
+                    if (!mipi_sensor)
                     {
                         depth_sensor.register_option(RS2_OPTION_EMITTER_ON_OFF, alternating_emitter_opt);
 				    }
                 }
-            }
+        }
             else if (_fw_version >= firmware_version("5.10.9.0") && 
                 (_device_capabilities & d400_caps::CAP_ACTIVE_PROJECTOR) == d400_caps::CAP_ACTIVE_PROJECTOR &&
                 _fw_version.experimental()) // Not yet available in production firmware
-            {
-                depth_sensor.register_option(RS2_OPTION_EMITTER_ON_OFF, std::make_shared<emitter_on_and_off_option>(*_hw_monitor, &raw_depth_sensor));
-            }
+        {
+            depth_sensor.register_option(RS2_OPTION_EMITTER_ON_OFF, std::make_shared<emitter_on_and_off_option>(*_hw_monitor, &raw_depth_sensor));
+        }
 
             if ((_device_capabilities & d400_caps::CAP_INTERCAM_HW_SYNC) == d400_caps::CAP_INTERCAM_HW_SYNC)
             {
