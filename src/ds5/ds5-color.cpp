@@ -72,7 +72,7 @@ namespace librealsense
                 raw_color_ep,
                 ds5_color_fourcc_to_rs2_format,
                 ds5_color_fourcc_to_rs2_stream);
-			if (ds::RS431_PID != color_devices_info.front().pid)
+			if (ds::RS431_PID != _pid)
             {
                 color_ep->register_option(RS2_OPTION_GLOBAL_TIME_ENABLED, enable_global_time_option);
 		    }
@@ -258,7 +258,7 @@ namespace librealsense
             if (_fw_version >= firmware_version("5.10.9.0"))
             {
                 roi_sensor_interface* roi_sensor;
-                if ((roi_sensor = dynamic_cast<roi_sensor_interface*>(color_ep.get())))
+                if ((roi_sensor = dynamic_cast<roi_sensor_interface*>(&color_ep)))
                     roi_sensor->set_roi_method(std::make_shared<ds5_auto_exposure_roi_method>(*_hw_monitor, ds::fw_cmd::SETRGBAEROI));
             }
             color_ep.register_processing_block(processing_block_factory::create_pbf_vector<uyvy_converter>(RS2_FORMAT_UYVY, map_supported_color_formats(RS2_FORMAT_UYVY), RS2_STREAM_COLOR));
@@ -268,7 +268,7 @@ namespace librealsense
         else
         {
             // Work-around for discrepancy between the RGB YUYV descriptor and the parser . Use UYUV parser instead
-            color_ep->register_processing_block(processing_block_factory::create_pbf_vector<uyvy_converter>(RS2_FORMAT_UYVY, map_supported_color_formats(RS2_FORMAT_UYVY), RS2_STREAM_COLOR));
+            color_ep.register_processing_block(processing_block_factory::create_pbf_vector<uyvy_converter>(RS2_FORMAT_UYVY, map_supported_color_formats(RS2_FORMAT_UYVY), RS2_STREAM_COLOR));
         }
 
 
