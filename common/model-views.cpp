@@ -1334,7 +1334,7 @@ namespace rs2
             if ((std::string(s->get_info(RS2_CAMERA_INFO_NAME)) == "RGB Sensor") &&
                   (std::string(s->get_info(RS2_CAMERA_INFO_PRODUCT_ID)) == "ABCD"))
             {
-                resolution_constrain = std::make_pair(1920, 1080);
+                auto resolution_constrain = std::make_pair(1920, 1080); //REMI TODO - won't work because reolution_constrain is no more is code
             }
 			
 			 std::cout   << "Sensor = " << std::string(s->get_info(RS2_CAMERA_INFO_NAME))

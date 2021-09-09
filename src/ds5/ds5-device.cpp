@@ -760,8 +760,7 @@ namespace librealsense
         auto&& backend = ctx->get_backend();
         auto& raw_sensor = get_raw_depth_sensor();
         auto pid = group.uvc_devices.front().pid;
-        auto pid_hex_str = hexify(pid);
-        bool mipi_sensor= (RS431_PID ==pid);
+        bool mipi_sensor= (RS431_PID == pid);
 
         _color_calib_table_raw = [this]()
         {
@@ -903,13 +902,16 @@ namespace librealsense
             }
 
         if ((val_in_range(pid, { RS455_PID })) && (_fw_version >= firmware_version("5.12.11.0")))
+        {
             auto thermal_compensation_toggle = std::make_shared<protected_xu_option<uint8_t>>(raw_depth_sensor, depth_xu,
                 ds::DS5_THERMAL_COMPENSATION, "Toggle Thermal Compensation Mechanism");
 
+            auto temperature_sensor = depth_sensor.get_option_handler(RS2_OPTION_ASIC_TEMPERATURE);
+
             _thermal_monitor = std::make_shared<ds5_thermal_monitor>(temperature_sensor, thermal_compensation_toggle);
             depth_sensor.register_option(RS2_OPTION_THERMAL_COMPENSATION,
-                std::make_shared<thermal_compensation>(_thermal_monitor,thermal_compensation_toggle));
-
+                std::make_shared<thermal_compensation>(_thermal_monitor, thermal_compensation_toggle));
+        }
         // minimal firmware version in which hdr feature is supported
         firmware_version hdr_firmware_version("5.12.8.100");
 
@@ -1002,6 +1004,7 @@ namespace librealsense
         auto mask = d400_caps::CAP_GLOBAL_SHUTTER | d400_caps::CAP_ACTIVE_PROJECTOR;
         // Alternating laser pattern should be set and query in a different way according to the firmware version
         if ((_fw_version >= firmware_version("5.11.3.0")) && ((_device_capabilities & mask) == mask))
+        {
             bool is_fw_version_using_id = (_fw_version >= firmware_version("5.12.8.100"));
             auto alternating_emitter_opt = std::make_shared<alternating_emitter_option>(*_hw_monitor, &raw_depth_sensor, is_fw_version_using_id);
             auto emitter_always_on_opt = std::make_shared<emitter_always_on_option>(*_hw_monitor, &depth_sensor);
@@ -1014,8 +1017,9 @@ namespace librealsense
                     std::make_shared<gated_option>(
                         emitter_always_on_opt,
                         options_and_reasons));
+            }
 
-        if (_fw_version >= firmware_version("5.5.8.0"))
+            if (_fw_version >= firmware_version("5.5.8.0"))
             {
                 std::vector<std::pair<std::shared_ptr<option>, std::string>> options_and_reasons = { std::make_pair(hdr_enabled_option, "Emitter ON/OFF cannot be set while HDR is enabled"),
                         std::make_pair(emitter_always_on_opt, "Emitter ON/OFF cannot be set while Emitter always ON is enabled") };
@@ -1035,19 +1039,19 @@ namespace librealsense
                         options_and_reasons));
             }
             else
-
-        if (!mipi_sensor)
-        {
             {
-                depth_sensor.register_option(RS2_OPTION_EMITTER_ON_OFF, alternating_emitter_opt);
+                if (!mipi_sensor)
+                {
+                    depth_sensor.register_option(RS2_OPTION_EMITTER_ON_OFF, alternating_emitter_opt);
+                }
             }
-            }
+        }
         else if (_fw_version >= firmware_version("5.10.9.0") &&
             (_device_capabilities & d400_caps::CAP_ACTIVE_PROJECTOR) == d400_caps::CAP_ACTIVE_PROJECTOR &&
                 _fw_version.experimental()) // Not yet available in production firmware
-            {
-                depth_sensor.register_option(RS2_OPTION_EMITTER_ON_OFF, std::make_shared<emitter_on_and_off_option>(*_hw_monitor, &raw_depth_sensor));
-            }
+        {
+            depth_sensor.register_option(RS2_OPTION_EMITTER_ON_OFF, std::make_shared<emitter_on_and_off_option>(*_hw_monitor, &raw_depth_sensor));
+        }
 
         if ((_device_capabilities & d400_caps::CAP_INTERCAM_HW_SYNC) == d400_caps::CAP_INTERCAM_HW_SYNC)
         {
