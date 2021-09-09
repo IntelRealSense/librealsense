@@ -170,18 +170,20 @@ namespace librealsense
             "Perform histogram equalization");
         register_option(RS2_OPTION_HISTOGRAM_EQUALIZATION_ENABLED, hist_opt);
 
-        max_dist_opt->add_observer([weak_hist_opt = std::weak_ptr<ptr_option< bool >>(hist_opt)](float val)
+        auto weak_hist_opt = std::weak_ptr<ptr_option< bool >>(hist_opt);
+
+        max_dist_opt->add_observer([weak_hist_opt](float val)
         {
-            auto strong = weak_hist_opt.lock();
-            if (strong)
-                strong->set(false);
+            auto strong_hist_opt = weak_hist_opt.lock();
+            if (strong_hist_opt)
+                strong_hist_opt->set(false);
         });
 
-        min_dist_opt->add_observer([weak_hist_opt = std::weak_ptr<ptr_option< bool >>(hist_opt)](float val)
+        min_dist_opt->add_observer([weak_hist_opt](float val)
         {
-            auto strong = weak_hist_opt.lock();
-            if (strong)
-                strong->set(false);
+            auto strong_hist_opt = weak_hist_opt.lock();
+            if (strong_hist_opt)
+                strong_hist_opt->set(false);
         });
 
         auto color_map = std::make_shared<ptr_option<int>>(0, (int)_maps.size() - 1, 1, 0, &_map_index, "Color map");
