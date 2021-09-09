@@ -12,6 +12,7 @@
 #include "converters/converter-raw.hpp"
 #include "converters/converter-ply.hpp"
 #include "converters/converter-bin.hpp"
+#include "converters/converter-text.hpp"
 
 #include <mutex>
 
@@ -37,6 +38,7 @@ int main(int argc, char** argv) try
     ValueArg<string> outputFilenameBin("b", "output-bin", "output BIN (depth matrix) file(s) path", false, "", "bin-path");
     SwitchArg switchDepth("d", "depth", "convert depth frames (default - all supported)", false);
     SwitchArg switchColor("c", "color", "convert color frames (default - all supported)", false);
+    SwitchArg switchTextOutput( "T", "output-text", "output text to stdout", false );
     ValueArg <string> frameNumberStart("f", "first-framenumber", "ignore frames whose frame number is less than this value", false, "", "first-framenumber");
     ValueArg <string> frameNumberEnd("t", "last-framenumber", "ignore frames whose frame number is greater than this value", false, "", "last-framenumber");
     ValueArg <string> startTime("s", "start-time", "ignore frames whose timestamp is less than this value (the first frame is at time 0)", false, "", "start-time");
@@ -55,6 +57,7 @@ int main(int argc, char** argv) try
     cmd.add(outputFilenameBin);
     cmd.add(switchDepth);
     cmd.add(switchColor);
+    cmd.add( switchTextOutput );
     cmd.parse(argc, argv);
 
     vector<shared_ptr<rs2::tools::converter::converter_base>> converters;
@@ -93,6 +96,11 @@ int main(int argc, char** argv) try
         converters.push_back(
             make_shared<rs2::tools::converter::converter_bin>(
                 outputFilenameBin.getValue()));
+    }
+
+    if( switchTextOutput.isSet() )
+    {
+        converters.push_back( make_shared< rs2::tools::converter::converter_text >() );
     }
 
     if (converters.empty() && !outputFilenamePly.isSet())
@@ -251,7 +259,8 @@ int main(int argc, char** argv) try
             if (posP > progress)
             {
                 progress = posP;
-                cout << posP << "%" << "\r" << flush;
+                if( ! switchTextOutput.isSet() )
+                    cout << posP << "%" << "\r" << flush;
             }
 
             const uint64_t posNext = playback.get_position();
@@ -272,17 +281,20 @@ int main(int argc, char** argv) try
         }
     }
 
-    cout << endl;
+    if( !switchTextOutput.isSet() )
+        cout << endl;
 
     //print statistics for ply converter. 
     if (outputFilenamePly.isSet()) {
         cout << plyconverter->get_statistics() << endl;
     }
 
-    for_each(converters.begin(), converters.end(),
-        [](shared_ptr<rs2::tools::converter::converter_base>& converter) {
-        cout << converter->get_statistics() << endl;
-    });
+    if( ! switchTextOutput.isSet() )
+        for_each( converters.begin(),
+                  converters.end(),
+                  []( shared_ptr< rs2::tools::converter::converter_base > & converter ) {
+                      cout << converter->get_statistics() << endl;
+                  } );
 
 
     return EXIT_SUCCESS;

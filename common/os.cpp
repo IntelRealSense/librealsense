@@ -26,6 +26,7 @@
 #include <wchar.h>
 #include <KnownFolders.h>
 #include <shlobj.h>
+#include "utilities/os/hresult.h"
 #endif
 
 #if (defined(_WIN32) || defined(_WIN64))
@@ -42,7 +43,6 @@
 
 namespace rs2
 {
-
     // Use shortcuts for long names to avoid trimming of essential data
     std::string truncate_string(const std::string& str, size_t width)
     {
@@ -58,7 +58,7 @@ namespace rs2
     void open_url(const char* url)
     {
 #if (defined(_WIN32) || defined(_WIN64))
-        if (reinterpret_cast<int>(ShellExecuteA(NULL, "open", url, NULL, NULL, SW_SHOW)) < 32)
+        if (reinterpret_cast<INT_PTR>(ShellExecuteA(NULL, "open", url, NULL, NULL, SW_SHOW)) < 32)
             throw std::runtime_error("Failed opening URL");
 #elif defined __linux__ || defined(__linux__)
         std::string command_name = "xdg-open ";
@@ -248,6 +248,7 @@ Some auxillary functionalities might be affected. Please report this message if 
     {
         std::string res;
 #ifdef _WIN32
+
         if (f == temp_folder)
         {
             TCHAR buf[MAX_PATH];
@@ -261,12 +262,21 @@ Some auxillary functionalities might be affected. Please report this message if 
         else
         {
             GUID folder;
+            HRESULT hr;
             switch (f)
             {
             case user_desktop: folder = FOLDERID_Desktop;
                 break;
             case user_documents: folder = FOLDERID_Documents;
-                break;
+                // The user's Documents folder location may get overridden, as we know OneDrive does in certain circumstances.
+                // In such cases, the new function, SHGetKnownFolderPath, does not always return the new path, while the deprecated
+                // function does.
+                CHAR path[MAX_PATH];
+                CHECK_HR(SHGetFolderPathA(NULL, CSIDL_PERSONAL, NULL, 0, path));
+
+                res = path;
+                res += "\\";
+                return res;
             case user_pictures: folder = FOLDERID_Pictures;
                 break;
             case user_videos: folder = FOLDERID_Videos;
@@ -277,8 +287,9 @@ Some auxillary functionalities might be affected. Please report this message if 
                 throw std::invalid_argument(
                     std::string("Value of f (") + std::to_string(f) + std::string(") is not supported"));
             }
+
             PWSTR folder_path = NULL;
-            HRESULT hr = SHGetKnownFolderPath(folder, KF_FLAG_DEFAULT_PATH, NULL, &folder_path);
+            hr = SHGetKnownFolderPath(folder, KF_FLAG_DEFAULT_PATH, NULL, &folder_path);
             if (SUCCEEDED(hr))
             {
                 char str[1024];

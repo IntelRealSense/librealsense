@@ -9,8 +9,16 @@
 #include "jni_logging.h"
 #include "frame_callback.h"
 
-bool rs_jni_callback_init(JNIEnv *env, jobject jcb, frame_callback_data* ud)
+bool rs_jni_callback_init(JNIEnv *env, jlong handle, jobject jcb, frame_callback_data* ud)
 {
+    if (ud == NULL)
+    {
+        LRS_JNI_LOGE("rs_jni_callback_init callback data NULL");
+        return false;
+    }
+
+    ud->handle = handle;
+
     // get the Java VM interface associated with the current thread
     int status = env->GetJavaVM(&(ud->jvm));
     if (status != 0)
@@ -20,7 +28,12 @@ bool rs_jni_callback_init(JNIEnv *env, jobject jcb, frame_callback_data* ud)
     }
 
     // get JVM version
-    ud->version = env->GetVersion();
+    jint version = env->GetVersion();
+
+    if (version == JNI_EDETACHED || version == JNI_EVERSION)
+        return false;
+    else
+        ud->version = version;
 
     // Creates a new global reference to the java callback object referred to by the jcb argument
     jobject callback = env->NewGlobalRef(jcb);
@@ -32,7 +45,18 @@ bool rs_jni_callback_init(JNIEnv *env, jobject jcb, frame_callback_data* ud)
     ud->frame_cb = callback;
 
     // find Frame class
-    jclass frameclass = env->FindClass("com/intel/realsense/librealsense/Frame");
+    jclass frameclass = NULL;
+
+    frameclass = env->FindClass("com/intel/realsense/librealsense/Frame");
+
+    // handling exception
+    if(env->ExceptionCheck())
+    {
+        env->ExceptionDescribe();
+        env->ExceptionClear();
+        return false;
+    }
+
     if(frameclass == NULL)
     {
         LRS_JNI_LOGE("Failed to find Frame java class in rs_jni_callback_init at line %d", __LINE__);
@@ -40,7 +64,7 @@ bool rs_jni_callback_init(JNIEnv *env, jobject jcb, frame_callback_data* ud)
     }
 
     // Creates a new global reference to the java Frame class
-    jclass fclass = (jclass) env->NewGlobalRef(frameclass);
+    jclass fclass = reinterpret_cast<jclass>(env->NewGlobalRef(frameclass));
     if (fclass == NULL)
     {
         LRS_JNI_LOGE("Failed to global reference to the Frame java class in rs_jni_callback_init at line %d", __LINE__);
@@ -53,25 +77,57 @@ bool rs_jni_callback_init(JNIEnv *env, jobject jcb, frame_callback_data* ud)
 
 bool rs_jni_cb(rs2::frame f, frame_callback_data* ud)
 {
+    if (ud == NULL)
+    {
+        LRS_JNI_LOGE("rs_jni_cb callback data NULL");
+        return false;
+    }
+
+    if (ud->jvm == NULL)
+    {
+        LRS_JNI_LOGE("rs_jni_cb jvm NULL");
+        return false;
+    }
+
+    if (ud->frame_cb == NULL)
+    {
+        LRS_JNI_LOGE("rs_jni_cb frame callback NULL");
+        return false;
+    }
+
+    if (ud->frameclass == NULL)
+    {
+        LRS_JNI_LOGE("rs_jni_cb frame class NULL");
+        return false;
+    }
+
     JNIEnv *cb_thread_env = NULL;
     int env_state = ud->jvm->GetEnv((void **)&cb_thread_env, ud->version);
 
-    if(env_state == JNI_EDETACHED){
-        if(ud->jvm->AttachCurrentThread(&cb_thread_env,NULL) != JNI_OK){
+    bool attached = JNI_FALSE;
+
+    if(env_state == JNI_EDETACHED)
+    {
+        if(ud->jvm->AttachCurrentThread(&cb_thread_env,NULL) != JNI_OK)
+        {
+            LRS_JNI_LOGE("rs_jni_cb failed to attach Java VM to current thread");
             return false;
         }
-        ud->attached = JNI_TRUE;
+        attached = JNI_TRUE;
     }
-
-    jobject callback = ud->frame_cb;
-
-    if (callback == NULL)
+    else if (env_state == JNI_OK)
     {
-        ud->jvm->DetachCurrentThread();
+        attached = JNI_TRUE;
+    }
+    else
+    {
+        LRS_JNI_LOGE("rs_jni_cb fail to get Java VM: %d", env_state);
         return false;
     }
 
     if(cb_thread_env){
+        jobject callback = ud->frame_cb;
+
         jclass usercb = cb_thread_env->GetObjectClass(callback);
         if(usercb == NULL){
             LRS_JNI_LOGE("cannot find user callback class ...");
@@ -80,6 +136,13 @@ bool rs_jni_cb(rs2::frame f, frame_callback_data* ud)
         }
 
         jmethodID methodid = cb_thread_env->GetMethodID(usercb, "onFrame", "(Lcom/intel/realsense/librealsense/Frame;)V");
+
+        if(cb_thread_env->ExceptionCheck())
+        {
+            cb_thread_env->ExceptionDescribe();
+            cb_thread_env->ExceptionClear();
+        }
+
         if(methodid == NULL){
             LRS_JNI_LOGE("cannot find method onFrame in user java callback");
             ud->jvm->DetachCurrentThread();
@@ -87,24 +150,50 @@ bool rs_jni_cb(rs2::frame f, frame_callback_data* ud)
         }
 
         jclass frameclass = ud->frameclass;
-        if(frameclass == NULL){
-            LRS_JNI_LOGE("cannot find java Frame class...");
-            ud->jvm->DetachCurrentThread();
-            return false;
-        }
 
         // get the Frame class constructor
         jmethodID frame_constructor = cb_thread_env->GetMethodID(frameclass, "<init>", "(J)V");
 
+        if(cb_thread_env->ExceptionCheck())
+        {
+            cb_thread_env->ExceptionDescribe();
+            cb_thread_env->ExceptionClear();
+        }
+
+        if(frame_constructor == NULL){
+            LRS_JNI_LOGE("cannot find frame java class constructor");
+            ud->jvm->DetachCurrentThread();
+            return false;
+        }
+
         // create a Frame object
         jobject frame = cb_thread_env->NewObject(frameclass, frame_constructor, (jlong) f.get());
 
+        if(cb_thread_env->ExceptionCheck())
+        {
+            cb_thread_env->ExceptionDescribe();
+            cb_thread_env->ExceptionClear();
+        }
+
+        if(frame == NULL){
+            LRS_JNI_LOGE("Failed create frame java object for user callback");
+            ud->jvm->DetachCurrentThread();
+            return false;
+        }
+
         // invoke the java callback with the frame
         cb_thread_env->CallVoidMethod(callback,methodid, frame);
+
+        if(cb_thread_env->ExceptionCheck())
+        {
+            cb_thread_env->ExceptionDescribe();
+            cb_thread_env->ExceptionClear();
+        }
     }
 
-    if(ud->attached){
+    if(attached){
         ud->jvm->DetachCurrentThread();
+        attached = JNI_FALSE;
     }
 
     cb_thread_env = NULL;

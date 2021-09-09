@@ -83,7 +83,6 @@ namespace librealsense
             if (frame)
             {
                 auto f = (T*)frame;
-                log_frame_callback_end(f);
                 std::unique_lock<std::recursive_mutex> lock(mutex);
 
                 frame->keep();
@@ -134,27 +133,6 @@ namespace librealsense
             *new_frame = std::move(*f);
 
             return new_frame;
-        }
-
-        void log_frame_callback_end(T* frame) const
-        {
-            if (frame && frame->get_stream())
-            {
-                auto callback_ended = _time_service ? _time_service->get_time() : 0;
-                auto callback_warning_duration = 1000 / (frame->get_stream()->get_framerate() + 1);
-                auto callback_duration = callback_ended - frame->get_frame_callback_start_time_point();
-
-                LOG_DEBUG("CallbackFinished," << rs2_stream_to_string(frame->get_stream()->get_stream_type()) << "," << std::dec << frame->get_frame_number()
-                    << ",DispatchedAt," << callback_ended);
-
-                if (callback_duration > callback_warning_duration)
-                {
-                    LOG_DEBUG("Frame Callback [" << rs2_stream_to_string(frame->get_stream()->get_stream_type())
-                        << "#" << std::dec << frame->additional_data.frame_number
-                        << "] overdue. (Duration: " << callback_duration
-                        << "ms, FPS: " << frame->get_stream()->get_framerate() << ", Max Duration: " << callback_warning_duration << "ms)");
-                }
-            }
         }
 
         std::shared_ptr<metadata_parser_map> get_md_parsers() const override { return _metadata_parsers; };

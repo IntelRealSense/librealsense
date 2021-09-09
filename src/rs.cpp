@@ -110,7 +110,9 @@ struct rs2_pipeline_profile
 struct rs2_frame_queue
 {
     explicit rs2_frame_queue(int cap)
-        : queue(cap)
+        : queue( cap, [cap]( librealsense::frame_holder const & fh ) {
+            LOG_DEBUG( "DROPPED queue (capacity= " << cap << ") frame " << frame_holder_to_string( fh ) );
+        } )
     {
     }
 
@@ -483,21 +485,21 @@ int rs2_is_stream_profile_default(const rs2_stream_profile* profile, rs2_error**
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, profile)
 
-void rs2_get_stream_profile_data(const rs2_stream_profile* mode, rs2_stream* stream, rs2_format* format, int* index, int* unique_id, int* framerate, rs2_error** error) BEGIN_API_CALL
+void rs2_get_stream_profile_data(const rs2_stream_profile* profile, rs2_stream* stream, rs2_format* format, int* index, int* unique_id, int* framerate, rs2_error** error) BEGIN_API_CALL
 {
-    VALIDATE_NOT_NULL(mode);
+    VALIDATE_NOT_NULL(profile);
     VALIDATE_NOT_NULL(stream);
     VALIDATE_NOT_NULL(format);
     VALIDATE_NOT_NULL(index);
     VALIDATE_NOT_NULL(unique_id);
 
-    *framerate = mode->profile->get_framerate();
-    *format = mode->profile->get_format();
-    *index = mode->profile->get_stream_index();
-    *stream = mode->profile->get_stream_type();
-    *unique_id = mode->profile->get_unique_id();
+    *framerate = profile->profile->get_framerate();
+    *format = profile->profile->get_format();
+    *index = profile->profile->get_stream_index();
+    *stream = profile->profile->get_stream_type();
+    *unique_id = profile->profile->get_unique_id();
 }
-HANDLE_EXCEPTIONS_AND_RETURN(, mode, stream, format, index, framerate)
+HANDLE_EXCEPTIONS_AND_RETURN(, profile, stream, format, index, framerate)
 
 void rs2_set_stream_profile_data(rs2_stream_profile* mode, rs2_stream stream, int index, rs2_format format, rs2_error** error) BEGIN_API_CALL
 {
@@ -1261,31 +1263,6 @@ const char* rs2_get_failed_args(const rs2_error* error) { return error ? error->
 const char* rs2_get_error_message(const rs2_error* error) { return error ? error->message.c_str() : nullptr; }
 rs2_exception_type rs2_get_librealsense_exception_type(const rs2_error* error) { return error ? error->exception_type : RS2_EXCEPTION_TYPE_UNKNOWN; }
 
-const char* rs2_stream_to_string(rs2_stream stream)                                       { return librealsense::get_string(stream);       }
-const char* rs2_format_to_string(rs2_format format)                                       { return librealsense::get_string(format);       }
-const char* rs2_distortion_to_string(rs2_distortion distortion)                           { return librealsense::get_string(distortion);   }
-const char* rs2_option_to_string(rs2_option option)                                       { return librealsense::get_string(option);       }
-const char* rs2_camera_info_to_string(rs2_camera_info info)                               { return librealsense::get_string(info);         }
-const char* rs2_timestamp_domain_to_string(rs2_timestamp_domain info)                     { return librealsense::get_string(info);         }
-const char* rs2_notification_category_to_string(rs2_notification_category category)       { return librealsense::get_string(category);     }
-const char* rs2_calib_target_type_to_string(rs2_calib_target_type type)                   { return librealsense::get_string(type);         }
-const char* rs2_sr300_visual_preset_to_string(rs2_sr300_visual_preset preset)             { return librealsense::get_string(preset);       }
-const char* rs2_log_severity_to_string(rs2_log_severity severity)                         { return librealsense::get_string(severity);     }
-const char* rs2_exception_type_to_string(rs2_exception_type type)                         { return librealsense::get_string(type);         }
-const char* rs2_playback_status_to_string(rs2_playback_status status)                     { return librealsense::get_string(status);       }
-const char* rs2_extension_type_to_string(rs2_extension type)                              { return librealsense::get_string(type);         }
-const char* rs2_frame_metadata_to_string(rs2_frame_metadata_value metadata)               { return librealsense::get_string(metadata);     }
-const char* rs2_extension_to_string(rs2_extension type)                                   { return rs2_extension_type_to_string(type);     }
-const char* rs2_frame_metadata_value_to_string(rs2_frame_metadata_value metadata)         { return rs2_frame_metadata_to_string(metadata); }
-const char* rs2_l500_visual_preset_to_string(rs2_l500_visual_preset preset)               { return get_string(preset); }
-const char* rs2_sensor_mode_to_string(rs2_sensor_mode mode)                               { return get_string(mode); }
-const char* rs2_ambient_light_to_string( rs2_ambient_light ambient )                      { return get_string(ambient); }
-const char* rs2_digital_gain_to_string(rs2_digital_gain gain)                             { return get_string(gain); }
-const char* rs2_cah_trigger_to_string( int mode )                                         { return "DEPRECATED as of 2.46"; }
-const char* rs2_calibration_type_to_string(rs2_calibration_type type)                     { return get_string(type); }
-const char* rs2_calibration_status_to_string(rs2_calibration_status status)               { return get_string(status); }
-const char* rs2_host_perf_mode_to_string(rs2_host_perf_mode mode)                         { return get_string(mode); }
-
 void rs2_log_to_console(rs2_log_severity min_severity, rs2_error** error) BEGIN_API_CALL
 {
     librealsense::log_to_console(min_severity);
@@ -1503,20 +1480,20 @@ int rs2_is_processing_block_extendable_to(const rs2_processing_block* f, rs2_ext
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, f, extension_type)
 
-int rs2_stream_profile_is(const rs2_stream_profile* f, rs2_extension extension_type, rs2_error** error) BEGIN_API_CALL
+int rs2_stream_profile_is(const rs2_stream_profile* profile, rs2_extension extension_type, rs2_error** error) BEGIN_API_CALL
 {
-    VALIDATE_NOT_NULL(f);
+    VALIDATE_NOT_NULL(profile);
     VALIDATE_ENUM(extension_type);
     switch (extension_type)
     {
-    case RS2_EXTENSION_VIDEO_PROFILE    : return VALIDATE_INTERFACE_NO_THROW(f->profile, librealsense::video_stream_profile_interface)  != nullptr;
-    case RS2_EXTENSION_MOTION_PROFILE   : return VALIDATE_INTERFACE_NO_THROW(f->profile, librealsense::motion_stream_profile_interface) != nullptr;
-    case RS2_EXTENSION_POSE_PROFILE     : return VALIDATE_INTERFACE_NO_THROW(f->profile, librealsense::pose_stream_profile_interface)   != nullptr;
+    case RS2_EXTENSION_VIDEO_PROFILE    : return VALIDATE_INTERFACE_NO_THROW(profile->profile, librealsense::video_stream_profile_interface)  != nullptr;
+    case RS2_EXTENSION_MOTION_PROFILE   : return VALIDATE_INTERFACE_NO_THROW(profile->profile, librealsense::motion_stream_profile_interface) != nullptr;
+    case RS2_EXTENSION_POSE_PROFILE     : return VALIDATE_INTERFACE_NO_THROW(profile->profile, librealsense::pose_stream_profile_interface)   != nullptr;
     default:
         return false;
     }
 }
-HANDLE_EXCEPTIONS_AND_RETURN(0, f, extension_type)
+HANDLE_EXCEPTIONS_AND_RETURN(0, profile, extension_type)
 
 rs2_device* rs2_context_add_device(rs2_context* ctx, const char* file, rs2_error** error) BEGIN_API_CALL
 {

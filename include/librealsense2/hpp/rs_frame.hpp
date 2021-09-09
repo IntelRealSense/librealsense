@@ -201,6 +201,8 @@ namespace rs2
     class video_stream_profile : public stream_profile
     {
     public:
+        video_stream_profile() : stream_profile() {}
+
         /**
         * Stream profile instance which contains additional video attributes
         * \param[in] stream_profile sp - assign exisiting stream_profile to this instance.

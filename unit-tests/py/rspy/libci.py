@@ -51,7 +51,7 @@ def run( cmd, stdout = None, timeout = 200, append = False ):
             if append:
                 handle = open( stdout, "a" )
                 handle.write(
-                    "\n---------------------------------------------------------------------------------\n\n" )
+                    "\n----------TEST-SEPARATOR----------\n\n" )
                 handle.flush()
             else:
                 handle = open( stdout, "w" )
@@ -428,6 +428,7 @@ class ExeTest( Test ):
             if log.is_debug_on():
                 cmd += ['-d', 'yes']  # show durations for each test-case
                 # cmd += ['--success']  # show successful assertions in output
+                cmd += ['--debug']
             # if log.is_color_on():
             #    cmd += ['--use-colour', 'yes']
             if self.config.context:

@@ -18,6 +18,15 @@ public class Sensor extends Options {
         return rv;
     }
 
+    public List<StreamProfile> getActiveStreams(){
+        long[] streamProfilesHandles = nGetActiveStreams(mHandle);
+        List<StreamProfile> rv = new ArrayList<>();
+        for(long h : streamProfilesHandles){
+            rv.add(new StreamProfile(h));
+        }
+        return rv;
+    }
+
     public <T extends Sensor> T as(Extension extension) throws RuntimeException {
         if (this.is(extension)) {
             switch (extension){
@@ -102,6 +111,7 @@ public class Sensor extends Options {
     }
 
     private static native long[] nGetStreamProfiles(long handle);
+    private static native long[] nGetActiveStreams(long handle);
     private static native void nRelease(long handle);
     private static native boolean nIsSensorExtendableTo(long handle, int extension);
     private static native void nOpen(long handle, long sp);

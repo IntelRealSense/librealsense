@@ -2,9 +2,10 @@
 Copyright(c) 2017 Intel Corporation. All Rights Reserved. */
 
 #include "python.hpp"
-#include "../include/librealsense2/hpp/rs_internal.hpp"
-#include "../include/librealsense2/hpp/rs_device.hpp"
-#include "../include/librealsense2/hpp/rs_record_playback.hpp" // for downcasts
+#include <librealsense2/hpp/rs_internal.hpp>
+#include <librealsense2/hpp/rs_device.hpp>
+#include <librealsense2/hpp/rs_record_playback.hpp> // for downcasts
+#include <../common/metadata-helper.h>
 
 void init_device(py::module &m) {
     /** rs_device.hpp **/
@@ -37,7 +38,7 @@ void init_device(py::module &m) {
         .def(BIND_DOWNCAST(device, calibration_change_device))
         .def(BIND_DOWNCAST(device, firmware_logger))
         .def("__repr__", [](const rs2::device &self) {
-            std::stringstream ss;
+            std::ostringstream ss;
             ss << "<" SNAME ".device: " << self.get_info(RS2_CAMERA_INFO_NAME);
             if (self.supports(RS2_CAMERA_INFO_SERIAL_NUMBER))
                 ss << " (S/N: " << self.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER);
@@ -52,6 +53,17 @@ void init_device(py::module &m) {
                 ss << "  on USB" << self.get_info( RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR );
             ss << ")>";
             return ss.str();
+        })
+        .def("is_metadata_enabled", [](const rs2::device& self) -> bool{
+            auto depth_sens = self.first< rs2::depth_sensor >();
+
+            if (!depth_sens.supports(RS2_CAMERA_INFO_PHYSICAL_PORT))
+            {
+                throw std::runtime_error("Device does not support checking metadata with this API");
+            }
+            std::string id = depth_sens.get_info(RS2_CAMERA_INFO_PHYSICAL_PORT);
+
+            return rs2::metadata_helper::instance().is_enabled(id);
         });
 
     // not binding update_progress_callback, templated

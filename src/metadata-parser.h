@@ -106,13 +106,19 @@ namespace librealsense
     /**\brief The metadata parser class directly access the metadata attribute in the blob received from HW.
     *   Given the metadata-nested construct, and the c++ lack of pointers
     *   to the inner struct, we pre-calculate and store the attribute offset internally
-    *   http://stackoverflow.com/questions/1929887/is-pointer-to-inner-struct-member-forbidden*/
+    *   http://stackoverflow.com/questions/1929887/is-pointer-to-inner-struct-member-forbidden
+    */
     template<class S, class Attribute, typename Flag>
     class md_attribute_parser : public md_attribute_parser_base
     {
     public:
-        md_attribute_parser(Attribute S::* attribute_name, Flag flag, unsigned long long offset, attrib_modifyer mod) :
-            _md_attribute(attribute_name), _md_flag(flag), _offset(offset), _modifyer(mod) {};
+        md_attribute_parser( Attribute S::*attribute_name, Flag flag, unsigned long long offset, attrib_modifyer mod )
+            : _md_attribute( attribute_name )
+            , _md_flag( flag )
+            , _offset( offset )
+            , _modifyer( mod )
+        {
+        }
 
         rs2_metadata_type get(const librealsense::frame & frm) const override
         {
@@ -122,7 +128,8 @@ namespace librealsense
                 throw invalid_value_exception("metadata not available");
 
             auto attrib = static_cast<rs2_metadata_type>((*s).*_md_attribute);
-            if (_modifyer) attrib = _modifyer(attrib);
+            if( _modifyer )
+                attrib = _modifyer( attrib );
             return attrib;
         }
 
@@ -135,31 +142,29 @@ namespace librealsense
         }
 
     protected:
+        bool is_attribute_valid( const S * s ) const
+        {
+            // verify that the struct is of the correct type
+            // Check that the header id and the struct size corresponds.
+            // Note that this heurisic is not deterministic and may validate false frames! TODO - requires review
+            md_type expected_type = md_type_trait< S >::type;
 
-            bool is_attribute_valid(const S* s) const
+            if( ( s->header.md_type_id != expected_type ) || ( s->header.md_size < sizeof( *s ) ) )
             {
-                // verify that the struct is of the correct type
-                // Check that the header id and the struct size corresponds.
-                // Note that this heurisic is not deterministic and may validate false frames! TODO - requires review
-                md_type expected_type = md_type_trait<S>::type;
-
-                if ((s->header.md_type_id != expected_type) || (s->header.md_size < sizeof(*s)))
-                {
-                    std::string type = (md_type_desc.count(s->header.md_type_id) > 0) ?
-                                md_type_desc.at(s->header.md_type_id) : (to_string()
-                                << "0x" << std::hex << static_cast<uint32_t>(s->header.md_type_id) << std::dec);
-                    LOG_DEBUG("Metadata mismatch - actual: " << type
-                        << ", expected: 0x"  << std::hex << (uint32_t)expected_type << std::dec << " (" << md_type_desc.at(expected_type) << ")");
-                    return false;
-                }
-
-                 // Check if the attribute's flag is set
-                 auto attribute_enabled =  (0 !=(s->flags & static_cast<uint32_t>(_md_flag)));
-                 if (!attribute_enabled)
-                    LOG_DEBUG("Metadata attribute No: "<< (*s.*_md_attribute) << "is not active");
-
-                 return attribute_enabled;
+                std::string type = ( md_type_desc.count( s->header.md_type_id ) > 0 )
+                                     ? md_type_desc.at( s->header.md_type_id )
+                                     : ( to_string() << "0x" << std::hex
+                                                     << static_cast< uint32_t >( s->header.md_type_id ) << std::dec );
+                LOG_DEBUG( "Metadata mismatch - actual: " << type << ", expected: 0x" << std::hex
+                                                          << (uint32_t)expected_type << std::dec << " ("
+                                                          << md_type_desc.at( expected_type ) << ")" );
+                return false;
             }
+
+            // Check if the attribute's flag is set
+            auto attribute_enabled = ( 0 != ( s->flags & static_cast< uint32_t >( _md_flag ) ) );
+            return attribute_enabled;
+        }
 
     private:
         md_attribute_parser() = delete;

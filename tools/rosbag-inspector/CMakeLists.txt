@@ -5,6 +5,7 @@ cmake_minimum_required(VERSION 2.8.3)
 
 project(RealsenseToolsRosbagInspector)
 
+
 if(BUILD_GRAPHICAL_EXAMPLES)
 
     set(RS_ROSBAG_INSPECTOR_CPP
@@ -12,6 +13,7 @@ if(BUILD_GRAPHICAL_EXAMPLES)
             files_container.h
             print_helpers.h
             rosbag_content.h
+            ../../common/os.h
             ../../common/os.cpp
             ../../third-party/glad/glad.c
             ../../third-party/imgui/imgui.cpp
@@ -25,7 +27,6 @@ if(BUILD_GRAPHICAL_EXAMPLES)
 
     if(WIN32)
         add_executable(rs-rosbag-inspector WIN32 ${RS_ROSBAG_INSPECTOR_CPP})
-
         include_directories(../../third-party/imgui ../../common ../../third-party/glad 
                                              ../../third-party/tinyfiledialogs ../../third-party ${CMAKE_CURRENT_SOURCE_DIR}/res/)
     else()

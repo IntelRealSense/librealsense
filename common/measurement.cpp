@@ -14,6 +14,7 @@ void measurement::enable() {
 void measurement::disable() { 
     state.points.clear(); 
     state.edges.clear();
+    state.polygons.clear();
     measurement_active = false;
     config_file::instance().set(configurations::viewer::is_measuring, false);
 }
@@ -659,7 +660,7 @@ void measurement::draw(ux_window& win)
 
 void measurement::show_tooltip(ux_window& win)
 {
-    if (mouse_picked_event.eval())
+    if (mouse_picked_event.eval() && ImGui::IsWindowHovered())
     {
         if (display_mouse_picked_tooltip() && hovered_edge_id  < 0)
         {

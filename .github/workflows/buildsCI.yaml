@@ -172,7 +172,6 @@ jobs:
         cd scripts && ./api_check.sh && cd ..
         mkdir build && cd build
         export LRS_LOG_LEVEL="DEBUG";
-       
         sudo add-apt-repository --yes ppa:ubuntu-toolchain-r/test;
         sudo apt-get update;
         sudo apt-get install -qq build-essential xorg-dev libgl1-mesa-dev libglu1-mesa-dev libglew-dev libglm-dev;

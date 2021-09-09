@@ -235,9 +235,10 @@ def check_log_for_fails( path_to_log, testname, configuration = None, repetition
     if path_to_log is None:
         return False
     results = None
-    for ctx in file.grep( r'^test cases:\s*(\d+) \|\s*(\d+) (passed|failed)|^-+$', path_to_log ):
+    for ctx in file.grep( r'^test cases:\s*(\d+) \|\s*(\d+) (passed|failed)|^----------TEST-SEPARATOR----------$',
+                          path_to_log ):
         m = ctx['match']
-        if m.string == "---------------------------------------------------------------------------------":
+        if m.string == "----------TEST-SEPARATOR----------":
             results = None
         else:
             results = m
@@ -430,6 +431,13 @@ try:
             #
             if required_tags and not all( tag in test.config.tags for tag in required_tags ):
                 log.d( 'does not fit --tag:', test.config.tags )
+                continue
+            #
+            if 'Windows' in test.config.flags and linux:
+                log.d( 'test has Windows flag and OS is Linux' )
+                continue
+            if 'Linux' in test.config.flags and not linux:
+                log.d( 'test has Linux flag and OS is Windows' )
                 continue
             #
             available_tags.update( test.config.tags )

@@ -10,6 +10,7 @@
 
 #include "jni_logging.h"
 #include "frame_callback.h"
+#include "jni_common.h"
 
 extern "C"
 JNIEXPORT void JNICALL
@@ -41,17 +42,24 @@ Java_com_intel_realsense_librealsense_Sensor_nOpenMultiple(JNIEnv *env, jclass t
     handle_error(env, e);
 }
 
-static frame_callback_data sdata = {NULL, 0, JNI_FALSE, NULL, NULL};
+// global param used to save the active frame callbacks, and their params
+static std::vector<frame_callback_data> sdata;
 
 extern "C"
 JNIEXPORT void JNICALL
 Java_com_intel_realsense_librealsense_Sensor_nStart(JNIEnv *env, jclass type, jlong handle, jobject jcb) {
     rs2_error* e = nullptr;
+    frame_callback_data cbdata = {handle, NULL, 0, NULL, NULL};
 
-    if (rs_jni_callback_init(env, jcb, &sdata) != true) return;
+    if (rs_jni_callback_init(env, handle, jcb, &cbdata) != true) return;
 
-    auto cb = [&](rs2::frame f) {
-        rs_jni_cb(f, &sdata);
+    // save data for releasing the global java references later
+    sdata.push_back(cbdata);
+
+    auto cb = [=](rs2::frame f) {
+        frame_callback_data callback_data = cbdata;
+
+        rs_jni_cb(f, &callback_data);
     };
 
     rs2_start_cpp(reinterpret_cast<rs2_sensor *>(handle), new rs2::frame_callback<decltype(cb)>(cb), &e);
@@ -63,9 +71,21 @@ extern "C"
 JNIEXPORT void JNICALL
 Java_com_intel_realsense_librealsense_Sensor_nStop(JNIEnv *env, jclass type, jlong handle) {
     rs2_error* e = nullptr;
-    rs_jni_cleanup(env, &sdata);
+
     rs2_stop(reinterpret_cast<rs2_sensor *>(handle), &e);
     handle_error(env, e);
+    
+    for (int i = 0; i < sdata.size(); i++) {
+        if (sdata[i].handle == handle) {
+            // release the java global references
+            // stop is not blocking so occasionally the last native callback will still running
+            // after stop is completed, wait a bit before cleanup the java references
+            std::this_thread::sleep_for(std::chrono::milliseconds(100) );
+            rs_jni_cleanup(env, &sdata[i]);
+            sdata.erase(sdata.begin() + i);
+            break;
+        }
+    }
 }
 
 extern "C"
@@ -92,24 +112,7 @@ Java_com_intel_realsense_librealsense_Sensor_nGetStreamProfiles(JNIEnv *env, jcl
             rs2_delete_stream_profiles_list);
     handle_error(env, e);
 
-    auto size = rs2_get_stream_profiles_count(list.get(), &e);
-    handle_error(env, e);
-
-    std::vector<const rs2_stream_profile*> profiles;
-
-    for (auto i = 0; i < size; i++)
-    {
-        auto sp = rs2_get_stream_profile(list.get(), i, &e);
-        handle_error(env, e);
-        profiles.push_back(sp);
-    }
-
-    // jlong is 64-bit, but pointer in profiles could be 32-bit, copy element by element
-    jlongArray rv = env->NewLongArray(profiles.size());
-    for (auto i = 0; i < size; i++)
-    {
-        env->SetLongArrayRegion(rv, i, 1, reinterpret_cast<const jlong *>(&profiles[i]));
-    }
+    jlongArray rv = rs_jni_convert_stream_profiles(env, list);
     return rv;
 }
 
@@ -169,4 +172,18 @@ Java_com_intel_realsense_librealsense_DepthSensor_nGetDepthScale(JNIEnv *env, jc
     float depthScale = rs2_get_depth_scale(reinterpret_cast<rs2_sensor *>(handle), &e);
     handle_error(env, e);
     return depthScale;
+}
+
+extern "C"
+JNIEXPORT jlongArray JNICALL
+Java_com_intel_realsense_librealsense_Sensor_nGetActiveStreams(JNIEnv *env, jclass type,
+                                                                jlong handle) {
+    rs2_error *e = nullptr;
+    std::shared_ptr<rs2_stream_profile_list> list(
+            rs2_get_active_streams(reinterpret_cast<rs2_sensor *>(handle), &e),
+            rs2_delete_stream_profiles_list);
+    handle_error(env, e);
+
+    jlongArray rv = rs_jni_convert_stream_profiles(env, list);
+    return rv;
 }

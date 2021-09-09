@@ -65,3 +65,7 @@ endif()
 if(BUILD_OPENNI2_BINDINGS)
 	add_subdirectory(openni2)
 endif()
+
+if(BUILD_PC_STITCHING)
+	add_subdirectory(pointcloud/pointcloud-stitching)
+endif()

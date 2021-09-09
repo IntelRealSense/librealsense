@@ -715,7 +715,7 @@ namespace rs2
 
         // -------------------- Measure ----------------
 
-        std::string measure_tooltip = "Measure distance between points";
+        std::string measure_tooltip = "Measure distance between points\nHold shift to connect more than 2 points and measure area";
         if (!glsl_available) measure_tooltip += "\nRequires GLSL acceleration! \nEnable 2 checkboxes in Settings - Performance:  \n- Use GLSL for Rendering \n- Use GLSL for Processing ";
         if (_measurements.is_enabled())
         {
@@ -759,6 +759,7 @@ namespace rs2
         active = false;
         if (big_button(&active, win, 5 + left, 0, textual_icons::floppy, "Export", false, last_points, "Export 3D model to 3rd-party application"))
         {
+            _measurements.disable();
             temp_cfg = config_file::instance();
             ImGui::OpenPopup("Export");
         }
@@ -1021,6 +1022,11 @@ namespace rs2
     bool rs2::viewer_model::is_option_skipped(rs2_option opt) const
     {
         return (_hidden_options.find(opt) != _hidden_options.end());
+    }
+
+    void rs2::viewer_model::disable_measurements()
+    {
+        _measurements.disable();
     }
 
     void rs2::viewer_model::show_popup(const ux_window& window, const popup& p)
@@ -1400,10 +1406,10 @@ namespace rs2
             {
                 auto f = frame.second;
 
-                if( f.is< points >()
-                    && ! paused )  // find and store the 3d points frame for later use
+                if (f.is< points >())  // find and store the 3d points frame for later use
                 {
-                    p = f.as< points >();
+                    if (!paused)
+                        p = f.as< points >();
                     continue;
                 }
 
@@ -3273,7 +3279,10 @@ namespace rs2
     {
         auto profile = f.get_profile().as<video_stream_profile>();
         auto index = profile.unique_id();
-        auto mapped_index = streams_origin.at(index);
+        int mapped_index = -2;
+        auto iter = streams_origin.find(index);
+        if (iter != streams_origin.end())
+            mapped_index = iter->second;
 
         if (!is_rasterizeable(profile.format()))
             return false;
