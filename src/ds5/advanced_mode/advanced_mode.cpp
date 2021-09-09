@@ -91,14 +91,19 @@ namespace librealsense
                 default_430(p);
                 break;
             case ds::RS455_PID:
+                default_450_mid_low_res(p);
                 switch (res)
                 {
                 case low_resolution:
                 case medium_resolution:
-                    default_450_mid_low_res(p);
+                    //applied defaultly 
                     break;
                 case high_resolution:
                     default_450_high_res(p);
+                    break;
+                default:
+                    throw invalid_value_exception(to_string() << "apply_preset(...) failed! Given device doesn't support Default Preset (pid=0x" <<
+                        std::hex << device_pid << ")");
                     break;
                 }
             case ds::RS405U_PID:
