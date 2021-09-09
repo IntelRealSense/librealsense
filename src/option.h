@@ -695,6 +695,8 @@ namespace librealsense
             }
             _proxy->set(value);
             _recording_function(*this);
+
+            notify(0);
         }
 
     private:
@@ -726,6 +728,8 @@ namespace librealsense
             }
             _proxy->set(value);
             _recording_function(*this);
+
+            notify(0);
         }
 
     private:
