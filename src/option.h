@@ -672,7 +672,7 @@ namespace librealsense
 
     /** \brief class provided a control
     * that changes min distance value when changing max distance value */
-    class max_distance_option : public proxy_option
+    class max_distance_option : public proxy_option, public observable_option
     {
     public:
         explicit max_distance_option(std::shared_ptr<option> max_option,
@@ -703,7 +703,7 @@ namespace librealsense
 
     /** \brief class provided a control
     * that changes max distance value when changing min distance value */
-    class min_distance_option : public proxy_option
+    class min_distance_option : public proxy_option, public observable_option
     {
     public:
         explicit min_distance_option(std::shared_ptr<option> min_option,
