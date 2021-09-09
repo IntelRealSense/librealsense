@@ -1912,7 +1912,8 @@ namespace librealsense
         {
             v4l2_ext_control control{get_cid(opt), 0, 0, 0};
             // Extract the control group from the underlying control query
-            v4l2_ext_controls ctrls_block { control.id&0xffff0000, 1, 0, {0 ,0}, &control};
+            // REMI - code changed from: v4l2_ext_controls ctrls_block{ control.id & 0xffff0000, 1, 0, {0 ,0}, &control };
+            v4l2_ext_controls ctrls_block { control.id&0xffff0000, 1, 0, 0, 0, &control};
 
             if (xioctl(_fd, VIDIOC_G_EXT_CTRLS, &ctrls_block) < 0)
             {
@@ -1931,7 +1932,8 @@ namespace librealsense
         {
             v4l2_ext_control control{get_cid(opt), 0, 0, value};
             // Extract the control group from the underlying control query
-            v4l2_ext_controls ctrls_block { control.id&0xffff0000, 1, 0, {0 ,0}, &control};
+            // REMI - code changed from: v4l2_ext_controls ctrls_block{ control.id & 0xffff0000, 1, 0, {0 ,0}, &control };
+            v4l2_ext_controls ctrls_block{ control.id & 0xffff0000, 1, 0, 0, 0, &control };
             if (xioctl(_fd, VIDIOC_S_EXT_CTRLS, &ctrls_block) < 0)
             {
                 if (errno == EIO || errno == EAGAIN) // TODO: Log?
@@ -1958,7 +1960,8 @@ namespace librealsense
 //            if (size < 8)
 //                xctrl.size = 0; // D431 Debug
             // Extract the control group from the underlying control query
-            v4l2_ext_controls ctrls_block { xctrl.id&0xffff0000, 1, 0, {0 ,0}, &xctrl};
+            // REMI - code changed from: v4l2_ext_controls ctrls_block { xctrl.id&0xffff0000, 1, 0, {0 ,0}, &xctrl};
+            v4l2_ext_controls ctrls_block { xctrl.id&0xffff0000, 1, 0, 0, 0, &xctrl };
             if (xioctl(_fd, VIDIOC_S_EXT_CTRLS, &ctrls_block) < 0)
             {
                 if (errno == EIO || errno == EAGAIN) // TODO: Log?
@@ -1973,7 +1976,8 @@ namespace librealsense
         {
             v4l2_ext_control xctrl{xu_to_cid(xu,control), uint32_t(size), 0, 0};
             // Extract the control group from the underlying control query
-            v4l2_ext_controls ctrls_block { xctrl.id&0xffff0000, 1, 0, {0 ,0}, &xctrl};
+            // REMI - code changed from: v4l2_ext_controls ctrls_block { xctrl.id&0xffff0000, 1, 0, {0 ,0}, &xctrl};
+            v4l2_ext_controls ctrls_block{ xctrl.id & 0xffff0000, 1, 0, 0, 0, &xctrl };
             if (xioctl(_fd, VIDIOC_G_EXT_CTRLS, &ctrls_block) < 0)
             {
                 if (errno == EIO || errno == EAGAIN) // TODO: Log?
