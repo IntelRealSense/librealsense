@@ -113,8 +113,8 @@ bool dispatcher::flush()
     utilities::time::waiting_on< bool > invoked( false );
     // Blocking call, we don't want the item in the queue to drop if the queue is full.
     // TODO - Add a timeout to blocking invoke, Currently it can wait forever here.
-    invoke( [invoked = invoked.in_thread()]( cancellable_timer ) { invoked.signal( true ); },
-            true );
+    auto invoked_in_thread = invoked.in_thread();
+    invoke( [invoked_in_thread]( cancellable_timer ) { invoked_in_thread.signal( true ); }, true );
     invoked.wait_until( std::chrono::seconds( 10 ), [&]() {
         return invoked || _was_stopped;
     } );
