@@ -4,7 +4,6 @@
 //#cmake: static!
 //#test:donotrun
 //#test:device D435
-//#test:donotrun:!nightly
 //#test:timeout 480
 
 #include <numeric>
