@@ -680,23 +680,23 @@ namespace librealsense
             : proxy_option(max_option), _min_option(min_option)
         {}
 
-        void set(float value) override
+        void set( float value ) override
         {
             auto strong = _min_option.lock();
-            if (!strong)
+            if( ! strong )
                 return;
 
             auto min_value = strong->query();
 
-            if (min_value > value)
+            if( min_value > value )
             {
                 auto min = strong->get_range().min;
-                strong->set(min);
+                strong->set( min );
             }
-            _proxy->set(value);
-            _recording_function(*this);
+            _proxy->set( value );
+            _recording_function( *this );
 
-            notify(0);
+            notify( value );
         }
 
     private:
@@ -713,23 +713,23 @@ namespace librealsense
             : proxy_option(min_option), _max_option(max_option)
         {}
 
-        void set(float value) override
+        void set( float value ) override
         {
             auto strong = _max_option.lock();
-            if (!strong)
+            if( ! strong )
                 return;
 
             auto max_value = strong->query();
 
-            if (max_value < value)
+            if( max_value < value )
             {
                 auto max = strong->get_range().max;
-                strong->set(max);
+                strong->set( max );
             }
-            _proxy->set(value);
-            _recording_function(*this);
+            _proxy->set( value );
+            _recording_function( *this );
 
-            notify(0);
+            notify( value );
         }
 
     private:
