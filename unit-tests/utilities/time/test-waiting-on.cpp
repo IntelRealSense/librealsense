@@ -94,8 +94,7 @@ TEST_CASE( "Not invoked but still notified" )
     
     // Add something we'll be waiting on
     utilities::time::waiting_on< bool > invoked( false );
-    auto invoked_in_thread = invoked.in_thread();
-    dispatcher->push( [invoked_in_thread]() { invoked_in_thread.signal( true ); } );
+    dispatcher->push( [invoked_in_thread = invoked.in_thread()]() { invoked_in_thread.signal( true ); } );
 
     // Destroy the dispatcher while we're waiting on the invocation!
     std::atomic_bool stopped( false );
