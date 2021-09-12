@@ -588,12 +588,16 @@ namespace librealsense
 
         auto min_max_fw_it = device_to_fw_min_max_version.find(_pid);
         if (min_max_fw_it == device_to_fw_min_max_version.end())
-            throw std::runtime_error("Min and Max firmware versions have not been defined for this device!");
+            throw librealsense::invalid_value_exception(to_string() << "Min and Max firmware versions have not been defined for this device: " << std::hex << _pid);
 
         // advanced SR3XX devices do not fit the "old" fw versions and 
         // legacy SR3XX devices do not fit the "new" fw versions
-        return (firmware_version(fw_version) >= firmware_version(min_max_fw_it->second.first)) &&
+        bool result = (firmware_version(fw_version) >= firmware_version(min_max_fw_it->second.first)) &&
             (firmware_version(fw_version) <= firmware_version(min_max_fw_it->second.second));
+        if (!result)
+            LOG_ERROR("Firmware version isn't compatible" << fw_version);
+
+        return result;
     }
 
     void sr3xx_camera::create_snapshot(std::shared_ptr<debug_interface>& snapshot) const
