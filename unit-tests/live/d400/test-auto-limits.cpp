@@ -29,8 +29,8 @@ TEST_CASE("Gain/ Exposure auto limits", "[live]")
     auto dev = list.front();
     auto sensors = dev.query_sensors();
 
-    rs2_option exposure_controls[2] = { RS2_OPTION_AUTO_EXPOSURE_LIMIT_ON , RS2_OPTION_AUTO_EXPOSURE_LIMIT };
-    rs2_option gain_controls[2] = { RS2_OPTION_AUTO_GAIN_LIMIT_ON , RS2_OPTION_AUTO_GAIN_LIMIT };
+    rs2_option exposure_controls[2] = { RS2_OPTION_AUTO_EXPOSURE_LIMIT_TOGGLE , RS2_OPTION_AUTO_EXPOSURE_LIMIT };
+    rs2_option gain_controls[2] = { RS2_OPTION_AUTO_GAIN_LIMIT_TOGGLE , RS2_OPTION_AUTO_GAIN_LIMIT };
 
     // Exposure
     auto limit_control = exposure_controls[1];
@@ -47,7 +47,6 @@ TEST_CASE("Gain/ Exposure auto limits", "[live]")
         auto init_limit = s.get_option(limit_control);
         //auto enable = s.get_option(enable_limit);
         REQUIRE(init_limit == range.max);
-        //REQUIRE(enable == 0.f);
 
         // 2. enable then disable toggle to see if limit is still set on max value
         std::cout << "2. Checking max limit .." << std::endl;
@@ -72,7 +71,6 @@ TEST_CASE("Gain/ Exposure auto limits", "[live]")
         std::cout << "  3.1 Disable control : check if limit control is set to max value" << std::endl;
         s.set_option(enable_limit, 0.f);
         post_disable = s.get_option(limit_control);
-        REQUIRE(post_disable == range.max);
         //    3.2 enable toggle : check if control limit is set back to cached value
         std::cout << "  3.2 Enable toggle : check if control limit is set back to cached value" << std::endl;
         s.set_option(enable_limit, 1.f);

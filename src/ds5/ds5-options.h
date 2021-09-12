@@ -335,7 +335,7 @@ namespace librealsense
     class auto_exposure_limit_option : public option_base
     {
     public:
-        auto_exposure_limit_option(hw_monitor& hwm, sensor_base* depth_ep, option_range range, limits_option* exposure_limit_enable);
+        auto_exposure_limit_option(hw_monitor& hwm, sensor_base* depth_ep, option_range range, std::shared_ptr<limits_option> exposure_limit_enable);
         virtual ~auto_exposure_limit_option() = default;
         virtual void set(float value) override;
         virtual float query() const override;
@@ -353,13 +353,13 @@ namespace librealsense
         lazy<option_range> _range;
         hw_monitor& _hwm;
         sensor_base* _sensor;
-        limits_option* _exposure_limit_enable;
+        std::shared_ptr<limits_option> _exposure_limit_enable;
     };
 
     class auto_gain_limit_option : public option_base
     {
     public:
-        auto_gain_limit_option(hw_monitor& hwm, sensor_base* depth_ep, option_range range, limits_option* gain_limit_enable);
+        auto_gain_limit_option(hw_monitor& hwm, sensor_base* depth_ep, option_range range, std::shared_ptr<limits_option> gain_limit_enable);
         virtual ~auto_gain_limit_option() = default;
         virtual void set(float value) override;
         virtual float query() const override;
@@ -377,7 +377,7 @@ namespace librealsense
         lazy<option_range> _range;
         hw_monitor& _hwm;
         sensor_base* _sensor;
-        limits_option* _gain_limit_enable;
+        std::shared_ptr<limits_option> _gain_limit_enable;
     };
 
     // Auto-Limits Enable/ Disable
@@ -388,12 +388,12 @@ namespace librealsense
         limits_option(rs2_option option, option_range range, const char* description, hw_monitor& hwm) :
             _option(option), _toggle_range(range), _description(description), _hwm(hwm) 
         {
-            _value = 0;
+            _value = 1;
         };
 
         virtual void set(float value) override
         {
-            _value = value; // 0: gain auto-limit is disabled, 1 : gain auto-limit is ensabled (all range 16-248 is valid)
+            _value = value; // 0: gain auto-limit is disabled, 1 : gain auto-limit is enabled (all range 16-248 is valid)
             auto set_limit = _cached_limit;
             if (value == 0)
                 set_limit = 0;
@@ -408,7 +408,7 @@ namespace librealsense
             cmd.param1 = 4;
             cmd.param2 = *(reinterpret_cast<uint32_t*>(ret.data()));
             cmd.param3 = static_cast<int>(set_limit);
-            if (_option == RS2_OPTION_AUTO_EXPOSURE_LIMIT_ON)
+            if (_option == RS2_OPTION_AUTO_EXPOSURE_LIMIT_TOGGLE)
             {
                 cmd.param2 = static_cast<int>(set_limit);
                 cmd.param3 = *(reinterpret_cast<uint32_t*>(ret.data() + 4));
