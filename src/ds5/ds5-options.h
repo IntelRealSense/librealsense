@@ -353,7 +353,7 @@ namespace librealsense
         lazy<option_range> _range;
         hw_monitor& _hwm;
         sensor_base* _sensor;
-        std::shared_ptr<limits_option> _exposure_limit_enable;
+        std::shared_ptr<limits_option> _exposure_limit_toggle;
     };
 
     class auto_gain_limit_option : public option_base
@@ -377,7 +377,7 @@ namespace librealsense
         lazy<option_range> _range;
         hw_monitor& _hwm;
         sensor_base* _sensor;
-        std::shared_ptr<limits_option> _gain_limit_enable;
+        std::shared_ptr<limits_option> _gain_limit_toggle;
     };
 
     // Auto-Limits Enable/ Disable
@@ -386,16 +386,12 @@ namespace librealsense
     public:
 
         limits_option(rs2_option option, option_range range, const char* description, hw_monitor& hwm) :
-            _option(option), _toggle_range(range), _description(description), _hwm(hwm) 
-        {
-            _value = 1;
-        };
+            _option(option), _toggle_range(range), _description(description), _hwm(hwm) {};
 
         virtual void set(float value) override
         {
-            _value = value; // 0: gain auto-limit is disabled, 1 : gain auto-limit is enabled (all range 16-248 is valid)
             auto set_limit = _cached_limit;
-            if (value == 0)
+            if (value == 0) // 0: gain auto-limit is disabled, 1 : gain auto-limit is enabled (all range 16-248 is valid)
                 set_limit = 0;
 
             command cmd_get(ds::AUTO_CALIB);
@@ -415,7 +411,22 @@ namespace librealsense
             }
             _hwm.send(cmd);
         };
-        virtual float query() const override { return _value; };
+        virtual float query() const override 
+        { 
+            auto offset = 0;
+            if (_option == RS2_OPTION_AUTO_GAIN_LIMIT_TOGGLE)
+                offset = 4;
+            command cmd(ds::AUTO_CALIB);
+            cmd.param1 = 5;
+            auto res = _hwm.send(cmd);
+            if (res.empty())
+                throw invalid_value_exception("auto_exposure_limit_option::query result is empty!");
+
+            auto limit_val = static_cast<float>(*(reinterpret_cast<uint32_t*>(res.data() + offset)));
+            if (limit_val == 0)
+                return 0;
+            return 1;
+        };
         virtual option_range get_range() const override { return _toggle_range; };
         virtual bool is_enabled() const override { return true; }
         virtual const char* get_description() const override { return _description; };
@@ -428,11 +439,23 @@ namespace librealsense
         };
         void set_cached_limit(float value) { _cached_limit = value; };
         float get_cached_limit() { return _cached_limit; };
+        float query_limit_value() 
+        {
+            auto offset = 0;
+            if (_option == RS2_OPTION_AUTO_GAIN_LIMIT_TOGGLE)
+                offset = 4;
+            command cmd(ds::AUTO_CALIB);
+            cmd.param1 = 5;
+            auto res = _hwm.send(cmd);
+            if (res.empty())
+                throw invalid_value_exception("auto_exposure_limit_option::query result is empty!");
+
+            return static_cast<float>(*(reinterpret_cast<uint32_t*>(res.data() + offset)));
+        };
 
     private:
         std::function<void(const option&)> _record_action = [](const option&) {};
         rs2_option _option;
-        float _value;
         option_range _toggle_range;
         const std::map<float, std::string> _description_per_value;
         float _cached_limit;

@@ -656,12 +656,13 @@ namespace librealsense
     }
 
     auto_exposure_limit_option::auto_exposure_limit_option(hw_monitor& hwm, sensor_base* ep, option_range range, std::shared_ptr<limits_option> exposure_limit_enable)
-        : option_base(range), _hwm(hwm), _sensor(ep), _exposure_limit_enable(exposure_limit_enable)
+        : option_base(range), _hwm(hwm), _sensor(ep), _exposure_limit_toggle(exposure_limit_enable)
     {
         _range = [range]()
         {
             return range;
         };
+        _exposure_limit_toggle->set_cached_limit(range.max);
     }
 
     void auto_exposure_limit_option::set(float value)
@@ -669,9 +670,9 @@ namespace librealsense
         if (!is_valid(value))
             throw invalid_value_exception("set(enable_auto_exposure) failed! Invalid Auto-Exposure mode request " + std::to_string(value));
 
-        _exposure_limit_enable->set_cached_limit(value);
-        if (_exposure_limit_enable->query() == 0.f)
-            _exposure_limit_enable->set(1);
+        _exposure_limit_toggle->set_cached_limit(value);
+        if (_exposure_limit_toggle->query() == 0.f)
+            _exposure_limit_toggle->set(1);
 
         command cmd_get(ds::AUTO_CALIB);
         cmd_get.param1 = 5;
@@ -699,7 +700,7 @@ namespace librealsense
         auto ret = static_cast<float>(*(reinterpret_cast<uint32_t*>(res.data())));
         if (ret< get_range().min || ret > get_range().max)
         {
-            return _exposure_limit_enable->get_cached_limit();
+            return _exposure_limit_toggle->get_cached_limit();
         }
         return ret;
     }
@@ -710,12 +711,13 @@ namespace librealsense
     }
 
     auto_gain_limit_option::auto_gain_limit_option(hw_monitor& hwm, sensor_base* ep, option_range range, std::shared_ptr <limits_option> gain_limit_enable)
-        : option_base(range), _hwm(hwm), _sensor(ep), _gain_limit_enable(gain_limit_enable)
+        : option_base(range), _hwm(hwm), _sensor(ep), _gain_limit_toggle(gain_limit_enable)
     {
         _range = [range]()
         {
             return range;
         };
+        _gain_limit_toggle->set_cached_limit(range.max);
     }
 
     void auto_gain_limit_option::set(float value)
@@ -723,9 +725,9 @@ namespace librealsense
         if (!is_valid(value))
             throw invalid_value_exception("set(enable_auto_gain) failed! Invalid Auto-Gain mode request " + std::to_string(value));
 
-        _gain_limit_enable->set_cached_limit(value);
-        if(_gain_limit_enable->query() == 0.f)
-            _gain_limit_enable->set(1);
+        _gain_limit_toggle->set_cached_limit(value);
+        if(_gain_limit_toggle->query() == 0.f)
+            _gain_limit_toggle->set(1);
             
 
         command cmd_get(ds::AUTO_CALIB);
@@ -754,7 +756,7 @@ namespace librealsense
         auto ret = static_cast<float>(*(reinterpret_cast<uint32_t*>(res.data() + 4)));
         if (ret< get_range().min || ret > get_range().max)
         {
-            return _gain_limit_enable->get_cached_limit();
+            return _gain_limit_toggle->get_cached_limit();
         }
         return ret;
     }
