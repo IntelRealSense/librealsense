@@ -21,12 +21,10 @@ TEST_CASE("Gain/ Exposure auto limits", "[live]")
     auto dev1 = list.front();
     auto dev2 = list.front();
     std::array < device, 2> devices = { dev1, dev2 };
-    std::array < std::vector<sensor>, 2> sensors = { dev1.query_sensors(), dev2.query_sensors() };
 
     rs2_option limits_toggle[2] = { RS2_OPTION_AUTO_EXPOSURE_LIMIT_TOGGLE, RS2_OPTION_AUTO_GAIN_LIMIT_TOGGLE };
     rs2_option limits_value[2] = { RS2_OPTION_AUTO_EXPOSURE_LIMIT, RS2_OPTION_AUTO_GAIN_LIMIT };
     std::array < std::map<rs2_option, sensor>, 2> picked_sensor;
-
 
     // 1. Scenario 1:
     //          - Change control value few times
@@ -44,7 +42,8 @@ TEST_CASE("Gain/ Exposure auto limits", "[live]")
     {
         for (auto j = 0; j < 2; j++) // 2 devices
         {
-            for (auto& s : sensors[j])
+            auto sensors = devices[j].query_sensors();
+            for (auto& s : sensors)
             {
                 std::string val = s.get_info(RS2_CAMERA_INFO_NAME);
                 if (!s.supports(limits_value[i]))
