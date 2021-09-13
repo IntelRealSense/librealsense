@@ -27,15 +27,13 @@ TEST_CASE("Gain/ Exposure auto limits", "[live]")
     rs2_option limits_value[2] = { RS2_OPTION_AUTO_EXPOSURE_LIMIT, RS2_OPTION_AUTO_GAIN_LIMIT };
     std::array < std::map<rs2_option, sensor>, 2> picked_sensor;
 
-    // 1. Toggle : 
-    //              - if toggle is off check that control limit value is 0
-    //              - if toggle is on check that control value is in the correct range
-    // 2. Scenario 1:
+
+    // 1. Scenario 1:
     //          - Change control value few times
     //          - Turn toggle off
     //          - Turn toggle on
     //          - Check that control limit value is the latest value
-    // 3. Scenario 2:
+    // 2. Scenario 2:
     //          - Init 2 devices
     //          - Change control value for each device to different values
     //          - Toggle off each control
@@ -53,19 +51,7 @@ TEST_CASE("Gain/ Exposure auto limits", "[live]")
                     continue;
                 picked_sensor[j][limits_value[i]] = s.get();//std::make_shared<sensor>(s);
                 auto range = s.get_option_range(limits_value[i]);
-                // 1. Toggle : 
-                //        - if toggle is off check that control limit value is 0
-                //        - if toggle is on check that control value is in the correct range
-                auto limit = s.get_option(limits_value[i]);
-                auto toggle = s.get_option(limits_toggle[i]);
-                if (toggle == 0)
-                    REQUIRE(limit == 0);
-                else
-                {
-                    REQUIRE(limit <= range.max);
-                    //REQUIRE(limit >= range.min); // failed !!!!
-                }
-                // 2. Scenario 1:
+                // 1. Scenario 1:
                 //    - Change control value few times
                 //    - Turn toggle off
                 //    - Turn toggle on
@@ -75,35 +61,44 @@ TEST_CASE("Gain/ Exposure auto limits", "[live]")
                     s.set_option(limits_value[i], val);
                 s.set_option(limits_toggle[i], 0.0); // off
                 s.set_option(limits_toggle[i], 1.0); // on
-                limit = s.get_option(limits_value[i]);
+                auto limit = s.get_option(limits_value[i]);
                 REQUIRE(limit == values[2]);
             }
         }
+    }
 
-        // 3. Scenario 2:
+        // 2. Scenario 2:
         //        - Init 2 devices
-        //        - Change control value for each device to different values
-        //        - Toggle off each control
-        //        - Toggle on each control
-        //        - Check that control limit value in each device is set to the device cached value
+        //        - toggle on both dev1 and dev2 and set two distinct values for the auto-exposure /gain.
+        //        - toggle both dev1and dev2 off.
+        //        2.1. toggle dev1 on :
+        //                  * verify that the limit value is the value that was stored(cached) in dev1.
+        //                  * verify that for dev2 both the limitand the toggle values are similar to those of dev1
+        //        2.2. toggle dev2 on :
+        //                  * verify that the limit value is the value that was stored(cached) in dev2.
 
-        for (auto i = 0; i < 2; i++) // exposure or gain
-        {
-            auto s1 = picked_sensor[0][limits_value[i]];
-            auto s2 = picked_sensor[1][limits_value[i]];
+    for (auto i = 0; i < 2; i++) // exposure or gain
+    {
+        auto s1 = picked_sensor[0][limits_value[i]];
+        auto s2 = picked_sensor[1][limits_value[i]];
 
-            auto range = s1.get_option_range(limits_value[i]); // should be same range from both sensors
-            s1.set_option(limits_value[i], range.max / 4.0);
-            s1.set_option(limits_toggle[i], 0.0); // off
-            s2.set_option(limits_value[i], range.max - 5.0);
-            s2.set_option(limits_toggle[i], 0.0); // off
+        auto range = s1.get_option_range(limits_value[i]); // should be same range from both sensors
+        s1.set_option(limits_value[i], range.max / 4.0);
+        s1.set_option(limits_toggle[i], 0.0); // off
+        s2.set_option(limits_value[i], range.max - 5.0);
+        s2.set_option(limits_toggle[i], 0.0); // off
 
-            s1.set_option(limits_toggle[i], 1.0); // on
-            auto limit1 = s1.get_option(limits_value[i]);
-            REQUIRE(limit1 == range.max / 4.0);
-            s2.set_option(limits_toggle[i], 1.0); // on
-            auto limit2 = s1.get_option(limits_value[i]);
-            REQUIRE(limit1 == range.max - 5.0);
-        }
+        // 2.1
+        s1.set_option(limits_toggle[i], 1.0); // on
+        auto limit1 = s1.get_option(limits_value[i]);
+        REQUIRE(limit1 == range.max / 4.0);
+        // keep toggle of dev2 off
+        auto limit2 = s2.get_option(limits_value[i]);
+        REQUIRE(limit1 == limit2);
+
+        // 2.2
+        s2.set_option(limits_toggle[i], 1.0); // on
+        limit2 = s2.get_option(limits_value[i]);
+        REQUIRE(limit2 == range.max - 5.0);
     }
 }
