@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2018 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2021 Intel Corporation. All Rights Reserved.
 
 #include <iostream>
 #include <string>
@@ -8,11 +8,11 @@
 #include <vector>
 
 #include "tclap/CmdLine.h"
+#include <lz4.h>
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "../third-party/stb_image.h"
 
-#include <lz4.h>
 
 #define RS_EMBED_VERSION "0.0.0.1"
 
@@ -38,21 +38,6 @@ struct int6
 {
     int x, y, z, a, b, c;
 };
-
-void uncompress(const uint8_t* ptr, int compressed_size, int original_size, int vertex_count, int index_count,
-    std::vector<float3>& vertex_data, std::vector<float3>& normals, std::vector<short3>& index_data)
-{
-    std::vector<char> uncompressed(original_size, 0);
-    LZ4_decompress_safe((const char*)ptr, uncompressed.data(), compressed_size, original_size);
-    const int vertex_size = vertex_count * sizeof(float3);
-    const int index_size = index_count * sizeof(short3);
-    vertex_data.resize(vertex_count);
-    memcpy(vertex_data.data(), uncompressed.data(), vertex_size);
-    index_data.resize(index_count);
-    memcpy(index_data.data(), uncompressed.data() + vertex_size, index_size);
-    normals.resize(vertex_count);
-    memcpy(normals.data(), uncompressed.data() + vertex_size + index_size, vertex_size);
-}
 
 bool ends_with(const std::string& s, const std::string& suffix)
 {
@@ -111,17 +96,23 @@ int main(int argc, char** argv) try
                     }
                     if (str[0] == 'f')
                     {
-                        int x, y, z, a = 0, b = 0, c = 0; // TODO check about a,b,c values
-                        sscanf(str.c_str(), "f %d %d %d", &x, &y, &z);
+                        int x, y, z, a, b, c; 
+                        sscanf(str.c_str(), "f %d//%d %d//%d %d//%d", &x, &a, &y, &b, &z, &c);
                         index_raw_data.push_back({ x, y, z, a, b, c });
                     }
                 }
             }
         }
+        else
+        {
+            std::cout << "file: " << input << " could not be found!" << std::endl;
+            return EXIT_FAILURE;
+        }
 
         normals_data.resize(vertex_data.size());
         for (auto& idx : index_raw_data)
         {
+            // TODO - normals data are currently disabled
             // normals_data[idx.x] = normals_raw_data[idx.a];
             // normals_data[idx.y] = normals_raw_data[idx.b];
             // normals_data[idx.z] = normals_raw_data[idx.c];
@@ -216,9 +207,6 @@ int main(int argc, char** argv) try
 
         myfile.close();
     }
-
-
-    //uncompress_d435_obj(vertex_data, normals_data, index_data);
 
     return EXIT_SUCCESS;
 }
