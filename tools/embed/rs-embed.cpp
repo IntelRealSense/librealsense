@@ -47,6 +47,16 @@ bool ends_with(const std::string& s, const std::string& suffix)
     return j == suffix.rend();
 }
 
+std::string get_current_time()
+{
+    auto t = time(nullptr);
+    char buffer[20] = {};
+    const tm* time = localtime(&t);
+    if (nullptr != time)
+        strftime(buffer, sizeof(buffer), "%m/%d/%Y %H:%M:%S", time);
+    return std::string(buffer);
+}
+
 int main(int argc, char** argv) try
 {
     // Parse command line arguments
@@ -137,11 +147,13 @@ int main(int argc, char** argv) try
         memset(pchCompressed, compressBufSize, 0);
         int nCompressedSize = LZ4_compress_default((const char*)data.data(), pchCompressed, rawDataSize, compressBufSize);
 
+  
         ofstream myfile;
         myfile.open(output);
         myfile << "// License: Apache 2.0. See LICENSE file in root directory.\n";
-        myfile << "// Copyright(c) 2018 Intel Corporation. All Rights Reserved.\n\n";
-        myfile << "// This file is auto-generated from " << name << ".obj\n";
+        myfile << "// Copyright(c) 2021 Intel Corporation. All Rights Reserved.\n\n";
+        myfile << "// This file is auto-generated from " << name << ".obj using rs-embed tool version: " << RS_EMBED_VERSION <<"\n";
+        myfile << "// Generation time: " << get_current_time() << ".\n\n";
         myfile << "#pragma once\n";
         myfile << "static uint32_t " << name << "_obj_data [] { ";
 
@@ -191,8 +203,9 @@ int main(int argc, char** argv) try
         ofstream myfile;
         myfile.open(output);
         myfile << "// License: Apache 2.0. See LICENSE file in root directory.\n";
-        myfile << "// Copyright(c) 2018 Intel Corporation. All Rights Reserved.\n\n";
-        myfile << "// This file is auto-generated from " << name << ".png\n";
+        myfile << "// Copyright(c) 2021 Intel Corporation. All Rights Reserved.\n\n";
+        myfile << "// This file is auto-generated from " << name << ".png using rs-embed tool version: " << RS_EMBED_VERSION << "\n";
+        myfile << "// Generation time: " << get_current_time() << ".\n\n";
 
         myfile << "static uint32_t " << name << "_png_size = 0x" << std::hex << buffer.size() << ";\n";
 
