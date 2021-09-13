@@ -4,7 +4,6 @@
 #include "l500-fw-update-device.h"
 #include "l500-private.h"
 
-
 namespace librealsense
 {
     l500_update_device::l500_update_device(std::shared_ptr<context> ctx, bool register_device_notifications, std::shared_ptr<platform::usb_device> usb_device)
@@ -31,7 +30,7 @@ namespace librealsense
         bool result = (firmware_version(fw_version) >= firmware_version(min_max_fw_it->second.first)) &&
             (firmware_version(fw_version) <= firmware_version(min_max_fw_it->second.second));
         if (!result)
-            LOG_ERROR(fw_version);
+            LOG_ERROR("Firmware version isn't compatible" << fw_version);
 
         return result;
     }

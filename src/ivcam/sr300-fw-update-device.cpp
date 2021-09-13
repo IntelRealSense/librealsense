@@ -40,7 +40,7 @@ namespace librealsense
         bool result = (firmware_version(fw_version) >= firmware_version(min_max_fw_it->second.first)) &&
             (firmware_version(fw_version) <= firmware_version(min_max_fw_it->second.second));
         if (!result)
-            LOG_ERROR(fw_version);
+            LOG_ERROR("Firmware version isn't compatible" << fw_version);
 
         return result;
     }
