@@ -360,8 +360,8 @@ namespace librealsense
         p.depth_auto_exposure.auto_exposure = 1;
         p.depth_gain.gain = 16.f;
     }
-    
-    void default_430(preset& p) 
+
+    void default_430(preset& p)
     {
         p.depth_controls.deepSeaMedianThreshold = 500;
         p.depth_controls.deepSeaNeighborThreshold = 7;
@@ -450,6 +450,7 @@ namespace librealsense
         p.amplitude_factor.amplitude = 0.f;
     }
 
+    //used as base preset for the D450
     void default_450_mid_low_res(preset& p)
     {
         p.depth_controls.deepSeaMedianThreshold = 500;
