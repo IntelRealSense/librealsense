@@ -2049,8 +2049,13 @@ HANDLE_EXCEPTIONS_AND_RETURN(0, config, pipe)
 
 rs2_processing_block* rs2_create_processing_block(rs2_frame_processor_callback* proc, rs2_error** error) BEGIN_API_CALL
 {
+    // Take ownership of the callback ASAP or else memory leaks could result if we throw! (the caller usually does a
+    // 'new' when calling us)
+    frame_processor_callback_ptr callback_ptr{ proc, []( rs2_frame_processor_callback * p ) {
+                                                  p->release();
+                                              } };
     auto block = std::make_shared<librealsense::processing_block>("Custom processing block");
-    block->set_processing_callback({ proc, [](rs2_frame_processor_callback* p) { p->release(); } });
+    block->set_processing_callback( callback_ptr );
 
     return new rs2_processing_block{ block };
 }
