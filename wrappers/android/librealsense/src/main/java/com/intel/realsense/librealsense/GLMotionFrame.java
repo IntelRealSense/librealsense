@@ -69,7 +69,6 @@ public class GLMotionFrame extends GLFrame {
         ver.asFloatBuffer().put(verArray);
 
         GLES10.glEnableClientState(GLES10.GL_VERTEX_ARRAY);
-
         GLES10.glColor4f(color.red, color.green, color.blue, 1f);
         GLES10.glLineWidth(axisWidth);
 
@@ -134,12 +133,11 @@ public class GLMotionFrame extends GLFrame {
         drawTriangle(verTriangleZ, blue);
     }
 
-    private Float3 calcMotionData(Float3 md, float norm){
-        float size = (float) Math.sqrt(md.x * md.x + md.y * md.y + md.z * md.z);
+    private Float3 normalizeMotionData(Float3 md, float norm){
         return new Float3(
-                (md.x / size) * norm,
-                (md.y / size) * norm,
-                (md.z / size) * norm);
+                (md.x / norm),
+                (md.y / norm),
+                (md.z / norm));
     }
 
     @Override
@@ -174,15 +172,37 @@ public class GLMotionFrame extends GLFrame {
         drawCircle(X, Z, 1, white);
         drawAxes(r, axisSize, axisWidth);
 
+        // draw norm vector
         MotionFrame mf = mFrame.as(Extension.MOTION_FRAME);
 
-        float norm = axisSize / 2.f;
-        Float3 md = calcMotionData(mf.getMotionData(), norm);
+        Float3 md = mf.getMotionData();
+        float norm = (float) Math.sqrt(md.x * md.x + md.y * md.y + md.z * md.z);
 
-        float[] verArray = { 0, 0, 0, md.x, md.y, md.z};
-        Color dir = new Color(Math.abs(md.x/norm), Math.abs(md.y/norm), Math.abs(md.z/norm));
+        float vec_threshold = 0.2f;
+        if ( norm > vec_threshold ) {
+            Float3 normalized_md = normalizeMotionData(mf.getMotionData(), norm);
 
-        drawLine(verArray, axisWidth, dir);
+            float[] verArray = {0, 0, 0, normalized_md.x, normalized_md.y, normalized_md.z};
+            drawLine(verArray, axisWidth, white);
+        }
+        else
+        {
+//            float radius = 0.05f;
+//            int circle_points = 100;
+//            float angle = 2.0f * 3.1416f / circle_points;
+//
+//            GLES10.glColor4f(white.red, white.green, white.blue, 1f);
+//            glBegin(GL_POLYGON);
+//            double angle1 = 0.0;
+//            glVertex2d(radius * cos(0.0), radius * sin(0.0));
+//            int i;
+//            for (i = 0; i < circle_points; i++)
+//            {
+//                glVertex2d(radius * cos(angle1), radius *sin(angle1));
+//                angle1 += angle;
+//            }
+//            glEnd();
+        }
 
         GLES10.glMatrixMode(GLES10.GL_PROJECTION);
         GLES10.glPopMatrix();
