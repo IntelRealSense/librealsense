@@ -67,7 +67,6 @@ librealsense-log.txt
 *.bin
 *.suo
 *.tlog
-*.obj
 *.ilk
 *.pdb
 *.exp
