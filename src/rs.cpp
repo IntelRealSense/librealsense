@@ -434,15 +434,17 @@ HANDLE_EXCEPTIONS_AND_RETURN( , dev, callback, user )
 
 void rs2_register_calibration_change_callback_cpp( rs2_device* dev, rs2_calibration_change_callback* callback, rs2_error** error ) BEGIN_API_CALL
 {
-    VALIDATE_NOT_NULL( dev );
+    // Take ownership of the callback ASAP or else memory leaks could result if we throw! (the caller usually does a
+    // 'new' when calling us)
     VALIDATE_NOT_NULL( callback );
+    calibration_change_callback_ptr callback_ptr{ callback, []( rs2_calibration_change_callback * p ) {
+                                                     p->release();
+                                                 } };
+
+    VALIDATE_NOT_NULL( dev );
 
     auto d2r = VALIDATE_INTERFACE( dev->device, librealsense::device_calibration );
-
-    // Wrap the C++ callback interface with a shared_ptr that we set to release() it (rather than delete it)
-    d2r->register_calibration_change_callback(
-        { callback, []( rs2_calibration_change_callback* p ) { p->release(); } }
-        );
+    d2r->register_calibration_change_callback( callback_ptr );
 }
 HANDLE_EXCEPTIONS_AND_RETURN( , dev, callback )
 
@@ -801,34 +803,59 @@ HANDLE_EXCEPTIONS_AND_RETURN(, context, callback, user)
 
 void rs2_start_cpp(const rs2_sensor* sensor, rs2_frame_callback* callback, rs2_error** error) BEGIN_API_CALL
 {
+    // Take ownership of the callback ASAP or else memory leaks could result if we throw! (the caller usually does a
+    // 'new' when calling us)
+    VALIDATE_NOT_NULL( callback );
+    frame_callback_ptr callback_ptr{ callback, []( rs2_frame_callback * p ) {
+                                        p->release();
+                                    } };
+
     VALIDATE_NOT_NULL(sensor);
-    VALIDATE_NOT_NULL(callback);
-    sensor->sensor->start({ callback, [](rs2_frame_callback* p) { p->release(); } });
+    sensor->sensor->start( callback_ptr );
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, sensor, callback)
 
 void rs2_set_notifications_callback_cpp(const rs2_sensor* sensor, rs2_notifications_callback* callback, rs2_error** error) BEGIN_API_CALL
 {
+    // Take ownership of the callback ASAP or else memory leaks could result if we throw! (the caller usually does a
+    // 'new' when calling us)
+    VALIDATE_NOT_NULL( callback );
+    notifications_callback_ptr callback_ptr{ callback, []( rs2_notifications_callback * p ) {
+                                                p->release();
+                                            } };
+
     VALIDATE_NOT_NULL(sensor);
-    VALIDATE_NOT_NULL(callback);
-    sensor->sensor->register_notifications_callback({ callback, [](rs2_notifications_callback* p) { p->release(); } });
+    sensor->sensor->register_notifications_callback( callback_ptr );
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, sensor, callback)
 
 void rs2_software_device_set_destruction_callback_cpp(const rs2_device* dev, rs2_software_device_destruction_callback* callback, rs2_error** error) BEGIN_API_CALL
 {
+    // Take ownership of the callback ASAP or else memory leaks could result if we throw! (the caller usually does a
+    // 'new' when calling us)
+    VALIDATE_NOT_NULL( callback );
+    software_device_destruction_callback_ptr callback_ptr{ callback,
+                                                           []( rs2_software_device_destruction_callback * p ) {
+                                                               p->release();
+                                                           } };
+
     VALIDATE_NOT_NULL(dev);
     auto swdev = VALIDATE_INTERFACE(dev->device, librealsense::software_device);
-    VALIDATE_NOT_NULL(callback);
-    swdev->register_destruction_callback({ callback, [](rs2_software_device_destruction_callback* p) { p->release(); } });
+    swdev->register_destruction_callback( callback_ptr );
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, dev, callback)
 
 void rs2_set_devices_changed_callback_cpp(rs2_context* context, rs2_devices_changed_callback* callback, rs2_error** error) BEGIN_API_CALL
 {
+    // Take ownership of the callback ASAP or else memory leaks could result if we throw! (the caller usually does a
+    // 'new' when calling us)
+    VALIDATE_NOT_NULL( callback );
+    devices_changed_callback_ptr callback_ptr{ callback, []( rs2_devices_changed_callback * p ) {
+                                                  p->release();
+                                              } };
+
     VALIDATE_NOT_NULL(context);
-    VALIDATE_NOT_NULL(callback);
-    context->ctx->set_devices_changed_callback({ callback, [](rs2_devices_changed_callback* p) { p->release(); } });
+    context->ctx->set_devices_changed_callback( callback_ptr );
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, context, callback)
 
@@ -1277,10 +1304,14 @@ HANDLE_EXCEPTIONS_AND_RETURN(, min_severity, file_path)
 
 void rs2_log_to_callback_cpp( rs2_log_severity min_severity, rs2_log_callback * callback, rs2_error** error ) BEGIN_API_CALL
 {
-    // Wrap the C++ callback interface with a shared_ptr that we set to release() it (rather than delete it)
-    librealsense::log_to_callback( min_severity,
-        { callback, []( rs2_log_callback * p ) { p->release(); } }
-    );
+    // Take ownership of the callback ASAP or else memory leaks could result if we throw! (the caller usually does a
+    // 'new' when calling us)
+    VALIDATE_NOT_NULL( callback );
+    log_callback_ptr callback_ptr{ callback, []( rs2_log_callback * p ) {
+                                      p->release();
+                                  } };
+
+    librealsense::log_to_callback( min_severity, callback_ptr );
 }
 HANDLE_EXCEPTIONS_AND_RETURN( , min_severity, callback )
 
@@ -1599,10 +1630,17 @@ HANDLE_EXCEPTIONS_AND_RETURN(0, device)
 
 void rs2_playback_device_set_status_changed_callback(const rs2_device* device, rs2_playback_status_changed_callback* callback, rs2_error** error) BEGIN_API_CALL
 {
+    // Take ownership of the callback ASAP or else memory leaks could result if we throw! (the caller usually does a
+    // 'new' when calling us)
+    VALIDATE_NOT_NULL( callback );
+    auto cb = std::shared_ptr< rs2_playback_status_changed_callback >( callback,
+                                                                       []( rs2_playback_status_changed_callback * p ) {
+                                                                           if( p )
+                                                                               p->release();
+                                                                       } );
+
     VALIDATE_NOT_NULL(device);
-    VALIDATE_NOT_NULL(callback);
     auto playback = VALIDATE_INTERFACE(device->device, librealsense::playback_device);
-    auto cb = std::shared_ptr<rs2_playback_status_changed_callback>(callback, [](rs2_playback_status_changed_callback* p) { if (p) p->release(); });
     playback->playback_status_changed += [cb](rs2_playback_status status) { cb->on_playback_status_changed(status); };
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, device, callback)
@@ -1821,7 +1859,8 @@ HANDLE_EXCEPTIONS_AND_RETURN(nullptr, pipe, config)
 rs2_pipeline_profile* rs2_pipeline_start_with_callback(rs2_pipeline* pipe, rs2_frame_callback_ptr on_frame, void* user, rs2_error ** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(pipe);
-    librealsense::frame_callback_ptr callback(new librealsense::frame_callback(on_frame, user), [](rs2_frame_callback* p) { p->release(); });
+    librealsense::frame_callback_ptr callback( new librealsense::frame_callback( on_frame, user ),
+                                               []( rs2_frame_callback * p ) { p->release(); } );
     return new rs2_pipeline_profile{ pipe->pipeline->start(std::make_shared<pipeline::config>(), move(callback)) };
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, pipe, on_frame, user)
@@ -1830,29 +1869,38 @@ rs2_pipeline_profile* rs2_pipeline_start_with_config_and_callback(rs2_pipeline* 
 {
     VALIDATE_NOT_NULL(pipe);
     VALIDATE_NOT_NULL(config);
-    librealsense::frame_callback_ptr callback(new librealsense::frame_callback(on_frame, user), [](rs2_frame_callback* p) { p->release(); });
+    librealsense::frame_callback_ptr callback( new librealsense::frame_callback( on_frame, user ),
+                                               []( rs2_frame_callback * p ) { p->release(); } );
     return new rs2_pipeline_profile{ pipe->pipeline->start(config->config, callback) };
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, pipe, config, on_frame, user)
 
 rs2_pipeline_profile* rs2_pipeline_start_with_callback_cpp(rs2_pipeline* pipe, rs2_frame_callback* callback, rs2_error ** error) BEGIN_API_CALL
 {
-    VALIDATE_NOT_NULL(pipe);
-    VALIDATE_NOT_NULL(callback);
+    // Take ownership of the callback ASAP or else memory leaks could result if we throw! (the caller usually does a
+    // 'new' when calling us)
+    VALIDATE_NOT_NULL( callback );
+    frame_callback_ptr callback_ptr{ callback, []( rs2_frame_callback * p ) {
+                                        p->release();
+                                    } };
 
-    return new rs2_pipeline_profile{ pipe->pipeline->start(std::make_shared<pipeline::config>(),
-        { callback, [](rs2_frame_callback* p) { p->release(); } }) };
+    VALIDATE_NOT_NULL(pipe);
+    return new rs2_pipeline_profile{ pipe->pipeline->start( std::make_shared< pipeline::config >(), callback_ptr ) };
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, pipe, callback)
 
 rs2_pipeline_profile* rs2_pipeline_start_with_config_and_callback_cpp(rs2_pipeline* pipe, rs2_config* config, rs2_frame_callback* callback, rs2_error ** error) BEGIN_API_CALL
 {
+    // Take ownership of the callback ASAP or else memory leaks could result if we throw! (the caller usually does a
+    // 'new' when calling us)
+    VALIDATE_NOT_NULL( callback );
+    frame_callback_ptr callback_ptr{ callback, []( rs2_frame_callback * p ) {
+                                        p->release();
+                                    } };
+
     VALIDATE_NOT_NULL(pipe);
     VALIDATE_NOT_NULL(config);
-    VALIDATE_NOT_NULL(callback);
-
-    return new rs2_pipeline_profile{ pipe->pipeline->start(config->config,
-        { callback, [](rs2_frame_callback* p) { p->release(); } }) };
+    return new rs2_pipeline_profile{ pipe->pipeline->start( config->config, callback_ptr ) };
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, pipe, config, callback)
 
@@ -2048,9 +2096,15 @@ NOARGS_HANDLE_EXCEPTIONS_AND_RETURN(nullptr)
 
 void rs2_start_processing(rs2_processing_block* block, rs2_frame_callback* on_frame, rs2_error** error) BEGIN_API_CALL
 {
+    // Take ownership of the callback ASAP or else memory leaks could result if we throw! (the caller usually does a
+    // 'new' when calling us)
+    frame_callback_ptr callback_ptr{ on_frame, []( rs2_frame_callback * p ) {
+                                        p->release();
+                                    } };
+
     VALIDATE_NOT_NULL(block);
 
-    block->block->set_output_callback({ on_frame, [](rs2_frame_callback* p) { p->release(); } });
+    block->block->set_output_callback( callback_ptr );
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, block, on_frame)
 
@@ -2901,6 +2955,12 @@ HANDLE_EXCEPTIONS_AND_RETURN(0, sensor, wo_sensor_id, frame_num, translational_v
 
 void rs2_update_firmware_cpp(const rs2_device* device, const void* fw_image, int fw_image_size, rs2_update_progress_callback* callback, rs2_error** error) BEGIN_API_CALL
 {
+    // Take ownership of the callback ASAP or else memory leaks could result if we throw! (the caller usually does a
+    // 'new' when calling us)
+    update_progress_callback_ptr callback_ptr;
+    if( callback )
+        callback_ptr.reset( callback, []( rs2_update_progress_callback * p ) { p->release(); } );
+
     VALIDATE_NOT_NULL(device);
     VALIDATE_NOT_NULL(fw_image);
     // check if the given FW size matches the expected FW size
@@ -2908,11 +2968,7 @@ void rs2_update_firmware_cpp(const rs2_device* device, const void* fw_image, int
         throw librealsense::invalid_value_exception(to_string() << "Unsupported firmware binary image provided - " << fw_image_size << " bytes");
 
     auto fwu = VALIDATE_INTERFACE(device->device, librealsense::update_device_interface);
-
-    if (callback == NULL)
-        fwu->update(fw_image, fw_image_size, nullptr);
-    else
-        fwu->update(fw_image, fw_image_size, { callback, [](rs2_update_progress_callback* p) { p->release(); } });
+    fwu->update( fw_image, fw_image_size, callback_ptr );
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, device, fw_image)
 
@@ -2939,18 +2995,19 @@ HANDLE_EXCEPTIONS_AND_RETURN(, device, fw_image)
 
 const rs2_raw_data_buffer* rs2_create_flash_backup_cpp(const rs2_device* device, rs2_update_progress_callback* callback, rs2_error** error) BEGIN_API_CALL
 {
+    // Take ownership of the callback ASAP or else memory leaks could result if we throw! (the caller usually does a
+    // 'new' when calling us)
+    update_progress_callback_ptr callback_ptr;
+    if( callback )
+        callback_ptr.reset( callback, []( rs2_update_progress_callback * p ) { p->release(); } );
+
     VALIDATE_NOT_NULL(device);
 
     auto fwud = std::dynamic_pointer_cast<updatable>(device->device);
     if (!fwud)
         throw std::runtime_error("This device does not support update protocol!");
 
-    std::vector<uint8_t> res;
-
-    if (callback == NULL)
-        res = fwud->backup_flash(nullptr);
-    else
-        res = fwud->backup_flash({ callback, [](rs2_update_progress_callback* p) { p->release(); } });
+    std::vector<uint8_t> res = fwud->backup_flash( callback_ptr );
 
     return new rs2_raw_data_buffer{ res };
 }
@@ -2979,8 +3036,19 @@ const rs2_raw_data_buffer* rs2_create_flash_backup(const rs2_device* device, rs2
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, device)
 
-void rs2_update_firmware_unsigned_cpp(const rs2_device* device, const void* image, int image_size, rs2_update_progress_callback* callback, int update_mode, rs2_error** error) BEGIN_API_CALL
+void rs2_update_firmware_unsigned_cpp( const rs2_device * device,
+                                       const void * image,
+                                       int image_size,
+                                       rs2_update_progress_callback * callback,
+                                       int update_mode,
+                                       rs2_error ** error ) BEGIN_API_CALL
 {
+    // Take ownership of the callback ASAP or else memory leaks could result if we throw! (the caller usually does a
+    // 'new' when calling us)
+    update_progress_callback_ptr callback_ptr;
+    if( callback )
+        callback_ptr.reset( callback, []( rs2_update_progress_callback * p ) { p->release(); } );
+
     VALIDATE_NOT_NULL(device);
     VALIDATE_NOT_NULL(image);
     // check if the given FW size matches the expected FW size
@@ -2993,10 +3061,7 @@ void rs2_update_firmware_unsigned_cpp(const rs2_device* device, const void* imag
 
     std::vector<uint8_t> buffer((uint8_t*)image, (uint8_t*)image + image_size);
 
-    if (callback == NULL)
-        fwud->update_flash(buffer, nullptr, update_mode);
-    else
-        fwud->update_flash(buffer, { callback, [](rs2_update_progress_callback* p) { p->release(); } }, update_mode);
+    fwud->update_flash( buffer, callback_ptr, update_mode );
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, image, device)
 
@@ -3056,8 +3121,20 @@ void rs2_enter_update_state(const rs2_device* device, rs2_error** error) BEGIN_A
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, device)
 
-const rs2_raw_data_buffer* rs2_run_on_chip_calibration_cpp(rs2_device* device, const void* json_content, int content_size, float* health, rs2_update_progress_callback* progress_callback, int timeout_ms, rs2_error** error) BEGIN_API_CALL
+const rs2_raw_data_buffer * rs2_run_on_chip_calibration_cpp( rs2_device * device,
+                                                             const void * json_content,
+                                                             int content_size,
+                                                             float * health,
+                                                             rs2_update_progress_callback * progress_callback,
+                                                             int timeout_ms,
+                                                             rs2_error ** error ) BEGIN_API_CALL
 {
+    // Take ownership of the callback ASAP or else memory leaks could result if we throw! (the caller usually does a
+    // 'new' when calling us)
+    update_progress_callback_ptr callback_ptr;
+    if( progress_callback )
+        callback_ptr.reset( progress_callback, []( rs2_update_progress_callback * p ) { p->release(); } );
+
     VALIDATE_NOT_NULL(device);
     VALIDATE_NOT_NULL(health);
 
@@ -3069,10 +3146,7 @@ const rs2_raw_data_buffer* rs2_run_on_chip_calibration_cpp(rs2_device* device, c
     std::vector<uint8_t> buffer;
 
     std::string json((char*)json_content, (char*)json_content + content_size);
-    if (progress_callback == nullptr)
-        buffer = auto_calib->run_on_chip_calibration(timeout_ms, json, health, nullptr);
-    else
-        buffer = auto_calib->run_on_chip_calibration(timeout_ms, json, health, { progress_callback, [](rs2_update_progress_callback* p) { p->release(); } });
+    buffer = auto_calib->run_on_chip_calibration( timeout_ms, json, health, callback_ptr );
 
     return new rs2_raw_data_buffer { buffer };
 }
@@ -3106,8 +3180,20 @@ const rs2_raw_data_buffer* rs2_run_on_chip_calibration(rs2_device* device, const
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, device)
 
-const rs2_raw_data_buffer* rs2_run_tare_calibration_cpp(rs2_device* device, float ground_truth_mm, const void* json_content, int content_size, rs2_update_progress_callback* progress_callback, int timeout_ms, rs2_error** error) BEGIN_API_CALL
+const rs2_raw_data_buffer * rs2_run_tare_calibration_cpp( rs2_device * device,
+                                                          float ground_truth_mm,
+                                                          const void * json_content,
+                                                          int content_size,
+                                                          rs2_update_progress_callback * progress_callback,
+                                                          int timeout_ms,
+                                                          rs2_error ** error ) BEGIN_API_CALL
 {
+    // Take ownership of the callback ASAP or else memory leaks could result if we throw! (the caller usually does a
+    // 'new' when calling us)
+    update_progress_callback_ptr callback_ptr;
+    if( progress_callback )
+        callback_ptr.reset( progress_callback, []( rs2_update_progress_callback * p ) { p->release(); } );
+
     VALIDATE_NOT_NULL(device);
 
     if(content_size > 0)
@@ -3117,10 +3203,7 @@ const rs2_raw_data_buffer* rs2_run_tare_calibration_cpp(rs2_device* device, floa
 
     std::vector<uint8_t> buffer;
     std::string json((char*)json_content, (char*)json_content + content_size);
-    if (progress_callback == nullptr)
-        buffer = auto_calib->run_tare_calibration(timeout_ms, ground_truth_mm, json, nullptr);
-    else
-        buffer = auto_calib->run_tare_calibration(timeout_ms, ground_truth_mm, json, { progress_callback, [](rs2_update_progress_callback* p) { p->release(); } });
+    buffer = auto_calib->run_tare_calibration( timeout_ms, ground_truth_mm, json, callback_ptr );
 
     return new rs2_raw_data_buffer{ buffer };
 }
