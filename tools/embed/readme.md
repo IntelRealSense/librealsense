@@ -37,5 +37,5 @@ Here we will learn how to generate an embed a 3D model into code.
 1. Download the requested CAD model from the [RealSense website](https://dev.intelrealsense.com/docs/cad-files).
 2. Convert the `step` file into an `obj` file. (Can be done using [freecad](https://wiki.freecadweb.org/Download) application)
 3. Optional - Reduce object size by narrowing data (Can be done using [meshmixer](https://www.meshmixer.com/download.html) application)
-   	* [Here](https://i.materialise.com/blog/en/reduce-the-file-size-of-stl-and-obj-3d-models/) is a guide on how to reduce obj side using meshmixer application.
+   	* [Here](https://i.materialise.com/blog/en/reduce-the-file-size-of-stl-and-obj-3d-models/) is a guide on how to reduce obj size using meshmixer application.
  4. Run rs-embed tool with the generated object as input.
