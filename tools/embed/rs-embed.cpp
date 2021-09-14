@@ -7,11 +7,11 @@
 #include <fstream>
 #include <vector>
 
-#include "tclap/CmdLine.h"
+#include <tclap/CmdLine.h>
 #include <lz4.h>
 
 #define STB_IMAGE_IMPLEMENTATION
-#include "../third-party/stb_image.h"
+#include <stb_image.h>
 
 
 #define RS_EMBED_VERSION "0.0.0.1"
