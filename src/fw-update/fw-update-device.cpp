@@ -138,6 +138,11 @@ namespace librealsense
 
     void update_device::update(const void* fw_image, int fw_image_size, update_progress_callback_ptr update_progress_callback) const
     {
+        // checking fw compatibility (covering the case of recovery device with wrong product line fw )
+        std::vector<uint8_t> buffer((uint8_t*)fw_image, (uint8_t*)fw_image + fw_image_size);
+        if (!check_fw_compatibility(buffer))
+            throw librealsense::invalid_value_exception("Device: " + get_serial_number() + " failed to update firmware\nImage is unsupported for this device or corrupted");
+
         auto messenger = _usb_device->open(FW_UPDATE_INTERFACE_NUMBER);
 
         const size_t transfer_size = 1024;
