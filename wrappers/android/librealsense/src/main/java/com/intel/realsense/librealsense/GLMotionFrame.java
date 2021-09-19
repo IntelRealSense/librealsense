@@ -178,10 +178,12 @@ public class GLMotionFrame extends GLFrame {
 
         float vecThreshold = 0.2f;
 
+        // If the absolute value of the motion vector is less than predefined `vecThreshold` meaning zero / noise values, draw a centered dot
         if ( norm < vecThreshold ) {
             drawCircle(0.05f, X, Y,  7, white, false);
         }
         else{
+            // Display the motion vector line
             Float3 nmd = normalizeMotionData(mf.getMotionData(), norm);
             float[] verArray = {0, 0, 0, axisSize * nmd.x, axisSize * nmd.y, axisSize * nmd.z};
             drawLines(verArray, axisWidth, white, true);
