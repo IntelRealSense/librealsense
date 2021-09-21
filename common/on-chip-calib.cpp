@@ -409,6 +409,8 @@ namespace rs2
 
                 if (_sub->s->supports(RS2_OPTION_EMITTER_ENABLED))
                     _sub->s->set_option(RS2_OPTION_EMITTER_ENABLED, 0.0f);
+                if (_sub->s->supports(RS2_OPTION_THERMAL_COMPENSATION))
+                    _sub->s->set_option(RS2_OPTION_THERMAL_COMPENSATION, 0.f);
             }
             else if (action == RS2_CALIB_ACTION_UVMAPPING_CALIB)
             {
@@ -455,6 +457,8 @@ namespace rs2
 
                 if (_sub->s->supports(RS2_OPTION_EMITTER_ENABLED))
                     _sub->s->set_option(RS2_OPTION_EMITTER_ENABLED, 0.0f);
+                if (_sub->s->supports(RS2_OPTION_THERMAL_COMPENSATION))
+                    _sub->s->set_option(RS2_OPTION_THERMAL_COMPENSATION, 0.f);
             }
             else if (run_fl_calib)
             {
@@ -480,6 +484,8 @@ namespace rs2
 
                 if (_sub->s->supports(RS2_OPTION_EMITTER_ENABLED))
                     _sub->s->set_option(RS2_OPTION_EMITTER_ENABLED, 0.0f);
+                if (_sub->s->supports(RS2_OPTION_THERMAL_COMPENSATION))
+                    _sub->s->set_option(RS2_OPTION_THERMAL_COMPENSATION, 0.f);
             }
             else
             {
@@ -896,8 +902,8 @@ namespace rs2
             // Stage 1 : Gather frames from Left/Right IR sensors
             while (counter < frames_required) // TODO timeout Evgeni
             {
-                auto fl = _viewer.ppf.frames_queue[_uid].wait_for_frame();    // left
-                auto fr = _viewer.ppf.frames_queue[_uid2].wait_for_frame();   // right
+                auto fl = _viewer.ppf.frames_queue[_uid].wait_for_frame();    // left intensity
+                auto fr = _viewer.ppf.frames_queue[_uid2].wait_for_frame();   // right intensity
                 if (fl && fr)
                 {
                     left.enqueue(fl);
@@ -905,7 +911,6 @@ namespace rs2
                     _progress += step;
                     counter++;
                 }
-
             }
 
             if (counter >= frames_required)
@@ -991,11 +996,9 @@ namespace rs2
             int limit = 50; // input frames required to calculate the target
             float step = 50.f / limit;  // frames gathering is 50% of the process, the rest is the internal data extraction and algo processing
             
-            rs2_error* e = nullptr;
-            //std::shared_ptr<rs2_frame_queue> queue(rs2_create_frame_queue(limit, &e), rs2_delete_frame_queue);
             rs2::frame_queue queue(limit*2,true);
-
             rs2::frame f;
+
             // Collect sufficient amount of frames (up to 50) to extract target pattern and calculate distance to it
             while ((counter < limit) && (++frm_idx < limit*2))
             {
@@ -1003,9 +1006,6 @@ namespace rs2
                 if (f)
                 {
                     queue.enqueue(f);
-                    /*f.keep();
-                    rs2_frame_add_ref(f.get(), &e);
-                    rs2_enqueue_frame(f.get(), queue.get());*/
                     ++counter;
                     _progress += step;
                 }
@@ -1215,7 +1215,7 @@ namespace rs2
 
     void on_chip_calib_manager::keep()
     {
-        // Write new calibration using SETINITCAL command
+        // Write new calibration using SETINITCAL/SETINITCALNEW command
         auto calib_dev = _dev.as<auto_calibrated_device>();
         calib_dev.write_calibration();
     }
@@ -1491,6 +1491,8 @@ namespace rs2
                     update_state = update_state_prev;
                     if (get_manager()._sub->s->supports(RS2_OPTION_EMITTER_ENABLED))
                         get_manager()._sub->s->set_option(RS2_OPTION_EMITTER_ENABLED, get_manager().laser_status_prev);
+                    if (get_manager()._sub->s->supports(RS2_OPTION_THERMAL_COMPENSATION))
+                        get_manager()._sub->s->set_option(RS2_OPTION_THERMAL_COMPENSATION, get_manager().thermal_loop_prev);
                     get_manager().stop_viewer();
                 }
 
@@ -1529,6 +1531,8 @@ namespace rs2
                 update_state = update_state_prev;
                 if (get_manager()._sub->s->supports(RS2_OPTION_EMITTER_ENABLED))
                     get_manager()._sub->s->set_option(RS2_OPTION_EMITTER_ENABLED, get_manager().laser_status_prev);
+                if (get_manager()._sub->s->supports(RS2_OPTION_THERMAL_COMPENSATION))
+                    get_manager()._sub->s->set_option(RS2_OPTION_THERMAL_COMPENSATION, get_manager().thermal_loop_prev);
             }
             else if (update_state == RS2_CALIB_STATE_GET_TARE_GROUND_TRUTH_FAILED)
             {
@@ -1696,6 +1700,8 @@ namespace rs2
                 {
                     if (get_manager()._sub->s->supports(RS2_OPTION_EMITTER_ENABLED))
                         get_manager().laser_status_prev = get_manager()._sub->s->get_option(RS2_OPTION_EMITTER_ENABLED);
+                    if (get_manager()._sub->s->supports(RS2_OPTION_THERMAL_COMPENSATION))
+                        get_manager().thermal_loop_prev = get_manager()._sub->s->get_option(RS2_OPTION_THERMAL_COMPENSATION);
 
                     update_state_prev = update_state;
                     update_state = RS2_CALIB_STATE_GET_TARE_GROUND_TRUTH;
@@ -1837,6 +1843,9 @@ namespace rs2
                 {
                     if (get_manager()._sub->s->supports(RS2_OPTION_EMITTER_ENABLED))
                         get_manager().laser_status_prev = get_manager()._sub->s->get_option(RS2_OPTION_EMITTER_ENABLED);
+                    if (get_manager()._sub->s->supports(RS2_OPTION_THERMAL_COMPENSATION))
+                        get_manager().thermal_loop_prev = get_manager()._sub->s->get_option(RS2_OPTION_THERMAL_COMPENSATION);
+
                     get_manager().restore_workspace([this](std::function<void()> a) { a(); });
                     get_manager().reset();
                     get_manager().retry_times = 0;
@@ -1912,6 +1921,8 @@ namespace rs2
                 {
                     if (get_manager()._sub->s->supports(RS2_OPTION_EMITTER_ENABLED))
                         get_manager()._sub->s->set_option(RS2_OPTION_EMITTER_ENABLED, get_manager().laser_status_prev);
+                    if (get_manager()._sub->s->supports(RS2_OPTION_THERMAL_COMPENSATION))
+                        get_manager()._sub->s->set_option(RS2_OPTION_THERMAL_COMPENSATION, get_manager().laser_status_prev);
 
                     ImGui::SetCursorScreenPos({ float(x + 20), float(y + 33) });
                     ImGui::Text("%s", "Health-Check Number for PX: ");
@@ -1980,8 +1991,8 @@ namespace rs2
                     {
                         //Evgeni - this is buggy code
                         //get_manager().keep_uvmapping_calib();
-                        get_manager().apply_calib(true); // Store the new calib internally, for depth - also load into FW RAM for immediate effect evaluation
-                        get_manager().keep();            // Store the new calibration in Flash
+                        get_manager().apply_calib(true);     // Store the new calibration internally
+                        get_manager().keep();            // Flash the new calibration
                         update_state = RS2_CALIB_STATE_COMPLETE;
                         pinned = false;
                         enable_dismiss = false;
@@ -2000,6 +2011,8 @@ namespace rs2
                     {
                         if (get_manager()._sub->s->supports(RS2_OPTION_EMITTER_ENABLED))
                             get_manager()._sub->s->set_option(RS2_OPTION_EMITTER_ENABLED, get_manager().laser_status_prev);
+                        if (get_manager()._sub->s->supports(RS2_OPTION_THERMAL_COMPENSATION))
+                            get_manager()._sub->s->set_option(RS2_OPTION_THERMAL_COMPENSATION, get_manager().thermal_loop_prev);
                     }
 
                     auto health = get_manager().get_health();
@@ -2341,6 +2354,9 @@ namespace rs2
                         {
                             if (get_manager()._sub->s->supports(RS2_OPTION_EMITTER_ENABLED))
                                 get_manager().laser_status_prev = get_manager()._sub->s->get_option(RS2_OPTION_EMITTER_ENABLED);
+                            if (get_manager()._sub->s->supports(RS2_OPTION_THERMAL_COMPENSATION))
+                                get_manager().thermal_loop_prev = get_manager()._sub->s->get_option(RS2_OPTION_THERMAL_COMPENSATION);
+
                             get_manager().restore_workspace([this](std::function<void()> a) { a(); });
                             get_manager().reset();
                             get_manager().retry_times = 0;
@@ -2459,7 +2475,7 @@ namespace rs2
                 {
                     update_state = RS2_CALIB_STATE_CALIB_COMPLETE;
                     enable_dismiss = true;
-                    if (get_manager().action != on_chip_calib_manager::RS2_CALIB_ACTION_UVMAPPING_CALIB)
+                    //Evgeni - should apply always if (get_manager().action != on_chip_calib_manager::RS2_CALIB_ACTION_UVMAPPING_CALIB)
                     {
                         get_manager().apply_calib(true);
                         use_new_calib = true;

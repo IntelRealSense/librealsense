@@ -71,6 +71,7 @@ namespace rs2
         auto_calib_action action = RS2_CALIB_ACTION_ON_CHIP_CALIB;
         int step_count_v3 = 256;
         float laser_status_prev = 0.0f;
+        float thermal_loop_prev = 0.f;
 
         int fl_step_count = 51;
         int fy_scan_range = 40;
