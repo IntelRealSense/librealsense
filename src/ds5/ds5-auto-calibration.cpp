@@ -846,13 +846,32 @@ namespace librealsense
     void auto_calibrated::write_calibration() const
     {
         using namespace ds;
-
-        if(_curr_calibration.size() < sizeof(table_header))
+        if(_curr_calibration.size() <= sizeof(table_header))
             throw std::runtime_error("Write calibration can be called only after set calibration table was called");
 
-        command write_calib( ds::SETINTCAL, set_coefficients );
+        table_header* hd = (table_header*)(_curr_calibration.data());
+        calibration_table_id tbl_id = static_cast<calibration_table_id>(hd->table_type);
+        fw_cmd cmd{};
+        int param2 = 0;
+        switch (tbl_id)
+        {
+        case coefficients_table_id:
+            cmd = SETINTCAL;
+            break;
+        case rgb_calibration_id:
+            cmd = SETINTCALNEW;
+            param2 = 1;
+            break;
+        default:
+            throw std::runtime_error(to_string() << "Flashing calibration table type 0x" << std::hex << tbl_id << " is not supported");
+        }
+
+        command write_calib(cmd, tbl_id, param2);
         write_calib.data = _curr_calibration;
         _hw_monitor->send(write_calib);
+
+        LOG_DEBUG("Flashing " << ((tbl_id == coefficients_table_id) ? "Depth" : "RGB") << " calibration table");
+
     }
 
     void auto_calibrated::set_calibration_table(const std::vector<uint8_t>& calibration)
@@ -864,14 +883,14 @@ namespace librealsense
 
         switch (tbl_id)
         {
-            case coefficients_table_id:
+            case coefficients_table_id: // Load the modified depth calib table into flash RAM
             {
                 uint8_t* table = (uint8_t*)(calibration.data() + sizeof(table_header));
                 command write_calib(ds::CALIBRECALC, 0, 0, 0, 0xcafecafe);
                 write_calib.data.insert(write_calib.data.end(), (uint8_t*)table, ((uint8_t*)table) + hd->table_size);
                 _hw_monitor->send(write_calib);
             }
-            case rgb_calibration_id: // case fall-through by design
+            case rgb_calibration_id: // case fall-through by design. For RGB skip loading to RAM (not supported)
                 _curr_calibration = calibration;
                 break;
             default:
