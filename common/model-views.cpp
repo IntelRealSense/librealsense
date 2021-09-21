@@ -5829,6 +5829,7 @@ namespace rs2
                             "User needs either to enter the known ground truth or use the get button\n"
                             "with specific target to get the ground truth.");
 
+#ifdef UVMAP_CAL // Disbled due to unverified maturity level
                     try
                     {
                         for (auto&& sub2 : subdevices)
@@ -5865,6 +5866,7 @@ namespace rs2
                     {
                         error_message = e.what();
                     }
+#endif UVMAP_CAL
 
                     if (_calib_model.supports())
                     {
