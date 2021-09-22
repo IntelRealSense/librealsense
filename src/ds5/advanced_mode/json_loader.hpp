@@ -135,7 +135,11 @@ namespace librealsense
         void load(const std::string& str) override
         {
             float value = static_cast<float>(::atof(str.c_str()));
-            strct->vals[0].*field = static_cast<S>(scale * value);
+            if (std::is_integral<S>::value) //in order to convert float to int correctly we add 0.5 and then use the floor function
+                value = std::floor(scale * value + 0.5f);
+            else
+                value = scale * value;
+            strct->vals[0].*field = static_cast<S>(value);
             strct->update = true;
         }
 
