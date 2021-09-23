@@ -209,12 +209,24 @@ namespace rs2
         {
             enqueue(std::move(f));
         }
+
+        /**
+        * Return the capacity of the queue
+        * \return capacity size
+        */
+        size_t size() const
+        {
+            rs2_error* e = nullptr;
+            auto res = rs2_frame_queue_size(_queue.get(), &e);
+            error::handle(e);
+            return static_cast<size_t>(res);
+        }
+
         /**
         * Return the capacity of the queue
         * \return capacity size
         */
         size_t capacity() const { return _capacity; }
-
         /**
         * Return whether or not the queue calls keep on enqueued frames
         * \return keeping frames

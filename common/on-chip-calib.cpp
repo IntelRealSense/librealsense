@@ -1220,26 +1220,26 @@ namespace rs2
         calib_dev.write_calibration();
     }
 
-    void on_chip_calib_manager::keep_uvmapping_calib()
-    {
-        std::vector<uint8_t> cmd =
-        {
-            0x14, 0x00, 0xab, 0xcd,
-            0x62, 0x00, 0x00, 0x00,
-            0x20, 0x00, 0x00, 0x00,
-            0x01, 0x00, 0x00, 0x00,
-            0x00, 0x00, 0x00, 0x00,
-            0x00, 0x00, 0x00, 0x00
-        };
+    //void on_chip_calib_manager::keep_uvmapping_calib()
+    //{
+    //    std::vector<uint8_t> cmd =
+    //    {
+    //        0x14, 0x00, 0xab, 0xcd,
+    //        0x62, 0x00, 0x00, 0x00,
+    //        0x20, 0x00, 0x00, 0x00,
+    //        0x01, 0x00, 0x00, 0x00,
+    //        0x00, 0x00, 0x00, 0x00,
+    //        0x00, 0x00, 0x00, 0x00
+    //    };
 
-        cmd.insert(cmd.end(), color_intrin_raw_data.data(), color_intrin_raw_data.data() + color_intrin_raw_data.size());
-        uint16_t* psize = reinterpret_cast<uint16_t*>(cmd.data());
-        *psize = static_cast<uint16_t>(cmd.size() - 4);
-        const rs2_raw_data_buffer* raw_buf = rs2_send_and_receive_raw_data(_dev.get().get(), cmd.data(), static_cast<unsigned int>(cmd.size()), nullptr);
-        rs2_delete_raw_data(raw_buf);
+    //    cmd.insert(cmd.end(), color_intrin_raw_data.data(), color_intrin_raw_data.data() + color_intrin_raw_data.size());
+    //    uint16_t* psize = reinterpret_cast<uint16_t*>(cmd.data());
+    //    *psize = static_cast<uint16_t>(cmd.size() - 4);
+    //    const rs2_raw_data_buffer* raw_buf = rs2_send_and_receive_raw_data(_dev.get().get(), cmd.data(), static_cast<unsigned int>(cmd.size()), nullptr);
+    //    rs2_delete_raw_data(raw_buf);
 
-        _dev.hardware_reset(); // Workaround for reloading color calibration table. Other approach?
-    }
+    //    _dev.hardware_reset(); // Workaround for reloading color calibration table. Other approach?
+    //}
 
     void on_chip_calib_manager::apply_calib(bool use_new)
     {
@@ -1993,6 +1993,9 @@ namespace rs2
                         //get_manager().keep_uvmapping_calib();
                         get_manager().apply_calib(true);     // Store the new calibration internally
                         get_manager().keep();            // Flash the new calibration
+                        if (RS2_CALIB_STATE_UVMAPPING_INPUT == update_state)
+                            get_manager().reset_device(); // Workaround for reloading color calibration table. Other approach?
+
                         update_state = RS2_CALIB_STATE_COMPLETE;
                         pinned = false;
                         enable_dismiss = false;

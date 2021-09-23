@@ -911,7 +911,10 @@ namespace librealsense
 
         rs2_error* e = nullptr;
         rs2_frame* f = nullptr;
-        while (rs2_poll_for_frame(frames, &f, &e))
+
+        int queue_size = rs2_frame_queue_size(frames, &e);
+        int fc = 0;
+        while ((fc++ < queue_size) && rs2_poll_for_frame(frames, &f, &e))
         {
             rs2::frame ff(f);
             if (ff.get_data())
@@ -958,7 +961,7 @@ namespace librealsense
         float fy[2] = { -1.0f, -1.0f };
 
         float left_rect_sides[4];
-        get_target_rect_info(left, left_rect_sides, fx[0], fy[0], 50, progress_callback);
+        get_target_rect_info(left, left_rect_sides, fx[0], fy[0], 50, progress_callback); // Report 50% progress
 
         float right_rect_sides[4];
         get_target_rect_info(right, right_rect_sides, fx[1], fy[1], 75, progress_callback);
@@ -1153,7 +1156,11 @@ namespace librealsense
 
         rs2_error* e = nullptr;
         rs2_frame* f = nullptr;
-        while (rs2_poll_for_frame(frames, &f, &e))
+
+        int queue_size = rs2_frame_queue_size(frames, &e);
+        int fc = 0;
+
+        while ((fc++ < queue_size) && rs2_poll_for_frame(frames, &f, &e))
         {
             rs2::frame ff(f);
             if (ff.get_data())
@@ -1240,7 +1247,11 @@ namespace librealsense
         int counter = 0;
         rs2_error* e = nullptr;
         rs2_frame* f = nullptr;
-        while (rs2_poll_for_frame(frames, &f, &e))
+
+        int queue_size = rs2_frame_queue_size(frames, &e);
+        int fc = 0;
+
+        while ((fc++ < queue_size) && rs2_poll_for_frame(frames, &f, &e))
         {
             rs2::frame ff(f);
             if (ff.get_data())
@@ -1502,7 +1513,11 @@ namespace librealsense
         int progress = 0;
         rs2_error* e = nullptr;
         rs2_frame* f = nullptr;
-        while (rs2_poll_for_frame(queue, &f, &e))
+
+        int queue_size = rs2_frame_queue_size(queue, &e);
+        int fc = 0;
+
+        while ((fc++ < queue_size) && rs2_poll_for_frame(queue, &f, &e))
         {
             rs2::frame ff(f);
             if (ff.get_data())

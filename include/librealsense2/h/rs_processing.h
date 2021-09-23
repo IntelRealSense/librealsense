@@ -169,6 +169,13 @@ rs2_frame_queue* rs2_create_frame_queue(int capacity, rs2_error** error);
 void rs2_delete_frame_queue(rs2_frame_queue* queue);
 
 /**
+* queries the number of frames
+* \param[in] queue to delete
+* \returns the number of frames currently stored in queue
+*/
+int rs2_frame_queue_size(rs2_frame_queue* queue, rs2_error** error);
+
+/**
 * wait until new frame becomes available in the queue and dequeue it
 * \param[in] queue the frame queue data structure
 * \param[in] timeout_ms   max time in milliseconds to wait until an exception will be thrown

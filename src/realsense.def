@@ -118,6 +118,7 @@ EXPORTS
     rs2_try_wait_for_frame
     rs2_enqueue_frame
     rs2_flush_queue
+    rs2_frame_queue_size
 
     rs2_create_error
     rs2_get_failed_function

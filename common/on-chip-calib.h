@@ -35,7 +35,6 @@ namespace rs2
 
         // Write new calibration to the device
         void keep();
-        void keep_uvmapping_calib();
 
         // Restore Viewer UI to how it was before auto-calib
         void restore_workspace(invoker invoke);
@@ -106,6 +105,7 @@ namespace rs2
         void start_fl_viewer();
         void start_uvmapping_viewer(bool b3D = false);
         void stop_viewer();
+        void reset_device() { _dev.hardware_reset(); }
 
     private:
         std::vector<uint8_t> safe_send_command(const std::vector<uint8_t>& cmd, const std::string& name);

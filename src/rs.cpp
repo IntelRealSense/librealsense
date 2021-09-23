@@ -1138,6 +1138,13 @@ void rs2_flush_queue(rs2_frame_queue* queue, rs2_error** error) BEGIN_API_CALL
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, queue)
 
+int rs2_frame_queue_size(rs2_frame_queue* queue, rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(queue);
+    return int(queue->queue.size());
+}
+HANDLE_EXCEPTIONS_AND_RETURN(0, queue)
+
 void rs2_get_extrinsics(const rs2_stream_profile* from,
     const rs2_stream_profile* to,
     rs2_extrinsics* extrin, rs2_error** error) BEGIN_API_CALL
@@ -3780,6 +3787,11 @@ const rs2_raw_data_buffer* rs2_run_focal_length_calibration_cpp(rs2_device* devi
     VALIDATE_NOT_NULL(right);
     VALIDATE_NOT_NULL(ratio);
     VALIDATE_NOT_NULL(angle);
+    VALIDATE_GT(rs2_frame_queue_size(left, error), 0);
+    VALIDATE_GT(rs2_frame_queue_size(right, error), 0);
+    VALIDATE_GT(target_w, 0.f);
+    VALIDATE_GT(target_h, 0.f);
+    VALIDATE_RANGE(adjust_both_sides, 0, 1);
 
     auto auto_calib = VALIDATE_INTERFACE(device->device, librealsense::auto_calibrated_interface);
     std::vector<uint8_t> buffer;
@@ -3800,6 +3812,11 @@ const rs2_raw_data_buffer* rs2_run_focal_length_calibration(rs2_device* device, 
     VALIDATE_NOT_NULL(right);
     VALIDATE_NOT_NULL(ratio);
     VALIDATE_NOT_NULL(angle);
+    VALIDATE_GT(rs2_frame_queue_size(left, error), 0);
+    VALIDATE_GT(rs2_frame_queue_size(right, error), 0);
+    VALIDATE_GT(target_w, 0.f);
+    VALIDATE_GT(target_h, 0.f);
+    VALIDATE_RANGE(adjust_both_sides, 0, 1);
 
     auto auto_calib = VALIDATE_INTERFACE(device->device, librealsense::auto_calibrated_interface);
     std::vector<uint8_t> buffer;
@@ -3824,6 +3841,10 @@ const rs2_raw_data_buffer* rs2_run_uv_map_calibration_cpp(rs2_device* device, rs
     VALIDATE_NOT_NULL(depth);
     VALIDATE_NOT_NULL(health);
     VALIDATE_GT(health_size, 0);
+    VALIDATE_GT(rs2_frame_queue_size(left, error), 0);
+    VALIDATE_GT(rs2_frame_queue_size(color, error), 0);
+    VALIDATE_GT(rs2_frame_queue_size(depth, error), 0);
+    VALIDATE_RANGE(py_px_only, 0, 1);
 
     auto auto_calib = VALIDATE_INTERFACE(device->device, librealsense::auto_calibrated_interface);
     std::vector<uint8_t> buffer;
@@ -3845,6 +3866,10 @@ const rs2_raw_data_buffer* rs2_run_uv_map_calibration(rs2_device* device, rs2_fr
     VALIDATE_NOT_NULL(depth);
     VALIDATE_NOT_NULL(health);
     VALIDATE_GT(health_size, 0);
+    VALIDATE_GT(rs2_frame_queue_size(left, error), 0);
+    VALIDATE_GT(rs2_frame_queue_size(color, error), 0);
+    VALIDATE_GT(rs2_frame_queue_size(depth, error), 0);
+    VALIDATE_RANGE(py_px_only, 0, 1);
 
     auto auto_calib = VALIDATE_INTERFACE(device->device, librealsense::auto_calibrated_interface);
     std::vector<uint8_t> buffer;
@@ -3868,6 +3893,7 @@ float rs2_calculate_target_z_cpp(rs2_device* device, rs2_frame_queue* queue, flo
     VALIDATE_NOT_NULL(queue);
     VALIDATE_GT(target_width, 0.f);
     VALIDATE_GT(target_height, 0.f);
+    VALIDATE_GT(rs2_frame_queue_size(queue, error), 0);
 
     auto auto_calib = VALIDATE_INTERFACE(device->device, librealsense::auto_calibrated_interface);
 
@@ -3887,6 +3913,7 @@ float rs2_calculate_target_z(rs2_device* device, rs2_frame_queue* queue, float t
     VALIDATE_NOT_NULL(queue);
     VALIDATE_GT(target_width, 0.f);
     VALIDATE_GT(target_height, 0.f);
+    VALIDATE_GT(rs2_frame_queue_size(queue, error), 0);
 
     auto auto_calib = VALIDATE_INTERFACE(device->device, librealsense::auto_calibrated_interface);
 
