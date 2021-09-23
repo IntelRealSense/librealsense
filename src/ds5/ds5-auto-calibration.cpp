@@ -87,8 +87,7 @@ namespace librealsense
         focal_length_calib_begin = 0x11,
         get_focal_legth_calib_result = 0x12,
         py_rx_plus_fl_calib_begin = 0x13,
-        get_py_rx_plus_fl_calib_result = 0x14,
-        set_coefficients = 0x19
+        get_py_rx_plus_fl_calib_result = 0x14
     };
 
     enum auto_calib_speed
