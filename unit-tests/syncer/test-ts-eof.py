@@ -93,17 +93,19 @@ sw.reset()
 #     [Color/1 #2 @33.333333]
 #     [Depth/0 #3 @50.000000]    <--- the frame that was "lost"
 #
-import subprocess, sys
-for p in sys.path:
-    rs_convert = os.path.join( p, 'rs-convert.exe' )
-    if os.path.isfile( rs_convert ):
-        subprocess.run( [rs_convert, '-i', filename, '-T'],
-                        stdout=None,
-                        stderr=subprocess.STDOUT,
-                        universal_newlines=True,
-                        timeout=10,
-                        check=True )
-        break
+from rspy import repo
+rs_convert = repo.find_built_exe( 'tools/convert', 'rs-convert' )
+if rs_convert:
+    import subprocess
+    subprocess.run( [rs_convert, '-i', filename, '-T'],
+                    stdout=None,
+                    stderr=subprocess.STDOUT,
+                    universal_newlines=True,
+                    timeout=10,
+                    check=False )  # don't fail on errors
+else:
+    log.w( 'no rs-covert was found!' )
+    log.d( 'sys.path=\n' + '\n    '.join( sys.path ) )
 
 test.finish()
 #
