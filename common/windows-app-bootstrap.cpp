@@ -22,6 +22,10 @@
 
 #include <delayimp.h>
 
+#ifdef _MSC_VER
+#pragma warning(disable: 4244) // Prevent warning for wchar->char string conversion
+#endif
+
 // Use OS hook to modify message box behaviour
 // This lets us implement "report" functionality if Viewer is crashing
 HHOOK hhk;
