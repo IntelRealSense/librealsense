@@ -2492,6 +2492,7 @@ namespace rs2
 
         if (open_settings_popup) 
         {
+            _measurements.disable();
             temp_cfg = config_file::instance();
             ImGui::OpenPopup(settings);   
             reload_required = false;    
@@ -3000,6 +3001,7 @@ namespace rs2
 
         if (open_about_popup) 
         {
+            _measurements.disable();
             ImGui::OpenPopup(about);                    
         }
 
