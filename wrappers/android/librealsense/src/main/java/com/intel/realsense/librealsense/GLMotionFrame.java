@@ -43,9 +43,8 @@ public class GLMotionFrame extends GLFrame {
         return new Rect((int)newLeft, (int)newTop, (int)newRight, (int)newBottom);
     }
 
-    private void  drawCircle(Float3 x, Float3 y, float axisWidth, Color color)
+    private void  drawCircle(float radius, Float3 x, Float3 y, float axisWidth, Color color, Boolean dashed)
     {
-        float radius = 2f;
         Float3 center = new Float3(0,0,0);
         final int N = 50;
         float[] verArray = new float[N * 3];
@@ -59,23 +58,21 @@ public class GLMotionFrame extends GLFrame {
             verArray[i*3 + 2] = ((float) (center.z + radius * (x.z * cost + y.z * sint)));
         }
 
-        drawLine(verArray, axisWidth, color);
+        drawLines(verArray, axisWidth, color, dashed);
     }
 
-    private void  drawLine(float[] verArray, float axisWidth, Color color)
+    private void  drawLines(float[] verArray, float axisWidth, Color color, Boolean dashed)
     {
         ByteBuffer ver = ByteBuffer.allocateDirect(verArray.length * 4);
         ver.order(ByteOrder.nativeOrder());
         ver.asFloatBuffer().put(verArray);
 
         GLES10.glEnableClientState(GLES10.GL_VERTEX_ARRAY);
-
         GLES10.glColor4f(color.red, color.green, color.blue, 1f);
         GLES10.glLineWidth(axisWidth);
 
         GLES10.glVertexPointer(3, GLES10.GL_FLOAT, 0, ver);
-
-        GLES10.glDrawArrays(GLES10.GL_LINES,0,verArray.length / 3);
+        GLES10.glDrawArrays(dashed ? GLES10.GL_LINES: GLES10.GL_LINE_LOOP,0, verArray.length / 3);
 
         GLES10.glDisableClientState(GLES10.GL_VERTEX_ARRAY);
         GLES10.glColor4f(1f, 1f, 1f, 1f);
@@ -126,20 +123,19 @@ public class GLMotionFrame extends GLFrame {
         Color green = new Color(0, 0.5f, 0);
         Color blue = new Color(0, 0, 0.5f);
 
-        drawLine(verAxisX, axisWidth, red);
+        drawLines(verAxisX, axisWidth, red, false);
         drawTriangle(verTriangleX, red);
-        drawLine(verAxisY, axisWidth, green);
+        drawLines(verAxisY, axisWidth, green, false);
         drawTriangle(verTriangleY, green);
-        drawLine(verAxisZ, axisWidth, blue);
+        drawLines(verAxisZ, axisWidth, blue, false);
         drawTriangle(verTriangleZ, blue);
     }
 
-    private Float3 calcMotionData(Float3 md, float norm){
-        float size = (float) Math.sqrt(md.x * md.x + md.y * md.y + md.z * md.z);
+    private Float3 normalizeMotionData(Float3 md, float norm){
         return new Float3(
-                (md.x / size) * norm,
-                (md.y / size) * norm,
-                (md.z / size) * norm);
+                (md.x / norm),
+                (md.y / norm),
+                (md.z / norm));
     }
 
     @Override
@@ -169,20 +165,29 @@ public class GLMotionFrame extends GLFrame {
         float axisWidth = 5;
         Color white = new Color(1, 1, 1);
 
-        drawCircle(X, Y, 1, white);
-        drawCircle(Y, Z, 1, white);
-        drawCircle(X, Z, 1, white);
+        drawCircle(axisSize, X, Y, 1, white, true);
+        drawCircle(axisSize, Y, Z, 1, white, true);
+        drawCircle(axisSize, X, Z, 1, white, true);
         drawAxes(r, axisSize, axisWidth);
 
+        // draw norm vector
         MotionFrame mf = mFrame.as(Extension.MOTION_FRAME);
 
-        float norm = axisSize / 2.f;
-        Float3 md = calcMotionData(mf.getMotionData(), norm);
+        Float3 md = mf.getMotionData();
+        float norm = (float) Math.sqrt(md.x * md.x + md.y * md.y + md.z * md.z);
 
-        float[] verArray = { 0, 0, 0, md.x, md.y, md.z};
-        Color dir = new Color(Math.abs(md.x/norm), Math.abs(md.y/norm), Math.abs(md.z/norm));
+        float vecThreshold = 0.2f;
 
-        drawLine(verArray, axisWidth, dir);
+        // If the absolute value of the motion vector is less than predefined `vecThreshold` meaning zero / noise values, draw a centered dot
+        if ( norm < vecThreshold ) {
+            drawCircle(0.05f, X, Y,  7, white, false);
+        }
+        else{
+            // Display the motion vector line
+            Float3 nmd = normalizeMotionData(mf.getMotionData(), norm);
+            float[] verArray = {0, 0, 0, axisSize * nmd.x, axisSize * nmd.y, axisSize * nmd.z};
+            drawLines(verArray, axisWidth, white, true);
+        }
 
         GLES10.glMatrixMode(GLES10.GL_PROJECTION);
         GLES10.glPopMatrix();
