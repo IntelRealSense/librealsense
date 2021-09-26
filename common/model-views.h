@@ -692,6 +692,7 @@ namespace rs2
 
         bool draw_streams_selector = true;
         bool draw_fps_selector = true;
+        bool draw_advanced_mode_prompt = false;
 
         region_of_interest algo_roi;
         bool show_algo_roi = false;
