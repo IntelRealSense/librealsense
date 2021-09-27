@@ -80,7 +80,6 @@ static void width_height_from_resolution(rs2_sensor_mode mode, int &width, int &
 }
 
 static int get_resolution_id_from_sensor_mode( rs2_sensor_mode sensor_mode,
-                                    const rs2::sensor & s,
                                     const std::vector< std::pair< int, int > > & res_values )
 {
     int width = 0, height = 0;
@@ -88,8 +87,8 @@ static int get_resolution_id_from_sensor_mode( rs2_sensor_mode sensor_mode,
     auto iter = std::find_if( res_values.begin(),
                               res_values.end(),
                               [width, height]( std::pair< int, int > res ) {
-                                  if( ( res.first == width ) && ( res.second == height )
-                                      || ( res.first == height ) && ( res.second == width ) )
+                                  if( (( res.first == width ) && ( res.second == height ))
+                                      || (( res.first == height ) && ( res.second == width )) )
                                       return true;
                                   return false;
                               } );
@@ -1599,7 +1598,6 @@ namespace rs2
                                 {
                                     ui.selected_res_id = get_resolution_id_from_sensor_mode(
                                         static_cast< rs2_sensor_mode >( sensor_mode_val ),
-                                        *s,
                                         res_values );
                                 }
                             }
@@ -2949,7 +2947,7 @@ namespace rs2
         label = to_string() << textual_icons::camera << "##Snapshot " << profile.unique_id();
         if (ImGui::Button(label.c_str(), { 24, top_bar_height }))
         {
-            auto filename = file_dialog_open(save_file, "Portable Network Graphics (PNG)\0*.png\0", NULL, NULL);
+            auto filename = file_dialog_open(save_file, "Portable Network Graphics (PNG)\0*.png\0", nullptr, nullptr);
 
             if (filename)
             {
@@ -5866,7 +5864,7 @@ namespace rs2
                     {
                         error_message = e.what();
                     }
-#endif UVMAP_CAL
+#endif //UVMAP_CAL
 
                     if (_calib_model.supports())
                     {
