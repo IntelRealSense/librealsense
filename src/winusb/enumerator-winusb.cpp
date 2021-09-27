@@ -11,7 +11,6 @@
 #include "../common/utilities/os/hresult.h"
 #include "types.h"
 
-#include <atlstr.h>
 #include <Windows.h>
 #include <Sddl.h>
 #include <string>
