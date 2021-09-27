@@ -2695,12 +2695,18 @@ namespace rs2
             std::string dev_serial = dev->dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER);
             std::string sensor_name = dev->s->get_info(RS2_CAMERA_INFO_NAME);
             std::string stream_name = rs2_stream_to_string(profile.stream_type());
-            int stream_index = profile.stream_index();
-            auto stream_index_length = 2; // #<index>
+            std::string stream_index_str;
 
-            tooltip = to_string() << dev_name << " s.n:" << dev_serial << " | " << sensor_name << ", " << stream_name << " #" << stream_index << " stream";
+            // Show stream index on IR streams
+            if (profile.stream_type() == RS2_STREAM_INFRARED)
+            {
+                int stream_index = profile.stream_index();
+                stream_index_str = to_string() << " #" << stream_index;
+            }
+
+            tooltip = to_string() << dev_name << " s.n:" << dev_serial << " | " << sensor_name << ", " << stream_name << stream_index_str << " stream";
             const auto approx_char_width = 12;
-            if (stream_rect.w - 32 * num_of_buttons >= (dev_name.size() + dev_serial.size() + sensor_name.size() + stream_name.size() + stream_index_length) * approx_char_width)
+            if (stream_rect.w - 32 * num_of_buttons >= (dev_name.size() + dev_serial.size() + sensor_name.size() + stream_name.size() + stream_index_str.size()) * approx_char_width)
                 label = tooltip;
             else
             {
@@ -2712,12 +2718,12 @@ namespace rs2
                 auto label_length = stream_rect.w - 32 * num_of_buttons;
                 
 
-                if (label_length >= (short_name.size() + dev_serial.size() + sensor_name.size() + stream_name.size() + stream_index_length) * approx_char_width)
-                    label = to_string() << short_name << " s.n:" << dev_serial << " | " << sensor_name << " " << stream_name << " #" << stream_index << " stream";
-                else if (label_length >= (short_name.size() + short_sn.size() + stream_name.size() + stream_index_length) * approx_char_width)
-                    label = to_string() << short_name << " s.n:" << short_sn << " " << stream_name << " #" << stream_index << " stream";
-                else if (label_length >= (short_name.size() + stream_index_length) * approx_char_width)
-                    label = to_string() << short_name << " " << stream_name << " #" << stream_index << " stream";
+                if (label_length >= (short_name.size() + dev_serial.size() + sensor_name.size() + stream_name.size() + stream_index_str.size()) * approx_char_width)
+                    label = to_string() << short_name << " s.n:" << dev_serial << " | " << sensor_name << " " << stream_name << stream_index_str << " stream";
+                else if (label_length >= (short_name.size() + short_sn.size() + stream_name.size() + stream_index_str.size()) * approx_char_width)
+                    label = to_string() << short_name << " s.n:" << short_sn << " " << stream_name << stream_index_str << " stream";
+                else if (label_length >= (short_name.size() + stream_index_str.size()) * approx_char_width)
+                    label = to_string() << short_name << " " << stream_name << stream_index_str << " stream";
                 else if (label_length >= short_name.size() * approx_char_width)
                     label = to_string() << short_name << " " << stream_name;
                 else
