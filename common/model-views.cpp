@@ -697,7 +697,7 @@ namespace rs2
                                 float dummy = std::floor(value);
                                 if (ImGui::DragFloat(id.c_str(), &dummy, 1, 0, 0, text.c_str()))
                                 {
-                                    // Changing the depth units not on advanced mode is npt allowed, 
+                                    // Changing the depth units not on advanced mode is not allowed, 
                                     // prompt the user to switch to advanced mode for chaging it.
                                     if (RS2_OPTION_DEPTH_UNITS == opt)
                                     {
