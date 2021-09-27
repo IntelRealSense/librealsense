@@ -695,7 +695,18 @@ namespace rs2
                                 ImGui::PushStyleColor(ImGuiCol_FrameBgActive, c);
                                 ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, c);
                                 float dummy = std::floor(value);
-                                ImGui::DragFloat(id.c_str(), &dummy, 1, 0, 0, text.c_str());
+                                if (ImGui::DragFloat(id.c_str(), &dummy, 1, 0, 0, text.c_str()))
+                                {
+                                    // Changing the depth units not on advanced mode is not allowed, 
+                                    // prompt the user to switch to advanced mode for chaging it.
+                                    if (RS2_OPTION_DEPTH_UNITS == opt)
+                                    {
+                                        auto advanced = dev->dev.as<advanced_mode>();
+                                        if (advanced)
+                                            if (!advanced.is_enabled())
+                                                dev->draw_advanced_mode_prompt = true;
+                                    }
+                                }
                                 ImGui::PopStyleColor(2);
                             }
                         }
@@ -6307,18 +6318,18 @@ namespace rs2
 
                     try
                     {
-                        static bool keep_showing_popup = false;
                         if (ImGui::Combo(opt_model.id.c_str(), &selected, labels.data(),
                             static_cast<int>(labels.size())))
                         {
                             *opt_model.invalidate_flag = true;
-
+                            
                             auto advanced = dev.as<advanced_mode>();
                             if (advanced)
                                 if (!advanced.is_enabled())
-                                    keep_showing_popup = true;
+                                    sub->draw_advanced_mode_prompt = false;
 
-                            if (!keep_showing_popup)
+
+                            if (!sub->draw_advanced_mode_prompt)
                             {
                                 if (selected < static_cast<int>(labels.size() - files_labels.size()))
                                 {
@@ -6345,9 +6356,9 @@ namespace rs2
                                 }
                             }
                         }
-                        if (keep_showing_popup)
+                        if (sub->draw_advanced_mode_prompt)
                         {
-                            keep_showing_popup = prompt_toggle_advanced_mode(true, popup_message, restarting_device_info, viewer, window, error_message);
+                            sub->draw_advanced_mode_prompt = prompt_toggle_advanced_mode(true, popup_message, restarting_device_info, viewer, window, error_message);
                         }
                     }
                     catch (const error& e)
