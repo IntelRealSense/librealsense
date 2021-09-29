@@ -13,7 +13,11 @@ namespace Intel.RealSense
                 Console.WriteLine($"Please, specify network server IP address as a parameter");
                 return;
             }
-            var w = new CaptureWindow(args[0]);
+            Config cfg = new Config();
+            cfg.EnableStream(Stream.Depth, 640, 480, Format.Z16, 30);
+            cfg.EnableStream(Stream.Color, 640, 480, Format.Rgb8, 30);
+
+            var w = new CaptureWindow(args[0], cfg);
             w.ShowDialog();
         }
     }

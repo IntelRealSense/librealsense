@@ -37,7 +37,7 @@ namespace Intel.RealSense
             });
         }
 
-        public CaptureWindow(string serverIp)
+        public CaptureWindow(string serverIp, Config cfg)
         {
             InitializeComponent();
 
@@ -63,7 +63,7 @@ namespace Intel.RealSense
                     Console.WriteLine($"Using device 0, {dev.Info[CameraInfo.Name]}" +
                                 $"\tSerial number: {dev.Info[CameraInfo.SerialNumber]}");
                     
-                    var pp = pipeline.Start();
+                    var pp = pipeline.Start(cfg);
 
                     SetupWindow(pp, out updateDepth, out updateColor);
                 }
