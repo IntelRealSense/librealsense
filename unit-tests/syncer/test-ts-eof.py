@@ -104,7 +104,7 @@ if rs_convert:
                     timeout=10,
                     check=False )  # don't fail on errors
 else:
-    log.w( 'no rs-covert was found!' )
+    log.w( 'no rs-convert was found!' )
     log.d( 'sys.path=\n' + '\n    '.join( sys.path ) )
 
 test.finish()
