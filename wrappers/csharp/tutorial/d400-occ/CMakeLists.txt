@@ -1,6 +1,6 @@
 cmake_minimum_required( VERSION 3.8.0 )
 
-project(cs-tutorial-8-D400-on-chip-calibration)
+project(cs-tutorial-D400-on-chip-calibration)
 
 add_executable(${PROJECT_NAME} 
 	Program.cs

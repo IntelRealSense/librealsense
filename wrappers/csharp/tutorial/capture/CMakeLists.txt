@@ -1,6 +1,6 @@
 cmake_minimum_required( VERSION 3.8.0 )
 
-project(cs-tutorial-2-capture)
+project(cs-tutorial-capture)
 
 add_executable(${PROJECT_NAME} 
 	Program.cs
