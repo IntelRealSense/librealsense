@@ -771,10 +771,8 @@ namespace rs2
                                 static_cast<int>(range.step)))
                             {
                                 // TODO: Round to step?
-                                model.add_log(to_string() << "Setting " << opt << " to " << int_value);
                                 auto set_ok = set_option(opt, static_cast<float>(int_value), error_message, std::chrono::milliseconds(100));
-                                if (set_ok)
-                                    model.add_log(to_string() << opt << " was set to " << int_value);
+                                if (set_ok) model.add_log(to_string() <<  "Setting " << opt << " to " << int_value );
                                 *invalidate_flag = true;
                                 res = true;
                             }
@@ -825,10 +823,8 @@ namespace rs2
                                     tmp_value = (loffset < roffset) ? tmp_value + loffset : tmp_value - roffset;
                                 tmp_value = (tmp_value < range.min) ? range.min : tmp_value;
                                 tmp_value = (tmp_value > range.max) ? range.max : tmp_value;
-                                model.add_log(to_string() << "Setting " << opt << " to " << tmp_value);
                                 auto set_ok = set_option(opt, tmp_value, error_message, std::chrono::milliseconds(100));
-                                if (set_ok)
-                                    model.add_log(to_string() << opt << " was set to " << tmp_value);
+                                if (set_ok) model.add_log(to_string() << "Setting " << opt << " to " << tmp_value);
                                 *invalidate_flag = true;
                                 res = true;
                             }
@@ -2317,33 +2313,32 @@ namespace rs2
                                    std::chrono::steady_clock::duration duplicated_set_delay )
     {
         bool option_was_set = false;
-
-        // Only set the value if the value is dofferent that the last requested value or
-        // `duplicated_set_delay` time past since last option set
-        if( last_set_stopwatch.get_elapsed() > duplicated_set_delay
-            || req_value != last_requested_value )
+        // Only set the value if the value is different than the last requested value or
+        // `duplicated_set_delay` time past since last set_option() call
+        if ( last_set_stopwatch.get_elapsed() < duplicated_set_delay &&
+            req_value == last_requested_value )
+            return option_was_set;
+        
+        try
         {
-            try
-            {
-                endpoint->set_option( opt, req_value );
-                last_set_stopwatch.reset();
-                last_requested_value = req_value;
-                option_was_set = true;
-            }
-            catch( const error & e )
-            {
-                error_message = error_to_string( e );
-            }
+            endpoint->set_option( opt, req_value );
+            last_set_stopwatch.reset();
+            last_requested_value = req_value;
+            option_was_set = true;
+        }
+        catch( const error & e )
+        {
+            error_message = error_to_string( e );
+        }
 
-            // Only update the cached value once set_option is done! That way, if it doesn't change
-            // anything...
-            try
-            {
-                value = endpoint->get_option( opt );
-            }
-            catch( ... )
-            {
-            }
+        // Only update the cached value once set_option is done! That way, if it doesn't change
+        // anything...
+        try
+        {
+            value = endpoint->get_option( opt );
+        }
+        catch( ... )
+        {
         }
 
         return option_was_set;
