@@ -772,7 +772,9 @@ namespace rs2
                             {
                                 // TODO: Round to step?
                                 model.add_log(to_string() << "Setting " << opt << " to " << int_value);
-                                set_option(opt, static_cast<float>(int_value), error_message);
+                                auto set_ok = set_option(opt, static_cast<float>(int_value), error_message, std::chrono::milliseconds(100));
+                                if (set_ok)
+                                    model.add_log(to_string() << opt << " was set to " << int_value);
                                 *invalidate_flag = true;
                                 res = true;
                             }
@@ -824,7 +826,9 @@ namespace rs2
                                 tmp_value = (tmp_value < range.min) ? range.min : tmp_value;
                                 tmp_value = (tmp_value > range.max) ? range.max : tmp_value;
                                 model.add_log(to_string() << "Setting " << opt << " to " << tmp_value);
-                                set_option(opt, tmp_value, error_message);
+                                auto set_ok = set_option(opt, tmp_value, error_message, std::chrono::milliseconds(100));
+                                if (set_ok)
+                                    model.add_log(to_string() << opt << " was set to " << tmp_value);
                                 *invalidate_flag = true;
                                 res = true;
                             }
@@ -2307,19 +2311,42 @@ namespace rs2
             return draw(error_message, model);
     }
 
-    void option_model::set_option(rs2_option opt, float req_value, std::string &error_message)
+    bool option_model::set_option( rs2_option opt,
+                                   float req_value,
+                                   std::string & error_message,
+                                   std::chrono::steady_clock::duration duplicated_set_delay )
     {
-        try
+        bool option_was_set = false;
+
+        // Only set the value if the value is dofferent that the last requested value or
+        // `duplicated_set_delay` time past since last option set
+        if( last_set_stopwatch.get_elapsed() > duplicated_set_delay
+            || req_value != last_requested_value )
         {
-            endpoint->set_option(opt, req_value);
+            try
+            {
+                endpoint->set_option( opt, req_value );
+                last_set_stopwatch.reset();
+                last_requested_value = req_value;
+                option_was_set = true;
+            }
+            catch( const error & e )
+            {
+                error_message = error_to_string( e );
+            }
+
+            // Only update the cached value once set_option is done! That way, if it doesn't change
+            // anything...
+            try
+            {
+                value = endpoint->get_option( opt );
+            }
+            catch( ... )
+            {
+            }
         }
-        catch (const error& e)
-        {
-            error_message = error_to_string(e);
-        }
-        // Only update the cached value once set_option is done! That way, if it doesn't change anything...
-        try { value = endpoint->get_option(opt); }
-        catch (...) {}
+
+        return option_was_set;
     }
 
     stream_model::stream_model()

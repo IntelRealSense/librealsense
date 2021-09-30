@@ -314,13 +314,18 @@ namespace rs2
         void update_supported(std::string& error_message);
         void update_read_only_status(std::string& error_message);
         void update_all_fields(std::string& error_message, notifications_model& model);
-        void set_option(rs2_option opt, float value, std::string &error_message);
+        bool set_option( rs2_option opt,
+                         float value,
+                         std::string & error_message,
+                         std::chrono::steady_clock::duration duplicated_set_delay = std::chrono::seconds( 0 ) );
         bool draw_option(bool update_read_only_options, bool is_streaming,
             std::string& error_message, notifications_model& model);
 
         rs2_option opt;
         option_range range;
         std::shared_ptr<options> endpoint;
+        float last_requested_value = 0;
+        utilities::time::stopwatch last_set_stopwatch;
         bool* invalidate_flag = nullptr;
         bool supported = false;
         bool read_only = false;
