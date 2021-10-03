@@ -295,7 +295,7 @@ jobs:
 
 
   Mac_cpp:
-    runs-on: macos-latest
+    runs-on: macos-10.15
     timeout-minutes: 60
     
     steps:
@@ -312,7 +312,10 @@ jobs:
     - name: Build
       run: |
         cd build
-        export OPENSSL_ROOT_DIR=`brew --prefix openssl` # Used by libcurl for 'CHECK_FOR_UPDATES' capability
+        # `OPENSSL_ROOT_DIR` setting is Used by libcurl for 'CHECK_FOR_UPDATES' capability
+        # GH machines deploy SSL at a specific location, see - https://github.com/actions/virtual-environments/blob/3198af0e94db478c4529106e3835ce27b43153e4/images/macos/macos-10.15-Readme.md#L85
+        export OPENSSL_ROOT_DIR="/usr/local/Cellar/openssl@1.1/1.1.1l"
+        
         cmake .. -DBUILD_EXAMPLES=true -DBUILD_WITH_OPENMP=false -DHWM_OVER_XU=false -DCHECK_FOR_UPDATES=true
         cmake --build . --config ${{env.LRS_BUILD_CONFIG}} -- -j4
         ls
