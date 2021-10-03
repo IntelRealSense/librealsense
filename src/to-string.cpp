@@ -370,6 +370,8 @@ const char * get_string( rs2_option value )
     CASE( TRANSMITTER_FREQUENCY )
     CASE( VERTICAL_BINNING )
     CASE( RECEIVER_SENSITIVITY )
+    CASE(AUTO_EXPOSURE_LIMIT_TOGGLE)
+    CASE(AUTO_GAIN_LIMIT_TOGGLE)
     default:
         assert( ! is_valid( value ) );
         return UNKNOWN_VALUE;
