@@ -12,10 +12,6 @@
 #include "core/streaming.h"
 #include "../include/librealsense2/hpp/rs_processing.hpp"
 
-#define STRCASE(T, X) case RS2_##T##_##X: {\
-        static const std::string s##T##_##X##_str = make_less_screamy(#X);\
-        return s##T##_##X##_str.c_str(); }
-
 const double SQRT_DBL_EPSILON = sqrt(std::numeric_limits<double>::epsilon());
 
 namespace librealsense
