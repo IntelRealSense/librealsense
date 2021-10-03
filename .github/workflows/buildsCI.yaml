@@ -295,7 +295,7 @@ jobs:
 
 
   Mac_cpp:
-    runs-on: macos-latest
+    runs-on: macos-10.15
     timeout-minutes: 60
     
     steps:
@@ -312,8 +312,7 @@ jobs:
     - name: Build
       run: |
         cd build
-        brew --prefix openssl
-        export OPENSSL_ROOT_DIR="/usr/local/Cellar/openssl@1.1/1.1.1l" # Used by libcurl for 'CHECK_FOR_UPDATES' capability
+        export OPENSSL_ROOT_DIR=`brew --prefix openssl` # Used by libcurl for 'CHECK_FOR_UPDATES' capability
         cmake .. -DBUILD_EXAMPLES=true -DBUILD_WITH_OPENMP=false -DHWM_OVER_XU=false -DCHECK_FOR_UPDATES=true
         cmake --build . --config ${{env.LRS_BUILD_CONFIG}} -- -j4
         ls
