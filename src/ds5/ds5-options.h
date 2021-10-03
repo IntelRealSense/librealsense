@@ -439,19 +439,6 @@ namespace librealsense
         };
         void set_cached_limit(float value) { _cached_limit = value; };
         float get_cached_limit() { return _cached_limit; };
-        float query_limit_value() 
-        {
-            auto offset = 0;
-            if (_option == RS2_OPTION_AUTO_GAIN_LIMIT_TOGGLE)
-                offset = 4;
-            command cmd(ds::AUTO_CALIB);
-            cmd.param1 = 5;
-            auto res = _hwm.send(cmd);
-            if (res.empty())
-                throw invalid_value_exception("auto_exposure_limit_option::query result is empty!");
-
-            return static_cast<float>(*(reinterpret_cast<uint32_t*>(res.data() + offset)));
-        };
 
     private:
         std::function<void(const option&)> _record_action = [](const option&) {};
