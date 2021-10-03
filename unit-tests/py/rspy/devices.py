@@ -630,7 +630,10 @@ else:
         # u'/sys/devices/pci0000:00/0000:00:14.0/usb2/2-3/2-3.3/2-3.3.1/2-3.3.1:1.0/video4linux/video0'
         #
         split_location = physical_port.split( '/' )
-        port_location = split_location[-4]
+        if len(split_location) > 4:
+            port_location = split_location[-4]
+        else:   #rsusb
+            port_location = split_location[0]
         # location example: 2-3.3.1
         return port_location
     #

@@ -30,6 +30,9 @@ def find_pyrs():
     global build
     from rspy import file
     if platform.system() == 'Linux':
+        for so in file.find( os.path.abspath('.'), '(^|/)pyrealsense2.*\.so$' ):
+            return os.path.join( os.path.abspath('.'), so )
+
         for so in file.find( build, '(^|/)pyrealsense2.*\.so$' ):
             return os.path.join( build, so )
     else:

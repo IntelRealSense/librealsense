@@ -15,6 +15,7 @@ messages in case of a failed check
 """
 
 import os, sys, subprocess, traceback, platform
+import pyrealsense2 as rs
 
 from rspy import log
 
@@ -39,7 +40,6 @@ if '--context' in sys.argv:
 # If --rslog flag was sent, enable LibRS logging (LOG_DEBUG, etc.)
 try:
     sys.argv.remove( '--rslog' )
-    import pyrealsense2 as rs
     rs.log_to_console( rs.log_severity.debug )
 except ValueError as e:
     pass  # No --rslog passed in
@@ -86,7 +86,6 @@ def find_first_device_or_exit():
     :return: the first device that was found, if no device is found the test is skipped. That way we can still run
         the unit-tests when no device is connected and not fail the tests that check a connected device
     """
-    import pyrealsense2 as rs
     c = rs.context()
     if not c.devices.size():  # if no device is connected we skip the test
         log.f("No device found")
@@ -103,7 +102,6 @@ def find_devices_by_product_line_or_exit( product_line ):
         That way we can still run the unit-tests when no device is connected
         and not fail the tests that check a connected device
     """
-    import pyrealsense2 as rs
     c = rs.context()
     devices_list = c.query_devices(product_line)
     if devices_list.size() == 0:
