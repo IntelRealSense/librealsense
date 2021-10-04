@@ -771,7 +771,7 @@ namespace rs2
                                 static_cast<int>(range.step)))
                             {
                                 // TODO: Round to step?
-                                auto option_was_set = set_option(opt, static_cast<float>(int_value), error_message, std::chrono::milliseconds(100));
+                                auto option_was_set = set_option(opt, static_cast<float>(int_value), error_message, std::chrono::milliseconds(150));
                                 if( option_was_set )
                                 {
                                     delay_set = false;
@@ -795,7 +795,7 @@ namespace rs2
                                         = set_option( opt,
                                                       last_requested_value,
                                                       error_message,
-                                                      std::chrono::milliseconds( 100 ) );
+                                                      std::chrono::milliseconds( 150 ) );
                                     if( option_was_set )
                                     {
                                         model.add_log( to_string() << "Setting " << opt << " to "
