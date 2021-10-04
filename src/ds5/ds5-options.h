@@ -445,7 +445,7 @@ namespace librealsense
         rs2_option _option;
         option_range _toggle_range;
         const std::map<float, std::string> _description_per_value;
-        float _cached_limit;
+        float _cached_limit;         // used to cache contol limit value when toggle is switched to off
         const char* _description;
         hw_monitor& _hwm;
     };

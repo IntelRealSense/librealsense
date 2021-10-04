@@ -109,9 +109,7 @@ namespace librealsense
         std::shared_ptr<lazy<rs2_extrinsics>> _color_extrinsic;
         bool _is_locked = true;
 
-        std::shared_ptr<limits_option>  _gain_limit_toggle_control;
         std::shared_ptr<auto_gain_limit_option> _gain_limit_value_control;
-        std::shared_ptr<limits_option>  _ae_limit_toggle_control;
         std::shared_ptr<auto_exposure_limit_option> _ae_limit_value_control;
     };
 
