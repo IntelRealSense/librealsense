@@ -9,6 +9,27 @@
 namespace rs2 {
 
 
+
+inline float clamp( float x, float min, float max )
+{
+    return std::max( std::min( max, x ), min );
+}
+
+inline float smoothstep( float x, float min, float max )
+{
+    if( max == min )
+    {
+        x = clamp( ( x - min ), 0.0, 1.0 );
+    }
+    else
+    {
+        x = clamp( ( x - min ) / ( max - min ), 0.0, 1.0 );
+    }
+
+    return x * x * ( 3 - 2 * x );
+}
+
+
 // Helper class that lets smoothly animate between its values
 template < class T > class animated
 {
@@ -42,7 +63,7 @@ public:
         auto ms = std::chrono::duration_cast< std::chrono::microseconds >( now - _last_update ).count();
         auto duration_ms = std::chrono::duration_cast< std::chrono::microseconds >( _duration ).count();
         auto t = (float)ms / duration_ms;
-        t = std::max( 0.f, std::min( rs2::smoothstep( t, 0.f, 1.f ), 1.f ) );
+        t = clamp( smoothstep( t, 0.f, 1.f ), 0.f, 1.f );
         return static_cast< T >( _old * ( 1.f - t ) + _new * t );
     }
     operator T() const { return get(); }

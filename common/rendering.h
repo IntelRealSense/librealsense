@@ -105,25 +105,6 @@ namespace rs2
         mutable std::mutex _mtx;
     };
 
-    inline float clamp(float x, float min, float max)
-    {
-        return std::max(std::min(max, x), min);
-    }
-
-    inline float smoothstep(float x, float min, float max)
-    {
-        if (max == min)
-        {
-            x = clamp((x - min) , 0.0, 1.0);
-        }
-        else
-        {
-            x = clamp((x - min) / (max - min), 0.0, 1.0);
-        }
-        
-        return x*x*(3 - 2 * x);
-    }
-
     inline float lerp(float a, float b, float t)
     {
         return b * t + a * (1 - t);
