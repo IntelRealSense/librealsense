@@ -791,15 +791,10 @@ namespace rs2
                                 // value.
                                 if( delay_set )
                                 {
-                                    auto option_was_set
-                                        = set_option( opt,
-                                                      last_requested_value,
-                                                      error_message,
-                                                      std::chrono::milliseconds( 150 ) );
-                                    if( option_was_set )
+                                    auto set_ok = set_option( opt, last_requested_value, error_message, std::chrono::milliseconds(150));
+                                    if (set_ok)
                                     {
-                                        model.add_log( to_string() << "Setting " << opt << " to "
-                                                                   << last_requested_value );
+                                        model.add_log(to_string() << "Setting " << opt << " to " << last_requested_value);
                                         delay_set = false;
                                     }
                                 }
@@ -852,7 +847,7 @@ namespace rs2
                                     tmp_value = (loffset < roffset) ? tmp_value + loffset : tmp_value - roffset;
                                 tmp_value = (tmp_value < range.min) ? range.min : tmp_value;
                                 tmp_value = (tmp_value > range.max) ? range.max : tmp_value;
-                                auto option_was_set = set_option(opt, tmp_value, error_message, std::chrono::milliseconds(100));
+                                auto option_was_set = set_option(opt, tmp_value, error_message, std::chrono::milliseconds(150));
                                 // if the set gets delayed save the value for later
                                 if (option_was_set)
                                 {
@@ -870,9 +865,9 @@ namespace rs2
                             else
                             { 
                                 // Slider unselected, if last value was ignored, set with last value.
-                                if (delay_set)
+                                if ( delay_set )
                                 {
-                                    auto set_ok = set_option(opt, last_requested_value, error_message, std::chrono::milliseconds(100));
+                                    auto set_ok = set_option(opt, last_requested_value, error_message, std::chrono::milliseconds(150));
                                     if (set_ok)
                                     {
                                         model.add_log(to_string() << "Setting " << opt << " to " << last_requested_value);
@@ -2372,9 +2367,9 @@ namespace rs2
         
         try
         {
-            endpoint->set_option( opt, req_value );
-            last_set_stopwatch.reset();
             option_was_set = true;
+            last_set_stopwatch.reset();
+            endpoint->set_option( opt, req_value );
         }
         catch( const error & e )
         {
