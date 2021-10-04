@@ -317,7 +317,7 @@ namespace rs2
         bool set_option( rs2_option opt,
                          float value,
                          std::string & error_message,
-                         std::chrono::steady_clock::duration duplicated_set_delay = std::chrono::seconds( 0 ) );
+                         std::chrono::steady_clock::duration ignore_period = std::chrono::seconds( 0 ) );
         bool draw_option(bool update_read_only_options, bool is_streaming,
             std::string& error_message, notifications_model& model);
 

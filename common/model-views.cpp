@@ -771,10 +771,38 @@ namespace rs2
                                 static_cast<int>(range.step)))
                             {
                                 // TODO: Round to step?
-                                auto set_ok = set_option(opt, static_cast<float>(int_value), error_message, std::chrono::milliseconds(100));
-                                if (set_ok) model.add_log(to_string() <<  "Setting " << opt << " to " << int_value );
+                                auto option_was_set = set_option(opt, static_cast<float>(int_value), error_message, std::chrono::milliseconds(100));
+                                if( option_was_set )
+                                {
+                                    delay_set = false;
+                                    model.add_log( to_string() << "Setting " << opt << " to " << int_value );
+                                }
+                                else
+                                {
+                                    delay_set = true;
+                                    last_requested_value = static_cast< float >( int_value );
+                                }
                                 *invalidate_flag = true;
                                 res = true;
+                            }
+                            else
+                            {
+                                // Slider unselected, if last value was ignored, set with last
+                                // value.
+                                if( delay_set )
+                                {
+                                    auto option_was_set
+                                        = set_option( opt,
+                                                      last_requested_value,
+                                                      error_message,
+                                                      std::chrono::milliseconds( 100 ) );
+                                    if( option_was_set )
+                                    {
+                                        model.add_log( to_string() << "Setting " << opt << " to "
+                                                                   << last_requested_value );
+                                        delay_set = false;
+                                    }
+                                }
                             }
                         }
                         else
@@ -811,6 +839,7 @@ namespace rs2
                             std::stringstream formatting_ss;
                             formatting_ss << "%." << num_of_decimal_digits_displayed << "f";
 
+                            
                             if (ImGui::SliderFloat(id.c_str(), &temp_value_displayed,
                                 min_range_displayed, max_range_displayed, formatting_ss.str().c_str()))
                             {
@@ -823,10 +852,34 @@ namespace rs2
                                     tmp_value = (loffset < roffset) ? tmp_value + loffset : tmp_value - roffset;
                                 tmp_value = (tmp_value < range.min) ? range.min : tmp_value;
                                 tmp_value = (tmp_value > range.max) ? range.max : tmp_value;
-                                auto set_ok = set_option(opt, tmp_value, error_message, std::chrono::milliseconds(100));
-                                if (set_ok) model.add_log(to_string() << "Setting " << opt << " to " << tmp_value);
+                                auto option_was_set = set_option(opt, tmp_value, error_message, std::chrono::milliseconds(100));
+                                // if the set gets delayed save the value for later
+                                if (option_was_set)
+                                {
+                                    delay_set = false;
+                                    model.add_log(to_string() << "Setting " << opt << " to " << tmp_value);
+                                }
+                                else
+                                {
+                                    delay_set = true;
+                                    last_requested_value = tmp_value;
+                                }
                                 *invalidate_flag = true;
                                 res = true;
+                            }
+                            else
+                            { 
+                                // Slider unselected, if last value was ignored, set with last value.
+                                if (delay_set)
+                                {
+                                    auto set_ok = set_option(opt, last_requested_value, error_message, std::chrono::milliseconds(100));
+                                    if (set_ok)
+                                    {
+                                        model.add_log(to_string() << "Setting " << opt << " to " << last_requested_value);
+                                        delay_set = false;
+                                    }
+
+                                }
                             }
                         }
                     }
@@ -2310,20 +2363,17 @@ namespace rs2
     bool option_model::set_option( rs2_option opt,
                                    float req_value,
                                    std::string & error_message,
-                                   std::chrono::steady_clock::duration duplicated_set_delay )
+                                   std::chrono::steady_clock::duration ignore_period )
     {
         bool option_was_set = false;
-        // Only set the value if the value is different than the last requested value or
-        // `duplicated_set_delay` time past since last set_option() call
-        if ( last_set_stopwatch.get_elapsed() < duplicated_set_delay &&
-            req_value == last_requested_value )
-            return option_was_set;
+        // Only set the value if `ignore_period` time past since last set_option() call for this option
+        if ( last_set_stopwatch.get_elapsed() < ignore_period )
+            return false;
         
         try
         {
             endpoint->set_option( opt, req_value );
             last_set_stopwatch.reset();
-            last_requested_value = req_value;
             option_was_set = true;
         }
         catch( const error & e )
