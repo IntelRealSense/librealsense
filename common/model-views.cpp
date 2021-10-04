@@ -532,6 +532,8 @@ namespace rs2
         option.label = options->get_option_name(opt) + std::string("##") + ss.str();
         option.invalidate_flag = options_invalidated;
         option.dev = model;
+        option.range = { 0, 1, 0, 0 };
+        option.value = 0;
 
         option.supported = options->supports(opt);
         if (option.supported)
@@ -544,8 +546,6 @@ namespace rs2
             }
             catch (const error& e)
             {
-                option.range = { 0, 1, 0, 0 };
-                option.value = 0;
                 error_message = error_to_string(e);
             }
         }

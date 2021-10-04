@@ -325,6 +325,7 @@ namespace rs2
         option_range range;
         std::shared_ptr<options> endpoint;
         float last_requested_value = 0;
+        bool delay_set = false;
         utilities::time::stopwatch last_set_stopwatch;
         bool* invalidate_flag = nullptr;
         bool supported = false;
