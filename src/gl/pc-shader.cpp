@@ -3,7 +3,7 @@
 
 #include "pc-shader.h"
 #include "synthetic-stream-gl.h"
-#include <glad/glad.h>
+#include "rendering.h"
 
 #include "option.h"
 #include "tiny-profiler.h"

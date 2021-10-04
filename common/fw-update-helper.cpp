@@ -1,19 +1,18 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2017 Intel Corporation. All Rights Reserved.
-#include <glad/glad.h>
 
+#include "fw-update-helper.h"
+#include "model-views.h"
+#include "viewer.h"
+#include "ux-window.h"
+
+#include "os.h"
 
 #include <map>
 #include <vector>
 #include <string>
 #include <thread>
 #include <condition_variable>
-
-#include "fw-update-helper.h"
-#include "model-views.h"
-#include "viewer.h"
-
-#include "os.h"
 
 #ifdef INTERNAL_FW
 #include "common/fw/D4XX_FW_Image.h"

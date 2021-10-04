@@ -6,13 +6,12 @@
 #include "option.h"
 #include "opengl3.h"
 
-#include <GLFW/glfw3.h>
-
 #ifndef NOMINMAX
 #define NOMINMAX
 #endif // NOMINMAX
 
 #include <glad/glad.h>
+#include <GLFW/glfw3.h>
 
 #include <iostream>
 #include <future>

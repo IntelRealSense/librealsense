@@ -7,23 +7,20 @@
 #endif
 #endif
 
+#include "notifications.h"
+#include <imgui_internal.h>
+#include "model-views.h"
+#include "os.h"
+#include "viewer.h"
+#include "metadata-helper.h"
+#include "ux-window.h"
+
 #include <thread>
 #include <algorithm>
 #include <regex>
 #include <cmath>
 
 #include <opengl3.h>
-
-#include "notifications.h"
-#include <imgui_internal.h>
-
-#include "model-views.h"
-
-#include "os.h"
-
-#include "viewer.h"
-
-#include "metadata-helper.h"
 
 using namespace std;
 using namespace chrono;

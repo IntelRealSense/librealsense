@@ -4,7 +4,6 @@
 #pragma once
 
 #include "sw-update/dev-updates-profile.h"
-#include "ux-window.h"
 #include "notifications.h"
 #include "fw-update-helper.h"
 
@@ -16,6 +15,8 @@
 
 namespace rs2
 {
+    class ux_window;
+
     class updates_model
     {
     public:

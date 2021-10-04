@@ -6,15 +6,16 @@
 #endif
 #endif
 
+#include "os.h"
+
 #include <thread>
 #include <algorithm>
 #include <regex>
 #include <cmath>
+#include <iomanip>
 
 #include <sys/types.h>
 #include <sys/stat.h>
-
-#include "os.h"
 
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include <stb_image_write.h>

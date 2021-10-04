@@ -2,7 +2,7 @@
 // Copyright(c) 2019 Intel Corporation. All Rights Reserved.
 
 #include "camera-shader.h"
-#include <glad/glad.h>
+#include "rendering.h"
 #include "option.h"
 
 using namespace rs2;

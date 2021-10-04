@@ -3,17 +3,26 @@
 
 #pragma once
 
+#include <librealsense2/rs.hpp>
+
+#include "rect.h"
+#include "animated.h"
+
 #include <functional>
 #include <string>
+#include <map>
 
-#include "ux-window.h"
 #include "rendering.h"
+#include <glad/glad.h>
+#include <GLFW/glfw3.h>
+#include <imgui.h>
 
 #include "../src/concurrency.h"
 
 namespace rs2
 {
     class device_model;
+    class ux_window;
 
     class stream_dashboard
     {

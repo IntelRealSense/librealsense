@@ -33,7 +33,12 @@
 #define __gl_h_
 
 #if defined(_WIN32) && !defined(APIENTRY) && !defined(__CYGWIN__) && !defined(__SCITECH_SNAP__)
-#define APIENTRY __stdcall
+// --------> manually added!!!
+// The #define is good, but minwindef.h will complain if it's included after:
+//     minwindef.h(130,1): warning C4005: 'APIENTRY': macro redefinition
+// ... so we include it first!
+#include <windows.h>
+//#define APIENTRY __stdcall
 #endif
 
 #ifndef APIENTRY
