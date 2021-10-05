@@ -353,7 +353,7 @@ namespace librealsense
         lazy<option_range> _range;
         hw_monitor& _hwm;
         sensor_base* _sensor;
-        std::shared_ptr<limits_option> _exposure_limit_toggle;
+        std::weak_ptr<limits_option> _exposure_limit_toggle;
     };
 
     class auto_gain_limit_option : public option_base
@@ -377,7 +377,7 @@ namespace librealsense
         lazy<option_range> _range;
         hw_monitor& _hwm;
         sensor_base* _sensor;
-        std::shared_ptr<limits_option> _gain_limit_toggle;
+        std::weak_ptr<limits_option> _gain_limit_toggle;
     };
 
     // Auto-Limits Enable/ Disable

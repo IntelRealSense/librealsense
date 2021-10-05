@@ -1091,8 +1091,8 @@ namespace librealsense
 
             depth_sensor.register_option(RS2_OPTION_AUTO_GAIN_LIMIT,
                 std::make_shared<auto_disabling_control>(
-                    std::shared_ptr<auto_gain_limit_option>(_gain_limit_value_control),
-                    std::shared_ptr<limits_option>(gain_limit_toggle_control)
+                    _gain_limit_value_control,
+                    gain_limit_toggle_control
                     
                     ));
 
@@ -1103,8 +1103,8 @@ namespace librealsense
 
             depth_sensor.register_option(RS2_OPTION_AUTO_EXPOSURE_LIMIT,
                 std::make_shared<auto_disabling_control>(
-                    std::shared_ptr<auto_exposure_limit_option>(_ae_limit_value_control),
-                    std::shared_ptr<limits_option>(ae_limit_toggle_control)
+                    _ae_limit_value_control,
+                    ae_limit_toggle_control
                     
                     ));
         }
