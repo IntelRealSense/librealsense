@@ -2,8 +2,12 @@
 // Copyright(c) 2020 Intel Corporation. All Rights Reserved.
 
 #include "measurement.h"
+#include "ux-window.h"
 
 #include <librealsense2/hpp/rs_export.hpp>
+
+#include "opengl3.h"
+
 
 using namespace rs2;
 

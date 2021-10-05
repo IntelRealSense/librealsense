@@ -12,7 +12,6 @@
 #include <usbioctl.h>
 #include <SetupAPI.h>
 #include <comdef.h>
-#include <atlstr.h>
 #include <Windows.h>
 #include <SetupAPI.h>
 #include <string>
@@ -780,11 +779,10 @@ namespace librealsense
 
         create_and_open_status named_mutex::create_named_mutex(const char* camID)
         {
-            CString lstr;
-            CString IDstr(camID);
             // IVCAM_DLL string is left in librealsense to allow safe
             // interoperability with existing tools like DCM
-            lstr.Format(L"Global\\IVCAM_DLL_WINUSB_MUTEX%s", IDstr);
+            std::string lstr( "Global\\IVCAM_DLL_WINUSB_MUTEX" );
+            lstr += camID;
             auto pSecDesc = make_allow_all_security_descriptor();
             if (pSecDesc)
             {
@@ -793,10 +791,10 @@ namespace librealsense
                 SecAttr.lpSecurityDescriptor = pSecDesc;
                 SecAttr.bInheritHandle = FALSE;
 
-                _winusb_mutex = CreateMutex(
+                _winusb_mutex = CreateMutexA(
                     &SecAttr,
                     FALSE,
-                    lstr);
+                    lstr.c_str());
                 LocalFree(pSecDesc);
             }
             //CreateMutex failed
@@ -813,24 +811,18 @@ namespace librealsense
 
         create_and_open_status named_mutex::open_named_mutex(const char* camID)
         {
-            CString lstr;
-            CString IDstr(camID);
             // IVCAM_DLL string is left in librealsense to allow safe
             // interoperability with existing tools like DCM
-            lstr.Format(L"Global\\IVCAM_DLL_WINUSB_MUTEX%s", IDstr.GetString());
+            std::string lstr( "Global\\IVCAM_DLL_WINUSB_MUTEX" );
+            lstr += camID;
 
-            _winusb_mutex = OpenMutex(
-                MUTEX_ALL_ACCESS,            // request full access
-                FALSE,                       // handle not inheritable
-                lstr);  // object name
+            _winusb_mutex = OpenMutexA( MUTEX_ALL_ACCESS,  // request full access
+                                        FALSE,             // handle not inheritable
+                                        lstr.c_str() );    // object name
 
             if (_winusb_mutex == nullptr)
             {
                 return Mutex_TotalFailure;
-            }
-            else if (GetLastError() == ERROR_ALREADY_EXISTS)
-            {
-                return Mutex_AlreadyExist;
             }
 
             return Mutex_Succeed;

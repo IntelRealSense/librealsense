@@ -2,6 +2,12 @@
 # Copyright(c) 2019 Intel Corporation. All Rights Reserved.
 
 set(COMMON_SRC
+        "${CMAKE_CURRENT_LIST_DIR}/animated.h"
+        "${CMAKE_CURRENT_LIST_DIR}/float2.h"
+        "${CMAKE_CURRENT_LIST_DIR}/float3.h"
+        "${CMAKE_CURRENT_LIST_DIR}/float4.h"
+        "${CMAKE_CURRENT_LIST_DIR}/matrix4.h"
+        "${CMAKE_CURRENT_LIST_DIR}/rect.h"
         "${CMAKE_CURRENT_LIST_DIR}/rendering.h"
         "${CMAKE_CURRENT_LIST_DIR}/model-views.h"
         "${CMAKE_CURRENT_LIST_DIR}/model-views.cpp"

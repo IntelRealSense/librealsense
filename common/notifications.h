@@ -8,12 +8,12 @@
 #include <vector>
 #include <chrono>
 
-#include "ux-window.h"
-
 #include "output-model.h"
 
 namespace rs2
 {
+    class ux_window;
+
     class notification_data
     {
     public:

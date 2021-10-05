@@ -9,6 +9,7 @@
 #include <vector>
 #include <functional>
 #include <cstring>
+#include <iomanip>
 
 #ifdef ANDROID
 #include "android_helpers.h"

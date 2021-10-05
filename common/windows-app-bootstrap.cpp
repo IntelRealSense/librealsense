@@ -18,6 +18,8 @@
 #include "os.h"
 #include "metadata-helper.h"
 #include "rendering.h"
+#include "utilities/string/windows.h"
+
 #include <delayimp.h>
 
 // Use OS hook to modify message box behaviour
@@ -161,8 +163,7 @@ int CALLBACK WinMain(
     std::vector<std::string> args;
     for (int i = 0; i < argCount; i++)
     {
-        std::wstring ws = szArgList.get()[i];
-        std::string s(ws.begin(), ws.end());
+        std::string s = utilities::string::windows::win_to_utf( szArgList.get()[i] );
 
         if (s == rs2::metadata_helper::get_command_line_param())
         {

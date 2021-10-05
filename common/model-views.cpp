@@ -7,12 +7,6 @@
 #endif
 #endif
 
-#include <thread>
-#include <algorithm>
-#include <regex>
-#include <cmath>
-
-#include <opengl3.h>
 
 #include <librealsense2/rs_advanced_mode.hpp>
 #include <librealsense2/rs.hpp>
@@ -27,6 +21,7 @@
 #include "post-processing-block-model.h"
 #include <imgui_internal.h>
 #include <time.h>
+#include "ux-window.h"
 
 #include "imgui-fonts-karla.hpp"
 #include "imgui-fonts-fontawesome.hpp"
@@ -38,6 +33,13 @@
 #include "calibration-model.h"
 #include "sw-update/http-downloader.h"
 #include "utilities/filesystem/glob.h"
+
+#include <thread>
+#include <algorithm>
+#include <regex>
+#include <cmath>
+
+#include "opengl3.h"
 
 using namespace rs400;
 using namespace nlohmann;

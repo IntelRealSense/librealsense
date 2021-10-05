@@ -117,7 +117,7 @@ def print_stack():
     """
     Function for printing the current call stack. Used when an assertion fails
     """
-    print( 'Traceback (most recent call last):' )
+    log.out( 'Traceback (most recent call last):' )
     stack = traceback.format_stack()
     # Avoid stack trace into format_stack():
     #     File "C:/work/git/lrs\unit-tests\py\rspy\test.py", line 124, in check
@@ -126,7 +126,7 @@ def print_stack():
     #       stack = traceback.format_stack()
     stack = stack[:-2]
     for line in stack:
-        print( line, end = '' )  # format_stack() adds \n
+        log.out( line, end = '' )  # format_stack() adds \n
 
 
 """
@@ -164,9 +164,9 @@ def check( exp, description = None, abort_if_failed = False):
     if not exp:
         print_stack()
         if description:
-            print( f"    {description}" )
+            log.out( f"    {description}" )
         else:
-            print( f"    check failed; received {exp}" )
+            log.out( f"    check failed; received {exp}" )
         check_failed()
         if abort_if_failed:
             abort()
@@ -184,7 +184,7 @@ def check_equal(result, expected, abort_if_failed = False):
     :return: True if assertion passed, False otherwise
     """
     if type(expected) == list:
-        print("check_equal should not be used for lists. Use check_equal_lists instead")
+        log.out("check_equal should not be used for lists. Use check_equal_lists instead")
         if abort_if_failed:
             abort()
         return False
@@ -192,8 +192,8 @@ def check_equal(result, expected, abort_if_failed = False):
     n_assertions += 1
     if result != expected:
         print_stack()
-        print( "    left  :", result )
-        print( "    right :", expected )
+        log.out( "    left  :", result )
+        log.out( "    right :", expected )
         check_failed()
         if abort_if_failed:
             abort()
@@ -240,19 +240,19 @@ def check_equal_lists(result, expected, abort_if_failed = False):
     failed = False
     if len(result) != len(expected):
         failed = True
-        print("Check equal lists failed due to lists of different sizes:")
-        print("The resulted list has", len(result), "elements, but the expected list has", len(expected), "elements")
+        log.out("Check equal lists failed due to lists of different sizes:")
+        log.out("The resulted list has", len(result), "elements, but the expected list has", len(expected), "elements")
     i = 0
     for res, exp in zip(result, expected):
         if res != exp:
             failed = True
-            print("Check equal lists failed due to unequal elements:")
-            print("The element of index", i, "in both lists was not equal")
+            log.out("Check equal lists failed due to unequal elements:")
+            log.out("The element of index", i, "in both lists was not equal")
         i += 1
     if failed:
         print_stack()
-        print( "    result list  :", result )
-        print( "    expected list:", expected )
+        log.out( "    result list  :", result )
+        log.out( "    expected list:", expected )
         check_failed()
         if abort_if_failed:
             abort()
@@ -277,7 +277,7 @@ def check_exception(exception, expected_type, expected_msg = None, abort_if_fail
         failed = [ "    exception message:", str(exception), "\n    but we expected:", expected_msg ]
     if failed:
         print_stack()
-        print( *failed )
+        log.out( *failed )
         check_failed()
         if abort_if_failed:
             abort()
@@ -303,11 +303,10 @@ def check_frame_drops(frame, previous_frame_number, allowed_drops = 1, allow_fra
     if previous_frame_number > 0 and not (allow_frame_counter_reset and frame_number < 5):
         dropped_frames = frame_number - (previous_frame_number + 1)
         if dropped_frames > allowed_drops:
-            print( dropped_frames, "frame(s) starting from frame", previous_frame_number + 1, "were dropped" )
+            log.out( dropped_frames, "frame(s) before", frame, "were dropped" )
             failed = True
         elif dropped_frames < 0:
-            print( "Frames repeated or out of order. Got frame", frame_number, "after frame",
-                   previous_frame_number)
+            log.out( "Frames repeated or out of order. Got", frame, "after frame", previous_frame_number )
             failed = True
     if failed:
         fail() 
@@ -360,9 +359,9 @@ def print_info():
     global test_info
     if not test_info: # No information is stored
         return
-    #print("Printing information")
+    #log.out("Printing information")
     for name, information in test_info.items():
-        print( f"    {name} : {information.value}" )
+        log.out( f"    {name} : {information.value}" )
     reset_info()
 
 
@@ -396,7 +395,7 @@ def start(*test_name):
     test_failed = False
     test_in_progress = True
     reset_info( persistent = True )
-    print( *test_name )
+    log.out( *test_name )
 
 
 def finish():
@@ -407,9 +406,9 @@ def finish():
     global test_failed, n_failed_tests, test_in_progress
     if test_failed:
         n_failed_tests += 1
-        print("Test failed")
+        log.out("Test failed")
     else:
-        print("Test passed")
+        log.out("Test passed")
     test_in_progress = False
 
 
@@ -421,8 +420,7 @@ def print_separator():
     check_test_in_progress( False )
     global n_tests
     if n_tests:
-        print()
-        print( '___' )
+        log.out( '\n___' )
 
 
 def print_results_and_exit():
@@ -434,8 +432,8 @@ def print_results_and_exit():
     global n_assertions, n_tests, n_failed_assertions, n_failed_tests
     if n_failed_tests:
         passed = n_assertions - n_failed_assertions
-        print("test cases:", n_tests, "|" , n_failed_tests,  "failed")
-        print("assertions:", n_assertions, "|", passed, "passed |", n_failed_assertions, "failed")
+        log.out("test cases:", n_tests, "|" , n_failed_tests,  "failed")
+        log.out("assertions:", n_assertions, "|", passed, "passed |", n_failed_assertions, "failed")
         sys.exit(1)
-    print("All tests passed (" + str(n_assertions) + " assertions in " + str(n_tests) + " test cases)")
+    log.out("All tests passed (" + str(n_assertions) + " assertions in " + str(n_tests) + " test cases)")
     sys.exit(0)

@@ -3,7 +3,9 @@
 
 #pragma once
 
-#include "rendering.h"
+#include "matrix4.h"
+#include "float3.h"
+#include "float2.h"
 
 #include <string>
 #include <unordered_map>

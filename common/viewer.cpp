@@ -3468,7 +3468,7 @@ namespace rs2
             {
                 _old_layout[stream] = _layout[stream].center();
             }
-            results[stream] = _old_layout[stream].lerp(t, _layout[stream]);
+            results[stream] = lerp( _old_layout[stream], t, _layout[stream] );
         }
 
         return results;

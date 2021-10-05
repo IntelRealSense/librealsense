@@ -1,6 +1,6 @@
 #pragma once
 
-#include "rendering.h"  // for rs2::rect
+#include "rect.h"
 #include <string>
 #include <vector>
 #include <mutex>

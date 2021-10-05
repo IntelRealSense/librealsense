@@ -3,8 +3,11 @@
 
 #include "opengl3.h"
 
-#include <glad/glad.h>
+#include <stdexcept>  // runtime_error
+#include <sstream>
 #include <assert.h>
+
+#include <glad/glad.h>
 
 using namespace rs2;
 
