@@ -13,6 +13,7 @@
 #include <regex>
 #include <cmath>
 #include <iomanip>
+#include <sstream>
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -49,7 +50,7 @@ namespace rs2
     {
         if (str.length() > width)
         {
-            std::stringstream ss;
+            std::ostringstream ss;
             ss << str.substr(0, width / 3) << "..." << str.substr(str.length() - width / 3);
             return ss.str().c_str();
         }
