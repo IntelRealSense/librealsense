@@ -5,7 +5,7 @@
 #include "backend-hid.h"
 #include "backend.h"
 #include "types.h"
-#include "../polling-device-watcher.h"
+#include "udev-device-watcher.h"
 #include "usb/usb-enumerator.h"
 #include "usb/usb-device.h"
 
@@ -1849,7 +1849,7 @@ namespace librealsense
 
         std::shared_ptr<device_watcher> v4l_backend::create_device_watcher() const
         {
-            return std::make_shared<polling_device_watcher>(this);
+            return std::make_shared<udev_device_watcher>(this);
         }
 
         std::shared_ptr<backend> create_backend()
