@@ -285,6 +285,8 @@ public:
             : _owner(owner)
         {}
 
+        bool was_stopped() const { return _owner->_was_stopped.load(); }
+
         // Replacement for sleep() -- try to sleep for a time, but stop if the
         // dispatcher is stopped
         // 
@@ -296,13 +298,12 @@ public:
             using namespace std::chrono;
 
             std::unique_lock<std::mutex> lock(_owner->_was_stopped_mutex);
-            auto dispatcher_was_stopped = [&]() { return _owner->_was_stopped.load(); };
-            if( dispatcher_was_stopped() )
+            if( was_stopped() )
                 return false;
             // wait_for() returns "false if the predicate pred still evaluates to false after the
             // rel_time timeout expired, otherwise true"
             return ! (
-                _owner->_was_stopped_cv.wait_for( lock, sleep_time, dispatcher_was_stopped ) );
+                _owner->_was_stopped_cv.wait_for( lock, sleep_time, [&]() { return was_stopped(); } ) );
         }
     };
 
