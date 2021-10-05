@@ -52,6 +52,16 @@ namespace librealsense
                     throw std::runtime_error(msg.str());
                 }
 
+                sts = libusb_set_auto_detach_kernel_driver(_handle, true); // detach from kernel driver when claimed and re-attach when released.
+                if(sts != LIBUSB_SUCCESS)
+                {
+                    auto rs_sts =  libusb_status_to_rs(sts);
+                    std::stringstream msg;
+                    msg << "failed to set kernel driver auto detach: " << (int)interface->get_number() << ", error: " << usb_status_to_string.at(rs_sts);
+                    LOG_ERROR(msg.str());
+                    throw std::runtime_error(msg.str());
+                }
+
                 claim_interface_or_throw(interface->get_number());
                 for(auto&& i : interface->get_associated_interfaces())
                     claim_interface_or_throw(i->get_number());
@@ -64,6 +74,7 @@ namespace librealsense
                 _context->stop_event_handler();
                 for(auto&& i : _first_interface->get_associated_interfaces())
                     libusb_release_interface(_handle, i->get_number());
+                libusb_release_interface(_handle, _first_interface->get_number());
                 libusb_close(_handle);
             }
 
@@ -82,12 +93,6 @@ namespace librealsense
 
             usb_status claim_interface(uint8_t interface)
             {
-                //libusb_set_auto_detach_kernel_driver(h, true);
-
-                 if (libusb_kernel_driver_active(_handle, interface) == 1)//find out if kernel driver is attached
-                     if (libusb_detach_kernel_driver(_handle, interface) == 0)// detach driver from device if attached.
-                         LOG_DEBUG("handle_libusb - detach kernel driver");
-
                 auto sts = libusb_claim_interface(_handle, interface);
                 if(sts != LIBUSB_SUCCESS)
                 {
