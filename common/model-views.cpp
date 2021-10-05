@@ -778,14 +778,13 @@ namespace rs2
                                     last_set_value = static_cast<float>(int_value);
                                     *invalidate_flag = true;
                                     model.add_log( to_string() << "Setting " << opt << " to " << int_value );
+                                    res = true;
                                 }
                                 else
                                 {
                                     delay_set = true;
                                     last_requested_value = static_cast< float >( int_value );
                                 }
-                                
-                                res = true;
                             }
                             else
                             {
@@ -800,6 +799,7 @@ namespace rs2
                                             model.add_log(to_string() << "Setting " << opt << " to " << last_requested_value);
                                             delay_set = false;
                                             *invalidate_flag = true;
+                                            res = true;
                                         }
                                     }
                                     else
@@ -862,14 +862,14 @@ namespace rs2
                                     last_set_value = tmp_value;
                                     *invalidate_flag = true;
                                     model.add_log(to_string() << "Setting " << opt << " to " << tmp_value);
+                                    res = true;
                                 }
                                 else
                                 {
                                     delay_set = true;
                                     last_requested_value = tmp_value;
+                                    res = true;
                                 }
-
-                                res = true;
                             }
                             else
                             { 
