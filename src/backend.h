@@ -2,11 +2,9 @@
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
 #pragma once
-#ifndef LIBREALSENSE_BACKEND_H
-#define LIBREALSENSE_BACKEND_H
 
-#include "../include/librealsense2/h/rs_types.h"     // Inherit all type definitions in the public API
-#include "../include/librealsense2/h/rs_option.h"
+#include <librealsense2/h/rs_types.h>     // Inherit all type definitions in the public API
+#include <librealsense2/h/rs_option.h>
 #include "usb/usb-types.h"
 #include "usb/usb-device.h"
 #include "hid/hid-types.h"
@@ -825,6 +823,5 @@ namespace librealsense
     }
 
     double monotonic_to_realtime(double monotonic);
-}
 
-#endif
+}  // namespace librealsense

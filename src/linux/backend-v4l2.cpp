@@ -5,6 +5,7 @@
 #include "backend-hid.h"
 #include "backend.h"
 #include "types.h"
+#include "../polling-device-watcher.h"
 #include "usb/usb-enumerator.h"
 #include "usb/usb-device.h"
 
