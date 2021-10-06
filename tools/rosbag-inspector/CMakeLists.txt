@@ -1,7 +1,7 @@
 # License: Apache 2.0. See LICENSE file in root directory.
 # Copyright(c) 2019 Intel Corporation. All Rights Reserved.
 # ubuntu 16.04 LTS cmake version 3.5.1
-cmake_minimum_required(VERSION 2.8.3)
+cmake_minimum_required(VERSION 2.8.3...3.20.5)
 
 project(RealsenseToolsRosbagInspector)
 
@@ -27,11 +27,11 @@ if(BUILD_GRAPHICAL_EXAMPLES)
 
     if(WIN32)
         add_executable(rs-rosbag-inspector WIN32 ${RS_ROSBAG_INSPECTOR_CPP})
-        include_directories(../../third-party/imgui ../../common ../../third-party/glad 
+        include_directories(../../third-party/imgui ../../common ../../third-party/glad
                                              ../../third-party/tinyfiledialogs ../../third-party ${CMAKE_CURRENT_SOURCE_DIR}/res/)
     else()
         add_executable(rs-rosbag-inspector ${RS_ROSBAG_INSPECTOR_CPP})
-        include_directories(../../third-party/imgui ../../common ../../third-party/glad 
+        include_directories(../../third-party/imgui ../../common ../../third-party/glad
                                              ../../third-party/tinyfiledialogs ../../third-party)
     endif()
     set_property(TARGET rs-rosbag-inspector PROPERTY CXX_STANDARD 11)
