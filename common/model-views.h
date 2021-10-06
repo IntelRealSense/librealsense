@@ -342,6 +342,15 @@ namespace rs2
         bool is_enum() const;
         bool is_checkbox() const;
         bool allow_change(float val, std::string& error_message) const; 
+        bool slider_selected( rs2_option opt,
+            float value,
+            std::string& error_message,
+            notifications_model& model);
+
+        bool slider_unselected(rs2_option opt,
+            float value,
+            std::string& error_message,
+            notifications_model& model);
     };
 
     class frame_queues
