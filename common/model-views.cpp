@@ -776,7 +776,6 @@ namespace rs2
                                 {
                                     delay_set = false;
                                     last_set_value = static_cast<float>(int_value);
-                                    *invalidate_flag = true;
                                     model.add_log( to_string() << "Setting " << opt << " to " << int_value );
                                     res = true;
                                 }
@@ -798,13 +797,14 @@ namespace rs2
                                         {
                                             model.add_log(to_string() << "Setting " << opt << " to " << last_requested_value);
                                             delay_set = false;
-                                            *invalidate_flag = true;
                                             res = true;
                                         }
                                     }
                                     else
                                         delay_set = false;
                                 }
+
+                                if (res) *invalidate_flag = true;
                             }
                         }
                         else
@@ -860,7 +860,6 @@ namespace rs2
                                 {
                                     delay_set = false;
                                     last_set_value = tmp_value;
-                                    *invalidate_flag = true;
                                     model.add_log(to_string() << "Setting " << opt << " to " << tmp_value);
                                     res = true;
                                 }
@@ -868,7 +867,6 @@ namespace rs2
                                 {
                                     delay_set = true;
                                     last_requested_value = tmp_value;
-                                    res = true;
                                 }
                             }
                             else
@@ -882,14 +880,16 @@ namespace rs2
                                         if (set_ok)
                                         {
                                             model.add_log(to_string() << "Setting " << opt << " to " << last_requested_value);
-                                            *invalidate_flag = true;
                                             delay_set = false;
+                                            res = true;
                                         }
                                     }
                                     else
                                         delay_set = false;
 
                                 }
+
+                                if (res) *invalidate_flag = true;
                             }
                         }
                     }
