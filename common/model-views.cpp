@@ -774,37 +774,35 @@ namespace rs2
                                 auto option_was_set = set_option(opt, static_cast<float>(int_value), error_message, std::chrono::milliseconds(200));
                                 if( option_was_set )
                                 {
-                                    delay_set = false;
-                                    last_set_value = static_cast<float>(int_value);
+                                    have_unset_value = false;
                                     *invalidate_flag = true;
                                     model.add_log( to_string() << "Setting " << opt << " to " << int_value );
                                     res = true;
                                 }
                                 else
                                 {
-                                    delay_set = true;
-                                    last_requested_value = static_cast< float >( int_value );
+                                    have_unset_value = true;
+                                    unset_value = static_cast< float >( int_value );
                                 }
                             }
                             else
                             {
                                 // Slider unselected, if last value was ignored, set with last value if the value was changed.
-                                if( delay_set )
+                                if( have_unset_value )
                                 {
-                                    if (last_set_value != last_requested_value)
+                                    if (value != unset_value)
                                     {
-                                        auto set_ok = set_option(opt, last_requested_value, error_message, std::chrono::milliseconds(100));
+                                        auto set_ok = set_option(opt, unset_value, error_message, std::chrono::milliseconds(100));
                                         if (set_ok)
                                         {
-                                            model.add_log(to_string() << "Setting " << opt << " to " << last_requested_value);
+                                            model.add_log(to_string() << "Setting " << opt << " to " << unset_value);
                                             *invalidate_flag = true;
-                                            last_set_value = last_requested_value;
-                                            delay_set = false;
+                                            have_unset_value = false;
                                             res = true;
                                         }
                                     }
                                     else
-                                        delay_set = false;
+                                        have_unset_value = false;
                                 }
                             }
                         }
@@ -859,37 +857,35 @@ namespace rs2
                                 // if the set gets delayed save the value for later
                                 if (option_was_set)
                                 {
-                                    delay_set = false;
-                                    last_set_value = tmp_value;
+                                    have_unset_value = false;
                                     model.add_log(to_string() << "Setting " << opt << " to " << tmp_value);
                                     *invalidate_flag = true;
                                     res = true;
                                 }
                                 else
                                 {
-                                    delay_set = true;
-                                    last_requested_value = tmp_value;
+                                    have_unset_value = true;
+                                    unset_value = tmp_value;
                                 }
                             }
                             else
                             { 
                                 // Slider unselected, if last value was ignored, set with last value if the value was changed.
-                                if ( delay_set )
+                                if ( have_unset_value )
                                 {
-                                    if (last_set_value != last_requested_value)
+                                    if (value != unset_value)
                                     {
-                                        auto set_ok = set_option(opt, last_requested_value, error_message, std::chrono::milliseconds(100));
-                                        if (set_ok)
+                                        auto set_ok = set_option(opt, unset_value, error_message, std::chrono::milliseconds(100));
+                                        if ( set_ok )
                                         {
-                                            model.add_log(to_string() << "Setting " << opt << " to " << last_requested_value);
+                                            model.add_log(to_string() << "Setting " << opt << " to " << unset_value);
                                             *invalidate_flag = true;
-                                            last_set_value = last_requested_value;
-                                            delay_set = false;
+                                            have_unset_value = false;
                                             res = true;
                                         }
                                     }
                                     else
-                                        delay_set = false;
+                                        have_unset_value = false;
 
                                 }
                             }
@@ -2377,14 +2373,12 @@ namespace rs2
                                    std::string & error_message,
                                    std::chrono::steady_clock::duration ignore_period )
     {
-        bool option_was_set = false;
         // Only set the value if `ignore_period` time past since last set_option() call for this option
         if ( last_set_stopwatch.get_elapsed() < ignore_period )
             return false;
         
         try
         {
-            option_was_set = true;
             last_set_stopwatch.reset();
             endpoint->set_option( opt, req_value );
         }
@@ -2403,7 +2397,7 @@ namespace rs2
         {
         }
 
-        return option_was_set;
+        return true;
     }
 
     stream_model::stream_model()
