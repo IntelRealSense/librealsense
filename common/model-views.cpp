@@ -776,6 +776,7 @@ namespace rs2
                                 {
                                     delay_set = false;
                                     last_set_value = static_cast<float>(int_value);
+                                    *invalidate_flag = true;
                                     model.add_log( to_string() << "Setting " << opt << " to " << int_value );
                                     res = true;
                                 }
@@ -796,6 +797,8 @@ namespace rs2
                                         if (set_ok)
                                         {
                                             model.add_log(to_string() << "Setting " << opt << " to " << last_requested_value);
+                                            *invalidate_flag = true;
+                                            last_set_value = last_requested_value;
                                             delay_set = false;
                                             res = true;
                                         }
@@ -803,8 +806,6 @@ namespace rs2
                                     else
                                         delay_set = false;
                                 }
-
-                                if (res) *invalidate_flag = true;
                             }
                         }
                         else
@@ -861,6 +862,7 @@ namespace rs2
                                     delay_set = false;
                                     last_set_value = tmp_value;
                                     model.add_log(to_string() << "Setting " << opt << " to " << tmp_value);
+                                    *invalidate_flag = true;
                                     res = true;
                                 }
                                 else
@@ -880,6 +882,8 @@ namespace rs2
                                         if (set_ok)
                                         {
                                             model.add_log(to_string() << "Setting " << opt << " to " << last_requested_value);
+                                            *invalidate_flag = true;
+                                            last_set_value = last_requested_value;
                                             delay_set = false;
                                             res = true;
                                         }
@@ -888,8 +892,6 @@ namespace rs2
                                         delay_set = false;
 
                                 }
-
-                                if (res) *invalidate_flag = true;
                             }
                         }
                     }
