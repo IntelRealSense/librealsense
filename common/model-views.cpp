@@ -532,6 +532,8 @@ namespace rs2
         option.label = options->get_option_name(opt) + std::string("##") + ss.str();
         option.invalidate_flag = options_invalidated;
         option.dev = model;
+        option.range = { 0, 1, 0, 0 };
+        option.value = 0;
 
         option.supported = options->supports(opt);
         if (option.supported)
@@ -544,8 +546,6 @@ namespace rs2
             }
             catch (const error& e)
             {
-                option.range = { 0, 1, 0, 0 };
-                option.value = 0;
                 error_message = error_to_string(e);
             }
         }
@@ -771,10 +771,11 @@ namespace rs2
                                 static_cast<int>(range.step)))
                             {
                                 // TODO: Round to step?
-                                model.add_log(to_string() << "Setting " << opt << " to " << int_value);
-                                set_option(opt, static_cast<float>(int_value), error_message);
-                                *invalidate_flag = true;
-                                res = true;
+                                res = slider_selected( opt, static_cast< float >( int_value ), error_message, model );
+                            }
+                            else
+                            {
+                                res = slider_unselected( opt, static_cast< float >( int_value ), error_message, model );
                             }
                         }
                         else
@@ -811,6 +812,7 @@ namespace rs2
                             std::stringstream formatting_ss;
                             formatting_ss << "%." << num_of_decimal_digits_displayed << "f";
 
+
                             if (ImGui::SliderFloat(id.c_str(), &temp_value_displayed,
                                 min_range_displayed, max_range_displayed, formatting_ss.str().c_str()))
                             {
@@ -823,10 +825,12 @@ namespace rs2
                                     tmp_value = (loffset < roffset) ? tmp_value + loffset : tmp_value - roffset;
                                 tmp_value = (tmp_value < range.min) ? range.min : tmp_value;
                                 tmp_value = (tmp_value > range.max) ? range.max : tmp_value;
-                                model.add_log(to_string() << "Setting " << opt << " to " << tmp_value);
-                                set_option(opt, tmp_value, error_message);
-                                *invalidate_flag = true;
-                                res = true;
+
+                                res = slider_selected( opt, tmp_value, error_message, model );
+                            }
+                            else
+                            {
+                                res = slider_unselected( opt, tmp_value, error_message, model );
                             }
                         }
                     }
@@ -1006,6 +1010,59 @@ namespace rs2
         // Place here option restrictions
         return true;
     }
+
+    bool option_model::slider_selected( rs2_option opt,
+                                        float value,
+                                        std::string & error_message,
+                                        notifications_model & model )
+    {
+        bool res = false;
+        auto option_was_set
+            = set_option( opt, value, error_message, std::chrono::milliseconds( 200 ) );
+        if( option_was_set )
+        {
+            have_unset_value = false;
+            *invalidate_flag = true;
+            model.add_log( to_string() << "Setting " << opt << " to " << value );
+            res = true;
+        }
+        else
+        {
+            have_unset_value = true;
+            unset_value = value;
+        }
+        return res;
+    }
+    bool option_model::slider_unselected( rs2_option opt,
+                                          float value,
+                                          std::string & error_message,
+                                          notifications_model & model )
+    {
+        bool res = false;
+        // Slider unselected, if last value was ignored, set with last value if the value was
+        // changed.
+        if( have_unset_value )
+        {
+            if( value != unset_value )
+            {
+                auto set_ok = set_option( opt,
+                                          unset_value,
+                                          error_message,
+                                          std::chrono::milliseconds( 100 ) );
+                if( set_ok )
+                {
+                    model.add_log( to_string() << "Setting " << opt << " to " << unset_value );
+                    *invalidate_flag = true;
+                    have_unset_value = false;
+                    res = true;
+                }
+            }
+            else
+                have_unset_value = false;
+        }
+        return res;
+    }
+    
 
     void subdevice_model::populate_options(std::map<int, option_model>& opt_container,
         const std::string& opt_base_label,
@@ -2307,19 +2364,36 @@ namespace rs2
             return draw(error_message, model);
     }
 
-    void option_model::set_option(rs2_option opt, float req_value, std::string &error_message)
+    bool option_model::set_option( rs2_option opt,
+                                   float req_value,
+                                   std::string & error_message,
+                                   std::chrono::steady_clock::duration ignore_period )
     {
+        // Only set the value if `ignore_period` time past since last set_option() call for this option
+        if ( last_set_stopwatch.get_elapsed() < ignore_period )
+            return false;
+        
         try
         {
-            endpoint->set_option(opt, req_value);
+            last_set_stopwatch.reset();
+            endpoint->set_option( opt, req_value );
         }
-        catch (const error& e)
+        catch( const error & e )
         {
-            error_message = error_to_string(e);
+            error_message = error_to_string( e );
         }
-        // Only update the cached value once set_option is done! That way, if it doesn't change anything...
-        try { value = endpoint->get_option(opt); }
-        catch (...) {}
+
+        // Only update the cached value once set_option is done! That way, if it doesn't change
+        // anything...
+        try
+        {
+            value = endpoint->get_option( opt );
+        }
+        catch( ... )
+        {
+        }
+
+        return true;
     }
 
     stream_model::stream_model()

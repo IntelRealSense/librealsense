@@ -314,13 +314,19 @@ namespace rs2
         void update_supported(std::string& error_message);
         void update_read_only_status(std::string& error_message);
         void update_all_fields(std::string& error_message, notifications_model& model);
-        void set_option(rs2_option opt, float value, std::string &error_message);
+        bool set_option( rs2_option opt,
+                         float value,
+                         std::string & error_message,
+                         std::chrono::steady_clock::duration ignore_period = std::chrono::seconds( 0 ) );
         bool draw_option(bool update_read_only_options, bool is_streaming,
             std::string& error_message, notifications_model& model);
 
         rs2_option opt;
         option_range range;
         std::shared_ptr<options> endpoint;
+        float unset_value = 0;
+        bool have_unset_value = false;
+        utilities::time::stopwatch last_set_stopwatch;
         bool* invalidate_flag = nullptr;
         bool supported = false;
         bool read_only = false;
@@ -336,6 +342,15 @@ namespace rs2
         bool is_enum() const;
         bool is_checkbox() const;
         bool allow_change(float val, std::string& error_message) const; 
+        bool slider_selected( rs2_option opt,
+            float value,
+            std::string& error_message,
+            notifications_model& model);
+
+        bool slider_unselected(rs2_option opt,
+            float value,
+            std::string& error_message,
+            notifications_model& model);
     };
 
     class frame_queues
