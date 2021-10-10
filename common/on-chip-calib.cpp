@@ -2485,11 +2485,8 @@ namespace rs2
                 {
                     update_state = RS2_CALIB_STATE_CALIB_COMPLETE;
                     enable_dismiss = true;
-                    //Evgeni - should apply always if (get_manager().action != on_chip_calib_manager::RS2_CALIB_ACTION_UVMAPPING_CALIB)
-                    {
-                        get_manager().apply_calib(true);
-                        use_new_calib = true;
-                    }
+                    get_manager().apply_calib(true);
+                    use_new_calib = true;
                 }
 
                 if (!expanded)
@@ -2499,8 +2496,6 @@ namespace rs2
                         update_manager->check_error(_error_message);
                         update_state = RS2_CALIB_STATE_FAILED;
                         enable_dismiss = true;
-                        //pinned = false;
-                        //dismiss(false);
                     }
 
                     draw_progress_bar(win, bar_width);

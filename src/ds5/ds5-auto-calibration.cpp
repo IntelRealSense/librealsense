@@ -626,7 +626,7 @@ namespace librealsense
             }
             catch (const std::exception& ex)
             {
-                LOG_WARNING(ex.what());
+                LOG_INFO(ex.what());
             }
 
             if (progress_callback)
