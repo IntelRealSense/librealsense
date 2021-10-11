@@ -1,7 +1,7 @@
 # License: Apache 2.0. See LICENSE file in root directory.
 # Copyright(c) 2019 Intel Corporation. All Rights Reserved.
 
-cmake_minimum_required(VERSION 2.8.9)
+cmake_minimum_required(VERSION 2.8.9...3.20.5)
 
 project(realsense2-gl)
 
@@ -88,7 +88,7 @@ configure_package_config_file(../../CMake/realsense2-glConfig.cmake.in realsense
 
 configure_file(../../config/librealsense-gl.pc.in ../../config/realsense2-gl.pc @ONLY)
 
-target_link_libraries(${PROJECT_NAME} 
+target_link_libraries(${PROJECT_NAME}
     PRIVATE ${DEPENDENCIES}
 )
 

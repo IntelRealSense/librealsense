@@ -5,6 +5,8 @@
 
 #include "types.h"
 #include "core/streaming.h"
+#include "callback-invocation.h"
+
 
 namespace librealsense
 {
