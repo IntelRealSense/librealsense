@@ -1854,7 +1854,54 @@ namespace rs2
                 ImGui::SetCursorScreenPos({ float(x + 15), float(y + 33) });
                 ImGui::Text("%s", "Please make sure the target is inside yellow\nrectangle of both left and right images. Adjust\ncamera position if necessary before to start.");
 
-                ImGui::SetCursorScreenPos({ float(x + 25), float(y + 38) + 3 * ImGui::GetTextLineHeight() });
+                ImGui::SetCursorScreenPos({ float(x + 15), float(y + 70 + ImGui::GetTextLineHeightWithSpacing()) });
+                ImGui::Text("%s", "Target Width (mm):");
+                if (ImGui::IsItemHovered())
+                {
+                    ImGui::SetTooltip("%s", "The width of the rectangle in millimeters inside the specific target");
+                }
+
+                const int MAX_SIZE = 256;
+                char buff[MAX_SIZE];
+
+                ImGui::SetCursorScreenPos({ float(x + 145), float(y + 70 + ImGui::GetTextLineHeightWithSpacing()) });
+                std::string id = to_string() << "##target_width_" << index;
+                ImGui::PushItemWidth(80);
+                float target_width = config_file::instance().get_or_default(configurations::viewer::target_width_r, 175.0f);
+                std::string tw = to_string() << target_width;
+                memcpy(buff, tw.c_str(), tw.size() + 1);
+                if (ImGui::InputText(id.c_str(), buff, std::max((int)tw.size() + 1, 10)))
+                {
+                    std::stringstream ss;
+                    ss << buff;
+                    ss >> target_width;
+                    config_file::instance().set(configurations::viewer::target_width_r, target_width);
+                }
+                ImGui::PopItemWidth();
+
+                ImGui::SetCursorScreenPos({ float(x + 15), float(y + 80 + 2 * ImGui::GetTextLineHeightWithSpacing()) });
+                ImGui::Text("%s", "Target Height (mm):");
+                if (ImGui::IsItemHovered())
+                {
+                    ImGui::SetTooltip("%s", "The height of the rectangle in millimeters inside the specific target");
+                }
+
+                ImGui::SetCursorScreenPos({ float(x + 145), float(y + 77 + 2 * ImGui::GetTextLineHeightWithSpacing()) });
+                id = to_string() << "##target_height_" << index;
+                ImGui::PushItemWidth(80);
+                float target_height = config_file::instance().get_or_default(configurations::viewer::target_height_r, 100.0f);
+                std::string th = to_string() << target_height;
+                memcpy(buff, th.c_str(), th.size() + 1);
+                if (ImGui::InputText(id.c_str(), buff, std::max((int)th.size() + 1, 10)))
+                {
+                    std::stringstream ss;
+                    ss << buff;
+                    ss >> target_height;
+                    config_file::instance().set(configurations::viewer::target_height_r, target_height);
+                }
+                ImGui::PopItemWidth();
+
+                ImGui::SetCursorScreenPos({ float(x + 20), float(y + 95) + 3 * ImGui::GetTextLineHeight() });
                 bool adj_both = (get_manager().adjust_both_sides == 1);
                 if (ImGui::Checkbox("Adjust both sides focal length", &adj_both))
                     get_manager().adjust_both_sides = (adj_both ? 1 : 0);
@@ -2649,7 +2696,7 @@ namespace rs2
         else if (update_state == RS2_CALIB_STATE_GET_TARE_GROUND_TRUTH) return 135;
         else if (update_state == RS2_CALIB_STATE_GET_TARE_GROUND_TRUTH_FAILED) return 115;
         else if (update_state == RS2_CALIB_STATE_FAILED) return ((get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_OB_CALIB || get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_FL_CALIB) ? (get_manager().retry_times < 3 ? 0 : 80) : 110);
-        else if (update_state == RS2_CALIB_STATE_FL_INPUT) return 140;
+        else if (update_state == RS2_CALIB_STATE_FL_INPUT) return 200;
         else if (update_state == RS2_CALIB_STATE_UVMAPPING_INPUT) return 140;
         else return 100;
     }

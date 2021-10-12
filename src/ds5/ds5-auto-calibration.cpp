@@ -760,7 +760,7 @@ namespace librealsense
         }
         else if (status == RS2_DSC_STATUS_NO_DEPTH_AVERAGE)
         {
-            throw std::runtime_error("Calibration didn't converge! (NO_AVERAGE)\n"
+            throw std::runtime_error("Calibration didn't converge! - no depth average\n"
                 "Please retry in different lighting conditions");
         }
         else throw std::runtime_error(to_string() << "Calibration didn't converge! (RESULT=" << int(status) << ")");
