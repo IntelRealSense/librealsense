@@ -1598,7 +1598,7 @@ namespace librealsense
             memset(event_subscription.reserved,0, sizeof(event_subscription.reserved));
             if  (xioctl(_fd, VIDIOC_SUBSCRIBE_EVENT, &event_subscription) < 0)
             {
-                throw linux_backend_exception("xioctl(VIDIOC_SUBSCRIBE_EVENT) failed");
+                throw linux_backend_exception(to_string() << "xioctl(VIDIOC_SUBSCRIBE_EVENT) with control_id = " << control_id << " failed");
             }
         }
 
@@ -1611,7 +1611,7 @@ namespace librealsense
             memset(event_subscription.reserved,0, sizeof(event_subscription.reserved));
             if  (xioctl(_fd, VIDIOC_UNSUBSCRIBE_EVENT, &event_subscription) < 0)
             {
-                throw linux_backend_exception("xioctl(VIDIOC_UNSUBSCRIBE_EVENT) failed");
+                throw linux_backend_exception("xioctl(VIDIOC_UNSUBSCRIBE_EVENT) with control_id = " << control_id << " failed");
             }
         }
 
