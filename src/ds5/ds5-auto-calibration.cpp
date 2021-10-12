@@ -1570,15 +1570,11 @@ namespace librealsense
         if (gt[0] <= 0.1f || gt[1] <= 0.1f || gt[2] <= 0.1f || gt[3] <= 0.1f)
             throw std::runtime_error("Target distance calculation failed");
 
-
         // Target's plane Z value is the average of the four calculated corners
         target_z_value = 0.f;
         for (int i = 0; i < 4; ++i)
             target_z_value += gt[i];
         target_z_value /= 4.f;
-
-        //TODO Evgeni
-        //config_file::instance().set(configurations::viewer::ground_truth_r, ground_truth);
 
         return target_z_value;
     }

@@ -980,6 +980,10 @@ namespace rs2
                 auto calib_dev = _dev.as<auto_calibrated_device>();
                 _new_calib = calib_dev.run_uv_map_calibration(left, color, depth, py_px_only, _health_nums, 4,
                                                             [&](const float progress) {_progress = progress; });
+                if (!_new_calib.size())
+                    fail("UV-Mapping parameters are within spec\n Recalibration is skipped");
+                else
+                    log(to_string() << "UV-Mapping recalibration - new parameters were generated");
             }
             else
                 fail("Failed to capture sufficient amount of frames to run UV-Map calibration!");
@@ -990,7 +994,7 @@ namespace rs2
         }
         catch (...)
         {
-            fail("UV-Mapping calibration failed!\nPlease adjust the camera position\nand make sure the specific target is\ninsid the ROI of the camera images!");
+            fail("UV-Mapping calibration failed!\nPlease adjust the camera position\nand make sure the specific target is\ninside the ROI of the camera images!");
         }
     }
 
@@ -1251,7 +1255,9 @@ namespace rs2
     void on_chip_calib_manager::apply_calib(bool use_new)
     {
         auto calib_dev = _dev.as<auto_calibrated_device>();
-        calib_dev.set_calibration_table(use_new ? _new_calib : _old_calib);
+        auto calib_table = use_new ? _new_calib : _old_calib;
+        if (calib_table.size())
+            calib_dev.set_calibration_table(calib_table);
     }
 
     void autocalib_notification_model::draw_dismiss(ux_window& win, int x, int y)
