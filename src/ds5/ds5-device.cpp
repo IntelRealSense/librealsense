@@ -1081,8 +1081,32 @@ namespace librealsense
         {
             auto exposure_range = depth_sensor.get_option(RS2_OPTION_EXPOSURE).get_range();
             auto gain_range = depth_sensor.get_option(RS2_OPTION_GAIN).get_range();
-            depth_sensor.register_option(RS2_OPTION_AUTO_EXPOSURE_LIMIT, std::make_shared<auto_exposure_limit_option>(*_hw_monitor, &depth_sensor, exposure_range));
-            depth_sensor.register_option(RS2_OPTION_AUTO_GAIN_LIMIT, std::make_shared<auto_gain_limit_option>(*_hw_monitor, &depth_sensor, gain_range));
+
+            option_range enable_range = { 0.f /*min*/, 1.f /*max*/, 1.f /*step*/, 0.f /*default*/ };
+
+            //GAIN Limit
+            auto gain_limit_toggle_control = std::make_shared<limits_option>(RS2_OPTION_AUTO_GAIN_LIMIT_TOGGLE, enable_range, "Toggle Auto-Gain Limit", *_hw_monitor);
+            _gain_limit_value_control = std::make_shared<auto_gain_limit_option>(*_hw_monitor, &depth_sensor, gain_range, gain_limit_toggle_control);
+            depth_sensor.register_option(RS2_OPTION_AUTO_GAIN_LIMIT_TOGGLE, gain_limit_toggle_control);
+
+            depth_sensor.register_option(RS2_OPTION_AUTO_GAIN_LIMIT,
+                std::make_shared<auto_disabling_control>(
+                    _gain_limit_value_control,
+                    gain_limit_toggle_control
+                    
+                    ));
+
+            // EXPOSURE Limit
+            auto ae_limit_toggle_control = std::make_shared<limits_option>(RS2_OPTION_AUTO_EXPOSURE_LIMIT_TOGGLE, enable_range, "Toggle Auto-Exposure Limit", *_hw_monitor);
+            _ae_limit_value_control = std::make_shared<auto_exposure_limit_option>(*_hw_monitor, &depth_sensor, exposure_range, ae_limit_toggle_control);
+            depth_sensor.register_option(RS2_OPTION_AUTO_EXPOSURE_LIMIT_TOGGLE, ae_limit_toggle_control);
+
+            depth_sensor.register_option(RS2_OPTION_AUTO_EXPOSURE_LIMIT,
+                std::make_shared<auto_disabling_control>(
+                    _ae_limit_value_control,
+                    ae_limit_toggle_control
+                    
+                    ));
         }
 
         // attributes of md_capture_timing

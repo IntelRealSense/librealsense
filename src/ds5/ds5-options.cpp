@@ -655,19 +655,28 @@ namespace librealsense
             return _uvc_option->is_enabled();
     }
 
-    auto_exposure_limit_option::auto_exposure_limit_option(hw_monitor& hwm, sensor_base* ep, option_range range)
-        : option_base(range), _hwm(hwm), _sensor(ep)
+    auto_exposure_limit_option::auto_exposure_limit_option(hw_monitor& hwm, sensor_base* ep, option_range range, std::shared_ptr<limits_option> exposure_limit_enable)
+        : option_base(range), _hwm(hwm), _sensor(ep), _exposure_limit_toggle(exposure_limit_enable)
     {
         _range = [range]()
         {
             return range;
         };
+        if (auto toggle = _exposure_limit_toggle.lock())
+            toggle->set_cached_limit(range.max);
     }
 
     void auto_exposure_limit_option::set(float value)
     {
         if (!is_valid(value))
             throw invalid_value_exception("set(enable_auto_exposure) failed! Invalid Auto-Exposure mode request " + std::to_string(value));
+
+        if (auto toggle = _exposure_limit_toggle.lock())
+        {
+            toggle->set_cached_limit(value);
+            if (toggle->query() == 0.f)
+                toggle->set(1);
+        }
 
         command cmd_get(ds::AUTO_CALIB);
         cmd_get.param1 = 5;
@@ -692,7 +701,13 @@ namespace librealsense
         if (res.empty())
             throw invalid_value_exception("auto_exposure_limit_option::query result is empty!");
 
-        return static_cast<float>(*(reinterpret_cast<uint32_t*>(res.data())));
+        auto ret = static_cast<float>(*(reinterpret_cast<uint32_t*>(res.data())));
+        if (ret< get_range().min || ret > get_range().max)
+        {
+            if (auto toggle = _exposure_limit_toggle.lock())
+                return toggle->get_cached_limit();
+        }
+        return ret;
     }
 
     option_range auto_exposure_limit_option::get_range() const
@@ -700,19 +715,29 @@ namespace librealsense
         return *_range;
     }
 
-    auto_gain_limit_option::auto_gain_limit_option(hw_monitor& hwm, sensor_base* ep, option_range range)
-        : option_base(range), _hwm(hwm), _sensor(ep)
+    auto_gain_limit_option::auto_gain_limit_option(hw_monitor& hwm, sensor_base* ep, option_range range, std::shared_ptr <limits_option> gain_limit_enable)
+        : option_base(range), _hwm(hwm), _sensor(ep), _gain_limit_toggle(gain_limit_enable)
     {
         _range = [range]()
         {
             return range;
         };
+        if (auto toggle = _gain_limit_toggle.lock())
+            toggle->set_cached_limit(range.max);
     }
 
     void auto_gain_limit_option::set(float value)
     {
         if (!is_valid(value))
             throw invalid_value_exception("set(enable_auto_gain) failed! Invalid Auto-Gain mode request " + std::to_string(value));
+
+        if (auto toggle = _gain_limit_toggle.lock())
+        {
+            toggle->set_cached_limit(value);
+            if (toggle->query() == 0.f)
+                toggle->set(1);
+        }
+            
 
         command cmd_get(ds::AUTO_CALIB);
         cmd_get.param1 = 5;
@@ -737,7 +762,13 @@ namespace librealsense
         if (res.empty())
             throw invalid_value_exception("auto_exposure_limit_option::query result is empty!");
 
-        return static_cast<float>(*(reinterpret_cast<uint32_t*>(res.data() + 4)));
+        auto ret = static_cast<float>(*(reinterpret_cast<uint32_t*>(res.data() + 4)));
+        if (ret< get_range().min || ret > get_range().max)
+        {
+            if (auto toggle = _gain_limit_toggle.lock())
+                return toggle->get_cached_limit();
+        }
+        return ret;
     }
 
     option_range auto_gain_limit_option::get_range() const
