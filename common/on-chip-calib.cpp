@@ -1421,6 +1421,10 @@ namespace rs2
                 ImGui::PushStyleColor(ImGuiCol_ButtonHovered, saturate(sensor_header_light_blue, 1.5f));
                 ImGui::SetCursorScreenPos({ float(x + 9), float(y + height - 55) });
                 ImGui::Checkbox("Px/Py only", &get_manager().py_px_only);
+                if (ImGui::IsItemHovered())
+                {
+                    ImGui::SetTooltip("%s", "Calibrate: {Fx/Fy/Px/Py}/{Px/Py}");
+                }
 
                 ImGui::SetCursorScreenPos({ float(x + 9), float(y + height - 25) });
                 std::string button_name = to_string() << "Calibrate" << "##uvmapping" << index;
