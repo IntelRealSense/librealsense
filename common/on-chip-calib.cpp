@@ -1796,20 +1796,21 @@ namespace rs2
                         ImGui::SetTooltip("%s", "check = adjust both sides, uncheck = adjust right side only");
                 }
 
-                float tmp_y = (get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_OB_CALIB ?
-                    float(y + 45 + 3 * ImGui::GetTextLineHeightWithSpacing()) : float(y + 41 + 2 * ImGui::GetTextLineHeightWithSpacing()));
+                // Deprecase OCC-Extended
+                //float tmp_y = (get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_OB_CALIB ?
+                //    float(y + 45 + 3 * ImGui::GetTextLineHeightWithSpacing()) : float(y + 41 + 2 * ImGui::GetTextLineHeightWithSpacing()));
 
-                ImGui::SetCursorScreenPos({ float(x + 9), tmp_y });
-                if (ImGui::RadioButton("OCC", (int*)&(get_manager().action), 1))
-                    get_manager().action = on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_CALIB;
-                if (ImGui::IsItemHovered())
-                    ImGui::SetTooltip("%s", "On-chip calibration");
+                //ImGui::SetCursorScreenPos({ float(x + 9), tmp_y });
+                //if (ImGui::RadioButton("OCC", (int*)&(get_manager().action), 1))
+                //    get_manager().action = on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_CALIB;
+                //if (ImGui::IsItemHovered())
+                //    ImGui::SetTooltip("%s", "On-chip calibration");
 
-                ImGui::SetCursorScreenPos({ float(x + 135),  tmp_y });
-                if (ImGui::RadioButton("OCC Extended", (int *)&(get_manager().action), 0))
-                    get_manager().action = on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_OB_CALIB;
-                if (ImGui::IsItemHovered())
-                    ImGui::SetTooltip("%s", "On-Chip Calibration Extended");
+                //ImGui::SetCursorScreenPos({ float(x + 135),  tmp_y });
+                //if (ImGui::RadioButton("OCC Extended", (int *)&(get_manager().action), 0))
+                //    get_manager().action = on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_OB_CALIB;
+                //if (ImGui::IsItemHovered())
+                //    ImGui::SetTooltip("%s", "On-Chip Calibration Extended");
 
                 auto sat = 1.f + sin(duration_cast<milliseconds>(system_clock::now() - created_time).count() / 700.f) * 0.1f;
                 ImGui::PushStyleColor(ImGuiCol_Button, saturate(sensor_header_light_blue, sat));
@@ -2629,7 +2630,7 @@ namespace rs2
             }
             else return 80;
         }
-        else if (update_state == RS2_CALIB_STATE_SELF_INPUT) return (get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_OB_CALIB ? 160 : 140);
+        else if (update_state == RS2_CALIB_STATE_SELF_INPUT) return (get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_OB_CALIB ? 160 : 120);
         else if (update_state == RS2_CALIB_STATE_TARE_INPUT) return 85;
         else if (update_state == RS2_CALIB_STATE_TARE_INPUT_ADVANCED) return 220;
         else if (update_state == RS2_CALIB_STATE_GET_TARE_GROUND_TRUTH) return 135;
