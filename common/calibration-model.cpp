@@ -8,17 +8,18 @@
 
 using namespace rs2;
 
+calibration_model::calibration_model(rs2::device dev, std::shared_ptr<notifications_model> not_model)
+    : dev(dev), _not_model(not_model)
+{
+    _accept = config_file::instance().get_or_default(configurations::calibration::enable_writing, false);
+}
+
 bool calibration_model::supports()
 {
     bool is_d400 = dev.supports(RS2_CAMERA_INFO_PRODUCT_LINE) ?
         std::string(dev.get_info(RS2_CAMERA_INFO_PRODUCT_LINE)) == "D400" : false;
 
     return dev.is<rs2::auto_calibrated_device>() && is_d400;
-}
-
-calibration_model::calibration_model(rs2::device dev) : dev(dev)
-{
-    _accept = config_file::instance().get_or_default(configurations::calibration::enable_writing, false);
 }
 
 void calibration_model::draw_float(std::string name, float& x, const float& orig, bool& changed)
@@ -299,6 +300,12 @@ void calibration_model::update(ux_window& window, std::string& error_message)
                     _calibration = dev.as<rs2::auto_calibrated_device>().get_calibration_table();
                     _original = _calibration;
                     changed = true;
+
+                    if (auto nm = _not_model.lock())
+                    {
+                        nm->add_notification({ to_string() << "Depth Calibration is reset to Factory Settings",
+                            RS2_LOG_SEVERITY_INFO, RS2_NOTIFICATION_CATEGORY_HARDWARE_EVENT });
+                    }
                 }
                 catch(const std::exception& ex)
                 {

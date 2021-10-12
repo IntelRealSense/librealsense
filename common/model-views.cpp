@@ -4146,7 +4146,7 @@ namespace rs2
 
     device_model::device_model(device& dev, std::string& error_message, viewer_model& viewer, bool new_device_connected, bool remove)
         : dev(dev),
-        _calib_model(dev),
+        _calib_model(dev, viewer.not_model),
         syncer(viewer.syncer),
         _update_readonly_options_timer(std::chrono::seconds(6)),
         _detected_objects(std::make_shared< atomic_objects_in_frame >()),
