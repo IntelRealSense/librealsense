@@ -1280,8 +1280,9 @@ namespace librealsense
         {
             struct v4l2_control control = {get_cid(opt), value};
             if (RS2_OPTION_ENABLE_AUTO_EXPOSURE==opt) { control.value = value ? V4L2_EXPOSURE_APERTURE_PRIORITY : V4L2_EXPOSURE_MANUAL; }
-
-            std::lock_guard<std::mutex> lock(_set_ctrl_event_mutex);
+            
+            // We chose not to protect the subscribe / unsubscribe with mutex due to performance reasons,
+            // we prefer returning on timeout (and let the retry mechanism try again if exist) than blocking the main thread on every set command
 
             subscribe_to_ctrl_event(control.id);
 
