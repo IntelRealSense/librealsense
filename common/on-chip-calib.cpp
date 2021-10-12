@@ -1419,6 +1419,9 @@ namespace rs2
                 auto sat = 1.f + sin(duration_cast<milliseconds>(system_clock::now() - created_time).count() / 700.f) * 0.1f;
                 ImGui::PushStyleColor(ImGuiCol_Button, saturate(sensor_header_light_blue, sat));
                 ImGui::PushStyleColor(ImGuiCol_ButtonHovered, saturate(sensor_header_light_blue, 1.5f));
+                ImGui::SetCursorScreenPos({ float(x + 9), float(y + height - 55) });
+                ImGui::Checkbox("Px/Py only", &get_manager().py_px_only);
+
                 ImGui::SetCursorScreenPos({ float(x + 9), float(y + height - 25) });
                 std::string button_name = to_string() << "Calibrate" << "##uvmapping" << index;
                 if (ImGui::Button(button_name.c_str(), { float(bar_width - 60), 20.f }))
@@ -2633,7 +2636,7 @@ namespace rs2
         else if (update_state == RS2_CALIB_STATE_GET_TARE_GROUND_TRUTH_FAILED) return 115;
         else if (update_state == RS2_CALIB_STATE_FAILED) return ((get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_OB_CALIB || get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_FL_CALIB) ? (get_manager().retry_times < 3 ? 0 : 80) : 110);
         else if (update_state == RS2_CALIB_STATE_FL_INPUT) return 140;
-        else if (update_state == RS2_CALIB_STATE_UVMAPPING_INPUT) return 120;
+        else if (update_state == RS2_CALIB_STATE_UVMAPPING_INPUT) return 140;
         else return 100;
     }
 
