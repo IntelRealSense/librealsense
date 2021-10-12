@@ -316,6 +316,7 @@ namespace librealsense
             DirectSearchCalibrationResult result{};
 
             int count = 0;
+            int retries = 0;
             bool done = false;
 
             auto start = std::chrono::high_resolution_clock::now();
@@ -339,7 +340,10 @@ namespace librealsense
                 }
                 catch (const std::exception& ex)
                 {
-                    LOG_WARNING(ex.what());
+                    if (!((retries++) % 5)) // Add log debug once in a sec
+                    {
+                        LOG_DEBUG(ex.what());
+                    }
                 }
 
                 if (progress_callback)
@@ -741,17 +745,17 @@ namespace librealsense
     {
         if (status == RS2_DSC_STATUS_EDGE_TOO_CLOSE)
         {
-            throw std::runtime_error("Calibration didn't converge! (EDGE_TO_CLOSE)\n"
+            throw std::runtime_error("Calibration didn't converge! - edges too close\n"
                 "Please retry in different lighting conditions");
         }
         else if (status == RS2_DSC_STATUS_FILL_FACTOR_TOO_LOW)
         {
-            throw std::runtime_error("Not enough depth pixels! (FILL_FACTOR_LOW)\n"
+            throw std::runtime_error("Not enough depth pixels! - low fill factor)\n"
                 "Please retry in different lighting conditions");
         }
         else if (status == RS2_DSC_STATUS_NOT_CONVERGE)
         {
-            throw std::runtime_error("Calibration didn't converge! (NOT_CONVERGE)\n"
+            throw std::runtime_error("Calibration failed to converge\n"
                 "Please retry in different lighting conditions");
         }
         else if (status == RS2_DSC_STATUS_NO_DEPTH_AVERAGE)
