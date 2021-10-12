@@ -1280,6 +1280,12 @@ namespace librealsense
         {
             struct v4l2_control control = {get_cid(opt), value};
             if (RS2_OPTION_ENABLE_AUTO_EXPOSURE==opt) { control.value = value ? V4L2_EXPOSURE_APERTURE_PRIORITY : V4L2_EXPOSURE_MANUAL; }
+
+            std::lock_guard<std::mutex> lock(_set_ctrl_event_mutex);
+
+            subscribe_to_ctrl_event(control.id);
+
+            // Set value
             if (xioctl(_fd, VIDIOC_S_CTRL, &control) < 0)
             {
                 if (errno == EIO || errno == EAGAIN) // TODO: Log?
@@ -1287,6 +1293,11 @@ namespace librealsense
 
                 throw linux_backend_exception("xioctl(VIDIOC_S_CTRL) failed");
             }
+
+            if (!pend_for_ctrl_status_event())
+                return false;
+
+            unsubscribe_from_ctrl_event(control.id);
 
             return true;
         }
@@ -1575,6 +1586,51 @@ namespace librealsense
                 LOG_INFO("Video node was successfully configured to " << fourcc_to_string(fmt.fmt.pix.pixelformat) << " format" <<", fd " << std::dec << _fd);
 
             LOG_INFO("Trying to configure fourcc " << fourcc_to_string(fmt.fmt.pix.pixelformat));
+        }
+
+        void v4l_uvc_device::subscribe_to_ctrl_event( uint32_t control_id )
+        {
+            struct v4l2_event_subscription event_subscription ;
+            event_subscription.flags = V4L2_EVENT_SUB_FL_ALLOW_FEEDBACK;
+            event_subscription.type =  V4L2_EVENT_CTRL;
+            event_subscription.id = control_id;
+            memset(event_subscription.reserved,0, sizeof(event_subscription.reserved));
+            if  (xioctl(_fd, VIDIOC_SUBSCRIBE_EVENT, &event_subscription) < 0)
+            {
+                throw linux_backend_exception("xioctl(VIDIOC_SUBSCRIBE_EVENT) failed");
+            }
+        }
+
+        void v4l_uvc_device::unsubscribe_from_ctrl_event( uint32_t control_id )
+        {
+            struct v4l2_event_subscription event_subscription ;
+            event_subscription.flags = V4L2_EVENT_SUB_FL_ALLOW_FEEDBACK;
+            event_subscription.type =  V4L2_EVENT_CTRL;
+            event_subscription.id = control_id;
+            memset(event_subscription.reserved,0, sizeof(event_subscription.reserved));
+            if  (xioctl(_fd, VIDIOC_UNSUBSCRIBE_EVENT, &event_subscription) < 0)
+            {
+                throw linux_backend_exception("xioctl(VIDIOC_UNSUBSCRIBE_EVENT) failed");
+            }
+        }
+
+
+        bool v4l_uvc_device::pend_for_ctrl_status_event()
+        {
+            struct v4l2_event event;
+            memset(&event, 0 , sizeof(event));
+
+            // Poll registered events and verify that set control event raised (wait max of 6 * 5 = 30 [ms])
+            static int MAX_POLL_RETRIES = 6;
+            for ( int i = 0 ; i < MAX_POLL_RETRIES && event.type != V4L2_EVENT_CTRL ; i++)
+            {
+                if(xioctl(_fd, VIDIOC_DQEVENT, &event) < 0)
+                {
+                    std::this_thread::sleep_for(std::chrono::milliseconds(5));
+                }
+            }
+
+            return event.type == V4L2_EVENT_CTRL;
         }
 
         v4l_uvc_meta_device::v4l_uvc_meta_device(const uvc_device_info& info, bool use_memory_map):
