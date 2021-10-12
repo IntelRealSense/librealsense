@@ -12,6 +12,7 @@
 #include <model-views.h>
 #include <viewer.h>
 #include "calibration-model.h"
+#include "os.h"
 #include "../src/algo.h"
 #include "../tools/depth-quality/depth-metrics.h"
 
@@ -959,11 +960,11 @@ namespace rs2
             float step = 50.f / frames_required; // The first stage represents 50% of the calibration process
 
             // Stage 1 : Gather frames from Depth/Left IR and RGB streams
-            while (counter < frames_required) // TODO timeout Evgeni
+            while (counter < frames_required)
             {
-                auto fl = _viewer.ppf.frames_queue[_uid].wait_for_frame(1000); // left
-                auto fd = _viewer.ppf.frames_queue[_uid2].wait_for_frame(1000); // depth
-                auto fc = _viewer.ppf.frames_queue[_uid_color].wait_for_frame(1000); // rgb
+                auto fl = _viewer.ppf.frames_queue[_uid].wait_for_frame(); // left
+                auto fd = _viewer.ppf.frames_queue[_uid2].wait_for_frame(); // depth
+                auto fc = _viewer.ppf.frames_queue[_uid_color].wait_for_frame(); // rgb
 
                 if (fl && fd && fc)
                 {
@@ -1110,8 +1111,16 @@ namespace rs2
         if (action == RS2_CALIB_ACTION_FL_CALIB || action == RS2_CALIB_ACTION_UVMAPPING_CALIB)
             _viewer.is_3d_view = false;
 
+        auto fps = 30;
+        if (_sub->dev.supports(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR))
+        {
+            std::string desc = _sub->dev.get_info(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR);
+            if (!starts_with(desc, "3."))
+                fps = 5; //USB2 bandwidth limitation for 720P RGB/DI
+        }
+
         if (action == RS2_CALIB_ACTION_FL_CALIB || action == RS2_CALIB_ACTION_TARE_GROUND_TRUTH || action == RS2_CALIB_ACTION_UVMAPPING_CALIB)
-            try_start_viewer(1280, 720, 30, invoke);
+            try_start_viewer(1280, 720, fps, invoke);
         else
             try_start_viewer(256, 144, 90, invoke);
 
