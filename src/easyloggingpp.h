@@ -4,8 +4,8 @@
 #pragma once
 
 #if BUILD_EASYLOGGINGPP
-
 #include "../third-party/easyloggingpp/src/easylogging++.h"
+namespace librealsense {
 
 #ifdef RS2_USE_ANDROID_BACKEND
 #include <android/log.h>
@@ -45,3 +45,4 @@
 
 
 #endif // BUILD_EASYLOGGINGPP
+}
