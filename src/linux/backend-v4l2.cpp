@@ -1284,6 +1284,12 @@ namespace librealsense
             // We chose not to protect the subscribe / unsubscribe with mutex due to performance reasons,
             // we prefer returning on timeout (and let the retry mechanism try again if exist) than blocking the main thread on every set command
 
+
+            // RAII to handle unsubscribe in case of exceptions
+            std::unique_ptr<uint32_t, std::function<void(uint32_t*)> > unsubscriber(
+                        new uint32_t(control.id),
+                        [this](uint32_t* id){ if (id) unsubscribe_from_ctrl_event(*id); });
+
             subscribe_to_ctrl_event(control.id);
 
             // Set value
@@ -1297,8 +1303,6 @@ namespace librealsense
 
             if (!pend_for_ctrl_status_event())
                 return false;
-
-            unsubscribe_from_ctrl_event(control.id);
 
             return true;
         }
@@ -1611,7 +1615,7 @@ namespace librealsense
             memset(event_subscription.reserved,0, sizeof(event_subscription.reserved));
             if  (xioctl(_fd, VIDIOC_UNSUBSCRIBE_EVENT, &event_subscription) < 0)
             {
-                throw linux_backend_exception("xioctl(VIDIOC_UNSUBSCRIBE_EVENT) with control_id = " << control_id << " failed");
+                throw linux_backend_exception(to_string() << "xioctl(VIDIOC_UNSUBSCRIBE_EVENT) with control_id = " << control_id << " failed");
             }
         }
 
