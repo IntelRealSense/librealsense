@@ -405,7 +405,7 @@ namespace rs2
                 _sub->s->set_option(RS2_OPTION_THERMAL_COMPENSATION, 0.f);
             }
 
-            bool run_fl_calib = action == RS2_CALIB_ACTION_FL_CALIB && w == 1280 && h == 720 && fps == 30;
+            bool run_fl_calib = ( (action == RS2_CALIB_ACTION_FL_CALIB) && (w == 1280) && (h == 720) && (fps == 30));
             if (action == RS2_CALIB_ACTION_TARE_GROUND_TRUTH)
             {
                 _uid = 1;
