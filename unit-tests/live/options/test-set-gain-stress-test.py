@@ -21,14 +21,25 @@ dev = test.find_first_device_or_exit()
 time.sleep( 3 ) # The device starts at D0 (Operational) state, allow time for it to get into idle state
 depth_ir_sensor = dev.first_depth_sensor()
 
+# Test only devices that supports set gain option
+if not depth_ir_sensor.supports(rs.option.gain):
+    test.finish()
+    test.print_results_and_exit()
+
+
 for i in range(test_iterations):
-    log.d("{} Itearion {} {}".format("=" * 50, i, "=" * 50))
+    log.d("{} Iteration {} {}".format("=" * 50, i, "=" * 50))
 
     # Reset Control values
     log.d("Resetting Controls...")
-    depth_ir_sensor.set_option(rs.option.enable_auto_exposure, 0)
-    depth_ir_sensor.set_option(rs.option.exposure, 1)
-    depth_ir_sensor.set_option(rs.option.gain, 248)
+
+    if (depth_ir_sensor.supports(rs.option.enable_auto_exposure)):
+        depth_ir_sensor.set_option(rs.option.enable_auto_exposure, 0)
+    if (depth_ir_sensor.supports(rs.option.exposure)):
+        depth_ir_sensor.set_option(rs.option.exposure, 1)
+
+        depth_ir_sensor.set_option(rs.option.gain, 248)
+
     log.d("Resetting Controls Done")
 
     time.sleep(0.1)
