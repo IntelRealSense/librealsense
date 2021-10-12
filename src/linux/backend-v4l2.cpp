@@ -1625,13 +1625,13 @@ namespace librealsense
             struct v4l2_event event;
             memset(&event, 0 , sizeof(event));
 
-            // Poll registered events and verify that set control event raised (wait max of 6 * 5 = 30 [ms])
-            static int MAX_POLL_RETRIES = 6;
+            // Poll registered events and verify that set control event raised (wait max of 10 * 2 = 20 [ms])
+            static int MAX_POLL_RETRIES = 10;
             for ( int i = 0 ; i < MAX_POLL_RETRIES && event.type != V4L2_EVENT_CTRL ; i++)
             {
                 if(xioctl(_fd, VIDIOC_DQEVENT, &event) < 0)
                 {
-                    std::this_thread::sleep_for(std::chrono::milliseconds(5));
+                    std::this_thread::sleep_for(std::chrono::milliseconds(2));
                 }
             }
 
