@@ -319,6 +319,9 @@ namespace librealsense
             virtual void prepare_capture_buffers() override;
             virtual void stop_data_capture() override;
             virtual void acquire_metadata(buffers_mgr & buf_mgr,fd_set &fds, bool compressed_format = false) override;
+            void subscribe_to_ctrl_event(uint32_t control_id);
+            void unsubscribe_from_ctrl_event(uint32_t control_id);
+            bool pend_for_ctrl_status_event();
 
             power_state _state = D3;
             std::string _name = "";
