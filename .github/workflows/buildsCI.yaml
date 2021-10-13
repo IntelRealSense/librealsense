@@ -313,9 +313,7 @@ jobs:
       run: |
         cd build
         # `OPENSSL_ROOT_DIR` setting is Used by libcurl for 'CHECK_FOR_UPDATES' capability
-        # GH machines deploy SSL at a specific location, see - https://github.com/actions/virtual-environments/blob/72f8e1a948d9c50f1fc9a1d5d50fa5ddda856707/images/macos/macos-10.15-Readme.md#L87
-        export OPENSSL_ROOT_DIR="/usr/local/Cellar/openssl@1.1/1.1.1l_1"
-        
+        export OPENSSL_ROOT_DIR=`readlink /usr/local/opt/openssl`        
         cmake .. -DBUILD_EXAMPLES=true -DBUILD_WITH_OPENMP=false -DHWM_OVER_XU=false -DCHECK_FOR_UPDATES=true
         cmake --build . --config ${{env.LRS_BUILD_CONFIG}} -- -j4
         ls
