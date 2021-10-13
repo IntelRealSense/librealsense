@@ -21,9 +21,12 @@ namespace rs2
     on_chip_calib_manager::on_chip_calib_manager(viewer_model& viewer, std::shared_ptr<subdevice_model> sub, device_model& model, device dev, std::shared_ptr<subdevice_model> sub_color, bool uvmapping_calib_full)
         : process_manager("On-Chip Calibration"), _model(model), _dev(dev), _sub(sub), _viewer(viewer), _sub_color(sub_color), py_px_only(!uvmapping_calib_full)
     {
-        auto dev_name = dev.get_info(RS2_CAMERA_INFO_NAME);
-        if (!strcmp(dev_name, "Intel RealSense D415"))
-            speed = 4;
+        if (dev.supports(RS2_CAMERA_INFO_PRODUCT_ID))
+        {
+            std::string dev_pid = dev.get_info(RS2_CAMERA_INFO_PRODUCT_ID);
+            if (val_in_range(dev_pid, { std::string("0AD3") }))
+                speed = 4;
+        }
     }
 
     on_chip_calib_manager::~on_chip_calib_manager()
@@ -177,7 +180,7 @@ namespace rs2
             _uid = 1;
             for (const auto& format : _sub->formats)
             {
-                if (format.second[0] == "Y8")
+                if (format.second[0] == Y8_FORMAT)
                 {
                     _uid = format.first;
                     break;
@@ -230,7 +233,7 @@ namespace rs2
             bool first_done = 0;
             for (const auto& format : _sub->formats)
             {
-                if (format.second[0] == "Y8")
+                if (format.second[0] == Y8_FORMAT)
                 {
                     if (!first_done)
                     {
@@ -296,13 +299,13 @@ namespace rs2
                 bool second_done = 0;
                 for (const auto& format : _sub->formats)
                 {
-                    if (format.second[0] == "Y8" && !first_done)
+                    if (format.second[0] == Y8_FORMAT && !first_done)
                     {
                         _uid = format.first;
                         first_done = true;
                     }
 
-                    if (format.second[0] == "Z16" && !second_done)
+                    if (format.second[0] == Z16_FORMAT && !second_done)
                     {
                         _uid2 = format.first;
                         second_done = true;
@@ -317,9 +320,9 @@ namespace rs2
                 for (const auto& format : _sub_color->formats)
                 {
                     int done = false;
-                    for (int i = 0; i < format.second.size(); ++i)
+                    for (int i = 0; i < int(format.second.size()); ++i)
                     {
-                        if (format.second[i] == "RGB8")
+                        if (format.second[i] == RGB8_FORMAT)
                         {
                             _uid_color = format.first;
                             _sub_color->ui.selected_format_id[_uid_color] = i;
@@ -341,7 +344,7 @@ namespace rs2
                 _sub->ui.selected_format_id[_uid2] = 0;
 
                 // Select FPS value
-                for (int i = 0; i < _sub->shared_fps_values.size(); i++)
+                for (int i = 0; i < int(_sub->shared_fps_values.size()); i++)
                 {
                     if (_sub->shared_fps_values[i] == 30)
                         _sub->ui.selected_shared_fps_id = i;
@@ -412,7 +415,7 @@ namespace rs2
                 _uid = 1;
                 for (const auto& format : _sub->formats)
                 {
-                    if (format.second[0] == "Y8")
+                    if (format.second[0] == Y8_FORMAT)
                     {
                         _uid = format.first;
                         break;
@@ -428,13 +431,13 @@ namespace rs2
                 bool second_done = false;
                 for (const auto& format : _sub->formats)
                 {
-                    if (format.second[0] == "Y8" && !first_done)
+                    if (format.second[0] == Y8_FORMAT && !first_done)
                     {
                         _uid = format.first;
                         first_done = true;
                     }
 
-                    if (format.second[0] == "Z16" && !second_done)
+                    if (format.second[0] == Z16_FORMAT && !second_done)
                     {
                         _uid2 = format.first;
                         second_done = true;
@@ -451,7 +454,7 @@ namespace rs2
                     int done = false;
                     for (int i = 0; i < format.second.size(); ++i)
                     {
-                        if (format.second[i] == "RGB8")
+                        if (format.second[i] == RGB8_FORMAT)
                         {
                             _uid_color = format.first;
                             _sub_color->ui.selected_format_id[_uid_color] = i;
@@ -475,7 +478,7 @@ namespace rs2
                 bool first_done = false;
                 for (const auto& format : _sub->formats)
                 {
-                    if (format.second[0] == "Y8")
+                    if (format.second[0] == Y8_FORMAT)
                     {
                         if (!first_done)
                         {
@@ -500,7 +503,7 @@ namespace rs2
                 _uid = 0;
                 for (const auto& format : _sub->formats)
                 {
-                    if (format.second[0] == "Z16")
+                    if (format.second[0] == Z16_FORMAT)
                     {
                         _uid = format.first;
                         break;
@@ -908,7 +911,7 @@ namespace rs2
             float step = 50.f / frames_required; // The first stage represents 50% of the calibration process
 
             // Stage 1 : Gather frames from Left/Right IR sensors
-            while (counter < frames_required) // TODO timeout Evgeni
+            while (counter < frames_required) // TODO timeout
             {
                 auto fl = _viewer.ppf.frames_queue[_uid].wait_for_frame();    // left intensity
                 auto fr = _viewer.ppf.frames_queue[_uid2].wait_for_frame();   // right intensity
@@ -982,9 +985,9 @@ namespace rs2
                 _new_calib = calib_dev.run_uv_map_calibration(left, color, depth, py_px_only, _health_nums, 4,
                                                             [&](const float progress) {_progress = progress; });
                 if (!_new_calib.size())
-                    fail("UV-Mapping parameters are within spec\n Recalibration is skipped");
+                    fail("UV-Mapping calibration failed!\nPlease adjust the camera position\nand make sure the specific target is\ninside the ROI of the camera images!");
                 else
-                    log(to_string() << "UV-Mapping recalibration - new parameters were generated");
+                    log(to_string() << "UV-Mapping recalibration - a new work poin was generated");
             }
             else
                 fail("Failed to capture sufficient amount of frames to run UV-Map calibration!");
@@ -1239,27 +1242,6 @@ namespace rs2
         auto calib_dev = _dev.as<auto_calibrated_device>();
         calib_dev.write_calibration();
     }
-
-    //void on_chip_calib_manager::keep_uvmapping_calib()
-    //{
-    //    std::vector<uint8_t> cmd =
-    //    {
-    //        0x14, 0x00, 0xab, 0xcd,
-    //        0x62, 0x00, 0x00, 0x00,
-    //        0x20, 0x00, 0x00, 0x00,
-    //        0x01, 0x00, 0x00, 0x00,
-    //        0x00, 0x00, 0x00, 0x00,
-    //        0x00, 0x00, 0x00, 0x00
-    //    };
-
-    //    cmd.insert(cmd.end(), color_intrin_raw_data.data(), color_intrin_raw_data.data() + color_intrin_raw_data.size());
-    //    uint16_t* psize = reinterpret_cast<uint16_t*>(cmd.data());
-    //    *psize = static_cast<uint16_t>(cmd.size() - 4);
-    //    const rs2_raw_data_buffer* raw_buf = rs2_send_and_receive_raw_data(_dev.get().get(), cmd.data(), static_cast<unsigned int>(cmd.size()), nullptr);
-    //    rs2_delete_raw_data(raw_buf);
-
-    //    _dev.hardware_reset(); // Workaround for reloading color calibration table. Other approach?
-    //}
 
     void on_chip_calib_manager::apply_calib(bool use_new)
     {
@@ -2066,8 +2048,6 @@ namespace rs2
                     std::string button_name = to_string() << "Apply" << "##apply" << index;
                     if (ImGui::Button(button_name.c_str(), { float(bar_width - 60), 20.f }))
                     {
-                        //Evgeni - this is buggy code
-                        //get_manager().keep_uvmapping_calib();
                         get_manager().apply_calib(true);     // Store the new calibration internally
                         get_manager().keep();            // Flash the new calibration
                         if (RS2_CALIB_STATE_UVMAPPING_INPUT == update_state)

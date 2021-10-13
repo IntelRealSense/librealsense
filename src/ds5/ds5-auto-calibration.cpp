@@ -1501,7 +1501,7 @@ namespace librealsense
 
     float auto_calibrated::calculate_target_z(rs2_frame_queue* queue, float target_w, float target_h, update_progress_callback_ptr progress_callback)
     {
-        constexpr size_t min_frames_required = 20;
+        constexpr size_t min_frames_required = 10;
         bool created = false;
 
         float4 rect_sides{};
@@ -1550,7 +1550,7 @@ namespace librealsense
 
         }
 
-        // Verify that at least TBD Evgeni valid extractions were made
+        // Verify that at least TBD  valid extractions were made
         if ((frm_idx < min_frames_required))
             throw std::runtime_error(to_string() << "Target distance calculation requires at least " << min_frames_required << " frames, aborting");
         if (float(rec_sides_data.size()/frm_idx) < 0.5f)

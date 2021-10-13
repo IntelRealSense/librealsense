@@ -8,6 +8,7 @@
 #include "../src/algo.h"
 
 #include <random>
+#include <string>
 
 namespace rs2
 {
@@ -92,6 +93,11 @@ namespace rs2
         std::shared_ptr<subdevice_model> _sub_color;
 
         bool py_px_only = false;
+
+        const std::string Y8_FORMAT = "Y8";
+        const std::string Z16_FORMAT = "Z16";
+        const std::string RGB8_FORMAT = "RGB8";
+
 
         void calibrate();
         void calibrate_fl();
