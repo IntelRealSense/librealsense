@@ -30,6 +30,7 @@
 
   <build_depend>libusb-1.0-dev</build_depend>
   <build_depend>libssl-dev</build_depend>
+  <build_depend>libudev-dev</build_depend>
   <build_depend>dkms</build_depend>
   <build_depend>udev</build_depend>
 
