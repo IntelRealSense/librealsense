@@ -50,8 +50,6 @@ for i in range(test_iterations):
         test.check(val == get_val)
         log.d("Gain Set To: {}".format(get_val))
 
-        time.sleep(0.1)
-
 test.finish()
 
 ################################################################################################
