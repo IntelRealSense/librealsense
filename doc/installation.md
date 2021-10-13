@@ -54,9 +54,9 @@ The scripts and commands below invoke `wget, git, add-apt-repository` which may 
 
   **Note**: 
 
-* on graphic sub-system utilization:<br />
+    * on graphic sub-system utilization:<br />
        *glfw3*, *mesa* and *gtk* packages are required if you plan to build the SDK's OpenGL-enabled examples. The *librealsense* core library and a range of demos/tools are designed for headless environment deployment.
-* `libudev-dev` installation is optional but recommended, when the `libudev-dev` is installed the SDK will use an event driven approach for triggering USB detection and enumeration, if not the SDK will use a timer polling approach which is less sensitive for device detection.
+    * `libudev-dev` installation is optional but recommended, when the `libudev-dev` is installed the SDK will use an event-driven approach for triggering USB detection and enumeration, if not the SDK will use a timer polling approach which is less sensitive for device detection.
 
   3. Run Intel Realsense permissions script from librealsense root directory:<br />
     `./scripts/setup_udev_rules.sh`  
@@ -66,7 +66,7 @@ The scripts and commands below invoke `wget, git, add-apt-repository` which may 
 
   4. Build and apply patched kernel modules for: <br />
 
-    * **Ubuntu 14/16/18 with LTS kernel**
+    * **Ubuntu 14/16/18/20 with LTS kernel**
       `./scripts/patch-realsense-ubuntu-lts.sh`<br />
     * **Ubuntu with Kernel 4.16**
       `./scripts/patch-ubuntu-kernel-4.16.sh`<br />  
