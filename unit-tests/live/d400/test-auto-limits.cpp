@@ -55,7 +55,7 @@ TEST_CASE("Gain/ Exposure auto limits", "[live]")
                 //    - Turn toggle off
                 //    - Turn toggle on
                 //    - Check that control limit value is the latest value
-                float values[3] = { range.min + 5.0,  range.max / 4.0, range.max - 5.0 };
+                float values[3] = { range.min + 5.0f,  range.max / 4.0f, range.max - 5.0f };
                 for (auto& val : values)
                     s.set_option(limits_value[i], val);
                 s.set_option(limits_toggle[i], 0.0); // off
@@ -82,9 +82,9 @@ TEST_CASE("Gain/ Exposure auto limits", "[live]")
         auto s2 = picked_sensor[1][limits_value[i]];
 
         auto range = s1.get_option_range(limits_value[i]); // should be same range from both sensors
-        s1.set_option(limits_value[i], range.max / 4.0);
+        s1.set_option(limits_value[i], range.max / 4.0f);
         s1.set_option(limits_toggle[i], 0.0); // off
-        s2.set_option(limits_value[i], range.max - 5.0);
+        s2.set_option(limits_value[i], range.max - 5.0f);
         s2.set_option(limits_toggle[i], 0.0); // off
 
         // 2.1
