@@ -1288,7 +1288,7 @@ namespace librealsense
             // RAII to handle unsubscribe in case of exceptions
             std::unique_ptr<uint32_t, std::function<void(uint32_t*)> > unsubscriber(
                         new uint32_t(control.id),
-                        [this](uint32_t* id){ if (id) unsubscribe_from_ctrl_event(*id); });
+                [this](uint32_t* id) { if (id) unsubscribe_from_ctrl_event(*id); delete id; });
 
             subscribe_to_ctrl_event(control.id);
 
