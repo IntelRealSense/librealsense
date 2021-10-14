@@ -343,7 +343,7 @@ jobs:
     - name: Build
       run: |
        cd build
-       cmake .. -DCMAKE_TOOLCHAIN_FILE=../android-ndk-r20b/build/cmake/android.toolchain.cmake
+       cmake .. -DCMAKE_TOOLCHAIN_FILE=../android-ndk-r20b/build/cmake/android.toolchain.cmake -DFORCE_RSUSB_BACKEND=true
        cmake --build . --config ${{env.LRS_BUILD_CONFIG}} -- -j4
        ls
   
