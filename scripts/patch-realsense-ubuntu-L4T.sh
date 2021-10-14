@@ -61,7 +61,7 @@ case ${JETSON_L4T_VERSION} in
     PATCHES_REV="4.4.1"	# JP 4.4.1
     ;;
   *)
-    echo -e "\e[41mUnsipported JetPack revision ${JETSON_L4T_VERSION} aborting script\e[0m"
+    echo -e "\e[41mUnsupported JetPack revision ${JETSON_L4T_VERSION} aborting script\e[0m"
     exit;
     ;;
 esac
