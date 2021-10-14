@@ -22,7 +22,7 @@ namespace librealsense
         serialized_utilities::json_preset_writer writer;
         writer.set_device_info(_depth_sensor.get_device());
 
-        return ivcam2::group_multiple_fw_calls( _depth_sensor, [&]() {
+        return group_multiple_fw_calls( _depth_sensor, [&]() {
 
             auto options = _depth_sensor.get_supported_options();
 
@@ -45,7 +45,7 @@ namespace librealsense
         // Verify if device information in preset file is compatible with the connected device.
         reader.check_device_info(_depth_sensor.get_device());
         
-        return ivcam2::group_multiple_fw_calls(_depth_sensor, [&]() {
+        return group_multiple_fw_calls(_depth_sensor, [&]() {
 
             // Set of options that should not be set in the loop
             std::set< rs2_option > options_to_ignore{ RS2_OPTION_SENSOR_MODE,
