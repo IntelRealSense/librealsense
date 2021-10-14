@@ -7,7 +7,7 @@
 #include "../third-party/easyloggingpp/src/easylogging++.h"
 
 
-#ifdef RS2_USE_ANDROID_BACKEND
+#ifdef __ANDROID__  
 #include <android/log.h>
 #include <sstream>
 
@@ -23,7 +23,7 @@
 #define LOG_DEBUG(...)   do { std::ostringstream ss; ss << __VA_ARGS__; __android_log_write(librealsense::ANDROID_LOG_DEBUG, LOG_TAG, ss.str().c_str()); } while(false)
 #endif
 
-#else //RS2_USE_ANDROID_BACKEND
+#else //__ANDROID__  
 
 #define LOG_DEBUG(...)   do { CLOG(DEBUG   ,"librealsense") << __VA_ARGS__; } while(false)
 #define LOG_INFO(...)    do { CLOG(INFO    ,"librealsense") << __VA_ARGS__; } while(false)
@@ -31,7 +31,7 @@
 #define LOG_ERROR(...)   do { CLOG(ERROR   ,"librealsense") << __VA_ARGS__; } while(false)
 #define LOG_FATAL(...)   do { CLOG(FATAL   ,"librealsense") << __VA_ARGS__; } while(false)
 
-#endif // RS2_USE_ANDROID_BACKEND
+#endif // __ANDROID__  
 
 
 #else // BUILD_EASYLOGGINGPP
