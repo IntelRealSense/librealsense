@@ -20,7 +20,7 @@
 #ifdef NDEBUG
 #define LOG_DEBUG(...)
 #else
-#define LOG_DEBUG(...)   do { std::ostringstream ss; ss << __VA_ARGS__; __android_log_write(librealsense::ANDROID_LOG_DEBUG, LOG_TAG, ss.str().c_str()); } while(false)
+#define LOG_DEBUG(...)   do { std::ostringstream ss; ss << __VA_ARGS__; __android_log_write( ANDROID_LOG_DEBUG, ANDROID_LOG_TAG, ss.str().c_str() ); } while(false)
 #endif
 
 #else //__ANDROID__  
