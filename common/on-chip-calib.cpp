@@ -901,6 +901,8 @@ namespace rs2
         config_file::instance().set(id.c_str(), (long long)rawtime);
     }
 
+    // fill_missing_data:
+    // Fill every zeros section linearly based on the section's edges.
     void on_chip_calib_manager::fill_missing_data(uint16_t data[256], int size)
     {
         int counter = 0;
@@ -983,20 +985,7 @@ namespace rs2
         }
 
         std::stringstream ss;
-        if (action == RS2_CALIB_ACTION_ON_CHIP_CALIB)
-        {
-            ss << "{\n \"calib type\":" << 0 <<
-                  ",\n \"host assistance\":" << host_assistance <<
-                  ",\n \"speed\":" << speed <<
-                  ",\n \"average step count\":" << average_step_count <<
-                  ",\n \"scan parameter\":" << (intrinsic_scan ? 0 : 1) <<
-                  ",\n \"step count\":" << step_count <<
-                  ",\n \"apply preset\":" << (apply_preset ? 1 : 0) <<
-                  ",\n \"accuracy\":" << accuracy <<
-                  ",\n \"scan only\":" << (host_assistance ? 1 : 0) <<
-                  ",\n \"interactive scan\":" << 0 << "}";
-        }
-        else if (action == RS2_CALIB_ACTION_ON_CHIP_FL_CALIB)
+        if (action == RS2_CALIB_ACTION_ON_CHIP_FL_CALIB)
         {
             ss << "{\n \"calib type\":" << 1 <<
                   ",\n \"host assistance\":" << host_assistance <<
@@ -1010,6 +999,19 @@ namespace rs2
                   ",\n \"white wall mode\":" << white_wall_mode <<
                   ",\n \"scan only\":" << (host_assistance ? 1 : 0) <<
                   ",\n \"interactive scan\":" << 0 << "}";
+        }
+        else if (action == RS2_CALIB_ACTION_ON_CHIP_CALIB)
+        {
+            ss << "{\n \"calib type\":" << 0 <<
+                ",\n \"host assistance\":" << host_assistance <<
+                ",\n \"speed\":" << speed <<
+                ",\n \"average step count\":" << average_step_count <<
+                ",\n \"scan parameter\":" << (intrinsic_scan ? 0 : 1) <<
+                ",\n \"step count\":" << step_count <<
+                ",\n \"apply preset\":" << (apply_preset ? 1 : 0) <<
+                ",\n \"accuracy\":" << accuracy <<
+                ",\n \"scan only\":" << (host_assistance ? 1 : 0) <<
+                ",\n \"interactive scan\":" << 0 << "}";
         }
         else
         {
@@ -1089,6 +1091,7 @@ namespace rs2
             {
                //_viewer.not_model->add_log(to_string() << "TARE, start_frame_counter=" << start_frame_counter << ", frame_counter=" << frame_counter);
 
+                // Skip frames until interactive process begins:
                 auto start_time = std::chrono::high_resolution_clock::now();
                 auto now = start_time;
                 while (frame_counter >= start_frame_counter)
