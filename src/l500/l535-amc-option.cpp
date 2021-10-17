@@ -18,7 +18,7 @@ amc_option::amc_option( librealsense::l500_device * l500_dev,
     , _description( description )
 {
     // Keep the USB power on while triggering multiple calls on it.
-    ivcam2::group_multiple_fw_calls( _device->get_depth_sensor(), [&]() {
+    group_multiple_fw_calls( _device->get_depth_sensor(), [&]() {
         auto min = _hw_monitor->send( command{ AMCGET, _control, get_min } );
         auto max = _hw_monitor->send( command{ AMCGET, _control, get_max } );
         auto step = _hw_monitor->send( command{ AMCGET, _control, get_step } );
