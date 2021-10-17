@@ -699,6 +699,22 @@ namespace rs2
         * \param[in]    queue: frame queue of raw images that capture the predefined target pattern
         * \param[in]    target_width: expected target's horizontal dimension in mm
         * \param[in]    target_height: expected target's vertical dimension in mm
+        * \return       Calculated distance (Z) to target in millimeter, return negative number on failure
+        */
+        float calculate_target_z(rs2::frame_queue queue, float target_width, float target_height) const
+        {
+            rs2_error* e = nullptr;
+            float result = rs2_calculate_target_z_cpp(_dev.get(), queue.get().get(), target_width, target_height, nullptr, &e);
+            error::handle(e);
+
+            return result;
+        }
+
+        /**
+        *  Calculate Z for calibration target - distance to the target's plane
+        * \param[in]    queue: frame queue of raw images that capture the predefined target pattern
+        * \param[in]    target_width: expected target's horizontal dimension in mm
+        * \param[in]    target_height: expected target's vertical dimension in mm
         * \param[in]    callback: Optional callback for reporting progress status
         * \return       Calculated distance (Z) to target in millimeter, return negative number on failure
         */
