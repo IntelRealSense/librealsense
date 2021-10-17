@@ -2,11 +2,9 @@
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
 #pragma once
-#ifndef LIBREALSENSE_BACKEND_H
-#define LIBREALSENSE_BACKEND_H
 
-#include "../include/librealsense2/h/rs_types.h"     // Inherit all type definitions in the public API
-#include "../include/librealsense2/h/rs_option.h"
+#include <librealsense2/h/rs_types.h>     // Inherit all type definitions in the public API
+#include <librealsense2/h/rs_option.h>
 #include "usb/usb-types.h"
 #include "usb/usb-device.h"
 #include "hid/hid-types.h"
@@ -30,7 +28,8 @@
 const uint16_t MAX_RETRIES                 = 100;
 const uint8_t  DEFAULT_V4L2_FRAME_BUFFERS  = 4;
 const uint16_t DELAY_FOR_RETRIES           = 50;
-const int      POLLING_DEVICES_INTERVAL_MS = 5000;
+const int      DISCONNECT_PERIOD_MS        = 6000;
+const int      POLLING_DEVICES_INTERVAL_MS = 2000;
 
 const uint8_t MAX_META_DATA_SIZE          = 0xff; // UVC Metadata total length
                                             // is limited by (UVC Bulk) design to 255 bytes
@@ -818,11 +817,11 @@ namespace librealsense
         public:
             virtual void start(device_changed_callback callback) = 0;
             virtual void stop() = 0;
+            virtual bool is_stopped() const = 0;
             virtual ~device_watcher() {};
         };
     }
 
     double monotonic_to_realtime(double monotonic);
-}
 
-#endif
+}  // namespace librealsense

@@ -6,9 +6,10 @@
 # test:device SR300*
 
 import pyrealsense2 as rs
-from rspy import test
+from rspy import test, libci
+import os
 
-fw_dir = 'C:/LibCI/data/FW/'
+fw_dir = os.path.join( libci.home, 'data/FW', '' )
 d400_fw_min_version_1 = 'Signed_Image_UVC_5_8_15_0.bin'
 d400_fw_min_version_2 = 'Signed_Image_UVC_5_12_7_100.bin'
 d400_fw_min_version_3 = 'Signed_Image_UVC_5_12_12_100.bin'

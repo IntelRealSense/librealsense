@@ -3,17 +3,26 @@
 
 #pragma once
 
+#include <librealsense2/rs.hpp>
+
+#include "rect.h"
+#include "animated.h"
+
 #include <functional>
 #include <string>
+#include <map>
 
-#include "ux-window.h"
 #include "rendering.h"
+#include <glad/glad.h>
+#include <GLFW/glfw3.h>
+#include <imgui.h>
 
 #include "../src/concurrency.h"
 
 namespace rs2
 {
     class device_model;
+    class ux_window;
 
     class stream_dashboard
     {
@@ -56,7 +65,7 @@ namespace rs2
         }
 
         void add_point(float x, float y) { xy.push_back(std::make_pair(x, y)); }
-        
+
         void draw_dashboard(ux_window& win, rect& r);
 
     private:
@@ -81,9 +90,9 @@ namespace rs2
     class frame_drops_dashboard : public stream_dashboard
     {
     public:
-        frame_drops_dashboard(std::string name, int* frame_drop_count, int* total) 
-            : stream_dashboard(name, 30), 
-              last_time(glfwGetTime()), frame_drop_count(frame_drop_count), total(total) 
+        frame_drops_dashboard(std::string name, int* frame_drop_count, int* total)
+            : stream_dashboard(name, 30),
+              last_time(glfwGetTime()), frame_drop_count(frame_drop_count), total(total)
         {
             clear(true);
         }
@@ -137,7 +146,7 @@ namespace rs2
         void open(ux_window& win);
 
         void foreach_log(std::function<void(log_entry& line)> action);
-        bool round_indicator(ux_window& win, std::string icon, int count, 
+        bool round_indicator(ux_window& win, std::string icon, int count,
             ImVec4 color, std::string tooltip, bool& highlighted, std::string suffix = "");
 
         bool new_log = false;

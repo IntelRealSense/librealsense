@@ -2,9 +2,11 @@
 // Copyright(c) 2017 Intel Corporation. All Rights Reserved.
 
 #pragma once
+
+#include "rect.h"
+
 #include <vector>
 #include <string>
-#include <rendering.h>
 
 struct GLFWmonitor;
 struct GLFWwindow;

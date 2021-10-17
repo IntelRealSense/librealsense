@@ -47,6 +47,7 @@ set(PYRS_CPP
     pyrs_sensor.cpp
     pyrs_types.cpp
     pyrsutil.cpp
+    ../../common/metadata-helper.cpp
 )
 
 pybind11_add_module(pyrealsense2 SHARED python.hpp ${PYRS_CPP})
@@ -79,6 +80,10 @@ set(RAW_RS
     ../../src/backend.h
     ../../src/backend.cpp
     ../../src/dispatcher.cpp
+    ../../src/frame.cpp
+    ../../src/environment.cpp
+    ../../src/to-string.cpp
+    ../../src/core/streaming.cpp
 )
 
 if(UNIX)

@@ -65,69 +65,106 @@ public class Streamer {
     };
 
     private int getFirstFrameTimeout() {
-        RsContext ctx = new RsContext();
-        try(DeviceList devices = ctx.queryDevices()) {
-            if (devices.getDeviceCount() == 0) {
-                return DEFAULT_TIMEOUT;
-            }
-            try (Device device = devices.createDevice(0)) {
-                if(device == null)
+        try(RsContext ctx = new RsContext()){
+            try(DeviceList devices = ctx.queryDevices()) {
+                if (devices.getDeviceCount() == 0) {
                     return DEFAULT_TIMEOUT;
-                ProductLine pl = ProductLine.valueOf(device.getInfo(CameraInfo.PRODUCT_LINE));
-                return pl == ProductLine.L500 ? L500_TIMEOUT : DEFAULT_TIMEOUT;
+                }
+                try (Device device = devices.createDevice(0)) {
+                    if(device == null)
+                        return DEFAULT_TIMEOUT;
+                    ProductLine pl = ProductLine.valueOf(device.getInfo(CameraInfo.PRODUCT_LINE));
+                    return pl == ProductLine.L500 ? L500_TIMEOUT : DEFAULT_TIMEOUT;
+                }
             }
         }
     }
 
-    private void configStream(Config config){
+    private int configStream(Config config){
+        int numStreams = 0;
         config.disableAllStreams();
-        RsContext ctx = new RsContext();
-        String pid;
-        Map<Integer, List<StreamProfile>> profilesMap;
-        try(DeviceList devices = ctx.queryDevices()) {
-            if (devices.getDeviceCount() == 0) {
-                return;
-            }
-            try (Device device = devices.createDevice(0)) {
-                if(device == null){
-                    Log.e(TAG, "failed to create device");
-                    return;
+
+        try(RsContext ctx = new RsContext()){
+            String pid;
+            Map<Integer, List<StreamProfile>> profilesMap;
+            try(DeviceList devices = ctx.queryDevices()) {
+                if (devices.getDeviceCount() == 0) {
+                    return 0;
                 }
-                pid = device.getInfo(CameraInfo.PRODUCT_ID);
-                profilesMap = SettingsActivity.createProfilesMap(device);
-
-                SharedPreferences sharedPref = mContext.getSharedPreferences(mContext.getString(R.string.app_settings), Context.MODE_PRIVATE);
-
-                for(Map.Entry e : profilesMap.entrySet()){
-                    List<StreamProfile> profiles = (List<StreamProfile>) e.getValue();
-                    StreamProfile p = profiles.get(0);
-                    if(!sharedPref.getBoolean(SettingsActivity.getEnabledDeviceConfigString(pid, p.getType(), p.getIndex()), false))
-                        continue;
-                    int index = sharedPref.getInt(SettingsActivity.getIndexdDeviceConfigString(pid, p.getType(), p.getIndex()), 0);
-                    if(index == -1 || index >= profiles.size())
-                        throw new IllegalArgumentException("Failed to resolve config");
-                    StreamProfile sp = profiles.get(index);
-                    if(p.is(Extension.VIDEO_PROFILE)){
-                        VideoStreamProfile vsp = sp.as(Extension.VIDEO_PROFILE);
-                        config.enableStream(vsp.getType(), vsp.getIndex(), vsp.getWidth(), vsp.getHeight(), vsp.getFormat(), vsp.getFrameRate());
+                try (Device device = devices.createDevice(0)) {
+                    if(device == null){
+                        Log.e(TAG, "failed to create device");
+                        return 0;
                     }
-                    if(p.is(Extension.MOTION_PROFILE)){
-                        MotionStreamProfile msp = sp.as(Extension.MOTION_PROFILE);
-                        config.enableStream(msp.getType(), msp.getIndex(), 0, 0, msp.getFormat(), msp.getFrameRate());
+                    pid = device.getInfo(CameraInfo.PRODUCT_ID);
+                    profilesMap = SettingsActivity.createProfilesMap(device);
+
+                    SharedPreferences sharedPref = mContext.getSharedPreferences(mContext.getString(R.string.app_settings), Context.MODE_PRIVATE);
+
+                    for(Map.Entry e : profilesMap.entrySet()){
+                        List<StreamProfile> profiles = (List<StreamProfile>) e.getValue();
+                        StreamProfile p = profiles.get(0);
+                        if(!sharedPref.getBoolean(SettingsActivity.getEnabledDeviceConfigString(pid, p.getType(), p.getIndex()), false))
+                            continue;
+                        int index = sharedPref.getInt(SettingsActivity.getIndexdDeviceConfigString(pid, p.getType(), p.getIndex()), 0);
+                        if(index == -1 || index >= profiles.size())
+                            throw new IllegalArgumentException("Failed to resolve config");
+                        StreamProfile sp = profiles.get(index);
+                        if(p.is(Extension.VIDEO_PROFILE)){
+                            VideoStreamProfile vsp = sp.as(Extension.VIDEO_PROFILE);
+                            config.enableStream(vsp.getType(), vsp.getIndex(), vsp.getWidth(), vsp.getHeight(), vsp.getFormat(), vsp.getFrameRate());
+                            numStreams++;
+                        }
+                        if(p.is(Extension.MOTION_PROFILE)){
+                            MotionStreamProfile msp = sp.as(Extension.MOTION_PROFILE);
+                            config.enableStream(msp.getType(), msp.getIndex(), 0, 0, msp.getFormat(), msp.getFrameRate());
+                            numStreams++;
+                        }
                     }
                 }
             }
         }
+
+        return numStreams;
     }
 
     void configAndStart() throws Exception {
         try(Config config = new Config()){
-            if(mLoadConfig)
-                configStream(config);
+            boolean defaultConfig = true;
+
+            if(mLoadConfig) {
+                if (configStream(config) > 0)
+                    defaultConfig = false;
+            }
             if(mListener != null)
                 mListener.config(config);
             // try statement needed here to release resources allocated by the Pipeline:start() method
-            try (PipelineProfile pp = mPipeline.start(config)){}
+            try (PipelineProfile pp = mPipeline.start(config)){
+
+                // if device runs on default configuration, get active stream profiles and record in settings
+                if (defaultConfig) {
+                    List<StreamProfile> activeProfiles = mPipeline.getActiveStreams();
+                    SharedPreferences sharedPref = mContext.getSharedPreferences(mContext.getString(R.string.app_settings), Context.MODE_PRIVATE);
+                    Device device = pp.getDevice();
+
+                    for (StreamProfile sp : activeProfiles) {
+                        String msg = "active profile: " + sp.getType() + "," + sp.getIndex() + "," + sp.getFormat().toString() + "," + sp.getFrameRate() + " fps";
+
+                        if (sp.is(Extension.VIDEO_PROFILE)) {
+                            VideoStreamProfile vp = sp.as(Extension.VIDEO_PROFILE);
+
+                            if (vp != null) {
+                                msg += "," + vp.getWidth() + "x" + vp.getHeight();
+                            }
+                        }
+
+                        Log.d(TAG, msg);
+
+                        // turn on the active profile in settings
+                        SettingsActivity.setProfileSetting(sharedPref, device, sp, true);
+                    }
+                }
+            }
         }
     }
 

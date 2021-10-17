@@ -145,10 +145,16 @@ namespace librealsense
         virtual ~target_calculator_interface() = default;
     };
 
+    const int _roi_ws = 480;
+    const int _roi_we = 800;
+    const int _roi_hs = 240;
+    const int _roi_he = 480;
+    const int _patch_size = 20; // in pixels
+
     class rect_gaussian_dots_target_calculator : public target_calculator_interface
     {
     public:
-        rect_gaussian_dots_target_calculator(int width, int height);
+        rect_gaussian_dots_target_calculator(int width, int height, int roi_start_x, int roi_start_y, int roi_width, int roi_height);
         virtual ~rect_gaussian_dots_target_calculator();
         bool calculate(const uint8_t* img, float* target_dims, unsigned int target_dims_size) override;
 
@@ -171,9 +177,6 @@ namespace librealsense
         void minimize_x(const double* p, int s, double* f, double& x);
         void minimize_y(const double* p, int s, double* f, double& y);
         double subpixel_agj(double* f, int s);
-
-    public:
-        static const int _frame_num = 25; // number of frames used to smooth the result
 
     protected:
         const int _tsize = 28; // template size
@@ -214,7 +217,6 @@ namespace librealsense
         };
 
         const double _thresh = 0.7; // used internally, range from 0 to 1 for normalized image ma
-        const int _patch_size = 20; // in pixels
         std::vector<double> _buf;
 
         std::vector<double> _img;
@@ -237,5 +239,24 @@ namespace librealsense
 
         point<double> _corners[4];
         point<int> _pts[4];
+
+        int _roi_start_x;
+        int _roi_start_y;
+        int _full_width;
+        int _full_height;
+    };
+
+    // Utility class for calculating the rectangle sides on the specific target
+    class rect_calculator
+    {
+    public:
+        rect_calculator(bool roi = false) : _roi(roi) {}
+        virtual ~rect_calculator() {}
+
+        // return 1 if target found, zero otherwise
+        int extract_target_dims(const rs2_frame* frame_ref, float4& rect_sides);
+
+    private:
+        bool _roi = false;
     };
 }

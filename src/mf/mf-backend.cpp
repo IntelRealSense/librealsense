@@ -18,6 +18,51 @@
 
 #include "../tm2/tm-boot.h"
 
+namespace {
+
+
+void debug_dev_broadcast( DEV_BROADCAST_HDR const * p_hdr, char const * context )
+{
+    switch( p_hdr->dbch_devicetype )
+    {
+    case DBT_DEVTYP_DEVICEINTERFACE: {
+        auto p_actual = reinterpret_cast< DEV_BROADCAST_DEVICEINTERFACE const * >( p_hdr );
+        LOG_DEBUG( "device change event: " << context << ": DEVICEINTERFACE: \""
+                                           << p_actual->dbcc_name << "\"" );
+        break;
+    }
+    case DBT_DEVTYP_HANDLE: {
+        auto p_actual = reinterpret_cast< DEV_BROADCAST_HANDLE const * >( p_hdr );
+        LOG_DEBUG( "device change event: " << context << ": HANDLE: file system handle 0x"
+                                           << std::hex << p_actual->dbch_handle );
+        break;
+    }
+    case DBT_DEVTYP_OEM: {
+        auto p_actual = reinterpret_cast< DEV_BROADCAST_OEM const * >( p_hdr );
+        LOG_DEBUG( "device change event: " << context << ": OEM: identifier 0x" << std::hex
+                                           << p_actual->dbco_identifier );
+        break;
+    }
+    case DBT_DEVTYP_PORT: {
+        auto p_actual = reinterpret_cast< DEV_BROADCAST_PORT const * >( p_hdr );
+        LOG_DEBUG( "device change event: " << context << ": PORT: \"" << p_actual->dbcp_name
+                                           << "\"" );
+        break;
+    }
+    case DBT_DEVTYP_VOLUME: {
+        auto p_actual = reinterpret_cast< DEV_BROADCAST_VOLUME const * >( p_hdr );
+        LOG_DEBUG( "device change event: " << context << ": VOLUME" );
+        break;
+    }
+    default:
+        LOG_DEBUG( "device change event: " << context << ": UNKNOWN (dbch_devicetype= "
+                                           << p_hdr->dbch_devicetype << ")" );
+        break;
+    }
+}
+
+}
+
 namespace librealsense
 {
     namespace platform
@@ -146,7 +191,7 @@ namespace librealsense
             win_event_device_watcher(const backend * backend)
             {
                 _data._backend = backend;
-                _data._stopped = false;
+                _data._stopped = true;
                 _data._last = backend_device_group(backend->query_uvc_devices(), backend->query_usb_devices(), backend->query_hid_devices());
             }
             ~win_event_device_watcher() { stop(); }
@@ -154,7 +199,10 @@ namespace librealsense
             void start(device_changed_callback callback) override
             {
                 std::lock_guard<std::mutex> lock(_m);
-                if (!_data._stopped) throw wrong_api_call_sequence_exception("Cannot start a running device_watcher");
+                if( ! _data._stopped )
+                    throw wrong_api_call_sequence_exception(
+                        "Cannot start a running device_watcher" );
+                LOG_DEBUG( "starting win_event_device_watcher" );
                 _data._stopped = false;
                 _data._callback = std::move(callback);
                 _thread = std::thread([this]() { run(); });
@@ -165,10 +213,17 @@ namespace librealsense
                 std::lock_guard<std::mutex> lock(_m);
                 if (!_data._stopped)
                 {
+                    LOG_DEBUG( "stopping win_event_device_watcher" );
                     _data._stopped = true;
                     if (_thread.joinable()) _thread.join();
                 }
             }
+
+            bool is_stopped() const override
+            {
+                return _data._stopped;
+            }
+
         private:
             std::thread _thread;
             std::mutex _m;
@@ -238,17 +293,28 @@ namespace librealsense
                     // Output some messages to the window.
                     switch (wParam)
                     {
-                    case DBT_DEVICEARRIVAL:
-                    {
-                        auto data = reinterpret_cast<extra_data*>(GetWindowLongPtr(hWnd, GWLP_USERDATA));
-                        backend_device_group next(data->_backend->query_uvc_devices(), data->_backend->query_usb_devices(), data->_backend->query_hid_devices());
-                        /*if (data->_last != next)*/ data->_callback(data->_last, next);
+                    case DBT_DEVICEARRIVAL: {
+                        // The system broadcasts the DBT_DEVICEARRIVAL device event when a device or
+                        // piece of media has been inserted and becomes available.
+                        auto p_hdr = reinterpret_cast< DEV_BROADCAST_HDR const * >( lParam );
+                        debug_dev_broadcast( p_hdr, "arrival" );
+                        if( p_hdr->dbch_devicetype != DBT_DEVTYP_DEVICEINTERFACE )
+                            break;
+                        auto data = reinterpret_cast< extra_data * >(
+                            GetWindowLongPtr( hWnd, GWLP_USERDATA ) );
+                        backend_device_group next( data->_backend->query_uvc_devices(),
+                                                   data->_backend->query_usb_devices(),
+                                                   data->_backend->query_hid_devices() );
+                        /*if (data->_last != next)*/ data->_callback( data->_last, next );
                         data->_last = next;
-                    }
                         break;
-
-                    case DBT_DEVICEREMOVECOMPLETE:
-                    {
+                    }
+                    case DBT_DEVICEREMOVECOMPLETE: {
+                        // A device or piece of media has been physically removed
+                        auto p_hdr = reinterpret_cast< DEV_BROADCAST_HDR const * >( lParam );
+                        debug_dev_broadcast( p_hdr, "remove complete" );
+                        if( p_hdr->dbch_devicetype != DBT_DEVTYP_DEVICEINTERFACE )
+                            break;
                         auto data = reinterpret_cast<extra_data*>(GetWindowLongPtr(hWnd, GWLP_USERDATA));
                         auto next = data->_last;
                         std::wstring temp = reinterpret_cast<DEV_BROADCAST_DEVICEINTERFACE*>(lParam)->dbcc_name;

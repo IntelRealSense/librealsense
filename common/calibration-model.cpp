@@ -1,11 +1,18 @@
-#include <glad/glad.h>
 #include "calibration-model.h"
 #include "model-views.h"
 #include "os.h"
+#include "ux-window.h"
 
 #include "../src/ds5/ds5-private.h"
 
+
 using namespace rs2;
+
+calibration_model::calibration_model(rs2::device dev, std::shared_ptr<notifications_model> not_model)
+    : dev(dev), _not_model(not_model)
+{
+    _accept = config_file::instance().get_or_default(configurations::calibration::enable_writing, false);
+}
 
 bool calibration_model::supports()
 {
@@ -13,11 +20,6 @@ bool calibration_model::supports()
         std::string(dev.get_info(RS2_CAMERA_INFO_PRODUCT_LINE)) == "D400" : false;
 
     return dev.is<rs2::auto_calibrated_device>() && is_d400;
-}
-
-calibration_model::calibration_model(rs2::device dev) : dev(dev) 
-{
-    _accept = config_file::instance().get_or_default(configurations::calibration::enable_writing, false);
 }
 
 void calibration_model::draw_float(std::string name, float& x, const float& orig, bool& changed)
@@ -31,7 +33,7 @@ void calibration_model::draw_float(std::string name, float& x, const float& orig
     ImGui::PopStyleColor();
 }
 
-void calibration_model::draw_float4x4(std::string name, librealsense::float3x3& feild, 
+void calibration_model::draw_float4x4(std::string name, librealsense::float3x3& feild,
                                       const librealsense::float3x3& original, bool& changed)
 {
     ImGui::SetCursorPosX(10);
@@ -45,7 +47,7 @@ void calibration_model::draw_float4x4(std::string name, librealsense::float3x3& 
     draw_float(name + "_XY", feild.x.y, original.x.y, changed);
     ImGui::SameLine();
     draw_float(name + "_XZ", feild.x.z, original.x.z, changed);
-    
+
     ImGui::SetCursorPosX(200);
     draw_float(name + "_YX", feild.y.x, original.y.x, changed);
     ImGui::SameLine();
@@ -147,7 +149,7 @@ void calibration_model::update(ux_window& window, std::string& error_message)
     auto table = (librealsense::ds::coefficients_table*)_calibration.data();
     auto orig_table = (librealsense::ds::coefficients_table*)_original.data();
     bool changed = false;
-    
+
     const float w = 620;
     const float h = 500;
     const float x0 = std::max(window.width() - w, 0.f) / 2;
@@ -234,7 +236,7 @@ void calibration_model::update(ux_window& window, std::string& error_message)
         ImGui::SameLine();
         if (ImGui::Button(u8"\uF0C7 Save As...", ImVec2(100, 30)))
         {
-            try 
+            try
             {
                 if (auto fn = file_dialog_open(file_dialog_mode::save_file, "Calibration JSON\0*.json\0", nullptr, nullptr))
                 {
@@ -259,7 +261,7 @@ void calibration_model::update(ux_window& window, std::string& error_message)
                     save_float3x4("intrinsic_right", table->intrinsic_right);
                     save_float3x4("world2left_rot", table->world2left_rot);
                     save_float3x4("world2right_rot", table->world2right_rot);
-                    
+
                     for (int i = 0; i < librealsense::ds::max_ds5_rect_resolutions; i++)
                     {
                         auto xy = librealsense::ds::resolutions_list[(librealsense::ds::ds5_rect_resolutions)i];
@@ -298,6 +300,12 @@ void calibration_model::update(ux_window& window, std::string& error_message)
                     _calibration = dev.as<rs2::auto_calibrated_device>().get_calibration_table();
                     _original = _calibration;
                     changed = true;
+
+                    if (auto nm = _not_model.lock())
+                    {
+                        nm->add_notification({ to_string() << "Depth Calibration is reset to Factory Settings",
+                            RS2_LOG_SEVERITY_INFO, RS2_NOTIFICATION_CATEGORY_HARDWARE_EVENT });
+                    }
                 }
                 catch(const std::exception& ex)
                 {
@@ -331,7 +339,7 @@ void calibration_model::update(ux_window& window, std::string& error_message)
 
         ImGui::SetCursorPosX(10);
         ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5);
-        
+
         ImGui::Text("Stereo Baseline(mm):"); ImGui::SameLine();
         ImGui::SetCursorPosX(200);
 
@@ -347,7 +355,7 @@ void calibration_model::update(ux_window& window, std::string& error_message)
 
         ImGui::SetCursorPosX(10);
         ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5);
-        
+
         ImGui::Text("Rectified Resolution:"); ImGui::SameLine();
         ImGui::SetCursorPosX(200);
 
@@ -374,7 +382,7 @@ void calibration_model::update(ux_window& window, std::string& error_message)
 
         ImGui::SetCursorPosX(10);
         ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5);
-        
+
         ImGui::Text("Focal Length:"); ImGui::SameLine();
         ImGui::SetCursorPosX(200);
 

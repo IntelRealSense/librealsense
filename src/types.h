@@ -6,21 +6,15 @@
 // out of this file and into more appropriate locations.
 
 #pragma once
-#ifndef LIBREALSENSE_TYPES_H
-#define LIBREALSENSE_TYPES_H
 
-// Disable declspec(dllexport) warnings:
-// Classes exported via LRS_EXTENSION_API are **not** part of official librealsense API (at least for now)
-// Any extension relying on these APIs must be compiled and distributed together with realsense2.dll
-#pragma warning(disable : 4275)        /* disable: C4275: non dll-interface class used as base for dll-interface class */
-#pragma warning(disable : 4251)        /* disable: C4251: class needs to have dll-interface to be used by clients of class */
-#ifdef WIN32
-#define LRS_EXTENSION_API __declspec(dllexport)
-#else
-#define LRS_EXTENSION_API
-#endif
+#include "basics.h"
 
-#include "../include/librealsense2/hpp/rs_types.hpp"
+#include <librealsense2/hpp/rs_types.hpp>
+
+#include "backend.h"
+#include "concurrency.h"
+#include "librealsense-exception.h"
+#include "easyloggingpp.h"
 
 #ifndef _USE_MATH_DEFINES
 #define _USE_MATH_DEFINES
@@ -42,12 +36,6 @@
 #include <utility>                          // For std::forward
 #include <limits>
 #include <iomanip>
-#include "backend.h"
-#include "concurrency.h"
-
-#if BUILD_EASYLOGGINGPP
-#include "../third-party/easyloggingpp/src/easylogging++.h"
-#endif // BUILD_EASYLOGGINGPP
 
 typedef unsigned char byte;
 
@@ -207,43 +195,6 @@ namespace librealsense
     void reset_logger();
     void enable_rolling_log_file( unsigned max_size );
 
-#if BUILD_EASYLOGGINGPP
-
-#ifdef RS2_USE_ANDROID_BACKEND
-#include <android/log.h>
-
-#define LOG_TAG "librs"
-
-#define LOG_INFO(...)   do { std::stringstream ss; ss << __VA_ARGS__; __android_log_write(librealsense::ANDROID_LOG_INFO, LOG_TAG, ss.str().c_str()); } while(false)
-#define LOG_WARNING(...)   do { std::stringstream ss; ss << __VA_ARGS__; __android_log_write(librealsense::ANDROID_LOG_WARN, LOG_TAG, ss.str().c_str()); } while(false)
-#define LOG_ERROR(...)   do { std::stringstream ss; ss << __VA_ARGS__; __android_log_write(librealsense::ANDROID_LOG_ERROR, LOG_TAG, ss.str().c_str()); } while(false)
-#define LOG_FATAL(...)   do { std::stringstream ss; ss << __VA_ARGS__; __android_log_write(librealsense::ANDROID_LOG_ERROR, LOG_TAG, ss.str().c_str()); } while(false)
-#ifdef NDEBUG
-#define LOG_DEBUG(...)
-#else
-#define LOG_DEBUG(...)   do { std::stringstream ss; ss << __VA_ARGS__; __android_log_write(librealsense::ANDROID_LOG_DEBUG, LOG_TAG, ss.str().c_str()); } while(false)
-#endif
-
-#else //RS2_USE_ANDROID_BACKEND
-
-#define LOG_DEBUG(...)   do { CLOG(DEBUG   ,"librealsense") << __VA_ARGS__; } while(false)
-#define LOG_INFO(...)    do { CLOG(INFO    ,"librealsense") << __VA_ARGS__; } while(false)
-#define LOG_WARNING(...) do { CLOG(WARNING ,"librealsense") << __VA_ARGS__; } while(false)
-#define LOG_ERROR(...)   do { CLOG(ERROR   ,"librealsense") << __VA_ARGS__; } while(false)
-#define LOG_FATAL(...)   do { CLOG(FATAL   ,"librealsense") << __VA_ARGS__; } while(false)
-
-#endif // RS2_USE_ANDROID_BACKEND
-
-#else // BUILD_EASYLOGGINGPP
-
-    #define LOG_DEBUG(...)   do { ; } while(false)
-#define LOG_INFO(...)    do { ; } while(false)
-#define LOG_WARNING(...) do { ; } while(false)
-#define LOG_ERROR(...)   do { ; } while(false)
-#define LOG_FATAL(...)   do { ; } while(false)
-
-#endif // BUILD_EASYLOGGINGPP
-
     // Enhancement for debug mode that incurs performance penalty with STL
     // std::clamp to be introduced with c++17
     template< typename T>
@@ -257,129 +208,6 @@ namespace librealsense
         return std::min(std::max(val, min), max);
 #endif
     }
-
-    //////////////////////////
-    // Exceptions mechanism //
-    //////////////////////////
-
-
-    class librealsense_exception : public std::exception
-    {
-    public:
-        const char* get_message() const noexcept
-        {
-            return _msg.c_str();
-        }
-
-        rs2_exception_type get_exception_type() const noexcept
-        {
-            return _exception_type;
-        }
-
-        const char* what() const noexcept override
-        {
-            return _msg.c_str();
-        }
-
-    protected:
-        librealsense_exception(const std::string& msg,
-                               rs2_exception_type exception_type) noexcept
-            : _msg(msg),
-              _exception_type(exception_type)
-        {}
-
-    private:
-        std::string _msg;
-        rs2_exception_type _exception_type;
-    };
-
-    class LRS_EXTENSION_API recoverable_exception : public librealsense_exception
-    {
-    public:
-        recoverable_exception(const std::string& msg,
-            rs2_exception_type exception_type) noexcept;
-    };
-
-    class unrecoverable_exception : public librealsense_exception
-    {
-    public:
-        unrecoverable_exception(const std::string& msg,
-                                rs2_exception_type exception_type) noexcept
-            : librealsense_exception(msg, exception_type)
-        {
-            LOG_ERROR(msg);
-        }
-    };
-    class io_exception : public unrecoverable_exception
-    {
-    public:
-        io_exception(const std::string& msg) noexcept
-            : unrecoverable_exception(msg, RS2_EXCEPTION_TYPE_IO)
-        {}
-    };
-    class camera_disconnected_exception : public unrecoverable_exception
-    {
-    public:
-        camera_disconnected_exception(const std::string& msg) noexcept
-            : unrecoverable_exception(msg, RS2_EXCEPTION_TYPE_CAMERA_DISCONNECTED)
-        {}
-    };
-
-    class backend_exception : public unrecoverable_exception
-    {
-    public:
-        backend_exception(const std::string& msg,
-                          rs2_exception_type exception_type) noexcept
-            : unrecoverable_exception(msg, exception_type)
-        {}
-    };
-
-    class linux_backend_exception : public backend_exception
-    {
-    public:
-        linux_backend_exception(const std::string& msg) noexcept
-            : backend_exception(generate_last_error_message(msg), RS2_EXCEPTION_TYPE_BACKEND)
-        {}
-
-    private:
-        std::string generate_last_error_message(const std::string& msg) const
-        {
-            return msg + " Last Error: " + strerror(errno);
-        }
-    };
-
-    class windows_backend_exception : public backend_exception
-    {
-    public:
-        // TODO: get last error
-        windows_backend_exception(const std::string& msg) noexcept
-            : backend_exception(msg, RS2_EXCEPTION_TYPE_BACKEND)
-        {}
-    };
-
-    class invalid_value_exception : public recoverable_exception
-    {
-    public:
-        invalid_value_exception(const std::string& msg) noexcept
-            : recoverable_exception(msg, RS2_EXCEPTION_TYPE_INVALID_VALUE)
-        {}
-    };
-
-    class wrong_api_call_sequence_exception : public recoverable_exception
-    {
-    public:
-        wrong_api_call_sequence_exception(const std::string& msg) noexcept
-            : recoverable_exception(msg, RS2_EXCEPTION_TYPE_WRONG_API_CALL_SEQUENCE)
-        {}
-    };
-
-    class not_implemented_exception : public recoverable_exception
-    {
-    public:
-        not_implemented_exception(const std::string& msg) noexcept
-            : recoverable_exception(msg, RS2_EXCEPTION_TYPE_NOT_IMPLEMENTED)
-        {}
-    };
 
 
 #pragma pack(push, 1)
@@ -689,10 +517,6 @@ namespace librealsense
     // Pixel formats //
     ///////////////////
 
-    typedef std::tuple<uint32_t, int, size_t> native_pixel_format_tuple;
-    typedef std::tuple<rs2_stream, int, rs2_format> output_tuple;
-    typedef std::tuple<platform::stream_profile_tuple, native_pixel_format_tuple, std::vector<output_tuple>> request_mapping_tuple;
-    
     struct resolution
     {
         uint32_t width, height;
@@ -760,76 +584,6 @@ namespace librealsense
         stream_descriptor stream_desc;
         rs2_format format;
         resolution_func stream_resolution;
-    };
-
-    struct pixel_format_unpacker
-    {
-        bool requires_processing;
-        void(*unpack)(byte * const dest[], const byte * source, int width, int height, int actual_size, int input_size);
-        std::vector<stream_output> outputs;
-
-        platform::stream_profile get_uvc_profile(const stream_profile& request, uint32_t fourcc, const std::vector<platform::stream_profile>& uvc_profiles) const
-        {
-            platform::stream_profile uvc_profile{};
-            auto it = std::find_if(begin(uvc_profiles), end(uvc_profiles),
-                [&fourcc, &request, this](const platform::stream_profile& uvc_p)
-            {
-                for (auto & o : outputs)
-                {
-                    auto res = o.stream_resolution(resolution{ uvc_p.width, uvc_p.height });
-                    if (o.stream_desc.type == request.stream && o.stream_desc.index == request.index &&
-                        res.width == request.width && res.height == request.height &&
-                        uvc_p.format == fourcc && request.fps == uvc_p.fps)
-                        return true;
-                }
-                return false;
-            });
-            if (it != end(uvc_profiles))
-            {
-                uvc_profile = *it;
-            }
-            return uvc_profile;
-        }
-
-        bool satisfies(const stream_profile& request, uint32_t fourcc, const std::vector<platform::stream_profile>& uvc_profiles) const
-        {
-            auto uvc_profile = get_uvc_profile(request, fourcc, uvc_profiles);
-            return provides_stream(request, fourcc, uvc_profile) &&
-                get_format(request.stream, request.index) == request.format;
-        }
-
-        bool provides_stream(const stream_profile& request, uint32_t fourcc, const platform::stream_profile& uvc_profile) const
-        {
-            for (auto& o : outputs)
-            {
-                auto res = o.stream_resolution(resolution{ uvc_profile.width, uvc_profile.height });
-                if (o.stream_desc.type == request.stream && o.stream_desc.index == request.index &&
-                    res.width == request.width && res.height == request.height)
-                    return true;
-            }
-
-            return false;
-        }
-        rs2_format get_format(rs2_stream stream, int index) const
-        {
-            for (auto& o : outputs)
-                if (o.stream_desc.type == stream && o.stream_desc.index == index)
-                    return o.format;
-
-            throw invalid_value_exception("missing output");
-        }
-
-        operator std::vector<output_tuple>()
-        {
-            std::vector<output_tuple> tuple_outputs;
-
-            for (auto output : outputs)
-            {
-                tuple_outputs.push_back(std::make_tuple(output.stream_desc.type, output.stream_desc.index, output.format));
-            }
-            return tuple_outputs;
-        }
-
     };
 
     class stream_profile_interface;
@@ -1199,93 +953,6 @@ namespace librealsense
         return (c0 << 24) | (c1 << 16) | (c2 << 8) | c3;
     }
 
-    template<class T, int C>
-    class small_heap
-    {
-        T buffer[C];
-        bool is_free[C];
-        std::mutex mutex;
-        bool keep_allocating = true;
-        std::condition_variable cv;
-        int size = 0;
-
-    public:
-        static const int CAPACITY = C;
-
-        small_heap()
-        {
-            for (auto i = 0; i < C; i++)
-            {
-                is_free[i] = true;
-                buffer[i] = std::move(T());
-            }
-        }
-
-        T * allocate()
-        {
-            std::unique_lock<std::mutex> lock(mutex);
-            if (!keep_allocating) return nullptr;
-
-            for (auto i = 0; i < C; i++)
-            {
-                if (is_free[i])
-                {
-                    is_free[i] = false;
-                    size++;
-                    return &buffer[i];
-                }
-            }
-            return nullptr;
-        }
-
-        void deallocate(T * item)
-        {
-             if (item < buffer || item >= buffer + C)
-            {
-                throw invalid_value_exception("Trying to return item to a heap that didn't allocate it!");
-            }
-            auto i = item - buffer;
-            auto old_value = std::move(buffer[i]);
-            buffer[i] = std::move(T());
-
-            {
-                std::unique_lock<std::mutex> lock(mutex);
-
-                is_free[i] = true;
-                size--;
-
-                if (size == 0)
-                {
-                    lock.unlock();
-                    cv.notify_one();
-                }
-            }
-        }
-
-        void stop_allocation()
-        {
-            std::unique_lock<std::mutex> lock(mutex);
-            keep_allocating = false;
-        }
-
-        void wait_until_empty()
-        {
-            std::unique_lock<std::mutex> lock(mutex);
-
-            const auto ready = [this]()
-            {
-                return is_empty();
-            };
-            if (!ready() && !cv.wait_for(lock, std::chrono::hours(1000), ready)) // for some reason passing std::chrono::duration::max makes it return instantly
-            {
-                throw invalid_value_exception("Could not flush one of the user controlled objects!");
-            }
-        }
-
-        bool is_empty() const { return size == 0; }
-        int get_size() const { return size; }
-    };
-
     struct uvc_device_info
     {
         std::string id = ""; // to distinguish between different pins of the same device
@@ -1434,52 +1101,6 @@ namespace librealsense
 
 
     typedef std::function<void(devices_data old, devices_data curr)> device_changed_callback;
-    struct callback_invocation
-    {
-        std::chrono::high_resolution_clock::time_point started;
-        std::chrono::high_resolution_clock::time_point ended;
-    };
-
-    typedef librealsense::small_heap<callback_invocation, 1> callbacks_heap;
-
-    struct callback_invocation_holder
-    {
-        callback_invocation_holder() : invocation(nullptr), owner(nullptr) {}
-        callback_invocation_holder(const callback_invocation_holder&) = delete;
-        callback_invocation_holder& operator=(const callback_invocation_holder&) = delete;
-
-        callback_invocation_holder(callback_invocation_holder&& other)
-            : invocation(other.invocation), owner(other.owner)
-        {
-            other.invocation = nullptr;
-        }
-
-        callback_invocation_holder(callback_invocation* invocation, callbacks_heap* owner)
-            : invocation(invocation), owner(owner)
-        { }
-
-        ~callback_invocation_holder()
-        {
-            if (invocation) owner->deallocate(invocation);
-        }
-
-        callback_invocation_holder& operator=(callback_invocation_holder&& other)
-        {
-            invocation = other.invocation;
-            owner = other.owner;
-            other.invocation = nullptr;
-            return *this;
-        }
-
-        operator bool()
-        {
-            return invocation != nullptr;
-        }
-
-    private:
-        callback_invocation* invocation;
-        callbacks_heap* owner;
-    };
 
     class frame_continuation
     {
@@ -1573,69 +1194,7 @@ namespace librealsense
     uint32_t calc_crc32(const uint8_t *buf, size_t bufsize);
 
 
-    class polling_device_watcher: public librealsense::platform::device_watcher
-    {
-    public:
-        polling_device_watcher(const platform::backend* backend_ref):
-            _backend(backend_ref),_active_object([this](dispatcher::cancellable_timer cancellable_timer)
-        {
-            polling(cancellable_timer);
-        }), _devices_data()
-        {
-            _devices_data = {   _backend->query_uvc_devices(),
-                                _backend->query_usb_devices(),
-                                _backend->query_hid_devices() };
-        }
-
-        ~polling_device_watcher()
-        {
-            stop();
-        }
-
-        void polling(dispatcher::cancellable_timer cancellable_timer)
-        {
-            if(cancellable_timer.try_sleep( std::chrono::milliseconds( POLLING_DEVICES_INTERVAL_MS )))
-            {
-                platform::backend_device_group curr(_backend->query_uvc_devices(), _backend->query_usb_devices(), _backend->query_hid_devices());
-                if(list_changed(_devices_data.uvc_devices, curr.uvc_devices ) ||
-                   list_changed(_devices_data.usb_devices, curr.usb_devices ) ||
-                   list_changed(_devices_data.hid_devices, curr.hid_devices ))
-                {
-                    callback_invocation_holder callback = { _callback_inflight.allocate(), &_callback_inflight };
-                    if(callback)
-                    {
-                        _callback(_devices_data, curr);
-                        _devices_data = curr;
-                    }
-                }
-            }
-        }
-
-        void start(platform::device_changed_callback callback) override
-        {
-            stop();
-            _callback = std::move(callback);
-            _active_object.start();
-        }
-
-        void stop() override
-        {
-            _active_object.stop();
-
-            _callback_inflight.wait_until_empty();
-        }
-
-    private:
-        active_object<> _active_object;
-
-        callbacks_heap _callback_inflight;
-        const platform::backend* _backend;
-
-        platform::backend_device_group _devices_data;
-        platform::device_changed_callback _callback;
-
-    };
-
+    
 
     template<typename HostingClass, typename... Args>
     class signal
@@ -1988,5 +1547,3 @@ inline bool operator==( const rs2_extrinsics& a, const rs2_extrinsics& b )
                 return false;
     return true;
 }
-
-#endif

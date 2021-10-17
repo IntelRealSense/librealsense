@@ -112,7 +112,7 @@ namespace librealsense
             rs2_recording_mode mode = RS2_RECORDING_MODE_COUNT,
             std::string min_api_version = "0.0.0");
 
-        void stop(){ if (!_devices_changed_callbacks.size()) _device_watcher->stop();}
+        void stop() { _device_watcher->stop(); }
         ~context();
         std::vector<std::shared_ptr<device_info>> query_devices(int mask) const;
         const platform::backend& get_backend() const { return *_backend; }
@@ -139,11 +139,11 @@ namespace librealsense
                                const std::map<std::string, std::weak_ptr<device_info>>& old_playback_devices,
                                const std::map<std::string, std::weak_ptr<device_info>>& new_playback_devices);
         void raise_devices_changed(const std::vector<rs2_device_info>& removed, const std::vector<rs2_device_info>& added);
-        int find_stream_profile(const stream_interface& p);
-        std::shared_ptr<lazy<rs2_extrinsics>> fetch_edge(int from, int to);
+        void start_device_watcher();
 
         std::shared_ptr<platform::backend> _backend;
         std::shared_ptr<platform::device_watcher> _device_watcher;
+
         std::map<std::string, std::weak_ptr<device_info>> _playback_devices;
         std::map<uint64_t, devices_changed_callback_ptr> _devices_changed_callbacks;
 

@@ -17,7 +17,7 @@ namespace librealsense
         public:
             virtual void start(device_changed_callback callback) override;
             virtual void stop() override;
-
+            virtual bool is_stopped() const override;
             void notify();
             static std::shared_ptr<device_watcher_usbhost> instance();
 
@@ -26,6 +26,7 @@ namespace librealsense
             device_changed_callback _callback = nullptr;
             backend_device_group _prev_group;
             std::vector<platform::uvc_device_info> update_uvc_devices();
+            bool _is_stopped = true;
         };
     }
 }

@@ -347,7 +347,7 @@ namespace librealsense
             _hw_monitor->send( cmd );
 
             // We allow 6 seconds because on Linux the removal status is updated at a 5 seconds rate.
-            const int MAX_ITERATIONS_FOR_DEVICE_DISCONNECTED_LOOP = (POLLING_DEVICES_INTERVAL_MS + 1000) / DELAY_FOR_RETRIES;
+            const int MAX_ITERATIONS_FOR_DEVICE_DISCONNECTED_LOOP = DISCONNECT_PERIOD_MS / DELAY_FOR_RETRIES;
 
             for( auto i = 0; i < MAX_ITERATIONS_FOR_DEVICE_DISCONNECTED_LOOP; i++ )
             {
@@ -584,16 +584,20 @@ namespace librealsense
 
     bool sr3xx_camera::check_fw_compatibility(const std::vector<uint8_t>& image) const
     {
-        std::string fw_version = extract_firmware_version_string((const void*)image.data(), image.size());
+        std::string fw_version = extract_firmware_version_string(image);
 
         auto min_max_fw_it = device_to_fw_min_max_version.find(_pid);
         if (min_max_fw_it == device_to_fw_min_max_version.end())
-            throw std::runtime_error("Min and Max firmware versions have not been defined for this device!");
+            throw librealsense::invalid_value_exception(to_string() << "Min and Max firmware versions have not been defined for this device: " << std::hex << _pid);
 
         // advanced SR3XX devices do not fit the "old" fw versions and 
         // legacy SR3XX devices do not fit the "new" fw versions
-        return (firmware_version(fw_version) >= firmware_version(min_max_fw_it->second.first)) &&
+        bool result = (firmware_version(fw_version) >= firmware_version(min_max_fw_it->second.first)) &&
             (firmware_version(fw_version) <= firmware_version(min_max_fw_it->second.second));
+        if (!result)
+            LOG_ERROR("Firmware version isn't compatible" << fw_version);
+
+        return result;
     }
 
     void sr3xx_camera::create_snapshot(std::shared_ptr<debug_interface>& snapshot) const

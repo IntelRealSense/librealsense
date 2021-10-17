@@ -6,12 +6,20 @@ import java.util.List;
 public class Sensor extends Options {
 
     Sensor(long h) {
-        mOwner = false;
         mHandle = h;
     }
 
     public List<StreamProfile> getStreamProfiles(){
         long[] streamProfilesHandles = nGetStreamProfiles(mHandle);
+        List<StreamProfile> rv = new ArrayList<>();
+        for(long h : streamProfilesHandles){
+            rv.add(new StreamProfile(h));
+        }
+        return rv;
+    }
+
+    public List<StreamProfile> getActiveStreams(){
+        long[] streamProfilesHandles = nGetActiveStreams(mHandle);
         List<StreamProfile> rv = new ArrayList<>();
         for(long h : streamProfilesHandles){
             rv.add(new StreamProfile(h));
@@ -103,6 +111,7 @@ public class Sensor extends Options {
     }
 
     private static native long[] nGetStreamProfiles(long handle);
+    private static native long[] nGetActiveStreams(long handle);
     private static native void nRelease(long handle);
     private static native boolean nIsSensorExtendableTo(long handle, int extension);
     private static native void nOpen(long handle, long sp);

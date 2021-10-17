@@ -96,9 +96,14 @@ std::map<uint32_t, std::shared_ptr<playback_sensor>> playback_device::create_pla
                         }
                     }
                 }
+
+                // If all sensors were stopped, we want to stop the device from dispatching frames.
+                // We invoke "stop_internal()" for concurrency reasons
                 if (need_to_stop_device)
                 {
-                    stop_internal();
+                    ( *m_read_thread )->invoke( [this]( dispatcher::cancellable_timer c ) {
+                        stop_internal();
+                    } );
                 }
             };
             if (invoke_required)
@@ -502,15 +507,18 @@ void playback_device::do_loop(T action)
     (*m_read_thread)->invoke([this, action](dispatcher::cancellable_timer c)
     {
         bool action_succeeded = false;
-        try
+        if (m_is_started)
         {
-            action_succeeded = action();
-        }
-        catch(const std::exception& e)
-        {
-            LOG_ERROR("Failed to read next frame from file: " << e.what());
-            //TODO: notify user that playback unexpectedly ended
-            action_succeeded = false; //will make the scope_guard stop the sensors, must return.
+            try
+            {
+                action_succeeded = action();
+            }
+            catch (const std::exception& e)
+            {
+                LOG_ERROR("Failed to read next frame from file: " << e.what());
+                //TODO: notify user that playback unexpectedly ended
+                action_succeeded = false; //will make the scope_guard stop the sensors, must return.
+            }
         }
 
         //On failure, exit thread
@@ -534,9 +542,6 @@ void playback_device::do_loop(T action)
             }
 
             m_last_published_timestamp = device_serializer::nanoseconds(0);
-
-            //After all sensors were stopped, stop_internal() is called and flags m_is_started as false
-            assert(m_is_started == false);
         }
 
         //Continue looping?

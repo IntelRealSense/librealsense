@@ -349,13 +349,16 @@ namespace rs2
             config_file::instance().set(configurations::window::position_y, y);
         });
 
-        glfwSetWindowSizeCallback(_win, [](GLFWwindow* window, int width, int height)
-        {
-            config_file::instance().set(configurations::window::saved_size, true);
-            config_file::instance().set(configurations::window::width, width);
-            config_file::instance().set(configurations::window::height, height);
-            config_file::instance().set(configurations::window::maximized, glfwGetWindowAttrib(window, GLFW_MAXIMIZED));
-        });
+        glfwSetWindowSizeCallback( _win, []( GLFWwindow * window, int width, int height ) {
+            if( width > 0 && height > 0 )
+            {
+                config_file::instance().set( configurations::window::saved_size, true );
+                config_file::instance().set( configurations::window::width, width );
+                config_file::instance().set( configurations::window::height, height );
+                config_file::instance().set( configurations::window::maximized,
+                                             glfwGetWindowAttrib( window, GLFW_MAXIMIZED ) );
+            }
+        } );
 
         setup_icon();
 
@@ -484,7 +487,7 @@ namespace rs2
         if (_query_devices && do_200ms)
         {
             _missing_device = _ctx.query_devices(RS2_PRODUCT_LINE_ANY_INTEL).size() == 0;
-            _hourglass_index = (_hourglass_index + 1) % 5;
+            _hourglass_index = (_hourglass_index + 1) % 4;
 
             if (!_missing_device)
             {

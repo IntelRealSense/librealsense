@@ -41,7 +41,7 @@ namespace rs2
         static export_model make_exporter(std::string name, std::string extension, T (&filters_str)[sz])
         {
             return export_model(name, extension, filters_str, sz);
-            
+
         }
         std::string name;
         std::string extension;
@@ -111,7 +111,7 @@ namespace rs2
 
         void show_top_bar(ux_window& window, const rect& viewer_rect, const device_models_list& devices);
 
-        void render_3d_view(const rect& view_rect, ux_window& win, 
+        void render_3d_view(const rect& view_rect, ux_window& win,
             std::shared_ptr<texture_buffer> texture, rs2::points points);
 
         void render_2d_view(const rect& view_rect, ux_window& win, int output_height,
@@ -120,6 +120,8 @@ namespace rs2
         void gc_streams();
 
         bool is_option_skipped(rs2_option opt) const;
+
+        void disable_measurements();
 
         std::mutex streams_mutex;
         std::map<int, stream_model> streams;
@@ -143,8 +145,8 @@ namespace rs2
         std::map<export_type, export_model> exporters;
         frameset_allocator frameset_alloc;
 
-        void draw_viewport(const rect& viewer_rect, 
-            ux_window& window, int devices, std::string& error_message, 
+        void draw_viewport(const rect& viewer_rect,
+            ux_window& window, int devices, std::string& error_message,
             std::shared_ptr<texture_buffer> texture, rs2::points  f = rs2::points());
 
         bool allow_3d_source_change = true;
@@ -248,7 +250,7 @@ namespace rs2
 
 
         bool _pc_selected = false;
-        
+
 
         temporal_event origin_occluded { std::chrono::milliseconds(3000) };
 
@@ -256,6 +258,6 @@ namespace rs2
         skybox _skybox;
 
         measurement _measurements;
-        
+
     };
 }

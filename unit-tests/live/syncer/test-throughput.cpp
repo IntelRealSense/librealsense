@@ -2,19 +2,19 @@
 // Copyright(c) 2021 Intel Corporation. All Rights Reserved.
 
 //#cmake: static!
-//#test:device D400*
+//#test:device D435
 
 
-#include <stdlib.h> 
-#include "../../catch.h"
-#include "../../unit-tests-common.h"
+#include <unit-tests/test.h>
+#include "../live-common.h"
 
 using namespace rs2;
+
 constexpr int RECEIVE_FRAMES_TIME = 10;
 constexpr float LOW_FPS = 30;
 constexpr float HIGH_FPS = 60;
 
-TEST_CASE("Syncer dynamic FPS - throughput test", "[live]")
+TEST_CASE( "Syncer dynamic FPS - throughput test" )
 {
     typedef enum configuration
     {
@@ -181,18 +181,8 @@ TEST_CASE("Syncer dynamic FPS - throughput test", "[live]")
     };
 
     // Require at least one device to be plugged in
-    rs2::context ctx;
-    auto list = ctx.query_devices();
-    REQUIRE(list.size());
-    auto dev = list.front();
+    auto dev = find_first_device_or_exit();
     auto sensors = dev.query_sensors();
-    REQUIRE(dev.supports(RS2_CAMERA_INFO_PRODUCT_LINE));
-    std::string device_type = list.front().get_info(RS2_CAMERA_INFO_PRODUCT_LINE);
-    if (device_type != "D400")
-    {
-        std::cout << "This test runs only with D400 device!"<< std::endl;
-        exit(EXIT_SUCCESS);
-    }
     int width = 848;
     int height = 480;
 
@@ -204,6 +194,10 @@ TEST_CASE("Syncer dynamic FPS - throughput test", "[live]")
     for (auto& s : sensors)
     {
         auto info = std::string(s.get_info(RS2_CAMERA_INFO_NAME));
+        if( info == "RGB Camera" )
+            rgb_sensor = s;
+        if( info == "Stereo Module" )
+            ir_sensor = s;
         auto stream_profiles = s.get_stream_profiles();
         for (auto& sp : stream_profiles)
         {
@@ -215,20 +209,10 @@ TEST_CASE("Syncer dynamic FPS - throughput test", "[live]")
                 ir_stream_profile.push_back(sp);
         }
         if (s.supports(RS2_OPTION_GLOBAL_TIME_ENABLED))
-        {
             s.set_option(RS2_OPTION_GLOBAL_TIME_ENABLED, 0);
-            if (info == "RGB Camera")
-                rgb_sensor = s;
-
-            if (info == "Stereo Module")
-                ir_sensor = s;
-        }
     }
-    if (rgb_sensor == NULL || ir_sensor == NULL)
-    {
-        std::cout << "ERROR : sensors are not valid!" << std::endl;
-        exit(EXIT_FAILURE);
-    }
+    REQUIRE( rgb_sensor );
+    REQUIRE( ir_sensor );
     if (ir_sensor.supports(RS2_OPTION_ENABLE_AUTO_EXPOSURE))
         ir_sensor.set_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE, false);
     if (rgb_sensor.supports(RS2_OPTION_ENABLE_AUTO_EXPOSURE))

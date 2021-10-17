@@ -672,7 +672,7 @@ namespace librealsense
 
     /** \brief class provided a control
     * that changes min distance value when changing max distance value */
-    class max_distance_option : public proxy_option
+    class max_distance_option : public proxy_option, public observable_option
     {
     public:
         explicit max_distance_option(std::shared_ptr<option> max_option,
@@ -680,21 +680,23 @@ namespace librealsense
             : proxy_option(max_option), _min_option(min_option)
         {}
 
-        void set(float value) override
+        void set( float value ) override
         {
             auto strong = _min_option.lock();
-            if (!strong)
+            if( ! strong )
                 return;
 
             auto min_value = strong->query();
 
-            if (min_value > value)
+            if( min_value > value )
             {
                 auto min = strong->get_range().min;
-                strong->set(min);
+                strong->set( min );
             }
-            _proxy->set(value);
-            _recording_function(*this);
+            _proxy->set( value );
+            _recording_function( *this );
+
+            notify( value );
         }
 
     private:
@@ -703,7 +705,7 @@ namespace librealsense
 
     /** \brief class provided a control
     * that changes max distance value when changing min distance value */
-    class min_distance_option : public proxy_option
+    class min_distance_option : public proxy_option, public observable_option
     {
     public:
         explicit min_distance_option(std::shared_ptr<option> min_option,
@@ -711,21 +713,23 @@ namespace librealsense
             : proxy_option(min_option), _max_option(max_option)
         {}
 
-        void set(float value) override
+        void set( float value ) override
         {
             auto strong = _max_option.lock();
-            if (!strong)
+            if( ! strong )
                 return;
 
             auto max_value = strong->query();
 
-            if (max_value < value)
+            if( max_value < value )
             {
                 auto max = strong->get_range().max;
-                strong->set(max);
+                strong->set( max );
             }
-            _proxy->set(value);
-            _recording_function(*this);
+            _proxy->set( value );
+            _recording_function( *this );
+
+            notify( value );
         }
 
     private:

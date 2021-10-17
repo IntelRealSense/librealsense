@@ -150,19 +150,38 @@ namespace librealsense
 
         _maps = { &jet, &classic, &grayscale, &inv_grayscale, &biomes, &cold, &warm, &quantized, &pattern, &hue };
 
-        auto min_opt = std::make_shared<ptr_option<float>>(0.f, 16.f, 0.1f, 0.f, &_min, "Min range in meters");
+        auto min_opt = std::make_shared< ptr_option< float > >( 0.f, 16.f, 0.1f, 0.f, &_min, "Min range in meters" );
 
-        auto max_opt = std::make_shared<ptr_option<float>>(0.f, 16.f, 0.1f, 6.f, &_max, "Max range in meters");
+        auto max_opt = std::make_shared< ptr_option< float > >( 0.f, 16.f, 0.1f, 6.f, &_max, "Max range in meters" );
 
-        register_option(RS2_OPTION_MAX_DISTANCE,
-            std::make_shared<max_distance_option>(
-                max_opt,
-                min_opt));
+        auto max_dist_opt = std::make_shared< max_distance_option >( max_opt, min_opt );
 
-        register_option(RS2_OPTION_MIN_DISTANCE,
-            std::make_shared<min_distance_option>(
-                min_opt,
-                max_opt));
+        auto min_dist_opt = std::make_shared< min_distance_option >( min_opt, max_opt );
+
+        register_option( RS2_OPTION_MAX_DISTANCE, max_dist_opt );
+
+        register_option( RS2_OPTION_MIN_DISTANCE, min_dist_opt );
+
+        auto hist_opt = std::make_shared< ptr_option< bool > >( false,
+                                                                true,
+                                                                true,
+                                                                true,
+                                                                &_equalize,
+                                                                "Perform histogram equalization" );
+        
+        auto weak_hist_opt = std::weak_ptr< ptr_option< bool > >( hist_opt );
+
+        max_dist_opt->add_observer( [weak_hist_opt]( float val ) {
+            auto strong_hist_opt = weak_hist_opt.lock();
+            if( strong_hist_opt )
+                strong_hist_opt->set( false );
+        } );
+
+        min_dist_opt->add_observer( [weak_hist_opt]( float val ) {
+            auto strong_hist_opt = weak_hist_opt.lock();
+            if( strong_hist_opt )
+                strong_hist_opt->set( false );
+        } );
 
         auto color_map = std::make_shared<ptr_option<int>>(0, (int)_maps.size() - 1, 1, 0, &_map_index, "Color map");
         color_map->set_description(0.f, "Jet");
@@ -218,7 +237,6 @@ namespace librealsense
         });
         register_option(RS2_OPTION_VISUAL_PRESET, preset_opt);
 
-        auto hist_opt = std::make_shared<ptr_option<bool>>(false, true, true, true, &_equalize, "Perform histogram equalization");
         register_option(RS2_OPTION_HISTOGRAM_EQUALIZATION_ENABLED, hist_opt);
     }
 

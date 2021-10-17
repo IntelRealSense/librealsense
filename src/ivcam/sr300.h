@@ -38,10 +38,10 @@ namespace librealsense
 
     static std::map<uint16_t, std::pair<std::string, std::string>> device_to_fw_min_max_version = {
             { SR300_PID,        {"3.21.0.0", "3.26.3.0"}},
-            { SR300v2_PID,      {"3.27.0.0", "99.99.99.99"}},
-            { SR306_PID,        {"3.28.3.0", "99.99.99.99"}},
-            { SR306_PID_DBG,    {"3.28.3.0", "99.99.99.99"}},
-            { SR300_RECOVERY,   {"3.21.0.0", "99.99.99.99"}}
+            { SR300v2_PID,      {"3.27.0.0", "3.99.99.99"}},
+            { SR306_PID,        {"3.28.3.0", "3.99.99.99"}},
+            { SR306_PID_DBG,    {"3.28.3.0", "3.99.99.99"}},
+            { SR300_RECOVERY,   {"3.21.0.0", "3.99.99.99"}}
     };
 
     class sr300_timestamp_reader : public frame_timestamp_reader

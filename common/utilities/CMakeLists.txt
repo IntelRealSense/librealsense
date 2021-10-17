@@ -13,3 +13,5 @@ target_sources(${LRS_TARGET}
         "${CMAKE_CURRENT_LIST_DIR}/time/l500/get-mfr-ww.h"
         "${CMAKE_CURRENT_LIST_DIR}/time/l500/get-mfr-ww.cpp"
 )
+
+include(${CMAKE_CURRENT_LIST_DIR}/os/CMakeLists.txt)

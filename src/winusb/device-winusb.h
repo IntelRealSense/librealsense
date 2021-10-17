@@ -11,7 +11,6 @@
 #include "messenger-winusb.h"
 
 #include <winusb.h>
-#include <atlstr.h>
 #include <Windows.h>
 #include <Sddl.h>
 #include <string>

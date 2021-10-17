@@ -43,6 +43,7 @@ void init_processing(py::module &m) {
         }, "timeout_ms"_a = 5000, py::call_guard<py::gil_scoped_release>()) // No docstring in C++
         .def("__call__", &rs2::frame_queue::operator(), "Identical to calling enqueue.", "f"_a)
         .def("capacity", &rs2::frame_queue::capacity, "Return the capacity of the queue.")
+        .def("size", &rs2::frame_queue::size, "Number of enqueued frames.")
         .def("keep_frames", &rs2::frame_queue::keep_frames, "Return whether or not the queue calls keep on enqueued frames.");
 
     py::class_<rs2::processing_block, rs2::options> processing_block(m, "processing_block", "Define the processing block workflow, inherit this class to "
@@ -100,20 +101,38 @@ void init_processing(py::module &m) {
     // rs2::asynchronous_syncer
 
     py::class_<rs2::syncer> syncer(m, "syncer", "Sync instance to align frames from different streams");
-    syncer.def(py::init<int>(), "queue_size"_a = 1)
-        .def("wait_for_frames", &rs2::syncer::wait_for_frames, "Wait until a coherent set "
-             "of frames becomes available", "timeout_ms"_a = 5000, py::call_guard<py::gil_scoped_release>())
-        .def("poll_for_frames", [](const rs2::syncer &self) {
-            rs2::frameset frames;
-            self.poll_for_frames(&frames);
-            return frames;
-        }, "Check if a coherent set of frames is available")
-        .def("try_wait_for_frames", [](const rs2::syncer &self, unsigned int timeout_ms) {
-            rs2::frameset fs;
-            auto success = self.try_wait_for_frames(&fs, timeout_ms);
-            return std::make_tuple(success, fs);
-        }, "timeout_ms"_a = 5000, py::call_guard<py::gil_scoped_release>()); // No docstring in C++
-        /*.def("__call__", &rs2::syncer::operator(), "frame"_a)*/
+    auto poll_for_frame = []( const rs2::syncer & self ) {
+        rs2::frameset frames;
+        self.poll_for_frames( &frames );
+        return frames;
+    };
+    auto wait_for_frame = []( const rs2::syncer& self, unsigned int timeout_ms ) {
+        rs2::frameset fs;
+        auto success = self.try_wait_for_frames( &fs, timeout_ms );
+        return std::make_tuple( success, fs );
+    };
+    syncer.def( py::init< int >(), "queue_size"_a = 1 )
+        .def( "wait_for_frames",
+              &rs2::syncer::wait_for_frames,
+              "Wait until a coherent set of frames becomes available",
+              "timeout_ms"_a = 5000,
+              py::call_guard< py::gil_scoped_release >() )
+        .def( "wait_for_frame",  // same, but with a name that matches frame_queue!
+              &rs2::syncer::wait_for_frames,
+              "Wait until a coherent set of frames becomes available",
+              "timeout_ms"_a = 5000,
+              py::call_guard< py::gil_scoped_release >() )
+        .def( "poll_for_frames", poll_for_frame, "Check if a coherent set of frames is available" )
+        .def( "poll_for_frame",  poll_for_frame, "Check if a coherent set of frames is available" )  // same, but with a name that matches frame_queue!
+        .def( "try_wait_for_frames",
+              wait_for_frame,
+              "timeout_ms"_a = 5000,
+              py::call_guard< py::gil_scoped_release >() )
+        .def( "try_wait_for_frame",  // same, but with a name that matches frame_queue!
+              wait_for_frame,
+              "timeout_ms"_a = 5000,
+              py::call_guard< py::gil_scoped_release >() );
+      /*.def("__call__", &rs2::syncer::operator(), "frame"_a)*/
 
     py::class_<rs2::align, rs2::filter> align(m, "align", "Performs alignment between depth image and another image.");
     align.def(py::init<rs2_stream>(), "To perform alignment of a depth image to the other, set the align_to parameter with the other stream type.\n"

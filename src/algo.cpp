@@ -561,12 +561,9 @@ void auto_exposure_algorithm::histogram_score(std::vector<int>& h, const int tot
     }
 }
 
-rect_gaussian_dots_target_calculator::rect_gaussian_dots_target_calculator(int width, int height)
-    : _width(width), _height(height)
+rect_gaussian_dots_target_calculator::rect_gaussian_dots_target_calculator(int width, int height, int roi_start_x, int roi_start_y, int roi_width, int roi_height)
+    : _full_width(width), _full_height(height), _roi_start_x(roi_start_x), _roi_start_y(roi_start_y), _width(roi_width), _height(roi_height)
 {
-    if (width != 256 || height != 144)
-        throw std::runtime_error(to_string() << "Only 256x144 resolution is supported!");
-
     _wt = _width - _tsize;
     _ht = _height - _tsize;
     _size = _width * _height;
@@ -579,7 +576,7 @@ rect_gaussian_dots_target_calculator::rect_gaussian_dots_target_calculator(int w
     _ncc.resize(_size);
     memset(_ncc.data(), 0, _size * sizeof(double));
 
-    _buf.resize(_patch_size * _patch_size);
+    _buf.resize(_patch_size);
 }
 
 rect_gaussian_dots_target_calculator::~rect_gaussian_dots_target_calculator()
@@ -599,7 +596,19 @@ bool rect_gaussian_dots_target_calculator::calculate(const uint8_t* img, float* 
         ret = validate_corners(img);
 
     if (ret)
-        calculate_rect_sides(target_dims);
+    {
+        if (target_dims_size == 4)
+            calculate_rect_sides(target_dims);
+        else if (target_dims_size == 8)
+        {
+            int j = 0;
+            for (int i = 0; i < 4; ++i)
+            {
+                target_dims[j++] = static_cast<float>(_corners[i].x + _roi_start_x);
+                target_dims[j++] = static_cast<float>(_corners[i].y + _roi_start_y);
+            }
+        }
+    }
 
     return ret;
 }
@@ -608,26 +617,39 @@ void rect_gaussian_dots_target_calculator::normalize(const uint8_t* img)
 {
     uint8_t min_val = 255;
     uint8_t max_val = 0;
-    const uint8_t* p = img;
-    for (int i = 0; i < _size; ++i)
+
+    int jumper = _full_width - _width;
+    const uint8_t* p = img + _roi_start_y * _full_width + _roi_start_x;
+    for (int j = 0; j < _height; ++j)
     {
-        if (*p < min_val)
-            min_val = *p;
+        for (int i = 0; i < _width; ++i)
+        {
+            if (*p < min_val)
+                min_val = *p;
 
-        if (*p > max_val)
-            max_val = *p;
+            if (*p > max_val)
+                max_val = *p;
 
-        ++p;
+            ++p;
+        }
+
+        p += jumper;
     }
 
     if (max_val > min_val)
     {
-        double factor = 1.0f / (max_val - min_val);
+        double factor = 1.0 / (max_val - min_val);
 
         p = img;
         double* q = _img.data();
-        for (int i = 0; i < _size; ++i)
-            *q++ = 1.0f - (*p++ - min_val) * factor;
+        p = img + _roi_start_y * _full_width + _roi_start_x;
+        for (int j = 0; j < _height; ++j)
+        {
+            for (int i = 0; i < _width; ++i)
+                *q++ = 1.0 - (*p++ - min_val) * factor;
+
+            p += jumper;
+        }
     }
 }
 
@@ -640,9 +662,9 @@ void rect_gaussian_dots_target_calculator::calculate_ncc()
     const double* pt = nullptr;
     const double* qi = nullptr;
 
-    double sum = 0.0f;
-    double mean = 0.0f;
-    double norm = 0.0f;
+    double sum = 0.0;
+    double mean = 0.0;
+    double norm = 0.0;
 
     double min_val = 2.0;
     double max_val = -2.0;
@@ -682,7 +704,7 @@ void rect_gaussian_dots_target_calculator::calculate_ncc()
 
             pt = _template.data();
             pit = _imgt.data();
-            sum = 0.0f;
+            sum = 0.0;
             for (int k = 0; k < _tsize2; ++k)
                 sum += *pit++ * *pt++;
 
@@ -703,7 +725,7 @@ void rect_gaussian_dots_target_calculator::calculate_ncc()
 
     if (max_val > min_val)
     {
-        double factor = 1.0f / (max_val - min_val);
+        double factor = 1.0 / (max_val - min_val);
         double div = 1.0 - _thresh;
         pncc = _ncc.data();
         for (int i = 0; i < _size; ++i)
@@ -863,36 +885,16 @@ void rect_gaussian_dots_target_calculator::refine_corners()
 
 bool rect_gaussian_dots_target_calculator::validate_corners(const uint8_t* img)
 {
-    uint8_t peaks[4] = { 0 };
-    int idx = 0;
-    int x = 0;
-    int y = 0;
-    for (int i = 0; i < 4; ++i)
+    static const int pos_diff_threshold = 4;
+    if (abs(_corners[0].x - _corners[2].x) > pos_diff_threshold ||
+        abs(_corners[1].x - _corners[3].x) > pos_diff_threshold ||
+        abs(_corners[0].y - _corners[1].y) > pos_diff_threshold ||
+        abs(_corners[2].y - _corners[3].y) > pos_diff_threshold)
     {
-        y = static_cast<int>(_corners[i].y + 0.5f);
-        x = static_cast<int>(_corners[i].x + 0.5f);
-        idx = y * _width + x;
-        peaks[i] = img[idx];
+        return false;
     }
 
-    static const int peak_diff_thresh = 12;
-    bool ok = true;
-    for (int j = 0; j < 4; ++j)
-    {
-        for (int i = 0; i < 4; ++i)
-        {
-            if (std::abs(peaks[i] - peaks[j]) > peak_diff_thresh)
-            {
-                ok = false;
-                break;
-            }
-
-            if (!ok)
-                break;
-        }
-    }
-
-    return ok;
+    return true;
 }
 
 void rect_gaussian_dots_target_calculator::calculate_rect_sides(float* rect_sides)
@@ -1003,4 +1005,22 @@ double rect_gaussian_dots_target_calculator::subpixel_agj(double* f, int s)
     }
 
     return (left_mv + right_mv) / 2;
+}
+
+// return 1 if target pattern is found and its location is calculated, zero otherwise.
+int rect_calculator::extract_target_dims(const rs2_frame* frame_ref, float4& rect_sides)
+{
+    int ret = 0;
+    rs2_error* e = nullptr;
+
+    //Target dimension array size is predefined. 4 for RS2_CALIB_TARGET_RECT_GAUSSIAN_DOT_VERTICES and 8 for RS2_CALIB_TARGET_POS_GAUSSIAN_DOT_VERTICES.
+    int dim_size = _roi ? 4 : 8;
+    rs2_calib_target_type tgt_type = _roi ? RS2_CALIB_TARGET_ROI_RECT_GAUSSIAN_DOT_VERTICES : RS2_CALIB_TARGET_RECT_GAUSSIAN_DOT_VERTICES;
+    rs2_extract_target_dimensions(frame_ref, tgt_type, reinterpret_cast<float*>(&rect_sides), dim_size, &e);
+    if (e == nullptr)
+    {
+        ret = 1;
+    }
+
+    return ret;
 }

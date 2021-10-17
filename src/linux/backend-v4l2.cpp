@@ -5,6 +5,11 @@
 #include "backend-hid.h"
 #include "backend.h"
 #include "types.h"
+#if defined(USING_UDEV)
+#include "udev-device-watcher.h"
+#else
+#include "../polling-device-watcher.h"
+#endif
 #include "usb/usb-enumerator.h"
 #include "usb/usb-device.h"
 
@@ -1275,6 +1280,27 @@ namespace librealsense
         {
             struct v4l2_control control = {get_cid(opt), value};
             if (RS2_OPTION_ENABLE_AUTO_EXPOSURE==opt) { control.value = value ? V4L2_EXPOSURE_APERTURE_PRIORITY : V4L2_EXPOSURE_MANUAL; }
+            
+            // We chose not to protect the subscribe / unsubscribe with mutex due to performance reasons,
+            // we prefer returning on timeout (and let the retry mechanism try again if exist) than blocking the main thread on every set command
+
+
+            // RAII to handle unsubscribe in case of exceptions
+            std::unique_ptr< uint32_t, std::function< void( uint32_t * ) > > unsubscriber(
+                new uint32_t( control.id ),
+                [this]( uint32_t * id ) {
+                    if (id)
+                    {
+                        // `unsubscribe_from_ctrl_event()` may throw so we first release the memory allocated and than call it.
+                        auto local_id = *id;
+                        delete id;
+                        unsubscribe_from_ctrl_event( local_id );
+                    }
+                } );
+
+            subscribe_to_ctrl_event(control.id);
+
+            // Set value
             if (xioctl(_fd, VIDIOC_S_CTRL, &control) < 0)
             {
                 if (errno == EIO || errno == EAGAIN) // TODO: Log?
@@ -1282,6 +1308,9 @@ namespace librealsense
 
                 throw linux_backend_exception("xioctl(VIDIOC_S_CTRL) failed");
             }
+
+            if (!pend_for_ctrl_status_event())
+                return false;
 
             return true;
         }
@@ -1572,6 +1601,51 @@ namespace librealsense
             LOG_INFO("Trying to configure fourcc " << fourcc_to_string(fmt.fmt.pix.pixelformat));
         }
 
+        void v4l_uvc_device::subscribe_to_ctrl_event( uint32_t control_id )
+        {
+            struct v4l2_event_subscription event_subscription ;
+            event_subscription.flags = V4L2_EVENT_SUB_FL_ALLOW_FEEDBACK;
+            event_subscription.type =  V4L2_EVENT_CTRL;
+            event_subscription.id = control_id;
+            memset(event_subscription.reserved,0, sizeof(event_subscription.reserved));
+            if  (xioctl(_fd, VIDIOC_SUBSCRIBE_EVENT, &event_subscription) < 0)
+            {
+                throw linux_backend_exception(to_string() << "xioctl(VIDIOC_SUBSCRIBE_EVENT) with control_id = " << control_id << " failed");
+            }
+        }
+
+        void v4l_uvc_device::unsubscribe_from_ctrl_event( uint32_t control_id )
+        {
+            struct v4l2_event_subscription event_subscription ;
+            event_subscription.flags = V4L2_EVENT_SUB_FL_ALLOW_FEEDBACK;
+            event_subscription.type =  V4L2_EVENT_CTRL;
+            event_subscription.id = control_id;
+            memset(event_subscription.reserved,0, sizeof(event_subscription.reserved));
+            if  (xioctl(_fd, VIDIOC_UNSUBSCRIBE_EVENT, &event_subscription) < 0)
+            {
+                throw linux_backend_exception(to_string() << "xioctl(VIDIOC_UNSUBSCRIBE_EVENT) with control_id = " << control_id << " failed");
+            }
+        }
+
+
+        bool v4l_uvc_device::pend_for_ctrl_status_event()
+        {
+            struct v4l2_event event;
+            memset(&event, 0 , sizeof(event));
+
+            // Poll registered events and verify that set control event raised (wait max of 10 * 2 = 20 [ms])
+            static int MAX_POLL_RETRIES = 10;
+            for ( int i = 0 ; i < MAX_POLL_RETRIES && event.type != V4L2_EVENT_CTRL ; i++)
+            {
+                if(xioctl(_fd, VIDIOC_DQEVENT, &event) < 0)
+                {
+                    std::this_thread::sleep_for(std::chrono::milliseconds(2));
+                }
+            }
+
+            return event.type == V4L2_EVENT_CTRL;
+        }
+
         v4l_uvc_meta_device::v4l_uvc_meta_device(const uvc_device_info& info, bool use_memory_map):
             v4l_uvc_device(info,use_memory_map),
             _md_fd(0),
@@ -1848,7 +1922,11 @@ namespace librealsense
 
         std::shared_ptr<device_watcher> v4l_backend::create_device_watcher() const
         {
-            return std::make_shared<polling_device_watcher>(this);
+#if defined(USING_UDEV)
+            return std::make_shared< udev_device_watcher >( this );
+#else
+            return std::make_shared< polling_device_watcher >( this );
+#endif
         }
 
         std::shared_ptr<backend> create_backend()

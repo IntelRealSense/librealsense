@@ -8,10 +8,9 @@
 #include "usb/usb-enumerator.h"
 #include "device-winusb.h"
 #include "interface-winusb.h"
-#include "win/win-helpers.h"
+#include "../common/utilities/os/hresult.h"
 #include "types.h"
 
-#include <atlstr.h>
 #include <Windows.h>
 #include <Sddl.h>
 #include <string>
@@ -28,6 +27,7 @@ namespace librealsense
 {
     namespace platform
     {
+
         //https://docs.microsoft.com/en-us/windows-hardware/drivers/usbcon/supported-usb-classes#microsoft-provided-usb-device-class-drivers
         const std::map<std::string, usb_class> guids = {
             {"{175695cd-30d9-4f87-8be3-5a8270f49a31}", RS2_USB_CLASS_VENDOR_SPECIFIC}, //Ivcam HWM
@@ -78,11 +78,11 @@ namespace librealsense
             return query_by_interface(guid);
         }
 
-        usb_device_info get_info(const std::wstring device_wstr)
+        usb_device_info get_info( const std::wstring & device_wstr )
         {
             usb_device_info rv{};
             std::smatch matches;
-            std::string device_str(device_wstr.begin(), device_wstr.end());
+            std::string device_str = utilities::string::windows::win_to_utf( device_wstr );
 
             std::regex regex_camera_interface("\\b(.*VID_)(.*)(&PID_)(.*)(&MI_)(.*)(#.*&)(.*)(&.*)(&.*)(.*#)(.*)", std::regex_constants::icase);
             std::regex regex_usb_interface("\\b(.*VID_)(.*)(&PID_)(.*)(#.*&)(.*)(&.*)(&.*)", std::regex_constants::icase);

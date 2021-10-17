@@ -19,7 +19,7 @@ device_options::device_options( std::shared_ptr< librealsense::context > ctx,
     auto & depth_sensor = get_depth_sensor();
 
     // Keep the USB power on while triggering multiple HW monitor commands on it.
-    ivcam2::group_multiple_fw_calls( depth_sensor, [&]() {
+    group_multiple_fw_calls( depth_sensor, [&]() {
         auto default_sensor_mode = RS2_SENSOR_MODE_VGA;
 
         std::map< rs2_option, std::pair< amc_control, std::string > > options = {

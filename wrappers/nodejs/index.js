@@ -6112,13 +6112,20 @@ const calib_target_type = {
      * the centers of gaussuian dots <br>Equivalent to its uppercase counterpart.
      */
     calib_target_rect_gaussian_dot_vertices: 'rect-gaussian-dot-vertices',
+    calib_target_roi_rect_gaussian_dot_vertices: 'roi-rect-gaussian-dot-vertices',
+    calib_target_pos_gaussian_dot_vertices: 'pos-gaussian-dot-vertices',
 
     /**
      * Frame timestamp was measured in relation to the camera clock <br>Equivalent to its lowercase
      * counterpart.
      * @type {Integer}
      */
-    CALIB_TARGET_RECT_GAUSSIAN_DOT_VERTICES: RS2.RS2_CALIB_TARGET_RECT_GAUSSIAN_DOT_VERTICES,
+    CALIB_TARGET_RECT_GAUSSIAN_DOT_VERTICES: // linesplit due to ESLint 80-char max-len
+      RS2.RS2_CALIB_TARGET_RECT_GAUSSIAN_DOT_VERTICES,
+    CALIB_TARGET_ROI_RECT_GAUSSIAN_DOT_VERTICES:
+      RS2.RS2_CALIB_TARGET_ROI_RECT_GAUSSIAN_DOT_VERTICES,
+    CALIB_TARGET_POS_GAUSSIAN_DOT_VERTICES:
+      RS2.RS2_CALIB_TARGET_POS_GAUSSIAN_DOT_VERTICES,
     /**
      * Number of enumeration values. Not a valid input: intended to be used in for-loops.
      * @type {Integer}
@@ -6132,6 +6139,10 @@ const calib_target_type = {
         switch (i) {
             case this.CALIB_TARGET_RECT_GAUSSIAN_DOT_VERTICES:
                 return this.calib_target_rect_gaussian_dot_vertices;
+            case this.CALIB_TARGET_ROI_RECT_GAUSSIAN_DOT_VERTICES:
+                return this.calib_target_roi_rect_gaussian_dot_vertices;
+            case this.CALIB_TARGET_POS_GAUSSIAN_DOT_VERTICES:
+                return this.calib_target_pos_gaussian_dot_vertices;
             default:
                 throw new TypeError('calib_target_type.calibTargetTypeToString() expects a valid value as the 1st argument'); // eslint-disable-line
         }

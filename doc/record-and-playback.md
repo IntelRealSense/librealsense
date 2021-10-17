@@ -433,7 +433,6 @@ This message defines a Motion device's intrinsic: scale, bias, and variances
       </tr>
    </tbody>
 </table>
-
 ----------
 
 ##### Notification
@@ -543,14 +542,16 @@ A record-able version of an extension holds an action to perform whenever the ex
 
 ## Playback
 
-Playback device is an implementation of device interface which reads from a
-file to simulate a real device.                                              
-
+Playback device is an implementation of device interface which reads from a file to simulate a real device.
 Playback device holds playback sensors which simulate real sensors.         
-
-When creating the playback device, it will read the initial device snapshot from the file in order to map itself and
-its sensors in matters of functionality and data provided.                              
-When creating each sensor, the device will create a sensor from the         
-sensor's initial snapshot.                            
+When creating the playback device, it will read the initial device snapshot from the file in order to map itself and its sensors in matters of functionality and data provided.               
+When creating each sensor, the device will create a sensor from the sensor's initial snapshot. 
 Each sensor will hold a single thread for each of the sensor's streams which is used to raise frames to the user.
 The playback device holds a single reading thread that reads the next frame in a loop and dispatches the frame to the relevant sensor.
+The reading of the file, as well as each sensor's handling of frames, are done in separate threads. All this is managed via a common `dispatcher` concurrency mechanism: an `invoke()` call enqueues an `action` and is dequeued and run from a worker thread.
+
+### Sequence Diagram
+![playback](./img/playback/playback-flow.png)
+
+*Note: this flow uses the sensor API; `librealsense2` supports playback with the pipeline API as well, which looks similar inside the playback device.*
+*Created using  [DrawIO](https://app.diagrams.net/)

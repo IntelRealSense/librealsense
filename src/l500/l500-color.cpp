@@ -399,7 +399,7 @@ namespace librealsense
 
                 try {
                     // Keep the USB power on while triggering multiple calls on it.
-                    ivcam2::group_multiple_fw_calls(*this, [&]() {
+                    group_multiple_fw_calls(*this, [&]() {
                         // endpoint 5 - 32KB
                         command cmdTprocGranEp5(ivcam2::TPROC_USB_GRAN_SET, 5, usb_trb);
                         _owner->_hw_monitor->send(cmdTprocGranEp5);

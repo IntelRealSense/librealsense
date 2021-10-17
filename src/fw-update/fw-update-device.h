@@ -151,6 +151,7 @@ namespace librealsense
         std::string _highest_fw_version;
         std::string _last_fw_version;
         std::string _physical_port;
+        std::string _pid;
         bool _is_dfu_locked = false;
     };
 }

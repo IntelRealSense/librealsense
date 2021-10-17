@@ -298,11 +298,16 @@ namespace librealsense
             occlusion_monotonic_scan,
             (uint8_t*)&_occlusion_filter->_occlusion_filter,
             "Occlusion removal");
-        occlusion_invalidation->on_set([this, occlusion_invalidation](float val)
-        {
-            if (!occlusion_invalidation->is_valid(val))
-                throw invalid_value_exception(to_string()
-                    << "Unsupported occlusion filtering requiested " << val << " is out of range.");
+
+        // Passing shared_ptr to capture list generates circular dependency and a memleak
+        auto occ_inv_weak = std::weak_ptr< ptr_option< uint8_t > >( occlusion_invalidation );
+        occlusion_invalidation->on_set( [this, occ_inv_weak]( float val ) {
+            if( auto occ_inv_shared = occ_inv_weak.lock() )
+            {
+                if( ! occ_inv_shared->is_valid( val ) )
+                    throw invalid_value_exception( to_string() << "Unsupported occlusion filtering mode requiested "
+                                                               << val << " is out of range." );
+            }
 
             _occlusion_filter->set_mode(static_cast<uint8_t>(val));
 

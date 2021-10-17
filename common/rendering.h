@@ -6,12 +6,16 @@
 #ifndef NOMINMAX
 #define NOMINMAX
 #endif
-#include <glad/glad.h>
 
 #include <librealsense2/rs.hpp>
 #include <librealsense2-gl/rs_processing_gl.hpp>
 #include <utilities/time/timer.h>
 
+#include "matrix4.h"
+#include "float3.h"
+#include "float2.h"
+#include "rect.h"
+#include "animated.h"
 
 #include <vector>
 #include <algorithm>
@@ -25,7 +29,6 @@
 #include <array>
 #include <chrono>
 #define _USE_MATH_DEFINES
-#include <cmath>
 #include <map>
 #include <unordered_map>
 #include <mutex>
@@ -33,6 +36,8 @@
 #include <iostream>
 #include <thread>
 #include <chrono>
+
+#include <glad/glad.h>
 
 #ifdef _MSC_VER
 #ifndef GL_CLAMP_TO_BORDER
@@ -100,25 +105,6 @@ namespace rs2
         mutable std::mutex _mtx;
     };
 
-    inline float clamp(float x, float min, float max)
-    {
-        return std::max(std::min(max, x), min);
-    }
-
-    inline float smoothstep(float x, float min, float max)
-    {
-        if (max == min)
-        {
-            x = clamp((x - min) , 0.0, 1.0);
-        }
-        else
-        {
-            x = clamp((x - min) / (max - min), 0.0, 1.0);
-        }
-        
-        return x*x*(3 - 2 * x);
-    }
-
     inline float lerp(float a, float b, float t)
     {
         return b * t + a * (1 - t);
@@ -133,73 +119,14 @@ namespace rs2
     };
     inline bool operator==(const plane& lhs, const plane& rhs) { return lhs.a == rhs.a && lhs.b == rhs.b && lhs.c == rhs.c && lhs.d == rhs.d; }
 
-    struct float3
-    {
-        float x, y, z;
-
-        float length() const { return sqrt(x*x + y*y + z*z); }
-
-        float3 normalize() const
-        {
-            return (length() > 0)? float3{ x / length(), y / length(), z / length() }:*this;
-        }
-    };
-
-    struct float4
-    {
-        float x, y, z, w;
-    };
-
-    inline float3 cross(const float3& a, const float3& b)
-    {
-        return { a.y * b.z - b.y * a.z, a.x * b.z - b.x * a.z, a.x * b.y - a.y * b.x };
-    }
-
     inline float evaluate_plane(const plane& plane, const float3& point)
     {
         return plane.a * point.x + plane.b * point.y + plane.c * point.z + plane.d;
     }
 
-    inline float3 operator*(const float3& a, float t)
-    {
-        return { a.x * t, a.y * t, a.z * t };
-    }
-
-    inline float3 operator/(const float3& a, float t)
-    {
-        return { a.x / t, a.y / t, a.z / t };
-    }
-
-    inline float3 operator+(const float3& a, const float3& b)
-    {
-        return { a.x + b.x, a.y + b.y, a.z + b.z };
-    }
-
-    inline float3 operator-(const float3& a, const float3& b)
-    {
-        return { a.x - b.x, a.y - b.y, a.z - b.z };
-    }
-
     inline float3 lerp(const float3& a, const float3& b, float t)
     {
         return b * t + a * (1 - t);
-    }
-
-    struct float2
-    {
-        float x, y;
-
-        float length() const { return sqrt(x*x + y*y); }
-
-        float2 normalize() const
-        {
-            return { x / length(), y / length() };
-        }
-    };
-
-    inline float dot(const rs2::float2& a, const rs2::float2& b)
-    {
-        return a.x * b.x + a.y * b.y;
     }
 
     inline rs2::float2 lerp(const rs2::float2& a, const rs2::float2& b, float t)
@@ -269,175 +196,6 @@ namespace rs2
         return { a * b.x, a * b.y };
     }
 
-    struct matrix4
-    {
-        float mat[4][4];
-
-        operator float*() const
-        {
-            return (float*)&mat;
-        } 
-
-        static matrix4 identity()
-        {
-            matrix4 m;
-            for (int i = 0; i < 4; i++)
-                m.mat[i][i] = 1.f;
-            return m;
-        }
-
-        matrix4()
-        {
-            std::memset(mat, 0, sizeof(mat));
-        }
-
-        matrix4(float vals[4][4])
-        {
-            std::memcpy(mat,vals,sizeof(mat));
-        }
-
-        // convert glGetFloatv output to matrix4
-        //
-        //   float m[16] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15 };
-        // into
-        //   rs2::matrix4 m = { {0, 1, 2, 3}, {4, 5, 6, 7}, {8, 9, 10, 11}, {12, 13, 14, 15} };
-        //       0     1     2     3
-        //       4     5     6     7
-        //       8     9    10    11
-        //       12   13    14    15
-        matrix4(float vals[16])
-        {
-            for (int i = 0; i < 4; i++)
-            {
-                for (int j = 0; j < 4; j++)
-                {
-                    mat[i][j] = vals[i * 4 + j];
-                }
-            }
-        }
-
-        float& operator()(int i, int j) { return mat[i][j]; }
-        const float& operator()(int i, int j) const { return mat[i][j]; }
-
-        //init rotation matrix from quaternion
-        matrix4(const rs2_quaternion& q)
-        {
-            mat[0][0] = 1 - 2*q.y*q.y - 2*q.z*q.z; mat[0][1] = 2*q.x*q.y - 2*q.z*q.w;     mat[0][2] = 2*q.x*q.z + 2*q.y*q.w;     mat[0][3] = 0.0f;
-            mat[1][0] = 2*q.x*q.y + 2*q.z*q.w;     mat[1][1] = 1 - 2*q.x*q.x - 2*q.z*q.z; mat[1][2] = 2*q.y*q.z - 2*q.x*q.w;     mat[1][3] = 0.0f;
-            mat[2][0] = 2*q.x*q.z - 2*q.y*q.w;     mat[2][1] = 2*q.y*q.z + 2*q.x*q.w;     mat[2][2] = 1 - 2*q.x*q.x - 2*q.y*q.y; mat[2][3] = 0.0f;
-            mat[3][0] = 0.0f;                      mat[3][1] = 0.0f;                      mat[3][2] = 0.0f;                      mat[3][3] = 1.0f;
-        }
-
-        //init translation matrix from vector
-        matrix4(const rs2_vector& t)
-        {
-            mat[0][0] = 1.0f; mat[0][1] = 0.0f; mat[0][2] = 0.0f; mat[0][3] = t.x;
-            mat[1][0] = 0.0f; mat[1][1] = 1.0f; mat[1][2] = 0.0f; mat[1][3] = t.y;
-            mat[2][0] = 0.0f; mat[2][1] = 0.0f; mat[2][2] = 1.0f; mat[2][3] = t.z;
-            mat[3][0] = 0.0f; mat[3][1] = 0.0f; mat[3][2] = 0.0f; mat[3][3] = 1.0f;
-        }
-
-        rs2_quaternion normalize(rs2_quaternion a)
-        {
-            float norm = sqrtf(a.x*a.x + a.y*a.y + a.z*a.z + a.w*a.w);
-            rs2_quaternion res = a;
-            res.x /= norm;
-            res.y /= norm;
-            res.z /= norm;
-            res.w /= norm;
-            return res;
-        }
-
-        rs2_quaternion to_quaternion()
-        {
-            float tr[4];
-            rs2_quaternion res;
-            tr[0] = (mat[0][0] + mat[1][1] + mat[2][2]);
-            tr[1] = (mat[0][0] - mat[1][1] - mat[2][2]);
-            tr[2] = (-mat[0][0] + mat[1][1] - mat[2][2]);
-            tr[3] = (-mat[0][0] - mat[1][1] + mat[2][2]);
-            if (tr[0] >= tr[1] && tr[0] >= tr[2] && tr[0] >= tr[3])
-            {
-                float s = 2 * sqrt(tr[0] + 1);
-                res.w = s / 4;
-                res.x = (mat[2][1] - mat[1][2]) / s;
-                res.y = (mat[0][2] - mat[2][0]) / s;
-                res.z = (mat[1][0] - mat[0][1]) / s;
-            }
-            else if (tr[1] >= tr[2] && tr[1] >= tr[3]) {
-                float s = 2 * sqrt(tr[1] + 1);
-                res.w = (mat[2][1] - mat[1][2]) / s;
-                res.x = s / 4;
-                res.y = (mat[1][0] + mat[0][1]) / s;
-                res.z = (mat[2][0] + mat[0][2]) / s;
-            }
-            else if (tr[2] >= tr[3]) {
-                float s = 2 * sqrt(tr[2] + 1);
-                res.w = (mat[0][2] - mat[2][0]) / s;
-                res.x = (mat[1][0] + mat[0][1]) / s;
-                res.y = s / 4;
-                res.z = (mat[1][2] + mat[2][1]) / s;
-            }
-            else {
-                float s = 2 * sqrt(tr[3] + 1);
-                res.w = (mat[1][0] - mat[0][1]) / s;
-                res.x = (mat[0][2] + mat[2][0]) / s;
-                res.y = (mat[1][2] + mat[2][1]) / s;
-                res.z = s / 4;
-            }
-            return normalize(res);
-        }
-
-        void to_column_major(float column_major[16])
-        {
-            column_major[0] = mat[0][0];
-            column_major[1] = mat[1][0];
-            column_major[2] = mat[2][0];
-            column_major[3] = mat[3][0];
-            column_major[4] = mat[0][1];
-            column_major[5] = mat[1][1];
-            column_major[6] = mat[2][1];
-            column_major[7] = mat[3][1];
-            column_major[8] = mat[0][2];
-            column_major[9] = mat[1][2];
-            column_major[10] = mat[2][2];
-            column_major[11] = mat[3][2];
-            column_major[12] = mat[0][3];
-            column_major[13] = mat[1][3];
-            column_major[14] = mat[2][3];
-            column_major[15] = mat[3][3];
-        }
-    };
-
-    inline matrix4 operator*(const matrix4& a, const matrix4& b)
-    {
-        matrix4 res;
-        for (int i = 0; i < 4; i++)
-        {
-            for (int j = 0; j < 4; j++)
-            {
-                float sum = 0.0f;
-                for (int k = 0; k < 4; k++)
-                {
-                    sum += a.mat[i][k] * b.mat[k][j];
-                }
-                res.mat[i][j] = sum;
-            }
-        }
-        return res;
-    }
-
-    inline float4 operator*(const matrix4& a, const float4& b)
-    {
-        float4 res;
-        int i = 0;
-        res.x = a(i, 0) * b.x + a(i, 1) * b.y + a(i, 2) * b.z + a(i, 3) * b.w; i++;
-        res.y = a(i, 0) * b.x + a(i, 1) * b.y + a(i, 2) * b.z + a(i, 3) * b.w; i++;
-        res.z = a(i, 0) * b.x + a(i, 1) * b.y + a(i, 2) * b.z + a(i, 3) * b.w; i++;
-        res.w = a(i, 0) * b.x + a(i, 1) * b.y + a(i, 2) * b.z + a(i, 3) * b.w; i++;
-        return res;
-    }
-
     inline matrix4 tm2_pose_to_world_transformation(const rs2_pose& pose)
     {
         matrix4 rotation(pose.rotation);
@@ -480,233 +238,13 @@ namespace rs2
         float ui_wheel = 0.f;
     };
 
-    template<typename T>
-    T normalizeT(const T& in_val, const T& min, const T& max)
+    inline rect lerp( const rect& r, float t, const rect& other )
     {
-        if (min >= max) return 0;
-        return ((in_val - min)/(max - min));
+        return{
+            rs2::lerp( r.x, other.x, t ), rs2::lerp( r.y, other.y, t ),
+            rs2::lerp( r.w, other.w, t ), rs2::lerp( r.h, other.h, t ),
+        };
     }
-
-    template<typename T>
-    T unnormalizeT(const T& in_val, const T& min, const T& max)
-    {
-        if (min == max) return min;
-        return ((in_val * (max - min)) + min);
-    }
-
-    struct rect
-    {
-        float x, y;
-        float w, h;
-
-        void operator=(const rect& other)
-        {
-            x = other.x;
-            y = other.y;
-            w = other.w;
-            h = other.h;
-        }
-
-        operator bool() const
-        {
-            return w*w > 0 && h*h > 0;
-        }
-
-        bool operator==(const rect& other) const
-        {
-            return x == other.x && y == other.y && w == other.w && h == other.h;
-        }
-
-        bool operator!=(const rect& other) const
-        {
-            return !(*this == other);
-        }
-
-        rect normalize(const rect& normalize_to) const
-        {
-            return rect{normalizeT(x, normalize_to.x, normalize_to.x + normalize_to.w),
-                        normalizeT(y, normalize_to.y, normalize_to.y + normalize_to.h),
-                        normalizeT(w, 0.f, normalize_to.w),
-                        normalizeT(h, 0.f, normalize_to.h)};
-        }
-
-        rect unnormalize(const rect& unnormalize_to) const
-        {
-            return rect{unnormalizeT(x, unnormalize_to.x, unnormalize_to.x + unnormalize_to.w),
-                        unnormalizeT(y, unnormalize_to.y, unnormalize_to.y + unnormalize_to.h),
-                        unnormalizeT(w, 0.f, unnormalize_to.w),
-                        unnormalizeT(h, 0.f, unnormalize_to.h)};
-        }
-
-        // Calculate the intersection between two rects
-        // If the intersection is empty, a rect with width and height zero will be returned
-        rect intersection(const rect& other) const
-        {
-            auto x1 = std::max(x, other.x);
-            auto y1 = std::max(y, other.y);
-            auto x2 = std::min(x + w, other.x + other.w);
-            auto y2 = std::min(y + h, other.y + other.h);
-
-            return{
-                x1, y1,
-                std::max(x2 - x1, 0.f),
-                std::max(y2 - y1, 0.f)
-            };
-        }
-
-        // Calculate the area of the rect
-        float area() const
-        {
-            return w * h;
-        }
-
-        rect cut_by(const rect& r) const
-        {
-            auto x1 = x;
-            auto y1 = y;
-            auto x2 = x + w;
-            auto y2 = y + h;
-
-            x1 = std::max(x1, r.x);
-            x1 = std::min(x1, r.x + r.w);
-            y1 = std::max(y1, r.y);
-            y1 = std::min(y1, r.y + r.h);
-
-            x2 = std::max(x2, r.x);
-            x2 = std::min(x2, r.x + r.w);
-            y2 = std::max(y2, r.y);
-            y2 = std::min(y2, r.y + r.h);
-
-            return { x1, y1, x2 - x1, y2 - y1 };
-        }
-
-        bool contains(const float2& p) const
-        {
-            return (p.x >= x) && (p.x < x + w) && (p.y >= y) && (p.y < y + h);
-        }
-
-        rect pan(const float2& p) const
-        {
-            return { x - p.x, y - p.y, w, h };
-        }
-
-        rect center() const
-        {
-            return{ x + w / 2.f, y + h / 2.f, 0, 0 };
-        }
-
-        rect lerp(float t, const rect& other) const
-        {
-            return{
-                rs2::lerp(x, other.x, t), rs2::lerp(y, other.y, t),
-                rs2::lerp(w, other.w, t), rs2::lerp(h, other.h, t),
-            };
-        }
-
-        rect adjust_ratio(float2 size) const
-        {
-            auto H = static_cast<float>(h), W = static_cast<float>(h) * size.x / size.y;
-            if (W > w)
-            {
-                auto scale = w / W;
-                W *= scale;
-                H *= scale;
-            }
-
-            return{ float(floor(x + floor(w - W) / 2)),
-                    float(floor(y + floor(h - H) / 2)),
-                    W, H };
-        }
-
-        rect scale(float factor) const
-        {
-            return { x, y, w * factor, h * factor };
-        }
-
-        rect grow(int pixels) const
-        {
-            return { x - pixels, y - pixels, w + pixels*2, h + pixels*2 };
-        }
-
-        rect grow(int dx, int dy) const
-        {
-            return { x - dx, y - dy, w + dx*2, h + dy*2 };
-        }
-
-        rect shrink_by(float2 pixels) const
-        {
-            return { x + pixels.x, y + pixels.y, w - pixels.x * 2, h - pixels.y * 2 };
-        }
-
-        rect center_at(const float2& new_center) const
-        {
-            auto c = center();
-            auto diff_x = new_center.x - c.x;
-            auto diff_y = new_center.y - c.y;
-
-            return { x + diff_x, y + diff_y, w, h };
-        }
-
-        rect fit(rect r) const
-        {
-            float new_w = w;
-            float new_h = h;
-
-            if (w < r.w)
-                new_w = r.w;
-
-            if (h < r.h)
-                new_h = r.h;
-
-            auto res = rect{x, y, new_w, new_h};
-            return res.adjust_ratio({w,h});
-        }
-
-        rect zoom(float zoom_factor) const
-        {
-            auto c = center();
-            return scale(zoom_factor).center_at({c.x,c.y});
-        }
-
-        rect enclose_in(rect in_rect) const
-        {
-            rect out_rect{x, y, w, h};
-            if (w > in_rect.w || h > in_rect.h)
-            {
-                return in_rect;
-            }
-
-            if (x < in_rect.x)
-            {
-                out_rect.x = in_rect.x;
-            }
-
-            if (y < in_rect.y)
-            {
-                out_rect.y = in_rect.y;
-            }
-
-
-            if (x + w > in_rect.x + in_rect.w)
-            {
-                out_rect.x = in_rect.x + in_rect.w - w;
-            }
-
-            if (y + h > in_rect.y + in_rect.h)
-            {
-                out_rect.y = in_rect.y + in_rect.h - h;
-            }
-
-            return out_rect;
-        }
-
-        bool intersects(const rect& other) const
-        {
-            return other.contains({ x, y }) || other.contains({ x + w, y }) ||
-                other.contains({ x, y + h }) || other.contains({ x + w, y + h }) ||
-                contains({ other.x, other.y });
-        }
-    };
 
     //////////////////////////////
     // Simple font loading code //
@@ -841,7 +379,7 @@ namespace rs2
                 [](std::pair<clock::time_point, bool> pair) {
                 return pair.second;
             });
-            return size_t(trues) / (float)_measurements.size(); 
+            return size_t(trues) / (float)_measurements.size();
         }
 
         void reset()
@@ -965,7 +503,7 @@ namespace rs2
             {
                 if (!frame.is<gl::gpu_frame>())
                 {
-                    // Points can be uploaded as two different 
+                    // Points can be uploaded as two different
                     // formats: XYZ for verteces and UV for texture coordinates
                     if (prefered_format == RS2_FORMAT_XYZ32F)
                     {
@@ -1018,13 +556,13 @@ namespace rs2
                                 if (!colorized_frame.is<gl::gpu_frame>())
                                 {
                                     data = colorized_frame.get_data();
-                                    
+
                                     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB,
                                         colorized_frame.get_width(),
                                         colorized_frame.get_height(),
                                         0, GL_RGB, GL_UNSIGNED_BYTE,
                                         data);
-                                    
+
                                 }
                                 rendered_frame = colorized_frame;
                             }
@@ -1376,7 +914,7 @@ namespace rs2
             glLineWidth(1);
             glBegin(GL_LINES);
             glColor4f(0.1f, 0.1f, 0.1f, 0.8f);
-            
+
             for (float x = -1.5; x < 1.5; x += step)
             {
                 for (float y = -1.5; y < 1.5; y += step)
@@ -1555,44 +1093,6 @@ namespace rs2
         }
     };
 
-    // Helper class that lets smoothly animate between its values
-    template<class T>
-    class animated
-    {
-    private:
-        T _old, _new;
-        std::chrono::system_clock::time_point _last_update;
-        std::chrono::system_clock::duration _duration;
-    public:
-        animated(T def, std::chrono::system_clock::duration duration = std::chrono::milliseconds(200))
-            : _duration(duration), _old(def), _new(def)
-        {
-            static_assert((std::is_arithmetic<T>::value), "animated class supports arithmetic built-in types only");
-            _last_update = std::chrono::system_clock::now();
-        }
-        animated& operator=(const T& other)
-        {
-            if (other != _new)
-            {
-                _old = get();
-                _new = other;
-                _last_update = std::chrono::system_clock::now();
-            }
-            return *this;
-        }
-        T get() const
-        {
-            auto now = std::chrono::system_clock::now();
-            auto ms = std::chrono::duration_cast<std::chrono::microseconds>(now - _last_update).count();
-            auto duration_ms = std::chrono::duration_cast<std::chrono::microseconds>(_duration).count();
-            auto t = (float)ms / duration_ms;
-            t = std::max(0.f, std::min(rs2::smoothstep(t, 0.f, 1.f), 1.f));
-            return static_cast<T>(_old * (1.f - t) + _new * t);
-        }
-        operator T() const { return get(); }
-        T value() const { return _new; }
-    };
-
     inline bool is_integer(float f)
     {
         return (fabs(fmod(f, 1)) < std::numeric_limits<float>::min());
@@ -1653,15 +1153,6 @@ namespace rs2
         return static_cast<float>(deg * (M_PI / 180.f));
     }
 
-    inline matrix4 identity_matrix()
-    {
-        matrix4 data;
-        for (int i = 0; i < 4; i++)
-            for (int j = 0; j < 4; j++)
-                data.mat[i][j] = (i == j) ? 1.f : 0.f;
-        return data;
-    }
-
     // Single-Wave - helper function that smoothly goes from 0 to 1 between 0 and 0.5,
     // and then smoothly returns from 1 to 0 between 0.5 and 1.0, and stays 0 anytime after
     // Useful to animate variable on and off based on last time something happened
@@ -1672,7 +1163,7 @@ namespace rs2
     }
 
     // convert 3d points into 2d viewport coordinates
-    inline	float2 translate_3d_to_2d(float3 point, matrix4 p, matrix4 v, matrix4 f, int32_t vp[4])
+    inline float2 translate_3d_to_2d(float3 point, matrix4 p, matrix4 v, matrix4 f, int32_t vp[4])
     {
         //
         // retrieve model view and projection matrix
@@ -1694,9 +1185,9 @@ namespace rs2
         // when use matrix4 in glUniformMatrix4fv, transpose option is GL_FALSE so data is passed into
         // shader as column major order
         //
-        //			rs2::matrix4 p = get_matrix(RS2_GL_MATRIX_PROJECTION);
-        //			rs2::matrix4 v = get_matrix(RS2_GL_MATRIX_CAMERA);
-        //			rs2::matrix4 f = get_matrix(RS2_GL_MATRIX_TRANSFORMATION);
+        //          rs2::matrix4 p = get_matrix(RS2_GL_MATRIX_PROJECTION);
+        //          rs2::matrix4 v = get_matrix(RS2_GL_MATRIX_CAMERA);
+        //          rs2::matrix4 f = get_matrix(RS2_GL_MATRIX_TRANSFORMATION);
 
         // matrix * operation in column major, transpose matrix
         //   0   4    8   12

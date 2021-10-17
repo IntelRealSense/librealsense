@@ -118,6 +118,7 @@ EXPORTS
     rs2_try_wait_for_frame
     rs2_enqueue_frame
     rs2_flush_queue
+    rs2_frame_queue_size
 
     rs2_create_error
     rs2_get_failed_function
@@ -128,6 +129,7 @@ EXPORTS
     rs2_exception_type_to_string
     rs2_extension_type_to_string
     rs2_extension_to_string
+    rs2_matchers_to_string
     rs2_playback_status_to_string
     rs2_log_severity_to_string
     rs2_log
@@ -369,10 +371,17 @@ EXPORTS
     rs2_update_firmware_unsigned_cpp
     rs2_check_firmware_compatibility
     rs2_enter_update_state
-    rs2_run_on_chip_calibration_cpp
-    rs2_run_tare_calibration_cpp
+
     rs2_run_on_chip_calibration
+    rs2_run_on_chip_calibration_cpp
     rs2_run_tare_calibration
+    rs2_run_tare_calibration_cpp
+    rs2_run_focal_length_calibration
+    rs2_run_focal_length_calibration_cpp
+    rs2_run_uv_map_calibration
+    rs2_run_uv_map_calibration_cpp
+    rs2_calculate_target_z
+    rs2_calculate_target_z_cpp
     rs2_get_calibration_table
     rs2_set_calibration_table
 

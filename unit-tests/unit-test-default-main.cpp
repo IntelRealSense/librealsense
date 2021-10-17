@@ -37,6 +37,12 @@ int main( int argc, char * argv[] )
              */
              | Opt( test::context, "context" )["--context"]( "Context in which to run the tests" )
              /*
+                 --debug
+
+                 Enable logging of "debug" messages (using test::log.d())
+             */
+             | Opt( test::debug )["--debug"]( "Enable debug logging via test::log.d(...)" )
+             /*
                  --rslog
 
                  Enable logging of LibRS log messages (LOG_DEBUG, etc.) to console.

@@ -3,6 +3,7 @@
 
 #include "rsusb-backend-windows.h"
 #include "types.h"
+#include "../polling-device-watcher.h"
 #include "../uvc/uvc-device.h"
 
 namespace librealsense

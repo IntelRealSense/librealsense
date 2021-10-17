@@ -121,6 +121,12 @@ public class GLPointsFrame extends GLFrame {
     public synchronized void close() {
         if(mFrame != null)
             mFrame.close();
+
+        if (mTexture != null) {
+            mTexture.close();
+            mTexture = null;
+        }
+
         if(mGlTexture != null)
             GLES10.glDeleteTextures(1, mGlTexture);
         mGlTexture = null;

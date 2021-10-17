@@ -2,6 +2,12 @@
 # Copyright(c) 2019 Intel Corporation. All Rights Reserved.
 
 set(COMMON_SRC
+        "${CMAKE_CURRENT_LIST_DIR}/animated.h"
+        "${CMAKE_CURRENT_LIST_DIR}/float2.h"
+        "${CMAKE_CURRENT_LIST_DIR}/float3.h"
+        "${CMAKE_CURRENT_LIST_DIR}/float4.h"
+        "${CMAKE_CURRENT_LIST_DIR}/matrix4.h"
+        "${CMAKE_CURRENT_LIST_DIR}/rect.h"
         "${CMAKE_CURRENT_LIST_DIR}/rendering.h"
         "${CMAKE_CURRENT_LIST_DIR}/model-views.h"
         "${CMAKE_CURRENT_LIST_DIR}/model-views.cpp"
@@ -54,11 +60,17 @@ set(COMMON_SRC
 
     set(UTILITIES_FILES
         "${CMAKE_CURRENT_LIST_DIR}/utilities/number/stabilized-value.h"
-        "${CMAKE_CURRENT_LIST_DIR}/utilities/string/trim-newlines.h"
         "${CMAKE_CURRENT_LIST_DIR}/utilities/string/split.h"
+        "${CMAKE_CURRENT_LIST_DIR}/utilities/string/string-utilities.h"
+        "${CMAKE_CURRENT_LIST_DIR}/utilities/string/trim-newlines.h"
         "${CMAKE_CURRENT_LIST_DIR}/utilities/imgui/wrap.h"
         "${CMAKE_CURRENT_LIST_DIR}/utilities/imgui/wrap.cpp"
         )
+if (WIN32)
+    list(APPEND UTILITIES_FILES
+        "${CMAKE_CURRENT_LIST_DIR}/utilities/string/windows.h"
+        )
+endif()
 
     set(COMMON_SRC
         ${COMMON_SRC}

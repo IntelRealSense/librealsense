@@ -2,6 +2,7 @@
 // Copyright(c) 2020 Intel Corporation. All Rights Reserved.
 
 #include "skybox.h"
+#include "rendering.h"
 
 #include <stb_image.h>
 

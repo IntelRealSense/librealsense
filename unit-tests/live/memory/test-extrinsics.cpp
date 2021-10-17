@@ -2,8 +2,8 @@
 // Copyright(c) 2021 Intel Corporation. All Rights Reserved.
 
 //#cmake: static!
-//#test:device D400*
-//#test:donotrun:!nightly
+//#test:donotrun
+//#test:device D435
 //#test:timeout 480
 
 #include <numeric>
@@ -18,7 +18,7 @@
 using namespace librealsense;
 using namespace librealsense::platform;
 
-constexpr int DELAY_INCREMENT_THRESHOLD = 3; //[%]
+constexpr int DELAY_INCREMENT_THRESHOLD = 4; //[%]
 constexpr int DELAY_INCREMENT_THRESHOLD_IMU = 8; //[%]
 constexpr int SPIKE_THRESHOLD = 2; //[stdev]
 
@@ -205,11 +205,12 @@ TEST_CASE("Extrinsic memory leak detection", "[live]")
             auto start_time = std::chrono::system_clock::now().time_since_epoch();
             auto start_time_milli = std::chrono::duration_cast<std::chrono::milliseconds>(start_time).count();
             bool condition = false;
+            bool all_arrived = false;
             std::mutex mutex;
-            std::mutex mutex_2;
+            std::condition_variable cv;
+
             auto process_frame = [&](const rs2::frame& f)
             {
-                std::lock_guard<std::mutex> lock(mutex_2);
                 auto stream_type = f.get_profile().stream_name();
                 auto frame_num = f.get_frame_number();
                 auto time_of_arrival = f.get_frame_metadata(RS2_FRAME_METADATA_TIME_OF_ARRIVAL);
@@ -220,6 +221,21 @@ TEST_CASE("Extrinsic memory leak detection", "[live]")
                     new_frame[stream_type] = true;
                 }
                 new_frame[stream_type] += 1;
+                if (new_frame.size() == cfg_size)
+                {
+                    int completed = 0;
+                    for (auto it = new_frame.begin(); it != new_frame.end(); it++)
+                    {
+                        if (it->second >= INNER_ITERATIONS_PER_CONFIG)
+                            completed++;
+                    }
+                    // if all streams received more than 20 frames, stop waiting
+                    if (completed == cfg_size)
+                    {
+                        all_arrived = true;
+                        cv.notify_all();
+                    }
+                }
             };
             auto frame_callback = [&](const rs2::frame& f)
             {
@@ -260,29 +276,16 @@ TEST_CASE("Extrinsic memory leak detection", "[live]")
                 }
             }
             // to prevent FW issue, at least 20 frames per stream should arrive
-            while (!condition) // the condition is set to true when at least 20 frames are received per stream
-            {
-                try
-                {
-                    if (new_frame.size() == cfg_size)
-                    {
-                        condition = true;
-                        for (auto it = new_frame.begin(); it != new_frame.end(); it++)
-                        {
-                            if (it->second < INNER_ITERATIONS_PER_CONFIG)
-                            {
-                                condition = false;
-                                break;
-                            }
-                        }
-                        // all streams received more than 10 frames
-                    }
-                }
-                catch (...)
-                {
-                    std::cout << "Iteration failed  " << std::endl;
-                }
-            }
+
+            std::unique_lock<std::mutex> lock(mutex);
+            auto pred = [&](){
+                return all_arrived;
+            };
+            REQUIRE(cv.wait_for(lock, std::chrono::seconds(5), pred));
+
+            if (new_frame.size() > cfg_size)
+                std::cout << "The number of active streams :" << new_frame.size() << " doesn't match the number of total streams:" << cfg_size << std::endl;
+
             if (is_pipe)
             {
                 pipe.stop();
@@ -330,11 +333,13 @@ TEST_CASE("Extrinsic memory leak detection", "[live]")
             // IMU streams have different threshold
             if (stream.first == "Accel" || stream.first == "Gyro") threshold = DELAY_INCREMENT_THRESHOLD_IMU;
             CAPTURE(stream.first, slope, threshold);
+            CAPTURE(stream.second);
             CHECK(slope < threshold);
 
         }
         // 3. "most" iterations have time to first frame delay below a defined threshold
-        std::map<std::string, double> delay_thresholds;
+        // REMOVED : this part is a duplication of : test-t2ff-pipeline.py and test-t2ff-sensor.py
+        /*std::map<std::string, double> delay_thresholds;
         // D400
         delay_thresholds["Accel"] = 1200; // ms
         delay_thresholds["Color"] = 1200; // ms
@@ -378,7 +383,7 @@ TEST_CASE("Extrinsic memory leak detection", "[live]")
             for (auto it = stream_.second.begin(); it != stream_.second.end(); ++it) {
                 CHECK(*it <= delay_thresholds[stream]);
             }
-        }
+        }*/
 
     }
 }
