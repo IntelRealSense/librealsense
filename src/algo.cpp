@@ -638,7 +638,7 @@ void rect_gaussian_dots_target_calculator::normalize(const uint8_t* img)
 
     if (max_val > min_val)
     {
-        double factor = 1.0f / (max_val - min_val);
+        double factor = 1.0 / (max_val - min_val);
 
         p = img;
         double* q = _img.data();
@@ -646,7 +646,7 @@ void rect_gaussian_dots_target_calculator::normalize(const uint8_t* img)
         for (int j = 0; j < _height; ++j)
         {
             for (int i = 0; i < _width; ++i)
-                *q++ = 1.0f - (*p++ - min_val) * factor;
+                *q++ = 1.0 - (*p++ - min_val) * factor;
 
             p += jumper;
         }
@@ -662,9 +662,9 @@ void rect_gaussian_dots_target_calculator::calculate_ncc()
     const double* pt = nullptr;
     const double* qi = nullptr;
 
-    double sum = 0.0f;
-    double mean = 0.0f;
-    double norm = 0.0f;
+    double sum = 0.0;
+    double mean = 0.0;
+    double norm = 0.0;
 
     double min_val = 2.0;
     double max_val = -2.0;
@@ -704,7 +704,7 @@ void rect_gaussian_dots_target_calculator::calculate_ncc()
 
             pt = _template.data();
             pit = _imgt.data();
-            sum = 0.0f;
+            sum = 0.0;
             for (int k = 0; k < _tsize2; ++k)
                 sum += *pit++ * *pt++;
 
@@ -725,7 +725,7 @@ void rect_gaussian_dots_target_calculator::calculate_ncc()
 
     if (max_val > min_val)
     {
-        double factor = 1.0f / (max_val - min_val);
+        double factor = 1.0 / (max_val - min_val);
         double div = 1.0 - _thresh;
         pncc = _ncc.data();
         for (int i = 0; i < _size; ++i)

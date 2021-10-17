@@ -125,7 +125,7 @@ void init_device(py::module &m) {
             return py::make_tuple(self.run_focal_length_calibration(left_queue, right_queue, target_width_mm, target_heigth_mm, adjust_both_sides,
                 &ratio, &angle), ratio, angle);
         }, "Run target-based focal length calibration. This call is executed on the caller's thread.",
-            "left_queue"_a, "right_queue"_a, "target_width_mm"_a, "tremarget_heigth_mm"_a, "adjust_both_sides"_a)
+            "left_queue"_a, "right_queue"_a, "target_width_mm"_a, "tremarget_heigth_mm"_a, "adjust_both_sides"_a,py::call_guard<py::gil_scoped_release>())
 
         .def("run_focal_length_calibration", [](const rs2::auto_calibrated_device& self, rs2::frame_queue left_queue, rs2::frame_queue right_queue,
                 float target_width_mm, float target_heigth_mm, int adjust_both_sides, std::function<void(float)> callback)
