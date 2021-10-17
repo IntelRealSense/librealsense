@@ -1138,6 +1138,13 @@ void rs2_flush_queue(rs2_frame_queue* queue, rs2_error** error) BEGIN_API_CALL
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, queue)
 
+int rs2_frame_queue_size(rs2_frame_queue* queue, rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(queue);
+    return int(queue->queue.size());
+}
+HANDLE_EXCEPTIONS_AND_RETURN(0, queue)
+
 void rs2_get_extrinsics(const rs2_stream_profile* from,
     const rs2_stream_profile* to,
     rs2_extrinsics* extrin, rs2_error** error) BEGIN_API_CALL
@@ -2449,17 +2456,44 @@ void rs2_extract_target_dimensions(const rs2_frame* frame_ref, rs2_calib_target_
     VALIDATE_NOT_NULL(target_dims_size);
 
     auto vf = VALIDATE_INTERFACE(((frame_interface*)frame_ref), librealsense::video_frame);
-    if (vf->get_stream()->get_format() != RS2_FORMAT_Y8)
-        throw std::runtime_error("wrong video frame format");
+    int width = vf->get_width();
+    int height = vf->get_height();
+    auto fmt = vf->get_stream()->get_format();
 
     std::shared_ptr<target_calculator_interface> target_calculator;
     if (calib_type == RS2_CALIB_TARGET_RECT_GAUSSIAN_DOT_VERTICES)
-        target_calculator = std::make_shared<rect_gaussian_dots_target_calculator>(vf->get_width(), vf->get_height());
+        target_calculator = std::make_shared<rect_gaussian_dots_target_calculator>(width, height, 0, 0, width, height);
+    else if (calib_type == RS2_CALIB_TARGET_ROI_RECT_GAUSSIAN_DOT_VERTICES)
+        target_calculator = std::make_shared<rect_gaussian_dots_target_calculator>(width, height, _roi_ws, _roi_hs, _roi_we - _roi_ws, _roi_he - _roi_hs);
+    else if (calib_type == RS2_CALIB_TARGET_POS_GAUSSIAN_DOT_VERTICES)
+        target_calculator = std::make_shared<rect_gaussian_dots_target_calculator>(width, height, _roi_ws, _roi_hs, _roi_we - _roi_ws, _roi_he - _roi_hs);
     else
         throw std::runtime_error("unsupported calibration target type");
-
-    if (!target_calculator->calculate(vf->get_frame_data(), target_dims, target_dims_size))
-        throw std::runtime_error("Failed to find the four rectangle side sizes on the frame");
+    
+    if (RS2_FORMAT_Y8 == fmt)
+    {
+        if (!target_calculator->calculate(vf->get_frame_data(), target_dims, target_dims_size))
+            throw std::runtime_error("Failed to find the four rectangle side sizes on the frame");
+    }
+    else if (RS2_FORMAT_RGB8 == fmt)
+    {
+        int size = width * height;
+        std::vector<uint8_t> buf(size);
+        uint8_t* p = buf.data();
+        const uint8_t* q = vf->get_frame_data();
+        float tmp = 0;
+        for (int i = 0; i < size; ++i)
+        {
+            tmp = static_cast<float>(*q++);
+            tmp += static_cast<float>(*q++);
+            tmp += static_cast<float>(*q++);
+            *p++ = static_cast<uint8_t>(tmp / 3 + 0.5f);
+        }
+        if (!target_calculator->calculate(buf.data(), target_dims, target_dims_size))
+            throw std::runtime_error("Failed to find the four rectangle side sizes on the frame");
+    }
+    else
+        throw std::runtime_error(librealsense::to_string() << "Unsupported video frame format " << rs2_format_to_string(fmt));
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, frame_ref, calib_type, target_dims, target_dims_size)
 
@@ -2808,7 +2842,7 @@ HANDLE_EXCEPTIONS_AND_RETURN(, device)
 
 rs2_processing_block_list* rs2_get_recommended_processing_blocks(rs2_sensor* sensor, rs2_error** error) BEGIN_API_CALL
 {
-    VALIDATE_NOT_NULL(sensor);                            
+    VALIDATE_NOT_NULL(sensor);
     return new rs2_processing_block_list{ sensor->sensor->get_recommended_processing_blocks() };
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, sensor)
@@ -3185,13 +3219,7 @@ const rs2_raw_data_buffer* rs2_run_on_chip_calibration(rs2_device* device, const
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, device)
 
-const rs2_raw_data_buffer * rs2_run_tare_calibration_cpp( rs2_device * device,
-                                                          float ground_truth_mm,
-                                                          const void * json_content,
-                                                          int content_size,
-                                                          rs2_update_progress_callback * progress_callback,
-                                                          int timeout_ms,
-                                                          rs2_error ** error ) BEGIN_API_CALL
+const rs2_raw_data_buffer* rs2_run_tare_calibration_cpp(rs2_device* device, float ground_truth_mm, const void* json_content, int content_size, rs2_update_progress_callback* progress_callback, int timeout_ms, rs2_error** error) BEGIN_API_CALL
 {
     // Take ownership of the callback ASAP or else memory leaks could result if we throw! (the caller usually does a
     // 'new' when calling us)
@@ -3208,7 +3236,10 @@ const rs2_raw_data_buffer * rs2_run_tare_calibration_cpp( rs2_device * device,
 
     std::vector<uint8_t> buffer;
     std::string json((char*)json_content, (char*)json_content + content_size);
-    buffer = auto_calib->run_tare_calibration( timeout_ms, ground_truth_mm, json, callback_ptr );
+    if (progress_callback == nullptr)
+        buffer = auto_calib->run_tare_calibration(timeout_ms, ground_truth_mm, json, nullptr);
+    else
+        buffer = auto_calib->run_tare_calibration(timeout_ms, ground_truth_mm, json, { progress_callback, [](rs2_update_progress_callback* p) { p->release(); } });
 
     return new rs2_raw_data_buffer{ buffer };
 }
@@ -3253,6 +3284,7 @@ void rs2_set_calibration_table(const rs2_device* device, const void* calibration
 {
     VALIDATE_NOT_NULL(device);
     VALIDATE_NOT_NULL(calibration);
+    VALIDATE_GT(calibration_size, 0);
 
     auto auto_calib = VALIDATE_INTERFACE(device->device, librealsense::auto_calibrated_interface);
 
@@ -3746,3 +3778,151 @@ void rs2_project_color_pixel_to_depth_pixel(float to_pixel[2],
     }
 }
 NOEXCEPT_RETURN(, to_pixel)
+
+const rs2_raw_data_buffer* rs2_run_focal_length_calibration_cpp(rs2_device* device, rs2_frame_queue* left, rs2_frame_queue* right, float target_w, float target_h, 
+    int adjust_both_sides, float* ratio, float* angle, rs2_update_progress_callback * progress_callback, rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(device);
+    VALIDATE_NOT_NULL(left);
+    VALIDATE_NOT_NULL(right);
+    VALIDATE_NOT_NULL(ratio);
+    VALIDATE_NOT_NULL(angle);
+    VALIDATE_GT(rs2_frame_queue_size(left, error), 0);
+    VALIDATE_GT(rs2_frame_queue_size(right, error), 0);
+    VALIDATE_GT(target_w, 0.f);
+    VALIDATE_GT(target_h, 0.f);
+    VALIDATE_RANGE(adjust_both_sides, 0, 1);
+
+    auto auto_calib = VALIDATE_INTERFACE(device->device, librealsense::auto_calibrated_interface);
+    std::vector<uint8_t> buffer;
+    if (progress_callback == nullptr)
+        buffer = auto_calib->run_focal_length_calibration(left, right, target_w, target_h, adjust_both_sides, ratio, angle, nullptr);
+    else
+        buffer = auto_calib->run_focal_length_calibration(left, right, target_w, target_h, adjust_both_sides, ratio, angle, { progress_callback, [](rs2_update_progress_callback* p) { p->release(); } });
+
+    return new rs2_raw_data_buffer{ buffer };
+}
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, device, left, right, ratio, angle)
+
+const rs2_raw_data_buffer* rs2_run_focal_length_calibration(rs2_device* device, rs2_frame_queue* left, rs2_frame_queue* right, float target_w, float target_h,
+    int adjust_both_sides, float* ratio, float* angle, rs2_update_progress_callback_ptr callback, void* client_data, rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(device);
+    VALIDATE_NOT_NULL(left);
+    VALIDATE_NOT_NULL(right);
+    VALIDATE_NOT_NULL(ratio);
+    VALIDATE_NOT_NULL(angle);
+    VALIDATE_GT(rs2_frame_queue_size(left, error), 0);
+    VALIDATE_GT(rs2_frame_queue_size(right, error), 0);
+    VALIDATE_GT(target_w, 0.f);
+    VALIDATE_GT(target_h, 0.f);
+    VALIDATE_RANGE(adjust_both_sides, 0, 1);
+
+    auto auto_calib = VALIDATE_INTERFACE(device->device, librealsense::auto_calibrated_interface);
+    std::vector<uint8_t> buffer;
+    if (callback == nullptr)
+        buffer = auto_calib->run_focal_length_calibration(left, right, target_w, target_h, adjust_both_sides, ratio, angle, nullptr);
+    else
+    {
+        librealsense::update_progress_callback_ptr cb(new librealsense::update_progress_callback(callback, client_data), [](update_progress_callback* p) { delete p; });
+        buffer = auto_calib->run_focal_length_calibration(left, right, target_w, target_h, adjust_both_sides, ratio, angle, cb);
+    }
+
+    return new rs2_raw_data_buffer{ buffer };
+}
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, device, left, right, ratio, angle)
+
+const rs2_raw_data_buffer* rs2_run_uv_map_calibration_cpp(rs2_device* device, rs2_frame_queue* left, rs2_frame_queue* color, rs2_frame_queue* depth, int py_px_only,
+    float* health, int health_size, rs2_update_progress_callback* progress_callback, rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(device);
+    VALIDATE_NOT_NULL(left);
+    VALIDATE_NOT_NULL(color);
+    VALIDATE_NOT_NULL(depth);
+    VALIDATE_NOT_NULL(health);
+    VALIDATE_GT(health_size, 0);
+    VALIDATE_GT(rs2_frame_queue_size(left, error), 0);
+    VALIDATE_GT(rs2_frame_queue_size(color, error), 0);
+    VALIDATE_GT(rs2_frame_queue_size(depth, error), 0);
+    VALIDATE_RANGE(py_px_only, 0, 1);
+
+    auto auto_calib = VALIDATE_INTERFACE(device->device, librealsense::auto_calibrated_interface);
+    std::vector<uint8_t> buffer;
+    if (progress_callback == nullptr)
+        buffer = auto_calib->run_uv_map_calibration(left, color, depth, py_px_only, health, health_size, nullptr);
+    else
+        buffer = auto_calib->run_uv_map_calibration(left, color, depth, py_px_only, health, health_size, { progress_callback, [](rs2_update_progress_callback* p) { p->release(); } });
+
+    return new rs2_raw_data_buffer{ buffer };
+}
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, device, left, color, depth, health)
+
+const rs2_raw_data_buffer* rs2_run_uv_map_calibration(rs2_device* device, rs2_frame_queue* left, rs2_frame_queue* color, rs2_frame_queue* depth, int py_px_only,
+    float* health, int health_size, rs2_update_progress_callback_ptr callback, void* client_data, rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(device);
+    VALIDATE_NOT_NULL(left);
+    VALIDATE_NOT_NULL(color);
+    VALIDATE_NOT_NULL(depth);
+    VALIDATE_NOT_NULL(health);
+    VALIDATE_GT(health_size, 0);
+    VALIDATE_GT(rs2_frame_queue_size(left, error), 0);
+    VALIDATE_GT(rs2_frame_queue_size(color, error), 0);
+    VALIDATE_GT(rs2_frame_queue_size(depth, error), 0);
+    VALIDATE_RANGE(py_px_only, 0, 1);
+
+    auto auto_calib = VALIDATE_INTERFACE(device->device, librealsense::auto_calibrated_interface);
+    std::vector<uint8_t> buffer;
+    if (callback == nullptr)
+        buffer = auto_calib->run_uv_map_calibration(left, color, depth, py_px_only, health, health_size, nullptr);
+    else
+    {
+        librealsense::update_progress_callback_ptr cb(new librealsense::update_progress_callback(callback, client_data), [](update_progress_callback* p) { delete p; });
+        buffer = auto_calib->run_uv_map_calibration(left, color, depth, py_px_only, health, health_size, cb);
+    }
+
+    return new rs2_raw_data_buffer{ buffer };
+}
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, device, left, color, depth, health)
+
+
+float rs2_calculate_target_z_cpp(rs2_device* device, rs2_frame_queue* queue, float target_width, float target_height,
+    rs2_update_progress_callback* progress_callback, rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(device);
+    VALIDATE_NOT_NULL(queue);
+    VALIDATE_GT(target_width, 0.f);
+    VALIDATE_GT(target_height, 0.f);
+    VALIDATE_GT(rs2_frame_queue_size(queue, error), 0);
+
+    auto auto_calib = VALIDATE_INTERFACE(device->device, librealsense::auto_calibrated_interface);
+
+    if (progress_callback == NULL)
+        return auto_calib->calculate_target_z(queue, target_width, target_height, nullptr);
+    else
+    {
+        return auto_calib->calculate_target_z(queue, target_width, target_height, { progress_callback, [](rs2_update_progress_callback* p) { p->release(); } });
+    }
+}
+HANDLE_EXCEPTIONS_AND_RETURN(-1.f, device, queue, target_width, target_height)
+
+float rs2_calculate_target_z(rs2_device* device, rs2_frame_queue* queue, float target_width, float target_height,
+    rs2_update_progress_callback_ptr progress_callback, void* client_data, rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(device);
+    VALIDATE_NOT_NULL(queue);
+    VALIDATE_GT(target_width, 0.f);
+    VALIDATE_GT(target_height, 0.f);
+    VALIDATE_GT(rs2_frame_queue_size(queue, error), 0);
+
+    auto auto_calib = VALIDATE_INTERFACE(device->device, librealsense::auto_calibrated_interface);
+
+    if (progress_callback == NULL)
+        return auto_calib->calculate_target_z(queue, target_width, target_height, nullptr);
+    else
+    {
+        librealsense::update_progress_callback_ptr cb(new librealsense::update_progress_callback(progress_callback, client_data), [](update_progress_callback* p) { delete p; });
+        return auto_calib->calculate_target_z(queue, target_width, target_height, cb);
+    }
+}
+HANDLE_EXCEPTIONS_AND_RETURN(-1.f, device, queue, target_width, target_height)

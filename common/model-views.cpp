@@ -80,7 +80,6 @@ static void width_height_from_resolution(rs2_sensor_mode mode, int &width, int &
 }
 
 static int get_resolution_id_from_sensor_mode( rs2_sensor_mode sensor_mode,
-                                    const rs2::sensor & s,
                                     const std::vector< std::pair< int, int > > & res_values )
 {
     int width = 0, height = 0;
@@ -88,8 +87,8 @@ static int get_resolution_id_from_sensor_mode( rs2_sensor_mode sensor_mode,
     auto iter = std::find_if( res_values.begin(),
                               res_values.end(),
                               [width, height]( std::pair< int, int > res ) {
-                                  if( ( res.first == width ) && ( res.second == height )
-                                      || ( res.first == height ) && ( res.second == width ) )
+                                  if( (( res.first == width ) && ( res.second == height ))
+                                      || (( res.first == height ) && ( res.second == width )) )
                                       return true;
                                   return false;
                               } );
@@ -1292,7 +1291,7 @@ namespace rs2
         auto colorizer = std::make_shared<processing_block_model>(
             this, "Depth Visualization", depth_colorizer,
             [=](rs2::frame f) { return depth_colorizer->colorize(f); }, error_message);
-        const_effects.push_back(colorizer);        
+        const_effects.push_back(colorizer);
 
 
         if (s->supports(RS2_CAMERA_INFO_PRODUCT_ID))
@@ -1346,6 +1345,20 @@ namespace rs2
                     {
                         default_resolution = std::pair<int, int>(vid_prof.width(), vid_prof.height());
                         default_fps = profile.fps();
+
+                        if (is_rgb_camera)
+                        {
+                            auto intrinsics = vid_prof.get_intrinsics();
+                            if (intrinsics.model == RS2_DISTORTION_INVERSE_BROWN_CONRADY
+                                && (std::abs(intrinsics.coeffs[0]) > std::numeric_limits< float >::epsilon() ||
+                                    std::abs(intrinsics.coeffs[1]) > std::numeric_limits< float >::epsilon() ||
+                                    std::abs(intrinsics.coeffs[2]) > std::numeric_limits< float >::epsilon() ||
+                                    std::abs(intrinsics.coeffs[3]) > std::numeric_limits< float >::epsilon() ||
+                                    std::abs(intrinsics.coeffs[4]) > std::numeric_limits< float >::epsilon()))
+                            {
+                                uvmapping_calib_full = true;
+                            }
+                        }
                     }
                     res << vid_prof.width() << " x " << vid_prof.height();
                     push_back_if_not_exists(res_values, std::pair<int, int>(vid_prof.width(), vid_prof.height()));
@@ -1552,7 +1565,7 @@ namespace rs2
             else
             {
                 ImGui::PushItemWidth(-1);
-                ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, { 1,1,1,1 }); 
+                ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, { 1,1,1,1 });
                 auto tmp_selected_res_id = ui.selected_res_id;
                 if (ImGui::Combo(label.c_str(), &tmp_selected_res_id, res_chars.data(),
                     static_cast<int>(res_chars.size())))
@@ -1568,7 +1581,7 @@ namespace rs2
                         auto height = res_values[tmp_selected_res_id].second;
                         auto res = resolution_from_width_height(width, height);
                         if (res >= RS2_SENSOR_MODE_VGA && res < RS2_SENSOR_MODE_COUNT)
-                        {   
+                        {
                             try
                             {
                                 s->set_option(RS2_OPTION_SENSOR_MODE, float(res));
@@ -1585,7 +1598,6 @@ namespace rs2
                                 {
                                     ui.selected_res_id = get_resolution_id_from_sensor_mode(
                                         static_cast< rs2_sensor_mode >( sensor_mode_val ),
-                                        *s,
                                         res_values );
                                 }
                             }
@@ -2531,7 +2543,7 @@ namespace rs2
                 static_cast<float>(vd.height()) };
         }
         _stream_not_alive.reset();
-        
+
         try
         {
             auto ds = d->dev.first< depth_sensor >();
@@ -2640,7 +2652,7 @@ namespace rs2
             // Case 1: Starting Dragging of the ROI rect
             // Pre-condition: not capturing already + mouse is down + we are inside stream rect
             if (!capturing_roi && mouse.mouse_down[0] && stream_rect.contains(mouse.cursor))
-            {   
+            {
                 // Initialize roi_display_rect with drag-start position
                 roi_display_rect.x = mouse.cursor.x;
                 roi_display_rect.y = mouse.cursor.y;
@@ -2935,7 +2947,7 @@ namespace rs2
         label = to_string() << textual_icons::camera << "##Snapshot " << profile.unique_id();
         if (ImGui::Button(label.c_str(), { 24, top_bar_height }))
         {
-            auto filename = file_dialog_open(save_file, "Portable Network Graphics (PNG)\0*.png\0", NULL, NULL);
+            auto filename = file_dialog_open(save_file, "Portable Network Graphics (PNG)\0*.png\0", nullptr, nullptr);
 
             if (filename)
             {
@@ -3361,7 +3373,7 @@ namespace rs2
             if (texture->get_last_frame().is<depth_frame>())
             {
                 // Draw pixel distance
-                auto meters = texture->get_last_frame().as<depth_frame>().get_distance(x, y);             
+                auto meters = texture->get_last_frame().as<depth_frame>().get_distance(x, y);
 
                 if (viewer.metric_system)
                 {
@@ -3387,7 +3399,7 @@ namespace rs2
                 auto ds = sensor_from_frame(texture->get_last_frame())->as<depth_sensor>();
                 if (!viewer.is_option_skipped(RS2_OPTION_ENABLE_MAX_USABLE_RANGE))
                 {
-                    if (ds.supports(RS2_OPTION_ENABLE_MAX_USABLE_RANGE) && 
+                    if (ds.supports(RS2_OPTION_ENABLE_MAX_USABLE_RANGE) &&
                         (ds.get_option(RS2_OPTION_ENABLE_MAX_USABLE_RANGE) == 1.0f))
                     {
                         auto mur_sensor = ds.as<max_usable_range_sensor>();
@@ -3847,7 +3859,7 @@ namespace rs2
             }
         }
         if (ss.str().size())
-            viewer.not_model->add_notification(notification_data{ 
+            viewer.not_model->add_notification(notification_data{
                 ss.str().c_str(), RS2_LOG_SEVERITY_INFO, RS2_NOTIFICATION_CATEGORY_HARDWARE_EVENT });
 
     }
@@ -4059,7 +4071,7 @@ namespace rs2
                                                                            manager,
                                                                            false );
                 // The FW update delay ID include the dismissed recommended version and the device serial number
-                // This way a newer FW recommended version will not be dismissed 
+                // This way a newer FW recommended version will not be dismissed
                 n->delay_id = "fw_update_alert." + recommended_fw_ver + "." + dev_name.second;
                 n->enable_complex_dismiss = true;
 
@@ -4134,7 +4146,7 @@ namespace rs2
 
     device_model::device_model(device& dev, std::string& error_message, viewer_model& viewer, bool new_device_connected, bool remove)
         : dev(dev),
-        _calib_model(dev),
+        _calib_model(dev, viewer.not_model),
         syncer(viewer.syncer),
         _update_readonly_options_timer(std::chrono::seconds(6)),
         _detected_objects(std::make_shared< atomic_objects_in_frame >()),
@@ -4423,7 +4435,7 @@ namespace rs2
                 default: break;
                 }
 
-                pc->set_option(RS2_OPTION_FILTER_MAGNITUDE, 
+                pc->set_option(RS2_OPTION_FILTER_MAGNITUDE,
                     viewer.occlusion_invalidation ? 2.f : 1.f);
                 res.push_back(pc->calculate(depth));
             }
@@ -5056,7 +5068,7 @@ namespace rs2
         return keep_showing;
     }
 
-   
+
     bool device_model::draw_advanced_controls(viewer_model& view, ux_window& window, std::string& error_message)
     {
         bool was_set = false;
@@ -5283,7 +5295,7 @@ namespace rs2
                                                 << "\nEssential SW version: "
                                                 << std::string( sw_update_info.ver ),
                                             RS2_LOG_SEVERITY_WARN );
-                                    
+
                                     if( essential_fw_update_found )
                                         nm->add_log(
                                             to_string()
@@ -5296,7 +5308,7 @@ namespace rs2
                                 }
                             }
                         }
-                        else 
+                        else
                         {
                             if (auto viewer_updates = updates_model_protected.lock())
                             {
@@ -5358,7 +5370,7 @@ namespace rs2
                     auto n = std::make_shared< sw_update_up_to_date_model >();
                     auto name = get_device_name(dev);
                     n->delay_id = "no_updates_alert." + name.second;
-                   
+
                     if (auto nm = notification_model_protected.lock())
                     {
                         nm->add_notification(n);
@@ -5660,7 +5672,7 @@ namespace rs2
                             {
                                 if( n->is< fw_update_notification_model >()
                                     || n->is< sw_recommended_update_alert_model >() )
-                                    n->dismiss( false ); // No need for snooze, if needed a new notification will be popped 
+                                    n->dismiss( false ); // No need for snooze, if needed a new notification will be popped
                             }
 
                             check_for_device_updates( viewer , true);
@@ -5702,7 +5714,7 @@ namespace rs2
                     }
                 }
             }
-            
+
             bool has_autocalib = false;
             for (auto&& sub : subdevices)
             {
@@ -5743,6 +5755,46 @@ namespace rs2
                             "If >0.25 we recommend applying the new calibration.\n"
                             "\"White wall\" mode should only be used when pointing at a flat white wall with projector on");
 
+                    if (ImGui::Selectable("Focal Length Calibration"))
+                    {
+                        try
+                        {
+                            std::shared_ptr< subdevice_model> sub_color;
+                            for (auto&& sub2 : subdevices)
+                            {
+                                if (sub2->s->is<rs2::color_sensor>())
+                                {
+                                    sub_color = sub2;
+                                    break;
+                                }
+                            }
+
+                            auto manager = std::make_shared<on_chip_calib_manager>(viewer, sub, *this, dev, sub_color);
+                            auto n = std::make_shared<autocalib_notification_model>("", manager, false);
+
+                            viewer.not_model->add_notification(n);
+                            n->forced = true;
+                            n->update_state = autocalib_notification_model::RS2_CALIB_STATE_FL_INPUT;
+
+                            for (auto&& n : related_notifications)
+                                if (dynamic_cast<autocalib_notification_model*>(n.get()))
+                                    n->dismiss(false);
+
+                            related_notifications.push_back(n);
+                            manager->start_fl_viewer();
+                        }
+                        catch (const error& e)
+                        {
+                            error_message = error_to_string(e);
+                        }
+                        catch (const std::exception& e)
+                        {
+                            error_message = e.what();
+                        }
+                    }
+                    if (ImGui::IsItemHovered())
+                        ImGui::SetTooltip("Focal length calibration is used to adjust camera focal length with specific target.");
+
                     if (ImGui::Selectable("Tare Calibration"))
                     {
                         try
@@ -5775,6 +5827,46 @@ namespace rs2
                             "User needs either to enter the known ground truth or use the get button\n"
                             "with specific target to get the ground truth.");
 
+#define UVMAP_CAL
+#ifdef UVMAP_CAL // Disbled due to unverified maturity level
+                    try
+                    {
+                        for (auto&& sub2 : subdevices)
+                        {
+                            if (sub2->s->is<rs2::color_sensor>())
+                            {
+                                if (ImGui::Selectable("UV-Mapping Calibration"))
+                                {
+                                    auto manager = std::make_shared<on_chip_calib_manager>(viewer, sub, *this, dev, sub2, sub2->uvmapping_calib_full);
+                                    auto n = std::make_shared<autocalib_notification_model>("", manager, false);
+
+                                    viewer.not_model->add_notification(n);
+                                    n->forced = true;
+                                    n->update_state = autocalib_notification_model::RS2_CALIB_STATE_UVMAPPING_INPUT;
+
+                                    for (auto&& n : related_notifications)
+                                        if (dynamic_cast<autocalib_notification_model*>(n.get()))
+                                            n->dismiss(false);
+
+                                    related_notifications.push_back(n);
+                                    manager->start_uvmapping_viewer();
+                                }
+
+                                if (ImGui::IsItemHovered())
+                                    ImGui::SetTooltip("UV-Mapping calibration is used to improve UV-Mapping with specific target.");
+                            }
+                        }
+                    }
+                    catch (const error& e)
+                    {
+                        error_message = error_to_string(e);
+                    }
+                    catch (const std::exception& e)
+                    {
+                        error_message = e.what();
+                    }
+#endif //UVMAP_CAL
+
                     if (_calib_model.supports())
                     {
                         if (ImGui::Selectable("Calibration Data"))
@@ -5805,42 +5897,42 @@ namespace rs2
                                     }
                                     catch (const std::exception& ex)
                                     {
-                                        viewer.not_model->output.add_log(RS2_LOG_SEVERITY_WARN, __FILE__, __LINE__, 
+                                        viewer.not_model->output.add_log(RS2_LOG_SEVERITY_WARN, __FILE__, __LINE__,
                                             to_string() << "Invalid Hardware Logger XML at '" << hwlogger_xml << "': " << ex.what() << "\nEither configure valid XML or remove it");
                                     }
                                 }
 
                                 auto message = fwlogger.create_message();
-                                
+
                                 while (fwlogger.get_flash_log(message))
                                 {
                                     auto parsed = fwlogger.create_parsed_message();
                                     auto parsed_ok = false;
-                                    
+
                                     if (has_parser)
                                     {
                                         if (fwlogger.parse_log(message, parsed))
                                         {
                                             parsed_ok = true;
 
-                                            viewer.not_model->output.add_log(message.get_severity(), 
-                                                parsed.file_name(), parsed.line(), to_string() 
+                                            viewer.not_model->output.add_log(message.get_severity(),
+                                                parsed.file_name(), parsed.line(), to_string()
                                                     << "FW-LOG [" << parsed.thread_name() << "] " << parsed.message());
                                         }
                                     }
 
                                     if (!parsed_ok)
                                     {
-                                        std::stringstream ss; 
+                                        std::stringstream ss;
                                         for (auto& elem : message.data())
                                             ss << std::setfill('0') << std::setw(2) << std::hex << static_cast<int>(elem) << " ";
                                         viewer.not_model->output.add_log(message.get_severity(), __FILE__, 0, ss.str());
-                                    }                            
+                                    }
                                 }
                             }
                             catch(const std::exception& ex)
                             {
-                                viewer.not_model->output.add_log(RS2_LOG_SEVERITY_WARN, __FILE__, __LINE__, 
+                                viewer.not_model->output.add_log(RS2_LOG_SEVERITY_WARN, __FILE__, __LINE__,
                                     to_string() << "Failed to fetch firmware logs: " << ex.what());
                             }
                         }
@@ -5865,7 +5957,7 @@ namespace rs2
             }
 
             ImGui::PopStyleColor();
-                
+
             ImGui::EndPopup();
 
         }
@@ -5880,7 +5972,7 @@ namespace rs2
 
         _calib_model.update(window, error_message);
 
-            
+
         ////////////////////////////////////////
         // Draw icons names
         ////////////////////////////////////////
@@ -5977,7 +6069,7 @@ namespace rs2
 
         auto dev_name = get_device_name(dev);
         // The SW update delay ID include the dismissed recommended version and the device serial number
-        // This way a newer SW recommended version will not be dismissed. 
+        // This way a newer SW recommended version will not be dismissed.
         n->delay_id = "sw_update_alert." + std::string(recommended_sw_update_info.ver) + "." + dev_name.second;
         n->enable_complex_dismiss = true;  // allow advanced dismiss menu
 

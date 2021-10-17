@@ -1,11 +1,14 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2016 Intel Corporation. All Rights Reserved.
 
+#include <numeric>
 #include "../third-party/json.hpp"
 #include "ds5-device.h"
 #include "ds5-private.h"
 #include "ds5-thermal-monitor.h"
 #include "ds5-auto-calibration.h"
+#include "librealsense2/rsutil.h"
+#include "../algo.h"
 
 namespace librealsense
 {
@@ -84,8 +87,7 @@ namespace librealsense
         focal_length_calib_begin = 0x11,
         get_focal_legth_calib_result = 0x12,
         py_rx_plus_fl_calib_begin = 0x13,
-        get_py_rx_plus_fl_calib_result = 0x14,
-        set_coefficients = 0x19
+        get_py_rx_plus_fl_calib_result = 0x14
     };
 
     enum auto_calib_speed
@@ -314,6 +316,7 @@ namespace librealsense
             DirectSearchCalibrationResult result{};
 
             int count = 0;
+            int retries = 0;
             bool done = false;
 
             auto start = std::chrono::high_resolution_clock::now();
@@ -337,8 +340,12 @@ namespace librealsense
                 }
                 catch (const std::exception& ex)
                 {
-                    LOG_WARNING(ex.what());
+                    if (!((retries++) % 5)) // Add log debug once in a sec
+                    {
+                        LOG_DEBUG(ex.what());
+                    }
                 }
+
                 if (progress_callback)
                     progress_callback->on_update_progress(count++ * (2.f * speed)); //curently this number does not reflect the actual progress
 
@@ -534,7 +541,7 @@ namespace librealsense
             if (status != RS2_DSC_STATUS_SUCCESS)
                 handle_calibration_error(status);
 
-            res = get_PyRxFL_calibration_results(&h_1 , &h_2);
+            res = get_PyRxFL_calibration_results(&h_1, &h_2);
 
             int health_1 = static_cast<int>(abs(h_1) * 1000.0f + 0.5f);
             health_1 &= 0xFFF;
@@ -566,6 +573,7 @@ namespace librealsense
         int scan_parameter = DEFAULT_SCAN;
         int data_sampling = DEFAULT_TARE_SAMPLING;
         int apply_preset = 1;
+        std::vector<uint8_t> res;
 
         //Enforce Thermal Compensation off during Tare calibration
         volatile thermal_compensation_guard grd(this);
@@ -605,27 +613,24 @@ namespace librealsense
 
         auto start = std::chrono::high_resolution_clock::now();
         auto now = start;
-
         do
         {
             memset(&result, 0, sizeof(DirectSearchCalibrationResult));
-
             std::this_thread::sleep_for(std::chrono::milliseconds(200));
 
             // Check calibration status
             try
             {
-                auto res = _hw_monitor->send(command{ ds::AUTO_CALIB, tare_calib_check_status });
+                res = _hw_monitor->send(command{ ds::AUTO_CALIB, tare_calib_check_status });
                 if (res.size() < sizeof(DirectSearchCalibrationResult))
                     throw std::runtime_error("Not enough data from CALIB_STATUS!");
 
                 result = *reinterpret_cast<DirectSearchCalibrationResult*>(res.data());
                 done = result.status != RS2_DSC_STATUS_RESULT_NOT_READY;
             }
-
             catch (const std::exception& ex)
             {
-                LOG_WARNING(ex.what());
+                LOG_INFO(ex.what());
             }
 
             if (progress_callback)
@@ -637,18 +642,13 @@ namespace librealsense
 
         // If we exit due to timeout, report timeout
         if (!done)
-        {
-            throw std::runtime_error("Operation timed-out!\n"
-                "Calibration state did not converged in time");
-        }
+            throw std::runtime_error("Operation timed-out!\nCalibration state did not converged in time");
 
         auto status = (rs2_dsc_status)result.status;
 
         // Handle errors from firmware
         if (status != RS2_DSC_STATUS_SUCCESS)
-        {
             handle_calibration_error(status);
-        }
 
         return get_calibration_results();
     }
@@ -745,22 +745,22 @@ namespace librealsense
     {
         if (status == RS2_DSC_STATUS_EDGE_TOO_CLOSE)
         {
-            throw std::runtime_error("Calibration didn't converge! (EDGE_TO_CLOSE)\n"
+            throw std::runtime_error("Calibration didn't converge! - edges too close\n"
                 "Please retry in different lighting conditions");
         }
         else if (status == RS2_DSC_STATUS_FILL_FACTOR_TOO_LOW)
         {
-            throw std::runtime_error("Not enough depth pixels! (FILL_FACTOR_LOW)\n"
+            throw std::runtime_error("Not enough depth pixels! - low fill factor)\n"
                 "Please retry in different lighting conditions");
         }
         else if (status == RS2_DSC_STATUS_NOT_CONVERGE)
         {
-            throw std::runtime_error("Calibration didn't converge! (NOT_CONVERGE)\n"
+            throw std::runtime_error("Calibration failed to converge\n"
                 "Please retry in different lighting conditions");
         }
         else if (status == RS2_DSC_STATUS_NO_DEPTH_AVERAGE)
         {
-            throw std::runtime_error("Calibration didn't converge! (NO_AVERAGE)\n"
+            throw std::runtime_error("Calibration didn't converge! - no depth average\n"
                 "Please retry in different lighting conditions");
         }
         else throw std::runtime_error(to_string() << "Calibration didn't converge! (RESULT=" << int(status) << ")");
@@ -849,13 +849,32 @@ namespace librealsense
     void auto_calibrated::write_calibration() const
     {
         using namespace ds;
-
-        if(_curr_calibration.size() < sizeof(table_header))
+        if(_curr_calibration.size() <= sizeof(table_header))
             throw std::runtime_error("Write calibration can be called only after set calibration table was called");
 
-        command write_calib( ds::SETINTCAL, set_coefficients );
+        table_header* hd = (table_header*)(_curr_calibration.data());
+        calibration_table_id tbl_id = static_cast<calibration_table_id>(hd->table_type);
+        fw_cmd cmd{};
+        int param2 = 0;
+        switch (tbl_id)
+        {
+        case coefficients_table_id:
+            cmd = SETINTCAL;
+            break;
+        case rgb_calibration_id:
+            cmd = SETINTCALNEW;
+            param2 = 1;
+            break;
+        default:
+            throw std::runtime_error(to_string() << "Flashing calibration table type 0x" << std::hex << tbl_id << " is not supported");
+        }
+
+        command write_calib(cmd, tbl_id, param2);
         write_calib.data = _curr_calibration;
         _hw_monitor->send(write_calib);
+
+        LOG_DEBUG("Flashing " << ((tbl_id == coefficients_table_id) ? "Depth" : "RGB") << " calibration table");
+
     }
 
     void auto_calibrated::set_calibration_table(const std::vector<uint8_t>& calibration)
@@ -863,17 +882,704 @@ namespace librealsense
         using namespace ds;
 
         table_header* hd = (table_header*)(calibration.data());
-        uint8_t* table = (uint8_t*)(calibration.data() + sizeof(table_header));
-        command write_calib(ds::CALIBRECALC, 0, 0, 0, 0xcafecafe);
-        write_calib.data.insert(write_calib.data.end(), (uint8_t*)table, ((uint8_t*)table) + hd->table_size);
-        _hw_monitor->send(write_calib);
+        ds::calibration_table_id tbl_id = static_cast<ds::calibration_table_id>(hd->table_type);
 
-        _curr_calibration = calibration;
+        switch (tbl_id)
+        {
+            case coefficients_table_id: // Load the modified depth calib table into flash RAM
+            {
+                uint8_t* table = (uint8_t*)(calibration.data() + sizeof(table_header));
+                command write_calib(ds::CALIBRECALC, 0, 0, 0, 0xcafecafe);
+                write_calib.data.insert(write_calib.data.end(), (uint8_t*)table, ((uint8_t*)table) + hd->table_size);
+                _hw_monitor->send(write_calib);
+            }
+            case rgb_calibration_id: // case fall-through by design. For RGB skip loading to RAM (not supported)
+                _curr_calibration = calibration;
+                break;
+            default:
+                throw std::runtime_error(to_string() << "the operation is not defined for calibration table type " << tbl_id);
+        }
     }
 
     void auto_calibrated::reset_to_factory_calibration() const
     {
         command cmd(ds::fw_cmd::CAL_RESTORE_DFLT);
         _hw_monitor->send(cmd);
+    }
+
+    void auto_calibrated::get_target_rect_info(rs2_frame_queue* frames, float rect_sides[4], float& fx, float& fy, int progress, update_progress_callback_ptr progress_callback)
+    {
+        fx = -1.0f;
+        std::vector<std::array<float, 4>> rect_sides_arr;
+
+        rs2_error* e = nullptr;
+        rs2_frame* f = nullptr;
+
+        int queue_size = rs2_frame_queue_size(frames, &e);
+        int fc = 0;
+        while ((fc++ < queue_size) && rs2_poll_for_frame(frames, &f, &e))
+        {
+            rs2::frame ff(f);
+            if (ff.get_data())
+            {
+                if (fx < 0.0f)
+                {
+                    auto p = ff.get_profile();
+                    auto vsp = p.as<rs2::video_stream_profile>();
+                    rs2_intrinsics intrin = vsp.get_intrinsics();
+                    fx = intrin.fx;
+                    fy = intrin.fy;
+                }
+
+                std::array<float, 4> rec_sides_cur;
+                rs2_extract_target_dimensions(f, RS2_CALIB_TARGET_ROI_RECT_GAUSSIAN_DOT_VERTICES, rec_sides_cur.data(), 4, &e);
+                if (e)
+                    throw std::runtime_error("Failed to extract target information\nfrom the captured frames!");
+                rect_sides_arr.emplace_back(rec_sides_cur);
+            }
+
+            rs2_release_frame(f);
+
+            if (progress_callback)
+                progress_callback->on_update_progress(static_cast<float>(++progress));
+        }
+
+        for (int i = 0; i < 4; ++i)
+            rect_sides[i] = rect_sides_arr[0][i];
+
+        for (int j = 1; j < rect_sides_arr.size(); ++j)
+        {
+            for (int i = 0; i < 4; ++i)
+                rect_sides[i] += rect_sides_arr[j][i];
+        }
+
+        for (int i = 0; i < 4; ++i)
+            rect_sides[i] /= rect_sides_arr.size();
+    }
+
+    std::vector<uint8_t> auto_calibrated::run_focal_length_calibration(rs2_frame_queue* left, rs2_frame_queue* right, float target_w, float target_h,
+        int adjust_both_sides, float *ratio, float * angle, update_progress_callback_ptr progress_callback)
+    {
+        float fx[2] = { -1.0f, -1.0f };
+        float fy[2] = { -1.0f, -1.0f };
+
+        float left_rect_sides[4];
+        get_target_rect_info(left, left_rect_sides, fx[0], fy[0], 50, progress_callback); // Report 50% progress
+
+        float right_rect_sides[4];
+        get_target_rect_info(right, right_rect_sides, fx[1], fy[1], 75, progress_callback);
+
+        std::vector<uint8_t> ret;
+        const float correction_factor = 0.50f;
+
+        auto calib_table = get_calibration_table();
+        auto table = (librealsense::ds::coefficients_table*)calib_table.data();
+
+        float ar[2] = { 0 };
+        float tmp = left_rect_sides[2] + left_rect_sides[3];
+        if (tmp > 0.1f)
+            ar[0] = (left_rect_sides[0] + left_rect_sides[1]) / tmp;
+
+        tmp = right_rect_sides[2] + right_rect_sides[3];
+        if (tmp > 0.1f)
+            ar[1] = (right_rect_sides[0] + right_rect_sides[1]) / tmp;
+
+        float align = 0.0f;
+        if (ar[0] > 0.0f)
+            align = ar[1] / ar[0] - 1.0f;
+
+        float ta[2] = { 0 };
+        float gt[4] = { 0 };
+        float ave_gt = 0.0f;
+
+        if (left_rect_sides[0] > 0)
+            gt[0] = fx[0] * target_w / left_rect_sides[0];
+
+        if (left_rect_sides[1] > 0)
+            gt[1] = fx[0] * target_w / left_rect_sides[1];
+
+        if (left_rect_sides[2] > 0)
+            gt[2] = fy[0] * target_h / left_rect_sides[2];
+
+        if (left_rect_sides[3] > 0)
+            gt[3] = fy[0] * target_h / left_rect_sides[3];
+
+        ave_gt = 0.0f;
+        for (int i = 0; i < 4; ++i)
+            ave_gt += gt[i];
+        ave_gt /= 4.0;
+
+        ta[0] = atanf(align * ave_gt / abs(table->baseline));
+        ta[0] = rad2deg(ta[0]);
+
+        if (right_rect_sides[0] > 0)
+            gt[0] = fx[1] * target_w / right_rect_sides[0];
+
+        if (right_rect_sides[1] > 0)
+            gt[1] = fx[1] * target_w / right_rect_sides[1];
+
+        if (right_rect_sides[2] > 0)
+            gt[2] = fy[1] * target_h / right_rect_sides[2];
+
+        if (right_rect_sides[3] > 0)
+            gt[3] = fy[1] * target_h / right_rect_sides[3];
+
+        ave_gt = 0.0f;
+        for (int i = 0; i < 4; ++i)
+            ave_gt += gt[i];
+        ave_gt /= 4.0;
+
+        ta[1] = atanf(align * ave_gt / abs(table->baseline));
+        ta[1] = rad2deg(ta[1]);
+
+        *angle = (ta[0] + ta[1]) / 2;
+
+        align *= 100;
+
+        float r[4] = { 0 };
+        float c = fx[0] / fx[1];
+
+        if (left_rect_sides[0] > 0.1f)
+            r[0] = c * right_rect_sides[0] / left_rect_sides[0];
+
+        if (left_rect_sides[1] > 0.1f)
+            r[1] = c * right_rect_sides[1] / left_rect_sides[1];
+
+        c = fy[0] / fy[1];
+        if (left_rect_sides[2] > 0.1f)
+            r[2] = c * right_rect_sides[2] / left_rect_sides[2];
+
+        if (left_rect_sides[3] > 0.1f)
+            r[3] = c * right_rect_sides[3] / left_rect_sides[3];
+
+        float ra = 0.0f;
+        for (int i = 0; i < 4; ++i)
+            ra += r[i];
+        ra /= 4;
+
+        ra -= 1.0f;
+        ra *= 100;
+
+        *ratio = ra - correction_factor * align;
+        float ratio_to_apply = *ratio / 100.0f + 1.0f;
+
+        if (adjust_both_sides)
+        {
+            float ratio_to_apply_2 = sqrtf(ratio_to_apply);
+            table->intrinsic_left.x.x /= ratio_to_apply_2;
+            table->intrinsic_left.x.y /= ratio_to_apply_2;
+            table->intrinsic_right.x.x *= ratio_to_apply_2;
+            table->intrinsic_right.x.y *= ratio_to_apply_2;
+        }
+        else
+        {
+            table->intrinsic_right.x.x *= ratio_to_apply;
+            table->intrinsic_right.x.y *= ratio_to_apply;
+        }
+
+        auto actual_data = calib_table.data() + sizeof(librealsense::ds::table_header);
+        auto actual_data_size = calib_table.size() - sizeof(librealsense::ds::table_header);
+        auto crc = librealsense::calc_crc32(actual_data, actual_data_size);
+        table->header.crc32 = crc;
+
+        return calib_table;
+    }
+
+    void auto_calibrated::undistort(uint8_t* img, const rs2_intrinsics& intrin, int roi_ws, int roi_hs, int roi_we, int roi_he)
+    {
+        assert(intrin.model == RS2_DISTORTION_INVERSE_BROWN_CONRADY);
+
+        int width = intrin.width;
+        int height = intrin.height;
+
+        if (roi_ws < 0) roi_ws = 0;
+        if (roi_hs < 0) roi_hs = 0;
+        if (roi_we > width) roi_we = width;
+        if (roi_he > height) roi_he = height;
+
+        int size3 = width * height * 3;
+        std::vector<uint8_t> tmp(size3);
+        memset(tmp.data(), 0, size3);
+
+        float x = 0;
+        float y = 0;
+        int m = 0;
+        int n = 0;
+
+        int width3 = width * 3;
+        int idx_from = 0;
+        int idx_to = 0;
+        for (int j = roi_hs; j < roi_he; ++j)
+        {
+            for (int i = roi_ws; i < roi_we; ++i)
+            {
+                x = static_cast<float>(i);
+                y = static_cast<float>(j);
+
+                if (abs(intrin.fx) > 0.00001f && abs(intrin.fy) > 0.0001f)
+                {
+                    x = (x - intrin.ppx) / intrin.fx;
+                    y = (y - intrin.ppy) / intrin.fy;
+
+                    float r2 = x * x + y * y;
+                    float f = 1 + intrin.coeffs[0] * r2 + intrin.coeffs[1] * r2 * r2 + intrin.coeffs[4] * r2 * r2 * r2;
+                    float ux = x * f + 2 * intrin.coeffs[2] * x * y + intrin.coeffs[3] * (r2 + 2 * x * x);
+                    float uy = y * f + 2 * intrin.coeffs[3] * x * y + intrin.coeffs[2] * (r2 + 2 * y * y);
+                    x = ux;
+                    y = uy;
+
+                    x = x * intrin.fx + intrin.ppx;
+                    y = y * intrin.fy + intrin.ppy;
+                }
+
+                m = static_cast<int>(x + 0.5f);
+                if (m >= 0 && m < width)
+                {
+                    n = static_cast<int>(y + 0.5f);
+                    if (n >= 0 && n < height)
+                    {
+                        idx_from = j * width3 + i * 3;
+                        idx_to = n * width3 + m * 3;
+                        tmp[idx_to++] = img[idx_from++];
+                        tmp[idx_to++] = img[idx_from++];
+                        tmp[idx_to++] = img[idx_from++];
+                    }
+                }
+            }
+        }
+
+        memmove(img, tmp.data(), size3);
+    }
+
+    void auto_calibrated::get_target_dots_info(rs2_frame_queue* frames, float dots_x[4], float dots_y[4], rs2::stream_profile& profile, rs2_intrinsics& intrin, int progress, update_progress_callback_ptr progress_callback)
+    {
+        bool got_intrinsics = false;
+        std::vector<std::array<float, 4>> dots_x_arr;
+        std::vector<std::array<float, 4>> dots_y_arr;
+
+        rs2_error* e = nullptr;
+        rs2_frame* f = nullptr;
+
+        int queue_size = rs2_frame_queue_size(frames, &e);
+        int fc = 0;
+
+        while ((fc++ < queue_size) && rs2_poll_for_frame(frames, &f, &e))
+        {
+            rs2::frame ff(f);
+            if (ff.get_data())
+            {
+                if (!got_intrinsics)
+                {
+                    profile = ff.get_profile();
+                    auto vsp = profile.as<rs2::video_stream_profile>();
+                    intrin = vsp.get_intrinsics();
+                    got_intrinsics = true;
+                }
+
+                if (ff.get_profile().format() == RS2_FORMAT_RGB8)
+                {
+                    undistort(const_cast<uint8_t *>(static_cast<const uint8_t *>(ff.get_data())), intrin,
+                            librealsense::_roi_ws - librealsense::_patch_size, librealsense::_roi_hs - librealsense::_patch_size,
+                            librealsense::_roi_we + librealsense::_patch_size, librealsense::_roi_he + librealsense::_patch_size);
+                }
+
+                float dots[8] = { 0 };
+                rs2_extract_target_dimensions(f, RS2_CALIB_TARGET_POS_GAUSSIAN_DOT_VERTICES, dots, 8, &e);
+                if (e)
+                    throw std::runtime_error("Failed to extract target information\nfrom the captured frames!");
+
+                std::array<float, 4> dots_x_cur;
+                std::array<float, 4> dots_y_cur;
+                int j = 0;
+                for (int i = 0; i < 4; ++i)
+                {
+                    j = i << 1;
+                    dots_x_cur[i] = dots[j];
+                    dots_y_cur[i] = dots[j + 1];
+                }
+                dots_x_arr.emplace_back(dots_x_cur);
+                dots_y_arr.emplace_back(dots_y_cur);
+            }
+
+            rs2_release_frame(f);
+
+            if (progress_callback)
+                progress_callback->on_update_progress(static_cast<float>(++progress));
+        }
+
+        for (int i = 0; i < 4; ++i)
+        {
+            dots_x[i] = dots_x_arr[0][i];
+            dots_y[i] = dots_y_arr[0][i];
+        }
+
+        for (int j = 1; j < dots_x_arr.size(); ++j)
+        {
+            for (int i = 0; i < 4; ++i)
+            {
+                dots_x[i] += dots_x_arr[j][i];
+                dots_y[i] += dots_y_arr[j][i];
+            }
+        }
+
+        for (int i = 0; i < 4; ++i)
+        {
+            dots_x[i] /= dots_x_arr.size();
+            dots_y[i] /= dots_y_arr.size();
+        }
+    }
+
+    void auto_calibrated::find_z_at_corners(float left_x[4], float left_y[4], rs2_frame_queue* frames, float left_z[4])
+    {
+        int x1[4] = { 0 };
+        int y1[4] = { 0 };
+        int x2[4] = { 0 };
+        int y2[4] = { 0 };
+        int pos_tl[4] = { 0 };
+        int pos_tr[4] = { 0 };
+        int pos_bl[4] = { 0 };
+        int pos_br[4] = { 0 };
+
+        float left_z_tl[4] = { 0 };
+        float left_z_tr[4] = { 0 };
+        float left_z_bl[4] = { 0 };
+        float left_z_br[4] = { 0 };
+
+        bool got_width = false;
+        int width = 0;
+        int counter = 0;
+        rs2_error* e = nullptr;
+        rs2_frame* f = nullptr;
+
+        int queue_size = rs2_frame_queue_size(frames, &e);
+        int fc = 0;
+
+        while ((fc++ < queue_size) && rs2_poll_for_frame(frames, &f, &e))
+        {
+            rs2::frame ff(f);
+            if (ff.get_data())
+            {
+                if (!got_width)
+                {
+                    auto p = ff.get_profile();
+                    auto vsp = p.as<rs2::video_stream_profile>();
+                    width = vsp.get_intrinsics().width;
+                    got_width = true;
+
+                    for (int i = 0; i < 4; ++i)
+                    {
+                        x1[i] = static_cast<int>(left_x[i]);
+                        y1[i] = static_cast<int>(left_y[i]);
+
+                        x2[i] = static_cast<int>(left_x[i] + 1.0f);
+                        y2[i] = static_cast<int>(left_y[i] + 1.0f);
+
+                        pos_tl[i] = y1[i] * width + x1[i];
+                        pos_tr[i] = y1[i] * width + x2[i];
+                        pos_bl[i] = y2[i] * width + x1[i];
+                        pos_br[i] = y2[i] * width + x2[i];
+                    }
+                }
+
+                const uint16_t* depth = reinterpret_cast<const uint16_t*>(ff.get_data());
+                for (int i = 0; i < 4; ++i)
+                {
+                    left_z_tl[i] += static_cast<float>(depth[pos_tl[i]]);
+                    left_z_tr[i] += static_cast<float>(depth[pos_tr[i]]);
+                    left_z_bl[i] += static_cast<float>(depth[pos_bl[i]]);
+                    left_z_br[i] += static_cast<float>(depth[pos_br[i]]);
+                }
+
+                ++counter;
+            }
+
+            rs2_release_frame(f);
+        }
+
+        for (int i = 0; i < 4; ++i)
+        {
+            left_z_tl[i] /= counter;
+            left_z_tr[i] /= counter;
+            left_z_bl[i] /= counter;
+            left_z_br[i] /= counter;
+        }
+
+        float z_1 = 0.0f;
+        float z_2 = 0.0f;
+        float s = 0.0f;
+        for (int i = 0; i < 4; ++i)
+        {
+            s = left_x[i] - x1[i];
+            z_1 = (1.0f - s) * left_z_bl[i] + s * left_z_br[i];
+            z_2 = (1.0f - s) * left_z_tl[i] + s * left_z_tr[i];
+
+            s = left_y[i] - y1[i];
+            left_z[i] = (1.0f - s) * z_2 + s * z_1;
+            left_z[i] *= 0.001f;
+        }
+    }
+
+    std::vector<uint8_t> auto_calibrated::run_uv_map_calibration(rs2_frame_queue* left, rs2_frame_queue* color, rs2_frame_queue* depth, int py_px_only,
+        float* health, int health_size, update_progress_callback_ptr progress_callback)
+    {
+        float left_dots_x[4];
+        float left_dots_y[4];
+        rs2_intrinsics left_intrin;
+        rs2::stream_profile left_profile;
+        get_target_dots_info(left, left_dots_x, left_dots_y, left_profile, left_intrin, 50, progress_callback);
+
+        float color_dots_x[4];
+        float color_dots_y[4];
+        rs2_intrinsics color_intrin;
+        rs2::stream_profile color_profile;
+        get_target_dots_info(color, color_dots_x, color_dots_y, color_profile, color_intrin, 75, progress_callback);
+
+        float z[4] = { 0 };
+        find_z_at_corners(left_dots_x, left_dots_y, depth, z);
+
+        rs2_extrinsics extrin = left_profile.get_extrinsics_to(color_profile);
+
+        float pixel_left[4][2] = { 0 };
+        float point_left[4][3] = { 0 };
+
+        float pixel_color[4][2] = { 0 };
+        float pixel_color_norm[4][2] = { 0 };
+        float point_color[4][3] = { 0 };
+
+        for (int i = 0; i < 4; ++i)
+        {
+            pixel_left[i][0] = left_dots_x[i];
+            pixel_left[i][1] = left_dots_y[i];
+
+            rs2_deproject_pixel_to_point(point_left[i], &left_intrin, pixel_left[i], z[i]);
+            rs2_transform_point_to_point(point_color[i], &extrin, point_left[i]);
+
+            pixel_color_norm[i][0] = point_color[i][0] / point_color[i][2];
+            pixel_color_norm[i][1] = point_color[i][1] / point_color[i][2];
+            pixel_color[i][0] = pixel_color_norm[i][0] * color_intrin.fx + color_intrin.ppx;
+            pixel_color[i][1] = pixel_color_norm[i][1] * color_intrin.fy + color_intrin.ppy;
+        }
+
+        float diff[4] = { 0 };
+        float tmp = 0.0f;
+        for (int i = 0; i < 4; ++i)
+        {
+            tmp = (pixel_color[i][0] - color_dots_x[i]);
+            tmp *= tmp;
+            diff[i] = tmp;
+
+            tmp = (pixel_color[i][1] - color_dots_y[i]);
+            tmp *= tmp;
+            diff[i] += tmp;
+
+            diff[i] = sqrtf(diff[i]);
+        }
+
+        float err_before = 0.0f;
+        for (int i = 0; i < 4; ++i)
+            err_before += diff[i];
+        err_before /= 4;
+
+        float ppx = 0.0f;
+        float ppy = 0.0f;
+        float fx = 0.0f;
+        float fy = 0.0f;
+
+        if (py_px_only)
+        {
+            fx = color_intrin.fx;
+            fy = color_intrin.fy;
+
+            ppx = 0.0f;
+            ppy = 0.0f;
+            for (int i = 0; i < 4; ++i)
+            {
+                ppx += color_dots_x[i] - pixel_color_norm[i][0] * fx;
+                ppy += color_dots_y[i] - pixel_color_norm[i][1] * fy;
+            }
+            ppx /= 4.0f;
+            ppy /= 4.0f;
+        }
+        else
+        {
+            double x = 0;
+            double y = 0;
+            double c_x = 0;
+            double c_y = 0;
+            double x_2 = 0;
+            double y_2 = 0;
+            double c_xc = 0;
+            double c_yc = 0;
+            for (int i = 0; i < 4; ++i)
+            {
+                x += pixel_color_norm[i][0];
+                y += pixel_color_norm[i][1];
+                c_x += color_dots_x[i];
+                c_y += color_dots_y[i];
+                x_2 += pixel_color_norm[i][0] * pixel_color_norm[i][0];
+                y_2 += pixel_color_norm[i][1] * pixel_color_norm[i][1];
+                c_xc += color_dots_x[i] * pixel_color_norm[i][0];
+                c_yc += color_dots_y[i] * pixel_color_norm[i][1];
+            }
+
+            double d_x = 4 * x_2 - x * x;
+            if (d_x > 0.01)
+            {
+                d_x = 1 / d_x;
+                fx = static_cast<float>(d_x * (4 * c_xc - x * c_x));
+                ppx = static_cast<float>(d_x * (x_2 * c_x - x * c_xc));
+            }
+
+            double d_y = 4 * y_2 - y * y;
+            if (d_y > 0.01)
+            {
+                d_y = 1 / d_y;
+                fy = static_cast<float>(d_y * (4 * c_yc - y * c_y));
+                ppy = static_cast<float>(d_y * (y_2 * c_y - y * c_yc));
+            }
+        }
+
+        float err_after = 0.0f;
+        float tmpx = 0;
+        float tmpy = 0;
+        for (int i = 0; i < 4; ++i)
+        {
+            tmpx = pixel_color_norm[i][0] * fx + ppx - color_dots_x[i];
+            tmpx *= tmpx;
+
+            tmpy = pixel_color_norm[i][1] * fy + ppy - color_dots_y[i];
+            tmpy *= tmpy;
+
+            err_after += sqrtf(tmpx + tmpy);
+        }
+
+        err_after /= 4.0f;
+
+        std::vector<uint8_t> ret;
+        const float max_change = 16.0f;
+        if (fabs(color_intrin.ppx - ppx) < max_change && fabs(color_intrin.ppy - ppy) < max_change && fabs(color_intrin.fx - fx) < max_change && fabs(color_intrin.fy - fy) < max_change)
+        {
+            ret = _hw_monitor->send(command{ds::GETINTCAL, ds::rgb_calibration_id });
+            auto table = reinterpret_cast<librealsense::ds::rgb_calibration_table*>(ret.data());
+
+            health[0] = table->intrinsic(2, 0); // px
+            health[1] = table->intrinsic(2, 1); // py
+            health[2] = table->intrinsic(0, 0); // fx
+            health[3] = table->intrinsic(1, 1); // fy
+
+            table->intrinsic(2, 0) = 2.0f * ppx / color_intrin.width - 1;  // ppx
+            table->intrinsic(2, 1) = 2.0f * ppy / color_intrin.height - 1; // ppy
+            table->intrinsic(0, 0) = 2.0f * fx / color_intrin.width;       // fx
+            table->intrinsic(1, 1) = 2.0f * fy / color_intrin.height;      // fy
+
+            float calib_aspect_ratio = 9.f / 16.f; // shall be overwritten with the actual calib resolution
+            if (table->calib_width && table->calib_height)
+                calib_aspect_ratio = float(table->calib_height) / float(table->calib_width);
+
+            float actual_aspect_ratio = color_intrin.height / (float)color_intrin.width;
+            if (actual_aspect_ratio < calib_aspect_ratio)
+            {
+                table->intrinsic(1, 1) /= calib_aspect_ratio / actual_aspect_ratio; // fy
+                table->intrinsic(2, 1) /= calib_aspect_ratio / actual_aspect_ratio; // ppy
+            }
+            else
+            {
+                table->intrinsic(0, 0) /= actual_aspect_ratio / calib_aspect_ratio; // fx
+                table->intrinsic(2, 0) /= actual_aspect_ratio / calib_aspect_ratio; // ppx
+            }
+
+            table->header.crc32 = calc_crc32(ret.data() + sizeof(librealsense::ds::table_header), ret.size() - sizeof(librealsense::ds::table_header));
+
+            health[0] = (abs(table->intrinsic(2, 0) / health[0]) - 1) * 100; // px
+            health[1] = (abs(table->intrinsic(2, 1) / health[1]) - 1) * 100; // py
+            health[2] = (abs(table->intrinsic(0, 0) / health[2]) - 1) * 100; // fx
+            health[3] = (abs(table->intrinsic(1, 1) / health[3]) - 1) * 100; // fy
+        }
+
+        return ret;
+    }
+
+    float auto_calibrated::calculate_target_z(rs2_frame_queue* queue, float target_w, float target_h, update_progress_callback_ptr progress_callback)
+    {
+        constexpr size_t min_frames_required = 10;
+        bool created = false;
+
+        float4 rect_sides{};
+        float target_fw = 0;
+        float target_fh = 0;
+
+        float target_z_value = -1.f;
+        std::vector<float4>  rec_sides_data;
+        rect_calculator target_z_calculator(true);
+
+        int frm_idx = 0;
+        int progress = 0;
+        rs2_error* e = nullptr;
+        rs2_frame* f = nullptr;
+
+        int queue_size = rs2_frame_queue_size(queue, &e);
+        int fc = 0;
+
+        while ((fc++ < queue_size) && rs2_poll_for_frame(queue, &f, &e))
+        {
+            rs2::frame ff(f);
+            if (ff.get_data())
+            {
+                if (!created)
+                {
+                    auto vsp = ff.get_profile().as<rs2::video_stream_profile>();
+
+                    target_fw = vsp.get_intrinsics().fx * target_w;
+                    target_fh = vsp.get_intrinsics().fy * target_h;
+                    created = true;
+                }
+
+                // retirieve target size and accumulate results, skip frame if target could not be found
+                if (target_z_calculator.extract_target_dims(f, rect_sides))
+                {
+                    rec_sides_data.push_back(rect_sides);
+                }
+
+                frm_idx++;
+            }
+
+            rs2_release_frame(f);
+
+            if (progress_callback)
+                progress_callback->on_update_progress(static_cast<float>(progress++));
+
+        }
+
+        // Verify that at least TBD  valid extractions were made
+        if ((frm_idx < min_frames_required))
+            throw std::runtime_error(to_string() << "Target distance calculation requires at least " << min_frames_required << " frames, aborting");
+        if (float(rec_sides_data.size()/frm_idx) < 0.5f)
+            throw std::runtime_error("Please re-adjust the camera position \nand make sure the specific target is \nin the middle of the camera image!");
+
+        rect_sides = {};
+        auto avg_data = std::accumulate(rec_sides_data.begin(), rec_sides_data.end(), rect_sides);
+        for (auto i=0UL; i < 4; i++)
+            avg_data[i] /= rec_sides_data.size();
+            
+        float gt[4] = { 0 };
+
+        gt[0] = target_fw / avg_data[0];
+
+        gt[1] = target_fw / avg_data[1];
+
+        gt[2] = target_fh / avg_data[2];
+
+        gt[3] = target_fh / avg_data[3];
+
+        if (gt[0] <= 0.1f || gt[1] <= 0.1f || gt[2] <= 0.1f || gt[3] <= 0.1f)
+            throw std::runtime_error("Target distance calculation failed");
+
+        // Target's plane Z value is the average of the four calculated corners
+        target_z_value = 0.f;
+        for (int i = 0; i < 4; ++i)
+            target_z_value += gt[i];
+        target_z_value /= 4.f;
+
+        return target_z_value;
     }
 }

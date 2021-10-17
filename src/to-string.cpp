@@ -537,6 +537,8 @@ const char * get_string( rs2_calib_target_type value )
     switch( value )
     {
     CASE( RECT_GAUSSIAN_DOT_VERTICES )
+    CASE( ROI_RECT_GAUSSIAN_DOT_VERTICES )
+    CASE( POS_GAUSSIAN_DOT_VERTICES )
     default:
         assert( ! is_valid( value ) );
         return UNKNOWN_VALUE;

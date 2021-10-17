@@ -118,7 +118,7 @@ namespace rs2
         virtual ~process_manager() = default;
 
         void start(invoker invoke);
-        int get_progress() const { return _progress; }
+        int get_progress() const { return int(_progress); }
         bool done() const { return _done; }
         bool started() const { return _started; }
         bool failed() const { return _failed; }
@@ -139,7 +139,7 @@ namespace rs2
         bool _started = false;
         bool _done = false;
         bool _failed = false;
-        int _progress = 0;
+        float _progress = 0;
 
         std::mutex _log_lock;
         std::string _last_error;

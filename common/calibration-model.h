@@ -4,10 +4,17 @@
 #pragma once
 
 #include <librealsense2/rs.hpp>
+#include "notifications.h"
 
 namespace librealsense
 {
     struct float3x3;
+}
+
+namespace helpers
+{
+    // Calculate CRC code for arbitrary characters buffer
+    uint32_t calc_crc32(const uint8_t* buf, size_t bufsize);
 }
 
 namespace rs2
@@ -17,7 +24,7 @@ namespace rs2
     class calibration_model
     {
     public:
-        calibration_model(rs2::device dev);
+        calibration_model(rs2::device dev, std::shared_ptr<notifications_model> not_model);
 
         bool supports();
 
@@ -37,5 +44,7 @@ namespace rs2
         std::vector<uint8_t> _original;
 
         int selected_resolution = 0;
+
+        std::weak_ptr<notifications_model> _not_model;
     };
 }
