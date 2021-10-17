@@ -5807,6 +5807,7 @@ namespace rs2
                                 related_notifications.push_back(n);
                                 manager->start_fl_viewer();
                             }
+                            }
                         }
                         catch (const error& e)
                         {
