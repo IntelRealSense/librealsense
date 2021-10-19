@@ -945,6 +945,31 @@ namespace rs2
         }
     }
 
+    // get_depth_frame_sum:
+    // Function sums the pixels in the image ROI - return values, count and sum are accumulative - not reset at function call. 
+    void get_depth_frame_sum(rs2::depth_frame f, int roi_start_w, int roi_start_h, int roi_w, int roi_h, int& count, double& sum)
+    {
+        int width = f.get_width();
+        int height = f.get_height();
+
+        const uint16_t* p = reinterpret_cast<const uint16_t*>(f.get_data());
+        p += roi_start_h * height + roi_start_w;
+
+        for (int j = 0; j < roi_h; ++j)
+        {
+            for (int i = 0; i < roi_w; ++i)
+            {
+                if (*p)
+                {
+                    ++count;
+                    sum += *p;
+                }
+                ++p;
+            }
+            p += width;
+        }
+    }
+
     void on_chip_calib_manager::calibrate()
     {
         int occ_timeout_ms = 9000;
@@ -1124,22 +1149,7 @@ namespace rs2
                 {
                     if (frame_num < average_step_count)
                     {
-                        p = reinterpret_cast<const uint16_t*>(f.get_data());
-                        p += roi_start_h * height + roi_start_w;
-
-                        for (int j = 0; j < roi_h; ++j)
-                        {
-                            for (int i = 0; i < roi_w; ++i)
-                            {
-                                if (*p)
-                                {
-                                    ++counter;
-                                    tmp += *p;
-                                }
-                                ++p;
-                            }
-                            p += width;
-                        }
+                        get_depth_frame_sum(f, roi_start_w, roi_start_h, roi_w, roi_h, counter, tmp);
 
                         if (counter && (frame_num + 1) == average_step_count)
                         {
