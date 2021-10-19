@@ -48,6 +48,7 @@ The library will be compiled without the metadata support!\n")
 
 #define DEVICE_NOT_READY_ERROR _HRESULT_TYPEDEF_(0x80070015L)
 #define MF_E_SHUTDOWN_ERROR _HRESULT_TYPEDEF_(0xC00D3E85)
+#define SEMAPHORE_TIMEOUT_ERROR _HRESULT_TYPEDEF_(0x80070079L)
 
 #define MAX_PINS 5
 
@@ -616,8 +617,18 @@ namespace librealsense
                     else
                     {
                         auto hr = get_video_proc()->Set(pu.property, value, VideoProcAmp_Flags_Manual);
-                        if (hr == DEVICE_NOT_READY_ERROR)
+
+                        // We found 2 cases when we want to return false and let the backend retry mechanism call another set command.
+                        // DEVICE_NOT_READY_ERROR: Can be return if the device is busy, not a real error.
+                        // SEMAPHORE_TIMEOUT_ERROR: We get this error at a very low statistics when setting multiple PU commands (i.e. gain command)
+                        // It is not expected but we decided to raise a log_debug and allow a retry on that case.
+                        if( hr == DEVICE_NOT_READY_ERROR || hr == SEMAPHORE_TIMEOUT_ERROR )
+                        {
+                            if( hr == SEMAPHORE_TIMEOUT_ERROR )
+                                LOG_DEBUG( "set_pu returned error code: , "
+                                           + utilities::hresult::hr_to_string( hr ) );
                             return false;
+                        }
 
                         CHECK_HR(hr);
                     }
