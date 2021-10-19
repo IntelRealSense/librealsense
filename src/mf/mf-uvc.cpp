@@ -625,8 +625,8 @@ namespace librealsense
                         if( hr == DEVICE_NOT_READY_ERROR || hr == SEMAPHORE_TIMEOUT_ERROR )
                         {
                             if( hr == SEMAPHORE_TIMEOUT_ERROR )
-                                LOG_DEBUG( "set_pu returned error code: , "
-                                           + utilities::hresult::hr_to_string( hr ) );
+                                LOG_DEBUG( "set_pu returned error code: "
+                                           << utilities::hresult::hr_to_string( hr ) );
                             return false;
                         }
 
