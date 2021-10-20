@@ -3852,8 +3852,7 @@ const rs2_raw_data_buffer* rs2_run_uv_map_calibration_cpp(rs2_device* device, rs
     VALIDATE_RANGE(py_px_only, 0, 1);
 
     auto auto_calib = VALIDATE_INTERFACE(device->device, librealsense::auto_calibrated_interface);
-    std::vector< uint8_t > buffer
-        = auto_calib->run_uv_map_calibration( left, color, depth, py_px_only, health, health_size, callback_ptr );
+    std::vector< uint8_t > buffer = auto_calib->run_uv_map_calibration( left, color, depth, py_px_only, health, health_size, callback_ptr );
 
     return new rs2_raw_data_buffer{ buffer };
 }
@@ -3888,8 +3887,8 @@ const rs2_raw_data_buffer* rs2_run_uv_map_calibration(rs2_device* device, rs2_fr
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, device, left, color, depth, health)
 
 
-float rs2_calculate_target_z_cpp(rs2_device* device, rs2_frame_queue* queue, float target_width, float target_height,
-    rs2_update_progress_callback* progress_callback, rs2_error** error) BEGIN_API_CALL
+float rs2_calculate_target_z_cpp(rs2_device* device, rs2_frame_queue* queue1, rs2_frame_queue* queue2, rs2_frame_queue* queue3,
+    float target_width, float target_height, rs2_update_progress_callback* progress_callback, rs2_error** error) BEGIN_API_CALL
 {
     // Take ownership of the callback ASAP or else memory leaks could result if we throw! (the caller usually does a
     // 'new' when calling us)
@@ -3898,33 +3897,38 @@ float rs2_calculate_target_z_cpp(rs2_device* device, rs2_frame_queue* queue, flo
         callback_ptr.reset( progress_callback, []( rs2_update_progress_callback * p ) { p->release(); } );
 
     VALIDATE_NOT_NULL(device);
-    VALIDATE_NOT_NULL(queue);
+    VALIDATE_NOT_NULL(queue1);
+    VALIDATE_NOT_NULL(queue2);
+    VALIDATE_NOT_NULL(queue3);
     VALIDATE_GT(target_width, 0.f);
     VALIDATE_GT(target_height, 0.f);
-    VALIDATE_GT(rs2_frame_queue_size(queue, error), 0);
+    VALIDATE_GT(rs2_frame_queue_size(queue1, error), 0); // Queues 2-3 are optional, can be empty
 
     auto auto_calib = VALIDATE_INTERFACE(device->device, librealsense::auto_calibrated_interface);
-    return auto_calib->calculate_target_z( queue, target_width, target_height, callback_ptr );
+    return auto_calib->calculate_target_z(queue1, queue2, queue3, target_width, target_height, callback_ptr );
 }
-HANDLE_EXCEPTIONS_AND_RETURN(-1.f, device, queue, target_width, target_height)
+HANDLE_EXCEPTIONS_AND_RETURN(-1.f, device, queue1, queue2, queue3, target_width, target_height)
 
-float rs2_calculate_target_z(rs2_device* device, rs2_frame_queue* queue, float target_width, float target_height,
-    rs2_update_progress_callback_ptr progress_callback, void* client_data, rs2_error** error) BEGIN_API_CALL
+float rs2_calculate_target_z(rs2_device* device, rs2_frame_queue* queue1, rs2_frame_queue* queue2, rs2_frame_queue* queue3,
+    float target_width, float target_height, rs2_update_progress_callback_ptr progress_callback, void* client_data, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(device);
-    VALIDATE_NOT_NULL(queue);
+    VALIDATE_NOT_NULL(queue1);
+    VALIDATE_NOT_NULL(queue2);
+    VALIDATE_NOT_NULL(queue3);
     VALIDATE_GT(target_width, 0.f);
     VALIDATE_GT(target_height, 0.f);
-    VALIDATE_GT(rs2_frame_queue_size(queue, error), 0);
+    VALIDATE_GT(rs2_frame_queue_size(queue1, error), 0); // Queues 2-3 are optional, can be empty
+
 
     auto auto_calib = VALIDATE_INTERFACE(device->device, librealsense::auto_calibrated_interface);
 
     if (progress_callback == NULL)
-        return auto_calib->calculate_target_z(queue, target_width, target_height, nullptr);
+        return auto_calib->calculate_target_z(queue1, queue2, queue3, target_width, target_height, nullptr);
     else
     {
         librealsense::update_progress_callback_ptr cb(new librealsense::update_progress_callback(progress_callback, client_data), [](update_progress_callback* p) { delete p; });
-        return auto_calib->calculate_target_z(queue, target_width, target_height, cb);
+        return auto_calib->calculate_target_z(queue1, queue2, queue3, target_width, target_height, cb);
     }
 }
-HANDLE_EXCEPTIONS_AND_RETURN(-1.f, device, queue, target_width, target_height)
+HANDLE_EXCEPTIONS_AND_RETURN(-1.f, device, queue1, queue2, queue3, target_width, target_height)

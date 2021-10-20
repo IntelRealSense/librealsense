@@ -1012,6 +1012,8 @@ namespace rs2
             float step = 50.f / limit;  // frames gathering is 50% of the process, the rest is the internal data extraction and algo processing
             
             rs2::frame_queue queue(limit*2,true);
+            rs2::frame_queue queue2(limit * 2, true);
+            rs2::frame_queue queue3(limit * 2, true);
             rs2::frame f;
 
             // Collect sufficient amount of frames (up to 50) to extract target pattern and calculate distance to it
@@ -1030,7 +1032,7 @@ namespace rs2
             if (counter >= limit)
             {
                 auto calib_dev = _dev.as<auto_calibrated_device>();
-                float target_z_mm = calib_dev.calculate_target_z(queue,
+                float target_z_mm = calib_dev.calculate_target_z(queue, queue2, queue3,
                                                     config_file::instance().get_or_default(configurations::viewer::target_width_r, 175.0f),
                                                     config_file::instance().get_or_default(configurations::viewer::target_height_r, 100.0f),
                                                     [&](const float progress) { _progress = std::min(100.f, _progress+step); });

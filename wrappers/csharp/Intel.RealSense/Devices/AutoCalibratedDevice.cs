@@ -98,20 +98,20 @@ namespace Intel.RealSense
             return GetByteArrayFromRawDataObject(rawDataBuffer);
         }
 
-        public float CalculateTargetZ(FrameQueue frame_queue, float target_width_mm, float target_height_mm)
+        public float CalculateTargetZ(FrameQueue frame_queue1, FrameQueue frame_queue2, FrameQueue frame_queue3, float target_width_mm, float target_height_mm)
         {
             object error;
-            return NativeMethods.rs2_calculate_target_z(Handle, frame_queue.Handle, target_width_mm, target_height_mm, null, out error);
+            return NativeMethods.rs2_calculate_target_z(Handle, frame_queue1.Handle, frame_queue2.Handle, frame_queue3.Handle, target_width_mm, target_height_mm, null, out error);
         }
 
-        public float CalculateTargetZ(FrameQueue frame_queue, float target_width_mm, float target_height_mm, ProgressCallback cb)
+        public float CalculateTargetZ(FrameQueue frame_queue1, FrameQueue frame_queue2, FrameQueue frame_queue3, float target_width_mm, float target_height_mm, ProgressCallback cb)
         {
             object error;
             rs2_update_progress_callback cb2 = (float progress, IntPtr u) =>
             {
                 cb((IntPtr)progress);
             };
-            return NativeMethods.rs2_calculate_target_z(Handle, frame_queue.Handle, target_width_mm, target_height_mm, cb2, out error);
+            return NativeMethods.rs2_calculate_target_z(Handle, frame_queue1.Handle, frame_queue2.Handle, frame_queue3.Handle, target_width_mm, target_height_mm, cb2, out error);
         }
 
         public byte[] CalibrationTable

@@ -708,11 +708,11 @@ namespace Intel.RealSense
             [MarshalAs(UnmanagedType.FunctionPtr)] rs2_update_progress_callback callback, [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(ErrorMarshaler))] out object error);
 
         [DllImport(dllName, CallingConvention = CallingConvention.Cdecl)]
-        internal static extern float rs2_calculate_target_z(IntPtr dev, IntPtr input_frame_queue, float target_width_mm, float target_height_mm,
+        internal static extern float rs2_calculate_target_z(IntPtr dev, IntPtr input_frame_queue1, IntPtr input_frame_queue2, IntPtr input_frame_queue3, float target_width_mm, float target_height_mm,
             [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(ErrorMarshaler))] out object error);
 
         [DllImport(dllName, CallingConvention = CallingConvention.Cdecl)]
-        internal static extern float rs2_calculate_target_z(IntPtr dev, IntPtr input_frame_queue, float target_width_mm, float target_height_mm,
+        internal static extern float rs2_calculate_target_z(IntPtr dev, IntPtr input_frame_queue1, IntPtr input_frame_queue2, IntPtr input_frame_queue3, float target_width_mm, float target_height_mm,
             [MarshalAs(UnmanagedType.FunctionPtr)] rs2_update_progress_callback callback, [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(ErrorMarshaler))] out object error);
 
         [DllImport(dllName, CallingConvention = CallingConvention.Cdecl)]
