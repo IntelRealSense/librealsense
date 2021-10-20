@@ -154,16 +154,18 @@ void init_device(py::module &m) {
                 return py::make_tuple(self.run_uv_map_calibration(left, color, depth, py_px_only, &health, health_check_params, callback), health);
             }, "Run target-based Depth-RGB UV-map calibraion. This call is executed on the caller's thread and provides progress notifications via the callback.",
             "left"_a, "color"_a, "depth"_a, "py_px_only"_a, "callback"_a, py::call_guard<py::gil_scoped_release>())
-        .def("calculate_target_z", [](const rs2::auto_calibrated_device& self, rs2::frame_queue queue, float target_width_mm, float target_height_mm)
+        .def("calculate_target_z", [](const rs2::auto_calibrated_device& self, rs2::frame_queue queue1, rs2::frame_queue queue2, rs2::frame_queue queue3,
+            float target_width_mm, float target_height_mm)
             {
-                return self.calculate_target_z(queue, target_width_mm, target_height_mm);
+                return self.calculate_target_z(queue1, queue2, queue3, target_width_mm, target_height_mm);
             }, "Calculate Z for calibration target - distance to the target's plane.",
-            "queue"_a, "target_width_mm"_a, "target_height_mm"_a, py::call_guard<py::gil_scoped_release>())
-        .def("calculate_target_z", [](const rs2::auto_calibrated_device& self, rs2::frame_queue queue, float target_width_mm, float target_height_mm, std::function<void(float)> callback)
+            "queue1"_a, "queue2"_a, "queue3"_a, "target_width_mm"_a, "target_height_mm"_a, py::call_guard<py::gil_scoped_release>())
+        .def("calculate_target_z", [](const rs2::auto_calibrated_device& self, rs2::frame_queue queue1, rs2::frame_queue queue2, rs2::frame_queue queue3,
+            float target_width_mm, float target_height_mm, std::function<void(float)> callback)
             {
-                return self.calculate_target_z(queue, target_width_mm, target_height_mm, callback);
+                return self.calculate_target_z(queue1, queue2, queue3, target_width_mm, target_height_mm, callback);
             }, "Calculate Z for calibration target - distance to the target's plane. This call is executed on the caller's thread and provides progress notifications via the callback.",
-            "queue"_a, "target_width_mm"_a, "target_height_mm"_a, "callback"_a, py::call_guard<py::gil_scoped_release>())
+            "queue1"_a, "queue2"_a, "queue3"_a, "target_width_mm"_a, "target_height_mm"_a, "callback"_a, py::call_guard<py::gil_scoped_release>())
         .def("get_calibration_table", &rs2::auto_calibrated_device::get_calibration_table, "Read current calibration table from flash.")
         .def("set_calibration_table", &rs2::auto_calibrated_device::set_calibration_table, "Set current table to dynamic area.")
         .def("reset_to_factory_calibration", &rs2::auto_calibrated_device::reset_to_factory_calibration, "Reset device to factory calibration.");

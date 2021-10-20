@@ -1749,7 +1749,8 @@ namespace librealsense
         return ret;
     }
 
-    float auto_calibrated::calculate_target_z(rs2_frame_queue* queue, float target_w, float target_h, update_progress_callback_ptr progress_callback)
+    float auto_calibrated::calculate_target_z(rs2_frame_queue* queue1, rs2_frame_queue* queue2, rs2_frame_queue* queue3,
+        float target_w, float target_h, update_progress_callback_ptr progress_callback)
     {
         constexpr size_t min_frames_required = 10;
         bool created = false;
@@ -1767,10 +1768,10 @@ namespace librealsense
         rs2_error* e = nullptr;
         rs2_frame* f = nullptr;
 
-        int queue_size = rs2_frame_queue_size(queue, &e);
+        int queue_size = rs2_frame_queue_size(queue1, &e);
         int fc = 0;
 
-        while ((fc++ < queue_size) && rs2_poll_for_frame(queue, &f, &e))
+        while ((fc++ < queue_size) && rs2_poll_for_frame(queue1, &f, &e))
         {
             rs2::frame ff(f);
             if (ff.get_data())
