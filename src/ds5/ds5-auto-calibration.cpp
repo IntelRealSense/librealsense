@@ -916,6 +916,8 @@ namespace librealsense
         rs2_frame* f = nullptr;
 
         int queue_size = rs2_frame_queue_size(frames, &e);
+        if (queue_size==0)
+            throw std::runtime_error("Extract target rectangle info - no frames in input queue!");
         int fc = 0;
         while ((fc++ < queue_size) && rs2_poll_for_frame(frames, &f, &e))
         {
@@ -944,17 +946,22 @@ namespace librealsense
                 progress_callback->on_update_progress(static_cast<float>(++progress));
         }
 
-        for (int i = 0; i < 4; ++i)
-            rect_sides[i] = rect_sides_arr[0][i];
-
-        for (int j = 1; j < rect_sides_arr.size(); ++j)
+        if (rect_sides_arr.size())
         {
             for (int i = 0; i < 4; ++i)
-                rect_sides[i] += rect_sides_arr[j][i];
-        }
+                rect_sides[i] = rect_sides_arr[0][i];
 
-        for (int i = 0; i < 4; ++i)
-            rect_sides[i] /= rect_sides_arr.size();
+            for (int j = 1; j < rect_sides_arr.size(); ++j)
+            {
+                for (int i = 0; i < 4; ++i)
+                    rect_sides[i] += rect_sides_arr[j][i];
+            }
+
+            for (int i = 0; i < 4; ++i)
+                rect_sides[i] /= rect_sides_arr.size();
+        }
+        else
+            throw std::runtime_error("Failed to extract the target rectangle info!");
     }
 
     std::vector<uint8_t> auto_calibrated::run_focal_length_calibration(rs2_frame_queue* left, rs2_frame_queue* right, float target_w, float target_h,
@@ -963,14 +970,14 @@ namespace librealsense
         float fx[2] = { -1.0f, -1.0f };
         float fy[2] = { -1.0f, -1.0f };
 
-        float left_rect_sides[4];
+        float left_rect_sides[4] = {0.f};
         get_target_rect_info(left, left_rect_sides, fx[0], fy[0], 50, progress_callback); // Report 50% progress
 
-        float right_rect_sides[4];
+        float right_rect_sides[4] = {0.f};
         get_target_rect_info(right, right_rect_sides, fx[1], fy[1], 75, progress_callback);
 
         std::vector<uint8_t> ret;
-        const float correction_factor = 0.50f;
+        const float correction_factor = 0.5f;
 
         auto calib_table = get_calibration_table();
         auto table = (librealsense::ds::coefficients_table*)calib_table.data();
