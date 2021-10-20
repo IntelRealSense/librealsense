@@ -1656,7 +1656,8 @@ namespace rs2
 
                     ImGui::PopItemWidth();
 
-                    draw_intrinsic_extrinsic(x, y + 3 * int(ImGui::GetTextLineHeightWithSpacing()) - 10);
+                    // Disabled according to the decision on v2.50
+                    //draw_intrinsic_extrinsic(x, y + 3 * int(ImGui::GetTextLineHeightWithSpacing()) - 10);
 
                     ImGui::SetCursorScreenPos({ float(x + 9), float(y + 52 + 4 * ImGui::GetTextLineHeightWithSpacing()) });
                     id = to_string() << "Apply High-Accuracy Preset##apply_preset_" << index;
@@ -1750,6 +1751,8 @@ namespace rs2
             }
             else if (update_state == RS2_CALIB_STATE_SELF_INPUT)
             {
+                // Disabled according to the decision on v2.50
+                /*
                 ImGui::SetCursorScreenPos({ float(x + 9), float(y + 33) });
                 ImGui::Text("%s", "Speed:");
 
@@ -1791,7 +1794,7 @@ namespace rs2
                         get_manager().adjust_both_sides = (restore ? 1 : 0);
                     if (ImGui::IsItemHovered())
                         ImGui::SetTooltip("%s", "check = adjust both sides, uncheck = adjust right side only");
-                }
+                }*/
 
                 // Deprecase OCC-Extended
                 //float tmp_y = (get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_OB_CALIB ?
@@ -2678,7 +2681,7 @@ namespace rs2
             }
             else return 80;
         }
-        else if (update_state == RS2_CALIB_STATE_SELF_INPUT) return (get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_OB_CALIB ? 160 : 120);
+        else if (update_state == RS2_CALIB_STATE_SELF_INPUT) return (get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_OB_CALIB ? 160 : 60);
         else if (update_state == RS2_CALIB_STATE_TARE_INPUT) return 85;
         else if (update_state == RS2_CALIB_STATE_TARE_INPUT_ADVANCED) return 220;
         else if (update_state == RS2_CALIB_STATE_GET_TARE_GROUND_TRUTH) return 135;
