@@ -6,7 +6,6 @@
 #include "auto-calibrated-device.h"
 #include "../core/advanced_mode.h"
 
-
 namespace librealsense
 {
     class auto_calibrated : public auto_calibrated_interface
@@ -15,7 +14,7 @@ namespace librealsense
         auto_calibrated(std::shared_ptr<hw_monitor>& hwm);
         void write_calibration() const override;
         std::vector<uint8_t> run_on_chip_calibration(int timeout_ms, std::string json, float* health, update_progress_callback_ptr progress_callback) override;
-        std::vector<uint8_t> run_tare_calibration(int timeout_ms, float ground_truth_mm, std::string json, update_progress_callback_ptr progress_callback) override;
+        std::vector<uint8_t> run_tare_calibration(int timeout_ms, float ground_truth_mm, std::string json, float* health, update_progress_callback_ptr progress_callback) override;
         std::vector<uint8_t> get_calibration_table() const override;
         void set_calibration_table(const std::vector<uint8_t>& calibration) override;
         void reset_to_factory_calibration() const override;
@@ -39,8 +38,13 @@ namespace librealsense
         void undistort(uint8_t* img, const rs2_intrinsics& intrin, int roi_ws, int roi_hs, int roi_we, int roi_he);
         void find_z_at_corners(float left_x[4], float left_y[4], rs2_frame_queue* frames, float left_z[4]);
         void get_target_dots_info(rs2_frame_queue* frames, float dots_x[4], float dots_y[4], rs2::stream_profile & profile, rs2_intrinsics & fy, int progress, update_progress_callback_ptr progress_callback);
-
+        void change_preset_and_stay();
+        void restore_preset();
         std::vector<uint8_t> _curr_calibration;
         std::shared_ptr<hw_monitor>& _hw_monitor;
+
+        bool _preset_change = false;
+        preset _old_preset_values;
+        rs2_rs400_visual_preset _old_preset;
     };
 }

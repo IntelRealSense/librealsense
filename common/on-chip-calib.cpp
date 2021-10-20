@@ -14,6 +14,7 @@
 #include "calibration-model.h"
 #include "os.h"
 #include "../src/algo.h"
+#include "../src/ds5/ds5-private.h"
 #include "../tools/depth-quality/depth-metrics.h"
 
 namespace rs2
@@ -26,6 +27,25 @@ namespace rs2
             std::string dev_pid = dev.get_info(RS2_CAMERA_INFO_PRODUCT_ID);
             if (val_in_range(dev_pid, { std::string("0AD3") }))
                 speed = 4;
+        }
+        if (dev.supports(RS2_CAMERA_INFO_FIRMWARE_VERSION))
+        {
+            std::string fw_version = dev.get_info(RS2_CAMERA_INFO_FIRMWARE_VERSION);
+            std::vector<int> versions;
+            int i = 0;
+            int j = 0;
+            for (int j = 0; j < fw_version.length(); ++j)
+            {
+                if (fw_version[j] == '.')
+                {
+                    versions.emplace_back(atoi(fw_version.substr(i, j - i).c_str()));
+                    i = j + 1;
+                }
+            }
+
+            versions.emplace_back(atoi(fw_version.substr(i).c_str()));
+            if (versions[0] >= 5 && versions[1] >= 12 && versions[2] >= 14 && versions[3] >= 100) // FW 05.12.14.100
+                tare_health = true;
         }
     }
 
@@ -422,6 +442,8 @@ namespace rs2
                     }
                 }
 
+                if (_sub->s->supports(RS2_OPTION_EMITTER_ENABLED))
+                    _sub->s->set_option(RS2_OPTION_EMITTER_ENABLED, 0.0f);  // TODO: Need to testore emitter to it's previous state
             }
             else if (action == RS2_CALIB_ACTION_UVMAPPING_CALIB)
             {
@@ -779,6 +801,75 @@ namespace rs2
         config_file::instance().set(id.c_str(), (long long)rawtime);
     }
 
+    // fill_missing_data:
+    // Fill every zeros section linearly based on the section's edges.
+    void on_chip_calib_manager::fill_missing_data(uint16_t data[256], int size)
+    {
+        int counter = 0;
+        int start = 0;
+        while (data[start++] == 0)
+            ++counter;
+
+        if (start + 2 > size)
+            throw std::runtime_error(to_string() << "There is no enought valid data in the array!");
+
+        for (int i = 0; i < counter; ++i)
+            data[i] = data[counter];
+
+        start = 0;
+        int end = 0;
+        float tmp = 0;
+        for (int i = 0; i < size; ++i)
+        {
+            if (data[i] == 0)
+                start = i;
+
+            if (start != 0 && data[i] != 0)
+                end = i;
+
+            if (start != 0 && end != 0)
+            {
+                tmp = static_cast<float>(data[end] - data[start - 1]);
+                tmp /= end - start + 1;
+                for (int j = start; j < end; ++j)
+                    data[j] = static_cast<uint16_t>(tmp * (j - start + 1) + data[start - 1] + 0.5f);
+                start = 0;
+                end = 0;
+            }
+        }
+
+        if (start != 0 && end == 0)
+        {
+            for (int i = start; i < size; ++i)
+                data[i] = data[start - 1];
+        }
+    }
+
+    // get_depth_frame_sum:
+    // Function sums the pixels in the image ROI - return values, count and sum are accumulative - not reset at function call. 
+    void get_depth_frame_sum(rs2::depth_frame f, int roi_start_w, int roi_start_h, int roi_w, int roi_h, int& count, double& sum)
+    {
+        int width = f.get_width();
+        int height = f.get_height();
+
+        const uint16_t* p = reinterpret_cast<const uint16_t*>(f.get_data());
+        p += roi_start_h * height + roi_start_w;
+
+        for (int j = 0; j < roi_h; ++j)
+        {
+            for (int i = 0; i < roi_w; ++i)
+            {
+                if (*p)
+                {
+                    ++count;
+                    sum += *p;
+                }
+                ++p;
+            }
+            p += width;
+        }
+    }
+
     void on_chip_calib_manager::calibrate()
     {
         int occ_timeout_ms = 9000;
@@ -822,18 +913,20 @@ namespace rs2
         if (action == RS2_CALIB_ACTION_ON_CHIP_CALIB)
         {
             ss << "{\n \"calib type\":" << 0 <<
+                  ",\n \"host assistance\":" << host_assistance <<
                   ",\n \"speed\":" << speed <<
                   ",\n \"average step count\":" << average_step_count <<
                   ",\n \"scan parameter\":" << (intrinsic_scan ? 0 : 1) <<
                   ",\n \"step count\":" << step_count <<
                   ",\n \"apply preset\":" << (apply_preset ? 1 : 0) <<
                   ",\n \"accuracy\":" << accuracy <<
-                  ",\n \"scan only\":" << 0 <<
+                  ",\n \"scan only\":" << (host_assistance ? 1 : 0) <<
                   ",\n \"interactive scan\":" << 0 << "}";
         }
         else if (action == RS2_CALIB_ACTION_ON_CHIP_FL_CALIB)
         {
             ss << "{\n \"calib type\":" << 1 <<
+                  ",\n \"host assistance\":" << host_assistance <<
                   ",\n \"fl step count\":" << fl_step_count <<
                   ",\n \"fy scan range\":" << fy_scan_range <<
                   ",\n \"keep new value after sucessful scan\":" << keep_new_value_after_sucessful_scan <<
@@ -842,12 +935,13 @@ namespace rs2
                   ",\n \"fl scan location\":" << fl_scan_location <<
                   ",\n \"fy scan direction\":" << fy_scan_direction <<
                   ",\n \"white wall mode\":" << white_wall_mode <<
-                  ",\n \"scan only\":" << 0 <<
+                  ",\n \"scan only\":" << (host_assistance ? 1 : 0) <<
                   ",\n \"interactive scan\":" << 0 << "}";
         }
         else
         {
             ss << "{\n \"calib type\":" << 2 <<
+                  ",\n \"host assistance\":" << host_assistance <<
                   ",\n \"fl step count\":" << fl_step_count <<
                   ",\n \"fy scan range\":" << fy_scan_range <<
                   ",\n \"keep new value after sucessful scan\":" << keep_new_value_after_sucessful_scan <<
@@ -862,7 +956,7 @@ namespace rs2
                   ",\n \"step count\":" << step_count <<
                   ",\n \"apply preset\":" << (apply_preset ? 1 : 0) <<
                   ",\n \"accuracy\":" << accuracy <<
-                  ",\n \"scan only\":" << 0 <<
+                  ",\n \"scan only\":" << (host_assistance ? 1 : 0) <<
                   ",\n \"interactive scan\":" << 0 <<
                   ",\n \"depth\":" << 0 << "}";
         }
@@ -873,12 +967,230 @@ namespace rs2
         rs2::depth_frame f = fetch_depth_frame(invoke, frame_fetch_timeout_ms);
         rs2_metadata_type frame_counter = 0;
         _progress = 0;
+        if (host_assistance) // wait enough frames
+        {
+            frame_counter = f.get_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER);
+            while (frame_counter <= 2)
+            {
+                if (_progress < 7)
+                    _progress += 3;
 
+                f = fetch_depth_frame(invoke, frame_fetch_timeout_ms);
+                frame_counter = f.get_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER);
+            }
+
+            _progress = 10;
+        }
+
+        float health[2] = { -1.0f, -1.0f };
         auto calib_dev = _dev.as<auto_calibrated_device>();
         if (action == RS2_CALIB_ACTION_TARE_CALIB)
-            _new_calib = calib_dev.run_tare_calibration(ground_truth, json, [&](const float progress) {_progress = progress;}, 5000);
+            _new_calib = calib_dev.run_tare_calibration(ground_truth, json, health, [&](const float progress) {_progress = int(progress);}, 5000);
         else if (action == RS2_CALIB_ACTION_ON_CHIP_CALIB || action == RS2_CALIB_ACTION_ON_CHIP_FL_CALIB || action == RS2_CALIB_ACTION_ON_CHIP_OB_CALIB)
             _new_calib = calib_dev.run_on_chip_calibration(json, &_health, [&](const float progress) {_progress = progress;}, occ_timeout_ms);
+
+        // version 3
+        if (host_assistance)
+        {
+            int total_frames = 256;
+            int start_frame_counter = static_cast<int>(frame_counter);
+
+            int width = f.get_width();
+            int height = f.get_height();
+            int size = width * height;
+
+            int roi_w = width / 5;
+            int roi_h = height / 5;
+            int roi_size = roi_w * roi_h;
+            int roi_fl_size = roi_w * 5;
+
+            int roi_start_w = 2 * roi_w;
+            int roi_start_h = 2 * roi_h;
+
+            int counter = 0;
+            double tmp = 0.0;
+            uint16_t fill_factor[256] = { 0 };
+
+            int start_timeout_ms = 4000;
+            if (action == RS2_CALIB_ACTION_TARE_CALIB)
+            {
+               //_viewer.not_model->add_log(to_string() << "TARE, start_frame_counter=" << start_frame_counter << ", frame_counter=" << frame_counter);
+
+                // Skip frames until interactive process begins:
+                auto start_time = std::chrono::high_resolution_clock::now();
+                auto now = start_time;
+                while (frame_counter >= start_frame_counter)
+                {
+                    now = std::chrono::high_resolution_clock::now();
+                    if (now - start_time > std::chrono::milliseconds(start_timeout_ms))
+                        throw std::runtime_error("Operation timed-out when starting calibration!");
+
+                    if (_progress < 18)
+                        _progress += 2;
+
+                    f = fetch_depth_frame(invoke, frame_fetch_timeout_ms);
+                    frame_counter = f.get_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER);
+
+                    //_viewer.not_model->add_log(to_string() << "frame_counter=" << frame_counter);
+                }
+                _progress = 20;
+
+                int depth = 0;
+                total_frames = step_count;
+                int prev_frame_counter = total_frames;
+
+                //_viewer.not_model->add_log(to_string() << "Interavtive starts with total_frames=" << total_frames << ", frame_counter=" << frame_counter << ", average_step_count=" << average_step_count);
+
+                tmp = 0.0;
+                counter = 0;
+                int frame_num = 0;
+                const uint16_t* p = nullptr;
+                while (frame_counter < total_frames)
+                {
+                    if (frame_num < average_step_count)
+                    {
+                        get_depth_frame_sum(f, roi_start_w, roi_start_h, roi_w, roi_h, counter, tmp);
+
+                        if (counter && (frame_num + 1) == average_step_count)
+                        {
+                            tmp /= counter;
+                            tmp *= 10000;
+
+                            depth = static_cast<int>(tmp + 0.5);
+
+                            std::stringstream ss;
+                            ss << "{\n \"depth\":" << depth << "}";
+
+                            std::string json = ss.str();
+                            calib_dev.run_tare_calibration(ground_truth, json, health, [&](const float progress) {}, 5000);
+                        }
+                    }
+
+                    f = fetch_depth_frame(invoke, frame_fetch_timeout_ms);
+                    prev_frame_counter = static_cast<int>(frame_counter);
+                    frame_counter = f.get_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER);
+
+                    if (frame_counter != prev_frame_counter)
+                    {
+                        if (_progress < 80)
+                            _progress += 1;
+
+                        counter = 0;
+                        tmp = 0.0;
+                        frame_num = 0;
+                    }
+                    else
+                        ++frame_num;
+
+                    //_viewer.not_model->add_log(to_string() << "frame_counter=" << frame_counter << ", frame_num=" << frame_num);
+                }
+
+                _progress = 80;
+
+                std::stringstream ss;
+                ss << "{\n \"depth\":" << -1 << "}";
+
+                std::string json = ss.str();
+                _new_calib = calib_dev.run_tare_calibration(ground_truth, json, health, [&](const float progress) {_progress = int(progress); }, 5000);
+                _progress = 100;
+            }
+            else
+            {
+                auto start_time = std::chrono::high_resolution_clock::now();
+                auto now = start_time;
+                while (frame_counter >= start_frame_counter)
+                {
+                    now = std::chrono::high_resolution_clock::now();
+                    if (now - start_time > std::chrono::milliseconds(start_timeout_ms))
+                        throw std::runtime_error("Operation timed-out when starting calibration!");
+
+                    if (_progress < 18)
+                        _progress += 2;
+
+                    f = fetch_depth_frame(invoke, frame_fetch_timeout_ms);
+                    frame_counter = f.get_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER);
+                }
+                _progress = 20;
+
+                int from = roi_start_h;
+                int to = roi_start_h + roi_h;
+                int data_size = roi_size;
+                if (action == RS2_CALIB_ACTION_ON_CHIP_CALIB)
+                {
+                    switch (speed)
+                    {
+                    case 0:
+                        total_frames = 60;
+                        break;
+                    case 1:
+                        total_frames = 120;
+                        break;
+                    case 2:
+                        total_frames = 256;
+                        break;
+                    case 3:
+                        total_frames = 256;
+                        break;
+                    case 4:
+                        total_frames = 120;
+                        break;
+                    }
+                }
+                else
+                {
+                    total_frames = fl_step_count;
+                }
+
+                int prev_frame_counter = total_frames;
+                int cur_progress = _progress;
+                while (frame_counter < total_frames)
+                {
+                    if (frame_counter != prev_frame_counter)
+                    {
+                        _progress = cur_progress + static_cast<int>(frame_counter * 60 / total_frames);
+
+                        const uint16_t* p = reinterpret_cast<const uint16_t*>(f.get_data());
+                        p += from * height + roi_start_w;
+
+                        counter = 0;
+                        for (int j = from; j < to; ++j)
+                        {
+                            for (int i = 0; i < roi_w; ++i)
+                            {
+                                if (*p)
+                                    ++counter;
+                                ++p;
+                            }
+                            p += width;
+                        }
+
+                        tmp = static_cast<float>(counter);
+                        tmp /= data_size;
+                        tmp *= 10000;
+                        fill_factor[frame_counter] = static_cast<uint16_t>(tmp + 0.5f);
+                    }
+
+                    f = fetch_depth_frame(invoke, frame_fetch_timeout_ms);
+                    prev_frame_counter = static_cast<int>(frame_counter);
+                    frame_counter = f.get_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER);
+                }
+
+                fill_missing_data(fill_factor, total_frames);
+
+                std::stringstream ss;
+                ss << "{\n \"calib type\":" << (action == RS2_CALIB_ACTION_ON_CHIP_CALIB ? 0 : 1) <<
+                      ",\n \"host assistance\":" << 2 <<
+                      ",\n \"step count v3\":" << total_frames;
+                for (int i = 0; i < total_frames; ++i)
+                    ss << ",\n \"fill factor " << i << "\":" << fill_factor[i];
+                ss << "}";
+
+                _progress = 80;
+                std::string json = ss.str();
+                _new_calib = calib_dev.run_on_chip_calibration(json, &_health, [&](const float progress) {_progress = int(progress); }, occ_timeout_ms);
+                _progress = 100;
+            }
+        }
 
         if (action == RS2_CALIB_ACTION_ON_CHIP_OB_CALIB)
         {
@@ -894,6 +1206,11 @@ namespace rs2
             _health_2 = h_2 / 1000.0f;
             if (sign & 2)
                 _health_2 = -_health_2;
+        }
+        else if (action == RS2_CALIB_ACTION_TARE_CALIB)
+        {
+            _health_1 = health[0] * 100;
+            _health_2 = health[1] * 100;
         }
     }
 
@@ -1124,6 +1441,8 @@ namespace rs2
 
         if (action == RS2_CALIB_ACTION_FL_CALIB || action == RS2_CALIB_ACTION_TARE_GROUND_TRUTH || action == RS2_CALIB_ACTION_UVMAPPING_CALIB)
             try_start_viewer(1280, 720, fps, invoke);
+        else if (host_assistance && action != RS2_CALIB_ACTION_TARE_GROUND_TRUTH)
+            try_start_viewer(0, 0, 0, invoke);
         else
             try_start_viewer(256, 144, 90, invoke);
 
@@ -1243,6 +1562,27 @@ namespace rs2
         calib_dev.write_calibration();
     }
 
+    void on_chip_calib_manager::keep_uvmapping_calib()
+    {
+        std::vector<uint8_t> cmd =
+        {
+            0x14, 0x00, 0xab, 0xcd,
+            0x62, 0x00, 0x00, 0x00,
+            0x20, 0x00, 0x00, 0x00,
+            0x01, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00
+        };
+
+        cmd.insert(cmd.end(), color_intrin_raw_data.data(), color_intrin_raw_data.data() + color_intrin_raw_data.size());
+        uint16_t* psize = reinterpret_cast<uint16_t*>(cmd.data());
+        *psize = static_cast<uint16_t>(cmd.size() - 4);
+        const rs2_raw_data_buffer* raw_buf = rs2_send_and_receive_raw_data(_dev.get().get(), cmd.data(), static_cast<unsigned int>(cmd.size()), nullptr);
+        rs2_delete_raw_data(raw_buf);
+
+        _dev.hardware_reset(); // Workaround for reloading color calibration table. Other approach?
+    }
+
     void on_chip_calib_manager::apply_calib(bool use_new)
     {
         auto calib_dev = _dev.as<auto_calibrated_device>();
@@ -1343,6 +1683,8 @@ namespace rs2
                 ImGui::Text("%s", "Calibration Health-Check");
             else if (update_state == RS2_CALIB_STATE_UVMAPPING_INPUT)
                 ImGui::Text("%s", "UV-Mapping Calibration");
+            else if (update_state == RS2_CALIB_STATE_FL_PLUS_INPUT)
+                ImGui::Text("%s", "Focal Length Plus Calibration");
             else if (update_state == RS2_CALIB_STATE_CALIB_IN_PROCESS ||
                      update_state == RS2_CALIB_STATE_CALIB_COMPLETE ||
                      update_state == RS2_CALIB_STATE_SELF_INPUT)
@@ -1357,6 +1699,8 @@ namespace rs2
                    ImGui::Text("%s", "Focal Length Calibration");
                else if (get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_UVMAPPING_CALIB)
                    ImGui::Text("%s", "UV-Mapping Calibration");
+               else if (get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_FL_PLUS_CALIB)
+                   ImGui::Text("%s", "Focal Length Plus Calibration");
                else
                    ImGui::Text("%s", "On-Chip Calibration");
             }
@@ -1721,6 +2065,13 @@ namespace rs2
                 if (ImGui::IsItemHovered())
                     ImGui::SetTooltip("%s", "Calculate ground truth for the specific target");
 
+                ImGui::SetCursorScreenPos({ float(x + 9), float(y + height - ImGui::GetTextLineHeightWithSpacing() - 30) });
+                bool assistance = (get_manager().host_assistance != 0);
+                if (ImGui::Checkbox("Host Assistance", &assistance))
+                    get_manager().host_assistance = (assistance ? 1 : 0);
+                if (ImGui::IsItemHovered())
+                    ImGui::SetTooltip("%s", "check = host assitance for statistics data, uncheck = no host assistance");
+
                 std::string button_name = to_string() << "Calibrate" << "##tare" << index;
 
                 ImGui::SetCursorScreenPos({ float(x + 5), float(y + height - 28) });
@@ -1806,6 +2157,13 @@ namespace rs2
                 //    get_manager().action = on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_OB_CALIB;
                 //if (ImGui::IsItemHovered())
                 //    ImGui::SetTooltip("%s", "On-Chip Calibration Extended");
+
+                ImGui::SetCursorScreenPos({ float(x + 9), float(y + height - ImGui::GetTextLineHeightWithSpacing() - 31) });
+                bool assistance = (get_manager().host_assistance != 0);
+                if (ImGui::Checkbox("Host Assistance", &assistance))
+                    get_manager().host_assistance = (assistance ? 1 : 0);
+                if (ImGui::IsItemHovered())
+                    ImGui::SetTooltip("%s", "check = host assitance for statistics data, uncheck = no host assistance");
 
                 auto sat = 1.f + sin(duration_cast<milliseconds>(system_clock::now() - created_time).count() / 700.f) * 0.1f;
                 ImGui::PushStyleColor(ImGuiCol_Button, saturate(sensor_header_light_blue, sat));
@@ -2096,7 +2454,60 @@ namespace rs2
 
                     ImGui::SetCursorScreenPos({ float(x + 10), float(y + 33) });
 
-                    if (get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_OB_CALIB)
+                    if (get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_TARE_CALIB)
+                    {
+                        if (get_manager().tare_health)
+                        {
+                            health_1 = get_manager().get_health_1();
+                            health_2 = get_manager().get_health_2();
+
+                            ImGui::Text("%s", "Health-Check Before Calibration: ");
+
+                            std::stringstream ss_1;
+                            ss_1 << std::fixed << std::setprecision(4) << health_1 << "%";
+                            auto health_str = ss_1.str();
+
+                            std::string text_name = to_string() << "##notification_text_1_" << index;
+
+                            ImGui::SetCursorScreenPos({ float(x + 225), float(y + 30) });
+                            ImGui::PushStyleColor(ImGuiCol_Text, white);
+                            ImGui::PushStyleColor(ImGuiCol_FrameBg, transparent);
+                            ImGui::PushStyleColor(ImGuiCol_ScrollbarBg, transparent);
+                            ImGui::PushStyleColor(ImGuiCol_ScrollbarGrab, transparent);
+                            ImGui::PushStyleColor(ImGuiCol_ScrollbarGrabActive, transparent);
+                            ImGui::PushStyleColor(ImGuiCol_ScrollbarGrabHovered, transparent);
+                            ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
+                            ImGui::InputTextMultiline(text_name.c_str(), const_cast<char*>(health_str.c_str()), strlen(health_str.c_str()) + 1, { 86, ImGui::GetTextLineHeight() + 6 }, ImGuiInputTextFlags_ReadOnly);
+                            ImGui::PopStyleColor(7);
+
+                            if (ImGui::IsItemHovered())
+                                ImGui::SetTooltip("%s", "Health-check number before Tare Calibration");
+
+                            ImGui::SetCursorScreenPos({ float(x + 10), float(y + 38) + ImGui::GetTextLineHeightWithSpacing() });
+                            ImGui::Text("%s", "Health-Check After Calibration: ");
+
+                            std::stringstream ss_2;
+                            ss_2 << std::fixed << std::setprecision(4) << health_2 << "%";
+                            health_str = ss_2.str();
+
+                            text_name = to_string() << "##notification_text_2_" << index;
+
+                            ImGui::SetCursorScreenPos({ float(x + 225), float(y + 35) + ImGui::GetTextLineHeightWithSpacing() });
+                            ImGui::PushStyleColor(ImGuiCol_Text, white);
+                            ImGui::PushStyleColor(ImGuiCol_FrameBg, transparent);
+                            ImGui::PushStyleColor(ImGuiCol_ScrollbarBg, transparent);
+                            ImGui::PushStyleColor(ImGuiCol_ScrollbarGrab, transparent);
+                            ImGui::PushStyleColor(ImGuiCol_ScrollbarGrabActive, transparent);
+                            ImGui::PushStyleColor(ImGuiCol_ScrollbarGrabHovered, transparent);
+                            ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
+                            ImGui::InputTextMultiline(text_name.c_str(), const_cast<char*>(health_str.c_str()), strlen(health_str.c_str()) + 1, { 86, ImGui::GetTextLineHeight() + 6 }, ImGuiInputTextFlags_ReadOnly);
+                            ImGui::PopStyleColor(7);
+
+                            if (ImGui::IsItemHovered())
+                                ImGui::SetTooltip("%s", "Health-check number after Tare Calibration");
+                        }
+                    }
+                    else if (get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_OB_CALIB)
                     {
                         ImGui::Text("%s", "Health-Check: ");
 
@@ -2664,20 +3075,21 @@ namespace rs2
             if (get_manager().allow_calib_keep())
             {
                 if (get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_OB_CALIB || get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_FL_CALIB) return 190;
-                else if (get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_TARE_CALIB) return 140;
+                else if (get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_TARE_CALIB) return (get_manager().tare_health ? 190 : 140);
                 else if (get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_UVMAPPING_CALIB) return 160;
+                else if (get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_FL_PLUS_CALIB) return 230;
                 else return 170;
             }
             else return 80;
         }
-        else if (update_state == RS2_CALIB_STATE_SELF_INPUT) return (get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_OB_CALIB ? 160 : 120);
-        else if (update_state == RS2_CALIB_STATE_TARE_INPUT) return 85;
-        else if (update_state == RS2_CALIB_STATE_TARE_INPUT_ADVANCED) return 220;
+        else if (update_state == RS2_CALIB_STATE_SELF_INPUT) return (get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_OB_CALIB ? 180 : 160);
+        else if (update_state == RS2_CALIB_STATE_TARE_INPUT) return 105;
+        else if (update_state == RS2_CALIB_STATE_TARE_INPUT_ADVANCED) return 230;
         else if (update_state == RS2_CALIB_STATE_GET_TARE_GROUND_TRUTH) return 135;
         else if (update_state == RS2_CALIB_STATE_GET_TARE_GROUND_TRUTH_FAILED) return 115;
         else if (update_state == RS2_CALIB_STATE_FAILED) return ((get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_OB_CALIB || get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_FL_CALIB) ? (get_manager().retry_times < 3 ? 0 : 80) : 110);
-        else if (update_state == RS2_CALIB_STATE_FL_INPUT) return 200;
-        else if (update_state == RS2_CALIB_STATE_UVMAPPING_INPUT) return 140;
+        else if (update_state == RS2_CALIB_STATE_FL_INPUT) return 140;
+        else if (update_state == RS2_CALIB_STATE_UVMAPPING_INPUT) return 120;
         else return 100;
     }
 
