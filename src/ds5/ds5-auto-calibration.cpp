@@ -341,6 +341,7 @@ namespace librealsense
         }
 
         std::vector<uint8_t> res;
+        std::shared_ptr<ds5_advanced_mode_base> preset_recover;
         if (calib_type == 0)
         {
             LOG_INFO("run_on_chip_calibration with parameters: speed = " << speed << " scan_parameter = " << scan_parameter << " data_sampling = " << data_sampling);
@@ -358,7 +359,6 @@ namespace librealsense
             if (interactive_scan_v3)
                 p4 |= (1 << 9);
 
-            std::shared_ptr<ds5_advanced_mode_base> preset_recover;
             if (speed == speed_white_wall && apply_preset)
             {
                 preset_recover = change_preset();

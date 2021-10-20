@@ -985,7 +985,7 @@ namespace rs2
         float health[2] = { -1.0f, -1.0f };
         auto calib_dev = _dev.as<auto_calibrated_device>();
         if (action == RS2_CALIB_ACTION_TARE_CALIB)
-            _new_calib = calib_dev.run_tare_calibration(ground_truth, json, health, [&](const float progress) {_progress = int(progress);}, 5000);
+            _new_calib = calib_dev.run_tare_calibration(ground_truth, json, health, [&](const float progress) {_progress = progress;}, 5000);
         else if (action == RS2_CALIB_ACTION_ON_CHIP_CALIB || action == RS2_CALIB_ACTION_ON_CHIP_FL_CALIB || action == RS2_CALIB_ACTION_ON_CHIP_OB_CALIB)
             _new_calib = calib_dev.run_on_chip_calibration(json, &_health, [&](const float progress) {_progress = progress;}, occ_timeout_ms);
 
@@ -1091,7 +1091,7 @@ namespace rs2
                 ss << "{\n \"depth\":" << -1 << "}";
 
                 std::string json = ss.str();
-                _new_calib = calib_dev.run_tare_calibration(ground_truth, json, health, [&](const float progress) {_progress = int(progress); }, 5000);
+                _new_calib = calib_dev.run_tare_calibration(ground_truth, json, health, [&](const float progress) {_progress = progress; }, 5000);
                 _progress = 100;
             }
             else
@@ -1142,12 +1142,12 @@ namespace rs2
                 }
 
                 int prev_frame_counter = total_frames;
-                int cur_progress = _progress;
+                int cur_progress = int(_progress);
                 while (frame_counter < total_frames)
                 {
                     if (frame_counter != prev_frame_counter)
                     {
-                        _progress = cur_progress + static_cast<int>(frame_counter * 60 / total_frames);
+                        _progress = static_cast<float>(cur_progress + static_cast<int>(frame_counter * 60 / total_frames));
 
                         const uint16_t* p = reinterpret_cast<const uint16_t*>(f.get_data());
                         p += from * height + roi_start_w;
@@ -1187,7 +1187,7 @@ namespace rs2
 
                 _progress = 80;
                 std::string json = ss.str();
-                _new_calib = calib_dev.run_on_chip_calibration(json, &_health, [&](const float progress) {_progress = int(progress); }, occ_timeout_ms);
+                _new_calib = calib_dev.run_on_chip_calibration(json, &_health, [&](const float progress) {_progress = progress; }, occ_timeout_ms);
                 _progress = 100;
             }
         }
@@ -1683,8 +1683,6 @@ namespace rs2
                 ImGui::Text("%s", "Calibration Health-Check");
             else if (update_state == RS2_CALIB_STATE_UVMAPPING_INPUT)
                 ImGui::Text("%s", "UV-Mapping Calibration");
-            else if (update_state == RS2_CALIB_STATE_FL_PLUS_INPUT)
-                ImGui::Text("%s", "Focal Length Plus Calibration");
             else if (update_state == RS2_CALIB_STATE_CALIB_IN_PROCESS ||
                      update_state == RS2_CALIB_STATE_CALIB_COMPLETE ||
                      update_state == RS2_CALIB_STATE_SELF_INPUT)
@@ -1699,8 +1697,6 @@ namespace rs2
                    ImGui::Text("%s", "Focal Length Calibration");
                else if (get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_UVMAPPING_CALIB)
                    ImGui::Text("%s", "UV-Mapping Calibration");
-               else if (get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_FL_PLUS_CALIB)
-                   ImGui::Text("%s", "Focal Length Plus Calibration");
                else
                    ImGui::Text("%s", "On-Chip Calibration");
             }
@@ -2784,11 +2780,11 @@ namespace rs2
                     }
                     else
                     {
-                        ImGui::SetCursorScreenPos({ float(x + 7), (get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_OB_CALIB || get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_FL_CALIB ? float(y + 105) + ImGui::GetTextLineHeightWithSpacing() : (get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_TARE_CALIB ? float(y + 50) + ImGui::GetTextLineHeightWithSpacing() : float(y + 105))) });
+                        ImGui::SetCursorScreenPos({ float(x + 7), (get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_OB_CALIB || get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_FL_CALIB ? float(y + 105) + ImGui::GetTextLineHeightWithSpacing() : (get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_TARE_CALIB ? (get_manager().tare_health ? float(y + 105) : float(y + 50)) + ImGui::GetTextLineHeightWithSpacing() : float(y + 105))) });
                         ImGui::Text("%s", "Please compare new vs old calibration\nand decide if to keep or discard the result...");
                     }
 
-                    ImGui::SetCursorScreenPos({ float(x + 20), (get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_OB_CALIB || get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_FL_CALIB ? float(y + 70) + ImGui::GetTextLineHeightWithSpacing() : (get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_TARE_CALIB ? float(y + 15) + ImGui::GetTextLineHeightWithSpacing() : float(y + 70))) });
+                    ImGui::SetCursorScreenPos({ float(x + 20), (get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_OB_CALIB || get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_FL_CALIB ? float(y + 70) + ImGui::GetTextLineHeightWithSpacing() : (get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_TARE_CALIB ? (get_manager().tare_health ? float(y + 70) : float(y + 15)) + ImGui::GetTextLineHeightWithSpacing() : float(y + 70))) });
 
                     if (ImGui::RadioButton("New", use_new_calib))
                     {
@@ -2796,7 +2792,7 @@ namespace rs2
                         get_manager().apply_calib(true);
                     }
 
-                    ImGui::SetCursorScreenPos({ float(x + 150), (get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_OB_CALIB || get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_FL_CALIB ? float(y + 70) + ImGui::GetTextLineHeightWithSpacing() : (get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_TARE_CALIB ? float(y + 15) + ImGui::GetTextLineHeightWithSpacing() : float(y + 70))) });
+                    ImGui::SetCursorScreenPos({ float(x + 150), (get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_OB_CALIB || get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_FL_CALIB ? float(y + 70) + ImGui::GetTextLineHeightWithSpacing() : (get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_TARE_CALIB ? (get_manager().tare_health ? float(y + 70) : float(y + 15)) + ImGui::GetTextLineHeightWithSpacing() : float(y + 70))) });
                     if (ImGui::RadioButton("Original", !use_new_calib))
                     {
                         use_new_calib = false;
@@ -3077,7 +3073,6 @@ namespace rs2
                 if (get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_OB_CALIB || get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_FL_CALIB) return 190;
                 else if (get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_TARE_CALIB) return (get_manager().tare_health ? 190 : 140);
                 else if (get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_UVMAPPING_CALIB) return 160;
-                else if (get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_FL_PLUS_CALIB) return 230;
                 else return 170;
             }
             else return 80;
