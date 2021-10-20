@@ -987,7 +987,7 @@ namespace rs2
                 if (!_new_calib.size())
                     fail("UV-Mapping calibration failed!\nPlease adjust the camera position\nand make sure the specific target is\ninside the ROI of the camera images!");
                 else
-                    log(to_string() << "UV-Mapping recalibration - a new work poin was generated");
+                    log(to_string() << "UV-Mapping recalibration - a new work point is generated");
             }
             else
                 fail("Failed to capture sufficient amount of frames to run UV-Map calibration!");
@@ -2600,12 +2600,18 @@ namespace rs2
         ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0);
 
         std::string title;
-        if (get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_FL_CALIB)
-            title = "On-Chip Focal Length Calibration";
-        else if (get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_OB_CALIB)
-            title = "On-Chip Calibration Extended";
-        else
-            title = "On-Chip Calibration";
+        switch (get_manager().action)
+        {
+            case on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_OB_CALIB: title = "On - Chip Calibration Extended"; break;
+            case on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_CALIB: title = "On-Chip Calibration"; break;
+            case on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_FL_CALIB: title = "On-Chip Focal Length Calibration"; break;
+            case on_chip_calib_manager::RS2_CALIB_ACTION_TARE_CALIB: title = "Tare Calibration"; break;
+            case on_chip_calib_manager::RS2_CALIB_ACTION_TARE_GROUND_TRUTH: title = "Ground Truth Calculation"; break;
+            case on_chip_calib_manager::RS2_CALIB_ACTION_FL_CALIB: title = "Focal Length Calibration"; break;
+            case on_chip_calib_manager::RS2_CALIB_ACTION_UVMAPPING_CALIB: title = "UV - Mapping Calibration"; break;
+            default: title = "Calibration";
+        }
+
         if (update_manager->failed()) title += " Failed";
 
         ImGui::OpenPopup(title.c_str());
