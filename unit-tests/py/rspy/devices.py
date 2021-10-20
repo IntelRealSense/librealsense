@@ -59,7 +59,7 @@ import time
 
 _device_by_sn = dict()
 _context = None
-_acroname_hubs = None
+_acroname_hubs = set()
 
 
 class Device:
@@ -215,8 +215,9 @@ def query( monitor_changes = True ):
         if not acroname.hub:
             acroname.connect()  # MAY THROW!
             acroname.enable_ports( sleep_on_change = 5 )  # make sure all connected!
-            global _acroname_hubs
-            _acroname_hubs = set( acroname.find_all_hubs() )
+            if platform.system() == 'Linux':
+                global _acroname_hubs
+                _acroname_hubs = set( acroname.find_all_hubs() )
     #
     # Get all devices, and store by serial-number
     global _device_by_sn, _context, _port_to_sn
@@ -694,7 +695,8 @@ if __name__ == '__main__':
         if acroname:
             if not acroname.hub:
                 acroname.connect()
-                _acroname_hubs = set( acroname.find_all_hubs() )
+                if platform.system() == 'Linux':
+                    _acroname_hubs = set( acroname.find_all_hubs() )
         action = 'list'
         def get_handle(dev):
             return dev.handle
