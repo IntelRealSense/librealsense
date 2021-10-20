@@ -1141,7 +1141,8 @@ namespace rs2
         class iterator
         {
         public:
-            //
+            // inheriting from std::iterator template is deprecated in C++17, this is the new way to define an iterator
+            // go to https://www.fluentcpp.com/2018/05/08/std-iterator-deprecated/ for more info
             using iterator_category = std::forward_iterator_tag;
             using value_type = frame;
             using difference_type = std::ptrdiff_t;
