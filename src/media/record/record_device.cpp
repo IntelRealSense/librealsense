@@ -103,14 +103,27 @@ void librealsense::record_device::write_header()
 }
 
 //Returns the time relative to beginning of the recording
-std::chrono::nanoseconds librealsense::record_device::get_capture_time() const
+std::chrono::nanoseconds librealsense::record_device::get_capture_time()
 {
+    using time_point = std::chrono::high_resolution_clock::time_point;
+
     if (m_capture_time_base.time_since_epoch() == std::chrono::nanoseconds::zero())
     {
         return std::chrono::nanoseconds::zero();
     }
     auto now = std::chrono::high_resolution_clock::now();
-    return (now - m_capture_time_base) - m_record_pause_time;
+
+    // Reduce the pause time only if pause action occur after recording actually started .
+    // time_point() initialize to 0
+    if ( m_time_of_pause != time_point() && m_capture_time_base > m_time_of_pause)
+    {
+        m_capture_time_base = now;
+        m_time_of_pause = time_point();
+        m_record_pause_time = std::chrono::nanoseconds::zero();
+    }
+
+    auto capture_time = now - m_capture_time_base - m_record_pause_time;
+    return capture_time;
 }
 
 void librealsense::record_device::write_data(size_t sensor_index, librealsense::frame_holder frame, std::function<void(std::string const&)> on_error)
