@@ -1808,36 +1808,41 @@ namespace librealsense
 
         }
 
-        // Verify that at least TBD  valid extractions were made
-        if ((frm_idx < min_frames_required))
-            throw std::runtime_error(to_string() << "Target distance calculation requires at least " << min_frames_required << " frames, aborting");
-        if (float(rec_sides_data.size()/frm_idx) < 0.5f)
-            throw std::runtime_error("Please re-adjust the camera position \nand make sure the specific target is \nin the middle of the camera image!");
+        if (rec_sides_data.size())
+        {
+            // Verify that at least TBD  valid extractions were made
+            if ((frm_idx < min_frames_required))
+                throw std::runtime_error(to_string() << "Target distance calculation requires at least " << min_frames_required << " frames, aborting");
+            if (float(rec_sides_data.size() / frm_idx) < 0.5f)
+                throw std::runtime_error("Please re-adjust the camera position \nand make sure the specific target is \nin the middle of the camera image!");
 
-        rect_sides = {};
-        auto avg_data = std::accumulate(rec_sides_data.begin(), rec_sides_data.end(), rect_sides);
-        for (auto i=0UL; i < 4; i++)
-            avg_data[i] /= rec_sides_data.size();
-            
-        float gt[4] = { 0 };
+            rect_sides = {};
+            auto avg_data = std::accumulate(rec_sides_data.begin(), rec_sides_data.end(), rect_sides);
+            for (auto i = 0UL; i < 4; i++)
+                avg_data[i] /= rec_sides_data.size();
 
-        gt[0] = target_fw / avg_data[0];
+            float gt[4] = { 0 };
 
-        gt[1] = target_fw / avg_data[1];
+            gt[0] = target_fw / avg_data[0];
 
-        gt[2] = target_fh / avg_data[2];
+            gt[1] = target_fw / avg_data[1];
 
-        gt[3] = target_fh / avg_data[3];
+            gt[2] = target_fh / avg_data[2];
 
-        if (gt[0] <= 0.1f || gt[1] <= 0.1f || gt[2] <= 0.1f || gt[3] <= 0.1f)
-            throw std::runtime_error("Target distance calculation failed");
+            gt[3] = target_fh / avg_data[3];
 
-        // Target's plane Z value is the average of the four calculated corners
-        target_z_value = 0.f;
-        for (int i = 0; i < 4; ++i)
-            target_z_value += gt[i];
-        target_z_value /= 4.f;
+            if (gt[0] <= 0.1f || gt[1] <= 0.1f || gt[2] <= 0.1f || gt[3] <= 0.1f)
+                throw std::runtime_error("Target distance calculation failed");
 
-        return target_z_value;
+            // Target's plane Z value is the average of the four calculated corners
+            target_z_value = 0.f;
+            for (int i = 0; i < 4; ++i)
+                target_z_value += gt[i];
+            target_z_value /= 4.f;
+
+            return target_z_value;
+        }
+        else
+            throw std::runtime_error("Failed to extract target dimension info!");
     }
 }

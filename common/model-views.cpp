@@ -5827,8 +5827,8 @@ namespace rs2
                             "User needs either to enter the known ground truth or use the get button\n"
                             "with specific target to get the ground truth.");
 
-#define UVMAP_CAL
-#ifdef UVMAP_CAL // Disbled due to unverified maturity level
+//#define UVMAP_CAL
+#ifdef UVMAP_CAL // Disabled due to stability and maturity levels
                     try
                     {
                         for (auto&& sub2 : subdevices)
