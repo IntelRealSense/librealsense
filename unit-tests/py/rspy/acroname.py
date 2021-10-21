@@ -95,6 +95,10 @@ def find_all_hubs():
     Yields all hub port numbers
     """
     from rspy import lsusb
+    #
+    # 24ff:8013 = 
+    #   iManufacturer           Acroname Inc.
+    #   iProduct                USBHub3p-3[A]
     hubs = set( lsusb.devices_by_vendor( '24ff' ))
     ports = set()
     # go thru the tree and find only the top-level ones (which we should encounter first)
