@@ -18,6 +18,7 @@ except ModuleNotFoundError:
         print( 'Flags:' )
         print( '        --all          Enable all port [requires acroname]' )
         print( '        --port <#>     Enable only this port [requires acroname]' )
+        print( '        --ports        Show physical port for each device (rather than the RS string)' )
         sys.exit(2)
     #
     # We need to tell Python where to look for rspy
@@ -58,6 +59,7 @@ import time
 
 _device_by_sn = dict()
 _context = None
+_acroname_hubs = set()
 
 
 class Device:
@@ -71,7 +73,11 @@ class Device:
         if dev.supports( rs.camera_info.product_line ):
             self._product_line = dev.get_info( rs.camera_info.product_line )
         self._physical_port = dev.supports( rs.camera_info.physical_port ) and dev.get_info( rs.camera_info.physical_port ) or None
-        self._usb_location = _get_usb_location( self._physical_port )
+        self._usb_location = None
+        try:
+            self._usb_location = _get_usb_location( self._physical_port )
+        except Exception as e:
+            log.e( 'Failed to get usb location:', e )
         self._port = None
         if acroname:
             try:
@@ -209,6 +215,9 @@ def query( monitor_changes = True ):
         if not acroname.hub:
             acroname.connect()  # MAY THROW!
             acroname.enable_ports( sleep_on_change = 5 )  # make sure all connected!
+            if platform.system() == 'Linux':
+                global _acroname_hubs
+                _acroname_hubs = set( acroname.find_all_hubs() )
     #
     # Get all devices, and store by serial-number
     global _device_by_sn, _context, _port_to_sn
@@ -630,7 +639,13 @@ else:
         # u'/sys/devices/pci0000:00/0000:00:14.0/usb2/2-3/2-3.3/2-3.3.1/2-3.3.1:1.0/video4linux/video0'
         #
         split_location = physical_port.split( '/' )
-        port_location = split_location[-4]
+        if len(split_location) > 4:
+            port_location = split_location[-4]
+        elif len(split_location) == 1:
+            # Recovery devices may have only the relevant port: e.g., L515 Recovery has "2-2.4.4-84"
+            port_location = physical_port
+        else:
+            raise RuntimeError( f"invalid physical port '{physical_port}'" )
         # location example: 2-3.3.1
         return port_location
     #
@@ -638,11 +653,31 @@ else:
         """
         """
         if usb_location:
-            split_port_location = usb_location.split( '.' )
-            first_port_coordinate = int( split_port_location[-2] )
-            second_port_coordinate = int( split_port_location[-1] )
-            port = acroname.get_port_from_usb( first_port_coordinate, second_port_coordinate )
-            return port
+            #
+            # Devices connected thru an acroname will be in one of two sub-hubs under the acroname main
+            # hub. Each is a 4-port hub with a different port (4 for ports 0-3, 3 for ports 4-7):
+            #     /:  Bus 02.Port 1: Dev 1, Class=root_hub, Driver=xhci_hcd/6p, 10000M
+            #         |__ Port 2: Dev 2, If 0, Class=Hub, Driver=hub/4p, 5000M                       <--- ACRONAME
+            #             |__ Port 3: Dev 3, If 0, Class=Hub, Driver=hub/4p, 5000M
+            #                 |__ Port X: Dev, If...
+            #                 |__ Port Y: ...
+            #             |__ Port 4: Dev 4, If 0, Class=Hub, Driver=hub/4p, 5000M
+            #                 |__ Port Z: ...
+            # (above is output from 'lsusb -t')
+            # For the above acroname at '2-2' (bus 2, port 2), there are at least 3 devices:
+            #     2-2.3.X
+            #     2-2.3.Y
+            #     2-2.4.Z
+            # Given the two sub-ports (3.X, 3.Y, 4.Z), we can get the port number.
+            # NOTE: some of our devices are hubs themselves! For example, the SR300 will show as '2-2.3.2.1' --
+            # we must start a known hub or else the ports we look at are meaningless...
+            #
+            global _acroname_hubs
+            for port in _acroname_hubs:
+                if usb_location.startswith( port + '.' ):
+                    match = re.search( r'^(\d+)\.(\d+)', usb_location[len(port)+1:] )
+                    if match:
+                        return acroname.get_port_from_usb( int(match.group(1)), int(match.group(2)) )
 
 
 ###############################################################################################
@@ -650,7 +685,7 @@ if __name__ == '__main__':
     import os, sys, getopt
     try:
         opts,args = getopt.getopt( sys.argv[1:], '',
-            longopts = [ 'help', 'recycle', 'all', 'list', 'port=' ])
+            longopts = [ 'help', 'recycle', 'all', 'list', 'port=', 'ports' ])
     except getopt.GetoptError as err:
         print( '-F-', err )   # something like "option -a not recognized"
         usage()
@@ -660,10 +695,19 @@ if __name__ == '__main__':
         if acroname:
             if not acroname.hub:
                 acroname.connect()
+                if platform.system() == 'Linux':
+                    _acroname_hubs = set( acroname.find_all_hubs() )
         action = 'list'
+        def get_handle(dev):
+            return dev.handle
+        def get_phys_port(dev):
+            return dev.physical_port or "???"
+        printer = get_handle
         for opt,arg in opts:
             if opt in ('--list'):
                 action = 'list'
+            elif opt in ('--ports'):
+                printer = get_phys_port
             elif opt in ('--all'):
                 if not acroname:
                     log.f( 'No acroname available' )
@@ -689,7 +733,7 @@ if __name__ == '__main__':
                     sn = sn,
                     name = device.name,
                     port = device.port is None and '?' or device.port,
-                    handle = device.handle
+                    handle = printer(device)
                     ))
         elif action == 'recycle':
             log.f( 'Not implemented yet' )

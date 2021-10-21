@@ -1,3 +1,6 @@
+# License: Apache 2.0. See LICENSE file in root directory.
+# Copyright(c) 2021 Intel Corporation. All Rights Reserved.
+
 """
 Brainstem Acroname Hub
 
@@ -85,6 +88,30 @@ def connect( spec = None ):
         raise RuntimeError( "failed to connect to acroname (result={})".format( result ))
     elif len(specs) > 1:
         log.d( 'connected to', spec )
+
+
+def find_all_hubs():
+    """
+    Yields all hub port numbers
+    """
+    from rspy import lsusb
+    #
+    # 24ff:8013 = 
+    #   iManufacturer           Acroname Inc.
+    #   iProduct                USBHub3p-3[A]
+    hubs = set( lsusb.devices_by_vendor( '24ff' ))
+    ports = set()
+    # go thru the tree and find only the top-level ones (which we should encounter first)
+    for dev,dev_port in lsusb.tree():
+        if dev not in hubs:
+            continue
+        for port in ports:
+            # ignore everything inside existing hubs - we only want the top-level
+            if dev_port.startswith( port + '.' ):
+                break
+        else:
+            ports.add( dev_port )
+            yield dev_port
 
 
 def is_connected():
