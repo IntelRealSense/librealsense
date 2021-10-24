@@ -52,9 +52,9 @@ try:
     pipeline.wait_for_frames()
     test.check_equal(device_playback.current_status(), rs.playback_status.playing)
 
-    # We allow 10 seconds to verify the playback_stopped event.
+    # We allow 15 seconds to verify the playback_stopped event.
     # This will verify that pause & resume did not mess up the recorded timestamps and the sleep time between each 2 frame is reasonable. [DSO-14342]
-    wait_for_stop_timer = Timer(10)
+    wait_for_stop_timer = Timer(15)
     wait_for_stop_timer.start()
 
     while (not wait_for_stop_timer.has_expired()):
