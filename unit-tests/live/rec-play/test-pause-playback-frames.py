@@ -4,47 +4,81 @@
 #test:device L500*
 #test:device D400*
 
-import pyrealsense2 as rs, os, time, tempfile, platform, sys
-from rspy import devices, log, test
+import pyrealsense2 as rs, os, time, tempfile
+from rspy import log, test
+from rspy.timer import Timer
 
+# create temporary folder to record to that will be deleted automatically at the end of the script
+# (requires that no files are being held open inside this directory. Important to not keep any handle open to a file
+# in this directory, any handle as such must be set to None)
+temp_dir = tempfile.TemporaryDirectory( prefix='recordings_' )
+file_name = temp_dir.name + os.sep + 'rec.bag'
 
-
-def stop_pipeline( pipeline ):
-    if pipeline:
-        try:
-            pipeline.stop()
-        except RuntimeError as rte:
-            # if the error Occurred because the pipeline wasn't started we ignore it
-            if str( rte ) != "stop() cannot be called before start()":
-                test.unexpected_exception()
-        except Exception:
-            test.unexpected_exception()
-
-file_name = 'c:/test/rec.bag'
-################################################################################################
-test.start("Trying to record pause and resume test using pipeline interface")
-
-cfg = pipeline = None
-try:
+def record_with_pause( file_name ):
     # creating a pipeline and recording to a file
     pipeline = rs.pipeline()
     cfg = rs.config()
-    cfg.enable_record_to_file( file_name )
-    pipeline_record_profile = pipeline.start( cfg )
-    device_record = pipeline_record_profile.get_device()
-    device_recorder = device_record.as_recorder()
-    print('Pausing.', end='')
+    cfg.enable_record_to_file(file_name)
+    pipeline_record_profile = pipeline.start(cfg)
+    device = pipeline_record_profile.get_device()
+    device_recorder = device.as_recorder()
+
+    log.d('Pausing...')
     rs.recorder.pause(device_recorder)
-    time.sleep(2)
-    print('Resumed.', end='')
+    time.sleep(5)
+
+    log.d('Resumed...')
     rs.recorder.resume(device_recorder)
     time.sleep(5)
     pipeline.stop()
+
+################################################################################################
+test.start( "Trying to record using pause and resume and verify playback" )
+
+cfg = pipeline = None
+try:
+
+    record_with_pause( file_name )
+
+    # we create a new pipeline and use it to playback from the file we just recoded to
+    pipeline = rs.pipeline()
+    cfg = rs.config()
+    cfg.enable_device_from_file( file_name, repeat_playback = False )
+    pipeline_playback_profile = pipeline.start( cfg )
+    device = pipeline_playback_profile.get_device()
+    device_playback = device.as_playback()
+    device_playback.set_real_time( True )
+    # if the record-playback worked we will get frames, otherwise the next line will timeout and throw
+    pipeline.wait_for_frames()
+    test.check_equal(device_playback.current_status(), rs.playback_status.playing)
+
+    # We allow 10 seconds to verify the playback_stopped event.
+    # This will verify that pause & resume did not mess up the recorded timestamps and the sleep time between each 2 frame is reasonable. [DSO-14342]
+    wait_for_stop_timer = Timer(10)
+    wait_for_stop_timer.start()
+
+    while (not wait_for_stop_timer.has_expired()):
+
+        status = device_playback.current_status()
+
+        if status == rs.playback_status.stopped:
+            log.d('stopped!')
+            break
+        else:
+            log.d("status =", status)
+
+        time.sleep(1)
+
+    test.check_equal(device_playback.current_status(), rs.playback_status.stopped)
+
 except Exception:
     test.unexpected_exception()
-finally: # we must remove all references to the file so we can use it again in the next test
-    cfg = None
-    stop_pipeline( pipeline )
+finally: # remove all references to the file and stop the pipeline if exist
+    # Cleanup
+    cfg = device = device_playback = pipeline = pipeline_playback_profile= None
+    if pipeline:
+        pipeline.stop()
+
 
 test.finish()
 
