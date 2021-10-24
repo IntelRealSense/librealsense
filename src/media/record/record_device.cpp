@@ -13,7 +13,7 @@ librealsense::record_device::record_device(std::shared_ptr<librealsense::device_
                                       std::shared_ptr<librealsense::device_serializer::writer> serializer):
     m_write_thread([](){return std::make_shared<dispatcher>(std::numeric_limits<unsigned int>::max());}),
     m_is_recording(true),
-    m_record_pause_time(0)
+    m_record_total_pause_duration(0)
 {
     if (device == nullptr)
     {
@@ -113,16 +113,26 @@ std::chrono::nanoseconds librealsense::record_device::get_capture_time()
     }
     auto now = std::chrono::high_resolution_clock::now();
 
-    // Reduce the pause time only if pause action occur after recording actually started .
-    // time_point() initialize to 0
-    if ( m_time_of_pause != time_point() && m_capture_time_base > m_time_of_pause)
-    {
-        m_capture_time_base = now;
-        m_time_of_pause = time_point();
-        m_record_pause_time = std::chrono::nanoseconds::zero();
-    }
+    auto capture_time = now - m_capture_time_base;
 
-    auto capture_time = now - m_capture_time_base - m_record_pause_time;
+    // Reduce the total pause duration to create a sequential recording timestamp (and skip recording holes)
+    // If recording was paused after the recording initialization (happens on the first frame received)
+    //      --> deduct the pause duration
+    // If the recording was paused before the first frame arrived,
+    //      --> deduct only the pause duration offset from the recording initialization base time
+    if( m_record_total_pause_duration != std::chrono::nanoseconds::zero() )
+    {
+        if( m_time_of_pause > m_capture_time_base )
+        {
+            capture_time -= m_record_total_pause_duration;
+        }
+        else
+        {
+            auto pause_since_base_duration = m_record_total_pause_duration - ( m_capture_time_base - m_time_of_pause );
+            capture_time -= pause_since_base_duration;
+        }
+    }
+    
     return capture_time;
 }
 
@@ -400,7 +410,7 @@ void librealsense::record_device::pause_recording()
         //unregister_callbacks();
         m_time_of_pause = std::chrono::high_resolution_clock::now();
         m_is_recording = false;
-        LOG_DEBUG("Time of pause: " << m_time_of_pause.time_since_epoch().count());
+        LOG_DEBUG("Time of pause: " << std::dec << m_time_of_pause.time_since_epoch().count());
     });
     (*m_write_thread)->flush();
     LOG_INFO("Record paused");
@@ -414,10 +424,10 @@ void librealsense::record_device::resume_recording()
         if (m_is_recording)
             return;
 
-        m_record_pause_time += (std::chrono::high_resolution_clock::now() - m_time_of_pause);
+        m_record_total_pause_duration += (std::chrono::high_resolution_clock::now() - m_time_of_pause);
         //register_callbacks();
         m_is_recording = true;
-        LOG_DEBUG("Total pause time: " << m_record_pause_time.count());
+        LOG_DEBUG("Total pause time: " << m_record_total_pause_duration.count());
         LOG_INFO("Record resumed");
     });
 }
@@ -440,6 +450,8 @@ void record_device::initialize_recording()
     //Expected to be called once when recording to file actually starts
     m_capture_time_base = std::chrono::high_resolution_clock::now();
     m_cached_data_size = 0;
+    LOG_DEBUG( "Recording capture time base set to: " << m_capture_time_base.time_since_epoch().count() );
+
 }
 void record_device::stop_gracefully(to_string error_msg)
 {

@@ -67,7 +67,7 @@ namespace librealsense
         std::shared_ptr<device_serializer::writer> m_ros_writer;
 
         std::chrono::high_resolution_clock::time_point m_capture_time_base;
-        std::chrono::high_resolution_clock::duration m_record_pause_time;
+        std::chrono::high_resolution_clock::duration m_record_total_pause_duration;
         std::chrono::high_resolution_clock::time_point m_time_of_pause;
 
         std::mutex m_mutex;
