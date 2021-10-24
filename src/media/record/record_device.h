@@ -53,7 +53,7 @@ namespace librealsense
         template <rs2_extension E, typename P> bool extend_to_aux(std::shared_ptr<P> p, void** ext);
 
         void write_header();
-        std::chrono::nanoseconds get_capture_time();
+        std::chrono::nanoseconds get_capture_time() const;
         void write_data(size_t sensor_index, frame_holder f, std::function<void(std::string const&)> on_error);
         void write_sensor_extension_snapshot(size_t sensor_index, rs2_extension ext, std::shared_ptr<extension_snapshot> snapshot, std::function<void(std::string const&)> on_error);
         void write_notification(size_t sensor_index, const notification& n);

@@ -103,7 +103,7 @@ void librealsense::record_device::write_header()
 }
 
 //Returns the time relative to beginning of the recording
-std::chrono::nanoseconds librealsense::record_device::get_capture_time()
+std::chrono::nanoseconds librealsense::record_device::get_capture_time() const
 {
     using time_point = std::chrono::high_resolution_clock::time_point;
 
