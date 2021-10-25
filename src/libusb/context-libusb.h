@@ -7,7 +7,7 @@
 #include "../concurrency.h"
 
 #include <memory>
-#include <libusb.h>
+#include "libusb.h"
 
 namespace librealsense
 {
