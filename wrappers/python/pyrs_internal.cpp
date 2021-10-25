@@ -91,7 +91,7 @@ void init_internal(py::module &m) {
                                                          // data.format -> underlying data type
                     std::memcpy( self.pixels, data.ptr, data.size * data.itemsize );
                     self.deleter = []( void * ptr ) {
-                        delete[] ptr;
+                        delete[]( uint8_t * ) ptr;
                     };
                 }
             } )
@@ -138,7 +138,7 @@ void init_internal(py::module &m) {
             dptr[0] = data.x;
             dptr[1] = data.y;
             dptr[2] = data.z;
-            self.deleter = [](void* ptr){ delete[] ptr; };
+            self.deleter = [](void* ptr){ delete[]( float * ) ptr; };
         })
         .def_readwrite("timestamp", &rs2_software_motion_frame::timestamp)
         .def_readwrite("domain", &rs2_software_motion_frame::domain)
@@ -149,13 +149,19 @@ void init_internal(py::module &m) {
     py::class_<rs2_software_pose_frame> software_pose_frame(m, "software_pose_frame", "All the parameters "
                                                             "required to define a pose frame.");
     software_pose_frame.def(py::init([]() { rs2_software_pose_frame f{}; f.deleter = nullptr; return f; })) // guarantee deleter is set to nullptr
-        .def_property("data", [](const rs2_software_pose_frame& self) -> rs2_pose {
-            return *reinterpret_cast<const rs2_pose*>(self.data);
-        }, [](rs2_software_pose_frame& self, rs2_pose data) {
-            if (self.deleter) self.deleter(self.data);
-            self.data = new rs2_pose(data);
-            self.deleter = [](void* ptr){ delete[] ptr; };
-        })
+        .def_property(
+            "data",
+            []( const rs2_software_pose_frame & self ) -> rs2_pose {
+                return *reinterpret_cast< const rs2_pose * >( self.data );
+            },
+            []( rs2_software_pose_frame & self, rs2_pose data ) {
+                if( self.deleter )
+                    self.deleter( self.data );
+                self.data = new rs2_pose( data );
+                self.deleter = []( void * ptr ) {
+                    delete(rs2_pose *)ptr;
+                };
+            } )
         .def_readwrite("timestamp", &rs2_software_pose_frame::timestamp)
         .def_readwrite("domain", &rs2_software_pose_frame::domain)
         .def_readwrite("frame_number", &rs2_software_pose_frame::frame_number)
