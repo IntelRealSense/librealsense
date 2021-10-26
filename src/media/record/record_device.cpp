@@ -109,26 +109,12 @@ std::chrono::nanoseconds librealsense::record_device::get_capture_time() const
     {
         return std::chrono::nanoseconds::zero();
     }
-    auto now = std::chrono::high_resolution_clock::now();
 
-    auto capture_time = now - m_capture_time_base;
+    auto capture_time = std::chrono::high_resolution_clock::now() - m_capture_time_base;
 
-    // Reduce the total pause duration to create a sequential recording timestamp (and skip recording holes)
-    // If recording was paused after the recording initialization (happens on the first frame received)
-    //      --> deduct the pause duration
-    // If the recording was paused before the first frame arrived,
-    //      --> deduct only the pause duration offset from the recording initialization base time
-    if( m_record_total_pause_duration != std::chrono::nanoseconds::zero() )
+    if (m_record_total_pause_duration > std::chrono::nanoseconds::zero())
     {
-        if( m_time_of_pause > m_capture_time_base )
-        {
-            capture_time -= m_record_total_pause_duration;
-        }
-        else
-        {
-            auto pause_since_base_duration = m_record_total_pause_duration - ( m_capture_time_base - m_time_of_pause );
-            capture_time -= pause_since_base_duration;
-        }
+        capture_time -= m_record_total_pause_duration;
     }
     
     return capture_time;
@@ -422,10 +408,32 @@ void librealsense::record_device::resume_recording()
         if (m_is_recording)
             return;
 
-        m_record_total_pause_duration += (std::chrono::high_resolution_clock::now() - m_time_of_pause);
+        auto now = std::chrono::high_resolution_clock::now();
+        auto current_pause_duration = now - m_time_of_pause;
+
+        // Only accumulate pause duration if we already initialized the recording base time (first frame arrived)
+        // If the pause action occurred after the recording base time set add the current pause duration to the total.
+        // If the pause time occurred before the recording base set and the resume after it, only add the offset from base time until resume time 
+        if ( m_capture_time_base.time_since_epoch() != std::chrono::nanoseconds::zero() )
+        {
+            if ( m_capture_time_base < m_time_of_pause )
+            {
+                m_record_total_pause_duration += current_pause_duration;
+            }
+            else
+            {
+                m_record_total_pause_duration += now - m_capture_time_base;
+            }
+
+            LOG_DEBUG("Total pause time: " << m_record_total_pause_duration.count());
+        }
+        else
+        {
+            LOG_DEBUG("Pause time ignored since no frames have been recorded yet");
+        }
+
         //register_callbacks();
         m_is_recording = true;
-        LOG_DEBUG("Total pause time: " << m_record_total_pause_duration.count());
         LOG_INFO("Record resumed");
     });
 }
