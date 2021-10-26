@@ -4,6 +4,13 @@
 #test:device L500*
 #test:device D400*
 
+
+# Tests objective - Verify that pause & resume did not mess up the recorded timestamps and the sleep time between
+# each 2 frame is reasonable. We had a BUG with calculating the sleep time between each 2 frames when the pause
+# action occurred before the recording base time was set (first frame arrival time). Here we test multiple flows on
+# pause & resume actions and verify that the whole file will be be played until a stop event (EOF) at a reasonable
+# time , see [DSO-14342]
+
 import pyrealsense2 as rs, os, time, tempfile
 from rspy import log, test
 from rspy.timer import Timer
@@ -56,10 +63,6 @@ def playback( pipeline, file_name, signal_on_stop ):
 
 
 def verify_stop_when_eof( timeout ):
-    # We allow `timeout` seconds to verify the playback_stopped event.
-    # Verify that pause & resume did not mess up the recorded timestamps and the sleep time between each 2 frame is reasonable.
-    # [DSO-14342]
-
     global stopped_detected
     stopped_detected = False
 
@@ -88,6 +91,7 @@ def signal_on_stop( playback_status ):
 ################################################################################################
 
 test.start("Immediate pause & test")
+# probably pause & resume will occur before recording base time is set.
 
 try:
     record_with_pause( file_name, iterations=1, pause_delay=0, resume_delay=0 )
@@ -105,6 +109,7 @@ test.finish()
 
 ################################################################################################
 test.start("Immediate pause & delayed resume test")
+# Pause time should be lower than recording base time and resume time higher
 
 try:
 
@@ -123,7 +128,7 @@ test.finish()
 
 ################################################################################################
 test.start("delayed pause & delayed resume test")
-
+# Pause & resume will occur after recording base time is set
 try:
 
     record_with_pause( file_name, iterations=1, pause_delay=3, resume_delay=2 )
@@ -141,6 +146,7 @@ test.finish()
 
 ################################################################################################
 test.start("multiple delay & pause test")
+# Combination of some of the previous tests, testing accumulated recording capture time
 
 try:
 
