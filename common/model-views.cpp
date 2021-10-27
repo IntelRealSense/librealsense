@@ -5721,13 +5721,24 @@ namespace rs2
                 if (sub->supports_on_chip_calib() && !has_autocalib)
                 {
                     something_to_show = true;
+
+                    std::string device_pid = sub->s->supports(RS2_CAMERA_INFO_PRODUCT_ID) ? sub->s->get_info(RS2_CAMERA_INFO_PRODUCT_ID) : "unknown";
+                    const uint16_t RS410_PID = 0x0ad2; // ASR
+                    const uint16_t RS415_PID = 0x0ad3; // ASRC
+                    bool show_disclaimer = val_in_range(device_pid, { std::string("0AD2"), std::string("0AD3") });
+
                     if (ImGui::Selectable("On-Chip Calibration"))
                     {
                         try
                         {
+                            if (show_disclaimer)
+                            {
+                                auto disclaimer_notice = std::make_shared<ucal_disclaimer_model>();
+                                viewer.not_model->add_notification(disclaimer_notice);
+                            }
+
                             auto manager = std::make_shared<on_chip_calib_manager>(viewer, sub, *this, dev);
                             auto n = std::make_shared<autocalib_notification_model>("", manager, false);
-
                             viewer.not_model->add_notification(n);
                             n->forced = true;
                             n->update_state = autocalib_notification_model::RS2_CALIB_STATE_SELF_INPUT;
@@ -5769,9 +5780,13 @@ namespace rs2
                                 }
                             }
 
+                            if (show_disclaimer)
+                            {
+                                auto disclaimer_notice = std::make_shared<ucal_disclaimer_model>();
+                                viewer.not_model->add_notification(disclaimer_notice);
+                            }
                             auto manager = std::make_shared<on_chip_calib_manager>(viewer, sub, *this, dev, sub_color);
                             auto n = std::make_shared<autocalib_notification_model>("", manager, false);
-
                             viewer.not_model->add_notification(n);
                             n->forced = true;
                             n->update_state = autocalib_notification_model::RS2_CALIB_STATE_FL_INPUT;
@@ -5799,10 +5814,13 @@ namespace rs2
                     {
                         try
                         {
+                            if (show_disclaimer)
+                            {
+                                auto disclaimer_notice = std::make_shared<ucal_disclaimer_model>();
+                                viewer.not_model->add_notification(disclaimer_notice);
+                            }
                             auto manager = std::make_shared<on_chip_calib_manager>(viewer, sub, *this, dev);
-                            auto n = std::make_shared<autocalib_notification_model>(
-                                "", manager, false);
-
+                            auto n = std::make_shared<autocalib_notification_model>("", manager, false);
                             viewer.not_model->add_notification(n);
                             n->forced = true;
                             n->update_state = autocalib_notification_model::RS2_CALIB_STATE_TARE_INPUT;
@@ -5837,9 +5855,13 @@ namespace rs2
                             {
                                 if (ImGui::Selectable("UV-Mapping Calibration"))
                                 {
+                                    if (show_disclaimer)
+                                    {
+                                        auto disclaimer_notice = std::make_shared<ucal_disclaimer_model>();
+                                        viewer.not_model->add_notification(disclaimer_notice);
+                                    }
                                     auto manager = std::make_shared<on_chip_calib_manager>(viewer, sub, *this, dev, sub2, sub2->uvmapping_calib_full);
                                     auto n = std::make_shared<autocalib_notification_model>("", manager, false);
-
                                     viewer.not_model->add_notification(n);
                                     n->forced = true;
                                     n->update_state = autocalib_notification_model::RS2_CALIB_STATE_UVMAPPING_INPUT;
