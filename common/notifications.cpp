@@ -1145,4 +1145,36 @@ namespace rs2
         ImGui::SetCursorScreenPos({ float(x + 5), float(y + height - 25) });
     }
 
+    ucal_disclaimer_model::ucal_disclaimer_model()
+        : notification_model()
+    {
+        enable_expand = false;
+        enable_dismiss = true;
+        enable_complex_dismiss = true; // Allow to inhibit the disclaimer
+        pinned = false;
+        message = "Please refer to\n"
+            "and                 for D415 consideration\n"; // whitespaces used as a placeholder for hyperlink insertion
+    }
+
+    void ucal_disclaimer_model::draw_content(ux_window& win, int x, int y, float t, std::string& error_message)
+    {
+        ImGui::SetCursorScreenPos({ float(x + 9), float(y + 4) });
+
+        ImGui::GetWindowDrawList()->AddRectFilled({ float(x), float(y) },
+            { float(x + width), float(y + 25) }, ImColor(orange));
+
+        ImGui::Text("Self-Calibration - Disclaimer");
+
+        ImGui::SetCursorScreenPos({ float(x + 5), float(y + 27) });
+
+        ImGui::PushStyleColor(ImGuiCol_Text, light_grey);
+        draw_text(get_title().c_str(), x, y, height - 50);
+        ImGui::PopStyleColor();
+
+        ImGui::SetCursorScreenPos({ float(x + 100), float(y + 27) });
+        hyperlink(win, "Self Calibration Whitepaper", "https://dev.intelrealsense.com/docs/self-calibration-for-depth-cameras");
+        ImGui::SetCursorScreenPos({ float(x + 35), float(y + 43) });
+        hyperlink(win, "Errata", "https://dev.intelrealsense.com/docs/firmware-releases");
+
+    }
 }
