@@ -8,7 +8,7 @@
 
 #include <chrono>
 
-#include <libusb.h>
+#include "libusb.h"
 
 namespace librealsense
 {
