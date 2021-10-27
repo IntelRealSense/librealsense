@@ -4,12 +4,15 @@
 #test:device L500*
 #test:device D400*
 
-
-# Tests objective - Verify that pause & resume did not mess up the recorded timestamps and the sleep time between
-# each 2 frame is reasonable. We had a BUG with calculating the sleep time between each 2 frames when the pause
-# action occurred before the recording base time was set (first frame arrival time). Here we test multiple flows on
-# pause & resume actions and verify that the whole file will be be played until a stop event (EOF) at a reasonable
-# time , see [DSO-14342]
+# Objective:
+#
+# Verify that pause & resume did not mess up the recorded timestamps and the sleep time between each 2 frames is
+# reasonable. We had a BUG with calculating the sleep time between each 2 frames when the pause action occurred
+# before the recording base time was set (first frame arrival time), causing the recorded bag file "capture
+# time" to go up and down, and therefore huge sleep times. See [DSO-14342]
+# 
+# Here we test multiple flows on pause & resume actions and verify that the whole file will be be played until a
+# stop event (EOF) within a reasonable time.
 
 import pyrealsense2 as rs, os, time, tempfile
 from rspy import log, test
@@ -50,7 +53,7 @@ def record_with_pause( file_name, iterations, pause_delay=0, resume_delay=0 ):
         time.sleep( STREAMING_DURATION )
 
     pipeline.stop()
-    return calc_timeout( iterations, pause_delay )
+    return calc_playback_timeout( iterations, pause_delay )
 
 
 def playback( pipeline, file_name, signal_on_stop ):
@@ -73,7 +76,6 @@ def playback( pipeline, file_name, signal_on_stop ):
 def verify_stop_when_eof( timeout ):
     global stop_detected
     stop_detected = False
-
     wait_for_stop_timer = Timer( timeout )
     wait_for_stop_timer.start()
     log.d( 'timeout set to', timeout, '[sec]' )
@@ -83,34 +85,34 @@ def verify_stop_when_eof( timeout ):
             break
         else:
             log.d( 'waiting for playback status -> stop' )
-
         time.sleep( 1 )
-
     test.check( stop_detected )
 
 
 def signal_on_stop( playback_status ):
-    log.d( 'playback status callback invoked with ', playback_status )
+    log.d( 'playback status callback invoked with', playback_status )
     if playback_status == rs.playback_status.stopped:
         global stop_detected
         stop_detected = True
 
-def calc_timeout ( iterations, pause_delay):
-    return iterations * (pause_delay + STREAMING_DURATION) + TIMEOUT_BUFFER
-################################################################################################
 
+def calc_playback_timeout( iterations, pause_delay ):
+    global TIMEOUT_BUFFER
+    # NOTE: the recording resume-delay is the time we have paused the stream, and is not
+    # reflected in the playback! Therefore it's not reflected here:
+    return iterations * ( pause_delay + STREAMING_DURATION ) + TIMEOUT_BUFFER
+
+
+################################################################################################
+#
 test.start("Immediate pause & test")
 # probably pause & resume will occur before recording base time is set.
 
 try:
-    pause_delay = 0
-    resume_delay = 0
-    iterations = 1
-    timeout = record_with_pause( file_name, iterations, pause_delay, resume_delay )
+    timeout = record_with_pause( file_name, iterations = 1, pause_delay = 0, resume_delay = 0 )
     pipeline = rs.pipeline()
     device_playback = playback( pipeline, file_name, signal_on_stop )
     verify_stop_when_eof( timeout )
-
 except Exception:
     test.unexpected_exception()
 finally:  # remove all references to the file and dereference the pipeline
@@ -118,19 +120,17 @@ finally:  # remove all references to the file and dereference the pipeline
     pipeline = None
 
 test.finish()
-
+#
 ################################################################################################
+#
 test.start("Immediate pause & delayed resume test")
-# Pause time should be lower than recording base time and resume time higher
 
+# Pause time should be lower than recording base time and resume time higher
 try:
-    pause_delay = 0
-    resume_delay = 5
-    timeout = record_with_pause( file_name, iterations, pause_delay, resume_delay )
+    timeout = record_with_pause( file_name, iterations = 1, pause_delay = 0, resume_delay = 5 )
     pipeline = rs.pipeline()
     device_playback = playback( pipeline, file_name, signal_on_stop )
     verify_stop_when_eof( timeout )
-
 except Exception:
     test.unexpected_exception()
 finally:   # remove all references to the file and dereference the pipeline
@@ -138,19 +138,16 @@ finally:   # remove all references to the file and dereference the pipeline
     pipeline = None
 
 test.finish()
-
+#
 ################################################################################################
+#
 test.start("delayed pause & delayed resume test")
 # Pause & resume will occur after recording base time is set
 try:
-    pause_delay = 3
-    resume_delay = 2
-    iterations = 1
-    timeout = record_with_pause( file_name, iterations, pause_delay, resume_delay )
+    timeout = record_with_pause( file_name, iterations = 1, pause_delay = 3, resume_delay = 2 )
     pipeline = rs.pipeline()
     device_playback = playback( pipeline, file_name, signal_on_stop )
     verify_stop_when_eof( timeout )
-
 except Exception:
     test.unexpected_exception()
 finally:   # remove all references to the file and dereference the pipeline
@@ -158,20 +155,17 @@ finally:   # remove all references to the file and dereference the pipeline
     pipeline = None
 
 test.finish()
-
+#
 ################################################################################################
+#
 test.start("multiple delay & pause test")
 # Combination of some of the previous tests, testing accumulated recording capture time
 
 try:
-    pause_delay = 0
-    resume_delay = 2
-    iterations = 2
-    timeout = record_with_pause( file_name, iterations, pause_delay, resume_delay )
+    timeout = record_with_pause( file_name, iterations = 2, pause_delay = 0, resume_delay = 2 )
     pipeline = rs.pipeline()
     device_playback = playback( pipeline, file_name, signal_on_stop )
     verify_stop_when_eof( timeout )
-
 except Exception:
     test.unexpected_exception()
 finally:   # remove all references to the file and dereference the pipeline
@@ -179,6 +173,7 @@ finally:   # remove all references to the file and dereference the pipeline
     pipeline = None
 
 test.finish()
-
+#
 #############################################################################################
+#
 test.print_results_and_exit()
