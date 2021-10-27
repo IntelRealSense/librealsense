@@ -987,7 +987,7 @@ namespace rs2
                 if (!_new_calib.size())
                     fail("UV-Mapping calibration failed!\nPlease adjust the camera position\nand make sure the specific target is\ninside the ROI of the camera images!");
                 else
-                    log(to_string() << "UV-Mapping recalibration - a new work poin was generated");
+                    log(to_string() << "UV-Mapping recalibration - a new work point is generated");
             }
             else
                 fail("Failed to capture sufficient amount of frames to run UV-Map calibration!");
@@ -1012,6 +1012,8 @@ namespace rs2
             float step = 50.f / limit;  // frames gathering is 50% of the process, the rest is the internal data extraction and algo processing
             
             rs2::frame_queue queue(limit*2,true);
+            rs2::frame_queue queue2(limit * 2, true);
+            rs2::frame_queue queue3(limit * 2, true);
             rs2::frame f;
 
             // Collect sufficient amount of frames (up to 50) to extract target pattern and calculate distance to it
@@ -1030,7 +1032,7 @@ namespace rs2
             if (counter >= limit)
             {
                 auto calib_dev = _dev.as<auto_calibrated_device>();
-                float target_z_mm = calib_dev.calculate_target_z(queue,
+                float target_z_mm = calib_dev.calculate_target_z(queue, queue2, queue3,
                                                     config_file::instance().get_or_default(configurations::viewer::target_width_r, 175.0f),
                                                     config_file::instance().get_or_default(configurations::viewer::target_height_r, 100.0f),
                                                     [&](const float progress) { _progress = std::min(100.f, _progress+step); });
@@ -1654,7 +1656,8 @@ namespace rs2
 
                     ImGui::PopItemWidth();
 
-                    draw_intrinsic_extrinsic(x, y + 3 * int(ImGui::GetTextLineHeightWithSpacing()) - 10);
+                    // Disabled according to the decision on v2.50
+                    //draw_intrinsic_extrinsic(x, y + 3 * int(ImGui::GetTextLineHeightWithSpacing()) - 10);
 
                     ImGui::SetCursorScreenPos({ float(x + 9), float(y + 52 + 4 * ImGui::GetTextLineHeightWithSpacing()) });
                     id = to_string() << "Apply High-Accuracy Preset##apply_preset_" << index;
@@ -1748,6 +1751,8 @@ namespace rs2
             }
             else if (update_state == RS2_CALIB_STATE_SELF_INPUT)
             {
+                // Disabled according to the decision on v2.50
+                /*
                 ImGui::SetCursorScreenPos({ float(x + 9), float(y + 33) });
                 ImGui::Text("%s", "Speed:");
 
@@ -1789,7 +1794,7 @@ namespace rs2
                         get_manager().adjust_both_sides = (restore ? 1 : 0);
                     if (ImGui::IsItemHovered())
                         ImGui::SetTooltip("%s", "check = adjust both sides, uncheck = adjust right side only");
-                }
+                }*/
 
                 // Deprecase OCC-Extended
                 //float tmp_y = (get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_OB_CALIB ?
@@ -2598,12 +2603,18 @@ namespace rs2
         ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0);
 
         std::string title;
-        if (get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_FL_CALIB)
-            title = "On-Chip Focal Length Calibration";
-        else if (get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_OB_CALIB)
-            title = "On-Chip Calibration Extended";
-        else
-            title = "On-Chip Calibration";
+        switch (get_manager().action)
+        {
+            case on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_OB_CALIB: title = "On - Chip Calibration Extended"; break;
+            case on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_CALIB: title = "On-Chip Calibration"; break;
+            case on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_FL_CALIB: title = "On-Chip Focal Length Calibration"; break;
+            case on_chip_calib_manager::RS2_CALIB_ACTION_TARE_CALIB: title = "Tare Calibration"; break;
+            case on_chip_calib_manager::RS2_CALIB_ACTION_TARE_GROUND_TRUTH: title = "Ground Truth Calculation"; break;
+            case on_chip_calib_manager::RS2_CALIB_ACTION_FL_CALIB: title = "Focal Length Calibration"; break;
+            case on_chip_calib_manager::RS2_CALIB_ACTION_UVMAPPING_CALIB: title = "UV - Mapping Calibration"; break;
+            default: title = "Calibration";
+        }
+
         if (update_manager->failed()) title += " Failed";
 
         ImGui::OpenPopup(title.c_str());
@@ -2670,7 +2681,7 @@ namespace rs2
             }
             else return 80;
         }
-        else if (update_state == RS2_CALIB_STATE_SELF_INPUT) return (get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_OB_CALIB ? 160 : 120);
+        else if (update_state == RS2_CALIB_STATE_SELF_INPUT) return (get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_OB_CALIB ? 160 : 60);
         else if (update_state == RS2_CALIB_STATE_TARE_INPUT) return 85;
         else if (update_state == RS2_CALIB_STATE_TARE_INPUT_ADVANCED) return 220;
         else if (update_state == RS2_CALIB_STATE_GET_TARE_GROUND_TRUTH) return 135;

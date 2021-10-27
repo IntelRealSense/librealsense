@@ -78,9 +78,10 @@ void frame::release()
 
 void frame::keep()
 {
-    if( ! _kept.exchange( true ) )
+    if( ! _kept.exchange( true ))
     {
-        owner->keep_frame( this );
+        if (owner)
+            owner->keep_frame( this );
     }
 }
 
