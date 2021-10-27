@@ -264,6 +264,24 @@ namespace rs2
         int calc_height() override { return 65; }
     };    
 
+    struct ucal_disclaimer_model : public notification_model
+    {
+        ucal_disclaimer_model();
+
+        void draw_content(ux_window& win, int x, int y, float t, std::string& error_message) override;
+        int calc_height() override { return 110; }
+        int get_max_lifetime_ms() const override { return 15000; }
+    };
+
+    struct fl_cal_limitation_model : public notification_model
+    {
+        fl_cal_limitation_model();
+
+        void draw_content(ux_window& win, int x, int y, float t, std::string& error_message) override;
+        int calc_height() override { return 100; }
+        int get_max_lifetime_ms() const override { return 10000; }
+    };
+
     class export_manager : public process_manager
     {
     public:

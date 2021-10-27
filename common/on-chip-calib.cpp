@@ -156,8 +156,9 @@ namespace rs2
         try
         {
             auto profiles = _sub->get_selected_profiles();
-            _sub->stop(_viewer.not_model);
-            if (_sub_color.get())
+            if (_sub->streaming)
+                _sub->stop(_viewer.not_model);
+            if (_sub_color.get() && _sub_color->streaming)
                 _sub_color->stop(_viewer.not_model);
 
             // Wait until frames from all active profiles stop arriving
@@ -214,6 +215,7 @@ namespace rs2
             _sub->ui.selected_format_id.clear();
             _sub->ui.selected_format_id[_uid] = 0;
 
+            _sub->ui.selected_shared_fps_id = 0; // For Ground Truth default is the lowest common FPS for USB2/# compatibility
             // Select FPS value
             for (int i = 0; i < _sub->shared_fps_values.size(); i++)
             {
@@ -280,7 +282,7 @@ namespace rs2
             // Select FPS value
             for (int i = 0; i < _sub->shared_fps_values.size(); i++)
             {
-                if (_sub->shared_fps_values[i] == 30)
+                if (val_in_range(_sub->shared_fps_values[i], {5,6}))
                     _sub->ui.selected_shared_fps_id = i;
             }
 
@@ -505,7 +507,7 @@ namespace rs2
                 _sub->s->set_option(RS2_OPTION_THERMAL_COMPENSATION, 0.f);
             }
 
-            bool run_fl_calib = ( (action == RS2_CALIB_ACTION_FL_CALIB) && (w == 1280) && (h == 720) && (fps == 30));
+            bool run_fl_calib = ( (action == RS2_CALIB_ACTION_FL_CALIB) && (w == 1280) && (h == 720));
             if (action == RS2_CALIB_ACTION_TARE_GROUND_TRUTH)
             {
                 _uid = 1;
@@ -1560,6 +1562,7 @@ namespace rs2
     {
         try
         {
+            std::this_thread::sleep_for(std::chrono::milliseconds(1000)); // W/A that allows for USB2 exposure to settle
             constexpr int frames_required = 25;
 
             rs2::frame_queue left(frames_required,true);
@@ -2315,12 +2318,20 @@ namespace rs2
 
         _restored = false;
 
+        auto fps = 30;
+        if (_sub->dev.supports(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR))
+        {
+            std::string desc = _sub->dev.get_info(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR);
+            if (!starts_with(desc, "3."))
+                fps = 6; //USB2 bandwidth limitation for 720P RGB/DI
+        }
+
         if (action != RS2_CALIB_ACTION_TARE_GROUND_TRUTH && action != RS2_CALIB_ACTION_UVMAPPING_CALIB)
         {
             if (!_was_streaming)
             {
                 if (action == RS2_CALIB_ACTION_FL_CALIB)
-                    try_start_viewer(848, 480, 30, invoke);
+                    try_start_viewer(848, 480, fps, invoke);
                 else
                     try_start_viewer(0, 0, 0, invoke);
             }
@@ -2342,13 +2353,6 @@ namespace rs2
         if (action == RS2_CALIB_ACTION_FL_CALIB || action == RS2_CALIB_ACTION_UVMAPPING_CALIB || action == RS2_CALIB_ACTION_FL_PLUS_CALIB)
             _viewer.is_3d_view = false;
 
-        auto fps = 30;
-        if (_sub->dev.supports(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR))
-        {
-            std::string desc = _sub->dev.get_info(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR);
-            if (!starts_with(desc, "3."))
-                fps = 5; //USB2 bandwidth limitation for 720P RGB/DI
-        }
 
         if (action == RS2_CALIB_ACTION_FL_CALIB || action == RS2_CALIB_ACTION_TARE_GROUND_TRUTH || action == RS2_CALIB_ACTION_UVMAPPING_CALIB || action == RS2_CALIB_ACTION_FL_PLUS_CALIB ||
             (_version == 3 && action != RS2_CALIB_ACTION_TARE_GROUND_TRUTH))

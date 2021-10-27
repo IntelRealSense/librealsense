@@ -1145,4 +1145,63 @@ namespace rs2
         ImGui::SetCursorScreenPos({ float(x + 5), float(y + height - 25) });
     }
 
+    ucal_disclaimer_model::ucal_disclaimer_model()
+        : notification_model()
+    {
+        enable_expand = false;
+        enable_dismiss = true;
+        enable_complex_dismiss = true; // Allow to inhibit the disclaimer
+        pinned = false;
+
+    }
+
+    void ucal_disclaimer_model::draw_content(ux_window& win, int x, int y, float t, std::string& error_message)
+    {
+        ImGui::SetCursorScreenPos({ float(x + 9), float(y + 4) });
+
+        ImGui::GetWindowDrawList()->AddRectFilled({ float(x), float(y) },
+            { float(x + width), float(y + 25) }, ImColor(orange));
+
+        ImGui::Text("Self-Calibration - Disclaimer");
+        ImGui::SetCursorScreenPos({ float(x + 5), float(y + 27) });
+        ImGui::PushStyleColor(ImGuiCol_Text, light_grey);
+        std::string message = "For D415 please refer to the links for details:";
+        draw_text(message.c_str(), x, y, 30);
+        ImGui::PopStyleColor();
+
+        ImGui::SetCursorScreenPos({ float(x + 10), float(y + 47) });
+        hyperlink(win, "1. Self-Calibration Whitepaper", "https://dev.intelrealsense.com/docs/self-calibration-for-depth-cameras");
+        ImGui::SetCursorScreenPos({ float(x + 10), float(y + 67) });
+        hyperlink(win, "2. Firmware Releases / Errata", "https://dev.intelrealsense.com/docs/firmware-releases");
+
+    }
+
+    fl_cal_limitation_model::fl_cal_limitation_model()
+        : notification_model()
+    {
+        enable_expand = false;
+        enable_dismiss = true;
+        enable_complex_dismiss = false;
+        pinned = false;
+        message = "Focal-Length Calibration for this device\n"
+            " requires USB3 connection.\n"
+            "Please switch the connection port and rerun";
+    }
+
+    void fl_cal_limitation_model::draw_content(ux_window& win, int x, int y, float t, std::string& error_message)
+    {
+        ImGui::SetCursorScreenPos({ float(x + 9), float(y + 4) });
+
+        ImGui::GetWindowDrawList()->AddRectFilled({ float(x), float(y) },
+            { float(x + width), float(y + 25) }, ImColor(grey));
+
+        ImGui::Text("User Notification");
+
+        ImGui::SetCursorScreenPos({ float(x + 5), float(y + 25) });
+        ImGui::GetWindowDrawList()->AddRectFilled({ float(x+2), float(y+27) },
+            { float(x + width), float(y + 79) }, ImColor(orange));
+        ImGui::PushStyleColor(ImGuiCol_Text, light_grey);
+        draw_text(get_title().c_str(), x, y, height - 50);
+        ImGui::PopStyleColor();
+    }
 }
