@@ -1326,7 +1326,7 @@ namespace rs2
             update_state == RS2_CALIB_STATE_FL_INPUT ||
             update_state == RS2_CALIB_STATE_GET_TARE_GROUND_TRUTH ||
             update_state == RS2_CALIB_STATE_GET_TARE_GROUND_TRUTH_IN_PROCESS ||
-            update_state == RS2_CALIB_STATE_CALIB_IN_PROCESS && (get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_FL_CALIB || get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_UVMAPPING_CALIB))
+            (update_state == RS2_CALIB_STATE_CALIB_IN_PROCESS && (get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_FL_CALIB || get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_UVMAPPING_CALIB)))
             get_manager().turn_roi_on();
         else
             get_manager().turn_roi_off();

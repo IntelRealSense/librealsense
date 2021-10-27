@@ -110,7 +110,7 @@ namespace rs2
             case FIRMWARE: return "FIRMWARE";
                 break;
             default:
-                LOG_ERROR("Unknown component type: " + component);
+                LOG_ERROR("Unknown component type: " + std::to_string(static_cast<int>(component)));
                 break;
             }
             return "";
@@ -126,7 +126,7 @@ namespace rs2
             case ESSENTIAL: return "ESSENTIAL";
                 break;
             default:
-                LOG_ERROR("Unknown policy type: " + policy);
+                LOG_ERROR("Unknown policy type: " + std::to_string(static_cast<int>(policy)));
                 break;
             }
             return "";
