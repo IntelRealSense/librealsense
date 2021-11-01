@@ -670,6 +670,9 @@ namespace librealsense
                             case 1:
                                 mi = 3;
                                 break;
+                            case 2:   //added for D457
+                                mi = 3;
+                                break;
                             default:
                                 mi = 0xffff;
                                 break;

@@ -810,7 +810,8 @@ namespace librealsense
         std::string optic_serial;
         std::string asic_serial;
         std::string fwv;
-
+#undef HW_MONITOR_ENABLED
+#ifdef HW_MONITOR_ENABLED
         _hw_monitor->get_gvd(gvd_buff.size(), gvd_buff.data(), GVD);
         // fooling tests recordings - don't remove
         _hw_monitor->get_gvd(gvd_buff.size(), gvd_buff.data(), GVD);
@@ -820,10 +821,17 @@ namespace librealsense
         fwv = _hw_monitor->get_firmware_version_string(gvd_buff, camera_fw_version_offset);
 
         _fw_version = firmware_version(fwv);
+#else
+        _fw_version = firmware_version("5.12.15.153");
+#endif
 
         _recommended_fw_version = firmware_version(D4XX_RECOMMENDED_FIRMWARE_VERSION);
         if (_fw_version >= firmware_version("5.10.4.0"))
+#ifdef HW_MONITOR_ENABLED
             _device_capabilities = parse_device_capabilities();
+#else
+            _device_capabilities = (ds::d400_caps)347; //same as for D455
+#endif
 
         auto& depth_sensor = get_depth_sensor();
         auto& raw_depth_sensor = get_raw_depth_sensor();
@@ -873,11 +881,12 @@ namespace librealsense
                     "Set the power level of the LED, with 0 meaning LED off"));
         }
 
-
+#ifdef HW_MONITOR_ENABLED
         if (_fw_version >= firmware_version("5.6.3.0"))
         {
             _is_locked = _hw_monitor->is_camera_locked(GVD, is_camera_locked_offset);
         }
+#endif
 
         if (_fw_version >= firmware_version("5.5.8.0"))
             //if hw_monitor was created by usb replace it with xu
