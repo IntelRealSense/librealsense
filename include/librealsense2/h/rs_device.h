@@ -359,6 +359,16 @@ const rs2_raw_data_buffer* rs2_run_tare_calibration_cpp(rs2_device* dev, float g
 
 
 /**
+* During host assisted calibration (Tare or on-chip), this is used to pump new depth frames until calibration is done.
+* \param[in]  f                  The next frame.
+* \param[in]  timeout_ms         Timeout in ms (use 5000 msec unless instructed otherwise)
+* \param[out] health             The health check numbers before and after calibration
+* \return                        New calibration table
+*/
+const rs2_raw_data_buffer* rs2_add_calibration_frame(rs2_device* dev, const rs2_frame* f, float* health, rs2_update_progress_callback* progress_callback, int timeout_ms, rs2_error** error);
+
+
+/**
  * Used in device_calibration; enumerates the different calibration types
  * available for that extension.
  */

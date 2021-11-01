@@ -545,6 +545,62 @@ namespace rs2
         }
 
         /**
+        * When doing a host-assited calibration (Tare or on-chip) add frame to the calibration process
+         * \param[in] f     The next depth frame.
+         * \param[in] callback            Optional callback to get progress notifications
+         * \param[in] timeout_ms          Timeout in ms
+         * \param[out] health             The health check numbers before and after calibration
+        * \return a New calibration table when process is done. An empty table otherwise - need more frames.
+        **/
+        template<class T>
+        calibration_table add_calibration_frame(rs2::frame f, float* health, T callback, int timeout_ms = 5000) const
+        {
+            std::vector<uint8_t> results;
+
+            rs2_error* e = nullptr;
+            std::shared_ptr<const rs2_raw_data_buffer> list(
+                rs2_add_calibration_frame(_dev.get(), f.get(), health, new update_progress_callback<T>(std::move(callback)), timeout_ms, &e),
+                rs2_delete_raw_data);
+            error::handle(e);
+
+            auto size = rs2_get_raw_data_size(list.get(), &e);
+            error::handle(e);
+
+            auto start = rs2_get_raw_data(list.get(), &e);
+
+            results.insert(results.begin(), start, start + size);
+
+            return results;
+        }
+
+        /**
+        * When doing a host-assited calibration (Tare or on-chip) add frame to the calibration process
+         * \param[in] f     The next depth frame.
+         * \param[in] timeout_ms          Timeout in ms
+         * \param[out] health             The health check numbers before and after calibration
+        * \return a New calibration table when process is done. An empty table otherwise - need more frames.
+        **/
+        calibration_table add_calibration_frame(rs2::frame f, float* health, int timeout_ms = 5000) const
+        {
+            std::vector<uint8_t> results;
+
+            rs2_error* e = nullptr;
+            std::shared_ptr<const rs2_raw_data_buffer> list(
+                rs2_add_calibration_frame(_dev.get(), f.get(), health, nullptr, timeout_ms, &e),
+                rs2_delete_raw_data);
+            error::handle(e);
+
+            auto size = rs2_get_raw_data_size(list.get(), &e);
+            error::handle(e);
+
+            auto start = rs2_get_raw_data(list.get(), &e);
+
+            results.insert(results.begin(), start, start + size);
+
+            return results;
+        }
+
+        /**
         *  Read current calibration table from flash.
         * \return    Calibration table
         */

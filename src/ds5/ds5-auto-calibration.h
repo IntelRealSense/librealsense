@@ -10,11 +10,28 @@ namespace librealsense
 {
     class auto_calibrated : public auto_calibrated_interface
     {
+    enum auto_calib_action
+    {
+        RS2_OCC_ACTION_ON_CHIP_CALIB,         // On-Chip calibration
+        RS2_OCC_ACTION_TARE_CALIB            // Tare calibration
+    };
+
+    enum interactive_calibration_state
+    {
+        RS2_OCC_STATE_NOT_ACTIVE = 0,
+        RS2_OCC_STATE_WAIT_TO_CAMERA_START,
+        RS2_OCC_STATE_INITIAL_FW_CALL,
+        RS2_OCC_STATE_WAIT_TO_CALIB_START,
+        RS2_OCC_STATE_DATA_COLLECT,
+        RS2_OCC_STATE_FINAL_FW_CALL
+    };
+
     public:
         auto_calibrated(std::shared_ptr<hw_monitor>& hwm);
         void write_calibration() const override;
         std::vector<uint8_t> run_on_chip_calibration(int timeout_ms, std::string json, float* health, update_progress_callback_ptr progress_callback) override;
         std::vector<uint8_t> run_tare_calibration(int timeout_ms, float ground_truth_mm, std::string json, float* health, update_progress_callback_ptr progress_callback) override;
+        std::vector<uint8_t> add_calibration_frame(int timeout_ms, const rs2_frame* f, float* health, update_progress_callback_ptr progress_callback) override;
         std::vector<uint8_t> get_calibration_table() const override;
         void set_calibration_table(const std::vector<uint8_t>& calibration) override;
         void reset_to_factory_calibration() const override;
@@ -40,11 +57,25 @@ namespace librealsense
         void get_target_dots_info(rs2_frame_queue* frames, float dots_x[4], float dots_y[4], rs2::stream_profile & profile, rs2_intrinsics & fy, int progress, update_progress_callback_ptr progress_callback);
         void change_preset_and_stay();
         void restore_preset();
+        void collect_depth_frame_sum(const rs2_frame* f);
+
         std::vector<uint8_t> _curr_calibration;
         std::shared_ptr<hw_monitor>& _hw_monitor;
 
         bool _preset_change = false;
         preset _old_preset_values;
         rs2_rs400_visual_preset _old_preset;
+
+        std::string _json;
+        float _ground_truth_mm;
+        int _total_frames;
+        int _average_step_count;
+        int _collected_counter;
+        int _collected_frame_num;
+        double _collected_sum;
+        auto_calib_action _action;
+        interactive_calibration_state _occ_state;
+        rs2_metadata_type _prev_frame_counter;
+
     };
 }
