@@ -1141,6 +1141,8 @@ namespace librealsense
             if(is_device_multisensor)
             {
                 all_sensors_present = all_sensors_present && mi_present(devices, 3);
+                // temp w/a
+                all_sensors_present = true;
             }
 
 
@@ -1161,6 +1163,8 @@ namespace librealsense
             if (is_device_hid_sensor)
             {
                 all_sensors_present &= (hids.size() >= 2);
+                //temp w/a
+                all_sensors_present = true;
             }
 #endif
 
