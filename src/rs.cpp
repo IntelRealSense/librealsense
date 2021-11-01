@@ -3266,6 +3266,24 @@ const rs2_raw_data_buffer* rs2_run_tare_calibration(rs2_device* device, float gr
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, device)
 
+const rs2_raw_data_buffer* rs2_add_calibration_frame(rs2_device* device, const rs2_frame* f, float* const health, rs2_update_progress_callback* progress_callback, int timeout_ms, rs2_error** error)  BEGIN_API_CALL
+{
+    // Take ownership of the callback ASAP or else memory leaks could result if we throw! (the caller usually does a
+    // 'new' when calling us)
+    update_progress_callback_ptr callback_ptr;
+    if (progress_callback)
+        callback_ptr.reset(progress_callback, [](rs2_update_progress_callback* p) { p->release(); });
+    VALIDATE_NOT_NULL(device);
+
+    auto auto_calib = VALIDATE_INTERFACE(device->device, librealsense::auto_calibrated_interface);
+
+    std::vector<uint8_t> buffer;
+    buffer = auto_calib->add_calibration_frame(timeout_ms, f, health, callback_ptr);
+
+    return new rs2_raw_data_buffer{ buffer };
+}
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, device)
+
 const rs2_raw_data_buffer* rs2_get_calibration_table(const rs2_device* device, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(device);
