@@ -269,6 +269,7 @@ namespace librealsense
         {
             // Work-around for discrepancy between the RGB YUYV descriptor and the parser . Use UYUV parser instead
             color_ep.register_processing_block(processing_block_factory::create_pbf_vector<uyvy_converter>(RS2_FORMAT_UYVY, map_supported_color_formats(RS2_FORMAT_UYVY), RS2_STREAM_COLOR));
+            color_ep.register_processing_block(processing_block_factory::create_pbf_vector<yuy2_converter>(RS2_FORMAT_YUYV, map_supported_color_formats(RS2_FORMAT_YUYV), RS2_STREAM_COLOR));
         }
 
 
