@@ -971,7 +971,7 @@ namespace rs2
         if (action == RS2_CALIB_ACTION_TARE_CALIB)
             _new_calib = calib_dev.run_tare_calibration(ground_truth, json, health, [&](const float progress) {_progress = progress; }, 5000);
         else if (action == RS2_CALIB_ACTION_ON_CHIP_CALIB || action == RS2_CALIB_ACTION_ON_CHIP_FL_CALIB || action == RS2_CALIB_ACTION_ON_CHIP_OB_CALIB)
-            _new_calib = calib_dev.run_on_chip_calibration(json, &_health, [&](const float progress) {_progress = progress; }, occ_timeout_ms);
+            _new_calib = calib_dev.run_on_chip_calibration(json, health, [&](const float progress) {_progress = progress; }, occ_timeout_ms);
         
         auto invoke = [](std::function<void()>) {};
         int frame_fetch_timeout_ms = 3000;
@@ -980,7 +980,7 @@ namespace rs2
         while (!calib_done)
         {
             rs2::depth_frame f = fetch_depth_frame(invoke, frame_fetch_timeout_ms);
-            _new_calib = calib_dev.add_calibration_frame(f, &_health, [&](const float progress) {_progress = progress; }, 5000);
+            _new_calib = calib_dev.add_calibration_frame(f, health, [&](const float progress) {_progress = progress; std::ofstream fout("logger_in.log", std::ofstream::app); fout << "progress:" << progress << std::endl; }, 5000);
             calib_done = !_new_calib.empty();
         }
 #else
@@ -1232,6 +1232,10 @@ namespace rs2
             _health_2 = h_2 / 1000.0f;
             if (sign & 2)
                 _health_2 = -_health_2;
+        }
+        else if (action == RS2_CALIB_ACTION_ON_CHIP_CALIB)
+        {
+            _health = health[0];
         }
         else if (action == RS2_CALIB_ACTION_TARE_CALIB)
         {

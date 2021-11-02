@@ -1063,10 +1063,16 @@ namespace librealsense
                 _prev_frame_counter = frame_counter;
                 if (still_waiting)
                 {
-                    std::cout << "waiting" << std::endl;
+                    if (progress_callback)
+                    {
+                        progress_callback->on_update_progress(static_cast<float>(15));
+                    }
                     return res;
                 }
-                std::cout << "Done waiting" << std::endl;
+                if (progress_callback)
+                {
+                    progress_callback->on_update_progress(static_cast<float>(20));
+                }
                 _collected_counter = 0;
                 _collected_sum = 0;
                 _collected_frame_num = 0;
@@ -1081,7 +1087,10 @@ namespace librealsense
                     {
                         if (frame_counter != _prev_frame_counter)
                         {
-                            //_progress = static_cast<float>(cur_progress + static_cast<int>(frame_counter * 60 / total_frames));
+                            if (progress_callback)
+                            {
+                                progress_callback->on_update_progress(static_cast<float>(20 + static_cast<int>(frame_counter * 60.0 / _total_frames)));
+                            }
                             _fill_factor[frame_counter] = calc_fill_rate(f);
                         }
                         _prev_frame_counter = frame_counter;
@@ -1099,9 +1108,7 @@ namespace librealsense
                         fout << __LINE__ << " : " << _collected_frame_num << ":" << _average_step_count << std::endl;
                         if (_collected_frame_num < _average_step_count)
                         {
-                            fout << "collect_depth_frame_sum...";
                             collect_depth_frame_sum(f);
-                            fout << "Done";
                             if (_collected_frame_num + 1 == _average_step_count)
                             {
                                 if (_collected_counter && (_collected_frame_num + 1) == _average_step_count)
@@ -1124,6 +1131,10 @@ namespace librealsense
                             _collected_counter = 0;
                             _collected_sum = 0.0;
                             _collected_frame_num = 0;
+                            if (progress_callback)
+                            {
+                                progress_callback->on_update_progress(static_cast<float>(20 + static_cast<int>(frame_counter * 60.0 / _total_frames)));
+                            }
                         }
                         else
                             ++_collected_frame_num;
@@ -1138,6 +1149,10 @@ namespace librealsense
             }
             if (_occ_state == RS2_OCC_STATE_FINAL_FW_CALL)
             {
+                if (progress_callback)
+                {
+                    progress_callback->on_update_progress(static_cast<float>(80));
+                }
                 if (_action == RS2_OCC_ACTION_ON_CHIP_CALIB)
                 {
                     fill_missing_data(_fill_factor, _total_frames);
@@ -1149,7 +1164,6 @@ namespace librealsense
                         ss << ",\n \"fill factor " << i << "\":" << _fill_factor[i];
                     ss << "}";
 
-                    //_progress = 80;
                     std::string json = ss.str();
 
                     fout << __LINE__ << json << std::endl;
@@ -1163,6 +1177,10 @@ namespace librealsense
                     std::string json = ss.str();
                     fout << __LINE__ << json << std::endl;
                     res = run_tare_calibration(timeout_ms, _ground_truth_mm, json, health, progress_callback);
+                }
+                if (progress_callback)
+                {
+                    progress_callback->on_update_progress(static_cast<float>(100));
                 }
                 _occ_state = RS2_OCC_STATE_NOT_ACTIVE;
             }
