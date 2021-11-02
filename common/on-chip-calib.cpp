@@ -195,6 +195,7 @@ namespace rs2
             _sub->ui.selected_format_id.clear();
             _sub->ui.selected_format_id[_uid] = 0;
 
+            _sub->ui.selected_shared_fps_id = 0; // For Ground Truth default is the lowest common FPS for USB2/# compatibility
             // Select FPS value
             for (int i = 0; i < _sub->shared_fps_values.size(); i++)
             {
@@ -261,7 +262,7 @@ namespace rs2
             // Select FPS value
             for (int i = 0; i < _sub->shared_fps_values.size(); i++)
             {
-                if (_sub->shared_fps_values[i] == 6)
+                if (val_in_range(_sub->shared_fps_values[i], {5,6}))
                     _sub->ui.selected_shared_fps_id = i;
             }
 
