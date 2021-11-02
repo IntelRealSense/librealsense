@@ -2034,10 +2034,10 @@ namespace rs2
                             break;
                         }
                     }
-                }                
+                }
             }
         }
-        return is_cal_format;   
+        return is_cal_format;
     }
 
     std::pair<int, int> subdevice_model::get_max_resolution(rs2_stream stream) const
