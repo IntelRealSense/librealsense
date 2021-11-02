@@ -1177,4 +1177,33 @@ namespace rs2
         hyperlink(win, "Errata", "https://dev.intelrealsense.com/docs/firmware-releases");
 
     }
+
+    fl_cal_limitation_model::fl_cal_limitation_model()
+        : notification_model()
+    {
+        enable_expand = false;
+        enable_dismiss = true;
+        enable_complex_dismiss = false;
+        pinned = false;
+        message = "Focal Length Calibration for D455\n"
+            " requires USB3 connection.\n"
+            "Please switch the connection port and rerun";
+    }
+
+    void fl_cal_limitation_model::draw_content(ux_window& win, int x, int y, float t, std::string& error_message)
+    {
+        ImGui::SetCursorScreenPos({ float(x + 9), float(y + 4) });
+
+        ImGui::GetWindowDrawList()->AddRectFilled({ float(x), float(y) },
+            { float(x + width), float(y + 25) }, ImColor(grey));
+
+        ImGui::Text("User Notification");
+
+        ImGui::SetCursorScreenPos({ float(x + 5), float(y + 25) });
+        ImGui::GetWindowDrawList()->AddRectFilled({ float(x+2), float(y+27) },
+            { float(x + width), float(y + 79) }, ImColor(orange));
+        ImGui::PushStyleColor(ImGuiCol_Text, light_grey);
+        draw_text(get_title().c_str(), x, y, height - 50);
+        ImGui::PopStyleColor();
+    }
 }
