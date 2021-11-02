@@ -9,6 +9,28 @@
 import pyrealsense2 as rs
 import  sys
 
+def on_chip_calibration_json(occ_json_file, host_assistance):
+    try:
+        occ_json = open(occ_json_file).read()
+    except:
+        if occ_json_file:
+            print('Error reading occ_json_file: ', occ_json_file)
+        print ('Using default parameters for on-chip calibration.')
+        occ_json = '{\n  '+\
+                    '"calib type": 0,\n'+\
+                    '"host assistance": ' + str(int(host_assistance)) + ',\n'+\
+                    '"speed": 3,\n'+\
+                    '"average_step_count": 20,\n'+\
+                    '"scan parameter": 0,\n'+\
+                    '"step count": 20,\n'+\
+                    '"apply preset": 1,\n'+\
+                    '"accuracy": 2,\n'+\
+                    '"scan only": ' + str(int(host_assistance)) + ',\n'+\
+                    '"interactive scan": 0\n'+\
+                    '}'
+    return occ_json
+
+
 def tare_calibration_json(tare_json_file, host_assistance):
     try:
         tare_json = open(tare_json_file).read()
@@ -48,9 +70,6 @@ def main(argv):
     occ_json_file = params.get('--occ', None)
     tare_json_file = params.get('--tare', None)
 
-    if occ_json_file:
-        occ_json = open(occ_json_file).read()
-
     pipeline = rs.pipeline()
     config = rs.config()
 
@@ -83,8 +102,9 @@ def main(argv):
                             "e - exit\n"
             operation = input(operation_str)
 
-            if operation == 'c':
+            if operation.lower() == 'c':
                 print("Starting on chip calibration")
+                occ_json = on_chip_calibration_json(occ_json_file, operation == 'C')
                 new_calib, health = calib_dev.run_on_chip_calibration(occ_json, on_chip_calib_cb, 5000)
                 calib_done = len(new_calib) > 0
                 while (not calib_done):

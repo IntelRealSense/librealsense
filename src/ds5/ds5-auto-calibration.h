@@ -57,6 +57,8 @@ namespace librealsense
         void get_target_dots_info(rs2_frame_queue* frames, float dots_x[4], float dots_y[4], rs2::stream_profile & profile, rs2_intrinsics & fy, int progress, update_progress_callback_ptr progress_callback);
         void change_preset_and_stay();
         void restore_preset();
+        uint16_t calc_fill_rate(const rs2_frame* f);
+        void fill_missing_data(uint16_t data[256], int size);
         void collect_depth_frame_sum(const rs2_frame* f);
 
         std::vector<uint8_t> _curr_calibration;
@@ -76,6 +78,7 @@ namespace librealsense
         auto_calib_action _action;
         interactive_calibration_state _occ_state;
         rs2_metadata_type _prev_frame_counter;
+        uint16_t _fill_factor[256];
 
     };
 }

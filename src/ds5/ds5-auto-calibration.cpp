@@ -267,7 +267,6 @@ namespace librealsense
 
     std::vector<uint8_t> auto_calibrated::run_on_chip_calibration(int timeout_ms, std::string json, float* health, update_progress_callback_ptr progress_callback)
     {
-        _action = RS2_OCC_ACTION_ON_CHIP_CALIB;
         int calib_type = DEFAULT_CALIB_TYPE;
 
         int speed = DEFAULT_SPEED;
@@ -343,6 +342,34 @@ namespace librealsense
         }
 
         std::vector<uint8_t> res;
+
+        if (host_assistance && _occ_state == RS2_OCC_STATE_NOT_ACTIVE)
+        {
+            _json = json;
+            _action = RS2_OCC_ACTION_ON_CHIP_CALIB;
+            _occ_state = RS2_OCC_STATE_WAIT_TO_CAMERA_START;
+            switch (speed)
+            {
+            case 0:
+                _total_frames = 60;
+                break;
+            case 1:
+                _total_frames = 120;
+                break;
+            case 2:
+                _total_frames = 256;
+                break;
+            case 3:
+                _total_frames = 256;
+                break;
+            case 4:
+                _total_frames = 120;
+                break;
+            }
+            std::fill_n(_fill_factor, 256, 0);
+            return res;
+        }
+
         std::shared_ptr<ds5_advanced_mode_base> preset_recover;
         if (calib_type == 0)
         {
@@ -880,6 +907,87 @@ namespace librealsense
         return res;
     }
 
+    uint16_t auto_calibrated::calc_fill_rate(const rs2_frame* f)
+    {
+        auto frame = ((video_frame*)f);
+        int width = frame->get_width();
+        int height = frame->get_height();
+        int roi_w = width / 5;
+        int roi_h = height / 5;
+        int roi_start_w = 2 * roi_w;
+        int roi_start_h = 2 * roi_h;
+        int from = roi_start_h;
+        int to = roi_start_h + roi_h;
+        int roi_size = roi_w * roi_h;
+        int data_size = roi_size;
+
+
+        const uint16_t* p = reinterpret_cast<const uint16_t*>(frame->get_frame_data());
+        p += from * height + roi_start_w;
+
+        int counter(0);
+        for (int j = from; j < to; ++j)
+        {
+            for (int i = 0; i < roi_w; ++i)
+            {
+                if (*p)
+                    ++counter;
+                ++p;
+            }
+            p += width;
+        }
+
+        double tmp = static_cast<double>(counter) / static_cast<double>(data_size) * 10000.0;
+        std::ofstream fout("logger_in.log", std::ofstream::app);
+        fout << "tmp:" << tmp << " = " << counter << " / " << data_size << "*" << 10000.0 << std::endl;
+        return static_cast<uint16_t>(tmp + 0.5f);
+
+    }
+
+    // fill_missing_data:
+    // Fill every zeros section linearly based on the section's edges.
+    void auto_calibrated::fill_missing_data(uint16_t data[256], int size)
+    {
+        int counter = 0;
+        int start = 0;
+        while (data[start++] == 0)
+            ++counter;
+
+        if (start + 2 > size)
+            throw std::runtime_error(to_string() << "There is no enought valid data in the array!");
+
+        for (int i = 0; i < counter; ++i)
+            data[i] = data[counter];
+
+        start = 0;
+        int end = 0;
+        float tmp = 0;
+        for (int i = 0; i < size; ++i)
+        {
+            if (data[i] == 0)
+                start = i;
+
+            if (start != 0 && data[i] != 0)
+                end = i;
+
+            if (start != 0 && end != 0)
+            {
+                tmp = static_cast<float>(data[end] - data[start - 1]);
+                tmp /= end - start + 1;
+                for (int j = start; j < end; ++j)
+                    data[j] = static_cast<uint16_t>(tmp * (j - start + 1) + data[start - 1] + 0.5f);
+                start = 0;
+                end = 0;
+            }
+        }
+
+        if (start != 0 && end == 0)
+        {
+            for (int i = start; i < size; ++i)
+                data[i] = data[start - 1];
+        }
+    }
+
     // get_depth_frame_sum:
     // Function sums the pixels in the image ROI - Add the collected avarage parameters to _collected_counter, _collected_sum. 
     void auto_calibrated::collect_depth_frame_sum(const rs2_frame* f)
@@ -912,126 +1020,159 @@ namespace librealsense
 
     std::vector<uint8_t> auto_calibrated::add_calibration_frame(int timeout_ms, const rs2_frame* f, float* health, update_progress_callback_ptr progress_callback)
     {
-        std::cout << __FILE__ << ":" << __LINE__ << ": add_calibration_frame: " << ((frame_interface*)f)->get_frame_number() << std::endl;
-        std::ofstream fout("logger_in.log", std::ofstream::app);
-        fout << __FILE__ << ":" << __LINE__ << ": add_calibration_frame: " << ((frame_interface*)f)->get_frame_number() << std::endl;
-        std::vector<uint8_t> res;
-        rs2_metadata_type frame_counter = ((frame_interface*)f)->get_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER);
-        fout << "_occ_state: " << _occ_state << " : " << frame_counter << std::endl;
-        if (_occ_state == RS2_OCC_STATE_WAIT_TO_CAMERA_START)
+        try
         {
-            if (frame_counter <= 2)
+            std::cout << __FILE__ << ":" << __LINE__ << ": add_calibration_frame: " << ((frame_interface*)f)->get_frame_number() << std::endl;
+            std::ofstream fout("logger_in.log", std::ofstream::app);
+            fout << __FILE__ << ":" << __LINE__ << ": add_calibration_frame: " << ((frame_interface*)f)->get_frame_number() << std::endl;
+            std::vector<uint8_t> res;
+            rs2_metadata_type frame_counter = ((frame_interface*)f)->get_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER);
+            fout << "_occ_state: " << _occ_state << " : " << frame_counter << std::endl;
+            if (_occ_state == RS2_OCC_STATE_WAIT_TO_CAMERA_START)
             {
-                return res;
-            }
-            if (progress_callback)
-            {
-                progress_callback->on_update_progress(static_cast<float>(10));
-            }
-            _occ_state = RS2_OCC_STATE_INITIAL_FW_CALL;
-        }
-        if (_occ_state == RS2_OCC_STATE_INITIAL_FW_CALL)
-        {
-            if (_action == RS2_OCC_ACTION_TARE_CALIB)
-            {
-                fout << __LINE__ << _json << std::endl;
-                res = run_tare_calibration(timeout_ms, _ground_truth_mm, _json, health, progress_callback);
-            }
-            else if (_action == RS2_OCC_ACTION_ON_CHIP_CALIB)
-            {
-                fout << __LINE__ << _json << std::endl;
-                res = run_on_chip_calibration(timeout_ms, _json, health, progress_callback);
-            }
-            _prev_frame_counter = frame_counter;
-            _occ_state = RS2_OCC_STATE_WAIT_TO_CALIB_START;
-            return res;
-        }
-        if (_occ_state == RS2_OCC_STATE_WAIT_TO_CALIB_START)
-        {
-            fout << __LINE__ << frame_counter << ":" << _prev_frame_counter << std::endl;
-            bool still_waiting(frame_counter >= _prev_frame_counter || frame_counter >= _total_frames);
-            _prev_frame_counter = frame_counter;
-            if (still_waiting)
-            {
-                std::cout << "waiting" << std::endl;
-                return res;
-            }
-            std::cout << "Done waiting" << std::endl;
-            _collected_counter = 0;
-            _collected_sum = 0;
-            _collected_frame_num = 0;
-            _occ_state = RS2_OCC_STATE_DATA_COLLECT;
-        }
-        if (_occ_state == RS2_OCC_STATE_DATA_COLLECT)
-        {
-            if (_action == RS2_OCC_ACTION_TARE_CALIB)
-            {
-                fout << __LINE__ << " : " << frame_counter << ":" << _total_frames << std::endl;
-                if (frame_counter < _total_frames)
+                if (frame_counter <= 2)
                 {
-                    fout<< __LINE__ << " : " << _collected_frame_num << ":" << _average_step_count << std::endl;
-                    if (_collected_frame_num < _average_step_count)
+                    return res;
+                }
+                if (progress_callback)
+                {
+                    progress_callback->on_update_progress(static_cast<float>(10));
+                }
+                _occ_state = RS2_OCC_STATE_INITIAL_FW_CALL;
+            }
+            if (_occ_state == RS2_OCC_STATE_INITIAL_FW_CALL)
+            {
+                if (_action == RS2_OCC_ACTION_TARE_CALIB)
+                {
+                    fout << __LINE__ << _json << std::endl;
+                    res = run_tare_calibration(timeout_ms, _ground_truth_mm, _json, health, progress_callback);
+                }
+                else if (_action == RS2_OCC_ACTION_ON_CHIP_CALIB)
+                {
+                    fout << __LINE__ << _json << std::endl;
+                    res = run_on_chip_calibration(timeout_ms, _json, health, progress_callback);
+                }
+                _prev_frame_counter = frame_counter;
+                _occ_state = RS2_OCC_STATE_WAIT_TO_CALIB_START;
+                return res;
+            }
+            if (_occ_state == RS2_OCC_STATE_WAIT_TO_CALIB_START)
+            {
+                fout << __LINE__ << frame_counter << ":" << _prev_frame_counter << std::endl;
+                bool still_waiting(frame_counter >= _prev_frame_counter || frame_counter >= _total_frames);
+                _prev_frame_counter = frame_counter;
+                if (still_waiting)
+                {
+                    std::cout << "waiting" << std::endl;
+                    return res;
+                }
+                std::cout << "Done waiting" << std::endl;
+                _collected_counter = 0;
+                _collected_sum = 0;
+                _collected_frame_num = 0;
+                _occ_state = RS2_OCC_STATE_DATA_COLLECT;
+            }
+            if (_occ_state == RS2_OCC_STATE_DATA_COLLECT)
+            {
+                if (_action == RS2_OCC_ACTION_ON_CHIP_CALIB)
+                {
+                    fout << __LINE__ << " : " << frame_counter << ":" << _total_frames << std::endl;
+                    if (frame_counter < _total_frames)
                     {
-                        fout << "collect_depth_frame_sum...";
-                        collect_depth_frame_sum(f);
-                        fout << "Done";
-                        if (_collected_frame_num + 1 == _average_step_count)
+                        if (frame_counter != _prev_frame_counter)
                         {
-                            if (_collected_counter && (_collected_frame_num + 1) == _average_step_count)
-                            {
-                                _collected_sum = (_collected_sum / _collected_counter) * 10000;
-                                int depth = static_cast<int>(_collected_sum + 0.5);
-
-                                std::stringstream ss;
-                                ss << "{\n \"depth\":" << depth << "}";
-
-                                std::string json = ss.str();
-                                fout << __LINE__ << json << std::endl;
-                                run_tare_calibration(timeout_ms, _ground_truth_mm, json, health, progress_callback);
-                            }
+                            //_progress = static_cast<float>(cur_progress + static_cast<int>(frame_counter * 60 / total_frames));
+                            _fill_factor[frame_counter] = calc_fill_rate(f);
                         }
-                    }
-                    fout << __LINE__ << frame_counter << ":" << _prev_frame_counter << ":" << _collected_frame_num << std::endl;
-                    if (frame_counter != _prev_frame_counter)
-                    {
-                        _collected_counter = 0;
-                        _collected_sum = 0.0;
-                        _collected_frame_num = 0;
+                        _prev_frame_counter = frame_counter;
                     }
                     else
-                        ++_collected_frame_num;
-
-                    _prev_frame_counter = frame_counter;
+                    {
+                        _occ_state = RS2_OCC_STATE_FINAL_FW_CALL;
+                    }
                 }
-                else
+                else if (_action == RS2_OCC_ACTION_TARE_CALIB)
                 {
-                    fout << __LINE__ << " : " << frame_counter << std::endl;
-                    _occ_state = RS2_OCC_STATE_FINAL_FW_CALL;
+                    fout << __LINE__ << " : " << frame_counter << ":" << _total_frames << std::endl;
+                    if (frame_counter < _total_frames)
+                    {
+                        fout << __LINE__ << " : " << _collected_frame_num << ":" << _average_step_count << std::endl;
+                        if (_collected_frame_num < _average_step_count)
+                        {
+                            fout << "collect_depth_frame_sum...";
+                            collect_depth_frame_sum(f);
+                            fout << "Done";
+                            if (_collected_frame_num + 1 == _average_step_count)
+                            {
+                                if (_collected_counter && (_collected_frame_num + 1) == _average_step_count)
+                                {
+                                    _collected_sum = (_collected_sum / _collected_counter) * 10000;
+                                    int depth = static_cast<int>(_collected_sum + 0.5);
+
+                                    std::stringstream ss;
+                                    ss << "{\n \"depth\":" << depth << "}";
+
+                                    std::string json = ss.str();
+                                    fout << __LINE__ << json << std::endl;
+                                    run_tare_calibration(timeout_ms, _ground_truth_mm, json, health, progress_callback);
+                                }
+                            }
+                        }
+                        fout << __LINE__ << frame_counter << ":" << _prev_frame_counter << ":" << _collected_frame_num << std::endl;
+                        if (frame_counter != _prev_frame_counter)
+                        {
+                            _collected_counter = 0;
+                            _collected_sum = 0.0;
+                            _collected_frame_num = 0;
+                        }
+                        else
+                            ++_collected_frame_num;
+
+                        _prev_frame_counter = frame_counter;
+                    }
+                    else
+                    {
+                        _occ_state = RS2_OCC_STATE_FINAL_FW_CALL;
+                    }
                 }
             }
-            else if (_action == RS2_OCC_ACTION_ON_CHIP_CALIB)
+            if (_occ_state == RS2_OCC_STATE_FINAL_FW_CALL)
             {
-                res = run_on_chip_calibration(timeout_ms, _json, health, progress_callback);
-            }
-        }
-        if (_occ_state == RS2_OCC_STATE_FINAL_FW_CALL)
-        {
-            if (_action == RS2_OCC_ACTION_TARE_CALIB)
-            {
-                std::stringstream ss;
-                ss << "{\n \"depth\":" << -1 << "}";
+                if (_action == RS2_OCC_ACTION_ON_CHIP_CALIB)
+                {
+                    fill_missing_data(_fill_factor, _total_frames);
+                    std::stringstream ss;
+                    ss << "{\n \"calib type\":" << 0 <<
+                        ",\n \"host assistance\":" << 2 <<
+                        ",\n \"step count v3\":" << _total_frames;
+                    for (int i = 0; i < _total_frames; ++i)
+                        ss << ",\n \"fill factor " << i << "\":" << _fill_factor[i];
+                    ss << "}";
 
-                std::string json = ss.str();
-                fout << __LINE__ << json << std::endl;
-                res = run_tare_calibration(timeout_ms, _ground_truth_mm, json, health, progress_callback);
+                    //_progress = 80;
+                    std::string json = ss.str();
+
+                    fout << __LINE__ << json << std::endl;
+                    res = run_on_chip_calibration(timeout_ms, json, health, progress_callback);
+                }
+                else if (_action == RS2_OCC_ACTION_TARE_CALIB)
+                {
+                    std::stringstream ss;
+                    ss << "{\n \"depth\":" << -1 << "}";
+
+                    std::string json = ss.str();
+                    fout << __LINE__ << json << std::endl;
+                    res = run_tare_calibration(timeout_ms, _ground_truth_mm, json, health, progress_callback);
+                }
+                _occ_state = RS2_OCC_STATE_NOT_ACTIVE;
             }
-            else if (_action == RS2_OCC_ACTION_ON_CHIP_CALIB)
-            {
-                res = run_on_chip_calibration(timeout_ms, _json, health, progress_callback);
-            }
-            _occ_state = RS2_OCC_STATE_NOT_ACTIVE;
+            return res;
         }
-        return res;
+        catch (const std::exception& ex)
+        {
+            _occ_state = RS2_OCC_STATE_NOT_ACTIVE;
+            throw ex;
+        }
     }
 
 
