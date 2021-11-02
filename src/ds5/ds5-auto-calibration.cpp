@@ -265,7 +265,7 @@ namespace librealsense
         thermal_compensation_guard& operator=(const thermal_compensation_guard&);
     };
 
-    std::vector<uint8_t> auto_calibrated::run_on_chip_calibration(int timeout_ms, std::string json, float* health, update_progress_callback_ptr progress_callback)
+    std::vector<uint8_t> auto_calibrated::run_on_chip_calibration(int timeout_ms, std::string json, float* const health, update_progress_callback_ptr progress_callback)
     {
         int calib_type = DEFAULT_CALIB_TYPE;
 
@@ -738,7 +738,7 @@ namespace librealsense
         return res;
     }
 
-    std::vector<uint8_t> auto_calibrated::run_tare_calibration(int timeout_ms, float ground_truth_mm, std::string json, float* health, update_progress_callback_ptr progress_callback)
+    std::vector<uint8_t> auto_calibrated::run_tare_calibration(int timeout_ms, float ground_truth_mm, std::string json, float* const health, update_progress_callback_ptr progress_callback)
     {
         int average_step_count = DEFAULT_AVERAGE_STEP_COUNT;
         int step_count = DEFAULT_STEP_COUNT;
@@ -901,6 +901,8 @@ namespace librealsense
                     restore_preset();
                     std::this_thread::sleep_for(std::chrono::milliseconds(200));
                 }
+                if (progress_callback)
+                    progress_callback->on_update_progress(static_cast<float>(100));
             }
         }
 
@@ -938,8 +940,6 @@ namespace librealsense
         }
 
         double tmp = static_cast<double>(counter) / static_cast<double>(data_size) * 10000.0;
-        std::ofstream fout("logger_in.log", std::ofstream::app);
-        fout << "tmp:" << tmp << " = " << counter << " / " << data_size << "*" << 10000.0 << std::endl;
         return static_cast<uint16_t>(tmp + 0.5f);
 
     }
@@ -1018,16 +1018,12 @@ namespace librealsense
         }
     }
 
-    std::vector<uint8_t> auto_calibrated::add_calibration_frame(int timeout_ms, const rs2_frame* f, float* health, update_progress_callback_ptr progress_callback)
+    std::vector<uint8_t> auto_calibrated::add_calibration_frame(int timeout_ms, const rs2_frame* f, float* const health, update_progress_callback_ptr progress_callback)
     {
         try
         {
-            std::cout << __FILE__ << ":" << __LINE__ << ": add_calibration_frame: " << ((frame_interface*)f)->get_frame_number() << std::endl;
-            std::ofstream fout("logger_in.log", std::ofstream::app);
-            fout << __FILE__ << ":" << __LINE__ << ": add_calibration_frame: " << ((frame_interface*)f)->get_frame_number() << std::endl;
             std::vector<uint8_t> res;
             rs2_metadata_type frame_counter = ((frame_interface*)f)->get_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER);
-            fout << "_occ_state: " << _occ_state << " : " << frame_counter << std::endl;
             if (_occ_state == RS2_OCC_STATE_WAIT_TO_CAMERA_START)
             {
                 if (frame_counter <= 2)
@@ -1044,12 +1040,10 @@ namespace librealsense
             {
                 if (_action == RS2_OCC_ACTION_TARE_CALIB)
                 {
-                    fout << __LINE__ << _json << std::endl;
                     res = run_tare_calibration(timeout_ms, _ground_truth_mm, _json, health, progress_callback);
                 }
                 else if (_action == RS2_OCC_ACTION_ON_CHIP_CALIB)
                 {
-                    fout << __LINE__ << _json << std::endl;
                     res = run_on_chip_calibration(timeout_ms, _json, health, progress_callback);
                 }
                 _prev_frame_counter = frame_counter;
@@ -1058,7 +1052,6 @@ namespace librealsense
             }
             if (_occ_state == RS2_OCC_STATE_WAIT_TO_CALIB_START)
             {
-                fout << __LINE__ << frame_counter << ":" << _prev_frame_counter << std::endl;
                 bool still_waiting(frame_counter >= _prev_frame_counter || frame_counter >= _total_frames);
                 _prev_frame_counter = frame_counter;
                 if (still_waiting)
@@ -1082,7 +1075,6 @@ namespace librealsense
             {
                 if (_action == RS2_OCC_ACTION_ON_CHIP_CALIB)
                 {
-                    fout << __LINE__ << " : " << frame_counter << ":" << _total_frames << std::endl;
                     if (frame_counter < _total_frames)
                     {
                         if (frame_counter != _prev_frame_counter)
@@ -1102,10 +1094,8 @@ namespace librealsense
                 }
                 else if (_action == RS2_OCC_ACTION_TARE_CALIB)
                 {
-                    fout << __LINE__ << " : " << frame_counter << ":" << _total_frames << std::endl;
                     if (frame_counter < _total_frames)
                     {
-                        fout << __LINE__ << " : " << _collected_frame_num << ":" << _average_step_count << std::endl;
                         if (_collected_frame_num < _average_step_count)
                         {
                             collect_depth_frame_sum(f);
@@ -1120,12 +1110,10 @@ namespace librealsense
                                     ss << "{\n \"depth\":" << depth << "}";
 
                                     std::string json = ss.str();
-                                    fout << __LINE__ << json << std::endl;
                                     run_tare_calibration(timeout_ms, _ground_truth_mm, json, health, progress_callback);
                                 }
                             }
                         }
-                        fout << __LINE__ << frame_counter << ":" << _prev_frame_counter << ":" << _collected_frame_num << std::endl;
                         if (frame_counter != _prev_frame_counter)
                         {
                             _collected_counter = 0;
@@ -1166,7 +1154,6 @@ namespace librealsense
 
                     std::string json = ss.str();
 
-                    fout << __LINE__ << json << std::endl;
                     res = run_on_chip_calibration(timeout_ms, json, health, progress_callback);
                 }
                 else if (_action == RS2_OCC_ACTION_TARE_CALIB)
@@ -1175,7 +1162,6 @@ namespace librealsense
                     ss << "{\n \"depth\":" << -1 << "}";
 
                     std::string json = ss.str();
-                    fout << __LINE__ << json << std::endl;
                     res = run_tare_calibration(timeout_ms, _ground_truth_mm, json, health, progress_callback);
                 }
                 if (progress_callback)
@@ -1336,7 +1322,7 @@ namespace librealsense
         else throw std::runtime_error(to_string() << "Calibration didn't converge! (RESULT=" << int(status) << ")");
     }
 
-    std::vector<uint8_t> auto_calibrated::get_calibration_results(float* health) const
+    std::vector<uint8_t> auto_calibrated::get_calibration_results(float* const health) const
     {
         using namespace ds;
 
@@ -1364,7 +1350,7 @@ namespace librealsense
         return calib;
     }
 
-    std::vector<uint8_t> auto_calibrated::get_PyRxFL_calibration_results(float* health, float* health_fl) const
+    std::vector<uint8_t> auto_calibrated::get_PyRxFL_calibration_results(float* const health, float* health_fl) const
     {
         using namespace ds;
 
@@ -1891,7 +1877,7 @@ namespace librealsense
     }
 
     std::vector<uint8_t> auto_calibrated::run_uv_map_calibration(rs2_frame_queue* left, rs2_frame_queue* color, rs2_frame_queue* depth, int py_px_only,
-        float* health, int health_size, update_progress_callback_ptr progress_callback)
+        float* const health, int health_size, update_progress_callback_ptr progress_callback)
     {
         float left_dots_x[4];
         float left_dots_y[4];

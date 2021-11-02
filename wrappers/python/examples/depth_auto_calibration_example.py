@@ -59,6 +59,12 @@ def tare_calibration_json(tare_json_file, host_assistance):
                     '}'
     return tare_json
 
+def on_chip_calib_cb(progress):
+    pp = int(progress)
+    sys.stdout.write('\r' + '*'*pp + ' '*(99-pp) + '*')
+    if (pp == 100):
+        print()
+
 def main(argv):
     if '--help' in sys.argv or '-h' in sys.argv:
         print('USAGE:')
@@ -88,9 +94,6 @@ def main(argv):
     conf = pipeline.start(config)
     calib_dev = rs.auto_calibrated_device(conf.get_device())
 
-    def on_chip_calib_cb(progress):
-        print(". ")
-
     while True:
         try:
             operation_str = "Please select what the operation you want to do\n" + \
@@ -110,7 +113,7 @@ def main(argv):
                 while (not calib_done):
                     frame_set = pipeline.wait_for_frames()
                     depth_frame = frame_set.get_depth_frame()
-                    new_calib, health = calib_dev.add_calibration_frame(depth_frame, 5000)
+                    new_calib, health = calib_dev.add_calibration_frame(depth_frame, on_chip_calib_cb, 5000)
                     calib_done = len(new_calib) > 0
                 print("Calibration completed")
                 print("health factor = ", health)
@@ -124,7 +127,7 @@ def main(argv):
                 while (not calib_done):
                     frame_set = pipeline.wait_for_frames()
                     depth_frame = frame_set.get_depth_frame()
-                    new_calib, health = calib_dev.add_calibration_frame(depth_frame, 5000)
+                    new_calib, health = calib_dev.add_calibration_frame(depth_frame, on_chip_calib_cb, 5000)
                     calib_done = len(new_calib) > 0
                 print("Calibration completed")
                 print("health factor = ", health)

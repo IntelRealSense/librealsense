@@ -553,7 +553,7 @@ namespace rs2
         * \return a New calibration table when process is done. An empty table otherwise - need more frames.
         **/
         template<class T>
-        calibration_table add_calibration_frame(rs2::frame f, float* health, T callback, int timeout_ms = 5000) const
+        calibration_table add_calibration_frame(rs2::frame f, float* const health, T callback, int timeout_ms = 5000) const
         {
             std::vector<uint8_t> results;
 
@@ -580,7 +580,7 @@ namespace rs2
          * \param[out] health             The health check numbers before and after calibration
         * \return a New calibration table when process is done. An empty table otherwise - need more frames.
         **/
-        calibration_table add_calibration_frame(rs2::frame f, float* health, int timeout_ms = 5000) const
+        calibration_table add_calibration_frame(rs2::frame f, float* const health, int timeout_ms = 5000) const
         {
             std::vector<uint8_t> results;
 

@@ -365,7 +365,7 @@ const rs2_raw_data_buffer* rs2_run_tare_calibration_cpp(rs2_device* dev, float g
 * \param[out] health             The health check numbers before and after calibration
 * \return                        New calibration table
 */
-const rs2_raw_data_buffer* rs2_add_calibration_frame(rs2_device* dev, const rs2_frame* f, float* health, rs2_update_progress_callback* progress_callback, int timeout_ms, rs2_error** error);
+const rs2_raw_data_buffer* rs2_add_calibration_frame(rs2_device* dev, const rs2_frame* f, float* const health, rs2_update_progress_callback* progress_callback, int timeout_ms, rs2_error** error);
 
 
 /**

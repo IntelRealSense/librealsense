@@ -29,21 +29,21 @@ namespace librealsense
     public:
         auto_calibrated(std::shared_ptr<hw_monitor>& hwm);
         void write_calibration() const override;
-        std::vector<uint8_t> run_on_chip_calibration(int timeout_ms, std::string json, float* health, update_progress_callback_ptr progress_callback) override;
-        std::vector<uint8_t> run_tare_calibration(int timeout_ms, float ground_truth_mm, std::string json, float* health, update_progress_callback_ptr progress_callback) override;
-        std::vector<uint8_t> add_calibration_frame(int timeout_ms, const rs2_frame* f, float* health, update_progress_callback_ptr progress_callback) override;
+        std::vector<uint8_t> run_on_chip_calibration(int timeout_ms, std::string json, float* const health, update_progress_callback_ptr progress_callback) override;
+        std::vector<uint8_t> run_tare_calibration(int timeout_ms, float ground_truth_mm, std::string json, float* const health, update_progress_callback_ptr progress_callback) override;
+        std::vector<uint8_t> add_calibration_frame(int timeout_ms, const rs2_frame* f, float* const health, update_progress_callback_ptr progress_callback) override;
         std::vector<uint8_t> get_calibration_table() const override;
         void set_calibration_table(const std::vector<uint8_t>& calibration) override;
         void reset_to_factory_calibration() const override;
         std::vector<uint8_t> run_focal_length_calibration(rs2_frame_queue* left, rs2_frame_queue* right, float target_w, float target_h, 
             int adjust_both_sides, float* ratio, float* angle, update_progress_callback_ptr progress_callback) override;
         std::vector<uint8_t> run_uv_map_calibration(rs2_frame_queue* left, rs2_frame_queue* color, rs2_frame_queue* depth, int py_px_only,
-            float* health, int health_size, update_progress_callback_ptr progress_callback) override;
+            float* const health, int health_size, update_progress_callback_ptr progress_callback) override;
         float calculate_target_z(rs2_frame_queue* queue, float target_width, float target_height, update_progress_callback_ptr progress_callback) override;
 
     private:
-        std::vector<uint8_t> get_calibration_results(float* health = nullptr) const;
-        std::vector<uint8_t> get_PyRxFL_calibration_results(float* health = nullptr, float* health_fl = nullptr) const;
+        std::vector<uint8_t> get_calibration_results(float* const health = nullptr) const;
+        std::vector<uint8_t> get_PyRxFL_calibration_results(float* const health = nullptr, float* health_fl = nullptr) const;
         void handle_calibration_error(int status) const;
         std::map<std::string, int> parse_json(std::string json);
         std::shared_ptr< ds5_advanced_mode_base> change_preset();
