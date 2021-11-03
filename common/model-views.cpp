@@ -5726,7 +5726,8 @@ namespace rs2
                     std::string device_usb_type = sub->s->supports(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR) ? sub->s->get_info(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR) : "unknown";
 
                     bool show_disclaimer = val_in_range(device_pid, { std::string("0AD2"), std::string("0AD3") }); // Specific for D410/5
-                    bool disable_fl_cal = ((device_pid == "0B5C") && (!starts_with(device_usb_type, "3."))); // D455@USB2
+                    bool disable_fl_cal = (((device_pid == "0B5C") || show_disclaimer) &&
+                                            (!starts_with(device_usb_type, "3."))); // D410/D15/D455@USB2
 
                     if (ImGui::Selectable("On-Chip Calibration"))
                     {
