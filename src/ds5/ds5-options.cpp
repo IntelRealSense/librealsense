@@ -501,8 +501,13 @@ namespace librealsense
 
     void alternating_emitter_option::set(float value)
     {
-        std::vector<uint8_t> pattern{};
+        if (value && _laser_power_val == 0) // raise a readable error if the condition is met 
+        {
+            throw std::runtime_error("Laser power value is not valid!");
+        }
 
+        std::vector<uint8_t> pattern{};
+        
         if (static_cast<int>(value))
         {
             if (_is_fw_version_using_id)

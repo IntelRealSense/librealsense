@@ -249,6 +249,7 @@ namespace librealsense
             return "Alternating emitter pattern, toggled on/off on per-frame basis";
         }
         virtual void enable_recording(std::function<void(const option &)> record_action) override { _record_action = record_action; }
+        void cache_laser_power_val(float value) { _laser_power_val = value; };
 
     private:
         std::function<void(const option &)> _record_action = [](const option&) {};
@@ -256,6 +257,7 @@ namespace librealsense
         hw_monitor& _hwm;
         sensor_base* _sensor;
         bool _is_fw_version_using_id;
+        float _laser_power_val;
     };
 
     class emitter_always_on_option : public option
