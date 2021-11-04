@@ -632,7 +632,6 @@ namespace librealsense
                 get_firmware_logs_command(),
                 get_flash_logs_command())
         {
-            set_laser_power_ref();
             check_and_restore_rgb_stream_extrinsic();
         }
 

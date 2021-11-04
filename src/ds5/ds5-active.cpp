@@ -40,7 +40,7 @@ namespace librealsense
                 depth_xu,
                 DS5_LASER_POWER,
                 "Manual laser power in mw. applicable only when laser power mode is set to Manual");
-
+            set_laser_power_ref();
             auto laser_power_auto_disabling = std::make_shared<auto_disabling_control>(
                                      _laser_power,
                                      emitter_enabled,

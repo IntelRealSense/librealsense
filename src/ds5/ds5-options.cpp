@@ -507,7 +507,6 @@ namespace librealsense
         }
 
         std::vector<uint8_t> pattern{};
-        
         if (static_cast<int>(value))
         {
             if (_is_fw_version_using_id)
