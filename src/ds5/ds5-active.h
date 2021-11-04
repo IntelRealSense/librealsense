@@ -12,8 +12,5 @@ namespace librealsense
     public:
         ds5_active(std::shared_ptr<context> ctx,
                    const platform::backend_device_group& group);
-    protected:
-        float get_laser_power_val() { return _laser_power->query(); };
-        //std::shared_ptr<uvc_xu_option<uint16_t>> _laser_power;
     };
 }
