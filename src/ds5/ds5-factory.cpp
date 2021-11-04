@@ -634,6 +634,7 @@ namespace librealsense
         {
             auto val = get_laser_power_val();
             cache_laser_power_val(val);
+            set_laser_power_ref();
             check_and_restore_rgb_stream_extrinsic();
         }
 
