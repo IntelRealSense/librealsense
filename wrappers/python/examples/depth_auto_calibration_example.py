@@ -6,6 +6,9 @@
 #####################################################
 
 # First import the library
+import sys
+sys.path.insert(0, "C:\\projects\\librealsense_calib3\\build\\Release")
+
 import pyrealsense2 as rs
 import  sys
 
@@ -68,8 +71,10 @@ def on_chip_calib_cb(progress):
 def main(argv):
     if '--help' in sys.argv or '-h' in sys.argv:
         print('USAGE:')
-        print('depth_auto_calibration_example.py --occ <json_file_name> --tare <json_file_name>')
+        print('depth_auto_calibration_example.py [--occ <json_file_name>] [--tare <json_file_name>]')
         print
+        print('Occ and Tare calibration uses parameters given with --occ and --tare arguments respectfully.')
+        print('If these are argument are not given, using default values, defined in this example program.')
         sys.exit(-1)
 
     params = dict(zip(sys.argv[1::2], sys.argv[2::2]))
@@ -98,6 +103,7 @@ def main(argv):
         try:
             operation_str = "Please select what the operation you want to do\n" + \
                             "c - on chip calibration\n" + \
+                            "C - on chip calibration - host assist\n" + \
                             "t - tare calibration\n" + \
                             "T - tare calibration - host assist\n" + \
                             "g - get the active calibration\n" + \

@@ -31,21 +31,7 @@ namespace rs2
         if (dev.supports(RS2_CAMERA_INFO_FIRMWARE_VERSION))
         {
             std::string fw_version = dev.get_info(RS2_CAMERA_INFO_FIRMWARE_VERSION);
-            std::vector<int> versions;
-            int i = 0;
-            int j = 0;
-            for (int j = 0; j < fw_version.length(); ++j)
-            {
-                if (fw_version[j] == '.')
-                {
-                    versions.emplace_back(atoi(fw_version.substr(i, j - i).c_str()));
-                    i = j + 1;
-                }
-            }
-
-            versions.emplace_back(atoi(fw_version.substr(i).c_str()));
-            if (versions[0] >= 5 && versions[1] >= 12 && versions[2] >= 14 && versions[3] >= 100) // FW 05.12.14.100
-                tare_health = true;
+            tare_health = is_upgradeable("05.12.14.100", fw_version);
         }
     }
 
