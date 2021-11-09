@@ -51,9 +51,27 @@ def main(arguments=None):
         print('Device is not connected')
         sys.exit(1)
 
-    depth_sensor = device.first_depth_sensor()
+    # Verify Preconditions:
+    # 1. The script is applicable for D400-series devices only
+    cam_name = device.get_info(rs.camera_info.name) if device.supports(rs.camera_info.name) else "Unrecognized camera"
+    if device.supports(rs.camera_info.product_line):
+        device_product_line = str(device.get_info(rs.camera_info.product_line))
+        if device_product_line != 'D400':
+            print(f'The example is intended for RealSense D400 Depth cameras, and is not', end =" ")
+            print(f'applicable with {cam_name}')
+            sys.exit(1)
+    # 2. The routine assumes USB3 connection type
+    #    In case of USB2 connection, the streaming profiles should be readjusted
+    if device.supports(rs.camera_info.usb_type_descriptor):
+        usb_type = device.get_info(rs.camera_info.usb_type_descriptor)
+        if not usb_type.startswith('3.'):
+            print('The script is designed to run with USB3 connection type.')
+            print('In order to enable it with USB2.1 mode the fps rates for the Focal Length and Ground Truth calculation stages should be re-adjusted')
+            sys.exit(1)
+
 
     # prepare device
+    depth_sensor = device.first_depth_sensor()
     depth_sensor.set_option(rs.option.emitter_enabled, 0)
     if depth_sensor.supports(rs.option.thermal_compensation):
         depth_sensor.set_option(rs.option.thermal_compensation, 0)
@@ -65,6 +83,7 @@ def main(arguments=None):
 
     print("Starting UCAL...")
     try:
+        # The recomended sequence of procedures: On-Chip -> Focal Length -> Tare Calibration
         run_on_chip_calibration(args.onchip_speed, args.onchip_scan)
         run_focal_length_calibration((args.target_width, args.target_height), args.focal_adjustment)
         run_tare_calibration(args.tare_accuracy, args.tare_scan, args.tare_gt, (args.target_width, args.target_height))
@@ -92,11 +111,6 @@ def run_on_chip_calibration(speed, scan):
     pipe = rs.pipeline(ctx)
     pp = pipe.start(cfg)
     dev = pp.get_device()
-
-    # Pre-conditions required by calibration flow
-    depth_sensor = dev.first_depth_sensor()
-    if (depth_sensor.supports(rs.option.thermal_compensation)):
-        depth_sensor.set_option(rs.option.thermal_compensation, 0)
 
     try:
 
@@ -147,13 +161,7 @@ def run_focal_length_calibration(target_size, adjust_side):
     pp = pipe.start(cfg, cb)
     dev = pp.get_device()
 
-    # Pre-conditions required by calibration flow
-    depth_sensor = dev.first_depth_sensor()
-    if (depth_sensor.supports(rs.option.thermal_compensation)):
-        depth_sensor.set_option(rs.option.thermal_compensation, 0)
-
     try:
-
         print('Starting Focal-Length calibration...')
         print(f'\tTarget Size:\t{target_size}')
         print(f'\tSide Adjustment:\t{adjust_side}')
@@ -193,13 +201,7 @@ def run_tare_calibration(accuracy, scan, gt, target_size):
     pp = pipe.start(cfg)
     dev = pp.get_device()
 
-    # Pre-conditions required by calibration flow
-    depth_sensor = dev.first_depth_sensor()
-    if (depth_sensor.supports(rs.option.thermal_compensation)):
-        depth_sensor.set_option(rs.option.thermal_compensation, 0)
-
     try:
-
         print(f'\tGround Truth:\t{target_z}')
         print(f'\tAccuracy:\t{accuracy}')
         print(f'\tScan:\t{scan}')
@@ -208,6 +210,7 @@ def run_tare_calibration(accuracy, scan, gt, target_size):
         print('Tare calibration finished')
         adev.set_calibration_table(table)
         adev.write_calibration()
+
     finally:
         pipe.stop()
 
@@ -237,11 +240,6 @@ def calculate_target_z(target_size):
     pipe = rs.pipeline(ctx)
     pp = pipe.start(cfg, cb)
     dev = pp.get_device()
-
-    # Pre-conditions required by calibration flow
-    depth_sensor = dev.first_depth_sensor()
-    if (depth_sensor.supports(rs.option.thermal_compensation)):
-        depth_sensor.set_option(rs.option.thermal_compensation, 0)
 
     try:
         stime = time.time()
