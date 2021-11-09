@@ -455,22 +455,19 @@ namespace librealsense
                     std::this_thread::sleep_for(std::chrono::milliseconds(200));
 
                     // Check calibration status
-                    try
-                    {
-                        auto res = _hw_monitor->send(command{ ds::AUTO_CALIB, py_rx_calib_check_status });
+                    auto res = _hw_monitor->send(command{ ds::AUTO_CALIB, py_rx_calib_check_status });
 
-                        if (res.size() < sizeof(DirectSearchCalibrationResult))
-                            throw std::runtime_error("Not enough data from CALIB_STATUS!");
-
-                        result = *reinterpret_cast<DirectSearchCalibrationResult*>(res.data());
-                        done = result.status != RS2_DSC_STATUS_RESULT_NOT_READY;
-                    }
-                    catch (const std::exception& ex)
+                    if (res.size() < sizeof(DirectSearchCalibrationResult))
                     {
                         if (!((retries++) % 5)) // Add log debug once in a sec
                         {
-                            LOG_DEBUG(ex.what());
+                            LOG_DEBUG("Not enough data from CALIB_STATUS!");
                         }
+                    }
+                    else
+                    {
+                        result = *reinterpret_cast<DirectSearchCalibrationResult*>(res.data());
+                        done = result.status != RS2_DSC_STATUS_RESULT_NOT_READY;
                     }
 
                     if (progress_callback)
@@ -574,19 +571,14 @@ namespace librealsense
                     std::this_thread::sleep_for(std::chrono::milliseconds(200));
 
                     // Check calibration status
-                    try
+                    auto res = _hw_monitor->send(command{ ds::AUTO_CALIB, get_focal_legth_calib_result });
+
+                    if (res.size() < sizeof(FocalLengthCalibrationResult))
+                        LOG_WARNING("Not enough data from CALIB_STATUS!");
+                    else
                     {
-                        auto res = _hw_monitor->send(command{ ds::AUTO_CALIB, get_focal_legth_calib_result });
-
-                        if (res.size() < sizeof(FocalLengthCalibrationResult))
-                            throw std::runtime_error("Not enough data from CALIB_STATUS!");
-
                         result = *reinterpret_cast<FocalLengthCalibrationResult*>(res.data());
                         done = result.status != RS2_DSC_STATUS_RESULT_NOT_READY;
-                    }
-                    catch (const std::exception& ex)
-                    {
-                        LOG_WARNING(ex.what());
                     }
 
                     if (progress_callback)
