@@ -831,31 +831,6 @@ namespace rs2
         }
     }
 
-    // get_depth_frame_sum:
-    // Function sums the pixels in the image ROI - return values, count and sum are accumulative - not reset at function call. 
-    void get_depth_frame_sum(rs2::depth_frame f, int roi_start_w, int roi_start_h, int roi_w, int roi_h, int& count, double& sum)
-    {
-        int width = f.get_width();
-        int height = f.get_height();
-
-        const uint16_t* p = reinterpret_cast<const uint16_t*>(f.get_data());
-        p += roi_start_h * height + roi_start_w;
-
-        for (int j = 0; j < roi_h; ++j)
-        {
-            for (int i = 0; i < roi_w; ++i)
-            {
-                if (*p)
-                {
-                    ++count;
-                    sum += *p;
-                }
-                ++p;
-            }
-            p += width;
-        }
-    }
-
     void on_chip_calib_manager::calibrate()
     {
         int occ_timeout_ms = 9000;
@@ -959,11 +934,22 @@ namespace rs2
         int frame_fetch_timeout_ms = 3000;
 
         bool calib_done(!_new_calib.empty());
-        while (!calib_done)
+
+        int timeout_sec(30);
+        auto start = std::chrono::high_resolution_clock::now();
+        bool is_timed_out(std::chrono::high_resolution_clock::now() - start > std::chrono::seconds(timeout_sec));
+
+        while (!(calib_done || is_timed_out))
         {
             rs2::depth_frame f = fetch_depth_frame(invoke, frame_fetch_timeout_ms);
             _new_calib = calib_dev.add_calibration_frame(f, health, [&](const float progress) {_progress = progress; }, 5000);
             calib_done = !_new_calib.empty();
+            is_timed_out = std::chrono::high_resolution_clock::now() - start > std::chrono::seconds(timeout_sec);
+        }
+        if (is_timed_out)
+        {
+            throw std::runtime_error("Operation timed-out!\n"
+                "Calibration process did not converged in time");
         }
 
         // finalize results:
