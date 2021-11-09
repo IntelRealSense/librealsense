@@ -36,6 +36,7 @@ namespace rs2
 
         // Write new calibration to the device
         void keep();
+        void keep_uvmapping_calib();
 
         // Restore Viewer UI to how it was before auto-calib
         void restore_workspace(invoker invoke);
@@ -69,6 +70,7 @@ namespace rs2
         };
 
         auto_calib_action action = RS2_CALIB_ACTION_ON_CHIP_CALIB;
+        int host_assistance = 0;
         int step_count_v3 = 256;
         float laser_status_prev = 0.0f;
         float thermal_loop_prev = 0.f;
@@ -88,6 +90,8 @@ namespace rs2
 
         float corrected_ratio = 0.0f;
         float tilt_angle = 0.0f;
+
+        bool tare_health = false;
 
         std::shared_ptr<subdevice_model> _sub;
         std::shared_ptr<subdevice_model> _sub_color;
