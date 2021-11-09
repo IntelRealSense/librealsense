@@ -118,6 +118,14 @@ namespace librealsense
         speed_white_wall = 4
     };
 
+    enum class host_assistance_type
+    {
+        no_assistance = 0,
+        assistance_start,
+        assistance_first_feed,
+        assistance_second_feed,
+    };
+
     enum subpixel_accuracy
     {
         very_high = 0, //(0.025%)
@@ -291,7 +299,7 @@ namespace librealsense
         int fy_scan_direction = DEFAULT_FY_SCAN_DIRECTION;
         int white_wall_mode = DEFAULT_WHITE_WALL_MODE;
 
-        int host_assistance = 0;
+        host_assistance_type host_assistance(host_assistance_type::no_assistance);
         int scan_only_v3 = 1;
         int interactive_scan_v3 = 0;
         uint16_t step_count_v3 = 0;
@@ -306,17 +314,23 @@ namespace librealsense
         if (json.size() > 0)
         {
             int tmp_speed(DEFAULT_SPEED);
+            int tmp_host_assistance(0);
             auto jsn = parse_json(json);
             try_fetch(jsn, "calib type", &calib_type);
-            try_fetch(jsn, "host assistance", &host_assistance);
-
             if (calib_type == 0)
             {
                 try_fetch(jsn, "speed", &tmp_speed);
+                if (tmp_speed < speed_very_fast || tmp_speed >  speed_white_wall)
+                    throw invalid_value_exception(to_string() << "Auto calibration failed! Given value of 'speed' " << speed << " is out of range (0 - 4).");
                 speed = auto_calib_speed(tmp_speed);
             }
             else
                 try_fetch(jsn, "speed", &speed_fl);
+
+            try_fetch(jsn, "host assistance", &tmp_host_assistance);
+            if (tmp_host_assistance < (int)host_assistance_type::no_assistance || tmp_host_assistance >  (int)host_assistance_type::assistance_second_feed)
+                throw invalid_value_exception(to_string() << "Auto calibration failed! Given value of 'host assistance' " << tmp_host_assistance << " is out of range (0 - " << (int)host_assistance_type::assistance_second_feed << ").");
+            host_assistance = host_assistance_type(tmp_host_assistance);
 
             try_fetch(jsn, "scan parameter", &scan_parameter);
             try_fetch(jsn, "data sampling", &data_sampling);
@@ -353,7 +367,7 @@ namespace librealsense
 
         std::vector<uint8_t> res;
 
-        if (host_assistance && _interactive_state == interactive_calibration_state::RS2_OCC_STATE_NOT_ACTIVE)
+        if (host_assistance != host_assistance_type::no_assistance && _interactive_state == interactive_calibration_state::RS2_OCC_STATE_NOT_ACTIVE)
         {
             _json = json;
             _action = auto_calib_action::RS2_OCC_ACTION_ON_CHIP_CALIB;
@@ -389,7 +403,7 @@ namespace librealsense
             int p4 = 0;
             if (scan_parameter)
                 p4 |= 1;
-            if (host_assistance)
+            if (host_assistance != host_assistance_type::no_assistance)
                 p4 |= (1 << 1);
             if (data_sampling)
                 p4 |= (1 << 3);
@@ -405,12 +419,12 @@ namespace librealsense
             }
 
             // Begin auto-calibration
-            if (host_assistance == 0 || host_assistance == 1)
+            if (host_assistance == host_assistance_type::no_assistance || host_assistance == host_assistance_type::assistance_start)
                 _hw_monitor->send(command{ ds::AUTO_CALIB, py_rx_calib_begin, speed, 0, p4 });
             
-            if (host_assistance != 1)
+            if (host_assistance != host_assistance_type::assistance_start)
             {
-                if (host_assistance == 2)
+                if (host_assistance == host_assistance_type::assistance_first_feed)
                 {
                     command cmd(ds::AUTO_CALIB, interactive_scan_control, 0, 0);
                     uint8_t* p = reinterpret_cast<uint8_t*>(&step_count_v3);
@@ -461,7 +475,7 @@ namespace librealsense
 
                     if (progress_callback)
                     {
-                        if (host_assistance)
+                        if (host_assistance != host_assistance_type::no_assistance)
                             if (count < 20) progress_callback->on_update_progress(static_cast<float>(80 + count++));
                         else
                             progress_callback->on_update_progress(count++ * (2.f * speed)); //curently this number does not reflect the actual progress
@@ -525,12 +539,12 @@ namespace librealsense
                 std::this_thread::sleep_for(std::chrono::milliseconds(200));
             }
 
-            if (host_assistance == 0 || host_assistance == 1)
+            if (host_assistance == host_assistance_type::no_assistance || host_assistance == host_assistance_type::assistance_start)
                 _hw_monitor->send(command{ ds::AUTO_CALIB, focal_length_calib_begin, fl_step_count, fy_scan_range, p4 });
 
-            if (host_assistance != 1)
+            if (host_assistance != host_assistance_type::assistance_start)
             {
-                if (host_assistance == 2)
+                if (host_assistance == host_assistance_type::assistance_first_feed)
                 {
                     command cmd(ds::AUTO_CALIB, interactive_scan_control, 0, 0);
                     uint8_t* p = reinterpret_cast<uint8_t*>(&step_count_v3);
@@ -577,7 +591,7 @@ namespace librealsense
 
                     if (progress_callback)
                     {
-                        if (host_assistance)
+                        if (host_assistance != host_assistance_type::no_assistance)
                             if (count < 20) progress_callback->on_update_progress(static_cast<float>(80 + count++));
                         else
                             progress_callback->on_update_progress(count++* (2.f * 3)); //curently this number does not reflect the actual progress
@@ -643,12 +657,12 @@ namespace librealsense
             }
 
             // Begin auto-calibration
-            if (host_assistance == 0 || host_assistance == 1)
+            if (host_assistance == host_assistance_type::no_assistance || host_assistance == host_assistance_type::assistance_start)
                 _hw_monitor->send(command{ ds::AUTO_CALIB, py_rx_plus_fl_calib_begin, speed_fl, 0, p4 });
 
-            if (host_assistance != 1)
+            if (host_assistance != host_assistance_type::assistance_start)
             {
-                if (host_assistance > 1)
+                if ((host_assistance == host_assistance_type::assistance_first_feed) || (host_assistance == host_assistance_type::assistance_second_feed))
                 {
                     command cmd(ds::AUTO_CALIB, interactive_scan_control, 0, 0);
                     uint8_t* p = reinterpret_cast<uint8_t*>(&step_count_v3);
@@ -664,7 +678,7 @@ namespace librealsense
                     _hw_monitor->send(cmd);
                 }
 
-                if (host_assistance != 2)
+                if (host_assistance != host_assistance_type::assistance_first_feed)
                 {
                     DscPyRxFLCalibrationTableResult result{};
 
@@ -698,7 +712,7 @@ namespace librealsense
 
                         if (progress_callback)
                         {
-                            if (host_assistance)
+                            if (host_assistance != host_assistance_type::no_assistance)
                                 if (count < 20) progress_callback->on_update_progress(static_cast<float>(80 + count++));
                             else
                                 progress_callback->on_update_progress(count++* (2.f * speed)); //curently this number does not reflect the actual progress
@@ -758,7 +772,7 @@ namespace librealsense
         int data_sampling = DEFAULT_TARE_SAMPLING;
         int apply_preset = 1;
         int depth = 0;
-        int host_assistance = 0;
+        host_assistance_type host_assistance(host_assistance_type::no_assistance);
         std::vector<uint8_t> res;
 
         //Enforce Thermal Compensation off during Tare calibration
@@ -774,11 +788,15 @@ namespace librealsense
             try_fetch(jsn, "scan parameter", &scan_parameter);
             try_fetch(jsn, "data sampling", &data_sampling);
             try_fetch(jsn, "apply preset", &apply_preset);
-            try_fetch(jsn, "host assistance", &host_assistance);
+            int tmp_host_assistance(0);
+            try_fetch(jsn, "host assistance", &tmp_host_assistance);
+            if (tmp_host_assistance < (int)host_assistance_type::no_assistance || tmp_host_assistance >(int)host_assistance_type::assistance_second_feed)
+                throw invalid_value_exception(to_string() << "Auto calibration failed! Given value of 'host assistance' " << tmp_host_assistance << " is out of range (0 - " << (int)host_assistance_type::assistance_second_feed << ").");
+            host_assistance = host_assistance_type(tmp_host_assistance);
             try_fetch(jsn, "depth", &depth);
         }
 
-        if (host_assistance && _interactive_state == interactive_calibration_state::RS2_OCC_STATE_NOT_ACTIVE)
+        if (host_assistance != host_assistance_type::no_assistance && _interactive_state == interactive_calibration_state::RS2_OCC_STATE_NOT_ACTIVE)
         {
             _json = json;
             _ground_truth_mm = ground_truth_mm;
@@ -801,7 +819,7 @@ namespace librealsense
             {
                 if (apply_preset)
                 {
-                    if (host_assistance)
+                    if (host_assistance != host_assistance_type::no_assistance)
                         change_preset_and_stay();
                     else
                         preset_recover = change_preset();
@@ -816,7 +834,7 @@ namespace librealsense
                 tare_calibration_params param3{ (byte)average_step_count, (byte)step_count, (byte)accuracy, 0 };
 
                 param4 param{ (byte)scan_parameter, 0, (byte)data_sampling };
-                if (host_assistance)
+                if (host_assistance != host_assistance_type::no_assistance)
                     param.param_4 |= (1 << 8);
 
                 // Log the current preset
@@ -831,7 +849,7 @@ namespace librealsense
                     _hw_monitor->send(command{ ds::AUTO_CALIB, tare_calib_begin, param2, param3.param3, param.param_4 });
             }
 
-            if (!host_assistance || depth < 0)
+            if (host_assistance == host_assistance_type::no_assistance || depth < 0)
             {
                 TareCalibrationResult result;
 
