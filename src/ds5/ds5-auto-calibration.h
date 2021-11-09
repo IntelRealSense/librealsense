@@ -10,13 +10,13 @@ namespace librealsense
 {
     class auto_calibrated : public auto_calibrated_interface
     {
-    enum auto_calib_action
+    enum class auto_calib_action
     {
         RS2_OCC_ACTION_ON_CHIP_CALIB,         // On-Chip calibration
         RS2_OCC_ACTION_TARE_CALIB            // Tare calibration
     };
 
-    enum interactive_calibration_state
+    enum class interactive_calibration_state
     {
         RS2_OCC_STATE_NOT_ACTIVE = 0,
         RS2_OCC_STATE_WAIT_TO_CAMERA_START,
@@ -76,7 +76,7 @@ namespace librealsense
         int _collected_frame_num;
         double _collected_sum;
         auto_calib_action _action;
-        interactive_calibration_state _occ_state;
+        interactive_calibration_state _interactive_state;
         rs2_metadata_type _prev_frame_counter;
         uint16_t _fill_factor[256];
 

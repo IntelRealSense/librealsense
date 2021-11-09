@@ -787,50 +787,6 @@ namespace rs2
         config_file::instance().set(id.c_str(), (long long)rawtime);
     }
 
-    // fill_missing_data:
-    // Fill every zeros section linearly based on the section's edges.
-    void on_chip_calib_manager::fill_missing_data(uint16_t data[256], int size)
-    {
-        int counter = 0;
-        int start = 0;
-        while (data[start++] == 0)
-            ++counter;
-
-        if (start + 2 > size)
-            throw std::runtime_error(to_string() << "There is no enought valid data in the array!");
-
-        for (int i = 0; i < counter; ++i)
-            data[i] = data[counter];
-
-        start = 0;
-        int end = 0;
-        float tmp = 0;
-        for (int i = 0; i < size; ++i)
-        {
-            if (data[i] == 0)
-                start = i;
-
-            if (start != 0 && data[i] != 0)
-                end = i;
-
-            if (start != 0 && end != 0)
-            {
-                tmp = static_cast<float>(data[end] - data[start - 1]);
-                tmp /= end - start + 1;
-                for (int j = start; j < end; ++j)
-                    data[j] = static_cast<uint16_t>(tmp * (j - start + 1) + data[start - 1] + 0.5f);
-                start = 0;
-                end = 0;
-            }
-        }
-
-        if (start != 0 && end == 0)
-        {
-            for (int i = start; i < size; ++i)
-                data[i] = data[start - 1];
-        }
-    }
-
     void on_chip_calib_manager::calibrate()
     {
         int occ_timeout_ms = 9000;

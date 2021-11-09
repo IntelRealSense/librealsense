@@ -170,7 +170,7 @@ namespace librealsense
     const int DEFAULT_AVERAGE_STEP_COUNT = 20;
     const int DEFAULT_STEP_COUNT = 20;
     const int DEFAULT_ACCURACY = subpixel_accuracy::medium;
-    const int DEFAULT_SPEED = auto_calib_speed::speed_slow;
+    const auto_calib_speed DEFAULT_SPEED = auto_calib_speed::speed_slow;
     const int DEFAULT_SCAN = scan_parameter::py_scan;
     const int DEFAULT_SAMPLING = data_sampling::interrupt;
 
@@ -188,7 +188,13 @@ namespace librealsense
 
     auto_calibrated::auto_calibrated(std::shared_ptr<hw_monitor>& hwm)
         : _hw_monitor(hwm),
-          _occ_state(RS2_OCC_STATE_NOT_ACTIVE){}
+          _interactive_state(interactive_calibration_state::RS2_OCC_STATE_NOT_ACTIVE),
+          _action(auto_calib_action::RS2_OCC_ACTION_ON_CHIP_CALIB),
+          _average_step_count(-1),
+          _collected_counter(-1),
+          _collected_frame_num(-1),
+          _collected_sum(-1.0)
+    {}
 
     std::map<std::string, int> auto_calibrated::parse_json(std::string json_content)
     {
@@ -269,7 +275,7 @@ namespace librealsense
     {
         int calib_type = DEFAULT_CALIB_TYPE;
 
-        int speed = DEFAULT_SPEED;
+        auto_calib_speed speed(DEFAULT_SPEED);
         int speed_fl = auto_calib_speed::speed_slow;
         int scan_parameter = DEFAULT_SCAN;
         int data_sampling = DEFAULT_SAMPLING;
@@ -299,12 +305,16 @@ namespace librealsense
 
         if (json.size() > 0)
         {
+            int tmp_speed;
             auto jsn = parse_json(json);
             try_fetch(jsn, "calib type", &calib_type);
             try_fetch(jsn, "host assistance", &host_assistance);
 
             if (calib_type == 0)
-                try_fetch(jsn, "speed", &speed);
+            {
+                try_fetch(jsn, "speed", &tmp_speed);
+                speed = auto_calib_speed(tmp_speed);
+            }
             else
                 try_fetch(jsn, "speed", &speed_fl);
 
@@ -343,26 +353,26 @@ namespace librealsense
 
         std::vector<uint8_t> res;
 
-        if (host_assistance && _occ_state == RS2_OCC_STATE_NOT_ACTIVE)
+        if (host_assistance && _interactive_state == interactive_calibration_state::RS2_OCC_STATE_NOT_ACTIVE)
         {
             _json = json;
-            _action = RS2_OCC_ACTION_ON_CHIP_CALIB;
-            _occ_state = RS2_OCC_STATE_WAIT_TO_CAMERA_START;
+            _action = auto_calib_action::RS2_OCC_ACTION_ON_CHIP_CALIB;
+            _interactive_state = interactive_calibration_state::RS2_OCC_STATE_WAIT_TO_CAMERA_START;
             switch (speed)
             {
-            case 0:
+            case auto_calib_speed::speed_very_fast:
                 _total_frames = 60;
                 break;
-            case 1:
+            case auto_calib_speed::speed_fast:
                 _total_frames = 120;
                 break;
-            case 2:
+            case auto_calib_speed::speed_medium:
                 _total_frames = 256;
                 break;
-            case 3:
+            case auto_calib_speed::speed_slow:
                 _total_frames = 256;
                 break;
-            case 4:
+            case auto_calib_speed::speed_white_wall:
                 _total_frames = 120;
                 break;
             }
@@ -768,14 +778,14 @@ namespace librealsense
             try_fetch(jsn, "depth", &depth);
         }
 
-        if (host_assistance && _occ_state == RS2_OCC_STATE_NOT_ACTIVE)
+        if (host_assistance && _interactive_state == interactive_calibration_state::RS2_OCC_STATE_NOT_ACTIVE)
         {
             _json = json;
             _ground_truth_mm = ground_truth_mm;
             _total_frames = step_count;
             _average_step_count = average_step_count;
-            _action = RS2_OCC_ACTION_TARE_CALIB;
-            _occ_state = RS2_OCC_STATE_WAIT_TO_CAMERA_START;
+            _action = auto_calib_action::RS2_OCC_ACTION_TARE_CALIB;
+            _interactive_state = interactive_calibration_state::RS2_OCC_STATE_WAIT_TO_CAMERA_START;
             return res;
         }
 
@@ -1024,7 +1034,7 @@ namespace librealsense
         {
             std::vector<uint8_t> res;
             rs2_metadata_type frame_counter = ((frame_interface*)f)->get_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER);
-            if (_occ_state == RS2_OCC_STATE_WAIT_TO_CAMERA_START)
+            if (_interactive_state == interactive_calibration_state::RS2_OCC_STATE_WAIT_TO_CAMERA_START)
             {
                 if (frame_counter <= 2)
                 {
@@ -1034,23 +1044,23 @@ namespace librealsense
                 {
                     progress_callback->on_update_progress(static_cast<float>(10));
                 }
-                _occ_state = RS2_OCC_STATE_INITIAL_FW_CALL;
+                _interactive_state = interactive_calibration_state::RS2_OCC_STATE_INITIAL_FW_CALL;
             }
-            if (_occ_state == RS2_OCC_STATE_INITIAL_FW_CALL)
+            if (_interactive_state == interactive_calibration_state::RS2_OCC_STATE_INITIAL_FW_CALL)
             {
-                if (_action == RS2_OCC_ACTION_TARE_CALIB)
+                if (_action == auto_calib_action::RS2_OCC_ACTION_TARE_CALIB)
                 {
                     res = run_tare_calibration(timeout_ms, _ground_truth_mm, _json, health, progress_callback);
                 }
-                else if (_action == RS2_OCC_ACTION_ON_CHIP_CALIB)
+                else if (_action == auto_calib_action::RS2_OCC_ACTION_ON_CHIP_CALIB)
                 {
                     res = run_on_chip_calibration(timeout_ms, _json, health, progress_callback);
                 }
                 _prev_frame_counter = frame_counter;
-                _occ_state = RS2_OCC_STATE_WAIT_TO_CALIB_START;
+                _interactive_state = interactive_calibration_state::RS2_OCC_STATE_WAIT_TO_CALIB_START;
                 return res;
             }
-            if (_occ_state == RS2_OCC_STATE_WAIT_TO_CALIB_START)
+            if (_interactive_state == interactive_calibration_state::RS2_OCC_STATE_WAIT_TO_CALIB_START)
             {
                 bool still_waiting(frame_counter >= _prev_frame_counter || frame_counter >= _total_frames);
                 _prev_frame_counter = frame_counter;
@@ -1069,11 +1079,11 @@ namespace librealsense
                 _collected_counter = 0;
                 _collected_sum = 0;
                 _collected_frame_num = 0;
-                _occ_state = RS2_OCC_STATE_DATA_COLLECT;
+                _interactive_state = interactive_calibration_state::RS2_OCC_STATE_DATA_COLLECT;
             }
-            if (_occ_state == RS2_OCC_STATE_DATA_COLLECT)
+            if (_interactive_state == interactive_calibration_state::RS2_OCC_STATE_DATA_COLLECT)
             {
-                if (_action == RS2_OCC_ACTION_ON_CHIP_CALIB)
+                if (_action == auto_calib_action::RS2_OCC_ACTION_ON_CHIP_CALIB)
                 {
                     if (frame_counter < _total_frames)
                     {
@@ -1089,10 +1099,10 @@ namespace librealsense
                     }
                     else
                     {
-                        _occ_state = RS2_OCC_STATE_FINAL_FW_CALL;
+                        _interactive_state = interactive_calibration_state::RS2_OCC_STATE_FINAL_FW_CALL;
                     }
                 }
-                else if (_action == RS2_OCC_ACTION_TARE_CALIB)
+                else if (_action == auto_calib_action::RS2_OCC_ACTION_TARE_CALIB)
                 {
                     if (frame_counter < _total_frames)
                     {
@@ -1131,17 +1141,17 @@ namespace librealsense
                     }
                     else
                     {
-                        _occ_state = RS2_OCC_STATE_FINAL_FW_CALL;
+                        _interactive_state = interactive_calibration_state::RS2_OCC_STATE_FINAL_FW_CALL;
                     }
                 }
             }
-            if (_occ_state == RS2_OCC_STATE_FINAL_FW_CALL)
+            if (_interactive_state == interactive_calibration_state::RS2_OCC_STATE_FINAL_FW_CALL)
             {
                 if (progress_callback)
                 {
                     progress_callback->on_update_progress(static_cast<float>(80));
                 }
-                if (_action == RS2_OCC_ACTION_ON_CHIP_CALIB)
+                if (_action == auto_calib_action::RS2_OCC_ACTION_ON_CHIP_CALIB)
                 {
                     fill_missing_data(_fill_factor, _total_frames);
                     std::stringstream ss;
@@ -1156,7 +1166,7 @@ namespace librealsense
 
                     res = run_on_chip_calibration(timeout_ms, json, health, progress_callback);
                 }
-                else if (_action == RS2_OCC_ACTION_TARE_CALIB)
+                else if (_action == auto_calib_action::RS2_OCC_ACTION_TARE_CALIB)
                 {
                     std::stringstream ss;
                     ss << "{\n \"depth\":" << -1 << "}";
@@ -1168,13 +1178,13 @@ namespace librealsense
                 {
                     progress_callback->on_update_progress(static_cast<float>(100));
                 }
-                _occ_state = RS2_OCC_STATE_NOT_ACTIVE;
+                _interactive_state = interactive_calibration_state::RS2_OCC_STATE_NOT_ACTIVE;
             }
             return res;
         }
         catch (const std::exception& ex)
         {
-            _occ_state = RS2_OCC_STATE_NOT_ACTIVE;
+            _interactive_state = interactive_calibration_state::RS2_OCC_STATE_NOT_ACTIVE;
             throw ex;
         }
     }
