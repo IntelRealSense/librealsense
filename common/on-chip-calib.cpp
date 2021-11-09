@@ -142,8 +142,9 @@ namespace rs2
         try
         {
             auto profiles = _sub->get_selected_profiles();
-            _sub->stop(_viewer.not_model);
-            if (_sub_color.get())
+            if (_sub->streaming)
+                _sub->stop(_viewer.not_model);
+            if (_sub_color.get() && _sub_color->streaming)
                 _sub_color->stop(_viewer.not_model);
 
             // Wait until frames from all active profiles stop arriving
@@ -200,6 +201,7 @@ namespace rs2
             _sub->ui.selected_format_id.clear();
             _sub->ui.selected_format_id[_uid] = 0;
 
+            _sub->ui.selected_shared_fps_id = 0; // For Ground Truth default is the lowest common FPS for USB2/# compatibility
             // Select FPS value
             for (int i = 0; i < _sub->shared_fps_values.size(); i++)
             {
@@ -266,7 +268,7 @@ namespace rs2
             // Select FPS value
             for (int i = 0; i < _sub->shared_fps_values.size(); i++)
             {
-                if (_sub->shared_fps_values[i] == 30)
+                if (val_in_range(_sub->shared_fps_values[i], {5,6}))
                     _sub->ui.selected_shared_fps_id = i;
             }
 
@@ -415,7 +417,7 @@ namespace rs2
                 _sub->s->set_option(RS2_OPTION_THERMAL_COMPENSATION, 0.f);
             }
 
-            bool run_fl_calib = ( (action == RS2_CALIB_ACTION_FL_CALIB) && (w == 1280) && (h == 720) && (fps == 30));
+            bool run_fl_calib = ( (action == RS2_CALIB_ACTION_FL_CALIB) && (w == 1280) && (h == 720));
             if (action == RS2_CALIB_ACTION_TARE_GROUND_TRUTH)
             {
                 _uid = 1;
@@ -880,14 +882,14 @@ namespace rs2
         std::string json = ss.str();
 
         float health[2] = { -1.0f, -1.0f };
+        auto invoke = [](std::function<void()>) {};
+        int frame_fetch_timeout_ms = 3000;
         auto calib_dev = _dev.as<auto_calibrated_device>();
         if (action == RS2_CALIB_ACTION_TARE_CALIB)
             _new_calib = calib_dev.run_tare_calibration(ground_truth, json, health, [&](const float progress) {_progress = progress; }, 5000);
         else if (action == RS2_CALIB_ACTION_ON_CHIP_CALIB || action == RS2_CALIB_ACTION_ON_CHIP_FL_CALIB || action == RS2_CALIB_ACTION_ON_CHIP_OB_CALIB)
             _new_calib = calib_dev.run_on_chip_calibration(json, health, [&](const float progress) {_progress = progress; }, occ_timeout_ms);
         
-        auto invoke = [](std::function<void()>) {};
-        int frame_fetch_timeout_ms = 3000;
 
         bool calib_done(!_new_calib.empty());
 
@@ -939,6 +941,7 @@ namespace rs2
     {
         try
         {
+            std::this_thread::sleep_for(std::chrono::milliseconds(1000)); // W/A that allows for USB2 exposure to settle
             constexpr int frames_required = 25;
 
             rs2::frame_queue left(frames_required,true);
@@ -1025,7 +1028,7 @@ namespace rs2
                 if (!_new_calib.size())
                     fail("UV-Mapping calibration failed!\nPlease adjust the camera position\nand make sure the specific target is\ninside the ROI of the camera images!");
                 else
-                    log(to_string() << "UV-Mapping recalibration - a new work poin was generated");
+                    log(to_string() << "UV-Mapping recalibration - a new work point is generated");
             }
             else
                 fail("Failed to capture sufficient amount of frames to run UV-Map calibration!");
@@ -1050,6 +1053,8 @@ namespace rs2
             float step = 50.f / limit;  // frames gathering is 50% of the process, the rest is the internal data extraction and algo processing
             
             rs2::frame_queue queue(limit*2,true);
+            rs2::frame_queue queue2(limit * 2, true);
+            rs2::frame_queue queue3(limit * 2, true);
             rs2::frame f;
 
             // Collect sufficient amount of frames (up to 50) to extract target pattern and calculate distance to it
@@ -1068,7 +1073,7 @@ namespace rs2
             if (counter >= limit)
             {
                 auto calib_dev = _dev.as<auto_calibrated_device>();
-                float target_z_mm = calib_dev.calculate_target_z(queue,
+                float target_z_mm = calib_dev.calculate_target_z(queue, queue2, queue3,
                                                     config_file::instance().get_or_default(configurations::viewer::target_width_r, 175.0f),
                                                     config_file::instance().get_or_default(configurations::viewer::target_height_r, 100.0f),
                                                     [&](const float progress) { _progress = std::min(100.f, _progress+step); });
@@ -1125,12 +1130,20 @@ namespace rs2
 
         _restored = false;
 
+        auto fps = 30;
+        if (_sub->dev.supports(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR))
+        {
+            std::string desc = _sub->dev.get_info(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR);
+            if (!starts_with(desc, "3."))
+                fps = 6; //USB2 bandwidth limitation for 720P RGB/DI
+        }
+
         if (action != RS2_CALIB_ACTION_TARE_GROUND_TRUTH && action != RS2_CALIB_ACTION_UVMAPPING_CALIB)
         {
             if (!_was_streaming)
             {
                 if (action == RS2_CALIB_ACTION_FL_CALIB)
-                    try_start_viewer(848, 480, 30, invoke);
+                    try_start_viewer(848, 480, fps, invoke);
                 else
                     try_start_viewer(0, 0, 0, invoke);
             }
@@ -1152,13 +1165,6 @@ namespace rs2
         if (action == RS2_CALIB_ACTION_FL_CALIB || action == RS2_CALIB_ACTION_UVMAPPING_CALIB)
             _viewer.is_3d_view = false;
 
-        auto fps = 30;
-        if (_sub->dev.supports(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR))
-        {
-            std::string desc = _sub->dev.get_info(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR);
-            if (!starts_with(desc, "3."))
-                fps = 5; //USB2 bandwidth limitation for 720P RGB/DI
-        }
 
         if (action == RS2_CALIB_ACTION_FL_CALIB || action == RS2_CALIB_ACTION_TARE_GROUND_TRUTH || action == RS2_CALIB_ACTION_UVMAPPING_CALIB)
             try_start_viewer(1280, 720, fps, invoke);
@@ -1281,27 +1287,6 @@ namespace rs2
         // Write new calibration using SETINITCAL/SETINITCALNEW command
         auto calib_dev = _dev.as<auto_calibrated_device>();
         calib_dev.write_calibration();
-    }
-
-    void on_chip_calib_manager::keep_uvmapping_calib()
-    {
-        std::vector<uint8_t> cmd =
-        {
-            0x14, 0x00, 0xab, 0xcd,
-            0x62, 0x00, 0x00, 0x00,
-            0x20, 0x00, 0x00, 0x00,
-            0x01, 0x00, 0x00, 0x00,
-            0x00, 0x00, 0x00, 0x00,
-            0x00, 0x00, 0x00, 0x00
-        };
-
-        cmd.insert(cmd.end(), color_intrin_raw_data.data(), color_intrin_raw_data.data() + color_intrin_raw_data.size());
-        uint16_t* psize = reinterpret_cast<uint16_t*>(cmd.data());
-        *psize = static_cast<uint16_t>(cmd.size() - 4);
-        const rs2_raw_data_buffer* raw_buf = rs2_send_and_receive_raw_data(_dev.get().get(), cmd.data(), static_cast<unsigned int>(cmd.size()), nullptr);
-        rs2_delete_raw_data(raw_buf);
-
-        _dev.hardware_reset(); // Workaround for reloading color calibration table. Other approach?
     }
 
     void on_chip_calib_manager::apply_calib(bool use_new)
@@ -1715,7 +1700,8 @@ namespace rs2
 
                     ImGui::PopItemWidth();
 
-                    draw_intrinsic_extrinsic(x, y + 3 * int(ImGui::GetTextLineHeightWithSpacing()) - 10);
+                    // Disabled according to the decision on v2.50
+                    //draw_intrinsic_extrinsic(x, y + 3 * int(ImGui::GetTextLineHeightWithSpacing()) - 10);
 
                     ImGui::SetCursorScreenPos({ float(x + 9), float(y + 52 + 4 * ImGui::GetTextLineHeightWithSpacing()) });
                     id = to_string() << "Apply High-Accuracy Preset##apply_preset_" << index;
@@ -1816,6 +1802,8 @@ namespace rs2
             }
             else if (update_state == RS2_CALIB_STATE_SELF_INPUT)
             {
+                // Disabled according to the decision on v2.50
+                /*
                 ImGui::SetCursorScreenPos({ float(x + 9), float(y + 33) });
                 ImGui::Text("%s", "Speed:");
 
@@ -1857,7 +1845,7 @@ namespace rs2
                         get_manager().adjust_both_sides = (restore ? 1 : 0);
                     if (ImGui::IsItemHovered())
                         ImGui::SetTooltip("%s", "check = adjust both sides, uncheck = adjust right side only");
-                }
+                }*/
 
                 // Deprecase OCC-Extended
                 //float tmp_y = (get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_OB_CALIB ?
@@ -2726,12 +2714,18 @@ namespace rs2
         ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0);
 
         std::string title;
-        if (get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_FL_CALIB)
-            title = "On-Chip Focal Length Calibration";
-        else if (get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_OB_CALIB)
-            title = "On-Chip Calibration Extended";
-        else
-            title = "On-Chip Calibration";
+        switch (get_manager().action)
+        {
+            case on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_OB_CALIB: title = "On - Chip Calibration Extended"; break;
+            case on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_CALIB: title = "On-Chip Calibration"; break;
+            case on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_FL_CALIB: title = "On-Chip Focal Length Calibration"; break;
+            case on_chip_calib_manager::RS2_CALIB_ACTION_TARE_CALIB: title = "Tare Calibration"; break;
+            case on_chip_calib_manager::RS2_CALIB_ACTION_TARE_GROUND_TRUTH: title = "Ground Truth Calculation"; break;
+            case on_chip_calib_manager::RS2_CALIB_ACTION_FL_CALIB: title = "Focal Length Calibration"; break;
+            case on_chip_calib_manager::RS2_CALIB_ACTION_UVMAPPING_CALIB: title = "UV - Mapping Calibration"; break;
+            default: title = "Calibration";
+        }
+
         if (update_manager->failed()) title += " Failed";
 
         ImGui::OpenPopup(title.c_str());
@@ -2798,14 +2792,14 @@ namespace rs2
             }
             else return 80;
         }
-        else if (update_state == RS2_CALIB_STATE_SELF_INPUT) return (get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_OB_CALIB ? 180 : 160);
+        else if (update_state == RS2_CALIB_STATE_SELF_INPUT) return (get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_OB_CALIB ? 160 : 85);
         else if (update_state == RS2_CALIB_STATE_TARE_INPUT) return 105;
         else if (update_state == RS2_CALIB_STATE_TARE_INPUT_ADVANCED) return 230;
         else if (update_state == RS2_CALIB_STATE_GET_TARE_GROUND_TRUTH) return 135;
         else if (update_state == RS2_CALIB_STATE_GET_TARE_GROUND_TRUTH_FAILED) return 115;
         else if (update_state == RS2_CALIB_STATE_FAILED) return ((get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_OB_CALIB || get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_FL_CALIB) ? (get_manager().retry_times < 3 ? 0 : 80) : 110);
-        else if (update_state == RS2_CALIB_STATE_FL_INPUT) return 140;
-        else if (update_state == RS2_CALIB_STATE_UVMAPPING_INPUT) return 120;
+        else if (update_state == RS2_CALIB_STATE_FL_INPUT) return 200;
+        else if (update_state == RS2_CALIB_STATE_UVMAPPING_INPUT) return 140;
         else return 100;
     }
 

@@ -53,7 +53,7 @@ namespace rs2
         int average_step_count = 20;
         int step_count = 20;
         int accuracy = 2;
-        int speed = 3;
+        int speed = 2;  //"Very Fast", "Fast", "Medium", "Slow", "White Wall"
         int speed_fl = 1;
         bool intrinsic_scan = true;
         bool apply_preset = true;

@@ -2034,10 +2034,10 @@ namespace rs2
                             break;
                         }
                     }
-                }                
+                }
             }
         }
-        return is_cal_format;   
+        return is_cal_format;
     }
 
     std::pair<int, int> subdevice_model::get_max_resolution(rs2_stream stream) const
@@ -5721,13 +5721,26 @@ namespace rs2
                 if (sub->supports_on_chip_calib() && !has_autocalib)
                 {
                     something_to_show = true;
+
+                    std::string device_pid = sub->s->supports(RS2_CAMERA_INFO_PRODUCT_ID) ? sub->s->get_info(RS2_CAMERA_INFO_PRODUCT_ID) : "unknown";
+                    std::string device_usb_type = sub->s->supports(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR) ? sub->s->get_info(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR) : "unknown";
+
+                    bool show_disclaimer = val_in_range(device_pid, { std::string("0AD2"), std::string("0AD3") }); // Specific for D410/5
+                    bool disable_fl_cal = (((device_pid == "0B5C") || show_disclaimer) &&
+                                            (!starts_with(device_usb_type, "3."))); // D410/D15/D455@USB2
+
                     if (ImGui::Selectable("On-Chip Calibration"))
                     {
                         try
                         {
+                            if (show_disclaimer)
+                            {
+                                auto disclaimer_notice = std::make_shared<ucal_disclaimer_model>();
+                                viewer.not_model->add_notification(disclaimer_notice);
+                            }
+
                             auto manager = std::make_shared<on_chip_calib_manager>(viewer, sub, *this, dev);
                             auto n = std::make_shared<autocalib_notification_model>("", manager, false);
-
                             viewer.not_model->add_notification(n);
                             n->forced = true;
                             n->update_state = autocalib_notification_model::RS2_CALIB_STATE_SELF_INPUT;
@@ -5759,29 +5772,41 @@ namespace rs2
                     {
                         try
                         {
-                            std::shared_ptr< subdevice_model> sub_color;
-                            for (auto&& sub2 : subdevices)
+                            if (disable_fl_cal)
                             {
-                                if (sub2->s->is<rs2::color_sensor>())
-                                {
-                                    sub_color = sub2;
-                                    break;
-                                }
+                                auto disable_fl_notice = std::make_shared<fl_cal_limitation_model>();
+                                viewer.not_model->add_notification(disable_fl_notice);
                             }
+                            else
+                            {
+                                std::shared_ptr< subdevice_model> sub_color;
+                                for (auto&& sub2 : subdevices)
+                                {
+                                    if (sub2->s->is<rs2::color_sensor>())
+                                    {
+                                        sub_color = sub2;
+                                        break;
+                                    }
+                                }
 
-                            auto manager = std::make_shared<on_chip_calib_manager>(viewer, sub, *this, dev, sub_color);
-                            auto n = std::make_shared<autocalib_notification_model>("", manager, false);
+                                if (show_disclaimer)
+                                {
+                                    auto disclaimer_notice = std::make_shared<ucal_disclaimer_model>();
+                                    viewer.not_model->add_notification(disclaimer_notice);
+                                }
+                                auto manager = std::make_shared<on_chip_calib_manager>(viewer, sub, *this, dev, sub_color);
+                                auto n = std::make_shared<autocalib_notification_model>("", manager, false);
+                                viewer.not_model->add_notification(n);
+                                n->forced = true;
+                                n->update_state = autocalib_notification_model::RS2_CALIB_STATE_FL_INPUT;
 
-                            viewer.not_model->add_notification(n);
-                            n->forced = true;
-                            n->update_state = autocalib_notification_model::RS2_CALIB_STATE_FL_INPUT;
+                                for (auto&& n : related_notifications)
+                                    if (dynamic_cast<autocalib_notification_model*>(n.get()))
+                                        n->dismiss(false);
 
-                            for (auto&& n : related_notifications)
-                                if (dynamic_cast<autocalib_notification_model*>(n.get()))
-                                    n->dismiss(false);
-
-                            related_notifications.push_back(n);
-                            manager->start_fl_viewer();
+                                related_notifications.push_back(n);
+                                manager->start_fl_viewer();
+                            }
                         }
                         catch (const error& e)
                         {
@@ -5799,10 +5824,13 @@ namespace rs2
                     {
                         try
                         {
+                            if (show_disclaimer)
+                            {
+                                auto disclaimer_notice = std::make_shared<ucal_disclaimer_model>();
+                                viewer.not_model->add_notification(disclaimer_notice);
+                            }
                             auto manager = std::make_shared<on_chip_calib_manager>(viewer, sub, *this, dev);
-                            auto n = std::make_shared<autocalib_notification_model>(
-                                "", manager, false);
-
+                            auto n = std::make_shared<autocalib_notification_model>("", manager, false);
                             viewer.not_model->add_notification(n);
                             n->forced = true;
                             n->update_state = autocalib_notification_model::RS2_CALIB_STATE_TARE_INPUT;
@@ -5827,8 +5855,8 @@ namespace rs2
                             "User needs either to enter the known ground truth or use the get button\n"
                             "with specific target to get the ground truth.");
 
-#define UVMAP_CAL
-#ifdef UVMAP_CAL // Disbled due to unverified maturity level
+//#define UVMAP_CAL
+#ifdef UVMAP_CAL // Disabled due to stability and maturity levels
                     try
                     {
                         for (auto&& sub2 : subdevices)
@@ -5837,9 +5865,13 @@ namespace rs2
                             {
                                 if (ImGui::Selectable("UV-Mapping Calibration"))
                                 {
+                                    if (show_disclaimer)
+                                    {
+                                        auto disclaimer_notice = std::make_shared<ucal_disclaimer_model>();
+                                        viewer.not_model->add_notification(disclaimer_notice);
+                                    }
                                     auto manager = std::make_shared<on_chip_calib_manager>(viewer, sub, *this, dev, sub2, sub2->uvmapping_calib_full);
                                     auto n = std::make_shared<autocalib_notification_model>("", manager, false);
-
                                     viewer.not_model->add_notification(n);
                                     n->forced = true;
                                     n->update_state = autocalib_notification_model::RS2_CALIB_STATE_UVMAPPING_INPUT;

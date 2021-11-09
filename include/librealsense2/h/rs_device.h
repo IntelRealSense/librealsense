@@ -547,26 +547,29 @@ const rs2_raw_data_buffer* rs2_run_uv_map_calibration(rs2_device* device, rs2_fr
 
 /**
 * Calculate Z for calibration target - distance to the target's plane
-* \param[in]    queue: A frame queue of raw images used to calculate and extract the distance to a predefined target pattern
+* \param[in]    queue1-3: A frame queue of raw images used to calculate and extract the distance to a predefined target pattern.
+* For D400 the indexes 1-3 correspond to Left IR, Right IR and Depth with only the Left IR being used
 * \param[in]    target_width: Expected target's horizontal dimension in mm
 * \param[in]    target_height: Expected target's vertical dimension in mm
 * \param[in]    callback: Optional callback for reporting progress status
 * \return       Calculated distance (Z) to target in millimeter, or negative number if failed
 */
-float rs2_calculate_target_z_cpp(rs2_device* device, rs2_frame_queue* queue, float target_width, float target_height,
+float rs2_calculate_target_z_cpp(rs2_device* device, rs2_frame_queue* queue1, rs2_frame_queue* queue2, rs2_frame_queue* queue3,
+    float target_width, float target_height,
     rs2_update_progress_callback* callback, rs2_error** error);
 
 /**
 * Calculate Z for calibration target - distance to the target's plane
-* \param[in]    queue: A frame queue of raw images used to calculate and extract the ground truth
+* \param[in]    queue1-3: A frame queue of raw images used to calculate and extract the distance to a predefined target pattern.
+* For D400 the indexes 1-3 correspond to Left IR, Right IR and Depth with only the Left IR being used
 * \param[in]    target_width: Expected target's horizontal dimension in mm
 * \param[in]    target_height: Expected target's vertical dimension in mm
 * \param[in]    callback: Optional callback for reporting progress status
 * \param[in]    client_data: Optional client data for the callback
 * \return       Calculated distance (Z) to target in millimeter, or negative number if failed
 */
-float rs2_calculate_target_z(rs2_device* device, rs2_frame_queue* queue, float target_width, float target_height,
-    rs2_update_progress_callback_ptr callback, void* client_data, rs2_error** error);
+float rs2_calculate_target_z(rs2_device* device, rs2_frame_queue* queue1, rs2_frame_queue* queue2, rs2_frame_queue* queue3,
+    float target_width, float target_height, rs2_update_progress_callback_ptr progress_callback, void* client_data, rs2_error** error);
 
 #ifdef __cplusplus
 }

@@ -39,7 +39,8 @@ namespace librealsense
             int adjust_both_sides, float* ratio, float* angle, update_progress_callback_ptr progress_callback) override;
         std::vector<uint8_t> run_uv_map_calibration(rs2_frame_queue* left, rs2_frame_queue* color, rs2_frame_queue* depth, int py_px_only,
             float* const health, int health_size, update_progress_callback_ptr progress_callback) override;
-        float calculate_target_z(rs2_frame_queue* queue, float target_width, float target_height, update_progress_callback_ptr progress_callback) override;
+        float calculate_target_z(rs2_frame_queue* queue1, rs2_frame_queue* queue2, rs2_frame_queue* queue3,
+            float target_width, float target_height, update_progress_callback_ptr progress_callback) override;
 
     private:
         std::vector<uint8_t> get_calibration_results(float* const health = nullptr) const;

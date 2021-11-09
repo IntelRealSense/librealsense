@@ -770,15 +770,18 @@ namespace rs2
 
         /**
         *  Calculate Z for calibration target - distance to the target's plane
-        * \param[in]    queue: frame queue of raw images that capture the predefined target pattern
+        * \param[in]    queue1-3: Frame queues of raw images used to calculate and extract the distance to a predefined target pattern.
+        * For D400 the indexes 1-3 correspond to Left IR, Right IR and Depth with only the Left IR being used
         * \param[in]    target_width: expected target's horizontal dimension in mm
         * \param[in]    target_height: expected target's vertical dimension in mm
         * \return       Calculated distance (Z) to target in millimeter, return negative number on failure
         */
-        float calculate_target_z(rs2::frame_queue queue, float target_width, float target_height) const
+        float calculate_target_z(rs2::frame_queue queue1, rs2::frame_queue queue2, rs2::frame_queue queue3,
+            float target_width, float target_height) const
         {
             rs2_error* e = nullptr;
-            float result = rs2_calculate_target_z_cpp(_dev.get(), queue.get().get(), target_width, target_height, nullptr, &e);
+            float result = rs2_calculate_target_z_cpp(_dev.get(), queue1.get().get(), queue2.get().get(), queue3.get().get(),
+                target_width, target_height, nullptr, &e);
             error::handle(e);
 
             return result;
@@ -786,18 +789,20 @@ namespace rs2
 
         /**
         *  Calculate Z for calibration target - distance to the target's plane
-        * \param[in]    queue: frame queue of raw images that capture the predefined target pattern
+        * \param[in]    queue1-3: Frame queues of raw images used to calculate and extract the distance to a predefined target pattern.
+        * For D400 the indexes 1-3 correspond to Left IR, Right IR and Depth with only the Left IR being used
         * \param[in]    target_width: expected target's horizontal dimension in mm
         * \param[in]    target_height: expected target's vertical dimension in mm
         * \param[in]    callback: Optional callback for reporting progress status
         * \return       Calculated distance (Z) to target in millimeter, return negative number on failure
         */
         template<class T>
-        float calculate_target_z(rs2::frame_queue queue, float target_width, float target_height, T callback) const
+        float calculate_target_z(rs2::frame_queue queue1, rs2::frame_queue queue2, rs2::frame_queue queue3,
+            float target_width, float target_height, T callback) const
         {
             rs2_error* e = nullptr;
-            float result = rs2_calculate_target_z_cpp(_dev.get(), queue.get().get(), target_width, target_height,
-                new update_progress_callback<T>(std::move(callback)), &e);
+            float result = rs2_calculate_target_z_cpp(_dev.get(), queue1.get().get(), queue2.get().get(), queue3.get().get(),
+                target_width, target_height, new update_progress_callback<T>(std::move(callback)), &e);
             error::handle(e);
 
             return result;

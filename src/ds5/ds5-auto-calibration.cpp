@@ -305,7 +305,7 @@ namespace librealsense
 
         if (json.size() > 0)
         {
-            int tmp_speed;
+            int tmp_speed(DEFAULT_SPEED);
             auto jsn = parse_json(json);
             try_fetch(jsn, "calib type", &calib_type);
             try_fetch(jsn, "host assistance", &host_assistance);
@@ -1483,6 +1483,8 @@ namespace librealsense
         rs2_frame* f = nullptr;
 
         int queue_size = rs2_frame_queue_size(frames, &e);
+        if (queue_size==0)
+            throw std::runtime_error("Extract target rectangle info - no frames in input queue!");
         int fc = 0;
         while ((fc++ < queue_size) && rs2_poll_for_frame(frames, &f, &e))
         {
@@ -1511,17 +1513,22 @@ namespace librealsense
                 progress_callback->on_update_progress(static_cast<float>(++progress));
         }
 
-        for (int i = 0; i < 4; ++i)
-            rect_sides[i] = rect_sides_arr[0][i];
-
-        for (int j = 1; j < rect_sides_arr.size(); ++j)
+        if (rect_sides_arr.size())
         {
             for (int i = 0; i < 4; ++i)
-                rect_sides[i] += rect_sides_arr[j][i];
-        }
+                rect_sides[i] = rect_sides_arr[0][i];
 
-        for (int i = 0; i < 4; ++i)
-            rect_sides[i] /= rect_sides_arr.size();
+            for (int j = 1; j < rect_sides_arr.size(); ++j)
+            {
+                for (int i = 0; i < 4; ++i)
+                    rect_sides[i] += rect_sides_arr[j][i];
+            }
+
+            for (int i = 0; i < 4; ++i)
+                rect_sides[i] /= rect_sides_arr.size();
+        }
+        else
+            throw std::runtime_error("Failed to extract the target rectangle info!");
     }
 
     std::vector<uint8_t> auto_calibrated::run_focal_length_calibration(rs2_frame_queue* left, rs2_frame_queue* right, float target_w, float target_h,
@@ -1530,14 +1537,14 @@ namespace librealsense
         float fx[2] = { -1.0f, -1.0f };
         float fy[2] = { -1.0f, -1.0f };
 
-        float left_rect_sides[4];
+        float left_rect_sides[4] = {0.f};
         get_target_rect_info(left, left_rect_sides, fx[0], fy[0], 50, progress_callback); // Report 50% progress
 
-        float right_rect_sides[4];
+        float right_rect_sides[4] = {0.f};
         get_target_rect_info(right, right_rect_sides, fx[1], fy[1], 75, progress_callback);
 
         std::vector<uint8_t> ret;
-        const float correction_factor = 0.50f;
+        const float correction_factor = 0.5f;
 
         auto calib_table = get_calibration_table();
         auto table = (librealsense::ds::coefficients_table*)calib_table.data();
@@ -2066,7 +2073,8 @@ namespace librealsense
         return ret;
     }
 
-    float auto_calibrated::calculate_target_z(rs2_frame_queue* queue, float target_w, float target_h, update_progress_callback_ptr progress_callback)
+    float auto_calibrated::calculate_target_z(rs2_frame_queue* queue1, rs2_frame_queue* queue2, rs2_frame_queue* queue3,
+        float target_w, float target_h, update_progress_callback_ptr progress_callback)
     {
         constexpr size_t min_frames_required = 10;
         bool created = false;
@@ -2084,10 +2092,10 @@ namespace librealsense
         rs2_error* e = nullptr;
         rs2_frame* f = nullptr;
 
-        int queue_size = rs2_frame_queue_size(queue, &e);
+        int queue_size = rs2_frame_queue_size(queue1, &e);
         int fc = 0;
 
-        while ((fc++ < queue_size) && rs2_poll_for_frame(queue, &f, &e))
+        while ((fc++ < queue_size) && rs2_poll_for_frame(queue1, &f, &e))
         {
             rs2::frame ff(f);
             if (ff.get_data())
@@ -2117,36 +2125,41 @@ namespace librealsense
 
         }
 
-        // Verify that at least TBD  valid extractions were made
-        if ((frm_idx < min_frames_required))
-            throw std::runtime_error(to_string() << "Target distance calculation requires at least " << min_frames_required << " frames, aborting");
-        if (float(rec_sides_data.size()/frm_idx) < 0.5f)
-            throw std::runtime_error("Please re-adjust the camera position \nand make sure the specific target is \nin the middle of the camera image!");
+        if (rec_sides_data.size())
+        {
+            // Verify that at least TBD  valid extractions were made
+            if ((frm_idx < min_frames_required))
+                throw std::runtime_error(to_string() << "Target distance calculation requires at least " << min_frames_required << " frames, aborting");
+            if (float(rec_sides_data.size() / frm_idx) < 0.5f)
+                throw std::runtime_error("Please re-adjust the camera position \nand make sure the specific target is \nin the middle of the camera image!");
 
-        rect_sides = {};
-        auto avg_data = std::accumulate(rec_sides_data.begin(), rec_sides_data.end(), rect_sides);
-        for (auto i=0UL; i < 4; i++)
-            avg_data[i] /= rec_sides_data.size();
-            
-        float gt[4] = { 0 };
+            rect_sides = {};
+            auto avg_data = std::accumulate(rec_sides_data.begin(), rec_sides_data.end(), rect_sides);
+            for (auto i = 0UL; i < 4; i++)
+                avg_data[i] /= rec_sides_data.size();
 
-        gt[0] = target_fw / avg_data[0];
+            float gt[4] = { 0 };
 
-        gt[1] = target_fw / avg_data[1];
+            gt[0] = target_fw / avg_data[0];
 
-        gt[2] = target_fh / avg_data[2];
+            gt[1] = target_fw / avg_data[1];
 
-        gt[3] = target_fh / avg_data[3];
+            gt[2] = target_fh / avg_data[2];
 
-        if (gt[0] <= 0.1f || gt[1] <= 0.1f || gt[2] <= 0.1f || gt[3] <= 0.1f)
-            throw std::runtime_error("Target distance calculation failed");
+            gt[3] = target_fh / avg_data[3];
 
-        // Target's plane Z value is the average of the four calculated corners
-        target_z_value = 0.f;
-        for (int i = 0; i < 4; ++i)
-            target_z_value += gt[i];
-        target_z_value /= 4.f;
+            if (gt[0] <= 0.1f || gt[1] <= 0.1f || gt[2] <= 0.1f || gt[3] <= 0.1f)
+                throw std::runtime_error("Target distance calculation failed");
 
-        return target_z_value;
+            // Target's plane Z value is the average of the four calculated corners
+            target_z_value = 0.f;
+            for (int i = 0; i < 4; ++i)
+                target_z_value += gt[i];
+            target_z_value /= 4.f;
+
+            return target_z_value;
+        }
+        else
+            throw std::runtime_error("Failed to extract target dimension info!");
     }
 }

@@ -13,7 +13,7 @@ librealsense::record_device::record_device(std::shared_ptr<librealsense::device_
                                       std::shared_ptr<librealsense::device_serializer::writer> serializer):
     m_write_thread([](){return std::make_shared<dispatcher>(std::numeric_limits<unsigned int>::max());}),
     m_is_recording(true),
-    m_record_pause_time(0)
+    m_record_total_pause_duration(0)
 {
     if (device == nullptr)
     {
@@ -109,8 +109,15 @@ std::chrono::nanoseconds librealsense::record_device::get_capture_time() const
     {
         return std::chrono::nanoseconds::zero();
     }
-    auto now = std::chrono::high_resolution_clock::now();
-    return (now - m_capture_time_base) - m_record_pause_time;
+
+    auto capture_time = std::chrono::high_resolution_clock::now() - m_capture_time_base;
+
+    if (m_record_total_pause_duration > std::chrono::nanoseconds::zero())
+    {
+        capture_time -= m_record_total_pause_duration;
+    }
+    
+    return capture_time;
 }
 
 void librealsense::record_device::write_data(size_t sensor_index, librealsense::frame_holder frame, std::function<void(std::string const&)> on_error)
@@ -387,7 +394,7 @@ void librealsense::record_device::pause_recording()
         //unregister_callbacks();
         m_time_of_pause = std::chrono::high_resolution_clock::now();
         m_is_recording = false;
-        LOG_DEBUG("Time of pause: " << m_time_of_pause.time_since_epoch().count());
+        LOG_DEBUG("Time of pause: " << std::dec << m_time_of_pause.time_since_epoch().count());
     });
     (*m_write_thread)->flush();
     LOG_INFO("Record paused");
@@ -401,10 +408,32 @@ void librealsense::record_device::resume_recording()
         if (m_is_recording)
             return;
 
-        m_record_pause_time += (std::chrono::high_resolution_clock::now() - m_time_of_pause);
+        auto now = std::chrono::high_resolution_clock::now();
+        auto current_pause_duration = now - m_time_of_pause;
+
+        // Only accumulate pause duration if we already initialized the recording base time (first frame arrived)
+        // If the pause action occurred after the recording base time set add the current pause duration to the total.
+        // If the pause time occurred before the recording base set and the resume after it, only add the offset from base time until resume time 
+        if ( m_capture_time_base.time_since_epoch() != std::chrono::nanoseconds::zero() )
+        {
+            if ( m_capture_time_base < m_time_of_pause )
+            {
+                m_record_total_pause_duration += current_pause_duration;
+            }
+            else
+            {
+                m_record_total_pause_duration += now - m_capture_time_base;
+            }
+
+            LOG_DEBUG("Total pause time: " << m_record_total_pause_duration.count());
+        }
+        else
+        {
+            LOG_DEBUG("Pause time ignored since no frames have been recorded yet");
+        }
+
         //register_callbacks();
         m_is_recording = true;
-        LOG_DEBUG("Total pause time: " << m_record_pause_time.count());
         LOG_INFO("Record resumed");
     });
 }
@@ -427,6 +456,8 @@ void record_device::initialize_recording()
     //Expected to be called once when recording to file actually starts
     m_capture_time_base = std::chrono::high_resolution_clock::now();
     m_cached_data_size = 0;
+    LOG_DEBUG( "Recording capture time base set to: " << m_capture_time_base.time_since_epoch().count() );
+
 }
 void record_device::stop_gracefully(to_string error_msg)
 {

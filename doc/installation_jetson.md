@@ -89,7 +89,7 @@ You can also double-TAB after typing `rs-` to see the full list of SDK examples.
 
 ⮕ Use the V4L Native backend by applying the kernel patching
 
-The method was verified with **Jetson AGX** boards with JetPack **4.2.3**[L4T 32.2.1,32.2.3], **4.3**[L4T 32.3.1] and **4.4**[L4T 32.4.3].
+The method was verified with **Jetson AGX** boards with JetPack **4.2.3**[L4T 32.2.1,32.2.3], **4.3**[L4T 32.3.1], **4.4**[L4T 32.4.3] and **4.5.1**[L4T 32.5.1].
 
 The method has not yet been verified on the **Jetson Nano** board.
 
@@ -125,7 +125,7 @@ The method has not yet been verified on the **Jetson Nano** board.
   * Follow the [Ubuntu installation guide](./installation.md) to install the missing components and configuration items:
 
     ```sh
-    sudo apt-get install git libssl-dev libusb-1.0-0-dev pkg-config libgtk-3-dev -y
+    sudo apt-get install git libssl-dev libusb-1.0-0-dev libudev-dev pkg-config libgtk-3-dev -y
     ./scripts/setup_udev_rules.sh  
     mkdir build && cd build  
     cmake .. -DBUILD_EXAMPLES=true -DCMAKE_BUILD_TYPE=release -DFORCE_RSUSB_BACKEND=false -DBUILD_WITH_CUDA=true && make -j$(($(nproc)-1)) && sudo make install
