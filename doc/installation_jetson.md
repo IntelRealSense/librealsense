@@ -43,8 +43,6 @@ This guide comes with a script that allows to modify the kernel modules with Lib
 
 ### 4. Install with Debian Packages
 
-Note that this method provides binary installation compiled using the `-DFORCE_RSUSB_BACKEND=true` option elaborated above.
-
 1. Register the server's public key:
 
     ```sh
