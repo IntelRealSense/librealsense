@@ -455,21 +455,27 @@ namespace librealsense
                     std::this_thread::sleep_for(std::chrono::milliseconds(200));
 
                     // Check calibration status
-                    auto res = _hw_monitor->send(command{ ds::AUTO_CALIB, py_rx_calib_check_status });
-
-                    if (res.size() < sizeof(DirectSearchCalibrationResult))
+                    try
                     {
-                        if (!((retries++) % 5)) // Add log debug once in a sec
+                        auto res = _hw_monitor->send(command{ ds::AUTO_CALIB, py_rx_calib_check_status });
+
+                        if (res.size() < sizeof(DirectSearchCalibrationResult))
                         {
-                            LOG_DEBUG("Not enough data from CALIB_STATUS!");
+                            if (!((retries++) % 5)) // Add log debug once in a sec
+                            {
+                                LOG_DEBUG("Not enough data from CALIB_STATUS!");
+                            }
+                        }
+                        else
+                        {
+                            result = *reinterpret_cast<DirectSearchCalibrationResult*>(res.data());
+                            done = result.status != RS2_DSC_STATUS_RESULT_NOT_READY;
                         }
                     }
-                    else
+                    catch (const invalid_value_exception& ex)
                     {
-                        result = *reinterpret_cast<DirectSearchCalibrationResult*>(res.data());
-                        done = result.status != RS2_DSC_STATUS_RESULT_NOT_READY;
+                        // Asked for status while firmware is still in progress.
                     }
-
                     if (progress_callback)
                     {
                         if (host_assistance != host_assistance_type::no_assistance)
