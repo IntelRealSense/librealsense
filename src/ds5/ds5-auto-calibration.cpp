@@ -14,20 +14,6 @@ namespace librealsense
 {
 #pragma pack(push, 1)
 #pragma pack(1)
-    struct DirectSearchCalibrationResult
-    {
-        uint16_t status;      // DscStatus
-        uint16_t stepCount;
-        uint16_t stepSize; // 1/1000 of a pixel
-        uint32_t pixelCountThreshold; // minimum number of pixels in
-                                      // selected bin
-        uint16_t minDepth;  // Depth range for FWHM
-        uint16_t maxDepth;
-        uint32_t rightPy;   // 1/1000000 of normalized unit
-        float healthCheck;
-        float rightRotation[9]; // Right rotation
-    };
-
     struct TareCalibrationResult
     {
         uint16_t status;  // DscStatus
@@ -202,7 +188,9 @@ namespace librealsense
           _average_step_count(-1),
           _collected_counter(-1),
           _collected_frame_num(-1),
-          _collected_sum(-1.0)
+          _collected_sum(-1.0),
+          _min_valid_depth(0),
+          _max_valid_depth(uint16_t(-1))
     {}
 
     std::map<std::string, int> auto_calibrated::parse_json(std::string json_content)
@@ -279,6 +267,63 @@ namespace librealsense
         thermal_compensation_guard(const thermal_compensation_guard&);
         thermal_compensation_guard& operator=(const thermal_compensation_guard&);
     };
+
+    DirectSearchCalibrationResult auto_calibrated::get_calibration_status(int timeout_ms, std::function<void(const int count)> progress_func, bool wait_for_final_results)
+    {
+        DirectSearchCalibrationResult result{};
+
+        int count = 0;
+        int retries = 0;
+        bool done = false;
+
+        auto start = std::chrono::high_resolution_clock::now();
+        auto now = start;
+
+        // While not ready...
+        do
+        {
+            std::this_thread::sleep_for(std::chrono::milliseconds(200));
+            try
+            {
+                // Check calibration status
+                auto res = _hw_monitor->send(command{ ds::AUTO_CALIB, py_rx_calib_check_status });
+
+                if (res.size() < sizeof(DirectSearchCalibrationResult))
+                {
+                    if (!((retries++) % 5)) // Add log debug once in a sec
+                    {
+                        LOG_DEBUG("Not enough data from CALIB_STATUS!");
+                    }
+                }
+                else
+                {
+                    result = *reinterpret_cast<DirectSearchCalibrationResult*>(res.data());
+                    done = !wait_for_final_results || result.status != RS2_DSC_STATUS_RESULT_NOT_READY;
+                }
+            }
+            catch (const invalid_value_exception&)
+            {
+                // Asked for status while firmware is still in progress.
+            }
+
+            if (progress_func)
+            {
+                progress_func(count);
+            }
+
+            now = std::chrono::high_resolution_clock::now();
+
+        } while (now - start < std::chrono::milliseconds(timeout_ms) && !done);
+
+
+        // If we exit due to timeout, report timeout
+        if (!done)
+        {
+            throw std::runtime_error("Operation timed-out!\n"
+                "Calibration state did not converged in time");
+        }
+        return result;
+    }
 
     std::vector<uint8_t> auto_calibrated::run_on_chip_calibration(int timeout_ms, std::string json, float* const health, update_progress_callback_ptr progress_callback)
     {
@@ -394,6 +439,25 @@ namespace librealsense
                 break;
             }
             std::fill_n(_fill_factor, 256, 0);
+            DirectSearchCalibrationResult result = get_calibration_status(timeout_ms, [progress_callback, host_assistance, speed](int count)
+            {
+                if (progress_callback)
+                {
+                    if (host_assistance != host_assistance_type::no_assistance)
+                        if (count < 20) progress_callback->on_update_progress(static_cast<float>(80 + count++));
+                        else
+                            progress_callback->on_update_progress(count++ * (2.f * speed)); //curently this number does not reflect the actual progress
+                }
+            }, false);
+            // Handle errors from firmware
+            rs2_dsc_status status = (rs2_dsc_status)result.status;
+
+            if (result.maxDepth == 0)
+            {
+                throw std::runtime_error("Firmware calibration values are not yet set.");
+            }
+            _min_valid_depth = result.minDepth;
+            _max_valid_depth = result.maxDepth;
             return res;
         }
 
@@ -443,57 +507,16 @@ namespace librealsense
                     _hw_monitor->send(cmd);
                 }
 
-                DirectSearchCalibrationResult result{};
-
-                int count = 0;
-                int retries = 0;
-                bool done = false;
-
-                auto start = std::chrono::high_resolution_clock::now();
-                auto now = start;
-
-                // While not ready...
-                do
-                {
-                    std::this_thread::sleep_for(std::chrono::milliseconds(200));
-
-                    // Check calibration status
-                    auto res = _hw_monitor->send(command{ ds::AUTO_CALIB, py_rx_calib_check_status });
-
-                    if (res.size() < sizeof(DirectSearchCalibrationResult))
+                DirectSearchCalibrationResult result = get_calibration_status(timeout_ms, [progress_callback, host_assistance, speed](int count)
                     {
-                        if (!((retries++) % 5)) // Add log debug once in a sec
+                        if (progress_callback)
                         {
-                            LOG_DEBUG("Not enough data from CALIB_STATUS!");
+                            if (host_assistance != host_assistance_type::no_assistance)
+                                if (count < 20) progress_callback->on_update_progress(static_cast<float>(80 + count++));
+                            else
+                                progress_callback->on_update_progress(count++ * (2.f * speed)); //curently this number does not reflect the actual progress
                         }
-                    }
-                    else
-                    {
-                        result = *reinterpret_cast<DirectSearchCalibrationResult*>(res.data());
-                        done = result.status != RS2_DSC_STATUS_RESULT_NOT_READY;
-                    }
-
-
-                if (progress_callback)
-                    {
-                        if (host_assistance != host_assistance_type::no_assistance)
-                            if (count < 20) progress_callback->on_update_progress(static_cast<float>(80 + count++));
-                        else
-                            progress_callback->on_update_progress(count++ * (2.f * speed)); //curently this number does not reflect the actual progress
-                    }
-
-                now = std::chrono::high_resolution_clock::now();
-
-            } while (now - start < std::chrono::milliseconds(timeout_ms) && !done);
-
-
-            // If we exit due to timeout, report timeout
-            if (!done)
-            {
-                throw std::runtime_error("Operation timed-out!\n"
-                    "Calibration did not converge on time");
-            }
-
+                    });
             std::this_thread::sleep_for(std::chrono::milliseconds(100));
 
             auto status = (rs2_dsc_status)result.status;
@@ -799,6 +822,27 @@ namespace librealsense
             _average_step_count = average_step_count;
             _action = auto_calib_action::RS2_OCC_ACTION_TARE_CALIB;
             _interactive_state = interactive_calibration_state::RS2_OCC_STATE_WAIT_TO_CAMERA_START;
+
+            DirectSearchCalibrationResult result = get_calibration_status(timeout_ms, [progress_callback, host_assistance, speed](int count)
+                {
+                    if (progress_callback)
+                    {
+                        if (host_assistance != host_assistance_type::no_assistance)
+                            if (count < 20) progress_callback->on_update_progress(static_cast<float>(80 + count++));
+                            else
+                                progress_callback->on_update_progress(count++ * (2.f * speed)); //curently this number does not reflect the actual progress
+                    }
+                }, false);
+            // Handle errors from firmware
+            rs2_dsc_status status = (rs2_dsc_status)result.status;
+
+            if (result.maxDepth == 0)
+            {
+                throw std::runtime_error("Firmware calibration values are not yet set.");
+            }
+            _min_valid_depth = result.minDepth;
+            _max_valid_depth = result.maxDepth;
+
             return res;
         }
 
@@ -956,7 +1000,7 @@ namespace librealsense
         {
             for (int i = 0; i < roi_w; ++i)
             {
-                if (*p)
+                if ((*p) > _min_valid_depth && (*p) < _max_valid_depth)
                     ++counter;
                 ++p;
             }
@@ -1031,7 +1075,7 @@ namespace librealsense
         {
             for (int i = 0; i < roi_w; ++i)
             {
-                if (*p)
+                if ((*p) > _min_valid_depth && (*p) < _max_valid_depth)
                 {
                     ++_collected_counter;
                     _collected_sum += *p;
