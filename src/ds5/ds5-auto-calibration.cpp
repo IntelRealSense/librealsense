@@ -449,6 +449,10 @@ namespace librealsense
             // Handle errors from firmware
             rs2_dsc_status status = (rs2_dsc_status)result.status;
 
+            if (result.maxDepth == 0)
+            {
+                throw std::runtime_error("Firmware calibration values are not yet set.");
+            }
             _min_valid_depth = result.minDepth;
             _max_valid_depth = result.maxDepth;
             return res;
@@ -830,6 +834,10 @@ namespace librealsense
             // Handle errors from firmware
             rs2_dsc_status status = (rs2_dsc_status)result.status;
 
+            if (result.maxDepth == 0)
+            {
+                throw std::runtime_error("Firmware calibration values are not yet set.");
+            }
             _min_valid_depth = result.minDepth;
             _max_valid_depth = result.maxDepth;
 
