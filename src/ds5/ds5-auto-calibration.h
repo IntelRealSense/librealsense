@@ -8,23 +8,40 @@
 
 namespace librealsense
 {
+#pragma pack(push, 1)
+#pragma pack(1)
+    struct DirectSearchCalibrationResult
+    {
+        uint16_t status;      // DscStatus
+        uint16_t stepCount;
+        uint16_t stepSize; // 1/1000 of a pixel
+        uint32_t pixelCountThreshold; // minimum number of pixels in
+                                      // selected bin
+        uint16_t minDepth;  // Depth range for FWHM
+        uint16_t maxDepth;
+        uint32_t rightPy;   // 1/1000000 of normalized unit
+        float healthCheck;
+        float rightRotation[9]; // Right rotation
+    };
+#pragma pack(pop)
+
     class auto_calibrated : public auto_calibrated_interface
     {
-    enum class auto_calib_action
-    {
-        RS2_OCC_ACTION_ON_CHIP_CALIB,         // On-Chip calibration
-        RS2_OCC_ACTION_TARE_CALIB            // Tare calibration
-    };
+        enum class auto_calib_action
+        {
+            RS2_OCC_ACTION_ON_CHIP_CALIB,         // On-Chip calibration
+            RS2_OCC_ACTION_TARE_CALIB            // Tare calibration
+        };
 
-    enum class interactive_calibration_state
-    {
-        RS2_OCC_STATE_NOT_ACTIVE = 0,
-        RS2_OCC_STATE_WAIT_TO_CAMERA_START,
-        RS2_OCC_STATE_INITIAL_FW_CALL,
-        RS2_OCC_STATE_WAIT_TO_CALIB_START,
-        RS2_OCC_STATE_DATA_COLLECT,
-        RS2_OCC_STATE_FINAL_FW_CALL
-    };
+        enum class interactive_calibration_state
+        {
+            RS2_OCC_STATE_NOT_ACTIVE = 0,
+            RS2_OCC_STATE_WAIT_TO_CAMERA_START,
+            RS2_OCC_STATE_INITIAL_FW_CALL,
+            RS2_OCC_STATE_WAIT_TO_CALIB_START,
+            RS2_OCC_STATE_DATA_COLLECT,
+            RS2_OCC_STATE_FINAL_FW_CALL
+        };
 
     public:
         auto_calibrated(std::shared_ptr<hw_monitor>& hwm);
@@ -35,7 +52,7 @@ namespace librealsense
         std::vector<uint8_t> get_calibration_table() const override;
         void set_calibration_table(const std::vector<uint8_t>& calibration) override;
         void reset_to_factory_calibration() const override;
-        std::vector<uint8_t> run_focal_length_calibration(rs2_frame_queue* left, rs2_frame_queue* right, float target_w, float target_h, 
+        std::vector<uint8_t> run_focal_length_calibration(rs2_frame_queue* left, rs2_frame_queue* right, float target_w, float target_h,
             int adjust_both_sides, float* ratio, float* angle, update_progress_callback_ptr progress_callback) override;
         std::vector<uint8_t> run_uv_map_calibration(rs2_frame_queue* left, rs2_frame_queue* color, rs2_frame_queue* depth, int py_px_only,
             float* const health, int health_size, update_progress_callback_ptr progress_callback) override;
@@ -55,12 +72,13 @@ namespace librealsense
         void get_target_rect_info(rs2_frame_queue* frames, float rect_sides[4], float& fx, float& fy, int progress, update_progress_callback_ptr progress_callback);
         void undistort(uint8_t* img, const rs2_intrinsics& intrin, int roi_ws, int roi_hs, int roi_we, int roi_he);
         void find_z_at_corners(float left_x[4], float left_y[4], rs2_frame_queue* frames, float left_z[4]);
-        void get_target_dots_info(rs2_frame_queue* frames, float dots_x[4], float dots_y[4], rs2::stream_profile & profile, rs2_intrinsics & fy, int progress, update_progress_callback_ptr progress_callback);
+        void get_target_dots_info(rs2_frame_queue* frames, float dots_x[4], float dots_y[4], rs2::stream_profile& profile, rs2_intrinsics& fy, int progress, update_progress_callback_ptr progress_callback);
         void change_preset_and_stay();
         void restore_preset();
         uint16_t calc_fill_rate(const rs2_frame* f);
         void fill_missing_data(uint16_t data[256], int size);
         void collect_depth_frame_sum(const rs2_frame* f);
+        DirectSearchCalibrationResult get_calibration_status(int timeout_ms, std::function<void(const int count)> progress_func, bool wait_for_final_results = true);
 
         std::vector<uint8_t> _curr_calibration;
         std::shared_ptr<hw_monitor>& _hw_monitor;
@@ -80,6 +98,7 @@ namespace librealsense
         interactive_calibration_state _interactive_state;
         rs2_metadata_type _prev_frame_counter;
         uint16_t _fill_factor[256];
+        uint16_t _min_valid_depth, _max_valid_depth;
 
     };
 }
