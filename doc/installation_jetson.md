@@ -42,8 +42,11 @@ And while it is possible to rebuild and flash a new kernel image the procedure c
 This guide comes with a script that allows to modify the kernel modules with Librealsense2-related patches without replacing the kernel image. The script has been verified with **Jetson AGX Xavier™** board using L4T versions 4.2.3, 4.3 and 4.4 (Sept 2020). Scroll to the end of the guide for details.
 
 ### 4. Install with Debian Packages
+ The minimum JetPack SDK required to run the precompiled Debians is [JetPack version 4.4.1](https://developer.nvidia.com/jetpack-sdk-441-archive) ( L4T 32.4.4 , CUDA version 10.2).
 
-Note that this method provides binary installation compiled using the `-DFORCE_RSUSB_BACKEND=true` option elaborated above.
+Note that a lower version may not work due to non compatible CUDA versions limitation.
+
+<u>Installation steps:</u>
 
 1. Register the server's public key:
 
@@ -98,6 +101,7 @@ The method has not yet been verified on the **Jetson Nano** board.
   * Verify the board type and Jetpack versions compatibility.  
   * Verify internet connection.  
   * Verify the available space on flash, the patching process requires **~2.5Gb** free space  
+    
     >df -h
   * Configure the Jetson Board into Max power mode (desktop -> see the upper right corner)  
   * Disconnect attached USB/UVC cameras (if any).  
