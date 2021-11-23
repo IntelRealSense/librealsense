@@ -101,32 +101,38 @@ void init_device(py::module &m) {
         .def("run_on_chip_calibration", [](rs2::auto_calibrated_device& self, std::string json_content, int timeout_ms)
         { 
             float health;
-            return std::make_tuple(self.run_on_chip_calibration(json_content, &health, timeout_ms), std::make_tuple(health, 0.0));
+            rs2::calibration_table table = self.run_on_chip_calibration(json_content, &health, timeout_ms);
+            return std::make_tuple(table, std::make_tuple(health, 0.0));
         },"This will improve the depth noise (plane fit RMS). This call is executed on the caller's thread.","json_content"_a, "timeout_ms"_a, py::call_guard<py::gil_scoped_release>())
         .def("run_on_chip_calibration", [](rs2::auto_calibrated_device& self, std::string json_content, std::function<void(float)> f, int timeout_ms)
         {
             float health;
-            return std::make_tuple(self.run_on_chip_calibration(json_content, &health, f, timeout_ms), std::make_tuple(health, 0.0));
+            rs2::calibration_table table = self.run_on_chip_calibration(json_content, &health, f, timeout_ms);
+            return std::make_tuple(table, std::make_tuple(health, 0.0));
         },"This will improve the depth noise (plane fit RMS). This call is executed on the caller's thread and provides progress notifications via the callback.", "json_content"_a, "callback"_a, "timeout_ms"_a, py::call_guard<py::gil_scoped_release>())
         .def("run_tare_calibration", [](const rs2::auto_calibrated_device& self, float ground_truth_mm, std::string json_content, int timeout_ms)
         {
             float health[] = { 0,0 };
-            return std::make_tuple(self.run_tare_calibration(ground_truth_mm, json_content, health, timeout_ms), std::make_tuple(health[0], health[1]));
+            rs2::calibration_table table = self.run_tare_calibration(ground_truth_mm, json_content, health, timeout_ms);
+            return std::make_tuple(table, std::make_tuple(health[0], health[1]));
         }, "This will adjust camera absolute distance to flat target. This call is executed on the caller's thread.", "ground_truth_mm"_a, "json_content"_a, "timeout_ms"_a, py::call_guard<py::gil_scoped_release>())
         .def("run_tare_calibration", [](const rs2::auto_calibrated_device& self, float ground_truth_mm, std::string json_content, std::function<void(float)> callback, int timeout_ms)
         {
             float health[] = { 0,0 };
-            return std::make_tuple(self.run_tare_calibration(ground_truth_mm, json_content, health, callback, timeout_ms), std::make_tuple(health[0], health[1]));
+            rs2::calibration_table table = self.run_tare_calibration(ground_truth_mm, json_content, health, callback, timeout_ms);
+            return std::make_tuple(table, std::make_tuple(health[0], health[1]));
         }, "This will adjust camera absolute distance to flat target. This call is executed on the caller's thread and it supports progress notifications via the callback.", "ground_truth_mm"_a, "json_content"_a, "callback"_a, "timeout_ms"_a, py::call_guard<py::gil_scoped_release>())
         .def("add_calibration_frame", [](const rs2::auto_calibrated_device& self, rs2::frame frame, int timeout_ms)
             {
             float health[] = { 0,0 };
-            return std::make_tuple(self.add_calibration_frame(frame, health, timeout_ms), std::make_tuple(health[0], health[1]));
+            rs2::calibration_table table = self.add_calibration_frame(frame, health, timeout_ms);
+            return std::make_tuple(table, std::make_tuple(health[0], health[1]));
             }, "This will add a frame to the calibration process initiated by run_tare_calibration or run_on_chip_calibration as host assistant process. This call is executed on the caller's thread  and it supports progress notifications via the callback.", "frame"_a, "timeout_ms"_a, py::call_guard<py::gil_scoped_release>())
         .def("add_calibration_frame", [](const rs2::auto_calibrated_device& self, rs2::frame frame, std::function<void(float)> callback, int timeout_ms)
             {
             float health[] = { 0,0 };
-            return std::make_tuple(self.add_calibration_frame(frame, health, callback, timeout_ms), std::make_tuple(health[0], health[1]));
+            rs2::calibration_table table = self.add_calibration_frame(frame, health, callback, timeout_ms);
+            return std::make_tuple(table, std::make_tuple(health[0], health[1]));
             }, "This will add a frame to the calibration process initiated by run_tare_calibration or run_on_chip_calibration as host assistant process. This call is executed on the caller's thread and it supports progress notifications via the callback.", "frame"_a, "callback"_a, "timeout_ms"_a, py::call_guard<py::gil_scoped_release>())
         .def("run_focal_length_calibration", [](const rs2::auto_calibrated_device& self, rs2::frame_queue left_queue, rs2::frame_queue right_queue,
                 float target_width_mm, float target_heigth_mm, int adjust_both_sides)
