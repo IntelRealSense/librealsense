@@ -94,6 +94,7 @@ namespace librealsense
         int _collected_counter;
         int _collected_frame_num;
         double _collected_sum;
+        int _resize_factor;
         auto_calib_action _action;
         interactive_calibration_state _interactive_state;
         rs2_metadata_type _prev_frame_counter;

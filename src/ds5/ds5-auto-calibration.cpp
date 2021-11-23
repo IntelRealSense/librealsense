@@ -189,7 +189,8 @@ namespace librealsense
           _collected_frame_num(-1),
           _collected_sum(-1.0),
           _min_valid_depth(0),
-          _max_valid_depth(uint16_t(-1))
+          _max_valid_depth(uint16_t(-1)),
+          _resize_factor(5)
     {}
 
     std::map<std::string, int> auto_calibrated::parse_json(std::string json_content)
@@ -396,6 +397,7 @@ namespace librealsense
 
             int val = 0;
             try_fetch(jsn, "step count v3", &val);
+
             step_count_v3 = static_cast<uint16_t>(val);
             if (step_count_v3 > 0)
             {
@@ -408,6 +410,7 @@ namespace librealsense
                     fill_factor[i] = static_cast<uint16_t>(val);
                 }
             }
+            try_fetch(jsn, "resize factor", &_resize_factor);
         }
 
         std::vector<uint8_t> res;
@@ -810,6 +813,7 @@ namespace librealsense
                 throw invalid_value_exception(to_string() << "Auto calibration failed! Given value of 'host assistance' " << tmp_host_assistance << " is out of range (0 - " << (int)host_assistance_type::assistance_second_feed << ").");
             host_assistance = host_assistance_type(tmp_host_assistance);
             try_fetch(jsn, "depth", &depth);
+            try_fetch(jsn, "resize factor", &_resize_factor);
         }
 
         if (host_assistance != host_assistance_type::no_assistance && _interactive_state == interactive_calibration_state::RS2_OCC_STATE_NOT_ACTIVE)
@@ -979,15 +983,14 @@ namespace librealsense
         auto frame = ((video_frame*)f);
         int width = frame->get_width();
         int height = frame->get_height();
-        int roi_w = width / 5;
-        int roi_h = height / 5;
-        int roi_start_w = 2 * roi_w;
-        int roi_start_h = 2 * roi_h;
+        int roi_w = width / _resize_factor;
+        int roi_h = height / _resize_factor;
+        int roi_start_w = (width - roi_w) / 2;
+        int roi_start_h = (height - roi_h) / 2;
         int from = roi_start_h;
         int to = roi_start_h + roi_h;
         int roi_size = roi_w * roi_h;
         int data_size = roi_size;
-
         const uint16_t* p = reinterpret_cast<const uint16_t*>(frame->get_frame_data());
 
 #ifdef SAVE_RAW_IMAGE
@@ -1088,10 +1091,10 @@ namespace librealsense
         auto frame = ((video_frame*)f);
         int width = frame->get_width();
         int height = frame->get_height();
-        int roi_w = width / 5;
-        int roi_h = height / 5;
-        int roi_start_w = 2 * roi_w;
-        int roi_start_h = 2 * roi_h;
+        int roi_w = width / _resize_factor;
+        int roi_h = height / _resize_factor;
+        int roi_start_w = (width - roi_w) / 2;
+        int roi_start_h = (height - roi_h) / 2;
 
         const uint16_t* p = reinterpret_cast<const uint16_t*>(frame->get_frame_data());
         p += roi_start_h * width + roi_start_w;

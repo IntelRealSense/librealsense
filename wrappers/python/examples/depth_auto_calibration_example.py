@@ -29,7 +29,8 @@ def on_chip_calibration_json(occ_json_file, host_assistance):
                     '"apply preset": 1,\n'+\
                     '"accuracy": 2,\n'+\
                     '"scan only": ' + str(int(host_assistance)) + ',\n'+\
-                    '"interactive scan": 0\n'+\
+                    '"interactive scan": 0' + ',\n'+\
+                    '"resize factor": 1\n'+\
                     '}'
     return occ_json
 
@@ -95,7 +96,8 @@ def main(argv):
         print("The connected device does not support auto calibration")
         return
 
-    config.enable_stream(rs.stream.depth, 256, 144, rs.format.z16, 90)
+    # config.enable_stream(rs.stream.depth, 256, 144, rs.format.z16, 90)
+    config.enable_stream(rs.stream.depth, 848, 480, rs.format.z16, 30)
     conf = pipeline.start(config)
     calib_dev = rs.auto_calibrated_device(conf.get_device())
 
