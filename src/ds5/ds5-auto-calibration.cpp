@@ -999,7 +999,9 @@ namespace librealsense
             origin_image[ii] = *(p + ii);
 
         {
-            std::ofstream fout("origin_image.raw", std::ios::out | std::ios::binary);
+            std::stringstream name_s;
+            name_s << "origin_image_" << std::setfill('0') << std::setw(4) << frame->get_frame_number() << ".raw";
+            std::ofstream fout(name_s.str(), std::ios::out | std::ios::binary);
             fout.write((char*)&origin_image[0], origin_image.size() * sizeof(uint16_t));
             fout.close();
         }
@@ -1030,7 +1032,9 @@ namespace librealsense
         }
 #ifdef SAVE_RAW_IMAGE
         {
-            std::ofstream fout("cropped_image.raw", std::ios::out | std::ios::binary);
+            std::stringstream name_s;
+            name_s << "cropped_image_" << std::setfill('0') << std::setw(4) << frame->get_frame_number() << ".raw";
+            std::ofstream fout(name_s.str(), std::ios::out | std::ios::binary);
             fout.write((char*)&cropped_image[0], cropped_image.size() * sizeof(uint16_t));
             fout.close();
         }
@@ -1097,12 +1101,34 @@ namespace librealsense
         int roi_start_h = (height - roi_h) / 2;
 
         const uint16_t* p = reinterpret_cast<const uint16_t*>(frame->get_frame_data());
+
+#ifdef SAVE_RAW_IMAGE
+        std::vector<uint16_t> origin_image(width * height, 0);
+        for (int ii = 0; ii < width * height; ii++)
+            origin_image[ii] = *(p + ii);
+
+        {
+            std::stringstream name_s;
+            name_s << "origin_tare_image_" << std::setfill('0') << std::setw(4) << frame->get_frame_number() << ".raw";
+            std::ofstream fout(name_s.str(), std::ios::out | std::ios::binary);
+            fout.write((char*)&origin_image[0], origin_image.size() * sizeof(uint16_t));
+            fout.close();
+        }
+        std::vector<uint16_t> cropped_image(width * height, 0);
+        int cropped_idx(0);
+        cropped_idx += roi_start_h * width + roi_start_w;
+#endif
+
         p += roi_start_h * width + roi_start_w;
 
         for (int j = 0; j < roi_h; ++j)
         {
             for (int i = 0; i < roi_w; ++i)
             {
+#ifdef SAVE_RAW_IMAGE
+                cropped_image[cropped_idx] = (*p);
+                cropped_idx++;
+#endif
                 if ((*p) > _min_valid_depth && (*p) < _max_valid_depth)
                 {
                     ++_collected_counter;
@@ -1110,8 +1136,20 @@ namespace librealsense
                 }
                 ++p;
             }
-            p += (width- roi_h);
+            p += (width- roi_w);
+#ifdef SAVE_RAW_IMAGE
+            cropped_idx += (width - roi_w);
+#endif
         }
+#ifdef SAVE_RAW_IMAGE
+        {
+            std::stringstream name_s;
+            name_s << "cropped_tare_image_" << std::setfill('0') << std::setw(4) << frame->get_frame_number() << ".raw";
+            std::ofstream fout(name_s.str(), std::ios::out | std::ios::binary);
+            fout.write((char*)&cropped_image[0], cropped_image.size() * sizeof(uint16_t));
+            fout.close();
+        }
+#endif
     }
 
     std::vector<uint8_t> auto_calibrated::add_calibration_frame(int timeout_ms, const rs2_frame* f, float* const health, update_progress_callback_ptr progress_callback)
