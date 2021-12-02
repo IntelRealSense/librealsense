@@ -7,11 +7,8 @@ from rspy import log, test
 from rspy.timer import Timer
 
 '''
-This class is used to wait and verify a requested playback status arrived whithin a requested timeout.
-It blocked the calling thread and sample the playback status using a playback status callback from LRS API\
-
-Note: LRS  set_status_changed_callback function is a 'register' and not a 'set' function
-      meaning multiple set called will add a callbak to the callback list
+This class is used to wait and verify for a requested playback status arrived within a requested timeout.
+It blocks the calling thread and samples the playback status using a playback status callback from LRS API
       
 Usage should look like this:
     psv = PlaybackStatusVerifier( device );
@@ -24,6 +21,10 @@ class PlaybackStatusVerifier:
         self._current_status = None
         self._status_changes_cnt = 0
         playback_dev = dev.as_playback()
+        '''
+        Note: LRS set_status_changed_callback function is a 'register' and not a 'set' function
+              meaning multiple set called will add a callback to the callback list
+        '''
         playback_dev.set_status_changed_callback( self.__signal_on_status_change )
 
     def __signal_on_status_change( self, playback_status ):
