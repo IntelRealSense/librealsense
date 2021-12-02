@@ -16,7 +16,7 @@
 
 import pyrealsense2 as rs, os, time, tempfile
 from rspy import log, test
-from rspy.timer import Timer
+from playback_helper import PlaybackStatusVerifier
 
 # create temporary folder to record to that will be deleted automatically at the end of the script
 # (requires that no files are being held open inside this directory. Important to not keep any handle open to a file
@@ -56,7 +56,7 @@ def record_with_pause( file_name, iterations, pause_delay=0, resume_delay=0 ):
     return calc_playback_timeout( iterations, pause_delay )
 
 
-def playback( pipeline, file_name, signal_on_stop ):
+def playback( pipeline, file_name ):
     cfg = rs.config()
     cfg.enable_device_from_file( file_name, repeat_playback=False )
     log.d( 'Playing...' )
@@ -67,33 +67,11 @@ def playback( pipeline, file_name, signal_on_stop ):
     # without it we would have to manually look at the frame timestamps. Instead, we turn it on and depend on the
     # timeout, albeit at the cost of playback runtime.
     playback_dev.set_real_time( True )
-    playback_dev.set_status_changed_callback( signal_on_stop )
     pipeline.wait_for_frames()
     test.check_equal( playback_dev.current_status(), rs.playback_status.playing )
     return playback_dev
 
 
-def verify_stop_when_eof( timeout ):
-    global stop_detected
-    stop_detected = False
-    wait_for_stop_timer = Timer( timeout )
-    wait_for_stop_timer.start()
-    log.d( 'timeout set to', timeout, '[sec]' )
-    while not wait_for_stop_timer.has_expired():
-        if stop_detected:
-            log.d( 'stopped!' )
-            break
-        else:
-            log.d( 'waiting for playback status -> stop' )
-        time.sleep( 1 )
-    test.check( stop_detected )
-
-
-def signal_on_stop( playback_status ):
-    log.d( 'playback status callback invoked with', playback_status )
-    if playback_status == rs.playback_status.stopped:
-        global stop_detected
-        stop_detected = True
 
 
 def calc_playback_timeout( iterations, pause_delay ):
@@ -111,8 +89,9 @@ test.start("Immediate pause & test")
 try:
     timeout = record_with_pause( file_name, iterations = 1, pause_delay = 0, resume_delay = 0 )
     pipeline = rs.pipeline()
-    device_playback = playback( pipeline, file_name, signal_on_stop )
-    verify_stop_when_eof( timeout )
+    device_playback = playback( pipeline, file_name )
+    psv = PlaybackStatusVerifier( device_playback );
+    psv.wait_for_status(timeout, rs.playback_status.stopped)
 except Exception:
     test.unexpected_exception()
 finally:  # remove all references to the file and dereference the pipeline
@@ -129,8 +108,9 @@ test.start("Immediate pause & delayed resume test")
 try:
     timeout = record_with_pause( file_name, iterations = 1, pause_delay = 0, resume_delay = 5 )
     pipeline = rs.pipeline()
-    device_playback = playback( pipeline, file_name, signal_on_stop )
-    verify_stop_when_eof( timeout )
+    device_playback = playback( pipeline, file_name )
+    psv = PlaybackStatusVerifier( device_playback );
+    psv.wait_for_status( timeout, rs.playback_status.stopped )
 except Exception:
     test.unexpected_exception()
 finally:   # remove all references to the file and dereference the pipeline
@@ -146,8 +126,9 @@ test.start("delayed pause & delayed resume test")
 try:
     timeout = record_with_pause( file_name, iterations = 1, pause_delay = 3, resume_delay = 2 )
     pipeline = rs.pipeline()
-    device_playback = playback( pipeline, file_name, signal_on_stop )
-    verify_stop_when_eof( timeout )
+    device_playback = playback( pipeline, file_name )
+    psv = PlaybackStatusVerifier( device_playback );
+    psv.wait_for_status( timeout, rs.playback_status.stopped )
 except Exception:
     test.unexpected_exception()
 finally:   # remove all references to the file and dereference the pipeline
@@ -164,8 +145,9 @@ test.start("multiple delay & pause test")
 try:
     timeout = record_with_pause( file_name, iterations = 2, pause_delay = 0, resume_delay = 2 )
     pipeline = rs.pipeline()
-    device_playback = playback( pipeline, file_name, signal_on_stop )
-    verify_stop_when_eof( timeout )
+    device_playback = playback( pipeline, file_name )
+    psv = PlaybackStatusVerifier( device_playback );
+    psv.wait_for_status( timeout, rs.playback_status.stopped )
 except Exception:
     test.unexpected_exception()
 finally:   # remove all references to the file and dereference the pipeline
