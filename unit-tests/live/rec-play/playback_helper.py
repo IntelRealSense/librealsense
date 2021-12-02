@@ -6,7 +6,7 @@ import time
 from rspy import log, test
 from rspy.timer import Timer
 
-
+#TODO - Add description and functions comments
 class PlaybackStatusVerifier:
 
     def __init__( self, dev ):
@@ -31,5 +31,6 @@ class PlaybackStatusVerifier:
                 break
             else:
                 log.d('waiting for status "' + str(required_status) + '" event')
-            time.sleep(1)
+            # sleep only 100 [ms],  We don't want to miss a status change if more than 1 status change occurs whithin the sleep time
+            time.sleep(0.1)
         test.check( required_status_detected )

@@ -26,20 +26,16 @@ for i in range(250):
     try:
         log.d("Test - Starting iteration # " , i)
         ctx = rs.context()
-        log.d("Test - loading device")
         dev = ctx.load_device( file_name )
-        log.d("Test - device loaded")
         psv = PlaybackStatusVerifier( dev );
         dev.set_real_time( False )
         sensors = dev.query_sensors()
         frames_count = 0
-        log.d("Test - Opening Sensors")
+        log.d("Opening Sensors")
         for sensor in sensors:
-            #log.d("Test Opening Sensor ", sensor)
             sensor.open( sensor.get_stream_profiles() )
-        log.d("Test - Starting Sensors")
+        log.d("Starting Sensors")
         for sensor in sensors:
-            #log.d("Test Starting Sensor ", sensor)
             sensor.start( frame_callback )
 
         psv.wait_for_status( 5, rs.playback_status.playing )
@@ -47,12 +43,11 @@ for i in range(250):
         # We allow 10 seconds to each iteration to verify the playback_stopped event.
         psv.wait_for_status( 10,  rs.playback_status.stopped )
 
-        log.d("Test - Stopping Sensors")
+        log.d("Stopping Sensors")
         for sensor in sensors:
-            #log.d("Test Stopping Sensor ", sensor)
             sensor.stop()
 
-        log.d("Test - Closing Sensors")
+        log.d("Closing Sensors")
         for sensor in sensors:
             #log.d("Test Closing Sensor ", sensor)
             sensor.close()
