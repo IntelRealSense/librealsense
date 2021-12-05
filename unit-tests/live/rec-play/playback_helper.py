@@ -12,7 +12,8 @@ It blocks the calling thread and samples the playback status using a playback st
       
 Usage should look like this:
     psv = PlaybackStatusVerifier( device );
-    psv.wait_for_status( 5, rs.playback_status.playing )
+    ...Start Streaming...
+    psv.wait_for_status( timeout=5, required_status=rs.playback_status.playing, sample_interval=0.05 )
 
 '''
 class PlaybackStatusVerifier:
@@ -32,7 +33,16 @@ class PlaybackStatusVerifier:
         self._status_changes_cnt += 1
         self._current_status = playback_status
 
-    def wait_for_status( self, timeout, required_status ):
+    '''
+    This function goal is to catch the first time the playback status match the required status,
+    We sample the status at a user-defined interval low enough for not missing the event and compare the status to the required one.
+    
+    Note: Limitation - This function is build to catch statues change at 'sample_interval' time, 
+    If the required status can arrive and change within this sample_interval, this function can miss it.
+    The user needs to make sure that the 'sample_interval' is lower than the possible time for this status to arrive and be overridden by a new status.
+    '''
+    def wait_for_status( self, timeout, required_status, sample_interval=0.01 ):
+        self._status_changes_cnt = 0
         status_changes_cnt = self._status_changes_cnt
         self._current_status = None
         required_status_detected = False
@@ -44,11 +54,15 @@ class PlaybackStatusVerifier:
                 log.d('Required status "' + str(required_status) + '" detected!')
                 required_status_detected = True
                 break
-            # sleep only 100 [ms],  We don't want to miss a status change if more than 1 status change occurs whithin the sleep time
-            time.sleep( 0.1 )
+            time.sleep( sample_interval )
 
-        #If the status changes too fast let say , Stopped -> Playing --> Stopped ,
-        # we want fail the test as our sleep is too long and we will not catch the required status
-        test.check( status_changes_cnt + 1 == self._status_changes_cnt,
-                    'Multiple status changes detected, expecting a single change, got '+ str(self._status_changes_cnt - status_changes_cnt) + ' changes' )
-        test.check( required_status_detected, description = 'Check failed, Timeout on waiting for ' + str(required_status) )
+        test.check(required_status_detected, description='Check failed, Timeout on waiting for ' + str(required_status) )
+
+        '''If the status changes too fast let say , Stopped -> Playing --> Stopped  within 1 sample time we can miss 
+        it. So if we already failed on the status we add a check to indicate it in the test result that our sample 
+        interval may be too long and we may have missed the required status '''
+        if not required_status_detected:
+            test.check( status_changes_cnt + 1 < self._status_changes_cnt,
+                    'Multiple status changes detected, expecting a single change, got '+ str( self._status_changes_cnt - status_changes_cnt ) +
+                        ' changes, consider lowering the sample interval' )
+
