@@ -9,7 +9,9 @@ using utilities::time::waiting_on;
 
 bool invoke( size_t delay_in_thread, size_t timeout )
 {
-    waiting_on< bool > invoked( false );
+    std::condition_variable cv;
+    std::mutex m;
+    waiting_on< bool > invoked( cv, m, false );
     
     auto invoked_in_thread = invoked.in_thread();
     auto lambda = [delay_in_thread, invoked_in_thread]() {
@@ -45,16 +47,20 @@ TEST_CASE( "Struct usage" )
         double d;
         std::atomic_int i{ 0 };
     };
-    waiting_on< value_t > output;
+
+    std::condition_variable cv;
+    std::mutex m;
+    waiting_on< value_t > output (cv, m);
     output->d = 2.;
 
     auto output_ = output.in_thread();
-    std::thread( [output_]() {
+    std::thread( [&m, output_]() {
         auto p_output = output_.still_alive();
         auto & output = *p_output;
         while( output->i < 30 )
         {
             std::this_thread::sleep_for( std::chrono::milliseconds( 50 ) );
+            std::lock_guard<std::mutex> lock(m);
             ++output->i;
             output.signal();
         }
@@ -93,13 +99,16 @@ TEST_CASE( "Not invoked but still notified" )
     dispatcher->push( [&]() { ++i; } );
     
     // Add something we'll be waiting on
-    utilities::time::waiting_on< bool > invoked( false );
+    std::condition_variable cv;
+    std::mutex m;
+    utilities::time::waiting_on< bool > invoked( cv, m, false );
     dispatcher->push( [invoked_in_thread = invoked.in_thread()]() { invoked_in_thread.signal( true ); } );
 
     // Destroy the dispatcher while we're waiting on the invocation!
     std::atomic_bool stopped( false );
     std::thread( [&]() {
         std::this_thread::sleep_for( std::chrono::seconds( 2 ));
+        std::lock_guard<std::mutex> lock(m);
         stopped = true;
         delete dispatcher;
         } ).detach();
