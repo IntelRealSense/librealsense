@@ -100,7 +100,7 @@ TEST_CASE("verify stop() not consuming high CPU usage")
 TEST_CASE("stop() notify flush to finish")
 {
     // On this test we check that if during a flush() another thread call stop(),
-    // than the flush CV we be triggered to exit and not wait a full 10 [sec] timeout
+    // than the flush CV will be triggered to exit and not wait a full timeout
     dispatcher dispatcher( 10 );
     dispatcher.start();
 
