@@ -107,9 +107,9 @@ TEST_CASE("stop() notify flush to finish")
     stopwatch sw;
     std::atomic_bool dispatched_end_verifier{ false };
     dispatcher.invoke( [&]( dispatcher::cancellable_timer c ) {
-        std::cout << "Sleeping from inside invoke" << std::endl;
+        //std::cout << "Sleeping from inside invoke" << std::endl;
         std::this_thread::sleep_for( std::chrono::seconds( 5 ) );
-        std::cout << "Sleeping from inside invoke - Done" << std::endl;
+        //std::cout << "Sleeping from inside invoke - Done" << std::endl;
         dispatched_end_verifier = true;
     } );
 
@@ -119,16 +119,17 @@ TEST_CASE("stop() notify flush to finish")
     std::thread t( [&]() {
         // Make sure we postpone the stop to after the flush call
         std::this_thread::sleep_for( std::chrono::milliseconds( 100 ) );
-        std::cout << "Stopping dispatcher" << std::endl;
+        //std::cout << "Stopping dispatcher" << std::endl;
         dispatcher.stop();
     } );
 
     auto timeout = std::chrono::seconds(10);
     auto timeout_ms = std::chrono::duration_cast<std::chrono::duration<double, std::milli>>(timeout).count();
-    std::cout << "Flushing dispatcher" << std::endl;
+    //std::cout << "Flushing dispatcher" << std::endl;
     dispatcher.flush(timeout);
+    // We expect that flush will be triggered by stop only after the dispatched function end.
     CHECK(dispatched_end_verifier);
-    std::cout << "Flushing is done" << std::endl;
+    //std::cout << "Flushing is done" << std::endl;
     CHECK( sw.get_elapsed_ms() < timeout_ms);
     t.join();
 }

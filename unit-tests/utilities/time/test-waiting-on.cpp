@@ -87,22 +87,12 @@ TEST_CASE( "Struct usage" )
     REQUIRE( output->i == 30 );
 }
 
-TEST_CASE( "Not invoked but still notified" )
+TEST_CASE( "Not invoked but still notified by predicate (stopped)" )
 {
-    // Emulate some dispatcher
-    typedef std::function< void () > func;
-    auto dispatcher = new std::queue< func >;
-
-    // Push some stuff onto it (not important what)
-    int i = 0;
-    dispatcher->push( [&]() { ++i; } );
-    dispatcher->push( [&]() { ++i; } );
-    
     // Add something we'll be waiting on
     std::condition_variable cv;
     std::mutex m;
     utilities::time::waiting_on< bool > invoked( cv, m, false );
-    dispatcher->push( [invoked_in_thread = invoked.in_thread()]() { invoked_in_thread.signal( true ); } );
 
     // Destroy the dispatcher while we're waiting on the invocation!
     std::atomic_bool stopped( false );
@@ -110,11 +100,10 @@ TEST_CASE( "Not invoked but still notified" )
         std::this_thread::sleep_for( std::chrono::seconds( 2 ));
         std::lock_guard<std::mutex> lock(m);
         stopped = true;
-        delete dispatcher;
+        cv.notify_all();
         } ).detach();
 
-    // Wait for it -- we'd expect that, when 'invoked_in_thread' is destroyed, it'll wake us up and
-    // not wait for the timeout
+    // When 'stopped' is turned on , it'll wake us up and not wait for the timeout
     auto wait_start = std::chrono::high_resolution_clock::now();
     invoked.wait_until( std::chrono::seconds( 5 ), [&]() {
         return invoked || stopped;  // Without stopped, invoked will be false and we'll wait again
@@ -126,3 +115,66 @@ TEST_CASE( "Not invoked but still notified" )
     REQUIRE( waited_ms > 1990 );
     REQUIRE( waited_ms < 3000 );    // Up to a second buffer
 }
+
+TEST_CASE("Not invoked but still notified by destructor")
+{
+    // Emulate some dispatcher
+    typedef std::function< void() > func;
+    auto dispatcher = new std::queue< func >;
+
+    // Push some stuff onto it (not important what)
+    int i = 0;
+    dispatcher->push([&]() { ++i; });
+    dispatcher->push([&]() { ++i; });
+
+    // Add something we'll be waiting on
+    std::condition_variable cv;
+    std::mutex m;
+    utilities::time::waiting_on< bool > invoked(cv, m, false);
+    dispatcher->push([invoked_in_thread = invoked.in_thread()]() { invoked_in_thread.signal(true); });
+
+    // Destroy the dispatcher while we're waiting on the invocation!
+    std::thread([&]() {
+        std::this_thread::sleep_for(std::chrono::seconds(2));
+        delete dispatcher;
+        }).detach();
+
+        // Wait for it -- we'd expect that, when 'invoked_in_thread' is destroyed, it'll wake us up and
+        // not wait for the timeout
+        auto wait_start = std::chrono::high_resolution_clock::now();
+        invoked.wait_until(std::chrono::seconds(5), [&]() {
+            return invoked;
+            });
+        auto wait_end = std::chrono::high_resolution_clock::now();
+        auto waited_ms = std::chrono::duration_cast<std::chrono::milliseconds>(wait_end - wait_start).count();
+
+        REQUIRE(waited_ms > 1990);
+        REQUIRE(waited_ms < 3000);    // Up to a second buffer
+}
+
+TEST_CASE("Not invoked flush timeout expected")
+{
+    // Emulate some dispatcher
+    typedef std::function< void() > func;
+    auto dispatcher = new std::queue< func >;
+
+    // Push some stuff onto it (not important what)
+    int i = 0;
+    dispatcher->push([&]() { ++i; });
+    dispatcher->push([&]() { ++i; });
+
+    // Add something we'll be waiting on
+    std::condition_variable cv;
+    std::mutex m;
+    utilities::time::waiting_on< bool > invoked(cv, m, false);
+    dispatcher->push([invoked_in_thread = invoked.in_thread()]() { invoked_in_thread.signal(true); });
+
+    auto wait_start = std::chrono::high_resolution_clock::now();
+    invoked.wait_until( std::chrono::seconds( 5 ), [&]() { return invoked; } );
+    auto wait_end = std::chrono::high_resolution_clock::now();
+    auto waited_ms
+        = std::chrono::duration_cast< std::chrono::milliseconds >( wait_end - wait_start ).count();
+
+    REQUIRE( waited_ms >= 5000 );
+}
+
