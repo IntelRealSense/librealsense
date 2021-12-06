@@ -16,11 +16,12 @@ namespace time {
 // it and signal when we can continue...
 // 
 // In order to synchronize the users predicate, we expect the user to provide his conditional variable and mutex used to set the predicate.
-// As mentioned at the conditional variable documentation:
+// As mentioned at the conditional variable documentation: (https://en.cppreference.com/w/cpp/thread/condition_variable)
 //     The thread that intends to modify the shared variable has to
-//      1 .acquire a std::mutex(typically via std::lock_guard)
+//      1. acquire a std::mutex(typically via std::lock_guard)
 //      2. perform the modification while the lock is held
 //      3. execute notify_one or notify_all on the std::condition_variable(the lock does not need to be held for notification)
+// For more detailed information see https://www.modernescpp.com/index.php/c-core-guidelines-be-aware-of-the-traps-of-condition-variables
 template< class T >
 class waiting_on
 {
@@ -35,7 +36,6 @@ public:
         std::condition_variable &_cv;
         std::mutex &_m;
         std::atomic_bool _valid{ true };
-        std::mutex _m;
         friend class waiting_on;
 
     public:
