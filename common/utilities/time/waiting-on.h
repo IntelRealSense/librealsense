@@ -32,7 +32,7 @@ public:
         T _value;
         std::condition_variable _cv;
         std::atomic_bool _valid{ true };
-
+        std::mutex _m;
         friend class waiting_on;
 
     public:
@@ -51,7 +51,9 @@ public:
         // Set a new value and signal
         void signal( T const & t )
         {
+            std::unique_lock<std::mutex> locker(_m);
             _value = t;
+            locker.unlock();
             signal();
         }
         // Signal with the current value
@@ -144,12 +146,9 @@ public:
     template < class U, class L >
     void wait_until( U const& timeout, L const& pred )
     {
-        // Note that the mutex is useless and used only for the wait -- we assume here that access
-        // to the T data does not need mutual exclusion
-        std::mutex m;
-        // Following will issue (from CppCheck):
-        //     warning: The lock is ineffective because the mutex is locked at the same scope as the mutex itself. [localMutex]
-        std::unique_lock< std::mutex > locker( m );
+        // The CV must use the same lock that locks the predicate assignment value, otherwise it
+        // could miss the signal which is a known trap of conditional variables
+        std::unique_lock< std::mutex > locker(_ptr->_m);
         _ptr->_cv.wait_for( locker, timeout, [&]() -> bool {
             if( ! _ptr->_valid )
                 return true;
