@@ -30,15 +30,24 @@ public:
     class wait_state_t
     {
         T _value;
-        std::condition_variable _cv;
+        std::condition_variable &_cv;
+        std::mutex &_m;
         std::atomic_bool _valid{ true };
         std::mutex _m;
         friend class waiting_on;
 
     public:
-        wait_state_t() = default;   // allow default ctor
-        wait_state_t( T const & t )
-            : _value( t )
+        wait_state_t() = delete; // Do not allow default Ctor, we need the user's CV and Mutex
+        wait_state_t( std::condition_variable & cv, std::mutex & m )
+            : _cv( cv )
+            , _m( m )
+        {
+        }
+
+        wait_state_t( std::condition_variable &cv, std::mutex &m, T const & t )
+            : _cv( cv )
+            , _m( m )
+            , _value( t )
         {
         }
 
@@ -115,12 +124,12 @@ public:
     };
 
 public:
-    waiting_on()
-        : _ptr( std::make_shared< wait_state_t >() )
+    waiting_on( std::condition_variable & cv, std::mutex & m )
+        : _ptr( std::make_shared< wait_state_t >( cv, m ) )
     {
     }
-    waiting_on( T const & value )
-        : _ptr( std::make_shared< wait_state_t >( value ) )
+    waiting_on( std::condition_variable & cv, std::mutex & m, T const & value )
+        : _ptr( std::make_shared< wait_state_t >( cv, m, value ) )
     {
     }
 

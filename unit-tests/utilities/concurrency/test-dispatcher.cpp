@@ -9,6 +9,7 @@
 
 #include <algorithm>
 #include <vector>
+#include <iostream>
 
 using namespace utilities::time;
 
@@ -94,4 +95,40 @@ TEST_CASE("verify stop() not consuming high CPU usage")
     // This test took > 9 seconds on an 8 cores PC, after the fix it took ~1.5 sec on 1 core run (on release configuration).
     // We allow 9 seconds to support debug configuration as well
     REQUIRE(sw.get_elapsed_ms() < 9000);
+}
+
+TEST_CASE("stop() notify flush to finish")
+{
+    // On this test we check that if during a flush() another thread call stop(),
+    // than the flush CV we be triggered to exit and not wait a full 10 [sec] timeout
+    dispatcher dispatcher( 10 );
+    dispatcher.start();
+
+    stopwatch sw;
+    std::atomic_bool dispatched_end_verifier = false;
+    dispatcher.invoke( [&]( dispatcher::cancellable_timer c ) {
+        std::cout << "Sleeping from inside invoke" << std::endl;
+        std::this_thread::sleep_for( std::chrono::seconds( 5 ) );
+        std::cout << "Sleeping from inside invoke - Done" << std::endl;
+        dispatched_end_verifier = true;
+    } );
+
+    // Make sure the above invoke function is dispatched
+    std::this_thread::sleep_for( std::chrono::milliseconds( 100 ) );
+
+    std::thread t( [&]() {
+        // Make sure we postpone the stop to after the flush call
+        std::this_thread::sleep_for( std::chrono::milliseconds( 100 ) );
+        std::cout << "Stopping dispatcher" << std::endl;
+        dispatcher.stop();
+    } );
+
+    auto timeout = std::chrono::seconds(10);
+    auto timeout_ms = std::chrono::duration_cast<std::chrono::duration<double, std::milli>>(timeout).count();
+    std::cout << "Flushing dispatcher" << std::endl;
+    dispatcher.flush(timeout);
+    CHECK(dispatched_end_verifier);
+    std::cout << "Flushing is done" << std::endl;
+    CHECK( sw.get_elapsed_ms() < timeout_ms);
+    t.join();
 }

@@ -376,7 +376,7 @@ public:
     // Return when all items in the queue are finished (within a timeout).
     // If additional items are added while we're waiting, those will not be waited on!
     //
-    bool flush();
+    bool flush(std::chrono::steady_clock::duration timeout = std::chrono::seconds(10) );
 
 
 private:
