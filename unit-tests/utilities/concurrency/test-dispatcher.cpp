@@ -105,7 +105,7 @@ TEST_CASE("stop() notify flush to finish")
     dispatcher.start();
 
     stopwatch sw;
-    std::atomic_bool dispatched_end_verifier = false;
+    std::atomic_bool dispatched_end_verifier{ false };
     dispatcher.invoke( [&]( dispatcher::cancellable_timer c ) {
         std::cout << "Sleeping from inside invoke" << std::endl;
         std::this_thread::sleep_for( std::chrono::seconds( 5 ) );
