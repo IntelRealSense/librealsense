@@ -15,10 +15,12 @@ namespace time {
 // Helper class -- encapsulate a variable of type T that we want to wait on: another thread will set
 // it and signal when we can continue...
 // 
-// We use the least amount of synchronization mechanisms: no effort is made to synchronize (usually,
-// it's not needed: only one thread will be writing to T, and the owner of T will be waiting on it)
-// so it's the responsibility of the user to do so if needed.
-//
+// In order to synchronize the users predicate, we expect the user to provide his conditional variable and mutex used to set the predicate.
+// As mentioned at the conditional variable documentation:
+//     The thread that intends to modify the shared variable has to
+//      1 .acquire a std::mutex(typically via std::lock_guard)
+//      2. perform the modification while the lock is held
+//      3. execute notify_one or notify_all on the std::condition_variable(the lock does not need to be held for notification)
 template< class T >
 class waiting_on
 {
