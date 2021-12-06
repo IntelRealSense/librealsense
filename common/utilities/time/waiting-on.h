@@ -35,7 +35,6 @@ public:
         std::condition_variable &_cv;
         std::mutex &_m;
         std::atomic_bool _valid{ true };
-        std::mutex _m;
         friend class waiting_on;
 
     public:
