@@ -86,18 +86,18 @@ void dispatcher::stop()
     // pending
     _queue.stop();
 
+    // Wait until any dispatched is done...
+    {
+        std::lock_guard< std::mutex > lock(_dispatch_mutex);
+        assert(_queue.empty());
+
+    }
     // Signal we've stopped so any sleeping dispatched will wake up immediately
     {
         std::lock_guard< std::mutex > lock( _was_stopped_mutex );
         _was_stopped = true;
     }
     _was_stopped_cv.notify_all();
-
-    // Wait until any dispatched is done...
-    {
-        std::lock_guard< std::mutex > lock( _dispatch_mutex );
-        assert( _queue.empty() );
-    }
 }
 
 
@@ -105,19 +105,17 @@ void dispatcher::stop()
 // If additional items are added while we're waiting, those will not be waited on!
 // Returns false if a timeout occurred before we were done
 //
-bool dispatcher::flush()
+bool dispatcher::flush( std::chrono::steady_clock::duration timeout )
 {
     if( _was_stopped )
         return true;  // Nothing to do - so success (no timeout)
 
-    utilities::time::waiting_on< bool > invoked( false );
+    utilities::time::waiting_on< bool > invoked( _was_stopped_cv, _was_stopped_mutex, false );
     // Blocking call, we don't want the item in the queue to drop if the queue is full.
     // TODO - Add a timeout to blocking invoke, Currently it can wait forever here.
     auto invoked_in_thread = invoked.in_thread();
     invoke( [invoked_in_thread]( cancellable_timer ) { invoked_in_thread.signal( true ); }, true );
-    invoked.wait_until( std::chrono::seconds( 10 ), [&]() {
-        return invoked || _was_stopped;
-    } );
+    invoked.wait_until( timeout, [&]() { return invoked || _was_stopped; } );
     return invoked;
 }
 
@@ -127,7 +125,7 @@ bool dispatcher::flush()
 bool dispatcher::_wait_for_start( int timeout_ms )
 {
     // If the dispatcher is not started wait for a start event, if not such event within given timeout do nothing.
-    // If during the wait the thread destructor is called (_is_aliva = false) do nothing as well.
+    // If during the wait the thread destructor is called (_is_alive = false) do nothing as well.
     std::unique_lock< std::mutex > lock(_was_stopped_mutex);
     return _was_stopped_cv.wait_for(lock, std::chrono::milliseconds(timeout_ms), [this]() {
         return !_was_stopped.load() || !_is_alive;
