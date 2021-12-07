@@ -3,16 +3,18 @@
 
 #include <unit-tests/catch.h>
 #include <common/utilities/time/waiting-on.h>
+#include <common/utilities/time/timer.h>
 #include <queue>
 
 using utilities::time::waiting_on;
+using namespace utilities::time;
 
 bool invoke( size_t delay_in_thread, size_t timeout )
 {
     std::condition_variable cv;
     std::mutex m;
     waiting_on< bool > invoked( cv, m, false );
-    
+
     auto invoked_in_thread = invoked.in_thread();
     auto lambda = [delay_in_thread, invoked_in_thread]() {
         // std::cout << "In thread" << std::endl;
@@ -20,13 +22,11 @@ bool invoke( size_t delay_in_thread, size_t timeout )
         // std::cout << "Signalling" << std::endl;
         invoked_in_thread.signal( true );
     };
-    //std::cout << "Starting thread" << std::endl;
+    // std::cout << "Starting thread" << std::endl;
     std::thread( lambda ).detach();
-    //std::cout << "Waiting" << std::endl;
-    invoked.wait_until( std::chrono::seconds( timeout ), [&]() {
-        return invoked;
-        } );
-    //std::cout << "After wait" << std::endl;
+    // std::cout << "Waiting" << std::endl;
+    invoked.wait_until( std::chrono::seconds( timeout ), [&]() { return invoked; } );
+    // std::cout << "After wait" << std::endl;
     return invoked;
 }
 
@@ -37,7 +37,7 @@ TEST_CASE( "Basic wait" )
 
 TEST_CASE( "Timeout" )
 {
-    REQUIRE( ! invoke( 10 /* seconds in thread */, 1 /* timeout */ ));
+    REQUIRE( ! invoke( 10 /* seconds in thread */, 1 /* timeout */ ) );
 }
 
 TEST_CASE( "Struct usage" )
@@ -50,7 +50,7 @@ TEST_CASE( "Struct usage" )
 
     std::condition_variable cv;
     std::mutex m;
-    waiting_on< value_t > output (cv, m);
+    waiting_on< value_t > output( cv, m );
     output->d = 2.;
 
     auto output_ = output.in_thread();
@@ -60,26 +60,24 @@ TEST_CASE( "Struct usage" )
         while( output->i < 30 )
         {
             std::this_thread::sleep_for( std::chrono::milliseconds( 50 ) );
-            std::lock_guard<std::mutex> lock(m);
+            std::lock_guard< std::mutex > lock( m );
             ++output->i;
             output.signal();
         }
     } ).detach();
 
     // Within a second, i should reach ~20, but we'll ask it top stop when it reaches 10
-    output.wait_until( std::chrono::seconds( 1 ), [&]() {
-        return output->i == 10;
-        } );
+    output.wait_until( std::chrono::seconds( 1 ), [&]() { return output->i == 10; } );
 
     auto i1 = output->i.load();
-    CHECK( i1 >= 10 ); // the thread is still running!
+    CHECK( i1 >= 10 );  // the thread is still running!
     CHECK( i1 < 16 );
-    //std::cout << "i1= " << i1 << std::endl;
+    // std::cout << "i1= " << i1 << std::endl;
 
     std::this_thread::sleep_for( std::chrono::milliseconds( 100 ) );
     auto i2 = output->i.load();
-    CHECK( i2 > i1 ); // the thread is still running!
-    //std::cout << "i2= " << i2 << std::endl;
+    CHECK( i2 > i1 );  // the thread is still running!
+    // std::cout << "i2= " << i2 << std::endl;
 
     // Wait until it's done, ~30x50ms = 1.5 seconds total
     REQUIRE( output->i < 30 );
@@ -87,10 +85,10 @@ TEST_CASE( "Struct usage" )
     REQUIRE( output->i == 30 );
 }
 
-TEST_CASE("Not invoked but still notified by destructor")
+TEST_CASE( "Not invoked but still notified by destructor" )
 {
     // Emulate some dispatcher
-    typedef std::function< void () > func;
+    typedef std::function< void() > func;
     auto dispatcher = new std::queue< func >;
 
     // Push some stuff onto it (not important what)
@@ -101,26 +99,24 @@ TEST_CASE("Not invoked but still notified by destructor")
     // Add something we'll be waiting on
     std::condition_variable cv;
     std::mutex m;
-    utilities::time::waiting_on< bool > invoked(cv, m, false);
-    dispatcher->push([invoked_in_thread = invoked.in_thread()]() { invoked_in_thread.signal(true); });
+    utilities::time::waiting_on< bool > invoked( cv, m, false );
+    dispatcher->push(
+        [invoked_in_thread = invoked.in_thread()]() { invoked_in_thread.signal( true ); } );
 
     // Destroy the dispatcher while we're waiting on the invocation!
-    std::thread([&]() {
-        std::this_thread::sleep_for(std::chrono::seconds(2));
+    std::thread( [&]() {
+        std::this_thread::sleep_for( std::chrono::seconds( 2 ) );
         delete dispatcher;
-        }).detach();
+    } ).detach();
 
-        // Wait for it -- we'd expect that, when 'invoked_in_thread' is destroyed, it'll wake us up and
-        // not wait for the timeout
-        auto wait_start = std::chrono::high_resolution_clock::now();
-        invoked.wait_until(std::chrono::seconds(5), [&]() {
-            return invoked;
-            });
-        auto wait_end = std::chrono::high_resolution_clock::now();
-        auto waited_ms = std::chrono::duration_cast<std::chrono::milliseconds>(wait_end - wait_start).count();
+    // Wait for it -- we'd expect that, when 'invoked_in_thread' is destroyed, it'll wake us up and
+    // not wait for the timeout
+    stopwatch sw;
+    invoked.wait_until( std::chrono::seconds( 5 ), [&]() { return invoked; } );
+    auto waited = sw.get_elapsed();
 
-        REQUIRE(waited_ms > 1990);
-        REQUIRE(waited_ms < 3000);    // Up to a second buffer
+    REQUIRE( waited > std::chrono::milliseconds( 1990 ) );
+    REQUIRE( waited < std::chrono::milliseconds( 3000 ) );  // Up to a second buffer
 }
 
 TEST_CASE( "Not invoked but still notified by predicate (stopped)" )
@@ -133,48 +129,37 @@ TEST_CASE( "Not invoked but still notified by predicate (stopped)" )
     // Destroy the dispatcher while we're waiting on the invocation!
     std::atomic_bool stopped( false );
     std::thread( [&]() {
-        std::this_thread::sleep_for( std::chrono::seconds( 2 ));
-        std::lock_guard<std::mutex> lock(m);
+        std::this_thread::sleep_for( std::chrono::seconds( 2 ) );
+        std::lock_guard< std::mutex > lock( m );
         stopped = true;
         cv.notify_all();
-        } ).detach();
+    } ).detach();
 
     // When 'stopped' is turned on , it'll wake us up and not wait for the timeout
+    stopwatch sw;
     auto wait_start = std::chrono::high_resolution_clock::now();
     invoked.wait_until( std::chrono::seconds( 5 ), [&]() {
         return invoked || stopped;  // Without stopped, invoked will be false and we'll wait again
                                     // even after we're signalled!
-        } );
+    } );
     auto wait_end = std::chrono::high_resolution_clock::now();
-    auto waited_ms = std::chrono::duration_cast<std::chrono::milliseconds>( wait_end - wait_start ).count();
+    auto waited = sw.get_elapsed();
 
-    REQUIRE( waited_ms > 1990 );
-    REQUIRE( waited_ms < 3000 );    // Up to a second buffer
+    REQUIRE( waited > std::chrono::milliseconds( 1990 ) );
+    REQUIRE( waited < std::chrono::milliseconds( 3000 ) );  // Up to a second buffer
 }
 
-TEST_CASE("Not invoked flush timeout expected")
+TEST_CASE( "Not invoked flush timeout expected" )
 {
-    // Emulate some dispatcher
-    typedef std::function< void() > func;
-    auto dispatcher = new std::queue< func >;
-
-    // Push some stuff onto it (not important what)
-    int i = 0;
-    dispatcher->push([&]() { ++i; });
-    dispatcher->push([&]() { ++i; });
-
     // Add something we'll be waiting on
     std::condition_variable cv;
     std::mutex m;
-    utilities::time::waiting_on< bool > invoked(cv, m, false);
-    dispatcher->push([invoked_in_thread = invoked.in_thread()]() { invoked_in_thread.signal(true); });
+    utilities::time::waiting_on< bool > invoked( cv, m, false );
 
-    auto wait_start = std::chrono::high_resolution_clock::now();
-    invoked.wait_until( std::chrono::seconds( 5 ), [&]() { return invoked; } );
-    auto wait_end = std::chrono::high_resolution_clock::now();
-    auto waited_ms
-        = std::chrono::duration_cast< std::chrono::milliseconds >( wait_end - wait_start ).count();
+    stopwatch sw;
+    auto timeout = std::chrono::seconds( 2 );
+    invoked.wait_until( timeout, [&]() { return invoked; } );
+    auto wait_time = sw.get_elapsed();
 
-    REQUIRE( waited_ms >= 5000 );
+    REQUIRE( wait_time >= timeout );
 }
-
