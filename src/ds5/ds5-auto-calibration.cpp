@@ -1013,7 +1013,7 @@ namespace librealsense
                 cropped_image[cropped_idx] = (*p);
                 cropped_idx++;
 #endif
-                if ((*p) > _min_valid_depth && (*p) < _max_valid_depth)
+                if ((*p) >= _min_valid_depth && (*p) <= _max_valid_depth)
                     ++counter;
                 ++p;
             }
@@ -1121,7 +1121,7 @@ namespace librealsense
                 cropped_image[cropped_idx] = (*p);
                 cropped_idx++;
 #endif
-                if ((*p) > _min_valid_depth && (*p) < _max_valid_depth)
+                if ((*p) >= _min_valid_depth && (*p) <= _max_valid_depth)
                 {
                     ++_collected_counter;
                     _collected_sum += *p;
