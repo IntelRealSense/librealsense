@@ -7,10 +7,14 @@
 
 # First import the library
 import sys
-sys.path.insert(0, "C:\\projects\\librealsense_calib3\\build\\Release")
+import os
+if os.name == 'posix':
+    from pyrealsense2 import pyrealsense2 as rs
+else:
+    sys.path.insert(0, "C:\\projects\\librealsense_calib3\\build\\Release")
+    import pyrealsense2 as rs
 
-import pyrealsense2 as rs
-import  sys
+rs.log_to_console(rs.log_severity.info)
 
 def on_chip_calibration_json(occ_json_file, host_assistance):
     try:
@@ -96,8 +100,8 @@ def main(argv):
         print("The connected device does not support auto calibration")
         return
 
-    # config.enable_stream(rs.stream.depth, 256, 144, rs.format.z16, 90)
-    config.enable_stream(rs.stream.depth, 848, 480, rs.format.z16, 30)
+    config.enable_stream(rs.stream.depth, 256, 144, rs.format.z16, 90)
+    # config.enable_stream(rs.stream.depth, 848, 480, rs.format.z16, 30)
     conf = pipeline.start(config)
     calib_dev = rs.auto_calibrated_device(conf.get_device())
 

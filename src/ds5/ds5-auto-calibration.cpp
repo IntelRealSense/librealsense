@@ -287,7 +287,6 @@ namespace librealsense
             {
                 // Check calibration status
                 auto res = _hw_monitor->send(command{ ds::AUTO_CALIB, py_rx_calib_check_status });
-
                 if (res.size() < sizeof(DirectSearchCalibrationResult))
                 {
                     if (!((retries++) % 5)) // Add log debug once in a sec
@@ -301,8 +300,9 @@ namespace librealsense
                     done = !wait_for_final_results || result.status != RS2_DSC_STATUS_RESULT_NOT_READY;
                 }
             }
-            catch (const invalid_value_exception&)
+            catch (const invalid_value_exception& e)
             {
+                LOG_DEBUG("error: " << e.what());
                 // Asked for status while firmware is still in progress.
             }
 
@@ -526,7 +526,6 @@ namespace librealsense
                 {
                     handle_calibration_error(status);
                 }
-
                 res = get_calibration_results(health);
             }
         }
@@ -921,7 +920,7 @@ namespace librealsense
                     }
                     catch (const std::exception& ex)
                     {
-                        LOG_WARNING(ex.what());
+                        LOG_DEBUG(ex.what());
                     }
 
                     if (progress_callback)
@@ -952,17 +951,10 @@ namespace librealsense
                 health[0] = ph[0];
                 health[1] = ph[1];
 
-                LOG_INFO("Ground truth: " << ground_truth_mm << "mm");
-                LOG_INFO("Health check numbers from TareCalibrationResult(0x0C): before=" << ph[0] << ", after=" << ph[1]);
-                LOG_INFO("Z calculated from health check numbers : before=" << (ph[0] + 1) * ground_truth_mm << ", after=" << (ph[1] + 1) * ground_truth_mm);
-
                 // Handle errors from firmware
                 if (status != RS2_DSC_STATUS_SUCCESS)
                     handle_calibration_error(status);
 
-                //float health_from_calibration_results = 0.0f;
-                //res = get_calibration_results(&health_from_calibration_results);
-                //LOG_INFO("Health_check from CalibrationResult(0x0D): health=" << health_from_calibration_results);
                 res = get_calibration_results();
 
                 if (depth < 0)
@@ -1309,7 +1301,7 @@ namespace librealsense
         catch (const std::exception& ex)
         {
             _interactive_state = interactive_calibration_state::RS2_OCC_STATE_NOT_ACTIVE;
-            throw ex;
+            throw;
         }
     }
 
@@ -1480,7 +1472,6 @@ namespace librealsense
         if(health)
             *health = reslt->m_dscResultParams.m_healthCheck;
 
-        LOG_INFO("Got calibration results with calib size: " << calib.size());
         return calib;
     }
 
