@@ -9,6 +9,7 @@
 
 #include <algorithm>
 #include <vector>
+#include <iostream>
 
 using namespace utilities::time;
 
@@ -57,7 +58,7 @@ TEST_CASE( "invoke and wait" )
     d.start();
     stopwatch sw;
     d.invoke_and_wait(func, []() {return false; }, true);
-    REQUIRE(sw.get_elapsed_ms() > 3000); // verify we get here only after the function call ended
+    REQUIRE( sw.get_elapsed() > std::chrono::seconds( 3 ) ); // verify we get here only after the function call ended
     d.stop();
 }
 
@@ -93,5 +94,41 @@ TEST_CASE("verify stop() not consuming high CPU usage")
     // We had an issue that stop() call cause a high CPU usage and therefore other operations stall, 
     // This test took > 9 seconds on an 8 cores PC, after the fix it took ~1.5 sec on 1 core run (on release configuration).
     // We allow 9 seconds to support debug configuration as well
-    REQUIRE(sw.get_elapsed_ms() < 9000);
+    REQUIRE( sw.get_elapsed() < std::chrono::seconds( 9 ) );
+}
+
+TEST_CASE("stop() notify flush to finish")
+{
+    // On this test we check that if during a flush() another thread call stop(),
+    // than the flush CV will be triggered to exit and not wait a full timeout
+    dispatcher dispatcher( 10 );
+    dispatcher.start();
+
+    stopwatch sw;
+    std::atomic_bool dispatched_end_verifier{ false };
+    dispatcher.invoke( [&]( dispatcher::cancellable_timer c ) {
+        //std::cout << "Sleeping from inside invoke" << std::endl;
+        std::this_thread::sleep_for( std::chrono::seconds( 3 ) );
+        //std::cout << "Sleeping from inside invoke - Done" << std::endl;
+        dispatched_end_verifier = true;
+    } );
+
+    // Make sure the above invoke function is dispatched
+    std::this_thread::sleep_for( std::chrono::milliseconds( 100 ) );
+
+    std::thread stop_thread( [&]() {
+        // Make sure we postpone the stop to after the flush call
+        std::this_thread::sleep_for( std::chrono::milliseconds( 100 ) );
+        //std::cout << "Stopping dispatcher" << std::endl;
+        dispatcher.stop();
+    } );
+
+    auto timeout = std::chrono::seconds(5);
+    //std::cout << "Flushing dispatcher" << std::endl;
+    CHECK(!dispatcher.flush(timeout));
+    // We expect that flush will be triggered by stop only after the dispatched function end.
+    CHECK(dispatched_end_verifier);
+    //std::cout << "Flushing is done" << std::endl;
+    CHECK( sw.get_elapsed() < timeout );
+    stop_thread.join();
 }
