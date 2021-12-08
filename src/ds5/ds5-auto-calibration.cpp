@@ -464,7 +464,7 @@ namespace librealsense
         std::shared_ptr<ds5_advanced_mode_base> preset_recover;
         if (calib_type == 0)
         {
-            LOG_INFO("run_on_chip_calibration with parameters: speed = " << speed << " scan_parameter = " << scan_parameter << " data_sampling = " << data_sampling);
+            LOG_DEBUG("run_on_chip_calibration with parameters: speed = " << speed << " scan_parameter = " << scan_parameter << " data_sampling = " << data_sampling);
             check_params(speed, scan_parameter, data_sampling);
 
             int p4 = 0;
@@ -531,7 +531,7 @@ namespace librealsense
         }
         else if (calib_type == 1)
         {
-            LOG_INFO("run_on_chip_focal_length_calibration with parameters: step count = " << fl_step_count
+            LOG_DEBUG("run_on_chip_focal_length_calibration with parameters: step count = " << fl_step_count
                 << ", fy scan range = " << fy_scan_range << ", keep new value after sucessful scan = " << keep_new_value_after_sucessful_scan
                 << ", interrrupt data sampling " << fl_data_sampling << ", adjust both sides = " << adjust_both_sides
                 << ", fl scan location = " << fl_scan_location << ", fy scan direction = " << fy_scan_direction << ", white wall mode = " << white_wall_mode);
@@ -642,7 +642,7 @@ namespace librealsense
         }
         else if (calib_type == 2)
         {
-            LOG_INFO("run_on_chip_calibration with parameters: speed = " << speed_fl
+            LOG_DEBUG("run_on_chip_calibration with parameters: speed = " << speed_fl
                 << ", keep new value after sucessful scan = " << keep_new_value_after_sucessful_scan
                 << " data_sampling = " << data_sampling << ", adjust both sides = " << adjust_both_sides
                 << ", fl scan location = " << fl_scan_location << ", fy scan direction = " << fy_scan_direction << ", white wall mode = " << white_wall_mode);
@@ -849,7 +849,7 @@ namespace librealsense
 
         if (depth > 0)
         {
-            LOG_INFO("run_tare_calibration interactive control with parameters: depth = " << depth);
+            LOG_DEBUG("run_tare_calibration interactive control with parameters: depth = " << depth);
             _hw_monitor->send(command{ ds::AUTO_CALIB, interactive_scan_control, 2, depth });
         }
         else
@@ -866,7 +866,7 @@ namespace librealsense
                     std::this_thread::sleep_for(std::chrono::milliseconds(200));
                 }
 
-                LOG_INFO("run_tare_calibration with parameters: speed = " << speed << " average_step_count = " << average_step_count << " step_count = " << step_count << " accuracy = " << accuracy << " scan_parameter = " << scan_parameter << " data_sampling = " << data_sampling);
+                LOG_DEBUG("run_tare_calibration with parameters: speed = " << speed << " average_step_count = " << average_step_count << " step_count = " << step_count << " accuracy = " << accuracy << " scan_parameter = " << scan_parameter << " data_sampling = " << data_sampling);
                 check_tare_params(speed, scan_parameter, data_sampling, average_step_count, step_count, accuracy);
 
                 auto param2 = (int)ground_truth_mm * 100;
@@ -882,7 +882,7 @@ namespace librealsense
                 if (advanced_mode)
                 {
                     auto cur_preset = (rs2_rs400_visual_preset)(int)advanced_mode->_preset_opt->query();
-                    LOG_INFO("run_tare_calibration with preset: " << rs2_rs400_visual_preset_to_string(cur_preset));
+                    LOG_DEBUG("run_tare_calibration with preset: " << rs2_rs400_visual_preset_to_string(cur_preset));
                 }
 
                 if (depth == 0)

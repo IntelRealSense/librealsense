@@ -26,12 +26,15 @@ def on_chip_calibration_json(occ_json_file, host_assistance):
         occ_json = '{\n  '+\
                     '"calib type": 0,\n'+\
                     '"host assistance": ' + str(int(host_assistance)) + ',\n'+\
+                    '"keep new value after sucessful scan": 1,\n'+\
+                    '"fl data sampling": 1,\n'+\
+                    '"adjust both sides": 0,\n'+\
+                    '"fl scan location": 0,\n'+\
+                    '"fy scan direction": 0,\n'+\
+                    '"white wall mode": 0,\n'+\
                     '"speed": 3,\n'+\
-                    '"average_step_count": 20,\n'+\
                     '"scan parameter": 0,\n'+\
-                    '"step count": 20,\n'+\
                     '"apply preset": 1,\n'+\
-                    '"accuracy": 2,\n'+\
                     '"scan only": ' + str(int(host_assistance)) + ',\n'+\
                     '"interactive scan": 0' + ',\n'+\
                     '"resize factor": 1\n'+\
@@ -47,23 +50,14 @@ def tare_calibration_json(tare_json_file, host_assistance):
             print('Error reading tare_json_file: ', tare_json_file)
         print ('Using default parameters for Tare calibration.')
         tare_json = '{\n  '+\
-                    '"calib type": 2,\n'+\
                     '"host assistance": ' + str(int(host_assistance)) + ',\n'+\
-                    '"keep new value after sucessful scan": 1,\n'+\
-                    '"fl data sampling": 1,\n'+\
-                    '"adjust both sides": 0,\n'+\
-                    '"fl scan location": 0,\n'+\
-                    '"fy scan direction": 0,\n'+\
-                    '"white wall mode": 0,\n'+\
                     '"speed": 3,\n'+\
-                    '"average_step_count": 20,\n'+\
                     '"scan parameter": 0,\n'+\
                     '"step count": 20,\n'+\
                     '"apply preset": 1,\n'+\
                     '"accuracy": 2,\n'+\
-                    '"scan only": ' + str(int(host_assistance)) + ',\n'+\
-                    '"interactive scan": 0,\n'+\
-                    '"depth": 0\n'+\
+                    '"depth": 0,\n'+\
+                    '"resize factor": 1\n'+\
                     '}'
     return tare_json
 
