@@ -1,6 +1,8 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2016 Intel Corporation. All Rights Reserved.
 
+#define SAVE_RAW_IMAGE
+
 #include <numeric>
 #include "../third-party/json.hpp"
 #include "ds5-device.h"
@@ -493,17 +495,27 @@ namespace librealsense
             {
                 if (host_assistance == host_assistance_type::assistance_first_feed)
                 {
+#ifdef SAVE_RAW_IMAGE
+                    std::stringstream name_s;
+                    name_s << "fill_factor_final.txt";
+                    std::ofstream fout(name_s.str(), std::ios::out);
+#endif
                     command cmd(ds::AUTO_CALIB, interactive_scan_control, 0, 0);
                     uint8_t* p = reinterpret_cast<uint8_t*>(&step_count_v3);
                     cmd.data.push_back(p[0]);
                     cmd.data.push_back(p[1]);
                     for (uint16_t i = 0; i < step_count_v3; ++i)
                     {
+#ifdef SAVE_RAW_IMAGE
+                        fout << i << ", " << *(fill_factor + i) << std::endl;
+#endif
                         p = reinterpret_cast<uint8_t*>(fill_factor + i);
                         cmd.data.push_back(p[0]);
                         cmd.data.push_back(p[1]);
                     }
-
+#ifdef SAVE_RAW_IMAGE
+                    fout.close();
+#endif
                     _hw_monitor->send(cmd);
                 }
 
@@ -977,7 +989,6 @@ namespace librealsense
 
         return res;
     }
-#define SAVE_RAW_IMAGE
     uint16_t auto_calibrated::calc_fill_rate(const rs2_frame* f)
     {
         auto frame = ((video_frame*)f);
@@ -1157,6 +1168,7 @@ namespace librealsense
         try
         {
             std::vector<uint8_t> res;
+
             rs2_metadata_type frame_counter = ((frame_interface*)f)->get_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER);
             if (_interactive_state == interactive_calibration_state::RS2_OCC_STATE_WAIT_TO_CAMERA_START)
             {
@@ -1187,9 +1199,9 @@ namespace librealsense
             if (_interactive_state == interactive_calibration_state::RS2_OCC_STATE_WAIT_TO_CALIB_START)
             {
                 bool still_waiting(frame_counter >= _prev_frame_counter || frame_counter >= _total_frames);
-                _prev_frame_counter = frame_counter;
                 if (still_waiting)
                 {
+                    _prev_frame_counter = frame_counter;
                     if (progress_callback)
                     {
                         progress_callback->on_update_progress(static_cast<float>(15));
@@ -1277,6 +1289,23 @@ namespace librealsense
                 }
                 if (_action == auto_calib_action::RS2_OCC_ACTION_ON_CHIP_CALIB)
                 {
+#ifdef SAVE_RAW_IMAGE
+                    {
+                        std::stringstream ss;
+                        ss << "{\n \"calib type\":" << 0 <<
+                            ",\n \"host assistance\":" << 2 <<
+                            ",\n \"step count v3\":" << _total_frames;
+                        for (int i = 0; i < _total_frames; ++i)
+                            ss << ",\n \"fill factor " << i << "\":" << _fill_factor[i];
+                        ss << "}";
+
+                        std::stringstream name_s;
+                        name_s << "fill_factor_before_fill.txt";
+                        std::ofstream fout(name_s.str(), std::ios::out);
+                        fout << ss.str();
+                        fout.close();
+                    }
+#endif
                     fill_missing_data(_fill_factor, _total_frames);
                     std::stringstream ss;
                     ss << "{\n \"calib type\":" << 0 <<
@@ -1287,6 +1316,15 @@ namespace librealsense
                     ss << "}";
 
                     std::string json = ss.str();
+#ifdef SAVE_RAW_IMAGE
+                    {
+                        std::stringstream name_s;
+                        name_s << "fill_factor.txt";
+                        std::ofstream fout(name_s.str(), std::ios::out);
+                        fout << json;
+                        fout.close();
+                    }
+#endif
 
                     res = run_on_chip_calibration(timeout_ms, json, health, progress_callback);
                 }

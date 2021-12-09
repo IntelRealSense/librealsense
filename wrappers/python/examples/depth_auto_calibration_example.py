@@ -12,6 +12,8 @@ sys.path.insert(0, "C:\\projects\\librealsense_calib3\\build\\Release")
 import pyrealsense2 as rs
 import  sys
 
+rs.log_to_console(rs.log_severity.info)
+
 def on_chip_calibration_json(occ_json_file, host_assistance):
     try:
         occ_json = open(occ_json_file).read()
@@ -59,7 +61,8 @@ def tare_calibration_json(tare_json_file, host_assistance):
                     '"accuracy": 2,\n'+\
                     '"scan only": ' + str(int(host_assistance)) + ',\n'+\
                     '"interactive scan": 0,\n'+\
-                    '"depth": 0\n'+\
+                    '"depth": 0,\n'+\
+                    '"resize factor": 1\n'+\
                     '}'
     return tare_json
 
@@ -96,8 +99,8 @@ def main(argv):
         print("The connected device does not support auto calibration")
         return
 
-    # config.enable_stream(rs.stream.depth, 256, 144, rs.format.z16, 90)
-    config.enable_stream(rs.stream.depth, 848, 480, rs.format.z16, 30)
+    config.enable_stream(rs.stream.depth, 256, 144, rs.format.z16, 90)
+    # config.enable_stream(rs.stream.depth, 848, 480, rs.format.z16, 30)
     conf = pipeline.start(config)
     calib_dev = rs.auto_calibrated_device(conf.get_device())
 
