@@ -1215,13 +1215,13 @@ namespace librealsense
                 {
                     if (frame_counter < _total_frames)
                     {
-                        if (frame_counter != _prev_frame_counter)
+                        if (frame_counter > 0 && frame_counter != _prev_frame_counter)
                         {
                             if (progress_callback)
                             {
                                 progress_callback->on_update_progress(static_cast<float>(20 + static_cast<int>(frame_counter * 60.0 / _total_frames)));
                             }
-                            _fill_factor[frame_counter] = calc_fill_rate(f);
+                            _fill_factor[frame_counter-1] = calc_fill_rate(f);
                         }
                         _prev_frame_counter = frame_counter;
                     }
