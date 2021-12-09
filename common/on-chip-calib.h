@@ -92,8 +92,6 @@ namespace rs2
         float tilt_angle = 0.0f;
 
         const float correction_factor = 0.50f;
-        float corrected_ratio = 0.0f;
-        float tilt_angle = 0.0f;
 
         bool tare_health = false;
 

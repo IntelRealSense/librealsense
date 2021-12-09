@@ -80,8 +80,6 @@ namespace librealsense
         return f.good();
     }
 
-            CASE(ROI_RECT_GAUSSIAN_DOT_VERTICES)
-            CASE(POS_GAUSSIAN_DOT_VERTICES)
     std::string firmware_version::to_string() const
     {
         if (is_any) return "any";

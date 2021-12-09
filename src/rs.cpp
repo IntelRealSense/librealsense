@@ -3235,7 +3235,7 @@ const rs2_raw_data_buffer* rs2_run_tare_calibration_cpp(rs2_device* device, floa
     auto auto_calib = VALIDATE_INTERFACE(device->device, librealsense::auto_calibrated_interface);
 
     std::string json((char*)json_content, (char*)json_content + content_size);
-    std::vector< uint8_t > buffer = auto_calib->run_tare_calibration( timeout_ms, ground_truth_mm, json, callback_ptr );
+    std::vector< uint8_t > buffer = auto_calib->run_tare_calibration( timeout_ms, ground_truth_mm, json, health, callback_ptr );
 
     return new rs2_raw_data_buffer{ buffer };
 }
