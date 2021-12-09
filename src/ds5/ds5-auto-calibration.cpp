@@ -289,7 +289,6 @@ namespace librealsense
             {
                 // Check calibration status
                 auto res = _hw_monitor->send(command{ ds::AUTO_CALIB, py_rx_calib_check_status });
-
                 if (res.size() < sizeof(DirectSearchCalibrationResult))
                 {
                     if (!((retries++) % 5)) // Add log debug once in a sec
@@ -303,8 +302,9 @@ namespace librealsense
                     done = !wait_for_final_results || result.status != RS2_DSC_STATUS_RESULT_NOT_READY;
                 }
             }
-            catch (const invalid_value_exception&)
+            catch (const invalid_value_exception& e)
             {
+                LOG_DEBUG("error: " << e.what());
                 // Asked for status while firmware is still in progress.
             }
 
@@ -466,7 +466,7 @@ namespace librealsense
         std::shared_ptr<ds5_advanced_mode_base> preset_recover;
         if (calib_type == 0)
         {
-            LOG_INFO("run_on_chip_calibration with parameters: speed = " << speed << " scan_parameter = " << scan_parameter << " data_sampling = " << data_sampling);
+            LOG_DEBUG("run_on_chip_calibration with parameters: speed = " << speed << " scan_parameter = " << scan_parameter << " data_sampling = " << data_sampling);
             check_params(speed, scan_parameter, data_sampling);
 
             int p4 = 0;
@@ -538,13 +538,12 @@ namespace librealsense
                 {
                     handle_calibration_error(status);
                 }
-
                 res = get_calibration_results(health);
             }
         }
         else if (calib_type == 1)
         {
-            LOG_INFO("run_on_chip_focal_length_calibration with parameters: step count = " << fl_step_count
+            LOG_DEBUG("run_on_chip_focal_length_calibration with parameters: step count = " << fl_step_count
                 << ", fy scan range = " << fy_scan_range << ", keep new value after sucessful scan = " << keep_new_value_after_sucessful_scan
                 << ", interrrupt data sampling " << fl_data_sampling << ", adjust both sides = " << adjust_both_sides
                 << ", fl scan location = " << fl_scan_location << ", fy scan direction = " << fy_scan_direction << ", white wall mode = " << white_wall_mode);
@@ -655,7 +654,7 @@ namespace librealsense
         }
         else if (calib_type == 2)
         {
-            LOG_INFO("run_on_chip_calibration with parameters: speed = " << speed_fl
+            LOG_DEBUG("run_on_chip_calibration with parameters: speed = " << speed_fl
                 << ", keep new value after sucessful scan = " << keep_new_value_after_sucessful_scan
                 << " data_sampling = " << data_sampling << ", adjust both sides = " << adjust_both_sides
                 << ", fl scan location = " << fl_scan_location << ", fy scan direction = " << fy_scan_direction << ", white wall mode = " << white_wall_mode);
@@ -862,7 +861,7 @@ namespace librealsense
 
         if (depth > 0)
         {
-            LOG_INFO("run_tare_calibration interactive control with parameters: depth = " << depth);
+            LOG_DEBUG("run_tare_calibration interactive control with parameters: depth = " << depth);
             _hw_monitor->send(command{ ds::AUTO_CALIB, interactive_scan_control, 2, depth });
         }
         else
@@ -879,7 +878,7 @@ namespace librealsense
                     std::this_thread::sleep_for(std::chrono::milliseconds(200));
                 }
 
-                LOG_INFO("run_tare_calibration with parameters: speed = " << speed << " average_step_count = " << average_step_count << " step_count = " << step_count << " accuracy = " << accuracy << " scan_parameter = " << scan_parameter << " data_sampling = " << data_sampling);
+                LOG_DEBUG("run_tare_calibration with parameters: speed = " << speed << " average_step_count = " << average_step_count << " step_count = " << step_count << " accuracy = " << accuracy << " scan_parameter = " << scan_parameter << " data_sampling = " << data_sampling);
                 check_tare_params(speed, scan_parameter, data_sampling, average_step_count, step_count, accuracy);
 
                 auto param2 = (int)ground_truth_mm * 100;
@@ -895,7 +894,7 @@ namespace librealsense
                 if (advanced_mode)
                 {
                     auto cur_preset = (rs2_rs400_visual_preset)(int)advanced_mode->_preset_opt->query();
-                    LOG_INFO("run_tare_calibration with preset: " << rs2_rs400_visual_preset_to_string(cur_preset));
+                    LOG_DEBUG("run_tare_calibration with preset: " << rs2_rs400_visual_preset_to_string(cur_preset));
                 }
 
                 if (depth == 0)
@@ -933,7 +932,7 @@ namespace librealsense
                     }
                     catch (const std::exception& ex)
                     {
-                        LOG_WARNING(ex.what());
+                        LOG_DEBUG(ex.what());
                     }
 
                     if (progress_callback)
@@ -964,17 +963,10 @@ namespace librealsense
                 health[0] = ph[0];
                 health[1] = ph[1];
 
-                LOG_INFO("Ground truth: " << ground_truth_mm << "mm");
-                LOG_INFO("Health check numbers from TareCalibrationResult(0x0C): before=" << ph[0] << ", after=" << ph[1]);
-                LOG_INFO("Z calculated from health check numbers : before=" << (ph[0] + 1) * ground_truth_mm << ", after=" << (ph[1] + 1) * ground_truth_mm);
-
                 // Handle errors from firmware
                 if (status != RS2_DSC_STATUS_SUCCESS)
                     handle_calibration_error(status);
 
-                //float health_from_calibration_results = 0.0f;
-                //res = get_calibration_results(&health_from_calibration_results);
-                //LOG_INFO("Health_check from CalibrationResult(0x0D): health=" << health_from_calibration_results);
                 res = get_calibration_results();
 
                 if (depth < 0)
@@ -1347,7 +1339,7 @@ namespace librealsense
         catch (const std::exception& ex)
         {
             _interactive_state = interactive_calibration_state::RS2_OCC_STATE_NOT_ACTIVE;
-            throw ex;
+            throw;
         }
     }
 
@@ -1518,7 +1510,6 @@ namespace librealsense
         if(health)
             *health = reslt->m_dscResultParams.m_healthCheck;
 
-        LOG_INFO("Got calibration results with calib size: " << calib.size());
         return calib;
     }
 
