@@ -304,8 +304,8 @@ jobs:
       run: |
         cd scripts && ./api_check.sh && cd ..
         mkdir build
-        #brew uninstall xctool;
-        #brew install xctool --HEAD;
+        # install coreutils for greadlink use
+        brew install coreutils
         brew install homebrew/core/glfw3;
         brew list libusb || brew install libusb;
         
@@ -313,7 +313,9 @@ jobs:
       run: |
         cd build
         # `OPENSSL_ROOT_DIR` setting is Used by libcurl for 'CHECK_FOR_UPDATES' capability
-        export OPENSSL_ROOT_DIR=`readlink /usr/local/opt/openssl`        
+        # We use "greadlink -f" which is mac-os parallel command to "readlink -f" from Linux (-f to convert relative link to absolute link)
+        export OPENSSL_ROOT_DIR=`greadlink -f /usr/local/opt/openssl@1.1`        
+        echo "OPENSSL_ROOT_DIR = ${OPENSSL_ROOT_DIR}"
         cmake .. -DBUILD_EXAMPLES=true -DBUILD_WITH_OPENMP=false -DHWM_OVER_XU=false -DCHECK_FOR_UPDATES=true
         cmake --build . --config ${{env.LRS_BUILD_CONFIG}} -- -j4
         ls
