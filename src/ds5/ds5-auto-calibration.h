@@ -100,6 +100,7 @@ namespace librealsense
         rs2_metadata_type _prev_frame_counter;
         uint16_t _fill_factor[256];
         uint16_t _min_valid_depth, _max_valid_depth;
+        int _tare_skipped_frames;
 
     };
 }

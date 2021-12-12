@@ -192,7 +192,8 @@ namespace librealsense
           _collected_sum(-1.0),
           _min_valid_depth(0),
           _max_valid_depth(uint16_t(-1)),
-          _resize_factor(5)
+          _resize_factor(5),
+          _tare_skipped_frames(0)
     {}
 
     std::map<std::string, int> auto_calibrated::parse_json(std::string json_content)
@@ -1207,6 +1208,7 @@ namespace librealsense
                 _collected_counter = 0;
                 _collected_sum = 0;
                 _collected_frame_num = 0;
+                _tare_skipped_frames = 0;
                 _interactive_state = interactive_calibration_state::RS2_OCC_STATE_DATA_COLLECT;
             }
             if (_interactive_state == interactive_calibration_state::RS2_OCC_STATE_DATA_COLLECT)
@@ -1232,13 +1234,29 @@ namespace librealsense
                 }
                 else if (_action == auto_calib_action::RS2_OCC_ACTION_TARE_CALIB)
                 {
+                    static const int FRAMES_TO_SKIP(1);
+                    if (frame_counter != _prev_frame_counter)
+                    {
+                        _collected_counter = 0;
+                        _collected_sum = 0.0;
+                        _collected_frame_num = 0;
+                        _tare_skipped_frames = 0;
+                        if (progress_callback)
+                        {
+                            progress_callback->on_update_progress(static_cast<float>(20 + static_cast<int>(frame_counter * 60.0 / _total_frames)));
+                        }
+                    }
                     if (frame_counter < _total_frames)
                     {
-                        if (_collected_frame_num < _average_step_count)
+                        if (_tare_skipped_frames < FRAMES_TO_SKIP)
                         {
-                            collect_depth_frame_sum(f);
-                            if (_collected_frame_num + 1 == _average_step_count)
+                            _tare_skipped_frames++;
+                        }
+                        else
+                        {
+                            if (_collected_frame_num < _average_step_count)
                             {
+                                collect_depth_frame_sum(f);
                                 if (_collected_counter && (_collected_frame_num + 1) == _average_step_count)
                                 {
                                     _collected_sum = (_collected_sum / _collected_counter) * 10000;
@@ -1251,20 +1269,8 @@ namespace librealsense
                                     run_tare_calibration(timeout_ms, _ground_truth_mm, json, health, progress_callback);
                                 }
                             }
-                        }
-                        if (frame_counter != _prev_frame_counter)
-                        {
-                            _collected_counter = 0;
-                            _collected_sum = 0.0;
-                            _collected_frame_num = 0;
-                            if (progress_callback)
-                            {
-                                progress_callback->on_update_progress(static_cast<float>(20 + static_cast<int>(frame_counter * 60.0 / _total_frames)));
-                            }
-                        }
-                        else
                             ++_collected_frame_num;
-
+                        }
                         _prev_frame_counter = frame_counter;
                     }
                     else
@@ -1336,7 +1342,7 @@ namespace librealsense
             }
             return res;
         }
-        catch (const std::exception& ex)
+        catch (const std::exception&)
         {
             _interactive_state = interactive_calibration_state::RS2_OCC_STATE_NOT_ACTIVE;
             throw;
