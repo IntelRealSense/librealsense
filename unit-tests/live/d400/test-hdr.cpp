@@ -246,6 +246,7 @@ TEST_CASE("HDR Streaming - custom config", "[hdr][live][using_pipeline]")
 }
 
 // HDR CHANGING CONFIG WHILE STREAMING TESTS
+/*
 TEST_CASE("HDR Config while Streaming", "[hdr][live][using_pipeline]")
 {
     rs2::context ctx;
@@ -325,7 +326,7 @@ TEST_CASE("HDR Config while Streaming", "[hdr][live][using_pipeline]")
             std::cout << "No device was found - skipping test" << std::endl;
         }
     }
-}
+}*/
 
 // CHECKING HDR AFTER PIPE RESTART
 TEST_CASE("HDR Running - restart hdr at restream", "[hdr][live][using_pipeline]")
