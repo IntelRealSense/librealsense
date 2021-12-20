@@ -5,7 +5,7 @@
 // This set of tests is valid for any device that supports the HDR feature //
 /////////////////////////////////////////////////////////////////////////////
 
-//#test:donotrun - until bug is fixed in fw
+//#test:device D400*
 
 #include "../../catch.h"
 #include "../../unit-tests-common.h"
