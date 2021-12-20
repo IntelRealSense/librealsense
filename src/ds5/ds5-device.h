@@ -68,7 +68,6 @@ namespace librealsense
         bool check_fw_compatibility(const std::vector<uint8_t>& image) const override;
     protected:
 
-        void set_laser_power_ref() { _alternating_emitter_opt->set_laser_power_ref(_laser_power); };
         std::vector<uint8_t> get_raw_calibration_table(ds::calibration_table_id table_id) const;
         std::vector<uint8_t> get_new_calibration_table() const;
 
@@ -88,7 +87,6 @@ namespace librealsense
         friend class ds5_depth_sensor;
 
         std::shared_ptr<alternating_emitter_option> _alternating_emitter_opt;
-        std::shared_ptr<uvc_xu_option<uint16_t>> _laser_power;
         std::shared_ptr<hw_monitor> _hw_monitor;
         firmware_version            _fw_version;
         firmware_version            _recommended_fw_version;

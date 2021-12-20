@@ -257,7 +257,7 @@ namespace librealsense
         hw_monitor& _hwm;
         sensor_base* _sensor;
         bool _is_fw_version_using_id;
-        std::shared_ptr<uvc_xu_option<uint16_t>> _laser_power;
+        std::weak_ptr<uvc_xu_option<uint16_t>> _laser_power;
     };
 
     class emitter_always_on_option : public option

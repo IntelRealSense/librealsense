@@ -501,7 +501,7 @@ namespace librealsense
 
     void alternating_emitter_option::set(float value)
     {
-        if (value && _laser_power->query() == 0) // raise a readable error if the condition is met 
+        if (value && _laser_power.lock()->query() == 0) // raise a readable error if the condition is met
         {
             throw std::runtime_error("Laser power value is not valid!");
         }

@@ -36,15 +36,17 @@ namespace librealsense
             auto emitter_enabled = std::make_shared<emitter_option>(raw_depth_ep);
             
             //LASER POWER OPTION
-            _laser_power = std::make_shared<uvc_xu_option<uint16_t>>(raw_depth_ep,
+            auto laser_power = std::make_shared<uvc_xu_option<uint16_t>>(raw_depth_ep,
                 depth_xu,
                 DS5_LASER_POWER,
                 "Manual laser power in mw. applicable only when laser power mode is set to Manual");
-            set_laser_power_ref();
+
             auto laser_power_auto_disabling = std::make_shared<auto_disabling_control>(
-                                     _laser_power,
+                                     laser_power,
                                      emitter_enabled,
                                      std::vector<float>{0.f, 2.f}, 1.f);
+
+            _alternating_emitter_opt->set_laser_power_ref(laser_power);
 
             if (auto hdr_enabled_option = depth_ep.get_option_handler(RS2_OPTION_HDR_ENABLED))
             {
