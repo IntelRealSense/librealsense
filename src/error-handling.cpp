@@ -53,19 +53,21 @@ namespace librealsense
 
                  if (val != 0 && !_silenced)
                  {
-                     auto strong = _notifications_processor.lock();
-
                      // First reset the value in the FW.
+                     auto reseted_val = static_cast<uint8_t>( _option->query() );
+
+                     auto strong = _notifications_processor.lock();
+                     if ( strong ) strong->raise_notification(_decoder->decode(val));
+
                      // Reading from last-error control is supposed to set it to zero in the
                      // firmware If this is not happening there is some issue 
                      // Note: if an error will be raised between the 2 queries, this will cause the error polling loop to stop
-                     auto reseted_val = static_cast<uint8_t>( _option->query() );
                      if( reseted_val != 0 )
                      {
                          std::string error_str = to_string()
-                                              << "Error polling loop is not behaving as expected! "
-                                                 "expecting value : 0 got : " << std::to_string( val )
-                                              << "\nShutting down error polling loop";
+                             << "Error polling loop is not behaving as expected! "
+                             "expecting value : 0 got : " << std::to_string( val )
+                             << "\nShutting down error polling loop";
                          LOG_ERROR( error_str );
                          notification postcondition_failed{
                              RS2_NOTIFICATION_CATEGORY_HARDWARE_ERROR,
@@ -76,8 +78,6 @@ namespace librealsense
                          if( strong ) strong->raise_notification( postcondition_failed );
                          _silenced = true;
                      }
-                     
-                     if ( strong && !_silenced ) strong->raise_notification(_decoder->decode(val));
                  }
              }
              catch (const std::exception& ex)
