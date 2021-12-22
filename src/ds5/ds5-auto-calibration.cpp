@@ -528,6 +528,8 @@ namespace librealsense
                 {
                     handle_calibration_error(status);
                 }
+                if (progress_callback)
+                    progress_callback->on_update_progress(static_cast<float>(100));
                 res = get_calibration_results(health);
             }
         }
@@ -778,7 +780,6 @@ namespace librealsense
                 }
             }
         }
-            
         return res;
     }
 
@@ -927,7 +928,7 @@ namespace librealsense
 
                     if (progress_callback)
                     {
-                        if (depth < 0 && count < 20)
+                        if (depth < 0 && count <= 20)
                             progress_callback->on_update_progress(static_cast<float>(80 + count++));
                         else if (depth == 0)
                             progress_callback->on_update_progress(count++ * (2.f * speed)); //curently this number does not reflect the actual progress
@@ -1166,7 +1167,8 @@ namespace librealsense
                         _tare_skipped_frames = 0;
                         if (progress_callback)
                         {
-                            progress_callback->on_update_progress(static_cast<float>(20 + static_cast<int>(frame_counter * 60.0 / _total_frames)));
+                            double progress_rate = std::min(1.0, static_cast<double>(frame_counter) / _total_frames);
+                            progress_callback->on_update_progress(static_cast<float>(20 + static_cast<int>(progress_rate * 60.0)));
                         }
                     }
                     if (frame_counter < _total_frames)
@@ -1229,10 +1231,6 @@ namespace librealsense
 
                     std::string json = ss.str();
                     res = run_tare_calibration(timeout_ms, _ground_truth_mm, json, health, progress_callback);
-                }
-                if (progress_callback)
-                {
-                    progress_callback->on_update_progress(static_cast<float>(100));
                 }
                 _interactive_state = interactive_calibration_state::RS2_OCC_STATE_NOT_ACTIVE;
             }
