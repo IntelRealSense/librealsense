@@ -43,48 +43,65 @@ namespace librealsense
         _active_object->stop();
     }
 
-    void polling_error_handler::polling(dispatcher::cancellable_timer cancellable_timer)
+    void polling_error_handler::polling( dispatcher::cancellable_timer cancellable_timer )
     {
-         if (cancellable_timer.try_sleep( std::chrono::milliseconds( _poll_intervals_ms )))
-         {
-             try
-             {
+        if( cancellable_timer.try_sleep( std::chrono::milliseconds( _poll_intervals_ms ) ) )
+        {
+            if( ! _silenced )
+            {
+                try
+                {
+                    auto val = static_cast< uint8_t >( _option->query() );
 
-                 auto val = static_cast<uint8_t>(_option->query());
+                    if( val != 0 )
+                    {
+                        LOG_DEBUG( "Error detected from FW, error ID: " <<  std::to_string(val)  );
+                        // First reset the value in the FW.
+                        auto reseted_val = static_cast< uint8_t >( _option->query() );
+                        auto strong = _notifications_processor.lock();
+                        if( ! strong )
+                        {
+                            LOG_DEBUG( "Could not lock the notifications processor" );
+                            _silenced = true;
+                            return;
+                        }
 
-                 if (val != 0 && !_silenced)
-                 {
-                     auto strong = _notifications_processor.lock();
-                     if (strong) strong->raise_notification(_decoder->decode(val));
+                        strong->raise_notification( _decoder->decode( val ) );
 
-                     val = static_cast<uint8_t>(_option->query());
-                     if (val != 0)
-                     {
-                         // Reading from last-error control is supposed to set it to zero in the firmware
-                         // If this is not happening there is some issue
-                         notification postcondition_failed{
-                             RS2_NOTIFICATION_CATEGORY_HARDWARE_ERROR,
-                             0,
-                             RS2_LOG_SEVERITY_WARN,
-                             "Error polling loop is not behaving as expected!\nThis can indicate an issue with camera firmware or the underlying OS..."
-                         };
-                         if (strong) strong->raise_notification(postcondition_failed);
-                         _silenced = true;
-                     }
-                 }
-             }
-             catch (const std::exception& ex)
-             {
-                 LOG_ERROR("Error during polling error handler: " << ex.what());
-             }
-             catch (...)
-             {
-                 LOG_ERROR("Unknown error during polling error handler!");
-             }
-         }
-         else
-         {
-             LOG_DEBUG("Notification polling loop is being shut-down");
-         }
+                        // Reading from last-error control is supposed to set it to zero in the
+                        // firmware If this is not happening there is some issue
+                        // Note: if an error will be raised between the 2 queries, this will cause
+                        // the error polling loop to stop
+                        if( reseted_val != 0 )
+                        {
+                            std::string error_str
+                                = to_string() << "Error polling loop is not behaving as expected! "
+                                                 "expecting value : 0 got : "
+                                              << std::to_string( val ) << "\nShutting down error polling loop";
+                            LOG_ERROR( error_str );
+                            notification postcondition_failed{
+                                RS2_NOTIFICATION_CATEGORY_HARDWARE_ERROR,
+                                0,
+                                RS2_LOG_SEVERITY_WARN,
+                                error_str };
+                            strong->raise_notification( postcondition_failed );
+                            _silenced = true;
+                        }
+                    }
+                }
+                catch( const std::exception & ex )
+                {
+                    LOG_ERROR( "Error during polling error handler: " << ex.what() );
+                }
+                catch( ... )
+                {
+                    LOG_ERROR( "Unknown error during polling error handler!" );
+                }
+            }
+        }
+        else
+        {
+            LOG_DEBUG( "Notification polling loop is being shut-down" );
+        }
     }
-}
+}  // namespace librealsense
