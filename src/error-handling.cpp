@@ -55,9 +55,15 @@ namespace librealsense
                  {
                      // First reset the value in the FW.
                      auto reseted_val = static_cast<uint8_t>( _option->query() );
-
                      auto strong = _notifications_processor.lock();
-                     if ( strong ) strong->raise_notification(_decoder->decode(val));
+                     if( !strong )
+                     {
+                         LOG_DEBUG("Could not lock the notifications processor");
+                         _silenced = true;
+                         return;
+                     }
+                         
+                     strong->raise_notification(_decoder->decode(val));
 
                      // Reading from last-error control is supposed to set it to zero in the
                      // firmware If this is not happening there is some issue 
@@ -75,7 +81,7 @@ namespace librealsense
                              RS2_LOG_SEVERITY_WARN,
                              error_str
                          };
-                         if( strong ) strong->raise_notification( postcondition_failed );
+                         strong->raise_notification( postcondition_failed );
                          _silenced = true;
                      }
                  }
