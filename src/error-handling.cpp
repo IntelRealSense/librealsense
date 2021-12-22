@@ -55,6 +55,7 @@ namespace librealsense
 
                     if( val != 0 )
                     {
+                        LOG_DEBUG( "Error detected from FW, error ID: " <<  std::to_string(val)  );
                         // First reset the value in the FW.
                         auto reseted_val = static_cast< uint8_t >( _option->query() );
                         auto strong = _notifications_processor.lock();
@@ -74,10 +75,9 @@ namespace librealsense
                         if( reseted_val != 0 )
                         {
                             std::string error_str
-                                = to_string()
-                               << "Error polling loop is not behaving as expected! "
-                                  "expecting value : 0 got : "
-                               << std::to_string( val ) << "\nShutting down error polling loop";
+                                = to_string() << "Error polling loop is not behaving as expected! "
+                                                 "expecting value : 0 got : "
+                                              << std::to_string( val ) << "\nShutting down error polling loop";
                             LOG_ERROR( error_str );
                             notification postcondition_failed{
                                 RS2_NOTIFICATION_CATEGORY_HARDWARE_ERROR,
