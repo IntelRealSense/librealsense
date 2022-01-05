@@ -143,7 +143,7 @@ namespace librealsense
                 };
                 m_dispatchers.at(stream_id)->invoke(callback, !is_real_time);
 
-                // On none real-time, we want the playback to run asynchrony
+                // On none real-time, we want the playback to run at an asynchronous mode.
                 // The playback will dispatch each frame and wait for it callback to finish before
                 // moving on to the next one.
                 if( !is_real_time )
