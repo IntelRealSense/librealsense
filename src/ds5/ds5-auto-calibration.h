@@ -41,6 +41,7 @@ namespace librealsense
             RS2_OCC_STATE_INITIAL_FW_CALL,
             RS2_OCC_STATE_WAIT_TO_CALIB_START,
             RS2_OCC_STATE_DATA_COLLECT,
+            RS2_OCC_STATE_WAIT_FOR_FINAL_FW_CALL,
             RS2_OCC_STATE_FINAL_FW_CALL
         };
 
@@ -49,7 +50,7 @@ namespace librealsense
         void write_calibration() const override;
         std::vector<uint8_t> run_on_chip_calibration(int timeout_ms, std::string json, float* const health, update_progress_callback_ptr progress_callback) override;
         std::vector<uint8_t> run_tare_calibration(int timeout_ms, float ground_truth_mm, std::string json, float* const health, update_progress_callback_ptr progress_callback) override;
-        std::vector<uint8_t> add_calibration_frame(int timeout_ms, const rs2_frame* f, float* const health, update_progress_callback_ptr progress_callback) override;
+        std::vector<uint8_t> process_calibration_frame(int timeout_ms, const rs2_frame* f, float* const health, update_progress_callback_ptr progress_callback) override;
         std::vector<uint8_t> get_calibration_table() const override;
         void set_calibration_table(const std::vector<uint8_t>& calibration) override;
         void reset_to_factory_calibration() const override;
@@ -98,10 +99,11 @@ namespace librealsense
         int _resize_factor;
         auto_calib_action _action;
         interactive_calibration_state _interactive_state;
+        bool _interactive_scan;
         rs2_metadata_type _prev_frame_counter;
         uint16_t _fill_factor[256];
         uint16_t _min_valid_depth, _max_valid_depth;
-        int _tare_skipped_frames;
+        int _skipped_frames;
 
     };
 }

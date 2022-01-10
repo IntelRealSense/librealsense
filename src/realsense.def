@@ -376,7 +376,7 @@ EXPORTS
     rs2_run_on_chip_calibration_cpp
     rs2_run_tare_calibration
     rs2_run_tare_calibration_cpp
-    rs2_add_calibration_frame
+    rs2_process_calibration_frame
     rs2_run_focal_length_calibration
     rs2_run_focal_length_calibration_cpp
     rs2_run_uv_map_calibration

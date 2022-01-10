@@ -2231,9 +2231,7 @@ namespace rs2
                 this->tm2.record_trajectory(true);
             }
         });
-
         s->open(profiles);
-
         try {
             s->start([&, syncer](frame f)
             {

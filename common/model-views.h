@@ -661,6 +661,9 @@ namespace rs2
 
         viewer_model& viewer;
         std::function<void()> on_frame = []{};
+        
+        std::ofstream _fout;
+
         std::shared_ptr<sensor> s;
         device dev;
         tm2_model tm2;

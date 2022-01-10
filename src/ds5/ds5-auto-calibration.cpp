@@ -1,8 +1,6 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2016 Intel Corporation. All Rights Reserved.
 
-#define SAVE_RAW_IMAGE
-
 #include <numeric>
 #include "../third-party/json.hpp"
 #include "ds5-device.h"
@@ -27,11 +25,6 @@ namespace librealsense
         float calRightRotation[9]; // Calibrated right rotation
         uint16_t accuracyLevel;  // [0-3] (Very High/High/Medium/Low)
         uint16_t iterations;        // Number of iterations it took to converge
-        //int32_t errors[iterations];  // Array of errors in 1/1000000 of a percent
-        //int32_t x[iterations];    // Intrinsic scan: array of Px in 1/1000000 normalized unit
-        //                         // Extrinsic scan: array of Ry in 1/100000 radian
-        //float beforeHealthCheck; // Before health check number
-        //float afterHealthCheck;  // After health check number
     };
 
     struct FocalLengthCalibrationResult
@@ -186,6 +179,7 @@ namespace librealsense
     auto_calibrated::auto_calibrated(std::shared_ptr<hw_monitor>& hwm)
         : _hw_monitor(hwm),
           _interactive_state(interactive_calibration_state::RS2_OCC_STATE_NOT_ACTIVE),
+          _interactive_scan(false),
           _action(auto_calib_action::RS2_OCC_ACTION_ON_CHIP_CALIB),
           _average_step_count(-1),
           _collected_counter(-1),
@@ -194,7 +188,7 @@ namespace librealsense
           _min_valid_depth(0),
           _max_valid_depth(uint16_t(-1)),
           _resize_factor(5),
-          _tare_skipped_frames(0)
+          _skipped_frames(0)
     {}
 
     std::map<std::string, int> auto_calibrated::parse_json(std::string json_content)
@@ -363,7 +357,7 @@ namespace librealsense
 
         if (json.size() > 0)
         {
-            int tmp_speed;
+            int tmp_speed(DEFAULT_SPEED);
             int tmp_host_assistance(0);
             auto jsn = parse_json(json);
             try_fetch(jsn, "calib type", &calib_type);
@@ -424,6 +418,7 @@ namespace librealsense
             _json = json;
             _action = auto_calib_action::RS2_OCC_ACTION_ON_CHIP_CALIB;
             _interactive_state = interactive_calibration_state::RS2_OCC_STATE_WAIT_TO_CAMERA_START;
+            _interactive_scan = bool(interactive_scan_v3);
             switch (speed)
             {
             case auto_calib_speed::speed_very_fast:
@@ -516,8 +511,8 @@ namespace librealsense
                         {
                             if (host_assistance != host_assistance_type::no_assistance)
                                 if (count < 20) progress_callback->on_update_progress(static_cast<float>(80 + count++));
-                                else
-                                    progress_callback->on_update_progress(count++ * (2.f * speed)); //curently this number does not reflect the actual progress
+                            else
+                                progress_callback->on_update_progress(count++ * (2.f * speed)); //curently this number does not reflect the actual progress
                         }
                     });
                 std::this_thread::sleep_for(std::chrono::milliseconds(100));
@@ -532,6 +527,7 @@ namespace librealsense
                 if (progress_callback)
                     progress_callback->on_update_progress(static_cast<float>(100));
                 res = get_calibration_results(health);
+                std::cout << "Py: " << result.rightPy << std::endl;
             }
         }
         else if (calib_type == 1)
@@ -965,6 +961,8 @@ namespace librealsense
                 if (status != RS2_DSC_STATUS_SUCCESS)
                     handle_calibration_error(status);
 
+                res = get_calibration_results();
+
                 if (depth < 0)
                 {
                     restore_preset();
@@ -993,6 +991,12 @@ namespace librealsense
         int data_size = roi_size;
         const uint16_t* p = reinterpret_cast<const uint16_t*>(frame->get_frame_data());
 
+#ifdef SAVE_RAW_IMAGE
+        std::vector<uint16_t> cropped_image(width * height, 0);
+        int cropped_idx(0);
+        cropped_idx += from * width + roi_start_w;
+#endif
+
         p += from * width + roi_start_w;
 
         int counter(0);
@@ -1000,12 +1004,32 @@ namespace librealsense
         {
             for (int i = 0; i < roi_w; ++i)
             {
+#ifdef SAVE_RAW_IMAGE
+                cropped_image[cropped_idx] = (*p);
+                cropped_idx++;
+#endif
                 if ((*p) >= _min_valid_depth && (*p) <= _max_valid_depth)
                     ++counter;
                 ++p;
             }
             p += (width - roi_w);
+#ifdef SAVE_RAW_IMAGE
+            cropped_idx += (width - roi_w);
+#endif
         }
+#ifdef SAVE_RAW_IMAGE
+        {
+            unsigned long milliseconds_since_epoch =
+                std::chrono::duration_cast<std::chrono::milliseconds>
+                (std::chrono::system_clock::now().time_since_epoch()).count();
+
+            std::stringstream name_s;
+            name_s << "cropped_image_" << std::setfill('0') << std::setw(4) << milliseconds_since_epoch << "_" << frame->get_frame_number() << ".raw";
+            std::ofstream fout(name_s.str(), std::ios::out | std::ios::binary);
+            fout.write((char*)&cropped_image[0], cropped_image.size() * sizeof(uint16_t));
+            fout.close();
+        }
+#endif
         double tmp = static_cast<double>(counter) / static_cast<double>(data_size) * 10000.0;
         return static_cast<uint16_t>(tmp + 0.5f);
 
@@ -1069,12 +1093,38 @@ namespace librealsense
 
         const uint16_t* p = reinterpret_cast<const uint16_t*>(frame->get_frame_data());
 
+#ifdef SAVE_RAW_IMAGE
+        std::vector<uint16_t> origin_image(width * height, 0);
+        for (int ii = 0; ii < width * height; ii++)
+            origin_image[ii] = *(p + ii);
+
+        {
+            unsigned long milliseconds_since_epoch =
+                std::chrono::duration_cast<std::chrono::milliseconds>
+                (std::chrono::system_clock::now().time_since_epoch()).count();
+
+            std::stringstream name_s;
+            name_s << "origin_tare_image_" << std::setfill('0') << std::setw(4) << milliseconds_since_epoch << "_" << frame->get_frame_number() << ".raw";
+
+            std::ofstream fout(name_s.str(), std::ios::out | std::ios::binary);
+            fout.write((char*)&origin_image[0], origin_image.size() * sizeof(uint16_t));
+            fout.close();
+        }
+        std::vector<uint16_t> cropped_image(width * height, 0);
+        int cropped_idx(0);
+        cropped_idx += roi_start_h * width + roi_start_w;
+#endif
+
         p += roi_start_h * width + roi_start_w;
 
         for (int j = 0; j < roi_h; ++j)
         {
             for (int i = 0; i < roi_w; ++i)
             {
+#ifdef SAVE_RAW_IMAGE
+                cropped_image[cropped_idx] = (*p);
+                cropped_idx++;
+#endif
                 if ((*p) >= _min_valid_depth && (*p) <= _max_valid_depth)
                 {
                     ++_collected_counter;
@@ -1083,15 +1133,31 @@ namespace librealsense
                 ++p;
             }
             p += (width- roi_w);
+#ifdef SAVE_RAW_IMAGE
+            cropped_idx += (width - roi_w);
+#endif
         }
+#ifdef SAVE_RAW_IMAGE
+        {
+            unsigned long milliseconds_since_epoch =
+                std::chrono::duration_cast<std::chrono::milliseconds>
+                (std::chrono::system_clock::now().time_since_epoch()).count();
+
+            std::stringstream name_s;
+            name_s << "cropped_tare_image_" << std::setfill('0') << std::setw(4) << milliseconds_since_epoch << "_" << frame->get_frame_number() << ".raw";
+
+            std::ofstream fout(name_s.str(), std::ios::out | std::ios::binary);
+            fout.write((char*)&cropped_image[0], cropped_image.size() * sizeof(uint16_t));
+            fout.close();
+        }
+#endif
     }
 
-    std::vector<uint8_t> auto_calibrated::add_calibration_frame(int timeout_ms, const rs2_frame* f, float* const health, update_progress_callback_ptr progress_callback)
+    std::vector<uint8_t> auto_calibrated::process_calibration_frame(int timeout_ms, const rs2_frame* f, float* const health, update_progress_callback_ptr progress_callback)
     {
         try
         {
             std::vector<uint8_t> res;
-
             rs2_metadata_type frame_counter = ((frame_interface*)f)->get_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER);
             if (_interactive_state == interactive_calibration_state::RS2_OCC_STATE_WAIT_TO_CAMERA_START)
             {
@@ -1122,9 +1188,9 @@ namespace librealsense
             if (_interactive_state == interactive_calibration_state::RS2_OCC_STATE_WAIT_TO_CALIB_START)
             {
                 bool still_waiting(frame_counter >= _prev_frame_counter || frame_counter >= _total_frames);
+                _prev_frame_counter = frame_counter;
                 if (still_waiting)
                 {
-                    _prev_frame_counter = frame_counter;
                     if (progress_callback)
                     {
                         progress_callback->on_update_progress(static_cast<float>(15));
@@ -1138,28 +1204,80 @@ namespace librealsense
                 _collected_counter = 0;
                 _collected_sum = 0;
                 _collected_frame_num = 0;
-                _tare_skipped_frames = 0;
+                _skipped_frames = 0;
+                _prev_frame_counter = -1;
                 _interactive_state = interactive_calibration_state::RS2_OCC_STATE_DATA_COLLECT;
             }
             if (_interactive_state == interactive_calibration_state::RS2_OCC_STATE_DATA_COLLECT)
             {
                 if (_action == auto_calib_action::RS2_OCC_ACTION_ON_CHIP_CALIB)
                 {
-                    if (frame_counter < _total_frames)
+#ifdef SAVE_RAW_IMAGE
                     {
-                        if (frame_counter > 0 && frame_counter != _prev_frame_counter)
+                        unsigned long milliseconds_since_epoch =
+                            std::chrono::duration_cast<std::chrono::milliseconds>
+                            (std::chrono::system_clock::now().time_since_epoch()).count();
+
+                        std::stringstream name_s;
+                        name_s << "all_frame_numbers.txt";
+                        std::ofstream fout(name_s.str(), std::ios::app);
+                        fout << frame_counter << ", " << _prev_frame_counter << ", " << _total_frames << ", " 
+                             << ((frame_interface*)f)->get_frame_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP) << ", " << milliseconds_since_epoch << std::endl;
+                        fout.close();
+                    }
+#endif
+#ifdef SAVE_RAW_IMAGE
+                    {
+                        auto frame = ((video_frame*)f);
+                        int width = frame->get_width();
+                        int height = frame->get_height();
+                        const uint16_t* p = reinterpret_cast<const uint16_t*>(frame->get_frame_data());
+                        {
+                            unsigned long milliseconds_since_epoch =
+                                std::chrono::duration_cast<std::chrono::milliseconds>
+                                (std::chrono::system_clock::now().time_since_epoch()).count();
+
+                            std::stringstream name_s;
+                            name_s << "origin_image_" << std::setfill('0') << std::setw(4) << milliseconds_since_epoch << "_" << frame->get_frame_number() << ".raw";
+
+                            std::ofstream fout(name_s.str(), std::ios::out | std::ios::binary);
+                            fout.write((char*)p, width * height * sizeof(uint16_t));
+                            fout.close();
+                        }
+                    }
+#endif
+
+                    static const int FRAMES_TO_SKIP(_interactive_scan ? 1 : 0);
+                    int fw_host_offset = (_interactive_scan ? 0 : 1);
+
+                    if (frame_counter + fw_host_offset < _total_frames)
+                    {
+                        if (frame_counter < _prev_frame_counter)
+                        {
+                            throw std::runtime_error("Frames arrived in a wrong order!");
+                        }
+                        if (_skipped_frames < FRAMES_TO_SKIP || frame_counter == _prev_frame_counter)
+                        {
+                            _skipped_frames++;
+                        }
+                        else
                         {
                             if (progress_callback)
                             {
                                 progress_callback->on_update_progress(static_cast<float>(20 + static_cast<int>(frame_counter * 60.0 / _total_frames)));
                             }
-                            _fill_factor[frame_counter-1] = calc_fill_rate(f);
+                            _fill_factor[frame_counter + fw_host_offset] = calc_fill_rate(f);
+                            if (_interactive_scan)
+                            {
+                                _hw_monitor->send(command{ ds::AUTO_CALIB, interactive_scan_control, 1});
+                            }
+                            _skipped_frames = 0;
+                            _prev_frame_counter = frame_counter;
                         }
-                        _prev_frame_counter = frame_counter;
                     }
                     else
                     {
-                        _interactive_state = interactive_calibration_state::RS2_OCC_STATE_FINAL_FW_CALL;
+                        _interactive_state = interactive_calibration_state::RS2_OCC_STATE_WAIT_FOR_FINAL_FW_CALL;
                     }
                 }
                 else if (_action == auto_calib_action::RS2_OCC_ACTION_TARE_CALIB)
@@ -1170,7 +1288,7 @@ namespace librealsense
                         _collected_counter = 0;
                         _collected_sum = 0.0;
                         _collected_frame_num = 0;
-                        _tare_skipped_frames = 0;
+                        _skipped_frames = 0;
                         if (progress_callback)
                         {
                             double progress_rate = std::min(1.0, static_cast<double>(frame_counter) / _total_frames);
@@ -1179,9 +1297,9 @@ namespace librealsense
                     }
                     if (frame_counter < _total_frames)
                     {
-                        if (_tare_skipped_frames < FRAMES_TO_SKIP)
+                        if (_skipped_frames < FRAMES_TO_SKIP)
                         {
-                            _tare_skipped_frames++;
+                            _skipped_frames++;
                         }
                         else
                         {
@@ -1206,8 +1324,19 @@ namespace librealsense
                     }
                     else
                     {
-                        _interactive_state = interactive_calibration_state::RS2_OCC_STATE_FINAL_FW_CALL;
+                        _interactive_state = interactive_calibration_state::RS2_OCC_STATE_WAIT_FOR_FINAL_FW_CALL;
                     }
+                }
+            }
+            if (_interactive_state == interactive_calibration_state::RS2_OCC_STATE_WAIT_FOR_FINAL_FW_CALL)
+            {
+                if (frame_counter > _total_frames)
+                {
+                    _interactive_state = interactive_calibration_state::RS2_OCC_STATE_FINAL_FW_CALL;
+                }
+                else if (_interactive_scan)
+                {
+                    _hw_monitor->send(command{ ds::AUTO_CALIB, interactive_scan_control, 1 });
                 }
             }
             if (_interactive_state == interactive_calibration_state::RS2_OCC_STATE_FINAL_FW_CALL)
@@ -1218,6 +1347,23 @@ namespace librealsense
                 }
                 if (_action == auto_calib_action::RS2_OCC_ACTION_ON_CHIP_CALIB)
                 {
+#ifdef SAVE_RAW_IMAGE
+                    {
+                        std::stringstream ss;
+                        ss << "{\n \"calib type\":" << 0 <<
+                            ",\n \"host assistance\":" << 2 <<
+                            ",\n \"step count v3\":" << _total_frames;
+                        for (int i = 0; i < _total_frames; ++i)
+                            ss << ",\n \"fill factor " << i << "\":" << _fill_factor[i];
+                        ss << "}";
+
+                        std::stringstream name_s;
+                        name_s << "fill_factor_before_fill.txt";
+                        std::ofstream fout(name_s.str(), std::ios::out);
+                        fout << ss.str();
+                        fout.close();
+                    }
+#endif
                     fill_missing_data(_fill_factor, _total_frames);
                     std::stringstream ss;
                     ss << "{\n \"calib type\":" << 0 <<
@@ -1228,6 +1374,16 @@ namespace librealsense
                     ss << "}";
 
                     std::string json = ss.str();
+#ifdef SAVE_RAW_IMAGE
+                    {
+                        std::stringstream name_s;
+                        name_s << "fill_factor.txt";
+                        std::ofstream fout(name_s.str(), std::ios::out);
+                        fout << json;
+                        fout.close();
+                    }
+#endif
+
                     res = run_on_chip_calibration(timeout_ms, json, health, progress_callback);
                 }
                 else if (_action == auto_calib_action::RS2_OCC_ACTION_TARE_CALIB)
@@ -1237,6 +1393,10 @@ namespace librealsense
 
                     std::string json = ss.str();
                     res = run_tare_calibration(timeout_ms, _ground_truth_mm, json, health, progress_callback);
+                }
+                if (progress_callback)
+                {
+                    progress_callback->on_update_progress(static_cast<float>(100));
                 }
                 _interactive_state = interactive_calibration_state::RS2_OCC_STATE_NOT_ACTIVE;
             }
