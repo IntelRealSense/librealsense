@@ -2231,13 +2231,39 @@ namespace rs2
                 this->tm2.record_trajectory(true);
             }
         });
-
+#define SAVE_RAW_IMAGE
         s->open(profiles);
-
         try {
             s->start([&, syncer](frame f)
             {
                 // The condition here must match the condition inside render_loop()!
+#ifdef SAVE_RAW_IMAGE
+                unsigned long milliseconds_since_epoch =
+                    std::chrono::duration_cast<std::chrono::milliseconds>
+                    (std::chrono::system_clock::now().time_since_epoch()).count();
+                {
+                    std::stringstream name_s;
+                    name_s << "C:\\temp\\occ_images\\frame_numbers.txt";
+                    std::ofstream fout(name_s.str(), std::ios::app);
+
+                    auto last_frame = std::chrono::high_resolution_clock::now();
+                    const uint16_t* p = reinterpret_cast<const uint16_t*>(f.as<video_frame>().get_data());
+                    int count(0);
+                    for (int i = 0; i < int(f.as<video_frame>().get_data_size() / 2); i++)
+                    {
+                        if (*(p + i) > 0) count++;
+                    }
+                    fout << f.get_frame_number() << " - " << milliseconds_since_epoch << ", " << count << ", " << 
+                        f.get_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER) << ", " << f.get_frame_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP) << std::endl;
+
+                    std::stringstream name_si;
+                    name_si << "C:\\temp\\occ_images\\occ_image_" << std::setfill('0') << std::setw(4) << milliseconds_since_epoch << "_" << f.get_frame_number() << ".raw";
+                    std::ofstream fouti(name_si.str(), std::ios::out | std::ios::binary);
+                    fouti.write((char*)p, f.as<video_frame>().get_data_size());
+                    fouti.close();
+                }
+#endif
+
                 if( viewer.synchronization_enable )
                 {
                     syncer->invoke(f);

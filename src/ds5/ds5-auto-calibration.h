@@ -97,6 +97,7 @@ namespace librealsense
         int _resize_factor;
         auto_calib_action _action;
         interactive_calibration_state _interactive_state;
+        bool _interactive_scan;
         rs2_metadata_type _prev_frame_counter;
         uint16_t _fill_factor[256];
         uint16_t _min_valid_depth, _max_valid_depth;
