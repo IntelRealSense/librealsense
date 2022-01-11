@@ -687,10 +687,13 @@ namespace librealsense
             auto it = std::find_if(drops_per_stream.begin(), drops_per_stream.end(), 
                 [profile](std::pair<stream_profile, std::deque<long int>>& sp_deq)
                 {return  profile == sp_deq.first; });
+
+            // setting the kpi checking to be done on the last second
+            int num_of_frames_to_check = profile.fps;
             if (it != drops_per_stream.end())
             {
                 auto& queue_for_profile = it->second;
-                auto limit = static_cast<int>(200.0 / (profile.fps * _kpi_frames_drops_pct) * 1000000.0);
+                auto limit = static_cast<int>(num_of_frames_to_check * 100.0 / (profile.fps * _kpi_frames_drops_pct) * 1000000.0);
                 // removing too old timestamps of partial frames
                 while (queue_for_profile.size() > 0)
                 {
@@ -703,10 +706,9 @@ namespace librealsense
                         break;
                 }
                 // checking kpi violation
-                if (queue_for_profile.size() >= 2)
+                if (queue_for_profile.size() >= num_of_frames_to_check)
                 {
                     is_kpi_violated = true;
-                    LOG_DEBUG_V4L("KPI VIOLATED: times are [0]:" << queue_for_profile[0] << " , [1]: " <<  queue_for_profile[1] << " [2]: " << timestamp_usec);
                     queue_for_profile.clear();
                 }
                 else
