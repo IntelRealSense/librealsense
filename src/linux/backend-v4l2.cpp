@@ -52,7 +52,7 @@
 #pragma GCC diagnostic ignored "-Woverflow"
 
 const size_t MAX_DEV_PARENT_DIR = 10;
-const int DEFAULT_KPI_FRAME_DROPS_PCT = 5;
+const double DEFAULT_KPI_FRAME_DROPS_PERCENTAGE = 0.05;
 
 #include "../tm2/tm-boot.h"
 
@@ -684,29 +684,34 @@ namespace librealsense
             bool is_kpi_violated = false;
             long int timestamp_usec = static_cast<long int> (timestamp.tv_sec * 1000000 + timestamp.tv_usec);
 
+            // checking if the current profile is already in the drops_per_stream container
             auto it = std::find_if(drops_per_stream.begin(), drops_per_stream.end(), 
                 [profile](std::pair<stream_profile, std::deque<long int>>& sp_deq)
                 {return  profile == sp_deq.first; });
 
-            // setting the kpi checking to be done on the last second
-            int num_of_frames_to_check = profile.fps;
+            // if the profile is already in the drops_per_stream container, 
+            // checking kpi with the new partial frame caught
             if (it != drops_per_stream.end())
             {
+                // setting the kpi checking to be done on the last 2 seconds
+                int time_limit = 2;
+                // max number of drops that can be received in the time_limit, without violation of the kpi
+                int max_num_of_drops = profile.fps * _kpi_frames_drops_pct * time_limit;
+
                 auto& queue_for_profile = it->second;
-                auto limit = static_cast<int>(num_of_frames_to_check * 100.0 / (profile.fps * _kpi_frames_drops_pct) * 1000000.0);
                 // removing too old timestamps of partial frames
                 while (queue_for_profile.size() > 0)
                 {
-                    auto delta = timestamp_usec - queue_for_profile.front();
-                    if (delta > limit)
+                    auto delta_ts_usec = timestamp_usec - queue_for_profile.front();
+                    if (delta_ts_usec > (time_limit * 1000000))
                     {
                         queue_for_profile.pop_front();
                     }
                     else
-                        break;
+                        break; // correct because the frames are added chronologically
                 }
                 // checking kpi violation
-                if (queue_for_profile.size() >= num_of_frames_to_check)
+                if (queue_for_profile.size() >= max_num_of_drops)
                 {
                     is_kpi_violated = true;
                     queue_for_profile.clear();
@@ -716,6 +721,7 @@ namespace librealsense
             }
             else
             {
+                // adding the the current partial frame's profile and timestamp to the container
                 std::deque<long int> deque_to_add;
                 deque_to_add.push_back(timestamp_usec);
                 drops_per_stream.push_back(std::make_pair(profile, deque_to_add));
@@ -734,7 +740,7 @@ namespace librealsense
               _fd(-1),
               _stop_pipe_fd{},
               _buf_dispatch(use_memory_map),
-              _kpi_checker(DEFAULT_KPI_FRAME_DROPS_PCT)
+              _kpi_checker(DEFAULT_KPI_FRAME_DROPS_PERCENTAGE)
         {
             foreach_uvc_device([&info, this](const uvc_device_info& i, const std::string& name)
             {
