@@ -252,6 +252,32 @@ namespace librealsense
             virtual void acquire_metadata(buffers_mgr & buf_mgr,fd_set &fds, bool compressed_format) = 0;
         };
 
+        // The aim of the kpi checker is to check the frames drops kpi for d400 devices - which requires
+        // that no more than some percentage of the frames are dropped
+        // It is checked using the fps, and the previous corrupted frames
+        // for example, for frame rate of 30 fps, and kpi of 5%, the creteria will be:
+        // - if at least 2 frames drops have occured in the previous 2/(30 * 5%) seconds ( = 2 * 0.667 = 1.33 sec).
+        // OR
+        // - if the delta between the previous frame sequence number and the current's one > 2 (this is not implemented yet - TBD)
+        // then the kpi is violated
+        class kpi_checker
+        {
+        public:
+            kpi_checker(int kpi_frames_drops) : _kpi_frames_drops_pct(kpi_frames_drops) {}
+            bool update_and_check(const stream_profile& profile, const timeval& timestamp); //returns whether the kpi has been violated
+            //void reset(); // should be called in signal_stop method
+            //bool is_kpi_violated(stream_profile profile) const;
+
+        private:
+        /*struct stream_drop_data
+        {
+            double prev_partial_frame_ts;
+            int prev_frame_seq;
+        };*/
+            std::vector<std::pair<stream_profile, std::deque<long int>>> drops_per_stream;
+            int _kpi_frames_drops_pct;
+        };
+
         class v4l_uvc_device : public uvc_device, public v4l_uvc_interface
         {
         public:
@@ -341,6 +367,7 @@ namespace librealsense
             int _max_fd = 0;                    // specifies the maximal pipe number the polling process will monitor
             std::vector<int>  _fds;             // list the file descriptors to be monitored during frames polling
             buffers_mgr     _buf_dispatch;      // Holder for partial (MD only) frames that shall be preserved between 'select' calls when polling v4l buffers
+            kpi_checker _kpi_checker;
 
         private:
             int _fd = 0;          // prevent unintentional abuse in derived class

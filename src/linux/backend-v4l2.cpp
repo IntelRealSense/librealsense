@@ -52,6 +52,7 @@
 #pragma GCC diagnostic ignored "-Woverflow"
 
 const size_t MAX_DEV_PARENT_DIR = 10;
+const int DEFAULT_KPI_FRAME_DROPS_PCT = 5;
 
 #include "../tm2/tm-boot.h"
 
@@ -678,6 +679,48 @@ namespace librealsense
             }
         }
 
+        bool kpi_checker::update_and_check(const stream_profile& profile, const timeval& timestamp)
+        {
+            bool is_kpi_violated = false;
+            long int timestamp_usec = static_cast<long int> (timestamp.tv_sec * 1000000 + timestamp.tv_usec);
+
+            auto it = std::find_if(drops_per_stream.begin(), drops_per_stream.end(), 
+                [profile](std::pair<stream_profile, std::deque<long int>>& sp_deq)
+                {return  profile == sp_deq.first; });
+            if (it != drops_per_stream.end())
+            {
+                auto& queue_for_profile = it->second;
+                auto limit = static_cast<int>(200.0 / (profile.fps * _kpi_frames_drops_pct) * 1000000.0);
+                // removing too old timestamps of partial frames
+                while (queue_for_profile.size() > 0)
+                {
+                    auto delta = timestamp_usec - queue_for_profile.front();
+                    if (delta > limit)
+                    {
+                        queue_for_profile.pop_front();
+                    }
+                    else
+                        break;
+                }
+                // checking kpi violation
+                if (queue_for_profile.size() >= 2)
+                {
+                    is_kpi_violated = true;
+                    LOG_DEBUG_V4L("KPI VIOLATED: times are [0]:" << queue_for_profile[0] << " , [1]: " <<  queue_for_profile[1] << " [2]: " << timestamp_usec);
+                    queue_for_profile.clear();
+                }
+                else
+                    queue_for_profile.push_back(timestamp_usec);
+            }
+            else
+            {
+                std::deque<long int> deque_to_add;
+                deque_to_add.push_back(timestamp_usec);
+                drops_per_stream.push_back(std::make_pair(profile, deque_to_add));
+            }
+            return is_kpi_violated;
+        }
+
         v4l_uvc_device::v4l_uvc_device(const uvc_device_info& info, bool use_memory_map)
             : _name(""), _info(),
               _is_capturing(false),
@@ -688,7 +731,8 @@ namespace librealsense
               _use_memory_map(use_memory_map),
               _fd(-1),
               _stop_pipe_fd{},
-              _buf_dispatch(use_memory_map)
+              _buf_dispatch(use_memory_map),
+              _kpi_checker(DEFAULT_KPI_FRAME_DROPS_PCT)
         {
             foreach_uvc_device([&info, this](const uvc_device_info& i, const std::string& name)
             {
@@ -1060,9 +1104,13 @@ namespace librealsense
                                                 << ", payload size " << buffer->get_length_frame_only();
                                     }
                                     LOG_WARNING("Incomplete frame received: " << s.str()); // Ev -try1
-                                    librealsense::notification n = { RS2_NOTIFICATION_CATEGORY_FRAME_CORRUPTED, 0, RS2_LOG_SEVERITY_WARN, s.str()};
-
-                                    _error_handler(n);
+                                    bool kpi_violated = _kpi_checker.update_and_check(_profile, buf.timestamp);
+                                    if (kpi_violated)
+                                    {
+                                        librealsense::notification n = { RS2_NOTIFICATION_CATEGORY_FRAME_CORRUPTED, 0, RS2_LOG_SEVERITY_WARN, s.str() };
+                                        _error_handler(n);
+                                    }
+                                    
                                     // Check if metadata was already allocated
                                     if (buf_mgr.metadata_size())
                                     {
