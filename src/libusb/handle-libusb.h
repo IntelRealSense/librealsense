@@ -93,11 +93,36 @@ namespace librealsense
 
             usb_status claim_interface(uint8_t interface)
             {
+               
                 auto sts = libusb_claim_interface(_handle, interface);
-                if(sts != LIBUSB_SUCCESS)
+
+                if (sts != LIBUSB_SUCCESS)
                 {
-                    auto rs_sts =  libusb_status_to_rs(sts);
-                    LOG_ERROR("failed to claim usb interface: " << (int)interface << ", error: " << usb_status_to_string.at(rs_sts));
+                    // If we try to claim the USB device and get 'USB_STATUS_BUSY' error we will
+                    // retry 2 times more with some short delay between each try
+                    if( sts == LIBUSB_ERROR_BUSY )
+                    {
+                        auto retry_counter = 2;
+                        do
+                        {
+                            LOG_DEBUG( "failed to claim usb interface, interface "
+                                         << (int)interface << ", is busy - retrying..." );
+                            std::this_thread::sleep_for( std::chrono::milliseconds( 10 ) );
+
+                            sts = libusb_claim_interface( _handle, interface );
+                            if( sts == LIBUSB_SUCCESS )
+                            {
+                                LOG_DEBUG( "retrying success, interface = " << (int)interface );
+                                return RS2_USB_STATUS_SUCCESS;
+                            }
+                        }
+                        while( sts == LIBUSB_ERROR_BUSY && --retry_counter > 0 );
+                    }
+
+                    auto rs_sts = libusb_status_to_rs(sts);
+                    LOG_ERROR( "failed to claim usb interface: "
+                               << (int)interface << ", error: "
+                               << usb_status_to_string.at( rs_sts ) );
                     return rs_sts;
                 }
 
