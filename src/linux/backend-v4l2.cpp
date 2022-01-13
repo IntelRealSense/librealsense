@@ -679,7 +679,7 @@ namespace librealsense
             }
         }
 
-        bool kpi_checker::update_and_check(const stream_profile& profile, const timeval& timestamp)
+        bool frame_drop_monitor::update_and_check_kpi(const stream_profile& profile, const timeval& timestamp)
         {
             bool is_kpi_violated = false;
             long int timestamp_usec = static_cast<long int> (timestamp.tv_sec * 1000000 + timestamp.tv_usec);
@@ -741,7 +741,7 @@ namespace librealsense
               _fd(-1),
               _stop_pipe_fd{},
               _buf_dispatch(use_memory_map),
-              _kpi_checker(DEFAULT_KPI_FRAME_DROPS_PERCENTAGE)
+              _frame_drop_monitor(DEFAULT_KPI_FRAME_DROPS_PERCENTAGE)
         {
             foreach_uvc_device([&info, this](const uvc_device_info& i, const std::string& name)
             {
@@ -1112,8 +1112,8 @@ namespace librealsense
                                             s << "overflow video frame detected!\nSize " << buf.bytesused
                                                 << ", payload size " << buffer->get_length_frame_only();
                                     }
-                                    LOG_WARNING("Incomplete frame received: " << s.str()); // Ev -try1
-                                    bool kpi_violated = _kpi_checker.update_and_check(_profile, buf.timestamp);
+                                    LOG_DEBUG("Incomplete frame received: " << s.str()); // Ev -try1
+                                    bool kpi_violated = _frame_drop_monitor.update_and_check_kpi(_profile, buf.timestamp);
                                     if (kpi_violated)
                                     {
                                         librealsense::notification n = { RS2_NOTIFICATION_CATEGORY_FRAME_CORRUPTED, 0, RS2_LOG_SEVERITY_WARN, s.str() };
