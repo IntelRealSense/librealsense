@@ -693,8 +693,9 @@ namespace librealsense
             // checking kpi with the new partial frame caught
             if (it != drops_per_stream.end())
             {
-                // setting the kpi checking to be done on the last 2 seconds
-                int time_limit = 2;
+                // setting the kpi checking to be done on the last 30 seconds
+                int time_limit = 30;
+                
                 // max number of drops that can be received in the time_limit, without violation of the kpi
                 int max_num_of_drops = profile.fps * _kpi_frames_drops_pct * time_limit;
 

@@ -254,9 +254,9 @@ namespace librealsense
 
         // The aim of the kpi checker is to check the frames drops kpi - which requires
         // that no more than some percentage of the frames are dropped
-        // It is checked using the fps, and the previous corrupted frames, on the last 2 seconds
+        // It is checked using the fps, and the previous corrupted frames, on the last 30 seconds
         // for example, for frame rate of 30 fps, and kpi of 5%, the criteria will be:
-        // if at least 3 frames (= 30[fps] * 5%[kpi]* 2[sec]) drops have occured in the 2 seconds,
+        // if at least 45 frames (= 30[fps] * 5%[kpi]* 30[sec]) drops have occured in the previous 30 seconds,
         // then the kpi is violated
         class kpi_checker
         {
