@@ -112,7 +112,7 @@ namespace librealsense
                             sts = libusb_claim_interface( _handle, interface );
                             if( sts == LIBUSB_SUCCESS )
                             {
-                                LOG_DEBUG( "retrying success, interface = " << (int)interface );
+                                LOG_WARNING( "retrying success, interface = " << (int)interface );
                                 return RS2_USB_STATUS_SUCCESS;
                             }
                         }
