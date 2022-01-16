@@ -105,14 +105,14 @@ namespace librealsense
                         auto retry_counter = 2;
                         do
                         {
-                            LOG_DEBUG( "failed to claim usb interface, interface "
+                            LOG_WARNING( "failed to claim usb interface, interface "
                                          << (int)interface << ", is busy - retrying..." );
                             std::this_thread::sleep_for( std::chrono::milliseconds( 10 ) );
 
                             sts = libusb_claim_interface( _handle, interface );
                             if( sts == LIBUSB_SUCCESS )
                             {
-                                LOG_WARNING( "retrying success, interface = " << (int)interface );
+                                LOG_DEBUG( "retrying success, interface = " << (int)interface );
                                 return RS2_USB_STATUS_SUCCESS;
                             }
                         }
