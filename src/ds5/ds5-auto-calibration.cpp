@@ -1247,8 +1247,8 @@ namespace librealsense
                     }
 #endif
 
-                    static const int FRAMES_TO_SKIP(_interactive_scan ? 1 : 0);
-                    int fw_host_offset = (_interactive_scan ? 0 : 1);
+                    static const int FRAMES_TO_SKIP(_interactive_scan ? 5 : 0);
+                    int fw_host_offset = (_interactive_scan ? 1 : 2);
 
                     if (frame_counter + fw_host_offset < _total_frames)
                     {
