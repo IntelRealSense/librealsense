@@ -194,7 +194,7 @@ namespace librealsense
           _min_valid_depth(0),
           _max_valid_depth(uint16_t(-1)),
           _resize_factor(5),
-          _tare_skipped_frames(0)
+          _skipped_frames(0)
     {}
 
     std::map<std::string, int> auto_calibrated::parse_json(std::string json_content)
@@ -552,6 +552,7 @@ namespace librealsense
                     handle_calibration_error(status);
                 }
                 res = get_calibration_results(health);
+                std::cout << "Py: " << result.rightPy << std::endl;
             }
         }
         else if (calib_type == 1)
@@ -1010,22 +1011,6 @@ namespace librealsense
         const uint16_t* p = reinterpret_cast<const uint16_t*>(frame->get_frame_data());
 
 #ifdef SAVE_RAW_IMAGE
-        std::vector<uint16_t> origin_image(width * height, 0);
-        for (int ii = 0; ii < width * height; ii++)
-            origin_image[ii] = *(p + ii);
-
-        {
-            unsigned long milliseconds_since_epoch =
-                std::chrono::duration_cast<std::chrono::milliseconds>
-                (std::chrono::system_clock::now().time_since_epoch()).count();
-
-            std::stringstream name_s;
-            name_s << "origin_image_" << std::setfill('0') << std::setw(4) << milliseconds_since_epoch << "_" << frame->get_frame_number() << ".raw";
-
-            std::ofstream fout(name_s.str(), std::ios::out | std::ios::binary);
-            fout.write((char*)&origin_image[0], origin_image.size() * sizeof(uint16_t));
-            fout.close();
-        }
         std::vector<uint16_t> cropped_image(width * height, 0);
         int cropped_idx(0);
         cropped_idx += from * width + roi_start_w;
@@ -1192,7 +1177,6 @@ namespace librealsense
         try
         {
             std::vector<uint8_t> res;
-
             rs2_metadata_type frame_counter = ((frame_interface*)f)->get_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER);
             if (_interactive_state == interactive_calibration_state::RS2_OCC_STATE_WAIT_TO_CAMERA_START)
             {
@@ -1223,9 +1207,9 @@ namespace librealsense
             if (_interactive_state == interactive_calibration_state::RS2_OCC_STATE_WAIT_TO_CALIB_START)
             {
                 bool still_waiting(frame_counter >= _prev_frame_counter || frame_counter >= _total_frames);
+                _prev_frame_counter = frame_counter;
                 if (still_waiting)
                 {
-                    _prev_frame_counter = frame_counter;
                     if (progress_callback)
                     {
                         progress_callback->on_update_progress(static_cast<float>(15));
@@ -1239,7 +1223,8 @@ namespace librealsense
                 _collected_counter = 0;
                 _collected_sum = 0;
                 _collected_frame_num = 0;
-                _tare_skipped_frames = 0;
+                _skipped_frames = 0;
+                _prev_frame_counter = -1;
                 _interactive_state = interactive_calibration_state::RS2_OCC_STATE_DATA_COLLECT;
             }
             if (_interactive_state == interactive_calibration_state::RS2_OCC_STATE_DATA_COLLECT)
@@ -1260,28 +1245,58 @@ namespace librealsense
                         fout.close();
                     }
 #endif
-                    if (frame_counter < _total_frames)
+#ifdef SAVE_RAW_IMAGE
                     {
-                        if (frame_counter != _prev_frame_counter)
+                        auto frame = ((video_frame*)f);
+                        int width = frame->get_width();
+                        int height = frame->get_height();
+                        const uint16_t* p = reinterpret_cast<const uint16_t*>(frame->get_frame_data());
                         {
-                            if (frame_counter > 0)
+                            unsigned long milliseconds_since_epoch =
+                                std::chrono::duration_cast<std::chrono::milliseconds>
+                                (std::chrono::system_clock::now().time_since_epoch()).count();
+
+                            std::stringstream name_s;
+                            name_s << "origin_image_" << std::setfill('0') << std::setw(4) << milliseconds_since_epoch << "_" << frame->get_frame_number() << ".raw";
+
+                            std::ofstream fout(name_s.str(), std::ios::out | std::ios::binary);
+                            fout.write((char*)p, width * height * sizeof(uint16_t));
+                            fout.close();
+                        }
+                    }
+#endif
+
+                    static const int FRAMES_TO_SKIP(_interactive_scan ? 5 : 0);
+                    int fw_host_offset = (_interactive_scan ? 1 : 2);
+
+                    if (frame_counter + fw_host_offset < _total_frames)
+                    {
+                        if (frame_counter < _prev_frame_counter)
+                        {
+                            throw std::runtime_error("Frames arrived in a wrong order!");
+                        }
+                        if (_skipped_frames < FRAMES_TO_SKIP || frame_counter == _prev_frame_counter)
+                        {
+                            _skipped_frames++;
+                        }
+                        else
+                        {
+                            if (progress_callback)
                             {
-                                if (progress_callback)
-                                {
-                                    progress_callback->on_update_progress(static_cast<float>(20 + static_cast<int>(frame_counter * 60.0 / _total_frames)));
-                                }
-                                _fill_factor[frame_counter - 1] = calc_fill_rate(f);
+                                progress_callback->on_update_progress(static_cast<float>(20 + static_cast<int>(frame_counter * 60.0 / _total_frames)));
                             }
+                            _fill_factor[frame_counter + fw_host_offset] = calc_fill_rate(f);
                             if (_interactive_scan)
                             {
                                 _hw_monitor->send(command{ ds::AUTO_CALIB, interactive_scan_control, 1});
                             }
+                            _skipped_frames = 0;
+                            _prev_frame_counter = frame_counter;
                         }
-                        _prev_frame_counter = frame_counter;
                     }
                     else
                     {
-                        _interactive_state = interactive_calibration_state::RS2_OCC_STATE_FINAL_FW_CALL;
+                        _interactive_state = interactive_calibration_state::RS2_OCC_STATE_WAIT_FOR_FINAL_FW_CALL;
                     }
                 }
                 else if (_action == auto_calib_action::RS2_OCC_ACTION_TARE_CALIB)
@@ -1292,7 +1307,7 @@ namespace librealsense
                         _collected_counter = 0;
                         _collected_sum = 0.0;
                         _collected_frame_num = 0;
-                        _tare_skipped_frames = 0;
+                        _skipped_frames = 0;
                         if (progress_callback)
                         {
                             progress_callback->on_update_progress(static_cast<float>(20 + static_cast<int>(frame_counter * 60.0 / _total_frames)));
@@ -1300,9 +1315,9 @@ namespace librealsense
                     }
                     if (frame_counter < _total_frames)
                     {
-                        if (_tare_skipped_frames < FRAMES_TO_SKIP)
+                        if (_skipped_frames < FRAMES_TO_SKIP)
                         {
-                            _tare_skipped_frames++;
+                            _skipped_frames++;
                         }
                         else
                         {
@@ -1327,8 +1342,19 @@ namespace librealsense
                     }
                     else
                     {
-                        _interactive_state = interactive_calibration_state::RS2_OCC_STATE_FINAL_FW_CALL;
+                        _interactive_state = interactive_calibration_state::RS2_OCC_STATE_WAIT_FOR_FINAL_FW_CALL;
                     }
+                }
+            }
+            if (_interactive_state == interactive_calibration_state::RS2_OCC_STATE_WAIT_FOR_FINAL_FW_CALL)
+            {
+                if (frame_counter > _total_frames)
+                {
+                    _interactive_state = interactive_calibration_state::RS2_OCC_STATE_FINAL_FW_CALL;
+                }
+                else if (_interactive_scan)
+                {
+                    _hw_monitor->send(command{ ds::AUTO_CALIB, interactive_scan_control, 1 });
                 }
             }
             if (_interactive_state == interactive_calibration_state::RS2_OCC_STATE_FINAL_FW_CALL)

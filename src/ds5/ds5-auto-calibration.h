@@ -40,6 +40,7 @@ namespace librealsense
             RS2_OCC_STATE_INITIAL_FW_CALL,
             RS2_OCC_STATE_WAIT_TO_CALIB_START,
             RS2_OCC_STATE_DATA_COLLECT,
+            RS2_OCC_STATE_WAIT_FOR_FINAL_FW_CALL,
             RS2_OCC_STATE_FINAL_FW_CALL
         };
 
@@ -101,7 +102,7 @@ namespace librealsense
         rs2_metadata_type _prev_frame_counter;
         uint16_t _fill_factor[256];
         uint16_t _min_valid_depth, _max_valid_depth;
-        int _tare_skipped_frames;
+        int _skipped_frames;
 
     };
 }
