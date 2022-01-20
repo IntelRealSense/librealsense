@@ -400,11 +400,6 @@ namespace rs2
         bool frame_arrived = false;
         try
         {
-            if (_sub->s->supports(RS2_OPTION_EMITTER_ENABLED))
-            {
-                laser_status_prev = _sub->s->get_option(RS2_OPTION_EMITTER_ENABLED);
-                _sub->s->set_option(RS2_OPTION_EMITTER_ENABLED, 0.0f);
-            }
             if (_sub->s->supports(RS2_OPTION_THERMAL_COMPENSATION))
             {
                 thermal_loop_prev = _sub->s->get_option(RS2_OPTION_THERMAL_COMPENSATION);
@@ -1321,6 +1316,40 @@ namespace rs2
         get_manager().intrinsic_scan = intrinsic;
     }
 
+    void autocalib_notification_model::draw_laser_toggle_button(bool is_laser_on)
+    {
+        if (is_laser_on)
+        {
+            ImGui_ScopePushStyleColor(ImGuiCol_Text, light_blue);
+            ImGui_ScopePushStyleColor(ImGuiCol_TextSelectedBg, light_blue + 0.1f);
+            std::string label = to_string() << "  " << textual_icons::toggle_on << "on##";
+            if (ImGui::Button(label.c_str(), { 100,30 }))
+            {
+                get_manager()._sub->s->set_option(RS2_OPTION_EMITTER_ENABLED, false);
+            }
+            if (ImGui::IsItemHovered())
+            {
+                ImGui::SetTooltip("Turn off laser");
+            }
+        }
+        else
+        {
+            ImGui_ScopePushStyleColor(ImGuiCol_Text, redish);
+            ImGui_ScopePushStyleColor(ImGuiCol_TextSelectedBg, redish + 0.1f);
+
+            std::string label = to_string() << "  " << textual_icons::toggle_off << "off";
+            if (ImGui::Button(label.c_str(), { 100,30 }))
+            {
+                get_manager()._sub->s->set_option(RS2_OPTION_EMITTER_ENABLED, true);
+            }
+            if (ImGui::IsItemHovered())
+            {
+                ImGui::SetTooltip("Turn on laser");
+            }
+        }
+    }
+
+
     void autocalib_notification_model::draw_content(ux_window& win, int x, int y, float t, std::string& error_message)
     {
         using namespace std;
@@ -1668,17 +1697,40 @@ namespace rs2
                     ImGui::Checkbox(id.c_str(), &get_manager().apply_preset);
                 }
 
+                bool is_laser_on = false;
+                if (get_manager()._sub->s->supports(RS2_OPTION_EMITTER_ENABLED))
+                {
+                    is_laser_on = get_manager()._sub->s->get_option(RS2_OPTION_EMITTER_ENABLED);
+                }
+
                 if (update_state == RS2_CALIB_STATE_TARE_INPUT_ADVANCED)
                 {
-                    ImGui::SetCursorScreenPos({ float(x + 9), float(y + 60 + 5 * ImGui::GetTextLineHeightWithSpacing()) });
+                    if (get_manager()._sub->s->supports(RS2_OPTION_EMITTER_ENABLED))
+                    {
+                        ImGui::SetCursorScreenPos({ float(x + 9), float(y + 60 + 5 * ImGui::GetTextLineHeightWithSpacing()) });
+                        ImGui::Text("%s", "Laser:");
+                        ImGui::SetCursorScreenPos({ float(x + 25), float(y + 53 + 5 * ImGui::GetTextLineHeightWithSpacing()) });
+                        draw_laser_toggle_button(is_laser_on);
+                        ImGui::SetCursorScreenPos({ float(x + 135), float(y + 28) });
+                    }
+                    ImGui::SetCursorScreenPos({ float(x + 9), float(y + 60 + 6 * ImGui::GetTextLineHeightWithSpacing()) });
                     ImGui::Text("%s", "Ground Truth(mm):");
-                    ImGui::SetCursorScreenPos({ float(x + 135), float(y + 58 + 5 * ImGui::GetTextLineHeightWithSpacing()) });
+                    ImGui::SetCursorScreenPos({ float(x + 135), float(y + 58 + 6 * ImGui::GetTextLineHeightWithSpacing()) });
                 }
                 else
                 {
-                    ImGui::SetCursorScreenPos({ float(x + 9), float(y + 33) });
+                    if (get_manager()._sub->s->supports(RS2_OPTION_EMITTER_ENABLED))
+                    {
+                        ImGui::SetCursorScreenPos({ float(x + 9), float(y + 28) });
+                        ImGui::Text("%s", "Laser:");
+                        ImGui::SetCursorScreenPos({ float(x + 25), float(y + 21) });
+                        draw_laser_toggle_button(is_laser_on);
+                        ImGui::SetCursorScreenPos({ float(x + 135), float(y + 28) });
+                    }
+
+                    ImGui::SetCursorScreenPos({ float(x + 9), float(y + 33 + ImGui::GetTextLineHeightWithSpacing()) });
                     ImGui::Text("%s", "Ground Truth (mm):");
-                    ImGui::SetCursorScreenPos({ float(x + 135), float(y + 30) });
+                    ImGui::SetCursorScreenPos({ float(x + 135), float(y + 30 + ImGui::GetTextLineHeightWithSpacing()) });
                 }
 
                 if (ImGui::IsItemHovered())
@@ -1709,10 +1761,11 @@ namespace rs2
                 ImGui::PushStyleColor(ImGuiCol_ButtonHovered, saturate(sensor_header_light_blue, 1.5f));
 
                 std::string get_button_name = to_string() << "Get" << "##tare" << index;
+
                 if (update_state == RS2_CALIB_STATE_TARE_INPUT_ADVANCED)
-                    ImGui::SetCursorScreenPos({ float(x + width - 52), float(y + 58 + 5 * ImGui::GetTextLineHeightWithSpacing()) });
+                    ImGui::SetCursorScreenPos({ float(x + width - 52), float(y + 58 + 6 * ImGui::GetTextLineHeightWithSpacing()) });
                 else
-                    ImGui::SetCursorScreenPos({ float(x + width - 52), float(y + 30) });
+                    ImGui::SetCursorScreenPos({ float(x + width - 52), float(y + 30 + ImGui::GetTextLineHeightWithSpacing())});
 
                 if (ImGui::Button(get_button_name.c_str(), { 42.0f, 20.f }))
                 {
@@ -2686,8 +2739,8 @@ namespace rs2
             else return 80;
         }
         else if (update_state == RS2_CALIB_STATE_SELF_INPUT) return (get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_OB_CALIB ? 160 : 60);
-        else if (update_state == RS2_CALIB_STATE_TARE_INPUT) return 85;
-        else if (update_state == RS2_CALIB_STATE_TARE_INPUT_ADVANCED) return 220;
+        else if (update_state == RS2_CALIB_STATE_TARE_INPUT) return 105;
+        else if (update_state == RS2_CALIB_STATE_TARE_INPUT_ADVANCED) return 235;
         else if (update_state == RS2_CALIB_STATE_GET_TARE_GROUND_TRUTH) return 135;
         else if (update_state == RS2_CALIB_STATE_GET_TARE_GROUND_TRUTH_FAILED) return 115;
         else if (update_state == RS2_CALIB_STATE_FAILED) return ((get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_OB_CALIB || get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_FL_CALIB) ? (get_manager().retry_times < 3 ? 0 : 80) : 110);
