@@ -1232,6 +1232,10 @@ namespace rs2
 
             if (_was_streaming) start_viewer(0, 0, 0, invoke);
 
+            // reverting laser status
+            if (_sub->s->supports(RS2_OPTION_EMITTER_ENABLED))
+                _sub->s->set_option(RS2_OPTION_EMITTER_ENABLED, laser_status_prev);
+
             _restored = true;
         }
         catch (...) {}
@@ -1502,7 +1506,11 @@ namespace rs2
                     get_manager().action = on_chip_calib_manager::RS2_CALIB_ACTION_TARE_CALIB;
                     update_state = update_state_prev;
                     if (get_manager()._sub->s->supports(RS2_OPTION_EMITTER_ENABLED))
+                    {
                         get_manager()._sub->s->set_option(RS2_OPTION_EMITTER_ENABLED, get_manager().laser_status_prev);
+                        ground_truth_use_laser = get_manager().laser_status_prev;
+
+                    }
                     if (get_manager()._sub->s->supports(RS2_OPTION_THERMAL_COMPENSATION))
                         get_manager()._sub->s->set_option(RS2_OPTION_THERMAL_COMPENSATION, get_manager().thermal_loop_prev);
                     get_manager().stop_viewer();
@@ -2006,7 +2014,7 @@ namespace rs2
                     if (get_manager()._sub->s->supports(RS2_OPTION_EMITTER_ENABLED))
                         get_manager()._sub->s->set_option(RS2_OPTION_EMITTER_ENABLED, get_manager().laser_status_prev);
                     if (get_manager()._sub->s->supports(RS2_OPTION_THERMAL_COMPENSATION))
-                        get_manager()._sub->s->set_option(RS2_OPTION_THERMAL_COMPENSATION, get_manager().laser_status_prev);
+                        get_manager()._sub->s->set_option(RS2_OPTION_THERMAL_COMPENSATION, get_manager().thermal_loop_prev);
 
                     ImGui::SetCursorScreenPos({ float(x + 20), float(y + 33) });
                     ImGui::Text("%s", "Health-Check Number for PX: ");
