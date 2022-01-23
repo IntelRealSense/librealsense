@@ -1316,40 +1316,6 @@ namespace rs2
         get_manager().intrinsic_scan = intrinsic;
     }
 
-    void autocalib_notification_model::draw_laser_toggle_button(bool is_laser_on)
-    {
-        if (is_laser_on)
-        {
-            ImGui_ScopePushStyleColor(ImGuiCol_Text, light_blue);
-            ImGui_ScopePushStyleColor(ImGuiCol_TextSelectedBg, light_blue + 0.1f);
-            std::string label = to_string() << "  " << textual_icons::toggle_on << "on##";
-            if (ImGui::Button(label.c_str(), { 100,30 }))
-            {
-                get_manager()._sub->s->set_option(RS2_OPTION_EMITTER_ENABLED, false);
-            }
-            if (ImGui::IsItemHovered())
-            {
-                ImGui::SetTooltip("Turn off laser");
-            }
-        }
-        else
-        {
-            ImGui_ScopePushStyleColor(ImGuiCol_Text, redish);
-            ImGui_ScopePushStyleColor(ImGuiCol_TextSelectedBg, redish + 0.1f);
-
-            std::string label = to_string() << "  " << textual_icons::toggle_off << "off";
-            if (ImGui::Button(label.c_str(), { 100,30 }))
-            {
-                get_manager()._sub->s->set_option(RS2_OPTION_EMITTER_ENABLED, true);
-            }
-            if (ImGui::IsItemHovered())
-            {
-                ImGui::SetTooltip("Turn on laser");
-            }
-        }
-    }
-
-
     void autocalib_notification_model::draw_content(ux_window& win, int x, int y, float t, std::string& error_message)
     {
         using namespace std;
@@ -1692,25 +1658,18 @@ namespace rs2
                     // Disabled according to the decision on v2.50
                     //draw_intrinsic_extrinsic(x, y + 3 * int(ImGui::GetTextLineHeightWithSpacing()) - 10);
 
-                    ImGui::SetCursorScreenPos({ float(x + 9), float(y + 52 + 4 * ImGui::GetTextLineHeightWithSpacing()) });
+                    ImGui::SetCursorScreenPos({ float(x + 9), float(y + 45 + 4 * ImGui::GetTextLineHeightWithSpacing()) });
                     id = to_string() << "Apply High-Accuracy Preset##apply_preset_" << index;
                     ImGui::Checkbox(id.c_str(), &get_manager().apply_preset);
                 }
 
-                bool is_laser_on = false;
-                if (get_manager()._sub->s->supports(RS2_OPTION_EMITTER_ENABLED))
-                {
-                    is_laser_on = get_manager()._sub->s->get_option(RS2_OPTION_EMITTER_ENABLED);
-                }
 
                 if (update_state == RS2_CALIB_STATE_TARE_INPUT_ADVANCED)
                 {
                     if (get_manager()._sub->s->supports(RS2_OPTION_EMITTER_ENABLED))
                     {
-                        ImGui::SetCursorScreenPos({ float(x + 9), float(y + 60 + 5 * ImGui::GetTextLineHeightWithSpacing()) });
-                        ImGui::Text("%s", "Laser:");
-                        ImGui::SetCursorScreenPos({ float(x + 25), float(y + 53 + 5 * ImGui::GetTextLineHeightWithSpacing()) });
-                        draw_laser_toggle_button(is_laser_on);
+                        ImGui::SetCursorScreenPos({ float(x + 9), float(y + 55 + 5 * ImGui::GetTextLineHeightWithSpacing()) });
+                        ImGui::Checkbox("Ground Truth with Laser", &ground_truth_use_laser);
                         ImGui::SetCursorScreenPos({ float(x + 135), float(y + 28) });
                     }
                     ImGui::SetCursorScreenPos({ float(x + 9), float(y + 60 + 6 * ImGui::GetTextLineHeightWithSpacing()) });
@@ -1722,9 +1681,7 @@ namespace rs2
                     if (get_manager()._sub->s->supports(RS2_OPTION_EMITTER_ENABLED))
                     {
                         ImGui::SetCursorScreenPos({ float(x + 9), float(y + 28) });
-                        ImGui::Text("%s", "Laser:");
-                        ImGui::SetCursorScreenPos({ float(x + 25), float(y + 21) });
-                        draw_laser_toggle_button(is_laser_on);
+                        ImGui::Checkbox("Ground Truth with Laser", &ground_truth_use_laser);
                         ImGui::SetCursorScreenPos({ float(x + 135), float(y + 28) });
                     }
 
@@ -1770,7 +1727,11 @@ namespace rs2
                 if (ImGui::Button(get_button_name.c_str(), { 42.0f, 20.f }))
                 {
                     if (get_manager()._sub->s->supports(RS2_OPTION_EMITTER_ENABLED))
+                    {
                         get_manager().laser_status_prev = get_manager()._sub->s->get_option(RS2_OPTION_EMITTER_ENABLED);
+                        if (get_manager().laser_status_prev != ground_truth_use_laser)
+                            get_manager()._sub->s->set_option(RS2_OPTION_EMITTER_ENABLED, ground_truth_use_laser);
+                    }
                     if (get_manager()._sub->s->supports(RS2_OPTION_THERMAL_COMPENSATION))
                         get_manager().thermal_loop_prev = get_manager()._sub->s->get_option(RS2_OPTION_THERMAL_COMPENSATION);
 
@@ -1786,6 +1747,8 @@ namespace rs2
                 ImGui::SetCursorScreenPos({ float(x + 5), float(y + height - 28) });
                 if (ImGui::Button(button_name.c_str(), { float(bar_width), 20.f }))
                 {
+                    if (get_manager()._sub->s->supports(RS2_OPTION_EMITTER_ENABLED))
+                        get_manager()._sub->s->set_option(RS2_OPTION_EMITTER_ENABLED, true);
                     get_manager().restore_workspace([](std::function<void()> a) { a(); });
                     get_manager().reset();
                     get_manager().retry_times = 0;
@@ -2787,5 +2750,7 @@ namespace rs2
         this->category = RS2_NOTIFICATION_CATEGORY_HARDWARE_EVENT;
 
         pinned = true;
+        if (manager->_sub->s->supports(RS2_OPTION_EMITTER_ENABLED))
+            ground_truth_use_laser = manager->_sub->s->get_option(RS2_OPTION_EMITTER_ENABLED);
     }
 }

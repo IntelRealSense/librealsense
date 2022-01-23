@@ -187,11 +187,11 @@ namespace rs2
         void draw_dismiss(ux_window& win, int x, int y) override;
         void draw_expanded(ux_window& win, std::string& error_message) override;
         void draw_intrinsic_extrinsic(int x, int y);
-        void draw_laser_toggle_button(bool is_laser_on);
         int calc_height() override;
         void dismiss(bool snooze) override;
 
         bool use_new_calib = true;
+        bool ground_truth_use_laser = false;
         std::string _error_message = "";
     };
 
