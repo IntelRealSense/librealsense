@@ -1232,7 +1232,7 @@ namespace rs2
 
             if (_was_streaming) start_viewer(0, 0, 0, invoke);
 
-            // reverting laser status
+            // reverting the laser status
             if (_sub->s->supports(RS2_OPTION_EMITTER_ENABLED))
                 _sub->s->set_option(RS2_OPTION_EMITTER_ENABLED, laser_status_prev);
 
