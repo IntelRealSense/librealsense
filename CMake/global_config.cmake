@@ -95,6 +95,11 @@ macro(global_set_flags)
         endif()
     endif()
     
+    if(BUILD_DDS_BACKEND)
+        message(STATUS "Building with FastDDS")
+        include(CMake/external_fastdds.cmake)
+    endif()
+    
     add_definitions(-D${BACKEND} -DUNICODE)
 endmacro()
 
