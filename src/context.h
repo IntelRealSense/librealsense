@@ -128,6 +128,7 @@ namespace librealsense
         void remove_device(const std::string& file);
 
         void add_software_device(std::shared_ptr<device_info> software_device);
+        void add_dds_listener( int port );
 
 #if WITH_TRACKING
         void unload_tracking_module();

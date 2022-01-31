@@ -118,6 +118,46 @@ jobs:
       run: |
         cd build
         cmake --build . --config ${{env.LRS_BUILD_CONFIG}} -- -m    
+        
+  Windows_cpp_static_dds:
+    runs-on: windows-2019
+    timeout-minutes: 60
+    env:
+      VS15: true
+      # GH-Actions Windows VM currently supply ~14 GB available on D drive, and ~80 GB on drive C.
+      # Building LRS statically with third parties is too much for drive D so we clone to drive 'D' and build on drive 'C'
+      BUILD_DIR: c:/lrs_build
+    steps:
+    - uses: actions/checkout@v2    
+
+    - name: Enable Long Paths
+      shell: powershell
+      run: |
+       New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name "LongPathsEnabled" -Value 1 -PropertyType DWORD -Force
+
+    - name: PreBuild
+      shell: bash
+      run: |
+       cd scripts && ./api_check.sh && cd ..
+       mkdir ${{env.BUILD_DIR}}
+
+    - name: Configure CMake
+    # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
+    # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
+      shell: bash
+      run: |   
+        pwd 
+        lrs_src=$(pwd)        
+        cd ${{env.BUILD_DIR}}
+        cmake ${lrs_src} -G "Visual Studio 16 2019" -DBUILD_WITH_TM2=true -DCHECK_FOR_UPDATES=true -DBUILD_SHARED_LIBS=false -DBUILD_DDS_BACKEND=true
+
+    - name: Build
+      # Build your program with the given configuration
+      shell: bash
+      run: |
+        df -h
+        cd ${{env.BUILD_DIR}}
+        cmake --build . --config ${{env.LRS_BUILD_CONFIG}} -- -m    
        
   Windows_CSharp:
     # The CMake configure and build commands are platform agnostic and should work equally

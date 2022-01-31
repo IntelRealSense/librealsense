@@ -35,8 +35,18 @@ if(${BACKEND} STREQUAL RS2_USE_V4L2_BACKEND)
     include(${_rel_path}/linux/CMakeLists.txt)
 endif()
 
+if(${BACKEND} STREQUAL RS2_USE_V4L2_DDS_BACKEND)
+    include(${_rel_path}/linux/CMakeLists.txt)
+    include(${_rel_path}/dds/CMakeLists.txt)
+endif()
+
 if(${BACKEND} STREQUAL RS2_USE_WMF_BACKEND)
     include(${_rel_path}/mf/CMakeLists.txt)
+endif()
+
+if(${BACKEND} STREQUAL RS2_USE_WMF_DDS_BACKEND)
+    include(${_rel_path}/mf/CMakeLists.txt)
+    include(${_rel_path}/dds/CMakeLists.txt)
 endif()
 
 if(${BACKEND} STREQUAL RS2_USE_WINUSB_UVC_BACKEND)
@@ -68,11 +78,6 @@ endif()
 if(BUILD_SHARED_LIBS)
     target_sources(${LRS_TARGET} PRIVATE "${CMAKE_CURRENT_LIST_DIR}/realsense.def")
 endif()
-
-if(BUILD_DDS_BACKEND)
-    include(${_rel_path}/dds-backend/CMakeLists.txt)
-endif()
-
 
 target_sources(${LRS_TARGET}
     PRIVATE

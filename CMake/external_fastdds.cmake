@@ -1,6 +1,7 @@
-# cmake_minimum_required comes from foonathan_memory 
-# https://github.com/foonathan/memory/blob/37e0a7e92344bd1c710a9f12c9054494ecaaa76c/CMakeLists.txt#L7
-cmake_minimum_required(VERSION 3.11) 
+# cmake_minimum_required comes from CMP0091,
+# In order to build FastDDS in `/MT` mode in windows static builds 
+# https://cmake.org/cmake/help/git-stage/policy/CMP0091.html
+cmake_minimum_required(VERSION 3.15) 
 include(ExternalProject)
 
 # Foonathan memory is a dependency of FastDDS.
@@ -33,7 +34,9 @@ ExternalProject_Add(
 set(FASTDDS_FLAGS   -DBUILD_SHARED_LIBS=OFF 
                     -DTHIRDPARTY_Asio=FORCE 
                     -DTHIRDPARTY_TinyXML2=FORCE 
-                    -DTHIRDPARTY_fastcdr=FORCE)
+                    -DTHIRDPARTY_fastcdr=FORCE
+                    -DCOMPILE_TOOLS=OFF
+                    -DBUILD_TESTING=OFF)
                         
 # We construct the git tag is the purpose of having a single place that indicate the FastDDS version we consume.
 # FastDDS library name is different in Windows/Linux (Windows library name is versioned and Linux is not!)
@@ -63,6 +66,8 @@ ExternalProject_Add(
                 -DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/fastdds/fastdds_install
                 -DCMAKE_INSTALL_LIBDIR=lib
                 -DCMAKE_TOOLCHAIN_FILE=${CMAKE_TOOLCHAIN_FILE}
+                -DCMAKE_POLICY_DEFAULT_CMP0091:STRING=NEW 
+                -DCMAKE_MSVC_RUNTIME_LIBRARY:STRING=MultiThreaded$<$<CONFIG:Debug>:Debug>
                 ${FASTDDS_FLAGS}
     UPDATE_COMMAND ""
     PATCH_COMMAND ""

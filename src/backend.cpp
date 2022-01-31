@@ -1,16 +1,20 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
-#if defined(RS2_USE_LIBUVC_BACKEND) && !defined(RS2_USE_WMF_BACKEND) && !defined(RS2_USE_V4L2_BACKEND) && !defined(RS2_USE_WINUSB_UVC_BACKEND)  && !defined(RS2_USE_ANDROID_BACKEND)
+#if defined(RS2_USE_LIBUVC_BACKEND) && !defined(RS2_USE_WMF_BACKEND) && !defined(RS2_USE_V4L2_BACKEND) && !defined(RS2_USE_WINUSB_UVC_BACKEND)  && !defined(RS2_USE_ANDROID_BACKEND) && !defined(RS2_USE_V4L2_backend_dds) && !defined(RS2_USE_WMF_DDS_BACKEND)
 // UVC support will be provided via libuvc / libusb backend
-#elif !defined(RS2_USE_LIBUVC_BACKEND) && defined(RS2_USE_WMF_BACKEND) && !defined(RS2_USE_V4L2_BACKEND) && !defined(RS2_USE_WINUSB_UVC_BACKEND) && !defined(RS2_USE_ANDROID_BACKEND)
+#elif !defined(RS2_USE_LIBUVC_BACKEND) && defined(RS2_USE_WMF_BACKEND) && !defined(RS2_USE_V4L2_BACKEND) && !defined(RS2_USE_WINUSB_UVC_BACKEND) && !defined(RS2_USE_ANDROID_BACKEND) && !defined(RS2_USE_V4L2_DDS_BACKEND) && !defined(RS2_USE_WMF_DDS_BACKEND)
 // UVC support will be provided via Windows Media Foundation / WinUSB backend
-#elif !defined(RS2_USE_LIBUVC_BACKEND) && !defined(RS2_USE_WMF_BACKEND) && !defined(RS2_USE_V4L2_BACKEND) && defined(RS2_USE_WINUSB_UVC_BACKEND)&&!defined(RS2_USE_ANDROID_BACKEND)
+#elif !defined(RS2_USE_LIBUVC_BACKEND) && !defined(RS2_USE_WMF_BACKEND) && !defined(RS2_USE_V4L2_BACKEND) && defined(RS2_USE_WINUSB_UVC_BACKEND)&&!defined(RS2_USE_ANDROID_BACKEND) && !defined(RS2_USE_V4L2_DDS_BACKEND) && !defined(RS2_USE_WMF_DDS_BACKEND)
 // UVC support will be provided via WinUSB / WinUSB backend
-#elif !defined(RS2_USE_LIBUVC_BACKEND) && !defined(RS2_USE_WMF_BACKEND) && defined(RS2_USE_V4L2_BACKEND) && !defined(RS2_USE_WINUSB_UVC_BACKEND)&&!defined(RS2_USE_ANDROID_BACKEND)
+#elif !defined(RS2_USE_LIBUVC_BACKEND) && !defined(RS2_USE_WMF_BACKEND) && defined(RS2_USE_V4L2_BACKEND) && !defined(RS2_USE_WINUSB_UVC_BACKEND)&&!defined(RS2_USE_ANDROID_BACKEND) && !defined(RS2_USE_V4L2_DDS_BACKEND) && !defined(RS2_USE_WMF_DDS_BACKEND)
 // UVC support will be provided via Video 4 Linux 2 / libusb backend
-#elif !defined(RS2_USE_LIBUVC_BACKEND) && !defined(RS2_USE_WMF_BACKEND) && !defined(RS2_USE_V4L2_BACKEND) && !defined(RS2_USE_WINUSB_UVC_BACKEND) && defined(RS2_USE_ANDROID_BACKEND)
+#elif !defined(RS2_USE_LIBUVC_BACKEND) && !defined(RS2_USE_WMF_BACKEND) && !defined(RS2_USE_V4L2_BACKEND) && !defined(RS2_USE_WINUSB_UVC_BACKEND) && defined(RS2_USE_ANDROID_BACKEND) && !defined(RS2_USE_V4L2_DDS_BACKEND) && !defined(RS2_USE_WMF_DDS_BACKEND)
 // UVC support will be provided via Android backend
+#elif !defined(RS2_USE_LIBUVC_BACKEND) && !defined(RS2_USE_WMF_BACKEND) && !defined(RS2_USE_V4L2_BACKEND) && !defined(RS2_USE_WINUSB_UVC_BACKEND) && !defined(RS2_USE_ANDROID_BACKEND) && defined(RS2_USE_V4L2_DDS_BACKEND) && !defined(RS2_USE_WMF_DDS_BACKEND)
+// UVC support will be provided via V4L2 + DDS backend
+#elif !defined(RS2_USE_LIBUVC_BACKEND) && !defined(RS2_USE_WMF_BACKEND) && !defined(RS2_USE_V4L2_BACKEND) && !defined(RS2_USE_WINUSB_UVC_BACKEND) && !defined(RS2_USE_ANDROID_BACKEND) && !defined(RS2_USE_V4L2_DDS_BACKEND) && defined(RS2_USE_WMF_DDS_BACKEND)
+// UVC support will be provided via Windows Media Foundation + DDS backend
 #else
 #error No UVC backend selected. Please #define exactly one of RS2_USE_LIBUVC_BACKEND, RS2_USE_WMF_BACKEND, RS2_USE_WINUSB_UVC_BACKEND or RS2_USE_V4L2_BACKEND
 #endif

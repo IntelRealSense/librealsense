@@ -580,6 +580,11 @@ namespace librealsense
         on_device_changed({}, {}, prev_playback_devices, _playback_devices);
     }
 
+    void add_dds_listener( int port )
+    {
+        
+    }
+
     void context::remove_device(const std::string& file)
     {
         auto it = _playback_devices.find(file);
