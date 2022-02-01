@@ -61,6 +61,11 @@ include(src/CMakeLists.txt)
 include(third-party/CMakeLists.txt)
 include(common/utilities/CMakeLists.txt)
 
+if(BUILD_DDS_BACKEND)
+    message(STATUS "Building with FastDDS")
+    include(CMake/external_fastdds.cmake)
+endif()
+
 # configure the project according to OS specific requirments
 # macro definition located at "CMake/<OS>_config.cmake"
 os_target_config()
@@ -107,3 +112,4 @@ if(IMPORT_DEPTH_CAM_FW)
 endif()
 
 include(CMake/embedd_udev_rules.cmake)
+
