@@ -48,7 +48,7 @@ jobs:
         cd ${{env.WIN_BUILD_DIR}}
         pwd
         ls        
-        cmake ${LRS_SRC_DIR} -G "Visual Studio 16 2019" -DPYTHON_EXECUTABLE=${{env.PYTHON_PATH}} -DBUILD_PYTHON_BINDINGS=true -DPYBIND11_PYTHON_VERSION=3.8 -DBUILD_UNIT_TESTS=false -DBUILD_LEGACY_LIVE_TEST=true -DBUILD_EXAMPLES=false -DBUILD_TOOLS=false -DBUILD_WITH_TM2=false -DFORCE_RSUSB_BACKEND=true -DBUILD_DDS_BACKEND=true
+        cmake ${LRS_SRC_DIR} -G "Visual Studio 16 2019" -DPYTHON_EXECUTABLE=${{env.PYTHON_PATH}} -DBUILD_PYTHON_BINDINGS=true -DPYBIND11_PYTHON_VERSION=3.8 -DBUILD_UNIT_TESTS=false -DBUILD_LEGACY_LIVE_TEST=true -DBUILD_EXAMPLES=false -DBUILD_TOOLS=false -DBUILD_WITH_TM2=false -DFORCE_RSUSB_BACKEND=true -DBUILD_WITH_DDS=true
 
     - name: Build
       # Build your program with the given configuration
@@ -152,7 +152,7 @@ jobs:
         pwd 
         LRS_SRC_DIR=$(pwd)        
         cd ${{env.WIN_BUILD_DIR}}
-        cmake ${LRS_SRC_DIR} -G "Visual Studio 16 2019" -DBUILD_WITH_TM2=true -DCHECK_FOR_UPDATES=true -DBUILD_SHARED_LIBS=false -DBUILD_DDS_BACKEND=true
+        cmake ${LRS_SRC_DIR} -G "Visual Studio 16 2019" -DBUILD_WITH_TM2=true -DCHECK_FOR_UPDATES=true -DBUILD_SHARED_LIBS=false -DBUILD_WITH_DDS=true
 
     - name: Build
       # Build your program with the given configuration
@@ -313,7 +313,7 @@ jobs:
       shell: bash
       run: | 
         cd build
-        cmake .. -DBUILD_UNIT_TESTS=false -DBUILD_LEGACY_LIVE_TEST=true -DBUILD_EXAMPLES=false -DBUILD_TOOLS=false -DBUILD_WITH_TM2=false -DCHECK_FOR_UPDATES=true -DBUILD_DDS_BACKEND=true
+        cmake .. -DBUILD_UNIT_TESTS=false -DBUILD_LEGACY_LIVE_TEST=true -DBUILD_EXAMPLES=false -DBUILD_TOOLS=false -DBUILD_WITH_TM2=false -DCHECK_FOR_UPDATES=true -DBUILD_WITH_DDS=true
         cmake --build . --config ${{env.LRS_RUN_CONFIG}} -- -j4
         
     - name: Test
@@ -368,7 +368,7 @@ jobs:
           cd scripts && ./api_check.sh && cd ..
           mkdir build
           cd ./scripts && ./pr_check.sh && cd ../build
-          cmake .. -DBUILD_EXAMPLES=true -DBUILD_WITH_TM2=true -DBUILD_SHARED_LIBS=false -DCHECK_FOR_UPDATES=true -DBUILD_PYTHON_BINDINGS=true -DPYBIND11_PYTHON_VERSION=3.5 -DBUILD_DDS_BACKEND=true
+          cmake .. -DBUILD_EXAMPLES=true -DBUILD_WITH_TM2=true -DBUILD_SHARED_LIBS=false -DCHECK_FOR_UPDATES=true -DBUILD_PYTHON_BINDINGS=true -DPYBIND11_PYTHON_VERSION=3.5 -DBUILD_WITH_DDS=true
           cmake --build . --config ${{env.LRS_BUILD_CONFIG}} -- -j4  
   
   Linux_python_nodejs:

@@ -37,7 +37,17 @@ set(FASTDDS_FLAGS   -DBUILD_SHARED_LIBS=OFF
                     -DTHIRDPARTY_fastcdr=FORCE
                     -DCOMPILE_TOOLS=OFF
                     -DBUILD_TESTING=OFF)
-                        
+
+# When LRS is built with static crt (/MT /MTd), 
+# Fastdds should be built with the same runtime setting
+# We use CMP0091 which was introduced at CMake version 3.15,
+# See https://cmake.org/cmake/help/git-stage/policy/CMP0091.html
+if(BUILD_WITH_STATIC_CRT)
+    set(FASTDDS_FLAGS   ${FASTDDS_FLAGS}
+                        -DCMAKE_POLICY_DEFAULT_CMP0091:STRING=NEW 
+                        -DCMAKE_MSVC_RUNTIME_LIBRARY:STRING=MultiThreaded$<$<CONFIG:Debug>:Debug>)
+endif()  
+
 # We construct the git tag is the purpose of having a single place that indicate the FastDDS version we consume.
 # FastDDS library name is different in Windows/Linux (Windows library name is versioned and Linux is not!)
 #   Windows: libfastrtps-<major-version>.<minor-version>.lib
@@ -66,8 +76,6 @@ ExternalProject_Add(
                 -DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/fastdds/fastdds_install
                 -DCMAKE_INSTALL_LIBDIR=lib
                 -DCMAKE_TOOLCHAIN_FILE=${CMAKE_TOOLCHAIN_FILE}
-                -DCMAKE_POLICY_DEFAULT_CMP0091:STRING=NEW 
-                -DCMAKE_MSVC_RUNTIME_LIBRARY:STRING=MultiThreaded$<$<CONFIG:Debug>:Debug>
                 ${FASTDDS_FLAGS}
     UPDATE_COMMAND ""
     PATCH_COMMAND ""
@@ -88,5 +96,7 @@ add_library(dds INTERFACE)
 target_include_directories(dds INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/fastdds/fastdds_install/include>)
 target_link_libraries(dds INTERFACE debug ${CMAKE_CURRENT_BINARY_DIR}/fastdds/fastdds_install/lib/${FASTDDS_DEBUG_TARGET_NAME}${CMAKE_STATIC_LIBRARY_SUFFIX})
 target_link_libraries(dds INTERFACE optimized ${CMAKE_CURRENT_BINARY_DIR}/fastdds/fastdds_install/lib/${FASTDDS_RELEASE_TARGET_NAME}${CMAKE_STATIC_LIBRARY_SUFFIX})
+
+add_definitions(-DRS2_USE_DDS)
 
 install(TARGETS dds EXPORT realsense2Targets)

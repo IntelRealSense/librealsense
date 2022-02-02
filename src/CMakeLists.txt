@@ -35,7 +35,7 @@ if(${BACKEND} STREQUAL RS2_USE_V4L2_BACKEND)
     include(${_rel_path}/linux/CMakeLists.txt)
 endif()
 
-if(BUILD_DDS_BACKEND)
+if(BUILD_WITH_DDS)
     include(${_rel_path}/dds/CMakeLists.txt)
 endif()
 
