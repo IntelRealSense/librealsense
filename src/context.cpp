@@ -20,6 +20,7 @@
 #include "environment.h"
 #include "context.h"
 #include "fw-update/fw-update-factory.h"
+#include "dds/dds-enumerator.h"
 
 #ifdef WITH_TRACKING
 #include "tm2/tm-info.h"
@@ -582,7 +583,9 @@ namespace librealsense
 
     void add_dds_listener( int port )
     {
-        
+        // PlaceHolder for checking compilation,
+        // Will be refactored
+        dds_enumerator dds_enum;
     }
 
     void context::remove_device(const std::string& file)

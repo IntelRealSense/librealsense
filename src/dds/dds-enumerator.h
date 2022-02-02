@@ -3,20 +3,17 @@
 
 #pragma once
 
-namespace eprosima
-{
-    namespace fastdds
-    {
-        namespace dds
-        {
-            class DomainParticipant;
-        }
-    }
+namespace eprosima {
+namespace fastdds {
+namespace dds {
+class DomainParticipant;
 }
+}  // namespace fastdds
+}  // namespace eprosima
 
 namespace librealsense {
 
-    
+
 class dds_enumerator
 {
 public:
@@ -25,6 +22,6 @@ public:
     void init();
 
 private:
-    eprosima::fastdds::dds::DomainParticipant* participant_;
+    eprosima::fastdds::dds::DomainParticipant * participant_;
 };
 }  // namespace librealsense

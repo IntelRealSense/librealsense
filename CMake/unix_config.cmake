@@ -39,8 +39,6 @@ macro(os_set_flags)
     
     if(FORCE_RSUSB_BACKEND)
         set(BACKEND RS2_USE_LIBUVC_BACKEND)
-    elseif(BUILD_DDS_BACKEND)
-        set(BACKEND RS2_USE_V4L2_DDS_BACKEND)
     else()
         set(BACKEND RS2_USE_V4L2_BACKEND)
     endif()

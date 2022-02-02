@@ -3,7 +3,7 @@
 
 #include "dds-enumerator.h"
 
-//include <fastdds/dds/domain/DomainParticipantFactory.hpp>
+// include <fastdds/dds/domain/DomainParticipantFactory.hpp>
 
 #include <fastdds/dds/domain/DomainParticipant.hpp>
 #include <fastdds/dds/subscriber/DataReaderListener.hpp>
@@ -17,9 +17,9 @@ using namespace eprosima::fastdds::dds;
 
 namespace librealsense {
 
-dds_enumerator::dds_enumerator()  : participant_(nullptr)
+dds_enumerator::dds_enumerator()
+    : participant_( nullptr )
 {
-
 }
 
 dds_enumerator::~dds_enumerator() {}

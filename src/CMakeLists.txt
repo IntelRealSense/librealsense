@@ -35,18 +35,12 @@ if(${BACKEND} STREQUAL RS2_USE_V4L2_BACKEND)
     include(${_rel_path}/linux/CMakeLists.txt)
 endif()
 
-if(${BACKEND} STREQUAL RS2_USE_V4L2_DDS_BACKEND)
-    include(${_rel_path}/linux/CMakeLists.txt)
+if(BUILD_DDS_BACKEND)
     include(${_rel_path}/dds/CMakeLists.txt)
 endif()
 
 if(${BACKEND} STREQUAL RS2_USE_WMF_BACKEND)
     include(${_rel_path}/mf/CMakeLists.txt)
-endif()
-
-if(${BACKEND} STREQUAL RS2_USE_WMF_DDS_BACKEND)
-    include(${_rel_path}/mf/CMakeLists.txt)
-    include(${_rel_path}/dds/CMakeLists.txt)
 endif()
 
 if(${BACKEND} STREQUAL RS2_USE_WINUSB_UVC_BACKEND)

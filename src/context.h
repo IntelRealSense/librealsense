@@ -128,7 +128,7 @@ namespace librealsense
         void remove_device(const std::string& file);
 
         void add_software_device(std::shared_ptr<device_info> software_device);
-        void add_dds_listener( int port );
+        
 
 #if WITH_TRACKING
         void unload_tracking_module();
@@ -141,7 +141,7 @@ namespace librealsense
                                const std::map<std::string, std::weak_ptr<device_info>>& new_playback_devices);
         void raise_devices_changed(const std::vector<rs2_device_info>& removed, const std::vector<rs2_device_info>& added);
         void start_device_watcher();
-
+        void add_dds_listener( int port );
         std::shared_ptr<platform::backend> _backend;
         std::shared_ptr<platform::device_watcher> _device_watcher;
 
