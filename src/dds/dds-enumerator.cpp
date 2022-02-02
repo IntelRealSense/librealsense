@@ -3,7 +3,14 @@
 
 #include "dds-enumerator.h"
 
-#include <fastdds/dds/domain/DomainParticipantFactory.hpp>
+//include <fastdds/dds/domain/DomainParticipantFactory.hpp>
+
+#include <fastdds/dds/domain/DomainParticipant.hpp>
+#include <fastdds/dds/subscriber/DataReaderListener.hpp>
+#include <fastrtps/subscriber/SampleInfo.h>
+#include <fastdds/dds/core/status/SubscriptionMatchedStatus.hpp>
+#include <fastdds/dds/domain/DomainParticipantListener.hpp>
+
 //#include "../polling-device-watcher.h"
 
 using namespace eprosima::fastdds::dds;
