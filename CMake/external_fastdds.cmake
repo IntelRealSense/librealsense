@@ -97,6 +97,6 @@ target_include_directories(dds INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_BINAR
 target_link_libraries(dds INTERFACE debug ${CMAKE_CURRENT_BINARY_DIR}/fastdds/fastdds_install/lib/${FASTDDS_DEBUG_TARGET_NAME}${CMAKE_STATIC_LIBRARY_SUFFIX})
 target_link_libraries(dds INTERFACE optimized ${CMAKE_CURRENT_BINARY_DIR}/fastdds/fastdds_install/lib/${FASTDDS_RELEASE_TARGET_NAME}${CMAKE_STATIC_LIBRARY_SUFFIX})
 
-add_definitions(-DRS2_USE_DDS)
+add_definitions(-DBUILD_WITH_DDS)
 
 install(TARGETS dds EXPORT realsense2Targets)

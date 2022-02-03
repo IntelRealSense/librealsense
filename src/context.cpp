@@ -20,7 +20,7 @@
 #include "environment.h"
 #include "context.h"
 #include "fw-update/fw-update-factory.h"
-#if RS2_USE_DDS
+#if BUILD_WITH_DDS
 #include "dds/dds-enumerator.h"
 #endif
 
@@ -587,7 +587,7 @@ namespace librealsense
     {
         // PlaceHolder for checking compilation,
         // Will be refactored
-#if RS2_USE_DDS
+#if BUILD_WITH_DDS
         dds_enumerator dds_enum;
 #endif
     }
