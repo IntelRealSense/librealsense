@@ -35,6 +35,10 @@ if(${BACKEND} STREQUAL RS2_USE_V4L2_BACKEND)
     include(${_rel_path}/linux/CMakeLists.txt)
 endif()
 
+if(BUILD_WITH_DDS)
+    include(${_rel_path}/dds/CMakeLists.txt)
+endif()
+
 if(${BACKEND} STREQUAL RS2_USE_WMF_BACKEND)
     include(${_rel_path}/mf/CMakeLists.txt)
 endif()
@@ -68,11 +72,6 @@ endif()
 if(BUILD_SHARED_LIBS)
     target_sources(${LRS_TARGET} PRIVATE "${CMAKE_CURRENT_LIST_DIR}/realsense.def")
 endif()
-
-if(BUILD_DDS_BACKEND)
-    include(${_rel_path}/dds-backend/CMakeLists.txt)
-endif()
-
 
 target_sources(${LRS_TARGET}
     PRIVATE

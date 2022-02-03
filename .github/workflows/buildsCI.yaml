@@ -11,6 +11,9 @@ env:
   LRS_BUILD_CONFIG: Debug
   LRS_RUN_CONFIG: Release
   PYTHON_PATH: C:\\hostedtoolcache\\windows\\Python\\3.8.1\\x64\\python.exe
+  # GH-Actions Windows VM currently supply ~14 GB available on D drive, and ~80 GB on drive C.
+  # Building LRS statically with third parties is too much for drive D so we clone to drive 'D' and build on drive 'C'
+  WIN_BUILD_DIR: C:/lrs_build
   
 jobs:    
   Windows_testing_cpp_USB_Win7:
@@ -34,23 +37,24 @@ jobs:
       shell: bash
       run: |
        cd scripts && ./api_check.sh && cd ..
-       mkdir build
+       mkdir ${{env.WIN_BUILD_DIR}}
     
     - name: Configure CMake
     # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
     # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
       shell: bash
       run: |        
-        cd build
+        LRS_SRC_DIR=$(pwd)   
+        cd ${{env.WIN_BUILD_DIR}}
         pwd
         ls        
-        cmake .. -G "Visual Studio 16 2019" -DPYTHON_EXECUTABLE=${{env.PYTHON_PATH}} -DBUILD_PYTHON_BINDINGS=true -DPYBIND11_PYTHON_VERSION=3.8 -DBUILD_UNIT_TESTS=false -DBUILD_LEGACY_LIVE_TEST=true -DBUILD_EXAMPLES=false -DBUILD_TOOLS=false -DBUILD_WITH_TM2=false -DFORCE_RSUSB_BACKEND=true -DBUILD_DDS_BACKEND=true
+        cmake ${LRS_SRC_DIR} -G "Visual Studio 16 2019" -DPYTHON_EXECUTABLE=${{env.PYTHON_PATH}} -DBUILD_PYTHON_BINDINGS=true -DPYBIND11_PYTHON_VERSION=3.8 -DBUILD_UNIT_TESTS=false -DBUILD_LEGACY_LIVE_TEST=true -DBUILD_EXAMPLES=false -DBUILD_TOOLS=false -DBUILD_WITH_TM2=false -DFORCE_RSUSB_BACKEND=true -DBUILD_WITH_DDS=true
 
     - name: Build
       # Build your program with the given configuration
       shell: bash
       run: |
-        cd build
+        cd ${{env.WIN_BUILD_DIR}}
         pwd
         ls
         cmake --build . --config ${{env.LRS_RUN_CONFIG}} -- -m    
@@ -63,7 +67,7 @@ jobs:
       continue-on-error: true 
       run: |
        export LRS_LOG_LEVEL="DEBUG";
-       cd build/${{env.LRS_RUN_CONFIG}}
+       cd  ${{env.WIN_BUILD_DIR}}/${{env.LRS_RUN_CONFIG}}
        ls
        ./live-test.exe -d yes -i [software-device]  
        
@@ -71,7 +75,7 @@ jobs:
       uses: actions/upload-artifact@v2
       with: 
         name: Log file - Windows_testing_cpp_USB_Win7
-        path: build/${{env.LRS_RUN_CONFIG}}/*.log
+        path:  ${{env.WIN_BUILD_DIR}}/${{env.LRS_RUN_CONFIG}}/*.log
         
     - name: Provide correct exit status for job 
       shell: bash
@@ -100,23 +104,61 @@ jobs:
       shell: bash
       run: |
        cd scripts && ./api_check.sh && cd ..
-       mkdir build
+       mkdir ${{env.WIN_BUILD_DIR}}
 
     - name: Configure CMake
     # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
     # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
       shell: bash
       run: |        
-        cd build
+        LRS_SRC_DIR=$(pwd)   
+        cd ${{env.WIN_BUILD_DIR}}
         pwd
         ls
-        cmake .. -G "Visual Studio 16 2019" -DBUILD_EXAMPLES=true -DBUILD_WITH_TM2=true -DCHECK_FOR_UPDATES=true
+        cmake ${LRS_SRC_DIR} -G "Visual Studio 16 2019" -DBUILD_EXAMPLES=true -DBUILD_WITH_TM2=true -DCHECK_FOR_UPDATES=true
 
     - name: Build
       # Build your program with the given configuration
       shell: bash
       run: |
-        cd build
+        cd ${{env.WIN_BUILD_DIR}}
+        cmake --build . --config ${{env.LRS_BUILD_CONFIG}} -- -m    
+        
+  Windows_cpp_static_dds:
+    runs-on: windows-2019
+    timeout-minutes: 60
+    env:
+      VS15: true
+      
+    steps:
+    - uses: actions/checkout@v2    
+
+    - name: Enable Long Paths
+      shell: powershell
+      run: |
+       New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name "LongPathsEnabled" -Value 1 -PropertyType DWORD -Force
+
+    - name: PreBuild
+      shell: bash
+      run: |
+       cd scripts && ./api_check.sh && cd ..
+       mkdir ${{env.WIN_BUILD_DIR}}
+
+    - name: Configure CMake
+    # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
+    # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
+      shell: bash
+      run: |   
+        pwd 
+        LRS_SRC_DIR=$(pwd)        
+        cd ${{env.WIN_BUILD_DIR}}
+        cmake ${LRS_SRC_DIR} -G "Visual Studio 16 2019" -DBUILD_WITH_TM2=true -DCHECK_FOR_UPDATES=true -DBUILD_SHARED_LIBS=false -DBUILD_WITH_DDS=true
+
+    - name: Build
+      # Build your program with the given configuration
+      shell: bash
+      run: |
+        cd ${{env.WIN_BUILD_DIR}}
         cmake --build . --config ${{env.LRS_BUILD_CONFIG}} -- -m    
        
   Windows_CSharp:
@@ -140,23 +182,24 @@ jobs:
       shell: bash
       run: |
        cd scripts && ./api_check.sh && cd ..
-       mkdir build
+       mkdir ${{env.WIN_BUILD_DIR}}
 
     - name: Configure CMake
       # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
       # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
       shell: bash
       run: |        
-        cd build
+        LRS_SRC_DIR=$(pwd)   
+        cd ${{env.WIN_BUILD_DIR}}
         pwd
         ls
-        cmake .. -G "Visual Studio 16 2019" -DBUILD_EXAMPLES=false -DBUILD_TOOLS=false -DBUILD_CSHARP_BINDINGS=true -DDOTNET_VERSION_LIBRARY="4.5" -DDOTNET_VERSION_EXAMPLES="4.5" -DCHECK_FOR_UPDATES=true    
+        cmake ${LRS_SRC_DIR} -G "Visual Studio 16 2019" -DBUILD_EXAMPLES=false -DBUILD_TOOLS=false -DBUILD_CSHARP_BINDINGS=true -DDOTNET_VERSION_LIBRARY="4.5" -DDOTNET_VERSION_EXAMPLES="4.5" -DCHECK_FOR_UPDATES=true    
 
     - name: Build
       # Build your program with the given configuration
       shell: bash
       run: |
-        cd build
+        cd ${{env.WIN_BUILD_DIR}}
         cmake --build . --config ${{env.LRS_BUILD_CONFIG}} -- -m     
   Linux_testing_cpp:
     runs-on: ubuntu-18.04    
@@ -270,7 +313,7 @@ jobs:
       shell: bash
       run: | 
         cd build
-        cmake .. -DBUILD_UNIT_TESTS=false -DBUILD_LEGACY_LIVE_TEST=true -DBUILD_EXAMPLES=false -DBUILD_TOOLS=false -DBUILD_WITH_TM2=false -DCHECK_FOR_UPDATES=true -DBUILD_DDS_BACKEND=true
+        cmake .. -DBUILD_UNIT_TESTS=false -DBUILD_LEGACY_LIVE_TEST=true -DBUILD_EXAMPLES=false -DBUILD_TOOLS=false -DBUILD_WITH_TM2=false -DCHECK_FOR_UPDATES=true -DBUILD_WITH_DDS=true
         cmake --build . --config ${{env.LRS_RUN_CONFIG}} -- -j4
         
     - name: Test
@@ -325,7 +368,7 @@ jobs:
           cd scripts && ./api_check.sh && cd ..
           mkdir build
           cd ./scripts && ./pr_check.sh && cd ../build
-          cmake .. -DBUILD_EXAMPLES=true -DBUILD_WITH_TM2=true -DBUILD_SHARED_LIBS=false -DCHECK_FOR_UPDATES=true -DBUILD_PYTHON_BINDINGS=true -DPYBIND11_PYTHON_VERSION=3.5 -DBUILD_DDS_BACKEND=true
+          cmake .. -DBUILD_EXAMPLES=true -DBUILD_WITH_TM2=true -DBUILD_SHARED_LIBS=false -DCHECK_FOR_UPDATES=true -DBUILD_PYTHON_BINDINGS=true -DPYBIND11_PYTHON_VERSION=3.5 -DBUILD_WITH_DDS=true
           cmake --build . --config ${{env.LRS_BUILD_CONFIG}} -- -j4  
   
   Linux_python_nodejs:

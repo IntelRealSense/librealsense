@@ -61,7 +61,7 @@ include(src/CMakeLists.txt)
 include(third-party/CMakeLists.txt)
 include(common/utilities/CMakeLists.txt)
 
-if(BUILD_DDS_BACKEND)
+if(BUILD_WITH_DDS)
     message(STATUS "Building with FastDDS")
     include(CMake/external_fastdds.cmake)
 endif()
