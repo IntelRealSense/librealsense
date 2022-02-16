@@ -8,5 +8,5 @@ target_sources(${LRS_TARGET}
 )
 
 target_link_libraries(${LRS_TARGET} PRIVATE dds)
-add_dependencies(${LRS_TARGET} fastdds)
+#add_dependencies(${LRS_TARGET} dds)
 

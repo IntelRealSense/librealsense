@@ -63,6 +63,7 @@ include(common/utilities/CMakeLists.txt)
 
 if(BUILD_WITH_DDS)
     message(STATUS "Building with FastDDS")
+    include(CMake/external_foonathan_memory.cmake)
     include(CMake/external_fastdds.cmake)
 endif()
 
