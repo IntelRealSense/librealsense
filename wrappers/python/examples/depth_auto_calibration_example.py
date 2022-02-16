@@ -16,7 +16,7 @@ else:
 
 rs.log_to_console(rs.log_severity.info)
 
-def on_chip_calibration_json(occ_json_file, host_assistance):
+def on_chip_calibration_json(occ_json_file, host_assistance, interactive_mode):
     try:
         occ_json = open(occ_json_file).read()
     except:
@@ -36,9 +36,8 @@ def on_chip_calibration_json(occ_json_file, host_assistance):
                     '"scan parameter": 0,\n'+\
                     '"apply preset": 1,\n'+\
                     '"scan only": ' + str(int(host_assistance)) + ',\n'+\
-                    '"interactive scan": 0' + ',\n'+\
-                    '"resize factor": 1,\n'+\
-                    '"interactive scan": 0' +\
+                    '"interactive scan": ' + str(int(interactive_mode)) + ',\n'+\
+                    '"resize factor": 1\n'+\
                     '}'
     return occ_json
 
@@ -99,9 +98,11 @@ def main(argv):
     # config.enable_stream(rs.stream.depth, 848, 480, rs.format.z16, 30)
     conf = pipeline.start(config)
     calib_dev = rs.auto_calibrated_device(conf.get_device())
+    interactive_mode = False
 
     while True:
         try:
+            print ("interactive_mode: ", interactive_mode)
             operation_str = "Please select what the operation you want to do\n" + \
                             "c - on chip calibration\n" + \
                             "C - on chip calibration - host assist\n" + \
@@ -114,7 +115,7 @@ def main(argv):
 
             if operation.lower() == 'c':
                 print("Starting on chip calibration")
-                occ_json = on_chip_calibration_json(occ_json_file, operation == 'C')
+                occ_json = on_chip_calibration_json(occ_json_file, operation == 'C', interactive_mode)
                 new_calib, health = calib_dev.run_on_chip_calibration(occ_json, on_chip_calib_cb, 5000)
                 calib_done = len(new_calib) > 0
                 while (not calib_done):
@@ -124,6 +125,9 @@ def main(argv):
                     calib_done = len(new_calib) > 0
                 print("Calibration completed")
                 print("health factor = ", health)
+
+            if operation.lower() == 'i':
+                interactive_mode = not interactive_mode
 
             if operation.lower() == 't':
                 print("Starting tare calibration" + (" - host assistance" if operation == 'T' else ""))
