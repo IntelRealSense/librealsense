@@ -16,6 +16,12 @@ FetchContent_Declare(
 set(FOONATHAN_MEMORY_BUILD_VARS -DFOONATHAN_MEMORY_BUILD_EXAMPLES=OFF 
                                 -DFOONATHAN_MEMORY_BUILD_TESTS=OFF
                                 -DFOONATHAN_MEMORY_BUILD_TOOLS=OFF)
+                                
+if(BUILD_WITH_STATIC_CRT)
+    set(FOONATHAN_MEMORY_BUILD_VARS ${FOONATHAN_MEMORY_BUILD_VARS}
+                                    -DCMAKE_POLICY_DEFAULT_CMP0091:STRING=NEW 
+                                    -DCMAKE_MSVC_RUNTIME_LIBRARY:STRING=MultiThreaded$<$<CONFIG:Debug>:Debug>)
+endif()  
   
 FetchContent_GetProperties(foonathan_memory)
 if(NOT foonathan_memory_POPULATED)
