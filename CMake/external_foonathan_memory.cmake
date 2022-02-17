@@ -27,12 +27,17 @@ endif()
 execute_process(COMMAND "${CMAKE_COMMAND}" -G "${CMAKE_GENERATOR}" -DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/fastdds/fastdds_install
                                                                    ${FOONATHAN_MEMORY_BUILD_VARS}
                                                                    . 
-                                                                    WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/third-party/foonathan_memory"
+                                                                    WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/third-party/foonathan_memory" 
+                                                                    RESULT_VARIABLE configure_ret
 )
 execute_process(COMMAND "${CMAKE_COMMAND}" --build . --target install
-    WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/third-party/foonathan_memory"
+    WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/third-party/foonathan_memory" 
+    RESULT_VARIABLE build_ret
 )
 
+ if(configure_ret OR build_ret)
+        message( FATAL_ERROR "Failed to build FastDDS")
+ endif()
 
 list(POP_BACK CMAKE_MESSAGE_INDENT)
 message(CHECK_PASS "foonathan_memory fetched")
