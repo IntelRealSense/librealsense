@@ -39,7 +39,17 @@ set(BUILD_SHARED_LIBS OFF)
 set(CMAKE_INSTALL_PREFIX ${CMAKE_BINARY_DIR}/fastdds/fastdds_install) 
 set(CMAKE_PREFIX_PATH ${CMAKE_BINARY_DIR}/fastdds/fastdds_install)  
 
+if (WIN32)
+    # FastDDS does not support UNICODE
+    remove_definitions(-D_UNICODE -DUNICODE)
+endif()
+
 FetchContent_MakeAvailable(fastdds)
+
+if (WIN32)
+    # Restore UNICODE
+    add_definitions(-D_UNICODE -DUNICODE)
+endif()
 
 # reset common variables to previous values
 set(BUILD_SHARED_LIBS ${CACHED_BUILD_SHARED_LIBS})
