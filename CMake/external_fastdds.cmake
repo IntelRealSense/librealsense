@@ -61,4 +61,8 @@ message(CHECK_PASS "fastdds fetched")
 
 add_library(dds INTERFACE)
 target_link_libraries(dds INTERFACE  fastcdr fastrtps)
-#add_dependencies(${LRS_TARGET} fastcdr fastrtps)
+
+add_definitions(-DBUILD_WITH_DDS)
+
+install(TARGETS dds EXPORT realsense2Targets)
+
