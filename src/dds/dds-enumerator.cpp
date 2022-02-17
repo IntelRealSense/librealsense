@@ -10,8 +10,7 @@
 #include <fastdds/dds/subscriber/Subscriber.hpp>
 
 // We align the DDS topic name to ROS2 as it expect the 'rt/' prefix for the topic name
-#define CONCATENATE(s1, s2) s1 ## s2
-#define ROS2_PREFIX(name) CONCATENATE("rt/", name)
+#define ROS2_PREFIX(name) std::string("rt/").append(name)
 
 using namespace eprosima::fastdds::dds;
 
