@@ -31,6 +31,7 @@ endif()
 
 # Build and install
 execute_process(COMMAND "${CMAKE_COMMAND}" -G "${CMAKE_GENERATOR}" -DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/fastdds/fastdds_install
+                                                                   -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
                                                                    ${FOONATHAN_MEMORY_BUILD_VARS}
                                                                    . 
                                                                     WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/third-party/foonathan_memory" 
