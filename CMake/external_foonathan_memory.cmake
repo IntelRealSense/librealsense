@@ -1,6 +1,10 @@
 cmake_minimum_required(VERSION 3.15) 
 include(FetchContent)
-set(FETCHCONTENT_QUIET OFF)
+#set(FETCHCONTENT_QUIET OFF)
+mark_as_advanced(FETCHCONTENT_QUIET)
+mark_as_advanced(FETCHCONTENT_BASE_DIR)
+mark_as_advanced(FETCHCONTENT_FULLY_DISCONNECTED)
+mark_as_advanced(FETCHCONTENT_UPDATES_DISCONNECTED)
 
 list(APPEND CMAKE_MESSAGE_INDENT "  ")
 message(CHECK_START  "Fetching foonathan_memory...")
@@ -25,9 +29,13 @@ endif()
   
 FetchContent_GetProperties(foonathan_memory)
 if(NOT foonathan_memory_POPULATED)
-  # Set internal variables
+  # Get foonathan_memory but do not add it's CMakelist file to the main Cmake, just download it.
   FetchContent_Populate(foonathan_memory)
 endif()
+
+# Move new options from FetchContent to advanced section
+mark_as_advanced(FETCHCONTENT_SOURCE_DIR_FOONATHAN_MEMORY)
+mark_as_advanced(FETCHCONTENT_UPDATES_DISCONNECTED_FOONATHAN_MEMORY)
 
 # Build and install Debug version
 execute_process(COMMAND "${CMAKE_COMMAND}" -G "${CMAKE_GENERATOR}" -DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/fastdds/fastdds_install

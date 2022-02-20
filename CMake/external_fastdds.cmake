@@ -1,6 +1,11 @@
 cmake_minimum_required(VERSION 3.15) 
 include(FetchContent)
 
+mark_as_advanced(FETCHCONTENT_QUIET)
+mark_as_advanced(FETCHCONTENT_BASE_DIR)
+mark_as_advanced(FETCHCONTENT_FULLY_DISCONNECTED)
+mark_as_advanced(FETCHCONTENT_UPDATES_DISCONNECTED)
+
 # For debugging purpose
 #set(FETCHCONTENT_QUIET OFF)
 
@@ -44,7 +49,12 @@ if (WIN32)
     remove_definitions(-D_UNICODE -DUNICODE)
 endif()
 
+# Get fastdds
 FetchContent_MakeAvailable(fastdds)
+
+# Move new options from FetchContent to advanced section
+mark_as_advanced(FETCHCONTENT_SOURCE_DIR_FASTDDS)
+mark_as_advanced(FETCHCONTENT_UPDATES_DISCONNECTED_FASTDDS)
 
 # place FastDDS project with other 3rd-party projects
 set_target_properties(fastcdr fastrtps PROPERTIES
