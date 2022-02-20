@@ -44,8 +44,10 @@ set(BUILD_SHARED_LIBS OFF)
 set(CMAKE_INSTALL_PREFIX ${CMAKE_BINARY_DIR}/fastdds/fastdds_install) 
 set(CMAKE_PREFIX_PATH ${CMAKE_BINARY_DIR}/fastdds/fastdds_install)  
 
-if (WIN32)
-    # FastDDS does not support UNICODE
+
+# FastDDS does not support UNICODE see https://github.com/eProsima/Fast-DDS/issues/2501
+# Should be removed when fetching FastDDS new release that will contain PR https://github.com/eProsima/Fast-DDS/pull/2510
+if (MSVC)
     remove_definitions(-D_UNICODE -DUNICODE)
 endif()
 
@@ -60,7 +62,8 @@ mark_as_advanced(FETCHCONTENT_UPDATES_DISCONNECTED_FASTDDS)
 set_target_properties(fastcdr fastrtps PROPERTIES
                       FOLDER "ExternalProjectTargets/fastdds")
 
-if (WIN32)
+# Add back the UNICODE definitions (Should be removed with the above remove_definitions once conditions mentioned on it are met)
+if (MSVC)
     # Restore UNICODE
     add_definitions(-D_UNICODE -DUNICODE)
 endif()
