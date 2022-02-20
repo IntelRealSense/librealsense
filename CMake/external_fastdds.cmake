@@ -46,6 +46,10 @@ endif()
 
 FetchContent_MakeAvailable(fastdds)
 
+# place FastDDS project with other 3rd-party projects
+set_target_properties(fastcdr fastrtps PROPERTIES
+                      FOLDER "ExternalProjectTargets/fastdds")
+
 if (WIN32)
     # Restore UNICODE
     add_definitions(-D_UNICODE -DUNICODE)
