@@ -62,9 +62,14 @@ include(third-party/CMakeLists.txt)
 include(common/utilities/CMakeLists.txt)
 
 if(BUILD_WITH_DDS)
-    message(STATUS "Building with FastDDS")
-    include(CMake/external_foonathan_memory.cmake)
-    include(CMake/external_fastdds.cmake)
+    if (CMAKE_SYSTEM MATCHES "Windows" OR CMAKE_SYSTEM MATCHES "Linux")
+        message(STATUS "Building with FastDDS")
+        include(CMake/external_foonathan_memory.cmake)
+        include(CMake/external_fastdds.cmake)
+    else()
+        MESSAGE(STATUS "Turning off `BUILD_WITH_DDS` as it's only supported on Windows & Linux and not on ${CMAKE_SYSTEM}")
+        set(BUILD_WITH_DDS OFF)
+    endif()
 endif()
 
 # configure the project according to OS specific requirments
