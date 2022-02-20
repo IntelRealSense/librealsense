@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.15) 
+cmake_minimum_required(VERSION 3.5) 
 include(FetchContent)
 
 mark_as_advanced(FETCHCONTENT_QUIET)

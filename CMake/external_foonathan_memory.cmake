@@ -1,6 +1,7 @@
-cmake_minimum_required(VERSION 3.15) 
+cmake_minimum_required(VERSION 3.11) 
 include(FetchContent)
 #set(FETCHCONTENT_QUIET OFF)
+
 mark_as_advanced(FETCHCONTENT_QUIET)
 mark_as_advanced(FETCHCONTENT_BASE_DIR)
 mark_as_advanced(FETCHCONTENT_FULLY_DISCONNECTED)
