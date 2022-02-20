@@ -840,7 +840,7 @@ namespace rs2
                   ",\n \"apply preset\":" << (apply_preset ? 1 : 0) <<
                   ",\n \"accuracy\":" << accuracy <<
                   ",\n \"scan only\":" << (host_assistance ? 1 : 0) <<
-                  ",\n \"interactive scan\":" << 0 << "}";
+                  ",\n \"interactive scan\":" << 1 << "}";
         }
         else if (action == RS2_CALIB_ACTION_ON_CHIP_FL_CALIB)
         {
@@ -894,13 +894,14 @@ namespace rs2
         bool calib_done(!_new_calib.empty());
 
         int timeout_sec(30);
+        timeout_sec *= (1 + static_cast<int>(action == RS2_CALIB_ACTION_ON_CHIP_CALIB)); // when RS2_CALIB_ACTION_ON_CHIP_CALIB is in interactive-mode the process takes longer.
         auto start = std::chrono::high_resolution_clock::now();
         bool is_timed_out(std::chrono::high_resolution_clock::now() - start > std::chrono::seconds(timeout_sec));
 
         while (!(calib_done || is_timed_out))
         {
             rs2::depth_frame f = fetch_depth_frame(invoke, frame_fetch_timeout_ms);
-            _new_calib = calib_dev.add_calibration_frame(f, health, [&](const float progress) {_progress = progress; }, 5000);
+            _new_calib = calib_dev.process_calibration_frame(f, health, [&](const float progress) {_progress = progress; }, 5000);
             calib_done = !_new_calib.empty();
             is_timed_out = std::chrono::high_resolution_clock::now() - start > std::chrono::seconds(timeout_sec);
         }

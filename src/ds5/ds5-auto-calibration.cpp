@@ -1,8 +1,6 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2016 Intel Corporation. All Rights Reserved.
 
-#define SAVE_RAW_IMAGE
-
 #include <numeric>
 #include "../third-party/json.hpp"
 #include "ds5-device.h"
@@ -27,11 +25,6 @@ namespace librealsense
       float calRightRotation[9]; // Calibrated right rotation
       uint16_t accuracyLevel;  // [0-3] (Very High/High/Medium/Low)
       uint16_t iterations;        // Number of iterations it took to converge
-      //int32_t errors[iterations];  // Array of errors in 1/1000000 of a percent
-      //int32_t x[iterations];    // Intrinsic scan: array of Px in 1/1000000 normalized unit
-      //                         // Extrinsic scan: array of Ry in 1/100000 radian
-      //float beforeHealthCheck; // Before health check number
-      //float afterHealthCheck;  // After health check number
     };
 
     struct FocalLengthCalibrationResult
@@ -463,16 +456,6 @@ namespace librealsense
             }
             _min_valid_depth = result.minDepth;
             _max_valid_depth = result.maxDepth;
-#ifdef SAVE_RAW_IMAGE
-            {
-                std::stringstream name_s;
-                name_s << "valid_depth_values.txt";
-                std::ofstream fout(name_s.str(), std::ios::out);
-                fout << "_min_valid_depth:" << _min_valid_depth << std::endl;
-                fout << "_max_valid_depth:" << _max_valid_depth << std::endl;
-            }
-#endif
-
             return res;
         }
 
@@ -508,27 +491,16 @@ namespace librealsense
             {
                 if (host_assistance == host_assistance_type::assistance_first_feed)
                 {
-#ifdef SAVE_RAW_IMAGE
-                    std::stringstream name_s;
-                    name_s << "fill_factor_final.txt";
-                    std::ofstream fout(name_s.str(), std::ios::out);
-#endif
                     command cmd(ds::AUTO_CALIB, interactive_scan_control, 0, 0);
                     uint8_t* p = reinterpret_cast<uint8_t*>(&step_count_v3);
                     cmd.data.push_back(p[0]);
                     cmd.data.push_back(p[1]);
                     for (uint16_t i = 0; i < step_count_v3; ++i)
                     {
-#ifdef SAVE_RAW_IMAGE
-                        fout << i << ", " << *(fill_factor + i) << std::endl;
-#endif
                         p = reinterpret_cast<uint8_t*>(fill_factor + i);
                         cmd.data.push_back(p[0]);
                         cmd.data.push_back(p[1]);
                     }
-#ifdef SAVE_RAW_IMAGE
-                    fout.close();
-#endif
                     _hw_monitor->send(cmd);
                 }
 
@@ -1009,13 +981,6 @@ namespace librealsense
         int roi_size = roi_w * roi_h;
         int data_size = roi_size;
         const uint16_t* p = reinterpret_cast<const uint16_t*>(frame->get_frame_data());
-
-#ifdef SAVE_RAW_IMAGE
-        std::vector<uint16_t> cropped_image(width * height, 0);
-        int cropped_idx(0);
-        cropped_idx += from * width + roi_start_w;
-#endif
-
         p += from * width + roi_start_w;
 
         int counter(0);
@@ -1023,32 +988,12 @@ namespace librealsense
         {
             for (int i = 0; i < roi_w; ++i)
             {
-#ifdef SAVE_RAW_IMAGE
-                cropped_image[cropped_idx] = (*p);
-                cropped_idx++;
-#endif
                 if ((*p) >= _min_valid_depth && (*p) <= _max_valid_depth)
                     ++counter;
                 ++p;
             }
             p += (width - roi_w);
-#ifdef SAVE_RAW_IMAGE
-            cropped_idx += (width - roi_w);
-#endif
         }
-#ifdef SAVE_RAW_IMAGE
-        {
-            unsigned long milliseconds_since_epoch =
-                std::chrono::duration_cast<std::chrono::milliseconds>
-                (std::chrono::system_clock::now().time_since_epoch()).count();
-
-            std::stringstream name_s;
-            name_s << "cropped_image_" << std::setfill('0') << std::setw(4) << milliseconds_since_epoch << "_" << frame->get_frame_number() << ".raw";
-            std::ofstream fout(name_s.str(), std::ios::out | std::ios::binary);
-            fout.write((char*)&cropped_image[0], cropped_image.size() * sizeof(uint16_t));
-            fout.close();
-        }
-#endif
         double tmp = static_cast<double>(counter) / static_cast<double>(data_size) * 10000.0;
         return static_cast<uint16_t>(tmp + 0.5f);
 
@@ -1111,39 +1056,12 @@ namespace librealsense
         int roi_start_h = (height - roi_h) / 2;
 
         const uint16_t* p = reinterpret_cast<const uint16_t*>(frame->get_frame_data());
-
-#ifdef SAVE_RAW_IMAGE
-        std::vector<uint16_t> origin_image(width * height, 0);
-        for (int ii = 0; ii < width * height; ii++)
-            origin_image[ii] = *(p + ii);
-
-        {
-            unsigned long milliseconds_since_epoch =
-                std::chrono::duration_cast<std::chrono::milliseconds>
-                (std::chrono::system_clock::now().time_since_epoch()).count();
-
-            std::stringstream name_s;
-            name_s << "origin_tare_image_" << std::setfill('0') << std::setw(4) << milliseconds_since_epoch << "_" << frame->get_frame_number() << ".raw";
-
-            std::ofstream fout(name_s.str(), std::ios::out | std::ios::binary);
-            fout.write((char*)&origin_image[0], origin_image.size() * sizeof(uint16_t));
-            fout.close();
-        }
-        std::vector<uint16_t> cropped_image(width * height, 0);
-        int cropped_idx(0);
-        cropped_idx += roi_start_h * width + roi_start_w;
-#endif
-
         p += roi_start_h * width + roi_start_w;
 
         for (int j = 0; j < roi_h; ++j)
         {
             for (int i = 0; i < roi_w; ++i)
             {
-#ifdef SAVE_RAW_IMAGE
-                cropped_image[cropped_idx] = (*p);
-                cropped_idx++;
-#endif
                 if ((*p) >= _min_valid_depth && (*p) <= _max_valid_depth)
                 {
                     ++_collected_counter;
@@ -1152,27 +1070,10 @@ namespace librealsense
                 ++p;
             }
             p += (width- roi_w);
-#ifdef SAVE_RAW_IMAGE
-            cropped_idx += (width - roi_w);
-#endif
         }
-#ifdef SAVE_RAW_IMAGE
-        {
-            unsigned long milliseconds_since_epoch =
-                std::chrono::duration_cast<std::chrono::milliseconds>
-                (std::chrono::system_clock::now().time_since_epoch()).count();
-
-            std::stringstream name_s;
-            name_s << "cropped_tare_image_" << std::setfill('0') << std::setw(4) << milliseconds_since_epoch << "_" << frame->get_frame_number() << ".raw";
-
-            std::ofstream fout(name_s.str(), std::ios::out | std::ios::binary);
-            fout.write((char*)&cropped_image[0], cropped_image.size() * sizeof(uint16_t));
-            fout.close();
-        }
-#endif
     }
 
-    std::vector<uint8_t> auto_calibrated::add_calibration_frame(int timeout_ms, const rs2_frame* f, float* const health, update_progress_callback_ptr progress_callback)
+    std::vector<uint8_t> auto_calibrated::process_calibration_frame(int timeout_ms, const rs2_frame* f, float* const health, update_progress_callback_ptr progress_callback)
     {
         try
         {
@@ -1231,41 +1132,6 @@ namespace librealsense
             {
                 if (_action == auto_calib_action::RS2_OCC_ACTION_ON_CHIP_CALIB)
                 {
-#ifdef SAVE_RAW_IMAGE
-                    {
-                        unsigned long milliseconds_since_epoch =
-                            std::chrono::duration_cast<std::chrono::milliseconds>
-                            (std::chrono::system_clock::now().time_since_epoch()).count();
-
-                        std::stringstream name_s;
-                        name_s << "all_frame_numbers.txt";
-                        std::ofstream fout(name_s.str(), std::ios::app);
-                        fout << frame_counter << ", " << _prev_frame_counter << ", " << _total_frames << ", " 
-                             << ((frame_interface*)f)->get_frame_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP) << ", " << milliseconds_since_epoch << std::endl;
-                        fout.close();
-                    }
-#endif
-#ifdef SAVE_RAW_IMAGE
-                    {
-                        auto frame = ((video_frame*)f);
-                        int width = frame->get_width();
-                        int height = frame->get_height();
-                        const uint16_t* p = reinterpret_cast<const uint16_t*>(frame->get_frame_data());
-                        {
-                            unsigned long milliseconds_since_epoch =
-                                std::chrono::duration_cast<std::chrono::milliseconds>
-                                (std::chrono::system_clock::now().time_since_epoch()).count();
-
-                            std::stringstream name_s;
-                            name_s << "origin_image_" << std::setfill('0') << std::setw(4) << milliseconds_since_epoch << "_" << frame->get_frame_number() << ".raw";
-
-                            std::ofstream fout(name_s.str(), std::ios::out | std::ios::binary);
-                            fout.write((char*)p, width * height * sizeof(uint16_t));
-                            fout.close();
-                        }
-                    }
-#endif
-
                     static const int FRAMES_TO_SKIP(_interactive_scan ? 1 : 0);
                     int fw_host_offset = (_interactive_scan ? 0 : 1);
 
@@ -1365,23 +1231,6 @@ namespace librealsense
                 }
                 if (_action == auto_calib_action::RS2_OCC_ACTION_ON_CHIP_CALIB)
                 {
-#ifdef SAVE_RAW_IMAGE
-                    {
-                        std::stringstream ss;
-                        ss << "{\n \"calib type\":" << 0 <<
-                            ",\n \"host assistance\":" << 2 <<
-                            ",\n \"step count v3\":" << _total_frames;
-                        for (int i = 0; i < _total_frames; ++i)
-                            ss << ",\n \"fill factor " << i << "\":" << _fill_factor[i];
-                        ss << "}";
-
-                        std::stringstream name_s;
-                        name_s << "fill_factor_before_fill.txt";
-                        std::ofstream fout(name_s.str(), std::ios::out);
-                        fout << ss.str();
-                        fout.close();
-                    }
-#endif
                     fill_missing_data(_fill_factor, _total_frames);
                     std::stringstream ss;
                     ss << "{\n \"calib type\":" << 0 <<
@@ -1392,16 +1241,6 @@ namespace librealsense
                     ss << "}";
 
                     std::string json = ss.str();
-#ifdef SAVE_RAW_IMAGE
-                    {
-                        std::stringstream name_s;
-                        name_s << "fill_factor.txt";
-                        std::ofstream fout(name_s.str(), std::ios::out);
-                        fout << json;
-                        fout.close();
-                    }
-#endif
-
                     res = run_on_chip_calibration(timeout_ms, json, health, progress_callback);
                 }
                 else if (_action == auto_calib_action::RS2_OCC_ACTION_TARE_CALIB)

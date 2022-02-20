@@ -552,12 +552,12 @@ namespace rs2
         * \return a New calibration table when process is done. An empty table otherwise - need more frames.
         **/
         template<class T>
-        calibration_table add_calibration_frame(rs2::frame f, float* const health, T callback, int timeout_ms = 5000) const
+        calibration_table process_calibration_frame(rs2::frame f, float* const health, T callback, int timeout_ms = 5000) const
         {
             std::vector<uint8_t> results;
 
             rs2_error* e = nullptr;
-            const rs2_raw_data_buffer* buf = rs2_add_calibration_frame(_dev.get(), f.get(), health, new update_progress_callback<T>(std::move(callback)), timeout_ms, &e);
+            const rs2_raw_data_buffer* buf = rs2_process_calibration_frame(_dev.get(), f.get(), health, new update_progress_callback<T>(std::move(callback)), timeout_ms, &e);
             error::handle(e);
             std::shared_ptr<const rs2_raw_data_buffer> list(buf, rs2_delete_raw_data);
 
@@ -578,12 +578,12 @@ namespace rs2
          * \param[out] health             The health check numbers before and after calibration
         * \return a New calibration table when process is done. An empty table otherwise - need more frames.
         **/
-        calibration_table add_calibration_frame(rs2::frame f, float* const health, int timeout_ms = 5000) const
+        calibration_table process_calibration_frame(rs2::frame f, float* const health, int timeout_ms = 5000) const
         {
             std::vector<uint8_t> results;
 
             rs2_error* e = nullptr;
-            const rs2_raw_data_buffer* buf = rs2_add_calibration_frame(_dev.get(), f.get(), health, nullptr, timeout_ms, &e);
+            const rs2_raw_data_buffer* buf = rs2_process_calibration_frame(_dev.get(), f.get(), health, nullptr, timeout_ms, &e);
             error::handle(e);
             std::shared_ptr<const rs2_raw_data_buffer> list(buf, rs2_delete_raw_data);
 

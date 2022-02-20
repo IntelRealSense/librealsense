@@ -121,7 +121,7 @@ def main(argv):
                 while (not calib_done):
                     frame_set = pipeline.wait_for_frames()
                     depth_frame = frame_set.get_depth_frame()
-                    new_calib, health = calib_dev.add_calibration_frame(depth_frame, on_chip_calib_cb, 5000)
+                    new_calib, health = calib_dev.process_calibration_frame(depth_frame, on_chip_calib_cb, 5000)
                     calib_done = len(new_calib) > 0
                 print("Calibration completed")
                 print("health factor = ", health)
@@ -138,7 +138,7 @@ def main(argv):
                 while (not calib_done):
                     frame_set = pipeline.wait_for_frames()
                     depth_frame = frame_set.get_depth_frame()
-                    new_calib, health = calib_dev.add_calibration_frame(depth_frame, on_chip_calib_cb, 5000)
+                    new_calib, health = calib_dev.process_calibration_frame(depth_frame, on_chip_calib_cb, 5000)
                     calib_done = len(new_calib) > 0
                 print("Calibration completed")
                 print("health factor = ", health)

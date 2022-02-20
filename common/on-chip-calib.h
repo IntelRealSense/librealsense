@@ -36,7 +36,6 @@ namespace rs2
 
         // Write new calibration to the device
         void keep();
-        void keep_uvmapping_calib();
 
         // Restore Viewer UI to how it was before auto-calib
         void restore_workspace(invoker invoke);
