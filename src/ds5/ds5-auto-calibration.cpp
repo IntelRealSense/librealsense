@@ -317,7 +317,7 @@ namespace librealsense
         if (!done)
         {
             throw std::runtime_error("Operation timed-out!\n"
-                "Calibration state did not converged in time");
+                "Calibration state did not converge in time");
         }
         return result;
     }
@@ -622,7 +622,7 @@ namespace librealsense
                 if (!done)
                 {
                     throw std::runtime_error("Operation timed-out!\n"
-                        "Calibration state did not converged in time");
+                        "Calibration state did not converge in time");
                 }
 
                 std::this_thread::sleep_for(std::chrono::milliseconds(100));
@@ -742,7 +742,7 @@ namespace librealsense
                     if (!done)
                     {
                         throw std::runtime_error("Operation timed-out!\n"
-                            "Calibration state did not converged in time");
+                            "Calibration state did not converge in time");
                     }
 
                     std::this_thread::sleep_for(std::chrono::milliseconds(100));
@@ -939,7 +939,7 @@ namespace librealsense
                     if (depth < 0)
                         restore_preset();
 
-                    throw std::runtime_error("Operation timed-out!\nCalibration state did not converged in time");
+                    throw std::runtime_error("Operation timed-out!\nCalibration state did not converge in time");
                 }
 
                 auto status = (rs2_dsc_status)result.status;

@@ -908,7 +908,7 @@ namespace rs2
         if (is_timed_out)
         {
             throw std::runtime_error("Operation timed-out!\n"
-                "Calibration process did not converged in time");
+                "Calibration process did not converge in time");
         }
 
         // finalize results:
