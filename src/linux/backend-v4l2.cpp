@@ -647,7 +647,7 @@ namespace librealsense
                     }
                     else // Video4Linux Devices that are not listed as UVC
                     {
-                        LOG_INFO("Enumerating v4l " << name << " realpath=" << real_path);
+                        //LOG_INFO("Enumerating v4l " << name << " realpath=" << real_path);
                         v4l_node = true;
 
                         // D431-specific
