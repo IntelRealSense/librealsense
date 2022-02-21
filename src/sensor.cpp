@@ -424,9 +424,10 @@ void log_callback_end( uint32_t fps,
 
                     if (fh.frame)
                     {
-                        assert( expected_size == sizeof(byte) * fr->data.size() );
+                        assert( expected_size == sizeof(byte) * fr->data.size() ||
+                                expected_size == sizeof(byte) * fr->data.size() + 255); // added for D457
 
-                        memcpy((void*)fh->get_frame_data(), fr->data.data(), expected_size);
+                        memcpy((void*)fh->get_frame_data(), fr->data.data(), sizeof(byte) * fr->data.size());
                         auto&& video = (video_frame*)fh.frame;
                         video->assign(width, height, width * bpp / 8, bpp);
                         video->set_timestamp_domain(timestamp_domain);
