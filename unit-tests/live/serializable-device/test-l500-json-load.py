@@ -1,7 +1,7 @@
 # License: Apache 2.0. See LICENSE file in root directory.
 # Copyright(c) 2020 Intel Corporation. All Rights Reserved.
 
-#test:device L500*
+# test:device L500*
 
 import pyrealsense2 as rs
 from rspy import test, log
@@ -14,7 +14,8 @@ sd = rs.serializable_device(device)
 visual_preset_number = depth_sensor.get_option(rs.option.visual_preset)
 visual_preset_name = rs.l500_visual_preset(int(visual_preset_number))
 
-def json_to_dict( json ):
+
+def json_to_dict(json):
     """
     :param json: a string representing a json file
     :return: a dictionary with all settings
@@ -22,35 +23,38 @@ def json_to_dict( json ):
     translation_table = dict.fromkeys(map(ord, '",\''), None)
     json_dict = {}
     for line in json.splitlines():
-        if ':' not in line: # ignoring lines that are not for settings such as empty lines
+        if ':' not in line:  # ignoring lines that are not for settings such as empty lines
             continue
         setting, value = line.split(':')
         setting = setting.strip().translate(translation_table)
         value = value.strip().translate(translation_table)
-        json_dict[ setting ] = value
+        json_dict[setting] = value
     return json_dict
 
-def log_settings_differences( data ):
+
+def log_settings_differences(data):
     global depth_sensor, sd
     depth_sensor.set_option(rs.option.visual_preset, int(rs.l500_visual_preset.low_ambient_light))
-    actual_data = str( sd.serialize_json() )
-    data_dict = json_to_dict( data )
-    actual_data_dict = json_to_dict( actual_data )
+    actual_data = str(sd.serialize_json())
+    data_dict = json_to_dict(data)
+    actual_data_dict = json_to_dict(actual_data)
     log.debug_indent()
     try:
         # logging the differences in the settings between the expected and the actual values
         for key in actual_data_dict.keys():
             if key not in data_dict:
-                log.d( "New setting added to json:", key)
+                log.d("New setting added to json:", key)
             elif "Visual Preset" in key or "Temperature" in key or "temperature" in key:
-                # the line regarding the visual preset will always be different because we load 1 from data but set it to
-                # 3 for low ambient. Also all lines regarding temperatures depend on the camera and don't affect the preset
+                # the line regarding the visual preset will always be different because
+                # we load 1 from data but set it to 3 for low ambient. Also, all lines regarding
+                # temperatures depend on the camera and don't affect the preset
                 continue
-            elif data_dict[ key ] != actual_data_dict[ key ]:
-                log.d( key, "was expected to have value of", data_dict[ key ],
-                       "but actually had value of", actual_data_dict[ key ])
+            elif data_dict[key] != actual_data_dict[key]:
+                log.d(key, "was expected to have value of", data_dict[key],
+                      "but actually had value of", actual_data_dict[key])
     finally:
         log.debug_unindent()
+
 
 #############################################################################################
 # This test checks backward compatibility to old json files that saved with default preset
@@ -99,15 +103,15 @@ low_ambient_data_with_default_preset = """
 
 test.start("Trying to load settings with default preset from json")
 try:
-    sd.load_json( low_ambient_data_with_default_preset )
+    sd.load_json(low_ambient_data_with_default_preset)
     visual_preset_number = depth_sensor.get_option(rs.option.visual_preset)
     visual_preset_name = rs.l500_visual_preset(int(visual_preset_number))
 
     # if this check fails it is most likely because FW changed the default settings
     equal = test.check_equal(visual_preset_name, rs.l500_visual_preset.low_ambient_light)
     if not equal:
-        log.w( "It is possible that FW changed the default settings of the camera." )
-        log_settings_differences( low_ambient_data_with_default_preset )
+        log.w("It is possible that FW changed the default settings of the camera.")
+        log_settings_differences(low_ambient_data_with_default_preset)
 except:
     test.unexpected_exception()
 test.finish()
@@ -153,7 +157,7 @@ wrong_data_with_default_preset = """
 
 test.start("Trying to load wrong settings, should get custom preset")
 try:
-    sd.load_json( wrong_data_with_default_preset )
+    sd.load_json(wrong_data_with_default_preset)
     visual_preset_number = depth_sensor.get_option(rs.option.visual_preset)
     visual_preset_name = rs.l500_visual_preset(int(visual_preset_number))
 
@@ -204,7 +208,7 @@ wrong_data_with_low_ambient_preset = """
 
 test.start("Trying to load wrong settings with specified preset")
 try:
-    sd.load_json( wrong_data_with_low_ambient_preset )
+    sd.load_json(wrong_data_with_low_ambient_preset)
     visual_preset_number = depth_sensor.get_option(rs.option.visual_preset)
     visual_preset_name = rs.l500_visual_preset(int(visual_preset_number))
 

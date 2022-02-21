@@ -5,16 +5,15 @@ import pyrealsense2 as rs
 from rspy import log, test
 import sw
 
-
 # The timestamp jumps are closely correlated to the FPS passed to the video streams:
 # syncer expects frames to arrive every 1000/FPS milliseconds!
 sw.fps_c = sw.fps_d = 30
-sw.init( syncer_matcher = rs.matchers.dic_c )
+sw.init(syncer_matcher=rs.matchers.dic_c)
 sw.start()
 
 #############################################################################################
 #
-test.start( "Init" )
+test.start("Init")
 
 # It can take a few frames for the syncer to actually produce a matched frameset (it doesn't
 # know what to match to in the beginning)
@@ -24,9 +23,9 @@ test.start( "Init" )
 # 0     @0          so next expected frame timestamp is at 0+16.67
 #    0  @0
 #
-sw.generate_depth_and_color( frame_number = 0, timestamp = 0 )
-sw.expect( depth_frame = 0 )                          # syncer doesn't know about C yet, so releases right away
-sw.expect( color_frame = 0, nothing_else = True )     # no hope for a match: D@0 is already out, so it's released
+sw.generate_depth_and_color(frame_number=0, timestamp=0)
+sw.expect(depth_frame=0)  # syncer doesn't know about C yet, so releases right away
+sw.expect(color_frame=0, nothing_else=True)  # no hope for a match: D@0 is already out, so it's released
 #
 # The syncer now knows about both streams, and is empty -- that was what we wanted
 
@@ -34,29 +33,29 @@ test.finish()
 #
 #############################################################################################
 #
-test.start( "Go past Color's Next Expected; get a lone Depth frame" )
+test.start("Go past Color's Next Expected; get a lone Depth frame")
 
 # 1     @7952 -> NE=7985; it's released because WAY past C.NE
 #
-sw.generate_depth_frame( 1, 7952 )
-sw.expect( depth_frame = 1, nothing_else = True )
+sw.generate_depth_frame(1, 7952)
+sw.expect(depth_frame=1, nothing_else=True)
 
 test.finish()
 #
 #############################################################################################
 #
-test.start( "Generate a Color frame which will wait for Depth" )
+test.start("Generate a Color frame which will wait for Depth")
 
 #    2  @7978 will wait, as it's ~= D.NE
 #
-sw.generate_color_frame( 2, 7978 )
+sw.generate_color_frame(2, 7978)
 sw.expect_nothing()
 
 test.finish()
 #
 #############################################################################################
 #
-test.start( "Generate Depth for release BEFORE the waiting Color" )
+test.start("Generate Depth for release BEFORE the waiting Color")
 
 # 3     @7952 -> needs to be released BEFORE C2!!
 #
@@ -67,21 +66,21 @@ test.start( "Generate Depth for release BEFORE the waiting Color" )
 #
 # NOTE: this used to crash (see LRS-289)!
 #
-sw.generate_depth_frame( 3, 7952 )
-sw.expect( depth_frame = 3 )
+sw.generate_depth_frame(3, 7952)
+sw.expect(depth_frame=3)
 
 test.finish()
 #
 #############################################################################################
 #
-test.start( "And only then get the Color when we generate a matching Depth" )
+test.start("And only then get the Color when we generate a matching Depth")
 
 sw.expect_nothing()  # C is still waiting for D.NE!
 
 # 4     @7986
 #
-sw.generate_depth_frame( 4, 7986 )
-sw.expect( depth_frame = 4, color_frame = 2, nothing_else = True )
+sw.generate_depth_frame(4, 7986)
+sw.expect(depth_frame=4, color_frame=2, nothing_else=True)
 
 test.finish()
 #

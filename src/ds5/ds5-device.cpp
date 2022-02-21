@@ -122,6 +122,16 @@ namespace librealsense
     {
         return _hw_monitor->send(input);
     }
+    
+    std::vector<uint8_t> ds5_device::build_raw_data(const uint32_t opcode,
+        const uint32_t param1,
+        const uint32_t param2,
+        const uint32_t param3,
+        const uint32_t param4,
+        const std::vector<uint8_t>& data)
+    {
+        return _hw_monitor->build_raw_data(opcode, param1, param2, param3, param4, data);
+    }
 
     void ds5_device::hardware_reset()
     {

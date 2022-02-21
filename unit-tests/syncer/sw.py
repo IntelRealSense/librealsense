@@ -5,10 +5,9 @@ import pyrealsense2 as rs
 from rspy import log, test
 import time
 
-
 # Constants
 #
-domain = rs.timestamp_domain.hardware_clock       # For either depth/color
+domain = rs.timestamp_domain.hardware_clock  # For either depth/color
 #
 # To be set before init() or playback()
 #
@@ -30,7 +29,7 @@ syncer = None
 playback_status = None
 
 
-def init( syncer_matcher = rs.matchers.default ):
+def init(syncer_matcher=rs.matchers.default):
     """
     One of the two initialization functions:
 
@@ -50,16 +49,16 @@ def init( syncer_matcher = rs.matchers.default ):
     gap_c = 1000 / fps_c
     #
     global pixels, w, h
-    pixels = bytearray( b'\x00' * ( w * h * 2 ))  # Dummy data
+    pixels = bytearray(b'\x00' * (w * h * 2))  # Dummy data
     #
     global device
     device = rs.software_device()
     if syncer_matcher is not None:
-        device.create_matcher( syncer_matcher )
+        device.create_matcher(syncer_matcher)
     #
     global depth_sensor, color_sensor
-    depth_sensor = device.add_sensor( "Depth" )
-    color_sensor = device.add_sensor( "Color" )
+    depth_sensor = device.add_sensor("Depth")
+    color_sensor = device.add_sensor("Color")
     #
     depth_stream = rs.video_stream()
     depth_stream.type = rs.stream.depth
@@ -71,7 +70,7 @@ def init( syncer_matcher = rs.matchers.default ):
     depth_stream.fps = fps_d
     #
     global depth_profile
-    depth_profile = rs.video_stream_profile( depth_sensor.add_video_stream( depth_stream ))
+    depth_profile = rs.video_stream_profile(depth_sensor.add_video_stream(depth_stream))
     #
     color_stream = rs.video_stream()
     color_stream.type = rs.stream.color
@@ -83,28 +82,28 @@ def init( syncer_matcher = rs.matchers.default ):
     color_stream.fps = fps_c
     #
     global color_profile
-    color_profile = rs.video_stream_profile( color_sensor.add_video_stream( color_stream ))
+    color_profile = rs.video_stream_profile(color_sensor.add_video_stream(color_stream))
     #
     # We don't want to lose any frames so use a big queue size (default is 1)
     global syncer
     if syncer_matcher is not None:
-        syncer = rs.syncer( 100 )  
+        syncer = rs.syncer(100)
     else:
-        syncer = rs.frame_queue( 100 )
+        syncer = rs.frame_queue(100)
     #
     global playback_status
     playback_status = None
 
 
-def playback_callback( status ):
+def playback_callback(status):
     """
     """
     global playback_status
     playback_status = status
-    log.d( "...", status )
+    log.d("...", status)
 
 
-def playback( filename, use_syncer = True ):
+def playback(filename, use_syncer=True):
     """
     One of the two initialization functions:
 
@@ -122,24 +121,24 @@ def playback( filename, use_syncer = True ):
     ctx = rs.context()
     #
     global device
-    device = rs.playback( ctx.load_device( filename ) )
-    device.set_real_time( False )
-    device.set_status_changed_callback( playback_callback )
+    device = rs.playback(ctx.load_device(filename))
+    device.set_real_time(False)
+    device.set_status_changed_callback(playback_callback)
     #
     global depth_sensor, color_sensor
     sensors = device.query_sensors()
-    depth_sensor = next( s for s in sensors if s.name == "Depth" )
-    color_sensor = next( s for s in sensors if s.name == "Color" )
+    depth_sensor = next(s for s in sensors if s.name == "Depth")
+    color_sensor = next(s for s in sensors if s.name == "Color")
     #
     global depth_profile, color_profile
-    depth_profile = next( p for p in depth_sensor.profiles if p.stream_type() == rs.stream.depth )
-    color_profile = next( p for p in color_sensor.profiles if p.stream_type() == rs.stream.color )
+    depth_profile = next(p for p in depth_sensor.profiles if p.stream_type() == rs.stream.depth)
+    color_profile = next(p for p in color_sensor.profiles if p.stream_type() == rs.stream.color)
     #
     global syncer
     if use_syncer:
-        syncer = rs.syncer( 100 )  # We don't want to lose any frames so uses a big queue size (default is 1)
+        syncer = rs.syncer(100)  # We don't want to lose any frames so uses a big queue size (default is 1)
     else:
-        syncer = rs.frame_queue( 100 )
+        syncer = rs.frame_queue(100)
     #
     global playback_status
     playback_status = rs.playback_status.unknown
@@ -149,10 +148,10 @@ def start():
     """
     """
     global depth_profile, color_profile, depth_sensor, color_sensor, syncer
-    depth_sensor.open( depth_profile )
-    color_sensor.open( color_profile )
-    depth_sensor.start( syncer )
-    color_sensor.start( syncer )
+    depth_sensor.open(depth_profile)
+    color_sensor.open(color_profile)
+    depth_sensor.start(syncer)
+    color_sensor.start(syncer)
 
 
 def stop():
@@ -181,12 +180,12 @@ def reset():
     syncer = None
 
 
-def generate_depth_frame( frame_number, timestamp ):
+def generate_depth_frame(frame_number, timestamp):
     """
     """
     global playback_status
     if playback_status is not None:
-        raise RuntimeError( "cannot generate frames when playing back" )
+        raise RuntimeError("cannot generate frames when playing back")
     #
     global depth_profile, domain, pixels, depth_sensor, w, bpp
     depth_frame = rs.software_video_frame()
@@ -198,15 +197,16 @@ def generate_depth_frame( frame_number, timestamp ):
     depth_frame.domain = domain
     depth_frame.profile = depth_profile
     #
-    log.d( "-->", depth_frame )
-    depth_sensor.on_video_frame( depth_frame )
+    log.d("-->", depth_frame)
+    depth_sensor.on_video_frame(depth_frame)
 
-def generate_color_frame( frame_number, timestamp ):
+
+def generate_color_frame(frame_number, timestamp):
     """
     """
     global playback_status
     if playback_status is not None:
-        raise RuntimeError( "cannot generate frames when playing back" )
+        raise RuntimeError("cannot generate frames when playing back")
     #
     global color_profile, domain, pixels, color_sensor, w, bpp
     color_frame = rs.software_video_frame()
@@ -218,14 +218,16 @@ def generate_color_frame( frame_number, timestamp ):
     color_frame.domain = domain
     color_frame.profile = color_profile
     #
-    log.d( "-->", color_frame )
-    color_sensor.on_video_frame( color_frame )
+    log.d("-->", color_frame)
+    color_sensor.on_video_frame(color_frame)
 
-def generate_depth_and_color( frame_number, timestamp ):
-    generate_depth_frame( frame_number, timestamp )
-    generate_color_frame( frame_number, timestamp )
 
-def expect( depth_frame = None, color_frame = None, nothing_else = False ):
+def generate_depth_and_color(frame_number, timestamp):
+    generate_depth_frame(frame_number, timestamp)
+    generate_color_frame(frame_number, timestamp)
+
+
+def expect(depth_frame=None, color_frame=None, nothing_else=False):
     """
     Looks at the syncer queue and gets the next frame from it if available, checking its contents
     against the expected frame numbers.
@@ -234,49 +236,49 @@ def expect( depth_frame = None, color_frame = None, nothing_else = False ):
     f = syncer.poll_for_frame()
     if playback_status is not None:
         countdown = 50  # 5 seconds
-        while not f  and  playback_status != rs.playback_status.stopped:
+        while not f and playback_status != rs.playback_status.stopped:
             countdown -= 1
             if countdown == 0:
                 break
-            time.sleep( 0.1 )
+            time.sleep(0.1)
             f = syncer.poll_for_frame()
     # NOTE: f will never be None
     if not f:
-        test.check( depth_frame is None, "expected a depth frame" )
-        test.check( color_frame is None, "expected a color frame" )
+        test.check(depth_frame is None, "expected a depth frame")
+        test.check(color_frame is None, "expected a color frame")
         return False
 
-    log.d( "Got", f )
+    log.d("Got", f)
 
-    fs = rs.composite_frame( f )
+    fs = rs.composite_frame(f)
 
     if fs:
         depth = fs.get_depth_frame()
     else:
-        depth = rs.depth_frame( f )
-    test.info( "actual depth", depth )
-    test.check_equal( depth_frame is None, not depth )
+        depth = rs.depth_frame(f)
+    test.info("actual depth", depth)
+    test.check_equal(depth_frame is None, not depth)
     if depth_frame is not None and depth:
-        test.check_equal( depth.get_frame_number(), depth_frame )
-    
+        test.check_equal(depth.get_frame_number(), depth_frame)
+
     if fs:
         color = fs.get_color_frame()
     elif not depth:
-        color = rs.video_frame( f )
+        color = rs.video_frame(f)
     else:
         color = None
-    test.info( "actual color", color )
-    test.check_equal( color_frame is None, not color )
+    test.info("actual color", color)
+    test.check_equal(color_frame is None, not color)
     if color_frame is not None and color:
-        test.check_equal( color.get_frame_number(), color_frame )
+        test.check_equal(color.get_frame_number(), color_frame)
 
     if nothing_else:
         f = syncer.poll_for_frame()
-        test.info( "Expected nothing else; actual", f )
-        test.check( not f )
+        test.info("Expected nothing else; actual", f)
+        test.check(not f)
 
     return True
 
-def expect_nothing():
-    expect( nothing_else = True )
 
+def expect_nothing():
+    expect(nothing_else=True)

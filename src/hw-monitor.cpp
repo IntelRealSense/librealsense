@@ -174,6 +174,17 @@ namespace librealsense
             newCommand.receivedCommandData + newCommand.receivedCommandDataLength);
     }
 
+    std::vector<uint8_t> hw_monitor::build_raw_data(const uint32_t opcode, const uint32_t param1, const uint32_t param2,
+        const uint32_t param3, const uint32_t param4, const std::vector<uint8_t>& data) const
+    {
+        int length;
+        std::vector<uint8_t> result;
+        result.resize(IVCAM_MONITOR_MAX_BUFFER_SIZE);
+        fill_usb_buffer(opcode, param1, param2, param3, param4, data.data(), (uint32_t)data.size(), result.data(), length);
+        result.resize(length);
+        return result;
+    }
+
     std::string hwmon_error_string( command const & cmd, hwmon_response e )
     {
         auto str = hwmon_error2str( e );
