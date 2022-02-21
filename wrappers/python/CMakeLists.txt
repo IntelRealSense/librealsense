@@ -12,12 +12,16 @@ set(DEPENDENCIES realsense2)
 # we copy the external project declaration to the build folder and then execute it
 configure_file(${CMAKE_SOURCE_DIR}/third-party/pybind11/CMakeLists.txt ${CMAKE_BINARY_DIR}/external-projects/pybind11/CMakeLists.txt)
 execute_process(COMMAND "${CMAKE_COMMAND}" -G "${CMAKE_GENERATOR}" .
-    WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/external-projects/pybind11"
+    WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/external-projects/pybind11" RESULT_VARIABLE configure_ret
 )
 execute_process(COMMAND "${CMAKE_COMMAND}" --build .
-    WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/external-projects/pybind11"
+    WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/external-projects/pybind11" RESULT_VARIABLE build_ret
 )
 
+ if(configure_ret OR build_ret)
+        message( FATAL_ERROR "Failed to build pybind11")
+ endif()
+    
 # Add pybind11 makefile
 add_subdirectory("${CMAKE_BINARY_DIR}/third-party/pybind11"
                  "${CMAKE_BINARY_DIR}/third-party/pybind11"

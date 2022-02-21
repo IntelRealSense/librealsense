@@ -1,102 +1,85 @@
-# cmake_minimum_required comes from CMP0091,
-# In order to build FastDDS in `/MT` mode in windows static builds 
-# https://cmake.org/cmake/help/git-stage/policy/CMP0091.html
-cmake_minimum_required(VERSION 3.15) 
-include(ExternalProject)
+cmake_minimum_required(VERSION 3.5) 
+include(FetchContent)
 
-# Foonathan memory is a dependency of FastDDS.
-ExternalProject_Add(
-    foonathan_memory
-    PREFIX foonathan_memory
-    GIT_REPOSITORY "https://github.com/foonathan/memory.git"
-    GIT_TAG "v0.7-1" # Commit Hash: 19ab0759c7f053d88657c0eb86d879493f784d61
-    SOURCE_DIR ${CMAKE_CURRENT_BINARY_DIR}/third-party/foonathan_memory
-    CMAKE_ARGS -DCMAKE_CXX_FLAGS=${CMAKE_CXX_FLAGS}
-               -DCMAKE_C_FLAGS=${CMAKE_C_FLAGS}
-               -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
-               -DCMAKE_C_FLAGS_DEBUG=${CMAKE_C_FLAGS_DEBUG}
-               -DCMAKE_C_FLAGS_MINSIZEREL=${CMAKE_C_FLAGS_MINSIZEREL}
-               -DCMAKE_C_FLAGS_RELEASE=${CMAKE_C_FLAGS_RELEASE}
-               -DCMAKE_C_FLAGS_RELWITHDEBINFO=${CMAKE_C_FLAGS_RELWITHDEBINFO}
-               -DCMAKE_CXX_STANDARD_LIBRARIES=${CMAKE_CXX_STANDARD_LIBRARIES}
-               -DBUILD_SHARED_LIBS:BOOL=OFF
-               -DFOONATHAN_MEMORY_BUILD_EXAMPLES:BOOL=OFF
-               -DFOONATHAN_MEMORY_BUILD_TESTS:BOOL=OFF
-               -DFOONATHAN_MEMORY_BUILD_TOOLS:BOOL=OFF
-               -DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/fastdds/fastdds_install
-    UPDATE_COMMAND ""
-    PATCH_COMMAND ""
-    TEST_COMMAND ""
+# We use a function to enforce a scoped variables creation only for FastDDS build (i.e turn off BUILD_SHARED_LIBS which is used on LRS build as well)
+function(get_fastdds)
+
+    # Mark new options from FetchContent as advanced options
+    mark_as_advanced(FETCHCONTENT_QUIET)
+    mark_as_advanced(FETCHCONTENT_BASE_DIR)
+    mark_as_advanced(FETCHCONTENT_FULLY_DISCONNECTED)
+    mark_as_advanced(FETCHCONTENT_UPDATES_DISCONNECTED)
+
+    message(CHECK_START  "Fetching fastdds...")
+    list(APPEND CMAKE_MESSAGE_INDENT "  ")  # Indent outputs
+
+    FetchContent_Declare(
+      fastdds
+      GIT_REPOSITORY https://github.com/eProsima/Fast-DDS.git
+      GIT_TAG        ecb9711cf2b9bcc608de7d45fc36d3a653d3bf05 # Git tag "v2.5.0", when updating this version consider removing the patches listed below.
+      GIT_SUBMODULES ""     # Submodules will be cloned as part of the FastDDS cmake configure stage
+      GIT_SHALLOW ON        # No history needed
+      SOURCE_DIR ${CMAKE_BINARY_DIR}/third-party/fastdds
     )
 
+    # Set FastDDS internal variables
+    # We use cached variables so the default parameter inside the sub directory will not override the required values
+    # We add "FORCE" so that is a previous cached value is set our assignment will override it.
+    set(THIRDPARTY_Asio FORCE CACHE INTERNAL "" FORCE)
+    set(THIRDPARTY_fastcdr FORCE CACHE INTERNAL "" FORCE)
+    set(THIRDPARTY_TinyXML2 FORCE CACHE INTERNAL "" FORCE)
+    set(COMPILE_TOOLS OFF CACHE INTERNAL "" FORCE)
+    set(BUILD_TESTING OFF CACHE INTERNAL "" FORCE)
+    set(SQLITE3_SUPPORT OFF CACHE INTERNAL "" FORCE)
 
-# Let FastDDS clone and build its dependencies (except "Foonathan_memory" which fastdds does not supply as a third party.
-set(FASTDDS_FLAGS   -DBUILD_SHARED_LIBS=OFF 
-                    -DTHIRDPARTY_Asio=FORCE 
-                    -DTHIRDPARTY_TinyXML2=FORCE 
-                    -DTHIRDPARTY_fastcdr=FORCE
-                    -DCOMPILE_TOOLS=OFF
-                    -DBUILD_TESTING=OFF)
+    # Set special values for FastDDS sub directory
+    set(BUILD_SHARED_LIBS OFF)
+    set(CMAKE_INSTALL_PREFIX ${CMAKE_BINARY_DIR}/fastdds/fastdds_install) 
+    set(CMAKE_PREFIX_PATH ${CMAKE_BINARY_DIR}/fastdds/fastdds_install)  
 
-# When LRS is built with static crt (/MT /MTd), 
-# Fastdds should be built with the same runtime setting
-# We use CMP0091 which was introduced at CMake version 3.15,
-# See https://cmake.org/cmake/help/git-stage/policy/CMP0091.html
-if(BUILD_WITH_STATIC_CRT)
-    set(FASTDDS_FLAGS   ${FASTDDS_FLAGS}
-                        -DCMAKE_POLICY_DEFAULT_CMP0091:STRING=NEW 
-                        -DCMAKE_MSVC_RUNTIME_LIBRARY:STRING=MultiThreaded$<$<CONFIG:Debug>:Debug>)
-endif()  
+    # FastDDS does not support UNICODE see https://github.com/eProsima/Fast-DDS/issues/2501
+    # Should be removed when fetching FastDDS new release that will contain fix PR https://github.com/eProsima/Fast-DDS/pull/2510
+    set(FORCE_REMOVE_UNICODE OFF)
+    if (MSVC)
+        remove_definitions(-D_UNICODE -DUNICODE)
+        set(FORCE_REMOVE_UNICODE ON)
+    endif()
 
-# We construct the git tag is the purpose of having a single place that indicate the FastDDS version we consume.
-# FastDDS library name is different in Windows/Linux (Windows library name is versioned and Linux is not!)
-#   Windows: libfastrtps-<major-version>.<minor-version>.lib
-#   Linux:   libfastrtps.a 
-# Current used version is "2.5.0"
-# Commit Hash: ecb9711cf2b9bcc608de7d45fc36d3a653d3bf05
-# Git tag "v2.5.0"
-set(FASTDDS_VERSION_MAJOR "2")
-set(FASTDDS_VERSION_MINOR "5")
-set(FASTDDS_VERSION_BUILD "0")
+    # Get fastdds
+    FetchContent_MakeAvailable(fastdds)
+    
+    # FastDDS enforce compiler flags as PUBLIC, we don't want it affecting our hosting target so we remove it from the interface compile options
+    # This 3 lines should be removed when we update to a FastDDS version containing this PR: https://github.com/eProsima/Fast-DDS/pull/2509
+    get_target_property(FASTDDS_COMPILER_FLAGS fastrtps INTERFACE_COMPILE_OPTIONS)
+    message(STATUS "Remove the following FastDDS compiler flags from the hosting target interface:  ${FASTDDS_COMPILER_FLAGS}")
+    set_target_properties(fastrtps PROPERTIES INTERFACE_COMPILE_OPTIONS "")
+    
+    # Mark new options from FetchContent as advanced options
+    mark_as_advanced(FETCHCONTENT_SOURCE_DIR_FASTDDS)
+    mark_as_advanced(FETCHCONTENT_UPDATES_DISCONNECTED_FASTDDS)
 
-ExternalProject_Add(
-    fastdds
-    PREFIX fastdds
-    GIT_REPOSITORY "https://github.com/eProsima/Fast-DDS.git"
-    GIT_TAG "v${FASTDDS_VERSION_MAJOR}.${FASTDDS_VERSION_MINOR}.${FASTDDS_VERSION_BUILD}" 
-    SOURCE_DIR ${CMAKE_CURRENT_BINARY_DIR}/third-party/fastdds
-    CMAKE_ARGS  -DCMAKE_CXX_FLAGS=${CMAKE_CXX_FLAGS}
-                -DCMAKE_C_FLAGS=${CMAKE_C_FLAGS}
-                -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
-                -DCMAKE_C_FLAGS_DEBUG=${CMAKE_C_FLAGS_DEBUG}
-                -DCMAKE_C_FLAGS_MINSIZEREL=${CMAKE_C_FLAGS_MINSIZEREL}
-                -DCMAKE_C_FLAGS_RELEASE=${CMAKE_C_FLAGS_RELEASE}
-                -DCMAKE_C_FLAGS_RELWITHDEBINFO=${CMAKE_C_FLAGS_RELWITHDEBINFO}
-                -DCMAKE_CXX_STANDARD_LIBRARIES=${CMAKE_CXX_STANDARD_LIBRARIES}
-                -DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/fastdds/fastdds_install
-                -DCMAKE_INSTALL_LIBDIR=lib
-                -DCMAKE_TOOLCHAIN_FILE=${CMAKE_TOOLCHAIN_FILE}
-                ${FASTDDS_FLAGS}
-    UPDATE_COMMAND ""
-    PATCH_COMMAND ""
-    TEST_COMMAND ""
-    DEPENDS "foonathan_memory"
-)
+    # place FastDDS project with other 3rd-party projects
+    set_target_properties(fastcdr fastrtps PROPERTIES
+                          FOLDER "ExternalProjectTargets/fastdds")
 
-set(FASTDDS_DEBUG_TARGET_NAME "libfastrtps")
-set(FASTDDS_RELEASE_TARGET_NAME "libfastrtps")
+    # If removed, restore the UNICODE definitions (Should be removed with the above remove_definitions once conditions mentioned on it are met)
+    if (FORCE_REMOVE_UNICODE)
+        # Restore UNICODE
+        add_definitions(-D_UNICODE -DUNICODE)
+    endif()
 
-if(WIN32)
-    set(FASTDDS_DEBUG_TARGET_NAME "${FASTDDS_DEBUG_TARGET_NAME}d-${FASTDDS_VERSION_MAJOR}.${FASTDDS_VERSION_MINOR}")
-    set(FASTDDS_RELEASE_TARGET_NAME "${FASTDDS_RELEASE_TARGET_NAME}-${FASTDDS_VERSION_MAJOR}.${FASTDDS_VERSION_MINOR}")
-endif()
+    list(POP_BACK CMAKE_MESSAGE_INDENT) # Unindent outputs
 
-add_library(dds INTERFACE)
+    add_library(dds INTERFACE)
+    target_link_libraries(dds INTERFACE  fastcdr fastrtps)
 
-target_include_directories(dds INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/fastdds/fastdds_install/include>)
-target_link_libraries(dds INTERFACE debug ${CMAKE_CURRENT_BINARY_DIR}/fastdds/fastdds_install/lib/${FASTDDS_DEBUG_TARGET_NAME}${CMAKE_STATIC_LIBRARY_SUFFIX})
-target_link_libraries(dds INTERFACE optimized ${CMAKE_CURRENT_BINARY_DIR}/fastdds/fastdds_install/lib/${FASTDDS_RELEASE_TARGET_NAME}${CMAKE_STATIC_LIBRARY_SUFFIX})
+    add_definitions(-DBUILD_WITH_DDS)
 
-add_definitions(-DBUILD_WITH_DDS)
+    install(TARGETS dds EXPORT realsense2Targets)
+    message(CHECK_PASS "Done")
+endfunction()
 
-install(TARGETS dds EXPORT realsense2Targets)
+# Trigger the FastDDS build
+get_fastdds()
+
+

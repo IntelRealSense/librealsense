@@ -2,17 +2,16 @@
 // Copyright(c) 2022 Intel Corporation. All Rights Reserved.
 
 #pragma once
+#include <iostream>
 
-namespace eprosima {
-namespace fastdds {
-namespace dds {
-class DomainParticipant;
-}
-}  // namespace fastdds
-}  // namespace eprosima
+#include <fastdds/dds/domain/DomainParticipantListener.hpp>
 
 namespace librealsense {
 
+//struct dds_device_info 
+//{
+//    std::string device_name;
+//};
 
 class dds_enumerator
 {
@@ -22,6 +21,18 @@ public:
     void init();
 
 private:
-    eprosima::fastdds::dds::DomainParticipant * participant_;
+
+    class DiscoveryDomainParticipantListener
+        : public eprosima::fastdds::dds::DomainParticipantListener
+    {
+        virtual void on_publisher_discovery( eprosima::fastdds::dds::DomainParticipant * participant,
+                                             eprosima::fastrtps::rtps::WriterDiscoveryInfo && info ) override;
+    } _domain_listener;
+
+    eprosima::fastdds::dds::DomainParticipant * _participant;
+    eprosima::fastdds::dds::Subscriber* _subscriber;
+    eprosima::fastdds::dds::Topic* _topic;
+    eprosima::fastdds::dds::DataReader* _reader;
+    eprosima::fastdds::dds::TypeSupport _type;
 };
 }  // namespace librealsense
