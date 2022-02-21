@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.11) 
 include(FetchContent)
 
+# Mark new options from FetchContent as advanced options
 mark_as_advanced(FETCHCONTENT_QUIET)
 mark_as_advanced(FETCHCONTENT_BASE_DIR)
 mark_as_advanced(FETCHCONTENT_FULLY_DISCONNECTED)
@@ -13,55 +14,57 @@ FetchContent_Declare(
   foonathan_memory
   GIT_REPOSITORY https://github.com/foonathan/memory.git
   GIT_TAG        19ab0759c7f053d88657c0eb86d879493f784d61 # GIT_TAG "v0.7-1"
-  GIT_SHALLOW ON
+  GIT_SHALLOW ON    # No history needed
   SOURCE_DIR ${CMAKE_CURRENT_BINARY_DIR}/third-party/foonathan_memory
 )
 
+# Remove unrequired targets
 set(FOONATHAN_MEMORY_BUILD_VARS -DFOONATHAN_MEMORY_BUILD_EXAMPLES=OFF 
                                 -DFOONATHAN_MEMORY_BUILD_TESTS=OFF
                                 -DFOONATHAN_MEMORY_BUILD_TOOLS=OFF)
-                                
+   
+# Align STATIC CRT definitions with LRS   
 if(BUILD_WITH_STATIC_CRT)
     set(FOONATHAN_MEMORY_BUILD_VARS ${FOONATHAN_MEMORY_BUILD_VARS}
                                     -DCMAKE_POLICY_DEFAULT_CMP0091:STRING=NEW 
                                     -DCMAKE_MSVC_RUNTIME_LIBRARY:STRING=MultiThreaded$<$<CONFIG:Debug>:Debug>)
 endif()  
   
+
+# Since `FastDDS` require foonathan_memory package installed during configure time,
+# We download it build it and install it both in Release & Debug configuration since we need both available.
+# We use `FetchContent_Populate` and not `FetchContent_MakeAvailable` for that reason, we want to manually configure and build it.
 FetchContent_GetProperties(foonathan_memory)
 if(NOT foonathan_memory_POPULATED)
-  # Get foonathan_memory but do not add it's CMakelist file to the main Cmake, just download it.
   FetchContent_Populate(foonathan_memory)
 endif()
 
-# Mark new options from FetchContent to advanced section
+# Mark new options from FetchContent as advanced options
 mark_as_advanced(FETCHCONTENT_SOURCE_DIR_FOONATHAN_MEMORY)
 mark_as_advanced(FETCHCONTENT_UPDATES_DISCONNECTED_FOONATHAN_MEMORY)
 
-# Build and install Debug version
+
+# Configure stage
 execute_process(COMMAND "${CMAKE_COMMAND}" -G "${CMAKE_GENERATOR}" -DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/fastdds/fastdds_install
                                                                    ${FOONATHAN_MEMORY_BUILD_VARS}
                                                                    . 
                                                                     WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/third-party/foonathan_memory" 
-                                                                    RESULT_VARIABLE debug_configure_ret
+                                                                    RESULT_VARIABLE configure_ret
 )
+
+# Build and install Debug version
 execute_process(COMMAND "${CMAKE_COMMAND}" --build . --config Debug --target install
     WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/third-party/foonathan_memory" 
     RESULT_VARIABLE debug_build_ret
 )
 
 # Build and install Release version
-execute_process(COMMAND "${CMAKE_COMMAND}" -G "${CMAKE_GENERATOR}" -DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/fastdds/fastdds_install
-                                                                   ${FOONATHAN_MEMORY_BUILD_VARS}
-                                                                   . 
-                                                                    WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/third-party/foonathan_memory" 
-                                                                    RESULT_VARIABLE release_configure_ret
-)
 execute_process(COMMAND "${CMAKE_COMMAND}" --build . --config Release --target install
     WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/third-party/foonathan_memory" 
     RESULT_VARIABLE release_build_ret
 )
 
- if(debug_configure_ret OR debug_build_ret OR release_configure_ret OR release_build_ret)
+ if(configure_ret OR debug_build_ret OR release_build_ret)
         message( FATAL_ERROR "Failed to build foonathan_memory")
  endif()
 

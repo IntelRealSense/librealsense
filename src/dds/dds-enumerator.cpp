@@ -51,8 +51,7 @@ void dds_enumerator::init()
         throw librealsense::backend_exception( "Error creating a DDS subscriber", RS2_EXCEPTION_TYPE_IO );
     }
 
-    //CREATE THE TOPIC
-    // the 'rt/' prefix is places 
+    // CREATE THE TOPIC
     _topic = _participant->create_topic(
         ROS2_PREFIX("DevicesTopic"),
         _type->getName(),

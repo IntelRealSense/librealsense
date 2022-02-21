@@ -1,9 +1,10 @@
 cmake_minimum_required(VERSION 3.5) 
 include(FetchContent)
 
-# We use a function to enforce a scoped variables creation only for FastDDS build (i.e turn off BUILD_SHARED_LIBS)
+# We use a function to enforce a scoped variables creation only for FastDDS build (i.e turn off BUILD_SHARED_LIBS which is used on LRS build as well)
 function(get_fastdds)
 
+    # Mark new options from FetchContent as advanced options
     mark_as_advanced(FETCHCONTENT_QUIET)
     mark_as_advanced(FETCHCONTENT_BASE_DIR)
     mark_as_advanced(FETCHCONTENT_FULLY_DISCONNECTED)
@@ -16,8 +17,8 @@ function(get_fastdds)
       fastdds
       GIT_REPOSITORY https://github.com/eProsima/Fast-DDS.git
       GIT_TAG        ecb9711cf2b9bcc608de7d45fc36d3a653d3bf05 # Git tag "v2.5.0", when updating this version consider removing the patches listed below.
-      GIT_SUBMODULES ""
-      GIT_SHALLOW ON
+      GIT_SUBMODULES ""     # Submodules will be cloned as part of the FastDDS cmake configure stage
+      GIT_SHALLOW ON        # No history needed
       SOURCE_DIR ${CMAKE_BINARY_DIR}/third-party/fastdds
     )
 
@@ -31,30 +32,29 @@ function(get_fastdds)
     set(BUILD_TESTING OFF CACHE INTERNAL "" FORCE)
     set(SQLITE3_SUPPORT OFF CACHE INTERNAL "" FORCE)
 
-    # Set new values for FastDDS sub directory
+    # Set special values for FastDDS sub directory
     set(BUILD_SHARED_LIBS OFF)
     set(CMAKE_INSTALL_PREFIX ${CMAKE_BINARY_DIR}/fastdds/fastdds_install) 
     set(CMAKE_PREFIX_PATH ${CMAKE_BINARY_DIR}/fastdds/fastdds_install)  
 
     # FastDDS does not support UNICODE see https://github.com/eProsima/Fast-DDS/issues/2501
-    # Should be removed when fetching FastDDS new release that will contain PR https://github.com/eProsima/Fast-DDS/pull/2510
-    
-    set(ADD_UNICODE_DEF OFF)
+    # Should be removed when fetching FastDDS new release that will contain fix PR https://github.com/eProsima/Fast-DDS/pull/2510
+    set(FORCE_REMOVE_UNICODE OFF)
     if (MSVC)
         remove_definitions(-D_UNICODE -DUNICODE)
-        set(ADD_UNICODE_DEF ON)
+        set(FORCE_REMOVE_UNICODE ON)
     endif()
 
     # Get fastdds
     FetchContent_MakeAvailable(fastdds)
     
-    # FastDDS enforce compiler flags as PUBLIC, we don't want it affecting our target so we remove it from the interface compile options
-    # Should be removed when this PR is included inside FastDDS version https://github.com/eProsima/Fast-DDS/pull/2509
+    # FastDDS enforce compiler flags as PUBLIC, we don't want it affecting our hosting target so we remove it from the interface compile options
+    # This 3 lines should be removed when we update to a FastDDS version containing this PR: https://github.com/eProsima/Fast-DDS/pull/2509
     get_target_property(FASTDDS_COMPILER_FLAGS fastrtps INTERFACE_COMPILE_OPTIONS)
-    message(STATUS "Switch the FastDDS library compiler warning flags private:  ${FASTDDS_COMPILER_FLAGS}")
+    message(STATUS "Remove the following FastDDS compiler flags from the hosting target interface:  ${FASTDDS_COMPILER_FLAGS}")
     set_target_properties(fastrtps PROPERTIES INTERFACE_COMPILE_OPTIONS "")
     
-    # Mark new options from FetchContent to advanced section
+    # Mark new options from FetchContent as advanced options
     mark_as_advanced(FETCHCONTENT_SOURCE_DIR_FASTDDS)
     mark_as_advanced(FETCHCONTENT_UPDATES_DISCONNECTED_FASTDDS)
 
@@ -62,8 +62,8 @@ function(get_fastdds)
     set_target_properties(fastcdr fastrtps PROPERTIES
                           FOLDER "ExternalProjectTargets/fastdds")
 
-    # Add back the UNICODE definitions (Should be removed with the above remove_definitions once conditions mentioned on it are met)
-    if (ADD_UNICODE_DEF)
+    # If removed, restore the UNICODE definitions (Should be removed with the above remove_definitions once conditions mentioned on it are met)
+    if (FORCE_REMOVE_UNICODE)
         # Restore UNICODE
         add_definitions(-D_UNICODE -DUNICODE)
     endif()

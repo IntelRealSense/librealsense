@@ -19,7 +19,7 @@ execute_process(COMMAND "${CMAKE_COMMAND}" --build .
 )
 
  if(configure_ret OR build_ret)
-        message( FATAL_ERROR "Failed to build FastDDS")
+        message( FATAL_ERROR "Failed to build pybind11")
  endif()
     
 # Add pybind11 makefile
