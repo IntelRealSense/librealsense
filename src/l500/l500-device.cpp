@@ -593,8 +593,8 @@ namespace librealsense
         const uint32_t param3,
         const uint32_t param4,
         const std::vector<uint8_t>& data)
-	{
-		return _hw_monitor->build_raw_data(opcode, param1, param2, param3, param4, data);
+    {
+        return _hw_monitor->build_raw_data(opcode, param1, param2, param3, param4, data);
     }
 
     ivcam2::extended_temperatures l500_device::get_temperatures() const

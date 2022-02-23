@@ -348,7 +348,7 @@ namespace librealsense
             const uint32_t param3 = 0,
             const uint32_t param4 = 0,
             const std::vector<uint8_t>& data = std::vector<uint8_t>())
-		{
+        {
             return _hw_monitor->build_raw_data(opcode, param1, param2, param3, param4, data);
         }
 

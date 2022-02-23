@@ -30,10 +30,16 @@ jobs:
       run: |
        New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name "LongPathsEnabled" -Value 1 -PropertyType DWORD -Force
     
+    - name: Check_API
+      shell: bash
+      run: |
+        cd scripts
+        ./api_check.sh
+        cd ..
+
     - name: PreBuild
       shell: bash
       run: |
-       cd scripts && ./api_check.sh && cd ..
        mkdir build
     
     - name: Configure CMake
@@ -96,10 +102,16 @@ jobs:
       run: |
        New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name "LongPathsEnabled" -Value 1 -PropertyType DWORD -Force
 
+    - name: Check_API
+      shell: bash
+      run: |
+        cd scripts
+        ./api_check.sh
+        cd ..   
+
     - name: PreBuild
       shell: bash
       run: |
-       cd scripts && ./api_check.sh && cd ..
        mkdir build
 
     - name: Configure CMake
@@ -136,10 +148,16 @@ jobs:
       run: |
        New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name "LongPathsEnabled" -Value 1 -PropertyType DWORD -Force
 
+    - name: Check_API
+      shell: bash
+      run: |
+        cd scripts
+        ./api_check.sh
+        cd ..
+
     - name: PreBuild
       shell: bash
       run: |
-       cd scripts && ./api_check.sh && cd ..
        mkdir build
 
     - name: Configure CMake
@@ -166,11 +184,18 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     
+    - name: Check_API
+      shell: bash
+      run: |
+        cd scripts
+        ./api_check.sh
+        cd ..
+
     - name: Prebuild
       shell: bash
       run: |
-        cd scripts && ./api_check.sh && cd ..
-        mkdir build && cd build
+        mkdir build
+        cd build
         export LRS_LOG_LEVEL="DEBUG";
         sudo add-apt-repository --yes ppa:ubuntu-toolchain-r/test;
         sudo apt-get update;
@@ -234,12 +259,20 @@ jobs:
           sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-5 60 --slave /usr/bin/g++ g++ /usr/bin/g++-5;
           sudo apt-get install libglfw3-dev libglfw3;
 
+      - name: Check_API
+        shell: bash
+        run: |
+          cd scripts
+          ./api_check.sh
+          cd ..
+
       - name: Build
         shell: bash
         run: |
-          cd scripts && ./api_check.sh && cd ..
           mkdir build
-          cd ./scripts && ./pr_check.sh && cd ../build
+          cd ./scripts
+          ./pr_check.sh
+          cd ../build
           cmake .. -DBUILD_EXAMPLES=true -DBUILD_WITH_TM2=true -DBUILD_SHARED_LIBS=false -DCHECK_FOR_UPDATES=true -DBUILD_PYTHON_BINDINGS=true -DPYBIND11_PYTHON_VERSION=3.5
           cmake --build . --config ${{env.LRS_BUILD_CONFIG}} -- -j4
   
@@ -253,11 +286,17 @@ jobs:
       - uses: actions/checkout@v2   
           
         
+      - name: Check_API
+        shell: bash
+        run: |
+          cd scripts
+          ./api_check.sh
+          cd ..  
+        
       - name: Prebuild
         shell: bash
         run: |
           set -x
-          cd ./scripts && ./api_check.sh && cd ..
           # Workaround for nvm failure: https://github.com/appleboy/ssh-action/issues/70
           export NVM_DIR="$HOME/.nvm"
           [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
@@ -300,9 +339,16 @@ jobs:
     
     steps:
     - uses: actions/checkout@v2
+
+    - name: Check_API
+      shell: bash
+      run: |
+        cd scripts
+        ./api_check.sh
+        cd ..
+
     - name: Prebuild
       run: |
-        cd scripts && ./api_check.sh && cd ..
         mkdir build
         # install coreutils for greadlink use
         brew install coreutils
@@ -326,10 +372,15 @@ jobs:
     steps:
     - uses: actions/checkout@v2
 
+    - name: Check_API
+      shell: bash
+      run: |
+        cd scripts
+        ./api_check.sh
+        cd ..
     - name: Prebuild 
       shell: bash
       run: |
-        cd scripts && ./api_check.sh && cd ..
         mkdir build
         wget https://dl.google.com/android/repository/android-ndk-r20b-linux-x86_64.zip;
         unzip -q android-ndk-r20b-linux-x86_64.zip -d ./;
