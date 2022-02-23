@@ -1793,7 +1793,7 @@ void rs2_synthetic_frame_ready(rs2_source* source, rs2_frame* frame, rs2_error**
 HANDLE_EXCEPTIONS_AND_RETURN(, source, frame)
 
 rs2_pipeline* rs2_create_pipeline(rs2_context* ctx, rs2_error ** error) BEGIN_API_CALL
- {
+{
     VALIDATE_NOT_NULL(ctx);
 
     auto pipe = std::make_shared<pipeline::pipeline>(ctx->ctx);

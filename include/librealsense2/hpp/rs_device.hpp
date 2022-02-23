@@ -830,7 +830,7 @@ namespace rs2
             error::handle(e);
         }
 
-        std::vector<uint8_t> build_raw_data(const uint32_t opcode = 0,
+        std::vector<uint8_t> build_raw_data(const uint32_t opcode,
             const uint32_t param1 = 0,
             const uint32_t param2 = 0,
             const uint32_t param3 = 0,

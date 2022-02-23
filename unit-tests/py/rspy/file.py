@@ -1,31 +1,30 @@
 # License: Apache 2.0. See LICENSE file in root directory.
 # Copyright(c) 2021 Intel Corporation. All Rights Reserved.
 
-import os
-import re
-import platform
+import os, re, platform, subprocess, sys
+
 from rspy import log
 
 # get os and directories for future use
 # NOTE: WSL will read as 'Linux' but the build is Windows-based!
 system = platform.system()
-if system == 'Linux' and "microsoft" not in platform.uname()[3].lower():
+if system == 'Linux'  and  "microsoft" not in platform.uname()[3].lower():
     linux = True
 else:
     linux = False
 
 
-def inside_dir(root):
+def inside_dir( root ):
     """
     Yield all files found in root, using relative names ('root/a' would be yielded as 'a')
     """
-    for (path, subdirs, leafs) in os.walk(root):
+    for (path,subdirs,leafs) in os.walk( root ):
         for leaf in leafs:
             # We have to stick to Unix conventions because CMake on Windows is fubar...
-            yield os.path.relpath(path + '/' + leaf, root).replace('\\', '/')
+            yield os.path.relpath( path + '/' + leaf, root ).replace( '\\', '/' )
 
 
-def is_inside(file, directory):
+def is_inside( file, directory ):
     """
     :param file: The file/directory we're checking
     :param directory: The parent directory
@@ -34,26 +33,25 @@ def is_inside(file, directory):
 
     NOTE: A directory is considered inside itself! is_inside( dir, dir ) is True
     """
-    directory = os.path.join(os.path.realpath(directory), '')
-    file = os.path.realpath(file)
+    directory = os.path.join( os.path.realpath( directory ), '' )
+    file = os.path.realpath( file )
 
     # Return True if the common prefix of both is equal to directory
     # E.g. /a/b/c/d.rst and directory is /a/b, the common prefix is /a/b
-    common = os.path.commonprefix([file, directory])
-    return common == directory or os.path.join(common, '') == directory
+    common = os.path.commonprefix( [file, directory] )
+    return common == directory or os.path.join( common, '' ) == directory
 
 
-def find(dir, mask):
+def find( dir, mask ):
     """
     Yield all files in given directory (including sub-directories) that fit the given mask
     :param dir: directory in which to search
     :param mask: mask to compare file names to
     """
-    pattern = re.compile(mask)
-    for leaf in inside_dir(dir):
-        if pattern.search(leaf):
+    pattern = re.compile( mask )
+    for leaf in inside_dir( dir ):
+        if pattern.search( leaf ):
             yield leaf
-
 
 def is_executable(path_to_file):
     """
@@ -66,15 +64,13 @@ def is_executable(path_to_file):
     else:
         return path_to_file.endswith('.exe')
 
-
-def remove_newlines(lines):
+def remove_newlines (lines):
     for line in lines:
         if line[-1] == '\n':
-            line = line[:-1]  # excluding the endline
+            line = line[:-1]    # excluding the endline
         yield line
 
-
-def _grep(pattern, lines, context):
+def _grep( pattern, lines, context ):
     """
     helper function for grep
     """
@@ -82,10 +78,10 @@ def _grep(pattern, lines, context):
     matches = 0
     for line in lines:
         index = index + 1
-        match = pattern.search(line)
+        match = pattern.search( line )
         if match:
             context['index'] = index
-            context['line'] = line
+            context['line']  = line
             context['match'] = match
             yield context
             matches += 1
@@ -94,24 +90,22 @@ def _grep(pattern, lines, context):
         del context['line']
         del context['match']
 
-
-def grep(expr, *args):
-    pattern = re.compile(expr)
+def grep( expr, *args ):
+    pattern = re.compile( expr )
     context = dict()
     for filename in args:
         context['filename'] = filename
-        with open(filename, errors='ignore') as file:
-            for line in _grep(pattern, remove_newlines(file), context):
+        with open( filename, errors = 'ignore' ) as file:
+            for line in _grep( pattern, remove_newlines( file ), context ):
                 yield line
 
+def cat( filename ):
+    with open( filename, errors = 'ignore' ) as file:
+        for line in remove_newlines( file ):
+            log.out( line )
 
-def cat(filename):
-    with open(filename, errors='ignore') as file:
-        for line in remove_newlines(file):
-            log.out(line)
 
-
-def split_comments(filename, comment_delim_regex='#'):
+def split_comments( filename, comment_delim_regex = '#' ):
     """
     Yields all lines in a file, but with comments separated:
         '  line'                yields ('  line', None )
@@ -119,10 +113,13 @@ def split_comments(filename, comment_delim_regex='#'):
         '# comment line  '      yields ('', 'comment line')
     """
     context = dict()
-    pattern = re.compile(r'^(.*?)(?:\s*' + comment_delim_regex + r'\s*(.*?)\s*)?$')  # to end-of-line
-    with open(filename, errors='ignore') as file:
-        for line in remove_newlines(file):
-            match = pattern.search(line)
+    pattern = re.compile( r'^(.*?)(?:\s*' + comment_delim_regex + r'\s*(.*?)\s*)?$' )  # to end-of-line
+    with open( filename, errors = 'ignore' ) as file:
+        for line in remove_newlines( file ):
+            match = pattern.search( line )
             line_without_comment = match.group(1)
-            comment = match.group(2)  # can be None
-            yield line_without_comment, comment
+            comment = match.group(2)                 # can be None
+            yield (line_without_comment, comment)
+
+
+

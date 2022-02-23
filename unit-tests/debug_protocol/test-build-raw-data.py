@@ -27,7 +27,7 @@ try:
     ctx = rs.context()
     dev = ctx.query_devices()[0]
 
-    print("======================= old scenario ==========================\n")
+    print("======================= Old Scenario ===========================\n")
     gvd_command = "14 00 ab cd 10 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00"
     converted_cmd = convert_bytes_to_decimal(gvd_command)
     old_result = send_hardware_monitor_command(dev, converted_cmd)
@@ -35,7 +35,7 @@ try:
 
     print("\n")
 
-    print("======================= NEW USAGE ==========================")
+    print("======================= New Scenario ===========================\n")
     gvd_opcode = 0x10
     new_command = rs.debug_protocol(dev).build_raw_data(gvd_opcode)
     new_result = send_hardware_monitor_command(dev, new_command)

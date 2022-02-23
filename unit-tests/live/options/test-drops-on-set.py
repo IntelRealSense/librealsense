@@ -5,7 +5,8 @@
 
 import platform
 import pyrealsense2 as rs
-from rspy import test, log
+from rspy import test
+from rspy import log
 import time
 
 dev = test.find_first_device_or_exit()
@@ -27,7 +28,6 @@ def get_allowed_drops():
         return 4
     # Our KPI is to prevent sequential frame drops, therefore single frame drop is allowed.
     return 1
-
 
 def set_new_value(sensor, option, value):
     global after_set_option
@@ -100,7 +100,6 @@ if product_line == "L500":
 
 if product_line == "D400":
     options_to_ignore = [rs.option.visual_preset, rs.option.inter_cam_sync_mode]
-
 
 def test_option_changes(sensor):
     global options_to_ignore
