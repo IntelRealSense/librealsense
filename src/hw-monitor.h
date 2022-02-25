@@ -332,8 +332,8 @@ namespace librealsense
 
         std::vector< uint8_t > send( std::vector< uint8_t > const & data ) const;
         std::vector<uint8_t> send( command cmd, hwmon_response * = nullptr, bool locked_transfer = false ) const;
-        std::vector<uint8_t> build_raw_data(const uint32_t opcode, const uint32_t param1 = 0, const uint32_t param2 = 0,
-            const uint32_t param3 = 0, const uint32_t param4 = 0, const std::vector<uint8_t>& data = std::vector<uint8_t>()) const;
+        std::vector<uint8_t> build_command(const uint32_t opcode, const uint32_t param1 = 0, const uint32_t param2 = 0,
+            const uint32_t param3 = 0, const uint32_t param4 = 0, const uint8_t* data = nullptr, int dataLength = 0) const;
 
         void get_gvd(size_t sz, unsigned char* gvd, uint8_t gvd_cmd) const;
         static std::string get_firmware_version_string(const std::vector<uint8_t>& buff, size_t index, size_t length = 4);

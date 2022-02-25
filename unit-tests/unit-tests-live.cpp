@@ -2038,7 +2038,7 @@ void trigger_error(const rs2::device& dev, int num)
     int opcode = 0x4d;
     if (auto debug = dev.as<debug_protocol>())
     {
-        auto raw_data = debug.build_raw_data(opcode, num);
+        auto raw_data = debug.build_command(opcode, num);
         debug.send_and_receive_raw_data(raw_data);
     }
 }

@@ -587,14 +587,15 @@ namespace librealsense
         return _hw_monitor->send(input);
     }
 
-    std::vector<uint8_t> l500_device::build_raw_data(const uint32_t opcode,
+    std::vector<uint8_t> l500_device::build_command(const uint32_t opcode,
         const uint32_t param1,
         const uint32_t param2,
         const uint32_t param3,
         const uint32_t param4,
-        const std::vector<uint8_t>& data)
+        const uint8_t* data,
+        int dataLength)
     {
-        return _hw_monitor->build_raw_data(opcode, param1, param2, param3, param4, data);
+        return _hw_monitor->build_command(opcode, param1, param2, param3, param4, data, dataLength);
     }
 
     ivcam2::extended_temperatures l500_device::get_temperatures() const

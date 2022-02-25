@@ -39,7 +39,7 @@ void trigger_error_or_exit( const rs2::device & dev, uint8_t num )
     {
         try
         {
-            auto raw_data = debug.build_raw_data(l500_trigger_error_opcode, 0, num);
+            auto raw_data = debug.build_command(l500_trigger_error_opcode, 0, num);
             debug.send_and_receive_raw_data( raw_data );
         }
         catch(std::exception const& e)

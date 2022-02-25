@@ -48,12 +48,13 @@ namespace librealsense
         }
 
         std::vector< uint8_t > send_receive_raw_data(const std::vector< uint8_t > & input) override;
-        std::vector<uint8_t> build_raw_data(const uint32_t opcode,
+        std::vector<uint8_t> build_command(const uint32_t opcode,
             const uint32_t param1 = 0,
             const uint32_t param2 = 0,
             const uint32_t param3 = 0,
             const uint32_t param4 = 0,
-            const std::vector<uint8_t>& data = std::vector<uint8_t>());
+            const uint8_t* data = nullptr,
+            int dataLength = 0) override;
 
         void hardware_reset() override
         {

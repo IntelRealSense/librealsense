@@ -52,7 +52,7 @@ def get_update_counter(device):
     else:
         log.f( "Incompatible product line:", product_line )
 
-    raw_cmd = rs.debug_protocol(device).build_raw_data(opcode, start_index, size)
+    raw_cmd = rs.debug_protocol(device).build_command(opcode, start_index, size)
     counter = send_hardware_monitor_command(device, raw_cmd)
     return counter[0]
 
@@ -64,10 +64,10 @@ def reset_update_counter( device ):
         opcode = 0x09
         start_index = 0x30
         size = 0x01
-        raw_cmd = rs.debug_protocol(device).build_raw_data(opcode, start_index, size)
+        raw_cmd = rs.debug_protocol(device).build_command(opcode, start_index, size)
     elif product_line == "D400":
         opcode = 0x86
-        raw_cmd = rs.debug_protocol(device).build_raw_data(opcode)
+        raw_cmd = rs.debug_protocol(device).build_command(opcode)
     else:
         log.f( "Incompatible product line:", product_line )
 

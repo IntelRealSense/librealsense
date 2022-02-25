@@ -45,7 +45,7 @@ namespace Intel.RealSense
                     dataLength = (uint)data.Length;
                 }
 
-                IntPtr rawDataBuffer = NativeMethods.rs2_build_raw_data(Handle, opcode, param1, param2, param3,
+                IntPtr rawDataBuffer = NativeMethods.rs2_build_debug_protocol_command(Handle, opcode, param1, param2, param3,
                     param4, nativeBytes, dataLength, out error);
 
                 IntPtr start = NativeMethods.rs2_get_raw_data(rawDataBuffer, out error);
