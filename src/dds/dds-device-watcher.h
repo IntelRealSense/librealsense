@@ -13,12 +13,12 @@ namespace librealsense {
 //    std::string device_name;
 //};
 
-class dds_enumerator
+class dds_device_watcher
 {
 public:
-    dds_enumerator();
-    ~dds_enumerator();
-    void init();
+    dds_device_watcher();
+    ~dds_device_watcher();
+    void init(); // May throw
 
 private:
 
@@ -33,6 +33,6 @@ private:
     eprosima::fastdds::dds::Subscriber* _subscriber;
     eprosima::fastdds::dds::Topic* _topic;
     eprosima::fastdds::dds::DataReader* _reader;
-    eprosima::fastdds::dds::TypeSupport _type;
+    eprosima::fastdds::dds::TypeSupport _type_ptr;
 };
 }  // namespace librealsense

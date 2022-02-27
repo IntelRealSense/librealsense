@@ -21,7 +21,7 @@
 #include "context.h"
 #include "fw-update/fw-update-factory.h"
 #ifdef BUILD_WITH_DDS
-#include "dds/dds-enumerator.h"
+#include "dds/dds-device-watcher.h"
 #endif
 
 #ifdef WITH_TRACKING
@@ -588,7 +588,7 @@ namespace librealsense
         // PlaceHolder for checking compilation,
         // Will be refactored
 #ifdef BUILD_WITH_DDS
-        dds_enumerator dds_enum;
+        dds_device_watcher dds_enum;
 #endif
     }
 
