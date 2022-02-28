@@ -94,8 +94,8 @@ void rs2_hardware_reset(const rs2_device * device, rs2_error ** error);
 * \param[out] error                     If non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return                               rs2_raw_data_buffer which includes raw command
 */
-const rs2_raw_data_buffer* rs2_build_debug_protocol_command(rs2_device* device, uint32_t opcode, uint32_t param1, uint32_t param2,
-    uint32_t param3, uint32_t param4, void* data, unsigned size_of_data, rs2_error** error);
+const rs2_raw_data_buffer* rs2_build_debug_protocol_command(rs2_device* device, unsigned int opcode, unsigned int param1, unsigned int param2,
+    unsigned int param3, unsigned int param4, void* data, unsigned size_of_data, rs2_error** error);
 
 /**
 * Send raw data to device

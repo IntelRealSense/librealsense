@@ -557,8 +557,8 @@ rs2_stream_profile* rs2_clone_video_stream_profile(const rs2_stream_profile* mod
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, mode, stream, index, format, width, height, intr)
 
-const rs2_raw_data_buffer* rs2_build_debug_protocol_command(rs2_device* device, uint32_t opcode, uint32_t param1, unsigned param2,
-    uint32_t param3, uint32_t param4, void* data, unsigned size_of_data, rs2_error** error) BEGIN_API_CALL
+const rs2_raw_data_buffer* rs2_build_debug_protocol_command(rs2_device* device, unsigned int opcode, unsigned int param1, unsigned int param2,
+    unsigned int param3, unsigned int param4, void* data, unsigned size_of_data, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(device);
 
