@@ -95,7 +95,7 @@ void rs2_hardware_reset(const rs2_device * device, rs2_error ** error);
 * \return                               rs2_raw_data_buffer which includes raw command
 */
 const rs2_raw_data_buffer* rs2_build_debug_protocol_command(rs2_device* device, unsigned opcode, unsigned param1, unsigned param2,
-    unsigned param3, unsigned param4, void* data, size_t size_of_data, rs2_error** error);
+    unsigned param3, unsigned param4, void* data, unsigned size_of_data, rs2_error** error);
 
 /**
 * Send raw data to device
