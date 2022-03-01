@@ -835,7 +835,7 @@ namespace rs2
             uint32_t param2 = 0,
             uint32_t param3 = 0,
             uint32_t param4 = 0,
-            std::vector<uint8_t> & const data = std::vector<uint8_t>()) const
+            std::vector<uint8_t> const & data = {}) const
         {
             std::vector<uint8_t> results;
 

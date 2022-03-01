@@ -179,7 +179,7 @@ namespace librealsense
         uint32_t param2,
         uint32_t param3,
         uint32_t param4,
-        uint8_t * const data,
+        uint8_t const * data,
         size_t dataLength) const
     {
         int length;

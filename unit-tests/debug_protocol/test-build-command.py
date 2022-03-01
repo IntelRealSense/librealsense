@@ -6,7 +6,7 @@ from rspy import devices, log, test, file, repo
 # Help Functions
 #############################################################################################
 
-def convert_bytes_to_decimal(command):
+def convert_bytes_string_to_decimal_list(command):
     command_input = []  # array of uint_8t
 
     # Parsing the command to array of unsigned integers(size should be < 8bits)
@@ -35,7 +35,6 @@ test.start("Init")
 try:
     ctx = rs.context()
     dev = ctx.query_devices()[0]
-    expected_status = convert_bytes_to_decimal("10 00 00 00")
 except:
     test.unexpected_exception()
 test.finish()
@@ -44,9 +43,21 @@ test.finish()
 
 test.start("Old Scenario Test")
 try:
-    gvd_command = "14 00 ab cd 10 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00"
-    raw_command = convert_bytes_to_decimal(gvd_command)
+    # creating a raw data command
+    # [msg_length, magic_number, opcode, params, data]
+    # all values are in hex - little endian
+    msg_length = "14 00"
+    magic_number = "ab cd"
+    gvd_opcode_as_string = "10 00 00 00"  # gvd opcode = 0x10
+    params_and_data = "00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00"  # empty params and data
+    gvd_command = msg_length + " " + magic_number + " " + gvd_opcode_as_string + " " + params_and_data
+    raw_command = convert_bytes_string_to_decimal_list(gvd_command)
+
     status, old_scenario_result = send_hardware_monitor_command(dev, raw_command)
+
+    # expected status in case of success of "send_hardware_monitor_command" is the same as opcode
+    expected_status = convert_bytes_string_to_decimal_list(gvd_opcode_as_string)
+
     test.check_equal_lists(status, expected_status)
 except:
     test.unexpected_exception()
@@ -56,9 +67,15 @@ test.finish()
 
 test.start("New Scenario Test")
 try:
-    gvd_opcode = 0x10
-    raw_command = rs.debug_protocol(dev).build_command(gvd_opcode)
+    gvd_opcode_as_int = 0x10
+    gvd_opcode_as_string = "10 00 00 00"  # little endian
+
+    raw_command = rs.debug_protocol(dev).build_command(gvd_opcode_as_int)
     status, new_scenario_result = send_hardware_monitor_command(dev, raw_command)
+
+    # expected status in case of success of "send_hardware_monitor_command" is the same as opcode
+    expected_status = convert_bytes_string_to_decimal_list(gvd_opcode_as_string)
+
     test.check_equal_lists(status, expected_status)
     test.check_equal_lists(new_scenario_result, old_scenario_result)
 except:

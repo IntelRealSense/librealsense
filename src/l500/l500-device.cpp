@@ -592,7 +592,7 @@ namespace librealsense
         uint32_t param2,
         uint32_t param3,
         uint32_t param4,
-        uint8_t * const data,
+        uint8_t const * data,
         size_t dataLength) const
     {
         return _hw_monitor->build_command(opcode, param1, param2, param3, param4, data, dataLength);

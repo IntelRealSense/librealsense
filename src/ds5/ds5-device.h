@@ -60,7 +60,7 @@ namespace librealsense
             uint32_t param2 = 0,
             uint32_t param3 = 0,
             uint32_t param4 = 0,
-            uint8_t * const data = nullptr,
+            uint8_t const * data = nullptr,
             size_t dataLength = 0) const override;
 
         void hardware_reset() override;

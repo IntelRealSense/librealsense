@@ -347,7 +347,7 @@ namespace librealsense
             uint32_t param2 = 0,
             uint32_t param3 = 0,
             uint32_t param4 = 0,
-            uint8_t * const data = nullptr,
+            uint8_t const * data = nullptr,
             size_t dataLength = 0) const override
         {
             return _hw_monitor->build_command(opcode, param1, param2, param3, param4, data, dataLength);
