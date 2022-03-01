@@ -81,7 +81,7 @@ int rs2_supports_device_info(const rs2_device* device, rs2_camera_info info, rs2
 void rs2_hardware_reset(const rs2_device * device, rs2_error ** error);
 
 /**
-* Build debug_protocl raw data command from opcode, parameters and data.
+* Build debug_protocol raw data command from opcode, parameters and data.
 * The result can be used as raw_data_to_send parameter in send_and_receive_raw_data
 * \param[in]  device                    RealSense device to send data to
 * \param[in]  opcode                    Commad opcode
@@ -94,8 +94,8 @@ void rs2_hardware_reset(const rs2_device * device, rs2_error ** error);
 * \param[out] error                     If non-null, receives any error that occurs during this call, otherwise, errors are ignored
 * \return                               rs2_raw_data_buffer which includes raw command
 */
-const rs2_raw_data_buffer* rs2_build_debug_protocol_command(rs2_device* device, unsigned int opcode, unsigned int param1, unsigned int param2,
-    unsigned int param3, unsigned int param4, void* data, unsigned size_of_data, rs2_error** error);
+const rs2_raw_data_buffer* rs2_build_debug_protocol_command(rs2_device* device, unsigned opcode, unsigned param1, unsigned param2,
+    unsigned param3, unsigned param4, void* data, size_t size_of_data, rs2_error** error);
 
 /**
 * Send raw data to device

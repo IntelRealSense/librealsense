@@ -123,13 +123,13 @@ namespace librealsense
         return _hw_monitor->send(input);
     }
     
-    std::vector<uint8_t> ds5_device::build_command(const uint32_t opcode,
-        const uint32_t param1,
-        const uint32_t param2,
-        const uint32_t param3,
-        const uint32_t param4,
-        const uint8_t* data,
-        int dataLength)
+    std::vector<uint8_t> ds5_device::build_command(uint32_t opcode,
+        uint32_t param1,
+        uint32_t param2,
+        uint32_t param3,
+        uint32_t param4,
+        uint8_t * const data,
+        size_t dataLength) const
     {
         return _hw_monitor->build_command(opcode, param1, param2, param3, param4, data, dataLength);
     }

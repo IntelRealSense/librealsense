@@ -31,7 +31,7 @@ namespace Intel.RealSense
         }
 
 
-        public byte[] BuildRawData(UInt32 opcode, UInt32 param1 = 0, UInt32 param2 = 0, UInt32 param3 = 0,
+        public byte[] BuildCommand(UInt32 opcode, UInt32 param1 = 0, UInt32 param2 = 0, UInt32 param3 = 0,
             UInt32 param4 = 0, byte[] data = null)
         {
             IntPtr nativeBytes = IntPtr.Zero;

@@ -22,7 +22,9 @@ def convert_bytes_to_decimal(command):
 
 def send_hardware_monitor_command(device, command):
     raw_result = rs.debug_protocol(device).send_and_receive_raw_data(command)
-    return raw_result[4:]
+    status = raw_result[:4]
+    result = raw_result[4:]
+    return status, result
 
 
 #############################################################################################
@@ -33,6 +35,7 @@ test.start("Init")
 try:
     ctx = rs.context()
     dev = ctx.query_devices()[0]
+    expected_status = convert_bytes_to_decimal("10 00 00 00")
 except:
     test.unexpected_exception()
 test.finish()
@@ -43,7 +46,8 @@ test.start("Old Scenario Test")
 try:
     gvd_command = "14 00 ab cd 10 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00"
     raw_command = convert_bytes_to_decimal(gvd_command)
-    old_scenario_result = send_hardware_monitor_command(dev, raw_command)
+    status, old_scenario_result = send_hardware_monitor_command(dev, raw_command)
+    test.check_equal_lists(status, expected_status)
 except:
     test.unexpected_exception()
 test.finish()
@@ -54,7 +58,8 @@ test.start("New Scenario Test")
 try:
     gvd_opcode = 0x10
     raw_command = rs.debug_protocol(dev).build_command(gvd_opcode)
-    new_scenario_result = send_hardware_monitor_command(dev, raw_command)
+    status, new_scenario_result = send_hardware_monitor_command(dev, raw_command)
+    test.check_equal_lists(status, expected_status)
     test.check_equal_lists(new_scenario_result, old_scenario_result)
 except:
     test.unexpected_exception()

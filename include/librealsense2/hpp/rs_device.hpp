@@ -830,12 +830,12 @@ namespace rs2
             error::handle(e);
         }
 
-        std::vector<uint8_t> build_command(const uint32_t opcode,
-            const uint32_t param1 = 0,
-            const uint32_t param2 = 0,
-            const uint32_t param3 = 0,
-            const uint32_t param4 = 0,
-            const std::vector<uint8_t>& data = std::vector<uint8_t>()) const
+        std::vector<uint8_t> build_command(uint32_t opcode,
+            uint32_t param1 = 0,
+            uint32_t param2 = 0,
+            uint32_t param3 = 0,
+            uint32_t param4 = 0,
+            std::vector<uint8_t> & const data = std::vector<uint8_t>()) const
         {
             std::vector<uint8_t> results;
 
