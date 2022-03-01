@@ -2035,14 +2035,12 @@ void metadata_verification(const std::vector<internal_frame_additional_data>& da
 ////serialize_json
 void trigger_error(const rs2::device& dev, int num)
 {
-    std::vector<uint8_t> raw_data(24, 0);
-    raw_data[0] = 0x14;
-    raw_data[2] = 0xab;
-    raw_data[3] = 0xcd;
-    raw_data[4] = 0x4d;
-    raw_data[8] = num;
+    int opcode = 0x4d;
     if (auto debug = dev.as<debug_protocol>())
+    {
+        auto raw_data = debug.build_command(opcode, num);
         debug.send_and_receive_raw_data(raw_data);
+    }
 }
 
 

@@ -35,17 +35,11 @@ std::map< uint8_t, std::pair< std::string, rs2_log_severity > > build_log_errors
 
 void trigger_error_or_exit( const rs2::device & dev, uint8_t num )
 {
-    std::vector< uint8_t > raw_data( 24, 0 );
-    raw_data[0] = 0x14;
-    raw_data[2] = 0xab;
-    raw_data[3] = 0xcd;
-    raw_data[4] = l500_trigger_error_opcode;
-    raw_data[12] = num;
-
     if( auto debug = dev.as< debug_protocol >() )
     {
         try
         {
+            auto raw_data = debug.build_command(l500_trigger_error_opcode, 0, num);
             debug.send_and_receive_raw_data( raw_data );
         }
         catch(std::exception const& e)
