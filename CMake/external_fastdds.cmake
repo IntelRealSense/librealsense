@@ -16,7 +16,7 @@ function(get_fastdds)
     FetchContent_Declare(
       fastdds
       GIT_REPOSITORY https://github.com/eProsima/Fast-DDS.git
-      GIT_TAG        ecb9711cf2b9bcc608de7d45fc36d3a653d3bf05 # Git tag "v2.5.0", when updating this version consider removing the patches listed below.
+      GIT_TAG        9b9da88f0cd0b7884b0325747b7ac5b16bebeec4 # Git tag "v2.5.1", when updating this version consider removing the patches listed below.
       GIT_SUBMODULES ""     # Submodules will be cloned as part of the FastDDS cmake configure stage
       GIT_SHALLOW ON        # No history needed
       SOURCE_DIR ${CMAKE_BINARY_DIR}/third-party/fastdds
@@ -37,14 +37,6 @@ function(get_fastdds)
     set(CMAKE_INSTALL_PREFIX ${CMAKE_BINARY_DIR}/fastdds/fastdds_install) 
     set(CMAKE_PREFIX_PATH ${CMAKE_BINARY_DIR}/fastdds/fastdds_install)  
 
-    # FastDDS does not support UNICODE see https://github.com/eProsima/Fast-DDS/issues/2501
-    # Should be removed when fetching FastDDS new release that will contain fix PR https://github.com/eProsima/Fast-DDS/pull/2510
-    set(FORCE_REMOVE_UNICODE OFF)
-    if (MSVC)
-        remove_definitions(-D_UNICODE -DUNICODE)
-        set(FORCE_REMOVE_UNICODE ON)
-    endif()
-
     # Get fastdds
     FetchContent_MakeAvailable(fastdds)
     
@@ -61,12 +53,6 @@ function(get_fastdds)
     # place FastDDS project with other 3rd-party projects
     set_target_properties(fastcdr fastrtps PROPERTIES
                           FOLDER "ExternalProjectTargets/fastdds")
-
-    # If removed, restore the UNICODE definitions (Should be removed with the above remove_definitions once conditions mentioned on it are met)
-    if (FORCE_REMOVE_UNICODE)
-        # Restore UNICODE
-        add_definitions(-D_UNICODE -DUNICODE)
-    endif()
 
     list(POP_BACK CMAKE_MESSAGE_INDENT) # Unindent outputs
 
