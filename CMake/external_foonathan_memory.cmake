@@ -19,9 +19,10 @@ FetchContent_Declare(
 )
 
 # Remove unrequired targets
-set(FOONATHAN_MEMORY_BUILD_VARS -DFOONATHAN_MEMORY_BUILD_EXAMPLES=OFF 
+set(FOONATHAN_MEMORY_BUILD_VARS -DBUILD_SHARED_LIBS=OFF             # explicit set static lib
+                                -DFOONATHAN_MEMORY_BUILD_EXAMPLES=OFF 
                                 -DFOONATHAN_MEMORY_BUILD_TESTS=OFF
-                                -DFOONATHAN_MEMORY_BUILD_TOOLS=OFF)
+                                -DFOONATHAN_MEMORY_BUILD_TOOLS=ON)  # this tool is needed during configure time only, FastDDS recommend turning it ON.
    
 # Align STATIC CRT definitions with LRS   
 if(BUILD_WITH_STATIC_CRT)
