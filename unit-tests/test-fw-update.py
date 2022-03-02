@@ -16,7 +16,6 @@ from rspy import devices, log, test, file, repo
 import re, platform
 
 
-print("Samer")
 if not devices.acroname:
     log.i( "No Acroname library found; skipping device FW update" )
     sys.exit(0)
