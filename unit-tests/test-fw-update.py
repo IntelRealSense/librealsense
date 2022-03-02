@@ -71,7 +71,7 @@ def reset_update_counter( device ):
     else:
         log.f( "Incompatible product line:", product_line )
 
-    send_hardware_monitor_command( device, cmd )
+    send_hardware_monitor_command( device, raw_cmd )
 
 def find_image_or_exit( product_name, fw_version_regex = r'(\d+\.){3}(\d+)' ):
     """
