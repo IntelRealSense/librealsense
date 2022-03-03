@@ -815,7 +815,7 @@ namespace librealsense
         _new_calib_table_raw = [this]() { return get_new_calibration_table(); };
 
         _pid = group.uvc_devices.front().pid;
-        std::string device_name = (rs400_sku_names.end() != rs400_sku_names.find(_pid)) ? rs400_sku_names.at(_pid) : "RS4xx";
+        std::string device_name = (rs400_sku_names.end() != rs400_sku_names.find(_pid)) ? rs400_sku_names.at(_pid) : "Intel RealSense D457";
 
         std::vector<uint8_t> gvd_buff(HW_MONITOR_BUFFER_SIZE);
 
@@ -833,8 +833,6 @@ namespace librealsense
 
         group_multiple_fw_calls(depth_sensor, [&]() {
 
-#undef HW_MONITOR_ENABLED
-#ifdef HW_MONITOR_ENABLED
             _hw_monitor->get_gvd(gvd_buff.size(), gvd_buff.data(), GVD);
             // fooling tests recordings - don't remove
             _hw_monitor->get_gvd(gvd_buff.size(), gvd_buff.data(), GVD);
@@ -843,17 +841,10 @@ namespace librealsense
             asic_serial = _hw_monitor->get_module_serial_string(gvd_buff, module_asic_serial_offset);
             fwv = _hw_monitor->get_firmware_version_string(gvd_buff, camera_fw_version_offset);
             _fw_version = firmware_version(fwv);
-#else
-        _fw_version = firmware_version("5.12.15.153");
-#endif
 
             _recommended_fw_version = firmware_version(D4XX_RECOMMENDED_FIRMWARE_VERSION);
             if (_fw_version >= firmware_version("5.10.4.0"))
-#ifdef HW_MONITOR_ENABLED
                 _device_capabilities = parse_device_capabilities();
-#else
-            _device_capabilities = (ds::d400_caps)347; //same as for D455
-#endif
         
         //D431 Development
         advanced_mode = mipi_sensor ? false : is_camera_in_advanced_mode();
@@ -897,12 +888,10 @@ namespace librealsense
                     "Set the power level of the LED, with 0 meaning LED off"));
         }
 
-#ifdef HW_MONITOR_ENABLED
         if ((_fw_version >= firmware_version("5.6.3.0")) || (_fw_version) == firmware_version("1.1.1.1")) // RS431 Dev
             {
                 _is_locked = _hw_monitor->is_camera_locked(GVD, is_camera_locked_offset);
             }
-#endif
 
             if (_fw_version >= firmware_version("5.5.8.0"))
             //if hw_monitor was created by usb replace it with xu
@@ -962,7 +951,7 @@ namespace librealsense
 
             // register HDR options
             //auto global_shutter_mask = d400_caps::CAP_GLOBAL_SHUTTER;
-            if ((_fw_version >= hdr_firmware_version))// && ((_device_capabilities & global_shutter_mask) == global_shutter_mask) )
+            if (!mipi_sensor && (_fw_version >= hdr_firmware_version))// && ((_device_capabilities & global_shutter_mask) == global_shutter_mask) )
             {
                 auto ds5_depth = As<ds5_depth_sensor, synthetic_sensor>(&get_depth_sensor());
                 ds5_depth->init_hdr_config(exposure_range, gain_range);
@@ -1028,7 +1017,7 @@ namespace librealsense
             // Alternating laser pattern is applicable for global shutter/active SKUs
             auto mask = d400_caps::CAP_GLOBAL_SHUTTER | d400_caps::CAP_ACTIVE_PROJECTOR;
             // Alternating laser pattern should be set and query in a different way according to the firmware version
-            if ((_fw_version >= firmware_version("5.11.3.0")) && ((_device_capabilities & mask) == mask))
+            if (!mipi_sensor || (_fw_version >= firmware_version("5.11.3.0")) && ((_device_capabilities & mask) == mask))
             {
                 bool is_fw_version_using_id = (_fw_version >= firmware_version("5.12.8.100"));
                 auto alternating_emitter_opt = std::make_shared<alternating_emitter_option>(*_hw_monitor, &raw_depth_sensor, is_fw_version_using_id);
@@ -1130,39 +1119,41 @@ namespace librealsense
             
             // Metadata registration
             if (!mipi_sensor)
+            {
                 depth_sensor.register_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP, make_uvc_header_parser(&uvc_header::timestamp));
 
-            // Auto exposure and gain limit
-            if (_fw_version >= firmware_version("5.12.10.11"))
-            {
-                auto exposure_range = depth_sensor.get_option(RS2_OPTION_EXPOSURE).get_range();
-                auto gain_range = depth_sensor.get_option(RS2_OPTION_GAIN).get_range();
+                // Auto exposure and gain limit
+                if (_fw_version >= firmware_version("5.12.10.11"))
+                {
+                    auto exposure_range = depth_sensor.get_option(RS2_OPTION_EXPOSURE).get_range();
+                    auto gain_range = depth_sensor.get_option(RS2_OPTION_GAIN).get_range();
 
-                option_range enable_range = { 0.f /*min*/, 1.f /*max*/, 1.f /*step*/, 0.f /*default*/ };
+                    option_range enable_range = { 0.f /*min*/, 1.f /*max*/, 1.f /*step*/, 0.f /*default*/ };
 
-                //GAIN Limit
-                auto gain_limit_toggle_control = std::make_shared<limits_option>(RS2_OPTION_AUTO_GAIN_LIMIT_TOGGLE, enable_range, "Toggle Auto-Gain Limit", *_hw_monitor);
-                _gain_limit_value_control = std::make_shared<auto_gain_limit_option>(*_hw_monitor, &depth_sensor, gain_range, gain_limit_toggle_control);
-                depth_sensor.register_option(RS2_OPTION_AUTO_GAIN_LIMIT_TOGGLE, gain_limit_toggle_control);
+                    //GAIN Limit
+                    auto gain_limit_toggle_control = std::make_shared<limits_option>(RS2_OPTION_AUTO_GAIN_LIMIT_TOGGLE, enable_range, "Toggle Auto-Gain Limit", *_hw_monitor);
+                    _gain_limit_value_control = std::make_shared<auto_gain_limit_option>(*_hw_monitor, &depth_sensor, gain_range, gain_limit_toggle_control);
+                    depth_sensor.register_option(RS2_OPTION_AUTO_GAIN_LIMIT_TOGGLE, gain_limit_toggle_control);
 
-                depth_sensor.register_option(RS2_OPTION_AUTO_GAIN_LIMIT,
-                    std::make_shared<auto_disabling_control>(
-                        _gain_limit_value_control,
-                        gain_limit_toggle_control
-                    
-                        ));
+                    depth_sensor.register_option(RS2_OPTION_AUTO_GAIN_LIMIT,
+                        std::make_shared<auto_disabling_control>(
+                            _gain_limit_value_control,
+                            gain_limit_toggle_control
 
-                // EXPOSURE Limit
-                auto ae_limit_toggle_control = std::make_shared<limits_option>(RS2_OPTION_AUTO_EXPOSURE_LIMIT_TOGGLE, enable_range, "Toggle Auto-Exposure Limit", *_hw_monitor);
-                _ae_limit_value_control = std::make_shared<auto_exposure_limit_option>(*_hw_monitor, &depth_sensor, exposure_range, ae_limit_toggle_control);
-                depth_sensor.register_option(RS2_OPTION_AUTO_EXPOSURE_LIMIT_TOGGLE, ae_limit_toggle_control);
+                            ));
 
-                depth_sensor.register_option(RS2_OPTION_AUTO_EXPOSURE_LIMIT,
-                    std::make_shared<auto_disabling_control>(
-                        _ae_limit_value_control,
-                        ae_limit_toggle_control
-                        ));
+                    // EXPOSURE Limit
+                    auto ae_limit_toggle_control = std::make_shared<limits_option>(RS2_OPTION_AUTO_EXPOSURE_LIMIT_TOGGLE, enable_range, "Toggle Auto-Exposure Limit", *_hw_monitor);
+                    _ae_limit_value_control = std::make_shared<auto_exposure_limit_option>(*_hw_monitor, &depth_sensor, exposure_range, ae_limit_toggle_control);
+                    depth_sensor.register_option(RS2_OPTION_AUTO_EXPOSURE_LIMIT_TOGGLE, ae_limit_toggle_control);
+
+                    depth_sensor.register_option(RS2_OPTION_AUTO_EXPOSURE_LIMIT,
+                        std::make_shared<auto_disabling_control>(
+                            _ae_limit_value_control,
+                            ae_limit_toggle_control
+                            ));
                 }
+            } // !mipi_sensor
         }); //group_multiple_fw_calls
 
         if (!mipi_sensor)

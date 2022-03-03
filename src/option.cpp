@@ -120,7 +120,8 @@ std::vector<uint8_t> librealsense::command_transfer_over_xu::send_receive(const 
                     std::dec << data.size() << " exceeds permitted limit " << HW_MONITOR_BUFFER_SIZE);
             }
 
-            std::vector<uint8_t> transmit_buf(HW_MONITOR_BUFFER_SIZE, 0);
+            // D457 - size of 1028 needed instead of 1024 (HW_MONITOR_BUFFER_SIZE)
+            std::vector<uint8_t> transmit_buf(1028/*HW_MONITOR_BUFFER_SIZE*/, 0);
             std::copy(data.begin(), data.end(), transmit_buf.begin());
 
             if (!dev.set_xu(_xu, _ctrl, transmit_buf.data(), static_cast<int>(transmit_buf.size())))
@@ -128,12 +129,12 @@ std::vector<uint8_t> librealsense::command_transfer_over_xu::send_receive(const 
 
             if (require_response)
             {
-                result.resize(HW_MONITOR_BUFFER_SIZE);
+                result.resize(HW_MONITOR_BUFFER_SIZE, 0);
                 if (!dev.get_xu(_xu, _ctrl, result.data(), static_cast<int>(result.size())))
                     throw invalid_value_exception(to_string() << "get_xu(ctrl=" << unsigned(_ctrl) << ") failed!" << " Last Error: " << strerror(errno));
 
                 // Returned data size located in the last 4 bytes
-                auto data_size = *(reinterpret_cast<uint32_t*>(result.data() + HW_MONITOR_DATA_SIZE_OFFSET)) + SIZE_OF_HW_MONITOR_HEADER;
+                auto data_size = *(reinterpret_cast<uint32_t*>(result.data() + HW_MONITOR_DATA_SIZE_OFFSET + SIZE_OF_HW_MONITOR_HEADER)) ;
                 result.resize(data_size);
             }
             return result;
