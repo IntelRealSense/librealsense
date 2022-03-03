@@ -81,6 +81,7 @@ constexpr uint32_t RS_CAMERA_CID_EXPOSURE_MODE              = (RS_CAMERA_CID_BAS
 constexpr uint32_t RS_CAMERA_CID_WHITE_BALANCE_MODE         = (RS_CAMERA_CID_BASE+20); // Similar to RS_CAMERA_CID_EWB ??
 constexpr uint32_t RS_CAMERA_CID_PRESET                     = (RS_CAMERA_CID_BASE+21);
 
+
 /* refe4rence for kernel 4.9 to be removed
 #define UVC_CID_GENERIC_XU          (V4L2_CID_PRIVATE_BASE+15)
 #define UVC_CID_LASER_POWER_MODE    (V4L2_CID_PRIVATE_BASE+16)
@@ -1996,7 +1997,6 @@ namespace librealsense
         {
             v4l2_ext_control control{get_cid(opt), 0, 0, 0};
             // Extract the control group from the underlying control query
-            // REMI - code changed from: v4l2_ext_controls ctrls_block{ control.id & 0xffff0000, 1, 0, {0 ,0}, &control };
             v4l2_ext_controls ctrls_block { control.id&0xffff0000, 1, 0, 0, 0, &control};
 
             if (xioctl(_fd, VIDIOC_G_EXT_CTRLS, &ctrls_block) < 0)
@@ -2016,7 +2016,6 @@ namespace librealsense
         {
             v4l2_ext_control control{get_cid(opt), 0, 0, value};
             // Extract the control group from the underlying control query
-            // REMI - code changed from: v4l2_ext_controls ctrls_block{ control.id & 0xffff0000, 1, 0, {0 ,0}, &control };
             v4l2_ext_controls ctrls_block{ control.id & 0xffff0000, 1, 0, 0, 0, &control };
             if (xioctl(_fd, VIDIOC_S_EXT_CTRLS, &ctrls_block) < 0)
             {
@@ -2041,12 +2040,12 @@ namespace librealsense
                 default:
                     xctrl.p_u8 = const_cast<uint8_t*>(data); // TODO aggregate initialization with union
             }
-//            if (size < 8)
-//                xctrl.size = 0; // D431 Debug
+
             // Extract the control group from the underlying control query
-            // REMI - code changed from: v4l2_ext_controls ctrls_block { xctrl.id&0xffff0000, 1, 0, {0 ,0}, &xctrl};
-            v4l2_ext_controls ctrls_block { xctrl.id&0xffff0000, 1, 0, 0, 0, &xctrl };
-            if (xioctl(_fd, VIDIOC_S_EXT_CTRLS, &ctrls_block) < 0)
+            v4l2_ext_controls ctrls_block { xctrl.id&0xffff0000, 1, 0, {0, 0}, &xctrl };
+
+            int retVal = xioctl(_fd, VIDIOC_S_EXT_CTRLS, &ctrls_block);
+            if (retVal < 0)
             {
                 if (errno == EIO || errno == EAGAIN) // TODO: Log?
                     return false;
@@ -2059,18 +2058,32 @@ namespace librealsense
         bool v4l_mipi_device::get_xu(const extension_unit& xu, uint8_t control, uint8_t* data, int size) const
         {
             v4l2_ext_control xctrl{xu_to_cid(xu,control), uint32_t(size), 0, 0};
-            // Extract the control group from the underlying control query
-            // REMI - code changed from: v4l2_ext_controls ctrls_block { xctrl.id&0xffff0000, 1, 0, {0 ,0}, &xctrl};
-            v4l2_ext_controls ctrls_block{ xctrl.id & 0xffff0000, 1, 0, 0, 0, &xctrl };
-            if (xioctl(_fd, VIDIOC_G_EXT_CTRLS, &ctrls_block) < 0)
+            xctrl.p_u8 = data;
+
+            struct v4l2_ext_controls ext {xctrl.id & 0xffff0000, 1, 0, {0, 0}, &xctrl};
+
+            // the ioctl fails once when performing send and receive right after it
+            // it succeeds on the second time
+            int tries = 2;
+            while(tries--)
             {
-                if (errno == EIO || errno == EAGAIN) // TODO: Log?
-                    return false;
-                throw linux_backend_exception("xioctl(VIDIOC_G_EXT_CTRLS) failed");
+                int ret = xioctl(_fd, VIDIOC_G_EXT_CTRLS, &ext);
+                if (ret < 0)
+                {
+                    // exception is thrown if the ioctl fails twice
+                    continue;
+                }
+
+                // TODO check if parsing for non-integer values D431
+                //memcpy(data,(void*)(&ctrl.value),size);
+                //memcpy(data,(void*)(&xctrl.value),size);
+                return true;
             }
-            // TODO check if parsing for non-integer values D431
-            memcpy(data,(void*)(&xctrl.value),size);
-            return true;
+
+            // sending error on ioctl failure
+            if (errno == EIO || errno == EAGAIN) // TODO: Log?
+                return false;
+            throw linux_backend_exception("xioctl(VIDIOC_G_EXT_CTRLS) failed");
         }
 
         control_range v4l_mipi_device::get_xu_range(const extension_unit& xu, uint8_t control, int len) const
