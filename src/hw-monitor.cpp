@@ -94,13 +94,11 @@ namespace librealsense
         if (details.receivedCommandDataLength < 4)
             throw invalid_value_exception("received incomplete response to usb command");
 
-        details.receivedCommandDataLength -= 8;
-        librealsense::copy(details.receivedOpcode.data(), outputBuffer + 4, 4);
+        details.receivedCommandDataLength -= 4;
+        librealsense::copy(details.receivedOpcode.data(), outputBuffer, 4);
 
-        //D457 - 28 works, must check why
-        int outputBufOffset = 28;
         if (details.receivedCommandDataLength > 0)
-            librealsense::copy(details.receivedCommandData.data(), outputBuffer + outputBufOffset, details.receivedCommandDataLength);
+            librealsense::copy(details.receivedCommandData.data(), outputBuffer + 4, details.receivedCommandDataLength);
     }
 
     void hw_monitor::send_hw_monitor_command(hwmon_cmd_details& details) const

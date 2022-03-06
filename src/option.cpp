@@ -121,7 +121,7 @@ std::vector<uint8_t> librealsense::command_transfer_over_xu::send_receive(const 
             }
 
             // D457 - size of 1028 needed instead of 1024 (HW_MONITOR_BUFFER_SIZE)
-            std::vector<uint8_t> transmit_buf(1028/*HW_MONITOR_BUFFER_SIZE*/, 0);
+            std::vector<uint8_t> transmit_buf(HW_MONITOR_BUFFER_SIZE + SIZE_OF_HW_MONITOR_HEADER, 0);
             std::copy(data.begin(), data.end(), transmit_buf.begin());
 
             if (!dev.set_xu(_xu, _ctrl, transmit_buf.data(), static_cast<int>(transmit_buf.size())))
@@ -136,6 +136,12 @@ std::vector<uint8_t> librealsense::command_transfer_over_xu::send_receive(const 
                 // Returned data size located in the last 4 bytes
                 auto data_size = *(reinterpret_cast<uint32_t*>(result.data() + HW_MONITOR_DATA_SIZE_OFFSET + SIZE_OF_HW_MONITOR_HEADER)) ;
                 result.resize(data_size);
+
+                // D457 code - stepping over 24 bytes:
+                // 4 bytes: header and magic number
+                // 20 bytes: input command
+                // this code may be removed after some bug correction in the kernel code
+                result.insert(result.begin(),transmit_buf.begin() + 24,transmit_buf.begin() + 24 + data_size);
             }
             return result;
         });
