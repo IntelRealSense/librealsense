@@ -29,10 +29,6 @@ macro(global_set_flags)
         set(LRS_GL_LIB_NAME ${LRS_GL_TARGET})
     endif()
 
-    if (ENABLE_ZERO_COPY)
-        add_definitions(-DZERO_COPY)
-    endif()
-
     if (BUILD_EASYLOGGINGPP)
         add_definitions(-DBUILD_EASYLOGGINGPP)
     endif()
