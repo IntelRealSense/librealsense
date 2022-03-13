@@ -65,6 +65,15 @@ typedef enum rs2_frame_metadata_value
     RS2_FRAME_METADATA_SEQUENCE_NAME                         , /**< sub-preset id */
     RS2_FRAME_METADATA_SEQUENCE_ID                , /**< sub-preset sequence id */
     RS2_FRAME_METADATA_SEQUENCE_SIZE              , /**< sub-preset sequence size */
+
+    //mipi metadata_values
+    RS2_FRAME_METADATA_TRIGGER,
+    RS2_FRAME_METADATA_PRESET,
+    RS2_FRAME_METADATA_INPUT_WIDTH,
+    RS2_FRAME_METADATA_INPUT_HEIGHT,
+    RS2_FRAME_METADATA_SUB_PRESET_INFO,
+    RS2_FRAME_METADATA_CRC,
+
     RS2_FRAME_METADATA_COUNT
 } rs2_frame_metadata_value;
 const char* rs2_frame_metadata_to_string(rs2_frame_metadata_value metadata);

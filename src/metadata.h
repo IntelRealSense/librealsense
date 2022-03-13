@@ -384,6 +384,7 @@ namespace librealsense
         uint32_t    sub_preset_info;
         uint32_t    crc;
     };
+    REGISTER_MD_TYPE(md_mipi_depth_mode, md_type::META_DATA_MIPI_INTEL_DEPTH_ID)
 
     /**\brief md_mipi_rgb_mode - properties associated with sensor configuration
      *  during video streaming. Corresponds to FW STMetaDataIntelCaptureTiming object*/
@@ -412,6 +413,7 @@ namespace librealsense
         uint8_t     reserved[6];
         uint32_t    crc;
     };
+    REGISTER_MD_TYPE(md_mipi_rgb_mode, md_type::META_DATA_MIPI_INTEL_RGB_ID)
 
     /**\brief md_mipi_capture_timing - properties associated with sensor configuration
      *  during video streaming. Corresponds to FW STMetaDataIntelCaptureTiming object*/
@@ -771,11 +773,11 @@ namespace librealsense
         md_sr300_rgb            sr300_rgb_mode;
     };
 
-    union md_mipi_modes
+    /*union md_mipi_modes
     {
         md_mipi_depth_mode depth_mode;
         md_mipi_rgb_mode   rgb_mode;
-    };
+    };*/
 
     /**\brief metadata_raw - metadata structure
      *  layout as transmitted and received by backend */
@@ -787,11 +789,18 @@ namespace librealsense
 
     /**\brief metadata_mipi_raw - metadata structure
      *  layout as transmitted and received by backend */
-    struct metadata_mipi_raw
+    struct metadata_mipi_depth_raw
     {
         platform::uvc_header    header;
         uint32_t                frame_counter;
-        md_mipi_modes           mipi_mode;
+        md_mipi_depth_mode      depth_mode;
+    };
+
+    struct metadata_mipi_rgb_raw
+    {
+        platform::uvc_header    header;
+        uint32_t                frame_counter;
+        md_mipi_rgb_mode        rgb_mode;
     };
 
     constexpr uint8_t metadata_raw_size = sizeof(metadata_raw);
