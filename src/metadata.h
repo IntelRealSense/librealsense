@@ -363,7 +363,7 @@ namespace librealsense
     };
 
     /**\brief md_mipi_depth_mode - properties associated with sensor configuration
-     *  during video streaming. Corresponds to FW STMetaDataIntelCaptureTiming object*/
+     *  during video streaming. Corresponds to FW STMetaDataExtMipiDepthIR object*/
     struct md_mipi_depth_mode
     {
         md_header   header;
@@ -387,7 +387,7 @@ namespace librealsense
     REGISTER_MD_TYPE(md_mipi_depth_mode, md_type::META_DATA_MIPI_INTEL_DEPTH_ID)
 
     /**\brief md_mipi_rgb_mode - properties associated with sensor configuration
-     *  during video streaming. Corresponds to FW STMetaDataIntelCaptureTiming object*/
+     *  during video streaming. Corresponds to FW STMetaDataExtMipiRgb object*/
     struct md_mipi_rgb_mode
     {
         md_header   header;
