@@ -130,6 +130,16 @@ namespace librealsense
 
        _device_watcher = _backend->create_device_watcher();
        assert(_device_watcher->is_stopped());
+
+#ifdef BUILD_WITH_DDS
+       _dds_watcher = std::make_shared< dds_device_watcher >();
+       _dds_watcher->start([this](platform::backend_device_group old, platform::backend_device_group curr)
+        {
+           // on_device_changed(old, curr, _playback_devices, _playback_devices);
+        });
+
+
+#endif
     }
 
 
@@ -581,15 +591,6 @@ namespace librealsense
         auto prev_playback_devices = _playback_devices;
         _playback_devices[file] = dev;
         on_device_changed({}, {}, prev_playback_devices, _playback_devices);
-    }
-
-    void context::add_dds_listener( int port )
-    {
-        // PlaceHolder for checking compilation,
-        // Will be refactored
-#ifdef BUILD_WITH_DDS
-        dds_device_watcher dds_enum;
-#endif
     }
 
     void context::remove_device(const std::string& file)

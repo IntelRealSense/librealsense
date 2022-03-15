@@ -141,12 +141,12 @@ namespace librealsense
                                const std::map<std::string, std::weak_ptr<device_info>>& new_playback_devices);
         void raise_devices_changed(const std::vector<rs2_device_info>& removed, const std::vector<rs2_device_info>& added);
         void start_device_watcher();
-        void add_dds_listener( int port );
         std::shared_ptr<platform::backend> _backend;
         std::shared_ptr<platform::device_watcher> _device_watcher;
 
         std::map<std::string, std::weak_ptr<device_info>> _playback_devices;
         std::map<uint64_t, devices_changed_callback_ptr> _devices_changed_callbacks;
+        std::shared_ptr<librealsense::platform::device_watcher> _dds_watcher;
 
         devices_changed_callback_ptr _devices_changed_callback;
         std::map<int, std::weak_ptr<const stream_interface>> _streams;
