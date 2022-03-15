@@ -61,7 +61,7 @@ constexpr bool metadata_node = false;
 #define V4L2_META_FMT_D4XX      v4l2_fourcc('D', '4', 'X', 'X') /* D400 Payload Header metadata */
 #endif
 
-//#define DEBUG_V4L
+#define DEBUG_V4L
 #ifdef DEBUG_V4L
 #define LOG_DEBUG_V4L(...)   do { CLOG(DEBUG   ,"librealsense") << __VA_ARGS__; } while(false)
 #else
@@ -376,7 +376,9 @@ namespace librealsense
         };
 
         // D431 Development. To be merged into underlying class
-        class v4l_mipi_device : public v4l_uvc_device
+        class v4l_mipi_device :
+                //public v4l_uvc_device
+                public v4l_uvc_meta_device
         {
         public:
             v4l_mipi_device(const uvc_device_info& info, bool use_memory_map = true);

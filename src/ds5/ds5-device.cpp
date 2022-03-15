@@ -1249,6 +1249,7 @@ namespace librealsense
         else
         {
             // used for mipi device
+            depth_sensor.register_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP, make_uvc_header_parser(&uvc_header::timestamp));
 
             // frame counter
             /*depth_sensor.register_metadata(RS2_FRAME_METADATA_FRAME_COUNTER,
@@ -1269,10 +1270,11 @@ namespace librealsense
                                                                  md_mipi_depth_control_attributes::hw_timestamp_attribute,
                                                                  md_prop_offset));
 
-            depth_sensor.register_metadata(RS2_FRAME_METADATA_SENSOR_TIMESTAMP,
+            /*depth_sensor.register_metadata(RS2_FRAME_METADATA_SENSOR_TIMESTAMP,
                                            make_attribute_parser(&md_mipi_depth_mode::optical_timestamp,
                                                                  md_mipi_depth_control_attributes::optical_timestamp_attribute,
                                                                  md_prop_offset));
+            */
             depth_sensor.register_metadata(RS2_FRAME_METADATA_ACTUAL_EXPOSURE,
                                            make_attribute_parser(&md_mipi_depth_mode::exposure_time,
                                                                  md_mipi_depth_control_attributes::exposure_time_attribute,
@@ -1297,6 +1299,7 @@ namespace librealsense
                                            make_attribute_parser(&md_mipi_depth_mode::preset,
                                                                  md_mipi_depth_control_attributes::preset_attribute,
                                                                  md_prop_offset));
+
             depth_sensor.register_metadata(RS2_FRAME_METADATA_GAIN_LEVEL,
                                            make_attribute_parser(&md_mipi_depth_mode::manual_gain,
                                                                  md_mipi_depth_control_attributes::manual_gain_attribute,
