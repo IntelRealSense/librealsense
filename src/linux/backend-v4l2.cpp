@@ -319,7 +319,7 @@ namespace librealsense
             if(xioctl(fd, VIDIOC_QBUF, &buf) < 0)
                 throw linux_backend_exception("xioctl(VIDIOC_QBUF) failed");
             else
-                LOG_DEBUG_V4L("prepare_for_streaming fd " << std::dec << fd);
+                LOG_DEBUG("prepare_for_streaming fd " << std::dec << fd);
         }
 
         buffer::~buffer()
@@ -360,7 +360,7 @@ namespace librealsense
                     memset((byte*)(get_frame_start()) + metadata_offset, 0, MAX_META_DATA_SIZE);
                 }
 
-                LOG_DEBUG_V4L("Enqueue buf " << std::dec << _buf.index << " for fd " << fd);
+                LOG_DEBUG("Enqueue buf " << std::dec << _buf.index << " for fd " << fd);
                 if (xioctl(fd, VIDIOC_QBUF, &_buf) < 0)
                 {
                     LOG_ERROR("xioctl(VIDIOC_QBUF) failed when requesting new frame! fd: " << fd << " error: " << strerror(errno));
@@ -379,7 +379,7 @@ namespace librealsense
             if (e_max_kernel_buf_type <=buf_type)
                 throw linux_backend_exception("invalid kernel buffer type request");
 
-            if (file_desc < 1)
+            if (file_desc < 0/*1*/)
             {
                 // QBUF to be performed by a 3rd party
                 this->buffers.at(buf_type)._managed  = true;
@@ -397,6 +397,7 @@ namespace librealsense
         {
             for (auto& buf : buffers)
             {
+                LOG_DEBUG("request_next_frame with fd = " << buf._file_desc);
                 if (buf._data_buf && (buf._file_desc >= 0))
                     buf._data_buf->request_next_frame(buf._file_desc);
             };
@@ -1040,14 +1041,14 @@ namespace librealsense
                 }
                 else {
                     val = 0;
-                    LOG_DEBUG("Select timeouted");
+                    LOG_DEBUG_V4L("Select timeouted");
                 }
 
                 if (val< 0)
-                    LOG_DEBUG("Select interrupted, val = " << val << ", error = " << errno);
+                    LOG_DEBUG_V4L("Select interrupted, val = " << val << ", error = " << errno);
             } while (val < 0 && errno == EINTR);
 
-            LOG_DEBUG("Select done, val = " << val << " at " << time_in_HH_MM_SS_MMM());
+            LOG_DEBUG_V4L("Select done, val = " << val << " at " << time_in_HH_MM_SS_MMM());
             if(val < 0)
             {
                 _is_capturing = false;
@@ -1092,7 +1093,7 @@ namespace librealsense
                             {
                                 if (!md_extracted)
                                 {
-                                    LOG_DEBUG("MD Poller read md ");
+                                    LOG_DEBUG_V4L("MD Poller read md ");
                                     acquire_metadata(buf_mgr,fds);
                                     if (buf_mgr.metadata_size())
                                     {
@@ -1100,7 +1101,7 @@ namespace librealsense
                                         {
                                             auto fn = *(uint32_t*)((char*)(buf_mgr.metadata_start())+28);
                                             auto mdb = buf_mgr.get_buffers().at(e_metadata_buf);
-                                            LOG_DEBUG("Poller stores buf for fd " << std::dec << mdb._file_desc
+                                            LOG_DEBUG_V4L("Poller stores buf for fd " << std::dec << mdb._file_desc
                                                           << " ,seq = " << mdb._dq_buf.sequence << " v4l_buf " << mdb._dq_buf.index
                                                           << " , metadata size = " << (int)buf_mgr.metadata_size()
                                                           << ", fn = " << fn);
@@ -1109,7 +1110,7 @@ namespace librealsense
                                         }
                                         else // Discard collected metadata buffer
                                         {
-                                            LOG_DEBUG("Discard md buffer");
+                                            LOG_DEBUG_V4L("Discard md buffer");
                                             auto md_buf = buf_mgr.get_buffers().at(e_metadata_buf);
                                             if (md_buf._data_buf)
                                                 md_buf._data_buf->request_next_frame(md_buf._file_desc,true);
@@ -1127,9 +1128,9 @@ namespace librealsense
                             buf.memory = _use_memory_map ? V4L2_MEMORY_MMAP : V4L2_MEMORY_USERPTR;
                             if(xioctl(_fd, VIDIOC_DQBUF, &buf) < 0)
                             {
-                                LOG_DEBUG("Dequeued empty buf for fd " << std::dec << _fd);
+                                LOG_DEBUG_V4L("Dequeued empty buf for fd " << std::dec << _fd);
                             }
-                            LOG_DEBUG("Dequeued buf " << std::dec << buf.index << " for fd " << _fd << " seq " << buf.sequence);
+                            LOG_DEBUG_V4L("Dequeued buf " << std::dec << buf.index << " for fd " << _fd << " seq " << buf.sequence);
 
                             auto buffer = _buffers[buf.index];
                             buf_mgr.handle_buffer(e_video_buf,_fd, buf,buffer);
@@ -1138,7 +1139,7 @@ namespace librealsense
                             {
                                 if(buf.bytesused == 0)
                                 {
-                                    LOG_DEBUG("Empty video frame arrived, index " << buf.index);
+                                    LOG_DEBUG_V4L("Empty video frame arrived, index " << buf.index);
                                     return;
                                 }
 
@@ -1193,7 +1194,7 @@ namespace librealsense
                                     if (wa_applied)
                                     {
                                         auto fn = *(uint32_t*)((char*)(buf_mgr.metadata_start())+28);
-                                        LOG_DEBUG("Extracting md buff, fn = " << fn);
+                                        LOG_DEBUG_V4L("Extracting md buff, fn = " << fn);
                                     }
 
                                     auto frame_sz = buf_mgr.md_node_present() ? buf.bytesused :
@@ -1206,7 +1207,7 @@ namespace librealsense
                                                      buffer->get_frame_start(), buf_mgr.metadata_start(), timestamp };
 
                                     buffer->attach_buffer(buf);
-                                    buf_mgr.handle_buffer(e_video_buf,-1); // transfer new buffer request to the frame callback
+                                    buf_mgr.handle_buffer(e_video_buf, -1); // transfer new buffer request to the frame callback
 
                                     if (buf_mgr.verify_vd_md_sync())
                                     {
@@ -1223,7 +1224,7 @@ namespace librealsense
                             }
                             else
                             {
-                                LOG_DEBUG("Video frame arrived in idle mode."); // TODO - verification
+                                LOG_DEBUG_V4L("Video frame arrived in idle mode."); // TODO - verification
                             }
                         }
                         else
@@ -1933,14 +1934,14 @@ namespace librealsense
                 // W/O multiplexing this will create a blocking call for metadata node
                 if(xioctl(_md_fd, VIDIOC_DQBUF, &buf) < 0)
                 {
-                    LOG_DEBUG("Dequeued empty buf for md fd " << std::dec << _md_fd);
+                    LOG_DEBUG_V4L("Dequeued empty buf for md fd " << std::dec << _md_fd);
                 }
 
                 //V4l debugging message
                 auto mdbuf = _md_buffers[buf.index]->get_frame_start();
                 auto hwts = *(uint32_t*)((mdbuf+2));
                 auto fn = *(uint32_t*)((mdbuf+38));
-                LOG_DEBUG("Dequeued md buf " << std::dec << buf.index << " for fd " << _md_fd << " seq " << buf.sequence
+                LOG_DEBUG_V4L("Dequeued md buf " << std::dec << buf.index << " for fd " << _md_fd << " seq " << buf.sequence
                              << " fn " << fn << " hw ts " << hwts
                               << " v4lbuf ts usec " << buf.timestamp.tv_usec);
 
@@ -1964,7 +1965,7 @@ namespace librealsense
                 }
                 else
                 {
-                    LOG_DEBUG("Invalid md size: bytes used =  " << buf.bytesused << " ,start offset=" << uvc_md_start_offset);
+                    LOG_DEBUG_V4L("Invalid md size: bytes used =  " << buf.bytesused << " ,start offset=" << uvc_md_start_offset);
                     // Zero-size buffers generate empty md. Non-zero partial bufs handled as errors
                     if(buf.bytesused > 0)
                     {
@@ -1979,7 +1980,6 @@ namespace librealsense
         }
 
         v4l_mipi_device::v4l_mipi_device(const uvc_device_info& info, bool use_memory_map):
-            //v4l_uvc_device(info,use_memory_map)
             v4l_uvc_meta_device(info,use_memory_map)
         {}
 
