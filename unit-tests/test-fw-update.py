@@ -61,7 +61,7 @@ def reset_update_counter( device ):
     product_line = device.get_info( rs.camera_info.product_line )
 
     if product_line == "L500":
-        opcode = 0x09
+        opcode = 0x0A
         start_index = 0x30
         size = 0x01
         raw_cmd = rs.debug_protocol(device).build_command(opcode, start_index, size)
