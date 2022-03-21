@@ -1772,8 +1772,12 @@ namespace librealsense
 
         void v4l_uvc_meta_device::streamon() const
         {
-            // Metadata stream shall be configured first to allow sync with video node
-            stream_ctl_on(_md_fd,LOCAL_V4L2_BUF_TYPE_META_CAPTURE);
+            if (_md_fd != -1)
+            {
+                // D457 development - added for mipi device, for IR because no metadata there
+                // Metadata stream shall be configured first to allow sync with video node
+                stream_ctl_on(_md_fd,LOCAL_V4L2_BUF_TYPE_META_CAPTURE);
+            }
 
             // Invoke UVC streaming request
             v4l_uvc_device::streamon();
@@ -1784,13 +1788,22 @@ namespace librealsense
         {
             v4l_uvc_device::streamoff();
 
-            stream_off(_md_fd,LOCAL_V4L2_BUF_TYPE_META_CAPTURE);
+            if (_md_fd != -1)
+            {
+                // D457 development - added for mipi device, for IR because no metadata there
+                stream_off(_md_fd,LOCAL_V4L2_BUF_TYPE_META_CAPTURE);
+            }
         }
 
         void v4l_uvc_meta_device::negotiate_kernel_buffers(size_t num) const
         {
             v4l_uvc_device::negotiate_kernel_buffers(num);
 
+            if (_md_fd == -1)
+            {
+                // D457 development - added for mipi device, for IR because no metadata there
+                return;
+            }
             req_io_buff(_md_fd, num, _name,
                         _use_memory_map ? V4L2_MEMORY_MMAP : V4L2_MEMORY_USERPTR,
                         LOCAL_V4L2_BUF_TYPE_META_CAPTURE);
@@ -1804,6 +1817,9 @@ namespace librealsense
             {
                 for(size_t i = 0; i < buffers; ++i)
                 {
+                    // D457 development - added for mipi device, for IR because no metadata there
+                    if (_md_fd == -1)
+                        continue;
                     _md_buffers.push_back(std::make_shared<buffer>(_md_fd, LOCAL_V4L2_BUF_TYPE_META_CAPTURE, _use_memory_map, i));
                 }
             }
@@ -1827,7 +1843,7 @@ namespace librealsense
             _md_fd = open(_md_name.c_str(), O_RDWR | O_NONBLOCK, 0);
             if(_md_fd < 0)
             {
-                // added for mipi device, for IR because no metadata there
+                // D457 development - added for mipi device, for IR because no metadata there
                 return;
                 throw linux_backend_exception(to_string() << "Cannot open '" << _md_name);
             }
@@ -1861,7 +1877,11 @@ namespace librealsense
             v4l_uvc_device::unmap_device_descriptor();
 
             if(::close(_md_fd) < 0)
+            {
+                // D457 development - added for mipi device, for IR because no metadata there
+                return;
                 throw linux_backend_exception("v4l_uvc_meta_device: close(_md_fd) failed");
+            }
 
             _md_fd = 0;
         }
@@ -1876,7 +1896,11 @@ namespace librealsense
             fmt.type = LOCAL_V4L2_BUF_TYPE_META_CAPTURE;
 
             if (xioctl(_md_fd, VIDIOC_G_FMT, &fmt))
+            {
+                // D457 development - added for mipi device, for IR because no metadata there
+                return;
                 throw linux_backend_exception(_md_name + " ioctl(VIDIOC_G_FMT) for metadata node failed");
+            }
 
             if (fmt.type != LOCAL_V4L2_BUF_TYPE_META_CAPTURE)
                 throw linux_backend_exception("ioctl(VIDIOC_G_FMT): " + _md_name + " node is not metadata capture");
@@ -1906,8 +1930,12 @@ namespace librealsense
 
         void v4l_uvc_meta_device::prepare_capture_buffers()
         {
-            // Meta node to be initialized first to enforce initial sync
-            for (auto&& buf : _md_buffers) buf->prepare_for_streaming(_md_fd);
+            if (_md_fd != -1)
+            {
+                // D457 development - added for mipi device, for IR because no metadata there
+                // Meta node to be initialized first to enforce initial sync
+                for (auto&& buf : _md_buffers) buf->prepare_for_streaming(_md_fd);
+            }
 
             // Request streaming for video node
             v4l_uvc_device::prepare_capture_buffers();
