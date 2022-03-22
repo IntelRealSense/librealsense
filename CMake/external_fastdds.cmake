@@ -16,7 +16,7 @@ function(get_fastdds)
     FetchContent_Declare(
       fastdds
       GIT_REPOSITORY https://github.com/eProsima/Fast-DDS.git
-      GIT_TAG        9b9da88f0cd0b7884b0325747b7ac5b16bebeec4 # Git tag "v2.5.1", when updating this version consider removing the patches listed below.
+      GIT_TAG        7124ff87c4813bed26858fd89d3b915a5857dbc7 # Git tag "v2.6.0", when updating this version consider removing the patches listed below.
       GIT_SUBMODULES ""     # Submodules will be cloned as part of the FastDDS cmake configure stage
       GIT_SHALLOW ON        # No history needed
       SOURCE_DIR ${CMAKE_BINARY_DIR}/third-party/fastdds
@@ -39,12 +39,6 @@ function(get_fastdds)
 
     # Get fastdds
     FetchContent_MakeAvailable(fastdds)
-    
-    # FastDDS enforce compiler flags as PUBLIC, we don't want it affecting our hosting target so we remove it from the interface compile options
-    # This 3 lines should be removed when we update to a FastDDS version containing this PR: https://github.com/eProsima/Fast-DDS/pull/2509
-    get_target_property(FASTDDS_COMPILER_FLAGS fastrtps INTERFACE_COMPILE_OPTIONS)
-    message(STATUS "Remove the following FastDDS compiler flags from the hosting target interface:  ${FASTDDS_COMPILER_FLAGS}")
-    set_target_properties(fastrtps PROPERTIES INTERFACE_COMPILE_OPTIONS "")
     
     # Mark new options from FetchContent as advanced options
     mark_as_advanced(FETCHCONTENT_SOURCE_DIR_FASTDDS)
