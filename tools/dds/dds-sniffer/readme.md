@@ -12,13 +12,13 @@ The dds-sniffer will print a message for every data reader/writer entity it loca
 |---|---|---|
 |'-h --help'|Show command line help menu||
 |'-d --domain < ID >'|dds-sniffer will monitor domain < ID >|0|
-|'-t --time < sec >'|dds-sniffer will run for < sec > seconds||
+|'-s --snapshot'|run momentarily taking a snapshot of the domain||
 
 For example:
 
-'dds-sniffer --domain 42 --time 17'
+'dds-sniffer --domain 42 --snapshot'
 
-will monitor DDS domain 42 for 17 seconds
+will take a snapshot of DDS domain 42
 
 'dds-sniffer'
 
