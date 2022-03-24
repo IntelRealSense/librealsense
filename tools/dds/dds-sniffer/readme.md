@@ -7,7 +7,7 @@ It helps discovering active DDS participants and the topics that they publish/su
 ## Description
 The dds-sniffer will print a message for every data reader/writer entity it locates in the domain. The messsage will include the topic name and type, helping the user to match entities that are capable of intercommunication.
 
-## Command Lune Parameters
+## Command Line Parameters
 | Flag | Description | Default|
 |---|---|---|
 |'-h --help'|Show command line help menu||
