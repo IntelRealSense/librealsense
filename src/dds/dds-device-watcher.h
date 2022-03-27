@@ -2,32 +2,30 @@
 // Copyright(c) 2022 Intel Corporation. All Rights Reserved.
 
 #pragma once
+
 #include <iostream>
 #include <map>
 #include <functional>
+
 #include <fastdds/dds/domain/DomainParticipantListener.hpp>
-#include <concurrency.h>
 #include <callback-invocation.h>
 
 namespace librealsense {
 
-// struct dds_device_info
-//{
-//    std::string device_name;
-//};
-
 class dds_device_watcher : public librealsense::platform::device_watcher
 {
 public:
-    dds_device_watcher();
+    dds_device_watcher() = delete;
+    dds_device_watcher( int domain_id );
     ~dds_device_watcher();
-    void init();  // May throw
 
     void start( platform::device_changed_callback callback ) override;
     void stop() override;
     bool is_stopped() const override { return ! _active_object.is_active(); }
 
 private:
+    void init( int domain_id );  // May throw
+
     class DiscoveryDomainParticipantListener
         : public eprosima::fastdds::dds::DomainParticipantListener
     {
@@ -39,7 +37,7 @@ private:
                                 eprosima::fastrtps::rtps::WriterDiscoveryInfo && info ) override;
 
     private:
-        std::function< void( uint32_t ) > _callback;
+        std::function< void( uint32_t ) > _datawriter_removed_callback;
     };
 
     eprosima::fastdds::dds::DomainParticipant * _participant;
@@ -50,8 +48,8 @@ private:
     bool _init_done;
     active_object<> _active_object;
     platform::device_changed_callback _callback;
-    callbacks_heap _callback_inflight;
-    std::map< uint32_t, std::string > _dds_devices;
+    //callbacks_heap _callback_inflight;
+    std::map< uint32_t, std::string > _dds_devices; // <datawriter GUID, device name>
     std::mutex _devices_mutex;
     std::shared_ptr< DiscoveryDomainParticipantListener > _domain_listener;
 };

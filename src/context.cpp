@@ -132,11 +132,25 @@ namespace librealsense
        assert(_device_watcher->is_stopped());
 
 #ifdef BUILD_WITH_DDS
-       _dds_watcher = std::make_shared< dds_device_watcher >();
-       _dds_watcher->start([this](platform::backend_device_group old, platform::backend_device_group curr)
-        {
-           // on_device_changed(old, curr, _playback_devices, _playback_devices);
-        });
+       try
+       {
+           _dds_watcher = std::make_shared< dds_device_watcher >( 0 );
+
+           // TODO - should we start here or on register_device_callback?
+           _dds_watcher->start( [this]( platform::backend_device_group old, platform::backend_device_group curr )
+               {
+                   // TODO Here we should add DDS devices to the `on_device_changed`parameters
+                   // on_device_changed(old, curr, _playback_devices, _playback_devices);
+               } );
+       }
+       catch( const std::exception &e ) 
+       {
+           LOG_ERROR("Failed starting a DDS device watcher, error: " << e.what());
+       }
+       catch(...) 
+       {
+           LOG_ERROR("Failed starting a DDS device watcher, unknown error occured");
+       }
 
 
 #endif
@@ -327,7 +341,13 @@ namespace librealsense
 
     context::~context()
     {
-        _device_watcher->stop(); //ensure that the device watcher will stop before the _devices_changed_callback will be deleted
+        //ensure that the device watchers will stop before the _devices_changed_callback will be deleted
+
+        if ( _device_watcher )
+            _device_watcher->stop(); 
+
+        if ( _dds_watcher )
+            _dds_watcher->stop();
     }
 
     std::vector<std::shared_ptr<device_info>> context::query_devices(int mask) const
