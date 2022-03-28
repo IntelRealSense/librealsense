@@ -1,18 +1,17 @@
 # License: Apache 2.0. See LICENSE file in root directory.
 # Copyright(c) 2022 Intel Corporation. All Rights Reserved.
-#  minimum required cmake version: 3.1.0
-cmake_minimum_required(VERSION 3.1.0)
 
-if(BUILD_WITH_DDS)
-    project(Realsensetoolsdds-sniffer)
 
-    add_executable(dds-sniffer dds-sniffer.cpp)
+project(rs-dds-sniffer)
 
-    set_property(TARGET dds-sniffer PROPERTY CXX_STANDARD 11)
+add_executable(${PROJECT_NAME} dds-sniffer.cpp)
 
-	add_dependencies(dds-sniffer dds)
-	target_link_libraries(dds-sniffer dds)
+set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 11)
+
+add_dependencies(${PROJECT_NAME} dds)
+include_directories(../../../third-party/tclap/include ${CMAKE_BINARY_DIR})
+target_link_libraries(${PROJECT_NAME} dds)
 	
-	set_target_properties (dds-sniffer PROPERTIES FOLDER Tools)
+set_target_properties (${PROJECT_NAME} PROPERTIES FOLDER Tools/dds)
 
-endif()
+install(TARGETS ${PROJECT_NAME} RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})

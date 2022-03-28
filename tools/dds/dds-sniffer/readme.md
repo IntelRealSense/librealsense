@@ -1,7 +1,7 @@
 # dds-sniffer tool
 
 ## Goal
-This tool is monitors the requested DDS domain.
+This tool monitors the requested DDS domain.
 It helps discovering active DDS participants and the topics that they publish/subscribe to.
 
 ## Description
