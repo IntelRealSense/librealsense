@@ -59,13 +59,19 @@ execute_process(COMMAND "${CMAKE_COMMAND}" --build . --config Debug --target ins
     RESULT_VARIABLE debug_build_ret
 )
 
+# Build and install RelWithDeb version
+execute_process(COMMAND "${CMAKE_COMMAND}" --build . --config RelWithDebInfo --target install
+    WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/third-party/foonathan_memory" 
+    RESULT_VARIABLE rel_with_deb_info_build_ret
+)
+
 # Build and install Release version
 execute_process(COMMAND "${CMAKE_COMMAND}" --build . --config Release --target install
     WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/third-party/foonathan_memory" 
     RESULT_VARIABLE release_build_ret
 )
 
- if(configure_ret OR debug_build_ret OR release_build_ret)
+ if(configure_ret OR debug_build_ret OR release_build_ret OR rel_with_deb_info_build_ret)
         message( FATAL_ERROR "Failed to build foonathan_memory")
  endif()
 
