@@ -405,10 +405,11 @@ namespace librealsense
                 throw invalid_value_exception(to_string() << "Calibration data invalid, buffer too small : expected " << sizeof(table_header) << " , actual: " << raw_data.size());
             }
             // verify the parsed table
-            if (table->header.crc32 != calc_crc32(raw_data.data() + sizeof(table_header), raw_data.size() - sizeof(table_header)))
+            // D457 development
+            /*if (table->header.crc32 != calc_crc32(raw_data.data() + sizeof(table_header), raw_data.size() - sizeof(table_header)))
             {
                 throw invalid_value_exception("Calibration data CRC error, parsing aborted!");
-            }
+            }*/
             LOG_DEBUG("Loaded Valid Table: version [mjr.mnr]: 0x" <<
                       hex << setfill('0') << setw(4) << header->version << dec
                 << ", type " << header->table_type << ", size " << header->table_size
