@@ -897,22 +897,23 @@ namespace librealsense
             //if hw_monitor was created by usb replace it with xu
             // D400_IMU will remain using USB interface due to HW limitations
             {
-                depth_sensor.register_option(RS2_OPTION_OUTPUT_TRIGGER_ENABLED,
-                    std::make_shared<uvc_xu_option<uint8_t>>(raw_depth_sensor, depth_xu, DS5_EXT_TRIGGER,
-                        "Generate trigger from the camera to external device once per frame"));
+                if (_pid != RS431_PID)
+                {
+                    depth_sensor.register_option(RS2_OPTION_OUTPUT_TRIGGER_ENABLED,
+                        std::make_shared<uvc_xu_option<uint8_t>>(raw_depth_sensor, depth_xu, DS5_EXT_TRIGGER,
+                            "Generate trigger from the camera to external device once per frame"));
+                    depth_sensor.register_option(RS2_OPTION_ASIC_TEMPERATURE,
+                        std::make_shared<asic_and_projector_temperature_options>(raw_depth_sensor,
+                            RS2_OPTION_ASIC_TEMPERATURE));
+                    auto error_control = std::make_shared<uvc_xu_option<uint8_t>>(raw_depth_sensor, depth_xu, DS5_ERROR_REPORTING, "Error reporting");
 
-                auto error_control = std::make_shared<uvc_xu_option<uint8_t>>(raw_depth_sensor, depth_xu, DS5_ERROR_REPORTING, "Error reporting");
+                    _polling_error_handler = std::make_shared<polling_error_handler>(1000,
+                        error_control,
+                        raw_depth_sensor.get_notifications_processor(),
+                        std::make_shared<ds5_notification_decoder>());
 
-                _polling_error_handler = std::make_shared<polling_error_handler>(1000,
-                    error_control,
-                    raw_depth_sensor.get_notifications_processor(),
-                    std::make_shared<ds5_notification_decoder>());
-
-                depth_sensor.register_option(RS2_OPTION_ERROR_POLLING_ENABLED, std::make_shared<polling_errors_disable>(_polling_error_handler));
-
-                depth_sensor.register_option(RS2_OPTION_ASIC_TEMPERATURE,
-                    std::make_shared<asic_and_projector_temperature_options>(raw_depth_sensor,
-                        RS2_OPTION_ASIC_TEMPERATURE));
+                    depth_sensor.register_option(RS2_OPTION_ERROR_POLLING_ENABLED, std::make_shared<polling_errors_disable>(_polling_error_handler));
+                }
             }
 
             if ((val_in_range(pid, { RS455_PID })) && (_fw_version >= firmware_version("5.12.11.0")))
@@ -1033,32 +1034,33 @@ namespace librealsense
                             options_and_reasons));
                 }
 
-                if (_fw_version >= hdr_firmware_version)
+                if (!mipi_sensor)
                 {
-                    std::vector<std::pair<std::shared_ptr<option>, std::string>> options_and_reasons = { std::make_pair(hdr_enabled_option, "Emitter ON/OFF cannot be set while HDR is enabled"),
-                            std::make_pair(emitter_always_on_opt, "Emitter ON/OFF cannot be set while Emitter always ON is enabled") };
-                    depth_sensor.register_option(RS2_OPTION_EMITTER_ON_OFF,
-                        std::make_shared<gated_option>(
-                            alternating_emitter_opt,
-                            options_and_reasons
-                            ));
-                }
-                else if ((_fw_version >= firmware_version("5.12.1.0")) && ((_device_capabilities & d400_caps::CAP_GLOBAL_SHUTTER) == d400_caps::CAP_GLOBAL_SHUTTER))
-                {
-                    std::vector<std::pair<std::shared_ptr<option>, std::string>> options_and_reasons = { std::make_pair(emitter_always_on_opt,
-                        "Emitter ON/OFF cannot be set while Emitter always ON is enabled") };
-                    depth_sensor.register_option(RS2_OPTION_EMITTER_ON_OFF,
-                        std::make_shared<gated_option>(
-                            alternating_emitter_opt,
-                            options_and_reasons));
-                }
-                else
-                {
-                    if (!mipi_sensor)
+                    if (_fw_version >= hdr_firmware_version)
+                    {
+                        std::vector<std::pair<std::shared_ptr<option>, std::string>> options_and_reasons = { std::make_pair(hdr_enabled_option, "Emitter ON/OFF cannot be set while HDR is enabled"),
+                                std::make_pair(emitter_always_on_opt, "Emitter ON/OFF cannot be set while Emitter always ON is enabled") };
+                        depth_sensor.register_option(RS2_OPTION_EMITTER_ON_OFF,
+                            std::make_shared<gated_option>(
+                                alternating_emitter_opt,
+                                options_and_reasons
+                                ));
+                    }
+                    else if ((_fw_version >= firmware_version("5.12.1.0")) && ((_device_capabilities & d400_caps::CAP_GLOBAL_SHUTTER) == d400_caps::CAP_GLOBAL_SHUTTER))
+                    {
+                        std::vector<std::pair<std::shared_ptr<option>, std::string>> options_and_reasons = { std::make_pair(emitter_always_on_opt,
+                            "Emitter ON/OFF cannot be set while Emitter always ON is enabled") };
+                        depth_sensor.register_option(RS2_OPTION_EMITTER_ON_OFF,
+                            std::make_shared<gated_option>(
+                                alternating_emitter_opt,
+                                options_and_reasons));
+                    }
+                    else
                     {
                         depth_sensor.register_option(RS2_OPTION_EMITTER_ON_OFF, alternating_emitter_opt);
                     }
                 }
+
             }
             else if (_fw_version >= firmware_version("5.10.9.0") && 
                 (_device_capabilities & d400_caps::CAP_ACTIVE_PROJECTOR) == d400_caps::CAP_ACTIVE_PROJECTOR &&
@@ -1090,8 +1092,11 @@ namespace librealsense
             if (roi_sensor)
                 roi_sensor->set_roi_method(std::make_shared<ds5_auto_exposure_roi_method>(*_hw_monitor));
 
-            depth_sensor.register_option(RS2_OPTION_STEREO_BASELINE, std::make_shared<const_value_option>("Distance in mm between the stereo imagers",
-                lazy<float>([this]() { return get_stereo_baseline_mm(); })));
+            if (!val_in_range(_pid, { ds::RS431_PID }))
+            {
+                depth_sensor.register_option(RS2_OPTION_STEREO_BASELINE, std::make_shared<const_value_option>("Distance in mm between the stereo imagers",
+                    lazy<float>([this]() { return get_stereo_baseline_mm(); })));
+            }
 
             if (advanced_mode && _fw_version >= firmware_version("5.6.3.0"))
             {
