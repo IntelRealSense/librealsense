@@ -114,46 +114,53 @@ namespace librealsense
         auto& color_ep = get_color_sensor();
         auto& raw_color_ep = get_raw_color_sensor();
         
-        color_ep.register_pu(RS2_OPTION_BRIGHTNESS);
-        color_ep.register_pu(RS2_OPTION_CONTRAST);
-        color_ep.register_pu(RS2_OPTION_SATURATION);
-        color_ep.register_pu(RS2_OPTION_GAMMA);
-        color_ep.register_pu(RS2_OPTION_SHARPNESS);
-        color_ep.register_pu(RS2_OPTION_BACKLIGHT_COMPENSATION);
+        if (!val_in_range(_pid, { ds::RS431_PID }))
+        {
+            color_ep.register_pu(RS2_OPTION_BRIGHTNESS);
+            color_ep.register_pu(RS2_OPTION_CONTRAST);
+            color_ep.register_pu(RS2_OPTION_SATURATION);
+            color_ep.register_pu(RS2_OPTION_GAMMA);
+            color_ep.register_pu(RS2_OPTION_SHARPNESS);
+            color_ep.register_pu(RS2_OPTION_BACKLIGHT_COMPENSATION);
 
-        auto white_balance_option = std::make_shared<uvc_pu_option>(raw_color_ep, RS2_OPTION_WHITE_BALANCE);
-        color_ep.register_option(RS2_OPTION_WHITE_BALANCE, white_balance_option);
-        auto auto_white_balance_option = std::make_shared<uvc_pu_option>(raw_color_ep, RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE);
-        color_ep.register_option(RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE, auto_white_balance_option);
-        color_ep.register_option(RS2_OPTION_WHITE_BALANCE,
-            std::make_shared<auto_disabling_control>(
-                white_balance_option,
-                auto_white_balance_option));
+            auto white_balance_option = std::make_shared<uvc_pu_option>(raw_color_ep, RS2_OPTION_WHITE_BALANCE);
+            color_ep.register_option(RS2_OPTION_WHITE_BALANCE, white_balance_option);
+            auto auto_white_balance_option = std::make_shared<uvc_pu_option>(raw_color_ep, RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE);
+            color_ep.register_option(RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE, auto_white_balance_option);
+            color_ep.register_option(RS2_OPTION_WHITE_BALANCE,
+                std::make_shared<auto_disabling_control>(
+                    white_balance_option,
+                   auto_white_balance_option));
+
+            color_ep.register_option(RS2_OPTION_POWER_LINE_FREQUENCY,
+                std::make_shared<uvc_pu_option>(raw_color_ep, RS2_OPTION_POWER_LINE_FREQUENCY,
+                    std::map<float, std::string>{ { 0.f, "Disabled"},
+                    { 1.f, "50Hz" },
+                    { 2.f, "60Hz" },
+                    { 3.f, "Auto" }, }));
+        }
 
         // Currently disabled for certain sensors
-        if (!val_in_range(_pid, { ds::RS465_PID }))
+        // D457
+        if (!val_in_range(_pid, { ds::RS465_PID, ds::RS431_PID}))
         {
             color_ep.register_pu(RS2_OPTION_HUE);
         }
 
-        color_ep.register_option(RS2_OPTION_POWER_LINE_FREQUENCY,
-            std::make_shared<uvc_pu_option>(raw_color_ep, RS2_OPTION_POWER_LINE_FREQUENCY,
-                std::map<float, std::string>{ { 0.f, "Disabled"},
-                { 1.f, "50Hz" },
-                { 2.f, "60Hz" },
-                { 3.f, "Auto" }, }));
-
         if (_separate_color)
         {
             // Currently disabled for certain sensors
-            if (!val_in_range(_pid, { ds::RS465_PID }))
+            if (!val_in_range(_pid, { ds::RS431_PID}))
             {
-                color_ep.register_pu(RS2_OPTION_AUTO_EXPOSURE_PRIORITY);
-            }
-            // From 5.11.15 auto-exposure priority is supported on the D465
-            else if (_fw_version >= firmware_version("5.11.15.0"))
-            {
-                color_ep.register_pu(RS2_OPTION_AUTO_EXPOSURE_PRIORITY);
+                if (!val_in_range(_pid, { ds::RS465_PID}))
+                {
+                    color_ep.register_pu(RS2_OPTION_AUTO_EXPOSURE_PRIORITY);
+                }
+                // From 5.11.15 auto-exposure priority is supported on the D465
+                else if (_fw_version >= firmware_version("5.11.15.0"))
+                {
+                    color_ep.register_pu(RS2_OPTION_AUTO_EXPOSURE_PRIORITY);
+                }
             }
 
             auto gain_option = std::make_shared<uvc_pu_option>(raw_color_ep, RS2_OPTION_GAIN);
