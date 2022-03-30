@@ -530,7 +530,9 @@ namespace librealsense
                 if(errno == EINVAL)
                     LOG_ERROR(dev_name + " does not support memory mapping");
                 else
-                    throw linux_backend_exception("xioctl(VIDIOC_REQBUFS) failed");
+                    return;
+                    //D457 - fails on close (when num = 0)
+                    //throw linux_backend_exception("xioctl(VIDIOC_REQBUFS) failed");
             }
         }
 
@@ -1951,7 +1953,8 @@ namespace librealsense
                 if (buf_mgr.metadata_size())
                 {
                     LOG_WARNING("Metadata override requested but avoided skipped");
-                    return;
+                    // D457 wa - return removed
+                    //return;
                 }
                 FD_CLR(_md_fd,&fds);
 
@@ -2003,7 +2006,6 @@ namespace librealsense
                         _error_handler({ RS2_NOTIFICATION_CATEGORY_FRAME_CORRUPTED, 0, RS2_LOG_SEVERITY_WARN, s.str()});
                     }
                 }
-
             }
         }
 
@@ -2153,13 +2155,13 @@ namespace librealsense
         {
             switch(option)
             {
-//            case RS2_OPTION_BACKLIGHT_COMPENSATION: return V4L2_CID_BACKLIGHT_COMPENSATION;
-//            case RS2_OPTION_BRIGHTNESS: return V4L2_CID_BRIGHTNESS;
-//            case RS2_OPTION_CONTRAST: return V4L2_CID_CONTRAST;
+                case RS2_OPTION_BACKLIGHT_COMPENSATION: return V4L2_CID_BACKLIGHT_COMPENSATION;
+                case RS2_OPTION_BRIGHTNESS: return V4L2_CID_BRIGHTNESS;
+                case RS2_OPTION_CONTRAST: return V4L2_CID_CONTRAST;
                 case RS2_OPTION_EXPOSURE: return V4L2_CID_EXPOSURE_ABSOLUTE; // Is this actually valid? I'm getting a lot of VIDIOC error 22s...
                 case RS2_OPTION_GAIN: return V4L2_CTRL_CLASS_IMAGE_SOURCE | 0x903; // v4l2-ctl --list-ctrls -d /dev/video0
-//            case RS2_OPTION_GAMMA: return V4L2_CID_GAMMA;
-//            case RS2_OPTION_HUE: return V4L2_CID_HUE;
+                case RS2_OPTION_GAMMA: return V4L2_CID_GAMMA;
+                case RS2_OPTION_HUE: return V4L2_CID_HUE;
 //            case RS2_OPTION_SATURATION: return V4L2_CID_SATURATION;
 //            case RS2_OPTION_SHARPNESS: return V4L2_CID_SHARPNESS;
 //            case RS2_OPTION_WHITE_BALANCE: return V4L2_CID_WHITE_BALANCE_TEMPERATURE;
