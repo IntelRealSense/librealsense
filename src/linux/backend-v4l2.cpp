@@ -449,11 +449,18 @@ namespace librealsense
         bool buffers_mgr::verify_vd_md_sync() const
         {
             if ((buffers[e_video_buf]._file_desc > 0) && (buffers[e_metadata_buf]._file_desc > 0))
+            {
                 if (buffers[e_video_buf]._dq_buf.sequence != buffers[e_metadata_buf]._dq_buf.sequence)
                 {
-                    LOG_ERROR("Non-sequential Video and Metadata v4l buffers");
+                    LOG_ERROR("Non-sequential Video and Metadata v4l buffers - video seq = " << buffers[e_video_buf]._dq_buf.sequence << ", md seq = " << buffers[e_metadata_buf]._dq_buf.sequence);
                     return false;
                 }
+            }
+            else
+            {
+                LOG_WARNING("In verify_vd_md_sync: buffers[video].fd = " << buffers[e_video_buf]._file_desc << ", and buffers[md].fd = " << buffers[e_metadata_buf]._file_desc);
+                //D457 - adding the "return false;" here would solve the metadata streaming bug, but will not enable to stream any stream without metadata (and this is required for IR)
+            }
             return true;
         }
 
@@ -1955,6 +1962,12 @@ namespace librealsense
                     LOG_WARNING("Metadata override requested but avoided skipped");
                     // D457 wa - return removed
                     //return;
+                    // In scenario: {vid[i]} ->{md[i]} ->{md[i+1],vid[i+1]}:
+                    // - vid[i] will be uploaded to user callback without metadata (for now)
+                    // - md[i] will be dropped
+                    // - vid[i+1] and md[i+1] will be uploaded together - back to stable stream
+                    auto md_buf = buf_mgr.get_buffers().at(e_metadata_buf);
+                    md_buf._data_buf->request_next_frame(md_buf._file_desc,true);
                 }
                 FD_CLR(_md_fd,&fds);
 
