@@ -2127,7 +2127,10 @@ namespace librealsense
 
                 // TODO check if parsing for non-integer values D431
                 //memcpy(data,(void*)(&ctrl.value),size);
-                //memcpy(data,(void*)(&xctrl.value),size);
+
+                // used to parse values that have size > 1
+                memcpy(data,(void*)(&xctrl.value), size);
+
                 return true;
             }
 
@@ -2175,6 +2178,8 @@ namespace librealsense
                 case RS2_OPTION_GAIN: return V4L2_CTRL_CLASS_IMAGE_SOURCE | 0x903; // v4l2-ctl --list-ctrls -d /dev/video0
                 case RS2_OPTION_GAMMA: return V4L2_CID_GAMMA;
                 case RS2_OPTION_HUE: return V4L2_CID_HUE;
+                case RS2_OPTION_LASER_POWER: return V4L2_CID_EXPOSURE_ABSOLUTE;
+                case RS2_OPTION_EMITTER_ENABLED: return V4L2_CID_EXPOSURE_AUTO;
 //            case RS2_OPTION_SATURATION: return V4L2_CID_SATURATION;
 //            case RS2_OPTION_SHARPNESS: return V4L2_CID_SHARPNESS;
 //            case RS2_OPTION_WHITE_BALANCE: return V4L2_CID_WHITE_BALANCE_TEMPERATURE;
