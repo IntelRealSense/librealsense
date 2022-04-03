@@ -2,3 +2,4 @@
 # Copyright(c) 2022 Intel Corporation. All Rights Reserved.
 
 add_subdirectory(dds-sniffer)
+add_subdirectory(dds-server)

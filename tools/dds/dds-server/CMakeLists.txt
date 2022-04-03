@@ -13,7 +13,8 @@ set(INC dds-server.h
 
 add_executable(${PROJECT_NAME} ${INC} ${SRC} )
 set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 11)
+include_directories(../../../third-party/tclap/include ${CMAKE_BINARY_DIR})
 target_link_libraries(${PROJECT_NAME} ${DEPENDENCIES} dds)
-set_target_properties (${PROJECT_NAME} PROPERTIES FOLDER Examples/dds)
+set_target_properties (${PROJECT_NAME} PROPERTIES FOLDER Tools/dds)
 
 install(TARGETS ${PROJECT_NAME} RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})

@@ -4,6 +4,7 @@
 #pragma once
 
 #include <unordered_map>
+#include <vector>
 #include <atomic>
 #include <mutex>
 
@@ -18,8 +19,8 @@ class dds_server
 public:
     dds_server();
     ~dds_server();
-
-    void start();
+    bool init( eprosima::fastdds::dds::DomainId_t domain_id );
+    void run();
 
 private:
     // We want to know when readers join our topic

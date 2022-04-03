@@ -1,7 +1,6 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2022 Intel Corporation. All Rights Reserved.
 
-#include <array>
 #include <iostream>
 
 #include "dds-server.h"
@@ -26,21 +25,21 @@ dds_server::dds_server()
     , _type_support_ptr( new devicesPubSubType() )
 {
 }
-
-void dds_server::start()
+bool dds_server::init( DomainId_t domain_id )
 {
     DomainParticipantQos pqos;
     pqos.name( "rs-dds-server" );
     _participant
-        = DomainParticipantFactory::get_instance()->create_participant( 0,
+        = DomainParticipantFactory::get_instance()->create_participant( domain_id,
                                                                         pqos,
                                                                         &_domain_listener );
+    std::cout << "Creating a RS DDS server for domain " << domain_id << std::endl;
 
-    if( _participant == nullptr )
-    {
-        throw std::runtime_error( "Error creating a DDS participant" );
-    }
+    return _participant != nullptr;
+}
 
+void dds_server::run()
+{
     // Registering the topic type enables topic instance creation by factory
     _type_support_ptr.register_type( _participant );
 
@@ -109,7 +108,8 @@ void dds_server::start()
                       // Publish the device info, but only after a matching reader is found.
                       devices msg;
                       strcpy( msg.name().data(), dev_name.c_str() );
-                      std::cout << "Device '" << dev_name << "' - added" << std::endl;
+                      std::cout << "\nDevice '" << dev_name << "' - detected" << std::endl;
+                      std::cout << "Looking for at least 1 matching reader... "; // Status value will be appended to this line
 
                       int retry_cnt = 4;
                       bool reader_found = false;
@@ -123,14 +123,20 @@ void dds_server::start()
 
                       if( reader_found )
                       {
-                          if( ! _devices_writers[dev_name].data_writer->write( &msg ) )
+                          std::cout << "found" << std::endl;
+                          if(  _devices_writers[dev_name].data_writer->write( &msg ) )
                           {
-                              std::cout << "Error writing add new device topic for: " << dev_name
+                              std::cout << "DDS device message sent!" << std::endl;
+                          }
+                          else
+                          {
+                              std::cout << "Error writing new device message for: " << dev_name
                                         << std::endl;
                           }
                       }
                       else
                       {
+                          std::cout << "not found" << std::endl;
                           std::cout << "Timeout finding a reader for devices topic" << std::endl;
                       }
                   }
@@ -185,6 +191,8 @@ void dds_server::start()
                 std::thread( device_change_func, devices_to_remove, devices_to_add ) );
         }
     } );
+
+    std::cout << "RS DDS Server is on.." << std::endl;
 }
 
 dds_server::~dds_server()
@@ -217,18 +225,17 @@ dds_server::~dds_server()
 }
 
 
-void dds_server::dds_serverListener::on_publication_matched(
-    eprosima::fastdds::dds::DataWriter * writer,
-    const eprosima::fastdds::dds::PublicationMatchedStatus & info )
+void dds_server::dds_serverListener::on_publication_matched( DataWriter * writer,
+                                                             const PublicationMatchedStatus & info )
 {
     if( info.current_count_change == 1 )
     {
-        std::cout << "DataWriter " << writer->guid() << " discovered" << std::endl;
+        std::cout << "DataReader " << writer->guid() << " discovered" << std::endl;
         _matched = info.total_count;
     }
     else if( info.current_count_change == -1 )
     {
-        std::cout << "DataWriter " << writer->guid() << " disappeared" << std::endl;
+        std::cout << "DataReader " << writer->guid() << " disappeared" << std::endl;
         _matched = info.total_count;
     }
     else
