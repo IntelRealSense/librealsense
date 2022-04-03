@@ -113,7 +113,7 @@ namespace librealsense
     {
         auto& color_ep = get_color_sensor();
         auto& raw_color_ep = get_raw_color_sensor();
-        
+
         if (!val_in_range(_pid, { ds::RS431_PID }))
         {
             color_ep.register_pu(RS2_OPTION_BRIGHTNESS);
@@ -396,19 +396,6 @@ namespace librealsense
 
     rs2_intrinsics ds5_color_sensor::get_intrinsics(const stream_profile& profile) const
     {
-        if ("ABCD" == get_info(RS2_CAMERA_INFO_PRODUCT_ID)) // RS431 Development. to be removed. TODO
-        {
-            rs2_intrinsics intr{};
-            intr.width =640;
-            intr.height =640;
-            intr.fx =320.f;
-            intr.fy =240.f;
-            intr.ppx =630.f;
-            intr.ppy =630.f;
-            intr.model = RS2_DISTORTION_NONE;
-            return intr;
-        }
-
         return get_intrinsic_by_resolution(
             *_owner->_color_calib_table_raw,
             ds::calibration_table_id::rgb_calibration_id,
