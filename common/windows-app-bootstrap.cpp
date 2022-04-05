@@ -18,7 +18,7 @@
 #include "os.h"
 #include "metadata-helper.h"
 #include "rendering.h"
-#include "utilities/string/windows.h"
+#include <librealsense2/utilities/string/windows.h>
 
 #include <delayimp.h>
 

@@ -14,7 +14,6 @@ set(RS_TERMINAL_SOURCES
         auto-complete.cpp
         auto-complete.h
         ../../common/parser.hpp
-        ../../common/utilities/string/string-utilities.h
     )
 add_executable(rs-terminal ${RS_TERMINAL_SOURCES})
 set_property(TARGET rs-terminal PROPERTY CXX_STANDARD 11)

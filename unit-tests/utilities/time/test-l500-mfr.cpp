@@ -4,14 +4,14 @@
 // Unit Test Goals:
 // Test the get_manufacture_work_week function
 
-//#cmake:add-file ../../../common/utilities/time/work_week.h
-//#cmake:add-file ../../../common/utilities/time/work_week.cpp
+//#cmake:add-file ../../../include/librealsense2/utilities/time/work-week.h
+//#cmake:add-file ../../../include/librealsense2/utilities/time/work-week.cpp
 //#cmake:add-file ../../../common/utilities/time/l500/get-mfr-ww.h
 //#cmake:add-file ../../../common/utilities/time/l500/get-mfr-ww.cpp
 
 
 #include "common.h"
-#include "../common/utilities/time/work_week.h"
+#include <librealsense2/utilities/time/work-week.h>
 #include "../common/utilities/time/l500/get-mfr-ww.h"
 
 #define INVALID_MESSAGE( serial, invalid ) "Invalid serial number \"" + serial + "\" " + invalid

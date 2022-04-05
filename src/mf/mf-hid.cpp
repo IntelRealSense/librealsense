@@ -25,7 +25,7 @@
 #include <propkeydef.h>
 #include <comutil.h>
 #include <string>
-#include "../common/utilities/string/windows.h"
+#include <librealsense2/utilities/string/windows.h>
 
 #pragma comment(lib, "Sensorsapi.lib")
 #pragma comment(lib, "PortableDeviceGuids.lib")

@@ -32,7 +32,7 @@
 #include "metadata-helper.h"
 #include "calibration-model.h"
 #include "sw-update/http-downloader.h"
-#include "utilities/filesystem/glob.h"
+#include "filesystem/glob.h"
 
 #include <thread>
 #include <algorithm>
