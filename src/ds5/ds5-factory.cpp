@@ -568,13 +568,13 @@ namespace librealsense
         };
     };
 
-    // D431 Development
-    class rs431_device : public ds5_active,
+    // D457 Development
+    class rs457_device : public ds5_active,
                          public ds5_color,
                          public ds5_advanced_mode_base
     {
     public:
-        rs431_device(std::shared_ptr<context> ctx,
+        rs457_device(std::shared_ptr<context> ctx,
                      const platform::backend_device_group group,
                      bool register_device_notifications)
             : device(ctx, group, register_device_notifications),
@@ -1097,12 +1097,12 @@ namespace librealsense
             return std::make_shared<rs410_device>(ctx, group, register_device_notifications);
         case RS400_IMU_PID:
             return std::make_shared<rs400_imu_device>(ctx, group, register_device_notifications);
-        case ds::RS405_PID:
+        case RS405_PID:
             return std::make_shared<rs405_device>(ctx, group, register_device_notifications);
-        case ds::RS455_PID:
+        case RS455_PID:
             return std::make_shared<rs455_device>(ctx, group, register_device_notifications);
-		case RS431_PID:
-            return std::make_shared<rs431_device>(ctx, group, register_device_notifications);
+        case RS457_PID:
+            return std::make_shared<rs457_device>(ctx, group, register_device_notifications);
         default:
             throw std::runtime_error(to_string() << "Unsupported RS400 model! 0x"
                 << std::hex << std::setw(4) << std::setfill('0') <<(int)pid);
@@ -1325,7 +1325,7 @@ namespace librealsense
     }
 
 
-    std::shared_ptr<matcher> rs431_device::create_matcher(const frame_holder& frame) const
+    std::shared_ptr<matcher> rs457_device::create_matcher(const frame_holder& frame) const
     {
         std::vector<stream_interface*> streams = { _depth_stream.get() , _left_ir_stream.get() , _right_ir_stream.get(), _color_stream.get() };
         if (frame.frame->supports_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER))

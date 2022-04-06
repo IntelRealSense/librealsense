@@ -895,7 +895,7 @@ namespace rs2
 
             }
 
-            // D431 demo
+            // D457 demo
             if (false && !read_only && opt == RS2_OPTION_ENABLE_AUTO_EXPOSURE && dev->auto_exposure_enabled  && dev->s->is<roi_sensor>() && dev->streaming)
             {
                 ImGui::SameLine(0, 10);
@@ -1243,7 +1243,7 @@ namespace rs2
                 if (is_rgb_camera)
                     model->enable(false);
             }
-			//D431 Demo
+            //D457 Demo
             if (shared_filter->is<spatial_filter>())
                 continue;
 
@@ -1413,7 +1413,7 @@ namespace rs2
 
             int selection_index{};
 
-            // D431 demo
+            // D457 demo
             if ((std::string(s->get_info(RS2_CAMERA_INFO_NAME)) == "RGB Sensor") &&
                   (std::string(s->get_info(RS2_CAMERA_INFO_PRODUCT_ID)) == "ABCD"))
             {
@@ -3102,7 +3102,7 @@ namespace rs2
                 ImGui::SetCursorScreenPos({ curr_info_rect.x + 10, line_y });
 
                 if (timestamp_domain == RS2_TIMESTAMP_DOMAIN_SYSTEM_TIME)
-                    ImGui::PushStyleColor(ImGuiCol_Text, /*redish*/regular_blue); // D431 Demo
+                    ImGui::PushStyleColor(ImGuiCol_Text, /*redish*/regular_blue); // D457 Demo
 
                 label = to_string() << "Time: " << std::left << std::fixed << std::setprecision(1) << timestamp << " ";
 
@@ -5088,7 +5088,7 @@ namespace rs2
 
         ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, { 0.9f, 0.9f, 0.9f, 1 });
 
-        //D431 Demo
+        //D457 Demo
         auto is_advanced_mode = (dev.is<advanced_mode>() && ("ABCD" != std::string(dev.get_info(RS2_CAMERA_INFO_PRODUCT_ID))));
         if (is_advanced_mode && ImGui::TreeNode("Advanced Controls"))
         {
@@ -6396,7 +6396,7 @@ namespace rs2
     {
         const float panel_height = 40.f;
 
-        // RS431 Development. to be removed. TODO
+        // RS457 Development. to be removed. TODO
         if ("ABCD" == std::string(dev.get_info(RS2_CAMERA_INFO_PRODUCT_ID)))
             return panel_height/4;
 
@@ -6622,7 +6622,7 @@ namespace rs2
             is_advanced_device = true;
             try
             {
-				//is_advanced_mode_enabled = true;// D431 Development..  advanced_dev.is_enabled();
+                //is_advanced_mode_enabled = true;// D457 Development..  advanced_dev.is_enabled();
                 // Prevent intermittent errors in polling mode to keep imgui in sync
                 is_advanced_mode_enabled = advanced_dev.is_enabled();
             }
