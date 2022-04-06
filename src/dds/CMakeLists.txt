@@ -3,8 +3,8 @@
 
 target_sources(${LRS_TARGET}
     PRIVATE
-        "${CMAKE_CURRENT_LIST_DIR}/dds-enumerator.h"
-        "${CMAKE_CURRENT_LIST_DIR}/dds-enumerator.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/dds-device-watcher.h"
+        "${CMAKE_CURRENT_LIST_DIR}/dds-device-watcher.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/msg/devicesPubSubTypes.h"
         "${CMAKE_CURRENT_LIST_DIR}/msg/devicesPubSubTypes.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/msg/devices.h"
