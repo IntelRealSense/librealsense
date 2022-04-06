@@ -369,7 +369,8 @@ namespace librealsense
             }
             else 
             {
-                if ("ABCD" == get_info(RS2_CAMERA_INFO_PRODUCT_ID)) // RS431 Development. to be removed. TODO
+                //REMI - D457 - check if needed
+                if ("ABCD" == get_info(RS2_CAMERA_INFO_PRODUCT_ID)) // RS457 Development. to be removed. TODO
                 {
                     rs2_intrinsics intr{};
                     intr.width =640;
@@ -716,8 +717,8 @@ namespace librealsense
         std::unique_ptr<frame_timestamp_reader> timestamp_reader_backup(new ds5_timestamp_reader(backend.create_time_service()));
         std::unique_ptr<frame_timestamp_reader> timestamp_reader_metadata(new ds5_timestamp_reader_from_metadata(std::move(timestamp_reader_backup)));
         auto enable_global_time_option = std::shared_ptr<global_time_option>(new global_time_option());
-        //D431
-		bool mipi_sensor = (ds::RS431_PID == all_device_infos.front().pid);
+        //D457
+        bool mipi_sensor = (ds::RS457_PID == all_device_infos.front().pid);
 		if (mipi_sensor)
         {
             enable_global_time_option->set(false);
@@ -771,7 +772,7 @@ namespace librealsense
         auto& raw_sensor = get_raw_depth_sensor();
         auto pid = group.uvc_devices.front().pid;
         // to be changed for D457
-        bool mipi_sensor= (RS431_PID == pid);
+        bool mipi_sensor= (RS457_PID == pid);
 
         _color_calib_table_raw = [this]()
         {
@@ -846,7 +847,7 @@ namespace librealsense
             if (_fw_version >= firmware_version("5.10.4.0"))
                 _device_capabilities = parse_device_capabilities();
         
-        //D431 Development
+        //D457 Development
         advanced_mode = mipi_sensor ? false : is_camera_in_advanced_mode();
         auto _usb_mode = usb3_type;
         usb_type_str = usb_spec_names.at(_usb_mode);
@@ -888,7 +889,7 @@ namespace librealsense
                     "Set the power level of the LED, with 0 meaning LED off"));
         }
 
-        if ((_fw_version >= firmware_version("5.6.3.0")) || (_fw_version) == firmware_version("1.1.1.1")) // RS431 Dev
+        if ((_fw_version >= firmware_version("5.6.3.0")) || (_fw_version) == firmware_version("1.1.1.1")) // RS457 Dev
             {
                 _is_locked = _hw_monitor->is_camera_locked(GVD, is_camera_locked_offset);
             }
@@ -897,7 +898,7 @@ namespace librealsense
             //if hw_monitor was created by usb replace it with xu
             // D400_IMU will remain using USB interface due to HW limitations
             {
-                if (_pid != RS431_PID)
+                if (_pid != RS457_PID)
                 {
                     depth_sensor.register_option(RS2_OPTION_OUTPUT_TRIGGER_ENABLED,
                         std::make_shared<uvc_xu_option<uint8_t>>(raw_depth_sensor, depth_xu, DS5_EXT_TRIGGER,
@@ -1092,7 +1093,7 @@ namespace librealsense
             if (roi_sensor)
                 roi_sensor->set_roi_method(std::make_shared<ds5_auto_exposure_roi_method>(*_hw_monitor));
 
-            if (!val_in_range(_pid, { ds::RS431_PID }))
+            if (!val_in_range(_pid, { ds::RS457_PID }))
             {
                 depth_sensor.register_option(RS2_OPTION_STEREO_BASELINE, std::make_shared<const_value_option>("Distance in mm between the stereo imagers",
                     lazy<float>([this]() { return get_stereo_baseline_mm(); })));

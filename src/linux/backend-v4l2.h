@@ -411,7 +411,7 @@ namespace librealsense
             stream_profile _md_profile;
         };
 
-        // D431 Development. To be merged into underlying class
+        // D457 Development. To be merged into underlying class
         class v4l_mipi_device : public v4l_uvc_meta_device
         {
         public:

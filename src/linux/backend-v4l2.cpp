@@ -54,7 +54,7 @@
 const size_t MAX_DEV_PARENT_DIR = 10;
 
 #include "../tm2/tm-boot.h"
-//D431 Dev. TODO -shall be refactored into the kernel headers.
+//D457 Dev. TODO -shall be refactored into the kernel headers.
 constexpr uint32_t RS_STREAM_CONFIG_0                       = 0x4000;
 constexpr uint32_t RS_CAMERA_CID_BASE                       = (V4L2_CTRL_CLASS_CAMERA | RS_STREAM_CONFIG_0);
 constexpr uint32_t RS_CAMERA_CID_LASER_POWER                = (RS_CAMERA_CID_BASE+1);
@@ -656,7 +656,7 @@ namespace librealsense
                         //LOG_INFO("Enumerating v4l " << name << " realpath=" << real_path);
                         v4l_node = true;
 
-                        // D431-specific
+                        // D457-specific
                         vid = 0x8086;
                         pid = 0xABCD; // TBD Evgeni
 
@@ -674,7 +674,7 @@ namespace librealsense
 
                         switch(ind)
                         {
-                            //  D431 exposes video0 for Depth and video1 for RGB. IR is currently not available
+                            //  D457 exposes video0 for Depth and video1 for RGB. IR is currently not available
                             case 0:
                                 mi = 0;
                                 break;
@@ -696,11 +696,11 @@ namespace librealsense
                         }
                     }
 
-                    // D431 Dev - skip unsupported devices. Do no upstream!
+                    // D457 Dev - skip unsupported devices. Do no upstream!
                     // manually rectify descriptor inconsistencies
                     if (0xffff == mi)
                     {
-                        LOG_DEBUG("D431 - Uninitialized device " << name << ", skipped during enumeration");
+                        LOG_DEBUG("D457 - Uninitialized device " << name << ", skipped during enumeration");
                         continue;
                     }
 
@@ -2023,7 +2023,7 @@ namespace librealsense
         v4l_mipi_device::~v4l_mipi_device()
         {}
 
-        // D431 controls map- temporal solution to bypass backend interface with actual codes
+        // D457 controls map- temporal solution to bypass backend interface with actual codes
         // DS5 depth XU identifiers
         const uint8_t RS_HWMONITOR                       = 1;
         const uint8_t RS_DEPTH_EMITTER_ENABLED           = 2;
@@ -2119,7 +2119,7 @@ namespace librealsense
                     continue;
                 }
 
-                // TODO check if parsing for non-integer values D431
+                // TODO check if parsing for non-integer values D457
                 //memcpy(data,(void*)(&ctrl.value),size);
 
                 // used to parse values that have size > 1
@@ -2185,7 +2185,7 @@ namespace librealsense
             }
         }
 
-        // D431 controls map- temporal solution to bypass backend interface with actual codes
+        // D457 controls map - temporal solution to bypass backend interface with actual codes
         uint32_t v4l_mipi_device::xu_to_cid(const extension_unit& xu, uint8_t control) const
         {
             if (0==xu.subdevice)
@@ -2199,7 +2199,7 @@ namespace librealsense
                     case RS_ENABLE_AUTO_WHITE_BALANCE : return RS_CAMERA_CID_WHITE_BALANCE_MODE;
                     case RS_ENABLE_AUTO_EXPOSURE: return V4L2_CID_EXPOSURE_AUTO; //RS_CAMERA_CID_EXPOSURE_MODE;
                     case RS_HARDWARE_PRESET : return RS_CAMERA_CID_PRESET;
-                    // D431 Missing functionality
+                    // D457 Missing functionality
                     //case RS_ERROR_REPORTING: TBD;
                     //case RS_EXT_TRIGGER: TBD;
                     //case RS_ASIC_AND_PROJECTOR_TEMPERATURES: TBD;
@@ -2214,7 +2214,7 @@ namespace librealsense
 
         std::shared_ptr<uvc_device> v4l_backend::create_uvc_device(uvc_device_info info) const
         {
-            bool mipi_device = 0xABCD == info.pid; // D431 development. Not for upstream
+            bool mipi_device = 0xABCD == info.pid; // D457 development. Not for upstream
             auto v4l_uvc_dev =        mipi_device ?         std::make_shared<v4l_mipi_device>(info) :
                               ((!info.has_metadata_node) ?  std::make_shared<v4l_uvc_device>(info) :
                                                             std::make_shared<v4l_uvc_meta_device>(info));

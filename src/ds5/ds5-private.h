@@ -22,7 +22,7 @@ namespace librealsense
 {
     namespace ds
     {
-        const uint16_t RS431_PID            = 0xabcd; // TODO 431 - Dev . Do not upstream!
+        const uint16_t RS457_PID            = 0xabcd; // D457 - Dev . Do not upstream!
         const uint16_t RS400_PID            = 0x0ad1; // PSR
         const uint16_t RS410_PID            = 0x0ad2; // ASR
         const uint16_t RS415_PID            = 0x0ad3; // ASRC
@@ -86,7 +86,7 @@ namespace librealsense
             ds::RS416_PID,
             ds::RS405_PID,
             ds::RS455_PID,
-			ds::RS431_PID,
+            ds::RS457_PID,
         };
 
         static const std::set<std::uint16_t> multi_sensors_pid = {
@@ -100,7 +100,7 @@ namespace librealsense
             ds::RS435I_PID,
             ds::RS465_PID,
             ds::RS455_PID,
-			ds::RS431_PID,
+            ds::RS457_PID,
         };
 
         static const std::set<std::uint16_t> hid_sensors_pid = {

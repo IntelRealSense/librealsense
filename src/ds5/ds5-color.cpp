@@ -55,10 +55,10 @@ namespace librealsense
         // except for D405, in which the color is part of the depth unit
         // and it will then been found in end point 0 (the depth's one)
         auto color_devs_info_mi3 = filter_by_mi(group.uvc_devices, 3);
-        if (color_devs_info_mi3.size() == 1 || ds::RS431_PID == _pid)
+        if (color_devs_info_mi3.size() == 1 || ds::RS457_PID == _pid)
         {
             // means color end point in part of a separate color sensor (e.g. D435)
-            if (ds::RS431_PID == _pid)
+            if (ds::RS457_PID == _pid)
                 color_devs_info = group.uvc_devices;
             else
                 color_devs_info = color_devs_info_mi3;
@@ -67,7 +67,7 @@ namespace librealsense
 
             auto enable_global_time_option = std::shared_ptr<global_time_option>(new global_time_option());
             platform::uvc_device_info info;
-            if (ds::RS431_PID == _pid)
+            if (ds::RS457_PID == _pid)
                 info = color_devs_info[1];
             else
                 info = color_devs_info.front();
@@ -82,7 +82,7 @@ namespace librealsense
                 raw_color_ep,
                 ds5_color_fourcc_to_rs2_format,
                 ds5_color_fourcc_to_rs2_stream);
-			if (ds::RS431_PID != _pid)
+            if (ds::RS457_PID != _pid)
             {
                 color_ep->register_option(RS2_OPTION_GLOBAL_TIME_ENABLED, enable_global_time_option);
 		    }
@@ -114,7 +114,7 @@ namespace librealsense
         auto& color_ep = get_color_sensor();
         auto& raw_color_ep = get_raw_color_sensor();
 
-        if (!val_in_range(_pid, { ds::RS431_PID }))
+        if (!val_in_range(_pid, { ds::RS457_PID }))
         {
             color_ep.register_pu(RS2_OPTION_BRIGHTNESS);
             color_ep.register_pu(RS2_OPTION_CONTRAST);
@@ -142,7 +142,7 @@ namespace librealsense
 
         // Currently disabled for certain sensors
         // D457
-        if (!val_in_range(_pid, { ds::RS465_PID, ds::RS431_PID}))
+        if (!val_in_range(_pid, { ds::RS465_PID, ds::RS457_PID}))
         {
             color_ep.register_pu(RS2_OPTION_HUE);
         }
@@ -150,7 +150,7 @@ namespace librealsense
         if (_separate_color)
         {
             // Currently disabled for certain sensors
-            if (!val_in_range(_pid, { ds::RS431_PID}))
+            if (!val_in_range(_pid, { ds::RS457_PID}))
             {
                 if (!val_in_range(_pid, { ds::RS465_PID}))
                 {
@@ -195,7 +195,7 @@ namespace librealsense
                     _color_calib_table_raw.reset(); });
             }
 
-            if (_pid != ds::RS431_PID) //not mipi device
+            if (_pid != ds::RS457_PID) //not mipi device
             {
                 auto md_prop_offset = offsetof(metadata_raw, mode) +
                     offsetof(md_rgb_mode, rgb_mode) +
@@ -216,7 +216,7 @@ namespace librealsense
             color_ep.register_metadata(RS2_FRAME_METADATA_AUTO_EXPOSURE, make_attribute_parser(&md_rgb_control::ae_mode, md_rgb_control_attributes::ae_mode_attribute, md_prop_offset));
         }
 
-        if (_pid != ds::RS431_PID) //not mipi device
+        if (_pid != ds::RS457_PID) //not mipi device
         {
             color_ep.register_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP, make_uvc_header_parser(&platform::uvc_header::timestamp));
             color_ep.register_metadata(RS2_FRAME_METADATA_ACTUAL_FPS, std::make_shared<ds5_md_attribute_actual_fps>(false, [](const rs2_metadata_type& param)
@@ -362,7 +362,7 @@ namespace librealsense
                                            make_attribute_parser(&md_mipi_rgb_mode::crc,
                                                                  md_mipi_rgb_control_attributes::crc_attribute,
                                                                  md_prop_offset));
-        } // ds::RS431 / mipi_device
+        } // ds::RS457 / mipi_device
 
 
         // Starting with firmware 5.10.9, auto-exposure ROI is available for color sensor
@@ -372,7 +372,7 @@ namespace librealsense
             if ((roi_sensor = dynamic_cast<roi_sensor_interface*>(&color_ep)))
                 roi_sensor->set_roi_method(std::make_shared<ds5_auto_exposure_roi_method>(*_hw_monitor, ds::fw_cmd::SETRGBAEROI));
         }
-        if (_pid != ds::RS431_PID)
+        if (_pid != ds::RS457_PID)
         {
             color_ep.register_processing_block(processing_block_factory::create_pbf_vector<uyvy_converter>(RS2_FORMAT_UYVY, map_supported_color_formats(RS2_FORMAT_UYVY), RS2_STREAM_COLOR));
             color_ep.register_processing_block(processing_block_factory::create_pbf_vector<yuy2_converter>(RS2_FORMAT_YUYV, map_supported_color_formats(RS2_FORMAT_YUYV), RS2_STREAM_COLOR));
