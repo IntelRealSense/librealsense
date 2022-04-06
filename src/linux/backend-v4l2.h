@@ -274,12 +274,6 @@ namespace librealsense
             // if returned value is false - no data is returned via the inout params because data could not be synced
             bool pull_video_with_metadata(std::shared_ptr<v4l2_buffer>& video_buffer, std::shared_ptr<v4l2_buffer>& md_buffer);
 
-            // checking if metadata is streamed at all
-            // if the metadata queue is empty, returning false
-            // issue is: if the first polling iteration returns only video, it will be uploaded without metadata
-            // instead of waiting for the next polling iteration
-            inline bool is_metadata_streamed() const { return !_md_queue.empty();}
-
         private:
             void enqueue_buffer_before_throwing_it(const sync_buffer& sb) const;
 
@@ -357,6 +351,10 @@ namespace librealsense
             void subscribe_to_ctrl_event(uint32_t control_id);
             void unsubscribe_from_ctrl_event(uint32_t control_id);
             bool pend_for_ctrl_status_event();
+            // checking if metadata is streamed
+            virtual inline bool is_metadata_streamed() const { return false;}
+            virtual inline std::shared_ptr<buffer> get_video_buffer(__u32 index) const {return _buffers[index];}
+            virtual inline std::shared_ptr<buffer> get_md_buffer(__u32 index) const {return nullptr;}
 
             power_state _state = D3;
             std::string _name = "";
@@ -403,7 +401,9 @@ namespace librealsense
             void set_format(stream_profile profile);
             void prepare_capture_buffers();
             virtual void acquire_metadata(buffers_mgr & buf_mgr,fd_set &fds, bool compressed_format=false);
-
+            // checking if metadata is streamed
+            virtual inline bool is_metadata_streamed() const { return _md_fd > 0;}
+            virtual inline std::shared_ptr<buffer> get_md_buffer(__u32 index) const {return _md_buffers[index];}
             int _md_fd = -1;
             std::string _md_name = "";
 
