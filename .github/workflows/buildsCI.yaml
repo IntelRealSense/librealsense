@@ -220,6 +220,7 @@ jobs:
       run: |
         cd ${{env.WIN_BUILD_DIR}}
         cmake --build . --config ${{env.LRS_BUILD_CONFIG}} -- -m     
+
   Linux_testing_cpp:
     runs-on: ubuntu-18.04    
     timeout-minutes: 60
@@ -396,21 +397,25 @@ jobs:
         #sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-5 60 --slave /usr/bin/g++ g++ /usr/bin/g++-5;
         sudo apt-get install libglfw3-dev libglfw3;
 
+    - name: Check_API
+      shell: bash
+      run: |
+        cd scripts
+        ./api_check.sh
+        ./pr_check.sh
+        cd ..
+        mkdir build
+
     - name: Build Debug
       shell: bash
       run: |
-        cd scripts && ./api_check.sh && cd ..
-        mkdir build
-        cd ./scripts && ./pr_check.sh && cd ../build
+        cd build
         cmake .. -DBUILD_EXAMPLES=true -DBUILD_WITH_TM2=true -DBUILD_SHARED_LIBS=false -DCHECK_FOR_UPDATES=true -DBUILD_TOOLS=true -DBUILD_PYTHON_BINDINGS=true -DPYBIND11_PYTHON_VERSION=3.5 -DBUILD_WITH_DDS=true
         cmake --build . --config ${{env.LRS_BUILD_CONFIG}} -- -j4  
 
     - name: Build RelWithDebInfo
       shell: bash
       run: |
-        cd scripts && ./api_check.sh && cd ..
-        mkdir build
-        cd ./scripts && ./pr_check.sh && cd ../build
         cmake .. -DBUILD_EXAMPLES=true -DBUILD_WITH_TM2=true -DBUILD_SHARED_LIBS=false -DCHECK_FOR_UPDATES=true -DBUILD_TOOLS=true -DBUILD_PYTHON_BINDINGS=true -DPYBIND11_PYTHON_VERSION=3.5 -DBUILD_WITH_DDS=true
         cmake --build . --config ${{env.LRS_RUN_WITH_DEB_CONFIG}} -- -j4  
   
