@@ -678,6 +678,7 @@ namespace librealsense
                         // - video0 for Depth and video1 for Depth's md.
                         // - video2 for RGB and video3 for RGB's md.
                         // - video4 for IR stream. IR's md is currently not available.
+                        // - video5 for IMU (accel or gyro TBD)
                             case 0:
                                 mi = 0;
                                 break;
@@ -691,6 +692,9 @@ namespace librealsense
                                 mi = 3;
                                 break;
                             case 4:   //added for D457
+                                mi = 0;
+                                break;
+                            case 5:   //added for D457
                                 mi = 4;
                                 break;
                             default:
