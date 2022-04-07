@@ -5,7 +5,7 @@
 #include <vector>
 #include <sstream>
 #include "wrap.h"
-#include "../common/utilities/string/split.h"
+#include <librealsense2/utilities/string/split.h>
 #include "../third-party/imgui/imgui.h"
 
 namespace utilities {

@@ -9,7 +9,7 @@
 
 #include <librealsense2/rs.hpp>
 #include <librealsense2-gl/rs_processing_gl.hpp>
-#include <utilities/time/timer.h>
+#include <librealsense2/utilities/time/timer.h>
 
 #include "matrix4.h"
 #include "float3.h"

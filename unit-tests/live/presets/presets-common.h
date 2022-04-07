@@ -2,7 +2,7 @@
 // Copyright(c) 2020 Intel Corporation. All Rights Reserved.
 
 #include "../live-common.h"
-#include <src/concurrency.h>
+#include <librealsense2/utilities/concurrency/concurrency.h>
 #include <src/types.h>
 #include <src/l500/l500-private.h>
 #include <src/l500/l500-options.h>

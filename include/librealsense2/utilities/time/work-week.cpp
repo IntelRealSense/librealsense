@@ -1,7 +1,7 @@
 //// License: Apache 2.0. See LICENSE file in root directory.
 //// Copyright(c) 2020 Intel Corporation. All Rights Reserved.
 
-#include "work_week.h"
+#include "work-week.h"
 #include <string>
 #include <stdexcept>
 #include <sstream>

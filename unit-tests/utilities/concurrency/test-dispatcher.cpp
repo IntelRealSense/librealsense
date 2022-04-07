@@ -1,11 +1,11 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2021 Intel Corporation. All Rights Reserved.
 
-//#cmake:add-file ../../../src/dispatcher.cpp
+//#cmake:add-file ../../../include/librealsense2/utilities/concurrency/dispatcher.cpp
 
 #include <unit-tests/test.h>
-#include <common/utilities/time/timer.h>
-#include <src/concurrency.h>
+#include <librealsense2/utilities/time/timer.h>
+#include <librealsense2/utilities/concurrency/concurrency.h>
 
 #include <algorithm>
 #include <vector>

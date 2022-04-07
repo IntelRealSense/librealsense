@@ -3,8 +3,20 @@
 
 #pragma once
 
+// When including this file outside LibRealSense you also need to:
+// 1. Compile the easylogging++.cc file
+// 2. With static linkage, ELPP is initialized by librealsense, so doing it here will
+//    create errors. When we're using the shared .so/.dll, the two are separate and we have
+//    to initialize ours if we want to use the APIs!
+// Use this code snippet:
+// 
+//#include <easylogging++.h>
+//#ifdef BUILD_SHARED_LIBS
+//INITIALIZE_EASYLOGGINGPP
+//#endif
+
 #if BUILD_EASYLOGGINGPP
-#include "../third-party/easyloggingpp/src/easylogging++.h"
+#include <third-party/easyloggingpp/src/easylogging++.h>
 
 
 #ifdef __ANDROID__  

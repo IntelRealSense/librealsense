@@ -6,7 +6,7 @@
 #include "uvc-types.h"
 #include "../usb/usb-messenger.h"
 #include "../usb/usb-enumerator.h"
-#include "../concurrency.h"
+#include <librealsense2/utilities/concurrency/concurrency.h>
 #include "../types.h"
 #include "uvc-parser.h"
 #include "uvc-streamer.h"

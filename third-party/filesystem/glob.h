@@ -3,7 +3,7 @@
 // of this distribution and at http://opencv.org/license.html.
 
 #pragma once
-
+#include <string>
 #if defined _WIN32 || defined WINCE
 # include <windows.h>
 const char dir_separators[] = "/\\";

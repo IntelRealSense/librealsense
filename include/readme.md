@@ -5,6 +5,7 @@
 Under `librealsense2` folder you will find two subfolers:
 * [h](./librealsense2/h) - Contains headers for the C language
 * [hpp](./librealsense2/hpp) - Contains headers for the C++ language, depends on C headers
+* [utilities](./librealsense2/utilities) - Contains utility classes/functions for the C/C++ language
 
 In addition, you can include [<librealsense2/rs.h>](./librealsense2/rs.h) and [<librealsense2/rs.hpp>](./librealsense2/rs.hpp) to get most of SDK functionality in C and C++ respectively. 
 

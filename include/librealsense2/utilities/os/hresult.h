@@ -7,7 +7,7 @@
 #include <functional>
 #include <comdef.h>
 #include <sstream>
-#include "../string/windows.h"
+#include <librealsense2/utilities/string/windows.h>
 
 namespace utilities {
 namespace hresult {

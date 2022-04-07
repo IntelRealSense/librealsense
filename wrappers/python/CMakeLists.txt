@@ -79,7 +79,7 @@ set(RAW_RS
     ../../src/log.cpp
     ../../src/backend.h
     ../../src/backend.cpp
-    ../../src/dispatcher.cpp
+    ../../include/librealsense2/utilities/concurrency/dispatcher.cpp
     ../../src/frame.cpp
     ../../src/environment.cpp
     ../../src/to-string.cpp
