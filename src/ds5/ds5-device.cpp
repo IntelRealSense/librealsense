@@ -1135,7 +1135,7 @@ namespace librealsense
             }
             
             // Metadata registration
-            if (/*true || */!mipi_sensor)
+            if (!mipi_sensor)
             {
                 depth_sensor.register_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP, make_uvc_header_parser(&uvc_header::timestamp));
 
