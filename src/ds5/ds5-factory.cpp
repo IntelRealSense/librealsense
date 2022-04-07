@@ -571,6 +571,7 @@ namespace librealsense
     // D457 Development
     class rs457_device : public ds5_active,
                          public ds5_color,
+                         public ds5_motion,
                          public ds5_advanced_mode_base
     {
     public:
@@ -581,6 +582,7 @@ namespace librealsense
               ds5_device(ctx, group),
               ds5_active(ctx, group),
               ds5_color(ctx,  group),
+              ds5_motion(ctx, group, true),
               ds5_advanced_mode_base(ds5_device::_hw_monitor, get_depth_sensor()) {}
 
         std::shared_ptr<matcher> create_matcher(const frame_holder& frame) const override;

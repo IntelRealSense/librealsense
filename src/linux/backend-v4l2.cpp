@@ -658,7 +658,7 @@ namespace librealsense
 
                         // D457-specific
                         vid = 0x8086;
-                        pid = 0xABCD; // TBD Evgeni
+                        pid = 0xABCD; // D457 dev
 
                         std::smatch match;
                         uint8_t ind{};
@@ -674,7 +674,10 @@ namespace librealsense
 
                         switch(ind)
                         {
-                            //  D457 exposes video0 for Depth and video1 for RGB. IR is currently not available
+                            //  D457 exposes:
+                        // - video0 for Depth and video1 for Depth's md.
+                        // - video2 for RGB and video3 for RGB's md.
+                        // - video4 for IR stream. IR's md is currently not available.
                             case 0:
                                 mi = 0;
                                 break;
@@ -688,7 +691,7 @@ namespace librealsense
                                 mi = 3;
                                 break;
                             case 4:   //added for D457
-                                mi = 0;
+                                mi = 4;
                                 break;
                             default:
                                 mi = 0xffff;
