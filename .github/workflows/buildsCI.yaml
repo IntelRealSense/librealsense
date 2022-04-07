@@ -416,6 +416,7 @@ jobs:
     - name: Build RelWithDebInfo
       shell: bash
       run: |
+        cd build
         cmake .. -DBUILD_EXAMPLES=true -DBUILD_WITH_TM2=true -DBUILD_SHARED_LIBS=false -DCHECK_FOR_UPDATES=true -DBUILD_TOOLS=true -DBUILD_PYTHON_BINDINGS=true -DPYBIND11_PYTHON_VERSION=3.5 -DBUILD_WITH_DDS=true
         cmake --build . --config ${{env.LRS_RUN_WITH_DEB_CONFIG}} -- -j4  
   
