@@ -6,7 +6,7 @@
 #include <librealsense2/rs_advanced_mode.hpp>
 #include <types.h>
 #include <type_traits>
-#include "utilities/string/string-utilities.h"
+#include <librealsense2/utilities/string/string-utilities.h>
 
 #define TEXT_BUFF_SIZE 1024
 

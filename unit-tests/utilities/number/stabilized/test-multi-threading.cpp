@@ -1,12 +1,12 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2020 Intel Corporation. All Rights Reserved.
 
-//#cmake:add-file ../../../../common/utilities/number/stabilized-value.h
+//#cmake:add-file ../../../../include/librealsense2/utilities/number/stabilized-value.h
 
 #include <thread>
 #include <chrono>
 #include "../../../test.h"
-#include <../common/utilities/number/stabilized-value.h>
+#include <librealsense2/utilities/number/stabilized-value.h>
 
 using namespace utilities::number;
 // Test group description:

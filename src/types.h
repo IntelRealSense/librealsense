@@ -12,9 +12,9 @@
 #include <librealsense2/hpp/rs_types.hpp>
 
 #include "backend.h"
-#include "concurrency.h"
+#include <librealsense2/utilities/concurrency/concurrency.h>
 #include "librealsense-exception.h"
-#include "easyloggingpp.h"
+#include <librealsense2/utilities/easylogging/easyloggingpp.h>
 
 #ifndef _USE_MATH_DEFINES
 #define _USE_MATH_DEFINES

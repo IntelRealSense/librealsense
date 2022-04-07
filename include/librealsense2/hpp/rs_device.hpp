@@ -830,6 +830,32 @@ namespace rs2
             error::handle(e);
         }
 
+        std::vector<uint8_t> build_command(uint32_t opcode,
+            uint32_t param1 = 0,
+            uint32_t param2 = 0,
+            uint32_t param3 = 0,
+            uint32_t param4 = 0,
+            std::vector<uint8_t> const & data = {}) const
+        {
+            std::vector<uint8_t> results;
+
+            rs2_error* e = nullptr;
+            auto buffer = rs2_build_debug_protocol_command(_dev.get(), opcode, param1, param2, param3, param4,
+                (void*)data.data(), (uint32_t)data.size(), &e);
+            std::shared_ptr<const rs2_raw_data_buffer> list(buffer, rs2_delete_raw_data);
+            error::handle(e);
+
+            auto size = rs2_get_raw_data_size(list.get(), &e);
+            error::handle(e);
+
+            auto start = rs2_get_raw_data(list.get(), &e);
+            error::handle(e);
+
+            results.insert(results.begin(), start, start + size);
+
+            return results;
+        }
+
         std::vector<uint8_t> send_and_receive_raw_data(const std::vector<uint8_t>& input) const
         {
             std::vector<uint8_t> results;
@@ -844,6 +870,7 @@ namespace rs2
             error::handle(e);
 
             auto start = rs2_get_raw_data(list.get(), &e);
+            error::handle(e);
 
             results.insert(results.begin(), start, start + size);
 

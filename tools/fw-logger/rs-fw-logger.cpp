@@ -3,7 +3,7 @@
 
 #include <librealsense2/rs.hpp>
 #include <librealsense2/hpp/rs_internal.hpp>
-#include <utilities/string/string-utilities.h>
+#include <librealsense2/utilities/string/string-utilities.h>
 #include <fstream>
 #include <thread>
 #include "tclap/CmdLine.h"
