@@ -167,6 +167,90 @@ namespace librealsense
         throw std::runtime_error(to_string() << "Motion Intrinsics unknown for stream " << rs2_stream_to_string(stream) << "!");
     }
 
+    std::shared_ptr<synthetic_sensor> ds5_motion::create_uvc_device(std::shared_ptr<context> ctx,
+                                                  const std::vector<platform::uvc_device_info>& all_uvc_infos,
+                                                  const firmware_version& camera_fw_version)
+    {
+        if (all_uvc_infos.empty())
+        {
+            LOG_WARNING("No UVC info provided, IMU is disabled");
+            return nullptr;
+        }
+
+        auto&& backend = ctx->get_backend();
+
+        std::vector<std::shared_ptr<platform::uvc_device>> imu_devices;
+        for (auto&& info : filter_by_mi(all_uvc_infos, 4)) // Filter just mi=4, IMU
+            imu_devices.push_back(backend.create_uvc_device(info));
+
+        static const char* custom_sensor_fw_ver = "5.6.0.0";
+
+        std::unique_ptr<frame_timestamp_reader> timestamp_reader_backup(new ds5_timestamp_reader(backend.create_time_service()));
+        std::unique_ptr<frame_timestamp_reader> timestamp_reader_metadata(new ds5_timestamp_reader_from_metadata(std::move(timestamp_reader_backup)));
+
+        auto enable_global_time_option = std::shared_ptr<global_time_option>(new global_time_option());
+
+        // Dynamically populate the supported HID profiles according to the selected IMU module
+        std::vector<odr> accel_fps_rates;
+        std::map<unsigned, unsigned> fps_and_frequency_map;
+        if (ds::d400_caps::CAP_BMI_085 && _device_capabilities)
+            accel_fps_rates = { odr::IMU_FPS_100,odr::IMU_FPS_200 };
+        else // Applies to BMI_055 and unrecognized sensors
+            accel_fps_rates = { odr::IMU_FPS_63,odr::IMU_FPS_250 };
+
+        for (auto&& elem : accel_fps_rates)
+        {
+            sensor_name_and_hid_profiles.push_back({ accel_sensor_name, { RS2_FORMAT_MOTION_XYZ32F, RS2_STREAM_ACCEL, 0, 1, 1, static_cast<uint16_t>(elem)} });
+            fps_and_frequency_map.emplace(unsigned(elem), hid_fps_translation.at(elem));
+        }
+        fps_and_sampling_frequency_per_rs2_stream[RS2_STREAM_ACCEL] = fps_and_frequency_map;
+
+        auto raw_hid_ep = std::make_shared<uvc_sensor>("Raw IMU Sensor", std::make_shared<platform::multi_pins_uvc_device>(imu_devices),
+             std::unique_ptr<frame_timestamp_reader>(new global_timestamp_reader(std::move(timestamp_reader_metadata), _tf_keeper, enable_global_time_option)), this);
+
+        auto hid_ep = std::make_shared<ds5_hid_sensor>("Motion Module", raw_hid_ep, this, this);
+
+        hid_ep->register_option(RS2_OPTION_GLOBAL_TIME_ENABLED, enable_global_time_option);
+
+        // register pre-processing
+        std::shared_ptr<enable_motion_correction> mm_correct_opt = nullptr;
+
+        //  Motion intrinsic calibration presents is a prerequisite for motion correction.
+        try
+        {
+            if (_mm_calib)
+            {
+                mm_correct_opt = std::make_shared<enable_motion_correction>(hid_ep.get(),
+                    option_range{ 0, 1, 1, 1 });
+                hid_ep->register_option(RS2_OPTION_ENABLE_MOTION_CORRECTION, mm_correct_opt);
+            }
+        }
+        catch (...) {}
+
+        hid_ep->register_processing_block(
+            { {RS2_FORMAT_MOTION_XYZ32F, RS2_STREAM_ACCEL} },
+            { {RS2_FORMAT_MOTION_XYZ32F, RS2_STREAM_ACCEL} },
+            [&, mm_correct_opt]() { return std::make_shared<acceleration_transform>(_mm_calib, mm_correct_opt);
+        });
+
+        hid_ep->register_processing_block(
+            { {RS2_FORMAT_MOTION_XYZ32F, RS2_STREAM_GYRO} },
+            { {RS2_FORMAT_MOTION_XYZ32F, RS2_STREAM_GYRO} },
+            [&, mm_correct_opt]() { return std::make_shared<gyroscope_transform>(_mm_calib, mm_correct_opt);
+        });
+
+        // D457 dev - removing it from "normal" hid device
+        /*if ((camera_fw_version >= firmware_version(custom_sensor_fw_ver)) &&
+                (!val_in_range(_pid, { ds::RS400_IMU_PID, ds::RS435I_PID, ds::RS430I_PID, ds::RS465_PID, ds::RS405_PID, ds::RS455_PID })))
+        {
+            hid_ep->register_option(RS2_OPTION_MOTION_MODULE_TEMPERATURE,
+                                    std::make_shared<motion_module_temperature_option>(*raw_hid_ep));
+        }*/
+
+        return hid_ep;
+    }
+
+
     std::shared_ptr<synthetic_sensor> ds5_motion::create_hid_device(std::shared_ptr<context> ctx,
                                                                 const std::vector<platform::hid_device_info>& all_hid_infos,
                                                                 const firmware_version& camera_fw_version)
@@ -304,7 +388,8 @@ namespace librealsense
     }
 
     ds5_motion::ds5_motion(std::shared_ptr<context> ctx,
-                           const platform::backend_device_group& group)
+                           const platform::backend_device_group& group,
+                           bool is_uvc_device)
         : device(ctx, group), ds5_device(ctx, group),
           _fisheye_stream(new stream(RS2_STREAM_FISHEYE)),
           _accel_stream(new stream(RS2_STREAM_ACCEL)),
@@ -312,22 +397,35 @@ namespace librealsense
     {
         using namespace ds;
 
-        std::vector<platform::hid_device_info> hid_infos = group.hid_devices;
-
-        if (!hid_infos.empty())
+        if (is_uvc_device)
         {
-            // product id
-            _pid = static_cast<uint16_t>(strtoul(hid_infos.front().pid.data(), nullptr, 16));
+            std::vector<platform::uvc_device_info> uvc_infos = group.uvc_devices;
 
-            // motion correction
-            _mm_calib = std::make_shared<mm_calib_handler>(_hw_monitor, _pid);
-
-            _accel_intrinsic = std::make_shared<lazy<ds::imu_intrinsic>>([this]() { return _mm_calib->get_intrinsic(RS2_STREAM_ACCEL); });
-            _gyro_intrinsic = std::make_shared<lazy<ds::imu_intrinsic>>([this]() { return _mm_calib->get_intrinsic(RS2_STREAM_GYRO); });
-
-            // use predefined extrinsics
-            _depth_to_imu = std::make_shared<lazy<rs2_extrinsics>>([this]() { return _mm_calib->get_extrinsic(RS2_STREAM_ACCEL); });
+            if (!uvc_infos.empty())
+            {
+                // product id - D457 dev - check - must not be the front of uvc_infos vector
+                _pid = uvc_infos.front().pid;
+            }
         }
+        else
+        {
+            std::vector<platform::hid_device_info> hid_infos = group.hid_devices;
+
+            if (!hid_infos.empty())
+            {
+                // product id
+                _pid = static_cast<uint16_t>(strtoul(hid_infos.front().pid.data(), nullptr, 16));
+            }
+        }
+
+        // motion correction
+        _mm_calib = std::make_shared<mm_calib_handler>(_hw_monitor, _pid);
+
+        _accel_intrinsic = std::make_shared<lazy<ds::imu_intrinsic>>([this]() { return _mm_calib->get_intrinsic(RS2_STREAM_ACCEL); });
+        _gyro_intrinsic = std::make_shared<lazy<ds::imu_intrinsic>>([this]() { return _mm_calib->get_intrinsic(RS2_STREAM_GYRO); });
+
+        // use predefined extrinsics
+        _depth_to_imu = std::make_shared<lazy<rs2_extrinsics>>([this]() { return _mm_calib->get_extrinsic(RS2_STREAM_ACCEL); });
 
         initialize_fisheye_sensor(ctx,group);
 
@@ -338,13 +436,28 @@ namespace librealsense
         register_stream_to_extrinsic_group(*_accel_stream, 0);
 
         // Try to add HID endpoint
-        auto hid_ep = create_hid_device(ctx, group.hid_devices, _fw_version);
-        if (hid_ep)
+        std::shared_ptr<synthetic_sensor> sensor_ep;
+        if (is_uvc_device)
         {
-            _motion_module_device_idx = static_cast<uint8_t>(add_sensor(hid_ep));
+            sensor_ep = create_uvc_device(ctx, group.uvc_devices, _fw_version);
+            if (sensor_ep)
+            {
+                _motion_module_device_idx = static_cast<uint8_t>(add_sensor(sensor_ep));
 
-            // HID metadata attributes
-            hid_ep->get_raw_sensor()->register_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP, make_hid_header_parser(&platform::hid_header::timestamp));
+                // HID metadata attributes - D457 dev - check metadata parser
+                sensor_ep->get_raw_sensor()->register_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP, make_hid_header_parser(&platform::hid_header::timestamp));
+            }
+        }
+        else
+        {
+            sensor_ep = create_hid_device(ctx, group.hid_devices, _fw_version);
+            if (sensor_ep)
+            {
+                _motion_module_device_idx = static_cast<uint8_t>(add_sensor(sensor_ep));
+
+                // HID metadata attributes
+                sensor_ep->get_raw_sensor()->register_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP, make_hid_header_parser(&platform::hid_header::timestamp));
+            }
         }
     }
 

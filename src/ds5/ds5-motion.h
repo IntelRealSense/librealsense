@@ -402,8 +402,13 @@ namespace librealsense
                                                       const std::vector<platform::hid_device_info>& all_hid_infos,
                                                       const firmware_version& camera_fw_version);
 
+        std::shared_ptr<synthetic_sensor> create_uvc_device(std::shared_ptr<context> ctx,
+                                                      const std::vector<platform::uvc_device_info>& all_uvc_infos,
+                                                      const firmware_version& camera_fw_version);
+
         ds5_motion(std::shared_ptr<context> ctx,
-                   const platform::backend_device_group& group);
+                   const platform::backend_device_group& group,
+                   bool is_uvc_device = false);
 
         rs2_motion_device_intrinsic get_motion_intrinsics(rs2_stream) const;
 
