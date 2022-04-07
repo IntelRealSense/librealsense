@@ -12,7 +12,7 @@
 #include "handle-usbhost.h"
 
 #include "endpoint-usbhost.h"
-#include "../concurrency.h"
+#include <librealsense2/utilities/concurrency/concurrency.h>
 #include "request-usbhost.h"
 #include <mutex>
 #include <map>

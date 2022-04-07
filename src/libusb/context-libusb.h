@@ -4,7 +4,7 @@
 #pragma once
 
 #include "usb/usb-types.h"
-#include "../concurrency.h"
+#include <librealsense2/utilities/concurrency/concurrency.h>
 
 #include <memory>
 #include "libusb.h"

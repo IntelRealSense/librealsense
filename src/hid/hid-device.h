@@ -6,7 +6,7 @@
 #include "hid-types.h"
 #include "../usb/usb-messenger.h"
 #include "../usb/usb-enumerator.h"
-#include "../concurrency.h"
+#include <librealsense2/utilities/concurrency/concurrency.h>
 #include "stdio.h"
 #include "stdlib.h"
 

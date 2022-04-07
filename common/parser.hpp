@@ -16,7 +16,7 @@
 #endif
 
 #include "../third-party/rapidxml/rapidxml.hpp"
-#include "./utilities/string/string-utilities.h"
+#include <librealsense2/utilities/string/string-utilities.h>
 
 #define MAX_PARAMS 4
 

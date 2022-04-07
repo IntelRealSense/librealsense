@@ -226,8 +226,10 @@ void init_device(py::module &m) {
 
     py::class_<rs2::debug_protocol> debug_protocol(m, "debug_protocol"); // No docstring in C++
     debug_protocol.def(py::init<rs2::device>())
+        .def("build_command", &rs2::debug_protocol::build_command, "opcode"_a, "param1"_a = 0, 
+            "param2"_a = 0, "param3"_a = 0, "param4"_a = 0, "data"_a = std::vector<uint8_t>()) 
         .def("send_and_receive_raw_data", &rs2::debug_protocol::send_and_receive_raw_data,
-             "input"_a);  // No docstring in C++
+            "input"_a);  // No docstring in C++
 
     py::class_<rs2::device_list> device_list(m, "device_list"); // No docstring in C++
     device_list.def(py::init<>())
