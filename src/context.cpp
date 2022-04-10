@@ -132,27 +132,7 @@ namespace librealsense
        assert(_device_watcher->is_stopped());
 
 #ifdef BUILD_WITH_DDS
-       try
-       {
-           _dds_watcher = std::make_shared< dds_device_watcher >( 0 );
-
-           // TODO - should we start here or on register_device_callback?
-           _dds_watcher->start( [this]( platform::backend_device_group old, platform::backend_device_group curr )
-               {
-                   // TODO Here we should add DDS devices to the `on_device_changed`parameters
-                   // on_device_changed(old, curr, _playback_devices, _playback_devices);
-               } );
-       }
-       catch( const std::exception &e ) 
-       {
-           LOG_ERROR("Failed starting a DDS device watcher, error: " << e.what());
-       }
-       catch(...) 
-       {
-           LOG_ERROR("Failed starting a DDS device watcher, unknown error occured");
-       }
-
-
+       _dds_watcher = std::make_shared< dds_device_watcher >( 0 );
 #endif
     }
 
@@ -491,6 +471,15 @@ namespace librealsense
         });
     }
 
+    void context::start_dds_device_watcher()
+    {
+        _dds_watcher->start(
+            [this]( platform::backend_device_group old, platform::backend_device_group curr ) {
+                // TODO Here we should add DDS devices to the `on_device_changed`parameters
+                // on_device_changed(old, curr, _playback_devices, _playback_devices);
+            } );
+    }
+
     uint64_t context::register_internal_device_callback(devices_changed_callback_ptr callback)
     {
         std::lock_guard<std::mutex> lock(_devices_changed_callbacks_mtx);
@@ -500,6 +489,11 @@ namespace librealsense
         if (_device_watcher->is_stopped())
         {
             start_device_watcher();
+        }
+
+        if( _dds_watcher && _dds_watcher->is_stopped() )
+        {
+            start_dds_device_watcher();
         }
 
         return callback_id;
@@ -513,6 +507,7 @@ namespace librealsense
         if (_devices_changed_callback == nullptr && _devices_changed_callbacks.size() == 0) // There are no register callbacks any more _device_watcher can be stopped
         {
             _device_watcher->stop();
+            if ( _dds_watcher ) _dds_watcher->stop();
         }
     }
 
@@ -524,6 +519,11 @@ namespace librealsense
         if (_device_watcher->is_stopped())
         {
             start_device_watcher();
+        }
+
+        if( _dds_watcher && _dds_watcher->is_stopped() )
+        {
+            start_dds_device_watcher();
         }
     }
 
