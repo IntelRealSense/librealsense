@@ -46,6 +46,7 @@ private:
     eprosima::fastdds::dds::DataReader * _reader;
     eprosima::fastdds::dds::TypeSupport _type_ptr;
     bool _init_done;
+    int _domain_id;
     active_object<> _active_object;
     platform::device_changed_callback _callback;
     //callbacks_heap _callback_inflight;

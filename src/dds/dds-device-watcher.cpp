@@ -24,9 +24,8 @@ dds_device_watcher::dds_device_watcher( int domain_id )
     , _reader( nullptr )
     , _type_ptr( new devicesPubSubType() )
     , _init_done( false )
-    , _active_object( [this, domain_id]( dispatcher::cancellable_timer timer ) {
-        if( ! _init_done )
-            init( domain_id );
+    , _domain_id( domain_id )
+    , _active_object( [this]( dispatcher::cancellable_timer timer ) {
 
         if( _reader->wait_for_unread_message( { 1, 0 } ) )
         {
@@ -86,6 +85,11 @@ void dds_device_watcher::start( platform::device_changed_callback callback )
 {
     stop();
     _callback = std::move( callback );
+    if( ! _init_done )
+    {
+        init( _domain_id );
+        _init_done = true;
+    }
     _active_object.start();
     LOG_DEBUG( "DDS device watcher started" );
 }
@@ -186,7 +190,6 @@ void dds_device_watcher::init( int domain_id )
     }
 
     LOG_DEBUG( "DDS device watcher initialized successfully" );
-    _init_done = true;
 }
 
 
