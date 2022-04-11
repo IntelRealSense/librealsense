@@ -17,7 +17,8 @@ void init_context(py::module &m) {
     // Not binding devices_changed_callback, templated
 
     py::class_<rs2::context> context(m, "context", "Librealsense context class. Includes realsense API version.");
-    context.def(py::init<>())
+    context.def( py::init<>() )
+        .def( py::init< char const * >() )
         .def("query_devices", (rs2::device_list(rs2::context::*)() const) &rs2::context::query_devices, "Create a static"
              " snapshot of all connected devices at the time of the call.")
         .def( "query_devices", ( rs2::device_list( rs2::context::* )(int) const ) & rs2::context::query_devices, "Create a static"

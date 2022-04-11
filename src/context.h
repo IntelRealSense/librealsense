@@ -105,12 +105,15 @@ namespace librealsense
 
     class context : public std::enable_shared_from_this<context>
     {
+        context();
     public:
         explicit context(backend_type type,
             const char* filename = nullptr,
             const char* section = nullptr,
             rs2_recording_mode mode = RS2_RECORDING_MODE_COUNT,
             std::string min_api_version = "0.0.0");
+
+        explicit context( char const * json_settings );
 
         void stop() { _device_watcher->stop(); }
         ~context();
