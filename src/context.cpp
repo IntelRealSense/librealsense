@@ -167,13 +167,13 @@ namespace librealsense
         return true;
     }
     template < class T >
-    static T json_get( json const & j, char const * key, T const & d )
+    static T json_get( json const & j, char const * key, T const & default_value )
     {
         T v;
         if( json_get_ex< T >( j, key, &v ) )
             return v;
-        LOG_DEBUG( key << " = " << d << " (default)" );
-        return d;
+        LOG_DEBUG( key << " = " << default_value << " (default)" );
+        return default_value;
     }
 
 
