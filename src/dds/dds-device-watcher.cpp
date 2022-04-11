@@ -58,7 +58,7 @@ dds_device_watcher::dds_device_watcher( int domain_id )
                 _dds_devices[guid.entityId.to_uint32()]
                     = std::string( data.name().begin(), data.name().end() );
 
-                LOG_DEBUG( "DDS device writer GUID: " << guid.entityId.to_uint32() << " added" );
+                LOG_DEBUG( "DDS device writer GUID: " << guid.entityId.to_uint32() << " added on domain " << _domain_id );
 
                 // TODO - Call LRS callback to create the RS devices
                 // if( callback )
@@ -96,9 +96,12 @@ void dds_device_watcher::start( platform::device_changed_callback callback )
 
 void dds_device_watcher::stop()
 {
-    _active_object.stop();
-    //_callback_inflight.wait_until_empty();
-    LOG_DEBUG( "DDS device watcher stopped" );
+    if( ! is_stopped() )
+    {
+        _active_object.stop();
+        //_callback_inflight.wait_until_empty();
+        LOG_DEBUG( "DDS device watcher stopped" );
+    }
 }
 
 

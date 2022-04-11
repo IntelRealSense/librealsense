@@ -96,11 +96,11 @@ namespace rs2
     class context
     {
     public:
-        context()
+        context( char const * json_settings = nullptr )
         {
             rs2_error* e = nullptr;
             _context = std::shared_ptr<rs2_context>(
-                rs2_create_context(RS2_API_VERSION, &e),
+                rs2_create_context_ex( RS2_API_VERSION, json_settings, &e ),
                 rs2_delete_context);
             error::handle(e);
         }

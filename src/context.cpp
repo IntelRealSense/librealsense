@@ -24,6 +24,9 @@
 #include "dds/dds-device-watcher.h"
 #endif
 
+#include <third-party/json.hpp>
+using json = nlohmann::json;
+
 #ifdef WITH_TRACKING
 #include "tm2/tm-info.h"
 #endif
@@ -98,20 +101,26 @@ namespace librealsense
         {rs_fourcc('M','J','P','G'), RS2_STREAM_COLOR},
     };
 
+
+    context::context()
+        : _devices_changed_callback( nullptr, []( rs2_devices_changed_callback* ) {} )
+    {
+        static bool version_logged = false;
+        if( ! version_logged )
+        {
+            version_logged = true;
+            LOG_DEBUG( "Librealsense " << std::string( std::begin( rs2_api_version ), std::end( rs2_api_version ) ) );
+        }
+    }
+
+
     context::context(backend_type type,
                      const char* filename,
                      const char* section,
                      rs2_recording_mode mode,
                      std::string min_api_version)
-        : _devices_changed_callback(nullptr, [](rs2_devices_changed_callback*){})
+        : context()
     {
-        static bool version_logged=false;
-        if (!version_logged)
-        {
-            version_logged = true;
-            LOG_DEBUG("Librealsense " << std::string(std::begin(rs2_api_version),std::end(rs2_api_version)));
-        }
-
         switch(type)
         {
         case backend_type::standard:
@@ -133,6 +142,56 @@ namespace librealsense
 
 #ifdef BUILD_WITH_DDS
        _dds_watcher = std::make_shared< dds_device_watcher >( 0 );
+#endif
+    }
+
+
+    template< class T >
+    static bool json_get_ex( json const & j, char const * key, T * pv )
+    {
+        auto it = j.find( key );
+        if( it == j.end()  ||  it->is_null() )
+            return false;
+        try
+        {
+            // This will throw for type mismatches, etc.
+            *pv = it->get< T >();
+        }
+        catch( std::exception const & e )
+        {
+            std::ostringstream s;
+            s << e.what() << " - while parsing '" << key << "'";
+            throw std::runtime_error( s.str() );
+        }
+        LOG_DEBUG( key << " = " << *pv );
+        return true;
+    }
+    template < class T >
+    static T json_get( json const & j, char const * key, T const & default_value )
+    {
+        T v;
+        if( json_get_ex< T >( j, key, &v ) )
+            return v;
+        LOG_DEBUG( key << " = " << default_value << " (default)" );
+        return default_value;
+    }
+
+
+    context::context( char const * json_settings )
+        : context()
+    {
+        json settings = json_settings ? json::parse( json_settings ) : json();
+
+        _backend = platform::create_backend();  // standard type
+
+        environment::get_instance().set_time_service( _backend->create_time_service() );
+
+        _device_watcher = _backend->create_device_watcher();
+        assert( _device_watcher->is_stopped() );
+
+#ifdef BUILD_WITH_DDS
+        if( json_get< bool >( settings, "dds-discovery", true ) )
+            _dds_watcher = std::make_shared< dds_device_watcher >( json_get< int >( settings, "dds-domain", 0 ) );
 #endif
     }
 
