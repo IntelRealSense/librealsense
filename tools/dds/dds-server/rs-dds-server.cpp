@@ -17,14 +17,18 @@ try
     CmdLine cmd( "librealsense rs-dds-server tool, use CTRL + C to stop..", ' ' );
     ValueArg< eprosima::fastdds::dds::DomainId_t > domain_arg( "d",
                                                                "domain",
-                                                               "select domain ID to listen on",
+                                                               "Select domain ID to listen on",
                                                                false,
                                                                0,
                                                                "0-232" );
+    SwitchArg debug_arg( "", "debug", "Enable debug logging", false );
 
     cmd.add( domain_arg );
+    cmd.add( debug_arg );
     cmd.parse( argc, argv );
 
+    if( debug_arg.isSet() )
+        rs2::log_to_console( RS2_LOG_SEVERITY_DEBUG );
     if( domain_arg.isSet() )
     {
         domain = domain_arg.getValue();

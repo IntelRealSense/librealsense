@@ -10,7 +10,7 @@
 #include <fastdds/dds/publisher/DataWriter.hpp>
 #include <fastdds/dds/publisher/qos/PublisherQos.hpp>
 #include <fastdds/rtps/participant/ParticipantDiscoveryInfo.h>
-#include "../../../src/dds/msg/devicesPubSubTypes.h"
+#include <src/dds/msg/devicesPubSubTypes.h>
 
 // We align the DDS topic name to ROS2 as it expect the 'rt/' prefix for the topic name
 #define ROS2_PREFIX( name ) std::string( "rt/" ).append( name )
@@ -23,6 +23,9 @@ dds_server::dds_server()
     , _publisher( nullptr )
     , _topic( nullptr )
     , _type_support_ptr( new devicesPubSubType() )
+    , _ctx( "{"
+            "\"dds-discovery\" : false"
+            "}" )
 {
 }
 bool dds_server::init( DomainId_t domain_id )
