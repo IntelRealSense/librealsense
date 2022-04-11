@@ -90,7 +90,7 @@ project( ''' + testname + ''' )
 set( SRC_FILES ''' + filelist + '''
 )
 add_executable( ''' + testname + ''' ${SRC_FILES} )
-source_group( "Common Files" FILES ${ELPP_FILES} ${CATCH_FILES} ''' + dir + '''/test.cpp''' )
+source_group( "Common Files" FILES ${ELPP_SOURCES} ${CATCH_FILES} ''' + dir + '''/test.cpp''' )
     if not custom_main:
         handle.write( ' ' + dir + '/unit-test-default-main.cpp' )
     handle.write( ''' )
@@ -200,7 +200,7 @@ def process_cpp( dir, builddir ):
 
             # Build the list of files we want in the project:
             # At a minimum, we have the original file, plus any common files
-            filelist = [ dir + '/' + f, '${ELPP_FILES}', '${CATCH_FILES}' ]
+            filelist = [ dir + '/' + f, '${ELPP_SOURCES}', '${CATCH_FILES}' ]
             # Add any "" includes specified in the .cpp that we can find
             includes = find_includes( dir + '/' + f )
             # Add any files explicitly listed in the .cpp itself, like this:
@@ -319,11 +319,8 @@ handle = open( cmakefile, 'w' )
 handle.write( '''
 
 # We make use of ELPP (EasyLogging++):
-include_directories( ''' + dir +  '''/../third-party/easyloggingpp/src )
-set( ELPP_FILES
-    ''' + dir + '''/../third-party/easyloggingpp/src/easylogging++.cc
-    ''' + dir + '''/../third-party/easyloggingpp/src/easylogging++.h
-)
+include( ''' + dir +  '''/../include/librealsense2/utilities/easylogging/easyloggingpp.cmake )
+include_directories( ${ELPP_INCLUDES} )
 set( CATCH_FILES
     ''' + dir + '''/catch/catch.hpp
 )
