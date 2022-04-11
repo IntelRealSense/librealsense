@@ -161,7 +161,7 @@ namespace librealsense
         {
             std::ostringstream s;
             s << e.what() << " - while parsing '" << key << "'";
-            throw std::exception( s.str().c_str() );
+            throw std::runtime_error( s.str() );
         }
         LOG_DEBUG( key << " = " << *pv );
         return true;
