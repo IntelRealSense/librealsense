@@ -369,20 +369,6 @@ namespace librealsense
             }
             else 
             {
-                //REMI - D457 - check if needed
-                if ("ABCD" == get_info(RS2_CAMERA_INFO_PRODUCT_ID)) // RS457 Development. to be removed. TODO
-                {
-                    rs2_intrinsics intr{};
-                    intr.width =640;
-                    intr.height =640;
-                    intr.fx =320.f;
-                    intr.fy =240.f;
-                    intr.ppx =630.f;
-                    intr.ppy =630.f;
-                    intr.model = RS2_DISTORTION_NONE;
-                    return intr;
-                }
-
                 return get_intrinsic_by_resolution(
                     *_owner->_coefficients_table_raw,
                     ds::calibration_table_id::coefficients_table_id,
