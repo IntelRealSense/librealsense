@@ -3,7 +3,8 @@ cmake_minimum_required(VERSION 3.1.0)
 project(librealsense2 LANGUAGES CXX C)
 
 # Allow librealsense2 and all of the nested project to include the main repo folder
-include_directories(${CMAKE_SOURCE_DIR})
+set(REPO_ROOT ${CMAKE_CURRENT_SOURCE_DIR})
+include_directories(${REPO_ROOT})
 
 include(CMake/lrs_options.cmake)
 include(CMake/connectivity_check.cmake)

@@ -15,6 +15,9 @@
 //INITIALIZE_EASYLOGGINGPP
 //#endif
 
+// you can use 'include(easyloggingpp.cmake)' for setting required includes and sources variables,
+// and then use '${ELPP_SOURCES}' and '${ELPP_INCLUDES}' CMake variable to add to your target
+
 #if BUILD_EASYLOGGINGPP
 #include <third-party/easyloggingpp/src/easylogging++.h>
 

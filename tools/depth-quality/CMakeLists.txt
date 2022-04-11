@@ -11,12 +11,8 @@ find_package(Threads REQUIRED)
 include_directories(${CMAKE_BINARY_DIR})
 
 if(${BUILD_EASYLOGGINGPP})
-set( ELPP_DIR ../../third-party/easyloggingpp/src )
-
-include_directories( ${ELPP_DIR} )
-set( ELPP_FILES
-    ${ELPP_DIR}/easylogging++.cc
-    ${ELPP_DIR}/easylogging++.h)
+include(../../include/librealsense2/utilities/easylogging/easyloggingpp.cmake)
+include_directories( ${ELPP_INCLUDES} )
 endif()
 
 include(../../common/CMakeLists.txt)
@@ -48,7 +44,7 @@ if(BUILD_GRAPHICAL_EXAMPLES)
 
     if(WIN32)
         add_executable(rs-depth-quality WIN32 ${RS_QUALITY_TOOL_CPP}
-                ${ELPP_FILES}
+                ${ELPP_SOURCES}
                 ${CMAKE_CURRENT_SOURCE_DIR}/res/resource.h
                 ${CMAKE_CURRENT_SOURCE_DIR}/res/realsense-viewer.rc
                 ../../common/windows-app-bootstrap.cpp)
@@ -89,7 +85,7 @@ if(BUILD_GRAPHICAL_EXAMPLES)
     else()
         add_executable(rs-depth-quality 
         ${RS_QUALITY_TOOL_CPP}
-        ${ELPP_FILES}
+        ${ELPP_SOURCES}
         )
 
         include_directories(../../common  ../../third-party
@@ -99,7 +95,6 @@ if(BUILD_GRAPHICAL_EXAMPLES)
                             ../../third-party/tclap/include)
     endif()
 
-    source_group("EasyLogging++" FILES ${ELPP_FILES})
     source_group("SW-Update" FILES ${SW_UPDATE_FILES})
 
     if (CHECK_FOR_UPDATES)
