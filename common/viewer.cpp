@@ -961,7 +961,7 @@ namespace rs2
         : ppf( *this )
         , ctx( ctx_ )
         , frameset_alloc( this )
-        , synchronization_enable( false ) //false for D457 // REMI - D457 - check if needed
+        , synchronization_enable( true )
         , synchronization_enable_prev_state(true)
         , zo_sensors( 0 )
         , _support_ir_reflectivity( false )
