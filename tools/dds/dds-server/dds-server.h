@@ -12,6 +12,7 @@
 #include <fastdds/dds/domain/DomainParticipantListener.hpp>
 #include <fastdds/dds/publisher/DataWriterListener.hpp>
 #include <librealsense2/rs.hpp>  // Include RealSense Cross Platform API
+#include <librealsense2/utilities/concurrency/concurrency.h> 
 
 
 class dds_server
@@ -59,5 +60,6 @@ private:
     std::unordered_map< std::string, dds_device_info > _devices_writers;
     rs2::context _ctx;
     std::vector< std::thread > _dds_device_handler_vec;
+    dispatcher _dds_device_dispatcher;
     std::mutex _worker_mutex;
 };  // class dds_server

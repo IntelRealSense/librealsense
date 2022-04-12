@@ -23,6 +23,7 @@ dds_server::dds_server()
     , _publisher( nullptr )
     , _topic( nullptr )
     , _type_support_ptr( new devicesPubSubType() )
+    , _dds_device_dispatcher( 10 )
     , _ctx( "{"
             "\"dds-discovery\" : false"
             "}" )

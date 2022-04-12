@@ -1,4 +1,4 @@
-# License: Apache 2.0. See LICENSE file in root directory.
+ # License: Apache 2.0. See LICENSE file in root directory.
 # Copyright(c) 2022 Intel Corporation. All Rights Reserved.
 project(rs-dds-server)
 
@@ -11,9 +11,14 @@ set(INC dds-server.h
         ../../../src/dds/msg/devicesPubSubTypes.h
         ../../../src/dds/msg/devices.h)
 
-add_executable(${PROJECT_NAME} ${INC} ${SRC} )
+set(UTILITIES ../../../include/librealsense2/utilities/concurrency/dispatcher.cpp)
+
+
+include(../../../include/librealsense2/utilities/easylogging/easyloggingpp.cmake)
+
+add_executable(${PROJECT_NAME} ${INC} ${SRC} ${UTILITIES} ${ELPP_SOURCES})
 set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 11)
-include_directories(../../../third-party/tclap/include ${CMAKE_BINARY_DIR})
+include_directories(../../../third-party/tclap/include ${ELPP_INCLUDES} ${CMAKE_BINARY_DIR} )
 target_link_libraries(${PROJECT_NAME} ${DEPENDENCIES} dds)
 set_target_properties (${PROJECT_NAME} PROPERTIES FOLDER Tools/dds)
 
