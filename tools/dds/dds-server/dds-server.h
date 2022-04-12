@@ -52,6 +52,17 @@ private:
         std::shared_ptr< dds_serverListener > listener;
     };
 
+    // This function handles the DDS publication of connected/disconnected RS devices.
+    // It prepares the input and dispatch the DDS work to a worker thread.
+    // If a device was removed:
+    //   * remove it from the connected devices (destruct the data writer, the client will be
+    //   notified automatically)
+    // If a device was added:
+    //   * Create a new data writer for it
+    //   * Publish the device name
+    void handle_device_changes( std::vector< std::string > devices_to_remove,
+        std::vector< std::pair< std::string, rs2::device > > devices_to_add );
+
     std::atomic_bool _running;
     eprosima::fastdds::dds::DomainParticipant * _participant;
     eprosima::fastdds::dds::Publisher * _publisher;
@@ -59,7 +70,5 @@ private:
     eprosima::fastdds::dds::TypeSupport _type_support_ptr;
     std::unordered_map< std::string, dds_device_info > _devices_writers;
     rs2::context _ctx;
-    std::vector< std::thread > _dds_device_handler_vec;
     dispatcher _dds_device_dispatcher;
-    std::mutex _worker_mutex;
 };  // class dds_server
