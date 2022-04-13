@@ -1,4 +1,4 @@
- # License: Apache 2.0. See LICENSE file in root directory.
+# License: Apache 2.0. See LICENSE file in root directory.
 # Copyright(c) 2022 Intel Corporation. All Rights Reserved.
 project(rs-dds-server)
 

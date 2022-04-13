@@ -52,7 +52,7 @@ private:
         std::shared_ptr< dds_serverListener > listener;
     };
 
-    // This function handles the DDS publication of connected/disconnected RS devices.
+    // This 2 functions (prepare & post) handles the DDS publication of connected/disconnected RS devices.
     // It prepares the input and dispatch the DDS work to a worker thread.
     // If a device was removed:
     //   * remove it from the connected devices (destruct the data writer, the client will be
@@ -60,8 +60,22 @@ private:
     // If a device was added:
     //   * Create a new data writer for it
     //   * Publish the device name
-    void handle_device_changes( std::vector< std::string > devices_to_remove,
+    bool prepare_devices_changed_lists(
+        const rs2::event_information & info,
+        std::vector< std::string > &devices_to_remove,
+        std::vector< std::pair< std::string, rs2::device > > &devices_to_add );
+
+    void post_device_changes( std::vector< std::string > devices_to_remove,
         std::vector< std::pair< std::string, rs2::device > > devices_to_add );
+
+
+    void remove_dds_device( std::string device_name );
+    void add_dds_device( std::pair< std::string, rs2::device > device_pair );
+    bool is_client_exist( const std::string &device_name ) const;
+    bool create_device_writer( std::string device_name, rs2::device rs2_device );
+    bool create_dds_participant( eprosima::fastdds::dds::DomainId_t domain_id );
+    bool create_dds_publisher();
+    void post_connected_devices_on_wakeup();
 
     std::atomic_bool _running;
     eprosima::fastdds::dds::DomainParticipant * _participant;
