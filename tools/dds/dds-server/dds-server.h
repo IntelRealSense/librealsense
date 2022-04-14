@@ -65,13 +65,15 @@ private:
         std::vector< std::string > &devices_to_remove,
         std::vector< std::pair< std::string, rs2::device > > &devices_to_add );
 
-    void post_device_changes( std::vector< std::string > devices_to_remove,
-        std::vector< std::pair< std::string, rs2::device > > devices_to_add );
+    void post_device_changes( const std::vector< std::string > &devices_to_remove,
+        const std::vector< std::pair< std::string, rs2::device > > &devices_to_add );
 
 
-    void remove_dds_device( std::string device_name );
-    void add_dds_device( std::pair< std::string, rs2::device > device_pair );
-    bool is_client_exist( const std::string &device_name ) const;
+    void remove_dds_device( const std::string &device_name );
+    void add_dds_device( const std::string &dev_name, const rs2::device &rs2_dev );
+    bool verify_client_exist( const std::string & device_name,
+                              std::chrono::steady_clock::duration timeout
+                              = std::chrono::steady_clock::duration::zero() ) const;
     bool create_device_writer( std::string device_name, rs2::device rs2_device );
     bool create_dds_participant( eprosima::fastdds::dds::DomainId_t domain_id );
     bool create_dds_publisher();

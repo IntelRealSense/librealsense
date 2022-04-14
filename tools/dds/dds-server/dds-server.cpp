@@ -30,7 +30,7 @@ dds_server::dds_server()
 {
 }
 bool dds_server::init( DomainId_t domain_id )
-{  
+{
     auto participant_created_ok = create_dds_participant( domain_id );
     auto publisher_created_ok = create_dds_publisher();
     return participant_created_ok && publisher_created_ok;
@@ -40,10 +40,11 @@ void dds_server::run()
 {
     _dds_device_dispatcher.start();
     _running = true;
-    
+
     post_connected_devices_on_wakeup();
 
-    // Register to LRS device changes function to notify on future devices being connected/disconnected
+    // Register to LRS device changes function to notify on future devices being
+    // connected/disconnected
     _ctx.set_devices_changed_callback( [this]( rs2::event_information & info ) {
         if( _running )
         {
@@ -66,8 +67,8 @@ void dds_server::run()
 
 bool dds_server::prepare_devices_changed_lists(
     const rs2::event_information & info,
-    std::vector< std::string > &devices_to_remove,
-    std::vector< std::pair< std::string, rs2::device > > &devices_to_add )
+    std::vector< std::string > & devices_to_remove,
+    std::vector< std::pair< std::string, rs2::device > > & devices_to_add )
 {
     // Remove disconnected devices from devices list
     for( auto dev_info : _devices_writers )
@@ -88,13 +89,13 @@ bool dds_server::prepare_devices_changed_lists(
         devices_to_add.push_back( { device_name, dev } );
     }
 
-    bool device_change_detected = !devices_to_remove.empty() || !devices_to_add.empty();
+    bool device_change_detected = ! devices_to_remove.empty() || ! devices_to_add.empty();
     return device_change_detected;
 }
 
 void dds_server::post_device_changes(
-    std::vector< std::string > devices_to_remove,
-    std::vector< std::pair< std::string, rs2::device > > devices_to_add )
+    const std::vector< std::string > & devices_to_remove,
+    const std::vector< std::pair< std::string, rs2::device > > & devices_to_add )
 {
     try
     {
@@ -105,7 +106,7 @@ void dds_server::post_device_changes(
 
         for( auto dev_to_add : devices_to_add )
         {
-            add_dds_device( dev_to_add );
+            add_dds_device( dev_to_add.first, dev_to_add.second );
         }
     }
 
@@ -115,20 +116,23 @@ void dds_server::post_device_changes(
     }
 }
 
-void dds_server::remove_dds_device( std::string device_name )
+void dds_server::remove_dds_device( const std::string & device_name )
 {
     // deleting a device also notify the clients internally
-    _publisher->delete_datawriter( _devices_writers[device_name].data_writer );
-    std::cout << "Device '" << device_name << "' - removed" << std::endl;
+    auto ret = _publisher->delete_datawriter( _devices_writers[device_name].data_writer );
+    if( ! ret )
+    {
+        std::cout << "Error code: " << ret() << " while trying to delete data writer ("
+                  << _devices_writers[device_name].data_writer->guid() << ")" << std::endl;
+        return;
+    }
     _devices_writers.erase( device_name );
+    std::cout << "Device '" << device_name << "' - removed" << std::endl;
 }
 
-void dds_server::add_dds_device( std::pair< std::string, rs2::device > device_pair )
+void dds_server::add_dds_device( const std::string & dev_name, const rs2::device & rs2_dev )
 {
-    auto dev_name = device_pair.first;
-    auto rs2_dev = device_pair.second;
-
-    if( !create_device_writer( dev_name, rs2_dev) )
+    if( ! create_device_writer( dev_name, rs2_dev ) )
     {
         std::cout << "Error creating a DDS writer" << std::endl;
         return;
@@ -138,9 +142,11 @@ void dds_server::add_dds_device( std::pair< std::string, rs2::device > device_pa
     devices msg;
     strcpy( msg.name().data(), dev_name.c_str() );
     std::cout << "\nDevice '" << dev_name << "' - detected" << std::endl;
-    std::cout << "Looking for at least 1 matching reader... ";  // Status value will be appended to this line
-    
-    if( is_client_exist( dev_name ) )
+    std::cout << "Looking for at least 1 matching reader... ";  // Status value will be appended to
+                                                                // this line
+    // It takes some time from the moment we create the data writer until the data reader is matched
+    // If we send before the data reader is matched the message will not arrive to it.
+    if( verify_client_exist( dev_name, std::chrono::seconds( 1 ) ) )
     {
         std::cout << "found" << std::endl;
         // Post a DDS message with the new added device
@@ -160,17 +166,23 @@ void dds_server::add_dds_device( std::pair< std::string, rs2::device > device_pa
     }
 }
 
-bool dds_server::is_client_exist( const std::string &device_name ) const
+bool dds_server::verify_client_exist( const std::string & device_name, std::chrono::steady_clock::duration timeout ) const
 {
-    int retry_cnt = 4;
     bool client_found = false;
-    do
-    {
-        std::this_thread::sleep_for( std::chrono::milliseconds( 250 ) );
-        client_found = _devices_writers.at(device_name).listener->_matched != 0;
-    }
-    while( ! client_found && retry_cnt-- > 0 );
+    auto & listener = _devices_writers.at( device_name ).listener;
+    client_found = listener->_matched != 0;
 
+    if( timeout > std::chrono::steady_clock::duration::zero() )
+    {
+        int retry_cnt = 4;
+        auto interval_timeout = timeout / retry_cnt;
+        while( !client_found && retry_cnt-- > 0 )
+        {
+            std::this_thread::sleep_for( interval_timeout );
+            std::cout << "slept for " << interval_timeout.count() << " time" << std::endl;
+            client_found = listener->_matched != 0;
+        }
+    }
     return client_found;
 }
 
