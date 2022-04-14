@@ -8,8 +8,8 @@ set(SRC rs-dds-server.cpp
         ${REPO_ROOT}/src/dds/msg/devices.cpp)
         
 set(INC dds-server.h
-        ../../../src/dds/msg/devicesPubSubTypes.h
-        ../../../src/dds/msg/devices.h)
+        ${REPO_ROOT}/src/dds/msg/devicesPubSubTypes.h
+        ${REPO_ROOT}/src/dds/msg/devices.h)
 
 set(UTILITIES ${REPO_ROOT}/include/librealsense2/utilities/concurrency/dispatcher.cpp)
 
