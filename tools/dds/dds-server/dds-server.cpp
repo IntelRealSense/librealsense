@@ -120,7 +120,7 @@ void dds_server::remove_dds_device( const std::string & device_name )
 {
     // deleting a device also notify the clients internally
     auto ret = _publisher->delete_datawriter( _devices_writers[device_name].data_writer );
-    if( ! ret )
+    if( ret != ReturnCode_t::RETCODE_OK)
     {
         std::cout << "Error code: " << ret() << " while trying to delete data writer ("
                   << _devices_writers[device_name].data_writer->guid() << ")" << std::endl;
@@ -146,6 +146,8 @@ void dds_server::add_dds_device( const std::string & dev_name, const rs2::device
                                                                 // this line
     // It takes some time from the moment we create the data writer until the data reader is matched
     // If we send before the data reader is matched the message will not arrive to it.
+    // Currently if we remove the sleep line the client sometimes miss the message. (See https://github.com/eProsima/Fast-DDS/issues/2641)
+    std::this_thread::sleep_for( std::chrono::milliseconds( 100 ) );
     if( verify_client_exist( dev_name, std::chrono::seconds( 1 ) ) )
     {
         std::cout << "found" << std::endl;
