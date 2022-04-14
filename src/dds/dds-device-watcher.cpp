@@ -58,7 +58,7 @@ dds_device_watcher::dds_device_watcher( int domain_id )
                 _dds_devices[guid.entityId.to_uint32()]
                     = std::string( data.name().begin(), data.name().end() );
 
-                LOG_DEBUG( "DDS device writer GUID: " << guid.entityId.to_uint32() << " added on domain " << _domain_id );
+                LOG_DEBUG( "DDS device writer GUID: " << std::hex << guid.entityId.to_uint32() << std::dec << " added on domain " << _domain_id );
 
                 // TODO - Call LRS callback to create the RS devices
                 // if( callback )
@@ -75,7 +75,7 @@ dds_device_watcher::dds_device_watcher( int domain_id )
               std::lock_guard< std::mutex > lock( _devices_mutex );
               if( _dds_devices.find( entity_id ) != _dds_devices.end() )
               {
-                  LOG_DEBUG( "DDS device writer GUID: " << entity_id << " removed" );
+                  LOG_DEBUG( "DDS device writer GUID: " << std::hex << entity_id << std::dec << " removed" );
                   _dds_devices.erase( entity_id );
               }
           } );
