@@ -8,7 +8,33 @@
 #include "tclap/CmdLine.h"
 #include "tclap/ValueArg.h"
 
+#include <librealsense2/utilities/easylogging/easyloggingpp.h>
+#include <fastdds/dds/log/Log.hpp>
+
+
 using namespace TCLAP;
+
+
+struct log_consumer : eprosima::fastdds::dds::LogConsumer
+{
+    virtual void Consume( const eprosima::fastdds::dds::Log::Entry & e ) override
+    {
+        using eprosima::fastdds::dds::Log;
+        switch( e.kind )
+        {
+        case Log::Kind::Error:
+            LOG_ERROR( "[DDS] " << e.message );
+            break;
+        case Log::Kind::Warning:
+            LOG_WARNING( "[DDS] " << e.message );
+            break;
+        case Log::Kind::Info:
+            LOG_DEBUG( "[DDS] " << e.message );
+            break;
+        }
+    }
+};
+
 
 int main( int argc, char * argv[] )
 try
@@ -27,8 +53,20 @@ try
     cmd.add( debug_arg );
     cmd.parse( argc, argv );
 
+    // Intercept DDS messages and redirect them to our own logging mechanism
+    std::unique_ptr< eprosima::fastdds::dds::LogConsumer > consumer( new log_consumer() );
+    eprosima::fastdds::dds::Log::ClearConsumers();
+    eprosima::fastdds::dds::Log::RegisterConsumer( std::move( consumer ) );
+
     if( debug_arg.isSet() )
+    {
         rs2::log_to_console( RS2_LOG_SEVERITY_DEBUG );
+        eprosima::fastdds::dds::Log::SetVerbosity( eprosima::fastdds::dds::Log::Info );
+    }
+    else
+    {
+        rs2::log_to_console( RS2_LOG_SEVERITY_ERROR );
+    }
     if( domain_arg.isSet() )
     {
         domain = domain_arg.getValue();
