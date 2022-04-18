@@ -3,18 +3,14 @@
 
 #include <types.h>
 #include "dds-device-watcher.h"
-#include "msg/devicesPubSubTypes.h"
+#include <librealsense2/dds/topics/dds-messages.h>
 #include <fastdds/dds/domain/DomainParticipantFactory.hpp>
 #include <fastdds/dds/domain/DomainParticipant.hpp>
 #include <fastdds/dds/subscriber/qos/DataReaderQos.hpp>
 #include <fastdds/dds/subscriber/DataReader.hpp>
 #include <fastdds/dds/subscriber/Subscriber.hpp>
 
-// We align the DDS topic name to ROS2 as it expect the 'rt/' prefix for the topic name
-#define ROS2_PREFIX( name ) std::string( "rt/" ).append( name )
-
 using namespace eprosima::fastdds::dds;
-
 using namespace librealsense;
 
 dds_device_watcher::dds_device_watcher( int domain_id )
@@ -22,14 +18,14 @@ dds_device_watcher::dds_device_watcher( int domain_id )
     , _subscriber( nullptr )
     , _topic( nullptr )
     , _reader( nullptr )
-    , _type_ptr( new devicesPubSubType() )
+    , _type_ptr( new dds::topics::devicesPubSubType() )
     , _init_done( false )
     , _domain_id( domain_id )
     , _active_object( [this]( dispatcher::cancellable_timer timer ) {
 
         if( _reader->wait_for_unread_message( { 1, 0 } ) )
         {
-            devices data;
+            dds::topics::devices data;
             SampleInfo info;
             bool device_update_detected = false;
             // Process all the samples until no one is returned,
@@ -160,7 +156,7 @@ void dds_device_watcher::init( int domain_id )
     }
 
     // CREATE THE TOPIC
-    _topic = _participant->create_topic( ROS2_PREFIX( "Devices" ),
+    _topic = _participant->create_topic(  librealsense::dds::topics::DEVICES_TOPIC_NAME,
                                          _type_ptr->getName(),
                                          TOPIC_QOS_DEFAULT );
 
