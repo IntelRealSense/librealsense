@@ -11,6 +11,7 @@ set(TOPICS_FILES
         ${REPO_ROOT}/include/librealsense2/dds/topics/devices/devicesMsg.h
         ${REPO_ROOT}/include/librealsense2/dds/topics/devices/devicesMsgPubSubTypes.cpp
         ${REPO_ROOT}/include/librealsense2/dds/topics/devices/devicesMsg.cpp
+        ${REPO_ROOT}/include/librealsense2/dds/topics/devices/dds-devices-msg.h
         ${REPO_ROOT}/include/librealsense2/dds/topics/dds-messages.h)
 
 set(UTILITIES ${REPO_ROOT}/include/librealsense2/utilities/concurrency/dispatcher.cpp)

@@ -2,5 +2,4 @@
 // Copyright(c) 2022 Intel Corporation. All Rights Reserved.
 
 #pragma once
-#include <string>
-#include "devices/devicesMsgPubSubTypes.h"
+#include "devices/dds-devices-msg.h"

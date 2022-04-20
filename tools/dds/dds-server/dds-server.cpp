@@ -47,7 +47,7 @@ void dds_server::run()
         if( _running )
         {
             std::vector< std::string > devices_to_remove;
-            std::vector< std::pair< tools::dds_server::device_info, rs2::device > > devices_to_add;
+            std::vector< std::pair< librealsense::dds::topics_phys::device_info, rs2::device > > devices_to_add;
 
             if( prepare_devices_changed_lists( info, devices_to_remove, devices_to_add ) )
             {
@@ -66,7 +66,7 @@ void dds_server::run()
 bool dds_server::prepare_devices_changed_lists(
     const rs2::event_information & info,
     std::vector< std::string > & devices_to_remove,
-    std::vector< std::pair< tools::dds_server::device_info, rs2::device > > & devices_to_add )
+    std::vector< std::pair< librealsense::dds::topics_phys::device_info, rs2::device > > & devices_to_add )
 {
     // Remove disconnected devices from devices list
     for( auto dev_info : _devices_writers )
@@ -94,7 +94,7 @@ bool dds_server::prepare_devices_changed_lists(
 
 void dds_server::post_device_changes(
     const std::vector< std::string > & devices_to_remove,
-    const std::vector< std::pair< tools::dds_server::device_info, rs2::device > > & devices_to_add )
+    const std::vector< std::pair< librealsense::dds::topics_phys::device_info, rs2::device > > & devices_to_add )
 {
     try
     {
@@ -129,7 +129,7 @@ void dds_server::remove_dds_device( const std::string & device_key )
     std::cout << "Device '" << device_key << "' - removed" << std::endl;
 }
 
-void dds_server::add_dds_device( const tools::dds_server::device_info &dev_info, const rs2::device & rs2_dev )
+void dds_server::add_dds_device( const librealsense::dds::topics_phys::device_info &dev_info, const rs2::device & rs2_dev )
 {
 
     if( ! create_device_writer( dev_info.serial, rs2_dev ) )
@@ -234,7 +234,7 @@ void dds_server::post_connected_devices_on_wakeup()
 {
     // Query the devices connected on startup
     auto connected_dev_list = _ctx.query_devices();
-    std::vector< std::pair< tools::dds_server::device_info , rs2::device > > devices_to_add;
+    std::vector< std::pair< librealsense::dds::topics_phys::device_info , rs2::device > > devices_to_add;
 
     for( auto connected_dev : connected_dev_list )
     {
@@ -251,9 +251,9 @@ void dds_server::post_connected_devices_on_wakeup()
     }
 }
 
-tools::dds_server::device_info dds_server::query_device_info( const rs2::device &rs2_dev ) const
+librealsense::dds::topics_phys::device_info dds_server::query_device_info( const rs2::device &rs2_dev ) const
 {
-    tools::dds_server::device_info dev_info;
+    librealsense::dds::topics_phys::device_info dev_info;
     dev_info.name = rs2_dev.get_info( RS2_CAMERA_INFO_NAME );
     dev_info.serial = rs2_dev.get_info( RS2_CAMERA_INFO_SERIAL_NUMBER );
     dev_info.product_line = rs2_dev.get_info( RS2_CAMERA_INFO_PRODUCT_LINE );
@@ -261,7 +261,7 @@ tools::dds_server::device_info dds_server::query_device_info( const rs2::device 
     return dev_info;
 }
 
-void dds_server::fill_device_msg( const tools::dds_server::device_info & dev_info,
+void dds_server::fill_device_msg( const librealsense::dds::topics_phys::device_info & dev_info,
                                   librealsense::dds::topics::devices & msg ) const
 {
     strcpy( msg.name().data(), dev_info.name.c_str() );

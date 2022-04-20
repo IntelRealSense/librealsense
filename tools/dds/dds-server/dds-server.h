@@ -19,6 +19,10 @@ namespace dds {
 namespace topics {
 class devices;
 }
+namespace topics_phys
+{
+    struct device_info;
+}
 }  // namespace dds
 }  // namespace librealsense
 
@@ -61,20 +65,6 @@ namespace tools
             std::shared_ptr< dds_serverListener > listener;
         };
 
-        struct device_info
-        {
-            std::string name;
-            std::string serial;
-            std::string product_line;
-            bool locked;
-
-            device_info()
-                : name()
-                , serial()
-                , product_line()
-                , locked( false ) {}
-        };
-
         // This 2 functions (prepare & post) handles the DDS publication of connected/disconnected RS devices.
         // It prepares the input and dispatch the DDS work to a worker thread.
         // If a device was removed:
@@ -86,14 +76,14 @@ namespace tools
         bool prepare_devices_changed_lists(
             const rs2::event_information& info,
             std::vector< std::string >& devices_to_remove,
-            std::vector< std::pair< device_info, rs2::device > >& devices_to_add );
+            std::vector< std::pair< librealsense::dds::topics_phys::device_info, rs2::device > >& devices_to_add );
 
         void post_device_changes( const std::vector< std::string >& devices_to_remove,
-            const std::vector< std::pair< device_info, rs2::device > >& devices_to_add );
+            const std::vector< std::pair< librealsense::dds::topics_phys::device_info, rs2::device > >& devices_to_add );
 
 
         void remove_dds_device( const std::string& device_key );
-        void add_dds_device( const device_info& dev_info, const rs2::device& rs2_dev );
+        void add_dds_device( const librealsense::dds::topics_phys::device_info& dev_info, const rs2::device& rs2_dev );
         bool verify_client_exist( const std::string& device_key,
             std::chrono::steady_clock::duration timeout
             = std::chrono::steady_clock::duration::zero() ) const;
@@ -102,8 +92,8 @@ namespace tools
         bool create_dds_publisher();
         void post_connected_devices_on_wakeup();
 
-        device_info query_device_info( const rs2::device& rs2_dev ) const;
-        void fill_device_msg( const device_info& dev_info, librealsense::dds::topics::devices& msg ) const;
+        librealsense::dds::topics_phys::device_info query_device_info( const rs2::device& rs2_dev ) const;
+        void fill_device_msg( const librealsense::dds::topics_phys::device_info& dev_info, librealsense::dds::topics::devices& msg ) const;
 
         std::atomic_bool _running;
         eprosima::fastdds::dds::DomainParticipant* _participant;

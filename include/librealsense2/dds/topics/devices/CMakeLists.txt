@@ -7,4 +7,5 @@ target_sources(${LRS_TARGET}
         "${CMAKE_CURRENT_LIST_DIR}/devicesMsgPubSubTypes.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/devicesMsg.h"
         "${CMAKE_CURRENT_LIST_DIR}/devicesMsg.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/dds-devices-msg.h"
         )

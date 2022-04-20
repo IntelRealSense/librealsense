@@ -28,6 +28,7 @@ dds_device_watcher::dds_device_watcher( int domain_id )
             dds::topics::devices data;
             SampleInfo info;
             bool device_update_detected = false;
+            dds::topics_phys::device_info device_info;
             // Process all the samples until no one is returned,
             // We will distinguish info change vs new data by validating using `valid_data` field
             while( ReturnCode_t::RETCODE_OK == _reader->take_next_sample( &data, &info ) )
@@ -38,9 +39,17 @@ dds_device_watcher::dds_device_watcher( int domain_id )
                 if( info.valid_data )
                 {
                     device_update_detected = true;
-                    LOG_DEBUG( "DDS device '"
-                               << std::string( data.name().begin(), data.name().end() )
-                               << "' detected!" );
+                    device_info.name = std::string( data.name().begin(), data.name().end() );
+                    device_info.serial = std::string( data.serial_number().begin(), data.serial_number().end() );
+                    device_info.product_line = std::string( data.product_line().begin(), data.product_line().end() );
+                    device_info.locked = data.locked();
+
+                    LOG_DEBUG( "DDS device detected:"
+                               << "\n\tName: " << device_info.name
+                               << "\n\tSerial: " << device_info.serial
+                               << "\n\tProduct_line: " << device_info.product_line
+                               << "\n\tLocked:" << ( device_info.locked ? "yes" : "no" ) );
+                        
                 }
             }
 
@@ -51,8 +60,7 @@ dds_device_watcher::dds_device_watcher( int domain_id )
                 const eprosima::fastrtps::rtps::GUID_t & guid(
                     info.sample_identity.writer_guid() );  // Get the publisher GUID
                 // Add a new device record into our dds devices map
-                _dds_devices[guid.entityId.to_uint32()]
-                    = std::string( data.name().begin(), data.name().end() );
+                _dds_devices[guid.entityId.to_uint32()] = device_info.name;
 
                 LOG_DEBUG( "DDS device writer GUID: " << std::hex << guid.entityId.to_uint32() << std::dec << " added on domain " << _domain_id );
 
