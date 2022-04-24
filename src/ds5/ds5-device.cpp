@@ -1,46 +1,47 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2016 Intel Corporation. All Rights Reserved.
 
+#include <src/device.h>
+#include <src/context.h>
+#include <src/image.h>
+#include <src/metadata-parser.h>
+
+#include "ds5-device.h"
+#include "ds5-private.h"
+#include "ds5-options.h"
+#include "ds5-timestamp.h"
+#include <src/stream.h>
+#include <src/environment.h>
+#include "ds5-color.h"
+#include "ds5-nonmonochrome.h"
+
+#include <src/proc/decimation-filter.h>
+#include <src/proc/threshold.h>
+#include <src/proc/disparity-transform.h>
+#include <src/proc/spatial-filter.h>
+#include <src/proc/colorizer.h>
+#include <src/proc/temporal-filter.h>
+#include <src/proc/y8i-to-y8y8.h>
+#include <src/proc/y12i-to-y16y16.h>
+#include <src/proc/color-formats-converter.h>
+#include <src/proc/syncer-processing-block.h>
+#include <src/proc/hole-filling-filter.h>
+#include <src/proc/depth-formats-converter.h>
+#include <src/proc/depth-decompress.h>
+#include <src/proc/hdr-merge.h>
+#include <src/proc/sequence-id-filter.h>
+#include <src/hdr-config.h>
+#include "ds5-thermal-monitor.h"
+#include <common/fw/firmware-version.h>
+#include <src/fw-update/fw-update-unsigned.h>
+#include <third-party/json.hpp>
+
 #include <mutex>
 #include <chrono>
 #include <vector>
 #include <iterator>
 #include <string>
 
-#include "device.h"
-#include "context.h"
-#include "image.h"
-#include "metadata-parser.h"
-
-#include "ds5-device.h"
-#include "ds5-private.h"
-#include "ds5-options.h"
-#include "ds5-timestamp.h"
-#include "stream.h"
-#include "environment.h"
-#include "ds5-color.h"
-#include "ds5-nonmonochrome.h"
-
-#include "proc/decimation-filter.h"
-#include "proc/threshold.h"
-#include "proc/disparity-transform.h"
-#include "proc/spatial-filter.h"
-#include "proc/colorizer.h"
-#include "proc/temporal-filter.h"
-#include "proc/y8i-to-y8y8.h"
-#include "proc/y12i-to-y16y16.h"
-#include "proc/color-formats-converter.h"
-#include "proc/syncer-processing-block.h"
-#include "proc/hole-filling-filter.h"
-#include "proc/depth-formats-converter.h"
-#include "proc/depth-decompress.h"
-#include "proc/hdr-merge.h"
-#include "proc/sequence-id-filter.h"
-#include "hdr-config.h"
-#include "ds5-thermal-monitor.h"
-#include "../common/fw/firmware-version.h"
-#include "fw-update/fw-update-unsigned.h"
-#include "../third-party/json.hpp"
 
 #ifdef HWM_OVER_XU
 constexpr bool hw_mon_over_xu = true;
@@ -1251,13 +1252,11 @@ namespace librealsense
 
     platform::usb_spec ds5_device::get_usb_spec() const
     {
-        if(!supports_info(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR))
-            return platform::usb_undefined;
-        auto str = get_info(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR);
-        for (auto u : platform::usb_spec_names)
+        if( supports_info( RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR ) )
         {
-            if (u.second.compare(str) == 0)
-                return u.first;
+            auto it = platform::usb_name_to_spec.find( get_info( RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR ) );
+            if( it != platform::usb_name_to_spec.end() )
+                return it->second;
         }
         return platform::usb_undefined;
     }
