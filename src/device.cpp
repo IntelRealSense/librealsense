@@ -166,7 +166,7 @@ matcher_factory::create_timestamp_composite_matcher( std::vector< std::shared_pt
 }
 
 device::device(std::shared_ptr<context> ctx,
-               const platform::backend_device_group group,
+               const platform::backend_device_group & group,
                bool device_changed_notifications)
     : _context(ctx), _group(group), _is_valid(true),
       _device_changed_notifications(device_changed_notifications)
