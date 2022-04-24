@@ -50,7 +50,7 @@ private:
     active_object<> _active_object;
     platform::device_changed_callback _callback;
     //callbacks_heap _callback_inflight;
-    std::map< uint32_t, std::string > _dds_devices; // <datawriter GUID, device name>
+    std::map< uint32_t, std::string > _dds_devices; // <datawriter GUID, device S/N>
     std::mutex _devices_mutex;
     std::shared_ptr< DiscoveryDomainParticipantListener > _domain_listener;
 };

@@ -2,4 +2,4 @@
 // Copyright(c) 2022 Intel Corporation. All Rights Reserved.
 
 #pragma once
-#include "devices/dds-devices-msg.h"
+#include "device-info/device-info-msg.h"

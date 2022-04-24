@@ -17,12 +17,11 @@
 namespace librealsense {
 namespace dds {
 namespace topics {
-class devices;
-}
-namespace topics_phys
-{
-    struct device_info;
-}
+namespace raw {
+class device_info;
+}  // namespace raw
+struct device_info;
+}  // namespace topics
 }  // namespace dds
 }  // namespace librealsense
 
@@ -76,14 +75,14 @@ namespace tools
         bool prepare_devices_changed_lists(
             const rs2::event_information& info,
             std::vector< std::string >& devices_to_remove,
-            std::vector< std::pair< librealsense::dds::topics_phys::device_info, rs2::device > >& devices_to_add );
+            std::vector< std::pair< librealsense::dds::topics::device_info, rs2::device > >& devices_to_add );
 
         void post_device_changes( const std::vector< std::string >& devices_to_remove,
-            const std::vector< std::pair< librealsense::dds::topics_phys::device_info, rs2::device > >& devices_to_add );
+            const std::vector< std::pair< librealsense::dds::topics::device_info, rs2::device > >& devices_to_add );
 
 
         void remove_dds_device( const std::string& device_key );
-        void add_dds_device( const librealsense::dds::topics_phys::device_info& dev_info, const rs2::device& rs2_dev );
+        void add_dds_device( const librealsense::dds::topics::device_info& dev_info, const rs2::device& rs2_dev );
         bool verify_client_exist( const std::string& device_key,
             std::chrono::steady_clock::duration timeout
             = std::chrono::steady_clock::duration::zero() ) const;
@@ -92,8 +91,8 @@ namespace tools
         bool create_dds_publisher();
         void post_connected_devices_on_wakeup();
 
-        librealsense::dds::topics_phys::device_info query_device_info( const rs2::device& rs2_dev ) const;
-        void fill_device_msg( const librealsense::dds::topics_phys::device_info& dev_info, librealsense::dds::topics::devices& msg ) const;
+        librealsense::dds::topics::device_info query_device_info( const rs2::device& rs2_dev ) const;
+        void fill_device_msg( const librealsense::dds::topics::device_info& dev_info, librealsense::dds::topics::raw::device_info& msg ) const;
 
         std::atomic_bool _running;
         eprosima::fastdds::dds::DomainParticipant* _participant;

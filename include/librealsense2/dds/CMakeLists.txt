@@ -6,4 +6,4 @@ target_sources(${LRS_TARGET}
         "${CMAKE_CURRENT_LIST_DIR}/topics/dds-messages.h"
         )
 
-include(${CMAKE_CURRENT_LIST_DIR}/topics/devices/CMakeLists.txt)
+include(${CMAKE_CURRENT_LIST_DIR}/topics/device-info/CMakeLists.txt)

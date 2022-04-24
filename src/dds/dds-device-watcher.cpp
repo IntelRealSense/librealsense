@@ -18,37 +18,34 @@ dds_device_watcher::dds_device_watcher( int domain_id )
     , _subscriber( nullptr )
     , _topic( nullptr )
     , _reader( nullptr )
-    , _type_ptr( new dds::topics::devicesPubSubType() )
+    , _type_ptr( new dds::topics::raw::device_infoPubSubType() )
     , _init_done( false )
     , _domain_id( domain_id )
     , _active_object( [this]( dispatcher::cancellable_timer timer ) {
 
         if( _reader->wait_for_unread_message( { 1, 0 } ) )
         {
-            dds::topics::devices data;
+            dds::topics::raw::device_info raw_data;
             SampleInfo info;
             bool device_update_detected = false;
-            dds::topics_phys::device_info device_info;
+            dds::topics::device_info device_info;
             // Process all the samples until no one is returned,
             // We will distinguish info change vs new data by validating using `valid_data` field
-            while( ReturnCode_t::RETCODE_OK == _reader->take_next_sample( &data, &info ) )
+            while( ReturnCode_t::RETCODE_OK == _reader->take_next_sample( &raw_data, &info ) )
             {
                 // Only samples for which valid_data is true should be accessed
                 // valid_data indicates that the instance is still ALIVE and the `take` return an
                 // updated sample
                 if( info.valid_data )
                 {
+                    dds::topics::device_info data ( raw_data );
                     device_update_detected = true;
-                    device_info.name = std::string( data.name().begin(), data.name().end() );
-                    device_info.serial = std::string( data.serial_number().begin(), data.serial_number().end() );
-                    device_info.product_line = std::string( data.product_line().begin(), data.product_line().end() );
-                    device_info.locked = data.locked();
 
                     LOG_DEBUG( "DDS device detected:"
-                               << "\n\tName: " << device_info.name
-                               << "\n\tSerial: " << device_info.serial
-                               << "\n\tProduct_line: " << device_info.product_line
-                               << "\n\tLocked:" << ( device_info.locked ? "yes" : "no" ) );
+                               << "\n\tName: " << data.name
+                               << "\n\tSerial: " << data.serial
+                               << "\n\tProduct_line: " << data.product_line
+                               << "\n\tLocked:" << ( data.locked ? "yes" : "no" ) );
                         
                 }
             }
@@ -60,7 +57,8 @@ dds_device_watcher::dds_device_watcher( int domain_id )
                 const eprosima::fastrtps::rtps::GUID_t & guid(
                     info.sample_identity.writer_guid() );  // Get the publisher GUID
                 // Add a new device record into our dds devices map
-                _dds_devices[guid.entityId.to_uint32()] = device_info.name;
+                // TODO : Change to full GUID prefix + entity
+                _dds_devices[guid.entityId.to_uint32()] = device_info.serial;
 
                 LOG_DEBUG( "DDS device writer GUID: " << std::hex << guid.entityId.to_uint32() << std::dec << " added on domain " << _domain_id );
 
@@ -164,7 +162,7 @@ void dds_device_watcher::init( int domain_id )
     }
 
     // CREATE THE TOPIC
-    _topic = _participant->create_topic(  librealsense::dds::topics::DEVICES_TOPIC_NAME,
+    _topic = _participant->create_topic(  librealsense::dds::topics::raw::DEVICE_INFO_TOPIC_NAME,
                                          _type_ptr->getName(),
                                          TOPIC_QOS_DEFAULT );
 
@@ -225,6 +223,7 @@ void dds_device_watcher::DiscoveryDomainParticipantListener::on_publisher_discov
                                   << info.info.topicName() << "' of type '" << info.info.typeName()
                                   << "' left the domain." );
         if( _datawriter_removed_callback )
+            // TODO : Change to full GUID prefix + entity
             _datawriter_removed_callback( info.info.guid().entityId.to_uint32() );
         break;
     }

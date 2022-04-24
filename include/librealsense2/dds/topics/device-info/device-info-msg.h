@@ -3,11 +3,11 @@
 
 #pragma once
 #include <string>
-#include "devicesMsgPubSubTypes.h"
+#include "deviceInfoPubSubTypes.h"
 
 namespace librealsense {
 namespace dds {
-namespace topics_phys {
+namespace topics {
 struct device_info
 {
     std::string name;
@@ -22,8 +22,17 @@ struct device_info
         , locked( false )
     {
     }
+
+    device_info( const topics::raw::device_info & dev )
+        : name( dev.name().data() )
+        , serial( dev.serial_number().data() )
+        , product_line( dev.product_line().data() )
+        , locked( dev.locked() )
+
+    {
+    }
 };
 
-}  // namespace topics_phys
+}  // namespace topics
 }  // namespace dds
 }  // namespace librealsense

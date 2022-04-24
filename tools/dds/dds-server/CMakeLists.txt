@@ -7,11 +7,11 @@ set(TOOL_FILES rs-dds-server.cpp
         dds-server.h)
         
 set(TOPICS_FILES 
-        ${REPO_ROOT}/include/librealsense2/dds/topics/devices/devicesMsgPubSubTypes.h
-        ${REPO_ROOT}/include/librealsense2/dds/topics/devices/devicesMsg.h
-        ${REPO_ROOT}/include/librealsense2/dds/topics/devices/devicesMsgPubSubTypes.cpp
-        ${REPO_ROOT}/include/librealsense2/dds/topics/devices/devicesMsg.cpp
-        ${REPO_ROOT}/include/librealsense2/dds/topics/devices/dds-devices-msg.h
+        ${REPO_ROOT}/include/librealsense2/dds/topics/device-info/deviceInfoPubSubTypes.h
+        ${REPO_ROOT}/include/librealsense2/dds/topics/device-info/deviceInfo.h
+        ${REPO_ROOT}/include/librealsense2/dds/topics/device-info/deviceInfoPubSubTypes.cpp
+        ${REPO_ROOT}/include/librealsense2/dds/topics/device-info/deviceInfo.cpp
+        ${REPO_ROOT}/include/librealsense2/dds/topics/device-info/device-info-msg.h
         ${REPO_ROOT}/include/librealsense2/dds/topics/dds-messages.h)
 
 set(UTILITIES ${REPO_ROOT}/include/librealsense2/utilities/concurrency/dispatcher.cpp)
