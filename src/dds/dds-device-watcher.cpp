@@ -38,14 +38,14 @@ dds_device_watcher::dds_device_watcher( int domain_id )
                 // updated sample
                 if( info.valid_data )
                 {
-                    dds::topics::device_info data ( raw_data );
+                    device_info = raw_data;
                     device_update_detected = true;
 
                     LOG_DEBUG( "DDS device detected:"
-                               << "\n\tName: " << data.name
-                               << "\n\tSerial: " << data.serial
-                               << "\n\tProduct_line: " << data.product_line
-                               << "\n\tLocked:" << ( data.locked ? "yes" : "no" ) );
+                               << "\n\tName: " << device_info.name
+                               << "\n\tSerial: " << device_info.serial
+                               << "\n\tProduct_line: " << device_info.product_line
+                               << "\n\tLocked:" << ( device_info.locked ? "yes" : "no" ) );
                         
                 }
             }
@@ -53,14 +53,13 @@ dds_device_watcher::dds_device_watcher( int domain_id )
             if( device_update_detected )
             {
                 std::lock_guard< std::mutex > lock( _devices_mutex );
+                eprosima::fastrtps::rtps::GUID_t guid;
+                eprosima::fastrtps::rtps::iHandle2GUID( guid, info.publication_handle );
 
-                const eprosima::fastrtps::rtps::GUID_t & guid(
-                    info.sample_identity.writer_guid() );  // Get the publisher GUID
                 // Add a new device record into our dds devices map
-                // TODO : Change to full GUID prefix + entity
-                _dds_devices[guid.entityId.to_uint32()] = device_info.serial;
+                _dds_devices[guid] = device_info;
 
-                LOG_DEBUG( "DDS device writer GUID: " << std::hex << guid.entityId.to_uint32() << std::dec << " added on domain " << _domain_id );
+                LOG_DEBUG( "DDS device writer GUID: " << guid << " for device: " << device_info.serial << " added on domain " << _domain_id );
 
                 // TODO - Call LRS callback to create the RS devices
                 // if( callback )
@@ -73,12 +72,14 @@ dds_device_watcher::dds_device_watcher( int domain_id )
     } )
 {
     _domain_listener
-        = std::make_shared< DiscoveryDomainParticipantListener >( [this]( uint32_t entity_id ) {
+        = std::make_shared< DiscoveryDomainParticipantListener >( [this]( eprosima::fastrtps::rtps::GUID_t guid ) {
               std::lock_guard< std::mutex > lock( _devices_mutex );
-              if( _dds_devices.find( entity_id ) != _dds_devices.end() )
+              auto dds_device = _dds_devices.find( guid );
+              if( dds_device != _dds_devices.end() )
               {
-                  LOG_DEBUG( "DDS device writer GUID: " << std::hex << entity_id << std::dec << " removed" );
-                  _dds_devices.erase( entity_id );
+                  auto dds_device_serial = dds_device->second.serial;
+                  _dds_devices.erase( guid );
+                  LOG_DEBUG( "DDS device writer GUID: " << guid << " for device: " << dds_device_serial << " removed from domain " << _domain_id );
               }
           } );
 }
@@ -199,7 +200,7 @@ void dds_device_watcher::init( int domain_id )
 
 
 dds_device_watcher::DiscoveryDomainParticipantListener::DiscoveryDomainParticipantListener(
-    std::function< void( uint32_t ) > callback )
+    std::function< void( eprosima::fastrtps::rtps::GUID_t ) > callback )
     : DomainParticipantListener()
     , _datawriter_removed_callback( std::move( callback ) )
 {
@@ -223,8 +224,7 @@ void dds_device_watcher::DiscoveryDomainParticipantListener::on_publisher_discov
                                   << info.info.topicName() << "' of type '" << info.info.typeName()
                                   << "' left the domain." );
         if( _datawriter_removed_callback )
-            // TODO : Change to full GUID prefix + entity
-            _datawriter_removed_callback( info.info.guid().entityId.to_uint32() );
+            _datawriter_removed_callback( info.info.guid() );
         break;
     }
 }

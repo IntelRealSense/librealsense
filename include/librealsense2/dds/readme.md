@@ -12,7 +12,7 @@
 | name          | device name                                    |
 | serial_number | device serial number                           |
 | product_line  | device product line (D4xx/L5xx ...)            |
-| locked        | true if device flush is locked, else otherwise |
+| locked        | true if device flash is locked, false otherwise |
 
 ## DDS topic creation / update
 * Create an IDL file (See [here](https://fast-dds.docs.eprosima.com/en/latest/fastddsgen/dataTypes/dataTypes.html) )

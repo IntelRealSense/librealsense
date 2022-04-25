@@ -12,6 +12,12 @@
 
 namespace librealsense {
 
+namespace dds {
+namespace topics {
+struct device_info;
+}  // namespace topics
+}  // namespace dds
+
 class dds_device_watcher : public librealsense::platform::device_watcher
 {
 public:
@@ -31,13 +37,13 @@ private:
     {
     public:
         DiscoveryDomainParticipantListener() = delete;
-        DiscoveryDomainParticipantListener( std::function< void( uint32_t ) > callback );
+        DiscoveryDomainParticipantListener( std::function< void( eprosima::fastrtps::rtps::GUID_t ) > callback );
         virtual void
         on_publisher_discovery( eprosima::fastdds::dds::DomainParticipant * participant,
                                 eprosima::fastrtps::rtps::WriterDiscoveryInfo && info ) override;
 
     private:
-        std::function< void( uint32_t ) > _datawriter_removed_callback;
+        std::function< void( eprosima::fastrtps::rtps::GUID_t guid ) > _datawriter_removed_callback;
     };
 
     eprosima::fastdds::dds::DomainParticipant * _participant;
@@ -50,7 +56,7 @@ private:
     active_object<> _active_object;
     platform::device_changed_callback _callback;
     //callbacks_heap _callback_inflight;
-    std::map< uint32_t, std::string > _dds_devices; // <datawriter GUID, device S/N>
+    std::map< eprosima::fastrtps::rtps::GUID_t, dds::topics::device_info > _dds_devices; 
     std::mutex _devices_mutex;
     std::shared_ptr< DiscoveryDomainParticipantListener > _domain_listener;
 };
