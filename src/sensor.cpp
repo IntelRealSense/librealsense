@@ -632,7 +632,8 @@ void log_callback_end( uint32_t fps,
 
     stream_profiles uvc_sensor::init_stream_profiles()
     {
-        std::unordered_set<std::shared_ptr<video_stream_profile>> profiles;
+        // D457 development - std::unordered_set<std::shared_ptr<video_stream_profile>> profiles;
+        std::unordered_set<std::shared_ptr<stream_profile_base>> profiles;
         power on(std::dynamic_pointer_cast<uvc_sensor>(shared_from_this()));
 
         _uvc_profiles = _device->get_profiles();
@@ -643,13 +644,26 @@ void log_callback_end( uint32_t fps,
             if (rs2_fmt == RS2_FORMAT_ANY)
                 continue;
 
-            auto&& profile = std::make_shared<video_stream_profile>(p);
-            profile->set_dims(p.width, p.height);
-            profile->set_stream_type(fourcc_to_rs2_stream(p.format));
-            profile->set_stream_index(0);
-            profile->set_format(rs2_fmt);
-            profile->set_framerate(p.fps);
-            profiles.insert(profile);
+            // D457 development
+            if (rs2_fmt == RS2_FORMAT_MOTION_XYZ32F)
+            {
+                auto profile = std::make_shared<motion_stream_profile>(p);
+                profile->set_stream_type(fourcc_to_rs2_stream(p.format));
+                profile->set_stream_index(0);
+                profile->set_format(rs2_fmt);
+                profile->set_framerate(p.fps);
+                profiles.insert(profile);
+            }
+            else
+            {
+                auto&& profile = std::make_shared<video_stream_profile>(p);
+                profile->set_dims(p.width, p.height);
+                profile->set_stream_type(fourcc_to_rs2_stream(p.format));
+                profile->set_stream_index(0);
+                profile->set_format(rs2_fmt);
+                profile->set_framerate(p.fps);
+                profiles.insert(profile);
+            }
         }
 
         stream_profiles result{ profiles.begin(), profiles.end() };

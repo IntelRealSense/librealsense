@@ -21,6 +21,14 @@
 using namespace librealsense;
 namespace librealsense
 {
+    // D457 development
+    const std::map<uint32_t, rs2_format> hid_fourcc_to_rs2_format = {
+        {rs_fourcc('G','R','E','Y'), RS2_FORMAT_MOTION_XYZ32F},
+    };
+    const std::map<uint32_t, rs2_stream> hid_fourcc_to_rs2_stream = {
+        {rs_fourcc('G','R','E','Y'), RS2_STREAM_ACCEL},
+    };
+
     const std::map<uint32_t, rs2_format> fisheye_fourcc_to_rs2_format = {
         {rs_fourcc('R','A','W','8'), RS2_FORMAT_RAW8},
         {rs_fourcc('G','R','E','Y'), RS2_FORMAT_RAW8},
@@ -61,7 +69,7 @@ namespace librealsense
             std::shared_ptr<sensor_base> sensor,
             device* device,
             ds5_motion_base* owner)
-            : synthetic_sensor(name, sensor, device),
+            : synthetic_sensor(name, sensor, device, hid_fourcc_to_rs2_format, hid_fourcc_to_rs2_stream),
             _owner(owner)
         {}
 
@@ -490,6 +498,8 @@ namespace librealsense
           _accel_stream(new stream(RS2_STREAM_ACCEL)),
           _gyro_stream(new stream(RS2_STREAM_GYRO))
     {
+        _pid = ds5_device::_pid;
+
         // motion correction
         _mm_calib = std::make_shared<mm_calib_handler>(_hw_monitor, _pid);
 
