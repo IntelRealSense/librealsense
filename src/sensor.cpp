@@ -413,6 +413,14 @@ void log_callback_end( uint32_t fps,
                     // For compressed formats copy the raw data as is
                     if (val_in_range(req_profile_base->get_format(), { RS2_FORMAT_MJPEG, RS2_FORMAT_Z16H }))
                         expected_size = static_cast<int>(f.frame_size);
+
+                    // D457 development
+                    if (!vsp)
+                    {
+                        auto&& msp = As<motion_stream_profile, stream_profile_interface>(req_profile);
+                        if (msp)
+                            expected_size = 32;
+                    }
                     frame_holder fh = _source.alloc_frame(
                         stream_to_frame_types( req_profile_base->get_stream_type() ),
                         expected_size,
