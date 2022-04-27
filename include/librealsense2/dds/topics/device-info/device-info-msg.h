@@ -8,27 +8,23 @@
 namespace librealsense {
 namespace dds {
 namespace topics {
-struct device_info
+class device_info
 {
+public:
+    using type = raw::device_infoPubSubType;
+
     std::string name;
     std::string serial;
     std::string product_line;
     bool locked;
 
-    device_info()
-        : name()
-        , serial()
-        , product_line()
-        , locked( false )
-    {
-    }
+    device_info() = default;
 
-    device_info( const topics::raw::device_info & dev )
+    device_info( const raw::device_info & dev )
         : name( dev.name().data() )
         , serial( dev.serial_number().data() )
         , product_line( dev.product_line().data() )
         , locked( dev.locked() )
-
     {
     }
 };

@@ -1,7 +1,7 @@
 # librealsense2 DDS topics
 
 ## Main idea
-`librealsense2` can discover RealSense devices connected throw Ethernet by listening to a set of DDS messages.
+`librealsense2` can discover RealSense devices connected through ethernet by listening to a set of DDS messages.
 
 ## Topics list
 

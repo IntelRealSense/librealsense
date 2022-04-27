@@ -18,7 +18,7 @@ dds_device_watcher::dds_device_watcher( int domain_id )
     , _subscriber( nullptr )
     , _topic( nullptr )
     , _reader( nullptr )
-    , _type_ptr( new dds::topics::raw::device_infoPubSubType() )
+    , _topic_type( new dds::topics::device_info::type )
     , _init_done( false )
     , _domain_id( domain_id )
     , _active_object( [this]( dispatcher::cancellable_timer timer ) {
@@ -27,8 +27,6 @@ dds_device_watcher::dds_device_watcher( int domain_id )
         {
             dds::topics::raw::device_info raw_data;
             SampleInfo info;
-            bool device_update_detected = false;
-            dds::topics::device_info device_info;
             // Process all the samples until no one is returned,
             // We will distinguish info change vs new data by validating using `valid_data` field
             while( ReturnCode_t::RETCODE_OK == _reader->take_next_sample( &raw_data, &info ) )
@@ -38,35 +36,33 @@ dds_device_watcher::dds_device_watcher( int domain_id )
                 // updated sample
                 if( info.valid_data )
                 {
-                    device_info = raw_data;
-                    device_update_detected = true;
+                    dds::topics::device_info device_info = raw_data;
 
                     LOG_DEBUG( "DDS device detected:"
                                << "\n\tName: " << device_info.name
                                << "\n\tSerial: " << device_info.serial
-                               << "\n\tProduct_line: " << device_info.product_line
+                               << "\n\tProduct line: " << device_info.product_line
                                << "\n\tLocked:" << ( device_info.locked ? "yes" : "no" ) );
+
+                    std::lock_guard< std::mutex > lock( _devices_mutex );
+                    eprosima::fastrtps::rtps::GUID_t guid;
+                    eprosima::fastrtps::rtps::iHandle2GUID( guid, info.publication_handle );
+
+                    // Add a new device record into our dds devices map
+                    _dds_devices[guid] = device_info;
+
+                    LOG_DEBUG( "DDS device writer GUID: " << guid
+                                                          << " for device: " << device_info.serial
+                                                          << " added on domain " << _domain_id );
+
+                    // TODO - Call LRS callback to create the RS devices
+                    // if( callback )
+                    // {
+                    //    callback_invocation_holder callback = { _callback_inflight.allocate(),
+                    //    &_callback_inflight }; _callback( _devices_data, curr );
+                    // }
                         
                 }
-            }
-
-            if( device_update_detected )
-            {
-                std::lock_guard< std::mutex > lock( _devices_mutex );
-                eprosima::fastrtps::rtps::GUID_t guid;
-                eprosima::fastrtps::rtps::iHandle2GUID( guid, info.publication_handle );
-
-                // Add a new device record into our dds devices map
-                _dds_devices[guid] = device_info;
-
-                LOG_DEBUG( "DDS device writer GUID: " << guid << " for device: " << device_info.serial << " added on domain " << _domain_id );
-
-                // TODO - Call LRS callback to create the RS devices
-                // if( callback )
-                // {
-                //    callback_invocation_holder callback = { _callback_inflight.allocate(),
-                //    &_callback_inflight }; _callback( _devices_data, curr );
-                // }
             }
         }
     } )
@@ -151,7 +147,7 @@ void dds_device_watcher::init( int domain_id )
     }
 
     // REGISTER THE TYPE
-    _type_ptr.register_type( _participant );
+    _topic_type.register_type( _participant );
 
     // CREATE THE SUBSCRIBER
     _subscriber = _participant->create_subscriber( SUBSCRIBER_QOS_DEFAULT, nullptr );
@@ -164,7 +160,7 @@ void dds_device_watcher::init( int domain_id )
 
     // CREATE THE TOPIC
     _topic = _participant->create_topic(  librealsense::dds::topics::raw::DEVICE_INFO_TOPIC_NAME,
-                                         _type_ptr->getName(),
+                                         _topic_type->getName(),
                                          TOPIC_QOS_DEFAULT );
 
     if( _topic == nullptr )

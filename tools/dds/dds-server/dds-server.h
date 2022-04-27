@@ -20,7 +20,7 @@ namespace topics {
 namespace raw {
 class device_info;
 }  // namespace raw
-struct device_info;
+class device_info;
 }  // namespace topics
 }  // namespace dds
 }  // namespace librealsense
@@ -98,7 +98,7 @@ namespace tools
         eprosima::fastdds::dds::DomainParticipant* _participant;
         eprosima::fastdds::dds::Publisher* _publisher;
         eprosima::fastdds::dds::Topic* _topic;
-        eprosima::fastdds::dds::TypeSupport _type_support_ptr;
+        eprosima::fastdds::dds::TypeSupport _topic_type;
         std::unordered_map< std::string, dds_device_info > _devices_writers;
         rs2::context _ctx;
         dispatcher _dds_device_dispatcher;

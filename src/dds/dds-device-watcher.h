@@ -14,7 +14,7 @@ namespace librealsense {
 
 namespace dds {
 namespace topics {
-struct device_info;
+class device_info;
 }  // namespace topics
 }  // namespace dds
 
@@ -50,7 +50,7 @@ private:
     eprosima::fastdds::dds::Subscriber * _subscriber;
     eprosima::fastdds::dds::Topic * _topic;
     eprosima::fastdds::dds::DataReader * _reader;
-    eprosima::fastdds::dds::TypeSupport _type_ptr;
+    eprosima::fastdds::dds::TypeSupport _topic_type;
     bool _init_done;
     int _domain_id;
     active_object<> _active_object;
