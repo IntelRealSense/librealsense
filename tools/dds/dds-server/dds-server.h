@@ -45,6 +45,8 @@ namespace tools
                 const eprosima::fastdds::dds::PublicationMatchedStatus& info ) override;
 
             std::atomic< int > _matched = { 0 };
+            std::atomic< bool > _new_reader_joined = { false };
+            std::mutex _new_reader_mutex;
         };
 
         class DiscoveryDomainParticipantListener
@@ -57,7 +59,7 @@ namespace tools
 
         } _domain_listener;
 
-        struct dds_device_info
+        struct dds_device_handle
         {
             rs2::device device;
             eprosima::fastdds::dds::DataWriter* data_writer;
@@ -75,21 +77,19 @@ namespace tools
         bool prepare_devices_changed_lists(
             const rs2::event_information& info,
             std::vector< std::string >& devices_to_remove,
-            std::vector< std::pair< librealsense::dds::topics::device_info, rs2::device > >& devices_to_add );
+            std::vector< std::pair< std::string, rs2::device > >& devices_to_add );
 
-        void post_device_changes( const std::vector< std::string >& devices_to_remove,
-            const std::vector< std::pair< librealsense::dds::topics::device_info, rs2::device > >& devices_to_add );
+        void handle_device_changes( const std::vector< std::string >& devices_to_remove,
+            const std::vector< std::pair< std::string, rs2::device > >& devices_to_add );
 
 
         void remove_dds_device( const std::string& device_key );
-        void add_dds_device( const librealsense::dds::topics::device_info& dev_info, const rs2::device& rs2_dev );
-        bool verify_client_exist( const std::string& device_key,
-            std::chrono::steady_clock::duration timeout
-            = std::chrono::steady_clock::duration::zero() ) const;
+        bool add_dds_device( const std::string & device_key, const rs2::device& rs2_dev );
         bool create_device_writer( const std::string& device_key, rs2::device rs2_device );
         bool create_dds_participant( eprosima::fastdds::dds::DomainId_t domain_id );
         bool create_dds_publisher();
-        void post_connected_devices_on_wakeup();
+        void post_current_connected_devices();
+        bool send_device_info_msg( const librealsense::dds::topics::device_info& dev_info );
 
         librealsense::dds::topics::device_info query_device_info( const rs2::device& rs2_dev ) const;
         void fill_device_msg( const librealsense::dds::topics::device_info& dev_info, librealsense::dds::topics::raw::device_info& msg ) const;
@@ -99,8 +99,9 @@ namespace tools
         eprosima::fastdds::dds::Publisher* _publisher;
         eprosima::fastdds::dds::Topic* _topic;
         eprosima::fastdds::dds::TypeSupport _topic_type;
-        std::unordered_map< std::string, dds_device_info > _devices_writers;
+        std::unordered_map< std::string, dds_device_handle > _devices_writers;
         rs2::context _ctx;
         dispatcher _dds_device_dispatcher;
+        active_object<> _new_clients_detector;
     };  // class dds_server
 }

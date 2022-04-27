@@ -22,6 +22,24 @@ dds_server::dds_server()
     , _topic( nullptr )
     , _topic_type( new librealsense::dds::topics::device_info::type )
     , _dds_device_dispatcher( 10 )
+    , _new_clients_detector( [this]( dispatcher::cancellable_timer timer ) {
+        for( auto dev_writer : _devices_writers )
+        {
+            std::lock_guard< std::mutex > lock( dev_writer.second.listener->_new_reader_mutex );
+            if( dev_writer.second.listener->_new_reader_joined )
+            {
+                auto dev_info = query_device_info( dev_writer.second.device );
+                if( send_device_info_msg( dev_info ) )
+                {
+                    {
+                        _devices_writers[dev_info.serial].listener->_new_reader_joined = false;
+                    }
+                }
+            }
+        }
+        timer.try_sleep( std::chrono::milliseconds( 100 ) );
+    } )
+
     , _ctx( "{"
             "\"dds-discovery\" : false"
             "}" )
@@ -37,9 +55,8 @@ bool dds_server::init( DomainId_t domain_id )
 void dds_server::run()
 {
     _dds_device_dispatcher.start();
-    _running = true;
 
-    post_connected_devices_on_wakeup();
+    post_current_connected_devices();
 
     // Register to LRS device changes function to notify on future devices being
     // connected/disconnected
@@ -47,26 +64,28 @@ void dds_server::run()
         if( _running )
         {
             std::vector< std::string > devices_to_remove;
-            std::vector< std::pair< librealsense::dds::topics::device_info, rs2::device > > devices_to_add;
+            std::vector< std::pair< std::string, rs2::device > > devices_to_add;
 
             if( prepare_devices_changed_lists( info, devices_to_remove, devices_to_add ) )
             {
                 // Post the devices connected / removed
                 _dds_device_dispatcher.invoke(
                     [this, devices_to_remove, devices_to_add]( dispatcher::cancellable_timer c ) {
-                        post_device_changes( devices_to_remove, devices_to_add );
+                        handle_device_changes( devices_to_remove, devices_to_add );
                     } );
             }
         }
     } );
 
+    _new_clients_detector.start();
+    _running = true;
     std::cout << "RS DDS Server is on.." << std::endl;
 }
 
 bool dds_server::prepare_devices_changed_lists(
     const rs2::event_information & info,
     std::vector< std::string > & devices_to_remove,
-    std::vector< std::pair< librealsense::dds::topics::device_info, rs2::device > > & devices_to_add )
+    std::vector< std::pair< std::string , rs2::device > > & devices_to_add )
 {
     // Remove disconnected devices from devices list
     for( auto dev_info : _devices_writers )
@@ -83,18 +102,17 @@ bool dds_server::prepare_devices_changed_lists(
     // Add new connected devices from devices list
     for( auto && dev : info.get_new_devices() )
     {
-        auto rs_dev_info = query_device_info( dev );
-        auto device_name = dev.get_info( RS2_CAMERA_INFO_NAME );
-        devices_to_add.push_back( { rs_dev_info, dev } );
+        auto device_serial = dev.get_info( RS2_CAMERA_INFO_SERIAL_NUMBER );
+        devices_to_add.push_back( { device_serial, dev } );
     }
 
     bool device_change_detected = ! devices_to_remove.empty() || ! devices_to_add.empty();
     return device_change_detected;
 }
 
-void dds_server::post_device_changes(
+void dds_server::handle_device_changes(
     const std::vector< std::string > & devices_to_remove,
-    const std::vector< std::pair< librealsense::dds::topics::device_info, rs2::device > > & devices_to_add )
+    const std::vector< std::pair< std::string, rs2::device > > & devices_to_add )
 {
     try
     {
@@ -105,7 +123,10 @@ void dds_server::post_device_changes(
 
         for( auto dev_to_add : devices_to_add )
         {
-            add_dds_device( dev_to_add.first, dev_to_add.second );
+            if( ! add_dds_device( dev_to_add.first, dev_to_add.second ) )
+            {
+                std::cout << "Error creating a DDS writer" << std::endl;
+            }
         }
     }
 
@@ -129,63 +150,18 @@ void dds_server::remove_dds_device( const std::string & device_key )
     std::cout << "Device '" << device_key << "' - removed" << std::endl;
 }
 
-void dds_server::add_dds_device( const librealsense::dds::topics::device_info &dev_info, const rs2::device & rs2_dev )
+bool dds_server::add_dds_device( const std::string & device_key,
+                                 const rs2::device & rs2_dev )
 {
-
-    if( ! create_device_writer( dev_info.serial, rs2_dev ) )
+    if( _devices_writers.find( device_key ) == _devices_writers.end() )
     {
-        std::cout << "Error creating a DDS writer" << std::endl;
-        return;
-    }
-
-    // Publish the device info, but only after a matching reader is found.
-    librealsense::dds::topics::raw::device_info raw_msg;
-    fill_device_msg( dev_info, raw_msg );
-    std::cout << "\nDevice '" << dev_info.serial << "' - detected" << std::endl;
-    std::cout << "Looking for at least 1 matching reader... ";  // Status value will be appended to
-                                                                // this line
-    // It takes some time from the moment we create the data writer until the data reader is matched
-    // If we send before the data reader is matched the message will not arrive to it.
-    // Currently if we remove the sleep line the client sometimes miss the message. (See https://github.com/eProsima/Fast-DDS/issues/2641)
-    std::this_thread::sleep_for( std::chrono::milliseconds( 100 ) );
-    if( verify_client_exist( dev_info.serial, std::chrono::seconds( 1 ) ) )
-    {
-        std::cout << "found" << std::endl;
-        // Post a DDS message with the new added device
-        if( _devices_writers[dev_info.serial].data_writer->write( &raw_msg ) )
+        if( ! create_device_writer( device_key, rs2_dev ) )
         {
-            std::cout << "DDS device message sent!" << std::endl;
-        }
-        else
-        {
-            std::cout << "Error writing new device message for device : " << dev_info.serial << std::endl;
+            return false;
         }
     }
-    else
-    {
-        std::cout << "not found" << std::endl;
-        std::cout << "Timeout finding a reader for devices topic" << std::endl;
-    }
-}
 
-bool dds_server::verify_client_exist( const std::string & device_key, std::chrono::steady_clock::duration timeout ) const
-{
-    bool client_found = false;
-    auto & listener = _devices_writers.at( device_key ).listener;
-    client_found = listener->_matched != 0;
-
-    if( timeout > std::chrono::steady_clock::duration::zero() )
-    {
-        int retry_cnt = 4;
-        auto interval_timeout = timeout / retry_cnt;
-        while( !client_found && retry_cnt-- > 0 )
-        {
-            std::this_thread::sleep_for( interval_timeout );
-            std::cout << "slept for " << interval_timeout.count() << " time" << std::endl;
-            client_found = listener->_matched != 0;
-        }
-    }
-    return client_found;
+    return true;
 }
 
 bool dds_server::create_device_writer( const std::string &device_key, rs2::device rs2_device )
@@ -230,25 +206,49 @@ bool dds_server::create_dds_publisher()
     return ( _topic != nullptr && _publisher != nullptr );
 }
 
-void dds_server::post_connected_devices_on_wakeup()
+void dds_server::post_current_connected_devices()
 {
     // Query the devices connected on startup
     auto connected_dev_list = _ctx.query_devices();
-    std::vector< std::pair< librealsense::dds::topics::device_info , rs2::device > > devices_to_add;
+    std::vector< std::pair< std::string , rs2::device > > devices_to_add;
 
     for( auto connected_dev : connected_dev_list )
     {
-        auto dev_info = query_device_info( connected_dev );
-        devices_to_add.push_back( { dev_info, connected_dev } );
+        auto device_serial = connected_dev.get_info( RS2_CAMERA_INFO_SERIAL_NUMBER );
+        devices_to_add.push_back( { device_serial, connected_dev } );
     }
 
     if( ! devices_to_add.empty() )
     {
         // Post the devices connected on startup
         _dds_device_dispatcher.invoke( [this, devices_to_add]( dispatcher::cancellable_timer c ) {
-            post_device_changes( {}, devices_to_add );
+            handle_device_changes( {}, devices_to_add );
         } );
     }
+}
+
+bool tools::dds_server::send_device_info_msg( const librealsense::dds::topics::device_info& dev_info )
+{
+    // Publish the device info, but only after a matching reader is found.
+    librealsense::dds::topics::raw::device_info raw_msg;
+    fill_device_msg( dev_info, raw_msg );
+    std::cout << "\nDevice '" << dev_info.serial << "' - detected" << std::endl;
+    // It takes some time from the moment we create the data writer until the data reader is matched
+    // If we send before the data reader is matched the message will not arrive to it.
+    // Currently if we remove the sleep line the client sometimes miss the message. (See https://github.com/eProsima/Fast-DDS/issues/2641)
+    std::this_thread::sleep_for( std::chrono::milliseconds( 100 ) );
+
+    // Post a DDS message with the new added device
+    if( _devices_writers[dev_info.serial].data_writer->write( &raw_msg ) )
+    {
+        std::cout << "DDS device message sent!" << std::endl;
+        return true;
+    }
+    else
+    {
+        std::cout << "Error writing new device message for device : " << dev_info.serial << std::endl;
+    }
+    return false;
 }
 
 librealsense::dds::topics::device_info dds_server::query_device_info( const rs2::device &rs2_dev ) const
@@ -276,6 +276,7 @@ dds_server::~dds_server()
     _running = false;
 
     _dds_device_dispatcher.stop();
+    _new_clients_detector.stop();
 
     for( auto device_writer : _devices_writers )
     {
@@ -304,6 +305,10 @@ void dds_server::dds_serverListener::on_publication_matched( DataWriter * writer
     {
         std::cout << "DataReader " << writer->guid() << " discovered" << std::endl;
         _matched = info.total_count;
+        {
+            std::lock_guard<std::mutex> lock( _new_reader_mutex );
+            _new_reader_joined = true;
+        }
     }
     else if( info.current_count_change == -1 )
     {
