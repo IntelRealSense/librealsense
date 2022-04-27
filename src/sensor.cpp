@@ -684,6 +684,8 @@ void log_callback_end( uint32_t fps,
         switch (stream)
         {
         case RS2_STREAM_DEPTH:  return RS2_EXTENSION_DEPTH_FRAME;
+        case RS2_STREAM_ACCEL:
+        case RS2_STREAM_GYRO:   return RS2_EXTENSION_MOTION_FRAME;
         default:                return RS2_EXTENSION_VIDEO_FRAME;
         }
     }
