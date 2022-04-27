@@ -12,11 +12,7 @@ class device_info
 {
 public:
     using type = raw::device_infoPubSubType;
-
-    std::string name;
-    std::string serial;
-    std::string product_line;
-    bool locked;
+    static constexpr char* const DEVICE_INFO_TOPIC_NAME = "realsense/device-info";
 
     device_info() = default;
 
@@ -27,6 +23,11 @@ public:
         , locked( dev.locked() )
     {
     }
+
+    std::string name;
+    std::string serial;
+    std::string product_line;
+    bool locked;
 };
 
 }  // namespace topics

@@ -54,7 +54,6 @@ namespace librealsense {
     namespace dds {
         namespace topics {
             namespace raw {
-                const std::string DEVICE_INFO_TOPIC_NAME = "realsense/device-info";
                 /*!
                  * @brief This class represents the structure device_info defined by the user in the IDL file.
                  * @ingroup DEVICEINFO
@@ -120,76 +119,76 @@ namespace librealsense {
                      * @param _name New value to be copied in member name
                      */
                     eProsima_user_DllExport void name(
-                            const std::array<char, 255>& _name);
+                            const std::array<char, 128>& _name);
 
                     /*!
                      * @brief This function moves the value in member name
                      * @param _name New value to be moved in member name
                      */
                     eProsima_user_DllExport void name(
-                            std::array<char, 255>&& _name);
+                            std::array<char, 128>&& _name);
 
                     /*!
                      * @brief This function returns a constant reference to member name
                      * @return Constant reference to member name
                      */
-                    eProsima_user_DllExport const std::array<char, 255>& name() const;
+                    eProsima_user_DllExport const std::array<char, 128>& name() const;
 
                     /*!
                      * @brief This function returns a reference to member name
                      * @return Reference to member name
                      */
-                    eProsima_user_DllExport std::array<char, 255>& name();
+                    eProsima_user_DllExport std::array<char, 128>& name();
                     /*!
                      * @brief This function copies the value in member serial_number
                      * @param _serial_number New value to be copied in member serial_number
                      */
                     eProsima_user_DllExport void serial_number(
-                            const std::array<char, 255>& _serial_number);
+                            const std::array<char, 32>& _serial_number);
 
                     /*!
                      * @brief This function moves the value in member serial_number
                      * @param _serial_number New value to be moved in member serial_number
                      */
                     eProsima_user_DllExport void serial_number(
-                            std::array<char, 255>&& _serial_number);
+                            std::array<char, 32>&& _serial_number);
 
                     /*!
                      * @brief This function returns a constant reference to member serial_number
                      * @return Constant reference to member serial_number
                      */
-                    eProsima_user_DllExport const std::array<char, 255>& serial_number() const;
+                    eProsima_user_DllExport const std::array<char, 32>& serial_number() const;
 
                     /*!
                      * @brief This function returns a reference to member serial_number
                      * @return Reference to member serial_number
                      */
-                    eProsima_user_DllExport std::array<char, 255>& serial_number();
+                    eProsima_user_DllExport std::array<char, 32>& serial_number();
                     /*!
                      * @brief This function copies the value in member product_line
                      * @param _product_line New value to be copied in member product_line
                      */
                     eProsima_user_DllExport void product_line(
-                            const std::array<char, 255>& _product_line);
+                            const std::array<char, 16>& _product_line);
 
                     /*!
                      * @brief This function moves the value in member product_line
                      * @param _product_line New value to be moved in member product_line
                      */
                     eProsima_user_DllExport void product_line(
-                            std::array<char, 255>&& _product_line);
+                            std::array<char, 16>&& _product_line);
 
                     /*!
                      * @brief This function returns a constant reference to member product_line
                      * @return Constant reference to member product_line
                      */
-                    eProsima_user_DllExport const std::array<char, 255>& product_line() const;
+                    eProsima_user_DllExport const std::array<char, 16>& product_line() const;
 
                     /*!
                      * @brief This function returns a reference to member product_line
                      * @return Reference to member product_line
                      */
-                    eProsima_user_DllExport std::array<char, 255>& product_line();
+                    eProsima_user_DllExport std::array<char, 16>& product_line();
                     /*!
                      * @brief This function sets a value in member locked
                      * @param _locked New value for member locked
@@ -269,9 +268,9 @@ namespace librealsense {
 
                 private:
 
-                    std::array<char, 255> m_name;
-                    std::array<char, 255> m_serial_number;
-                    std::array<char, 255> m_product_line;
+                    std::array<char, 128> m_name;
+                    std::array<char, 32> m_serial_number;
+                    std::array<char, 16> m_product_line;
                     bool m_locked;
                 };
             } // namespace raw

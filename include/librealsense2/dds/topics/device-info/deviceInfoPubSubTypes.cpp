@@ -21,7 +21,6 @@ namespace librealsense {
     namespace dds {
         namespace topics {
             namespace raw {
-
                 device_infoPubSubType::device_infoPubSubType()
                 {
                     setName("librealsense::dds::topics::raw::device_info");

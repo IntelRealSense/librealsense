@@ -23,16 +23,15 @@ using namespace eprosima::fastcdr::exception;
 
 #include <utility>
 
-
 librealsense::dds::topics::raw::device_info::device_info()
 {
-    // m_name com.eprosima.idl.parser.typecode.ArrayTypeCode@704921a5
-    memset(&m_name, 0, (255) * 1);
-    // m_serial_number com.eprosima.idl.parser.typecode.ArrayTypeCode@df27fae
-    memset(&m_serial_number, 0, (255) * 1);
-    // m_product_line com.eprosima.idl.parser.typecode.ArrayTypeCode@24a35978
-    memset(&m_product_line, 0, (255) * 1);
-    // m_locked com.eprosima.idl.parser.typecode.PrimitiveTypeCode@16f7c8c1
+    // m_name com.eprosima.idl.parser.typecode.ArrayTypeCode@64485a47
+    memset(&m_name, 0, (128) * 1);
+    // m_serial_number com.eprosima.idl.parser.typecode.ArrayTypeCode@25bbf683
+    memset(&m_serial_number, 0, (32) * 1);
+    // m_product_line com.eprosima.idl.parser.typecode.ArrayTypeCode@6ec8211c
+    memset(&m_product_line, 0, (16) * 1);
+    // m_locked com.eprosima.idl.parser.typecode.PrimitiveTypeCode@7276c8cd
     m_locked = false;
 
 }
@@ -106,13 +105,13 @@ size_t librealsense::dds::topics::raw::device_info::getMaxCdrSerializedSize(
     size_t initial_alignment = current_alignment;
 
 
-    current_alignment += ((255) * 1) + eprosima::fastcdr::Cdr::alignment(current_alignment, 1);
+    current_alignment += ((128) * 1) + eprosima::fastcdr::Cdr::alignment(current_alignment, 1);
 
 
-    current_alignment += ((255) * 1) + eprosima::fastcdr::Cdr::alignment(current_alignment, 1);
+    current_alignment += ((32) * 1) + eprosima::fastcdr::Cdr::alignment(current_alignment, 1);
 
 
-    current_alignment += ((255) * 1) + eprosima::fastcdr::Cdr::alignment(current_alignment, 1);
+    current_alignment += ((16) * 1) + eprosima::fastcdr::Cdr::alignment(current_alignment, 1);
 
 
     current_alignment += 1 + eprosima::fastcdr::Cdr::alignment(current_alignment, 1);
@@ -130,19 +129,19 @@ size_t librealsense::dds::topics::raw::device_info::getCdrSerializedSize(
     size_t initial_alignment = current_alignment;
 
 
-    if ((255) > 0)
+    if ((128) > 0)
     {
-        current_alignment += ((255) * 1) + eprosima::fastcdr::Cdr::alignment(current_alignment, 1);
+        current_alignment += ((128) * 1) + eprosima::fastcdr::Cdr::alignment(current_alignment, 1);
     }
 
-    if ((255) > 0)
+    if ((32) > 0)
     {
-        current_alignment += ((255) * 1) + eprosima::fastcdr::Cdr::alignment(current_alignment, 1);
+        current_alignment += ((32) * 1) + eprosima::fastcdr::Cdr::alignment(current_alignment, 1);
     }
 
-    if ((255) > 0)
+    if ((16) > 0)
     {
-        current_alignment += ((255) * 1) + eprosima::fastcdr::Cdr::alignment(current_alignment, 1);
+        current_alignment += ((16) * 1) + eprosima::fastcdr::Cdr::alignment(current_alignment, 1);
     }
 
     current_alignment += 1 + eprosima::fastcdr::Cdr::alignment(current_alignment, 1);
@@ -184,7 +183,7 @@ void librealsense::dds::topics::raw::device_info::deserialize(
  * @param _name New value to be copied in member name
  */
 void librealsense::dds::topics::raw::device_info::name(
-        const std::array<char, 255>& _name)
+        const std::array<char, 128>& _name)
 {
     m_name = _name;
 }
@@ -194,7 +193,7 @@ void librealsense::dds::topics::raw::device_info::name(
  * @param _name New value to be moved in member name
  */
 void librealsense::dds::topics::raw::device_info::name(
-        std::array<char, 255>&& _name)
+        std::array<char, 128>&& _name)
 {
     m_name = std::move(_name);
 }
@@ -203,7 +202,7 @@ void librealsense::dds::topics::raw::device_info::name(
  * @brief This function returns a constant reference to member name
  * @return Constant reference to member name
  */
-const std::array<char, 255>& librealsense::dds::topics::raw::device_info::name() const
+const std::array<char, 128>& librealsense::dds::topics::raw::device_info::name() const
 {
     return m_name;
 }
@@ -212,7 +211,7 @@ const std::array<char, 255>& librealsense::dds::topics::raw::device_info::name()
  * @brief This function returns a reference to member name
  * @return Reference to member name
  */
-std::array<char, 255>& librealsense::dds::topics::raw::device_info::name()
+std::array<char, 128>& librealsense::dds::topics::raw::device_info::name()
 {
     return m_name;
 }
@@ -221,7 +220,7 @@ std::array<char, 255>& librealsense::dds::topics::raw::device_info::name()
  * @param _serial_number New value to be copied in member serial_number
  */
 void librealsense::dds::topics::raw::device_info::serial_number(
-        const std::array<char, 255>& _serial_number)
+        const std::array<char, 32>& _serial_number)
 {
     m_serial_number = _serial_number;
 }
@@ -231,7 +230,7 @@ void librealsense::dds::topics::raw::device_info::serial_number(
  * @param _serial_number New value to be moved in member serial_number
  */
 void librealsense::dds::topics::raw::device_info::serial_number(
-        std::array<char, 255>&& _serial_number)
+        std::array<char, 32>&& _serial_number)
 {
     m_serial_number = std::move(_serial_number);
 }
@@ -240,7 +239,7 @@ void librealsense::dds::topics::raw::device_info::serial_number(
  * @brief This function returns a constant reference to member serial_number
  * @return Constant reference to member serial_number
  */
-const std::array<char, 255>& librealsense::dds::topics::raw::device_info::serial_number() const
+const std::array<char, 32>& librealsense::dds::topics::raw::device_info::serial_number() const
 {
     return m_serial_number;
 }
@@ -249,7 +248,7 @@ const std::array<char, 255>& librealsense::dds::topics::raw::device_info::serial
  * @brief This function returns a reference to member serial_number
  * @return Reference to member serial_number
  */
-std::array<char, 255>& librealsense::dds::topics::raw::device_info::serial_number()
+std::array<char, 32>& librealsense::dds::topics::raw::device_info::serial_number()
 {
     return m_serial_number;
 }
@@ -258,7 +257,7 @@ std::array<char, 255>& librealsense::dds::topics::raw::device_info::serial_numbe
  * @param _product_line New value to be copied in member product_line
  */
 void librealsense::dds::topics::raw::device_info::product_line(
-        const std::array<char, 255>& _product_line)
+        const std::array<char, 16>& _product_line)
 {
     m_product_line = _product_line;
 }
@@ -268,7 +267,7 @@ void librealsense::dds::topics::raw::device_info::product_line(
  * @param _product_line New value to be moved in member product_line
  */
 void librealsense::dds::topics::raw::device_info::product_line(
-        std::array<char, 255>&& _product_line)
+        std::array<char, 16>&& _product_line)
 {
     m_product_line = std::move(_product_line);
 }
@@ -277,7 +276,7 @@ void librealsense::dds::topics::raw::device_info::product_line(
  * @brief This function returns a constant reference to member product_line
  * @return Constant reference to member product_line
  */
-const std::array<char, 255>& librealsense::dds::topics::raw::device_info::product_line() const
+const std::array<char, 16>& librealsense::dds::topics::raw::device_info::product_line() const
 {
     return m_product_line;
 }
@@ -286,7 +285,7 @@ const std::array<char, 255>& librealsense::dds::topics::raw::device_info::produc
  * @brief This function returns a reference to member product_line
  * @return Reference to member product_line
  */
-std::array<char, 255>& librealsense::dds::topics::raw::device_info::product_line()
+std::array<char, 16>& librealsense::dds::topics::raw::device_info::product_line()
 {
     return m_product_line;
 }

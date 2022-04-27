@@ -223,7 +223,7 @@ bool dds_server::create_dds_publisher()
     // Registering the topic type enables topic instance creation by factory
     _topic_type.register_type( _participant );
     _publisher = _participant->create_publisher( PUBLISHER_QOS_DEFAULT, nullptr );
-    _topic = _participant->create_topic( librealsense::dds::topics::raw::DEVICE_INFO_TOPIC_NAME,
+    _topic = _participant->create_topic( librealsense::dds::topics::device_info::DEVICE_INFO_TOPIC_NAME,
                                          _topic_type->getName(),
                                          TOPIC_QOS_DEFAULT );
 
