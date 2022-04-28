@@ -22,10 +22,10 @@ using namespace librealsense;
 namespace librealsense
 {
     // D457 development
-    const std::map<uint32_t, rs2_format> hid_fourcc_to_rs2_format = {
+    const std::map<uint32_t, rs2_format> motion_fourcc_to_rs2_format = {
         {rs_fourcc('G','R','E','Y'), RS2_FORMAT_MOTION_XYZ32F},
     };
-    const std::map<uint32_t, rs2_stream> hid_fourcc_to_rs2_stream = {
+    const std::map<uint32_t, rs2_stream> motion_fourcc_to_rs2_stream = {
         {rs_fourcc('G','R','E','Y'), RS2_STREAM_ACCEL},
     };
 
@@ -61,15 +61,15 @@ namespace librealsense
         region_of_interest _roi{};
     };
 
-    class ds5_hid_sensor : public synthetic_sensor,
+    class ds5_motion_sensor : public synthetic_sensor,
                            public motion_sensor
     {
     public:
-        explicit ds5_hid_sensor(std::string name,
+        explicit ds5_motion_sensor(std::string name,
             std::shared_ptr<sensor_base> sensor,
             device* device,
             ds5_motion_base* owner)
-            : synthetic_sensor(name, sensor, device, hid_fourcc_to_rs2_format, hid_fourcc_to_rs2_stream),
+            : synthetic_sensor(name, sensor, device, motion_fourcc_to_rs2_format, motion_fourcc_to_rs2_stream),
             _owner(owner)
         {}
 
@@ -191,34 +191,17 @@ namespace librealsense
         for (auto&& info : filter_by_mi(all_uvc_infos, 4)) // Filter just mi=4, IMU
             imu_devices.push_back(backend.create_uvc_device(info));
 
-        static const char* custom_sensor_fw_ver = "5.6.0.0";
-
         std::unique_ptr<frame_timestamp_reader> timestamp_reader_backup(new ds5_timestamp_reader(backend.create_time_service()));
         std::unique_ptr<frame_timestamp_reader> timestamp_reader_metadata(new ds5_timestamp_reader_from_metadata(std::move(timestamp_reader_backup)));
 
         auto enable_global_time_option = std::shared_ptr<global_time_option>(new global_time_option());
 
-        // Dynamically populate the supported HID profiles according to the selected IMU module
-        std::vector<odr> accel_fps_rates;
-        std::map<unsigned, unsigned> fps_and_frequency_map;
-        if (ds::d400_caps::CAP_BMI_085 && _device_capabilities)
-            accel_fps_rates = { odr::IMU_FPS_100,odr::IMU_FPS_200 };
-        else // Applies to BMI_055 and unrecognized sensors
-            accel_fps_rates = { odr::IMU_FPS_63,odr::IMU_FPS_250 };
-
-        for (auto&& elem : accel_fps_rates)
-        {
-            sensor_name_and_hid_profiles.push_back({ accel_sensor_name, { RS2_FORMAT_MOTION_XYZ32F, RS2_STREAM_ACCEL, 0, 1, 1, static_cast<uint16_t>(elem)} });
-            fps_and_frequency_map.emplace(unsigned(elem), hid_fps_translation.at(elem));
-        }
-        fps_and_sampling_frequency_per_rs2_stream[RS2_STREAM_ACCEL] = fps_and_frequency_map;
-
-        auto raw_hid_ep = std::make_shared<uvc_sensor>("Raw IMU Sensor", std::make_shared<platform::multi_pins_uvc_device>(imu_devices),
+        auto raw_motion_ep = std::make_shared<uvc_sensor>("Raw IMU Sensor", std::make_shared<platform::multi_pins_uvc_device>(imu_devices),
              std::unique_ptr<frame_timestamp_reader>(new global_timestamp_reader(std::move(timestamp_reader_metadata), _tf_keeper, enable_global_time_option)), this);
 
-        auto hid_ep = std::make_shared<ds5_hid_sensor>("Motion Module", raw_hid_ep, this, this);
+        auto motion_ep = std::make_shared<ds5_motion_sensor>("Motion Module", raw_motion_ep, this, this);
 
-        hid_ep->register_option(RS2_OPTION_GLOBAL_TIME_ENABLED, enable_global_time_option);
+        motion_ep->register_option(RS2_OPTION_GLOBAL_TIME_ENABLED, enable_global_time_option);
 
         // register pre-processing
         std::shared_ptr<enable_motion_correction> mm_correct_opt = nullptr;
@@ -228,34 +211,26 @@ namespace librealsense
         {
             if (_mm_calib)
             {
-                mm_correct_opt = std::make_shared<enable_motion_correction>(hid_ep.get(),
+                mm_correct_opt = std::make_shared<enable_motion_correction>(motion_ep.get(),
                     option_range{ 0, 1, 1, 1 });
-                hid_ep->register_option(RS2_OPTION_ENABLE_MOTION_CORRECTION, mm_correct_opt);
+                motion_ep->register_option(RS2_OPTION_ENABLE_MOTION_CORRECTION, mm_correct_opt);
             }
         }
         catch (...) {}
 
-        hid_ep->register_processing_block(
+        motion_ep->register_processing_block(
             { {RS2_FORMAT_MOTION_XYZ32F, RS2_STREAM_ACCEL} },
             { {RS2_FORMAT_MOTION_XYZ32F, RS2_STREAM_ACCEL} },
             [&, mm_correct_opt]() { return std::make_shared<acceleration_transform>(_mm_calib, mm_correct_opt);
         });
 
-        hid_ep->register_processing_block(
+        motion_ep->register_processing_block(
             { {RS2_FORMAT_MOTION_XYZ32F, RS2_STREAM_GYRO} },
             { {RS2_FORMAT_MOTION_XYZ32F, RS2_STREAM_GYRO} },
             [&, mm_correct_opt]() { return std::make_shared<gyroscope_transform>(_mm_calib, mm_correct_opt);
         });
 
-        // D457 dev - removing it from "normal" hid device
-        /*if ((camera_fw_version >= firmware_version(custom_sensor_fw_ver)) &&
-                (!val_in_range(_pid, { ds::RS400_IMU_PID, ds::RS435I_PID, ds::RS430I_PID, ds::RS465_PID, ds::RS405_PID, ds::RS455_PID })))
-        {
-            hid_ep->register_option(RS2_OPTION_MOTION_MODULE_TEMPERATURE,
-                                    std::make_shared<motion_module_temperature_option>(*raw_hid_ep));
-        }*/
-
-        return hid_ep;
+        return motion_ep;
     }
 
 
@@ -297,7 +272,7 @@ namespace librealsense
             sensor_name_and_hid_profiles,
             this);
 
-        auto hid_ep = std::make_shared<ds5_hid_sensor>("Motion Module", raw_hid_ep, this, this);
+        auto hid_ep = std::make_shared<ds5_motion_sensor>("Motion Module", raw_hid_ep, this, this);
 
         hid_ep->register_option(RS2_OPTION_GLOBAL_TIME_ENABLED, enable_global_time_option);
 

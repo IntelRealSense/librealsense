@@ -403,10 +403,11 @@ namespace librealsense
 
         std::shared_ptr<auto_exposure_mechanism> register_auto_exposure_options(synthetic_sensor* ep,
                                                                                 const platform::extension_unit* fisheye_xu);
+
     private:
 
         friend class ds5_fisheye_sensor;
-        friend class ds5_hid_sensor;
+        friend class ds5_motion_sensor;
 
         void initialize_fisheye_sensor(std::shared_ptr<context> ctx, const platform::backend_device_group& group);
 
@@ -450,6 +451,7 @@ namespace librealsense
         std::shared_ptr<synthetic_sensor> create_hid_device(std::shared_ptr<context> ctx,
                                                       const std::vector<platform::hid_device_info>& all_hid_infos,
                                                       const firmware_version& camera_fw_version);
+
     };
 
     class ds5_motion_uvc : public ds5_motion_base
