@@ -355,19 +355,7 @@ void log_callback_end( uint32_t fps,
                 rs2_time_t last_timestamp = 0;
                 _device->probe_and_commit(req_profile_base->get_backend_profile(),
                     [this, req_profile_base, req_profile, last_frame_number, last_timestamp](platform::stream_profile p, platform::frame_object f, std::function<void()> continuation) mutable
-                {
-                    // D431 demo - avoid handling of the partial frames
-//                    const auto&& vspl = As<video_stream_profile, stream_profile_interface>(req_profile);
-//                    int w = vspl ? vspl->get_width() : 0;
-//                    int h = vspl ? vspl->get_height() : 0;
-//                    int bppl = get_image_bpp(req_profile_base->get_format());
-//                    size_t req_size = size_t(w * h * bppl / 8);
-//                    if (f.frame_size < req_size)
-//                    {
-//                        std::cout << "Actual size = " <<  f.frame_size << " , expected = " << req_size << std::endl;
-//                        return;
-//                    }
-
+                {                 
                     const auto&& system_time = environment::get_instance().get_time_service()->get_time();
                     const auto&& fr = generate_frame_from_data(f, _timestamp_reader.get(), last_timestamp, last_frame_number, req_profile_base);
                     const auto&& requires_processing = true; // TODO - Ariel add option
@@ -376,10 +364,30 @@ void log_callback_end( uint32_t fps,
                     auto&& frame_counter = fr->additional_data.frame_number;
                     auto&& timestamp = fr->additional_data.timestamp;
 
+                    // D457 development
+                    int expected_size;
+                    bool is_gyro = false;
+                    bool is_accel = false;
+                    auto&& msp = As<motion_stream_profile, stream_profile_interface>(req_profile);
+                    if (msp)
+                    {
+                        if (fr->data[0] == 2)
+                            is_gyro = true;
+                        else
+                            is_accel = true;
+                        expected_size = 32;
+                    }
+
+                    rs2_stream current_stream = req_profile_base->get_stream_type();
+                    if (is_gyro)
+                        current_stream = RS2_STREAM_GYRO;
+                    if (is_accel)
+                        current_stream = RS2_STREAM_ACCEL;
+
                     if (!this->is_streaming())
                     {
                         LOG_WARNING("Frame received with streaming inactive,"
-                            << librealsense::get_string(req_profile_base->get_stream_type())
+                            << librealsense::get_string(current_stream)
                             << req_profile_base->get_stream_index()
                             << ", Arrived," << std::fixed << f.backend_time << " " << system_time);
                         return;
@@ -387,7 +395,7 @@ void log_callback_end( uint32_t fps,
 
                     frame_continuation release_and_enqueue(continuation, f.pixels);
 
-                    LOG_DEBUG("FrameAccepted," << librealsense::get_string(req_profile_base->get_stream_type())
+                    LOG_DEBUG("FrameAccepted," << librealsense::get_string(current_stream)
                         << ",Counter," << std::dec << fr->additional_data.frame_number
                         << ",Index," << req_profile_base->get_stream_index()
                         << ",BackEndTS," << std::fixed << f.backend_time
@@ -409,20 +417,14 @@ void log_callback_end( uint32_t fps,
                     if( req_profile->get_stream_type() == RS2_STREAM_CONFIDENCE )
                         bpp = 4;
 
-                    auto expected_size = (width * height * bpp) >> 3;
+                    if (!msp)
+                        expected_size = (width * height * bpp) >> 3;
                     // For compressed formats copy the raw data as is
                     if (val_in_range(req_profile_base->get_format(), { RS2_FORMAT_MJPEG, RS2_FORMAT_Z16H }))
                         expected_size = static_cast<int>(f.frame_size);
 
-                    // D457 development
-                    if (!vsp)
-                    {
-                        auto&& msp = As<motion_stream_profile, stream_profile_interface>(req_profile);
-                        if (msp)
-                            expected_size = 32;
-                    }
                     frame_holder fh = _source.alloc_frame(
-                        stream_to_frame_types( req_profile_base->get_stream_type() ),
+                        stream_to_frame_types( current_stream ),
                         expected_size,
                         fr->additional_data,
                         requires_processing );
