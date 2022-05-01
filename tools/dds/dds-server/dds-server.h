@@ -7,6 +7,7 @@
 #include <vector>
 #include <atomic>
 #include <mutex>
+#include <condition_variable>
 
 #include <fastdds/dds/domain/DomainParticipant.hpp>
 #include <fastdds/dds/domain/DomainParticipantListener.hpp>
@@ -40,13 +41,18 @@ namespace tools
         class dds_serverListener : public eprosima::fastdds::dds::DataWriterListener
         {
         public:
+            dds_serverListener( dds_server* owner )
+                : eprosima::fastdds::dds::DataWriterListener()
+                , _owner ( owner )
+            {
+            }
+
             void on_publication_matched(
                 eprosima::fastdds::dds::DataWriter* writer,
                 const eprosima::fastdds::dds::PublicationMatchedStatus& info ) override;
 
-            std::atomic< int > _matched = { 0 };
-            std::atomic< bool > _new_reader_joined = { false };
-            std::mutex _new_reader_mutex;
+            std::atomic_bool _new_reader_joined = { false }; // Used to indicate that a new reader has joined for this writer 
+            dds_server* _owner;
         };
 
         class DiscoveryDomainParticipantListener
@@ -94,7 +100,7 @@ namespace tools
         librealsense::dds::topics::device_info query_device_info( const rs2::device& rs2_dev ) const;
         void fill_device_msg( const librealsense::dds::topics::device_info& dev_info, librealsense::dds::topics::raw::device_info& msg ) const;
 
-        std::atomic_bool _running;
+        std::atomic_bool _running, _trigger_msg_send;
         eprosima::fastdds::dds::DomainParticipant* _participant;
         eprosima::fastdds::dds::Publisher* _publisher;
         eprosima::fastdds::dds::Topic* _topic;
@@ -102,6 +108,8 @@ namespace tools
         std::unordered_map< std::string, dds_device_handle > _devices_writers;
         rs2::context _ctx;
         dispatcher _dds_device_dispatcher;
-        active_object<> _new_clients_detector;
+        active_object<> _device_info_msg_sender;
+        std::condition_variable _device_info_msg_cv;
+        std::mutex _device_info_msg_mutex;
     };  // class dds_server
 }
