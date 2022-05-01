@@ -6,10 +6,10 @@ set(TOOL_FILES rs-dds-server.cpp
         dds-server.cpp
         dds-server.h)
         
-include(${REPO_ROOT}/include/librealsense2/dds/topics/dds_messages.cmake)
-include(${REPO_ROOT}/include/librealsense2/utilities/easylogging/easyloggingpp.cmake)
+include("${REPO_ROOT}/include/librealsense2/dds/topics/dds-messages.cmake")
+include("${REPO_ROOT}/include/librealsense2/utilities/easylogging/easyloggingpp.cmake")
 
-set(UTILITIES ${REPO_ROOT}/include/librealsense2/utilities/concurrency/dispatcher.cpp)
+set(UTILITIES "${REPO_ROOT}/include/librealsense2/utilities/concurrency/dispatcher.cpp")
 
 add_executable(${PROJECT_NAME} ${TOOL_FILES} ${DDS_TOPICS_FILES} ${UTILITIES} ${ELPP_SOURCES})
 set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 11)
