@@ -12,7 +12,7 @@ class device_info
 {
 public:
     using type = raw::device_infoPubSubType;
-    static constexpr char* const DEVICE_INFO_TOPIC_NAME = "realsense/device-info";
+    static constexpr char* const TOPIC_NAME = "realsense/device-info";
 
     device_info() = default;
 

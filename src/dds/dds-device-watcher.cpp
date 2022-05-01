@@ -159,7 +159,7 @@ void dds_device_watcher::init( int domain_id )
     }
 
     // CREATE THE TOPIC
-    _topic = _participant->create_topic(  librealsense::dds::topics::device_info::DEVICE_INFO_TOPIC_NAME,
+    _topic = _participant->create_topic(  librealsense::dds::topics::device_info::TOPIC_NAME,
                                          _topic_type->getName(),
                                          TOPIC_QOS_DEFAULT );
 
