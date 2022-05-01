@@ -77,7 +77,7 @@ try
         }
     }
 
-    dds_server my_dds_server;
+    tools::dds_server my_dds_server;
     if( my_dds_server.init( domain ) )
     {
         my_dds_server.run( );

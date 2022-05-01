@@ -1,4 +1,0 @@
-struct devices
-{
-	char name[255];
-};

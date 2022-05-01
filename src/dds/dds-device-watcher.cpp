@@ -3,18 +3,14 @@
 
 #include <types.h>
 #include "dds-device-watcher.h"
-#include "msg/devicesPubSubTypes.h"
+#include <librealsense2/dds/topics/dds-messages.h>
 #include <fastdds/dds/domain/DomainParticipantFactory.hpp>
 #include <fastdds/dds/domain/DomainParticipant.hpp>
 #include <fastdds/dds/subscriber/qos/DataReaderQos.hpp>
 #include <fastdds/dds/subscriber/DataReader.hpp>
 #include <fastdds/dds/subscriber/Subscriber.hpp>
 
-// We align the DDS topic name to ROS2 as it expect the 'rt/' prefix for the topic name
-#define ROS2_PREFIX( name ) std::string( "rt/" ).append( name )
-
 using namespace eprosima::fastdds::dds;
-
 using namespace librealsense;
 
 dds_device_watcher::dds_device_watcher( int domain_id )
@@ -22,61 +18,64 @@ dds_device_watcher::dds_device_watcher( int domain_id )
     , _subscriber( nullptr )
     , _topic( nullptr )
     , _reader( nullptr )
-    , _type_ptr( new devicesPubSubType() )
+    , _topic_type( new dds::topics::device_info::type )
     , _init_done( false )
     , _domain_id( domain_id )
     , _active_object( [this]( dispatcher::cancellable_timer timer ) {
 
         if( _reader->wait_for_unread_message( { 1, 0 } ) )
         {
-            devices data;
+            dds::topics::raw::device_info raw_data;
             SampleInfo info;
-            bool device_update_detected = false;
             // Process all the samples until no one is returned,
             // We will distinguish info change vs new data by validating using `valid_data` field
-            while( ReturnCode_t::RETCODE_OK == _reader->take_next_sample( &data, &info ) )
+            while( ReturnCode_t::RETCODE_OK == _reader->take_next_sample( &raw_data, &info ) )
             {
                 // Only samples for which valid_data is true should be accessed
                 // valid_data indicates that the instance is still ALIVE and the `take` return an
                 // updated sample
                 if( info.valid_data )
                 {
-                    device_update_detected = true;
-                    LOG_DEBUG( "DDS device '"
-                               << std::string( data.name().begin(), data.name().end() )
-                               << "' detected!" );
+                    dds::topics::device_info device_info = raw_data;
+
+                    LOG_DEBUG( "DDS device detected:"
+                               << "\n\tName: " << device_info.name
+                               << "\n\tSerial: " << device_info.serial
+                               << "\n\tProduct line: " << device_info.product_line
+                               << "\n\tLocked:" << ( device_info.locked ? "yes" : "no" ) );
+
+                    std::lock_guard< std::mutex > lock( _devices_mutex );
+                    eprosima::fastrtps::rtps::GUID_t guid;
+                    eprosima::fastrtps::rtps::iHandle2GUID( guid, info.publication_handle );
+
+                    // Add a new device record into our dds devices map
+                    _dds_devices[guid] = device_info;
+
+                    LOG_DEBUG( "DDS device writer GUID: " << guid
+                                                          << " for device: " << device_info.serial
+                                                          << " added on domain " << _domain_id );
+
+                    // TODO - Call LRS callback to create the RS devices
+                    // if( callback )
+                    // {
+                    //    callback_invocation_holder callback = { _callback_inflight.allocate(),
+                    //    &_callback_inflight }; _callback( _devices_data, curr );
+                    // }
+                        
                 }
-            }
-
-            if( device_update_detected )
-            {
-                std::lock_guard< std::mutex > lock( _devices_mutex );
-
-                const eprosima::fastrtps::rtps::GUID_t & guid(
-                    info.sample_identity.writer_guid() );  // Get the publisher GUID
-                // Add a new device record into our dds devices map
-                _dds_devices[guid.entityId.to_uint32()]
-                    = std::string( data.name().begin(), data.name().end() );
-
-                LOG_DEBUG( "DDS device writer GUID: " << std::hex << guid.entityId.to_uint32() << std::dec << " added on domain " << _domain_id );
-
-                // TODO - Call LRS callback to create the RS devices
-                // if( callback )
-                // {
-                //    callback_invocation_holder callback = { _callback_inflight.allocate(),
-                //    &_callback_inflight }; _callback( _devices_data, curr );
-                // }
             }
         }
     } )
 {
     _domain_listener
-        = std::make_shared< DiscoveryDomainParticipantListener >( [this]( uint32_t entity_id ) {
+        = std::make_shared< DiscoveryDomainParticipantListener >( [this]( eprosima::fastrtps::rtps::GUID_t guid ) {
               std::lock_guard< std::mutex > lock( _devices_mutex );
-              if( _dds_devices.find( entity_id ) != _dds_devices.end() )
+              auto dds_device = _dds_devices.find( guid );
+              if( dds_device != _dds_devices.end() )
               {
-                  LOG_DEBUG( "DDS device writer GUID: " << std::hex << entity_id << std::dec << " removed" );
-                  _dds_devices.erase( entity_id );
+                  auto dds_device_serial = dds_device->second.serial;
+                  _dds_devices.erase( guid );
+                  LOG_DEBUG( "DDS device writer GUID: " << guid << " for device: " << dds_device_serial << " removed from domain " << _domain_id );
               }
           } );
 }
@@ -148,7 +147,7 @@ void dds_device_watcher::init( int domain_id )
     }
 
     // REGISTER THE TYPE
-    _type_ptr.register_type( _participant );
+    _topic_type.register_type( _participant );
 
     // CREATE THE SUBSCRIBER
     _subscriber = _participant->create_subscriber( SUBSCRIBER_QOS_DEFAULT, nullptr );
@@ -160,8 +159,8 @@ void dds_device_watcher::init( int domain_id )
     }
 
     // CREATE THE TOPIC
-    _topic = _participant->create_topic( ROS2_PREFIX( "Devices" ),
-                                         _type_ptr->getName(),
+    _topic = _participant->create_topic(  librealsense::dds::topics::device_info::TOPIC_NAME,
+                                         _topic_type->getName(),
                                          TOPIC_QOS_DEFAULT );
 
     if( _topic == nullptr )
@@ -197,7 +196,7 @@ void dds_device_watcher::init( int domain_id )
 
 
 dds_device_watcher::DiscoveryDomainParticipantListener::DiscoveryDomainParticipantListener(
-    std::function< void( uint32_t ) > callback )
+    std::function< void( eprosima::fastrtps::rtps::GUID_t ) > callback )
     : DomainParticipantListener()
     , _datawriter_removed_callback( std::move( callback ) )
 {
@@ -221,7 +220,7 @@ void dds_device_watcher::DiscoveryDomainParticipantListener::on_publisher_discov
                                   << info.info.topicName() << "' of type '" << info.info.typeName()
                                   << "' left the domain." );
         if( _datawriter_removed_callback )
-            _datawriter_removed_callback( info.info.guid().entityId.to_uint32() );
+            _datawriter_removed_callback( info.info.guid() );
         break;
     }
 }
