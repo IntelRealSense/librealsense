@@ -52,6 +52,7 @@ namespace tools
                 const eprosima::fastdds::dds::PublicationMatchedStatus& info ) override;
 
             std::atomic_bool _new_reader_joined = { false }; // Used to indicate that a new reader has joined for this writer 
+        private:
             dds_server* _owner;
         };
 
@@ -105,7 +106,7 @@ namespace tools
         eprosima::fastdds::dds::Publisher* _publisher;
         eprosima::fastdds::dds::Topic* _topic;
         eprosima::fastdds::dds::TypeSupport _topic_type;
-        std::unordered_map< std::string, dds_device_handle > _devices_writers;
+        std::unordered_map< std::string, dds_device_handle > _device_handle_by_sn;
         rs2::context _ctx;
         dispatcher _dds_device_dispatcher;
         active_object<> _device_info_msg_sender;

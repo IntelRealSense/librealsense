@@ -35,7 +35,7 @@ dds_server::dds_server()
         {
             _trigger_msg_send = false;
             _dds_device_dispatcher.invoke( [this]( dispatcher::cancellable_timer ) {
-                for( auto dev_writer : _devices_writers )
+                for( auto dev_writer : _device_handle_by_sn )
                 {
                     if( dev_writer.second.listener->_new_reader_joined )
                     {
@@ -85,7 +85,7 @@ void dds_server::run()
             } );
         }
     } );
-
+    
     _device_info_msg_sender.start();
     _running = true;
     std::cout << "RS DDS Server is on.." << std::endl;
@@ -97,9 +97,9 @@ bool dds_server::prepare_devices_changed_lists(
     std::vector< std::pair< std::string , rs2::device > > & devices_to_add )
 {
     // Remove disconnected devices from devices list
-    for( auto dev_info : _devices_writers )
+    for( auto dev_handle : _device_handle_by_sn )
     {
-        auto & dev = dev_info.second.device;
+        auto & dev = dev_handle.second.device;
         auto device_key = dev.get_info( RS2_CAMERA_INFO_SERIAL_NUMBER );
 
         if( info.was_removed( dev ) )
@@ -148,21 +148,21 @@ void dds_server::handle_device_changes(
 void dds_server::remove_dds_device( const std::string & device_key )
 {
     // deleting a device also notify the clients internally
-    auto ret = _publisher->delete_datawriter( _devices_writers[device_key].data_writer );
+    auto ret = _publisher->delete_datawriter( _device_handle_by_sn[device_key].data_writer );
     if( ret != ReturnCode_t::RETCODE_OK)
     {
         std::cout << "Error code: " << ret() << " while trying to delete data writer ("
-                  << _devices_writers[device_key].data_writer->guid() << ")" << std::endl;
+                  << _device_handle_by_sn[device_key].data_writer->guid() << ")" << std::endl;
         return;
     }
-    _devices_writers.erase( device_key );
+    _device_handle_by_sn.erase( device_key );
     std::cout << "Device '" << device_key << "' - removed" << std::endl;
 }
 
 bool dds_server::add_dds_device( const std::string & device_key,
                                  const rs2::device & rs2_dev )
 {
-    if( _devices_writers.find( device_key ) == _devices_writers.end() )
+    if( _device_handle_by_sn.find( device_key ) == _device_handle_by_sn.end() )
     {
         if( ! create_device_writer( device_key, rs2_dev ) )
         {
@@ -184,12 +184,12 @@ bool dds_server::create_device_writer( const std::string &device_key, rs2::devic
     std::shared_ptr< dds_serverListener > writer_listener
         = std::make_shared< dds_serverListener >( this );
 
-    _devices_writers[device_key]
+    _device_handle_by_sn[device_key]
         = { rs2_device,
             _publisher->create_datawriter( _topic, wqos, writer_listener.get() ),
             writer_listener };
 
-    return _devices_writers[device_key].data_writer != nullptr;
+    return _device_handle_by_sn[device_key].data_writer != nullptr;
 }
 
 bool dds_server::create_dds_participant( DomainId_t domain_id )
@@ -248,7 +248,7 @@ bool tools::dds_server::send_device_info_msg( const librealsense::dds::topics::d
     std::this_thread::sleep_for( std::chrono::milliseconds( 100 ) );
 
     // Post a DDS message with the new added device
-    if( _devices_writers[dev_info.serial].data_writer->write( &raw_msg ) )
+    if( _device_handle_by_sn[dev_info.serial].data_writer->write( &raw_msg ) )
     {
         std::cout << "DDS device message sent!" << std::endl;
         return true;
@@ -287,13 +287,13 @@ dds_server::~dds_server()
     _dds_device_dispatcher.stop();
     _device_info_msg_sender.stop();
 
-    for( auto device_writer : _devices_writers )
+    for( auto dev_handle : _device_handle_by_sn )
     {
-        auto & dev_writer = device_writer.second.data_writer;
+        auto & dev_writer = dev_handle.second.data_writer;
         if( dev_writer )
             _publisher->delete_datawriter( dev_writer );
     }
-    _devices_writers.clear();
+    _device_handle_by_sn.clear();
 
     if( _topic != nullptr )
     {
