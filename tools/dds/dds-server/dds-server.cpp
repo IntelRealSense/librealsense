@@ -28,8 +28,8 @@ dds_server::dds_server()
         // We wait until the new reader callback indicate a new reader has joined or until the
         // active object is stopped
         std::unique_lock< std::mutex > lock( _new_client_mutex );
-        _new_client_cv.wait( lock, [this]() {
-            return _trigger_msg_send.load() || ! _new_client_handler.is_active();
+        _new_client_cv.wait( lock, [this, timer]() {
+            return _trigger_msg_send.load() || timer.was_stopped();
         } );
         if( _new_client_handler.is_active() && _trigger_msg_send.load() )
         {
