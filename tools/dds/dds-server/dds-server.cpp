@@ -23,15 +23,15 @@ dds_server::dds_server()
     , _topic( nullptr )
     , _topic_type( new librealsense::dds::topics::device_info::type )
     , _dds_device_dispatcher( 10 )
-    , _device_info_msg_sender( [this]( dispatcher::cancellable_timer timer ) {
+    , _new_client_handler( [this]( dispatcher::cancellable_timer timer ) {
 
         // We wait until the new reader callback indicate a new reader has joined or until the
         // active object is stopped
-        std::unique_lock< std::mutex > lock( _device_info_msg_mutex );
-        _device_info_msg_cv.wait( lock, [this]() {
-            return _trigger_msg_send.load() || ! _device_info_msg_sender.is_active();
+        std::unique_lock< std::mutex > lock( _new_client_mutex );
+        _new_client_cv.wait( lock, [this]() {
+            return _trigger_msg_send.load() || ! _new_client_handler.is_active();
         } );
-        if( _device_info_msg_sender.is_active() && _trigger_msg_send.load() )
+        if( _new_client_handler.is_active() && _trigger_msg_send.load() )
         {
             _trigger_msg_send = false;
             _dds_device_dispatcher.invoke( [this]( dispatcher::cancellable_timer ) {
@@ -86,7 +86,7 @@ void dds_server::run()
         }
     } );
     
-    _device_info_msg_sender.start();
+    _new_client_handler.start();
     _running = true;
     std::cout << "RS DDS Server is on.." << std::endl;
 }
@@ -181,8 +181,8 @@ bool dds_server::create_device_writer( const std::string &device_key, rs2::devic
     wqos.durability().kind = VOLATILE_DURABILITY_QOS;
     wqos.data_sharing().automatic();
     wqos.ownership().kind = EXCLUSIVE_OWNERSHIP_QOS;
-    std::shared_ptr< dds_serverListener > writer_listener
-        = std::make_shared< dds_serverListener >( this );
+    std::shared_ptr< dds_client_listener > writer_listener
+        = std::make_shared< dds_client_listener >( this );
 
     _device_handle_by_sn[device_key]
         = { rs2_device,
@@ -285,7 +285,9 @@ dds_server::~dds_server()
     _running = false;
 
     _dds_device_dispatcher.stop();
-    _device_info_msg_sender.stop();
+    _new_client_handler.stop();
+
+    _new_client_cv.notify_all(); // Wake up _device_info_msg_sender to finish running
 
     for( auto dev_handle : _device_handle_by_sn )
     {
@@ -307,7 +309,7 @@ dds_server::~dds_server()
 }
 
 
-void dds_server::dds_serverListener::on_publication_matched( DataWriter * writer,
+void dds_server::dds_client_listener::on_publication_matched( DataWriter * writer,
                                                              const PublicationMatchedStatus & info )
 {
     if( info.current_count_change == 1 )
@@ -317,11 +319,11 @@ void dds_server::dds_serverListener::on_publication_matched( DataWriter * writer
             // We send the work to the dispatcher to avoid waiting on the mutex here.
             _owner->_dds_device_dispatcher.invoke( [this]( dispatcher::cancellable_timer ) {
                 {
-                    std::lock_guard< std::mutex > lock( _owner->_device_info_msg_mutex );
+                    std::lock_guard< std::mutex > lock( _owner->_new_client_mutex );
                     _new_reader_joined = true;
                     _owner->_trigger_msg_send = true;
                 }
-                _owner->_device_info_msg_cv.notify_all();
+                _owner->_new_client_cv.notify_all();
             } );
         }
     }
@@ -336,7 +338,7 @@ void dds_server::dds_serverListener::on_publication_matched( DataWriter * writer
     }
 }
 
-void dds_server::DiscoveryDomainParticipantListener::on_participant_discovery(
+void dds_server::dds_participant_listener::on_participant_discovery(
     DomainParticipant * participant, eprosima::fastrtps::rtps::ParticipantDiscoveryInfo && info )
 {
     switch( info.status )

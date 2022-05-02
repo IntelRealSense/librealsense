@@ -38,10 +38,10 @@ namespace tools
 
     private:
         // We want to know when readers join our topic
-        class dds_serverListener : public eprosima::fastdds::dds::DataWriterListener
+        class dds_client_listener : public eprosima::fastdds::dds::DataWriterListener
         {
         public:
-            dds_serverListener( dds_server* owner )
+            dds_client_listener( dds_server* owner )
                 : eprosima::fastdds::dds::DataWriterListener()
                 , _owner ( owner )
             {
@@ -56,7 +56,7 @@ namespace tools
             dds_server* _owner;
         };
 
-        class DiscoveryDomainParticipantListener
+        class dds_participant_listener
             : public eprosima::fastdds::dds::DomainParticipantListener
         {
 
@@ -70,7 +70,7 @@ namespace tools
         {
             rs2::device device;
             eprosima::fastdds::dds::DataWriter* data_writer;
-            std::shared_ptr< dds_serverListener > listener;
+            std::shared_ptr< dds_client_listener > listener;
         };
 
         // This 2 functions (prepare & post) handles the DDS publication of connected/disconnected RS devices.
@@ -109,8 +109,8 @@ namespace tools
         std::unordered_map< std::string, dds_device_handle > _device_handle_by_sn;
         rs2::context _ctx;
         dispatcher _dds_device_dispatcher;
-        active_object<> _device_info_msg_sender;
-        std::condition_variable _device_info_msg_cv;
-        std::mutex _device_info_msg_mutex;
+        active_object<> _new_client_handler;
+        std::condition_variable _new_client_cv;
+        std::mutex _new_client_mutex;
     };  // class dds_server
 }
