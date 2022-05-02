@@ -165,6 +165,7 @@ bool dds_server::add_dds_device( const std::string & device_key,
 {
     if( _device_handle_by_sn.find( device_key ) == _device_handle_by_sn.end() )
     {
+        std::cout << "\nDevice '" << device_key << "' - detected" << std::endl;
         if( ! create_device_writer( device_key, rs2_dev ) )
         {
             return false;
@@ -242,7 +243,6 @@ bool tools::dds_server::send_device_info_msg( const librealsense::dds::topics::d
     // Publish the device info, but only after a matching reader is found.
     librealsense::dds::topics::raw::device_info raw_msg;
     fill_device_msg( dev_info, raw_msg );
-    std::cout << "\nDevice '" << dev_info.serial << "' - detected" << std::endl;
     // It takes some time from the moment we create the data writer until the data reader is matched
     // If we send before the data reader is matched the message will not arrive to it.
     // Currently if we remove the sleep line the client sometimes miss the message. (See https://github.com/eProsima/Fast-DDS/issues/2641)
