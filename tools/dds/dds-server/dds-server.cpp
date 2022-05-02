@@ -35,14 +35,14 @@ dds_server::dds_server()
         {
             _trigger_msg_send = false;
             _dds_device_dispatcher.invoke( [this]( dispatcher::cancellable_timer ) {
-                for( auto dev_writer : _device_handle_by_sn )
+                for( auto sn_and_handle : _device_handle_by_sn )
                 {
-                    if( dev_writer.second.listener->_new_reader_joined )
+                    if( sn_and_handle.second.listener->_new_reader_joined )
                     {
-                        auto dev_info = query_device_info( dev_writer.second.device );
+                        auto dev_info = query_device_info( sn_and_handle.second.device );
                         if( send_device_info_msg( dev_info ) )
                         {
-                            dev_writer.second.listener->_new_reader_joined = false;
+                            sn_and_handle.second.listener->_new_reader_joined = false;
                         }
                     }
                 }
@@ -65,6 +65,7 @@ bool dds_server::init( DomainId_t domain_id )
 void dds_server::run()
 {
     _dds_device_dispatcher.start();
+    _new_client_handler.start();
 
     post_current_connected_devices();
 
@@ -86,7 +87,7 @@ void dds_server::run()
         }
     } );
     
-    _new_client_handler.start();
+  
     _running = true;
     std::cout << "RS DDS Server is on.." << std::endl;
 }
@@ -97,10 +98,10 @@ bool dds_server::prepare_devices_changed_lists(
     std::vector< std::pair< std::string , rs2::device > > & devices_to_add )
 {
     // Remove disconnected devices from devices list
-    for( auto dev_handle : _device_handle_by_sn )
+    for( auto sn_and_handle : _device_handle_by_sn )
     {
-        auto & dev = dev_handle.second.device;
-        auto device_key = dev.get_info( RS2_CAMERA_INFO_SERIAL_NUMBER );
+        auto & dev = sn_and_handle.second.device;
+        auto device_key = sn_and_handle.first;
 
         if( info.was_removed( dev ) )
         {
@@ -289,9 +290,9 @@ dds_server::~dds_server()
 
     _new_client_cv.notify_all(); // Wake up _device_info_msg_sender to finish running
 
-    for( auto dev_handle : _device_handle_by_sn )
+    for( auto sn_and_handle : _device_handle_by_sn )
     {
-        auto & dev_writer = dev_handle.second.data_writer;
+        auto & dev_writer = sn_and_handle.second.data_writer;
         if( dev_writer )
             _publisher->delete_datawriter( dev_writer );
     }
