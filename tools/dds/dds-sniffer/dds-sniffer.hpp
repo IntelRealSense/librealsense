@@ -4,12 +4,14 @@
 #pragma once
 
 #include <map>
+#include <string>
 
 #include <fastdds/dds/domain/DomainParticipant.hpp>
 #include <fastdds/dds/domain/DomainParticipantListener.hpp>
 #include <fastdds/dds/subscriber/DataReader.hpp>
 #include <fastdds/dds/subscriber/qos/DataReaderQos.hpp>
 #include <fastrtps/attributes/SubscriberAttributes.h>
+#include <fastdds/rtps/common/Guid.h>
 
 class Sniffer : public eprosima::fastdds::dds::DomainParticipantListener
 {
@@ -17,8 +19,10 @@ public:
     Sniffer();
     ~Sniffer();
 
-    bool init( eprosima::fastdds::dds::DomainId_t domain = 0 );
+    bool init( eprosima::fastdds::dds::DomainId_t domain = 0, bool snapshot = false );
     void run( uint32_t seconds );
+
+    void print_topics();
 
 private:
     eprosima::fastdds::dds::DomainParticipant * _participant;
@@ -28,12 +32,24 @@ private:
     std::map< eprosima::fastdds::dds::DataReader *, eprosima::fastrtps::types::DynamicType_ptr > _readers;
     std::map< eprosima::fastdds::dds::DataReader *, eprosima::fastrtps::types::DynamicData_ptr > _datas;
 
+    std::map< eprosima::fastrtps::rtps::GUID_t, eprosima::fastrtps::string_255 > _discoveredParticipants;
+    struct ReadersWriters
+    {
+        std::vector< eprosima::fastrtps::rtps::GUID_t > readers;
+        std::vector< eprosima::fastrtps::rtps::GUID_t > writers;
+    };
+    std::map< std::string, ReadersWriters > _discoveredTopics;
+
     eprosima::fastrtps::SubscriberAttributes _subscriberAttributes;
 
     eprosima::fastdds::dds::DataReaderQos _readerQoS;
 
     std::atomic_int _matched = { 0 };
-    bool _running = false;
+    bool _snapshot = false;
+
+    void print_writer( const eprosima::fastrtps::rtps::GUID_t & writer, uint32_t indentation );
+    void print_reader( const eprosima::fastrtps::rtps::GUID_t & reader, uint32_t indentation );
+    void ident( uint32_t indentation );
 
     void on_data_available( eprosima::fastdds::dds::DataReader * reader ) override;
 

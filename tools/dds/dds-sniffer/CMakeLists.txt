@@ -4,7 +4,10 @@
 
 project(rs-dds-sniffer)
 
-add_executable(${PROJECT_NAME} dds-sniffer.cpp)
+set(SRC dds-sniffer.cpp)
+set(INC dds-sniffer.hpp)
+
+add_executable(${PROJECT_NAME} ${INC} ${SRC})
 
 set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 11)
 
