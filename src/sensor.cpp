@@ -268,21 +268,7 @@ void log_callback_end( uint32_t fps,
         auto system_time = environment::get_instance().get_time_service()->get_time();
         auto fr = std::make_shared<frame>();
         byte* pix = (byte*)fo.pixels;
-        std::vector<byte> pixels;
-        try
-        {
-            pixels = std::vector<byte> (pix, pix + fo.frame_size);
-        }
-        catch(std::bad_alloc &exc)
-        {
-            std::cout << " Got you! - " << exc.what() << std::endl;
-            exit(1);
-        }
-        catch(...)
-        {
-            std::cout << " Got you!" << std::endl;
-            exit(1);
-        }
+        std::vector<byte> pixels(pix, pix + fo.frame_size);
         fr->data = pixels;
         fr->set_stream(profile);
 
@@ -366,28 +352,16 @@ void log_callback_end( uint32_t fps,
 
                     // D457 development
                     int expected_size;
-                    bool is_gyro = false;
-                    bool is_accel = false;
                     auto&& msp = As<motion_stream_profile, stream_profile_interface>(req_profile);
                     if (msp)
                     {
-                        if (fr->data[0] == 2)
-                            is_gyro = true;
-                        else
-                            is_accel = true;
                         expected_size = 32;
                     }
-
-                    rs2_stream current_stream = req_profile_base->get_stream_type();
-                    if (is_gyro)
-                        current_stream = RS2_STREAM_GYRO;
-                    if (is_accel)
-                        current_stream = RS2_STREAM_ACCEL;
 
                     if (!this->is_streaming())
                     {
                         LOG_WARNING("Frame received with streaming inactive,"
-                            << librealsense::get_string(current_stream)
+                            << librealsense::get_string(req_profile_base->get_stream_type())
                             << req_profile_base->get_stream_index()
                             << ", Arrived," << std::fixed << f.backend_time << " " << system_time);
                         return;
@@ -395,7 +369,7 @@ void log_callback_end( uint32_t fps,
 
                     frame_continuation release_and_enqueue(continuation, f.pixels);
 
-                    LOG_DEBUG("FrameAccepted," << librealsense::get_string(current_stream)
+                    LOG_DEBUG("FrameAccepted," << librealsense::get_string(req_profile_base->get_stream_type())
                         << ",Counter," << std::dec << fr->additional_data.frame_number
                         << ",Index," << req_profile_base->get_stream_index()
                         << ",BackEndTS," << std::fixed << f.backend_time
@@ -424,7 +398,7 @@ void log_callback_end( uint32_t fps,
                         expected_size = static_cast<int>(f.frame_size);
 
                     frame_holder fh = _source.alloc_frame(
-                        stream_to_frame_types( current_stream ),
+                        stream_to_frame_types( req_profile_base->get_stream_type() ),
                         expected_size,
                         fr->additional_data,
                         requires_processing );
@@ -1536,6 +1510,8 @@ void log_callback_end( uint32_t fps,
 
         for (auto source : requests)
             add_source_profile_missing_data(source);
+
+
 
         const auto&& resolved_req = resolve_requests(requests);
 

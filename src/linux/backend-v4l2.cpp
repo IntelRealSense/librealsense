@@ -319,7 +319,7 @@ namespace librealsense
             if(xioctl(fd, VIDIOC_QBUF, &buf) < 0)
                 throw linux_backend_exception("xioctl(VIDIOC_QBUF) failed");
             else
-                LOG_DEBUG("prepare_for_streaming fd " << std::dec << fd);
+                LOG_DEBUG_V4L("prepare_for_streaming fd " << std::dec << fd);
         }
 
         buffer::~buffer()
@@ -360,7 +360,7 @@ namespace librealsense
                     memset((byte*)(get_frame_start()) + metadata_offset, 0, MAX_META_DATA_SIZE);
                 }
 
-                LOG_DEBUG("Enqueue buf " << std::dec << _buf.index << " for fd " << fd);
+                LOG_DEBUG_V4L("Enqueue buf " << std::dec << _buf.index << " for fd " << fd);
                 if (xioctl(fd, VIDIOC_QBUF, &_buf) < 0)
                 {
                     LOG_ERROR("xioctl(VIDIOC_QBUF) failed when requesting new frame! fd: " << fd << " error: " << strerror(errno));
@@ -379,7 +379,8 @@ namespace librealsense
             if (e_max_kernel_buf_type <=buf_type)
                 throw linux_backend_exception("invalid kernel buffer type request");
 
-            if (file_desc < 0/*1*/)
+            // D457 development - changed from 1 to 0
+            if (file_desc < 0)
             {
                 // QBUF to be performed by a 3rd party
                 this->buffers.at(buf_type)._managed  = true;
@@ -397,7 +398,7 @@ namespace librealsense
         {
             for (auto& buf : buffers)
             {
-                LOG_DEBUG("request_next_frame with fd = " << buf._file_desc);
+                LOG_DEBUG_V4L("request_next_frame with fd = " << buf._file_desc);
                 if (buf._data_buf && (buf._file_desc >= 0))
                     buf._data_buf->request_next_frame(buf._file_desc);
             };
@@ -2272,7 +2273,6 @@ namespace librealsense
             v4l_hid_device::foreach_hid_device([&](const hid_device_info& hid_dev_info){
                 results.push_back(hid_dev_info);
             });
-
             return results;
         }
         std::shared_ptr<time_service> v4l_backend::create_time_service() const
