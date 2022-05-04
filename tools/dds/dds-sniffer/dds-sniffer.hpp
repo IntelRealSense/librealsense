@@ -22,8 +22,6 @@ public:
     bool init( eprosima::fastdds::dds::DomainId_t domain = 0, bool snapshot = false );
     void run( uint32_t seconds );
 
-    void print_topics();
-
 private:
     eprosima::fastdds::dds::DomainParticipant * _participant;
     eprosima::fastdds::dds::Subscriber * _subscriber;
@@ -35,8 +33,8 @@ private:
     std::map< eprosima::fastrtps::rtps::GUID_t, eprosima::fastrtps::string_255 > _discoveredParticipants;
     struct ReadersWriters
     {
-        std::vector< eprosima::fastrtps::rtps::GUID_t > readers;
-        std::vector< eprosima::fastrtps::rtps::GUID_t > writers;
+        std::set< eprosima::fastrtps::rtps::GUID_t > readers;
+        std::set< eprosima::fastrtps::rtps::GUID_t > writers;
     };
     std::map< std::string, ReadersWriters > _discoveredTopics;
 
@@ -45,11 +43,9 @@ private:
     eprosima::fastdds::dds::DataReaderQos _readerQoS;
 
     std::atomic_int _matched = { 0 };
-    bool _snapshot = false;
-
-    void print_writer( const eprosima::fastrtps::rtps::GUID_t & writer, uint32_t indentation );
-    void print_reader( const eprosima::fastrtps::rtps::GUID_t & reader, uint32_t indentation );
-    void ident( uint32_t indentation );
+    bool _print_discoveries = false;
+    bool _print_by_topics = false;
+    uint32_t _max_indentation = 0;
 
     void on_data_available( eprosima::fastdds::dds::DataReader * reader ) override;
 
@@ -88,4 +84,20 @@ private:
                                        const eprosima::fastrtps::string_255 topic_name,
                                        const eprosima::fastrtps::string_255 type_name,
                                        const eprosima::fastrtps::types::TypeInformation & type_information ) override;
+
+    // Topics data-base functions
+    void save_topic_writer( const eprosima::fastrtps::rtps::WriterDiscoveryInfo & info );
+    void remove_topic_writer( const eprosima::fastrtps::rtps::WriterDiscoveryInfo & info );
+    void save_topic_reader( const eprosima::fastrtps::rtps::ReaderDiscoveryInfo & info );
+    void save_max_indentation( const std::string && str );
+    void remove_topic_reader( const eprosima::fastrtps::rtps::ReaderDiscoveryInfo & info );
+
+    // Helper print functions
+    void print_writer_discovered( const eprosima::fastrtps::rtps::WriterDiscoveryInfo & info, bool discovered ) const;
+    void print_reader_discovered( const eprosima::fastrtps::rtps::ReaderDiscoveryInfo & info, bool discovered ) const;
+    void print_participant_discovered( const eprosima::fastrtps::rtps::ParticipantDiscoveryInfo & info, bool discovered ) const;
+    void print_topics();
+    void ident( uint32_t indentation ) const;
+    void print_topic_writer( const eprosima::fastrtps::rtps::GUID_t & writer, uint32_t indentation ) const;
+    void print_topic_reader( const eprosima::fastrtps::rtps::GUID_t & reader, uint32_t indentation ) const;
 };

@@ -121,14 +121,15 @@ Sniffer::~Sniffer()
 
 bool Sniffer::init( eprosima::fastdds::dds::DomainId_t domain, bool snapshot )
 {
-    _snapshot = snapshot;
+    _print_discoveries = !snapshot;
+    _print_by_topics = snapshot;
 
     eprosima::fastdds::dds::DomainParticipantQos participantQoS;
     participantQoS.name( "rs-dds-sniffer" );
     _participant = eprosima::fastdds::dds::DomainParticipantFactory::get_instance()->create_participant( domain,
                                                                                                          participantQoS,
                                                                                                          this );
-    if( _snapshot )
+    if( snapshot )
     {
         std::cout << "rs-dds-sniffer taking a snapshot of domain " << domain << std::endl;
     }
@@ -151,76 +152,9 @@ void Sniffer::run( uint32_t seconds )
         std::this_thread::sleep_for( std::chrono::seconds( seconds ) );
     }
 
-    print_topics();
-}
-
-void Sniffer::print_topics()
-{
-    std::cout << std::endl;
-
-    for( auto topic : _discoveredTopics )
+    if( _print_by_topics )
     {
-        std::cout << topic.first << std::endl;
-        uint32_t indentation = 1;
-        for( auto writer : topic.second.writers )
-        {
-            print_writer( writer, indentation );
-        }
-        for( auto reader : topic.second.readers )
-        {
-            print_reader( reader, indentation );
-        }
-    }
-}
-
-void Sniffer::print_writer( const eprosima::fastrtps::rtps::GUID_t & writer, uint32_t indentation )
-{
-    auto iter = _discoveredParticipants.begin();
-    for( ; iter != _discoveredParticipants.end(); ++iter )
-    {
-        if( iter->first.guidPrefix == writer.guidPrefix )
-        {
-            uint16_t tmp;
-            memcpy( &tmp, &iter->first.guidPrefix.value[GUID_PROCESS_LOCATION], sizeof( tmp ) );
-            ident( indentation );
-            std::cout << "Writer of \"" << iter->second << "_" << std::hex << tmp << std::dec << "\"" << std::endl;
-            break;
-        }
-    }
-    if( iter == _discoveredParticipants.end() )
-    {
-        ident( indentation );
-        std::cout << "Writer of unknown participant" << std::endl;
-    }
-}
-
-void Sniffer::print_reader( const eprosima::fastrtps::rtps::GUID_t & reader, uint32_t indentation )
-{
-    auto iter = _discoveredParticipants.begin();
-    for( auto iter = _discoveredParticipants.begin(); iter != _discoveredParticipants.end(); ++iter )
-    {
-        if( iter->first.guidPrefix == reader.guidPrefix )
-        {
-            uint16_t tmp;
-            memcpy( &tmp, &iter->first.guidPrefix.value[GUID_PROCESS_LOCATION], sizeof( tmp ) );
-            ident( indentation );
-            std::cout << "Reader of \"" << iter->second << "_" << std::hex << tmp << std::dec << "\"" << std::endl;
-            break;
-        }
-    }
-    if( iter == _discoveredParticipants.end() )
-    {
-        ident( indentation );
-        std::cout << "Reader of unknown participant" << std::endl;
-    }
-}
-
-void Sniffer::ident( uint32_t indentation )
-{
-    while( indentation > 0 )
-    {
-        std::cout << "    ";
-        --indentation;
+        print_topics();
     }
 }
 
@@ -300,7 +234,7 @@ void Sniffer::on_type_discovery( eprosima::fastdds::dds::DomainParticipant *,
 
     _topics[reader] = topic;
     _readers[reader] = dyn_type;
-    eprosima::fastrtps::types::DynamicData_ptr data( eprosima::fastrtps::types::DynamicDataFactory::get_instance()->create_data( dyn_type ) );
+    eprosima::fastrtps::types::DynamicData_ptr data(eprosima::fastrtps::types::DynamicDataFactory::get_instance()->create_data( dyn_type ) );
     _datas[reader] = data;
 }
 
@@ -310,35 +244,19 @@ void Sniffer::on_publisher_discovery( eprosima::fastdds::dds::DomainParticipant 
     switch( info.status )
     {
     case eprosima::fastrtps::rtps::WriterDiscoveryInfo::DISCOVERED_WRITER:
-        if( ! _snapshot )
+        if( _print_discoveries )
         {
-            std::cout << "DataWriter  " << info.info.guid() << " publishing topic '" << info.info.topicName()
-                      << "' of type '" << info.info.typeName() << "' discovered" << std::endl;
+            print_writer_discovered( info, true );
         }
-
-        if( _discoveredTopics.find( info.info.topicName().c_str() ) == _discoveredTopics.end() )
-        {
-            _discoveredTopics.insert( { info.info.topicName().c_str(), *std::make_unique< ReadersWriters >() } );
-        }
-        _discoveredTopics[info.info.topicName().c_str()].writers.push_back( info.info.guid() );
+        save_topic_writer( info );
         break;
     case eprosima::fastrtps::rtps::WriterDiscoveryInfo::REMOVED_WRITER:
-        if( ! _snapshot )
+        if( _print_discoveries )
         {
-            std::cout << "DataWriter  " << info.info.guid() << " publishing topic '" << info.info.topicName()
-                      << "' of type '" << info.info.typeName() << "' left the domain." << std::endl;
+            print_writer_discovered( info, false );
         }
 
-        for( auto iter = _discoveredTopics[info.info.topicName().c_str()].writers.begin();
-             iter != _discoveredTopics[info.info.topicName().c_str()].writers.end();
-             ++iter )
-        {
-            if( *iter == info.info.guid() )
-            {
-                _discoveredTopics[info.info.topicName().c_str()].writers.erase( iter );
-                break;
-            }
-        }
+        remove_topic_writer( info );
         break;
     }
 }
@@ -348,35 +266,19 @@ void Sniffer::on_subscriber_discovery( eprosima::fastdds::dds::DomainParticipant
 {
     switch( info.status )
     {
-    case eprosima::fastrtps::rtps::ReaderDiscoveryInfo::DISCOVERED_READER: {
-        if( ! _snapshot )
+    case eprosima::fastrtps::rtps::ReaderDiscoveryInfo::DISCOVERED_READER:
+        if( _print_discoveries )
         {
-            std::cout << "DataReader  " << info.info.guid() << " reading topic '" << info.info.topicName()
-                      << "' of type '" << info.info.typeName() << "' discovered" << std::endl;
+            print_reader_discovered( info, true );
         }
-        if( _discoveredTopics.find( info.info.topicName().c_str() ) == _discoveredTopics.end() )
-        {
-            _discoveredTopics.insert( { info.info.topicName().c_str(), *std::make_unique< ReadersWriters >() } );
-        }
-        _discoveredTopics[info.info.topicName().c_str()].readers.push_back( info.info.guid() );
+        save_topic_reader( info );
         break;
-    }
     case eprosima::fastrtps::rtps::ReaderDiscoveryInfo::REMOVED_READER:
-        if( ! _snapshot )
+        if( _print_discoveries )
         {
-            std::cout << "DataReader  " << info.info.guid() << " reading topic '" << info.info.topicName()
-                      << "' of type '" << info.info.typeName() << "' left the domain." << std::endl;
+            print_reader_discovered( info, false );
         }
-        for( auto iter = _discoveredTopics[info.info.topicName().c_str()].readers.begin();
-             iter != _discoveredTopics[info.info.topicName().c_str()].readers.end();
-             ++iter )
-        {
-            if( *iter == info.info.guid() )
-            {
-                _discoveredTopics[info.info.topicName().c_str()].readers.erase( iter );
-                break;
-            }
-        }
+        remove_topic_reader( info );
         break;
     }
 }
@@ -384,25 +286,20 @@ void Sniffer::on_subscriber_discovery( eprosima::fastdds::dds::DomainParticipant
 void Sniffer::on_participant_discovery( eprosima::fastdds::dds::DomainParticipant *,
                                         eprosima::fastrtps::rtps::ParticipantDiscoveryInfo && info )
 {
-    uint16_t tmp( 0 );
     switch( info.status )
     {
     case eprosima::fastrtps::rtps::ParticipantDiscoveryInfo::DISCOVERED_PARTICIPANT:
-        if( ! _snapshot )
+        if( _print_discoveries )
         {
-            memcpy( &tmp, &info.info.m_guid.guidPrefix.value[GUID_PROCESS_LOCATION], sizeof( tmp ) );
-            std::cout << "Participant " << info.info.m_guid << " " << info.info.m_participantName << "_" << std::hex
-                      << tmp << std::dec << " discovered" << std::endl;
+            print_participant_discovered( info, true );
         }
         _discoveredParticipants[info.info.m_guid] = info.info.m_participantName;
         break;
     case eprosima::fastrtps::rtps::ParticipantDiscoveryInfo::REMOVED_PARTICIPANT:
     case eprosima::fastrtps::rtps::ParticipantDiscoveryInfo::DROPPED_PARTICIPANT:
-        if( ! _snapshot )
+        if( _print_discoveries )
         {
-            memcpy( &tmp, &info.info.m_guid.guidPrefix.value[GUID_PROCESS_LOCATION], sizeof( tmp ) );
-            std::cout << "Participant " << info.info.m_guid << " " << info.info.m_participantName << "_" << std::hex
-                      << tmp << std::dec << " left the domain." << std::endl;
+            print_participant_discovered( info, false );
         }
         _discoveredParticipants.erase( info.info.m_guid );
         break;
@@ -415,4 +312,197 @@ void Sniffer::on_type_information_received( eprosima::fastdds::dds::DomainPartic
                                             const eprosima::fastrtps::types::TypeInformation & type_information )
 {
     std::cout << "Topic '" << topic_name << "' with type '" << type_name << "' received" << std::endl;
+}
+
+void Sniffer::save_topic_writer( const eprosima::fastrtps::rtps::WriterDiscoveryInfo & info )
+{
+    std::string topic_name = info.info.topicName().c_str();
+    if( _discoveredTopics.find( topic_name ) == _discoveredTopics.end() )
+    {
+        _discoveredTopics.insert( { topic_name, *std::make_shared< ReadersWriters >() } );
+    }
+
+    _discoveredTopics[topic_name].writers.insert( info.info.guid() );
+    save_max_indentation( std::move( topic_name ) );
+}
+
+void Sniffer::remove_topic_writer( const eprosima::fastrtps::rtps::WriterDiscoveryInfo & info )
+{
+    auto topic_entry = _discoveredTopics[info.info.topicName().c_str()];
+    auto writer_iter = topic_entry.writers.find( info.info.guid() );
+    if( writer_iter == topic_entry.writers.end() )
+    {
+        topic_entry.writers.erase( writer_iter );
+        if( topic_entry.writers.empty() && topic_entry.readers.empty() )
+        {
+            _discoveredTopics.erase( info.info.topicName().c_str() );
+        }
+    }
+}
+
+void Sniffer::save_topic_reader( const eprosima::fastrtps::rtps::ReaderDiscoveryInfo & info )
+{
+    std::string topic_name = info.info.topicName().c_str();
+    if( _discoveredTopics.find( topic_name ) == _discoveredTopics.end() )
+    {
+        _discoveredTopics.insert( { topic_name, *std::make_shared< ReadersWriters >() } );
+    }
+
+    _discoveredTopics[topic_name].readers.insert( info.info.guid() );
+    save_max_indentation( std::move( topic_name ) );
+}
+
+void Sniffer::save_max_indentation( const std::string && str )
+{
+    std::istringstream topic( str );
+    std::string nested;
+    uint32_t indentation = 0;
+    while( std::getline( topic, nested, '/' ) )  // Use / as delimiter for nested topic names
+    {
+        ++indentation;
+    }
+    if( indentation > _max_indentation )
+    {
+        _max_indentation = indentation;
+    }
+}
+
+void Sniffer::remove_topic_reader( const eprosima::fastrtps::rtps::ReaderDiscoveryInfo & info )
+{
+    auto topic_entry = _discoveredTopics[info.info.topicName().c_str()];
+    auto reader_iter = topic_entry.readers.find( info.info.guid() );
+    if( reader_iter != topic_entry.readers.end() )
+    {
+        topic_entry.readers.erase( reader_iter );
+        if( topic_entry.writers.empty() && topic_entry.readers.empty() )
+        {
+            _discoveredTopics.erase( info.info.topicName().c_str() );
+        }
+    }
+}
+
+void Sniffer::print_writer_discovered( const eprosima::fastrtps::rtps::WriterDiscoveryInfo & info, bool discovered ) const
+{
+    std::cout << "DataWriter  " << info.info.guid() << " publishing topic '" << info.info.topicName() << "' of type '"
+              << info.info.typeName() << ( discovered ? "' discovered" : "' left the domain." ) << std::endl;
+}
+
+void Sniffer::print_reader_discovered( const eprosima::fastrtps::rtps::ReaderDiscoveryInfo & info, bool discovered ) const
+{
+    std::cout << "DataReader  " << info.info.guid() << " reading topic '" << info.info.topicName() << "' of type '"
+              << info.info.typeName() << ( discovered ? "' discovered" : "' left the domain." ) << std::endl;
+}
+
+void Sniffer::print_participant_discovered( const eprosima::fastrtps::rtps::ParticipantDiscoveryInfo & info, bool discovered ) const
+{
+    uint16_t tmp( 0 );
+    memcpy( &tmp, &info.info.m_guid.guidPrefix.value[GUID_PROCESS_LOCATION], sizeof( tmp ) );
+    std::cout << "Participant " << info.info.m_guid << " " << info.info.m_participantName << "_" << std::hex << tmp
+              << std::dec << ( discovered ? " discovered" : " left the domain" ) << std::endl;
+}
+
+void Sniffer::print_topics()
+{
+    std::istringstream last_topic( "" );
+    std::string last_topic_nested;
+    for( auto topic : _discoveredTopics )
+    {
+        std::cout << std::endl;
+
+        std::istringstream current_topic( topic.first );  // Get topic name
+        std::string current_topic_nested;
+        uint32_t indentation = 0;
+
+        // Compare to previous topic
+        while( std::getline( last_topic, last_topic_nested, '/' ) )  // Use / as delimiter for nested topic names
+        {
+            if( std::getline( current_topic, current_topic_nested, '/' ) )
+            {
+                if( current_topic_nested.compare( last_topic_nested ) == 0 )
+                {
+                    ++indentation;  // Skip parts that are same as previous topic
+                }
+                else
+                {
+                    ident( indentation );
+                    std::cout << current_topic_nested << std::endl;
+                    ++indentation;
+                    break;
+                }
+            }
+        }
+
+        // Print reminder of string
+        while( std::getline( current_topic, current_topic_nested, '/' ) )
+        {
+            ident( indentation );
+            std::cout << current_topic_nested << std::endl;
+            ++indentation;
+        }
+
+        for( auto writer : topic.second.writers )
+        {
+            print_topic_writer( writer, _max_indentation );
+        }
+        for( auto reader : topic.second.readers )
+        {
+            print_topic_reader( reader, _max_indentation );
+        }
+
+        last_topic.clear();
+        last_topic.str( topic.first );  // Save topic name for next iteration
+        last_topic.seekg( 0, last_topic.beg );
+    }
+}
+
+void Sniffer::ident( uint32_t indentation ) const
+{
+    while( indentation > 0 )
+    {
+        std::cout << "    ";
+        --indentation;
+    }
+    std::cout << "- ";
+}
+
+void Sniffer::print_topic_writer( const eprosima::fastrtps::rtps::GUID_t & writer, uint32_t indentation ) const
+{
+    auto iter = _discoveredParticipants.begin();
+    for( ; iter != _discoveredParticipants.end(); ++iter )
+    {
+        if( iter->first.guidPrefix == writer.guidPrefix )
+        {
+            uint16_t tmp;
+            memcpy( &tmp, &iter->first.guidPrefix.value[GUID_PROCESS_LOCATION], sizeof( tmp ) );
+            ident( indentation );
+            std::cout << "Writer of \"" << iter->second << "_" << std::hex << tmp << std::dec << "\"" << std::endl;
+            break;
+        }
+    }
+    if( iter == _discoveredParticipants.end() )
+    {
+        ident( indentation );
+        std::cout << "Writer of unknown participant" << std::endl;
+    }
+}
+
+void Sniffer::print_topic_reader( const eprosima::fastrtps::rtps::GUID_t & reader, uint32_t indentation ) const
+{
+    auto iter = _discoveredParticipants.begin();
+    for( auto iter = _discoveredParticipants.begin(); iter != _discoveredParticipants.end(); ++iter )
+    {
+        if( iter->first.guidPrefix == reader.guidPrefix )
+        {
+            uint16_t tmp;
+            memcpy( &tmp, &iter->first.guidPrefix.value[GUID_PROCESS_LOCATION], sizeof( tmp ) );
+            ident( indentation );
+            std::cout << "Reader of \"" << iter->second << "_" << std::hex << tmp << std::dec << "\"" << std::endl;
+            break;
+        }
+    }
+    if( iter == _discoveredParticipants.end() )
+    {
+        ident( indentation );
+        std::cout << "Reader of unknown participant" << std::endl;
+    }
 }
