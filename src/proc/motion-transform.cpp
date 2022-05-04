@@ -97,6 +97,33 @@ namespace librealsense
         }
     }
 
+    motion_to_accel_gyro::motion_to_accel_gyro(std::shared_ptr<mm_calib_handler> mm_calib, std::shared_ptr<enable_motion_correction> mm_correct_opt)
+        : motion_to_accel_gyro("Accel_Gyro Transform", mm_calib, mm_correct_opt)
+    {}
+
+    motion_to_accel_gyro::motion_to_accel_gyro(const char * name, std::shared_ptr<mm_calib_handler> mm_calib, std::shared_ptr<enable_motion_correction> mm_correct_opt)
+        : motion_transform(name, RS2_FORMAT_MOTION_XYZ32F, RS2_STREAM_ANY, mm_calib, mm_correct_opt)
+    {}
+
+    void motion_to_accel_gyro::process_function(byte * const dest[], const byte * source, int width, int height, int output_size, int actual_size)
+    {
+        if (source[0] == 1)
+        {
+            _target_stream = RS2_STREAM_ACCEL;
+            unpack_accel_axes<RS2_FORMAT_MOTION_XYZ32F>(dest, source, width, height, actual_size);
+        }
+        else if (source[0] == 2)
+        {
+            _target_stream = RS2_STREAM_GYRO;
+            unpack_gyro_axes<RS2_FORMAT_MOTION_XYZ32F>(dest, source, width, height, actual_size);
+        }
+        else
+        {
+            LOG_ERROR("motion_to_accel_gyro::process_function - stream type not discovered");
+            //throw("motion_to_accel_gyro::process_function - stream type not discovered");
+        }
+    }
+
     acceleration_transform::acceleration_transform(std::shared_ptr<mm_calib_handler> mm_calib, std::shared_ptr<enable_motion_correction> mm_correct_opt)
         : acceleration_transform("Acceleration Transform", mm_calib, mm_correct_opt)
     {}

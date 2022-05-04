@@ -113,7 +113,7 @@ namespace librealsense
     public:
         explicit ds5_fisheye_sensor(std::shared_ptr<sensor_base> sensor,
             device* device,
-            ds5_motion_base* owner)
+            ds5_motion* owner)
             : synthetic_sensor("Wide FOV Camera", sensor, device, fisheye_fourcc_to_rs2_format, fisheye_fourcc_to_rs2_stream),
             _owner(owner)
         {}
@@ -161,7 +161,7 @@ namespace librealsense
             return uvc_raw_sensor;
         }
     private:
-        const ds5_motion_base* _owner;
+        const ds5_motion* _owner;
     };
 
     rs2_motion_device_intrinsic ds5_motion_base::get_motion_intrinsics(rs2_stream stream) const
@@ -218,7 +218,7 @@ namespace librealsense
         }
         catch (...) {}
 
-        motion_ep->register_processing_block(
+        /*motion_ep->register_processing_block(
             { {RS2_FORMAT_MOTION_XYZ32F, RS2_STREAM_ACCEL} },
             { {RS2_FORMAT_MOTION_XYZ32F, RS2_STREAM_ACCEL} },
             [&, mm_correct_opt]() { return std::make_shared<acceleration_transform>(_mm_calib, mm_correct_opt);
@@ -228,6 +228,12 @@ namespace librealsense
             { {RS2_FORMAT_MOTION_XYZ32F, RS2_STREAM_GYRO} },
             { {RS2_FORMAT_MOTION_XYZ32F, RS2_STREAM_GYRO} },
             [&, mm_correct_opt]() { return std::make_shared<gyroscope_transform>(_mm_calib, mm_correct_opt);
+        });*/
+
+        motion_ep->register_processing_block(
+            { {RS2_FORMAT_MOTION_XYZ32F} },
+            { {RS2_FORMAT_MOTION_XYZ32F, RS2_STREAM_ACCEL}, {RS2_FORMAT_MOTION_XYZ32F, RS2_STREAM_GYRO} },
+            [&, mm_correct_opt]() { return std::make_shared<motion_to_accel_gyro>(_mm_calib, mm_correct_opt);
         });
 
         return motion_ep;
@@ -370,7 +376,7 @@ namespace librealsense
         return auto_exposure;
     }
 
-    void ds5_motion_base::initialize_fisheye_sensor(std::shared_ptr<context> ctx, const platform::backend_device_group& group)
+    void ds5_motion::initialize_fisheye_sensor(std::shared_ptr<context> ctx, const platform::backend_device_group& group)
     {
         using namespace ds;
 
@@ -469,7 +475,6 @@ namespace librealsense
                                     const platform::backend_device_group& group)
         : device(ctx, group),
           ds5_device(ctx, group),
-          _fisheye_stream(new stream(RS2_STREAM_FISHEYE)),
           _accel_stream(new stream(RS2_STREAM_ACCEL)),
           _gyro_stream(new stream(RS2_STREAM_GYRO))
     {
@@ -484,8 +489,6 @@ namespace librealsense
         // use predefined extrinsics
         _depth_to_imu = std::make_shared<lazy<rs2_extrinsics>>([this]() { return _mm_calib->get_extrinsic(RS2_STREAM_ACCEL); });
 
-        initialize_fisheye_sensor(ctx,group);
-
         // Make sure all MM streams are positioned with the same extrinsics
         environment::get_instance().get_extrinsics_graph().register_extrinsics(*_depth_stream, *_accel_stream, _depth_to_imu);
         environment::get_instance().get_extrinsics_graph().register_same_extrinsics(*_accel_stream, *_gyro_stream);
@@ -497,7 +500,8 @@ namespace librealsense
                            const platform::backend_device_group& group)
         : ds5_motion_base(ctx, group),
           device(ctx, group),
-          ds5_device(ctx, group)
+          ds5_device(ctx, group),
+        _fisheye_stream(new stream(RS2_STREAM_FISHEYE))
     {
         using namespace ds;
 
@@ -508,6 +512,8 @@ namespace librealsense
             // product id
             _pid = static_cast<uint16_t>(strtoul(hid_infos.front().pid.data(), nullptr, 16));
         }
+
+        initialize_fisheye_sensor(ctx,group);
 
         // Try to add HID endpoint
         std::shared_ptr<synthetic_sensor> hid_ep;
