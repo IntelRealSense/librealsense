@@ -6,7 +6,9 @@ set(TOOL_FILES rs-dds-server.cpp
         dds-device-broadcaster.cpp
         dds-device-broadcaster.h
         dds-participant.cpp
-        dds-participant.h)
+        dds-participant.h
+        lrs-device-watcher.h
+        lrs-device-watcher.cpp)
         
 include("${REPO_ROOT}/include/librealsense2/dds/topics/dds-messages.cmake")
 include("${REPO_ROOT}/include/librealsense2/utilities/easylogging/easyloggingpp.cmake")
