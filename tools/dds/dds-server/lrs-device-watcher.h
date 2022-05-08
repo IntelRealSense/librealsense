@@ -2,6 +2,8 @@
 // Copyright(c) 2022 Intel Corporation. All Rights Reserved.
 
 #pragma once
+#include <atomic>
+#include <librealsense2/rs.hpp>  // Include RealSense Cross Platform API
 
 namespace tools {
 
@@ -12,7 +14,15 @@ class lrs_device_watcher
 public:
     lrs_device_watcher();
     ~lrs_device_watcher();
+    void run( std::function< void( rs2::device ) > add_device_cb,
+              std::function< void( rs2::device ) > remove_device_cb );
 
 private:
+    void notify_connected_devices_on_wake_up( std::function< void( rs2::device ) > add_device_cb );
+    std::atomic_bool _running;
+    rs2::context _ctx;
+    std::function<void( rs2::device )> _add_device_cb;
+    std::function<void( rs2::device )> _remove_device_cb;
+    std::vector<rs2::device> _rs_device_list;
 };  // class lrs_device_watcher
 }  // namespace tools

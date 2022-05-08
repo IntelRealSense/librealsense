@@ -4,6 +4,7 @@
 #include <iostream>
 #include "dds-device-broadcaster.h"
 #include "dds-participant.h"
+#include "lrs-device-watcher.h"
 
 #include <fastrtps/types/TypesBase.h>
 #include "tclap/CmdLine.h"
@@ -92,6 +93,11 @@ try
         std::cerr << "Initialization failure" << std::endl;
         return EXIT_FAILURE;
     }
+
+    // Run the LRS device watcher
+    tools::lrs_device_watcher dev_watcher;
+    dev_watcher.run( [&]( rs2::device dev ) { broadcaster.add_device( dev ); },
+                     [&]( rs2::device dev ) { broadcaster.remove_device( dev ); } );
 
     std::cin.ignore(std::numeric_limits<std::streamsize>::max(), 0);// Pend until CTRL + C is pressed 
 

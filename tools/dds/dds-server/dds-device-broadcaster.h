@@ -37,6 +37,15 @@ namespace tools
         ~dds_device_broadcaster();
         bool init();
         void run();
+        void add_device( rs2::device dev )
+        {
+            std::cout << " TEST! Add Device Notification" << std::endl;
+        };
+        void remove_device( rs2::device dev )
+        {
+            std::cout << " TEST! Remove Device Notification" << std::endl;
+        };
+        
 
     private:
         // We want to know when readers join our topic

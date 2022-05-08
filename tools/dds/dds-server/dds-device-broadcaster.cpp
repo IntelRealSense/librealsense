@@ -80,25 +80,25 @@ void dds_device_broadcaster::run()
     _dds_device_dispatcher.start();
     _new_client_handler.start();
 
-    post_current_connected_devices();
+    //post_current_connected_devices();
 
     // Register to LRS device changes function to notify on future devices being
     // connected/disconnected
-    _ctx.set_devices_changed_callback( [this]( rs2::event_information & info ) {
-        if( _running )
-        {
-            _dds_device_dispatcher.invoke( [this, info]( dispatcher::cancellable_timer ) {
-                std::vector< std::string > devices_to_remove;
-                std::vector< std::pair< std::string, rs2::device > > devices_to_add;
+    //_ctx.set_devices_changed_callback( [this]( rs2::event_information & info ) {
+    //    if( _running )
+    //    {
+    //        _dds_device_dispatcher.invoke( [this, info]( dispatcher::cancellable_timer ) {
+    //            std::vector< std::string > devices_to_remove;
+    //            std::vector< std::pair< std::string, rs2::device > > devices_to_add;
 
-                if( prepare_devices_changed_lists( info, devices_to_remove, devices_to_add ) )
-                {
-                    // Post the devices connected / removed
-                    handle_device_changes( devices_to_remove, devices_to_add );
-                }
-            } );
-        }
-    } );
+    //            if( prepare_devices_changed_lists( info, devices_to_remove, devices_to_add ) )
+    //            {
+    //                // Post the devices connected / removed
+    //                handle_device_changes( devices_to_remove, devices_to_add );
+    //            }
+    //        } );
+    //    }
+    //} );
     
   
     _running = true;
