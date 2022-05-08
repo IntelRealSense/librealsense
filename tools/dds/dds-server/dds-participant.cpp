@@ -2,6 +2,7 @@
 // Copyright(c) 2022 Intel Corporation. All Rights Reserved.
 
 #include <iostream>
+#include <memory>
 #include "dds-participant.h"
 #include <fastdds/dds/domain/DomainParticipantFactory.hpp>
 #include <fastdds/dds/domain/DomainParticipantListener.hpp>
@@ -19,8 +20,8 @@ class dds_participant_listener : public eprosima::fastdds::dds::DomainParticipan
 };
 
 dds_participant::dds_participant( int domain_id, std::string name )
-    : _participant( nullptr ),
-    _domain_listener(std::make_shared<dds_participant_listener>())
+    : _participant( nullptr )
+    , _domain_listener( std::make_shared< dds_participant_listener >() )
 {
     DomainParticipantQos pqos;
     pqos.name( name );
@@ -32,7 +33,7 @@ dds_participant::dds_participant( int domain_id, std::string name )
     if( ! _participant )
     {
         throw std::runtime_error( "Failed creating participant" + name + " on domain id "
-                            + std::to_string( domain_id ) );
+                                  + std::to_string( domain_id ) );
     }
 }
 
