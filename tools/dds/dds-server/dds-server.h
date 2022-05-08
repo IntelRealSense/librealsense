@@ -28,12 +28,14 @@ class device_info;
 
 namespace tools
 {
+    class dds_participant;
+
     class dds_server
     {
     public:
-        dds_server();
+        dds_server( tools::dds_participant &participant );
         ~dds_server();
-        bool init( eprosima::fastdds::dds::DomainId_t domain_id );
+        bool init();
         void run();
 
     private:
@@ -93,7 +95,6 @@ namespace tools
         void remove_dds_device( const std::string& device_key );
         bool add_dds_device( const std::string & device_key, const rs2::device& rs2_dev );
         bool create_device_writer( const std::string& device_key, rs2::device rs2_device );
-        bool create_dds_participant( eprosima::fastdds::dds::DomainId_t domain_id );
         bool create_dds_publisher();
         void post_current_connected_devices();
         bool send_device_info_msg( const librealsense::dds::topics::device_info& dev_info );
@@ -112,5 +113,6 @@ namespace tools
         active_object<> _new_client_handler;
         std::condition_variable _new_client_cv;
         std::mutex _new_client_mutex;
+        bool init_done;
     };  // class dds_server
 }

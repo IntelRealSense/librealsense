@@ -4,6 +4,7 @@
 #include <iostream>
 
 #include "dds-server.h"
+#include "dds-participant.h"
 
 #include <fastdds/dds/domain/DomainParticipantFactory.hpp>
 #include <fastdds/dds/publisher/Publisher.hpp>
@@ -15,10 +16,10 @@
 using namespace eprosima::fastdds::dds;
 using namespace tools;
 
-dds_server::dds_server()
+dds_server::dds_server(tools::dds_participant &participant)
     : _running( false )
     , _trigger_msg_send ( false )
-    , _participant( nullptr )
+    , _participant( participant.get() )
     , _publisher( nullptr )
     , _topic( nullptr )
     , _topic_type( new librealsense::dds::topics::device_info::type )
@@ -53,17 +54,29 @@ dds_server::dds_server()
     , _ctx( "{"
             "\"dds-discovery\" : false"
             "}" )
+    , init_done( false )
+
 {
 }
-bool dds_server::init( DomainId_t domain_id )
+bool dds_server::init()
 {
-    auto participant_created_ok = create_dds_participant( domain_id );
-    auto publisher_created_ok = create_dds_publisher();
-    return participant_created_ok && publisher_created_ok;
+    if( !_participant )
+    {
+        return false;
+    }
+
+    init_done = create_dds_publisher();
+    return init_done;
 }
 
 void dds_server::run()
 {
+    if( !init_done )
+    {
+        std::cout << "RS DDS Server was not initialize, please call 'init()' first" << std::endl;
+        return;
+    }
+
     _dds_device_dispatcher.start();
     _new_client_handler.start();
 
@@ -194,17 +207,6 @@ bool dds_server::create_device_writer( const std::string &device_key, rs2::devic
     return _device_handle_by_sn[device_key].data_writer != nullptr;
 }
 
-bool dds_server::create_dds_participant( DomainId_t domain_id )
-{
-    DomainParticipantQos pqos;
-    pqos.name( "rs-dds-server" );
-    _participant
-        = DomainParticipantFactory::get_instance()->create_participant( domain_id,
-                                                                        pqos,
-                                                                        &_domain_listener );
-    return _participant != nullptr;
-}
-
 bool dds_server::create_dds_publisher()
 {
     // Registering the topic type enables topic instance creation by factory
@@ -306,7 +308,6 @@ dds_server::~dds_server()
     {
         _participant->delete_publisher( _publisher );
     }
-    DomainParticipantFactory::get_instance()->delete_participant( _participant );
 }
 
 

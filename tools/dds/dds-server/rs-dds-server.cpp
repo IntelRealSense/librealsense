@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include "dds-server.h"
+#include "dds-participant.h"
 
 #include <fastrtps/types/TypesBase.h>
 #include "tclap/CmdLine.h"
@@ -77,8 +78,9 @@ try
         }
     }
 
-    tools::dds_server my_dds_server;
-    if( my_dds_server.init( domain ) )
+    tools::dds_participant participant( domain, "rs-dds-server" );
+    tools::dds_server my_dds_server( participant );
+    if( my_dds_server.init() )
     {
         my_dds_server.run( );
     }

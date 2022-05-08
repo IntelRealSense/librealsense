@@ -4,7 +4,9 @@ project(rs-dds-server)
 
 set(TOOL_FILES rs-dds-server.cpp
         dds-server.cpp
-        dds-server.h)
+        dds-server.h
+        dds-participant.cpp
+        dds-participant.h)
         
 include("${REPO_ROOT}/include/librealsense2/dds/topics/dds-messages.cmake")
 include("${REPO_ROOT}/include/librealsense2/utilities/easylogging/easyloggingpp.cmake")
