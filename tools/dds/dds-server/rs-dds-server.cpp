@@ -2,7 +2,7 @@
 // Copyright(c) 2022 Intel Corporation. All Rights Reserved.
 
 #include <iostream>
-#include "dds-server.h"
+#include "dds-device-broadcaster.h"
 #include "dds-participant.h"
 
 #include <fastrtps/types/TypesBase.h>
@@ -78,11 +78,14 @@ try
         }
     }
 
+    // Create a DDS publisher
     tools::dds_participant participant( domain, "rs-dds-server" );
-    tools::dds_server my_dds_server( participant );
-    if( my_dds_server.init() )
+
+    // Run the DDS device broadcaster
+    tools::dds_device_broadcaster broadcaster( participant );
+    if( broadcaster.init() )
     {
-        my_dds_server.run( );
+        broadcaster.run( );
     }
     else
     {

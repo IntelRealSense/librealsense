@@ -30,11 +30,11 @@ namespace tools
 {
     class dds_participant;
 
-    class dds_server
+    class dds_device_broadcaster
     {
     public:
-        dds_server( tools::dds_participant &participant );
-        ~dds_server();
+        dds_device_broadcaster( tools::dds_participant &participant );
+        ~dds_device_broadcaster();
         bool init();
         void run();
 
@@ -43,7 +43,7 @@ namespace tools
         class dds_client_listener : public eprosima::fastdds::dds::DataWriterListener
         {
         public:
-            dds_client_listener( dds_server* owner )
+            dds_client_listener( dds_device_broadcaster* owner )
                 : eprosima::fastdds::dds::DataWriterListener()
                 , _owner ( owner )
             {
@@ -55,18 +55,8 @@ namespace tools
 
             std::atomic_bool _new_reader_joined = { false }; // Used to indicate that a new reader has joined for this writer 
         private:
-            dds_server* _owner;
+            dds_device_broadcaster* _owner;
         };
-
-        class dds_participant_listener
-            : public eprosima::fastdds::dds::DomainParticipantListener
-        {
-
-            virtual void on_participant_discovery(
-                eprosima::fastdds::dds::DomainParticipant* participant,
-                eprosima::fastrtps::rtps::ParticipantDiscoveryInfo&& info ) override;
-
-        } _domain_listener;
 
         struct dds_device_handle
         {
@@ -114,5 +104,5 @@ namespace tools
         std::condition_variable _new_client_cv;
         std::mutex _new_client_mutex;
         bool init_done;
-    };  // class dds_server
+    };  // class dds_device_broadcaster
 }

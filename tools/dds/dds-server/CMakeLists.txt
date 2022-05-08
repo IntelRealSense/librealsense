@@ -3,8 +3,8 @@
 project(rs-dds-server)
 
 set(TOOL_FILES rs-dds-server.cpp
-        dds-server.cpp
-        dds-server.h
+        dds-device-broadcaster.cpp
+        dds-device-broadcaster.h
         dds-participant.cpp
         dds-participant.h)
         

@@ -3,7 +3,7 @@
 
 #include <iostream>
 
-#include "dds-server.h"
+#include "dds-device-broadcaster.h"
 #include "dds-participant.h"
 
 #include <fastdds/dds/domain/DomainParticipantFactory.hpp>
@@ -16,7 +16,7 @@
 using namespace eprosima::fastdds::dds;
 using namespace tools;
 
-dds_server::dds_server(tools::dds_participant &participant)
+dds_device_broadcaster::dds_device_broadcaster(tools::dds_participant &participant)
     : _running( false )
     , _trigger_msg_send ( false )
     , _participant( participant.get() )
@@ -58,7 +58,7 @@ dds_server::dds_server(tools::dds_participant &participant)
 
 {
 }
-bool dds_server::init()
+bool dds_device_broadcaster::init()
 {
     if( !_participant )
     {
@@ -69,7 +69,7 @@ bool dds_server::init()
     return init_done;
 }
 
-void dds_server::run()
+void dds_device_broadcaster::run()
 {
     if( !init_done )
     {
@@ -105,7 +105,7 @@ void dds_server::run()
     std::cout << "RS DDS Server is on.." << std::endl;
 }
 
-bool dds_server::prepare_devices_changed_lists(
+bool dds_device_broadcaster::prepare_devices_changed_lists(
     const rs2::event_information & info,
     std::vector< std::string > & devices_to_remove,
     std::vector< std::pair< std::string , rs2::device > > & devices_to_add )
@@ -133,7 +133,7 @@ bool dds_server::prepare_devices_changed_lists(
     return device_change_detected;
 }
 
-void dds_server::handle_device_changes(
+void dds_device_broadcaster::handle_device_changes(
     const std::vector< std::string > & devices_to_remove,
     const std::vector< std::pair< std::string, rs2::device > > & devices_to_add )
 {
@@ -159,7 +159,7 @@ void dds_server::handle_device_changes(
     }
 }
 
-void dds_server::remove_dds_device( const std::string & device_key )
+void dds_device_broadcaster::remove_dds_device( const std::string & device_key )
 {
     // deleting a device also notify the clients internally
     auto ret = _publisher->delete_datawriter( _device_handle_by_sn[device_key].data_writer );
@@ -173,7 +173,7 @@ void dds_server::remove_dds_device( const std::string & device_key )
     std::cout << "Device '" << device_key << "' - removed" << std::endl;
 }
 
-bool dds_server::add_dds_device( const std::string & device_key,
+bool dds_device_broadcaster::add_dds_device( const std::string & device_key,
                                  const rs2::device & rs2_dev )
 {
     if( _device_handle_by_sn.find( device_key ) == _device_handle_by_sn.end() )
@@ -188,7 +188,7 @@ bool dds_server::add_dds_device( const std::string & device_key,
     return true;
 }
 
-bool dds_server::create_device_writer( const std::string &device_key, rs2::device rs2_device )
+bool dds_device_broadcaster::create_device_writer( const std::string &device_key, rs2::device rs2_device )
 {
     // Create a data writer for the topic
     DataWriterQos wqos = DATAWRITER_QOS_DEFAULT;
@@ -207,7 +207,7 @@ bool dds_server::create_device_writer( const std::string &device_key, rs2::devic
     return _device_handle_by_sn[device_key].data_writer != nullptr;
 }
 
-bool dds_server::create_dds_publisher()
+bool dds_device_broadcaster::create_dds_publisher()
 {
     // Registering the topic type enables topic instance creation by factory
     _topic_type.register_type( _participant );
@@ -219,7 +219,7 @@ bool dds_server::create_dds_publisher()
     return ( _topic != nullptr && _publisher != nullptr );
 }
 
-void dds_server::post_current_connected_devices()
+void dds_device_broadcaster::post_current_connected_devices()
 {
     // Query the devices connected on startup
     auto connected_dev_list = _ctx.query_devices();
@@ -240,7 +240,7 @@ void dds_server::post_current_connected_devices()
     }
 }
 
-bool tools::dds_server::send_device_info_msg( const librealsense::dds::topics::device_info& dev_info )
+bool tools::dds_device_broadcaster::send_device_info_msg( const librealsense::dds::topics::device_info& dev_info )
 {
     // Publish the device info, but only after a matching reader is found.
     librealsense::dds::topics::raw::device_info raw_msg;
@@ -263,7 +263,7 @@ bool tools::dds_server::send_device_info_msg( const librealsense::dds::topics::d
     return false;
 }
 
-librealsense::dds::topics::device_info dds_server::query_device_info( const rs2::device &rs2_dev ) const
+librealsense::dds::topics::device_info dds_device_broadcaster::query_device_info( const rs2::device &rs2_dev ) const
 {
     librealsense::dds::topics::device_info dev_info;
     dev_info.name = rs2_dev.get_info( RS2_CAMERA_INFO_NAME );
@@ -273,7 +273,7 @@ librealsense::dds::topics::device_info dds_server::query_device_info( const rs2:
     return dev_info;
 }
 
-void dds_server::fill_device_msg( const librealsense::dds::topics::device_info & dev_info,
+void dds_device_broadcaster::fill_device_msg( const librealsense::dds::topics::device_info & dev_info,
                                   librealsense::dds::topics::raw::device_info & msg ) const
 {
     strcpy( msg.name().data(), dev_info.name.c_str() );
@@ -282,7 +282,7 @@ void dds_server::fill_device_msg( const librealsense::dds::topics::device_info &
     msg.locked() = dev_info.locked;
 }
 
-dds_server::~dds_server()
+dds_device_broadcaster::~dds_device_broadcaster()
 {
     std::cout << "Shutting down rs-dds-server..." << std::endl;
     _running = false;
@@ -311,7 +311,7 @@ dds_server::~dds_server()
 }
 
 
-void dds_server::dds_client_listener::on_publication_matched( DataWriter * writer,
+void dds_device_broadcaster::dds_client_listener::on_publication_matched( DataWriter * writer,
                                                              const PublicationMatchedStatus & info )
 {
     if( info.current_count_change == 1 )
@@ -340,19 +340,3 @@ void dds_server::dds_client_listener::on_publication_matched( DataWriter * write
     }
 }
 
-void dds_server::dds_participant_listener::on_participant_discovery(
-    DomainParticipant * participant, eprosima::fastrtps::rtps::ParticipantDiscoveryInfo && info )
-{
-    switch( info.status )
-    {
-    case eprosima::fastrtps::rtps::ParticipantDiscoveryInfo::DISCOVERED_PARTICIPANT:
-        std::cout << "Participant '" << info.info.m_participantName << "' discovered" << std::endl;
-        break;
-    case eprosima::fastrtps::rtps::ParticipantDiscoveryInfo::REMOVED_PARTICIPANT:
-    case eprosima::fastrtps::rtps::ParticipantDiscoveryInfo::DROPPED_PARTICIPANT:
-        std::cout << "Participant '" << info.info.m_participantName << "' disappeared" << std::endl;
-        break;
-    default:
-        break;
-    }
-}
