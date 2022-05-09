@@ -35,16 +35,18 @@ namespace tools
     public:
         dds_device_broadcaster( tools::dds_participant &participant );
         ~dds_device_broadcaster();
+
+        // Initialize the device-info publisher
         bool init();
+
+        // Start listening for device changes
         void run();
-        void add_device( rs2::device dev )
-        {
-            std::cout << " TEST! Add Device Notification" << std::endl;
-        };
-        void remove_device( rs2::device dev )
-        {
-            std::cout << " TEST! Remove Device Notification" << std::endl;
-        };
+
+        // Create a new data writer for a new connected device
+        void add_device( rs2::device dev );
+
+        // Destroy the removed device data writer
+        void remove_device( rs2::device dev );
         
 
     private:
@@ -74,18 +76,14 @@ namespace tools
             std::shared_ptr< dds_client_listener > listener;
         };
 
-        // This 2 functions (prepare & post) handles the DDS publication of connected/disconnected RS devices.
-        // It prepares the input and dispatch the DDS work to a worker thread.
+        // handles the DDS writers pool of connected/disconnected RS devices.
+        // It dispatch the DDS work to a worker thread.
         // If a device was removed:
         //   * remove it from the connected devices (destruct the data writer, the client will be
         //   notified automatically)
         // If a device was added:
         //   * Create a new data writer for it
         //   * Publish the device name
-        bool prepare_devices_changed_lists(
-            const rs2::event_information& info,
-            std::vector< std::string >& devices_to_remove,
-            std::vector< std::pair< std::string, rs2::device > >& devices_to_add );
 
         void handle_device_changes( const std::vector< std::string >& devices_to_remove,
             const std::vector< std::pair< std::string, rs2::device > >& devices_to_add );
@@ -95,7 +93,6 @@ namespace tools
         bool add_dds_device( const std::string & device_key, const rs2::device& rs2_dev );
         bool create_device_writer( const std::string& device_key, rs2::device rs2_device );
         bool create_dds_publisher();
-        void post_current_connected_devices();
         bool send_device_info_msg( const librealsense::dds::topics::device_info& dev_info );
 
         librealsense::dds::topics::device_info query_device_info( const rs2::device& rs2_dev ) const;

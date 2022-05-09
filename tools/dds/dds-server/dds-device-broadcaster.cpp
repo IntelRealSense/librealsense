@@ -79,84 +79,57 @@ void dds_device_broadcaster::run()
 
     _dds_device_dispatcher.start();
     _new_client_handler.start();
-
-    //post_current_connected_devices();
-
-    // Register to LRS device changes function to notify on future devices being
-    // connected/disconnected
-    //_ctx.set_devices_changed_callback( [this]( rs2::event_information & info ) {
-    //    if( _running )
-    //    {
-    //        _dds_device_dispatcher.invoke( [this, info]( dispatcher::cancellable_timer ) {
-    //            std::vector< std::string > devices_to_remove;
-    //            std::vector< std::pair< std::string, rs2::device > > devices_to_add;
-
-    //            if( prepare_devices_changed_lists( info, devices_to_remove, devices_to_add ) )
-    //            {
-    //                // Post the devices connected / removed
-    //                handle_device_changes( devices_to_remove, devices_to_add );
-    //            }
-    //        } );
-    //    }
-    //} );
-    
-  
     _running = true;
     std::cout << "RS DDS Server is on.." << std::endl;
 }
 
-bool dds_device_broadcaster::prepare_devices_changed_lists(
-    const rs2::event_information & info,
-    std::vector< std::string > & devices_to_remove,
-    std::vector< std::pair< std::string , rs2::device > > & devices_to_add )
+void tools::dds_device_broadcaster::add_device( rs2::device dev )
 {
-    // Remove disconnected devices from devices list
-    for( auto sn_and_handle : _device_handle_by_sn )
-    {
-        auto & dev = sn_and_handle.second.device;
-        auto device_key = sn_and_handle.first;
+    auto device_serial = dev.get_info( RS2_CAMERA_INFO_SERIAL_NUMBER );
+    std::vector< std::pair< std::string, rs2::device > > devices_to_add;
+    devices_to_add.push_back( { device_serial, dev } );
 
-        if( info.was_removed( dev ) )
-        {
-            devices_to_remove.push_back( device_key );
-        }
-    }
+    // Post the connected device
+    handle_device_changes( {}, devices_to_add );
+}
 
-    // Add new connected devices from devices list
-    for( auto && dev : info.get_new_devices() )
-    {
-        auto device_serial = dev.get_info( RS2_CAMERA_INFO_SERIAL_NUMBER );
-        devices_to_add.push_back( { device_serial, dev } );
-    }
+void tools::dds_device_broadcaster::remove_device( rs2::device dev )
+{
+    auto device_serial = dev.get_info( RS2_CAMERA_INFO_SERIAL_NUMBER );
+    std::vector< std::string > devices_to_remove;
+    devices_to_remove.push_back( device_serial );
 
-    bool device_change_detected = ! devices_to_remove.empty() || ! devices_to_add.empty();
-    return device_change_detected;
+    // Post the disconnected device
+    handle_device_changes( devices_to_remove, {} );
 }
 
 void dds_device_broadcaster::handle_device_changes(
     const std::vector< std::string > & devices_to_remove,
     const std::vector< std::pair< std::string, rs2::device > > & devices_to_add )
 {
-    try
-    {
-        for( auto dev_to_remove : devices_to_remove )
-        {
-            remove_dds_device( dev_to_remove );
-        }
-
-        for( auto dev_to_add : devices_to_add )
-        {
-            if( ! add_dds_device( dev_to_add.first, dev_to_add.second ) )
+    _dds_device_dispatcher.invoke(
+        [this, devices_to_add, devices_to_remove]( dispatcher::cancellable_timer ) {
+            try
             {
-                std::cout << "Error creating a DDS writer" << std::endl;
-            }
-        }
-    }
+                for( auto dev_to_remove : devices_to_remove )
+                {
+                    remove_dds_device( dev_to_remove );
+                }
 
-    catch( ... )
-    {
-        std::cout << "Unknown error when trying to remove/add a DDS device" << std::endl;
-    }
+                for( auto dev_to_add : devices_to_add )
+                {
+                    if( ! add_dds_device( dev_to_add.first, dev_to_add.second ) )
+                    {
+                        std::cout << "Error creating a DDS writer" << std::endl;
+                    }
+                }
+            }
+
+            catch( ... )
+            {
+                std::cout << "Unknown error when trying to remove/add a DDS device" << std::endl;
+            }
+        } );
 }
 
 void dds_device_broadcaster::remove_dds_device( const std::string & device_key )
@@ -217,27 +190,6 @@ bool dds_device_broadcaster::create_dds_publisher()
                                          TOPIC_QOS_DEFAULT );
 
     return ( _topic != nullptr && _publisher != nullptr );
-}
-
-void dds_device_broadcaster::post_current_connected_devices()
-{
-    // Query the devices connected on startup
-    auto connected_dev_list = _ctx.query_devices();
-    std::vector< std::pair< std::string , rs2::device > > devices_to_add;
-
-    for( auto connected_dev : connected_dev_list )
-    {
-        auto device_serial = connected_dev.get_info( RS2_CAMERA_INFO_SERIAL_NUMBER );
-        devices_to_add.push_back( { device_serial, connected_dev } );
-    }
-
-    if( ! devices_to_add.empty() )
-    {
-        // Post the devices connected on startup
-        _dds_device_dispatcher.invoke( [this, devices_to_add]( dispatcher::cancellable_timer c ) {
-            handle_device_changes( {}, devices_to_add );
-        } );
-    }
 }
 
 bool tools::dds_device_broadcaster::send_device_info_msg( const librealsense::dds::topics::device_info& dev_info )
