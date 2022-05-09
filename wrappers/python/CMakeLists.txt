@@ -210,6 +210,10 @@ install(FILES "${CMAKE_BINARY_DIR}/wrappers/python/pyrealsense2ConfigVersion.cma
     DESTINATION ${CMAKECONFIG_PY_INSTALL_DIR}
 )
 
+install(FILES "${CMAKE_SOURCE_DIR}/wrappers/python/pyrealsense2/__init__.py"
+    DESTINATION ${PYTHON_INSTALL_DIR}
+)
+
 target_include_directories(pybackend2 PRIVATE ../../src)
 target_include_directories(pyrealsense2 PRIVATE ../../src)
 
@@ -247,6 +251,9 @@ if(BUILD_NETWORK_DEVICE)
 
     install(FILES "${CMAKE_BINARY_DIR}/wrappers/python/pyrealsense2-netConfigVersion.cmake"
       DESTINATION ${CMAKECONFIG_PY_INSTALL_DIR})
+
+    install(FILES "${CMAKE_SOURCE_DIR}/wrappers/python/pyrealsense2/__init__.py"
+      DESTINATION ${PYTHON_INSTALL_DIR})
 
 endif()
 
