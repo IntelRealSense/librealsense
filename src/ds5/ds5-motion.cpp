@@ -218,18 +218,6 @@ namespace librealsense
         }
         catch (...) {}
 
-        /*motion_ep->register_processing_block(
-            { {RS2_FORMAT_MOTION_XYZ32F, RS2_STREAM_ACCEL} },
-            { {RS2_FORMAT_MOTION_XYZ32F, RS2_STREAM_ACCEL} },
-            [&, mm_correct_opt]() { return std::make_shared<acceleration_transform>(_mm_calib, mm_correct_opt);
-        });
-
-        motion_ep->register_processing_block(
-            { {RS2_FORMAT_MOTION_XYZ32F, RS2_STREAM_GYRO} },
-            { {RS2_FORMAT_MOTION_XYZ32F, RS2_STREAM_GYRO} },
-            [&, mm_correct_opt]() { return std::make_shared<gyroscope_transform>(_mm_calib, mm_correct_opt);
-        });*/
-
         motion_ep->register_processing_block(
             { {RS2_FORMAT_MOTION_XYZ32F} },
             { {RS2_FORMAT_MOTION_XYZ32F, RS2_STREAM_ACCEL}, {RS2_FORMAT_MOTION_XYZ32F, RS2_STREAM_GYRO} },

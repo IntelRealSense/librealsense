@@ -75,6 +75,19 @@ namespace librealsense
         byte reserved3[2];
     };
 
+    // D457 dev
+    struct hid_mipi_data
+    {
+        uint8_t typeID;
+        uint8_t skip1;
+        uint64_t hwTs;
+        int16_t x;
+        int16_t y;
+        int16_t z;
+        uint64_t hwTs2;
+        uint64_t skip2;
+    };
+
 #pragma pack(pop)
 
     static const double TIMESTAMP_USEC_TO_MSEC = 0.001;
