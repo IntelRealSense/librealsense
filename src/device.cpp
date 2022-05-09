@@ -195,6 +195,7 @@ device::device(std::shared_ptr<context> ctx,
 
 device::~device()
 {
+    _context->stop_device_watcher();
     if (_device_changed_notifications)
     {
         _context->unregister_internal_device_callback(_callback_id);
