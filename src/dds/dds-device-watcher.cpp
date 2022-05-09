@@ -42,6 +42,7 @@ dds_device_watcher::dds_device_watcher( int domain_id )
                                << "\n\tName: " << device_info.name
                                << "\n\tSerial: " << device_info.serial
                                << "\n\tProduct line: " << device_info.product_line
+                               << "\n\tDevice root: " << device_info.topic_root
                                << "\n\tLocked:" << ( device_info.locked ? "yes" : "no" ) );
 
                     std::lock_guard< std::mutex > lock( _devices_mutex );

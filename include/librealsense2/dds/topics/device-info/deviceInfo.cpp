@@ -31,7 +31,9 @@ librealsense::dds::topics::raw::device_info::device_info()
     memset(&m_serial_number, 0, (32) * 1);
     // m_product_line com.eprosima.idl.parser.typecode.ArrayTypeCode@6ec8211c
     memset(&m_product_line, 0, (16) * 1);
-    // m_locked com.eprosima.idl.parser.typecode.PrimitiveTypeCode@7276c8cd
+    // m_topic_root com.eprosima.idl.parser.typecode.ArrayTypeCode@7276c8cd
+    memset(&m_topic_root, 0, (256) * 1);
+    // m_locked com.eprosima.idl.parser.typecode.PrimitiveTypeCode@544a2ea6
     m_locked = false;
 
 }
@@ -42,6 +44,7 @@ librealsense::dds::topics::raw::device_info::~device_info()
 
 
 
+
 }
 
 librealsense::dds::topics::raw::device_info::device_info(
@@ -50,6 +53,7 @@ librealsense::dds::topics::raw::device_info::device_info(
     m_name = x.m_name;
     m_serial_number = x.m_serial_number;
     m_product_line = x.m_product_line;
+    m_topic_root = x.m_topic_root;
     m_locked = x.m_locked;
 }
 
@@ -59,6 +63,7 @@ librealsense::dds::topics::raw::device_info::device_info(
     m_name = std::move(x.m_name);
     m_serial_number = std::move(x.m_serial_number);
     m_product_line = std::move(x.m_product_line);
+    m_topic_root = std::move(x.m_topic_root);
     m_locked = x.m_locked;
 }
 
@@ -69,6 +74,7 @@ librealsense::dds::topics::raw::device_info& librealsense::dds::topics::raw::dev
     m_name = x.m_name;
     m_serial_number = x.m_serial_number;
     m_product_line = x.m_product_line;
+    m_topic_root = x.m_topic_root;
     m_locked = x.m_locked;
 
     return *this;
@@ -81,6 +87,7 @@ librealsense::dds::topics::raw::device_info& librealsense::dds::topics::raw::dev
     m_name = std::move(x.m_name);
     m_serial_number = std::move(x.m_serial_number);
     m_product_line = std::move(x.m_product_line);
+    m_topic_root = std::move(x.m_topic_root);
     m_locked = x.m_locked;
 
     return *this;
@@ -90,7 +97,7 @@ bool librealsense::dds::topics::raw::device_info::operator ==(
         const device_info& x) const
 {
 
-    return (m_name == x.m_name && m_serial_number == x.m_serial_number && m_product_line == x.m_product_line && m_locked == x.m_locked);
+    return (m_name == x.m_name && m_serial_number == x.m_serial_number && m_product_line == x.m_product_line && m_topic_root == x.m_topic_root && m_locked == x.m_locked);
 }
 
 bool librealsense::dds::topics::raw::device_info::operator !=(
@@ -112,6 +119,9 @@ size_t librealsense::dds::topics::raw::device_info::getMaxCdrSerializedSize(
 
 
     current_alignment += ((16) * 1) + eprosima::fastcdr::Cdr::alignment(current_alignment, 1);
+
+
+    current_alignment += ((256) * 1) + eprosima::fastcdr::Cdr::alignment(current_alignment, 1);
 
 
     current_alignment += 1 + eprosima::fastcdr::Cdr::alignment(current_alignment, 1);
@@ -144,6 +154,11 @@ size_t librealsense::dds::topics::raw::device_info::getCdrSerializedSize(
         current_alignment += ((16) * 1) + eprosima::fastcdr::Cdr::alignment(current_alignment, 1);
     }
 
+    if ((256) > 0)
+    {
+        current_alignment += ((256) * 1) + eprosima::fastcdr::Cdr::alignment(current_alignment, 1);
+    }
+
     current_alignment += 1 + eprosima::fastcdr::Cdr::alignment(current_alignment, 1);
 
 
@@ -161,6 +176,8 @@ void librealsense::dds::topics::raw::device_info::serialize(
 
     scdr << m_product_line;
 
+    scdr << m_topic_root;
+
     scdr << m_locked;
 
 }
@@ -174,6 +191,8 @@ void librealsense::dds::topics::raw::device_info::deserialize(
     dcdr >> m_serial_number;
 
     dcdr >> m_product_line;
+
+    dcdr >> m_topic_root;
 
     dcdr >> m_locked;
 }
@@ -290,6 +309,43 @@ std::array<char, 16>& librealsense::dds::topics::raw::device_info::product_line(
     return m_product_line;
 }
 /*!
+ * @brief This function copies the value in member topic_root
+ * @param _topic_root New value to be copied in member topic_root
+ */
+void librealsense::dds::topics::raw::device_info::topic_root(
+        const std::array<char, 256>& _topic_root)
+{
+    m_topic_root = _topic_root;
+}
+
+/*!
+ * @brief This function moves the value in member topic_root
+ * @param _topic_root New value to be moved in member topic_root
+ */
+void librealsense::dds::topics::raw::device_info::topic_root(
+        std::array<char, 256>&& _topic_root)
+{
+    m_topic_root = std::move(_topic_root);
+}
+
+/*!
+ * @brief This function returns a constant reference to member topic_root
+ * @return Constant reference to member topic_root
+ */
+const std::array<char, 256>& librealsense::dds::topics::raw::device_info::topic_root() const
+{
+    return m_topic_root;
+}
+
+/*!
+ * @brief This function returns a reference to member topic_root
+ * @return Reference to member topic_root
+ */
+std::array<char, 256>& librealsense::dds::topics::raw::device_info::topic_root()
+{
+    return m_topic_root;
+}
+/*!
  * @brief This function sets a value in member locked
  * @param _locked New value for member locked
  */
@@ -329,6 +385,7 @@ size_t librealsense::dds::topics::raw::device_info::getKeyMaxCdrSerializedSize(
 
 
 
+
     return current_align;
 }
 
@@ -341,7 +398,7 @@ void librealsense::dds::topics::raw::device_info::serializeKey(
         eprosima::fastcdr::Cdr& scdr) const
 {
     (void) scdr;
-        
+         
 }
 
 

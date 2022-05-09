@@ -190,6 +190,31 @@ namespace librealsense {
                      */
                     eProsima_user_DllExport std::array<char, 16>& product_line();
                     /*!
+                     * @brief This function copies the value in member topic_root
+                     * @param _topic_root New value to be copied in member topic_root
+                     */
+                    eProsima_user_DllExport void topic_root(
+                            const std::array<char, 256>& _topic_root);
+
+                    /*!
+                     * @brief This function moves the value in member topic_root
+                     * @param _topic_root New value to be moved in member topic_root
+                     */
+                    eProsima_user_DllExport void topic_root(
+                            std::array<char, 256>&& _topic_root);
+
+                    /*!
+                     * @brief This function returns a constant reference to member topic_root
+                     * @return Constant reference to member topic_root
+                     */
+                    eProsima_user_DllExport const std::array<char, 256>& topic_root() const;
+
+                    /*!
+                     * @brief This function returns a reference to member topic_root
+                     * @return Reference to member topic_root
+                     */
+                    eProsima_user_DllExport std::array<char, 256>& topic_root();
+                    /*!
                      * @brief This function sets a value in member locked
                      * @param _locked New value for member locked
                      */
@@ -271,6 +296,7 @@ namespace librealsense {
                     std::array<char, 128> m_name;
                     std::array<char, 32> m_serial_number;
                     std::array<char, 16> m_product_line;
+                    std::array<char, 256> m_topic_root;
                     bool m_locked;
                 };
             } // namespace raw

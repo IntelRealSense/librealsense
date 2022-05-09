@@ -13,6 +13,9 @@
 #include <fastdds/rtps/participant/ParticipantDiscoveryInfo.h>
 #include <librealsense2/dds/topics/dds-messages.h>
 
+#define RS_ROOT "realsense/"
+#define DEVICE_NAME_PREFIX "Intel RealSense "
+
 using namespace eprosima::fastdds::dds;
 using namespace tools;
 
@@ -222,6 +225,9 @@ librealsense::dds::topics::device_info dds_device_broadcaster::query_device_info
     dev_info.serial = rs2_dev.get_info( RS2_CAMERA_INFO_SERIAL_NUMBER );
     dev_info.product_line = rs2_dev.get_info( RS2_CAMERA_INFO_PRODUCT_LINE );
     dev_info.locked = (rs2_dev.get_info( RS2_CAMERA_INFO_CAMERA_LOCKED ) == "YES");
+
+    // Build device topic root path
+    dev_info.topic_root = get_topic_root(dev_info.name, dev_info.serial);
     return dev_info;
 }
 
@@ -231,7 +237,17 @@ void dds_device_broadcaster::fill_device_msg( const librealsense::dds::topics::d
     strcpy( msg.name().data(), dev_info.name.c_str() );
     strcpy( msg.serial_number().data(), dev_info.serial.c_str() );
     strcpy( msg.product_line().data(), dev_info.product_line.c_str() );
+    strcpy( msg.topic_root().data(), dev_info.topic_root.c_str() );
     msg.locked() = dev_info.locked;
+}
+
+std::string tools::dds_device_broadcaster::get_topic_root( const std::string& name, const std::string& sn ) const
+{
+    // Build device root path (we use a device model only name like DXXX)
+    // example: /realsense/D435/11223344
+    std::string rs_device_name_prefix = DEVICE_NAME_PREFIX;
+    std::string short_device_name = name.substr( rs_device_name_prefix.length() );
+    return RS_ROOT + short_device_name + "/" + sn;
 }
 
 dds_device_broadcaster::~dds_device_broadcaster()

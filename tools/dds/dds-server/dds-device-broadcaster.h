@@ -97,7 +97,7 @@ namespace tools
 
         librealsense::dds::topics::device_info query_device_info( const rs2::device& rs2_dev ) const;
         void fill_device_msg( const librealsense::dds::topics::device_info& dev_info, librealsense::dds::topics::raw::device_info& msg ) const;
-
+        std::string get_topic_root( const std::string &name, const std::string &sn) const;
         std::atomic_bool _running, _trigger_msg_send;
         eprosima::fastdds::dds::DomainParticipant* _participant;
         eprosima::fastdds::dds::Publisher* _publisher;
