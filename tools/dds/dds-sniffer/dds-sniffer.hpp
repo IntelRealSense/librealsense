@@ -19,7 +19,7 @@ public:
     Sniffer();
     ~Sniffer();
 
-    bool init( eprosima::fastdds::dds::DomainId_t domain = 0, bool snapshot = false );
+    bool init( eprosima::fastdds::dds::DomainId_t domain = 0, bool snapshot = false, bool machine_readable = false );
     void run( uint32_t seconds );
 
 private:
@@ -45,6 +45,7 @@ private:
     std::atomic_int _matched = { 0 };
     bool _print_discoveries = false;
     bool _print_by_topics = false;
+    bool _print_machine_readable = false;
     uint32_t _max_indentation = 0;
 
     void on_data_available( eprosima::fastdds::dds::DataReader * reader ) override;
@@ -96,6 +97,7 @@ private:
     void print_writer_discovered( const eprosima::fastrtps::rtps::WriterDiscoveryInfo & info, bool discovered ) const;
     void print_reader_discovered( const eprosima::fastrtps::rtps::ReaderDiscoveryInfo & info, bool discovered ) const;
     void print_participant_discovered( const eprosima::fastrtps::rtps::ParticipantDiscoveryInfo & info, bool discovered ) const;
+    void print_topics_machine_readable();
     void print_topics();
     void ident( uint32_t indentation ) const;
     void print_topic_writer( const eprosima::fastrtps::rtps::GUID_t & writer, uint32_t indentation ) const;

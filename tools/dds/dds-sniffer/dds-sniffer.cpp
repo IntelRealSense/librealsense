@@ -27,6 +27,7 @@ int main( int argc, char ** argv ) try
 
     CmdLine cmd( "librealsense rs-dds-sniffer tool", ' ' );
     SwitchArg snapshot_arg( "s", "snapshot", "run momentarily taking a snapshot of the domain" );
+    SwitchArg machine_readable_arg( "m", "machine-readable", "output entities in a way more suitable for automatic parsing" );
     ValueArg< eprosima::fastdds::dds::DomainId_t > domain_arg( "d",
                                                                "domain",
                                                                "select domain ID to listen on",
@@ -34,6 +35,7 @@ int main( int argc, char ** argv ) try
                                                                0,
                                                                "0-232" );
     cmd.add( snapshot_arg );
+    cmd.add( machine_readable_arg );
     cmd.add( domain_arg );
     cmd.parse( argc, argv );
 
@@ -53,7 +55,7 @@ int main( int argc, char ** argv ) try
     }
 
     Sniffer snif;
-    if( snif.init( domain, snapshot_arg.isSet() ) )
+    if( snif.init( domain, snapshot_arg.isSet(), machine_readable_arg.isSet() ) )
     {
         snif.run( seconds );
     }
@@ -119,23 +121,27 @@ Sniffer::~Sniffer()
     _readers.clear();
 }
 
-bool Sniffer::init( eprosima::fastdds::dds::DomainId_t domain, bool snapshot )
+bool Sniffer::init( eprosima::fastdds::dds::DomainId_t domain, bool snapshot, bool machine_readable )
 {
     _print_discoveries = !snapshot;
     _print_by_topics = snapshot;
+    _print_machine_readable = machine_readable;
 
     eprosima::fastdds::dds::DomainParticipantQos participantQoS;
     participantQoS.name( "rs-dds-sniffer" );
     _participant = eprosima::fastdds::dds::DomainParticipantFactory::get_instance()->create_participant( domain,
                                                                                                          participantQoS,
                                                                                                          this );
-    if( snapshot )
+    if (!_print_machine_readable)
     {
-        std::cout << "rs-dds-sniffer taking a snapshot of domain " << domain << std::endl;
-    }
-    else
-    {
-        std::cout << "rs-dds-sniffer listening on domain " << domain << std::endl;
+        if (snapshot)
+        {
+            std::cout << "rs-dds-sniffer taking a snapshot of domain " << domain << std::endl;
+        }
+        else
+        {
+            std::cout << "rs-dds-sniffer listening on domain " << domain << std::endl;
+        }
     }
 
     return _participant != nullptr;
@@ -154,7 +160,14 @@ void Sniffer::run( uint32_t seconds )
 
     if( _print_by_topics )
     {
-        print_topics();
+        if (_print_machine_readable)
+        {
+            print_topics_machine_readable();
+        }
+        else
+        {
+            print_topics();
+        }
     }
 }
 
@@ -383,22 +396,63 @@ void Sniffer::remove_topic_reader( const eprosima::fastrtps::rtps::ReaderDiscove
 
 void Sniffer::print_writer_discovered( const eprosima::fastrtps::rtps::WriterDiscoveryInfo & info, bool discovered ) const
 {
-    std::cout << "DataWriter  " << info.info.guid() << " publishing topic '" << info.info.topicName() << "' of type '"
-              << info.info.typeName() << ( discovered ? "' discovered" : "' left the domain." ) << std::endl;
+    if (_print_machine_readable)
+    {
+        std::cout << "DataWriter," << info.info.guid() << "," << info.info.topicName() << "," << info.info.typeName()
+                  << (discovered ? ",discovered" : ",removed") << std::endl;
+    }
+    else
+    {
+        std::cout << "DataWriter  " << info.info.guid() << " publishing topic '" << info.info.topicName() << "' of type '"
+                  << info.info.typeName() << (discovered ? "' discovered" : "' removed") << std::endl;
+    }
 }
 
 void Sniffer::print_reader_discovered( const eprosima::fastrtps::rtps::ReaderDiscoveryInfo & info, bool discovered ) const
 {
-    std::cout << "DataReader  " << info.info.guid() << " reading topic '" << info.info.topicName() << "' of type '"
-              << info.info.typeName() << ( discovered ? "' discovered" : "' left the domain." ) << std::endl;
+    if (_print_machine_readable)
+    {
+        std::cout << "DataReader," << info.info.guid() << "," << info.info.topicName() << "," << info.info.typeName()
+                  << (discovered ? ",discovered" : ",removed") << std::endl;
+    }
+    else
+    {
+        std::cout << "DataReader  " << info.info.guid() << " reading topic '" << info.info.topicName() << "' of type '"
+                  << info.info.typeName() << (discovered ? "' discovered" : "' removed") << std::endl;
+    }
 }
 
 void Sniffer::print_participant_discovered( const eprosima::fastrtps::rtps::ParticipantDiscoveryInfo & info, bool discovered ) const
 {
-    uint16_t tmp( 0 );
-    memcpy( &tmp, &info.info.m_guid.guidPrefix.value[GUID_PROCESS_LOCATION], sizeof( tmp ) );
-    std::cout << "Participant " << info.info.m_guid << " " << info.info.m_participantName << "_" << std::hex << tmp
-              << std::dec << ( discovered ? " discovered" : " left the domain" ) << std::endl;
+    if (_print_machine_readable)
+    {
+        std::cout << "Participant," << info.info.m_guid << "," << info.info.m_participantName
+                  << (discovered ? ",discovered" : ",removed") << std::endl;
+    }
+    else
+    {
+        uint16_t tmp( 0 );
+        memcpy( &tmp, &info.info.m_guid.guidPrefix.value[GUID_PROCESS_LOCATION], sizeof( tmp ) );
+        std::cout << "Participant " << info.info.m_guid << " " << info.info.m_participantName << "_" << std::hex << tmp
+                  << std::dec << (discovered ? " discovered" : " removed") << std::endl;
+    }
+}
+
+void Sniffer::print_topics_machine_readable()
+{
+    for (auto topic : _discoveredTopics)
+    {
+        for (auto writer : topic.second.writers)
+        {
+            std::cout << topic.first << ",";
+            print_topic_writer( writer, _max_indentation );
+        }
+        for (auto reader : topic.second.readers)
+        {
+            std::cout << topic.first << ",";
+            print_topic_reader( reader, _max_indentation );
+        }
+    }
 }
 
 void Sniffer::print_topics()
@@ -474,8 +528,15 @@ void Sniffer::print_topic_writer( const eprosima::fastrtps::rtps::GUID_t & write
         {
             uint16_t tmp;
             memcpy( &tmp, &iter->first.guidPrefix.value[GUID_PROCESS_LOCATION], sizeof( tmp ) );
-            ident( indentation );
-            std::cout << "Writer of \"" << iter->second << "_" << std::hex << tmp << std::dec << "\"" << std::endl;
+            if (_print_machine_readable)
+            {
+                std::cout << "Writer," << iter->second << "_" << std::hex << std::setw(4) << std::setfill( '0' ) << tmp << std::dec << std::endl;
+            }
+            else
+            {
+                ident( indentation );
+                std::cout << "Writer of \"" << iter->second << "_" << std::hex << std::setw(4) << std::setfill( '0' ) << tmp << std::dec << "\"" << std::endl;
+            }
             break;
         }
     }
@@ -495,8 +556,15 @@ void Sniffer::print_topic_reader( const eprosima::fastrtps::rtps::GUID_t & reade
         {
             uint16_t tmp;
             memcpy( &tmp, &iter->first.guidPrefix.value[GUID_PROCESS_LOCATION], sizeof( tmp ) );
-            ident( indentation );
-            std::cout << "Reader of \"" << iter->second << "_" << std::hex << tmp << std::dec << "\"" << std::endl;
+            if (_print_machine_readable)
+            {
+                std::cout << "Reader," << iter->second << "_" << std::hex << std::setw(4) << std::setfill( '0' ) << tmp << std::dec << std::endl;
+            }
+            else
+            {
+                ident( indentation );
+                std::cout << "Reader of \"" << iter->second << "_" << std::hex << std::setw(4) << std::setfill( '0' ) << tmp << std::dec << "\"" << std::endl;
+            }
             break;
         }
     }
