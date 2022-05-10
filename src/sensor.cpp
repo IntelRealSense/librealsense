@@ -412,9 +412,14 @@ void log_callback_end( uint32_t fps,
                                 expected_size == sizeof(byte) * fr->data.size() + 226); // added for D457
 
                         memcpy((void*)fh->get_frame_data(), fr->data.data(), sizeof(byte) * fr->data.size());
-                        auto&& video = (video_frame*)fh.frame;
-                        video->assign(width, height, width * bpp / 8, bpp);
-                        video->set_timestamp_domain(timestamp_domain);
+
+                        auto&& video = dynamic_cast<video_frame*>(fh.frame);
+                        if (video)
+                        {
+                            video->assign(width, height, width * bpp / 8, bpp);
+                            video->set_timestamp_domain(timestamp_domain);
+                        }
+
                         fh->set_stream(req_profile_base);
                     }
                     else

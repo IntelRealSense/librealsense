@@ -136,12 +136,10 @@ namespace librealsense
             if (frame->get_frame_data()[0] == 1)
             {
                 _accel_gyro_target_profile->set_stream_type(RS2_STREAM_ACCEL);
-                LOG_DEBUG("motion_to_accel_gyro::configure_processing_callback - ACCEL");
             }
             else if (frame->get_frame_data()[0] == 2)
             {
                 _accel_gyro_target_profile->set_stream_type(RS2_STREAM_GYRO);
-                LOG_DEBUG("motion_to_accel_gyro::configure_processing_callback - GYRO");
             }
             else
             {
