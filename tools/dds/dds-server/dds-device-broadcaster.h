@@ -36,11 +36,8 @@ namespace tools
         dds_device_broadcaster( tools::dds_participant &participant );
         ~dds_device_broadcaster();
 
-        // Initialize the device-info publisher
-        bool init();
-
         // Start listening for device changes
-        void run();
+        bool run();
 
         // Create a new data writer for a new connected device
         void add_device( rs2::device dev );
@@ -98,7 +95,7 @@ namespace tools
         librealsense::dds::topics::device_info query_device_info( const rs2::device& rs2_dev ) const;
         void fill_device_msg( const librealsense::dds::topics::device_info& dev_info, librealsense::dds::topics::raw::device_info& msg ) const;
         std::string get_topic_root( const std::string &name, const std::string &sn) const;
-        std::atomic_bool _running, _trigger_msg_send;
+        std::atomic_bool _trigger_msg_send;
         eprosima::fastdds::dds::DomainParticipant* _participant;
         eprosima::fastdds::dds::Publisher* _publisher;
         eprosima::fastdds::dds::Topic* _topic;
@@ -109,6 +106,5 @@ namespace tools
         active_object<> _new_client_handler;
         std::condition_variable _new_client_cv;
         std::mutex _new_client_mutex;
-        bool init_done;
     };  // class dds_device_broadcaster
 }

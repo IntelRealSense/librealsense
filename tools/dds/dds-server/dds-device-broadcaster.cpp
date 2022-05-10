@@ -20,8 +20,7 @@ using namespace eprosima::fastdds::dds;
 using namespace tools;
 
 dds_device_broadcaster::dds_device_broadcaster(tools::dds_participant &participant)
-    : _running( false )
-    , _trigger_msg_send ( false )
+    : _trigger_msg_send ( false )
     , _participant( participant.get() )
     , _publisher( nullptr )
     , _topic( nullptr )
@@ -57,33 +56,27 @@ dds_device_broadcaster::dds_device_broadcaster(tools::dds_participant &participa
     , _ctx( "{"
             "\"dds-discovery\" : false"
             "}" )
-    , init_done( false )
 
 {
 }
-bool dds_device_broadcaster::init()
+
+bool dds_device_broadcaster::run()
 {
-    if( !_participant )
+    if( ! _participant )
     {
+        std::cout << "Error - Participant is not valid" << std::endl;
         return false;
     }
 
-    init_done = create_dds_publisher();
-    return init_done;
-}
-
-void dds_device_broadcaster::run()
-{
-    if( !init_done )
+    if( ! create_dds_publisher() )
     {
-        std::cout << "RS DDS Server was not initialize, please call 'init()' first" << std::endl;
-        return;
+        std::cout << "Error - Failed creating publisher" << std::endl;
+        return false;
     }
 
     _dds_device_dispatcher.start();
     _new_client_handler.start();
-    _running = true;
-    std::cout << "RS DDS Server is on.." << std::endl;
+    return true;
 }
 
 void tools::dds_device_broadcaster::add_device( rs2::device dev )
@@ -253,7 +246,6 @@ std::string tools::dds_device_broadcaster::get_topic_root( const std::string& na
 dds_device_broadcaster::~dds_device_broadcaster()
 {
     std::cout << "Shutting down rs-dds-server..." << std::endl;
-    _running = false;
 
     _dds_device_dispatcher.stop();
     _new_client_handler.stop();

@@ -84,13 +84,9 @@ try
 
     // Run the DDS device broadcaster
     tools::dds_device_broadcaster broadcaster( participant );
-    if( broadcaster.init() )
+    if( !broadcaster.run() )
     {
-        broadcaster.run( );
-    }
-    else
-    {
-        std::cerr << "Initialization failure" << std::endl;
+        std::cerr << "Failure running the DDS Device Broadcaster" << std::endl;
         return EXIT_FAILURE;
     }
 
@@ -98,6 +94,8 @@ try
     tools::lrs_device_watcher dev_watcher;
     dev_watcher.run( [&]( rs2::device dev ) { broadcaster.add_device( dev ); },
                      [&]( rs2::device dev ) { broadcaster.remove_device( dev ); } );
+
+    std::cout << "RS DDS Server is on.." << std::endl;
 
     std::cin.ignore(std::numeric_limits<std::streamsize>::max(), 0);// Pend until CTRL + C is pressed 
 
