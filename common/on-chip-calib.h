@@ -108,7 +108,7 @@ namespace rs2
         void calibrate();
         void calibrate_fl();
         void calibrate_uv_mapping();
-        void calibrate_fl_plus();
+        //void calibrate_fl_plus();
         void get_ground_truth();
 
         void turn_roi_on();

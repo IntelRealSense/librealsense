@@ -1112,7 +1112,6 @@ namespace librealsense
 	                std::make_shared<auto_disabling_control>(
 	                    _ae_limit_value_control,
 	                    ae_limit_toggle_control
-                    
 	                    ));
 	            }
         }); //group_multiple_fw_calls
