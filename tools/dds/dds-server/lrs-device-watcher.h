@@ -9,7 +9,7 @@ namespace tools {
 
 // This class is in charge of notifying a RS device connection / disconnection
 // It will also notify of all connected devices during it's wakeup.
-class lrs_device_watcher
+class lrs_device_watcher : public std::enable_shared_from_this<lrs_device_watcher>
 {
 public:
     lrs_device_watcher();

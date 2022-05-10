@@ -3,6 +3,8 @@
 
 #pragma once
 
+#include <memory>
+
 namespace eprosima {
 namespace fastdds {
 namespace dds {

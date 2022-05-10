@@ -28,10 +28,15 @@ void lrs_device_watcher::run( std::function< void( rs2::device ) > add_device_cb
     // Register to LRS device change callback.
     // For each device added, call callback and store it in a list
     // For each device removed, call callback and remove it from the list
+    std::weak_ptr<lrs_device_watcher> weak_dev_watcher = shared_from_this();
     _ctx.set_devices_changed_callback(
-        [this, add_device_cb, remove_device_cb]( rs2::event_information & info ) {
+        [this, add_device_cb, remove_device_cb, weak_dev_watcher]( rs2::event_information & info ) {
             if( _running )
             {
+                auto self = weak_dev_watcher.lock();
+                if (!self) return;
+
+                weak_dev_watcher.lock();
                 std::vector<rs2::device> devices_to_remove;
                 for( auto && rs_device : _rs_device_list )
                 {
