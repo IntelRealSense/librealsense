@@ -11,7 +11,7 @@ class DomainParticipant;
 }  // namespace fastdds
 }  // namespace eprosima
 
-class dds_participant_listener;
+
 
 namespace tools {
 
@@ -25,6 +25,7 @@ public:
     eprosima::fastdds::dds::DomainParticipant * get() { return _participant; }
 
 private:
+    class dds_participant_listener;
     eprosima::fastdds::dds::DomainParticipant * _participant;
     std::shared_ptr< dds_participant_listener > _domain_listener;
 };  // class dds_participant

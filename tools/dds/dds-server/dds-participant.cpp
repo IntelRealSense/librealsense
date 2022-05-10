@@ -11,12 +11,28 @@
 using namespace eprosima::fastdds::dds;
 using namespace tools;
 
-class dds_participant_listener : public eprosima::fastdds::dds::DomainParticipantListener
+class dds_participant::dds_participant_listener
+    : public eprosima::fastdds::dds::DomainParticipantListener
 {
 
-    virtual void
-    on_participant_discovery( eprosima::fastdds::dds::DomainParticipant * participant,
-                              eprosima::fastrtps::rtps::ParticipantDiscoveryInfo && info ) override;
+    virtual void on_participant_discovery( eprosima::fastdds::dds::DomainParticipant * participant,
+                              eprosima::fastrtps::rtps::ParticipantDiscoveryInfo && info ) override
+    {
+        switch( info.status )
+        {
+        case eprosima::fastrtps::rtps::ParticipantDiscoveryInfo::DISCOVERED_PARTICIPANT:
+            std::cout << "Participant '" << info.info.m_participantName << "' discovered"
+                      << std::endl;
+            break;
+        case eprosima::fastrtps::rtps::ParticipantDiscoveryInfo::REMOVED_PARTICIPANT:
+        case eprosima::fastrtps::rtps::ParticipantDiscoveryInfo::DROPPED_PARTICIPANT:
+            std::cout << "Participant '" << info.info.m_participantName << "' disappeared"
+                      << std::endl;
+            break;
+        default:
+            break;
+        }
+    }
 };
 
 dds_participant::dds_participant( int domain_id, std::string name )
@@ -51,19 +67,3 @@ dds_participant::~dds_participant()
         std::cout << "Failed deleting participant!" << std::endl;
 }
 
-void dds_participant_listener::on_participant_discovery(
-    DomainParticipant * participant, eprosima::fastrtps::rtps::ParticipantDiscoveryInfo && info )
-{
-    switch( info.status )
-    {
-    case eprosima::fastrtps::rtps::ParticipantDiscoveryInfo::DISCOVERED_PARTICIPANT:
-        std::cout << "Participant '" << info.info.m_participantName << "' discovered" << std::endl;
-        break;
-    case eprosima::fastrtps::rtps::ParticipantDiscoveryInfo::REMOVED_PARTICIPANT:
-    case eprosima::fastrtps::rtps::ParticipantDiscoveryInfo::DROPPED_PARTICIPANT:
-        std::cout << "Participant '" << info.info.m_participantName << "' disappeared" << std::endl;
-        break;
-    default:
-        break;
-    }
-}
