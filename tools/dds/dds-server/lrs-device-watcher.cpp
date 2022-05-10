@@ -2,12 +2,13 @@
 // Copyright(c) 2022 Intel Corporation. All Rights Reserved.
 
 #include <algorithm>
+#include <iostream>
 #include "lrs-device-watcher.h"
 
 using namespace tools;
 
 lrs_device_watcher::lrs_device_watcher()
-    : _running( false )
+    : _alive( std::make_shared<bool>(false) )
     , _ctx( "{"
             "\"dds-discovery\" : false"
             "}" )
@@ -17,7 +18,6 @@ lrs_device_watcher::lrs_device_watcher()
 
 lrs_device_watcher::~lrs_device_watcher() 
 {
-    _running = false;
 }
 
 void lrs_device_watcher::run( std::function< void( rs2::device ) > add_device_cb,
@@ -28,15 +28,11 @@ void lrs_device_watcher::run( std::function< void( rs2::device ) > add_device_cb
     // Register to LRS device change callback.
     // For each device added, call callback and store it in a list
     // For each device removed, call callback and remove it from the list
-    std::weak_ptr<lrs_device_watcher> weak_dev_watcher = shared_from_this();
+    std::weak_ptr<void> weak_dev_watcher(_alive);
     _ctx.set_devices_changed_callback(
         [this, add_device_cb, remove_device_cb, weak_dev_watcher]( rs2::event_information & info ) {
-            if( _running )
+            if( weak_dev_watcher.lock() )
             {
-                auto self = weak_dev_watcher.lock();
-                if (!self) return;
-
-                weak_dev_watcher.lock();
                 std::vector<rs2::device> devices_to_remove;
                 for( auto && rs_device : _rs_device_list )
                 {
@@ -65,8 +61,6 @@ void lrs_device_watcher::run( std::function< void( rs2::device ) > add_device_cb
                 }
             }
         } );
-
-    _running = true;
 }
 
 void tools::lrs_device_watcher::notify_connected_devices_on_wake_up(

@@ -19,7 +19,7 @@ public:
 
 private:
     void notify_connected_devices_on_wake_up( std::function< void( rs2::device ) > add_device_cb );
-    std::atomic_bool _running;
+    std::shared_ptr<bool> _alive;
     rs2::context _ctx;
     std::function<void( rs2::device )> _add_device_cb;
     std::function<void( rs2::device )> _remove_device_cb;
