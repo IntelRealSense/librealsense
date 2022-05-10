@@ -26,10 +26,14 @@ set -e
 # despite it being harder to get up and running on non-standard platforms.
 
 # Install all dependencies necessary to build kernel modules
-sudo apt-get build-dep linux-image-unsigned-$(uname -r)
-apt-get source linux-image-unsigned-$(uname -r)
 export vershort=`echo $(uname -r) | cut -f1 -d"-"`
+if [ ! -d linux-$vershort ]
+then
+        sudo apt-get build-dep linux-image-unsigned-$(uname -r)
+        apt-get source linux-image-unsigned-$(uname -r)
+fi
 cd linux-$vershort
+
 
 # Note: the commands above should download the sources for current running kernel into the current folder
 #       Unfortunately, the folder name often doesn't have rhyme or reason ascertainable from 'uname -r'
@@ -42,7 +46,7 @@ cd linux-$vershort
 # I found that the following patch from previous Ubuntu-related patches was already in the 5.15 kernel
 #   realsense-hid-*.patch
 export LINUX_BRANCH=$(uname -r)
-patch -p1 <  ../rpi-realsense-bootstrap/patches/realsense-combined-jammy-x86_64-5.15.0-27.patch
+patch -p1 <  ../scripts/realsense-combined-jammy-x86_64-5.15.0-27.patch
 chmod +x scripts/*.sh   # This one seemed bizarre, but you have to do it, or some scripts won't run
 
 # This step copies the configuration of the current running module and the symbol versions of the currently

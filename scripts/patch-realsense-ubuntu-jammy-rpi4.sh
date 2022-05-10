@@ -49,7 +49,7 @@ cd linux-raspi-5.15.0/
 # I found that the following patch from previous Ubuntu-related patches was already in the 5.15 kernel
 #   realsense-hid-*.patch
 export LINUX_BRANCH=$(uname -r)
-patch -p1 <  ../rpi-realsense-bootstrap/patches/realsense-combined-jammy-rpi4-5.15.0_1006.patch
+patch -p1 <  ../scripts/realsense-combined-jammy-rpi4-5.15.0_1006.patch
 chmod +x scripts/*.sh   # This one seemed bizarre, but you have to do it, or some scripts won't run
 
 # This step copies the configuration of the current running module and the symbol versions of the currently
