@@ -8,7 +8,7 @@
 using namespace tools;
 
 lrs_device_watcher::lrs_device_watcher()
-    : _alive( std::make_shared<bool>(false) )
+    : _rs_device_list( std::make_shared< std::vector< rs2::device > >() )
     , _ctx( "{"
             "\"dds-discovery\" : false"
             "}" )
@@ -28,13 +28,14 @@ void lrs_device_watcher::run( std::function< void( rs2::device ) > add_device_cb
     // Register to LRS device change callback.
     // For each device added, call callback and store it in a list
     // For each device removed, call callback and remove it from the list
-    std::weak_ptr<void> weak_dev_watcher(_alive);
+    std::weak_ptr< std::vector< rs2::device > > weak_rs_device_list ( _rs_device_list );
     _ctx.set_devices_changed_callback(
-        [this, add_device_cb, remove_device_cb, weak_dev_watcher]( rs2::event_information & info ) {
-            if( weak_dev_watcher.lock() )
+        [this, add_device_cb, remove_device_cb, weak_rs_device_list]( rs2::event_information & info ) {
+            auto strong_rs_device_list = weak_rs_device_list.lock();
+            if( strong_rs_device_list )
             {
                 std::vector<rs2::device> devices_to_remove;
-                for( auto && rs_device : _rs_device_list )
+                for( auto && rs_device : *strong_rs_device_list )
                 {
                     if( info.was_removed( rs_device ) )
                     {
@@ -45,19 +46,19 @@ void lrs_device_watcher::run( std::function< void( rs2::device ) > add_device_cb
                 for( auto device_to_remove : devices_to_remove )
                 {
                     remove_device_cb( device_to_remove );
-                    _rs_device_list.erase( std::remove_if( _rs_device_list.begin(),
-                                                           _rs_device_list.end(),
+                    strong_rs_device_list->erase( std::remove_if( strong_rs_device_list->begin(),
+                                                           strong_rs_device_list->end(),
                                                            [&]( const rs2::device & dev ) {
                                                                return dev == device_to_remove;
                                                            } ),
-                                           _rs_device_list.end() );
+                                           strong_rs_device_list->end() );
                 }
  
 
                 for( auto && rs_device : info.get_new_devices() )
                 {
                     add_device_cb( rs_device );
-                    _rs_device_list.push_back(rs_device);
+                    strong_rs_device_list->push_back(rs_device);
                 }
             }
         } );
@@ -70,6 +71,6 @@ void tools::lrs_device_watcher::notify_connected_devices_on_wake_up(
     for( auto connected_dev : connected_dev_list )
     {
         add_device_cb( connected_dev );
-        _rs_device_list.push_back(connected_dev);
+        _rs_device_list->push_back(connected_dev);
     }
 }

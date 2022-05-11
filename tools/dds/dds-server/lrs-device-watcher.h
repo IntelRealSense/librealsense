@@ -19,10 +19,9 @@ public:
 
 private:
     void notify_connected_devices_on_wake_up( std::function< void( rs2::device ) > add_device_cb );
-    std::shared_ptr<bool> _alive;
     rs2::context _ctx;
     std::function<void( rs2::device )> _add_device_cb;
     std::function<void( rs2::device )> _remove_device_cb;
-    std::vector<rs2::device> _rs_device_list;
+    std::shared_ptr<std::vector<rs2::device>> _rs_device_list;
 };  // class lrs_device_watcher
 }  // namespace tools
