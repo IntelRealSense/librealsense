@@ -163,7 +163,18 @@ bool dds_device_broadcaster::create_device_writer( const std::string &device_key
     DataWriterQos wqos = DATAWRITER_QOS_DEFAULT;
     wqos.reliability().kind = RELIABLE_RELIABILITY_QOS;
     wqos.durability().kind = VOLATILE_DURABILITY_QOS;
-    wqos.data_sharing().automatic();
+
+    //---------------------------------------------------------------------------------------
+    // It takes some time from the moment we create the data writer until the data reader is matched
+    // FastDDS calls "on_publication_matched()" before the matched process was ended
+    // When using data_sharing (shared memory) the write() time is faster then the UDP transport time
+    // so sometimes the writer doesn't really send the message
+    // Currently we will disable data_sharing until FastDDS will address the following open issue. (See https://github.com/eProsima/Fast-DDS/issues/2641)
+
+    //wqos.data_sharing().automatic();
+    wqos.data_sharing().off();
+    //---------------------------------------------------------------------------------------
+
     wqos.ownership().kind = EXCLUSIVE_OWNERSHIP_QOS;
     std::shared_ptr< dds_client_listener > writer_listener
         = std::make_shared< dds_client_listener >( this );
@@ -193,10 +204,6 @@ bool tools::dds_device_broadcaster::send_device_info_msg( const librealsense::dd
     // Publish the device info, but only after a matching reader is found.
     librealsense::dds::topics::raw::device_info raw_msg;
     fill_device_msg( dev_info, raw_msg );
-    // It takes some time from the moment we create the data writer until the data reader is matched
-    // If we send before the data reader is matched the message will not arrive to it.
-    // Currently if we remove the sleep line the client sometimes miss the message. (See https://github.com/eProsima/Fast-DDS/issues/2641)
-    std::this_thread::sleep_for( std::chrono::milliseconds( 100 ) );
 
     // Post a DDS message with the new added device
     if( _device_handle_by_sn[dev_info.serial].data_writer->write( &raw_msg ) )
