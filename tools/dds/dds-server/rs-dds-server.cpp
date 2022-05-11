@@ -79,6 +79,8 @@ try
         }
     }
 
+    std::cout << "Starting RS DDS Server.." << std::endl;
+
     // Create a DDS publisher
     tools::dds_participant participant( domain, "rs-dds-server" );
 
@@ -90,12 +92,12 @@ try
         return EXIT_FAILURE;
     }
 
+    
+    std::cout << "Start listening to RS devices.." << std::endl;
     // Run the LRS device watcher
     tools::lrs_device_watcher dev_watcher;
     dev_watcher.run( [&]( rs2::device dev ) { broadcaster.add_device( dev ); },
                      [&]( rs2::device dev ) { broadcaster.remove_device( dev ); } );
-
-    std::cout << "RS DDS Server is on.." << std::endl;
 
     std::cin.ignore(std::numeric_limits<std::streamsize>::max(), 0);// Pend until CTRL + C is pressed 
 
