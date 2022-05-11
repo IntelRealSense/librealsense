@@ -165,13 +165,18 @@ bool dds_device_broadcaster::create_device_writer( const std::string &device_key
     wqos.durability().kind = VOLATILE_DURABILITY_QOS;
 
     //---------------------------------------------------------------------------------------
-    // It takes some time from the moment we create the data writer until the data reader is matched
-    // and ready to receive messages. FastDDS calls "on_publication_matched()" before the matched
-    // process has ended on the reader side. When using data_sharing (shared memory) the write() time
-    // is faster then the UDP transport time so sometimes the writer get matched and send the
-    // message before the reader had the time to match the writer and the message get's discarded.
-    // We could ether sleep between a writer creation and sending the message through that writer,
-    // or we can disable data_sharing for this topic, which we did here.
+    // The writer-reader handshake is done on UDP, even when data_sharing (shared memory) is used for
+    // actual messaging. This means it is possible to send a message and receive it on the reader’s
+    // side even before the UDP handshake is complete:
+    //   1. The writer goes up and broadcasts its presence periodically; no readers exist
+    //   2. The reader joins and broadcasts its presence, again periodically; it doesn’t know about the writer yet
+    //   3. The writer sees the reader (in-between broadcasts) so sends a message
+    //   4. The reader gets the message and discards it because it does not yet recognize the writer
+    // This depends on timing. When shared memory is on, step 3 is so fast that this miscommunication is much more likely.
+    // This is a known gap in the DDS standard.
+    //
+    // We can either insert a sleep between writer creation and message sending or we can disable
+    // data_sharing for this topic, which we did here.
     // (See https://github.com/eProsima/Fast-DDS/issues/2641)
 
     //wqos.data_sharing().automatic();
