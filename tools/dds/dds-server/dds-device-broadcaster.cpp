@@ -227,7 +227,7 @@ librealsense::dds::topics::device_info dds_device_broadcaster::query_device_info
     dev_info.locked = (rs2_dev.get_info( RS2_CAMERA_INFO_CAMERA_LOCKED ) == "YES");
 
     // Build device topic root path
-    dev_info.topic_root = get_topic_root(dev_info.name, dev_info.serial);
+    dev_info.topic_root = get_topic_root( dev_info );
     return dev_info;
 }
 
@@ -241,13 +241,13 @@ void dds_device_broadcaster::fill_device_msg( const librealsense::dds::topics::d
     msg.locked() = dev_info.locked;
 }
 
-std::string tools::dds_device_broadcaster::get_topic_root( const std::string& name, const std::string& sn ) const
+std::string tools::dds_device_broadcaster::get_topic_root( const librealsense::dds::topics::device_info& dev_info ) const
 {
     // Build device root path (we use a device model only name like DXXX)
     // example: /realsense/D435/11223344
     std::string rs_device_name_prefix = DEVICE_NAME_PREFIX;
-    std::string short_device_name = name.substr( rs_device_name_prefix.length() );
-    return RS_ROOT + short_device_name + "/" + sn;
+    std::string short_device_name = dev_info.name.substr( rs_device_name_prefix.length() );
+    return RS_ROOT + short_device_name + "/" + dev_info.serial;
 }
 
 dds_device_broadcaster::~dds_device_broadcaster()

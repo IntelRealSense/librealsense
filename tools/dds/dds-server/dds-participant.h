@@ -24,7 +24,7 @@ class dds_participant
 public:
     dds_participant( int domain_id, std::string name );
     ~dds_participant();
-    eprosima::fastdds::dds::DomainParticipant * get() { return _participant; }
+    eprosima::fastdds::dds::DomainParticipant * get() const { return _participant; }
 
 private:
     class dds_participant_listener;
