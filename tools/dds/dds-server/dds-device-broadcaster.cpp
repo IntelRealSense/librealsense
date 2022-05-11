@@ -166,10 +166,13 @@ bool dds_device_broadcaster::create_device_writer( const std::string &device_key
 
     //---------------------------------------------------------------------------------------
     // It takes some time from the moment we create the data writer until the data reader is matched
-    // FastDDS calls "on_publication_matched()" before the matched process was ended
-    // When using data_sharing (shared memory) the write() time is faster then the UDP transport time
-    // so sometimes the writer doesn't really send the message
-    // Currently we will disable data_sharing until FastDDS will address the following open issue. (See https://github.com/eProsima/Fast-DDS/issues/2641)
+    // and ready to receive messages. FastDDS calls "on_publication_matched()" before the matched
+    // process has ended on the reader side. When using data_sharing (shared memory) the write() time
+    // is faster then the UDP transport time so sometimes the writer get matched and send the
+    // message before the reader had the time to match the writer and the message get's discarded.
+    // We could ether sleep between a writer creation and sending the message through that writer,
+    // or we can disable data_sharing for this topic, which we did here.
+    // (See https://github.com/eProsima/Fast-DDS/issues/2641)
 
     //wqos.data_sharing().automatic();
     wqos.data_sharing().off();
