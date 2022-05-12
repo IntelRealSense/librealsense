@@ -2,11 +2,9 @@
 # Copyright(c) 2022 Intel Corporation. All Rights Reserved.
 
 include("${CMAKE_CURRENT_LIST_DIR}/topics/dds-messages.cmake")
-include("${CMAKE_CURRENT_LIST_DIR}/dds-utilities.cmake")
 
 target_sources(${LRS_TARGET}
     PRIVATE
         ${DDS_TOPICS_FILES}
-        ${DDS_UTILITIES_FILES}
         )
 
