@@ -48,7 +48,7 @@ dds_participant::dds_participant( int domain_id, std::string name )
 
     if( ! _participant )
     {
-        throw std::runtime_error( "Failed creating participant" + name + " on domain id "
+        throw std::runtime_error( "Failed creating participant " + name + " on domain id "
                                   + std::to_string( domain_id ) );
     }
 }

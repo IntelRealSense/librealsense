@@ -44,25 +44,8 @@ public:
 
 
 private:
-    // We want to know when readers join our topic
-    class dds_client_listener : public eprosima::fastdds::dds::DataWriterListener
-    {
-    public:
-        dds_client_listener( dds_device_broadcaster * owner )
-            : eprosima::fastdds::dds::DataWriterListener()
-            , _owner( owner )
-        {
-        }
 
-        void on_publication_matched(
-            eprosima::fastdds::dds::DataWriter * writer,
-            const eprosima::fastdds::dds::PublicationMatchedStatus & info ) override;
-
-        std::atomic_bool _new_reader_joined
-            = { false };  // Used to indicate that a new reader has joined for this writer
-    private:
-        dds_device_broadcaster * _owner;
-    };
+    class dds_client_listener;
 
     struct dds_device_handle
     {

@@ -19,6 +19,54 @@
 using namespace eprosima::fastdds::dds;
 using namespace librealsense::dds;
 
+// We want to know when readers join our topic
+class dds_device_broadcaster::dds_client_listener
+    : public eprosima::fastdds::dds::DataWriterListener
+{
+public:
+    dds_client_listener( dds_device_broadcaster * owner )
+        : eprosima::fastdds::dds::DataWriterListener()
+        , _owner( owner )
+    {
+    }
+
+    void
+    on_publication_matched( eprosima::fastdds::dds::DataWriter * writer,
+                            const eprosima::fastdds::dds::PublicationMatchedStatus & info ) override
+    {
+        if( info.current_count_change == 1 )
+        {
+            std::cout << "DataReader " << writer->guid() << " discovered" << std::endl;
+            {
+                // We send the work to the dispatcher to avoid waiting on the mutex here.
+                _owner->_dds_device_dispatcher.invoke( [this]( dispatcher::cancellable_timer ) {
+                    {
+                        std::lock_guard< std::mutex > lock( _owner->_new_client_mutex );
+                        _new_reader_joined = true;
+                        _owner->_trigger_msg_send = true;
+                    }
+                    _owner->_new_client_cv.notify_all();
+                } );
+            }
+        }
+        else if( info.current_count_change == -1 )
+        {
+            std::cout << "DataReader " << writer->guid() << " disappeared" << std::endl;
+        }
+        else
+        {
+            std::cout << std::to_string( info.current_count_change )
+                      << " is not a valid value for on_publication_matched" << std::endl;
+        }
+    }
+
+    std::atomic_bool _new_reader_joined
+        = { false };  // Used to indicate that a new reader has joined for this writer
+private:
+    dds_device_broadcaster * _owner;
+};
+
+
 dds_device_broadcaster::dds_device_broadcaster(dds_participant &participant)
     : _trigger_msg_send ( false )
     , _participant( participant.get() )
@@ -282,36 +330,6 @@ dds_device_broadcaster::~dds_device_broadcaster()
     if( _publisher != nullptr )
     {
         _participant->delete_publisher( _publisher );
-    }
-}
-
-
-void dds_device_broadcaster::dds_client_listener::on_publication_matched( DataWriter * writer,
-                                                             const PublicationMatchedStatus & info )
-{
-    if( info.current_count_change == 1 )
-    {
-        std::cout << "DataReader " << writer->guid() << " discovered" << std::endl;
-        {
-            // We send the work to the dispatcher to avoid waiting on the mutex here.
-            _owner->_dds_device_dispatcher.invoke( [this]( dispatcher::cancellable_timer ) {
-                {
-                    std::lock_guard< std::mutex > lock( _owner->_new_client_mutex );
-                    _new_reader_joined = true;
-                    _owner->_trigger_msg_send = true;
-                }
-                _owner->_new_client_cv.notify_all();
-            } );
-        }
-    }
-    else if( info.current_count_change == -1 )
-    {
-        std::cout << "DataReader " << writer->guid() << " disappeared" << std::endl;
-    }
-    else
-    {
-        std::cout << std::to_string( info.current_count_change )
-                  << " is not a valid value for on_publication_matched" << std::endl;
     }
 }
 
