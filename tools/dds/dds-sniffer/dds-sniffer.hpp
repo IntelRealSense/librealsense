@@ -13,11 +13,11 @@
 #include <fastrtps/attributes/SubscriberAttributes.h>
 #include <fastdds/rtps/common/Guid.h>
 
-class Sniffer : public eprosima::fastdds::dds::DomainParticipantListener
+class dds_sniffer : public eprosima::fastdds::dds::DomainParticipantListener
 {
 public:
-    Sniffer();
-    ~Sniffer();
+    dds_sniffer();
+    ~dds_sniffer();
 
     bool init( eprosima::fastdds::dds::DomainId_t domain = 0, bool snapshot = false, bool machine_readable = false );
     void run( uint32_t seconds );
@@ -30,17 +30,17 @@ private:
     std::map< eprosima::fastdds::dds::DataReader *, eprosima::fastrtps::types::DynamicType_ptr > _readers;
     std::map< eprosima::fastdds::dds::DataReader *, eprosima::fastrtps::types::DynamicData_ptr > _datas;
 
-    std::map< eprosima::fastrtps::rtps::GUID_t, eprosima::fastrtps::string_255 > _discoveredParticipants;
-    struct ReadersWriters
+    std::map< eprosima::fastrtps::rtps::GUID_t, eprosima::fastrtps::string_255 > _discovered_participants;
+    struct topic_info
     {
         std::set< eprosima::fastrtps::rtps::GUID_t > readers;
         std::set< eprosima::fastrtps::rtps::GUID_t > writers;
     };
-    std::map< std::string, ReadersWriters > _discoveredTopics;
+    std::map< std::string, topic_info > _discovered_topics;
 
-    eprosima::fastrtps::SubscriberAttributes _subscriberAttributes;
+    eprosima::fastrtps::SubscriberAttributes _subscriber_attributes;
 
-    eprosima::fastdds::dds::DataReaderQos _readerQoS;
+    eprosima::fastdds::dds::DataReaderQos _reader_qos;
 
     std::atomic_int _matched = { 0 };
     bool _print_discoveries = false;
@@ -90,15 +90,15 @@ private:
     void save_topic_writer( const eprosima::fastrtps::rtps::WriterDiscoveryInfo & info );
     void remove_topic_writer( const eprosima::fastrtps::rtps::WriterDiscoveryInfo & info );
     void save_topic_reader( const eprosima::fastrtps::rtps::ReaderDiscoveryInfo & info );
-    void save_max_indentation( const std::string && str );
     void remove_topic_reader( const eprosima::fastrtps::rtps::ReaderDiscoveryInfo & info );
+    void save_max_indentation( const std::string && str );
 
     // Helper print functions
     void print_writer_discovered( const eprosima::fastrtps::rtps::WriterDiscoveryInfo & info, bool discovered ) const;
     void print_reader_discovered( const eprosima::fastrtps::rtps::ReaderDiscoveryInfo & info, bool discovered ) const;
     void print_participant_discovered( const eprosima::fastrtps::rtps::ParticipantDiscoveryInfo & info, bool discovered ) const;
-    void print_topics_machine_readable();
-    void print_topics();
+    void print_topics_machine_readable() const;
+    void print_topics() const;
     void ident( uint32_t indentation ) const;
     void print_topic_writer( const eprosima::fastrtps::rtps::GUID_t & writer, uint32_t indentation ) const;
     void print_topic_reader( const eprosima::fastrtps::rtps::GUID_t & reader, uint32_t indentation ) const;
