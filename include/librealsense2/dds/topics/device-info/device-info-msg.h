@@ -20,6 +20,7 @@ public:
         : name( dev.name().data() )
         , serial( dev.serial_number().data() )
         , product_line( dev.product_line().data() )
+        , topic_root( dev.topic_root().data() )
         , locked( dev.locked() )
     {
     }
@@ -27,6 +28,7 @@ public:
     std::string name;
     std::string serial;
     std::string product_line;
+    std::string topic_root;
     bool locked;
 };
 

@@ -2,18 +2,17 @@
 // Copyright(c) 2022 Intel Corporation. All Rights Reserved.
 
 #include <iostream>
-#include "dds-server.h"
-
+#include <librealsense2/utilities/easylogging/easyloggingpp.h>
+#include <librealsense2/dds/dds-device-broadcaster.h>
+#include <librealsense2/dds/dds-participant.h>
 #include <fastrtps/types/TypesBase.h>
+#include <fastdds/dds/log/Log.hpp>
+
+#include "lrs-device-watcher.h"
 #include "tclap/CmdLine.h"
 #include "tclap/ValueArg.h"
 
-#include <librealsense2/utilities/easylogging/easyloggingpp.h>
-#include <fastdds/dds/log/Log.hpp>
-
-
 using namespace TCLAP;
-
 
 struct log_consumer : eprosima::fastdds::dds::LogConsumer
 {
@@ -77,16 +76,25 @@ try
         }
     }
 
-    tools::dds_server my_dds_server;
-    if( my_dds_server.init( domain ) )
+    std::cout << "Starting RS DDS Server.." << std::endl;
+
+    // Create a DDS publisher
+    librealsense::dds::dds_participant participant( domain, "rs-dds-server" );
+
+    // Run the DDS device broadcaster
+    librealsense::dds::dds_device_broadcaster broadcaster( participant );
+    if( !broadcaster.run() )
     {
-        my_dds_server.run( );
-    }
-    else
-    {
-        std::cerr << "Initialization failure" << std::endl;
+        std::cerr << "Failure running the DDS Device Broadcaster" << std::endl;
         return EXIT_FAILURE;
     }
+
+    
+    std::cout << "Start listening to RS devices.." << std::endl;
+    // Run the LRS device watcher
+    tools::lrs_device_watcher dev_watcher;
+    dev_watcher.run( [&]( rs2::device dev ) { broadcaster.add_device( dev ); },
+                     [&]( rs2::device dev ) { broadcaster.remove_device( dev ); } );
 
     std::cin.ignore(std::numeric_limits<std::streamsize>::max(), 0);// Pend until CTRL + C is pressed 
 

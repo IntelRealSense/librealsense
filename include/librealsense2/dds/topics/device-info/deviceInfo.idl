@@ -14,6 +14,7 @@ module librealsense
                     char name[128];
                     char serial_number[32];
                     char product_line[16];
+                    char topic_root[256];
                     boolean locked;
                 };
             };
