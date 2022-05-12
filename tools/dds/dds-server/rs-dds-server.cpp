@@ -2,20 +2,17 @@
 // Copyright(c) 2022 Intel Corporation. All Rights Reserved.
 
 #include <iostream>
-#include "dds-device-broadcaster.h"
-#include "dds-participant.h"
-#include "lrs-device-watcher.h"
-
+#include <librealsense2/utilities/easylogging/easyloggingpp.h>
+#include <librealsense2/dds/dds-device-broadcaster.h>
+#include <librealsense2/dds/dds-participant.h>
 #include <fastrtps/types/TypesBase.h>
+#include <fastdds/dds/log/Log.hpp>
+
+#include "lrs-device-watcher.h"
 #include "tclap/CmdLine.h"
 #include "tclap/ValueArg.h"
 
-#include <librealsense2/utilities/easylogging/easyloggingpp.h>
-#include <fastdds/dds/log/Log.hpp>
-
-
 using namespace TCLAP;
-
 
 struct log_consumer : eprosima::fastdds::dds::LogConsumer
 {
@@ -82,10 +79,10 @@ try
     std::cout << "Starting RS DDS Server.." << std::endl;
 
     // Create a DDS publisher
-    tools::dds_participant participant( domain, "rs-dds-server" );
+    librealsense::dds::dds_participant participant( domain, "rs-dds-server" );
 
     // Run the DDS device broadcaster
-    tools::dds_device_broadcaster broadcaster( participant );
+    librealsense::dds::dds_device_broadcaster broadcaster( participant );
     if( !broadcaster.run() )
     {
         std::cerr << "Failure running the DDS Device Broadcaster" << std::endl;

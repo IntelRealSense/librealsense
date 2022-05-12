@@ -17,9 +17,9 @@
 #define DEVICE_NAME_PREFIX "Intel RealSense "
 
 using namespace eprosima::fastdds::dds;
-using namespace tools;
+using namespace librealsense::dds;
 
-dds_device_broadcaster::dds_device_broadcaster(tools::dds_participant &participant)
+dds_device_broadcaster::dds_device_broadcaster(dds_participant &participant)
     : _trigger_msg_send ( false )
     , _participant( participant.get() )
     , _publisher( nullptr )
@@ -79,7 +79,7 @@ bool dds_device_broadcaster::run()
     return true;
 }
 
-void tools::dds_device_broadcaster::add_device( rs2::device dev )
+void dds_device_broadcaster::add_device( rs2::device dev )
 {
     auto device_serial = dev.get_info( RS2_CAMERA_INFO_SERIAL_NUMBER );
     std::vector< std::pair< std::string, rs2::device > > devices_to_add;
@@ -89,7 +89,7 @@ void tools::dds_device_broadcaster::add_device( rs2::device dev )
     handle_device_changes( {}, devices_to_add );
 }
 
-void tools::dds_device_broadcaster::remove_device( rs2::device dev )
+void dds_device_broadcaster::remove_device( rs2::device dev )
 {
     auto device_serial = dev.get_info( RS2_CAMERA_INFO_SERIAL_NUMBER );
     std::vector< std::string > devices_to_remove;
@@ -207,7 +207,7 @@ bool dds_device_broadcaster::create_dds_publisher()
     return ( _topic != nullptr && _publisher != nullptr );
 }
 
-bool tools::dds_device_broadcaster::send_device_info_msg( const librealsense::dds::topics::device_info& dev_info )
+bool dds_device_broadcaster::send_device_info_msg( const librealsense::dds::topics::device_info& dev_info )
 {
     // Publish the device info, but only after a matching reader is found.
     librealsense::dds::topics::raw::device_info raw_msg;
@@ -249,7 +249,7 @@ void dds_device_broadcaster::fill_device_msg( const librealsense::dds::topics::d
     msg.locked() = dev_info.locked;
 }
 
-std::string tools::dds_device_broadcaster::get_topic_root( const librealsense::dds::topics::device_info& dev_info ) const
+std::string dds_device_broadcaster::get_topic_root( const librealsense::dds::topics::device_info& dev_info ) const
 {
     // Build device root path (we use a device model only name like DXXX)
     // example: /realsense/D435/11223344

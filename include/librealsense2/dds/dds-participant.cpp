@@ -9,7 +9,7 @@
 #include <fastdds/dds/domain/DomainParticipant.hpp>
 
 using namespace eprosima::fastdds::dds;
-using namespace tools;
+using namespace librealsense::dds;
 
 class dds_participant::dds_participant_listener
     : public eprosima::fastdds::dds::DomainParticipantListener

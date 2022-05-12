@@ -13,9 +13,8 @@ class DomainParticipant;
 }  // namespace fastdds
 }  // namespace eprosima
 
-
-
-namespace tools {
+namespace librealsense {
+namespace dds {
 
 // Encapsulate FastDDS "participant" entity
 // Use this class if you wish to create & pass a participant entity without the need to include 'FastDDS' headers
@@ -31,4 +30,5 @@ private:
     eprosima::fastdds::dds::DomainParticipant * _participant;
     std::shared_ptr< dds_participant_listener > _domain_listener;
 };  // class dds_participant
-}  // namespace tools
+}  // namespace dds
+}  // namespace librealsense
