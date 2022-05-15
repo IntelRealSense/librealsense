@@ -46,6 +46,7 @@ void lrs_device_watcher::run( std::function< void( rs2::device ) > add_device_cb
                 for( auto device_to_remove : devices_to_remove )
                 {
                     remove_device_cb( device_to_remove );
+                    std::cout << "Device '" << device_to_remove.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER) << "' - removed" << std::endl;
                     strong_rs_device_list->erase( std::remove_if( strong_rs_device_list->begin(),
                                                            strong_rs_device_list->end(),
                                                            [&]( const rs2::device & dev ) {
@@ -59,6 +60,7 @@ void lrs_device_watcher::run( std::function< void( rs2::device ) > add_device_cb
                 {
                     add_device_cb( rs_device );
                     strong_rs_device_list->push_back(rs_device);
+                    std::cout << "Device '" << rs_device.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER) << "' - detected" << std::endl;
                 }
             }
         } );
@@ -72,5 +74,6 @@ void tools::lrs_device_watcher::notify_connected_devices_on_wake_up(
     {
         add_device_cb( connected_dev );
         _rs_device_list->push_back(connected_dev);
+        std::cout << "Device '" << connected_dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER) << "' - detected" << std::endl;
     }
 }

@@ -6,6 +6,7 @@
 #include "dds-device-broadcaster.h"
 #include "dds-participant.h"
 
+#include <librealsense2/utilities/easylogging/easyloggingpp.h>
 #include <fastdds/dds/domain/DomainParticipantFactory.hpp>
 #include <fastdds/dds/publisher/Publisher.hpp>
 #include <fastdds/dds/publisher/DataWriter.hpp>
@@ -36,7 +37,7 @@ public:
     {
         if( info.current_count_change == 1 )
         {
-            std::cout << "DataReader " << writer->guid() << " discovered" << std::endl;
+            LOG_DEBUG( "DataReader " << writer->guid() << " discovered" );
             {
                 // We send the work to the dispatcher to avoid waiting on the mutex here.
                 _owner->_dds_device_dispatcher.invoke( [this]( dispatcher::cancellable_timer ) {
@@ -51,12 +52,12 @@ public:
         }
         else if( info.current_count_change == -1 )
         {
-            std::cout << "DataReader " << writer->guid() << " disappeared" << std::endl;
+            LOG_DEBUG( "DataReader " << writer->guid() << " disappeared" );
         }
         else
         {
-            std::cout << std::to_string( info.current_count_change )
-                      << " is not a valid value for on_publication_matched" << std::endl;
+            LOG_ERROR( std::to_string( info.current_count_change )
+                       << " is not a valid value for on_publication_matched" );
         }
     }
 
@@ -100,11 +101,6 @@ dds_device_broadcaster::dds_device_broadcaster(dds_participant &participant)
             } );
         }
     } )
-
-    , _ctx( "{"
-            "\"dds-discovery\" : false"
-            "}" )
-
 {
 }
 
@@ -112,13 +108,13 @@ bool dds_device_broadcaster::run()
 {
     if( ! _participant )
     {
-        std::cout << "Error - Participant is not valid" << std::endl;
+        LOG_ERROR( "Error - Participant is not valid" );
         return false;
     }
 
     if( ! create_dds_publisher() )
     {
-        std::cout << "Error - Failed creating publisher" << std::endl;
+        LOG_ERROR( "Error - Failed creating publisher" );
         return false;
     }
 
@@ -164,14 +160,14 @@ void dds_device_broadcaster::handle_device_changes(
                 {
                     if( ! add_dds_device( dev_to_add.first, dev_to_add.second ) )
                     {
-                        std::cout << "Error creating a DDS writer" << std::endl;
+                        LOG_ERROR( "Error creating a DDS writer" );
                     }
                 }
             }
 
             catch( ... )
             {
-                std::cout << "Unknown error when trying to remove/add a DDS device" << std::endl;
+                LOG_ERROR( "Unknown error when trying to remove/add a DDS device" );
             }
         } );
 }
@@ -182,12 +178,11 @@ void dds_device_broadcaster::remove_dds_device( const std::string & device_key )
     auto ret = _publisher->delete_datawriter( _device_handle_by_sn[device_key].data_writer );
     if( ret != ReturnCode_t::RETCODE_OK)
     {
-        std::cout << "Error code: " << ret() << " while trying to delete data writer ("
-                  << _device_handle_by_sn[device_key].data_writer->guid() << ")" << std::endl;
+        LOG_ERROR( "Error code: " << ret() << " while trying to delete data writer ("
+                  << _device_handle_by_sn[device_key].data_writer->guid() << ")" );
         return;
     }
     _device_handle_by_sn.erase( device_key );
-    std::cout << "Device '" << device_key << "' - removed" << std::endl;
 }
 
 bool dds_device_broadcaster::add_dds_device( const std::string & device_key,
@@ -195,7 +190,6 @@ bool dds_device_broadcaster::add_dds_device( const std::string & device_key,
 {
     if( _device_handle_by_sn.find( device_key ) == _device_handle_by_sn.end() )
     {
-        std::cout << "\nDevice '" << device_key << "' - detected" << std::endl;
         if( ! create_device_writer( device_key, rs2_dev ) )
         {
             return false;
@@ -264,12 +258,12 @@ bool dds_device_broadcaster::send_device_info_msg( const librealsense::dds::topi
     // Post a DDS message with the new added device
     if( _device_handle_by_sn[dev_info.serial].data_writer->write( &raw_msg ) )
     {
-        std::cout << "DDS device message sent!" << std::endl;
+        LOG_DEBUG( "DDS device message sent!" );
         return true;
     }
     else
     {
-        std::cout << "Error writing new device message for device : " << dev_info.serial << std::endl;
+        LOG_ERROR( "Error writing new device message for device : " << dev_info.serial );
     }
     return false;
 }
@@ -308,8 +302,6 @@ std::string dds_device_broadcaster::get_topic_root( const librealsense::dds::top
 
 dds_device_broadcaster::~dds_device_broadcaster()
 {
-    std::cout << "Shutting down rs-dds-server..." << std::endl;
-
     _dds_device_dispatcher.stop();
     _new_client_handler.stop();
 

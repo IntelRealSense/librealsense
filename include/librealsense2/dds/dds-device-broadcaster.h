@@ -84,7 +84,6 @@ private:
     eprosima::fastdds::dds::Topic * _topic;
     eprosima::fastdds::dds::TypeSupport _topic_type;
     std::unordered_map< std::string, dds_device_handle > _device_handle_by_sn;
-    rs2::context _ctx;
     dispatcher _dds_device_dispatcher;
     active_object<> _new_client_handler;
     std::condition_variable _new_client_cv;
