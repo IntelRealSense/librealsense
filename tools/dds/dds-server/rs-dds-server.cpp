@@ -2,13 +2,18 @@
 // Copyright(c) 2022 Intel Corporation. All Rights Reserved.
 
 #include <iostream>
+#include <map>
+
 #include <librealsense2/utilities/easylogging/easyloggingpp.h>
 #include <librealsense2/dds/dds-device-broadcaster.h>
+#include <librealsense2/dds/dds-device-server.h>
 #include <librealsense2/dds/dds-participant.h>
 #include <fastrtps/types/TypesBase.h>
 #include <fastdds/dds/log/Log.hpp>
 
 #include "lrs-device-watcher.h"
+#include "lrs-device-manager.h"
+
 #include "tclap/CmdLine.h"
 #include "tclap/ValueArg.h"
 
@@ -90,16 +95,52 @@ try
         return EXIT_FAILURE;
     }
 
+    std::map<rs2::device, std::pair<std::shared_ptr<librealsense::dds::dds_device_server>, std::shared_ptr<tools::lrs_device_manager>>> device_handlers_list;
     
     std::cout << "Start listening to RS devices.." << std::endl;
+
+    // Create a RealSense context
+    rs2::context ctx( "{"
+        "\"dds-discovery\" : false"
+        "}" );
+
     // Run the LRS device watcher
-    tools::lrs_device_watcher dev_watcher;
-    dev_watcher.run( [&]( rs2::device dev ) { broadcaster.add_device( dev ); },
-                     [&]( rs2::device dev ) { broadcaster.remove_device( dev ); } );
+    tools::lrs_device_watcher dev_watcher( ctx );
+    dev_watcher.run(
+        [&]( rs2::device dev ) {
+            // Add this device to the DDS device broadcaster
+            auto dev_topic_root = broadcaster.add_device( dev );
+
+            // Add a dds-device-server and a lrs-device-manager for this device
+            std::shared_ptr< librealsense::dds::dds_device_server > new_dds_device_server
+                = std::make_shared< librealsense::dds::dds_device_server >( participant,
+                                                                            dev_topic_root );
+
+            std::shared_ptr< tools::lrs_device_manager > new_lrs_device_manager
+                = std::make_shared< tools::lrs_device_manager >( dev );
+
+            device_handlers_list.insert(
+                { dev, { new_dds_device_server, new_lrs_device_manager } } );
+
+            new_lrs_device_manager->start_stream(
+                tools::stream_type::RGB,
+                [&]( const std::string & topic_name, uint8_t * frame ) {
+                    device_handlers_list[dev].first->publish_dds_video_frame( topic_name, frame );
+                } );
+        },
+        [&]( rs2::device dev ) {
+            // Remove the dds-server for this device
+            auto & dev_handler = device_handlers_list.at( dev );
+            dev_handler.second->stop_stream( tools::stream_type::RGB );
+            device_handlers_list.erase( dev );
+
+            // Remove this device from the DDS device broadcaster
+            broadcaster.remove_device( dev );
+        } );
 
     std::cin.ignore(std::numeric_limits<std::streamsize>::max(), 0);// Pend until CTRL + C is pressed 
 
-    std::cout << "Shutting down RS DDS Server..." << std::endl;
+    std::cout << "Shutting down rs-dds-server..." << std::endl;
 
     return EXIT_SUCCESS;
 }

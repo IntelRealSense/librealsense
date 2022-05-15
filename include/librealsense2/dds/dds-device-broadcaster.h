@@ -9,11 +9,22 @@
 #include <mutex>
 #include <condition_variable>
 
-#include <fastdds/dds/domain/DomainParticipant.hpp>
-#include <fastdds/dds/domain/DomainParticipantListener.hpp>
-#include <fastdds/dds/publisher/DataWriterListener.hpp>
 #include <librealsense2/rs.hpp>  // Include RealSense Cross Platform API
 #include <librealsense2/utilities/concurrency/concurrency.h>
+
+// Forward declare FastDDS types
+namespace eprosima {
+namespace fastdds {
+namespace dds {
+class DomainParticipant;
+class Publisher;
+class Topic;
+class DataWriter;
+class TypeSupport;
+}  // namespace dds
+}  // namespace fastdds
+}  // namespace eprosima
+
 
 namespace librealsense {
 namespace dds {
@@ -37,11 +48,10 @@ public:
     bool run();
 
     // Create a new data writer for a new connected device
-    void add_device( rs2::device dev );
+    std::string add_device( rs2::device dev );
 
     // Destroy the removed device data writer
     void remove_device( rs2::device dev );
-
 
 private:
 
@@ -73,16 +83,16 @@ private:
     bool create_device_writer( const std::string & device_key, rs2::device rs2_device );
     bool create_dds_publisher();
     bool send_device_info_msg( const librealsense::dds::topics::device_info & dev_info );
-
-    librealsense::dds::topics::device_info query_device_info( const rs2::device & rs2_dev ) const;
     void fill_device_msg( const librealsense::dds::topics::device_info & dev_info,
                           librealsense::dds::topics::raw::device_info & msg ) const;
-    std::string get_topic_root( const librealsense::dds::topics::device_info & dev_info ) const;
+    librealsense::dds::topics::device_info query_device_info( const rs2::device & rs2_dev ) const;
+
+    std::string get_topic_root( const std::string& dev_name, const std::string& dev_sn ) const;
     std::atomic_bool _trigger_msg_send;
     eprosima::fastdds::dds::DomainParticipant * _participant;
     eprosima::fastdds::dds::Publisher * _publisher;
     eprosima::fastdds::dds::Topic * _topic;
-    eprosima::fastdds::dds::TypeSupport _topic_type;
+    std::shared_ptr<eprosima::fastdds::dds::TypeSupport> _topic_type_ptr;
     std::unordered_map< std::string, dds_device_handle > _device_handle_by_sn;
     dispatcher _dds_device_dispatcher;
     active_object<> _new_client_handler;

@@ -8,8 +8,11 @@
 
 #include <librealsense2/utilities/easylogging/easyloggingpp.h>
 #include <fastdds/dds/domain/DomainParticipantFactory.hpp>
+#include <fastdds/dds/domain/DomainParticipant.hpp>
+#include <fastdds/dds/domain/DomainParticipantListener.hpp>
 #include <fastdds/dds/publisher/Publisher.hpp>
 #include <fastdds/dds/publisher/DataWriter.hpp>
+#include <fastdds/dds/topic/TypeSupport.hpp>
 #include <fastdds/dds/publisher/qos/PublisherQos.hpp>
 #include <fastdds/rtps/participant/ParticipantDiscoveryInfo.h>
 #include <librealsense2/dds/topics/dds-topics.h>
@@ -68,15 +71,14 @@ private:
 };
 
 
-dds_device_broadcaster::dds_device_broadcaster(dds_participant &participant)
-    : _trigger_msg_send ( false )
+dds_device_broadcaster::dds_device_broadcaster( dds_participant & participant )
+    : _trigger_msg_send( false )
     , _participant( participant.get() )
     , _publisher( nullptr )
     , _topic( nullptr )
-    , _topic_type( new librealsense::dds::topics::device_info::type )
+    , _topic_type_ptr( std::make_shared<eprosima::fastdds::dds::TypeSupport>(new librealsense::dds::topics::device_info::type) )
     , _dds_device_dispatcher( 10 )
     , _new_client_handler( [this]( dispatcher::cancellable_timer timer ) {
-
         // We wait until the new reader callback indicate a new reader has joined or until the
         // active object is stopped
         std::unique_lock< std::mutex > lock( _new_client_mutex );
@@ -123,7 +125,7 @@ bool dds_device_broadcaster::run()
     return true;
 }
 
-void dds_device_broadcaster::add_device( rs2::device dev )
+std::string dds_device_broadcaster::add_device( rs2::device dev )
 {
     auto device_serial = dev.get_info( RS2_CAMERA_INFO_SERIAL_NUMBER );
     std::vector< std::pair< std::string, rs2::device > > devices_to_add;
@@ -131,6 +133,8 @@ void dds_device_broadcaster::add_device( rs2::device dev )
 
     // Post the connected device
     handle_device_changes( {}, devices_to_add );
+
+    return get_topic_root(dev.get_info(RS2_CAMERA_INFO_NAME), dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER));
 }
 
 void dds_device_broadcaster::remove_device( rs2::device dev )
@@ -240,10 +244,10 @@ bool dds_device_broadcaster::create_device_writer( const std::string &device_key
 bool dds_device_broadcaster::create_dds_publisher()
 {
     // Registering the topic type enables topic instance creation by factory
-    _topic_type.register_type( _participant );
+    _topic_type_ptr->register_type( _participant );
     _publisher = _participant->create_publisher( PUBLISHER_QOS_DEFAULT, nullptr );
     _topic = _participant->create_topic( librealsense::dds::topics::device_info::TOPIC_NAME,
-                                         _topic_type->getName(),
+                                         (*_topic_type_ptr)->getName(),
                                          TOPIC_QOS_DEFAULT );
 
     return ( _topic != nullptr && _publisher != nullptr );
@@ -277,7 +281,7 @@ librealsense::dds::topics::device_info dds_device_broadcaster::query_device_info
     dev_info.locked = (rs2_dev.get_info( RS2_CAMERA_INFO_CAMERA_LOCKED ) == "YES");
 
     // Build device topic root path
-    dev_info.topic_root = get_topic_root( dev_info );
+    dev_info.topic_root = get_topic_root( dev_info.name, dev_info.serial );
     return dev_info;
 }
 
@@ -291,13 +295,13 @@ void dds_device_broadcaster::fill_device_msg( const librealsense::dds::topics::d
     msg.locked() = dev_info.locked;
 }
 
-std::string dds_device_broadcaster::get_topic_root( const librealsense::dds::topics::device_info& dev_info ) const
+std::string dds_device_broadcaster::get_topic_root( const std::string& dev_name, const std::string& dev_sn ) const
 {
     // Build device root path (we use a device model only name like DXXX)
     // example: /realsense/D435/11223344
     std::string rs_device_name_prefix = DEVICE_NAME_PREFIX;
-    std::string short_device_name = dev_info.name.substr( rs_device_name_prefix.length() );
-    return RS_ROOT + short_device_name + "/" + dev_info.serial;
+    std::string model_name = dev_name.substr( rs_device_name_prefix.length() );
+    return RS_ROOT + model_name + "/" + dev_sn;
 }
 
 dds_device_broadcaster::~dds_device_broadcaster()

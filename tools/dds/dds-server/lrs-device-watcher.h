@@ -12,14 +12,14 @@ namespace tools {
 class lrs_device_watcher : public std::enable_shared_from_this<lrs_device_watcher>
 {
 public:
-    lrs_device_watcher();
+    lrs_device_watcher( rs2::context &_ctx );
     ~lrs_device_watcher();
     void run( std::function< void( rs2::device ) > add_device_cb,
               std::function< void( rs2::device ) > remove_device_cb );
 
 private:
     void notify_connected_devices_on_wake_up( std::function< void( rs2::device ) > add_device_cb );
-    rs2::context _ctx;
+    rs2::context &_ctx;
     std::function<void( rs2::device )> _add_device_cb;
     std::function<void( rs2::device )> _remove_device_cb;
     std::shared_ptr<std::vector<rs2::device>> _rs_device_list;

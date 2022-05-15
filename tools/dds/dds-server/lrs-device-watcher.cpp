@@ -7,11 +7,9 @@
 
 using namespace tools;
 
-lrs_device_watcher::lrs_device_watcher()
+lrs_device_watcher::lrs_device_watcher( rs2::context &ctx )
     : _rs_device_list( std::make_shared< std::vector< rs2::device > >() )
-    , _ctx( "{"
-            "\"dds-discovery\" : false"
-            "}" )
+    , _ctx( ctx )
 {
 }
 
@@ -39,6 +37,7 @@ void lrs_device_watcher::run( std::function< void( rs2::device ) > add_device_cb
                 {
                     if( info.was_removed( rs_device ) )
                     {
+                        std::cout << "Device '" << rs_device.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER) << "' - removed" << std::endl;
                         devices_to_remove.push_back(rs_device);
                     }
                 }
@@ -58,6 +57,7 @@ void lrs_device_watcher::run( std::function< void( rs2::device ) > add_device_cb
 
                 for( auto && rs_device : info.get_new_devices() )
                 {
+                    std::cout << "Device '" << rs_device.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER) << "' - detected" << std::endl;
                     add_device_cb( rs_device );
                     strong_rs_device_list->push_back(rs_device);
                     std::cout << "Device '" << rs_device.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER) << "' - detected" << std::endl;
