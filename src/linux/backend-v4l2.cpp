@@ -991,6 +991,7 @@ namespace librealsense
 
         void v4l_uvc_device::signal_stop()
         {
+            _video_md_syncer.flush();
             char buff[1]={};
             if (write(_stop_pipe_fd[1], buff, 1) < 0)
             {
@@ -1823,7 +1824,6 @@ namespace librealsense
         void v4l_uvc_meta_device::streamoff() const
         {
             v4l_uvc_device::streamoff();
-
             if (_md_fd != -1)
             {
                 // D457 development - added for mipi device, for IR because no metadata there
@@ -2403,6 +2403,20 @@ namespace librealsense
             if (xioctl(sb._fd, VIDIOC_QBUF, &(*sb._v4l2_buf)) < 0)
             {
                 LOG_ERROR("xioctl(VIDIOC_QBUF) failed when requesting new frame! fd: " << sb._fd << " error: " << strerror(errno));
+            }
+        }
+
+        void v4l2_video_md_syncer::flush()
+        {
+            // Empty queues
+            LOG_DEBUG_V4L("video_md_syncer - flush video and md queues");
+            while(!_video_queue.empty())
+            {
+                _video_queue.pop();
+            }
+            while(!_md_queue.empty())
+            {
+                _md_queue.pop();
             }
         }
     }

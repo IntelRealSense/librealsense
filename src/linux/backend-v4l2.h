@@ -274,6 +274,8 @@ namespace librealsense
             // if returned value is false - no data is returned via the inout params because data could not be synced
             bool pull_video_with_metadata(std::shared_ptr<v4l2_buffer>& video_buffer, std::shared_ptr<v4l2_buffer>& md_buffer);
 
+            void flush();
+
         private:
             void enqueue_buffer_before_throwing_it(const sync_buffer& sb) const;
 
@@ -290,7 +292,7 @@ namespace librealsense
 
             v4l_uvc_device(const uvc_device_info& info, bool use_memory_map = false);
 
-            ~v4l_uvc_device() override;
+            virtual ~v4l_uvc_device() override;
 
             void probe_and_commit(stream_profile profile, frame_callback callback, int buffers) override;
 
@@ -388,7 +390,7 @@ namespace librealsense
         public:
             v4l_uvc_meta_device(const uvc_device_info& info, bool use_memory_map = false);
 
-            ~v4l_uvc_meta_device();
+            virtual ~v4l_uvc_meta_device();
 
         protected:
 
@@ -417,7 +419,7 @@ namespace librealsense
         public:
             v4l_mipi_device(const uvc_device_info& info, bool use_memory_map = true);
 
-            ~v4l_mipi_device();
+            virtual ~v4l_mipi_device();
 
             bool get_pu(rs2_option opt, int32_t& value) const override;
             bool set_pu(rs2_option opt, int32_t value) override;

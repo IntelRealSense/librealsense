@@ -269,6 +269,7 @@ void log_callback_end( uint32_t fps,
         auto fr = std::make_shared<frame>();
         byte* pix = (byte*)fo.pixels;
         std::vector<byte> pixels(pix, pix + fo.frame_size);
+
         fr->data = pixels;
         fr->set_stream(profile);
 
@@ -341,8 +342,18 @@ void log_callback_end( uint32_t fps,
                 rs2_time_t last_timestamp = 0;
                 _device->probe_and_commit(req_profile_base->get_backend_profile(),
                     [this, req_profile_base, req_profile, last_frame_number, last_timestamp](platform::stream_profile p, platform::frame_object f, std::function<void()> continuation) mutable
-                {                 
+                {
                     const auto&& system_time = environment::get_instance().get_time_service()->get_time();
+
+                    if (!this->is_streaming())
+                    {
+                        LOG_WARNING("Frame received with streaming inactive,"
+                            << librealsense::get_string(req_profile_base->get_stream_type())
+                            << req_profile_base->get_stream_index()
+                            << ", Arrived," << std::fixed << f.backend_time << " " << system_time);
+                        return;
+                    }
+
                     const auto&& fr = generate_frame_from_data(f, _timestamp_reader.get(), last_timestamp, last_frame_number, req_profile_base);
                     const auto&& requires_processing = true; // TODO - Ariel add option
                     const auto&& timestamp_domain = _timestamp_reader->get_frame_timestamp_domain(fr);
@@ -358,14 +369,6 @@ void log_callback_end( uint32_t fps,
                         expected_size = 32;
                     }
 
-                    if (!this->is_streaming())
-                    {
-                        LOG_WARNING("Frame received with streaming inactive,"
-                            << librealsense::get_string(req_profile_base->get_stream_type())
-                            << req_profile_base->get_stream_index()
-                            << ", Arrived," << std::fixed << f.backend_time << " " << system_time);
-                        return;
-                    }
 
                     frame_continuation release_and_enqueue(continuation, f.pixels);
 
