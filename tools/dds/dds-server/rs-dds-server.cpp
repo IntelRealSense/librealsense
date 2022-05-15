@@ -98,7 +98,7 @@ try
 
     std::cin.ignore(std::numeric_limits<std::streamsize>::max(), 0);// Pend until CTRL + C is pressed 
 
-     std::cout << "Shutting down RS DDS Server..." << std::endl;
+    std::cout << "Shutting down RS DDS Server..." << std::endl;
 
     return EXIT_SUCCESS;
 }
