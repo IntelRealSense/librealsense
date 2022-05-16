@@ -4,6 +4,7 @@
 #include <iostream>
 #include <memory>
 #include "dds-participant.h"
+#include <librealsense2/utilities/easylogging/easyloggingpp.h>
 #include <fastdds/dds/domain/DomainParticipantFactory.hpp>
 #include <fastdds/dds/domain/DomainParticipantListener.hpp>
 #include <fastdds/dds/domain/DomainParticipant.hpp>
@@ -21,13 +22,11 @@ class dds_participant::dds_participant_listener
         switch( info.status )
         {
         case eprosima::fastrtps::rtps::ParticipantDiscoveryInfo::DISCOVERED_PARTICIPANT:
-            std::cout << "Participant '" << info.info.m_participantName << "' discovered"
-                      << std::endl;
+            LOG_DEBUG( "Participant '" << info.info.m_participantName << "' discovered" );
             break;
         case eprosima::fastrtps::rtps::ParticipantDiscoveryInfo::REMOVED_PARTICIPANT:
         case eprosima::fastrtps::rtps::ParticipantDiscoveryInfo::DROPPED_PARTICIPANT:
-            std::cout << "Participant '" << info.info.m_participantName << "' disappeared"
-                      << std::endl;
+            LOG_DEBUG( "Participant '" << info.info.m_participantName << "' disappeared" );
             break;
         default:
             break;
@@ -58,12 +57,12 @@ dds_participant::~dds_participant()
 {
     if( _participant->has_active_entities() )
     {
-        std::cout << "participant has active entities!, deleting them all.." << std::endl;
+        LOG_DEBUG( "participant has active entities!, deleting them all.." );
         _participant->delete_contained_entities();
     }
 
 
     if( ! DomainParticipantFactory::get_instance()->delete_participant( _participant ) )
-        std::cout << "Failed deleting participant!" << std::endl;
+        LOG_ERROR(  "Failed deleting participant!" );
 }
 
