@@ -1232,7 +1232,7 @@ namespace librealsense
                         std::shared_ptr<v4l2_buffer> video_v4l2_buffer;
                         std::shared_ptr<v4l2_buffer> md_v4l2_buffer;
 
-                        if (is_metadata_streamed())
+                        if (_is_started && is_metadata_streamed())
                         {
                             if (_video_md_syncer.pull_video_with_metadata(video_v4l2_buffer, md_v4l2_buffer))
                             {
@@ -2296,6 +2296,7 @@ namespace librealsense
 
         void v4l2_video_md_syncer::push_video(const sync_buffer& video_buffer)
         {
+            std::lock_guard<std::mutex> lock(_syncer_mutex);
             _video_queue.push(video_buffer);
             LOG_DEBUG_V4L("video_md_syncer - video pushed with sequence " << video_buffer._v4l2_buf->sequence);
 
@@ -2310,6 +2311,7 @@ namespace librealsense
 
         void v4l2_video_md_syncer::push_metadata(const sync_buffer& md_buffer)
         {
+            std::lock_guard<std::mutex> lock(_syncer_mutex);
             _md_queue.push(md_buffer);
             LOG_DEBUG_V4L("video_md_syncer - md pushed with sequence " << md_buffer._v4l2_buf->sequence);
 
@@ -2324,6 +2326,7 @@ namespace librealsense
 
         bool v4l2_video_md_syncer::pull_video_with_metadata(std::shared_ptr<v4l2_buffer>& video_buffer, std::shared_ptr<v4l2_buffer>& md_buffer)
         {
+            std::lock_guard<std::mutex> lock(_syncer_mutex);
             if (_video_queue.empty())
             {
                 LOG_DEBUG_V4L("video_md_syncer - video queue is empty");
@@ -2410,6 +2413,7 @@ namespace librealsense
         {
             // Empty queues
             LOG_DEBUG_V4L("video_md_syncer - flush video and md queues");
+            std::lock_guard<std::mutex> lock(_syncer_mutex);
             while(!_video_queue.empty())
             {
                 _video_queue.pop();
