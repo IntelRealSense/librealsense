@@ -91,14 +91,14 @@ private:
     void remove_topic_writer( const eprosima::fastrtps::rtps::WriterDiscoveryInfo & info );
     void save_topic_reader( const eprosima::fastrtps::rtps::ReaderDiscoveryInfo & info );
     void remove_topic_reader( const eprosima::fastrtps::rtps::ReaderDiscoveryInfo & info );
-    void save_max_indentation( const std::string && str );
+    void calc_max_indentation();
 
     // Helper print functions
     void print_writer_discovered( const eprosima::fastrtps::rtps::WriterDiscoveryInfo & info, bool discovered ) const;
     void print_reader_discovered( const eprosima::fastrtps::rtps::ReaderDiscoveryInfo & info, bool discovered ) const;
     void print_participant_discovered( const eprosima::fastrtps::rtps::ParticipantDiscoveryInfo & info, bool discovered ) const;
     void print_topics_machine_readable() const;
-    void print_topics() const;
+    void print_topics();
     void ident( uint32_t indentation ) const;
     void print_topic_writer( const eprosima::fastrtps::rtps::GUID_t & writer, uint32_t indentation ) const;
     void print_topic_reader( const eprosima::fastrtps::rtps::GUID_t & reader, uint32_t indentation ) const;

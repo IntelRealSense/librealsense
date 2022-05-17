@@ -19,8 +19,16 @@
 
 using namespace TCLAP;
 
-//GUID_t - 4 MSB bytes host, 4 bytes process, 4 bytes participant, 4 bytes entity ID (reader/writer)
-constexpr uint8_t GUID_PROCESS_LOCATION = 4; //To differentiate participants with same name
+//FastDDS GUID_t - 4 MSB bytes host, 4 bytes process, 4 bytes participant, 4 bytes entity ID (reader/writer)
+//For example:
+//  Participant 1                 - 01.0f.be.05.f0.09.86.b6.01.00.00.00|0.0.1.c1
+//  Writer under participant 1    - 01.0f.be.05.f0.09.86.b6.01.00.00.00|0.0.1.2
+//  Participant 2 of same process - 01.0f.be.05.f0.09.86.b6.02.00.00.00|0.0.1.c1
+//  Reader under participant 2    - 01.0f.be.05.f0.09.86.b6.02.00.00.00|0.0.1.7
+//  Participant 3 other process   - 01.0f.be.05.88.50.ea.4a.01.00.00.00|0.0.1.c1
+//Note same host for all, participant and entity IDs may be repeat for different processes
+//To differentiate entities of different participant with same name we append process GUID values to the name
+constexpr uint8_t GUID_PROCESS_LOCATION = 4;
 
 int main( int argc, char ** argv ) try
 {
@@ -333,19 +341,17 @@ void dds_sniffer::save_topic_writer( const eprosima::fastrtps::rtps::WriterDisco
 {
     std::string topic_name = info.info.topicName().c_str();
     _discovered_topics[topic_name].writers.insert( info.info.guid() );
-    save_max_indentation( std::move( topic_name ) );
 }
 
 void dds_sniffer::remove_topic_writer( const eprosima::fastrtps::rtps::WriterDiscoveryInfo & info )
 {
-    auto topic_entry = _discovered_topics[info.info.topicName().c_str()];
-    auto writer_iter = topic_entry.writers.find( info.info.guid() );
-    if( writer_iter != topic_entry.writers.end() )
+    auto topic_entry = _discovered_topics.find(info.info.topicName().c_str());
+    if(topic_entry != _discovered_topics.end() )
     {
-        topic_entry.writers.erase( writer_iter );
-        if( topic_entry.writers.empty() && topic_entry.readers.empty() )
+        topic_entry->second.writers.erase( info.info.guid() );
+        if( topic_entry->second.writers.empty() && topic_entry->second.readers.empty() )
         {
-            _discovered_topics.erase( info.info.topicName().c_str() );
+            _discovered_topics.erase( topic_entry );
         }
     }
 }
@@ -354,35 +360,31 @@ void dds_sniffer::save_topic_reader( const eprosima::fastrtps::rtps::ReaderDisco
 {
     std::string topic_name = info.info.topicName().c_str();
     _discovered_topics[topic_name].readers.insert( info.info.guid() );
-    save_max_indentation( std::move( topic_name ) );
 }
 
 void dds_sniffer::remove_topic_reader( const eprosima::fastrtps::rtps::ReaderDiscoveryInfo & info )
 {
-    auto topic_entry = _discovered_topics[info.info.topicName().c_str()];
-    auto reader_iter = topic_entry.readers.find( info.info.guid() );
-    if( reader_iter != topic_entry.readers.end() )
+    auto topic_entry = _discovered_topics.find(info.info.topicName().c_str());
+    if(topic_entry != _discovered_topics.end() )
     {
-        topic_entry.readers.erase( reader_iter );
-        if( topic_entry.writers.empty() && topic_entry.readers.empty() )
+        topic_entry->second.readers.erase( info.info.guid() );
+        if( topic_entry->second.writers.empty() && topic_entry->second.readers.empty() )
         {
             _discovered_topics.erase( info.info.topicName().c_str() );
         }
     }
 }
 
-void dds_sniffer::save_max_indentation( const std::string&& str )
+void dds_sniffer::calc_max_indentation()
 {
-    std::istringstream topic( str );
-    std::string nested;
     uint32_t indentation = 0;
-    while (std::getline( topic, nested, '/' ))  // Use / as delimiter for nested topic names
+    for (auto topic : _discovered_topics)
     {
-        ++indentation;
+        indentation = static_cast<uint32_t>(std::count( topic.first.begin(), topic.first.end(), '/' ));  // Use / as delimiter for nested topic names
     }
-    if (indentation > _max_indentation)
+    if (indentation >= _max_indentation)
     {
-        _max_indentation = indentation;
+        _max_indentation = indentation + 1; //+1 for Reader/Writer indentation
     }
 }
 
@@ -447,10 +449,13 @@ void dds_sniffer::print_topics_machine_readable() const
     }
 }
 
-void dds_sniffer::print_topics() const
+void dds_sniffer::print_topics()
 {
     std::istringstream last_topic( "" );
     std::string last_topic_nested;
+
+    calc_max_indentation();
+
     for( auto topic : _discovered_topics )
     {
         std::cout << std::endl;
