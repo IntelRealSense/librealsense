@@ -1259,7 +1259,6 @@ namespace librealsense
                                 auto md_size = buf_mgr.metadata_size();
                                 frame_object fo{ frame_sz, buf_mgr.metadata_size(),
                                                  video_buffer->get_frame_start(), buf_mgr.metadata_start(), timestamp };
-
                                 //Invoke user callback and enqueue next frame
                                 _callback(_profile, fo, [buf_mgr]() mutable {
                                     buf_mgr.request_next_frame();
@@ -2379,7 +2378,7 @@ namespace librealsense
             if (video_candidate._v4l2_buf->sequence < md_candidate._v4l2_buf->sequence && _video_queue.size() > 1)
             {
                 // Enqueue of md buffer before throwing its content away
-                enqueue_buffer_before_throwing_it(md_candidate);
+                enqueue_buffer_before_throwing_it(video_candidate);
                 _video_queue.pop();
 
                 // checking remaining video buffer in queue
@@ -2403,7 +2402,7 @@ namespace librealsense
         {
             // Enqueue of buffer before throwing its content away
             LOG_DEBUG_V4L("video_md_syncer - Enqueue buf " << std::dec << sb._buffer_index << " for fd " << sb._fd << " before dropping it");
-            if (xioctl(sb._fd, VIDIOC_QBUF, &(*sb._v4l2_buf)) < 0)
+            if (xioctl(sb._fd, VIDIOC_QBUF, sb._v4l2_buf.get()) < 0)
             {
                 LOG_ERROR("xioctl(VIDIOC_QBUF) failed when requesting new frame! fd: " << sb._fd << " error: " << strerror(errno));
             }
