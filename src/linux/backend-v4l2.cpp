@@ -1241,7 +1241,7 @@ namespace librealsense
 
                                 static const size_t uvc_md_start_offset = sizeof(uvc_meta_buffer::ns) + sizeof(uvc_meta_buffer::sof);
                                 auto metadata_buffer = get_md_buffer(md_v4l2_buffer->index);
-                                buf_mgr.set_md_attributes(md_v4l2_buffer->bytesused - uvc_md_start_offset,
+                                buf_mgr.set_md_attributes(md_v4l2_buffer->bytesused,
                                                             metadata_buffer->get_frame_start());
                                 metadata_buffer->attach_buffer(*md_v4l2_buffer);
                                 buf_mgr.handle_buffer(e_metadata_buf,-1); // transfer new buffer request to the frame callback

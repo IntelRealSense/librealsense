@@ -412,7 +412,7 @@ void log_callback_end( uint32_t fps,
                     if (fh.frame)
                     {
                         assert( expected_size == sizeof(byte) * fr->data.size() ||
-                                expected_size == sizeof(byte) * fr->data.size() + 226); // added for D457
+                                expected_size == sizeof(byte) * fr->data.size() + 68); // added for D457 - need to understand why this happens (68 is size of md)
 
                         memcpy((void*)fh->get_frame_data(), fr->data.data(), sizeof(byte) * fr->data.size());
 
