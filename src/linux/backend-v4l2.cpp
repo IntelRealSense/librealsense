@@ -289,7 +289,7 @@ namespace librealsense
 
             if (use_memory_map)
             {
-                _start = static_cast<uint8_t*>(mmap(nullptr, buf.length,
+                _start = static_cast<uint8_t*>(mmap(nullptr, _original_length,
                                                     PROT_READ | PROT_WRITE, MAP_SHARED,
                                                     fd, buf.m.offset));
                 if(_start == MAP_FAILED)
@@ -326,7 +326,7 @@ namespace librealsense
         {
             if (_use_memory_map)
             {
-               if(munmap(_start, _length) < 0)
+               if(munmap(_start, _original_length) < 0)
                    linux_backend_exception("munmap");
             }
             else
@@ -1241,10 +1241,11 @@ namespace librealsense
 
                                 static const size_t uvc_md_start_offset = sizeof(uvc_meta_buffer::ns) + sizeof(uvc_meta_buffer::sof);
                                 auto metadata_buffer = get_md_buffer(md_v4l2_buffer->index);
-                                metadata_buffer->attach_buffer(*md_v4l2_buffer);
-                                buf_mgr.handle_buffer(e_metadata_buf,-1); // transfer new buffer request to the frame callback
                                 buf_mgr.set_md_attributes(md_v4l2_buffer->bytesused - uvc_md_start_offset,
                                                             metadata_buffer->get_frame_start());
+                                metadata_buffer->attach_buffer(*md_v4l2_buffer);
+                                buf_mgr.handle_buffer(e_metadata_buf,-1); // transfer new buffer request to the frame callback
+
 
                                 auto video_buffer = get_video_buffer(video_v4l2_buffer->index);
                                 video_buffer->attach_buffer(*video_v4l2_buffer);
@@ -1259,6 +1260,7 @@ namespace librealsense
                                 auto md_size = buf_mgr.metadata_size();
                                 frame_object fo{ frame_sz, buf_mgr.metadata_size(),
                                                  video_buffer->get_frame_start(), buf_mgr.metadata_start(), timestamp };
+
                                 //Invoke user callback and enqueue next frame
                                 _callback(_profile, fo, [buf_mgr]() mutable {
                                     buf_mgr.request_next_frame();
@@ -1860,7 +1862,7 @@ namespace librealsense
             }
             else
             {
-                for(size_t i = 0; i < _buffers.size(); i++)
+                for(size_t i = 0; i < _md_buffers.size(); i++)
                 {
                     _md_buffers[i]->detach_buffer();
                 }
