@@ -716,7 +716,7 @@ namespace librealsense
         auto enable_global_time_option = std::shared_ptr<global_time_option>(new global_time_option());
         //D457
         bool mipi_sensor = (ds::RS457_PID == all_device_infos.front().pid);
-		if (mipi_sensor)
+        if (mipi_sensor)
         {
             enable_global_time_option->set(false);
             _tf_keeper->set_enabling_opt(enable_global_time_option);

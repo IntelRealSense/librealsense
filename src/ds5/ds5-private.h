@@ -142,7 +142,7 @@ namespace librealsense
             { RS420_MM_PID,         "Intel RealSense D420 with Tracking Module"},
             { RS410_MM_PID,         "Intel RealSense D410 with Tracking Module"},
             { RS400_MM_PID,         "Intel RealSense D400 with Tracking Module"},
-			{ RS430_PID,            "Intel RealSense D430"},
+            { RS430_PID,            "Intel RealSense D430"},
             { RS430I_PID,           "Intel RealSense D430I"},
             { RS430_MM_RGB_PID,     "Intel RealSense D430 with Tracking and RGB Modules"},
             { RS460_PID,            "Intel RealSense D460" },

@@ -85,7 +85,7 @@ namespace librealsense
             if (ds::RS457_PID != _pid)
             {
                 color_ep->register_option(RS2_OPTION_GLOBAL_TIME_ENABLED, enable_global_time_option);
-		    }
+            }
 
             color_ep->register_info(RS2_CAMERA_INFO_PHYSICAL_PORT, color_devs_info.front().device_path);
 
