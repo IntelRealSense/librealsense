@@ -1982,7 +1982,7 @@ namespace librealsense
         void v4l_uvc_meta_device::acquire_metadata(buffers_mgr & buf_mgr,fd_set &fds, bool)
         {
             //Use non-blocking metadata node polling
-            if(FD_ISSET(_md_fd, &fds))
+            if(_md_fd > 0 && FD_ISSET(_md_fd, &fds))
             {
                 // In scenario if [md+vid] ->[md] ->[md,vid] the third md should not be retrieved but wait for next select
                 if (buf_mgr.metadata_size())
