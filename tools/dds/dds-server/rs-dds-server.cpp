@@ -38,14 +38,14 @@ struct log_consumer : eprosima::fastdds::dds::LogConsumer
 int main( int argc, char * argv[] )
 try
 {
-    eprosima::fastdds::dds::DomainId_t domain = 0;
+    librealsense::dds::dds_domain_id domain = 0;
     CmdLine cmd( "librealsense rs-dds-server tool, use CTRL + C to stop..", ' ' );
-    ValueArg< eprosima::fastdds::dds::DomainId_t > domain_arg( "d",
-                                                               "domain",
-                                                               "Select domain ID to listen on",
-                                                               false,
-                                                               0,
-                                                               "0-232" );
+    ValueArg< librealsense::dds::dds_domain_id > domain_arg( "d",
+                                                             "domain",
+                                                             "Select domain ID to listen on",
+                                                             false,
+                                                             0,
+                                                             "0-232" );
     SwitchArg debug_arg( "", "debug", "Enable debug logging", false );
 
     cmd.add( domain_arg );
@@ -79,7 +79,8 @@ try
     std::cout << "Starting RS DDS Server.." << std::endl;
 
     // Create a DDS publisher
-    librealsense::dds::dds_participant participant( domain, "rs-dds-server" );
+    librealsense::dds::dds_participant participant;
+    participant.init( domain, "rs-dds-server" );
 
     // Run the DDS device broadcaster
     librealsense::dds::dds_device_broadcaster broadcaster( participant );
