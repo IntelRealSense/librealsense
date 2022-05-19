@@ -14,8 +14,7 @@ using namespace eprosima::fastdds::dds;
 using namespace librealsense;
 
 dds_device_watcher::dds_device_watcher( int domain_id )
-    : _participant( nullptr )
-    , _subscriber( nullptr )
+    : _subscriber( nullptr )
     , _topic( nullptr )
     , _reader( nullptr )
     , _topic_type( new dds::topics::device_info::type )
@@ -68,17 +67,6 @@ dds_device_watcher::dds_device_watcher( int domain_id )
         }
     } )
 {
-    _domain_listener
-        = std::make_shared< DiscoveryDomainParticipantListener >( [this]( eprosima::fastrtps::rtps::GUID_t guid ) {
-              std::lock_guard< std::mutex > lock( _devices_mutex );
-              auto dds_device = _dds_devices.find( guid );
-              if( dds_device != _dds_devices.end() )
-              {
-                  auto dds_device_serial = dds_device->second.serial;
-                  _dds_devices.erase( guid );
-                  LOG_DEBUG( "DDS device writer GUID: " << guid << " for device: " << dds_device_serial << " removed from domain " << _domain_id );
-              }
-          } );
 }
 
 void dds_device_watcher::start( platform::device_changed_callback callback )
@@ -113,7 +101,7 @@ dds_device_watcher::~dds_device_watcher()
     {
         _subscriber->delete_datareader( _reader );
     }
-    if( _participant != nullptr )
+    if( _participant.is_valid() )
     {
         if( _subscriber != nullptr )
         {
@@ -123,7 +111,6 @@ dds_device_watcher::~dds_device_watcher()
         {
             _participant->delete_topic( _topic );
         }
-        DomainParticipantFactory::get_instance()->delete_participant( _participant );
     }
 }
 
@@ -136,19 +123,21 @@ void dds_device_watcher::init( int domain_id )
     // DomainParticipant to be alive.
     pqos.wire_protocol().builtin.discovery_config.leaseDuration = { 10, 0 };  //[sec]
 
-    _participant
-        = DomainParticipantFactory::get_instance()->create_participant( domain_id,
-                                                                        pqos,
-                                                                        _domain_listener.get() );
-
-    if( _participant == nullptr )
-    {
-        throw librealsense::backend_exception( "Error creating a DDS participant",
-                                               RS2_EXCEPTION_TYPE_IO );
-    }
+    _participant.init( domain_id, "LRS_DEVICES_CLIENT" );
+    _participant.on_writer_removed( [this]( dds::dds_guid guid ) {
+        std::lock_guard< std::mutex > lock( _devices_mutex );
+        auto dds_device = _dds_devices.find( guid );
+        if( dds_device != _dds_devices.end() )
+        {
+            auto dds_device_serial = dds_device->second.serial;
+            _dds_devices.erase( guid );
+            LOG_DEBUG( "DDS device writer GUID: " << guid << " for device: " << dds_device_serial
+                                                  << " removed from domain " << _domain_id );
+        }
+    } );
 
     // REGISTER THE TYPE
-    _topic_type.register_type( _participant );
+    _topic_type.register_type( _participant.get() );
 
     // CREATE THE SUBSCRIBER
     _subscriber = _participant->create_subscriber( SUBSCRIBER_QOS_DEFAULT, nullptr );
@@ -160,7 +149,7 @@ void dds_device_watcher::init( int domain_id )
     }
 
     // CREATE THE TOPIC
-    _topic = _participant->create_topic(  librealsense::dds::topics::device_info::TOPIC_NAME,
+    _topic = _participant->create_topic( librealsense::dds::topics::device_info::TOPIC_NAME,
                                          _topic_type->getName(),
                                          TOPIC_QOS_DEFAULT );
 
@@ -193,35 +182,4 @@ void dds_device_watcher::init( int domain_id )
     }
 
     LOG_DEBUG( "DDS device watcher initialized successfully" );
-}
-
-
-dds_device_watcher::DiscoveryDomainParticipantListener::DiscoveryDomainParticipantListener(
-    std::function< void( eprosima::fastrtps::rtps::GUID_t ) > callback )
-    : DomainParticipantListener()
-    , _datawriter_removed_callback( std::move( callback ) )
-{
-}
-
-
-void dds_device_watcher::DiscoveryDomainParticipantListener::on_publisher_discovery(
-    DomainParticipant * participant, eprosima::fastrtps::rtps::WriterDiscoveryInfo && info )
-{
-    switch( info.status )
-    {
-    case eprosima::fastrtps::rtps::WriterDiscoveryInfo::DISCOVERED_WRITER:
-        /* Process the case when a new publisher was found in the domain */
-        LOG_DEBUG( "New DataWriter (" << info.info.guid() << ") publishing under topic '"
-                                      << info.info.topicName() << "' of type '"
-                                      << info.info.typeName() << "' discovered" );
-        break;
-    case eprosima::fastrtps::rtps::WriterDiscoveryInfo::REMOVED_WRITER:
-        /* Process the case when a publisher was removed from the domain */
-        LOG_DEBUG( "DataWriter (" << info.info.guid() << ") publishing under topic '"
-                                  << info.info.topicName() << "' of type '" << info.info.typeName()
-                                  << "' left the domain." );
-        if( _datawriter_removed_callback )
-            _datawriter_removed_callback( info.info.guid() );
-        break;
-    }
 }
