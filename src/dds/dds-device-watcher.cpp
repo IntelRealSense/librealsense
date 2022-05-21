@@ -3,7 +3,7 @@
 
 #include <types.h>
 #include "dds-device-watcher.h"
-#include <librealsense2/dds/topics/dds-messages.h>
+#include <librealsense2/dds/topics/dds-topics.h>
 #include <fastdds/dds/domain/DomainParticipantFactory.hpp>
 #include <fastdds/dds/domain/DomainParticipant.hpp>
 #include <fastdds/dds/subscriber/qos/DataReaderQos.hpp>

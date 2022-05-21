@@ -1,9 +1,14 @@
 # License: Apache 2.0. See LICENSE file in root directory.
 # Copyright(c) 2019 Intel Corporation. All Rights Reserved.
-#  minimum required cmake version: 3.1.0
-cmake_minimum_required(VERSION 3.1.0)
+cmake_minimum_required(VERSION 3.13.0)
 
-project(RealsenseToolsRealSenseViewer)
+project(realsense-viewer)
+
+if(WIN32)
+add_executable( ${PROJECT_NAME} WIN32 "" )
+else()
+add_executable( ${PROJECT_NAME} "" )
+endif()
 
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
@@ -51,7 +56,7 @@ if(BUILD_GRAPHICAL_EXAMPLES)
     ../../common/os.cpp
 )
 
-SET(DELAYED 
+SET(DELAYED
     realsense2d.dll
     realsense2-gld.dll
     realsense2.dll
@@ -134,7 +139,7 @@ if(DEFINED INTEL_OPENVINO_DIR  AND  IS_DIRECTORY ${INTEL_OPENVINO_DIR})
 
     include(../../wrappers/openvino/dl_vino_model.cmake)
     # Download model files -- these will go into build/tools/realsense-viewer, which is also
-    # where the sample is run from in Visual Studio 
+    # where the sample is run from in Visual Studio
 
     if(OPENVINO2019)
     dl_vino_model( "README.txt"                              "789e144d6cafa379c8437d2a6860829b6d935a8d" )
@@ -167,12 +172,13 @@ endif()
 
 # config-ui
 if(WIN32)
-    add_executable(realsense-viewer WIN32
-        ${RS_VIEWER_CPP}
-        ${ELPP_SOURCES}
-        ${CMAKE_CURRENT_SOURCE_DIR}/res/resource.h
-        ${CMAKE_CURRENT_SOURCE_DIR}/res/realsense-viewer.rc
-        ../../common/windows-app-bootstrap.cpp
+    target_sources( ${PROJECT_NAME}
+        PRIVATE
+            ${RS_VIEWER_CPP}
+            ${ELPP_SOURCES}
+            ${CMAKE_CURRENT_SOURCE_DIR}/res/resource.h
+            ${CMAKE_CURRENT_SOURCE_DIR}/res/realsense-viewer.rc
+            ../../common/windows-app-bootstrap.cpp
         )
 
     source_group("3rd Party" FILES
@@ -194,13 +200,14 @@ if(WIN32)
     #list(TRANSFORM DELAYED PREPEND " /DELAYLOAD:")  - Requires cmake v3.12
     PREPEND(DELAYED " /DELAYLOAD:" ${DELAYED})
     string(REPLACE ";" " " LD_FLAGS_STR "${DELAYED}")
-    set_target_properties(realsense-viewer PROPERTIES LINK_FLAGS "${LD_FLAGS_STR}")
+    set_target_properties(${PROJECT_NAME} PROPERTIES LINK_FLAGS "${LD_FLAGS_STR}")
 
 else()
-    add_executable(realsense-viewer
-        ${RS_VIEWER_CPP}
-        ${ELPP_SOURCES}
-    )
+    target_sources( ${PROJECT_NAME}
+        PRIVATE
+            ${RS_VIEWER_CPP}
+            ${ELPP_SOURCES}
+        )
 endif()
 
 if(OPENVINO2019)
@@ -223,19 +230,19 @@ include_directories(
     )
 
 
-set_property(TARGET realsense-viewer PROPERTY CXX_STANDARD 11)
+set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 11)
 
 set(RS_VIEWER_LIBS ${GTK3_LIBRARIES} Threads::Threads realsense2-gl)
 
 if (CHECK_FOR_UPDATES)
     message( STATUS "Check for updates capability added to realsense-viewer" )
-    add_dependencies(realsense-viewer libcurl)
+    add_dependencies(${PROJECT_NAME} libcurl)
     set(RS_VIEWER_LIBS ${RS_VIEWER_LIBS} curl)
 endif()
 
 if (IMPORT_DEPTH_CAM_FW)
     add_definitions(-DINTERNAL_FW)
-    target_link_libraries(realsense-viewer fw)
+    target_link_libraries(${PROJECT_NAME} fw)
 endif()
 
 if(BUILD_NETWORK_DEVICE)
@@ -243,16 +250,16 @@ if(BUILD_NETWORK_DEVICE)
     set(RS_VIEWER_LIBS ${RS_VIEWER_LIBS} realsense2-net)
 endif()
 
-target_link_libraries(realsense-viewer ${DEPENDENCIES} ${RS_VIEWER_LIBS})
+target_link_libraries(${PROJECT_NAME} ${DEPENDENCIES} ${RS_VIEWER_LIBS})
 
-set_target_properties (realsense-viewer PROPERTIES
+set_target_properties (${PROJECT_NAME} PROPERTIES
     FOLDER Tools
 )
 
-target_include_directories(realsense-viewer PRIVATE ../../src)
+target_include_directories(${PROJECT_NAME} PRIVATE ../../src)
 
 install(
-    TARGETS realsense-viewer
+    TARGETS ${PROJECT_NAME}
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 )
 #https://cmake.org/cmake/help/latest/command/install.html
