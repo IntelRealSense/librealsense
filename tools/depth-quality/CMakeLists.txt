@@ -16,8 +16,7 @@ find_package(Threads REQUIRED)
 include_directories(${CMAKE_BINARY_DIR})
 
 if(${BUILD_EASYLOGGINGPP})
-include(../../include/librealsense2/utilities/easylogging/easyloggingpp.cmake)
-include_directories( ${ELPP_INCLUDES} )
+    include("${REPO_ROOT}/include/librealsense2/utilities/easylogging/easyloggingpp.cmake")
 endif()
 
 include(../../common/CMakeLists.txt)
@@ -51,7 +50,6 @@ if(BUILD_GRAPHICAL_EXAMPLES)
         target_sources( ${PROJECT_NAME}
             PRIVATE
                 ${RS_QUALITY_TOOL_CPP}
-                ${ELPP_SOURCES}
                 ${CMAKE_CURRENT_SOURCE_DIR}/res/resource.h
                 ${CMAKE_CURRENT_SOURCE_DIR}/res/realsense-viewer.rc
                 ../../common/windows-app-bootstrap.cpp
@@ -94,7 +92,6 @@ if(BUILD_GRAPHICAL_EXAMPLES)
         target_sources( ${PROJECT_NAME}
             PRIVATE
                 ${RS_QUALITY_TOOL_CPP}
-                ${ELPP_SOURCES}
             )
 
         include_directories(../../common  ../../third-party
