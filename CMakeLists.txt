@@ -1,4 +1,7 @@
-cmake_minimum_required(VERSION 3.13.0)
+
+# Require 3.13, but we use 3.10 because that's what's in bionic...
+cmake_minimum_required(VERSION 3.10.2)
+
 project(realsense2 LANGUAGES CXX C)
 
 # Allow librealsense2 and all of the nested project to include the main repo folder
