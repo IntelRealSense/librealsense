@@ -1,6 +1,6 @@
 
-# Require 3.13, but we use 3.10 because that's what's in bionic...
-cmake_minimum_required(VERSION 3.10.2)
+# Xionic requires 3.5, Bionic 3.10...
+cmake_minimum_required(VERSION 3.1.0)
 
 project(realsense2 LANGUAGES CXX C)
 
