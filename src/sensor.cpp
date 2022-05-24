@@ -259,6 +259,21 @@ void log_callback_end( uint32_t fps,
         return *_owner;
     }
 
+    // TODO - make this method more efficient, using parralel computation, with SSE or CUDA, when available
+    std::vector<byte> sensor_base::align_width_to_64(int width, int height, int bpp, byte* pix) const
+    {
+        int factor = bpp >> 3;
+        int actual_input_width = ((width / 64 ) + 1) * 64;
+        std::vector<byte> pixels;
+        for (int j = 0; j < height; ++j)
+        {
+            int start_index = j * actual_input_width * factor;
+            int end_index = (width * factor) + (j * actual_input_width * factor);
+            pixels.insert(pixels.end(), pix + start_index, pix + end_index);
+        }
+        return pixels;
+    }
+
     std::shared_ptr<frame> sensor_base::generate_frame_from_data(const platform::frame_object& fo,
         frame_timestamp_reader* timestamp_reader,
         const rs2_time_t& last_timestamp,
@@ -268,7 +283,23 @@ void log_callback_end( uint32_t fps,
         auto system_time = environment::get_instance().get_time_service()->get_time();
         auto fr = std::make_shared<frame>();
         byte* pix = (byte*)fo.pixels;
-        std::vector<byte> pixels(pix, pix + fo.frame_size);
+        std::vector<byte> pixels;
+        const auto&& vsp = As<video_stream_profile, stream_profile_interface>(profile);
+        int width = vsp ? vsp->get_width() : 0;
+        int height = vsp ? vsp->get_height() : 0;
+        int bpp = get_image_bpp(profile->get_format());
+
+        // method should be limited to use of MIPI - not for USB
+        // the aim is to grab the data from a bigger buffer, which is aligned to 64 bytes,
+        // when the resolution's width is not aligned to 64
+        if (width % 64 != 0 && fo.frame_size > compute_frame_expected_size(width, height, bpp))
+        {
+            pixels = align_width_to_64(width, height, bpp, pix);
+        }
+        else
+        {
+            pixels = std::vector<byte>(pix, pix + fo.frame_size);
+        }
 
         fr->data = pixels;
         fr->set_stream(profile);
@@ -283,7 +314,7 @@ void log_callback_end( uint32_t fps,
             last_frame_number,
             false,
             0,
-            (uint32_t)fo.frame_size);
+            (uint32_t)pixels.size());
 
         if (_metadata_modifier)
             _metadata_modifier(additional_data);
@@ -365,10 +396,7 @@ void log_callback_end( uint32_t fps,
                     int expected_size;
                     auto&& msp = As<motion_stream_profile, stream_profile_interface>(req_profile);
                     if (msp)
-                    {
                         expected_size = 32;
-                    }
-
 
                     frame_continuation release_and_enqueue(continuation, f.pixels);
 
@@ -395,7 +423,8 @@ void log_callback_end( uint32_t fps,
                         bpp = 4;
 
                     if (!msp)
-                        expected_size = (width * height * bpp) >> 3;
+                        expected_size = compute_frame_expected_size(width, height, bpp);
+
                     // For compressed formats copy the raw data as is
                     if (val_in_range(req_profile_base->get_format(), { RS2_FORMAT_MJPEG, RS2_FORMAT_Z16H }))
                         expected_size = static_cast<int>(f.frame_size);
