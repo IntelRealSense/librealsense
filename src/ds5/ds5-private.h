@@ -194,6 +194,7 @@ namespace librealsense
             DFU             = 0x1E,     // Enter to FW update mode
             HWRST           = 0x20,     // hardware reset
             OBW             = 0x29,     // OVT bypass write
+            PROJ_TEMP_MIPI  = 0x2A,     // get ASIC temperature - with mipi device
             SET_ADV         = 0x2B,     // set advanced mode control
             GET_ADV         = 0x2C,     // get advanced mode control
             EN_ADV          = 0x2D,     // enable advanced mode
@@ -212,6 +213,7 @@ namespace librealsense
             GETRGBAEROI     = 0x76,     // get RGB auto-exposure region of interest
             SET_PWM_ON_OFF  = 0x77,     // set emitter on and off mode
             GET_PWM_ON_OFF  = 0x78,     // get emitter on and off mode
+            ASIC_TEMP_MIPI  = 0x7A,     // get ASIC temperature - with mipi device
             SETSUBPRESET    = 0x7B,     // Download sub-preset
             GETSUBPRESET    = 0x7C,     // Upload the current sub-preset
             GETSUBPRESETID  = 0x7D,     // Retrieve sub-preset's name

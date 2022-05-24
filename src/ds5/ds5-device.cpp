@@ -895,23 +895,32 @@ namespace librealsense
             //if hw_monitor was created by usb replace it with xu
             // D400_IMU will remain using USB interface due to HW limitations
             {
-                if (_pid != RS457_PID)
+                if (_pid == ds::RS457_PID)
                 {
+                    depth_sensor.register_option(RS2_OPTION_ASIC_TEMPERATURE,
+                        std::make_shared<asic_temperature_option>(_hw_monitor,
+                            RS2_OPTION_ASIC_TEMPERATURE));
+                }
+                else
+                {
+
                     depth_sensor.register_option(RS2_OPTION_OUTPUT_TRIGGER_ENABLED,
                         std::make_shared<uvc_xu_option<uint8_t>>(raw_depth_sensor, depth_xu, DS5_EXT_TRIGGER,
                             "Generate trigger from the camera to external device once per frame"));
+
                     depth_sensor.register_option(RS2_OPTION_ASIC_TEMPERATURE,
                         std::make_shared<asic_and_projector_temperature_options>(raw_depth_sensor,
                             RS2_OPTION_ASIC_TEMPERATURE));
-                    auto error_control = std::make_shared<uvc_xu_option<uint8_t>>(raw_depth_sensor, depth_xu, DS5_ERROR_REPORTING, "Error reporting");
-
-                    _polling_error_handler = std::make_shared<polling_error_handler>(1000,
-                        error_control,
-                        raw_depth_sensor.get_notifications_processor(),
-                        std::make_shared<ds5_notification_decoder>());
-
-                    depth_sensor.register_option(RS2_OPTION_ERROR_POLLING_ENABLED, std::make_shared<polling_errors_disable>(_polling_error_handler));
                 }
+
+                auto error_control = std::make_shared<uvc_xu_option<uint8_t>>(raw_depth_sensor, depth_xu, DS5_ERROR_REPORTING, "Error reporting");
+
+                _polling_error_handler = std::make_shared<polling_error_handler>(1000,
+                    error_control,
+                    raw_depth_sensor.get_notifications_processor(),
+                    std::make_shared<ds5_notification_decoder>());
+
+                depth_sensor.register_option(RS2_OPTION_ERROR_POLLING_ENABLED, std::make_shared<polling_errors_disable>(_polling_error_handler));
             }
 
             if ((val_in_range(pid, { RS455_PID })) && (_fw_version >= firmware_version("5.12.11.0")))
