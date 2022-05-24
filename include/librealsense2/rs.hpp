@@ -13,6 +13,7 @@
 #include "hpp/rs_record_playback.hpp"
 #include "hpp/rs_sensor.hpp"
 #include "hpp/rs_pipeline.hpp"
+#include "hpp/rs_aus.hpp"
 
 namespace rs2
 {
@@ -50,7 +51,7 @@ namespace rs2
         rs2_enable_rolling_log_file( max_size, &e );
         error::handle( e );
     }
-    
+
     /*
         Interface to the log message data we expose.
     */

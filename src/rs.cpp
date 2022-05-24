@@ -5,6 +5,7 @@
 
 #include "api.h"
 #include "log.h"
+#include "aus.h"
 #include "context.h"
 #include "device.h"
 #include "algo.h"
@@ -36,7 +37,7 @@
 #include "proc/sequence-id-filter.h"
 #include "media/playback/playback_device.h"
 #include "stream.h"
-#include <librealsense2/h/rs_types.h>
+#include "../include/librealsense2/h/rs_types.h"
 #include "pipeline/pipeline.h"
 #include "environment.h"
 #include "proc/temporal-filter.h"
@@ -48,8 +49,6 @@
 #include "firmware_logger_device.h"
 #include "device-calibration.h"
 #include "calibrated-sensor.h"
-
-#include <rsutils/string/from.h>
 
 ////////////////////////
 // API implementation //
@@ -729,8 +728,7 @@ const char* rs2_get_device_info(const rs2_device* dev, rs2_camera_info info, rs2
     {
         return dev->device->get_info(info).c_str();
     }
-    throw librealsense::invalid_value_exception( rsutils::string::from() << "info " << rs2_camera_info_to_string( info )
-                                                                         << " not supported by the device!" );
+    throw librealsense::invalid_value_exception(librealsense::to_string() << "info " << rs2_camera_info_to_string(info) << " not supported by the device!");
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, dev, info)
 
@@ -751,8 +749,7 @@ const char* rs2_get_sensor_info(const rs2_sensor* sensor, rs2_camera_info info, 
     {
         return sensor->sensor->get_info(info).c_str();
     }
-    throw librealsense::invalid_value_exception( rsutils::string::from() << "info " << rs2_camera_info_to_string( info )
-                                                                         << " not supported by the sensor!" );
+    throw librealsense::invalid_value_exception(librealsense::to_string() << "info " << rs2_camera_info_to_string(info) << " not supported by the sensor!");
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, sensor, info)
 
@@ -1350,6 +1347,72 @@ void rs2_enable_rolling_log_file( unsigned max_size, rs2_error ** error ) BEGIN_
     librealsense::enable_rolling_log_file( max_size );
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, max_size)
+
+void rs2_aus_set(const char* counter, int value, rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_STRING(counter);
+    librealsense::aus_set(counter, value);
+}
+NOARGS_HANDLE_EXCEPTIONS_AND_RETURN_VOID()
+
+void rs2_aus_increment(const char * counter, rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_STRING(counter);
+    librealsense::aus_increment(counter);
+}
+NOARGS_HANDLE_EXCEPTIONS_AND_RETURN_VOID()
+
+long rs2_aus_get(const char* counter, rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_STRING(counter);
+    return librealsense::aus_get(counter);
+}
+NOARGS_HANDLE_EXCEPTIONS_AND_RETURN(0);
+
+void rs2_aus_start(const char* timer, rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_STRING(timer);
+    librealsense::aus_start(timer);
+}
+NOARGS_HANDLE_EXCEPTIONS_AND_RETURN_VOID()
+
+void rs2_aus_stop(const char* timer, rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_STRING(timer);
+    librealsense::aus_stop(timer);
+}
+NOARGS_HANDLE_EXCEPTIONS_AND_RETURN_VOID()
+
+
+const rs2_strings_list* rs2_aus_get_counters_list(rs2_error** error) BEGIN_API_CALL
+{
+    auto ret = librealsense::aus_get_counters_list();
+    return new rs2_strings_list{ std::move(ret) };
+
+}
+NOARGS_HANDLE_EXCEPTIONS_AND_RETURN(0);
+
+int rs2_aus_get_counters_list_size(const rs2_strings_list* buffer, rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(buffer);
+    return static_cast<int>(buffer->buffer.size());
+}
+HANDLE_EXCEPTIONS_AND_RETURN(0, buffer)
+
+void rs2_aus_delete_counters_list(const rs2_strings_list* buffer) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(buffer);
+    delete buffer;
+}
+NOEXCEPT_RETURN(, buffer)
+
+const char* rs2_aus_get_counter_data(const rs2_strings_list* buffer, int i, rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(buffer);
+    //VALIDATE_NOT_NULL(buffer[i]);
+    return buffer->buffer[i].c_str();
+}
+HANDLE_EXCEPTIONS_AND_RETURN(0, buffer)
 
 // librealsense wrapper around a C function
 class on_log_callback : public rs2_log_callback
@@ -2291,7 +2354,6 @@ rs2_processing_block* rs2_create_colorizer(rs2_error** error) BEGIN_API_CALL
     auto block = std::make_shared<librealsense::colorizer>();
 
     auto res = new rs2_processing_block{ block };
-
     return res;
 }
 NOARGS_HANDLE_EXCEPTIONS_AND_RETURN(nullptr)
@@ -2510,8 +2572,7 @@ void rs2_extract_target_dimensions(const rs2_frame* frame_ref, rs2_calib_target_
             throw std::runtime_error("Failed to find the four rectangle side sizes on the frame");
     }
     else
-        throw std::runtime_error( rsutils::string::from()
-                                  << "Unsupported video frame format " << rs2_format_to_string( fmt ) );
+        throw std::runtime_error(librealsense::to_string() << "Unsupported video frame format " << rs2_format_to_string(fmt));
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, frame_ref, calib_type, target_dims, target_dims_size)
 
@@ -2552,10 +2613,7 @@ void rs2_software_device_update_info(rs2_device* dev, rs2_camera_info info, cons
     {
         df->update_info(info, val);
     }
-    else
-        throw librealsense::invalid_value_exception( rsutils::string::from()
-                                                     << "info " << rs2_camera_info_to_string( info )
-                                                     << " not supported by the device!" );
+    else throw librealsense::invalid_value_exception(librealsense::to_string() << "info " << rs2_camera_info_to_string(info) << " not supported by the device!");
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, dev, info, val)
 
@@ -2899,8 +2957,7 @@ const char* rs2_get_processing_block_info(const rs2_processing_block* block, rs2
     {
         return block->block->get_info(info).c_str();
     }
-    throw librealsense::invalid_value_exception( rsutils::string::from() << "Info " << rs2_camera_info_to_string( info )
-                                                                         << " not supported by processing block!" );
+    throw librealsense::invalid_value_exception(librealsense::to_string() << "Info " << rs2_camera_info_to_string(info) << " not supported by processing block!");
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, block, info)
 
@@ -2999,8 +3056,7 @@ int rs2_load_wheel_odometry_config(const rs2_sensor* sensor, const unsigned char
     std::vector<uint8_t> buffer_to_send(odometry_blob, odometry_blob + blob_size);
     int ret = wo_snr->load_wheel_odometery_config(buffer_to_send);
     if (!ret)
-        throw librealsense::wrong_api_call_sequence_exception(
-            rsutils::string::from() << "Load wheel odometry config failed, file size " << blob_size );
+        throw librealsense::wrong_api_call_sequence_exception(librealsense::to_string() << "Load wheel odometry config failed, file size " << blob_size);
     return ret;
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, sensor, odometry_blob, blob_size)
@@ -3027,8 +3083,7 @@ void rs2_update_firmware_cpp(const rs2_device* device, const void* fw_image, int
     VALIDATE_NOT_NULL(fw_image);
     // check if the given FW size matches the expected FW size
     if (!val_in_range(fw_image_size, { signed_fw_size, signed_sr300_size }))
-        throw librealsense::invalid_value_exception(
-            rsutils::string::from() << "Unsupported firmware binary image provided - " << fw_image_size << " bytes" );
+        throw librealsense::invalid_value_exception(to_string() << "Unsupported firmware binary image provided - " << fw_image_size << " bytes");
 
     auto fwu = VALIDATE_INTERFACE(device->device, librealsense::update_device_interface);
     fwu->update( fw_image, fw_image_size, callback_ptr );
@@ -3041,8 +3096,7 @@ void rs2_update_firmware(const rs2_device* device, const void* fw_image, int fw_
     VALIDATE_NOT_NULL(fw_image);
     // check if the given FW size matches the expected FW size
     if (!val_in_range(fw_image_size, { signed_fw_size, signed_sr300_size }))
-        throw librealsense::invalid_value_exception(
-            rsutils::string::from() << "Unsupported firmware binary image provided - " << fw_image_size << " bytes" );
+        throw librealsense::invalid_value_exception(to_string() << "Unsupported firmware binary image provided - " << fw_image_size << " bytes");
 
     auto fwu = VALIDATE_INTERFACE(device->device, librealsense::update_device_interface);
 
@@ -3117,9 +3171,7 @@ void rs2_update_firmware_unsigned_cpp( const rs2_device * device,
     VALIDATE_NOT_NULL(image);
     // check if the given FW size matches the expected FW size
     if (!val_in_range(image_size, { unsigned_fw_size, unsigned_sr300_size }))
-        throw librealsense::invalid_value_exception( rsutils::string::from()
-                                                     << "Unsupported firmware binary image (unsigned) provided - "
-                                                     << image_size << " bytes" );
+        throw librealsense::invalid_value_exception(to_string() << "Unsupported firmware binary image (unsigned) provided - " << image_size << " bytes");
 
     auto fwud = std::dynamic_pointer_cast<updatable>(device->device);
     if (!fwud)
@@ -3137,9 +3189,7 @@ void rs2_update_firmware_unsigned(const rs2_device* device, const void* image, i
     VALIDATE_NOT_NULL(image);
     // check if the given FW size matches the expected FW size
     if (!val_in_range(image_size, { unsigned_fw_size, unsigned_sr300_size }))
-        throw librealsense::invalid_value_exception( rsutils::string::from()
-                                                     << "Unsupported firmware binary image (unsigned) provided - "
-                                                     << image_size << " bytes" );
+        throw librealsense::invalid_value_exception(to_string() << "Unsupported firmware binary image (unsigned) provided - " << image_size << " bytes");
 
     auto fwud = std::dynamic_pointer_cast<updatable>(device->device);
     if (!fwud)
@@ -3164,8 +3214,7 @@ int rs2_check_firmware_compatibility(const rs2_device* device, const void* fw_im
     VALIDATE_NOT_NULL(fw_image);
     // check if the given FW size matches the expected FW size
     if (!val_in_range(fw_image_size, { signed_fw_size, signed_sr300_size }))
-        throw librealsense::invalid_value_exception(
-            rsutils::string::from() << "Unsupported firmware binary image provided - " << fw_image_size << " bytes" );
+        throw librealsense::invalid_value_exception(to_string() << "Unsupported firmware binary image provided - " << fw_image_size << " bytes");
 
     auto fwud = std::dynamic_pointer_cast<updatable>(device->device);
     if (!fwud)
@@ -3249,7 +3298,7 @@ const rs2_raw_data_buffer* rs2_run_on_chip_calibration(rs2_device* device, const
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, device)
 
-const rs2_raw_data_buffer* rs2_run_tare_calibration_cpp(rs2_device* device, float ground_truth_mm, const void* json_content, int content_size, float* health, rs2_update_progress_callback* progress_callback, int timeout_ms, rs2_error** error) BEGIN_API_CALL
+const rs2_raw_data_buffer* rs2_run_tare_calibration_cpp(rs2_device* device, float ground_truth_mm, const void* json_content, int content_size, rs2_update_progress_callback* progress_callback, int timeout_ms, rs2_error** error) BEGIN_API_CALL
 {
     // Take ownership of the callback ASAP or else memory leaks could result if we throw! (the caller usually does a
     // 'new' when calling us)
@@ -3265,13 +3314,13 @@ const rs2_raw_data_buffer* rs2_run_tare_calibration_cpp(rs2_device* device, floa
     auto auto_calib = VALIDATE_INTERFACE(device->device, librealsense::auto_calibrated_interface);
 
     std::string json((char*)json_content, (char*)json_content + content_size);
-    std::vector< uint8_t > buffer = auto_calib->run_tare_calibration( timeout_ms, ground_truth_mm, json, health, callback_ptr );
+    std::vector< uint8_t > buffer = auto_calib->run_tare_calibration( timeout_ms, ground_truth_mm, json, callback_ptr );
 
     return new rs2_raw_data_buffer{ buffer };
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, device)
 
-const rs2_raw_data_buffer* rs2_run_tare_calibration(rs2_device* device, float ground_truth_mm, const void* json_content, int content_size, float * health, rs2_update_progress_callback_ptr progress_callback, void* user, int timeout_ms, rs2_error** error) BEGIN_API_CALL
+const rs2_raw_data_buffer* rs2_run_tare_calibration(rs2_device* device, float ground_truth_mm, const void* json_content, int content_size, rs2_update_progress_callback_ptr progress_callback, void* user, int timeout_ms, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(device);
 
@@ -3284,32 +3333,14 @@ const rs2_raw_data_buffer* rs2_run_tare_calibration(rs2_device* device, float gr
     std::string json((char*)json_content, (char*)json_content + content_size);
 
     if (progress_callback == nullptr)
-        buffer = auto_calib->run_tare_calibration(timeout_ms, ground_truth_mm, json, health, nullptr);
+        buffer = auto_calib->run_tare_calibration(timeout_ms, ground_truth_mm, json, nullptr);
     else
     {
         librealsense::update_progress_callback_ptr cb(new librealsense::update_progress_callback(progress_callback, user),
             [](update_progress_callback* p) { delete p; });
 
-        buffer = auto_calib->run_tare_calibration(timeout_ms, ground_truth_mm, json, health, cb);
+        buffer = auto_calib->run_tare_calibration(timeout_ms, ground_truth_mm, json, cb);
     }
-    return new rs2_raw_data_buffer{ buffer };
-}
-HANDLE_EXCEPTIONS_AND_RETURN(nullptr, device)
-
-const rs2_raw_data_buffer* rs2_process_calibration_frame(rs2_device* device, const rs2_frame* f, float* const health, rs2_update_progress_callback* progress_callback, int timeout_ms, rs2_error** error)  BEGIN_API_CALL
-{
-    // Take ownership of the callback ASAP or else memory leaks could result if we throw! (the caller usually does a
-    // 'new' when calling us)
-    update_progress_callback_ptr callback_ptr;
-    if (progress_callback)
-        callback_ptr.reset(progress_callback, [](rs2_update_progress_callback* p) { p->release(); });
-    VALIDATE_NOT_NULL(device);
-
-    auto auto_calib = VALIDATE_INTERFACE(device->device, librealsense::auto_calibrated_interface);
-
-    std::vector<uint8_t> buffer;
-    buffer = auto_calib->process_calibration_frame(timeout_ms, f, health, callback_ptr);
-
     return new rs2_raw_data_buffer{ buffer };
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, device)
@@ -3755,7 +3786,7 @@ void next_pixel_in_line(float curr[2], const float start[2], const float end[2])
     else
     {
         curr[1] = end[1] > curr[1] ? curr[1] + 1 : curr[1] - 1;
-        curr[0] = end[0] - ((end[1] - curr[1]) / line_slope);
+        curr[0] = end[0] - ((end[1] + curr[1]) / line_slope);
     }
 }
 
@@ -3980,3 +4011,5 @@ float rs2_calculate_target_z(rs2_device* device, rs2_frame_queue* queue1, rs2_fr
     }
 }
 HANDLE_EXCEPTIONS_AND_RETURN(-1.f, device, queue1, queue2, queue3, target_width, target_height)
+
+

@@ -33,6 +33,10 @@ macro(global_set_flags)
         add_definitions(-DBUILD_EASYLOGGINGPP)
     endif()
 
+    if (BUILD_AUS)
+        add_definitions(-DBUILD_AUS)
+    endif()
+
     if (ENABLE_EASYLOGGINGPP_ASYNC)
         add_definitions(-DEASYLOGGINGPP_ASYNC)
     endif()

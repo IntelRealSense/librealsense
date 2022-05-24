@@ -758,6 +758,9 @@ namespace librealsense
           _right_ir_stream(new stream(RS2_STREAM_INFRARED, 2)),
           _color_stream(nullptr)
     {
+        std::string ds5_devices_counter = librealsense::aus_build_system_counter_name("CONNECTED_DEVICES", "DS5");
+        librealsense::aus_increment(ds5_devices_counter);
+
         _depth_device_idx = add_sensor(create_depth_device(ctx, group.uvc_devices));
         init(ctx, group);
     }

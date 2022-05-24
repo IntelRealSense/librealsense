@@ -16,6 +16,11 @@ struct rs2_raw_data_buffer
     std::vector<uint8_t> buffer;
 };
 
+struct rs2_strings_list
+{
+    std::vector<std::string> buffer;
+};
+
 typedef struct rs2_error rs2_error;
 
 struct rs2_notification
@@ -405,6 +410,7 @@ return __p.invoke(func);\
 
     #define VALIDATE_FIXED_SIZE(ARG, SIZE) if((ARG) != (SIZE)) { std::ostringstream ss; ss << "Unsupported size provided { " << ARG << " }," " expecting { " << SIZE << " }"; throw librealsense::invalid_value_exception(ss.str()); }
     #define VALIDATE_NOT_NULL(ARG) if(!(ARG)) throw std::runtime_error("null pointer passed for argument \"" #ARG "\"");
+    #define VALIDATE_STRING(ARG) if(!(ARG) || strlen(ARG) == 0) throw std::runtime_error("string \"" #ARG "\" is not valid ");
     #define VALIDATE_ENUM(ARG) if(!librealsense::is_valid(ARG)) { std::ostringstream ss; ss << "invalid enum value for argument \"" #ARG "\""; throw librealsense::invalid_value_exception(ss.str()); }
     #define VALIDATE_OPTION(OBJ, OPT_ID) if(!OBJ->options->supports_option(OPT_ID)) { std::ostringstream ss; ss << "object doesn't support option #" << std::to_string(OPT_ID); throw librealsense::invalid_value_exception(ss.str()); }
     #define VALIDATE_RANGE(ARG, MIN, MAX) if((ARG) < (MIN) || (ARG) > (MAX)) { std::ostringstream ss; ss << "out of range value for argument \"" #ARG "\""; throw librealsense::invalid_value_exception(ss.str()); }

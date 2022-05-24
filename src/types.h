@@ -203,6 +203,19 @@ namespace librealsense
     void reset_logger();
     void enable_rolling_log_file( unsigned max_size );
 
+    ///////////////////////
+    //   AUS mechanism   //
+    ///////////////////////
+
+    void aus_set(std::string counter, int value);
+    void aus_increment(std::string counter);
+    long aus_get(std::string counter);
+    void aus_start(std::string counter);
+    void aus_stop(std::string counter);
+    std::string aus_build_system_timer_name(std::string suffix, std::string device_name = "");
+    std::string aus_build_system_counter_name(std::string suffix, std::string device_name = "");
+    std::vector<std::string> aus_get_counters_list();
+
     // Enhancement for debug mode that incurs performance penalty with STL
     // std::clamp to be introduced with c++17
     template< typename T>

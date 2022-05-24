@@ -66,6 +66,11 @@ int main(int argc, char * argv[]) try
         app.show(render_frames);
     }
 
+    auto my_list = rs2::aus_get_counters_list();
+    for (auto i : my_list) {
+        auto aus_value = rs2::aus_get(i.c_str());
+        std::cout << i << " " << aus_value << std::endl;
+    }
     return EXIT_SUCCESS;
 }
 catch (const rs2::error & e)
