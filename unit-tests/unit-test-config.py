@@ -88,21 +88,25 @@ cmake_minimum_required( VERSION 3.1.0 )
 project( ''' + testname + ''' )
 
 set( SRC_FILES ''' + filelist + '''
-)
-add_executable( ''' + testname + ''' ${SRC_FILES} )
-source_group( "Common Files" FILES ${ELPP_SOURCES} ${CATCH_FILES} ''' + dir + '''/test.cpp''' )
+    )
+add_executable( ${PROJECT_NAME} ${SRC_FILES} )
+source_group( "Common Files" FILES ${CATCH_FILES} ''' + dir + '''/test.cpp''' )
     if not custom_main:
         handle.write( ' ' + dir + '/unit-test-default-main.cpp' )
     handle.write( ''' )
-set_property(TARGET ''' + testname + ''' PROPERTY CXX_STANDARD 11)
-target_link_libraries( ''' + testname + ''' ${DEPENDENCIES})
+set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 11)
+target_link_libraries( ${PROJECT_NAME} ${DEPENDENCIES} )
 
-set_target_properties( ''' + testname + ''' PROPERTIES FOLDER "Unit-Tests/''' + os.path.dirname( testdir ) + '''" )
+set_target_properties( ${PROJECT_NAME} PROPERTIES FOLDER "Unit-Tests/''' + os.path.dirname( testdir ) + '''" )
 
 # Add the repo root directory (so includes into src/ will be specific: <src/...>)
-target_include_directories(''' + testname + ''' PRIVATE ''' + root + ''')
+target_include_directories( ${PROJECT_NAME} PRIVATE ''' + root + ''' )
+
+# We make use of ELPP (EasyLogging++):
+include( ${REPO_ROOT}/include/librealsense2/utilities/easylogging/easyloggingpp.cmake )
 
 ''' )
+
     handle.close()
 
 
@@ -200,7 +204,7 @@ def process_cpp( dir, builddir ):
 
             # Build the list of files we want in the project:
             # At a minimum, we have the original file, plus any common files
-            filelist = [ dir + '/' + f, '${ELPP_SOURCES}', '${CATCH_FILES}' ]
+            filelist = [ dir + '/' + f, '${CATCH_FILES}' ]
             # Add any "" includes specified in the .cpp that we can find
             includes = find_includes( dir + '/' + f )
             # Add any files explicitly listed in the .cpp itself, like this:
@@ -318,9 +322,6 @@ log.d( 'Creating "' + name + '" project in', cmakefile )
 handle = open( cmakefile, 'w' )
 handle.write( '''
 
-# We make use of ELPP (EasyLogging++):
-include( ''' + dir +  '''/../include/librealsense2/utilities/easylogging/easyloggingpp.cmake )
-include_directories( ${ELPP_INCLUDES} )
 set( CATCH_FILES
     ''' + dir + '''/catch/catch.hpp
 )

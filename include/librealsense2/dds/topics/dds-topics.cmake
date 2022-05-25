@@ -5,5 +5,13 @@ include("${CMAKE_CURRENT_LIST_DIR}/device-info/device-info-topic-files.cmake")
 
 set(DDS_TOPICS_FILES 
     ${DEVICE_INFO_TOPIC_FILES}
-    "${CMAKE_CURRENT_LIST_DIR}/dds-messages.h"
-)
+    "${CMAKE_CURRENT_LIST_DIR}/dds-topics.h"
+    )
+
+source_group( "DDS/topics" FILES ${DDS_TOPICS_FILES} )
+
+target_sources(${PROJECT_NAME}
+    PRIVATE
+        ${DDS_TOPICS_FILES}
+    )
+

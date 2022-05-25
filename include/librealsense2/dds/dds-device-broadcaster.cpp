@@ -12,7 +12,7 @@
 #include <fastdds/dds/publisher/DataWriter.hpp>
 #include <fastdds/dds/publisher/qos/PublisherQos.hpp>
 #include <fastdds/rtps/participant/ParticipantDiscoveryInfo.h>
-#include <librealsense2/dds/topics/dds-messages.h>
+#include <librealsense2/dds/topics/dds-topics.h>
 
 #define RS_ROOT "realsense/"
 #define DEVICE_NAME_PREFIX "Intel RealSense "

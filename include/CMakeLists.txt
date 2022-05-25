@@ -40,5 +40,6 @@ target_sources(${LRS_TARGET}
 include(${CMAKE_CURRENT_LIST_DIR}/librealsense2/utilities/CMakeLists.txt)
 
 if (${BUILD_WITH_DDS})
-    include(${CMAKE_CURRENT_LIST_DIR}/librealsense2/dds/CMakeLists.txt)
+    include("${CMAKE_CURRENT_LIST_DIR}/librealsense2/dds/dds-client.cmake")
+    include("${CMAKE_CURRENT_LIST_DIR}/librealsense2/dds/topics/dds-topics.cmake")
 endif()

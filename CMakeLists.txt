@@ -1,6 +1,8 @@
-#  minimum required cmake version: 3.1.0
+
+# Xenial requires 3.5, Bionic 3.10...
 cmake_minimum_required(VERSION 3.1.0)
-project(librealsense2 LANGUAGES CXX C)
+
+project(realsense2 LANGUAGES CXX C)
 
 # Allow librealsense2 and all of the nested project to include the main repo folder
 set(REPO_ROOT ${CMAKE_CURRENT_SOURCE_DIR})
