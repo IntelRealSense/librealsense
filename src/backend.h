@@ -692,7 +692,6 @@ namespace librealsense
 
             void set_power_state(power_state state) override
             {
-                // D457 development - for the third one, the map getting fails becasue IR has no metadata
                 for (auto& elem : _dev)
                 {
                     elem->set_power_state(state);

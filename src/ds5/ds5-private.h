@@ -155,6 +155,7 @@ namespace librealsense
             { RS416_RGB_PID,        "Intel RealSense F416 with RGB Module"},
             { RS405_PID,            "Intel RealSense D405" },
             { RS455_PID,            "Intel RealSense D455" },
+            { RS457_PID,            "Intel RealSense D457" }
         };
 
         // DS5 fisheye XU identifiers
