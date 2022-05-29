@@ -13,9 +13,9 @@ class image
 public:
     using type = raw::imagePubSubType;
 
-    static std::string construct_name( const std::string& model, const std::string& sn, const std::string& stream )
+    static std::string construct_name( const std::string& topic_root, const std::string& stream )
     {
-        return model + "/" + sn + "/" + stream;
+        return topic_root + "/" + stream;
     }
 
     image( const std::string & topic_name )

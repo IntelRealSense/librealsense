@@ -6,6 +6,8 @@
 #include "dds-device-server.h"
 #include "dds-participant.h"
 
+#include <librealsense2/utilities/easylogging/easyloggingpp.h>
+
 #include <fastdds/dds/domain/DomainParticipant.hpp>
 #include <fastdds/dds/publisher/Publisher.hpp>
 #include <fastdds/dds/publisher/DataWriter.hpp>
@@ -64,7 +66,7 @@ void dds_device_server::publish_dds_video_frame( const std::string& topic_name, 
 
     if( _init_ok )
     {
-        std::cout << "publishing a DDS video frame" << std::endl;
+        LOG_DEBUG( "publishing a DDS video frame for topic: " << topic_name );
         //librealsense::dds::topics::image image;
         // prepare_image( image );
         // publish_frame( image );

@@ -124,8 +124,18 @@ try
 
             new_lrs_device_manager->start_stream(
                 tools::stream_type::RGB,
-                [&]( const std::string & topic_name, uint8_t * frame ) {
-                    device_handlers_list[dev].first->publish_dds_video_frame( topic_name, frame );
+                [&, dev]( const std::string & stream_name, uint8_t * frame ) {
+                    auto &dev_handler = device_handlers_list.at( dev );
+                    std::string topic_name = dev_handler.first->get_topic_root() + "/" + stream_name;
+                    try
+                    {
+                        dev_handler.first->publish_dds_video_frame( topic_name, frame);
+                    }
+                    catch( std::exception &e )
+                    {
+                        LOG_ERROR( "Exception raised during DDS publish frame of topic " + topic_name );
+                    }
+                    
                 } );
         },
         [&]( rs2::device dev ) {

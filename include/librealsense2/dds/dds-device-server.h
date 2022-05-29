@@ -36,8 +36,9 @@ class dds_device_server
 public:
     dds_device_server( librealsense::dds::dds_participant & participant, const std::string &topic_root );
     ~dds_device_server();
-    bool run();
     void publish_dds_video_frame(const std::string& topic_name, uint8_t* frame );
+    std::string get_topic_root() const { return _topic_root; }
+    
 
 private:
     bool create_dds_publisher( const std::string& stream_name );

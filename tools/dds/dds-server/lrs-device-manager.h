@@ -23,11 +23,13 @@ public:
             {
                 _frame_callback( _stream_name, (uint8_t *)f.get_data() );
             } );
+        std::cout << _stream_name << " stream started"  << std::endl;
     }
     ~sensor_wrapper()
     {
         _rs2_sensor.stop();
         _rs2_sensor.close();
+        std::cout << _stream_name << " stream stopped"  << std::endl;
     };
 
 private:
@@ -43,7 +45,7 @@ class lrs_device_manager
 {
 public:
     
-    lrs_device_manager( rs2::device &dev );
+    lrs_device_manager( rs2::device dev );
     ~lrs_device_manager();
     void start_stream( stream_type stream, std::function< void( const std::string&, uint8_t* ) > cb );
     void stop_stream( stream_type stream );

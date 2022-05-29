@@ -8,7 +8,7 @@
 using namespace tools;
 
 
-lrs_device_manager::lrs_device_manager( rs2::device & dev )
+lrs_device_manager::lrs_device_manager( rs2::device dev )
     : _rs_dev( dev )
 {
     _device_sn = _rs_dev.get_info( RS2_CAMERA_INFO_SERIAL_NUMBER );

@@ -37,7 +37,6 @@ void lrs_device_watcher::run( std::function< void( rs2::device ) > add_device_cb
                 {
                     if( info.was_removed( rs_device ) )
                     {
-                        std::cout << "Device '" << rs_device.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER) << "' - removed" << std::endl;
                         devices_to_remove.push_back(rs_device);
                     }
                 }
@@ -60,7 +59,6 @@ void lrs_device_watcher::run( std::function< void( rs2::device ) > add_device_cb
                     std::cout << "Device '" << rs_device.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER) << "' - detected" << std::endl;
                     add_device_cb( rs_device );
                     strong_rs_device_list->push_back(rs_device);
-                    std::cout << "Device '" << rs_device.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER) << "' - detected" << std::endl;
                 }
             }
         } );
@@ -72,8 +70,8 @@ void tools::lrs_device_watcher::notify_connected_devices_on_wake_up(
     auto connected_dev_list = _ctx.query_devices();
     for( auto connected_dev : connected_dev_list )
     {
+        std::cout << "Device '" << connected_dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER) << "' - detected" << std::endl;
         add_device_cb( connected_dev );
         _rs_device_list->push_back(connected_dev);
-        std::cout << "Device '" << connected_dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER) << "' - detected" << std::endl;
     }
 }
