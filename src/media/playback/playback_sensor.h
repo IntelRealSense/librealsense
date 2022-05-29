@@ -7,7 +7,7 @@
 #include "../../core/serialization.h"
 #include "../../core/streaming.h"
 #include "../../archive.h"
-#include "../../concurrency.h"
+#include <librealsense2/utilities/concurrency/concurrency.h>
 #include "../../sensor.h"
 #include "../../types.h"
 
@@ -142,6 +142,12 @@ namespace librealsense
                     
                 };
                 m_dispatchers.at(stream_id)->invoke(callback, !is_real_time);
+
+                // On non-real-time, we want the playback to run in synchronous mode:
+                // The playback will dispatch each frame and wait for it callback to finish before
+                // moving on to the next one.
+                if( ! is_real_time )
+                    m_dispatchers.at( stream_id )->flush();
             }
         }
     };

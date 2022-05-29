@@ -34,12 +34,12 @@ extern "C" {
         RS2_OPTION_ENABLE_AUTO_EXPOSURE, /**< Enable / disable color image auto-exposure*/
         RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE, /**< Enable / disable color image auto-white-balance*/
         RS2_OPTION_VISUAL_PRESET, /**< Provide access to several recommend sets of option presets for the depth camera */
-        RS2_OPTION_LASER_POWER, /**< Power of the laser emitter, with 0 meaning projector off*/
+        RS2_OPTION_LASER_POWER, /**< Power of the laser emitter (mW), with 0 meaning projector turned off*/
         RS2_OPTION_ACCURACY, /**< Set the number of patterns projected per frame. The higher the accuracy value the more patterns projected. Increasing the number of patterns help to achieve better accuracy. Note that this control is affecting the Depth FPS */
         RS2_OPTION_MOTION_RANGE, /**< Motion vs. Range trade-off, with lower values allowing for better motion sensitivity and higher values allowing for better depth range*/
         RS2_OPTION_FILTER_OPTION, /**< Set the filter to apply to each depth frame. Each one of the filter is optimized per the application requirements*/
         RS2_OPTION_CONFIDENCE_THRESHOLD, /**< The confidence level threshold used by the Depth algorithm pipe to set whether a pixel will get a valid range or will be marked with invalid range*/
-        RS2_OPTION_EMITTER_ENABLED, /**< Emitter select: 0 – disable all emitters. 1 – enable laser. 2 – enable auto laser. 3 – enable LED.*/
+        RS2_OPTION_EMITTER_ENABLED, /**< Emitter select: 0 - disable all emitters. 1 - enable laser. 2 - enable auto laser. 3 - enable LED.*/
         RS2_OPTION_FRAMES_QUEUE_SIZE, /**< Number of frames the user is allowed to keep per stream. Trying to hold-on to more frames will cause frame-drops.*/
         RS2_OPTION_TOTAL_FRAME_DROPS, /**< Total number of detected frame drops from all streams */
         RS2_OPTION_AUTO_EXPOSURE_MODE, /**< Auto-Exposure modes: Static, Anti-Flicker and Hybrid */
@@ -107,8 +107,8 @@ extern "C" {
         RS2_OPTION_ALTERNATE_IR, /**< Turn on/off the alternate IR, When enabling alternate IR, the IR image is holding the amplitude of the depth correlation. */
         RS2_OPTION_NOISE_ESTIMATION,  /**< Noise estimation - indicates the noise on the IR image */
         RS2_OPTION_ENABLE_IR_REFLECTIVITY, /**< Enables data collection for calculating IR pixel reflectivity  */
-        RS2_OPTION_AUTO_EXPOSURE_LIMIT, /**< Set and get auto exposure limit in microseconds. Default is 0 which means full exposure range. If the requested exposure limit is greater than frame time, it will be set to frame time at runtime. Setting will not take effect until next streaming session. */
-        RS2_OPTION_AUTO_GAIN_LIMIT, /**< Set and get auto gain limits ranging from 16 to 248. Default is 0 which means full gain. If the requested gain limit is less than 16, it will be set to 16. If the requested gain limit is greater than 248, it will be set to 248. Setting will not take effect until next streaming session. */
+        RS2_OPTION_AUTO_EXPOSURE_LIMIT, /**< Set and get auto exposure limit in microseconds. If the requested exposure limit is greater than frame time, it will be set to frame time at runtime. Setting will not take effect until next streaming session. */
+        RS2_OPTION_AUTO_GAIN_LIMIT, /**< Set and get auto gain limits ranging from 16 to 248. If the requested gain limit is less than 16, it will be set to 16. If the requested gain limit is greater than 248, it will be set to 248. Setting will not take effect until next streaming session. */
         RS2_OPTION_AUTO_RX_SENSITIVITY, /**< Enable receiver sensitivity according to ambient light, bounded by the Receiver Gain control. */
         RS2_OPTION_TRANSMITTER_FREQUENCY, /**<changes the transmitter frequencies increasing effective range over sharpness. */
         RS2_OPTION_VERTICAL_BINNING, /**< Enables vertical binning which increases the maximal sensed distance. */

@@ -69,9 +69,19 @@ namespace librealsense
             }
             
             //PROJECTOR TEMPERATURE OPTION
-            depth_ep.register_option(RS2_OPTION_PROJECTOR_TEMPERATURE,
-                std::make_shared<asic_and_projector_temperature_options>(raw_depth_ep,
-                    RS2_OPTION_PROJECTOR_TEMPERATURE));
+            if (_pid == ds::RS457_PID)
+            {
+                depth_ep.register_option(RS2_OPTION_PROJECTOR_TEMPERATURE,
+                    std::make_shared<projector_temperature_option>(_hw_monitor,
+                        RS2_OPTION_PROJECTOR_TEMPERATURE));
+            }
+            else
+            {
+                depth_ep.register_option(RS2_OPTION_PROJECTOR_TEMPERATURE,
+                    std::make_shared<asic_and_projector_temperature_options>(raw_depth_ep,
+                        RS2_OPTION_PROJECTOR_TEMPERATURE));
+            }
+
         }
         else
         {

@@ -2,8 +2,8 @@
 // Copyright(c) 2021 Intel Corporation. All Rights Reserved.
 
 #include <unit-tests/catch.h>
-#include <common/utilities/time/waiting-on.h>
-#include <common/utilities/time/timer.h>
+#include <librealsense2/utilities/time/waiting-on.h>
+#include <librealsense2/utilities/time/timer.h>
 #include <queue>
 
 using utilities::time::waiting_on;

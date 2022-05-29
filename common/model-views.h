@@ -27,9 +27,9 @@
 #include "fw-update-helper.h"
 #include "updates-model.h"
 #include "calibration-model.h"
-#include <utilities/time/periodic_timer.h>
+#include <librealsense2/utilities/time/periodic-timer.h>
+#include <librealsense2/utilities/number/stabilized-value.h>
 #include "reflectivity/reflectivity.h"
-#include <utilities/number/stabilized-value.h>
 
 ImVec4 from_rgba(uint8_t r, uint8_t g, uint8_t b, uint8_t a, bool consistent_color = false);
 ImVec4 operator+(const ImVec4& c, float v);

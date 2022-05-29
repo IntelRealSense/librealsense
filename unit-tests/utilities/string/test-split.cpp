@@ -1,10 +1,10 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2020 Intel Corporation. All Rights Reserved.
 
-//#cmake:add-file ../../../common/utilities/string/split.h
+//#cmake:add-file ../../../include/librealsense2/utilities/string/split.h
 
 #include "common.h"
-#include "../../../common/utilities/string/split.h"
+#include <librealsense2/utilities/string/split.h>
 
 using namespace utilities::string;
 

@@ -35,16 +35,6 @@
 #define FW_L51X_FW_IMAGE_VERSION ""
 #endif // INTERNAL_FW
 
-#ifdef BUILD_EASYLOGGINGPP
-#include <easylogging++.h>
-#ifdef BUILD_SHARED_LIBS
-// With static linkage, ELPP is initialized by librealsense, so doing it here will
-// create errors. When we're using the shared .so/.dll, the two are separate and we have
-// to initialize ours if we want to use the APIs!
-INITIALIZE_EASYLOGGINGPP
-#endif
-#endif
-
 using namespace rs2;
 using namespace rs400;
 

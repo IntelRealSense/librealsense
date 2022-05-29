@@ -3,6 +3,7 @@
 
 //#cmake: static!
 //#test:device L500*
+//#test:donotrun      # temporary: currently it fails LibCI on Linux (see LRS-351)!
 
 #include "presets-common.h"
 #include "../reset-camera.h"

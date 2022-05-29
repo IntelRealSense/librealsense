@@ -36,6 +36,42 @@ namespace librealsense
         rs2_option                  _option;
     };
 
+    class asic_temperature_option : public readonly_option
+    {
+    public:
+        float query() const override;
+
+        option_range get_range() const override;
+
+        inline bool is_enabled() const override {return true;}
+
+        inline const char* get_description() const override {return "Current Asic Temperature (degree celsius)";}
+
+        explicit asic_temperature_option(std::shared_ptr<hw_monitor> hwm, rs2_option opt);
+
+    private:
+        rs2_option                  _option;
+        std::shared_ptr<hw_monitor>  _hw_monitor;
+    };
+
+    class projector_temperature_option : public readonly_option
+    {
+    public:
+        float query() const override;
+
+        option_range get_range() const override;
+
+        inline bool is_enabled() const override {return true;}
+
+        inline const char* get_description() const override {return "Current Projector Temperature (degree celsius)";}
+
+        explicit projector_temperature_option(std::shared_ptr<hw_monitor> hwm, rs2_option opt);
+
+    private:
+        rs2_option                  _option;
+        std::shared_ptr<hw_monitor>  _hw_monitor;
+    };
+
     class motion_module_temperature_option : public readonly_option
     {
     public:
@@ -344,7 +380,7 @@ namespace librealsense
         virtual bool is_read_only() const { return _sensor && _sensor->is_opened(); }
         virtual const char* get_description() const override
         {
-            return "Exposure limit is in microseconds. Default is 0 which means full exposure range. If the requested exposure limit is greater than frame time, it will be set to frame time at runtime. Setting will not take effect until next streaming session.";
+            return "Exposure limit is in microseconds. If the requested exposure limit is greater than frame time, it will be set to frame time at runtime. Setting will not take effect until next streaming session.";
         }
         virtual void enable_recording(std::function<void(const option&)> record_action) override { _record_action = record_action; }
 
@@ -368,7 +404,7 @@ namespace librealsense
         virtual bool is_read_only() const { return _sensor && _sensor->is_opened(); }
         virtual const char* get_description() const override
         {
-            return "Gain limits ranges from 16 to 248. Default is 0 which means full gain. If the requested gain limit is less than 16, it will be set to 16. If the requested gain limit is greater than 248, it will be set to 248. Setting will not take effect until next streaming session.";
+            return "Gain limits ranges from 16 to 248. If the requested gain limit is less than 16, it will be set to 16. If the requested gain limit is greater than 248, it will be set to 248. Setting will not take effect until next streaming session.";
         }
         virtual void enable_recording(std::function<void(const option&)> record_action) override { _record_action = record_action; }
 

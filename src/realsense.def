@@ -101,6 +101,7 @@ EXPORTS
     rs2_set_region_of_interest
     rs2_get_region_of_interest
 
+    rs2_build_debug_protocol_command
     rs2_send_and_receive_raw_data
     rs2_get_raw_data_size
     rs2_delete_raw_data

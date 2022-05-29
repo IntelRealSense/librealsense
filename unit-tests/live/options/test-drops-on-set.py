@@ -96,10 +96,10 @@ depth_sensor.set_option( rs.option.visual_preset, int(rs.l500_visual_preset.max_
 options_to_ignore = [] 
 
 if product_line == "L500":
-    options_to_ignore = [rs.option.host_performance]
+    options_to_ignore = [rs.option.host_performance, rs.option.inter_cam_sync_mode]
 
 if product_line == "D400":
-    options_to_ignore = [rs.option.visual_preset]
+    options_to_ignore = [rs.option.visual_preset, rs.option.inter_cam_sync_mode]
 
 def test_option_changes(sensor):
     global options_to_ignore

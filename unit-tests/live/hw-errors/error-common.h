@@ -1,7 +1,7 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2021 Intel Corporation. All Rights Reserved.
 
-#include <src/concurrency.h>
+#include <librealsense2/utilities/concurrency/concurrency.h>
 
 // This should be defined, per device type
 void trigger_error_or_exit( const rs2::device & dev, uint8_t num );
@@ -24,6 +24,7 @@ void validate_errors_handling( const rs2::device & dev,
 
         notification_description = n.get_description();
         severity = n.get_severity();
+        std::cout << "notifications_callback called with error: " << n.get_description() << std::endl;
         cv.notify_one();
     } );
 
@@ -31,6 +32,7 @@ void validate_errors_handling( const rs2::device & dev,
 
     for( auto i = error_report.begin(); i != error_report.end(); i++ )
     {
+        std::cout << "triggering error : " << i->second.first << std::endl;
         trigger_error_or_exit( dev, i->first );
         std::unique_lock< std::mutex > lock( m );
         CAPTURE( i->first );

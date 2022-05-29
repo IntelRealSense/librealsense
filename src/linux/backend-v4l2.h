@@ -61,7 +61,7 @@ constexpr bool metadata_node = false;
 #define V4L2_META_FMT_D4XX      v4l2_fourcc('D', '4', 'X', 'X') /* D400 Payload Header metadata */
 #endif
 
-//#define DEBUG_V4L
+#define DEBUG_V4L
 #ifdef DEBUG_V4L
 #define LOG_DEBUG_V4L(...)   do { CLOG(DEBUG   ,"librealsense") << __VA_ARGS__; } while(false)
 #else
@@ -159,6 +159,42 @@ namespace librealsense
         };
 
 
+        //Debug Evgeni
+        // RAII for buffer exchange with kernel
+        struct kernel_buf_guard
+        {
+            ~kernel_buf_guard()
+            {
+                if (_data_buf && (!_managed))
+                {
+                    if (_file_desc > 0)
+                    {
+                        if (xioctl(_file_desc, (int)VIDIOC_QBUF, &_dq_buf) < 0)
+                        {
+                            LOG_DEBUG_V4L("xioctl(VIDIOC_QBUF) guard failed for fd " << std::dec << _file_desc);
+                            if (xioctl(_file_desc, (int)VIDIOC_DQBUF, &_dq_buf) >= 0)
+                            {
+                                LOG_DEBUG_V4L("xioctl(VIDIOC_QBUF) Re-enqueue succeeded for fd " << std::dec << _file_desc);
+                                if (xioctl(_file_desc, (int)VIDIOC_QBUF, &_dq_buf) < 0)
+                                    LOG_DEBUG_V4L("xioctl(VIDIOC_QBUF) re-deque  failed for fd " << std::dec << _file_desc);
+                                else
+                                    LOG_DEBUG_V4L("xioctl(VIDIOC_QBUF) re-deque succeeded for fd " << std::dec << _file_desc);
+                            }
+                            else
+                                LOG_DEBUG_V4L("xioctl(VIDIOC_QBUF) Re-enqueue failed for fd " << std::dec << _file_desc);
+                        }
+                        else
+                            LOG_DEBUG_V4L("Enqueue (e) buf " << std::dec << _dq_buf.index << " for fd " << _file_desc);
+                    }
+                }
+            }
+
+            std::shared_ptr<platform::buffer>   _data_buf=nullptr;
+            v4l2_buffer                         _dq_buf{};
+            int                                 _file_desc=-1;
+            bool                                _managed=false;
+        };
+
         // RAII handling of kernel buffers interchanges
         class buffers_mgr
         {
@@ -184,42 +220,6 @@ namespace librealsense
             void    set_md_from_video_node(bool compressed);
             bool    verify_vd_md_sync() const;
             bool    md_node_present() const;
-
-            //Debug Evgeni
-            // RAII for buffer exchange with kernel
-            struct kernel_buf_guard
-            {
-                ~kernel_buf_guard()
-                {
-                    if (_data_buf && (!_managed))
-                    {
-                        if (_file_desc > 0)
-                        {
-                            if (xioctl(_file_desc, (int)VIDIOC_QBUF, &_dq_buf) < 0)
-                            {
-                                LOG_DEBUG_V4L("xioctl(VIDIOC_QBUF) guard failed for fd " << std::dec << _file_desc);
-                                if (xioctl(_file_desc, (int)VIDIOC_DQBUF, &_dq_buf) >= 0)
-                                {
-                                    LOG_DEBUG_V4L("xioctl(VIDIOC_QBUF) Re-enqueue succeeded for fd " << std::dec << _file_desc);
-                                    if (xioctl(_file_desc, (int)VIDIOC_QBUF, &_dq_buf) < 0)
-                                        LOG_DEBUG_V4L("xioctl(VIDIOC_QBUF) re-deque  failed for fd " << std::dec << _file_desc);
-                                    else
-                                        LOG_DEBUG_V4L("xioctl(VIDIOC_QBUF) re-deque succeeded for fd " << std::dec << _file_desc);
-                                }
-                                else
-                                    LOG_DEBUG_V4L("xioctl(VIDIOC_QBUF) Re-enqueue failed for fd " << std::dec << _file_desc);
-                            }
-                            else
-                                LOG_DEBUG_V4L("Enqueue (e) buf " << std::dec << _dq_buf.index << " for fd " << _file_desc);
-                        }
-                    }
-                }
-
-                std::shared_ptr<platform::buffer>   _data_buf=nullptr;
-                v4l2_buffer                         _dq_buf{};
-                int                                 _file_desc=-1;
-                bool                                _managed=false;
-            };
 
             std::array<kernel_buf_guard, e_max_kernel_buf_type>& get_buffers()
                     { return buffers; }
@@ -252,6 +252,38 @@ namespace librealsense
             virtual void acquire_metadata(buffers_mgr & buf_mgr,fd_set &fds, bool compressed_format) = 0;
         };
 
+        class v4l2_video_md_syncer
+        {
+        public:
+            v4l2_video_md_syncer() {}
+
+            struct sync_buffer
+            {
+                std::shared_ptr<v4l2_buffer> _v4l2_buf;
+                int _fd;
+                __u32 _buffer_index;
+            };
+
+            // pushing video buffer to the video queue
+            void push_video(const sync_buffer& video_buffer);
+            // pushing metadata buffer to the metadata queue
+            void push_metadata(const sync_buffer& md_buffer);
+
+            // pulling synced data
+            // if returned value is true - the data could have been pulled
+            // if returned value is false - no data is returned via the inout params because data could not be synced
+            bool pull_video_with_metadata(std::shared_ptr<v4l2_buffer>& video_buffer, std::shared_ptr<v4l2_buffer>& md_buffer);
+
+            void flush();
+
+        private:
+            void enqueue_buffer_before_throwing_it(const sync_buffer& sb) const;
+
+            std::mutex _syncer_mutex;
+            std::queue<sync_buffer> _video_queue;
+            std::queue<sync_buffer> _md_queue;
+        };
+
         class v4l_uvc_device : public uvc_device, public v4l_uvc_interface
         {
         public:
@@ -261,7 +293,7 @@ namespace librealsense
 
             v4l_uvc_device(const uvc_device_info& info, bool use_memory_map = false);
 
-            ~v4l_uvc_device() override;
+            virtual ~v4l_uvc_device() override;
 
             void probe_and_commit(stream_profile profile, frame_callback callback, int buffers) override;
 
@@ -302,7 +334,7 @@ namespace librealsense
             usb_spec get_usb_specification() const override { return _device_usb_spec; }
 
         protected:
-            static uint32_t get_cid(rs2_option option);
+            virtual uint32_t get_cid(rs2_option option) const;
 
             virtual void capture_loop() override;
 
@@ -322,6 +354,10 @@ namespace librealsense
             void subscribe_to_ctrl_event(uint32_t control_id);
             void unsubscribe_from_ctrl_event(uint32_t control_id);
             bool pend_for_ctrl_status_event();
+            // checking if metadata is streamed
+            virtual inline bool is_metadata_streamed() const { return false;}
+            virtual inline std::shared_ptr<buffer> get_video_buffer(__u32 index) const {return _buffers[index];}
+            virtual inline std::shared_ptr<buffer> get_md_buffer(__u32 index) const {return nullptr;}
 
             power_state _state = D3;
             std::string _name = "";
@@ -341,9 +377,10 @@ namespace librealsense
             int _max_fd = 0;                    // specifies the maximal pipe number the polling process will monitor
             std::vector<int>  _fds;             // list the file descriptors to be monitored during frames polling
             buffers_mgr     _buf_dispatch;      // Holder for partial (MD only) frames that shall be preserved between 'select' calls when polling v4l buffers
+            int _fd = 0;          // prevent unintentional abuse in derived class
+            v4l2_video_md_syncer _video_md_syncer;
 
         private:
-            int _fd = 0;          // prevent unintentional abuse in derived class
             int _stop_pipe_fd[2]; // write to _stop_pipe_fd[1] and read from _stop_pipe_fd[0]
 
         };
@@ -354,7 +391,7 @@ namespace librealsense
         public:
             v4l_uvc_meta_device(const uvc_device_info& info, bool use_memory_map = false);
 
-            ~v4l_uvc_meta_device();
+            virtual ~v4l_uvc_meta_device();
 
         protected:
 
@@ -367,12 +404,33 @@ namespace librealsense
             void set_format(stream_profile profile);
             void prepare_capture_buffers();
             virtual void acquire_metadata(buffers_mgr & buf_mgr,fd_set &fds, bool compressed_format=false);
-
+            // checking if metadata is streamed
+            virtual inline bool is_metadata_streamed() const { return _md_fd > 0;}
+            virtual inline std::shared_ptr<buffer> get_md_buffer(__u32 index) const {return _md_buffers[index];}
             int _md_fd = -1;
             std::string _md_name = "";
 
             std::vector<std::shared_ptr<buffer>> _md_buffers;
             stream_profile _md_profile;
+        };
+
+        // D457 Development. To be merged into underlying class
+        class v4l_mipi_device : public v4l_uvc_meta_device
+        {
+        public:
+            v4l_mipi_device(const uvc_device_info& info, bool use_memory_map = true);
+
+            virtual ~v4l_mipi_device();
+
+            bool get_pu(rs2_option opt, int32_t& value) const override;
+            bool set_pu(rs2_option opt, int32_t value) override;
+            bool set_xu(const extension_unit& xu, uint8_t control, const uint8_t* data, int size) override;
+            bool get_xu(const extension_unit& xu, uint8_t control, uint8_t* data, int size) const override;
+            control_range get_xu_range(const extension_unit& xu, uint8_t control, int len) const override;
+            control_range get_pu_range(rs2_option option) const override;
+        protected:
+            virtual uint32_t get_cid(rs2_option option) const;
+            uint32_t xu_to_cid(const extension_unit& xu, uint8_t control) const; // Find the mapping of XU to the underlying control
         };
 
         class v4l_backend : public backend

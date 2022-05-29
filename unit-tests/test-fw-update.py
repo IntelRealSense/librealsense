@@ -7,6 +7,11 @@
 #test:device each(D400*)
 
 import pyrealsense2 as rs, sys, os, subprocess
+import os
+import subprocess
+import re
+import platform
+import pyrealsense2 as rs
 from rspy import devices, log, test, file, repo
 import re, platform
 
@@ -26,53 +31,47 @@ except acroname.NoneFoundError as e:
 # needed to verify it is available above...
 devices.acroname = None
 
-def send_hardware_monitor_command( device, command ):
-    command_input = []  # array of uint_8t
 
-    # Parsing the command to array of unsigned integers(size should be < 8bits)
-    # threw out spaces
-    command = command.lower()
-    command = command.replace(" ", "")
-    current_uint8_t_string = ''
-    for i in range(0, len(command)):
-        current_uint8_t_string += command[i]
-        if len(current_uint8_t_string) >= 2:
-            command_input.append(int('0x' + current_uint8_t_string, 0))
-            current_uint8_t_string = ''
-    if current_uint8_t_string != '':
-        command_input.append(int('0x' + current_uint8_t_string, 0))
-
+def send_hardware_monitor_command(device, command):
     # byte_index = -1
-    raw_result = rs.debug_protocol( device ).send_and_receive_raw_data( command_input )
+    raw_result = rs.debug_protocol(device).send_and_receive_raw_data(command)
 
     return raw_result[4:]
 
-def get_update_counter( device ):
-    product_line = device.get_info( rs.camera_info.product_line )
-    cmd = None
+
+def get_update_counter(device):
+    product_line = device.get_info(rs.camera_info.product_line)
+    opcode = 0x09
+    start_index = 0x30
+    size = None
 
     if product_line == "L500":
-        cmd = "14 00 AB CD 09 00 00 00 30 00 00 00 01 00 00 00 00 00 00 00 00 00 00 00"
+        size = 0x1
     elif product_line == "D400":
-        cmd = "14 00 AB CD 09 00 00 00 30 00 00 00 02 00 00 00 00 00 00 00 00 00 00 00"
+        size = 0x2
     else:
         log.f( "Incompatible product line:", product_line )
 
-    counter = send_hardware_monitor_command( device, cmd )
+    raw_cmd = rs.debug_protocol(device).build_command(opcode, start_index, size)
+    counter = send_hardware_monitor_command(device, raw_cmd)
     return counter[0]
+
 
 def reset_update_counter( device ):
     product_line = device.get_info( rs.camera_info.product_line )
-    cmd = None
 
     if product_line == "L500":
-        cmd = "14 00 AB CD 0A 00 00 00 30 00 00 00 01 00 00 00 00 00 00 00 00 00 00 00 00"
+        opcode = 0x0A
+        start_index = 0x30
+        size = 0x01
+        raw_cmd = rs.debug_protocol(device).build_command(opcode, start_index, size)
     elif product_line == "D400":
-        cmd = "14 00 AB CD 86 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00"
+        opcode = 0x86
+        raw_cmd = rs.debug_protocol(device).build_command(opcode)
     else:
         log.f( "Incompatible product line:", product_line )
 
-    send_hardware_monitor_command( device, cmd )
+    send_hardware_monitor_command( device, raw_cmd )
 
 def find_image_or_exit( product_name, fw_version_regex = r'(\d+\.){3}(\d+)' ):
     """

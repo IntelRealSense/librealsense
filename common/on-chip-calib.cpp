@@ -3043,9 +3043,7 @@ namespace rs2
         {
             if (get_manager().allow_calib_keep())
             {
-                if (get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_OB_CALIB ||
-                    get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_FL_CALIB ||
-                    get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_FL_CALIB) return 190;
+                if (get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_OB_CALIB || get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_FL_CALIB) return 190;
                 else if (get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_TARE_CALIB) return 140;
                 else if (get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_UVMAPPING_CALIB) return 160;
                 else return 170;

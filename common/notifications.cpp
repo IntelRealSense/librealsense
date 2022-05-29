@@ -1175,6 +1175,7 @@ namespace rs2
         hyperlink(win, "2. Firmware Releases / Errata", "https://dev.intelrealsense.com/docs/firmware-releases");
 
     }
+
     fl_cal_limitation_model::fl_cal_limitation_model()
         : notification_model()
     {

@@ -92,12 +92,6 @@ def main(arguments=None):
             depth_sensor.set_option(rs.option.thermal_compensation, 1)
     print("UCAL finished successfully")
 
-def on_chip_calib_cb(progress):
-    pp = int(progress)
-    sys.stdout.write('\r' + '*'*pp + ' '*(99-pp) + '*')
-    if (pp == 100):
-        print()
-
 
 def progress_callback(progress):
     print(f'\rProgress  {progress}% ... ', end ="\r")
@@ -206,6 +200,7 @@ def run_tare_calibration(accuracy, scan, gt, target_size):
     pipe = rs.pipeline(ctx)
     pp = pipe.start(cfg)
     dev = pp.get_device()
+
     try:
         print(f'\tGround Truth:\t{target_z}')
         print(f'\tAccuracy:\t{accuracy}')

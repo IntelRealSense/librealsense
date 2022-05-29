@@ -341,6 +341,18 @@ namespace librealsense
             return _hw_monitor->send(input);
         }
 
+
+        std::vector<uint8_t> build_command(uint32_t opcode,
+            uint32_t param1 = 0,
+            uint32_t param2 = 0,
+            uint32_t param3 = 0,
+            uint32_t param4 = 0,
+            uint8_t const * data = nullptr,
+            size_t dataLength = 0) const override
+        {
+            return _hw_monitor->build_command(opcode, param1, param2, param3, param4, data, dataLength);
+        }
+
         void hardware_reset() override
         {
             force_hardware_reset();

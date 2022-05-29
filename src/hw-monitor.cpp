@@ -73,8 +73,8 @@ namespace librealsense
             if (res.size() < static_cast<int>(sizeof(uint32_t)))
                 throw invalid_value_exception("Incomplete bulk usb transfer!");
 
-            if (res.size() > IVCAM_MONITOR_MAX_BUFFER_SIZE)
-                throw invalid_value_exception("Out buffer is greater than max buffer size!");
+            //if (res.size() > IVCAM_MONITOR_MAX_BUFFER_SIZE)
+             //   throw invalid_value_exception("Out buffer is greater than max buffer size!");
 
             op = *reinterpret_cast<uint32_t *>(res.data());
             if (res.size() > static_cast<int>(inSize))
@@ -172,6 +172,22 @@ namespace librealsense
 
         return std::vector<uint8_t>(newCommand.receivedCommandData,
             newCommand.receivedCommandData + newCommand.receivedCommandDataLength);
+    }
+
+    std::vector<uint8_t> hw_monitor::build_command(uint32_t opcode,
+        uint32_t param1,
+        uint32_t param2,
+        uint32_t param3,
+        uint32_t param4,
+        uint8_t const * data,
+        size_t dataLength) const
+    {
+        int length;
+        std::vector<uint8_t> result;
+        result.resize(IVCAM_MONITOR_MAX_BUFFER_SIZE);
+        fill_usb_buffer(opcode, param1, param2, param3, param4, data, static_cast<int>(dataLength), result.data(), length);
+        result.resize(length);
+        return result;
     }
 
     std::string hwmon_error_string( command const & cmd, hwmon_response e )

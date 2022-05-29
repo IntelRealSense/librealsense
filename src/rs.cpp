@@ -557,6 +557,19 @@ rs2_stream_profile* rs2_clone_video_stream_profile(const rs2_stream_profile* mod
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, mode, stream, index, format, width, height, intr)
 
+const rs2_raw_data_buffer* rs2_build_debug_protocol_command(rs2_device* device, unsigned opcode, unsigned param1, unsigned param2,
+    unsigned param3, unsigned param4, void* data, unsigned size_of_data, rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(device);
+
+    auto debug_interface = VALIDATE_INTERFACE(device->device, librealsense::debug_interface);
+    auto ret_data = debug_interface->build_command(opcode, param1, param2, param3, param4, static_cast<uint8_t*>(data), size_of_data);
+    
+    return new rs2_raw_data_buffer{ std::move(ret_data) };
+
+}
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, device)
+
 const rs2_raw_data_buffer* rs2_send_and_receive_raw_data(rs2_device* device, void* raw_data_to_send, unsigned size_of_raw_data_to_send, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(device);
@@ -566,7 +579,7 @@ const rs2_raw_data_buffer* rs2_send_and_receive_raw_data(rs2_device* device, voi
     auto raw_data_buffer = static_cast<uint8_t*>(raw_data_to_send);
     std::vector<uint8_t> buffer_to_send(raw_data_buffer, raw_data_buffer + size_of_raw_data_to_send);
     auto ret_data = debug_interface->send_receive_raw_data(buffer_to_send);
-    return new rs2_raw_data_buffer{ ret_data };
+    return new rs2_raw_data_buffer{ std::move(ret_data) };
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, device)
 

@@ -196,11 +196,12 @@ namespace librealsense
                 s << "id- " << id <<
                     "\nvid- " << std::hex << vid <<
                     "\npid- " << std::hex << pid <<
-                    "\nmi- " << mi <<
+                    "\nmi- " << std::dec << mi <<
                     "\nunique_id- " << unique_id <<
                     "\npath- " << device_path <<
-                    "\nsusb specification- " << std::hex << (uint16_t)conn_spec << std::dec <<
-                    (has_metadata_node ? ( "\nmetadata node-" + metadata_node_id) : "");
+                    "\nUVC capabilities- " << std::hex << uvc_capabilities <<
+                    "\nUVC specification- " << std::hex << (uint16_t)conn_spec << std::dec <<
+                    (has_metadata_node ? ( "\nmetadata node-" + metadata_node_id) : "") << std::endl;
 
                 return s.str();
             }

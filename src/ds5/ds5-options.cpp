@@ -117,6 +117,62 @@ namespace librealsense
         : _option(opt), _ep(ep)
         {}
 
+    asic_temperature_option::asic_temperature_option(std::shared_ptr<hw_monitor> hwm, rs2_option opt)
+        : _hw_monitor(hwm), _option(opt)
+        {}
+
+    float asic_temperature_option::query() const
+    {
+        if (!is_enabled() || !_hw_monitor)
+            throw wrong_api_call_sequence_exception("query is available during streaming only");
+
+        float temperature = -1;
+        try{
+            command cmd(ds::ASIC_TEMP_MIPI);
+            auto res = _hw_monitor->send( cmd );
+            temperature = static_cast<float>(res[0]);
+        }
+        catch(...)
+        {
+            throw wrong_api_call_sequence_exception("hw monitor command for asic temperature failed");
+        }
+
+        return temperature;
+    }
+
+    option_range asic_temperature_option::get_range() const
+    {
+        return option_range { -40, 125, 0, 0 };
+    }
+
+    projector_temperature_option::projector_temperature_option(std::shared_ptr<hw_monitor> hwm, rs2_option opt)
+        : _hw_monitor(hwm), _option(opt)
+        {}
+
+    float projector_temperature_option::query() const
+    {
+        if (!is_enabled() || !_hw_monitor)
+            throw wrong_api_call_sequence_exception("query is available during streaming only");
+
+        float temperature;
+        try {
+            command cmd(ds::PROJ_TEMP_MIPI);
+            auto res = _hw_monitor->send( cmd );
+            temperature = static_cast<float>(res[0]);
+        }
+        catch(...)
+        {
+            throw wrong_api_call_sequence_exception("hw monitor command for projector temperature failed");
+        }
+
+        return temperature;
+    }
+
+    option_range projector_temperature_option::get_range() const
+    {
+        return option_range { -40, 125, 0, 0 };
+    }
+
     float motion_module_temperature_option::query() const
     {
         if (!is_enabled())
