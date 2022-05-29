@@ -27,7 +27,7 @@ namespace librealsense
 
         //Projector's capacity is established based on actual HW capabilities
         auto pid = group.uvc_devices.front().pid;
-        if (pid != RS_USB2_PID)
+        if ((pid != RS_USB2_PID) && ((_device_capabilities & d400_caps::CAP_ACTIVE_PROJECTOR) == d400_caps::CAP_ACTIVE_PROJECTOR))
         {
             auto&& depth_ep = get_depth_sensor();
             auto&& raw_depth_ep = get_raw_depth_sensor();

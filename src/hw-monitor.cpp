@@ -157,7 +157,6 @@ namespace librealsense
         // endian?
         auto opCodeAsUint32 = pack(details.receivedOpcode[3], details.receivedOpcode[2],
                                     details.receivedOpcode[1], details.receivedOpcode[0]);
-
         if (opCodeAsUint32 != opCodeXmit)
         {
             auto err_type = static_cast<hwmon_response>(opCodeAsUint32);

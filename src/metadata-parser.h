@@ -23,21 +23,6 @@ namespace librealsense
         RS2_FRAME_METADATA_COUNT
     };
 
-    /*
-    /** \brief Metadata fields that are utilized internally by librealsense
-        Provides extention to the r2_frame_metadata list of attributes*
-    //mipi metadata_values
-    enum frame_metadata_mipi
-    {
-
-        RS2_FRAME_METADATA_TRIGGER,
-        RS2_FRAME_METADATA_PRESET,
-        RS2_FRAME_METADATA_INPUT_WIDTH,
-        RS2_FRAME_METADATA_INPUT_HEIGHT,
-        RS2_FRAME_METADATA_SUB_PRESET_INFO,
-        RS2_FRAME_METADATA_CRC,
-    }*/
-
     /**\brief Base class that establishes the interface for retrieving metadata attributes*/
     class md_attribute_parser_base
     {

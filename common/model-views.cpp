@@ -1408,7 +1408,7 @@ namespace rs2
             show_single_fps_list = is_there_common_fps();
 
             int selection_index{};
-			
+
             if (!show_single_fps_list)
             {
                 for (auto fps_array : fps_values_per_stream)

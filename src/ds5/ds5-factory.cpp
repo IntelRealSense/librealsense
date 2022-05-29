@@ -1138,10 +1138,7 @@ namespace librealsense
             for (auto&& uvc : devices)
             {
                 if (is_pid_of_multisensor_device(uvc.pid))
-                {
                     is_device_multisensor = true;
-                    break;
-                }
             }
 
             if(is_device_multisensor)
@@ -1169,8 +1166,6 @@ namespace librealsense
             if (is_device_hid_sensor)
             {
                 all_sensors_present &= (hids.size() >= 2);
-                //temp w/a
-                all_sensors_present = true;
             }
 #endif
 
