@@ -4,20 +4,23 @@
 #pragma once
 
 #include <map>
+#include <string>
+#include <mutex>
 
 #include <fastdds/dds/domain/DomainParticipant.hpp>
 #include <fastdds/dds/domain/DomainParticipantListener.hpp>
 #include <fastdds/dds/subscriber/DataReader.hpp>
 #include <fastdds/dds/subscriber/qos/DataReaderQos.hpp>
 #include <fastrtps/attributes/SubscriberAttributes.h>
+#include <fastdds/rtps/common/Guid.h>
 
-class Sniffer : public eprosima::fastdds::dds::DomainParticipantListener
+class dds_sniffer : public eprosima::fastdds::dds::DomainParticipantListener
 {
 public:
-    Sniffer();
-    ~Sniffer();
+    dds_sniffer();
+    ~dds_sniffer();
 
-    bool init( eprosima::fastdds::dds::DomainId_t domain = 0 );
+    bool init( eprosima::fastdds::dds::DomainId_t domain = 0, bool snapshot = false, bool machine_readable = false );
     void run( uint32_t seconds );
 
 private:
@@ -28,12 +31,24 @@ private:
     std::map< eprosima::fastdds::dds::DataReader *, eprosima::fastrtps::types::DynamicType_ptr > _readers;
     std::map< eprosima::fastdds::dds::DataReader *, eprosima::fastrtps::types::DynamicData_ptr > _datas;
 
-    eprosima::fastrtps::SubscriberAttributes _subscriberAttributes;
+    std::map< eprosima::fastrtps::rtps::GUID_t, eprosima::fastrtps::string_255 > _discovered_participants;
+    struct topic_info
+    {
+        std::set< eprosima::fastrtps::rtps::GUID_t > readers;
+        std::set< eprosima::fastrtps::rtps::GUID_t > writers;
+    };
+    std::map< std::string, topic_info > _discovered_topics;
 
-    eprosima::fastdds::dds::DataReaderQos _readerQoS;
+    eprosima::fastrtps::SubscriberAttributes _subscriber_attributes;
+
+    eprosima::fastdds::dds::DataReaderQos _reader_qos;
 
     std::atomic_int _matched = { 0 };
-    bool _running = false;
+    bool _print_discoveries = false;
+    bool _print_by_topics = false;
+    bool _print_machine_readable = false;
+
+    mutable std::mutex _dds_entities_lock;
 
     void on_data_available( eprosima::fastdds::dds::DataReader * reader ) override;
 
@@ -72,4 +87,21 @@ private:
                                        const eprosima::fastrtps::string_255 topic_name,
                                        const eprosima::fastrtps::string_255 type_name,
                                        const eprosima::fastrtps::types::TypeInformation & type_information ) override;
+
+    // Topics data-base functions
+    void save_topic_writer( const eprosima::fastrtps::rtps::WriterDiscoveryInfo & info );
+    void remove_topic_writer( const eprosima::fastrtps::rtps::WriterDiscoveryInfo & info );
+    void save_topic_reader( const eprosima::fastrtps::rtps::ReaderDiscoveryInfo & info );
+    void remove_topic_reader( const eprosima::fastrtps::rtps::ReaderDiscoveryInfo & info );
+    uint32_t calc_max_indentation() const;
+
+    // Helper print functions
+    void print_writer_discovered( const eprosima::fastrtps::rtps::WriterDiscoveryInfo & info, bool discovered ) const;
+    void print_reader_discovered( const eprosima::fastrtps::rtps::ReaderDiscoveryInfo & info, bool discovered ) const;
+    void print_participant_discovered( const eprosima::fastrtps::rtps::ParticipantDiscoveryInfo & info, bool discovered ) const;
+    void print_topics_machine_readable() const;
+    void print_topics() const;
+    void ident( uint32_t indentation ) const;
+    void print_topic_writer( const eprosima::fastrtps::rtps::GUID_t & writer, uint32_t indentation = 0) const;
+    void print_topic_reader( const eprosima::fastrtps::rtps::GUID_t & reader, uint32_t indentation = 0) const;
 };
