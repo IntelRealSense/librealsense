@@ -1155,10 +1155,7 @@ namespace librealsense
             for (auto&& uvc : devices)
             {
                 if (is_pid_of_hid_sensor_device(uvc.pid))
-                {
                     is_device_hid_sensor = true;
-                    break;
-                }
             }
 
             // Device with hids can be enabled only if both hids (gyro and accelerometer) are present
