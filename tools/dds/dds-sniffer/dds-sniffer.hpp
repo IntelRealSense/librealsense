@@ -5,6 +5,7 @@
 
 #include <map>
 #include <string>
+#include <mutex>
 
 #include <fastdds/dds/domain/DomainParticipant.hpp>
 #include <fastdds/dds/domain/DomainParticipantListener.hpp>
@@ -46,7 +47,8 @@ private:
     bool _print_discoveries = false;
     bool _print_by_topics = false;
     bool _print_machine_readable = false;
-    uint32_t _max_indentation = 0;
+
+    mutable std::mutex _dds_entities_lock;
 
     void on_data_available( eprosima::fastdds::dds::DataReader * reader ) override;
 
@@ -91,15 +93,15 @@ private:
     void remove_topic_writer( const eprosima::fastrtps::rtps::WriterDiscoveryInfo & info );
     void save_topic_reader( const eprosima::fastrtps::rtps::ReaderDiscoveryInfo & info );
     void remove_topic_reader( const eprosima::fastrtps::rtps::ReaderDiscoveryInfo & info );
-    void calc_max_indentation();
+    uint32_t calc_max_indentation() const;
 
     // Helper print functions
     void print_writer_discovered( const eprosima::fastrtps::rtps::WriterDiscoveryInfo & info, bool discovered ) const;
     void print_reader_discovered( const eprosima::fastrtps::rtps::ReaderDiscoveryInfo & info, bool discovered ) const;
     void print_participant_discovered( const eprosima::fastrtps::rtps::ParticipantDiscoveryInfo & info, bool discovered ) const;
     void print_topics_machine_readable() const;
-    void print_topics();
+    void print_topics() const;
     void ident( uint32_t indentation ) const;
-    void print_topic_writer( const eprosima::fastrtps::rtps::GUID_t & writer, uint32_t indentation ) const;
-    void print_topic_reader( const eprosima::fastrtps::rtps::GUID_t & reader, uint32_t indentation ) const;
+    void print_topic_writer( const eprosima::fastrtps::rtps::GUID_t & writer, uint32_t indentation = 0) const;
+    void print_topic_reader( const eprosima::fastrtps::rtps::GUID_t & reader, uint32_t indentation = 0) const;
 };

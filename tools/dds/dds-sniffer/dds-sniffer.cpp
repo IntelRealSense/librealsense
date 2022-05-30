@@ -316,7 +316,10 @@ void dds_sniffer::on_participant_discovery( eprosima::fastdds::dds::DomainPartic
         {
             print_participant_discovered( info, true );
         }
-        _discovered_participants[info.info.m_guid] = info.info.m_participantName;
+        {
+            std::lock_guard<std::mutex> lock( _dds_entities_lock );
+            _discovered_participants[info.info.m_guid] = info.info.m_participantName;
+        }
         break;
     case eprosima::fastrtps::rtps::ParticipantDiscoveryInfo::REMOVED_PARTICIPANT:
     case eprosima::fastrtps::rtps::ParticipantDiscoveryInfo::DROPPED_PARTICIPANT:
@@ -324,7 +327,10 @@ void dds_sniffer::on_participant_discovery( eprosima::fastdds::dds::DomainPartic
         {
             print_participant_discovered( info, false );
         }
-        _discovered_participants.erase( info.info.m_guid );
+        {
+            std::lock_guard<std::mutex> lock( _dds_entities_lock );
+            _discovered_participants.erase( info.info.m_guid );
+        }
         break;
     }
 }
@@ -339,12 +345,16 @@ void dds_sniffer::on_type_information_received( eprosima::fastdds::dds::DomainPa
 
 void dds_sniffer::save_topic_writer( const eprosima::fastrtps::rtps::WriterDiscoveryInfo & info )
 {
+    std::lock_guard<std::mutex> lock( _dds_entities_lock );
+
     std::string topic_name = info.info.topicName().c_str();
     _discovered_topics[topic_name].writers.insert( info.info.guid() );
 }
 
 void dds_sniffer::remove_topic_writer( const eprosima::fastrtps::rtps::WriterDiscoveryInfo & info )
 {
+    std::lock_guard<std::mutex> lock( _dds_entities_lock );
+
     auto topic_entry = _discovered_topics.find(info.info.topicName().c_str());
     if(topic_entry != _discovered_topics.end() )
     {
@@ -358,34 +368,42 @@ void dds_sniffer::remove_topic_writer( const eprosima::fastrtps::rtps::WriterDis
 
 void dds_sniffer::save_topic_reader( const eprosima::fastrtps::rtps::ReaderDiscoveryInfo & info )
 {
+    std::lock_guard<std::mutex> lock( _dds_entities_lock );
+
     std::string topic_name = info.info.topicName().c_str();
     _discovered_topics[topic_name].readers.insert( info.info.guid() );
 }
 
 void dds_sniffer::remove_topic_reader( const eprosima::fastrtps::rtps::ReaderDiscoveryInfo & info )
 {
+    std::lock_guard<std::mutex> lock( _dds_entities_lock );
+
     auto topic_entry = _discovered_topics.find(info.info.topicName().c_str());
     if(topic_entry != _discovered_topics.end() )
     {
         topic_entry->second.readers.erase( info.info.guid() );
         if( topic_entry->second.writers.empty() && topic_entry->second.readers.empty() )
         {
-            _discovered_topics.erase( info.info.topicName().c_str() );
+            _discovered_topics.erase(topic_entry);
         }
     }
 }
 
-void dds_sniffer::calc_max_indentation()
+uint32_t dds_sniffer::calc_max_indentation() const
 {
     uint32_t indentation = 0;
-    for (auto topic : _discovered_topics)
+    uint32_t max_indentation = 0;
+
+    for (auto topic : _discovered_topics) //_dds_entities_lock locked by print_topics()
     {
         indentation = static_cast<uint32_t>(std::count( topic.first.begin(), topic.first.end(), '/' ));  // Use / as delimiter for nested topic names
+        if (indentation >= max_indentation)
+        {
+            max_indentation = indentation + 1; //+1 for Reader/Writer indentation
+        }
     }
-    if (indentation >= _max_indentation)
-    {
-        _max_indentation = indentation + 1; //+1 for Reader/Writer indentation
-    }
+
+    return max_indentation;
 }
 
 void dds_sniffer::print_writer_discovered( const eprosima::fastrtps::rtps::WriterDiscoveryInfo & info, bool discovered ) const
@@ -434,27 +452,31 @@ void dds_sniffer::print_participant_discovered( const eprosima::fastrtps::rtps::
 
 void dds_sniffer::print_topics_machine_readable() const
 {
+    std::lock_guard<std::mutex> lock( _dds_entities_lock );
+
     for (auto topic : _discovered_topics)
     {
         for (auto writer : topic.second.writers)
         {
             std::cout << topic.first << ",";
-            print_topic_writer( writer, _max_indentation );
+            print_topic_writer( writer );
         }
         for (auto reader : topic.second.readers)
         {
             std::cout << topic.first << ",";
-            print_topic_reader( reader, _max_indentation );
+            print_topic_reader( reader );
         }
     }
 }
 
-void dds_sniffer::print_topics()
+void dds_sniffer::print_topics() const
 {
     std::istringstream last_topic( "" );
     std::string last_topic_nested;
 
-    calc_max_indentation();
+    std::lock_guard<std::mutex> lock( _dds_entities_lock );
+
+    uint32_t max_indentation( calc_max_indentation() );
 
     for( auto topic : _discovered_topics )
     {
@@ -493,11 +515,11 @@ void dds_sniffer::print_topics()
 
         for( auto writer : topic.second.writers )
         {
-            print_topic_writer( writer, _max_indentation );
+            print_topic_writer( writer, max_indentation );
         }
         for( auto reader : topic.second.readers )
         {
-            print_topic_reader( reader, _max_indentation );
+            print_topic_reader( reader, max_indentation );
         }
 
         last_topic.clear();
@@ -519,7 +541,7 @@ void dds_sniffer::ident( uint32_t indentation ) const
 void dds_sniffer::print_topic_writer( const eprosima::fastrtps::rtps::GUID_t & writer, uint32_t indentation ) const
 {
     auto iter = _discovered_participants.begin();
-    for( ; iter != _discovered_participants.end(); ++iter )
+    for( ; iter != _discovered_participants.end(); ++iter ) //_dds_entities_lock locked by caller
     {
         if( iter->first.guidPrefix == writer.guidPrefix )
         {
@@ -547,7 +569,7 @@ void dds_sniffer::print_topic_writer( const eprosima::fastrtps::rtps::GUID_t & w
 void dds_sniffer::print_topic_reader( const eprosima::fastrtps::rtps::GUID_t & reader, uint32_t indentation ) const
 {
     auto iter = _discovered_participants.begin();
-    for( auto iter = _discovered_participants.begin(); iter != _discovered_participants.end(); ++iter )
+    for( ; iter != _discovered_participants.end(); ++iter ) //_dds_entities_lock locked by caller
     {
         if( iter->first.guidPrefix == reader.guidPrefix )
         {
