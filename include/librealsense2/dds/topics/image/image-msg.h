@@ -18,19 +18,8 @@ public:
         return topic_root + "/" + stream;
     }
 
-    image( const std::string & topic_name )
-        : _topic_name( topic_name )
-        , width( 0 )
-        , height( 0 )
-        , stride( 0 )
-        , bpp( 0 )
-        , format( RS2_FORMAT_ANY )
-    {
-    }
-
-    image( const std::string &topic_name,  const raw::image & image )
-        : _topic_name( topic_name )
-        , raw_data(image.raw_data()) // TODO: avoid image copy?
+    image( const raw::image & image )
+        : raw_data(image.raw_data()) // TODO: avoid image copy?
         , width( image.width())
         , height( image.height() )
         , stride( image.stride() )
@@ -39,7 +28,6 @@ public:
     {
     }
 
-    const std::string _topic_name;
     std::vector<uint8_t> raw_data;
     int width;
     int height;

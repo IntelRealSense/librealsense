@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <map>
+#include <unordered_set>
 
 #include <librealsense2/utilities/easylogging/easyloggingpp.h>
 #include <librealsense2/dds/dds-device-broadcaster.h>
@@ -107,37 +108,66 @@ try
     // Run the LRS device watcher
     tools::lrs_device_watcher dev_watcher( ctx );
     dev_watcher.run(
+        // Handle a device connection
         [&]( rs2::device dev ) {
-            // Add this device to the DDS device broadcaster
+
+            // Broadcast the new connected device to all listeners
             auto dev_topic_root = broadcaster.add_device( dev );
 
-            // Add a dds-device-server and a lrs-device-manager for this device
+            // Create a supported streams list for initializing the relevant DDS topics
+            auto device_sensors = dev.query_sensors();
+            std::unordered_set<std::string> supported_streams_names;
+            for( auto sensor : device_sensors )
+            {
+                auto stream_profiles = sensor.get_stream_profiles();
+                std::for_each( stream_profiles.begin(),
+                               stream_profiles.end(),
+                               [&]( const rs2::stream_profile & sp ) {
+                                   if( supported_streams_names.find( sp.stream_name() )
+                                       == supported_streams_names.end() )
+                                   {
+                                       supported_streams_names.insert( sp.stream_name() );
+                                   }
+                               } );
+            }
+
+            // Create a dds-device-server for this device
+            std::vector<std::string> supported_streams_names_vec( supported_streams_names.begin(), supported_streams_names.end() );
             std::shared_ptr< librealsense::dds::dds_device_server > new_dds_device_server
                 = std::make_shared< librealsense::dds::dds_device_server >( participant,
                                                                             dev_topic_root );
+            if( !new_dds_device_server->init( supported_streams_names_vec ) )
+            {
+                std::cerr << "Failure initializing dds_device_server for topic root: " << dev_topic_root << std::endl;
+                return;
+            }
 
+            // Create a lrs_device_manager for this device
             std::shared_ptr< tools::lrs_device_manager > new_lrs_device_manager
                 = std::make_shared< tools::lrs_device_manager >( dev );
+
 
             device_handlers_list.insert(
                 { dev, { new_dds_device_server, new_lrs_device_manager } } );
 
+            // Start RGB streaming
             new_lrs_device_manager->start_stream(
                 tools::stream_type::RGB,
                 [&, dev]( const std::string & stream_name, uint8_t * frame ) {
                     auto &dev_handler = device_handlers_list.at( dev );
-                    std::string topic_name = dev_handler.first->get_topic_root() + "/" + stream_name;
+                    auto& dds_device_server = dev_handler.first;
                     try
                     {
-                        dev_handler.first->publish_dds_video_frame( topic_name, frame);
+                        dds_device_server->publish_frame( "Color", frame );
                     }
                     catch( std::exception &e )
                     {
-                        LOG_ERROR( "Exception raised during DDS publish frame of topic " + topic_name );
+                        LOG_ERROR( "Exception raised during DDS publish RGB frame: " << e.what() );
                     }
                     
                 } );
         },
+        // Handle a device disconnection
         [&]( rs2::device dev ) {
             // Remove the dds-server for this device
             auto & dev_handler = device_handlers_list.at( dev );
