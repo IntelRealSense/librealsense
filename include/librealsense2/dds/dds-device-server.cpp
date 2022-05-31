@@ -100,7 +100,7 @@ dds_device_server::dds_stream_server::dds_stream_server( eprosima::fastdds::dds:
     wqos.reliability().kind = BEST_EFFORT_RELIABILITY_QOS;
     wqos.durability().kind = VOLATILE_DURABILITY_QOS;
     wqos.publish_mode().kind = SYNCHRONOUS_PUBLISH_MODE;
-
+    wqos.endpoint().history_memory_policy = eprosima::fastrtps::rtps::PREALLOCATED_WITH_REALLOC_MEMORY_MODE;
     _data_writer = _publisher->create_datawriter( _topic, wqos );
 
     if( ! _topic || ! _data_writer )
