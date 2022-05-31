@@ -2167,6 +2167,8 @@ namespace librealsense
                     << xctrl_query.default_value << ", " << xctrl_query.step
                     << "\n Elements = " << xctrl_query.elems);
 
+            if (control == RS_ENABLE_AUTO_EXPOSURE)
+                return {0, 1, 1, 1};
             return { static_cast<int32_t>(xctrl_query.minimum), static_cast<int32_t>(xctrl_query.maximum),
                      static_cast<int32_t>(xctrl_query.step), static_cast<int32_t>(xctrl_query.default_value)};
         }
