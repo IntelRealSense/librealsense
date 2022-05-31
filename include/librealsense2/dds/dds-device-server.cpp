@@ -6,8 +6,6 @@
 #include "dds-device-server.h"
 #include "dds-participant.h"
 
-#include <librealsense2/utilities/easylogging/easyloggingpp.h>
-
 #include <fastdds/dds/domain/DomainParticipant.hpp>
 #include <fastdds/dds/publisher/Publisher.hpp>
 #include <fastdds/dds/publisher/DataWriter.hpp>
@@ -18,16 +16,94 @@ using namespace eprosima::fastdds::dds;
 using namespace librealsense::dds;
 
 
-dds_device_server::dds_device_server( dds_participant & participant, const std::string &topic_root )
+class dds_device_server::dds_stream_server
+{
+public:
+    dds_stream_server( eprosima::fastdds::dds::DomainParticipant * participant,
+                       eprosima::fastdds::dds::Publisher * publisher,
+                       const std::string & topic_root,
+                       const std::string & stream_name )
+        : _participant( participant )
+        , _publisher( publisher )
+        , _topic( nullptr )
+        , _topic_type_ptr( std::make_shared< eprosima::fastdds::dds::TypeSupport >(
+              new librealsense::dds::topics::image::type ) )
+        , _data_writer( nullptr )
+    {
+        _topic_name = librealsense::dds::topics::image::construct_stream_topic_name( topic_root,
+                                                                                     stream_name );
+        _topic_type_ptr->register_type( _participant );
+        _topic = _participant->create_topic( _topic_name,
+                                             ( *_topic_type_ptr )->getName(),
+                                             TOPIC_QOS_DEFAULT );
+
+        // TODO:: Maybe we want to open a writer only when the stream is requested?
+        DataWriterQos wqos = DATAWRITER_QOS_DEFAULT;
+        wqos.data_sharing().off();
+        wqos.reliability().kind = BEST_EFFORT_RELIABILITY_QOS;
+        wqos.durability().kind = VOLATILE_DURABILITY_QOS;
+        wqos.publish_mode().kind = SYNCHRONOUS_PUBLISH_MODE;
+        // Our message has dynamic size (unbounded) so we need a memory policy that supports it
+        wqos.endpoint().history_memory_policy
+            = eprosima::fastrtps::rtps::PREALLOCATED_WITH_REALLOC_MEMORY_MODE;
+        _data_writer = _publisher->create_datawriter( _topic, wqos );
+
+        if( ! _topic || ! _data_writer )
+            throw std::runtime_error(
+                "Error in creating DDS resources for video stream server of topic: "
+                + _topic_name );
+    }
+    ~dds_stream_server()
+    {
+        if( nullptr != _participant )
+        {
+            if( nullptr != _topic )
+            {
+                _participant->delete_topic( _topic );
+            }
+
+            if( nullptr != _data_writer )
+            {
+                _publisher->delete_datawriter( _data_writer );
+            }
+        }
+    }
+
+    void publish_video_frame( uint8_t * frame, int size )
+    {
+        LOG_DEBUG( "publishing a DDS video frame for topic: " << _topic_name );
+        librealsense::dds::topics::raw::image raw_image;
+        raw_image.size() = size;
+        raw_image.format() = _image_header.format;
+        raw_image.height() = _image_header.height;
+        raw_image.width() = _image_header.width;
+        raw_image.raw_data().assign( frame, frame + size );
+
+        _data_writer->write( &raw_image );
+    }
+    void set_image_header( const image_header & header ) { _image_header = header; }
+
+private:
+    std::string _topic_name;
+    eprosima::fastdds::dds::DomainParticipant * _participant;
+    eprosima::fastdds::dds::Publisher * _publisher;
+    eprosima::fastdds::dds::Topic * _topic;
+    std::shared_ptr< eprosima::fastdds::dds::TypeSupport > _topic_type_ptr;
+    eprosima::fastdds::dds::DataWriter * _data_writer;
+    image_header _image_header;
+};
+
+dds_device_server::dds_device_server( dds_participant & participant,
+                                      const std::string & topic_root )
     : _participant( participant.get() )
-    , _publisher(nullptr)
+    , _publisher( nullptr )
     , _topic_root( topic_root )
 {
-    LOG_DEBUG( "DDS device server for device root: " << _topic_root << " created");
+    LOG_DEBUG( "DDS device server for device topic root: " << _topic_root << " created" );
 }
 
 dds_device_server::~dds_device_server()
-{    
+{
     // Release resources
     if( nullptr != _participant )
     {
@@ -38,7 +114,23 @@ dds_device_server::~dds_device_server()
     }
 
     stream_name_to_server.clear();
-    LOG_DEBUG( "DDS device server for device root: " << _topic_root << " deleted" );
+    LOG_DEBUG( "DDS device server for device topic root: " << _topic_root << " deleted" );
+}
+
+void dds_device_server::set_image_header( const std::string & stream_name,
+                                          const image_header & header )
+{
+    stream_name_to_server.at( stream_name )->set_image_header( header );
+}
+
+void dds_device_server::publish_frame( const std::string & stream_name, uint8_t * frame, int size )
+{
+    if( ! is_valid() )
+    {
+        LOG_ERROR( "Cannot publish frame through DDS, DDS device server in uninitialized" );
+    }
+
+    stream_name_to_server.at( stream_name )->publish_video_frame( frame, size );
 }
 
 bool dds_device_server::init( const std::vector<std::string> &supported_streams_names )
@@ -68,58 +160,3 @@ bool dds_device_server::create_dds_publisher( )
     return ( _publisher != nullptr );
 }
 
-void dds_device_server::dds_stream_server::publish_video_frame( uint8_t * frame, int size )
-{
-    LOG_DEBUG( "publishing a DDS video frame for topic: " << _topic_name );
-    librealsense::dds::topics::raw::image raw_image;
-    raw_image.size() = size;
-    raw_image.format() = _image_header.format;
-    raw_image.height() = _image_header.height;
-    raw_image.width() = _image_header.width;
-    raw_image.raw_data().assign( frame, frame + size );
-
-    _data_writer->write( &raw_image );
-}
-
-dds_device_server::dds_stream_server::dds_stream_server( eprosima::fastdds::dds::DomainParticipant * participant, eprosima::fastdds::dds::Publisher * publisher,  const std::string& topic_root, const std::string& stream_name )
-    : _participant( participant )
-    , _publisher( publisher )
-    , _topic( nullptr )
-    , _topic_type_ptr( std::make_shared< eprosima::fastdds::dds::TypeSupport >( new librealsense::dds::topics::image::type ) )
-    , _data_writer( nullptr )
-{
-    _topic_name = librealsense::dds::topics::image::construct_stream_topic_name( topic_root, stream_name );
-    _topic_type_ptr->register_type( _participant );
-    _topic = _participant->create_topic( _topic_name,
-                                         ( *_topic_type_ptr )->getName(),
-                                         TOPIC_QOS_DEFAULT );
-
-    // TODO:: Maybe we want to open a writer only when the stream is requested?
-    DataWriterQos wqos = DATAWRITER_QOS_DEFAULT;  
-    wqos.data_sharing().off();
-    wqos.reliability().kind = BEST_EFFORT_RELIABILITY_QOS;
-    wqos.durability().kind = VOLATILE_DURABILITY_QOS;
-    wqos.publish_mode().kind = SYNCHRONOUS_PUBLISH_MODE;
-    wqos.endpoint().history_memory_policy = eprosima::fastrtps::rtps::PREALLOCATED_WITH_REALLOC_MEMORY_MODE;
-    _data_writer = _publisher->create_datawriter( _topic, wqos );
-
-    if( ! _topic || ! _data_writer )
-        throw std::runtime_error(
-            "Error in creating DDS resources for video stream server of topic: " + _topic_name );
-}
-
-dds_device_server::dds_stream_server::~dds_stream_server()
-{
-    if( nullptr != _participant )
-    {
-        if( nullptr != _topic )
-        {
-            _participant->delete_topic( _topic );
-        }
-
-        if( nullptr != _data_writer )
-        {
-            _publisher->delete_datawriter( _data_writer );
-        }
-    }
-}

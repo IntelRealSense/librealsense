@@ -7,6 +7,36 @@
 
 using namespace tools;
 
+class lrs_device_manager::lrs_sensor_streamer
+{
+public:
+    lrs_sensor_streamer() = default;
+    lrs_sensor_streamer( rs2::sensor rs2_sensor,
+                    rs2::stream_profile stream_profile,
+                    std::function< void( const std::string & stream_name, uint8_t * data, int size ) > cb )
+        : _rs2_sensor( rs2_sensor )
+        , _stream_profile( stream_profile )
+        , _frame_callback(std::move( cb ))
+    {
+        _rs2_sensor.open( _stream_profile );  // TODO open required profile!
+        _rs2_sensor.start( [&]( rs2::frame f ) 
+            {
+                _frame_callback( _stream_profile.stream_name(), (uint8_t *)f.get_data(), f.get_data_size() );
+            } );
+        std::cout << _stream_profile.stream_name() << " stream started"  << std::endl;
+    }
+    ~lrs_sensor_streamer()
+    {
+        _rs2_sensor.stop();
+        _rs2_sensor.close();
+        std::cout << _stream_profile.stream_name() << " stream stopped"  << std::endl;
+    };
+
+private:
+    rs2::sensor _rs2_sensor;
+    rs2::stream_profile _stream_profile;
+    std::function< void( const std::string& stream_name, uint8_t* data, int size ) > _frame_callback;
+};
 
 lrs_device_manager::lrs_device_manager( rs2::device dev )
     : _rs_dev( dev )
@@ -29,12 +59,12 @@ void lrs_device_manager::start_stream( rs2::stream_profile sp,
     {
     case RS2_STREAM_COLOR: {
         auto cs = _rs_dev.first< rs2::color_sensor>();
-        stream_to_rs2_sensor[RS2_STREAM_COLOR] = std::make_shared<sensor_wrapper>( cs, sp, cb );
+        stream_to_rs2_sensor[RS2_STREAM_COLOR] = std::make_shared<lrs_device_manager::lrs_sensor_streamer>( cs, sp, cb );
     }
     break;
     case RS2_STREAM_DEPTH: {
         auto ds = _rs_dev.first< rs2::depth_sensor  >();
-        stream_to_rs2_sensor[RS2_STREAM_DEPTH]= std::make_shared<sensor_wrapper>( ds, sp, cb );
+        stream_to_rs2_sensor[RS2_STREAM_DEPTH]= std::make_shared<lrs_device_manager::lrs_sensor_streamer>( ds, sp, cb );
     }
     break;
 
