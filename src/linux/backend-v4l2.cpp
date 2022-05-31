@@ -2095,6 +2095,9 @@ namespace librealsense
                     xctrl.p_u8 = const_cast<uint8_t*>(data); // TODO aggregate initialization with union
             }
 
+            if (control == RS_ENABLE_AUTO_EXPOSURE)
+                xctrl.value = xctrl.value ? V4L2_EXPOSURE_APERTURE_PRIORITY : V4L2_EXPOSURE_MANUAL;
+
             // Extract the control group from the underlying control query
             v4l2_ext_controls ctrls_block { xctrl.id&0xffff0000, 1, 0, {0, 0}, &xctrl };
 
@@ -2130,6 +2133,9 @@ namespace librealsense
 
                 // TODO check if parsing for non-integer values D457
                 //memcpy(data,(void*)(&ctrl.value),size);
+
+                if (control == RS_ENABLE_AUTO_EXPOSURE)
+                  xctrl.value = (V4L2_EXPOSURE_MANUAL == xctrl.value) ? 0 : 1;
 
                 // used to parse values that have size > 1
                 memcpy(data,(void*)(&xctrl.value), size);
