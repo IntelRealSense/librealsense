@@ -150,19 +150,40 @@ try
             device_handlers_list.insert(
                 { dev, { new_dds_device_server, new_lrs_device_manager } } );
 
-            // Start RGB streaming
+
+            auto color_sensor = dev.first<rs2::color_sensor>();
+            auto color_stream_profiles = color_sensor.get_stream_profiles();
+            
+            auto req_color_profiles
+                = std::find_if( color_stream_profiles.begin(),
+                                color_stream_profiles.end(),
+                                []( rs2::stream_profile sp ) {
+                                    auto vp = sp.as< rs2::video_stream_profile >();
+                                    return sp.stream_type() == RS2_STREAM_COLOR && sp.fps() == 30
+                                        && sp.format() == RS2_FORMAT_RGB8 && vp.width() == 1280
+                                        && vp.height() == 720;
+                                } );
+
+            if( req_color_profiles == color_stream_profiles.end() )
+            {
+                std::cerr << "Could not find required profile" << std::endl;
+                return;
+            }
+            // Get first profile that match our request (We know it exist if we got here..)
+            auto& req_color_profile = req_color_profiles[0];
+
+            // Start required streaming
             new_lrs_device_manager->start_stream(
-                tools::stream_type::RGB,
-                [&, dev]( const std::string & stream_name, uint8_t * frame ) {
-                    auto &dev_handler = device_handlers_list.at( dev );
-                    auto& dds_device_server = dev_handler.first;
+                req_color_profile,
+                [&, dev, req_color_profile]( const std::string & stream_name, uint8_t * frame ) {
+                    auto &dds_device_server = device_handlers_list.at( dev ).first;
                     try
                     {
-                        dds_device_server->publish_frame( "Color", frame );
+                        dds_device_server->publish_frame( req_color_profile.stream_name(), frame );
                     }
                     catch( std::exception &e )
                     {
-                        LOG_ERROR( "Exception raised during DDS publish RGB frame: " << e.what() );
+                        LOG_ERROR( "Exception raised during DDS publish " << req_color_profile.stream_name() << " frame: " << e.what() );
                     }
                     
                 } );
@@ -170,8 +191,9 @@ try
         // Handle a device disconnection
         [&]( rs2::device dev ) {
             // Remove the dds-server for this device
-            auto & dev_handler = device_handlers_list.at( dev );
-            dev_handler.second->stop_stream( tools::stream_type::RGB );
+            auto & lrs_dev_manager = device_handlers_list.at( dev ).second;
+
+            lrs_dev_manager->stop_all_streams();
             device_handlers_list.erase( dev );
 
             // Remove this device from the DDS device broadcaster

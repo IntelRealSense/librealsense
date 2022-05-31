@@ -48,11 +48,11 @@ public:
     }
     
 private:
-    class dds_video_stream_server
+    class dds_stream_server
     {
     public:
-        dds_video_stream_server( eprosima::fastdds::dds::DomainParticipant * _participant, eprosima::fastdds::dds::Publisher * publisher, const std::string& topic_root, const std::string& stream_name );
-        ~dds_video_stream_server();
+        dds_stream_server( eprosima::fastdds::dds::DomainParticipant * _participant, eprosima::fastdds::dds::Publisher * publisher, const std::string& topic_root, const std::string& stream_name );
+        ~dds_stream_server();
         void publish_video_frame( uint8_t* frame );
 
     private:
@@ -69,7 +69,7 @@ private:
     eprosima::fastdds::dds::DomainParticipant * _participant;
     eprosima::fastdds::dds::Publisher * _publisher;
     std::string _topic_root;
-    std::unordered_map<std::string, std::shared_ptr<dds_video_stream_server>> stream_name_to_server;
+    std::unordered_map<std::string, std::shared_ptr<dds_stream_server>> stream_name_to_server;
 };  // class dds_device_server
 }  // namespace dds
 }  // namespace librealsense

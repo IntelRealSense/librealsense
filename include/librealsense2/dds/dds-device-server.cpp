@@ -53,7 +53,10 @@ bool dds_device_server::init( const std::vector<std::string> &supported_streams_
     
     for( auto stream_name : supported_streams_names )
     {
-        stream_name_to_server[stream_name] = std::make_shared<dds_video_stream_server>(_participant, _publisher, _topic_root, stream_name);
+        stream_name_to_server[stream_name] = std::make_shared< dds_stream_server >( _participant,
+                                                                                    _publisher,
+                                                                                    _topic_root,
+                                                                                    stream_name );
     }
 
     return true;
@@ -65,15 +68,15 @@ bool dds_device_server::create_dds_publisher( )
     return ( _publisher != nullptr );
 }
 
-void dds_device_server::dds_video_stream_server::publish_video_frame( uint8_t * frame )
+void dds_device_server::dds_stream_server::publish_video_frame( uint8_t * frame )
 {
     LOG_DEBUG( "publishing a DDS video frame for topic: " << _topic_name );
     librealsense::dds::topics::raw::image raw_image;
     // TODO fill image data
     raw_image.bpp() = 8 * 3;
     raw_image.format() = 1;
-    raw_image.height() = 480;
-    raw_image.width() = 640;
+    raw_image.height() = 720;
+    raw_image.width() = 1280;
     raw_image.stride() = raw_image.width() * ( raw_image.bpp() / 8 ); // TODO:: not really needed??
     raw_image.raw_data().assign(frame, frame + (raw_image.stride() * raw_image.height()));
 
@@ -83,11 +86,11 @@ void dds_device_server::dds_video_stream_server::publish_video_frame( uint8_t * 
     // publish_frame( image );
 }
 
-dds_device_server::dds_video_stream_server::dds_video_stream_server( eprosima::fastdds::dds::DomainParticipant * participant, eprosima::fastdds::dds::Publisher * publisher,  const std::string& topic_root, const std::string& stream_name )
+dds_device_server::dds_stream_server::dds_stream_server( eprosima::fastdds::dds::DomainParticipant * participant, eprosima::fastdds::dds::Publisher * publisher,  const std::string& topic_root, const std::string& stream_name )
     : _participant( participant )
     , _publisher( publisher )
     , _topic( nullptr )
-    , _topic_type_ptr(std::make_shared<eprosima::fastdds::dds::TypeSupport>(new librealsense::dds::topics::image::type))
+    , _topic_type_ptr( std::make_shared< eprosima::fastdds::dds::TypeSupport >( new librealsense::dds::topics::image::type ) )
     , _data_writer( nullptr )
 {
     _topic_name = librealsense::dds::topics::image::construct_name( topic_root, stream_name );
@@ -95,7 +98,14 @@ dds_device_server::dds_video_stream_server::dds_video_stream_server( eprosima::f
     _topic = _participant->create_topic( _topic_name,
                                          ( *_topic_type_ptr )->getName(),
                                          TOPIC_QOS_DEFAULT );
-    DataWriterQos wqos = DATAWRITER_QOS_DEFAULT;  // TODO, check if the QOS is OK for frames
+
+    // TODO:: Maybe we want to open a writer only when the stream is requested?
+    DataWriterQos wqos = DATAWRITER_QOS_DEFAULT;  
+    wqos.data_sharing().off();
+    wqos.reliability().kind = BEST_EFFORT_RELIABILITY_QOS;
+    wqos.durability().kind = VOLATILE_DURABILITY_QOS;
+    wqos.publish_mode().kind = SYNCHRONOUS_PUBLISH_MODE;
+
     _data_writer = _publisher->create_datawriter( _topic, wqos );
 
     if( ! _topic || ! _data_writer )
@@ -103,7 +113,7 @@ dds_device_server::dds_video_stream_server::dds_video_stream_server( eprosima::f
             "Error in creating DDS resources for video stream server of topic: " + _topic_name );
 }
 
-dds_device_server::dds_video_stream_server::~dds_video_stream_server()
+dds_device_server::dds_stream_server::~dds_stream_server()
 {
     if( nullptr != _participant )
     {
