@@ -140,6 +140,25 @@ namespace librealsense {
                      */
                     eProsima_user_DllExport std::vector<uint8_t>& raw_data();
                     /*!
+                     * @brief This function sets a value in member size
+                     * @param _size New value for member size
+                     */
+                    eProsima_user_DllExport void size(
+                            uint32_t _size);
+
+                    /*!
+                     * @brief This function returns the value of member size
+                     * @return Value of member size
+                     */
+                    eProsima_user_DllExport uint32_t size() const;
+
+                    /*!
+                     * @brief This function returns a reference to member size
+                     * @return Reference to member size
+                     */
+                    eProsima_user_DllExport uint32_t& size();
+
+                    /*!
                      * @brief This function sets a value in member width
                      * @param _width New value for member width
                      */
@@ -176,44 +195,6 @@ namespace librealsense {
                      * @return Reference to member height
                      */
                     eProsima_user_DllExport uint16_t& height();
-
-                    /*!
-                     * @brief This function sets a value in member stride
-                     * @param _stride New value for member stride
-                     */
-                    eProsima_user_DllExport void stride(
-                            uint16_t _stride);
-
-                    /*!
-                     * @brief This function returns the value of member stride
-                     * @return Value of member stride
-                     */
-                    eProsima_user_DllExport uint16_t stride() const;
-
-                    /*!
-                     * @brief This function returns a reference to member stride
-                     * @return Reference to member stride
-                     */
-                    eProsima_user_DllExport uint16_t& stride();
-
-                    /*!
-                     * @brief This function sets a value in member bpp
-                     * @param _bpp New value for member bpp
-                     */
-                    eProsima_user_DllExport void bpp(
-                            uint8_t _bpp);
-
-                    /*!
-                     * @brief This function returns the value of member bpp
-                     * @return Value of member bpp
-                     */
-                    eProsima_user_DllExport uint8_t bpp() const;
-
-                    /*!
-                     * @brief This function returns a reference to member bpp
-                     * @return Reference to member bpp
-                     */
-                    eProsima_user_DllExport uint8_t& bpp();
 
                     /*!
                      * @brief This function sets a value in member format
@@ -295,10 +276,9 @@ namespace librealsense {
                 private:
 
                     std::vector<uint8_t> m_raw_data;
+                    uint32_t m_size;
                     uint16_t m_width;
                     uint16_t m_height;
-                    uint16_t m_stride;
-                    uint8_t m_bpp;
                     uint8_t m_format;
                 };
             } // namespace raw

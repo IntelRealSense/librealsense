@@ -23,7 +23,7 @@ lrs_device_manager::~lrs_device_manager()
 }
 
 void lrs_device_manager::start_stream( rs2::stream_profile sp,
-                                       std::function< void( const std::string&, uint8_t* ) > cb )
+                                       std::function< void( const std::string&, uint8_t*, int ) > cb )
 {
     switch( sp.stream_type() )
     {

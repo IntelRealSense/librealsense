@@ -36,15 +36,25 @@ class dds_participant;
 class dds_device_server
 {
 public:
+    struct image_header
+    {
+        int format;
+        int height;
+        int width;
+    };
+
     dds_device_server( librealsense::dds::dds_participant& participant, const std::string& topic_root );
     ~dds_device_server();
     bool init( const std::vector<std::string>& supported_streams_names );
     bool is_valid() const { return ( nullptr != _publisher ); }
     bool operator!() const { return ! is_valid(); }
-
-    void publish_frame( const std::string & stream_name, uint8_t * frame )
+    void set_image_header( const std::string &stream_name, const image_header & header ) 
+    { 
+        stream_name_to_server.at( stream_name )->set_image_header(header);
+    }
+    void publish_frame( const std::string &stream_name, uint8_t * frame, int size )
     {
-        stream_name_to_server.at( stream_name )->publish_video_frame( frame );
+        stream_name_to_server.at( stream_name )->publish_video_frame( frame, size );
     }
     
 private:
@@ -53,7 +63,8 @@ private:
     public:
         dds_stream_server( eprosima::fastdds::dds::DomainParticipant * _participant, eprosima::fastdds::dds::Publisher * publisher, const std::string& topic_root, const std::string& stream_name );
         ~dds_stream_server();
-        void publish_video_frame( uint8_t* frame );
+        void publish_video_frame( uint8_t* frame, int size );
+        void set_image_header( const image_header & header ) { _image_header = header; }
 
     private:
         std::string _topic_name;
@@ -62,6 +73,7 @@ private:
         eprosima::fastdds::dds::Topic * _topic;
         std::shared_ptr<eprosima::fastdds::dds::TypeSupport> _topic_type_ptr;
         eprosima::fastdds::dds::DataWriter * _data_writer;
+        image_header _image_header;
     };
 
     bool create_dds_publisher( );

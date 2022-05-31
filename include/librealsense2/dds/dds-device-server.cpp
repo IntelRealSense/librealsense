@@ -68,22 +68,17 @@ bool dds_device_server::create_dds_publisher( )
     return ( _publisher != nullptr );
 }
 
-void dds_device_server::dds_stream_server::publish_video_frame( uint8_t * frame )
+void dds_device_server::dds_stream_server::publish_video_frame( uint8_t * frame, int size )
 {
     LOG_DEBUG( "publishing a DDS video frame for topic: " << _topic_name );
     librealsense::dds::topics::raw::image raw_image;
-    // TODO fill image data
-    raw_image.bpp() = 8 * 3;
-    raw_image.format() = 1;
-    raw_image.height() = 720;
-    raw_image.width() = 1280;
-    raw_image.stride() = raw_image.width() * ( raw_image.bpp() / 8 ); // TODO:: not really needed??
-    raw_image.raw_data().assign(frame, frame + (raw_image.stride() * raw_image.height()));
+    raw_image.size() = size;
+    raw_image.format() = _image_header.format;
+    raw_image.height() = _image_header.height;
+    raw_image.width() = _image_header.width;
+    raw_image.raw_data().assign( frame, frame + size );
 
-    _data_writer->write(&raw_image);
-    
-    // prepare_image( image );
-    // publish_frame( image );
+    _data_writer->write( &raw_image );
 }
 
 dds_device_server::dds_stream_server::dds_stream_server( eprosima::fastdds::dds::DomainParticipant * participant, eprosima::fastdds::dds::Publisher * publisher,  const std::string& topic_root, const std::string& stream_name )
@@ -93,7 +88,7 @@ dds_device_server::dds_stream_server::dds_stream_server( eprosima::fastdds::dds:
     , _topic_type_ptr( std::make_shared< eprosima::fastdds::dds::TypeSupport >( new librealsense::dds::topics::image::type ) )
     , _data_writer( nullptr )
 {
-    _topic_name = librealsense::dds::topics::image::construct_name( topic_root, stream_name );
+    _topic_name = librealsense::dds::topics::image::construct_stream_topic_name( topic_root, stream_name );
     _topic_type_ptr->register_type( _participant );
     _topic = _participant->create_topic( _topic_name,
                                          ( *_topic_type_ptr )->getName(),

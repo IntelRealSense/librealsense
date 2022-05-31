@@ -13,10 +13,9 @@ module librealsense
                 struct image
                 {
                     sequence<octet> raw_data;
+                    unsigned long size;
                     unsigned short width;
                     unsigned short height;
-                    unsigned short stride;
-                    octet bpp;
                     octet format; // See librealsense 'rs2_format' type for values
                 };
             };

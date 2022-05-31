@@ -13,7 +13,7 @@ public:
     sensor_wrapper() = default;
     sensor_wrapper( rs2::sensor rs2_sensor,
                     rs2::stream_profile stream_profile,
-                    std::function< void( const std::string & stream_name, uint8_t * data ) > cb )
+                    std::function< void( const std::string & stream_name, uint8_t * data, int size ) > cb )
         : _rs2_sensor( rs2_sensor )
         , _stream_profile( stream_profile )
         , _frame_callback(std::move( cb ))
@@ -21,7 +21,7 @@ public:
         _rs2_sensor.open( _stream_profile );  // TODO open required profile!
         _rs2_sensor.start( [&]( rs2::frame f ) 
             {
-                _frame_callback( _stream_profile.stream_name(), (uint8_t *)f.get_data() );
+                _frame_callback( _stream_profile.stream_name(), (uint8_t *)f.get_data(), f.get_data_size() );
             } );
         std::cout << _stream_profile.stream_name() << " stream started"  << std::endl;
     }
@@ -35,7 +35,7 @@ public:
 private:
     rs2::sensor _rs2_sensor;
     rs2::stream_profile _stream_profile;
-    std::function< void( const std::string& stream_name, uint8_t* data ) > _frame_callback;
+    std::function< void( const std::string& stream_name, uint8_t* data, int size ) > _frame_callback;
 };
 
 // This class is in charge of handling a RS device: streaming, control..
@@ -45,7 +45,7 @@ public:
     
     lrs_device_manager( rs2::device dev );
     ~lrs_device_manager();
-    void start_stream( rs2::stream_profile sp, std::function< void( const std::string&, uint8_t* ) > cb );
+    void start_stream( rs2::stream_profile sp, std::function< void( const std::string&, uint8_t*, int ) > cb );
     void stop_stream( rs2_stream stream );
     void stop_all_streams();
 

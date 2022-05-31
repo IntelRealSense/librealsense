@@ -172,14 +172,23 @@ try
             // Get first profile that match our request (We know it exist if we got here..)
             auto& req_color_profile = req_color_profiles[0];
 
+            // Configure DDS-server to the required frame header
+            librealsense::dds::dds_device_server::image_header header;
+            auto vsp = req_color_profile.as<rs2::video_stream_profile>();
+            header.format = vsp.format();
+            header.height = vsp.height();
+            header.width = vsp.width();
+            auto &dds_device_server = device_handlers_list.at( dev ).first;
+            dds_device_server->set_image_header( req_color_profile.stream_name(), header );
+             
             // Start required streaming
             new_lrs_device_manager->start_stream(
                 req_color_profile,
-                [&, dev, req_color_profile]( const std::string & stream_name, uint8_t * frame ) {
+                [&, dev, req_color_profile]( const std::string & stream_name, uint8_t * frame, int size ) {
                     auto &dds_device_server = device_handlers_list.at( dev ).first;
                     try
                     {
-                        dds_device_server->publish_frame( req_color_profile.stream_name(), frame );
+                        dds_device_server->publish_frame( req_color_profile.stream_name(), frame, size );
                     }
                     catch( std::exception &e )
                     {

@@ -25,17 +25,15 @@ using namespace eprosima::fastcdr::exception;
 
 librealsense::dds::topics::raw::image::image()
 {
-    // m_raw_data com.eprosima.idl.parser.typecode.SequenceTypeCode@2fd66ad3
+    // m_raw_data com.eprosima.idl.parser.typecode.SequenceTypeCode@6dde5c8c
 
-    // m_width com.eprosima.idl.parser.typecode.PrimitiveTypeCode@5d11346a
+    // m_size com.eprosima.idl.parser.typecode.PrimitiveTypeCode@5123a213
+    m_size = 0;
+    // m_width com.eprosima.idl.parser.typecode.PrimitiveTypeCode@52525845
     m_width = 0;
-    // m_height com.eprosima.idl.parser.typecode.PrimitiveTypeCode@7a36aefa
+    // m_height com.eprosima.idl.parser.typecode.PrimitiveTypeCode@3b94d659
     m_height = 0;
-    // m_stride com.eprosima.idl.parser.typecode.PrimitiveTypeCode@17211155
-    m_stride = 0;
-    // m_bpp com.eprosima.idl.parser.typecode.PrimitiveTypeCode@b3d7190
-    m_bpp = 0;
-    // m_format com.eprosima.idl.parser.typecode.PrimitiveTypeCode@5fdba6f9
+    // m_format com.eprosima.idl.parser.typecode.PrimitiveTypeCode@24b1d79b
     m_format = 0;
 
 }
@@ -47,17 +45,15 @@ librealsense::dds::topics::raw::image::~image()
 
 
 
-
 }
 
 librealsense::dds::topics::raw::image::image(
         const image& x)
 {
     m_raw_data = x.m_raw_data;
+    m_size = x.m_size;
     m_width = x.m_width;
     m_height = x.m_height;
-    m_stride = x.m_stride;
-    m_bpp = x.m_bpp;
     m_format = x.m_format;
 }
 
@@ -65,10 +61,9 @@ librealsense::dds::topics::raw::image::image(
         image&& x)
 {
     m_raw_data = std::move(x.m_raw_data);
+    m_size = x.m_size;
     m_width = x.m_width;
     m_height = x.m_height;
-    m_stride = x.m_stride;
-    m_bpp = x.m_bpp;
     m_format = x.m_format;
 }
 
@@ -77,10 +72,9 @@ librealsense::dds::topics::raw::image& librealsense::dds::topics::raw::image::op
 {
 
     m_raw_data = x.m_raw_data;
+    m_size = x.m_size;
     m_width = x.m_width;
     m_height = x.m_height;
-    m_stride = x.m_stride;
-    m_bpp = x.m_bpp;
     m_format = x.m_format;
 
     return *this;
@@ -91,10 +85,9 @@ librealsense::dds::topics::raw::image& librealsense::dds::topics::raw::image::op
 {
 
     m_raw_data = std::move(x.m_raw_data);
+    m_size = x.m_size;
     m_width = x.m_width;
     m_height = x.m_height;
-    m_stride = x.m_stride;
-    m_bpp = x.m_bpp;
     m_format = x.m_format;
 
     return *this;
@@ -104,7 +97,7 @@ bool librealsense::dds::topics::raw::image::operator ==(
         const image& x) const
 {
 
-    return (m_raw_data == x.m_raw_data && m_width == x.m_width && m_height == x.m_height && m_stride == x.m_stride && m_bpp == x.m_bpp && m_format == x.m_format);
+    return (m_raw_data == x.m_raw_data && m_size == x.m_size && m_width == x.m_width && m_height == x.m_height && m_format == x.m_format);
 }
 
 bool librealsense::dds::topics::raw::image::operator !=(
@@ -125,16 +118,13 @@ size_t librealsense::dds::topics::raw::image::getMaxCdrSerializedSize(
 
 
 
-    current_alignment += 2 + eprosima::fastcdr::Cdr::alignment(current_alignment, 2);
+    current_alignment += 4 + eprosima::fastcdr::Cdr::alignment(current_alignment, 4);
 
 
     current_alignment += 2 + eprosima::fastcdr::Cdr::alignment(current_alignment, 2);
 
 
     current_alignment += 2 + eprosima::fastcdr::Cdr::alignment(current_alignment, 2);
-
-
-    current_alignment += 1 + eprosima::fastcdr::Cdr::alignment(current_alignment, 1);
 
 
     current_alignment += 1 + eprosima::fastcdr::Cdr::alignment(current_alignment, 1);
@@ -161,16 +151,13 @@ size_t librealsense::dds::topics::raw::image::getCdrSerializedSize(
 
 
 
-    current_alignment += 2 + eprosima::fastcdr::Cdr::alignment(current_alignment, 2);
+    current_alignment += 4 + eprosima::fastcdr::Cdr::alignment(current_alignment, 4);
 
 
     current_alignment += 2 + eprosima::fastcdr::Cdr::alignment(current_alignment, 2);
 
 
     current_alignment += 2 + eprosima::fastcdr::Cdr::alignment(current_alignment, 2);
-
-
-    current_alignment += 1 + eprosima::fastcdr::Cdr::alignment(current_alignment, 1);
 
 
     current_alignment += 1 + eprosima::fastcdr::Cdr::alignment(current_alignment, 1);
@@ -185,10 +172,9 @@ void librealsense::dds::topics::raw::image::serialize(
 {
 
     scdr << m_raw_data;
+    scdr << m_size;
     scdr << m_width;
     scdr << m_height;
-    scdr << m_stride;
-    scdr << m_bpp;
     scdr << m_format;
 
 }
@@ -198,10 +184,9 @@ void librealsense::dds::topics::raw::image::deserialize(
 {
 
     dcdr >> m_raw_data;
+    dcdr >> m_size;
     dcdr >> m_width;
     dcdr >> m_height;
-    dcdr >> m_stride;
-    dcdr >> m_bpp;
     dcdr >> m_format;
 }
 
@@ -242,6 +227,34 @@ std::vector<uint8_t>& librealsense::dds::topics::raw::image::raw_data()
 {
     return m_raw_data;
 }
+/*!
+ * @brief This function sets a value in member size
+ * @param _size New value for member size
+ */
+void librealsense::dds::topics::raw::image::size(
+        uint32_t _size)
+{
+    m_size = _size;
+}
+
+/*!
+ * @brief This function returns the value of member size
+ * @return Value of member size
+ */
+uint32_t librealsense::dds::topics::raw::image::size() const
+{
+    return m_size;
+}
+
+/*!
+ * @brief This function returns a reference to member size
+ * @return Reference to member size
+ */
+uint32_t& librealsense::dds::topics::raw::image::size()
+{
+    return m_size;
+}
+
 /*!
  * @brief This function sets a value in member width
  * @param _width New value for member width
@@ -299,62 +312,6 @@ uint16_t& librealsense::dds::topics::raw::image::height()
 }
 
 /*!
- * @brief This function sets a value in member stride
- * @param _stride New value for member stride
- */
-void librealsense::dds::topics::raw::image::stride(
-        uint16_t _stride)
-{
-    m_stride = _stride;
-}
-
-/*!
- * @brief This function returns the value of member stride
- * @return Value of member stride
- */
-uint16_t librealsense::dds::topics::raw::image::stride() const
-{
-    return m_stride;
-}
-
-/*!
- * @brief This function returns a reference to member stride
- * @return Reference to member stride
- */
-uint16_t& librealsense::dds::topics::raw::image::stride()
-{
-    return m_stride;
-}
-
-/*!
- * @brief This function sets a value in member bpp
- * @param _bpp New value for member bpp
- */
-void librealsense::dds::topics::raw::image::bpp(
-        uint8_t _bpp)
-{
-    m_bpp = _bpp;
-}
-
-/*!
- * @brief This function returns the value of member bpp
- * @return Value of member bpp
- */
-uint8_t librealsense::dds::topics::raw::image::bpp() const
-{
-    return m_bpp;
-}
-
-/*!
- * @brief This function returns a reference to member bpp
- * @return Reference to member bpp
- */
-uint8_t& librealsense::dds::topics::raw::image::bpp()
-{
-    return m_bpp;
-}
-
-/*!
  * @brief This function sets a value in member format
  * @param _format New value for member format
  */
@@ -395,7 +352,6 @@ size_t librealsense::dds::topics::raw::image::getKeyMaxCdrSerializedSize(
 
 
 
-
     return current_align;
 }
 
@@ -408,7 +364,7 @@ void librealsense::dds::topics::raw::image::serializeKey(
         eprosima::fastcdr::Cdr& scdr) const
 {
     (void) scdr;
-          
+         
 }
 
 
