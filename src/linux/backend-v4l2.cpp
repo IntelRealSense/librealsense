@@ -2061,6 +2061,8 @@ namespace librealsense
                 throw linux_backend_exception("xioctl(VIDIOC_G_EXT_CTRLS) failed");
             }
 
+            if (opt == RS2_OPTION_ENABLE_AUTO_EXPOSURE)
+                control.value = (V4L2_EXPOSURE_MANUAL==control.value) ? 0 : 1;
             value = control.value;
 
             return true;
@@ -2069,6 +2071,9 @@ namespace librealsense
         bool v4l_mipi_device::set_pu(rs2_option opt, int32_t value)
         {
             v4l2_ext_control control{get_cid(opt), 0, 0, value};
+            if (opt == RS2_OPTION_ENABLE_AUTO_EXPOSURE)
+                control.value = value ? V4L2_EXPOSURE_APERTURE_PRIORITY : V4L2_EXPOSURE_MANUAL;
+
             // Extract the control group from the underlying control query
             v4l2_ext_controls ctrls_block{ control.id & 0xffff0000, 1, 0, 0, 0, &control };
             if (xioctl(_fd, VIDIOC_S_EXT_CTRLS, &ctrls_block) < 0)
