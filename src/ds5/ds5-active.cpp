@@ -72,7 +72,7 @@ namespace librealsense
             if (_pid == ds::RS457_PID)
             {
                 depth_ep.register_option(RS2_OPTION_PROJECTOR_TEMPERATURE,
-                    std::make_shared<projector_temperature_option>(_hw_monitor,
+                    std::make_shared<projector_temperature_option_mipi>(_hw_monitor,
                         RS2_OPTION_PROJECTOR_TEMPERATURE));
             }
             else
