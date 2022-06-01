@@ -36,7 +36,7 @@ namespace librealsense
         rs2_option                  _option;
     };
 
-    class asic_temperature_option : public readonly_option
+    class asic_temperature_option_mipi : public readonly_option
     {
     public:
         float query() const override;
@@ -47,14 +47,14 @@ namespace librealsense
 
         inline const char* get_description() const override {return "Current Asic Temperature (degree celsius)";}
 
-        explicit asic_temperature_option(std::shared_ptr<hw_monitor> hwm, rs2_option opt);
+        explicit asic_temperature_option_mipi(std::shared_ptr<hw_monitor> hwm, rs2_option opt);
 
     private:
         rs2_option                  _option;
         std::shared_ptr<hw_monitor>  _hw_monitor;
     };
 
-    class projector_temperature_option : public readonly_option
+    class projector_temperature_option_mipi : public readonly_option
     {
     public:
         float query() const override;
@@ -65,7 +65,7 @@ namespace librealsense
 
         inline const char* get_description() const override {return "Current Projector Temperature (degree celsius)";}
 
-        explicit projector_temperature_option(std::shared_ptr<hw_monitor> hwm, rs2_option opt);
+        explicit projector_temperature_option_mipi(std::shared_ptr<hw_monitor> hwm, rs2_option opt);
 
     private:
         rs2_option                  _option;

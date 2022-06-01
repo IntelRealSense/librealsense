@@ -117,11 +117,11 @@ namespace librealsense
         : _option(opt), _ep(ep)
         {}
 
-    asic_temperature_option::asic_temperature_option(std::shared_ptr<hw_monitor> hwm, rs2_option opt)
+    asic_temperature_option_mipi::asic_temperature_option_mipi(std::shared_ptr<hw_monitor> hwm, rs2_option opt)
         : _hw_monitor(hwm), _option(opt)
         {}
 
-    float asic_temperature_option::query() const
+    float asic_temperature_option_mipi::query() const
     {
         if (!is_enabled() || !_hw_monitor)
             throw wrong_api_call_sequence_exception("query is available during streaming only");
@@ -140,16 +140,16 @@ namespace librealsense
         return temperature;
     }
 
-    option_range asic_temperature_option::get_range() const
+    option_range asic_temperature_option_mipi::get_range() const
     {
         return option_range { -40, 125, 0, 0 };
     }
 
-    projector_temperature_option::projector_temperature_option(std::shared_ptr<hw_monitor> hwm, rs2_option opt)
+    projector_temperature_option_mipi::projector_temperature_option_mipi(std::shared_ptr<hw_monitor> hwm, rs2_option opt)
         : _hw_monitor(hwm), _option(opt)
         {}
 
-    float projector_temperature_option::query() const
+    float projector_temperature_option_mipi::query() const
     {
         if (!is_enabled() || !_hw_monitor)
             throw wrong_api_call_sequence_exception("query is available during streaming only");
@@ -168,7 +168,7 @@ namespace librealsense
         return temperature;
     }
 
-    option_range projector_temperature_option::get_range() const
+    option_range projector_temperature_option_mipi::get_range() const
     {
         return option_range { -40, 125, 0, 0 };
     }
