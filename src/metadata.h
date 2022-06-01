@@ -385,6 +385,7 @@ namespace librealsense
         uint32_t    sub_preset_info;
         uint32_t    crc;
     };
+    constexpr uint8_t md_mipi_depth_mode_size = sizeof(md_mipi_depth_mode);
     REGISTER_MD_TYPE(md_mipi_depth_mode, md_type::META_DATA_MIPI_INTEL_DEPTH_ID)
 
     /**\brief md_mipi_rgb_mode - properties associated with sensor configuration
@@ -414,6 +415,7 @@ namespace librealsense
         uint8_t     reserved[6];
         uint32_t    crc;
     };
+    constexpr uint8_t md_mipi_rgb_mode_size = sizeof(md_mipi_rgb_mode);
     REGISTER_MD_TYPE(md_mipi_rgb_mode, md_type::META_DATA_MIPI_INTEL_RGB_ID)
 
     /**\brief md_mipi_capture_timing - properties associated with sensor configuration
@@ -774,12 +776,6 @@ namespace librealsense
         md_sr300_rgb            sr300_rgb_mode;
     };
 
-    /*union md_mipi_modes
-    {
-        md_mipi_depth_mode depth_mode;
-        md_mipi_rgb_mode   rgb_mode;
-    };*/
-
     /**\brief metadata_raw - metadata structure
      *  layout as transmitted and received by backend */
     struct metadata_raw
@@ -792,17 +788,31 @@ namespace librealsense
      *  layout as transmitted and received by backend */
     struct metadata_mipi_depth_raw
     {
-        platform::uvc_header    header;
-        uint32_t                frame_counter;
-        md_mipi_depth_mode      depth_mode;
+        platform::uvc_header_mipi    header;
+        md_mipi_depth_mode           depth_mode;
+
+        inline bool capture_valid() const
+        {
+            return ((header.header.length > platform::uvc_header_mipi_size) &&
+                (depth_mode.header.md_size == md_mipi_depth_mode_size) &&
+                (depth_mode.header.md_type_id == md_type::META_DATA_MIPI_INTEL_DEPTH_ID));
+        }
     };
+    REGISTER_MD_TYPE(metadata_mipi_depth_raw, md_type::META_DATA_MIPI_INTEL_DEPTH_ID)
 
     struct metadata_mipi_rgb_raw
     {
-        platform::uvc_header    header;
-        uint32_t                frame_counter;
-        md_mipi_rgb_mode        rgb_mode;
+        platform::uvc_header_mipi    header;
+        md_mipi_rgb_mode             rgb_mode;
+
+        inline bool capture_valid() const
+        {
+            return ((header.header.length > platform::uvc_header_mipi_size) &&
+                (rgb_mode.header.md_size == md_mipi_rgb_mode_size) &&
+                (rgb_mode.header.md_type_id == md_type::META_DATA_MIPI_INTEL_RGB_ID));
+        }
     };
+    REGISTER_MD_TYPE(metadata_mipi_rgb_raw, md_type::META_DATA_MIPI_INTEL_RGB_ID)
 
     constexpr uint8_t metadata_raw_size = sizeof(metadata_raw);
 

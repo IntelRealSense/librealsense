@@ -63,7 +63,13 @@ namespace librealsense
             else
                 color_devs_info = color_devs_info_mi3;
             std::unique_ptr<frame_timestamp_reader> ds5_timestamp_reader_backup(new ds5_timestamp_reader(backend.create_time_service()));
-            std::unique_ptr<frame_timestamp_reader> ds5_timestamp_reader_metadata(new ds5_timestamp_reader_from_metadata(std::move(ds5_timestamp_reader_backup)));
+            frame_timestamp_reader* timestamp_reader_from_metadata;
+            if (ds::RS457_PID != _pid)
+                timestamp_reader_from_metadata = new ds5_timestamp_reader_from_metadata(std::move(ds5_timestamp_reader_backup));
+            else
+                timestamp_reader_from_metadata = new ds5_timestamp_reader_from_metadata_mipi_color(std::move(ds5_timestamp_reader_backup));
+
+            std::unique_ptr<frame_timestamp_reader> ds5_timestamp_reader_metadata(timestamp_reader_from_metadata);
 
             auto enable_global_time_option = std::shared_ptr<global_time_option>(new global_time_option());
             platform::uvc_device_info info;
@@ -276,19 +282,19 @@ namespace librealsense
         else
         {
             // for mipi device
+            color_ep.register_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP, make_uvc_header_parser(&platform::uvc_header::timestamp));
+
             // frame counter
-            /*color_ep.register_metadata(RS2_FRAME_METADATA_FRAME_COUNTER,
-                                           make_attribute_parser(&metadata_mipi_rgb_raw::frame_counter,
-                                                                 md_mipi_rgb_control_attributes::hw_timestamp_attribute,
-                                                                 0));*/
+            color_ep.register_metadata(RS2_FRAME_METADATA_FRAME_COUNTER, make_uvc_header_parser(&platform::uvc_header_mipi::frame_counter));
 
             // attributes of md_mipi_rgb_control structure
             auto md_prop_offset = offsetof(metadata_mipi_rgb_raw, rgb_mode);
 
             // to be checked
-            //depth_sensor.register_metadata(RS2_FRAME_METADATA_SENSOR_TIMESTAMP, make_rs400_sensor_ts_parser(make_uvc_header_parser(&uvc_header::timestamp),
-            //    make_attribute_parser(&md_capture_timing::sensor_timestamp, md_capture_timing_attributes::sensor_timestamp_attribute, md_prop_offset)));
-
+            color_ep.register_metadata(RS2_FRAME_METADATA_SENSOR_TIMESTAMP,
+                                           make_attribute_parser(&md_mipi_rgb_mode::hw_timestamp,
+                                                                 md_mipi_rgb_control_attributes::hw_timestamp_attribute,
+                                                                 md_prop_offset));
 
             color_ep.register_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP,
                                            make_attribute_parser(&md_mipi_rgb_mode::hw_timestamp,

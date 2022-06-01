@@ -711,7 +711,12 @@ namespace librealsense
             depth_devices.push_back(backend.create_uvc_device(info));
 
         std::unique_ptr<frame_timestamp_reader> timestamp_reader_backup(new ds5_timestamp_reader(backend.create_time_service()));
-        std::unique_ptr<frame_timestamp_reader> timestamp_reader_metadata(new ds5_timestamp_reader_from_metadata(std::move(timestamp_reader_backup)));
+        frame_timestamp_reader* timestamp_reader_from_metadata;
+        if (all_device_infos.front().pid != RS457_PID)
+            timestamp_reader_from_metadata = new ds5_timestamp_reader_from_metadata(std::move(timestamp_reader_backup));
+        else
+            timestamp_reader_from_metadata = new ds5_timestamp_reader_from_metadata_mipi(std::move(timestamp_reader_backup));
+        std::unique_ptr<frame_timestamp_reader> timestamp_reader_metadata(timestamp_reader_from_metadata);
         auto enable_global_time_option = std::shared_ptr<global_time_option>(new global_time_option());
 
         auto raw_depth_ep = std::make_shared<uvc_sensor>("Raw Depth Sensor", std::make_shared<platform::multi_pins_uvc_device>(depth_devices),
@@ -1247,10 +1252,7 @@ namespace librealsense
             depth_sensor.register_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP, make_uvc_header_parser(&uvc_header::timestamp));
 
             // frame counter
-            /*depth_sensor.register_metadata(RS2_FRAME_METADATA_FRAME_COUNTER,
-                                           make_attribute_parser(&metadata_mipi_raw::frame_counter,
-                                                                 md_mipi_depth_control_attributes::hw_timestamp_attribute,
-                                                                 0));*/
+            depth_sensor.register_metadata(RS2_FRAME_METADATA_FRAME_COUNTER, make_uvc_header_parser(&uvc_header_mipi::frame_counter));
 
             // attributes of md_mipi_depth_control structure
             auto md_prop_offset = offsetof(metadata_mipi_depth_raw, depth_mode);

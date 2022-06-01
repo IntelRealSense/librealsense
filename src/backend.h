@@ -154,6 +154,12 @@ namespace librealsense
             uint8_t         source_clock[6];
         };
 
+        struct uvc_header_mipi
+        {
+            uvc_header      header;
+            uint32_t        frame_counter;
+        };
+
         struct hid_header
         {
             uint8_t         length;             // HID report total size. Limited to 255
@@ -164,6 +170,7 @@ namespace librealsense
 
         constexpr uint8_t uvc_header_size = sizeof(uvc_header);
         constexpr uint8_t hid_header_size = sizeof(hid_header);
+        constexpr uint8_t uvc_header_mipi_size = sizeof(uvc_header_mipi);
 
         struct frame_object
         {
