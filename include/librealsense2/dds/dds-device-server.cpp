@@ -5,6 +5,7 @@
 
 #include "dds-device-server.h"
 #include "dds-participant.h"
+#include "dds-utilities.h"
 
 #include <fastdds/dds/domain/DomainParticipant.hpp>
 #include <fastdds/dds/publisher/Publisher.hpp>
@@ -26,16 +27,15 @@ public:
         : _participant( participant )
         , _publisher( publisher )
         , _topic( nullptr )
-        , _topic_type_ptr( std::make_shared< eprosima::fastdds::dds::TypeSupport >(
-              new librealsense::dds::topics::image::type ) )
         , _data_writer( nullptr )
     {
         _topic_name = librealsense::dds::topics::image::construct_stream_topic_name( topic_root,
                                                                                      stream_name );
-        _topic_type_ptr->register_type( _participant );
-        _topic = _participant->create_topic( _topic_name,
-                                             ( *_topic_type_ptr )->getName(),
-                                             TOPIC_QOS_DEFAULT );
+
+        eprosima::fastdds::dds::TypeSupport topic_type( new librealsense::dds::topics::image::type );
+
+        DDS_API_CALL( _participant->register_type( topic_type ) );
+        _topic = DDS_API_CALL( _participant->create_topic( _topic_name, topic_type->getName(), TOPIC_QOS_DEFAULT ) );
 
         // TODO:: Maybe we want to open a writer only when the stream is requested?
         DataWriterQos wqos = DATAWRITER_QOS_DEFAULT;
@@ -46,12 +46,8 @@ public:
         // Our message has dynamic size (unbounded) so we need a memory policy that supports it
         wqos.endpoint().history_memory_policy
             = eprosima::fastrtps::rtps::PREALLOCATED_WITH_REALLOC_MEMORY_MODE;
-        _data_writer = _publisher->create_datawriter( _topic, wqos );
 
-        if( ! _topic || ! _data_writer )
-            throw std::runtime_error(
-                "Error in creating DDS resources for video stream server of topic: "
-                + _topic_name );
+        _data_writer = DDS_API_CALL( _publisher->create_datawriter( _topic, wqos ) );
     }
     ~dds_stream_server()
     {
@@ -59,21 +55,16 @@ public:
         {
             if( nullptr != _data_writer )
             {
-                if( !_publisher->delete_datawriter( _data_writer ) )
-                {
-                    LOG_ERROR("Could not delete data_writer: " << _data_writer->guid());
-                }
+                DDS_API_CALL_NO_THROW( _publisher->delete_datawriter( _data_writer ) );
             }
 
             if( nullptr != _topic )
             {
-                if( !_participant->delete_topic( _topic ) )
-                {
-                    LOG_ERROR("Could not delete topic: " << _topic->get_name());
-                }
+                DDS_API_CALL_NO_THROW( _participant->delete_topic( _topic ) );
             }
         }
     }
+
 
     void publish_video_frame( uint8_t * frame, int size )
     {
@@ -85,7 +76,7 @@ public:
         raw_image.width() = _image_header.width;
         raw_image.raw_data().assign( frame, frame + size );
 
-        _data_writer->write( &raw_image );
+        DDS_API_CALL_NO_THROW( _data_writer->write( &raw_image ) );
     }
     void set_image_header( const image_header & header ) { _image_header = header; }
 
@@ -94,7 +85,6 @@ private:
     eprosima::fastdds::dds::DomainParticipant * _participant;
     eprosima::fastdds::dds::Publisher * _publisher;
     eprosima::fastdds::dds::Topic * _topic;
-    std::shared_ptr< eprosima::fastdds::dds::TypeSupport > _topic_type_ptr;
     eprosima::fastdds::dds::DataWriter * _data_writer;
     image_header _image_header;
 };
@@ -139,16 +129,15 @@ void dds_device_server::publish_frame( const std::string & stream_name, uint8_t 
     stream_name_to_server.at( stream_name )->publish_video_frame( frame, size );
 }
 
-bool dds_device_server::init( const std::vector<std::string> &supported_streams_names )
+void dds_device_server::init( const std::vector<std::string> &supported_streams_names )
 {
     if( is_valid() )
     {
         throw std::runtime_error( "publisher is already initialized; cannot init a publisher for'" + _topic_root);
     }
 
-    if( !create_dds_publisher() )
-        return false;
-    
+    _publisher = DDS_API_CALL(_participant->create_publisher( PUBLISHER_QOS_DEFAULT, nullptr ));
+
     for( auto stream_name : supported_streams_names )
     {
         stream_name_to_server[stream_name] = std::make_shared< dds_stream_server >( _participant,
@@ -156,13 +145,5 @@ bool dds_device_server::init( const std::vector<std::string> &supported_streams_
                                                                                     _topic_root,
                                                                                     stream_name );
     }
-
-    return true;
-}
-
-bool dds_device_server::create_dds_publisher( )
-{
-    _publisher = _participant->create_publisher( PUBLISHER_QOS_DEFAULT, nullptr );
-    return ( _publisher != nullptr );
 }
 

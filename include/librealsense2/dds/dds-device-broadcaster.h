@@ -81,7 +81,7 @@ private:
     void remove_dds_device( const std::string & device_key );
     bool add_dds_device( const std::string & device_key, const rs2::device & rs2_dev );
     bool create_device_writer( const std::string & device_key, rs2::device rs2_device );
-    bool create_dds_publisher();
+    void create_dds_publisher();
     bool send_device_info_msg( const librealsense::dds::topics::device_info & dev_info );
     void fill_device_msg( const librealsense::dds::topics::device_info & dev_info,
                           librealsense::dds::topics::raw::device_info & msg ) const;
@@ -92,7 +92,6 @@ private:
     eprosima::fastdds::dds::DomainParticipant * _participant;
     eprosima::fastdds::dds::Publisher * _publisher;
     eprosima::fastdds::dds::Topic * _topic;
-    std::shared_ptr<eprosima::fastdds::dds::TypeSupport> _topic_type_ptr;
     std::unordered_map< std::string, dds_device_handle > _device_handle_by_sn;
     dispatcher _dds_device_dispatcher;
     active_object<> _new_client_handler;

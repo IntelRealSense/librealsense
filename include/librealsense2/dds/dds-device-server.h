@@ -46,7 +46,7 @@ public:
 
     dds_device_server( librealsense::dds::dds_participant& participant, const std::string& topic_root );
     ~dds_device_server();
-    bool init( const std::vector<std::string>& supported_streams_names );
+    void init( const std::vector<std::string>& supported_streams_names );
     bool is_valid() const { return ( nullptr != _publisher ); }
     bool operator!() const { return ! is_valid(); }
     void set_image_header( const std::string& stream_name, const image_header& header );
@@ -54,8 +54,6 @@ public:
     
 private:
     class dds_stream_server;
-
-    bool create_dds_publisher( );
     
     eprosima::fastdds::dds::DomainParticipant * _participant;
     eprosima::fastdds::dds::Publisher * _publisher;

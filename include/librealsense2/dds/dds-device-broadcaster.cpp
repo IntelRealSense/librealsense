@@ -5,6 +5,7 @@
 
 #include "dds-device-broadcaster.h"
 #include "dds-participant.h"
+#include "dds-utilities.h"
 
 #include <librealsense2/utilities/easylogging/easyloggingpp.h>
 #include <fastdds/dds/domain/DomainParticipantFactory.hpp>
@@ -76,7 +77,6 @@ dds_device_broadcaster::dds_device_broadcaster( dds_participant & participant )
     , _participant( participant.get() )
     , _publisher( nullptr )
     , _topic( nullptr )
-    , _topic_type_ptr( std::make_shared<eprosima::fastdds::dds::TypeSupport>(new librealsense::dds::topics::device_info::type) )
     , _dds_device_dispatcher( 10 )
     , _new_client_handler( [this]( dispatcher::cancellable_timer timer ) {
         // We wait until the new reader callback indicate a new reader has joined or until the
@@ -114,11 +114,7 @@ bool dds_device_broadcaster::run()
         return false;
     }
 
-    if( ! create_dds_publisher() )
-    {
-        LOG_ERROR( "Error - Failed creating publisher" );
-        return false;
-    }
+    create_dds_publisher();
 
     _dds_device_dispatcher.start();
     _new_client_handler.start();
@@ -241,16 +237,16 @@ bool dds_device_broadcaster::create_device_writer( const std::string &device_key
     return _device_handle_by_sn[device_key].data_writer != nullptr;
 }
 
-bool dds_device_broadcaster::create_dds_publisher()
+void dds_device_broadcaster::create_dds_publisher()
 {
     // Registering the topic type enables topic instance creation by factory
-    _topic_type_ptr->register_type( _participant );
-    _publisher = _participant->create_publisher( PUBLISHER_QOS_DEFAULT, nullptr );
-    _topic = _participant->create_topic( librealsense::dds::topics::device_info::TOPIC_NAME,
-                                         (*_topic_type_ptr)->getName(),
-                                         TOPIC_QOS_DEFAULT );
-
-    return ( _topic != nullptr && _publisher != nullptr );
+    eprosima::fastdds::dds::TypeSupport topic_type( new librealsense::dds::topics::device_info::type );
+    DDS_API_CALL( _participant->register_type( topic_type ) );
+    _publisher = DDS_API_CALL( _participant->create_publisher( PUBLISHER_QOS_DEFAULT, nullptr ) );
+    _topic = DDS_API_CALL(
+        _participant->create_topic( librealsense::dds::topics::device_info::TOPIC_NAME,
+                                    topic_type->getName(),
+                                    TOPIC_QOS_DEFAULT ) );
 }
 
 bool dds_device_broadcaster::send_device_info_msg( const librealsense::dds::topics::device_info& dev_info )
@@ -315,17 +311,19 @@ dds_device_broadcaster::~dds_device_broadcaster()
     {
         auto & dev_writer = sn_and_handle.second.data_writer;
         if( dev_writer )
-            _publisher->delete_datawriter( dev_writer );
+        {
+            DDS_API_CALL_NO_THROW( _publisher->delete_datawriter( dev_writer ) );
+        }
     }
     _device_handle_by_sn.clear();
 
     if( _topic != nullptr )
     {
-        _participant->delete_topic( _topic );
+        DDS_API_CALL_NO_THROW( _participant->delete_topic( _topic ) );
     }
     if( _publisher != nullptr )
     {
-        _participant->delete_publisher( _publisher );
+        DDS_API_CALL_NO_THROW( _participant->delete_publisher( _publisher ) );
     }
 }
 

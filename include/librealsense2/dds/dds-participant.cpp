@@ -2,6 +2,8 @@
 // Copyright(c) 2022 Intel Corporation. All Rights Reserved.
 
 #include "dds-participant.h"
+#include "dds-utilities.h"
+
 #include <librealsense2/utilities/easylogging/easyloggingpp.h>
 #include <fastdds/dds/domain/DomainParticipantFactory.hpp>
 #include <fastdds/dds/domain/DomainParticipantListener.hpp>
@@ -84,8 +86,7 @@ void dds_participant::init( dds_domain_id domain_id, std::string const & partici
     // DomainParticipant to be alive.
     pqos.wire_protocol().builtin.discovery_config.leaseDuration = { 10, 0 };  // [sec,nsec]
 
-    _participant
-        = DomainParticipantFactory::get_instance()->create_participant( domain_id, pqos, _domain_listener.get() );
+    _participant = DDS_API_CALL(DomainParticipantFactory::get_instance()->create_participant( domain_id, pqos, _domain_listener.get() ));
     
     if( ! _participant )
     {
@@ -104,11 +105,10 @@ dds_participant::~dds_participant()
         if( _participant->has_active_entities() )
         {
             LOG_DEBUG( "participant has active entities!, deleting them all.." );
-            _participant->delete_contained_entities();
+            DDS_API_CALL_NO_THROW( _participant->delete_contained_entities() );
         }
 
-        if( ! DomainParticipantFactory::get_instance()->delete_participant( _participant ) )
-            LOG_ERROR( "Failed deleting participant!" );
+        DDS_API_CALL_NO_THROW( DomainParticipantFactory::get_instance()->delete_participant( _participant ) );
     }
 }
 

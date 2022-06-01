@@ -136,11 +136,7 @@ try
             std::shared_ptr< librealsense::dds::dds_device_server > new_dds_device_server
                 = std::make_shared< librealsense::dds::dds_device_server >( participant,
                                                                             dev_topic_root );
-            if( !new_dds_device_server->init( supported_streams_names_vec ) )
-            {
-                std::cerr << "Failure initializing dds_device_server for topic root: " << dev_topic_root << std::endl;
-                return;
-            }
+            new_dds_device_server->init( supported_streams_names_vec );
 
             // Create a lrs_device_manager for this device
             std::shared_ptr< tools::lrs_device_manager > new_lrs_device_manager
