@@ -57,14 +57,20 @@ public:
     {
         if( nullptr != _participant )
         {
-            if( nullptr != _topic )
-            {
-                _participant->delete_topic( _topic );
-            }
-
             if( nullptr != _data_writer )
             {
-                _publisher->delete_datawriter( _data_writer );
+                if( !_publisher->delete_datawriter( _data_writer ) )
+                {
+                    LOG_ERROR("Could not delete data_writer: " << _data_writer->guid());
+                }
+            }
+
+            if( nullptr != _topic )
+            {
+                if( !_participant->delete_topic( _topic ) )
+                {
+                    LOG_ERROR("Could not delete topic: " << _topic->get_name());
+                }
             }
         }
     }
