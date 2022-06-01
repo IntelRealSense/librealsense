@@ -397,7 +397,7 @@ def by_configuration( config, exceptions = None ):
         sns = set()
         for spec in config:
             old_len = len(sns)
-            for sn in _get_sns_from_spec( spec ):
+            for sn in _get_sns_from_spec( spec, []):
                 if sn in exceptions:
                     continue
                 if sn not in sns:
