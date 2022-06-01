@@ -109,14 +109,14 @@ dds_device_server::~dds_device_server()
         }
     }
 
-    stream_name_to_server.clear();
+    _stream_name_to_server.clear();
     LOG_DEBUG( "DDS device server for device topic root: " << _topic_root << " deleted" );
 }
 
 void dds_device_server::set_image_header( const std::string & stream_name,
                                           const image_header & header )
 {
-    stream_name_to_server.at( stream_name )->set_image_header( header );
+    _stream_name_to_server.at( stream_name )->set_image_header( header );
 }
 
 void dds_device_server::publish_frame( const std::string & stream_name, uint8_t * frame, int size )
@@ -126,21 +126,21 @@ void dds_device_server::publish_frame( const std::string & stream_name, uint8_t 
         LOG_ERROR( "Cannot publish frame through DDS, DDS device server in uninitialized" );
     }
 
-    stream_name_to_server.at( stream_name )->publish_video_frame( frame, size );
+    _stream_name_to_server.at( stream_name )->publish_video_frame( frame, size );
 }
 
 void dds_device_server::init( const std::vector<std::string> &supported_streams_names )
 {
     if( is_valid() )
     {
-        throw std::runtime_error( "publisher is already initialized; cannot init a publisher for'" + _topic_root);
+        throw std::runtime_error( "device server '" + _topic_root + "' is already initialized" );
     }
 
     _publisher = DDS_API_CALL(_participant->create_publisher( PUBLISHER_QOS_DEFAULT, nullptr ));
 
     for( auto stream_name : supported_streams_names )
     {
-        stream_name_to_server[stream_name] = std::make_shared< dds_stream_server >( _participant,
+        _stream_name_to_server[stream_name] = std::make_shared< dds_stream_server >( _participant,
                                                                                     _publisher,
                                                                                     _topic_root,
                                                                                     stream_name );

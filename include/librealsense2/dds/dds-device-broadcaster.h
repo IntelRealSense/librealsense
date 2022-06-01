@@ -47,7 +47,7 @@ public:
     // Start listening for device changes
     bool run();
 
-    // Create a new data writer for a new connected device
+    // Create a new data writer for a new connected device and return its topic root
     std::string add_device( rs2::device dev );
 
     // Destroy the removed device data writer

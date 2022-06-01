@@ -96,7 +96,7 @@ try
         return EXIT_FAILURE;
     }
 
-    std::map<rs2::device, std::pair<std::shared_ptr<librealsense::dds::dds_device_server>, std::shared_ptr<tools::lrs_device_manager>>> device_handlers_list;
+    std::map<rs2::device, std::pair<std::shared_ptr<librealsense::dds::dds_device_server>, std::shared_ptr<tools::lrs_device_controller>>> device_handlers_list;
     
     std::cout << "Start listening to RS devices.." << std::endl;
 
@@ -123,11 +123,7 @@ try
                 std::for_each( stream_profiles.begin(),
                                stream_profiles.end(),
                                [&]( const rs2::stream_profile & sp ) {
-                                   if( supported_streams_names.find( sp.stream_name() )
-                                       == supported_streams_names.end() )
-                                   {
-                                       supported_streams_names.insert( sp.stream_name() );
-                                   }
+                                   supported_streams_names.insert( sp.stream_name() );
                                } );
             }
 
@@ -139,8 +135,8 @@ try
             new_dds_device_server->init( supported_streams_names_vec );
 
             // Create a lrs_device_manager for this device
-            std::shared_ptr< tools::lrs_device_manager > new_lrs_device_manager
-                = std::make_shared< tools::lrs_device_manager >( dev );
+            std::shared_ptr< tools::lrs_device_controller > new_lrs_device_manager
+                = std::make_shared< tools::lrs_device_controller >( dev );
 
 
             device_handlers_list.insert(
@@ -166,7 +162,7 @@ try
                 return;
             }
             // Get first profile that match our request (We know it exist if we got here..)
-            auto& req_color_profile = req_color_profiles[0];
+            auto& req_color_profile = *req_color_profiles;
 
             // Configure DDS-server to the required frame header
             librealsense::dds::dds_device_server::image_header header;
