@@ -887,12 +887,11 @@ namespace librealsense
                 if (_pid == ds::RS457_PID)
                 {
                     depth_sensor.register_option(RS2_OPTION_ASIC_TEMPERATURE,
-                        std::make_shared<asic_temperature_option>(_hw_monitor,
+                        std::make_shared<asic_temperature_option_mipi>(_hw_monitor,
                             RS2_OPTION_ASIC_TEMPERATURE));
                 }
                 else
                 {
-
                     depth_sensor.register_option(RS2_OPTION_OUTPUT_TRIGGER_ENABLED,
                         std::make_shared<uvc_xu_option<uint8_t>>(raw_depth_sensor, depth_xu, DS5_EXT_TRIGGER,
                             "Generate trigger from the camera to external device once per frame"));
