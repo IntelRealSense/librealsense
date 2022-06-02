@@ -51,32 +51,29 @@ public:
     }
     ~dds_stream_server()
     {
-        if( nullptr != _participant )
+        if( nullptr != _data_writer )
         {
-            if( nullptr != _data_writer )
-            {
-                DDS_API_CALL_NO_THROW( _publisher->delete_datawriter( _data_writer ) );
-            }
+            DDS_API_CALL_NO_THROW( _publisher->delete_datawriter( _data_writer ) );
+        }
 
-            if( nullptr != _topic )
-            {
-                DDS_API_CALL_NO_THROW( _participant->delete_topic( _topic ) );
-            }
+        if( nullptr != _topic )
+        {
+            DDS_API_CALL_NO_THROW( _participant->delete_topic( _topic ) );
         }
     }
 
 
-    void publish_video_frame( uint8_t * frame, int size )
+    void publish_image( const uint8_t * data, size_t size )
     {
         LOG_DEBUG( "publishing a DDS video frame for topic: " << _topic_name );
         librealsense::dds::topics::raw::image raw_image;
-        raw_image.size() = size;
+        raw_image.size() = static_cast< uint32_t >( size );
         raw_image.format() = _image_header.format;
         raw_image.height() = _image_header.height;
         raw_image.width() = _image_header.width;
-        raw_image.raw_data().assign( frame, frame + size );
+        raw_image.raw_data().assign( data, data + size );
 
-        DDS_API_CALL_NO_THROW( _data_writer->write( &raw_image ) );
+        DDS_API_CALL( _data_writer->write( &raw_image ) );
     }
     void set_image_header( const image_header & header ) { _image_header = header; }
 
@@ -119,14 +116,15 @@ void dds_device_server::set_image_header( const std::string & stream_name,
     _stream_name_to_server.at( stream_name )->set_image_header( header );
 }
 
-void dds_device_server::publish_frame( const std::string & stream_name, uint8_t * frame, int size )
+void dds_device_server::publish_image( const std::string & stream_name, const uint8_t * data, size_t size )
 {
-    if( ! is_valid() )
+    if( !is_valid() )
     {
-        LOG_ERROR( "Cannot publish frame through DDS, DDS device server in uninitialized" );
+        throw std::runtime_error( "Cannot publish '" + stream_name + "' frame for '" + _topic_root
+                                  + "', DDS device server in uninitialized" );
     }
 
-    _stream_name_to_server.at( stream_name )->publish_video_frame( frame, size );
+    _stream_name_to_server.at( stream_name )->publish_image( data, size );
 }
 
 void dds_device_server::init( const std::vector<std::string> &supported_streams_names )

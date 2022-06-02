@@ -7,8 +7,8 @@ set(TOOL_FILES
     rs-dds-server.cpp
     lrs-device-watcher.h
     lrs-device-watcher.cpp
-    lrs-device-manager.h
-    lrs-device-manager.cpp
+    lrs-device-controller.h
+    lrs-device-controller.cpp
     )
 
 set(UTILITIES

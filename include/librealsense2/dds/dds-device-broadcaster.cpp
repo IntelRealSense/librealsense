@@ -114,7 +114,7 @@ bool dds_device_broadcaster::run()
         return false;
     }
 
-    create_dds_publisher();
+    create_broadcast_topic();
 
     _dds_device_dispatcher.start();
     _new_client_handler.start();
@@ -237,7 +237,7 @@ bool dds_device_broadcaster::create_device_writer( const std::string &device_key
     return _device_handle_by_sn[device_key].data_writer != nullptr;
 }
 
-void dds_device_broadcaster::create_dds_publisher()
+void dds_device_broadcaster::create_broadcast_topic()
 {
     // Registering the topic type enables topic instance creation by factory
     eprosima::fastdds::dds::TypeSupport topic_type( new librealsense::dds::topics::device_info::type );

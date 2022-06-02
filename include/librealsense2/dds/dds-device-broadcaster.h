@@ -81,7 +81,7 @@ private:
     void remove_dds_device( const std::string & device_key );
     bool add_dds_device( const std::string & device_key, const rs2::device & rs2_dev );
     bool create_device_writer( const std::string & device_key, rs2::device rs2_device );
-    void create_dds_publisher();
+    void create_broadcast_topic();
     bool send_device_info_msg( const librealsense::dds::topics::device_info & dev_info );
     void fill_device_msg( const librealsense::dds::topics::device_info & dev_info,
                           librealsense::dds::topics::raw::device_info & msg ) const;

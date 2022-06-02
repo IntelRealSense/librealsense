@@ -5,26 +5,27 @@
 
 #include <fastrtps/types/TypesBase.h>
 #include <librealsense2/utilities/easylogging/easyloggingpp.h>
+#include <sstream>
 
-// FastDDS API in most cases is build from 2 formats:
-// 1. ReturnCode_t api_call(...)
-// 2. <class_name> * api_call(...)
+// FastDDS, in most case, is using two error conventions:
+// 1. ReturnCode_t api_call(...)   -> return ReturnCode_t != RETCODE_OK
+// 2. <class_name> * api_call(...) -> return nullptr
 
-// Here we covered this 2 options with are own functions which log the error and raise the appropriate exception
+// Here we covered this 2 options with our own functions which log the error and raise the appropriate exception
 // The static function are made to distinguish between the 2 calling formats
 namespace librealsense {
 namespace dds {
-static std::string get_dds_error( eprosima::fastrtps::types::ReturnCode_t ret_code )
+inline std::string get_dds_error( eprosima::fastrtps::types::ReturnCode_t ret_code )
 {
-    std::stringstream s;
+    std::ostringstream s;
     s << " Err:" << ret_code();
     return s.str();
 }
 
 template < typename T > 
-static std::string get_dds_error( T ret_code )
+inline std::string get_dds_error( T *address )
 {
-    return "";
+    return "returned null";
 }
 }  // namespace dds
 }  // namespace librealsense
@@ -41,6 +42,7 @@ static std::string get_dds_error( T ret_code )
         return r;                                                                                  \
     }()
 
+// We assume FastDDS API does not throw
 #define DDS_API_CALL_NO_THROW( func )                                                              \
     [&]() {                                                                                        \
         auto r = func;                                                                             \

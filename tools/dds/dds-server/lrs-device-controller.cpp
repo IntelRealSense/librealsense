@@ -1,7 +1,7 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2022 Intel Corporation. All Rights Reserved.
 
-#include "lrs-device-manager.h"
+#include "lrs-device-controller.h"
 #include <librealsense2/utilities/easylogging/easyloggingpp.h>
 #include <algorithm>
 #include <iostream>
@@ -13,10 +13,9 @@ using namespace tools;
 class lrs_device_controller::lrs_sensor_streamer
 {
 public:
-    lrs_sensor_streamer() = default;
     lrs_sensor_streamer( rs2::sensor rs2_sensor,
                     rs2::stream_profile stream_profile,
-                    std::function< void( const std::string & stream_name, uint8_t * data, int size ) > cb )
+                    std::function< void( const std::string & stream_name, const uint8_t * data, size_t size ) > cb )
         : _rs2_sensor( rs2_sensor )
         , _stream_profile( stream_profile )
         , _frame_callback(std::move( cb ))
@@ -55,7 +54,7 @@ lrs_device_controller::~lrs_device_controller()
     LOG_DEBUG( "LRS device manager for device: " << _device_sn << " deleted" );
 }
 void lrs_device_controller::start_stream( rs2::stream_profile sp,
-                                       std::function< void( const std::string& stream_name, uint8_t* frame, int size ) > cb )
+                                       std::function< void( const std::string& stream_name, const uint8_t* data, size_t size ) > cb )
 {
     switch( sp.stream_type() )
     {

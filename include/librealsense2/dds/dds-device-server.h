@@ -65,7 +65,7 @@ public:
     bool is_valid() const { return ( nullptr != _publisher ); }
     bool operator!() const { return ! is_valid(); }
     void set_image_header( const std::string& stream_name, const image_header& header );
-    void publish_frame( const std::string& stream_name, uint8_t* frame, int size );
+    void publish_image( const std::string& stream_name, const uint8_t* data, size_t size );
     
 private:
     class dds_stream_server;

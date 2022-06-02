@@ -176,11 +176,11 @@ try
             // Start required streaming
             new_lrs_device_manager->start_stream(
                 req_color_profile,
-                [&, dev, req_color_profile]( const std::string & stream_name, uint8_t * frame, int size ) {
+                [&, dev, req_color_profile]( const std::string & stream_name, const uint8_t * data, size_t size ) {
                     auto &dds_device_server = device_handlers_list.at( dev ).first;
                     try
                     {
-                        dds_device_server->publish_frame( req_color_profile.stream_name(), frame, size );
+                        dds_device_server->publish_image( req_color_profile.stream_name(), data, size );
                     }
                     catch( std::exception &e )
                     {
