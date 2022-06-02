@@ -176,15 +176,16 @@ try
             // Start required streaming
             new_lrs_device_manager->start_stream(
                 req_color_profile,
-                [&, dev, req_color_profile]( const std::string & stream_name, const uint8_t * data, size_t size ) {
+                [&, dev]( rs2::frame f) {
                     auto &dds_device_server = device_handlers_list.at( dev ).first;
+                    auto vf = f.as<rs2::video_frame>();
                     try
                     {
-                        dds_device_server->publish_image( req_color_profile.stream_name(), data, size );
+                        dds_device_server->publish_image( vf.get_profile().stream_name(), (const uint8_t *)f.get_data(), f.get_data_size() );
                     }
                     catch( std::exception &e )
                     {
-                        LOG_ERROR( "Exception raised during DDS publish " << req_color_profile.stream_name() << " frame: " << e.what() );
+                        LOG_ERROR( "Exception raised during DDS publish " << vf.get_profile().stream_name() << " frame: " << e.what() );
                     }
                     
                 } );

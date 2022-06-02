@@ -23,7 +23,7 @@ public:
         _rs2_sensor.open( _stream_profile );
         _rs2_sensor.start( [&]( rs2::frame f ) 
             {
-                _frame_callback( _stream_profile.stream_name(), (uint8_t *)f.get_data(), f.get_data_size() );
+                _frame_callback( f );
             } );
         std::cout << _stream_profile.stream_name() << " stream started"  << std::endl;
     }

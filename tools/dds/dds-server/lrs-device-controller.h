@@ -14,7 +14,7 @@ class lrs_device_controller
 public:
 
     typedef std::function< void(
-        const std::string & stream_name, const uint8_t * data, size_t size ) >
+        rs2::frame ) >
         frame_callback_type;
 
     lrs_device_controller( rs2::device dev );
