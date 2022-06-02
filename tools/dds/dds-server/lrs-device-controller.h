@@ -7,14 +7,19 @@
 
 namespace tools {
 
+
 // This class is in charge of handling a RS device: streaming, control..
 class lrs_device_controller
 {
 public:
-    
+
+    typedef std::function< void(
+        const std::string & stream_name, const uint8_t * data, size_t size ) >
+        frame_callback_type;
+
     lrs_device_controller( rs2::device dev );
     ~lrs_device_controller();
-    void start_stream( rs2::stream_profile sp, std::function< void( const std::string& stream_name, const uint8_t* data, size_t size) > cb );
+    void start_stream( rs2::stream_profile sp, frame_callback_type cb );
     void stop_stream( rs2_stream stream );
     void stop_all_streams();
 

@@ -15,7 +15,7 @@ class lrs_device_controller::lrs_sensor_streamer
 public:
     lrs_sensor_streamer( rs2::sensor rs2_sensor,
                     rs2::stream_profile stream_profile,
-                    std::function< void( const std::string & stream_name, const uint8_t * data, size_t size ) > cb )
+                    frame_callback_type cb )
         : _rs2_sensor( rs2_sensor )
         , _stream_profile( stream_profile )
         , _frame_callback(std::move( cb ))
@@ -37,7 +37,7 @@ public:
 private:
     rs2::sensor _rs2_sensor;
     rs2::stream_profile _stream_profile;
-    std::function< void( const std::string& stream_name, uint8_t* data, int size ) > _frame_callback;
+    frame_callback_type _frame_callback;
 };
 
 lrs_device_controller::lrs_device_controller( rs2::device dev )
@@ -53,8 +53,7 @@ lrs_device_controller::~lrs_device_controller()
     stop_all_streams();
     LOG_DEBUG( "LRS device manager for device: " << _device_sn << " deleted" );
 }
-void lrs_device_controller::start_stream( rs2::stream_profile sp,
-                                       std::function< void( const std::string& stream_name, const uint8_t* data, size_t size ) > cb )
+void lrs_device_controller::start_stream( rs2::stream_profile sp, frame_callback_type cb )
 {
     switch( sp.stream_type() )
     {
