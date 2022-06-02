@@ -13,7 +13,7 @@
 #include <fastdds/dds/log/Log.hpp>
 
 #include "lrs-device-watcher.h"
-#include "lrs-device-manager.h"
+#include "lrs-device-controller.h"
 
 #include "tclap/CmdLine.h"
 #include "tclap/ValueArg.h"
