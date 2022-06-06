@@ -263,13 +263,12 @@ void log_callback_end( uint32_t fps,
     std::vector<byte> sensor_base::align_width_to_64(int width, int height, int bpp, byte* pix) const
     {
         int factor = bpp >> 3;
-        int bytes_in_width = width * factor;
-        int actual_input_bytes_in_width = (((bytes_in_width / 64 ) + 1) * 64);
+        int actual_input_width = ((width / 64 ) + 1) * 64;
         std::vector<byte> pixels;
         for (int j = 0; j < height; ++j)
         {
-            int start_index = j * actual_input_bytes_in_width;
-            int end_index = (width * factor) + (j * actual_input_bytes_in_width);
+            int start_index = j * actual_input_width * factor;
+            int end_index = (width * factor) + (j * actual_input_width * factor);
             pixels.insert(pixels.end(), pix + start_index, pix + end_index);
         }
         return pixels;
