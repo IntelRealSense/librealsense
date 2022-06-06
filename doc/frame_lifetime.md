@@ -31,6 +31,20 @@ As a side-note, `rs2::device::stop` will block until all pending callbacks retur
 * Except some initial stabilization period, librealsense ensures no heap allocations are being made when using frame callbacks. (This also applies to `rs2::frame_queue` but not to `rs2::syncer` primitive)
 * If you are not releasing `rs2::frame` objects in less then the `1000 / fps` milliseconds, you will likely encounter frame drops. These events will be visible in the log, if you decrease the severity to DEBUG level. 
 
+## Frame Copies
+
+The following diagram specify the frame flow in the system and indicates where and when the frame is being copied/reconstructed.
+
+
+
+![](C:\Work\Git\librealsense\doc\img\frame_lifetime.png)
+
+* First copy is a mandatory step in the SDK and it's purpose is passing the frame content ownership from the digital media controller (WMF/V4L2) into librealsense.
+
+* Second reconstruction of the frame is optional and a subject of frame manipulation needed by the user, examples for it are: pixel format representation conversions and more.. (See some of the implemented filters [here](https://github.com/IntelRealSense/librealsense/blob/master/doc/post-processing-filters.md) )
+
+  This filters / post processing blocks can be concatenated and each one will get the last processed frame as input and output a new frame.
+
 ## Frames and Threads
 
 Callbacks are invoked from an internal thread to minimize latency. If you have a lot of processing to do, or simply want to handle the frame in your main event loop, librealsense provides `rs2::frame_queue` primitive to move frames from one thread to another in a thread-safe fashion:
@@ -88,7 +102,6 @@ while(true)
 * If hardware timestamps are available, librealsense will take advantage of them.
 * If the device supports hardware sync, librealsense will try to take advantage of it if it's enabled, but will not implicitly enable it. 
 * You can also use a single `rs2::syncer` to synchronize between devices, assuming it makes sense. 
-
 
 
 
