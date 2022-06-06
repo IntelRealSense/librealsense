@@ -1,0 +1,25 @@
+// License: Apache 2.0. See LICENSE file in root directory.
+// Copyright(c) 2022 Intel Corporation. All Rights Reserved.
+
+module librealsense
+{
+    module dds
+    {
+        module topics
+        {
+            module raw
+            {
+                
+                struct image
+                {
+                    sequence<octet> raw_data;
+                    unsigned long size;
+                    unsigned short width;
+                    unsigned short height;
+                    octet format; // See librealsense 'rs2_format' type for values
+                };
+            };
+            
+        };
+    };
+};

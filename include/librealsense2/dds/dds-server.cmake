@@ -6,6 +6,9 @@ set(DDS_SERVER_FILES
     "${CMAKE_CURRENT_LIST_DIR}/dds-participant.cpp"
     "${CMAKE_CURRENT_LIST_DIR}/dds-device-broadcaster.h"
     "${CMAKE_CURRENT_LIST_DIR}/dds-device-broadcaster.cpp"
+    "${CMAKE_CURRENT_LIST_DIR}/dds-device-server.h"
+    "${CMAKE_CURRENT_LIST_DIR}/dds-device-server.cpp"
+    "${CMAKE_CURRENT_LIST_DIR}/dds-utilities.h"
 )
 
 source_group( "DDS" FILES ${DDS_SERVER_FILES} )
