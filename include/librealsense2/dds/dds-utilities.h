@@ -25,7 +25,8 @@ inline std::string get_dds_error( eprosima::fastrtps::types::ReturnCode_t ret_co
 template < typename T > 
 inline std::string get_dds_error( T *address )
 {
-    return "returned null";
+    (void) address;
+    return " returned null"; 
 }
 }  // namespace dds
 }  // namespace librealsense
