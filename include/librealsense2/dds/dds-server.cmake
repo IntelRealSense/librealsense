@@ -2,6 +2,7 @@
 # Copyright(c) 2022 Intel Corporation. All Rights Reserved.
 
 set(DDS_SERVER_FILES 
+    "${CMAKE_CURRENT_LIST_DIR}/dds-defines.h"
     "${CMAKE_CURRENT_LIST_DIR}/dds-participant.h"
     "${CMAKE_CURRENT_LIST_DIR}/dds-participant.cpp"
     "${CMAKE_CURRENT_LIST_DIR}/dds-device-broadcaster.h"
