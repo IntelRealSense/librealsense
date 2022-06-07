@@ -3,23 +3,27 @@
 
 #include <types.h>
 #include "dds-device-watcher.h"
+#include <librealsense2/dds/dds-device.h>
 #include <librealsense2/dds/topics/dds-topics.h>
 #include <fastdds/dds/domain/DomainParticipantFactory.hpp>
 #include <fastdds/dds/domain/DomainParticipant.hpp>
 #include <fastdds/dds/subscriber/qos/DataReaderQos.hpp>
 #include <fastdds/dds/subscriber/DataReader.hpp>
 #include <fastdds/dds/subscriber/Subscriber.hpp>
+#include "dds-devices.h"
+
 
 using namespace eprosima::fastdds::dds;
 using namespace librealsense;
 
-dds_device_watcher::dds_device_watcher( int domain_id )
+
+dds_device_watcher::dds_device_watcher( std::shared_ptr< dds::dds_participant > participant )
     : _subscriber( nullptr )
     , _topic( nullptr )
     , _reader( nullptr )
     , _topic_type( new dds::topics::device_info::type )
     , _init_done( false )
-    , _domain_id( domain_id )
+    , _participant( participant )
     , _active_object( [this]( dispatcher::cancellable_timer timer ) {
 
         if( _reader->wait_for_unread_message( { 1, 0 } ) )
@@ -37,23 +41,19 @@ dds_device_watcher::dds_device_watcher( int domain_id )
                 {
                     dds::topics::device_info device_info = raw_data;
 
-                    LOG_DEBUG( "DDS device detected:"
-                               << "\n\tName: " << device_info.name
-                               << "\n\tSerial: " << device_info.serial
-                               << "\n\tProduct line: " << device_info.product_line
-                               << "\n\tTopic root: " << device_info.topic_root
-                               << "\n\tLocked:" << ( device_info.locked ? "yes" : "no" ) );
-
                     std::lock_guard< std::mutex > lock( _devices_mutex );
                     eprosima::fastrtps::rtps::GUID_t guid;
                     eprosima::fastrtps::rtps::iHandle2GUID( guid, info.publication_handle );
 
-                    // Add a new device record into our dds devices map
-                    _dds_devices[guid] = device_info;
+                    LOG_DEBUG( "DDS device (" << guid << ") detected:"
+                        << "\n\tName: " << device_info.name
+                        << "\n\tSerial: " << device_info.serial
+                        << "\n\tProduct line: " << device_info.product_line
+                        << "\n\tTopic root: " << device_info.topic_root
+                        << "\n\tLocked:" << ( device_info.locked ? "yes" : "no" ) );
 
-                    LOG_DEBUG( "DDS device writer GUID: " << guid
-                                                          << " for device: " << device_info.serial
-                                                          << " added on domain " << _domain_id );
+                    // Add a new device record into our dds devices map
+                    _dds_devices[guid] = dds::dds_device::create( _participant, guid, device_info );
 
                     // TODO - Call LRS callback to create the RS devices
                     // if( callback )
@@ -75,7 +75,7 @@ void dds_device_watcher::start( platform::device_changed_callback callback )
     _callback = std::move( callback );
     if( ! _init_done )
     {
-        init( _domain_id );
+        init();
         _init_done = true;
     }
     _active_object.start();
@@ -101,46 +101,41 @@ dds_device_watcher::~dds_device_watcher()
     {
         _subscriber->delete_datareader( _reader );
     }
-    if( _participant.is_valid() )
+    if( _participant->is_valid() )
     {
         if( _subscriber != nullptr )
         {
-            _participant->delete_subscriber( _subscriber );
+            _participant->get()->delete_subscriber( _subscriber );
         }
         if( _topic != nullptr )
         {
-            _participant->delete_topic( _topic );
+            _participant->get()->delete_topic( _topic );
         }
     }
 }
 
-void dds_device_watcher::init( int domain_id )
+void dds_device_watcher::init()
 {
-    DomainParticipantQos pqos;
-    pqos.name( "LRS_DEVICES_CLIENT" );
+    if( ! _participant->is_valid() )
+        throw std::runtime_error( "participant was not initialized" );
 
-    // Indicates for how much time should a remote DomainParticipant consider the local
-    // DomainParticipant to be alive.
-    pqos.wire_protocol().builtin.discovery_config.leaseDuration = { 10, 0 };  //[sec]
-
-    _participant.init( domain_id, "LRS_DEVICES_CLIENT" );
-    _participant.on_writer_removed( [this]( dds::dds_guid guid ) {
-        std::lock_guard< std::mutex > lock( _devices_mutex );
-        auto dds_device = _dds_devices.find( guid );
-        if( dds_device != _dds_devices.end() )
-        {
-            auto dds_device_serial = dds_device->second.serial;
-            _dds_devices.erase( guid );
-            LOG_DEBUG( "DDS device writer GUID: " << guid << " for device: " << dds_device_serial
-                                                  << " removed from domain " << _domain_id );
-        }
-    } );
+    if( ! _listener )
+        _participant->create_listener( &_listener )->on_writer_removed( [this]( dds::dds_guid guid ) {
+            std::lock_guard< std::mutex > lock( _devices_mutex );
+            auto it = _dds_devices.find( guid );
+            if( it != _dds_devices.end() )
+            {
+                auto serial_number = it->second->device_info().serial;
+                _dds_devices.erase( it );
+                LOG_DEBUG( "DDS device s/n " << serial_number << " removed from domain" );
+            }
+        } );
 
     // REGISTER THE TYPE
-    _topic_type.register_type( _participant.get() );
+    _topic_type.register_type( _participant->get() );
 
     // CREATE THE SUBSCRIBER
-    _subscriber = _participant->create_subscriber( SUBSCRIBER_QOS_DEFAULT, nullptr );
+    _subscriber = _participant->get()->create_subscriber( SUBSCRIBER_QOS_DEFAULT, nullptr );
 
     if( _subscriber == nullptr )
     {
@@ -149,9 +144,9 @@ void dds_device_watcher::init( int domain_id )
     }
 
     // CREATE THE TOPIC
-    _topic = _participant->create_topic( librealsense::dds::topics::device_info::TOPIC_NAME,
-                                         _topic_type->getName(),
-                                         TOPIC_QOS_DEFAULT );
+    _topic = _participant->get()->create_topic( librealsense::dds::topics::device_info::TOPIC_NAME,
+                                                _topic_type->getName(),
+                                                TOPIC_QOS_DEFAULT );
 
     if( _topic == nullptr )
     {
@@ -183,3 +178,17 @@ void dds_device_watcher::init( int domain_id )
 
     LOG_DEBUG( "DDS device watcher initialized successfully" );
 }
+
+
+bool dds_device_watcher::foreach_device(
+    std::function< bool( dds::dds_guid const &, std::shared_ptr< dds::dds_device > const & ) > fn )
+{
+    std::lock_guard< std::mutex > lock( _devices_mutex );
+    for( auto && guid_to_dev_info : _dds_devices )
+    {
+        if( ! fn( guid_to_dev_info.first, guid_to_dev_info.second ) )
+            return false;
+    }
+    return true;
+}
+
