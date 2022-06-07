@@ -10,7 +10,6 @@
 #include <fastdds/dds/subscriber/qos/DataReaderQos.hpp>
 #include <fastdds/dds/subscriber/DataReader.hpp>
 #include <fastdds/dds/subscriber/Subscriber.hpp>
-#include "dds-devices.h"
 
 
 using namespace eprosima::fastdds::dds;
