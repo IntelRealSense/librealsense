@@ -397,7 +397,7 @@ void log_callback_end( uint32_t fps,
                     int expected_size;
                     auto&& msp = As<motion_stream_profile, stream_profile_interface>(req_profile);
                     if (msp)
-                        expected_size = 32;
+                        expected_size = 64;//32; // D457 - WORKAROUND - SHOULD BE REMOVED AFTER CORRECTION IN DRIVER
 
                     frame_continuation release_and_enqueue(continuation, f.pixels);
 
