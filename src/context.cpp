@@ -412,6 +412,7 @@ namespace librealsense
         return std::make_shared<platform_camera>(ctx, _uvcs, this->get_device_data(), register_device_notifications);
     }
 
+#ifdef BUILD_WITH_DDS
     // This is the rs2 device; it proxies to an actual DDS device that does all the actual
     // work. For example:
     //     auto dev_list = ctx.query_devices();
@@ -460,6 +461,7 @@ namespace librealsense
             return platform::backend_device_group{};
         }
     };
+#endif
 
     context::~context()
     {
