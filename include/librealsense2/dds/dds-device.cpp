@@ -62,7 +62,6 @@ dds_device::find_or_create_dds_device( std::shared_ptr< dds::dds_participant > c
     }
     else if( create_it )
     {
-        guid_to_device.emplace( guid, dev );
         auto impl = std::make_shared< dds_device::impl >( participant, guid, info );
         // Use a custom deleter to automatically remove the device from the map when it's done with
         dev = std::shared_ptr< dds::dds_device >( new dds_device( impl ), [guid]( dds::dds_device * ptr ) {
@@ -70,6 +69,7 @@ dds_device::find_or_create_dds_device( std::shared_ptr< dds::dds_participant > c
             guid_to_device.erase( guid );
             delete ptr;
         } );
+        guid_to_device.emplace( guid, dev );
     }
     return dev;
 }
@@ -77,6 +77,11 @@ dds_device::find_or_create_dds_device( std::shared_ptr< dds::dds_participant > c
 
 dds_device::dds_device( std::shared_ptr< impl > impl )
     : _impl( impl )
+{
+}
+
+
+dds_device::~dds_device()
 {
 }
 
