@@ -27,6 +27,9 @@ namespace dds {
 namespace topics {
 namespace raw {
 class device_info;
+namespace device {
+class notifications;
+}  // namespace device
 }  // namespace raw
 class device_info;
 }  // namespace topics
@@ -66,14 +69,18 @@ public:
     bool operator!() const { return ! is_valid(); }
     void set_image_header( const std::string& stream_name, const image_header& header );
     void publish_image( const std::string& stream_name, const uint8_t* data, size_t size );
+    void publish_notifications( const topics::raw::device::notifications& notifications_msg, bool new_reader_notification = false );
     
 private:
+    void publish_streams_and_profiles();
     class dds_stream_server;
+    class dds_notifications_server;
     
     eprosima::fastdds::dds::DomainParticipant * _participant;
     eprosima::fastdds::dds::Publisher * _publisher;
     std::string _topic_root;
     std::unordered_map<std::string, std::shared_ptr<dds_stream_server>> _stream_name_to_server;
+    std::shared_ptr<dds_notifications_server> _dds_notifications_server;
 };  // class dds_device_server
 }  // namespace dds
 }  // namespace librealsense
