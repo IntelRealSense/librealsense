@@ -44,6 +44,7 @@ namespace librealsense
         void configure_processing_callback();
         void process_function(byte * const dest[], const byte * source, int width, int height, int actual_size, int input_size) override;
 
+        std::shared_ptr<stream_profile_interface> _source_stream_profile;
         std::shared_ptr<stream_profile_interface> _accel_gyro_target_profile;
     };
 

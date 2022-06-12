@@ -130,9 +130,16 @@ namespace librealsense
                 return;
             }
 
-            // creating profile that fits the frame real stream type
-            _accel_gyro_target_profile = profile->clone();
-            _accel_gyro_target_profile->set_format(_target_format);
+            if (profile.get() != _source_stream_profile.get())
+            {
+                _source_stream_profile = profile;
+                // creating profile that fits the frame real stream type
+                _accel_gyro_target_profile = profile->clone();
+                _accel_gyro_target_profile->set_format(_target_format);
+                _accel_gyro_target_profile->set_stream_index(0);
+                //_accel_gyro_target_profile->set_unique_id(_target_profile_idx);
+            }
+
             if (frame->get_frame_data()[0] == 1)
             {
                 _accel_gyro_target_profile->set_stream_type(RS2_STREAM_ACCEL);
@@ -145,8 +152,6 @@ namespace librealsense
             {
                 throw("motion_to_accel_gyro::configure_processing_callback - stream type not discovered");
             }
-            _accel_gyro_target_profile->set_stream_index(0);
-            //_accel_gyro_target_profile->set_unique_id(_target_profile_idx);
 
             frame_holder agf;
             agf = source->allocate_motion_frame(_accel_gyro_target_profile, frame);
