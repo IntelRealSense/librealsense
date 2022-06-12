@@ -124,7 +124,7 @@ void dds_device_watcher::init( int domain_id )
     pqos.wire_protocol().builtin.discovery_config.leaseDuration = { 10, 0 };  //[sec]
 
     _participant.init( domain_id, "LRS_DEVICES_CLIENT" );
-    _participant.on_writer_removed( [this]( dds::dds_guid guid ) {
+    _participant.on_writer_removed( [this]( dds::dds_guid guid, char const* ) {
         std::lock_guard< std::mutex > lock( _devices_mutex );
         auto dds_device = _dds_devices.find( guid );
         if( dds_device != _dds_devices.end() )

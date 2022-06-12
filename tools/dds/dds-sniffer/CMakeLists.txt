@@ -4,18 +4,19 @@
 
 project(rs-dds-sniffer)
 
-set(SRC dds-sniffer.cpp)
-set(INC dds-sniffer.hpp)
+set(SRC rs-dds-sniffer.cpp ${REPO_ROOT}/include/librealsense2/dds/dds-participant.cpp)
+set(INC rs-dds-sniffer.h   ${REPO_ROOT}/include/librealsense2/dds/dds-participant.h)
 
-add_executable(${PROJECT_NAME} ${INC} ${SRC})
+add_executable(${PROJECT_NAME} ${INC} ${SRC} ${ELPP_SOURCES})
 
-set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 11)
+include("${REPO_ROOT}/include/librealsense2/utilities/easylogging/easyloggingpp.cmake")
+include_directories(${REPO_ROOT}/third-party/tclap/include ${ELPP_INCLUDES} ${CMAKE_BINARY_DIR})
 
-add_dependencies(${PROJECT_NAME} dds)
-include_directories(../../../third-party/tclap/include ${CMAKE_BINARY_DIR})
-target_link_libraries(${PROJECT_NAME} dds)
+target_link_libraries(${PROJECT_NAME} dds ${DEPENDENCIES})
 
-set_target_properties (${PROJECT_NAME} PROPERTIES FOLDER Tools/dds)
+set_target_properties (${PROJECT_NAME} PROPERTIES
+                       FOLDER Tools/dds
+                       CXX_STANDARD 11)
 
 install(TARGETS ${PROJECT_NAME} RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 

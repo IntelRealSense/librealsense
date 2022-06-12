@@ -42,13 +42,29 @@ public:
 
     void init( dds_domain_id, std::string const & participant_name );
 
-    void on_writer_added( std::function< void( dds_guid guid, char const * ) > callback )
+    void on_writer_added( std::function< void( dds_guid guid, char const* topic_name ) > callback )
     {
         _on_writer_added = std::move( callback );
     }
-    void on_writer_removed( std::function< void( dds_guid guid ) > callback )
+    void on_writer_removed( std::function< void( dds_guid guid, char const* topic_name ) > callback )
     {
         _on_writer_removed = std::move( callback );
+    }
+    void on_reader_added( std::function< void( dds_guid guid, char const * topic_name ) > callback )
+    {
+        _on_reader_added = std::move( callback );
+    }
+    void on_reader_removed( std::function< void( dds_guid guid, char const* topic_name ) > callback )
+    {
+        _on_reader_removed = std::move( callback );
+    }
+    void on_participant_added( std::function< void( dds_guid guid, char const * participant_name ) > callback )
+    {
+        _on_participant_added = std::move( callback );
+    }
+    void on_participant_removed( std::function< void( dds_guid guid, char const* participant_name ) > callback )
+    {
+        _on_participant_removed = std::move( callback );
     }
 
     bool is_valid() const { return ( nullptr != _participant ); }
@@ -62,8 +78,12 @@ private:
 
     std::shared_ptr< dds_participant_listener > _domain_listener;
 
-    std::function< void( dds_guid, char const * topic_name ) > _on_writer_added;
-    std::function< void( dds_guid ) > _on_writer_removed;
+    std::function< void( dds_guid, char const * ) > _on_writer_added;
+    std::function< void( dds_guid, char const * ) > _on_writer_removed;
+    std::function< void( dds_guid, char const * ) > _on_reader_added;
+    std::function< void( dds_guid, char const * ) > _on_reader_removed;
+    std::function< void( dds_guid, char const * ) > _on_participant_added;
+    std::function< void( dds_guid, char const * ) > _on_participant_removed;
 };  // class dds_participant
 
 

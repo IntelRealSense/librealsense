@@ -33,10 +33,14 @@ struct dds_participant::dds_participant_listener
         {
         case eprosima::fastrtps::rtps::ParticipantDiscoveryInfo::DISCOVERED_PARTICIPANT:
             LOG_DEBUG( "Participant '" << info.info.m_participantName << "' discovered" );
+            if (_owner._on_participant_added)
+                _owner._on_participant_added( info.info.m_guid, info.info.m_participantName.c_str() );
             break;
         case eprosima::fastrtps::rtps::ParticipantDiscoveryInfo::REMOVED_PARTICIPANT:
         case eprosima::fastrtps::rtps::ParticipantDiscoveryInfo::DROPPED_PARTICIPANT:
             LOG_DEBUG( "Participant '" << info.info.m_participantName << "' disappeared" );
+            if (_owner._on_participant_removed)
+                _owner._on_participant_removed( info.info.m_guid, info.info.m_participantName.c_str() );
             break;
         default:
             break;
@@ -49,23 +53,41 @@ struct dds_participant::dds_participant_listener
         switch( info.status )
         {
         case eprosima::fastrtps::rtps::WriterDiscoveryInfo::DISCOVERED_WRITER:
-            /* Process the case when a new publisher was found in the domain */
-            LOG_DEBUG( "New DataWriter (" << info.info.guid() << ") publishing under topic '" << info.info.topicName()
+            LOG_DEBUG( "New DataWriter (" << info.info.guid() << ") publishing topic '" << info.info.topicName()
                                           << "' of type '" << info.info.typeName() << "' discovered" );
             if( _owner._on_writer_added )
                 _owner._on_writer_added( info.info.guid(), info.info.topicName().c_str() );
             break;
 
         case eprosima::fastrtps::rtps::WriterDiscoveryInfo::REMOVED_WRITER:
-            /* Process the case when a publisher was removed from the domain */
-            LOG_DEBUG( "DataWriter (" << info.info.guid() << ") publishing under topic '" << info.info.topicName()
-                                      << "' of type '" << info.info.typeName() << "' left the domain." );
+            LOG_DEBUG( "DataWriter (" << info.info.guid() << ") publishing topic '" << info.info.topicName()
+                                      << "' of type '" << info.info.typeName() << "' removed." );
             if( _owner._on_writer_removed )
-                _owner._on_writer_removed( info.info.guid() );
+                _owner._on_writer_removed( info.info.guid(), info.info.topicName().c_str() );
             break;
         }
     }
 
+    virtual void on_subscriber_discovery( eprosima::fastdds::dds::DomainParticipant * participant,
+                                          eprosima::fastrtps::rtps::ReaderDiscoveryInfo && info ) override
+    {
+        switch( info.status )
+        {
+        case eprosima::fastrtps::rtps::ReaderDiscoveryInfo::DISCOVERED_READER:
+            LOG_DEBUG( "New DataReader (" << info.info.guid() << ") reading topic '" << info.info.topicName()
+                                          << "' of type '" << info.info.typeName() << "' discovered" );
+            if( _owner._on_reader_added )
+                _owner._on_reader_added( info.info.guid(), info.info.topicName().c_str() );
+            break;
+
+        case eprosima::fastrtps::rtps::ReaderDiscoveryInfo::REMOVED_READER:
+            LOG_DEBUG( "DataWriter (" << info.info.guid() << ") reading topic '" << info.info.topicName()
+                                      << "' of type '" << info.info.typeName() << "' removed." );
+            if( _owner._on_reader_removed )
+                _owner._on_reader_removed( info.info.guid(), info.info.topicName().c_str() );
+            break;
+        }
+    }
 };
 
 
