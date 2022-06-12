@@ -6420,10 +6420,6 @@ namespace rs2
     {
         const float panel_height = 40.f;
 
-        // RS457 Development. to be removed. TODO
-        if ("ABCD" == std::string(dev.get_info(RS2_CAMERA_INFO_PRODUCT_ID)))
-            return panel_height/4;
-
         auto panel_pos = ImGui::GetCursorPos();
         ImGui::PushStyleColor(ImGuiCol_Button, sensor_bg);
         ImGui::PushStyleColor(ImGuiCol_ButtonHovered, sensor_bg);
