@@ -37,7 +37,7 @@ The following diagram specify the frame flow in the system and indicates where a
 
 
 
-![](C:\Work\Git\librealsense\doc\img\frame_lifetime.png)
+![](.\img\frame_lifetime.png)
 
 * First copy is a mandatory step in the SDK and it's purpose is passing the frame content ownership from the digital media controller (WMF/V4L2) into librealsense.
 
