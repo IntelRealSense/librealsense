@@ -1,6 +1,7 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
+#include "metadata.h"
 #include "backend-v4l2.h"
 #include "backend-hid.h"
 #include "backend.h"
@@ -1193,16 +1194,33 @@ namespace librealsense
                                             auto frame_sz = buf_mgr.md_node_present() ? buf.bytesused :
                                                                 std::min(buf.bytesused - buf_mgr.metadata_size(),
                                                                          buffer->get_length_frame_only());
-                                            // D457 work - to work with "normal camera", use frame_sz as the first input to the following frame_object:
-                                            //frame_object fo{ buf.bytesused - MAX_META_DATA_SIZE, buf_mgr.metadata_size(),
-                                            auto md_size = buf_mgr.metadata_size();
-                                            frame_object fo{ frame_sz, buf_mgr.metadata_size(),
-                                                             buffer->get_frame_start(), buf_mgr.metadata_start(), timestamp };
+
+                                            uint8_t md_size = buf_mgr.metadata_size();
+                                            void* md_start = buf_mgr.metadata_start();
+
+                                            metadata_hid_raw meta_data{};
+                                            if (buffer->get_length_frame_only() <= 64)
+                                            {
+                                                // Populate HID IMU data - Header
+                                                meta_data.header.report_type = md_hid_report_type::hid_report_imu;
+                                                meta_data.header.length = hid_header_size + metadata_imu_report_size;
+                                                meta_data.header.timestamp = *(reinterpret_cast<uint64_t *>(buffer->get_frame_start() + 16));
+                                                // Payload:
+                                                meta_data.report_type.imu_report.header.md_type_id = md_type::META_DATA_HID_IMU_REPORT_ID;
+                                                meta_data.report_type.imu_report.header.md_size = metadata_imu_report_size;
+
+                                                md_size = sizeof(metadata_hid_raw);
+                                                md_start = &meta_data;
+                                            }
+
+                                            frame_object fo{ frame_sz, md_size,
+                                                        buffer->get_frame_start(), md_start, timestamp };
 
                                             //Invoke user callback and enqueue next frame
                                             _callback(_profile, fo, [buf_mgr]() mutable {
                                                 buf_mgr.request_next_frame();
                                             });
+
                                         }
                                         else
                                         {
