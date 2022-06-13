@@ -20,7 +20,7 @@ def measure_fps(sensor, profile):
     Count number of received frames for 5 seconds and compare actual fps to requested fps
     """
     seconds_till_steady_state = 2
-    seconds_to_count_frames = 5
+    seconds_to_count_frames = 20
     
     steady_state = False
     frames_received = 0
@@ -50,7 +50,7 @@ def measure_fps(sensor, profile):
     return fps
 
 
-acceptable_exception_rate_Hz = 0.5
+acceptable_exception_rate_Hz = 1
 tested_fps = [6, 15, 30, 60, 90]
 
 dev = test.find_first_device_or_exit()
