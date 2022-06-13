@@ -4,6 +4,7 @@
 # test:device L500*
 # test:device D400*
 # test:donotrun:!nightly
+# test:timeout 230
 
 import pyrealsense2 as rs
 from rspy.stopwatch import Stopwatch
@@ -36,8 +37,8 @@ def measure_fps(sensor, profile):
 
     time.sleep(seconds_till_steady_state)
 
-    fps_stopwatch.reset()
     steady_state = True
+    fps_stopwatch.reset()
     
     time.sleep(seconds_to_count_frames) # Time to count frames
     
@@ -61,6 +62,9 @@ test.start("Testing depth fps " + product_line + " device - "+ platform.system()
 
 for requested_fps in tested_fps:
     ds = dev.first_depth_sensor()
+    if product_line == "D400":
+        ds.set_option(rs.option.enable_auto_exposure, 1)
+
     try:
         dp = next(p for p in ds.profiles
                   if p.fps() == requested_fps 
@@ -81,6 +85,11 @@ test.start("Testing color fps " + product_line + " device - "+ platform.system()
 for requested_fps in tested_fps:
     dev = test.find_first_device_or_exit()
     cs = dev.first_color_sensor()
+    if product_line == "D400":
+        ds.set_option(rs.option.enable_auto_exposure, 1)
+    elif product_line == "L500":
+        cs.set_option(rs.option.enable_auto_exposure, 0)
+
     try:
         cp = next(p for p in cs.profiles
                   if p.fps() == requested_fps
