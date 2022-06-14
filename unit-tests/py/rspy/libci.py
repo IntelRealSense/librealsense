@@ -190,12 +190,13 @@ class TestConfigFromText( TestConfig ):
                     continue
             if directive == 'device':
                 # log.d( '    configuration:', params )
+                params_lower_splitted = text_params.lower().split()
                 if not params:
                     log.e( source + '+' + str( line['index'] ) + ': device directive with no devices listed' )
-                elif 'each' in text_params.lower() and len( params ) > 1:
+                elif params_lower_splitted.count("each") > 1:
                     log.e( source + '+' + str(
-                            line['index'] ) + ': each() cannot be used in combination with other specs', params )
-                elif 'each' in text_params.lower() and not re.fullmatch( r'each\(.+\)', text_params, re.IGNORECASE ):
+                            line['index'] ) + ': each() cannot be used multiple times in same line', params )
+                elif 'each' in params_lower_splitted[0] and not re.fullmatch( r'each\(.+\)', params_lower_splitted[0], re.IGNORECASE ):
                     log.e( source + '+' + str( line['index'] ) + ': invalid \'each\' syntax:', params )
                 else:
                     self._configurations.append( params )

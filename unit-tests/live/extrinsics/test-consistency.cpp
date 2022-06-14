@@ -1,7 +1,7 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2021 Intel Corporation. All Rights Reserved.
 
-//#test:device D400*
+//#test:device each(D400*) !D457
 //#test:device L500*
 //#test:device SR300*
 

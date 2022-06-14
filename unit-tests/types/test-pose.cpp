@@ -1,6 +1,10 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2020 Intel Corporation. All Rights Reserved.
 
+//#test:device each(D400*) !D457
+//#test:device each(L500*)
+//#test:device each(SR300*)
+
 #include <easylogging++.h>
 
 #include "../catch.h"
