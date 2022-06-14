@@ -193,7 +193,7 @@ class TestConfigFromText( TestConfig ):
                 params_lower_list = text_params.lower().split()
                 if not params:
                     log.e( source + '+' + str( line['index'] ) + ': device directive with no devices listed' )
-                elif params_lower_list.count("each") > 1:
+                elif sum('each' in s for s in params_lower_list) > 1:
                     log.e( source + '+' + str(
                             line['index'] ) + ': each() cannot be used multiple times in same line', params )
                 elif 'each' in params_lower_list[0] and not re.fullmatch( r'each\(.+\)', params_lower_list[0], re.IGNORECASE ):
