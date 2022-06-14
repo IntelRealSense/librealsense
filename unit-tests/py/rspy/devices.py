@@ -299,13 +299,12 @@ def by_product_line( product_line, ignored_products ):
     global _device_by_sn
     result = set()
     for device in _device_by_sn.values():
-        ignore_flag = False
-        for ignored_product in ignored_products:
-            if ignored_product in device.name:
-                ignore_flag = True
-                break
-        if device.product_line == product_line and not ignore_flag:
-            result.add(device.serial_number)
+        if device.product_line == product_line:
+            for ignored_product in ignored_products:
+                if ignored_product in device.name:
+                    break
+            else:
+                result.add(device.serial_number)
     return result
 
 
@@ -389,16 +388,21 @@ def by_configuration( config, exceptions = None ):
     raised!
     """
     exceptions = exceptions or set()
-    ignored_products = []
+	
+    # split the current config to two lists:
+    #     1) new_config (the wanted products)
+    #     2) ignored_products (strings starting with !)
+    # For example: "each(D400*) !D457" ---> new_config = ['each(D400*)'], ignored_products = ['D457']
     new_config = []
+    ignored_products = []
     for p in config:
         if p[0] == '!':
-            ignored_products.append(p[1:])
+            ignored_products.append(p[1:])  # remove the '!'
         else:
             new_config.append(p)
 
-    if len( config ) > 0 and re.fullmatch( r'each\(.+\)', config[0], re.IGNORECASE ):
-        spec = config[0][5:-1]
+    if len( new_config ) > 0 and re.fullmatch( r'each\(.+\)', new_config[0], re.IGNORECASE ):
+        spec = new_config[0][5:-1]
         for sn in _get_sns_from_spec( spec, ignored_products ):
             if sn not in exceptions:
                 yield { sn }
