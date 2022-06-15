@@ -12,4 +12,3 @@ source_group( "DDS" FILES ${DDS_CLIENT_FILES} )
 # NOTE: this requires that your "project(...)" statement match the executable
 target_link_libraries( ${PROJECT_NAME} PRIVATE dds )
 target_sources( ${PROJECT_NAME} PRIVATE ${DDS_CLIENT_FILES} )
-
