@@ -199,15 +199,15 @@ class TestConfigFromText( TestConfig ):
                 elif params_lower_list[0].startswith('each('):
                     if not re.fullmatch( r'each\(.+\)', params_lower_list[0], re.IGNORECASE ):
                         log.e( source + '+' + str( line['index'] ) + ': invalid \'each\' syntax:', params )
-					else:
-	                    for param in params_lower_list[1:]:
-	                        if not param.startswith("!"):
-	                            log.e(source + '+' + str(line['index']) + ': invalid syntax:', params,
-	                                  '. All device names after \'' + params[0] +
-	                                  '\' must start with \'!\' in order to skip them')
-	                            break
-	                    else:
-	                        self._configurations.append( params )
+                    else:
+                        for param in params_lower_list[1:]:
+                            if not param.startswith("!"):
+                                log.e(source + '+' + str(line['index']) + ': invalid syntax:', params,
+                                      '. All device names after \'' + params[0] +
+                                      '\' must start with \'!\' in order to skip them')
+                            break
+                        else:
+                            self._configurations.append( params )
                 else:
                     self._configurations.append( params )
             elif directive == 'priority':
