@@ -22,6 +22,7 @@ namespace librealsense
 {
     namespace ds
     {
+        const uint16_t RS457_PID            = 0xabcd; // D457 - Dev . Do not upstream!
         const uint16_t RS400_PID            = 0x0ad1; // PSR
         const uint16_t RS410_PID            = 0x0ad2; // ASR
         const uint16_t RS415_PID            = 0x0ad3; // ASRC
@@ -85,6 +86,7 @@ namespace librealsense
             ds::RS416_PID,
             ds::RS405_PID,
             ds::RS455_PID,
+            ds::RS457_PID,
         };
 
         static const std::set<std::uint16_t> multi_sensors_pid = {
@@ -98,6 +100,7 @@ namespace librealsense
             ds::RS435I_PID,
             ds::RS465_PID,
             ds::RS455_PID,
+            ds::RS457_PID,
         };
 
         static const std::set<std::uint16_t> hid_sensors_pid = {
@@ -139,6 +142,8 @@ namespace librealsense
             { RS420_MM_PID,         "Intel RealSense D420 with Tracking Module"},
             { RS410_MM_PID,         "Intel RealSense D410 with Tracking Module"},
             { RS400_MM_PID,         "Intel RealSense D400 with Tracking Module"},
+            { RS430_PID,            "Intel RealSense D430"},
+            { RS430I_PID,           "Intel RealSense D430I"},
             { RS430_MM_RGB_PID,     "Intel RealSense D430 with Tracking and RGB Modules"},
             { RS460_PID,            "Intel RealSense D460" },
             { RS435_RGB_PID,        "Intel RealSense D435"},
@@ -150,6 +155,7 @@ namespace librealsense
             { RS416_RGB_PID,        "Intel RealSense F416 with RGB Module"},
             { RS405_PID,            "Intel RealSense D405" },
             { RS455_PID,            "Intel RealSense D455" },
+            { RS457_PID,            "Intel RealSense D457" }
         };
 
         // DS5 fisheye XU identifiers
@@ -189,6 +195,7 @@ namespace librealsense
             DFU             = 0x1E,     // Enter to FW update mode
             HWRST           = 0x20,     // hardware reset
             OBW             = 0x29,     // OVT bypass write
+            PROJ_TEMP_MIPI  = 0x2A,     // get ASIC temperature - with mipi device
             SET_ADV         = 0x2B,     // set advanced mode control
             GET_ADV         = 0x2C,     // get advanced mode control
             EN_ADV          = 0x2D,     // enable advanced mode
@@ -207,6 +214,7 @@ namespace librealsense
             GETRGBAEROI     = 0x76,     // get RGB auto-exposure region of interest
             SET_PWM_ON_OFF  = 0x77,     // set emitter on and off mode
             GET_PWM_ON_OFF  = 0x78,     // get emitter on and off mode
+            ASIC_TEMP_MIPI  = 0x7A,     // get ASIC temperature - with mipi device
             SETSUBPRESET    = 0x7B,     // Download sub-preset
             GETSUBPRESET    = 0x7C,     // Upload the current sub-preset
             GETSUBPRESETID  = 0x7D,     // Retrieve sub-preset's name
@@ -400,10 +408,11 @@ namespace librealsense
                 throw invalid_value_exception(to_string() << "Calibration data invalid, buffer too small : expected " << sizeof(table_header) << " , actual: " << raw_data.size());
             }
             // verify the parsed table
-            if (table->header.crc32 != calc_crc32(raw_data.data() + sizeof(table_header), raw_data.size() - sizeof(table_header)))
+            // D457 development
+            /*if (table->header.crc32 != calc_crc32(raw_data.data() + sizeof(table_header), raw_data.size() - sizeof(table_header)))
             {
                 throw invalid_value_exception("Calibration data CRC error, parsing aborted!");
-            }
+            }*/
             LOG_DEBUG("Loaded Valid Table: version [mjr.mnr]: 0x" <<
                       hex << setfill('0') << setw(4) << header->version << dec
                 << ", type " << header->table_type << ", size " << header->table_size

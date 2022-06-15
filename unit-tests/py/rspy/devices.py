@@ -389,7 +389,6 @@ def by_configuration( config, exceptions = None ):
     raised!
     """
     exceptions = exceptions or set()
-	
     # split the current config to two lists:
     #     1) new_config (the wanted products)
     #     2) ignored_products (strings starting with !)

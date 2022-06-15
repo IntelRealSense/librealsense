@@ -509,6 +509,13 @@ const char * get_string( rs2_frame_metadata_value value )
     CASE( SEQUENCE_NAME )
     CASE( SEQUENCE_ID )
     CASE( SEQUENCE_SIZE )
+    CASE( TRIGGER )
+    CASE( PRESET )
+    CASE( INPUT_WIDTH )
+    CASE( INPUT_HEIGHT )
+    CASE( SUB_PRESET_INFO )
+    CASE( CRC )
+
     default:
         assert( ! is_valid( value ) );
         return UNKNOWN_VALUE;
