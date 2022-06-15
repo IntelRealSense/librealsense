@@ -161,11 +161,35 @@ namespace librealsense
             frame_data[0] = (byte*)agf.frame->get_frame_data();
             process_function(frame_data, (const byte*)frame->get_frame_data(), 0, 0, 0, 0);
 
+            // correct the axes values according to the device's data
+            correct_motion((float3*)(frame_data[0]));
+
             source->frame_ready(std::move(agf));
         };
 
         set_processing_callback(std::shared_ptr<rs2_frame_processor_callback>(
             new internal_frame_processor_callback<decltype(process_callback)>(process_callback)));
+    }
+
+    void motion_to_accel_gyro::correct_motion(float3* xyz) const
+    {
+        // The IMU sensor orientation shall be aligned with depth sensor's coordinate system
+        *xyz = _imu2depth_cs_alignment_matrix * (*xyz);
+
+        // IMU calibration is done with data in depth sensor's coordinate system, so calibration parameters should be applied for motion correction
+        // in the same coordinate system
+        if (_mm_correct_opt)
+        {
+            if ((_mm_correct_opt->query() > 0.f)) // TBD resolve duality of is_enabled/is_active
+            {
+                auto&& s = _accel_gyro_target_profile->get_stream_type();
+                if (s == RS2_STREAM_ACCEL)
+                    *xyz = (_accel_sensitivity * (*xyz)) - _accel_bias;
+
+                if (s == RS2_STREAM_GYRO)
+                    *xyz = _gyro_sensitivity * (*xyz) - _gyro_bias;
+            }
+        }
     }
 
     void motion_to_accel_gyro::process_function(byte * const dest[], const byte * source, int width, int height, int output_size, int actual_size)

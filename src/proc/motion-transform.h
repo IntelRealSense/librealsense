@@ -23,7 +23,7 @@ namespace librealsense
             std::shared_ptr<enable_motion_correction> mm_correct_opt);
         rs2::frame process_frame(const rs2::frame_source& source, const rs2::frame& f) override;
 
-    private:
+    protected:
         void correct_motion(rs2::frame* f);
 
         std::shared_ptr<enable_motion_correction> _mm_correct_opt = nullptr;
@@ -43,6 +43,7 @@ namespace librealsense
         motion_to_accel_gyro(const char* name, std::shared_ptr<mm_calib_handler> mm_calib, std::shared_ptr<enable_motion_correction> mm_correct_opt);
         void configure_processing_callback();
         void process_function(byte * const dest[], const byte * source, int width, int height, int actual_size, int input_size) override;
+        void correct_motion(float3* xyz) const;
 
         std::shared_ptr<stream_profile_interface> _source_stream_profile;
         std::shared_ptr<stream_profile_interface> _accel_gyro_target_profile;
