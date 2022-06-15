@@ -78,17 +78,17 @@ namespace librealsense
 
     enum auto_calib_sub_cmd : uint8_t
     {
-        interactive_scan_control = 0x06,
-        py_rx_calib_begin = 0x08,
-        py_rx_calib_check_status = 0x03,
-        tare_calib_begin = 0x0b,
-        tare_calib_check_status = 0x0c,
-        get_calibration_result = 0x0d,
-        focal_length_calib_begin = 0x11,
-        get_focal_legth_calib_result = 0x12,
-        py_rx_plus_fl_calib_begin = 0x13,
-        get_py_rx_plus_fl_calib_result = 0x14,
-        set_coefficients = 0x19
+        py_rx_calib_check_status        = 0x03,
+        interactive_scan_control        = 0x06,
+        py_rx_calib_begin               = 0x08,
+        tare_calib_begin                = 0x0b,
+        tare_calib_check_status         = 0x0c,
+        get_calibration_result          = 0x0d,
+        focal_length_calib_begin        = 0x11,
+        get_focal_legth_calib_result    = 0x12,
+        py_rx_plus_fl_calib_begin       = 0x13,
+        get_py_rx_plus_fl_calib_result  = 0x14,
+        set_coefficients                = 0x19
     };
 
     enum auto_calib_speed
