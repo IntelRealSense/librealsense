@@ -317,9 +317,10 @@ def by_name( name, ignored_products ):
     global _device_by_sn
     result = set()
     ignored_list_as_str = " ".join(ignored_products)
-    for device in _device_by_sn.values():
-        if (name not in ignored_list_as_str) and (device.name.find( name ) >= 0):
-            result.add(device.serial_number)
+    if name not in ignored_list_as_str:
+        for device in _device_by_sn.values():
+            if device.name.find( name ) >= 0:
+                result.add(device.serial_number)
     return result
 
 def _get_sns_from_spec( spec, ignored_products ):
