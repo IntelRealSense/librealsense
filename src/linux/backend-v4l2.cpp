@@ -48,6 +48,8 @@
 #include <regex>
 #include <list>
 
+#include <cstddef> // offsetof
+
 #include <sys/signalfd.h>
 #include <signal.h>
 #pragma GCC diagnostic ignored "-Woverflow"
@@ -1198,13 +1200,14 @@ namespace librealsense
                                             uint8_t md_size = buf_mgr.metadata_size();
                                             void* md_start = buf_mgr.metadata_start();
 
+                                            // D457 development - hid over uvc - md size for IMU is 64
                                             metadata_hid_raw meta_data{};
-                                            if (buffer->get_length_frame_only() <= 64)
+                                            if (md_size == 0 && buffer->get_length_frame_only() <= 64)
                                             {
                                                 // Populate HID IMU data - Header
                                                 meta_data.header.report_type = md_hid_report_type::hid_report_imu;
                                                 meta_data.header.length = hid_header_size + metadata_imu_report_size;
-                                                meta_data.header.timestamp = *(reinterpret_cast<uint64_t *>(buffer->get_frame_start() + 16));
+                                                meta_data.header.timestamp = *(reinterpret_cast<uint64_t *>(buffer->get_frame_start() + offsetof(hid_mipi_data, hwTs)));
                                                 // Payload:
                                                 meta_data.report_type.imu_report.header.md_type_id = md_type::META_DATA_HID_IMU_REPORT_ID;
                                                 meta_data.report_type.imu_report.header.md_size = metadata_imu_report_size;
