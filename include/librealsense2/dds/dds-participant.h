@@ -40,6 +40,8 @@ public:
     dds_participant( const dds_participant & ) = delete;
     ~dds_participant();
 
+    //Creates the underlying DDS participant and sets the QoS
+    //If need to use callbacks set them before calling init, they may be called before init returns.
     void init( dds_domain_id, std::string const & participant_name );
 
     void on_writer_added( std::function< void( dds_guid guid, char const* topic_name ) > callback )

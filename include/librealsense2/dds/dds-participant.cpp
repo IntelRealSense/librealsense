@@ -81,7 +81,7 @@ struct dds_participant::dds_participant_listener
             break;
 
         case eprosima::fastrtps::rtps::ReaderDiscoveryInfo::REMOVED_READER:
-            LOG_DEBUG( "DataWriter (" << info.info.guid() << ") reading topic '" << info.info.topicName()
+            LOG_DEBUG( "DataReader (" << info.info.guid() << ") reading topic '" << info.info.topicName()
                                       << "' of type '" << info.info.typeName() << "' removed." );
             if( _owner._on_reader_removed )
                 _owner._on_reader_removed( info.info.guid(), info.info.topicName().c_str() );
