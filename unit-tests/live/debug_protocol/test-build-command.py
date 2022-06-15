@@ -82,7 +82,6 @@ try:
     expected_status = convert_bytes_string_to_decimal_list(gvd_opcode_as_string)
 
     test.check_equal_lists(status, expected_status)
-
     product_name = dev.get_info(rs.camera_info.name)
     if 'D457' in product_name:
         # compare only the first 272 bytes since MIPI devices can return bigger buffer with

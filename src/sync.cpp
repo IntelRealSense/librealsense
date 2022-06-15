@@ -631,7 +631,10 @@ namespace librealsense
             if( it->second != last_arrived.timestamp_domain )
             {
                 // LOG_IF_ENABLE( "...     not the same domain: frameset not ready!", env );
-                return false;
+                // D457 dev - return false removed
+                // because IR has no md, so its ts domain is "system time"
+                // other streams have md, and their ts domain is "hardware clock"
+                //return false;
             }
         }
 
