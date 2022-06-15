@@ -78,12 +78,12 @@ private:
 
     std::shared_ptr< dds_participant_listener > _domain_listener;
 
-    std::function< void( dds_guid, char const * ) > _on_writer_added;
-    std::function< void( dds_guid, char const * ) > _on_writer_removed;
-    std::function< void( dds_guid, char const * ) > _on_reader_added;
-    std::function< void( dds_guid, char const * ) > _on_reader_removed;
-    std::function< void( dds_guid, char const * ) > _on_participant_added;
-    std::function< void( dds_guid, char const * ) > _on_participant_removed;
+    std::function< void( dds_guid, char const * topic_name ) > _on_writer_added;
+    std::function< void( dds_guid, char const * topic_name ) > _on_writer_removed;
+    std::function< void( dds_guid, char const * topic_name ) > _on_reader_added;
+    std::function< void( dds_guid, char const * topic_name ) > _on_reader_removed;
+    std::function< void( dds_guid, char const * participant_name ) > _on_participant_added;
+    std::function< void( dds_guid, char const * participant_name ) > _on_participant_removed;
 };  // class dds_participant
 
 

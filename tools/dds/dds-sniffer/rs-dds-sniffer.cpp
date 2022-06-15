@@ -99,24 +99,7 @@ bool dds_sniffer::init( librealsense::dds::dds_domain_id domain, bool snapshot, 
     _print_by_topics = snapshot;
     _print_machine_readable = machine_readable;
 
-    _participant.init( domain, "rs-dds-sniffer" );
-    if (!_print_machine_readable)
-    {
-        if (snapshot)
-        {
-            std::cout << "rs-dds-sniffer taking a snapshot of domain " << domain << std::endl;
-        }
-        else
-        {
-            std::cout << "rs-dds-sniffer listening on domain " << domain << std::endl;
-        }
-    }
-
-    return _participant.is_valid();
-}
-
-void dds_sniffer::run( uint32_t seconds )
-{
+    //Set callbacks before calling _participant.init(), or some events, specifically on_participant_added, might get lost
     _participant.on_writer_added( [this]( librealsense::dds::dds_guid guid, char const* topic_name )
     {
         on_writer_added( guid, topic_name );  
@@ -142,6 +125,25 @@ void dds_sniffer::run( uint32_t seconds )
         on_participant_removed( guid, participant_name );
     } );
 
+    _participant.init( domain, "rs-dds-sniffer" );
+
+    if (!_print_machine_readable)
+    {
+        if (snapshot)
+        {
+            std::cout << "rs-dds-sniffer taking a snapshot of domain " << domain << std::endl;
+        }
+        else
+        {
+            std::cout << "rs-dds-sniffer listening on domain " << domain << std::endl;
+        }
+    }
+
+    return _participant.is_valid();
+}
+
+void dds_sniffer::run( uint32_t seconds )
+{
     if( seconds == 0 )
     {
         std::cin.ignore( std::numeric_limits< std::streamsize >::max() );

@@ -13,3 +13,4 @@ source_group( "DDS" FILES ${DDS_CLIENT_FILES} )
 target_link_libraries( ${PROJECT_NAME} PRIVATE dds )
 target_sources( ${PROJECT_NAME} PRIVATE ${DDS_CLIENT_FILES} )
 
+include("${REPO_ROOT}/include/librealsense2/utilities/easylogging/easyloggingpp.cmake")
