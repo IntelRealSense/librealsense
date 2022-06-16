@@ -24,7 +24,8 @@ namespace librealsense
         rs2::frame process_frame(const rs2::frame_source& source, const rs2::frame& f) override;
 
     protected:
-        void correct_motion(rs2::frame* f);
+        void correct_motion(rs2::frame* f) const;
+        void correct_motion_helper(float3* xyz, rs2_stream stream_type) const;
 
         std::shared_ptr<enable_motion_correction> _mm_correct_opt = nullptr;
         float3x3            _accel_sensitivity;
