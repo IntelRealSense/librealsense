@@ -85,10 +85,8 @@ namespace librealsense
         return ret;
     }
 
-    void motion_transform::correct_motion(rs2::frame* f)
+    void motion_transform::correct_motion_helper(float3* xyz, rs2_stream stream_type) const
     {
-        auto xyz = (float3*)(f->get_data());
-
         // The IMU sensor orientation shall be aligned with depth sensor's coordinate system
         *xyz = _imu2depth_cs_alignment_matrix * (*xyz);
 
@@ -98,14 +96,24 @@ namespace librealsense
         {
             if ((_mm_correct_opt->query() > 0.f)) // TBD resolve duality of is_enabled/is_active
             {
-                auto&& s = f->get_profile().stream_type();
-                if (s == RS2_STREAM_ACCEL)
+                if (stream_type == RS2_STREAM_ACCEL)
                     *xyz = (_accel_sensitivity * (*xyz)) - _accel_bias;
 
-                if (s == RS2_STREAM_GYRO)
+                if (stream_type == RS2_STREAM_GYRO)
                     *xyz = _gyro_sensitivity * (*xyz) - _gyro_bias;
             }
         }
+    }
+    void motion_transform::correct_motion(rs2::frame* f) const
+    {
+        auto xyz = (float3*)(f->get_data());
+
+        correct_motion_helper(xyz, f->get_profile().stream_type());
+    }
+
+    void motion_to_accel_gyro::correct_motion(float3* xyz) const
+    {
+        correct_motion_helper(xyz, _accel_gyro_target_profile->get_stream_type());
     }
 
     motion_to_accel_gyro::motion_to_accel_gyro(std::shared_ptr<mm_calib_handler> mm_calib, std::shared_ptr<enable_motion_correction> mm_correct_opt)
@@ -160,6 +168,9 @@ namespace librealsense
             byte* frame_data[1];
             frame_data[0] = (byte*)agf.frame->get_frame_data();
             process_function(frame_data, (const byte*)frame->get_frame_data(), 0, 0, 0, 0);
+
+            // correct the axes values according to the device's data
+            correct_motion((float3*)(frame_data[0]));
 
             source->frame_ready(std::move(agf));
         };
