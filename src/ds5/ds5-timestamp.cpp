@@ -106,6 +106,7 @@ namespace librealsense
         {
             _has_metadata[i] = false;
         }
+        _backup_timestamp_reader->reset();
     }
 
     rs2_timestamp_domain ds5_timestamp_reader_from_metadata::get_frame_timestamp_domain(const std::shared_ptr<frame_interface>& frame) const
