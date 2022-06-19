@@ -241,6 +241,50 @@ namespace librealsense
         return _backup_timestamp_reader->get_frame_counter(frame);
     }
 
+    ds5_timestamp_reader_from_metadata_mipi_motion::ds5_timestamp_reader_from_metadata_mipi_motion(std::unique_ptr<frame_timestamp_reader> backup_timestamp_reader)
+    : ds5_timestamp_reader_from_metadata(std::move(backup_timestamp_reader)) {}
+
+    rs2_time_t ds5_timestamp_reader_from_metadata_mipi_motion::get_frame_timestamp(const std::shared_ptr<frame_interface>& frame)
+    {
+        std::lock_guard<std::recursive_mutex> lock(_mtx);
+
+        auto f = std::dynamic_pointer_cast<librealsense::frame>(frame);
+        if (!f)
+        {
+            LOG_ERROR("Frame is not valid. Failed to downcast to librealsense::frame.");
+            return 0;
+        }
+
+        auto md = (librealsense::metadata_hid_raw*)(f->additional_data.metadata_blob.data());
+        if(md)
+        {
+            return (double)(md->header.timestamp) * TIMESTAMP_USEC_TO_MSEC;
+        }
+        else
+        {
+            if (!one_time_note)
+            {
+                LOG_INFO("UVC metadata payloads not available. Please refer to the installation chapter for details.");
+                one_time_note = true;
+            }
+            return _backup_timestamp_reader->get_frame_timestamp(frame);
+        }
+    }
+
+    unsigned long long ds5_timestamp_reader_from_metadata_mipi_motion::get_frame_counter(const std::shared_ptr<frame_interface>& frame) const
+    {
+        // no counter is provided in the synthetic metadata structure - librealsense::metadata_hid_raw
+        std::lock_guard<std::recursive_mutex> lock(_mtx);
+
+        return _backup_timestamp_reader->get_frame_counter(frame);
+    }
+
+    void ds5_timestamp_reader_from_metadata_mipi_motion::reset()
+    {
+        // no counter is provided in the synthetic metadata structure - librealsense::metadata_hid_raw
+        _backup_timestamp_reader->reset();
+    }
+
     ds5_timestamp_reader::ds5_timestamp_reader(std::shared_ptr<platform::time_service> ts)
         : counter(pins), _ts(ts)
     {
