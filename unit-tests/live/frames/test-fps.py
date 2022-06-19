@@ -51,7 +51,7 @@ def measure_fps(sensor, profile):
     return fps
 
 
-acceptable_exception_rate_Hz = 1
+delta_Hz = 1
 tested_fps = [6, 15, 30, 60, 90]
 
 dev = test.find_first_device_or_exit()
@@ -62,6 +62,7 @@ test.start("Testing depth fps " + product_line + " device - "+ platform.system()
 
 for requested_fps in tested_fps:
     ds = dev.first_depth_sensor()
+    #Set auto-exposure option as it might take precedence over requested FPS
     if product_line == "D400":
         ds.set_option(rs.option.enable_auto_exposure, 1)
 
@@ -75,7 +76,7 @@ for requested_fps in tested_fps:
     else:
         fps = measure_fps(ds, dp)
         print("Requested fps: {:.1f} [Hz], actual fps: {:.1f} [Hz] ".format(requested_fps, fps))
-        test.check(fps <= (requested_fps + acceptable_exception_rate_Hz) and fps >= (requested_fps - acceptable_exception_rate_Hz))
+        test.check(fps <= (requested_fps + delta_Hz) and fps >= (requested_fps - delta_Hz))
 test.finish()
 
 
@@ -83,8 +84,8 @@ test.finish()
 test.start("Testing color fps " + product_line + " device - "+ platform.system() + " OS")
 
 for requested_fps in tested_fps:
-    dev = test.find_first_device_or_exit()
     cs = dev.first_color_sensor()
+    #Set auto-exposure option as it might take precedence over requested FPS
     if product_line == "D400":
         ds.set_option(rs.option.enable_auto_exposure, 1)
     elif product_line == "L500":
@@ -100,7 +101,7 @@ for requested_fps in tested_fps:
     else:
         fps = measure_fps(cs, cp)
         print("Requested fps: {:.1f} [Hz], actual fps: {:.1f} [Hz] ".format(requested_fps, fps))
-        test.check(fps <= (requested_fps + acceptable_exception_rate_Hz) and fps >= (requested_fps - acceptable_exception_rate_Hz))
+        test.check(fps <= (requested_fps + delta_Hz) and fps >= (requested_fps - delta_Hz))
 
 test.finish()
 
