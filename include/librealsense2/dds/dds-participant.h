@@ -28,6 +28,8 @@ public:
     dds_participant( const dds_participant & ) = delete;
     ~dds_participant();
 
+    //Creates the underlying DDS participant and sets the QoS
+    //If need to use callbacks set them before calling init, they may be called before init returns.
     void init( dds_domain_id, std::string const & participant_name );
 
     bool is_valid() const { return ( nullptr != _participant ); }
@@ -41,20 +43,38 @@ public:
         friend class dds_participant;
 
         std::function< void( dds_guid, char const * topic_name ) > _on_writer_added;
-        std::function< void( dds_guid ) > _on_writer_removed;
+        std::function< void( dds_guid, char const * topic_name ) > _on_writer_removed;
+        std::function< void( dds_guid, char const * topic_name ) > _on_reader_added;
+        std::function< void( dds_guid, char const * topic_name ) > _on_reader_removed;
+        std::function< void( dds_guid, char const * participant_name ) > _on_participant_added;
+        std::function< void( dds_guid, char const * participant_name ) > _on_participant_removed;
 
         listener() = default;
 
     public:
-        // Register a writer-added callback
-        void on_writer_added( std::function< void( dds_guid guid, char const* ) > callback )
+        void on_writer_added( std::function< void( dds_guid guid, char const * topic_name ) > callback )
         {
             _on_writer_added = std::move( callback );
         }
-        // Register a writer-removed callback
-        void on_writer_removed( std::function< void( dds_guid guid ) > callback )
+        void on_writer_removed( std::function< void( dds_guid guid, char const * topic_name ) > callback )
         {
             _on_writer_removed = std::move( callback );
+        }
+        void on_reader_added( std::function< void( dds_guid guid, char const * topic_name ) > callback )
+        {
+            _on_reader_added = std::move( callback );
+        }
+        void on_reader_removed( std::function< void( dds_guid guid, char const * topic_name ) > callback )
+        {
+            _on_reader_removed = std::move( callback );
+        }
+        void on_participant_added( std::function< void( dds_guid guid, char const * participant_name ) > callback )
+        {
+            _on_participant_added = std::move( callback );
+        }
+        void on_participant_removed( std::function< void( dds_guid guid, char const * participant_name ) > callback )
+        {
+            _on_participant_removed = std::move( callback );
         }
     };
 
@@ -84,7 +104,11 @@ private:
     std::shared_ptr< listener_impl > _domain_listener;
 
     void on_writer_added( dds_guid, char const * topic_name );
-    void on_writer_removed( dds_guid );
+    void on_writer_removed( dds_guid, char const * topic_name );
+    void on_reader_added( dds_guid, char const * topic_name );
+    void on_reader_removed( dds_guid, char const * topic_name );
+    void on_participant_added( dds_guid, char const * participantc_name );
+    void on_participant_removed( dds_guid, char const * participantc_name );
 };  // class dds_participant
 
 
