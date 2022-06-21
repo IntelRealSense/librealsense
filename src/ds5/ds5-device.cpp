@@ -1115,12 +1115,9 @@ namespace librealsense
                     lazy<float>([default_depth_units]()
                         { return default_depth_units; })));
             }
-            
-            // Metadata registration
-            if (!mipi_sensor)
-            {
-                depth_sensor.register_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP, make_uvc_header_parser(&uvc_header::timestamp));
 
+            if (!mipi_sensor) // D457 dev - this condition should be removed after bug resolved in FW
+            {
                 // Auto exposure and gain limit
                 if (_fw_version >= firmware_version("5.12.10.11"))
                 {
@@ -1152,7 +1149,7 @@ namespace librealsense
                             ae_limit_toggle_control
                             ));
                 }
-            } // !mipi_sensor
+            }
         }); //group_multiple_fw_calls
 
         
@@ -1189,6 +1186,8 @@ namespace librealsense
 
     void ds5_device::register_metadata(const synthetic_sensor &depth_sensor, const firmware_version& hdr_firmware_version) const
     {
+        depth_sensor.register_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP, make_uvc_header_parser(&platform::uvc_header::timestamp));
+
         // attributes of md_capture_timing
         auto md_prop_offset = offsetof(metadata_raw, mode) +
             offsetof(md_depth_mode, depth_y_mode) +
