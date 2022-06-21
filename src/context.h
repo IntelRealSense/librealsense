@@ -7,6 +7,7 @@
 #include "backend.h"
 #include "mock/recorder.h"
 #include "core/streaming.h"
+#include <librealsense2/utilities/shared-ptr-singleton.h>
 
 #include <vector>
 #include "media/playback/playback_device.h"
@@ -34,6 +35,7 @@ struct rs2_stream_profile
     librealsense::stream_profile_interface* profile;
     std::shared_ptr<librealsense::stream_profile_interface> clone;
 };
+
 
 namespace librealsense
 {
@@ -156,8 +158,8 @@ namespace librealsense
         std::map<std::string, std::weak_ptr<device_info>> _playback_devices;
         std::map<uint64_t, devices_changed_callback_ptr> _devices_changed_callbacks;
 #ifdef BUILD_WITH_DDS
-        static std::shared_ptr< dds::dds_participant > s_dds_participant;  // common to all contexts!
-        std::shared_ptr< dds_device_watcher > _dds_watcher;
+        shared_ptr_singleton< dds::dds_participant > _dds_participant;  // common to all contexts!
+        shared_ptr_singleton< dds_device_watcher > _dds_watcher;
         void start_dds_device_watcher();
 #endif
 

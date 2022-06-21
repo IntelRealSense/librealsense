@@ -133,6 +133,10 @@ namespace librealsense
         {
         case backend_type::standard:
             _backend = platform::create_backend();
+#ifdef BUILD_WITH_DDS
+            _dds_participant.instance()->init( 0, "librealsense" );
+            _dds_watcher.instance( _dds_participant.get() );
+#endif
             break;
         case backend_type::record:
             _backend = std::make_shared<platform::record_backend>(platform::create_backend(), filename, section, mode);
@@ -147,15 +151,6 @@ namespace librealsense
 
        _device_watcher = _backend->create_device_watcher();
        assert(_device_watcher->is_stopped());
-
-#ifdef BUILD_WITH_DDS
-       if( ! s_dds_participant )
-       {
-           s_dds_participant = std::make_shared< dds::dds_participant >();
-           s_dds_participant->init( 0, "librealsense" );
-       }
-       _dds_watcher = std::make_shared< dds_device_watcher >( s_dds_participant );
-#endif
     }
 
 
@@ -213,17 +208,17 @@ namespace librealsense
 #ifdef BUILD_WITH_DDS
         if( json_get< bool >( settings, "dds-discovery", true ) )
         {
-            if( ! s_dds_participant )
+            if( ! _dds_participant )
             {
-                s_dds_participant = std::make_shared< dds::dds_participant >();
-                s_dds_participant->init( json_get< int >( settings, "dds-domain", 0 ),
-                                         json_get< std::string >( settings, "dds-participant-name", "librealsense" ) );
+                _dds_participant.instance()->init(
+                    json_get< int >( settings, "dds-domain", 0 ),
+                    json_get< std::string >( settings, "dds-participant-name", "librealsense" ) );
             }
             else if( json_has_value( settings, "dds-domain" ) || json_has_value( settings, "dds-participant-name" ) )
             {
                 LOG_WARNING( "DDS participant has already been created; ignoring DDS settings" );
             }
-            _dds_watcher = std::make_shared< dds_device_watcher >( s_dds_participant );
+            _dds_watcher.instance( _dds_participant.get() );
             //_dds_backend = ...; TODO
         }
 #endif
