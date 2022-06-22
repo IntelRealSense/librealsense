@@ -87,8 +87,6 @@ TEST_CASE("Gain/ Exposure auto limits", "[live]")
         {
             auto s1 = picked_sensor[0][limits_value[i]];
             auto s2 = picked_sensor[1][limits_value[i]];
-            if (!s1 || !s2)
-                continue;
 
             auto range = s1.get_option_range(limits_value[i]); // should be same range from both sensors
             s1.set_option(limits_value[i], range.max / 4.0f);

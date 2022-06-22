@@ -593,8 +593,8 @@ void log_callback_end( uint32_t fps,
             throw wrong_api_call_sequence_exception("stop_streaming() failed. UVC device is not streaming!");
 
         _is_streaming = false;
-        _timestamp_reader->reset();
         _device->stop_callbacks();
+        _timestamp_reader->reset();
         raise_on_before_streaming_changes(false);
     }
 
