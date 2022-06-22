@@ -284,28 +284,15 @@ void log_callback_end( uint32_t fps,
         auto system_time = environment::get_instance().get_time_service()->get_time();
         auto fr = std::make_shared<frame>();
         
-        //REMOVED! - no need to add 2 copies to a frame
-        //byte* pix = (byte*)fo.pixels;
-        std::vector<byte> pixels;
+        fr->set_stream(profile);
+
+        // D457 dev - computing relevant frame size
         const auto&& vsp = As<video_stream_profile, stream_profile_interface>(profile);
         int width = vsp ? vsp->get_width() : 0;
         int height = vsp ? vsp->get_height() : 0;
         int bpp = get_image_bpp(profile->get_format());
+        auto frame_size = compute_frame_expected_size(width, height, bpp);
 
-        // method should be limited to use of MIPI - not for USB
-        // the aim is to grab the data from a bigger buffer, which is aligned to 64 bytes,
-        // when the resolution's width is not aligned to 64
-        if (width % 64 != 0 && fo.frame_size > compute_frame_expected_size(width, height, bpp))
-        {
-            pixels = align_width_to_64(width, height, bpp, pix);
-        }
-        else
-        {
-            pixels = std::vector<byte>(pix, pix + fo.frame_size);
-        }
-
-        //fr->data = pixels;
-        fr->set_stream(profile);
         frame_additional_data additional_data(0,
             0,
             system_time,
@@ -316,7 +303,7 @@ void log_callback_end( uint32_t fps,
             last_frame_number,
             false,
             0,
-            (uint32_t)pixels.size());
+            (uint32_t)frame_size);
 
         if (_metadata_modifier)
             _metadata_modifier(additional_data);
@@ -442,12 +429,23 @@ void log_callback_end( uint32_t fps,
 
                     if (fh.frame)
                     {
-                        assert( expected_size == sizeof(byte) * /*fr->data.size()*/f.frame_size );
-                                //expected_size == sizeof(byte) * fr->data.size() + 68); // added for D457 - need to understand why this happens (68 is size of md)
-
-                        memcpy( (void *)fh->get_frame_data(),
-                                /*fr->data.data()*/ f.pixels,
-                                expected_size );
+                        // method should be limited to use of MIPI - not for USB
+                        // the aim is to grab the data from a bigger buffer, which is aligned to 64 bytes,
+                        // when the resolution's width is not aligned to 64
+                        if (width % 64 != 0 && f.frame_size > expected_size)
+                        {
+                            byte* pix = (byte*)f.pixels;
+                            std::vector<byte> pixels;
+                            pixels = align_width_to_64(width, height, bpp, pix);
+                            fr->data = pixels;
+                            assert( expected_size == sizeof(byte) * fr->data.size());
+                            memcpy( (void *)fh->get_frame_data(), fr->data.data(), expected_size );
+                        }
+                        else
+                        {
+                            assert( expected_size == sizeof(byte) * f.frame_size );
+                            memcpy( (void *)fh->get_frame_data(), f.pixels, expected_size );
+                        }
 
                         auto&& video = dynamic_cast<video_frame*>(fh.frame);
                         if (video)
