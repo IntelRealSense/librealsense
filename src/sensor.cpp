@@ -432,14 +432,11 @@ void log_callback_end( uint32_t fps,
                         // method should be limited to use of MIPI - not for USB
                         // the aim is to grab the data from a bigger buffer, which is aligned to 64 bytes,
                         // when the resolution's width is not aligned to 64
-                        if (width % 64 != 0 && f.frame_size > expected_size)
+                        if ((width * bpp >> 3) % 64 != 0 && f.frame_size > expected_size)
                         {
-                            byte* pix = (byte*)f.pixels;
-                            std::vector<byte> pixels;
-                            pixels = align_width_to_64(width, height, bpp, pix);
-                            fr->data = pixels;
-                            assert( expected_size == sizeof(byte) * fr->data.size());
-                            memcpy( (void *)fh->get_frame_data(), fr->data.data(), expected_size );
+                            std::vector<byte> pixels = align_width_to_64(width, height, bpp, (byte*)f.pixels);
+                            assert( expected_size == sizeof(byte) * pixels.size());
+                            memcpy( (void *)fh->get_frame_data(), pixels.data(), expected_size );
                         }
                         else
                         {
