@@ -272,7 +272,7 @@ namespace librealsense
             // pulling synced data
             // if returned value is true - the data could have been pulled
             // if returned value is false - no data is returned via the inout params because data could not be synced
-            bool pull_video_with_metadata(std::shared_ptr<v4l2_buffer>& video_buffer, std::shared_ptr<v4l2_buffer>& md_buffer);
+            bool pull_video_with_metadata(std::shared_ptr<v4l2_buffer>& video_buffer, std::shared_ptr<v4l2_buffer>& md_buffer, int& video_fd, int& md_fd);
 
             void flush();
 
