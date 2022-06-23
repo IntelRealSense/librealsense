@@ -196,7 +196,7 @@ void dds_participant::on_participant_added( dds_guid guid, char const * particip
 }
 
 
-void dds_participant::on_reader_removed( dds_guid guid, char const * participant_name )
+void dds_participant::on_participant_removed( dds_guid guid, char const * participant_name )
 {
     for( auto wl : _listeners )
     {

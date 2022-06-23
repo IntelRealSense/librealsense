@@ -119,7 +119,7 @@ void dds_device_watcher::init()
         throw std::runtime_error( "participant was not initialized" );
 
     if( ! _listener )
-        _participant->create_listener( &_listener )->on_writer_removed( [this]( dds::dds_guid guid ) {
+        _participant->create_listener( &_listener )->on_writer_removed( [this]( dds::dds_guid guid, char const * ) {
             std::lock_guard< std::mutex > lock( _devices_mutex );
             auto it = _dds_devices.find( guid );
             if( it != _dds_devices.end() )
