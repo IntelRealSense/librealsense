@@ -7,3 +7,12 @@ include(${CMAKE_CURRENT_LIST_DIR}/time/CMakeLists.txt)
 include(${CMAKE_CURRENT_LIST_DIR}/number/CMakeLists.txt)
 include(${CMAKE_CURRENT_LIST_DIR}/os/CMakeLists.txt)
 include(${CMAKE_CURRENT_LIST_DIR}/string/CMakeLists.txt)
+
+SET( STRING_TARGETS
+    )
+
+target_sources( ${LRS_TARGET}
+    PRIVATE
+        "${CMAKE_CURRENT_LIST_DIR}/shared-ptr-singleton.h"
+    )
+

@@ -105,10 +105,6 @@ namespace librealsense
         {rs_fourcc('M','J','P','G'), RS2_STREAM_COLOR},
     };
 
-#ifdef BUILD_WITH_DDS
-    /* static */ std::shared_ptr< dds::dds_participant > context::s_dds_participant;
-#endif
-
 
     context::context()
         : _devices_changed_callback( nullptr, []( rs2_devices_changed_callback* ) {} )

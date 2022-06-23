@@ -18,38 +18,38 @@
 template< class T >
 class shared_ptr_singleton
 {
-	std::shared_ptr< T > _ptr;
+    std::shared_ptr< T > _ptr;
 
 public:
-	template< typename... Args >
-	shared_ptr_singleton & instance( Args... args )
-	{
-		if( ! _ptr )
-		{
-			static std::mutex _mutex;
-			static std::weak_ptr< T > _singleton;
+    template< typename... Args >
+    shared_ptr_singleton & instance( Args... args )
+    {
+        if( ! _ptr )
+        {
+            static std::mutex _mutex;
+            static std::weak_ptr< T > _singleton;
 
-			std::lock_guard< std::mutex > lock( _mutex );
-			if( _ptr = _singleton.lock() )
-			{
-				// The singleton is still alive and we can just use it
-			}
-			else
-			{
-				// First instance ever of T, or the singleton died (all references to the singleton were released), so
-				// we have to recreate it
-				_ptr = std::make_shared< T >( args... );
-				_singleton = _ptr;
-			}
-		}
-		return *this;  // for convenience: instance(...)->foo(...);
-	}
+            std::lock_guard< std::mutex > lock( _mutex );
+            if( _ptr = _singleton.lock() )
+            {
+                // The singleton is still alive and we can just use it
+            }
+            else
+            {
+                // First instance ever of T, or the singleton died (all references to the singleton were released), so
+                // we have to recreate it
+                _ptr = std::make_shared< T >( args... );
+                _singleton = _ptr;
+            }
+        }
+        return *this;  // for convenience: instance(...)->foo(...);
+    }
 
-	T * operator->() const { return _ptr.get(); }
+    T * operator->() const { return _ptr.get(); }
 
-	std::shared_ptr< T > const & get() const { return _ptr; }
-	operator std::shared_ptr< T > const & ( ) const { return get(); }
+    std::shared_ptr< T > const & get() const { return _ptr; }
+    operator std::shared_ptr< T > const & ( ) const { return get(); }
 
-	operator bool() const { return( _ptr.get() != nullptr ); }
-	bool operator!() const { return ! _ptr; }
+    operator bool() const { return( _ptr.get() != nullptr ); }
+    bool operator!() const { return ! _ptr; }
 };
