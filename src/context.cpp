@@ -130,7 +130,7 @@ namespace librealsense
         case backend_type::standard:
             _backend = platform::create_backend();
 #ifdef BUILD_WITH_DDS
-            if( ! _dds_participant  &&  ! _dds_participant.instance()->is_valid() )
+            if( ! _dds_participant.instance()->is_valid() )
                 _dds_participant->init( 0, "librealsense" );
             _dds_watcher.instance( _dds_participant.get() );
 #endif
@@ -205,7 +205,7 @@ namespace librealsense
 #ifdef BUILD_WITH_DDS
         if( json_get< bool >( settings, "dds-discovery", true ) )
         {
-            if( ! _dds_participant  &&  ! _dds_participant.instance()->is_valid() )
+            if( ! _dds_participant.instance()->is_valid() )
             {
                 _dds_participant->init(
                     json_get< int >( settings, "dds-domain", 0 ),
