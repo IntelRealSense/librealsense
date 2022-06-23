@@ -52,29 +52,35 @@ public:
         listener() = default;
 
     public:
-        void on_writer_added( std::function< void( dds_guid guid, char const * topic_name ) > callback )
+        listener * on_writer_added( std::function< void( dds_guid guid, char const * topic_name ) > callback )
         {
             _on_writer_added = std::move( callback );
+            return this;
         }
-        void on_writer_removed( std::function< void( dds_guid guid, char const * topic_name ) > callback )
+        listener * on_writer_removed( std::function< void( dds_guid guid, char const * topic_name ) > callback )
         {
             _on_writer_removed = std::move( callback );
+            return this;
         }
-        void on_reader_added( std::function< void( dds_guid guid, char const * topic_name ) > callback )
+        listener * on_reader_added( std::function< void( dds_guid guid, char const * topic_name ) > callback )
         {
             _on_reader_added = std::move( callback );
+            return this;
         }
-        void on_reader_removed( std::function< void( dds_guid guid, char const * topic_name ) > callback )
+        listener * on_reader_removed( std::function< void( dds_guid guid, char const * topic_name ) > callback )
         {
             _on_reader_removed = std::move( callback );
+            return this;
         }
-        void on_participant_added( std::function< void( dds_guid guid, char const * participant_name ) > callback )
+        listener * on_participant_added( std::function< void( dds_guid guid, char const * participant_name ) > callback )
         {
             _on_participant_added = std::move( callback );
+            return this;
         }
-        void on_participant_removed( std::function< void( dds_guid guid, char const * participant_name ) > callback )
+        listener * on_participant_removed( std::function< void( dds_guid guid, char const * participant_name ) > callback )
         {
             _on_participant_removed = std::move( callback );
+            return this;
         }
     };
 

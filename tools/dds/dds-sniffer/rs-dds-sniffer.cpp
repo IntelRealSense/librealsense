@@ -100,30 +100,25 @@ bool dds_sniffer::init( librealsense::dds::dds_domain_id domain, bool snapshot, 
     _print_machine_readable = machine_readable;
 
     //Set callbacks before calling _participant.init(), or some events, specifically on_participant_added, might get lost
-    _participant.on_writer_added( [this]( librealsense::dds::dds_guid guid, char const* topic_name )
-    {
-        on_writer_added( guid, topic_name );  
-    } );
-    _participant.on_writer_removed( [this]( librealsense::dds::dds_guid guid, char const* topic_name )
-    {
-        on_writer_removed( guid, topic_name );
-    } );
-    _participant.on_reader_added( [this]( librealsense::dds::dds_guid guid, char const* topic_name )
-    { 
-        on_reader_added( guid, topic_name );
-    } );
-    _participant.on_reader_removed( [this]( librealsense::dds::dds_guid guid, char const* topic_name )
-    {
-        on_reader_removed( guid, topic_name );
-    } );
-    _participant.on_participant_added( [this]( librealsense::dds::dds_guid guid, char const* participant_name )
-    {
-        on_participant_added( guid, participant_name );
-    } );
-    _participant.on_participant_removed( [this]( librealsense::dds::dds_guid guid, char const* participant_name )
-    {
-        on_participant_removed( guid, participant_name );
-    } );
+    _participant.create_listener( &_listener )
+        ->on_writer_added( [this]( librealsense::dds::dds_guid guid, char const * topic_name ) {
+            on_writer_added( guid, topic_name );
+        } )
+        ->on_writer_removed( [this]( librealsense::dds::dds_guid guid, char const * topic_name ) {
+            on_writer_removed( guid, topic_name );
+        } )
+        ->on_reader_added( [this]( librealsense::dds::dds_guid guid, char const * topic_name ) {
+            on_reader_added( guid, topic_name );
+        } )
+        ->on_reader_removed( [this]( librealsense::dds::dds_guid guid, char const * topic_name ) {
+            on_reader_removed( guid, topic_name );
+        } )
+        ->on_participant_added( [this]( librealsense::dds::dds_guid guid, char const * participant_name ) {
+            on_participant_added( guid, participant_name );
+        } )
+        ->on_participant_removed( [this]( librealsense::dds::dds_guid guid, char const * participant_name ) {
+            on_participant_removed( guid, participant_name );
+        } );
 
     _participant.init( domain, "rs-dds-sniffer" );
 
