@@ -15,6 +15,7 @@ namespace librealsense
     {
     public:
         software_device();
+        software_device( std::shared_ptr< context > ctx );
         virtual ~software_device();
 
         software_sensor& add_software_sensor(const std::string& name);

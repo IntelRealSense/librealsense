@@ -3,30 +3,16 @@
 
 #pragma once
 
+#include "dds-defines.h"
+
 #include <memory>
 #include <functional>
 #include <string>
+#include <list>
 
-
-namespace eprosima {
-namespace fastdds {
-namespace dds {
-    class DomainParticipant;
-}  // namespace dds
-}  // namespace fastdds
-namespace fastrtps {
-namespace rtps {
-    struct GUID_t;
-}  // namespace dds
-}  // namespace fastdds
-}  // namespace eprosima
 
 namespace librealsense {
 namespace dds {
-
-
-using dds_guid = eprosima::fastrtps::rtps::GUID_t;
-typedef int dds_domain_id;
 
 
 // Encapsulate FastDDS "participant" entity
@@ -34,6 +20,8 @@ typedef int dds_domain_id;
 class dds_participant
 {
     eprosima::fastdds::dds::DomainParticipant * _participant = nullptr;
+
+    struct listener_impl;
 
 public:
     dds_participant() = default;
@@ -44,48 +32,89 @@ public:
     //If need to use callbacks set them before calling init, they may be called before init returns.
     void init( dds_domain_id, std::string const & participant_name );
 
-    void on_writer_added( std::function< void( dds_guid guid, char const* topic_name ) > callback )
-    {
-        _on_writer_added = std::move( callback );
-    }
-    void on_writer_removed( std::function< void( dds_guid guid, char const* topic_name ) > callback )
-    {
-        _on_writer_removed = std::move( callback );
-    }
-    void on_reader_added( std::function< void( dds_guid guid, char const * topic_name ) > callback )
-    {
-        _on_reader_added = std::move( callback );
-    }
-    void on_reader_removed( std::function< void( dds_guid guid, char const* topic_name ) > callback )
-    {
-        _on_reader_removed = std::move( callback );
-    }
-    void on_participant_added( std::function< void( dds_guid guid, char const * participant_name ) > callback )
-    {
-        _on_participant_added = std::move( callback );
-    }
-    void on_participant_removed( std::function< void( dds_guid guid, char const* participant_name ) > callback )
-    {
-        _on_participant_removed = std::move( callback );
-    }
-
     bool is_valid() const { return ( nullptr != _participant ); }
     bool operator!() const { return ! is_valid(); }
 
     eprosima::fastdds::dds::DomainParticipant * get() const { return _participant; }
     eprosima::fastdds::dds::DomainParticipant * operator->() const { return get(); }
 
+    class listener
+    {
+        friend class dds_participant;
+
+        std::function< void( dds_guid, char const * topic_name ) > _on_writer_added;
+        std::function< void( dds_guid, char const * topic_name ) > _on_writer_removed;
+        std::function< void( dds_guid, char const * topic_name ) > _on_reader_added;
+        std::function< void( dds_guid, char const * topic_name ) > _on_reader_removed;
+        std::function< void( dds_guid, char const * participant_name ) > _on_participant_added;
+        std::function< void( dds_guid, char const * participant_name ) > _on_participant_removed;
+
+        listener() = default;
+
+    public:
+        listener * on_writer_added( std::function< void( dds_guid guid, char const * topic_name ) > callback )
+        {
+            _on_writer_added = std::move( callback );
+            return this;
+        }
+        listener * on_writer_removed( std::function< void( dds_guid guid, char const * topic_name ) > callback )
+        {
+            _on_writer_removed = std::move( callback );
+            return this;
+        }
+        listener * on_reader_added( std::function< void( dds_guid guid, char const * topic_name ) > callback )
+        {
+            _on_reader_added = std::move( callback );
+            return this;
+        }
+        listener * on_reader_removed( std::function< void( dds_guid guid, char const * topic_name ) > callback )
+        {
+            _on_reader_removed = std::move( callback );
+            return this;
+        }
+        listener * on_participant_added( std::function< void( dds_guid guid, char const * participant_name ) > callback )
+        {
+            _on_participant_added = std::move( callback );
+            return this;
+        }
+        listener * on_participant_removed( std::function< void( dds_guid guid, char const * participant_name ) > callback )
+        {
+            _on_participant_removed = std::move( callback );
+            return this;
+        }
+    };
+
+    // Create an instance that gets callbacks and returns a shared_ptr. When the shared_ptr is destroyed the
+    // callbacks to it will automatically stop.
+    //
+    // The shared_ptr must therefore be assigned and kept alive.
+    // The out parameter is to enable syntax like this:
+    //     _participant.create_listener( &_listener )->on_writer_removed( ... );
+    // rather than:
+    //     _listener = _participant.create_listener();
+    //     _listener->on_writer_removed( ... );
+    // The latter is still possible.
+    //
+    std::shared_ptr< listener > create_listener( std::shared_ptr< listener > * out = nullptr )
+    {
+        std::shared_ptr< listener > l( new listener );
+        std::weak_ptr< listener > wl( l );
+        _listeners.emplace_back( wl );
+        if( out )
+            *out = l;
+        return l;
+    }
+
 private:
-    struct dds_participant_listener;
+    std::list< std::weak_ptr< listener > > _listeners;
+    std::shared_ptr< listener_impl > _domain_listener;
 
-    std::shared_ptr< dds_participant_listener > _domain_listener;
-
-    std::function< void( dds_guid, char const * topic_name ) > _on_writer_added;
-    std::function< void( dds_guid, char const * topic_name ) > _on_writer_removed;
-    std::function< void( dds_guid, char const * topic_name ) > _on_reader_added;
-    std::function< void( dds_guid, char const * topic_name ) > _on_reader_removed;
-    std::function< void( dds_guid, char const * participant_name ) > _on_participant_added;
-    std::function< void( dds_guid, char const * participant_name ) > _on_participant_removed;
+    void on_writer_added( dds_guid, char const * topic_name );
+    void on_writer_removed( dds_guid, char const * topic_name );
+    void on_reader_added( dds_guid, char const * topic_name );
+    void on_reader_removed( dds_guid, char const * topic_name );
+    void on_participant_added( dds_guid, char const * participantc_name );
+    void on_participant_removed( dds_guid, char const * participantc_name );
 };  // class dds_participant
 
 

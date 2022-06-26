@@ -7,6 +7,7 @@
 #include "backend.h"
 #include "mock/recorder.h"
 #include "core/streaming.h"
+#include <librealsense2/utilities/shared-ptr-singleton.h>
 
 #include <vector>
 #include "media/playback/playback_device.h"
@@ -35,10 +36,17 @@ struct rs2_stream_profile
     std::shared_ptr<librealsense::stream_profile_interface> clone;
 };
 
+
 namespace librealsense
 {
     class device;
     class context;
+#ifdef BUILD_WITH_DDS
+    class dds_device_watcher;
+    namespace dds {
+        class dds_participant;
+    }
+#endif
 
     class device_info
     {
@@ -144,13 +152,16 @@ namespace librealsense
                                const std::map<std::string, std::weak_ptr<device_info>>& new_playback_devices);
         void raise_devices_changed(const std::vector<rs2_device_info>& removed, const std::vector<rs2_device_info>& added);
         void start_device_watcher();
-        void start_dds_device_watcher();
         std::shared_ptr<platform::backend> _backend;
         std::shared_ptr<platform::device_watcher> _device_watcher;
 
         std::map<std::string, std::weak_ptr<device_info>> _playback_devices;
         std::map<uint64_t, devices_changed_callback_ptr> _devices_changed_callbacks;
-        std::shared_ptr<librealsense::platform::device_watcher> _dds_watcher;
+#ifdef BUILD_WITH_DDS
+        shared_ptr_singleton< dds::dds_participant > _dds_participant;  // common to all contexts!
+        shared_ptr_singleton< dds_device_watcher > _dds_watcher;
+        void start_dds_device_watcher();
+#endif
 
         devices_changed_callback_ptr _devices_changed_callback;
         std::map<int, std::weak_ptr<const stream_interface>> _streams;
