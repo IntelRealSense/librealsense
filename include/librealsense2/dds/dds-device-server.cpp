@@ -113,7 +113,7 @@ public:
         {
             if( info.current_count_change == 1 )
             {
-                LOG_DEBUG( "DataReader " << writer->guid() << " discovered" );
+                LOG_DEBUG( "DataReader " << writer->guid() << " for topic: " << writer->get_topic()->get_name() << " discovered" );
                 {
                     {
                         std::lock_guard< std::mutex > lock( _owner->_notification_send_mutex );
@@ -124,7 +124,7 @@ public:
             }
             else if( info.current_count_change == -1 )
             {
-                LOG_DEBUG( "DataReader " << writer->guid() << " disappeared" );
+                LOG_DEBUG( "DataReader " << writer->guid() << " for topic: " << writer->get_topic()->get_name() <<" disappeared" );
             }
             else
             {
@@ -148,29 +148,34 @@ public:
         , _notifications_loop( [this]( dispatcher::cancellable_timer timer ) {
             if( _active )
             {
+                // We can send 2 types of notifications:
+                // * Latched notifications that should be sent for every new reader (like sensors & profiles data)
+                // * Instant notifications that can be sent upon an event and is not required to be
+                //   resent to new readers
                 std::unique_lock< std::mutex > lock( _notification_send_mutex );
                 _send_notification_cv.wait( lock, [this]() {
-                    return ! _active || _new_reader_joined || _new_notification;
+                    return ! _active || _new_reader_joined || _new_instant_notification;
                 } );
 
                 if( _new_reader_joined )
                 {
-                    // Send all required data
-                    for( auto notification : _new_reader_notifications )
+                    // Send all latched notifications
+                    for( auto notification : _latched_notifications )
                     {
                         DDS_API_CALL( _data_writer->write( &notification ) );
                     }
                     _new_reader_joined = false;
                 }
 
-                if( _new_notification )
+                if( _new_instant_notification )
                 {
+                    // Send all instant notifications
                     topics::raw::device::notifications msg;
-                    while( _notifications_msg_queue.dequeue( &msg, 1000 ) )
+                    while( _instant_notifications.dequeue( &msg, 1000 ) )
                     {
                         DDS_API_CALL( _data_writer->write( &msg ) );
                     }
-                    _new_notification = false;
+                    _new_instant_notification = false;
                 }
             }
         } )
@@ -214,15 +219,15 @@ public:
         }
     };
 
-    void send_notifications( const topics::raw::device::notifications& msg, bool notification_for_new_reader = false) 
+    void send_notifications( const topics::raw::device::notifications& msg, bool latched = false) 
     {
         std::unique_lock< std::mutex > lock( _notification_send_mutex );
         topics::raw::device::notifications msg_to_move( msg );
-        if( notification_for_new_reader )
-            _new_reader_notifications.push_back( std::move( msg_to_move ) );
+        if( latched )
+            _latched_notifications.push_back( std::move( msg_to_move ) );
         else
         {
-            if( !_notifications_msg_queue.enqueue( std::move( msg_to_move )))
+            if( !_instant_notifications.enqueue( std::move( msg_to_move )))
             {
                 LOG_ERROR("error while trying to enqueue a message id:" << msg_to_move.id() << " to _notifications_msg_queue");
             }
@@ -238,12 +243,12 @@ private:
     eprosima::fastdds::dds::DataWriter * _data_writer;
     dds_notifications_client_listener _clients_listener;
     active_object<> _notifications_loop;
-    single_consumer_queue< topics::raw::device::notifications > _notifications_msg_queue;
-    std::vector<topics::raw::device::notifications> _new_reader_notifications;
+    single_consumer_queue< topics::raw::device::notifications > _instant_notifications;
+    std::vector<topics::raw::device::notifications> _latched_notifications;
     std::mutex _notification_send_mutex;
     std::condition_variable _send_notification_cv;
     std::atomic_bool _new_reader_joined = { false };  // Used to indicate that a new reader has joined for the notifications writer
-    std::atomic_bool _new_notification = { false };  
+    std::atomic_bool _new_instant_notification = { false };  
     std::atomic_bool _active = { false };
 };
 
