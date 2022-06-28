@@ -53,6 +53,18 @@ namespace librealsense
         unsigned long long get_frame_counter(const std::shared_ptr<frame_interface>& frame) const override;
     };
 
+    class ds5_timestamp_reader_from_metadata_mipi_motion : public ds5_timestamp_reader_from_metadata
+    {
+    public:
+        ds5_timestamp_reader_from_metadata_mipi_motion(std::unique_ptr<frame_timestamp_reader> backup_timestamp_reader);
+
+        rs2_time_t get_frame_timestamp(const std::shared_ptr<frame_interface>& frame) override;
+
+        unsigned long long get_frame_counter(const std::shared_ptr<frame_interface>& frame) const override;
+
+        void reset() override;
+    };
+
     class ds5_timestamp_reader : public frame_timestamp_reader
     {
         static const int pins = 2;

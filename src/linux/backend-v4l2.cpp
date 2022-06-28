@@ -1132,7 +1132,7 @@ namespace librealsense
                             LOG_DEBUG_V4L("Dequeued buf " << std::dec << buf.index << " for fd " << _fd << " seq " << buf.sequence);
 
                             auto buffer = _buffers[buf.index];
-                            buf_mgr.handle_buffer(e_video_buf,_fd, buf,buffer);
+                            buf_mgr.handle_buffer(e_video_buf, _fd, buf, buffer);
 
                             if (_is_started)
                             {
@@ -1234,6 +1234,7 @@ namespace librealsense
                                     {
                                         // saving video buffer to syncer
                                         _video_md_syncer.push_video({std::make_shared<v4l2_buffer>(buf), _fd, buf.index});
+                                        buf_mgr.handle_buffer(e_video_buf, -1);
                                     }
                                 }
                             }
@@ -1255,30 +1256,43 @@ namespace librealsense
 
                         if (_is_started && is_metadata_streamed())
                         {
-                            if (_video_md_syncer.pull_video_with_metadata(video_v4l2_buffer, md_v4l2_buffer))
+                            int video_fd = -1, md_fd = -1;
+                            if (_video_md_syncer.pull_video_with_metadata(video_v4l2_buffer, md_v4l2_buffer, video_fd, md_fd))
                             {
-                                auto timestamp = (double)video_v4l2_buffer->timestamp.tv_sec * 1000.f + (double)video_v4l2_buffer->timestamp.tv_usec / 1000.f;
-                                timestamp = monotonic_to_realtime(timestamp);
+                                // Preparing video buffer
+                                auto video_buffer = get_video_buffer(video_v4l2_buffer->index);
+                                video_buffer->attach_buffer(*video_v4l2_buffer);
 
+                                // happens when the video did not arrive on
+                                // the current polling iteration (was taken from the syncer's video queue)
+                                if (buf_mgr.get_buffers()[e_video_buf]._file_desc == -1)
+                                {
+                                    buf_mgr.handle_buffer(e_video_buf, video_fd, *video_v4l2_buffer, video_buffer);
+                                }
+                                buf_mgr.handle_buffer(e_video_buf, -1); // transfer new buffer request to the frame callback
+
+                                // Preparing metadata buffer
                                 static const size_t uvc_md_start_offset = sizeof(uvc_meta_buffer::ns) + sizeof(uvc_meta_buffer::sof);
                                 auto metadata_buffer = get_md_buffer(md_v4l2_buffer->index);
                                 buf_mgr.set_md_attributes(md_v4l2_buffer->bytesused,
                                                             metadata_buffer->get_frame_start());
                                 metadata_buffer->attach_buffer(*md_v4l2_buffer);
-                                buf_mgr.handle_buffer(e_metadata_buf,-1); // transfer new buffer request to the frame callback
 
-
-                                auto video_buffer = get_video_buffer(video_v4l2_buffer->index);
-                                video_buffer->attach_buffer(*video_v4l2_buffer);
-                                buf_mgr.handle_buffer(e_video_buf, -1); // transfer new buffer request to the frame callback
-
+                                if (buf_mgr.get_buffers()[e_metadata_buf]._file_desc == -1)
+                                {
+                                    buf_mgr.handle_buffer(e_metadata_buf, md_fd, *md_v4l2_buffer, metadata_buffer);
+                                }
+                                buf_mgr.handle_buffer(e_metadata_buf, -1); // transfer new buffer request to the frame callback
 
                                 auto frame_sz = buf_mgr.md_node_present() ? video_v4l2_buffer->bytesused :
                                                     std::min(video_v4l2_buffer->bytesused - buf_mgr.metadata_size(),
                                                              video_buffer->get_length_frame_only());
+
+                                auto timestamp = (double)video_v4l2_buffer->timestamp.tv_sec * 1000.f + (double)video_v4l2_buffer->timestamp.tv_usec / 1000.f;
+                                timestamp = monotonic_to_realtime(timestamp);
+
                                 // D457 work - to work with "normal camera", use frame_sz as the first input to the following frame_object:
                                 //frame_object fo{ buf.bytesused - MAX_META_DATA_SIZE, buf_mgr.metadata_size(),
-                                auto md_size = buf_mgr.metadata_size();
                                 frame_object fo{ frame_sz, buf_mgr.metadata_size(),
                                                  video_buffer->get_frame_start(), buf_mgr.metadata_start(), timestamp };
 
@@ -2039,10 +2053,11 @@ namespace librealsense
                               << " v4lbuf ts usec " << buf.timestamp.tv_usec);
 
                 auto buffer = _md_buffers[buf.index];
-                buf_mgr.handle_buffer(e_metadata_buf,_md_fd, buf,buffer);
+                buf_mgr.handle_buffer(e_metadata_buf, _md_fd, buf, buffer);
 
                 // pushing metadata buffer to syncer
                 _video_md_syncer.push_metadata({std::make_shared<v4l2_buffer>(buf), _md_fd, buf.index});
+                buf_mgr.handle_buffer(e_metadata_buf, -1);
             }
         }
 
@@ -2359,7 +2374,8 @@ namespace librealsense
             }
         }
 
-        bool v4l2_video_md_syncer::pull_video_with_metadata(std::shared_ptr<v4l2_buffer>& video_buffer, std::shared_ptr<v4l2_buffer>& md_buffer)
+        bool v4l2_video_md_syncer::pull_video_with_metadata(std::shared_ptr<v4l2_buffer>& video_buffer, std::shared_ptr<v4l2_buffer>& md_buffer,
+                                                            int& video_fd, int& md_fd)
         {
             std::lock_guard<std::mutex> lock(_syncer_mutex);
             if (_video_queue.empty())
@@ -2374,8 +2390,12 @@ namespace librealsense
                 return false;
             }
 
-            auto video_candidate = _video_queue.front();
-            auto md_candidate = _md_queue.front();
+            sync_buffer video_candidate = _video_queue.front();
+            sync_buffer md_candidate = _md_queue.front();
+
+            // set video and md file descriptors
+            video_fd = video_candidate._fd;
+            md_fd = md_candidate._fd;
 
             // sync is ok if latest video and md have the same sequence
             if (video_candidate._v4l2_buf->sequence == md_candidate._v4l2_buf->sequence)
