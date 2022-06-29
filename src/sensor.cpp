@@ -597,6 +597,7 @@ void log_callback_end( uint32_t fps,
 
         _is_streaming = false;
         _device->stop_callbacks();
+        _timestamp_reader->reset();
         raise_on_before_streaming_changes(false);
     }
 
