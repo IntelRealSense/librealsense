@@ -3,7 +3,7 @@
 
 #pragma once
 #include <string>
-#include "librealsense2/h/rs_sensor.h"
+#include <librealsense2/h/rs_sensor.h>
 #include "notificationsPubSubTypes.h"
 
 namespace librealsense {
@@ -72,7 +72,7 @@ public:
 
 #pragma pack( pop )
 
-    static std::string construct_notifications_topic_name( const std::string& topic_root )
+    static std::string construct_topic_name( const std::string& topic_root )
     {
         return topic_root + "/notifications";
     }
@@ -82,7 +82,8 @@ public:
     {
         raw_msg.id() = static_cast<int16_t>(msg_id);
         raw_msg.size() = sizeof( T );
-        raw_msg.raw_data().assign((uint8_t* )&msg, (uint8_t* )&msg + raw_msg.size());
+        raw_msg.raw_data().assign( reinterpret_cast< const uint8_t * >( &msg ),
+                                   reinterpret_cast< const uint8_t * >( &msg ) + raw_msg.size() );
     }
 
     notifications() = default;

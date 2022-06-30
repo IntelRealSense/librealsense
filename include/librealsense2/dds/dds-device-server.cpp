@@ -93,7 +93,6 @@ private:
 //------------------------------------------------------------------------------------------------------------//
 // DDS notifications server is in charge of publishing notifications and info like streams, profiles, events
 //------------------------------------------------------------------------------------------------------------//
-// We want to know when readers join our topic
 class dds_device_server::dds_notifications_server
 {
 public:
@@ -181,7 +180,7 @@ public:
         } )
     {
         _topic_name
-            = librealsense::dds::topics::device::notifications::construct_notifications_topic_name(
+            = librealsense::dds::topics::device::notifications::construct_topic_name(
                 topic_root );
 
         eprosima::fastdds::dds::TypeSupport topic_type(
@@ -318,8 +317,8 @@ void dds_device_server::init( const std::vector<std::string> &supported_streams_
     }
 }
 
-void dds_device_server::publish_notifications( const topics::raw::device::notifications& notifications_msg, bool new_reader_notification )
+void dds_device_server::publish_notifications( const topics::raw::device::notifications& notifications_msg, bool latched )
 {
-    _dds_notifications_server->send_notifications( notifications_msg, new_reader_notification );
+    _dds_notifications_server->send_notifications( notifications_msg, latched );
 }
 

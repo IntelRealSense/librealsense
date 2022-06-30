@@ -69,7 +69,7 @@ public:
     bool operator!() const { return ! is_valid(); }
     void set_image_header( const std::string& stream_name, const image_header& header );
     void publish_image( const std::string& stream_name, const uint8_t* data, size_t size );
-    void publish_notifications( const topics::raw::device::notifications& notifications_msg, bool new_reader_notification = false );
+    void publish_notifications( const topics::raw::device::notifications& notifications_msg, bool latched = false );
     
 private:
     void publish_streams_and_profiles();
