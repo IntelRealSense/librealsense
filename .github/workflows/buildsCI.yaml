@@ -12,6 +12,9 @@ env:
   LRS_RUN_CONFIG: Release
   PYTHON_PATH: C:\\hostedtoolcache\\windows\\Python\\3.8.1\\x64\\python.exe
   
+permissions:
+  contents: read
+
 jobs:    
   Windows_testing_cpp_USB_Win7:
     runs-on: windows-2016
