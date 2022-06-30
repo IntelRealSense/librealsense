@@ -216,6 +216,11 @@ namespace librealsense
                 LOG_WARNING( "DDS participant has already been created; ignoring DDS settings" );
             }
             _dds_watcher.instance( _dds_participant.get() );
+
+            if( _dds_watcher && _dds_watcher->is_stopped() )
+            {
+                start_dds_device_watcher();
+            }
             //_dds_backend = ...; TODO
         }
 #endif
@@ -645,12 +650,6 @@ namespace librealsense
         {
             start_device_watcher();
         }
-#ifdef BUILD_WITH_DDS
-        if( _dds_watcher && _dds_watcher->is_stopped() )
-        {
-            start_dds_device_watcher();
-        }
-#endif
         return callback_id;
     }
 
@@ -678,12 +677,6 @@ namespace librealsense
         {
             start_device_watcher();
         }
-#ifdef BUILD_WITH_DDS
-        if( _dds_watcher && _dds_watcher->is_stopped() )
-        {
-            start_dds_device_watcher();
-        }
-#endif
     }
 
     std::vector<platform::uvc_device_info> filter_by_product(const std::vector<platform::uvc_device_info>& devices, const std::set<uint16_t>& pid_list)
