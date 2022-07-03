@@ -92,7 +92,7 @@ void start_streaming( std::shared_ptr< tools::lrs_device_controller > lrs_device
     } );
 }
 
-void publish_device_header( rs2::device dev, std::shared_ptr<librealsense::dds::dds_device_server> &server )
+void add_init_device_header_msg( rs2::device dev, std::shared_ptr<librealsense::dds::dds_device_server> &server )
 {
     using namespace librealsense::dds::topics;
    
@@ -106,7 +106,7 @@ void publish_device_header( rs2::device dev, std::shared_ptr<librealsense::dds::
         device_header_msg,
         raw_msg );
 
-    server->publish_notifications( raw_msg, true );
+    server->add_init_msgs( raw_msg );
 }
 
 void send_stream_header_msg(  std::shared_ptr<librealsense::dds::dds_device_server> &server, rs2::sensor sensor, const int stream_idx, size_t profiles_count )
@@ -123,7 +123,7 @@ void send_stream_header_msg(  std::shared_ptr<librealsense::dds::dds_device_serv
                                                   stream_header_msg,
                                                   raw_stream_header_msg );
 
-    server->publish_notifications( raw_stream_header_msg, true );
+    server->add_init_msgs( raw_stream_header_msg );
 }
 
 void prepare_profiles_messeges( rs2::device dev,
@@ -168,7 +168,7 @@ void prepare_profiles_messeges( rs2::device dev,
     }
 }
 
-void publish_profiles( rs2::device dev, std::shared_ptr<librealsense::dds::dds_device_server> &server )
+void add_init_profiles_msgs( rs2::device dev, std::shared_ptr<librealsense::dds::dds_device_server> &server )
 {
     using namespace librealsense::dds::topics;
     auto stream_idx = 0;
@@ -193,7 +193,7 @@ void publish_profiles( rs2::device dev, std::shared_ptr<librealsense::dds::dds_d
             device::notifications::msg_type::VIDEO_STREAM_PROFILES,
             video_stream_profiles_msg,
             raw_video_stream_profiles_msg );
-        server->publish_notifications( raw_video_stream_profiles_msg, true );
+        server->add_init_msgs( raw_video_stream_profiles_msg );
 
         // Send motion stream profiles
         raw::device::notifications raw_motion_stream_profiles_msg;
@@ -201,17 +201,17 @@ void publish_profiles( rs2::device dev, std::shared_ptr<librealsense::dds::dds_d
             device::notifications::msg_type::MOTION_STREAM_PROFILES,
             motion_stream_profiles_msg,
             raw_motion_stream_profiles_msg );
-        server->publish_notifications( raw_motion_stream_profiles_msg, true );
+        server->add_init_msgs( raw_motion_stream_profiles_msg );
 
         // Send pose stream profiles ? TODO
     }
 }
 
 
-void publish_streams_and_profiles( rs2::device dev, std::shared_ptr<librealsense::dds::dds_device_server>& server )
+void init_dds_device( rs2::device dev, std::shared_ptr<librealsense::dds::dds_device_server>& server )
 {
-    publish_device_header( dev, server );
-    publish_profiles( dev, server );
+    add_init_device_header_msg( dev, server );
+    add_init_profiles_msgs( dev, server );
 }
 
 struct log_consumer : eprosima::fastdds::dds::LogConsumer
@@ -326,7 +326,8 @@ try
             device_handlers_list.insert(
                 { dev, { dds_device_server, lrs_device_controller } } );
 
-            publish_streams_and_profiles( dev, dds_device_server );
+            // We add initialization messages to be sent to a new reader (sensors & profiles info).
+            init_dds_device( dev, dds_device_server );
 
             // Get the desired stream profile
             auto profile = get_required_profile( dev.first< rs2::color_sensor >(),

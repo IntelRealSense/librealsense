@@ -148,7 +148,7 @@ public:
             if( _active )
             {
                 // We can send 2 types of notifications:
-                // * Latched notifications that should be sent for every new reader (like sensors & profiles data)
+                // * Initialize notifications that should be sent for every new reader (like sensors & profiles data)
                 // * Instant notifications that can be sent upon an event and is not required to be
                 //   resent to new readers
                 std::unique_lock< std::mutex > lock( _notification_send_mutex );
@@ -156,17 +156,17 @@ public:
                     return ! _active || _new_reader_joined || _new_instant_notification;
                 } );
 
-                if( _new_reader_joined )
+                if( _active && _new_reader_joined )
                 {
                     // Send all latched notifications
-                    for( auto notification : _latched_notifications )
+                    for( auto notification : _init_notifications )
                     {
                         DDS_API_CALL( _data_writer->write( &notification ) );
                     }
                     _new_reader_joined = false;
                 }
 
-                if( _new_instant_notification )
+                if( _active && _new_instant_notification )
                 {
                     // Send all instant notifications
                     topics::raw::device::notifications msg;
@@ -218,21 +218,24 @@ public:
         }
     };
 
-    void send_notifications( const topics::raw::device::notifications& msg, bool latched = false) 
+    void send_notifications( const topics::raw::device::notifications& msg ) 
     {
         std::unique_lock< std::mutex > lock( _notification_send_mutex );
         topics::raw::device::notifications msg_to_move( msg );
-        if( latched )
-            _latched_notifications.push_back( std::move( msg_to_move ) );
-        else
+        if( ! _instant_notifications.enqueue( std::move( msg_to_move ) ) )
         {
-            if( !_instant_notifications.enqueue( std::move( msg_to_move )))
-            {
-                LOG_ERROR("error while trying to enqueue a message id:" << msg_to_move.id() << " to _notifications_msg_queue");
-            }
+            LOG_ERROR( "error while trying to enqueue a message id:"
+                       << msg_to_move.id() << " to _notifications_msg_queue" );
         }
-
     };
+
+    void add_init_notifications( const topics::raw::device::notifications & msg ) 
+    {
+        std::unique_lock< std::mutex > lock( _notification_send_mutex );
+        topics::raw::device::notifications msg_to_move( msg );
+        _init_notifications.push_back( std::move( msg_to_move ) );
+    };
+    
 
 private:
     std::string _topic_name;
@@ -243,7 +246,7 @@ private:
     dds_notifications_client_listener _clients_listener;
     active_object<> _notifications_loop;
     single_consumer_queue< topics::raw::device::notifications > _instant_notifications;
-    std::vector<topics::raw::device::notifications> _latched_notifications;
+    std::vector<topics::raw::device::notifications> _init_notifications;
     std::mutex _notification_send_mutex;
     std::condition_variable _send_notification_cv;
     std::atomic_bool _new_reader_joined = { false };  // Used to indicate that a new reader has joined for the notifications writer
@@ -317,8 +320,12 @@ void dds_device_server::init( const std::vector<std::string> &supported_streams_
     }
 }
 
-void dds_device_server::publish_notifications( const topics::raw::device::notifications& notifications_msg, bool latched )
+void dds_device_server::publish_notifications( const topics::raw::device::notifications& notifications_msg )
 {
-    _dds_notifications_server->send_notifications( notifications_msg, latched );
+    _dds_notifications_server->send_notifications( notifications_msg );
+}
+void dds_device_server::add_init_msgs( const topics::raw::device::notifications& notifications_msg )
+{
+    _dds_notifications_server->add_init_notifications( notifications_msg );
 }
 

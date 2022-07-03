@@ -85,7 +85,7 @@ dds_device_broadcaster::dds_device_broadcaster( dds_participant & participant )
         {
             std::unique_lock< std::mutex > lock( _new_client_mutex );
             _new_client_cv.wait( lock, [this]() { return ! _active || _trigger_msg_send.load(); } );
-            if( _new_client_handler.is_active() && _trigger_msg_send.load() )
+            if( _active && _trigger_msg_send.load() )
             {
                 _trigger_msg_send = false;
                 _dds_device_dispatcher.invoke( [this]( dispatcher::cancellable_timer ) {
