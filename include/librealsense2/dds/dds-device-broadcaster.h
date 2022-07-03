@@ -97,6 +97,7 @@ private:
     active_object<> _new_client_handler;
     std::condition_variable _new_client_cv;
     std::mutex _new_client_mutex;
+    std::atomic_bool _active = { false };
 };  // class dds_device_broadcaster
 }  // namespace dds
 }  // namespace librealsense

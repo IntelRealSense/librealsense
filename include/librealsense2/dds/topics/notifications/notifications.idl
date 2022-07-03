@@ -11,17 +11,14 @@ module librealsense
             {
                 module device
                 {
-                struct image
+                    struct notifications
                     {
-                        sequence<octet> raw_data;
+                        short id; // See "librealsense::dds::topics::device::msg_type"
                         unsigned long size;
-                        unsigned short width;
-                        unsigned short height;
-                        octet format; // See librealsense 'rs2_format' type for values
+                        sequence<octet> raw_data;
                     };
                 };
             };
-            
         };
     };
 };

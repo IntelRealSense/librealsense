@@ -81,26 +81,27 @@ dds_device_broadcaster::dds_device_broadcaster( dds_participant & participant )
     , _new_client_handler( [this]( dispatcher::cancellable_timer timer ) {
         // We wait until the new reader callback indicate a new reader has joined or until the
         // active object is stopped
-        std::unique_lock< std::mutex > lock( _new_client_mutex );
-        _new_client_cv.wait( lock, [this, timer]() {
-            return _trigger_msg_send.load() || timer.was_stopped();
-        } );
-        if( _new_client_handler.is_active() && _trigger_msg_send.load() )
+        if( _active )
         {
-            _trigger_msg_send = false;
-            _dds_device_dispatcher.invoke( [this]( dispatcher::cancellable_timer ) {
-                for( auto sn_and_handle : _device_handle_by_sn )
-                {
-                    if( sn_and_handle.second.listener->_new_reader_joined )
+            std::unique_lock< std::mutex > lock( _new_client_mutex );
+            _new_client_cv.wait( lock, [this]() { return ! _active || _trigger_msg_send.load(); } );
+            if( _active && _trigger_msg_send.load() )
+            {
+                _trigger_msg_send = false;
+                _dds_device_dispatcher.invoke( [this]( dispatcher::cancellable_timer ) {
+                    for( auto sn_and_handle : _device_handle_by_sn )
                     {
-                        auto dev_info = query_device_info( sn_and_handle.second.device );
-                        if( send_device_info_msg( dev_info ) )
+                        if( sn_and_handle.second.listener->_new_reader_joined )
                         {
-                            sn_and_handle.second.listener->_new_reader_joined = false;
+                            auto dev_info = query_device_info( sn_and_handle.second.device );
+                            if( send_device_info_msg( dev_info ) )
+                            {
+                                sn_and_handle.second.listener->_new_reader_joined = false;
+                            }
                         }
                     }
-                }
-            } );
+                } );
+            }
         }
     } )
 {
@@ -118,6 +119,7 @@ bool dds_device_broadcaster::run()
 
     _dds_device_dispatcher.start();
     _new_client_handler.start();
+    _active = true;
     return true;
 }
 
@@ -302,10 +304,12 @@ std::string dds_device_broadcaster::get_topic_root( const std::string& dev_name,
 
 dds_device_broadcaster::~dds_device_broadcaster()
 {
+    // Mark this class as inactive and wake up the active object do we can properly stop it.
+    _active = false; 
+    _new_client_cv.notify_all(); 
+    
     _dds_device_dispatcher.stop();
     _new_client_handler.stop();
-
-    _new_client_cv.notify_all(); // Wake up _device_info_msg_sender to finish running
 
     for( auto sn_and_handle : _device_handle_by_sn )
     {
