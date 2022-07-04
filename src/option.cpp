@@ -105,6 +105,9 @@ const char* librealsense::uvc_pu_option::get_description() const
     }
 }
 
+#undef HWM_MIPI
+#ifndef HWM_MIPI
+
 std::vector<uint8_t> librealsense::command_transfer_over_xu::send_receive(const std::vector<uint8_t>& data, int, bool require_response)
 {
     return _uvc.invoke_powered([this, &data, require_response]
@@ -139,7 +142,9 @@ std::vector<uint8_t> librealsense::command_transfer_over_xu::send_receive(const 
             return result;
         });
 }
-/*
+
+#else
+
 std::vector<uint8_t> librealsense::command_transfer_over_xu::send_receive(const std::vector<uint8_t>& data, int, bool require_response)
 {
     return _uvc.invoke_powered([this, &data, require_response]
@@ -155,7 +160,6 @@ std::vector<uint8_t> librealsense::command_transfer_over_xu::send_receive(const 
                     std::dec << data.size() << " exceeds permitted limit " << HW_MONITOR_BUFFER_SIZE);
             }
 
-            std::vector<uint8_t> transmit_buf(HW_MONITOR_BUFFER_SIZE, 0);
             // D457 - size of 1028 needed instead of 1024 (HW_MONITOR_BUFFER_SIZE)
             std::vector<uint8_t> transmit_buf(HW_MONITOR_BUFFER_SIZE + SIZE_OF_HW_MONITOR_HEADER, 0);
             std::copy(data.begin(), data.end(), transmit_buf.begin());
@@ -181,7 +185,9 @@ std::vector<uint8_t> librealsense::command_transfer_over_xu::send_receive(const 
             }
             return result;
         });
-}*/
+}
+
+#endif // HWM_MIPI
 
 librealsense::polling_errors_disable::~polling_errors_disable()
 {
