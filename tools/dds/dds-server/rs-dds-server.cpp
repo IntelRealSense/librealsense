@@ -9,7 +9,7 @@
 #include <librealsense2/dds/dds-device-broadcaster.h>
 #include <librealsense2/dds/dds-device-server.h>
 #include <librealsense2/dds/dds-participant.h>
-#include <librealsense2/dds/topics/notifications/notifications-msg.h>
+#include <librealsense2/dds/topics/notification/notification-msg.h>
 #include <fastrtps/types/TypesBase.h>
 #include <fastdds/dds/log/Log.hpp>
 
@@ -96,13 +96,13 @@ void add_init_device_header_msg( rs2::device dev, std::shared_ptr<librealsense::
 {
     using namespace librealsense::dds::topics;
    
-    device::notifications::device_header device_header_msg;
+    device::notification::device_header device_header_msg;
     auto &&sensors = dev.query_sensors();
     device_header_msg.num_of_streams = sensors.size();
 
-    raw::device::notifications raw_msg;
-    device::notifications::construct_raw_message(
-        device::notifications::msg_type::DEVICE_HEADER,
+    raw::device::notification raw_msg;
+    device::notification::construct_raw_message(
+        device::notification::msg_type::DEVICE_HEADER,
         device_header_msg,
         raw_msg );
 
@@ -114,12 +114,12 @@ void send_stream_header_msg(  std::shared_ptr<librealsense::dds::dds_device_serv
     using namespace librealsense::dds::topics;
 
     // Send current stream header message
-    device::notifications::stream_header stream_header_msg;
+    device::notification::stream_header stream_header_msg;
     stream_header_msg.index = stream_idx;
     stream_header_msg.name;
     stream_header_msg.num_of_profiles = profiles_count;
-    raw::device::notifications raw_stream_header_msg;
-    device::notifications::construct_raw_message( device::notifications::msg_type::STREAM_HEADER,
+    raw::device::notification raw_stream_header_msg;
+    device::notification::construct_raw_message( device::notification::msg_type::STREAM_HEADER,
                                                   stream_header_msg,
                                                   raw_stream_header_msg );
 
@@ -128,8 +128,8 @@ void send_stream_header_msg(  std::shared_ptr<librealsense::dds::dds_device_serv
 
 void prepare_profiles_messeges( rs2::device dev,
                                const std::vector< rs2::stream_profile > & stream_profiles, 
-    librealsense::dds::topics::device::notifications::video_stream_profiles& video_stream_profiles_msg, 
-    librealsense::dds::topics::device::notifications::motion_stream_profiles& motion_stream_profiles_msg)
+    librealsense::dds::topics::device::notification::video_stream_profiles& video_stream_profiles_msg, 
+    librealsense::dds::topics::device::notification::motion_stream_profiles& motion_stream_profiles_msg)
 {
     using namespace librealsense::dds::topics;
     for( auto & stream_profile : stream_profiles )
@@ -138,7 +138,7 @@ void prepare_profiles_messeges( rs2::device dev,
         {
             const auto & vsp = stream_profile.as< rs2::video_stream_profile >();
 
-            device::notifications::video_stream_profile vsp_msg
+            device::notification::video_stream_profile vsp_msg
                 = { static_cast< int8_t >( vsp.stream_index() ),
                     static_cast< int16_t >( vsp.unique_id() ),
                     static_cast< int8_t >( vsp.fps() ),
@@ -153,7 +153,7 @@ void prepare_profiles_messeges( rs2::device dev,
         else if( stream_profile.is< rs2::motion_stream_profile >() )
         {
             const auto & msp = stream_profile.as< rs2::video_stream_profile >();
-            device::notifications::motion_stream_profile msp_msg
+            device::notification::motion_stream_profile msp_msg
                 = { static_cast< int8_t >( msp.stream_index() ),
                     static_cast< int16_t >( msp.unique_id() ),
                     static_cast< int8_t >( msp.fps() ),
@@ -172,8 +172,8 @@ void add_init_profiles_msgs( rs2::device dev, std::shared_ptr<librealsense::dds:
 {
     using namespace librealsense::dds::topics;
     auto stream_idx = 0;
-    device::notifications::video_stream_profiles video_stream_profiles_msg;
-    device::notifications::motion_stream_profiles motion_stream_profiles_msg;
+    device::notification::video_stream_profiles video_stream_profiles_msg;
+    device::notification::motion_stream_profiles motion_stream_profiles_msg;
 
     // For each sensor publish all it's profiles
     for( auto &sensor : dev.query_sensors() )
@@ -188,17 +188,17 @@ void add_init_profiles_msgs( rs2::device dev, std::shared_ptr<librealsense::dds:
                                    motion_stream_profiles_msg );
 
         // Send video stream profiles
-        raw::device::notifications raw_video_stream_profiles_msg;
-        device::notifications::construct_raw_message(
-            device::notifications::msg_type::VIDEO_STREAM_PROFILES,
+        raw::device::notification raw_video_stream_profiles_msg;
+        device::notification::construct_raw_message(
+            device::notification::msg_type::VIDEO_STREAM_PROFILES,
             video_stream_profiles_msg,
             raw_video_stream_profiles_msg );
         server->add_init_msgs( raw_video_stream_profiles_msg );
 
         // Send motion stream profiles
-        raw::device::notifications raw_motion_stream_profiles_msg;
-        device::notifications::construct_raw_message(
-            device::notifications::msg_type::MOTION_STREAM_PROFILES,
+        raw::device::notification raw_motion_stream_profiles_msg;
+        device::notification::construct_raw_message(
+            device::notification::msg_type::MOTION_STREAM_PROFILES,
             motion_stream_profiles_msg,
             raw_motion_stream_profiles_msg );
         server->add_init_msgs( raw_motion_stream_profiles_msg );

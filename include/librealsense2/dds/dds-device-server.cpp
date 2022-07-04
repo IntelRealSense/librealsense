@@ -116,7 +116,7 @@ public:
                 {
                     {
                         std::lock_guard< std::mutex > lock( _owner->_notification_send_mutex );
-                        _owner->_new_reader_joined = true;
+                        _owner->_send_init_msgs = true;
                     }
                     _owner->_send_notification_cv.notify_all();
                 }
@@ -153,23 +153,19 @@ public:
                 //   resent to new readers
                 std::unique_lock< std::mutex > lock( _notification_send_mutex );
                 _send_notification_cv.wait( lock, [this]() {
-                    return ! _active || _new_reader_joined || _new_instant_notification;
+                    return ! _active || _send_init_msgs || _new_instant_notification;
                 } );
 
-                if( _active && _new_reader_joined )
+                if( _active && _send_init_msgs )
                 {
-                    // Send all latched notifications
-                    for( auto notification : _init_notifications )
-                    {
-                        DDS_API_CALL( _data_writer->write( &notification ) );
-                    }
-                    _new_reader_joined = false;
+                    send_init_msgs();
+                    _send_init_msgs = false;
                 }
 
                 if( _active && _new_instant_notification )
                 {
                     // Send all instant notifications
-                    topics::raw::device::notifications msg;
+                    topics::raw::device::notification msg;
                     while( _instant_notifications.dequeue( &msg, 1000 ) )
                     {
                         DDS_API_CALL( _data_writer->write( &msg ) );
@@ -180,11 +176,11 @@ public:
         } )
     {
         _topic_name
-            = librealsense::dds::topics::device::notifications::construct_topic_name(
+            = librealsense::dds::topics::device::notification::construct_topic_name(
                 topic_root );
 
         eprosima::fastdds::dds::TypeSupport topic_type(
-            new librealsense::dds::topics::device::notifications::type );
+            new librealsense::dds::topics::device::notification::type );
 
         DDS_API_CALL( _participant->register_type( topic_type ) );
         _topic = DDS_API_CALL(
@@ -218,26 +214,36 @@ public:
         }
     };
 
-    void send_notifications( const topics::raw::device::notifications& msg ) 
+    void send_notification( const topics::raw::device::notification& msg ) 
     {
         std::unique_lock< std::mutex > lock( _notification_send_mutex );
-        topics::raw::device::notifications msg_to_move( msg );
+        topics::raw::device::notification msg_to_move( msg );
         if( ! _instant_notifications.enqueue( std::move( msg_to_move ) ) )
         {
             LOG_ERROR( "error while trying to enqueue a message id:"
-                       << msg_to_move.id() << " to _notifications_msg_queue" );
+                       << msg_to_move.id() << " to instant notifications queue" );
         }
     };
 
-    void add_init_notifications( const topics::raw::device::notifications & msg ) 
+    void add_init_notification( const topics::raw::device::notification & msg ) 
     {
         std::unique_lock< std::mutex > lock( _notification_send_mutex );
-        topics::raw::device::notifications msg_to_move( msg );
+        topics::raw::device::notification msg_to_move( msg );
         _init_notifications.push_back( std::move( msg_to_move ) );
     };
     
 
 private:
+
+    void send_init_msgs()
+    {
+        // Send all initialization notifications
+        for( auto notification : _init_notifications )
+        {
+            DDS_API_CALL( _data_writer->write( &notification ) );
+        }
+    }
+
     std::string _topic_name;
     eprosima::fastdds::dds::DomainParticipant * _participant;
     eprosima::fastdds::dds::Publisher * _publisher;
@@ -245,11 +251,11 @@ private:
     eprosima::fastdds::dds::DataWriter * _data_writer;
     dds_notifications_client_listener _clients_listener;
     active_object<> _notifications_loop;
-    single_consumer_queue< topics::raw::device::notifications > _instant_notifications;
-    std::vector<topics::raw::device::notifications> _init_notifications;
+    single_consumer_queue< topics::raw::device::notification > _instant_notifications;
+    std::vector< topics::raw::device::notification > _init_notifications;
     std::mutex _notification_send_mutex;
     std::condition_variable _send_notification_cv;
-    std::atomic_bool _new_reader_joined = { false };  // Used to indicate that a new reader has joined for the notifications writer
+    std::atomic_bool _send_init_msgs = { false }; 
     std::atomic_bool _new_instant_notification = { false };  
     std::atomic_bool _active = { false };
 };
@@ -320,12 +326,12 @@ void dds_device_server::init( const std::vector<std::string> &supported_streams_
     }
 }
 
-void dds_device_server::publish_notifications( const topics::raw::device::notifications& notifications_msg )
+void dds_device_server::publish_notification( const topics::raw::device::notification& notification_msg )
 {
-    _dds_notifications_server->send_notifications( notifications_msg );
+    _dds_notifications_server->send_notification( notification_msg );
 }
-void dds_device_server::add_init_msgs( const topics::raw::device::notifications& notifications_msg )
+void dds_device_server::add_init_msgs( const topics::raw::device::notification& notification_msg )
 {
-    _dds_notifications_server->add_init_notifications( notifications_msg );
+    _dds_notifications_server->add_init_notification( notification_msg );
 }
 

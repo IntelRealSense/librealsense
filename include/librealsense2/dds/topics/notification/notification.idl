@@ -11,7 +11,7 @@ module librealsense
             {
                 module device
                 {
-                    struct notifications
+                    struct notification
                     {
                         short id; // See "librealsense::dds::topics::device::msg_type"
                         unsigned long size;

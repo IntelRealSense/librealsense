@@ -4,17 +4,17 @@
 #pragma once
 #include <string>
 #include <librealsense2/h/rs_sensor.h>
-#include "notificationsPubSubTypes.h"
+#include "notificationPubSubTypes.h"
 
 namespace librealsense {
 namespace dds {
 namespace topics {
 namespace device {
-class notifications
+class notification
 {
 public:
 
-    using type = raw::device::notificationsPubSubType;
+    using type = raw::device::notificationPubSubType;
 
 #pragma pack( push, 1 )
     enum class msg_type : uint16_t
@@ -74,11 +74,11 @@ public:
 
     static std::string construct_topic_name( const std::string& topic_root )
     {
-        return topic_root + "/notifications";
+        return topic_root + "/notification";
     }
 
     template<typename T>
-    static void construct_raw_message( msg_type msg_id, const T& msg, raw::device::notifications& raw_msg )
+    static void construct_raw_message( msg_type msg_id, const T& msg, raw::device::notification& raw_msg )
     {
         raw_msg.id() = static_cast<int16_t>(msg_id);
         raw_msg.size() = sizeof( T );
@@ -86,9 +86,9 @@ public:
                                    reinterpret_cast< const uint8_t * >( &msg ) + raw_msg.size() );
     }
 
-    notifications() = default;
+    notification() = default;
 
-    notifications( const raw::device::notifications & main )
+    notification( const raw::device::notification & main )
         : _msg_type( static_cast<msg_type>(main.id()) )
         , _raw_data(main.raw_data()) // TODO: avoid data copy?
         , _size( main.size() )
