@@ -653,8 +653,9 @@ void log_callback_end( uint32_t fps,
 
     stream_profiles uvc_sensor::init_stream_profiles()
     {
-        // D457 development - std::unordered_set<std::shared_ptr<video_stream_profile>> profiles;
-        std::unordered_set<std::shared_ptr<stream_profile_base>> profiles;
+        std::unordered_set<std::shared_ptr<video_stream_profile>> video_profiles;
+        // D457 development
+        std::unordered_set<std::shared_ptr<motion_stream_profile>> motion_profiles;
         power on(std::dynamic_pointer_cast<uvc_sensor>(shared_from_this()));
 
         _uvc_profiles = _device->get_profiles();
@@ -673,7 +674,7 @@ void log_callback_end( uint32_t fps,
                 profile->set_stream_index(0);
                 profile->set_format(rs2_fmt);
                 profile->set_framerate(p.fps);
-                profiles.insert(profile);
+                motion_profiles.insert(profile);
             }
             else
             {
@@ -683,11 +684,12 @@ void log_callback_end( uint32_t fps,
                 profile->set_stream_index(0);
                 profile->set_format(rs2_fmt);
                 profile->set_framerate(p.fps);
-                profiles.insert(profile);
+                video_profiles.insert(profile);
             }
         }
 
-        stream_profiles result{ profiles.begin(), profiles.end() };
+        stream_profiles result{ video_profiles.begin(), video_profiles.end() };
+        result.insert(result.end(), motion_profiles.begin(), motion_profiles.end());
         return result;
     }
 
@@ -1549,8 +1551,6 @@ void log_callback_end( uint32_t fps,
 
         for (auto source : requests)
             add_source_profile_missing_data(source);
-
-
 
         const auto&& resolved_req = resolve_requests(requests);
 
