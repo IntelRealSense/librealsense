@@ -655,7 +655,7 @@ namespace librealsense
                         // /sys/devices/pci0000:00/0000:00:xx.0/ABC/M-N/version
                         usb_specification = get_usb_connection_type(real_path + "/../../../");
                     }
-#undef enumerate_MIPI
+#define enumerate_MIPI
 #ifdef enumerate_MIPI
                     else // COMMENT THIS TO MAKE USB ENUMERATION POSSIBLE - Video4Linux Devices that are not listed as UVC
                     {
