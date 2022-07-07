@@ -1184,54 +1184,92 @@ namespace librealsense
                                 }
                                 else
                                 {
-                                    if (!is_metadata_streamed()) // when metadata is not enabled at all, streaming only video
+                                    if (!_info.has_metadata_node)
                                     {
-                                        auto timestamp = (double)buf.timestamp.tv_sec * 1000.f + (double)buf.timestamp.tv_usec / 1000.f;
-                                        timestamp = monotonic_to_realtime(timestamp);
-
-                                        LOG_DEBUG_V4L("no metadata streamed");
-                                        if (buf_mgr.verify_vd_md_sync())
+                                        if(has_metadata())
                                         {
-                                            buffer->attach_buffer(buf);
-                                            buf_mgr.handle_buffer(e_video_buf, -1); // transfer new buffer request to the frame callback
+                                            auto timestamp = (double)buf.timestamp.tv_sec*1000.f + (double)buf.timestamp.tv_usec/1000.f;
+                                            timestamp = monotonic_to_realtime(timestamp);
 
+                                            // Read metadata. Metadata node performs a blocking call to ensure video and metadata sync
+                                            acquire_metadata(buf_mgr,fds,compressed_format);
+                                            md_extracted = true;
 
-                                            auto frame_sz = buf_mgr.md_node_present() ? buf.bytesused :
-                                                                std::min(buf.bytesused - buf_mgr.metadata_size(),
-                                                                         buffer->get_length_frame_only());
-
-                                            uint8_t md_size = buf_mgr.metadata_size();
-                                            void* md_start = buf_mgr.metadata_start();
-
-                                            // D457 development - hid over uvc - md size for IMU is 64
-                                            metadata_hid_raw meta_data{};
-                                            if (md_size == 0 && buffer->get_length_frame_only() <= 64)
+                                            if (wa_applied)
                                             {
-                                                // Populate HID IMU data - Header
-                                                meta_data.header.report_type = md_hid_report_type::hid_report_imu;
-                                                meta_data.header.length = hid_header_size + metadata_imu_report_size;
-                                                meta_data.header.timestamp = *(reinterpret_cast<uint64_t *>(buffer->get_frame_start() + offsetof(hid_mipi_data, hwTs)));
-                                                // Payload:
-                                                meta_data.report_type.imu_report.header.md_type_id = md_type::META_DATA_HID_IMU_REPORT_ID;
-                                                meta_data.report_type.imu_report.header.md_size = metadata_imu_report_size;
-
-                                                md_size = sizeof(metadata_hid_raw);
-                                                md_start = &meta_data;
+                                                auto fn = *(uint32_t*)((char*)(buf_mgr.metadata_start())+28);
+                                                LOG_DEBUG_V4L("Extracting md buff, fn = " << fn);
                                             }
 
-                                            frame_object fo{ frame_sz, md_size,
-                                                        buffer->get_frame_start(), md_start, timestamp };
+                                            auto frame_sz = buf_mgr.md_node_present() ? buf.bytesused :
+                                                                std::min(buf.bytesused - buf_mgr.metadata_size(), buffer->get_length_frame_only());
+                                            frame_object fo{ frame_sz, buf_mgr.metadata_size(),
+                                                             buffer->get_frame_start(), buf_mgr.metadata_start(), timestamp };
 
-                                            //Invoke user callback and enqueue next frame
-                                            _callback(_profile, fo, [buf_mgr]() mutable {
-                                                buf_mgr.request_next_frame();
-                                            });
+                                            buffer->attach_buffer(buf);
+                                            buf_mgr.handle_buffer(e_video_buf,-1); // transfer new buffer request to the frame callback
 
+                                            if (buf_mgr.verify_vd_md_sync())
+                                            {
+                                                //Invoke user callback and enqueue next frame
+                                                _callback(_profile, fo, [buf_mgr]() mutable {
+                                                    buf_mgr.request_next_frame();
+                                                });
+                                            }
+                                            else
+                                            {
+                                                LOG_WARNING("Video frame dropped, video and metadata buffers inconsistency");
+                                            }
                                         }
-                                        else
+                                        else // when metadata is not enabled at all, streaming only video
                                         {
-                                            LOG_WARNING("Video frame dropped, video and metadata buffers inconsistency");
+                                            auto timestamp = (double)buf.timestamp.tv_sec * 1000.f + (double)buf.timestamp.tv_usec / 1000.f;
+                                            timestamp = monotonic_to_realtime(timestamp);
+
+                                            LOG_DEBUG_V4L("no metadata streamed");
+                                            if (buf_mgr.verify_vd_md_sync())
+                                            {
+                                                buffer->attach_buffer(buf);
+                                                buf_mgr.handle_buffer(e_video_buf, -1); // transfer new buffer request to the frame callback
+
+
+                                                auto frame_sz = buf_mgr.md_node_present() ? buf.bytesused :
+                                                                    std::min(buf.bytesused - buf_mgr.metadata_size(),
+                                                                             buffer->get_length_frame_only());
+
+                                                uint8_t md_size = buf_mgr.metadata_size();
+                                                void* md_start = buf_mgr.metadata_start();
+
+                                                // D457 development - hid over uvc - md size for IMU is 64
+                                                metadata_hid_raw meta_data{};
+                                                if (md_size == 0 && buffer->get_length_frame_only() <= 64)
+                                                {
+                                                    // Populate HID IMU data - Header
+                                                    meta_data.header.report_type = md_hid_report_type::hid_report_imu;
+                                                    meta_data.header.length = hid_header_size + metadata_imu_report_size;
+                                                    meta_data.header.timestamp = *(reinterpret_cast<uint64_t *>(buffer->get_frame_start() + offsetof(hid_mipi_data, hwTs)));
+                                                    // Payload:
+                                                    meta_data.report_type.imu_report.header.md_type_id = md_type::META_DATA_HID_IMU_REPORT_ID;
+                                                    meta_data.report_type.imu_report.header.md_size = metadata_imu_report_size;
+
+                                                    md_size = sizeof(metadata_hid_raw);
+                                                    md_start = &meta_data;
+                                                }
+
+                                                frame_object fo{ frame_sz, md_size,
+                                                            buffer->get_frame_start(), md_start, timestamp };
+
+                                                //Invoke user callback and enqueue next frame
+                                                _callback(_profile, fo, [buf_mgr]() mutable {
+                                                    buf_mgr.request_next_frame();
+                                                });
+                                            }
+                                            else
+                                            {
+                                                LOG_WARNING("Video frame dropped, video and metadata buffers inconsistency");
+                                            }
                                         }
+
                                     }
                                     else
                                     {
