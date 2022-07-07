@@ -354,6 +354,8 @@ namespace librealsense
             void subscribe_to_ctrl_event(uint32_t control_id);
             void unsubscribe_from_ctrl_event(uint32_t control_id);
             bool pend_for_ctrl_status_event();
+            void upload_video_and_metadata_from_syncer(buffers_mgr& buf_mgr);
+            void populate_imu_data(metadata_hid_raw& meta_data, uint8_t* frame_start, uint8_t& md_size, void** md_start) const;
             // checking if metadata is streamed
             virtual inline bool is_metadata_streamed() const { return false;}
             virtual inline std::shared_ptr<buffer> get_video_buffer(__u32 index) const {return _buffers[index];}
