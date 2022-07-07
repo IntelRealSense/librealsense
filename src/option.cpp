@@ -105,9 +105,6 @@ const char* librealsense::uvc_pu_option::get_description() const
     }
 }
 
-#undef HWM_MIPI
-#ifndef HWM_MIPI
-
 std::vector<uint8_t> librealsense::command_transfer_over_xu::send_receive(const std::vector<uint8_t>& data, int, bool require_response)
 {
     return _uvc.invoke_powered([this, &data, require_response]
@@ -172,52 +169,6 @@ std::vector<uint8_t> librealsense::command_transfer_over_xu::send_receive(const 
 
         });
 }
-
-#else
-
-std::vector<uint8_t> librealsense::command_transfer_over_xu::send_receive(const std::vector<uint8_t>& data, int, bool require_response)
-{
-    return _uvc.invoke_powered([this, &data, require_response]
-        (platform::uvc_device& dev)
-        {
-            std::vector<uint8_t> result;
-            std::lock_guard<platform::uvc_device> lock(dev);
-
-            if (data.size() > HW_MONITOR_BUFFER_SIZE)
-            {
-                LOG_ERROR("XU command size is invalid");
-                throw invalid_value_exception(to_string() << "Requested XU command size " <<
-                    std::dec << data.size() << " exceeds permitted limit " << HW_MONITOR_BUFFER_SIZE);
-            }
-
-            // D457 - size of 1028 needed instead of 1024 (HW_MONITOR_BUFFER_SIZE)
-            std::vector<uint8_t> transmit_buf(HW_MONITOR_BUFFER_SIZE + SIZE_OF_HW_MONITOR_HEADER, 0);
-            std::copy(data.begin(), data.end(), transmit_buf.begin());
-
-            if (!dev.set_xu(_xu, _ctrl, transmit_buf.data(), static_cast<int>(transmit_buf.size())))
-                throw invalid_value_exception(to_string() << "set_xu(ctrl=" << unsigned(_ctrl) << ") failed!" << " Last Error: " << strerror(errno));
-
-            if (require_response)
-            {
-                result.resize(HW_MONITOR_BUFFER_SIZE);
-                if (!dev.get_xu(_xu, _ctrl, result.data(), static_cast<int>(result.size())))
-                    throw invalid_value_exception(to_string() << "get_xu(ctrl=" << unsigned(_ctrl) << ") failed!" << " Last Error: " << strerror(errno));
-
-                // Returned data size located in the last 4 bytes
-                auto data_size = *(reinterpret_cast<uint32_t*>(result.data() + HW_MONITOR_DATA_SIZE_OFFSET + SIZE_OF_HW_MONITOR_HEADER)) ;
-                result.resize(data_size);
-
-                // D457 code - stepping over 24 bytes:
-                // 4 bytes: header and magic number
-                // 20 bytes: input command
-                // this code may be removed after some bug correction in the kernel code
-                result.insert(result.begin(),transmit_buf.begin() + 24,transmit_buf.begin() + 24 + data_size);
-            }
-            return result;
-        });
-}
-
-#endif // HWM_MIPI
 
 librealsense::polling_errors_disable::~polling_errors_disable()
 {
