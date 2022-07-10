@@ -20,7 +20,7 @@ public:
     enum class msg_type : uint16_t
     {
         DEVICE_HEADER,
-        STREAM_HEADER,
+        SENSOR_HEADER,
         VIDEO_STREAM_PROFILES,
         MOTION_STREAM_PROFILES,
         MAX_MSG_TYPE
@@ -28,14 +28,21 @@ public:
 
     struct device_header
     {
-        size_t num_of_streams;
+        size_t num_of_sensors;
     };
 
-    struct stream_header
+    struct sensor_header
     {
-        uint8_t index;           // Index of the current stream [0-(num_of_streams-1)]
-        char name[32];           // Stream name
-        size_t num_of_profiles;  // Profile count for this stream
+        enum sensor_type
+        {
+            VIDEO_SENSOR,
+            MOTION_SENSOR
+        };
+
+        sensor_type type;
+        uint8_t index;           // Index of the current sensor [0-(num_of_sensors-1)]
+        char name[32];           // Sensor name
+        size_t num_of_profiles;  // Profile count for this sensor
     };
 
 

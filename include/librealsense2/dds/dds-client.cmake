@@ -11,6 +11,7 @@ set(DDS_CLIENT_FILES
 )
 
 source_group( "DDS" FILES ${DDS_CLIENT_FILES} )
+include("${REPO_ROOT}/include/librealsense2/dds/topics/dds-topics.cmake")
 
 # NOTE: this requires that your "project(...)" statement match the executable
 target_link_libraries( ${PROJECT_NAME} PRIVATE dds )

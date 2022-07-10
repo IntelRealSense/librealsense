@@ -70,7 +70,7 @@ void start_streaming( std::shared_ptr< tools::lrs_device_controller > lrs_device
     // Configure DDS-server to the required frame header
     librealsense::dds::dds_device_server::image_header header;
     auto vsp = stream_profile.as< rs2::video_stream_profile >();
-    header.format = vsp.format();
+    header.format = static_cast< int >( vsp.format() );
     header.height = vsp.height();
     header.width = vsp.width();
     dds_dev_server->set_image_header( stream_profile.stream_name(), header );
@@ -98,7 +98,7 @@ void add_init_device_header_msg( rs2::device dev, std::shared_ptr<librealsense::
    
     device::notification::device_header device_header_msg;
     auto &&sensors = dev.query_sensors();
-    device_header_msg.num_of_streams = sensors.size();
+    device_header_msg.num_of_sensors = sensors.size();
 
     raw::device::notification raw_msg;
     device::notification::construct_raw_message(
@@ -109,21 +109,29 @@ void add_init_device_header_msg( rs2::device dev, std::shared_ptr<librealsense::
     server->add_init_msgs( raw_msg );
 }
 
-void send_stream_header_msg(  std::shared_ptr<librealsense::dds::dds_device_server> &server, rs2::sensor sensor, const int stream_idx, size_t profiles_count )
+void send_sensor_header_msg(  std::shared_ptr<librealsense::dds::dds_device_server> &server, rs2::sensor sensor, const int stream_idx, size_t profiles_count )
 {
     using namespace librealsense::dds::topics;
 
     // Send current stream header message
-    device::notification::stream_header stream_header_msg;
-    stream_header_msg.index = stream_idx;
-    stream_header_msg.name;
-    stream_header_msg.num_of_profiles = profiles_count;
-    raw::device::notification raw_stream_header_msg;
-    device::notification::construct_raw_message( device::notification::msg_type::STREAM_HEADER,
-                                                  stream_header_msg,
-                                                  raw_stream_header_msg );
+    device::notification::sensor_header sensor_header_msg;
+    sensor_header_msg.index = stream_idx;
 
-    server->add_init_msgs( raw_stream_header_msg );
+    strcpy( sensor_header_msg.name, sensor.get_info( RS2_CAMERA_INFO_NAME ) );
+    if( sensor.is<rs2::color_sensor>() || sensor.is<rs2::depth_sensor>() )
+        sensor_header_msg.type = device::notification::sensor_header::VIDEO_SENSOR;
+    else if( sensor.is<rs2::motion_sensor>() )
+        sensor_header_msg.type = device::notification::sensor_header::MOTION_SENSOR;
+    else
+        throw std::runtime_error("Sensor type is not supported (only video & motion sensors are supported)");
+
+    sensor_header_msg.num_of_profiles = profiles_count;
+    raw::device::notification raw_sensor_header_msg;
+    device::notification::construct_raw_message( device::notification::msg_type::SENSOR_HEADER,
+                                                  sensor_header_msg,
+                                                  raw_sensor_header_msg );
+
+    server->add_init_msgs( raw_sensor_header_msg );
 }
 
 void prepare_profiles_messeges( rs2::device dev,
@@ -179,7 +187,7 @@ void add_init_profiles_msgs( rs2::device dev, std::shared_ptr<librealsense::dds:
     for( auto &sensor : dev.query_sensors() )
     {
         auto && stream_profiles = sensor.get_stream_profiles();
-        send_stream_header_msg( server, sensor, stream_idx++, stream_profiles.size() );
+        send_sensor_header_msg( server, sensor, stream_idx++, stream_profiles.size() );
 
         // Prepare stream profiles messages
         prepare_profiles_messeges( dev,

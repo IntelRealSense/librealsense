@@ -33,13 +33,13 @@ public:
         , _topic( nullptr )
         , _data_writer( nullptr )
     {
-        _topic_name = librealsense::dds::topics::device::image::construct_stream_topic_name( topic_root,
+        std::string topic_name = librealsense::dds::topics::device::image::construct_topic_name( topic_root,
                                                                                      stream_name );
 
         eprosima::fastdds::dds::TypeSupport topic_type( new librealsense::dds::topics::device::image::type );
 
         DDS_API_CALL( _participant->register_type( topic_type ) );
-        _topic = DDS_API_CALL( _participant->create_topic( _topic_name, topic_type->getName(), TOPIC_QOS_DEFAULT ) );
+        _topic = DDS_API_CALL( _participant->create_topic( topic_name, topic_type->getName(), TOPIC_QOS_DEFAULT ) );
 
         // TODO:: Maybe we want to open a writer only when the stream is requested?
         DataWriterQos wqos = DATAWRITER_QOS_DEFAULT;
@@ -69,7 +69,7 @@ public:
 
     void publish_image( const uint8_t * data, size_t size )
     {
-        LOG_DEBUG( "publishing a DDS video frame for topic: " << _topic_name );
+        LOG_DEBUG( "publishing a DDS video frame for topic: " << this->_data_writer->get_topic()->get_name() );
         librealsense::dds::topics::raw::device::image raw_image;
         raw_image.size() = static_cast< uint32_t >( size );
         raw_image.format() = _image_header.format;
@@ -82,7 +82,6 @@ public:
     void set_image_header( const image_header & header ) { _image_header = header; }
 
 private:
-    std::string _topic_name;
     eprosima::fastdds::dds::DomainParticipant * _participant;
     eprosima::fastdds::dds::Publisher * _publisher;
     eprosima::fastdds::dds::Topic * _topic;
@@ -175,21 +174,22 @@ public:
             }
         } )
     {
-        _topic_name
-            = librealsense::dds::topics::device::notification::construct_topic_name(
-                topic_root );
+        std::string topic_name
+            = librealsense::dds::topics::device::notification::construct_topic_name( topic_root );
 
         eprosima::fastdds::dds::TypeSupport topic_type(
             new librealsense::dds::topics::device::notification::type );
 
         DDS_API_CALL( _participant->register_type( topic_type ) );
         _topic = DDS_API_CALL(
-            _participant->create_topic( _topic_name, topic_type->getName(), TOPIC_QOS_DEFAULT ) );
+            _participant->create_topic( topic_name, topic_type->getName(), TOPIC_QOS_DEFAULT ) );
 
         DataWriterQos wqos = DATAWRITER_QOS_DEFAULT;
         wqos.data_sharing().off();
         wqos.reliability().kind = RELIABLE_RELIABILITY_QOS;
-        wqos.durability().kind = TRANSIENT_LOCAL_DURABILITY_QOS;
+        wqos.durability().kind = VOLATILE_DURABILITY_QOS;
+        wqos.history().kind = KEEP_LAST_HISTORY_QOS;;
+        wqos.history().depth = 10;
         wqos.publish_mode().kind = SYNCHRONOUS_PUBLISH_MODE;
         _data_writer = DDS_API_CALL( _publisher->create_datawriter( _topic, wqos, &_clients_listener ) );
         _notifications_loop.start();
@@ -244,7 +244,6 @@ private:
         }
     }
 
-    std::string _topic_name;
     eprosima::fastdds::dds::DomainParticipant * _participant;
     eprosima::fastdds::dds::Publisher * _publisher;
     eprosima::fastdds::dds::Topic * _topic;

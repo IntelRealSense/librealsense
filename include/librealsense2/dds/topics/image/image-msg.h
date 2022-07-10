@@ -14,7 +14,7 @@ class image
 public:
     using type = raw::device::imagePubSubType;
 
-    static std::string construct_stream_topic_name( const std::string& topic_root, const std::string& stream )
+    static std::string construct_topic_name( const std::string& topic_root, const std::string& stream )
     {
         return topic_root + "/" + stream;
     }
@@ -24,7 +24,7 @@ public:
         , width( image.width())
         , height( image.height() )
         , size( image.size() )
-        , format( static_cast<rs2_format>( image.format() ) ) // Enum conversion, we assume the conversion is legal
+        , format( image.format() )
     {
     }
 
@@ -32,7 +32,7 @@ public:
     int width;
     int height;
     int size;
-    rs2_format format;
+    int format;
 };
 
 }  // namespace device
