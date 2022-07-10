@@ -2189,7 +2189,7 @@ namespace librealsense
                 xctrl.value = xctrl.value ? V4L2_EXPOSURE_APERTURE_PRIORITY : V4L2_EXPOSURE_MANUAL;
 
             // Extract the control group from the underlying control query
-            v4l2_ext_controls ctrls_block { xctrl.id&0xffff0000, 1, 0, {0, 0}, &xctrl };
+            v4l2_ext_controls ctrls_block { xctrl.id&0xffff0000, 1, 0, 0, 0, &xctrl };
 
             int retVal = xioctl(_fd, VIDIOC_S_EXT_CTRLS, &ctrls_block);
             if (retVal < 0)
@@ -2207,7 +2207,7 @@ namespace librealsense
             v4l2_ext_control xctrl{xu_to_cid(xu,control), uint32_t(size), 0, 0};
             xctrl.p_u8 = data;
 
-            struct v4l2_ext_controls ext {xctrl.id & 0xffff0000, 1, 0, {0, 0}, &xctrl};
+            v4l2_ext_controls ext {xctrl.id & 0xffff0000, 1, 0, 0, 0, &xctrl};
 
             // the ioctl fails once when performing send and receive right after it
             // it succeeds on the second time
