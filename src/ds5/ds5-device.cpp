@@ -774,7 +774,7 @@ namespace librealsense
             _hw_monitor = std::make_shared<hw_monitor>(
                 std::make_shared<locked_transfer>(
                     std::make_shared<command_transfer_over_xu>(
-                        raw_sensor, depth_xu, DS5_HWMONITOR),
+                        raw_sensor, depth_xu, DS5_HWMONITOR, mipi_sensor),
                     raw_sensor));
         }
         else

@@ -492,14 +492,15 @@ namespace librealsense
         std::vector<uint8_t> send_receive(const std::vector<uint8_t>& data, int, bool require_response) override;
 
         command_transfer_over_xu(uvc_sensor& uvc,
-            platform::extension_unit xu, uint8_t ctrl)
-            : _uvc(uvc), _xu(std::move(xu)), _ctrl(ctrl)
+            platform::extension_unit xu, uint8_t ctrl, bool is_mipi = false)
+            : _uvc(uvc), _xu(std::move(xu)), _ctrl(ctrl), _is_mipi(is_mipi)
         {}
 
     private:
         uvc_sensor& _uvc;
         platform::extension_unit _xu;
         uint8_t             _ctrl;
+        bool _is_mipi;   // D457 dev- should be removed after hwm discrepancy USB/MIPI fixed in driver
     };
 
     class polling_error_handler;

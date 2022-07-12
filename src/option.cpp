@@ -120,7 +120,8 @@ std::vector<uint8_t> librealsense::command_transfer_over_xu::send_receive(const 
                     std::dec << data.size() << " exceeds permitted limit " << HW_MONITOR_BUFFER_SIZE);
             }
 
-            try{
+            if (!_is_mipi)
+            {
                 std::vector<uint8_t> transmit_buf(HW_MONITOR_BUFFER_SIZE, 0);
                 std::copy(data.begin(), data.end(), transmit_buf.begin());
 
@@ -139,7 +140,7 @@ std::vector<uint8_t> librealsense::command_transfer_over_xu::send_receive(const 
                 }
                 return result;
             }
-            catch(...)
+            else
             {
                 // D457 - size of 1028 needed instead of 1024 (HW_MONITOR_BUFFER_SIZE)
                 std::vector<uint8_t> transmit_buf(HW_MONITOR_BUFFER_SIZE + SIZE_OF_HW_MONITOR_HEADER, 0);
