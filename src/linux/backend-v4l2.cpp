@@ -1331,10 +1331,8 @@ namespace librealsense
                     buf_mgr.handle_buffer(e_video_buf, -1); // transfer new buffer request to the frame callback
 
                     // Preparing metadata buffer
-                    static const size_t uvc_md_start_offset = sizeof(uvc_meta_buffer::ns) + sizeof(uvc_meta_buffer::sof);
                     auto metadata_buffer = get_md_buffer(md_v4l2_buffer->index);
-                    buf_mgr.set_md_attributes(md_v4l2_buffer->bytesused,
-                                                metadata_buffer->get_frame_start());
+                    set_metadata_attributes(buf_mgr, md_v4l2_buffer->bytesused, metadata_buffer->get_frame_start());
                     metadata_buffer->attach_buffer(*md_v4l2_buffer);
 
                     if (buf_mgr.get_buffers()[e_metadata_buf]._file_desc == -1)
@@ -1367,7 +1365,20 @@ namespace librealsense
             }
         }
 
-        void v4l_uvc_device::acquire_metadata(buffers_mgr & buf_mgr,fd_set &, bool compressed_format)
+        void v4l_uvc_device::set_metadata_attributes(buffers_mgr& buf_mgr, __u32 bytesused, uint8_t* md_start)
+        {
+            size_t uvc_md_start_offset = sizeof(uvc_meta_buffer::ns) + sizeof(uvc_meta_buffer::sof);
+            buf_mgr.set_md_attributes(bytesused - uvc_md_start_offset,
+                                        md_start + uvc_md_start_offset);
+        }
+
+        void v4l_mipi_device::set_metadata_attributes(buffers_mgr& buf_mgr, __u32 bytesused, uint8_t* md_start)
+        {
+            buf_mgr.set_md_attributes(bytesused, md_start);
+        }
+
+
+        void v4l_uvc_device::acquire_metadata(buffers_mgr& buf_mgr,fd_set &, bool compressed_format)
         {
             if (has_metadata())
                 buf_mgr.set_md_from_video_node(compressed_format);

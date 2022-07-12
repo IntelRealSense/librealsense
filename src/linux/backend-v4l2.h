@@ -351,6 +351,7 @@ namespace librealsense
             virtual void prepare_capture_buffers() override;
             virtual void stop_data_capture() override;
             virtual void acquire_metadata(buffers_mgr & buf_mgr,fd_set &fds, bool compressed_format = false) override;
+            virtual void set_metadata_attributes(buffers_mgr& buf_mgr, __u32 bytesused, uint8_t* md_start);
             void subscribe_to_ctrl_event(uint32_t control_id);
             void unsubscribe_from_ctrl_event(uint32_t control_id);
             bool pend_for_ctrl_status_event();
@@ -430,6 +431,7 @@ namespace librealsense
             bool get_xu(const extension_unit& xu, uint8_t control, uint8_t* data, int size) const override;
             control_range get_xu_range(const extension_unit& xu, uint8_t control, int len) const override;
             control_range get_pu_range(rs2_option option) const override;
+            void set_metadata_attributes(buffers_mgr& buf_mgr, __u32 bytesused, uint8_t* md_start) override;
         protected:
             virtual uint32_t get_cid(rs2_option option) const;
             uint32_t xu_to_cid(const extension_unit& xu, uint8_t control) const; // Find the mapping of XU to the underlying control
