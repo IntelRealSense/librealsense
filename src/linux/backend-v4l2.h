@@ -278,6 +278,7 @@ namespace librealsense
 
         private:
             void enqueue_buffer_before_throwing_it(const sync_buffer& sb) const;
+            void enqueue_front_buffer_before_throwing_it(std::queue<sync_buffer>& sync_queue);
 
             std::mutex _syncer_mutex;
             std::queue<sync_buffer> _video_queue;

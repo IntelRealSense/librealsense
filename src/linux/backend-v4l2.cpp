@@ -2414,14 +2414,18 @@ namespace librealsense
             if (_video_queue.size() > 2)
             {
                 // Enqueue of video buffer before throwing its content away
-                enqueue_buffer_before_throwing_it(_video_queue.front());
-                _video_queue.pop();
+                enqueue_front_buffer_before_throwing_it(_video_queue);
             }
         }
 
         void v4l2_video_md_syncer::push_metadata(const sync_buffer& md_buffer)
         {
             std::lock_guard<std::mutex> lock(_syncer_mutex);
+
+            // override front buffer if it has the same sequence that the new buffer - happens with metadata sequence 0
+            if (_md_queue.size() > 0 && _md_queue.front()._v4l2_buf->sequence == md_buffer._v4l2_buf->sequence)
+                enqueue_front_buffer_before_throwing_it(_md_queue);
+
             _md_queue.push(md_buffer);
             LOG_DEBUG_V4L("video_md_syncer - md pushed with sequence " << md_buffer._v4l2_buf->sequence);
 
@@ -2429,8 +2433,7 @@ namespace librealsense
             if (_md_queue.size() > 2)
             {
                 // Enqueue of md buffer before throwing its content away
-                enqueue_buffer_before_throwing_it(_md_queue.front());
-                _md_queue.pop();
+                enqueue_front_buffer_before_throwing_it(_md_queue);
             }
         }
 
@@ -2523,6 +2526,18 @@ namespace librealsense
                 LOG_ERROR("xioctl(VIDIOC_QBUF) failed when requesting new frame! fd: " << sb._fd << " error: " << strerror(errno));
             }
         }
+
+        void v4l2_video_md_syncer::enqueue_front_buffer_before_throwing_it(std::queue<sync_buffer>& sync_queue)
+        {
+            // Enqueue of buffer before throwing its content away
+            LOG_DEBUG_V4L("video_md_syncer - Enqueue buf " << std::dec << sync_queue.front()._buffer_index << " for fd " << sync_queue.front()._fd << " before dropping it");
+            if (xioctl(sync_queue.front()._fd, VIDIOC_QBUF, sync_queue.front()._v4l2_buf.get()) < 0)
+            {
+                LOG_ERROR("xioctl(VIDIOC_QBUF) failed when requesting new frame! fd: " << sync_queue.front()._fd << " error: " << strerror(errno));
+            }
+            sync_queue.pop();
+        }
+
 
         void v4l2_video_md_syncer::flush()
         {
