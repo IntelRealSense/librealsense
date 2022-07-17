@@ -194,10 +194,54 @@ namespace rs2
         return false;
     }
 
+    void firmware_update_manager::process_flow_mipi()
+    {
+        if (!_is_signed)
+        {
+            LOG_INFO("Only Signed Firmware can be burnt on MIPI device");
+            return;
+        }
+
+        // Enter DFU mode
+        auto device_debug = _dev.as<rs2::debug_protocol>();
+        uint32_t dfu_opcode = 0x1e;
+        device_debug.build_command(dfu_opcode, 1);
+
+        _progress = 30;
+        // Grant permissions for writing
+        // skipped for now - must be done in sudo
+        //chmod("/dev/d4xx-dfu504", __S_IREAD|__S_IWRITE);
+
+        // Write signed firmware to appropriate file descritptor
+        std::ofstream fw_path_in_device("/dev/d4xx-dfu504", std::ios::binary);
+        if (fw_path_in_device)
+        {
+            fw_path_in_device.write(reinterpret_cast<const char*>(_fw.data()), _fw.size());
+        }
+        else
+        {
+            fail("Firmware Update failed - wrong path or permissions missing");
+            return;
+        }
+        LOG_INFO("Firmware Update for MIPI device done.");
+        fw_path_in_device.close();
+
+        _progress = 100;
+        _done = true;
+        // need to find a way to update the fw version field in the viewer
+    }
+
     void firmware_update_manager::process_flow(
         std::function<void()> cleanup,
         invoker invoke)
     {
+        auto str = _dev.get_info(RS2_CAMERA_INFO_PRODUCT_ID);
+        if (!strcmp(_dev.get_info(RS2_CAMERA_INFO_PRODUCT_ID), "ABCD")) // if device is D457
+        {
+            process_flow_mipi();
+            return;
+        }
+
         std::string serial = "";
         if (_dev.supports(RS2_CAMERA_INFO_FIRMWARE_UPDATE_ID))
             serial = _dev.get_info(RS2_CAMERA_INFO_FIRMWARE_UPDATE_ID);
