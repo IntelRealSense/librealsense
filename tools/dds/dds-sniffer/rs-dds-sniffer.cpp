@@ -6,14 +6,19 @@
 #include <thread>
 #include <memory>
 
-#include <librealsense2/dds/dds-participant.h>
 #include <fastdds/rtps/common/Guid.h>
+#include <fastdds/dds/domain/DomainParticipant.hpp>
+#include <fastdds/dds/subscriber/DataReader.hpp>
+#include <fastdds/dds/subscriber/DataReaderListener.hpp>
+#include <fastrtps/types/DynamicDataHelper.hpp>
+#include <fastrtps/types/DynamicDataFactory.h>
 
 #include <tclap/CmdLine.h>
 #include <tclap/ValueArg.h>
 #include <tclap/SwitchArg.h>
 
 using namespace TCLAP;
+using namespace eprosima::fastdds::dds;
 
 //FastDDS GUID_t - 4 MSB bytes host, 4 bytes process, 4 bytes participant, 4 bytes entity ID (reader/writer)
 //For example:
@@ -86,11 +91,25 @@ catch( const std::exception & e )
 
 dds_sniffer::dds_sniffer()
     : _participant()
+    , _reader_listener(_discovered_types_datas )
 {
 }
 
 dds_sniffer::~dds_sniffer()
 {
+    for (const auto& it : _discovered_types_readers)
+    {
+        _discovered_types_subscriber->delete_datareader( it.first ); //If not empty than _discovered_types_subscriber != nullptr
+        _participant.get()->delete_topic( it.second );
+    }
+
+    if (_discovered_types_subscriber != nullptr)
+    {
+        _participant.get()->delete_subscriber( _discovered_types_subscriber );
+    }
+
+    _discovered_types_readers.clear();
+    _discovered_types_datas.clear();
 }
 
 bool dds_sniffer::init( librealsense::dds::dds_domain_id domain, bool snapshot, bool machine_readable )
@@ -123,6 +142,10 @@ bool dds_sniffer::init( librealsense::dds::dds_domain_id domain, bool snapshot, 
     _participant.on_participant_removed( [this]( librealsense::dds::dds_guid guid, char const* participant_name )
     {
         on_participant_removed( guid, participant_name );
+    } );
+    _participant.on_type_discovery( [this]( char const* topic_name, eprosima::fastrtps::types::DynamicType_ptr dyn_type )
+    {
+        on_type_discovery( topic_name, dyn_type );
     } );
 
     _participant.init( domain, "rs-dds-sniffer" );
@@ -216,6 +239,7 @@ void dds_sniffer::on_participant_added( librealsense::dds::dds_guid guid, const 
 
     _discovered_participants[guid] = participant_name;
 }
+
 void dds_sniffer::on_participant_removed( librealsense::dds::dds_guid guid, const char* participant_name )
 {
     if( _print_discoveries )
@@ -228,24 +252,111 @@ void dds_sniffer::on_participant_removed( librealsense::dds::dds_guid guid, cons
     _discovered_participants.erase( guid );
 }
 
+void dds_sniffer::on_type_discovery( char const* topic_name, eprosima::fastrtps::types::DynamicType_ptr dyn_type )
+{
+    //Register type with participant
+    TypeSupport type_support( new eprosima::fastrtps::types::DynamicPubSubType( dyn_type ) );
+    type_support.register_type( _participant.get() );
+    std::cout << "Discovered topic " << topic_name << " of type: " << type_support->getName() << std::endl;
+
+    //Create subscriber, topic and reader to receive instances of this topic
+    if (_discovered_types_subscriber == nullptr)
+    {
+        _discovered_types_subscriber = _participant.get()->create_subscriber( SUBSCRIBER_QOS_DEFAULT, nullptr );
+        if (_discovered_types_subscriber == nullptr)
+        {
+            std::cout << "Cannot create subscriber for discovered type '" << topic_name << std::endl;
+            return;
+        }
+    }
+
+    Topic* topic = _participant.get()->create_topic( topic_name, type_support->getName(), TOPIC_QOS_DEFAULT );
+    if (topic == nullptr)
+    {
+        std::cout << "Cannot create topic for discovered type '" << topic_name << std::endl;
+        return;
+    }
+
+    StatusMask sub_mask = StatusMask::subscription_matched() << StatusMask::data_available();
+    DataReaderQos rqos = DATAREADER_QOS_DEFAULT;
+    //rqos.reliability().kind = RELIABLE_RELIABILITY_QOS;
+    //rqos.durability().kind = VOLATILE_DURABILITY_QOS;
+    //rqos.ownership().kind = EXCLUSIVE_OWNERSHIP_QOS;
+    DataReader* reader = _discovered_types_subscriber->create_datareader( topic, rqos, &_reader_listener, sub_mask );
+    if (reader == nullptr)
+    {
+        std::cout << "Cannot create reader for discovered type '" << topic_name << std::endl;
+        _participant.get()->delete_topic( topic );
+        return;
+    }
+    _discovered_types_readers[reader] = topic;
+
+    eprosima::fastrtps::types::DynamicData_ptr data( eprosima::fastrtps::types::DynamicDataFactory::get_instance()->create_data( dyn_type ) );
+    _discovered_types_datas[reader] = data;
+}
+
+dds_sniffer::dds_reader_listener::dds_reader_listener( std::map<eprosima::fastdds::dds::DataReader*,
+                                                                eprosima::fastrtps::types::DynamicData_ptr>& datas ) :
+    _datas( datas )
+{
+}
+
+void dds_sniffer::dds_reader_listener::on_data_available( DataReader* reader )
+{
+    const TopicDescription* topic_desc = reader->get_topicdescription();
+    std::cout << "Received topic " << topic_desc->get_name() << " of type " << topic_desc->get_type_name() << std::endl;
+
+    auto dit = _datas.find( reader );
+
+    if (dit != _datas.end())
+    {
+        eprosima::fastrtps::types::DynamicData_ptr data = dit->second;
+        SampleInfo info;
+        if (reader->take_next_sample( data.get(), &info ) == ReturnCode_t::RETCODE_OK)
+        {
+            if (info.instance_state == ALIVE_INSTANCE_STATE)
+            {
+                eprosima::fastrtps::types::DynamicDataHelper::print( data );
+            }
+        }
+    }
+}
+
+void dds_sniffer::dds_reader_listener::on_subscription_matched(DataReader*, const SubscriptionMatchedStatus& info )
+{
+    if (info.current_count_change == 1)
+    {
+        std::cout << "Subscriber matched" << std::endl;
+    }
+    else if (info.current_count_change == -1)
+    {
+        std::cout << "Subscriber unmatched" << std::endl;
+    }
+    else
+    {
+        std::cout << info.current_count_change
+            << " is not a valid value for SubscriptionMatchedStatus current count change" << std::endl;
+    }
+}
+
 void dds_sniffer::save_topic_writer( librealsense::dds::dds_guid guid, const char* topic_name )
 {
     std::lock_guard<std::mutex> lock( _dds_entities_lock );
 
-    _discovered_topics[topic_name].writers.insert( guid );
+    _topics_info_by_name[topic_name].writers.insert( guid );
 }
 
 void dds_sniffer::remove_topic_writer( librealsense::dds::dds_guid guid, const char* topic_name )
 {
     std::lock_guard<std::mutex> lock( _dds_entities_lock );
 
-    auto topic_entry = _discovered_topics.find( topic_name );
-    if(topic_entry != _discovered_topics.end() )
+    auto topic_entry = _topics_info_by_name.find( topic_name );
+    if(topic_entry != _topics_info_by_name.end() )
     {
         topic_entry->second.writers.erase( guid );
         if( topic_entry->second.writers.empty() && topic_entry->second.readers.empty() )
         {
-            _discovered_topics.erase( topic_entry );
+            _topics_info_by_name.erase( topic_entry );
         }
     }
 }
@@ -254,20 +365,20 @@ void dds_sniffer::save_topic_reader( librealsense::dds::dds_guid guid, const cha
 {
     std::lock_guard<std::mutex> lock( _dds_entities_lock );
 
-    _discovered_topics[topic_name].readers.insert( guid );
+    _topics_info_by_name[topic_name].readers.insert( guid );
 }
 
 void dds_sniffer::remove_topic_reader( librealsense::dds::dds_guid guid, const char* topic_name )
 {
     std::lock_guard<std::mutex> lock( _dds_entities_lock );
 
-    auto topic_entry = _discovered_topics.find( topic_name );
-    if(topic_entry != _discovered_topics.end() )
+    auto topic_entry = _topics_info_by_name.find( topic_name );
+    if(topic_entry != _topics_info_by_name.end() )
     {
         topic_entry->second.readers.erase( guid );
         if( topic_entry->second.writers.empty() && topic_entry->second.readers.empty() )
         {
-            _discovered_topics.erase(topic_entry);
+            _topics_info_by_name.erase(topic_entry);
         }
     }
 }
@@ -277,7 +388,7 @@ uint32_t dds_sniffer::calc_max_indentation() const
     uint32_t indentation = 0;
     uint32_t max_indentation = 0;
 
-    for (auto topic : _discovered_topics) //_dds_entities_lock locked by print_topics()
+    for (auto topic : _topics_info_by_name) //_dds_entities_lock locked by print_topics()
     {
         indentation = static_cast<uint32_t>(std::count( topic.first.begin(), topic.first.end(), '/' ));  // Use / as delimiter for nested topic names
         if (indentation >= max_indentation)
@@ -335,7 +446,7 @@ void dds_sniffer::print_topics_machine_readable() const
 {
     std::lock_guard<std::mutex> lock( _dds_entities_lock );
 
-    for (auto topic : _discovered_topics)
+    for (auto topic : _topics_info_by_name)
     {
         for (auto writer : topic.second.writers)
         {
@@ -359,7 +470,7 @@ void dds_sniffer::print_topics() const
 
     uint32_t max_indentation( calc_max_indentation() );
 
-    for( auto topic : _discovered_topics )
+    for( auto topic : _topics_info_by_name )
     {
         std::cout << std::endl;
 

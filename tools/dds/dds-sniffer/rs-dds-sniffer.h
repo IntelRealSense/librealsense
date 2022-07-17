@@ -10,6 +10,10 @@
 
 #include <librealsense2/dds/dds-participant.h>
 
+#include <fastdds/dds/subscriber/Subscriber.hpp>
+#include <fastdds/dds/topic/Topic.hpp>
+#include <fastdds/dds/core/status/SubscriptionMatchedStatus.hpp>
+
 class dds_sniffer
 {
 public:
@@ -22,19 +26,38 @@ public:
 private:
     librealsense::dds::dds_participant _participant;
 
+    //For listing entities in the domain
     std::map< librealsense::dds::dds_guid, std::string> _discovered_participants;
     struct topic_info
     {
         std::set< librealsense::dds::dds_guid > readers;
         std::set< librealsense::dds::dds_guid > writers;
     };
-    std::map< std::string, topic_info > _discovered_topics;
+    std::map< std::string, topic_info > _topics_info_by_name;
 
     bool _print_discoveries = false;
     bool _print_by_topics = false;
     bool _print_machine_readable = false;
 
     mutable std::mutex _dds_entities_lock;
+
+    //For sniffing topics (can sniff only topics that send TypeObject during discovery)
+    eprosima::fastdds::dds::Subscriber* _discovered_types_subscriber = nullptr;
+    std::map<eprosima::fastdds::dds::DataReader*, eprosima::fastdds::dds::Topic*> _discovered_types_readers; //Save readers and topics for resource cleanup
+    std::map<eprosima::fastdds::dds::DataReader*, eprosima::fastrtps::types::DynamicData_ptr> _discovered_types_datas; //Save allocated data buffer for sample read
+
+    struct dds_reader_listener : public eprosima::fastdds::dds::DataReaderListener
+    {
+        dds_reader_listener( std::map<eprosima::fastdds::dds::DataReader*, eprosima::fastrtps::types::DynamicData_ptr>& datas );
+
+        void on_data_available( eprosima::fastdds::dds::DataReader* reader ) override;
+        void on_subscription_matched( eprosima::fastdds::dds::DataReader*, const eprosima::fastdds::dds::SubscriptionMatchedStatus& info ) override;
+
+    private:
+        std::map<eprosima::fastdds::dds::DataReader*, eprosima::fastrtps::types::DynamicData_ptr>& _datas;
+    };
+
+    dds_reader_listener _reader_listener; //define only after _discovered_types_datas (creation order matters)
 
     //Callbacks for dds-participant
     void on_writer_added( librealsense::dds::dds_guid guid, const char* topic_name );
@@ -43,6 +66,7 @@ private:
     void on_reader_removed( librealsense::dds::dds_guid guid, const char* topic_name );
     void on_participant_added( librealsense::dds::dds_guid guid, const char* topic_name );
     void on_participant_removed( librealsense::dds::dds_guid guid, const char* topic_name );
+    void on_type_discovery( char const* topic_name, eprosima::fastrtps::types::DynamicType_ptr dyn_type );
 
     // Topics data-base functions
     void save_topic_writer( librealsense::dds::dds_guid guid, const char* topic_name );

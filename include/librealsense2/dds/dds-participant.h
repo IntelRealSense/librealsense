@@ -17,8 +17,11 @@ namespace dds {
 namespace fastrtps {
 namespace rtps {
     struct GUID_t;
-}  // namespace dds
-}  // namespace fastdds
+}  // namespace rtps
+namespace types {
+    class DynamicType_ptr;
+}  // namespace types
+}  // namespace fastrtps
 }  // namespace eprosima
 
 namespace librealsense {
@@ -68,6 +71,11 @@ public:
     {
         _on_participant_removed = std::move( callback );
     }
+    void on_type_discovery( std::function< void( char const* topic_name,
+                                                 eprosima::fastrtps::types::DynamicType_ptr dyn_type ) > callback )
+    {
+        _on_type_discovery = std::move( callback );
+    }
 
     bool is_valid() const { return ( nullptr != _participant ); }
     bool operator!() const { return ! is_valid(); }
@@ -86,6 +94,8 @@ private:
     std::function< void( dds_guid, char const * topic_name ) > _on_reader_removed;
     std::function< void( dds_guid, char const * participant_name ) > _on_participant_added;
     std::function< void( dds_guid, char const * participant_name ) > _on_participant_removed;
+    std::function< void( char const * topic_name,
+                         eprosima::fastrtps::types::DynamicType_ptr dyn_type ) > _on_type_discovery;
 };  // class dds_participant
 
 

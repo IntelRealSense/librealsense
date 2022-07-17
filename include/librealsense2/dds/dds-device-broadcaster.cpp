@@ -225,28 +225,27 @@ bool dds_device_broadcaster::create_device_writer( const std::string &device_key
     wqos.data_sharing().off();
     //---------------------------------------------------------------------------------------
 
-    wqos.ownership().kind = EXCLUSIVE_OWNERSHIP_QOS;
-    std::shared_ptr< dds_client_listener > writer_listener
-        = std::make_shared< dds_client_listener >( this );
+    //wqos.ownership().kind = EXCLUSIVE_OWNERSHIP_QOS;
+    std::shared_ptr< dds_client_listener > writer_listener = std::make_shared< dds_client_listener >( this );
 
-    _device_handle_by_sn[device_key]
-        = { rs2_device,
-            _publisher->create_datawriter( _topic, wqos, writer_listener.get() ),
-            writer_listener };
+    _device_handle_by_sn[device_key] = { rs2_device,
+                                         _publisher->create_datawriter( _topic, wqos, writer_listener.get() ),
+                                         writer_listener };
 
     return _device_handle_by_sn[device_key].data_writer != nullptr;
 }
 
 void dds_device_broadcaster::create_broadcast_topic()
 {
-    // Registering the topic type enables topic instance creation by factory
+    // Topic constructor creates TypeObject that will be sent as part of the discovery phase
+    librealsense::dds::topics::raw::device_info raw_msg;
+    // Registering the topic type with the participant enables topic instance creation by factory
     eprosima::fastdds::dds::TypeSupport topic_type( new librealsense::dds::topics::device_info::type );
     DDS_API_CALL( _participant->register_type( topic_type ) );
     _publisher = DDS_API_CALL( _participant->create_publisher( PUBLISHER_QOS_DEFAULT, nullptr ) );
-    _topic = DDS_API_CALL(
-        _participant->create_topic( librealsense::dds::topics::device_info::TOPIC_NAME,
-                                    topic_type->getName(),
-                                    TOPIC_QOS_DEFAULT ) );
+    _topic = DDS_API_CALL( _participant->create_topic( librealsense::dds::topics::device_info::TOPIC_NAME,
+                                                       topic_type->getName(),
+                                                       TOPIC_QOS_DEFAULT ) );
 }
 
 bool dds_device_broadcaster::send_device_info_msg( const librealsense::dds::topics::device_info& dev_info )

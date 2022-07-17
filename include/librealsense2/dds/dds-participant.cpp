@@ -8,12 +8,15 @@
 #include <fastdds/dds/domain/DomainParticipantFactory.hpp>
 #include <fastdds/dds/domain/DomainParticipantListener.hpp>
 #include <fastdds/dds/domain/DomainParticipant.hpp>
+#include <fastrtps/types/DynamicDataFactory.h>
+#include <fastdds/dds/core/status/SubscriptionMatchedStatus.hpp>
 
 #include <iostream>
 #include <memory>
 
 using namespace eprosima::fastdds::dds;
 using namespace librealsense::dds;
+
 
 struct dds_participant::dds_participant_listener
     : public eprosima::fastdds::dds::DomainParticipantListener
@@ -27,7 +30,7 @@ struct dds_participant::dds_participant_listener
     }
 
     virtual void on_participant_discovery( eprosima::fastdds::dds::DomainParticipant * participant,
-                              eprosima::fastrtps::rtps::ParticipantDiscoveryInfo && info ) override
+                                           eprosima::fastrtps::rtps::ParticipantDiscoveryInfo && info ) override
     {
         switch( info.status )
         {
@@ -88,6 +91,19 @@ struct dds_participant::dds_participant_listener
             break;
         }
     }
+
+    virtual void on_type_discovery( eprosima::fastdds::dds::DomainParticipant* participant,
+                                    const eprosima::fastrtps::rtps::SampleIdentity& request_sample_id,
+                                    const eprosima::fastrtps::string_255& topic_name,
+                                    const eprosima::fastrtps::types::TypeIdentifier* identifier,
+                                    const eprosima::fastrtps::types::TypeObject* object,
+                                    eprosima::fastrtps::types::DynamicType_ptr dyn_type ) override
+    {
+        if (_owner._on_type_discovery)
+        {
+            _owner._on_type_discovery( topic_name.c_str(), dyn_type );
+        }
+    }
 };
 
 
@@ -101,14 +117,16 @@ void dds_participant::init( dds_domain_id domain_id, std::string const & partici
 
     _domain_listener = std::make_shared< dds_participant_listener >( *this );
 
+
     DomainParticipantQos pqos;
     pqos.name( participant_name );
 
-    // Indicates for how much time should a remote DomainParticipant consider the local
-    // DomainParticipant to be alive.
+    // Indicates for how much time should a remote DomainParticipant consider the local DomainParticipant to be alive.
     pqos.wire_protocol().builtin.discovery_config.leaseDuration = { 10, 0 };  // [sec,nsec]
 
-    _participant = DDS_API_CALL(DomainParticipantFactory::get_instance()->create_participant( domain_id, pqos, _domain_listener.get() ));
+    //Listener will call DataReaderListener::on_data_available for a specific reader, not SubscriberListener::on_data_on_readers for any reader
+    StatusMask par_mask = StatusMask::all() >> StatusMask::data_on_readers();
+    _participant = DDS_API_CALL(DomainParticipantFactory::get_instance()->create_participant( domain_id, pqos, _domain_listener.get(), par_mask ));
     
     if( ! _participant )
     {

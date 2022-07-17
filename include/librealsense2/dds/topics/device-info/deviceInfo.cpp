@@ -16,6 +16,7 @@ char dummy;
 #endif  // _WIN32
 
 #include "deviceInfo.h"
+#include "deviceInfoTypeObject.h"
 #include <fastcdr/Cdr.h>
 
 #include <fastcdr/exceptions/BadParamException.h>
@@ -25,17 +26,19 @@ using namespace eprosima::fastcdr::exception;
 
 librealsense::dds::topics::raw::device_info::device_info()
 {
-    // m_name com.eprosima.idl.parser.typecode.ArrayTypeCode@64485a47
+    // m_name com.eprosima.idl.parser.typecode.ArrayTypeCode@13deb50e
     memset(&m_name, 0, (128) * 1);
-    // m_serial_number com.eprosima.idl.parser.typecode.ArrayTypeCode@25bbf683
+    // m_serial_number com.eprosima.idl.parser.typecode.ArrayTypeCode@239963d8
     memset(&m_serial_number, 0, (32) * 1);
-    // m_product_line com.eprosima.idl.parser.typecode.ArrayTypeCode@6ec8211c
+    // m_product_line com.eprosima.idl.parser.typecode.ArrayTypeCode@3abbfa04
     memset(&m_product_line, 0, (16) * 1);
-    // m_topic_root com.eprosima.idl.parser.typecode.ArrayTypeCode@7276c8cd
+    // m_topic_root com.eprosima.idl.parser.typecode.ArrayTypeCode@57fffcd7
     memset(&m_topic_root, 0, (256) * 1);
-    // m_locked com.eprosima.idl.parser.typecode.PrimitiveTypeCode@544a2ea6
+    // m_locked com.eprosima.idl.parser.typecode.PrimitiveTypeCode@598067a5
     m_locked = false;
 
+    // Just to register all known types
+    registerdeviceInfoTypes();
 }
 
 librealsense::dds::topics::raw::device_info::~device_info()
