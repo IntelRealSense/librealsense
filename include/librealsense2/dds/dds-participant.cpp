@@ -18,8 +18,7 @@ using namespace eprosima::fastdds::dds;
 using namespace librealsense::dds;
 
 
-struct dds_participant::dds_participant_listener
-    : public eprosima::fastdds::dds::DomainParticipantListener
+struct dds_participant::dds_participant_listener : public eprosima::fastdds::dds::DomainParticipantListener
 {
     dds_participant & _owner;
 
@@ -36,13 +35,13 @@ struct dds_participant::dds_participant_listener
         {
         case eprosima::fastrtps::rtps::ParticipantDiscoveryInfo::DISCOVERED_PARTICIPANT:
             LOG_DEBUG( "Participant '" << info.info.m_participantName << "' discovered" );
-            if (_owner._on_participant_added)
+            if( _owner._on_participant_added )
                 _owner._on_participant_added( info.info.m_guid, info.info.m_participantName.c_str() );
             break;
         case eprosima::fastrtps::rtps::ParticipantDiscoveryInfo::REMOVED_PARTICIPANT:
         case eprosima::fastrtps::rtps::ParticipantDiscoveryInfo::DROPPED_PARTICIPANT:
             LOG_DEBUG( "Participant '" << info.info.m_participantName << "' disappeared" );
-            if (_owner._on_participant_removed)
+            if( _owner._on_participant_removed )
                 _owner._on_participant_removed( info.info.m_guid, info.info.m_participantName.c_str() );
             break;
         default:
@@ -92,14 +91,14 @@ struct dds_participant::dds_participant_listener
         }
     }
 
-    virtual void on_type_discovery( eprosima::fastdds::dds::DomainParticipant* participant,
-                                    const eprosima::fastrtps::rtps::SampleIdentity& request_sample_id,
-                                    const eprosima::fastrtps::string_255& topic_name,
-                                    const eprosima::fastrtps::types::TypeIdentifier* identifier,
-                                    const eprosima::fastrtps::types::TypeObject* object,
+    virtual void on_type_discovery( eprosima::fastdds::dds::DomainParticipant * participant,
+                                    const eprosima::fastrtps::rtps::SampleIdentity & request_sample_id,
+                                    const eprosima::fastrtps::string_255 & topic_name,
+                                    const eprosima::fastrtps::types::TypeIdentifier * identifier,
+                                    const eprosima::fastrtps::types::TypeObject * object,
                                     eprosima::fastrtps::types::DynamicType_ptr dyn_type ) override
     {
-        if (_owner._on_type_discovery)
+        if( _owner._on_type_discovery )
         {
             _owner._on_type_discovery( topic_name.c_str(), dyn_type );
         }
@@ -124,10 +123,14 @@ void dds_participant::init( dds_domain_id domain_id, std::string const & partici
     // Indicates for how much time should a remote DomainParticipant consider the local DomainParticipant to be alive.
     pqos.wire_protocol().builtin.discovery_config.leaseDuration = { 10, 0 };  // [sec,nsec]
 
-    //Listener will call DataReaderListener::on_data_available for a specific reader, not SubscriberListener::on_data_on_readers for any reader
+    // Listener will call DataReaderListener::on_data_available for a specific reader,
+    // not SubscriberListener::on_data_on_readers for any reader
     StatusMask par_mask = StatusMask::all() >> StatusMask::data_on_readers();
-    _participant = DDS_API_CALL(DomainParticipantFactory::get_instance()->create_participant( domain_id, pqos, _domain_listener.get(), par_mask ));
-    
+    _participant = DDS_API_CALL( DomainParticipantFactory::get_instance()->create_participant( domain_id,
+                                                                                               pqos,
+                                                                                               _domain_listener.get(),
+                                                                                               par_mask ) );
+
     if( ! _participant )
     {
         throw std::runtime_error( "failed creating participant " + participant_name + " on domain id "
@@ -151,4 +154,3 @@ dds_participant::~dds_participant()
         DDS_API_CALL_NO_THROW( DomainParticipantFactory::get_instance()->delete_participant( _participant ) );
     }
 }
-
