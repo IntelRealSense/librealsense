@@ -74,7 +74,7 @@ constexpr uint32_t RS_CAMERA_CID_AE_SETPOINT_GET            = (RS_CAMERA_CID_BAS
 constexpr uint32_t RS_CAMERA_CID_AE_SETPOINT_SET            = (RS_CAMERA_CID_BASE+12);
 constexpr uint32_t RS_CAMERA_CID_ERB                        = (RS_CAMERA_CID_BASE+13);
 constexpr uint32_t RS_CAMERA_CID_EWB                        = (RS_CAMERA_CID_BASE+14);
-constexpr uint32_t RS_CAMERA_CID_HWMC                       = (RS_CAMERA_CID_BASE+15);
+constexpr uint32_t RS_CAMERA_CID_HWMC_LEGACY                = (RS_CAMERA_CID_BASE+15);
 
 //const uint32_t RS_CAMERA_GENERIC_XU                     = (RS_CAMERA_CID_BASE+15); // RS_CAMERA_CID_HWMC duplicate??
 constexpr uint32_t RS_CAMERA_CID_LASER_POWER_MODE           = (RS_CAMERA_CID_BASE+16); // RS_CAMERA_CID_LASER_POWER duplicate ???
@@ -84,6 +84,7 @@ constexpr uint32_t RS_CAMERA_CID_EXPOSURE_MODE              = (RS_CAMERA_CID_BAS
 constexpr uint32_t RS_CAMERA_CID_WHITE_BALANCE_MODE         = (RS_CAMERA_CID_BASE+20); // Similar to RS_CAMERA_CID_EWB ??
 constexpr uint32_t RS_CAMERA_CID_PRESET                     = (RS_CAMERA_CID_BASE+21);
 
+constexpr uint32_t RS_CAMERA_CID_HWMC                       = (RS_CAMERA_CID_BASE+32);
 
 /* refe4rence for kernel 4.9 to be removed
 #define UVC_CID_GENERIC_XU          (V4L2_CID_PRIVATE_BASE+15)
@@ -2232,14 +2233,13 @@ namespace librealsense
                     continue;
                 }
 
-                // TODO check if parsing for non-integer values D457
-                //memcpy(data,(void*)(&ctrl.value),size);
-
                 if (control == RS_ENABLE_AUTO_EXPOSURE)
                   xctrl.value = (V4L2_EXPOSURE_MANUAL == xctrl.value) ? 0 : 1;
 
-                // used to parse values that have size > 1
-                memcpy(data,(void*)(&xctrl.value), size);
+                // used to parse the data when only a value is returned (e.g. laser power),
+                // and not a pointer to a buffer of data (e.g. gvd)
+                if (size < sizeof(__s64))
+                    memcpy(data,(void*)(&xctrl.value), size);
 
                 return true;
             }
