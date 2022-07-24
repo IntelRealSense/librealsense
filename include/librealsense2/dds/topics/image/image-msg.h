@@ -8,17 +8,18 @@
 namespace librealsense {
 namespace dds {
 namespace topics {
+namespace device {
 class image
 {
 public:
-    using type = raw::imagePubSubType;
+    using type = raw::device::imagePubSubType;
 
     static std::string construct_stream_topic_name( const std::string& topic_root, const std::string& stream )
     {
         return topic_root + "/" + stream;
     }
 
-    image( const raw::image & image )
+    image( const raw::device::image & image )
         : raw_data(image.raw_data()) // TODO: avoid image copy?
         , width( image.width())
         , height( image.height() )
@@ -34,6 +35,7 @@ public:
     rs2_format format;
 };
 
+}  // namespace device
 }  // namespace topics
 }  // namespace dds
 }  // namespace librealsense

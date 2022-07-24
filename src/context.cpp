@@ -22,6 +22,10 @@
 #include "fw-update/fw-update-factory.h"
 #ifdef BUILD_WITH_DDS
 #include "dds/dds-device-watcher.h"
+#include <librealsense2/dds/dds-participant.h>
+#include <librealsense2/dds/dds-device.h>
+#include "software-device.h"
+#include <librealsense2/dds/topics/device-info/device-info-msg.h>
 #endif
 
 #include <third-party/json.hpp>
@@ -125,6 +129,11 @@ namespace librealsense
         {
         case backend_type::standard:
             _backend = platform::create_backend();
+#ifdef BUILD_WITH_DDS
+            if( ! _dds_participant.instance()->is_valid() )
+                _dds_participant->init( 0, "librealsense" );
+            _dds_watcher.instance( _dds_participant.get() );
+#endif
             break;
         case backend_type::record:
             _backend = std::make_shared<platform::record_backend>(platform::create_backend(), filename, section, mode);
@@ -139,12 +148,16 @@ namespace librealsense
 
        _device_watcher = _backend->create_device_watcher();
        assert(_device_watcher->is_stopped());
-
-#ifdef BUILD_WITH_DDS
-       _dds_watcher = std::make_shared< dds_device_watcher >( 0 );
-#endif
     }
 
+
+    static bool json_has_value( json const & j, char const * key )
+    {
+        auto it = j.find( key );
+        if( it == j.end() || it->is_null() )
+            return false;
+        return true;
+    }
 
     template< class T >
     static bool json_get_ex( json const & j, char const * key, T * pv )
@@ -191,7 +204,20 @@ namespace librealsense
 
 #ifdef BUILD_WITH_DDS
         if( json_get< bool >( settings, "dds-discovery", true ) )
-            _dds_watcher = std::make_shared< dds_device_watcher >( json_get< int >( settings, "dds-domain", 0 ) );
+        {
+            if( ! _dds_participant.instance()->is_valid() )
+            {
+                _dds_participant->init(
+                    json_get< int >( settings, "dds-domain", 0 ),
+                    json_get< std::string >( settings, "dds-participant-name", "librealsense" ) );
+            }
+            else if( json_has_value( settings, "dds-domain" ) || json_has_value( settings, "dds-participant-name" ) )
+            {
+                LOG_WARNING( "DDS participant has already been created; ignoring DDS settings" );
+            }
+            _dds_watcher.instance( _dds_participant.get() );
+            //_dds_backend = ...; TODO
+        }
 #endif
     }
 
@@ -378,27 +404,81 @@ namespace librealsense
         return std::make_shared<platform_camera>(ctx, _uvcs, this->get_device_data(), register_device_notifications);
     }
 
+#ifdef BUILD_WITH_DDS
+    // This is the rs2 device; it proxies to an actual DDS device that does all the actual
+    // work. For example:
+    //     auto dev_list = ctx.query_devices();
+    //     auto dev1 = dev_list[0];
+    //     auto dev2 = dev_list[0];
+    // dev1 and dev2 are two different rs2 devices, but they both go to the same DDS source!
+    //
+    class dds_device_proxy : public software_device
+    {
+        std::shared_ptr< dds::dds_device > _dds_dev;
+
+    public:
+        dds_device_proxy( std::shared_ptr< context > ctx, std::shared_ptr< dds::dds_device > const & dev )
+            : software_device( ctx )
+            , _dds_dev( dev )
+        {
+            LOG_DEBUG( "=====> dds-device-proxy " << this << " created on top of dds-device " << _dds_dev.get() );
+            auto & info = dev->device_info();
+            register_info( RS2_CAMERA_INFO_NAME, info.name );
+            register_info( RS2_CAMERA_INFO_PRODUCT_LINE, info.product_line );
+            register_info( RS2_CAMERA_INFO_SERIAL_NUMBER, info.serial );
+            register_info( RS2_CAMERA_INFO_CAMERA_LOCKED, info.locked ? "YES" : "NO" );
+            register_info( RS2_CAMERA_INFO_PHYSICAL_PORT, info.topic_root );
+        }
+    };
+
+    class dds_device_info : public device_info
+    {
+        std::shared_ptr< dds::dds_device > _dev;
+
+    public:
+        dds_device_info( std::shared_ptr< context > const & ctx, std::shared_ptr< dds::dds_device > const & dev )
+            : device_info( ctx )
+            , _dev( dev )
+        {
+        }
+
+        std::shared_ptr< device_interface > create( std::shared_ptr< context > ctx,
+                                                    bool register_device_notifications ) const override
+        {
+            return std::make_shared< dds_device_proxy >( ctx, _dev );
+        }
+
+        platform::backend_device_group get_device_data() const override
+        {
+            return platform::backend_device_group{};
+        }
+    };
+#endif
+
     context::~context()
     {
         //ensure that the device watchers will stop before the _devices_changed_callback will be deleted
 
         if ( _device_watcher )
             _device_watcher->stop(); 
-
-        if ( _dds_watcher )
+#ifdef BUILD_WITH_DDS
+        if( _dds_watcher )
             _dds_watcher->stop();
+#endif
     }
 
     std::vector<std::shared_ptr<device_info>> context::query_devices(int mask) const
     {
-
-        platform::backend_device_group devices(_backend->query_uvc_devices(), _backend->query_usb_devices(), _backend->query_hid_devices());
-        return create_devices(devices, _playback_devices, mask);
+        platform::backend_device_group devices( _backend->query_uvc_devices(),
+                                                _backend->query_usb_devices(),
+                                                _backend->query_hid_devices() );
+        return create_devices( devices, _playback_devices, mask );
     }
 
-    std::vector<std::shared_ptr<device_info>> context::create_devices(platform::backend_device_group devices,
-                                                                      const std::map<std::string, std::weak_ptr<device_info>>& playback_devices,
-                                                                      int mask) const
+    std::vector< std::shared_ptr< device_info > >
+    context::create_devices( platform::backend_device_group devices,
+                             const std::map< std::string, std::weak_ptr< device_info > > & playback_devices,
+                             int mask ) const
     {
         std::vector<std::shared_ptr<device_info>> list;
 
@@ -406,10 +486,11 @@ namespace librealsense
         // to allow them to modify context later on
         auto ctx = t->shared_from_this();
 
-        if (mask & RS2_PRODUCT_LINE_D400)
+        if( mask & RS2_PRODUCT_LINE_D400 )
         {
             auto ds5_devices = ds5_info::pick_ds5_devices(ctx, devices);
             std::copy(begin(ds5_devices), end(ds5_devices), std::back_inserter(list));
+
         }
 
         if( mask & RS2_PRODUCT_LINE_L500 )
@@ -418,11 +499,24 @@ namespace librealsense
             std::copy(begin(l500_devices), end(l500_devices), std::back_inserter(list));
         }
 
-        if (mask & RS2_PRODUCT_LINE_SR300)
+        if( mask & RS2_PRODUCT_LINE_SR300 )
         {
             auto sr300_devices = sr300_info::pick_sr300_devices(ctx, devices.uvc_devices, devices.usb_devices);
             std::copy(begin(sr300_devices), end(sr300_devices), std::back_inserter(list));
         }
+
+#ifdef BUILD_WITH_DDS
+        if( _dds_watcher )
+            _dds_watcher->foreach_device( [&]( dds::dds_guid const &, std::shared_ptr< dds::dds_device > const & dev ) -> bool {
+                //if( mask & RS2_PRODUCT_LINE_D400 )
+                    //if( dev.product_line == "D400" )
+                    {
+                        std::shared_ptr< device_info > info = std::make_shared< dds_device_info >( ctx, dev );
+                        list.push_back( info );
+                    }
+                return true;
+            } );
+#endif
 
 #ifdef WITH_TRACKING
         if (mask & RS2_PRODUCT_LINE_T200)
@@ -432,13 +526,13 @@ namespace librealsense
         }
 #endif
         // Supported recovery devices
-        if (mask & RS2_PRODUCT_LINE_D400 || mask & RS2_PRODUCT_LINE_SR300 || mask & RS2_PRODUCT_LINE_L500) 
+        if( mask & RS2_PRODUCT_LINE_D400 || mask & RS2_PRODUCT_LINE_SR300 || mask & RS2_PRODUCT_LINE_L500 ) 
         {
             auto recovery_devices = fw_update_info::pick_recovery_devices(ctx, devices.usb_devices, mask);
             std::copy(begin(recovery_devices), end(recovery_devices), std::back_inserter(list));
         }
 
-        if (mask & RS2_PRODUCT_LINE_NON_INTEL)
+        if( mask & RS2_PRODUCT_LINE_NON_INTEL )
         {
             auto uvc_devices = platform_camera_info::pick_uvc_devices(ctx, devices.uvc_devices);
             std::copy(begin(uvc_devices), end(uvc_devices), std::back_inserter(list));
@@ -530,6 +624,7 @@ namespace librealsense
         });
     }
 
+#ifdef BUILD_WITH_DDS
     void context::start_dds_device_watcher()
     {
         _dds_watcher->start(
@@ -538,6 +633,7 @@ namespace librealsense
                 // on_device_changed(old, curr, _playback_devices, _playback_devices);
             } );
     }
+#endif
 
     uint64_t context::register_internal_device_callback(devices_changed_callback_ptr callback)
     {
@@ -549,12 +645,12 @@ namespace librealsense
         {
             start_device_watcher();
         }
-
+#ifdef BUILD_WITH_DDS
         if( _dds_watcher && _dds_watcher->is_stopped() )
         {
             start_dds_device_watcher();
         }
-
+#endif
         return callback_id;
     }
 
@@ -566,7 +662,10 @@ namespace librealsense
         if (_devices_changed_callback == nullptr && _devices_changed_callbacks.size() == 0) // There are no register callbacks any more _device_watcher can be stopped
         {
             _device_watcher->stop();
-            if ( _dds_watcher ) _dds_watcher->stop();
+#ifdef BUILD_WITH_DDS
+            if( _dds_watcher )
+                _dds_watcher->stop();
+#endif
         }
     }
 
@@ -579,11 +678,12 @@ namespace librealsense
         {
             start_device_watcher();
         }
-
+#ifdef BUILD_WITH_DDS
         if( _dds_watcher && _dds_watcher->is_stopped() )
         {
             start_dds_device_watcher();
         }
+#endif
     }
 
     std::vector<platform::uvc_device_info> filter_by_product(const std::vector<platform::uvc_device_info>& devices, const std::set<uint16_t>& pid_list)

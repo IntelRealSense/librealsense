@@ -9,6 +9,7 @@
 #include <librealsense2/dds/dds-device-broadcaster.h>
 #include <librealsense2/dds/dds-device-server.h>
 #include <librealsense2/dds/dds-participant.h>
+#include <librealsense2/dds/topics/notifications/notifications-msg.h>
 #include <fastrtps/types/TypesBase.h>
 #include <fastdds/dds/log/Log.hpp>
 
@@ -91,6 +92,127 @@ void start_streaming( std::shared_ptr< tools::lrs_device_controller > lrs_device
     } );
 }
 
+void add_init_device_header_msg( rs2::device dev, std::shared_ptr<librealsense::dds::dds_device_server> &server )
+{
+    using namespace librealsense::dds::topics;
+   
+    device::notifications::device_header device_header_msg;
+    auto &&sensors = dev.query_sensors();
+    device_header_msg.num_of_streams = sensors.size();
+
+    raw::device::notifications raw_msg;
+    device::notifications::construct_raw_message(
+        device::notifications::msg_type::DEVICE_HEADER,
+        device_header_msg,
+        raw_msg );
+
+    server->add_init_msgs( raw_msg );
+}
+
+void send_stream_header_msg(  std::shared_ptr<librealsense::dds::dds_device_server> &server, rs2::sensor sensor, const int stream_idx, size_t profiles_count )
+{
+    using namespace librealsense::dds::topics;
+
+    // Send current stream header message
+    device::notifications::stream_header stream_header_msg;
+    stream_header_msg.index = stream_idx;
+    stream_header_msg.name;
+    stream_header_msg.num_of_profiles = profiles_count;
+    raw::device::notifications raw_stream_header_msg;
+    device::notifications::construct_raw_message( device::notifications::msg_type::STREAM_HEADER,
+                                                  stream_header_msg,
+                                                  raw_stream_header_msg );
+
+    server->add_init_msgs( raw_stream_header_msg );
+}
+
+void prepare_profiles_messeges( rs2::device dev,
+                               const std::vector< rs2::stream_profile > & stream_profiles, 
+    librealsense::dds::topics::device::notifications::video_stream_profiles& video_stream_profiles_msg, 
+    librealsense::dds::topics::device::notifications::motion_stream_profiles& motion_stream_profiles_msg)
+{
+    using namespace librealsense::dds::topics;
+    for( auto & stream_profile : stream_profiles )
+    {
+        if( stream_profile.is< rs2::video_stream_profile >() )
+        {
+            const auto & vsp = stream_profile.as< rs2::video_stream_profile >();
+
+            device::notifications::video_stream_profile vsp_msg
+                = { static_cast< int8_t >( vsp.stream_index() ),
+                    static_cast< int16_t >( vsp.unique_id() ),
+                    static_cast< int8_t >( vsp.fps() ),
+                    vsp.format(),
+                    vsp.stream_type(),
+                    static_cast< int16_t >( vsp.width() ),
+                    static_cast< int16_t >( vsp.height() ) };
+
+
+            video_stream_profiles_msg.profiles_vec.push_back( std::move( vsp_msg ) );
+        }
+        else if( stream_profile.is< rs2::motion_stream_profile >() )
+        {
+            const auto & msp = stream_profile.as< rs2::video_stream_profile >();
+            device::notifications::motion_stream_profile msp_msg
+                = { static_cast< int8_t >( msp.stream_index() ),
+                    static_cast< int16_t >( msp.unique_id() ),
+                    static_cast< int8_t >( msp.fps() ),
+                    msp.format(),
+                    msp.stream_type() };
+            motion_stream_profiles_msg.profiles_vec.push_back(std::move(msp_msg));
+        }
+        else
+        {
+            LOG_ERROR( "got illegal profile with uid:" << stream_profile.unique_id() );
+        }
+    }
+}
+
+void add_init_profiles_msgs( rs2::device dev, std::shared_ptr<librealsense::dds::dds_device_server> &server )
+{
+    using namespace librealsense::dds::topics;
+    auto stream_idx = 0;
+    device::notifications::video_stream_profiles video_stream_profiles_msg;
+    device::notifications::motion_stream_profiles motion_stream_profiles_msg;
+
+    // For each sensor publish all it's profiles
+    for( auto &sensor : dev.query_sensors() )
+    {
+        auto && stream_profiles = sensor.get_stream_profiles();
+        send_stream_header_msg( server, sensor, stream_idx++, stream_profiles.size() );
+
+        // Prepare stream profiles messages
+        prepare_profiles_messeges( dev,
+                                   stream_profiles,
+                                   video_stream_profiles_msg,
+                                   motion_stream_profiles_msg );
+
+        // Send video stream profiles
+        raw::device::notifications raw_video_stream_profiles_msg;
+        device::notifications::construct_raw_message(
+            device::notifications::msg_type::VIDEO_STREAM_PROFILES,
+            video_stream_profiles_msg,
+            raw_video_stream_profiles_msg );
+        server->add_init_msgs( raw_video_stream_profiles_msg );
+
+        // Send motion stream profiles
+        raw::device::notifications raw_motion_stream_profiles_msg;
+        device::notifications::construct_raw_message(
+            device::notifications::msg_type::MOTION_STREAM_PROFILES,
+            motion_stream_profiles_msg,
+            raw_motion_stream_profiles_msg );
+        server->add_init_msgs( raw_motion_stream_profiles_msg );
+
+        // Send pose stream profiles ? TODO
+    }
+}
+
+
+void init_dds_device( rs2::device dev, std::shared_ptr<librealsense::dds::dds_device_server>& server )
+{
+    add_init_device_header_msg( dev, server );
+    add_init_profiles_msgs( dev, server );
+}
 
 struct log_consumer : eprosima::fastdds::dds::LogConsumer
 {
@@ -203,6 +325,9 @@ try
             // Keep a pair of device controller and server per RS device
             device_handlers_list.insert(
                 { dev, { dds_device_server, lrs_device_controller } } );
+
+            // We add initialization messages to be sent to a new reader (sensors & profiles info).
+            init_dds_device( dev, dds_device_server );
 
             // Get the desired stream profile
             auto profile = get_required_profile( dev.first< rs2::color_sensor >(),

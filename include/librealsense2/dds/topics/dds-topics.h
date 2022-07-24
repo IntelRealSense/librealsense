@@ -4,3 +4,4 @@
 #pragma once
 #include "device-info/device-info-msg.h"
 #include "image/image-msg.h"
+#include "notifications/notifications-msg.h"

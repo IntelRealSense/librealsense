@@ -25,6 +25,7 @@ public:
     void run( uint32_t seconds );
 
 private:
+    std::shared_ptr< librealsense::dds::dds_participant::listener > _listener;
     librealsense::dds::dds_participant _participant;
 
     // For listing entities in the domain

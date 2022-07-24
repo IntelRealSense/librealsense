@@ -2,9 +2,12 @@
 # Copyright(c) 2022 Intel Corporation. All Rights Reserved.
 
 set(DDS_CLIENT_FILES 
+    "${CMAKE_CURRENT_LIST_DIR}/dds-defines.h"
     "${CMAKE_CURRENT_LIST_DIR}/dds-participant.h"
     "${CMAKE_CURRENT_LIST_DIR}/dds-participant.cpp"
     "${CMAKE_CURRENT_LIST_DIR}/dds-utilities.h"
+    "${CMAKE_CURRENT_LIST_DIR}/dds-device.h"
+    "${CMAKE_CURRENT_LIST_DIR}/dds-device.cpp"
 )
 
 source_group( "DDS" FILES ${DDS_CLIENT_FILES} )

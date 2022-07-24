@@ -27,6 +27,9 @@ namespace dds {
 namespace topics {
 namespace raw {
 class device_info;
+namespace device {
+class notifications;
+}  // namespace device
 }  // namespace raw
 class device_info;
 }  // namespace topics
@@ -65,15 +68,21 @@ public:
     bool is_valid() const { return ( nullptr != _publisher ); }
     bool operator!() const { return ! is_valid(); }
     void set_image_header( const std::string& stream_name, const image_header& header );
+    // `Init` messages are sent when a new reader joins, it holds all required information about the device capabilities (sensors, profiles)
+    // Currently it will broadcast the messages to all connected readers (not only the new reader)
+    void add_init_msgs( const topics::raw::device::notifications& notifications_msg );
     void publish_image( const std::string& stream_name, const uint8_t* data, size_t size );
+    void publish_notifications( const topics::raw::device::notifications& notifications_msg );
     
 private:
     class dds_stream_server;
+    class dds_notifications_server;
     
     eprosima::fastdds::dds::DomainParticipant * _participant;
     eprosima::fastdds::dds::Publisher * _publisher;
     std::string _topic_root;
     std::unordered_map<std::string, std::shared_ptr<dds_stream_server>> _stream_name_to_server;
+    std::shared_ptr<dds_notifications_server> _dds_notifications_server;
 };  // class dds_device_server
 }  // namespace dds
 }  // namespace librealsense
