@@ -20,7 +20,8 @@ public:
     dds_sniffer();
     ~dds_sniffer();
 
-    bool init( librealsense::dds::dds_domain_id domain = 0, bool snapshot = false, bool machine_readable = false );
+    bool init( librealsense::dds::dds_domain_id domain = 0, bool snapshot = false, bool machine_readable = false,
+               bool topic_samples = false );
     void run( uint32_t seconds );
 
 private:
@@ -38,6 +39,7 @@ private:
     bool _print_discoveries = false;
     bool _print_by_topics = false;
     bool _print_machine_readable = false;
+    bool _print_topic_samples = false;
 
     mutable std::mutex _dds_entities_lock;
 

@@ -40,9 +40,11 @@ int main( int argc, char ** argv ) try
     CmdLine cmd( "librealsense rs-dds-sniffer tool", ' ' );
     SwitchArg snapshot_arg( "s", "snapshot", "run momentarily taking a snapshot of the domain" );
     SwitchArg machine_readable_arg( "m", "machine-readable", "output entities in a way more suitable for automatic parsing" );
+    SwitchArg topic_samples_arg( "t", "topic-samples", "register to topics that send TypeObject and print their samples" );
     ValueArg< librealsense::dds::dds_domain_id > domain_arg( "d", "domain", "select domain ID to listen on", false, 0, "0-232" );
     cmd.add( snapshot_arg );
     cmd.add( machine_readable_arg );
+    cmd.add( topic_samples_arg );
     cmd.add( domain_arg );
     cmd.parse( argc, argv );
 
@@ -62,7 +64,7 @@ int main( int argc, char ** argv ) try
     }
 
     dds_sniffer snif;
-    if( snif.init( domain, snapshot_arg.isSet(), machine_readable_arg.isSet() ) )
+    if( snif.init( domain, snapshot_arg.isSet(), machine_readable_arg.isSet(), topic_samples_arg.isSet() ) )
     {
         snif.run( seconds );
     }
@@ -113,11 +115,12 @@ dds_sniffer::~dds_sniffer()
     _discovered_types_datas.clear();
 }
 
-bool dds_sniffer::init( librealsense::dds::dds_domain_id domain, bool snapshot, bool machine_readable )
+bool dds_sniffer::init( librealsense::dds::dds_domain_id domain, bool snapshot, bool machine_readable, bool topic_samples )
 {
     _print_discoveries = !snapshot;
     _print_by_topics = snapshot;
     _print_machine_readable = machine_readable;
+    _print_topic_samples = topic_samples && !snapshot;
 
     // Set callbacks before calling _participant.init(), or some events, specifically on_participant_added, might get lost
     _participant.on_writer_added( [this]( librealsense::dds::dds_guid guid, char const * topic_name )
@@ -260,36 +263,40 @@ void dds_sniffer::on_type_discovery( char const * topic_name, DynamicType_ptr dy
     type_support.register_type( _participant.get() );
     std::cout << "Discovered topic " << topic_name << " of type: " << type_support->getName() << std::endl;
 
-    // Create subscriber, topic and reader to receive instances of this topic
-    if( _discovered_types_subscriber == nullptr )
+    if (_print_topic_samples)
     {
-        _discovered_types_subscriber = _participant.get()->create_subscriber( SUBSCRIBER_QOS_DEFAULT, nullptr );
-        if( _discovered_types_subscriber == nullptr )
+        // Create subscriber, topic and reader to receive instances of this topic
+        if (_discovered_types_subscriber == nullptr)
         {
-            std::cout << "Cannot create subscriber for discovered type '" << topic_name << std::endl;
+            _discovered_types_subscriber = _participant.get()->create_subscriber( SUBSCRIBER_QOS_DEFAULT, nullptr );
+            if (_discovered_types_subscriber == nullptr)
+            {
+                std::cout << "Cannot create subscriber for discovered type '" << topic_name << std::endl;
+                return;
+            }
+        }
+
+        Topic* topic = _participant.get()->create_topic( topic_name, type_support->getName(), TOPIC_QOS_DEFAULT );
+        if (topic == nullptr)
+        {
+            std::cout << "Cannot create topic for discovered type '" << topic_name << std::endl;
             return;
         }
-    }
 
-    Topic * topic = _participant.get()->create_topic( topic_name, type_support->getName(), TOPIC_QOS_DEFAULT );
-    if( topic == nullptr )
-    {
-        std::cout << "Cannot create topic for discovered type '" << topic_name << std::endl;
-        return;
-    }
+        StatusMask sub_mask = StatusMask::subscription_matched() << StatusMask::data_available();
+        DataReader* reader = _discovered_types_subscriber->create_datareader( topic, DATAREADER_QOS_DEFAULT,
+                                                                              &_reader_listener, sub_mask );
+        if (reader == nullptr)
+        {
+            std::cout << "Cannot create reader for discovered type '" << topic_name << std::endl;
+            _participant.get()->delete_topic( topic );
+            return;
+        }
+        _discovered_types_readers[reader] = topic;
 
-    StatusMask sub_mask = StatusMask::subscription_matched() << StatusMask::data_available();
-    DataReader * reader = _discovered_types_subscriber->create_datareader( topic, DATAREADER_QOS_DEFAULT, &_reader_listener, sub_mask );
-    if( reader == nullptr )
-    {
-        std::cout << "Cannot create reader for discovered type '" << topic_name << std::endl;
-        _participant.get()->delete_topic( topic );
-        return;
+        DynamicData_ptr data( DynamicDataFactory::get_instance()->create_data( dyn_type ) );
+        _discovered_types_datas[reader] = data;
     }
-    _discovered_types_readers[reader] = topic;
-
-    DynamicData_ptr data( DynamicDataFactory::get_instance()->create_data( dyn_type ) );
-    _discovered_types_datas[reader] = data;
 }
 
 dds_sniffer::dds_reader_listener::dds_reader_listener( std::map< DataReader *, DynamicData_ptr > & datas )
