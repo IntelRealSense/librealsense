@@ -118,6 +118,7 @@ void dds_participant::init( dds_domain_id domain_id, std::string const & partici
 
     // Listener will call DataReaderListener::on_data_available for a specific reader,
     // not SubscriberListener::on_data_on_readers for any reader
+    // ( See note on https://fast-dds.docs.eprosima.com/en/v2.7.0/fastdds/dds_layer/core/entity/entity.html )
     StatusMask par_mask = StatusMask::all() >> StatusMask::data_on_readers();
     _participant = DDS_API_CALL( DomainParticipantFactory::get_instance()->create_participant( domain_id,
                                                                                                pqos,
@@ -227,13 +228,13 @@ void dds_participant::on_participant_removed( dds_guid guid, char const * partic
 }
 
 
-void dds_participant::on_type_discovery( char const* topic_name, eprosima::fastrtps::types::DynamicType_ptr dyn_type )
+void dds_participant::on_type_discovery( char const * topic_name, eprosima::fastrtps::types::DynamicType_ptr dyn_type )
 {
-    for (auto wl : _listeners)
+    for( auto wl : _listeners )
     {
-        if (auto l = wl.lock())
+        if( auto l = wl.lock() )
         {
-            if (l->_on_type_discovery)
+            if( l->_on_type_discovery )
                 l->_on_type_discovery( topic_name, dyn_type );
         }
     }

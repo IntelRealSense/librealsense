@@ -233,19 +233,22 @@ bool dds_device_broadcaster::create_device_writer( const std::string & device_ke
 
 void dds_device_broadcaster::create_broadcast_topic()
 {
-    // Topic constructor creates TypeObject that will be sent as part of the discovery phase
-    librealsense::dds::topics::raw::device_info raw_msg;
-
     eprosima::fastdds::dds::TypeSupport topic_type( new librealsense::dds::topics::device_info::type );
-    // Auto fill type object but not type information so sniffer can dynamically match a reader for this topic
-    topic_type.get()->auto_fill_type_information( false );
+    // Auto fill DDS X-Types TypeObject so other applications (e.g sniffer) can dynamically match a reader for this topic
     topic_type.get()->auto_fill_type_object( true );
+    // Don't fill DDS X-Types TypeInformation, it is wasteful if you send TypeObject anyway
+    topic_type.get()->auto_fill_type_information( false );
     // Registering the topic type with the participant enables topic instance creation by factory
     DDS_API_CALL( _participant->register_type( topic_type ) );
     _publisher = DDS_API_CALL( _participant->create_publisher( PUBLISHER_QOS_DEFAULT, nullptr ) );
     _topic = DDS_API_CALL( _participant->create_topic( librealsense::dds::topics::device_info::TOPIC_NAME,
                                                        topic_type->getName(),
                                                        TOPIC_QOS_DEFAULT ) );
+
+    // Topic constructor creates TypeObject that will be sent as part of the discovery phase
+    // If this line is removed TypeObject will be sent only after constructing the topic in the first time
+    // send_device_info_msg is called (after having a matching reader)
+    librealsense::dds::topics::raw::device_info raw_msg;
 }
 
 bool dds_device_broadcaster::send_device_info_msg( const librealsense::dds::topics::device_info & dev_info )

@@ -10,12 +10,16 @@
 #include <fastdds/dds/domain/DomainParticipant.hpp>
 #include <fastdds/dds/subscriber/DataReader.hpp>
 #include <fastdds/dds/subscriber/DataReaderListener.hpp>
+#include <fastdds/dds/log/Log.hpp>
 #include <fastrtps/types/DynamicDataHelper.hpp>
 #include <fastrtps/types/DynamicDataFactory.h>
 
 #include <tclap/CmdLine.h>
 #include <tclap/ValueArg.h>
 #include <tclap/SwitchArg.h>
+
+#include <librealsense2/utilities/easylogging/easyloggingpp.h>
+#include <librealsense2/rs.hpp>  // Include RealSense Cross Platform API
 
 using namespace TCLAP;
 using namespace eprosima::fastdds::dds;
@@ -32,6 +36,28 @@ using namespace eprosima::fastrtps::types;
 // To differentiate entities of different participant with same name we append process GUID values to the name
 constexpr uint8_t GUID_PROCESS_LOCATION = 4;
 
+// Redirect DDS log messages to our own logging mechanism
+struct log_consumer : eprosima::fastdds::dds::LogConsumer
+{
+    virtual void Consume( const eprosima::fastdds::dds::Log::Entry & e ) override
+    {
+        using eprosima::fastdds::dds::Log;
+        switch( e.kind )
+        {
+        case Log::Kind::Error:
+            LOG_ERROR( "[DDS] " << e.message );
+            break;
+        case Log::Kind::Warning:
+            LOG_WARNING( "[DDS] " << e.message );
+            break;
+        case Log::Kind::Info:
+            LOG_DEBUG( "[DDS] " << e.message );
+            break;
+        }
+    }
+};
+
+
 int main( int argc, char ** argv ) try
 {
     librealsense::dds::dds_domain_id domain = 0;
@@ -41,12 +67,29 @@ int main( int argc, char ** argv ) try
     SwitchArg snapshot_arg( "s", "snapshot", "run momentarily taking a snapshot of the domain" );
     SwitchArg machine_readable_arg( "m", "machine-readable", "output entities in a way more suitable for automatic parsing" );
     SwitchArg topic_samples_arg( "t", "topic-samples", "register to topics that send TypeObject and print their samples" );
+    SwitchArg debug_arg( "", "debug", "Enable debug logging", false );
     ValueArg< librealsense::dds::dds_domain_id > domain_arg( "d", "domain", "select domain ID to listen on", false, 0, "0-232" );
     cmd.add( snapshot_arg );
     cmd.add( machine_readable_arg );
     cmd.add( topic_samples_arg );
     cmd.add( domain_arg );
+    cmd.add( debug_arg );
     cmd.parse( argc, argv );
+
+    // Intercept DDS messages and redirect them to our own logging mechanism
+    std::unique_ptr< eprosima::fastdds::dds::LogConsumer > consumer( new log_consumer() );
+    eprosima::fastdds::dds::Log::ClearConsumers();
+    eprosima::fastdds::dds::Log::RegisterConsumer( std::move( consumer ) );
+
+    if( debug_arg.isSet() )
+    {
+        rs2::log_to_console( RS2_LOG_SEVERITY_DEBUG );
+        eprosima::fastdds::dds::Log::SetVerbosity( eprosima::fastdds::dds::Log::Info );
+    }
+    else
+    {
+        rs2::log_to_console( RS2_LOG_SEVERITY_ERROR );
+    }
 
     if( snapshot_arg.isSet() )
     {
@@ -58,7 +101,7 @@ int main( int argc, char ** argv ) try
         domain = domain_arg.getValue();
         if( domain > 232 )
         {
-            std::cerr << "Invalid domain value, enter a value in the range [0, 232]" << std::endl;
+            LOG_ERROR( "Invalid domain value, enter a value in the range [0, 232]" );
             return EXIT_FAILURE;
         }
     }
@@ -70,7 +113,7 @@ int main( int argc, char ** argv ) try
     }
     else
     {
-        std::cerr << "Initialization failure" << std::endl;
+        LOG_ERROR( "Initialization failure" );
         return EXIT_FAILURE;
     }
 
@@ -78,17 +121,17 @@ int main( int argc, char ** argv ) try
 }
 catch( const TCLAP::ExitException & )
 {
-    std::cerr << "Undefined exception while parsing command line arguments" << std::endl;
+    LOG_ERROR( "Undefined exception while parsing command line arguments" );
     return EXIT_FAILURE;
 }
 catch( const TCLAP::ArgException & e )
 {
-    std::cerr << e.what() << std::endl;
+    LOG_ERROR( e.what() );
     return EXIT_FAILURE;
 }
 catch( const std::exception & e )
 {
-    std::cerr << e.what() << std::endl;
+    LOG_ERROR( e.what() );
     return EXIT_FAILURE;
 }
 
@@ -102,7 +145,7 @@ dds_sniffer::~dds_sniffer()
 {
     for( const auto & it : _discovered_types_readers )
     {
-        _discovered_types_subscriber->delete_datareader( it.first ); // If not empty than _discovered_types_subscriber != nullptr
+        _discovered_types_subscriber->delete_datareader( it.first );  // If not empty than _discovered_types_subscriber != nullptr
         _participant.get()->delete_topic( it.second );
     }
 
@@ -115,17 +158,20 @@ dds_sniffer::~dds_sniffer()
     _discovered_types_datas.clear();
 }
 
-bool dds_sniffer::init( librealsense::dds::dds_domain_id domain, bool snapshot, bool machine_readable, bool topic_samples )
+bool dds_sniffer::init( librealsense::dds::dds_domain_id domain,
+                        bool snapshot,
+                        bool machine_readable,
+                        bool topic_samples )
 {
-    _print_discoveries = !snapshot;
+    _print_discoveries = ! snapshot;
     _print_by_topics = snapshot;
     _print_machine_readable = machine_readable;
-    _print_topic_samples = topic_samples && !snapshot;
+    _print_topic_samples = topic_samples && ! snapshot;
 
     // Set callbacks before calling _participant.init(), or some events, specifically on_participant_added, might get lost
     _participant.create_listener( &_listener )
         ->on_writer_added( [this]( librealsense::dds::dds_guid guid, char const * topic_name ) {
-        on_writer_added( guid, topic_name );  
+            on_writer_added( guid, topic_name );
         } )
         ->on_writer_removed( [this]( librealsense::dds::dds_guid guid, char const * topic_name ) {
             on_writer_removed( guid, topic_name );
@@ -142,14 +188,13 @@ bool dds_sniffer::init( librealsense::dds::dds_domain_id domain, bool snapshot, 
         ->on_participant_removed( [this]( librealsense::dds::dds_guid guid, char const * participant_name ) {
             on_participant_removed( guid, participant_name );
         } )
-        ->on_type_discovery( [this]( char const * topic_name, DynamicType_ptr dyn_type )
-        {
+        ->on_type_discovery( [this]( char const * topic_name, DynamicType_ptr dyn_type ) {
             on_type_discovery( topic_name, dyn_type );
         } );
 
     _participant.init( domain, "rs-dds-sniffer" );
 
-    if( !_print_machine_readable )
+    if( ! _print_machine_readable )
     {
         if( snapshot )
         {
@@ -253,44 +298,49 @@ void dds_sniffer::on_participant_removed( librealsense::dds::dds_guid guid, cons
 
 void dds_sniffer::on_type_discovery( char const * topic_name, DynamicType_ptr dyn_type )
 {
-    // Register type with participant
-    TypeSupport type_support( new DynamicPubSubType( dyn_type ) );
-    type_support.register_type( _participant.get() );
-    std::cout << "Discovered topic " << topic_name << " of type: " << type_support->getName() << std::endl;
-
-    if (_print_topic_samples)
+    if( ! _print_by_topics )
     {
-        // Create subscriber, topic and reader to receive instances of this topic
-        if (_discovered_types_subscriber == nullptr)
+        // Register type with participant
+        TypeSupport type_support( new DynamicPubSubType( dyn_type ) );
+        type_support.register_type( _participant.get() );
+        std::cout << "Discovered topic " << topic_name << " of type: " << type_support->getName() << std::endl;
+
+        if( _print_topic_samples )
         {
-            _discovered_types_subscriber = _participant.get()->create_subscriber( SUBSCRIBER_QOS_DEFAULT, nullptr );
-            if (_discovered_types_subscriber == nullptr)
+            // Create subscriber, topic and reader to receive instances of this topic
+            if( _discovered_types_subscriber == nullptr )
             {
-                std::cout << "Cannot create subscriber for discovered type '" << topic_name << std::endl;
+                _discovered_types_subscriber = _participant.get()->create_subscriber( SUBSCRIBER_QOS_DEFAULT, nullptr );
+                if( _discovered_types_subscriber == nullptr )
+                {
+                    LOG_ERROR( "Cannot create subscriber for discovered type '" << topic_name );
+                    return;
+                }
+            }
+
+            Topic * topic = _participant.get()->create_topic( topic_name, type_support->getName(), TOPIC_QOS_DEFAULT );
+            if( topic == nullptr )
+            {
+                LOG_ERROR( "Cannot create topic for discovered type '" << topic_name );
                 return;
             }
-        }
 
-        Topic* topic = _participant.get()->create_topic( topic_name, type_support->getName(), TOPIC_QOS_DEFAULT );
-        if (topic == nullptr)
-        {
-            std::cout << "Cannot create topic for discovered type '" << topic_name << std::endl;
-            return;
-        }
+            StatusMask sub_mask = StatusMask::subscription_matched() << StatusMask::data_available();
+            DataReader * reader = _discovered_types_subscriber->create_datareader( topic,
+                                                                                   DATAREADER_QOS_DEFAULT,
+                                                                                   &_reader_listener,
+                                                                                   sub_mask );
+            if( reader == nullptr )
+            {
+                LOG_ERROR( "Cannot create reader for discovered type '" << topic_name );
+                _participant.get()->delete_topic( topic );
+                return;
+            }
+            _discovered_types_readers[reader] = topic;
 
-        StatusMask sub_mask = StatusMask::subscription_matched() << StatusMask::data_available();
-        DataReader* reader = _discovered_types_subscriber->create_datareader( topic, DATAREADER_QOS_DEFAULT,
-                                                                              &_reader_listener, sub_mask );
-        if (reader == nullptr)
-        {
-            std::cout << "Cannot create reader for discovered type '" << topic_name << std::endl;
-            _participant.get()->delete_topic( topic );
-            return;
+            DynamicData_ptr data( DynamicDataFactory::get_instance()->create_data( dyn_type ) );
+            _discovered_types_datas[reader] = data;
         }
-        _discovered_types_readers[reader] = topic;
-
-        DynamicData_ptr data( DynamicDataFactory::get_instance()->create_data( dyn_type ) );
-        _discovered_types_datas[reader] = data;
     }
 }
 
@@ -312,7 +362,7 @@ void dds_sniffer::dds_reader_listener::on_data_available( DataReader * reader )
         SampleInfo info;
         if( reader->take_next_sample( data.get(), &info ) == ReturnCode_t::RETCODE_OK )
         {
-            if( info.instance_state == ALIVE_INSTANCE_STATE )
+            if( info.valid_data )
             {
                 DynamicDataHelper::print( data );
             }
@@ -324,16 +374,15 @@ void dds_sniffer::dds_reader_listener::on_subscription_matched( DataReader *, co
 {
     if( info.current_count_change == 1 )
     {
-        std::cout << "Subscriber matched" << std::endl;
+        LOG_DEBUG( "Subscriber matched" );
     }
     else if( info.current_count_change == -1 )
     {
-        std::cout << "Subscriber unmatched" << std::endl;
+        LOG_DEBUG( "Subscriber unmatched" );
     }
     else
     {
-        std::cout << info.current_count_change
-                  << " is not a valid value for SubscriptionMatchedStatus current count change" << std::endl;
+        LOG_ERROR( info.current_count_change << " is not a valid value for SubscriptionMatchedStatus current count change" );
     }
 }
 
@@ -435,8 +484,8 @@ void dds_sniffer::print_participant_discovered( librealsense::dds::dds_guid guid
 {
     if( _print_machine_readable )
     {
-        std::cout << "Participant," << guid << "," << participant_name
-                  << ( discovered ? ",discovered" : ",removed" ) << std::endl;
+        std::cout << "Participant," << guid << "," << participant_name << ( discovered ? ",discovered" : ",removed" )
+                  << std::endl;
     }
     else
     {
