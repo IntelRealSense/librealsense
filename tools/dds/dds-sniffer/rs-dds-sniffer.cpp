@@ -20,6 +20,7 @@
 
 #include <librealsense2/utilities/easylogging/easyloggingpp.h>
 #include <librealsense2/rs.hpp>  // Include RealSense Cross Platform API
+#include <librealsense2/dds/dds-utilities.h>
 
 using namespace TCLAP;
 using namespace eprosima::fastdds::dds;
@@ -145,13 +146,13 @@ dds_sniffer::~dds_sniffer()
 {
     for( const auto & it : _discovered_types_readers )
     {
-        _discovered_types_subscriber->delete_datareader( it.first );  // If not empty than _discovered_types_subscriber != nullptr
-        _participant.get()->delete_topic( it.second );
+        DDS_API_CALL_NO_THROW( _discovered_types_subscriber->delete_datareader( it.first ) );  // If not empty than _discovered_types_subscriber != nullptr
+        DDS_API_CALL_NO_THROW( _participant.get()->delete_topic( it.second ) );
     }
 
     if( _discovered_types_subscriber != nullptr )
     {
-        _participant.get()->delete_subscriber( _discovered_types_subscriber );
+        DDS_API_CALL_NO_THROW( _participant.get()->delete_subscriber( _discovered_types_subscriber ) );
     }
 
     _discovered_types_readers.clear();
@@ -301,8 +302,8 @@ void dds_sniffer::on_type_discovery( char const * topic_name, DynamicType_ptr dy
     if( ! _print_by_topics )
     {
         // Register type with participant
-        TypeSupport type_support( new DynamicPubSubType( dyn_type ) );
-        type_support.register_type( _participant.get() );
+        TypeSupport type_support( DDS_API_CALL( new DynamicPubSubType( dyn_type ) ) );
+        DDS_API_CALL( type_support.register_type( _participant.get() ) );
         std::cout << "Discovered topic " << topic_name << " of type: " << type_support->getName() << std::endl;
 
         if( _print_topic_samples )
@@ -310,7 +311,8 @@ void dds_sniffer::on_type_discovery( char const * topic_name, DynamicType_ptr dy
             // Create subscriber, topic and reader to receive instances of this topic
             if( _discovered_types_subscriber == nullptr )
             {
-                _discovered_types_subscriber = _participant.get()->create_subscriber( SUBSCRIBER_QOS_DEFAULT, nullptr );
+                _discovered_types_subscriber = DDS_API_CALL( _participant.get()->create_subscriber( SUBSCRIBER_QOS_DEFAULT,
+                                                                                                    nullptr ) );
                 if( _discovered_types_subscriber == nullptr )
                 {
                     LOG_ERROR( "Cannot create subscriber for discovered type '" << topic_name );
@@ -318,7 +320,8 @@ void dds_sniffer::on_type_discovery( char const * topic_name, DynamicType_ptr dy
                 }
             }
 
-            Topic * topic = _participant.get()->create_topic( topic_name, type_support->getName(), TOPIC_QOS_DEFAULT );
+            Topic * topic = DDS_API_CALL( _participant.get()->create_topic( topic_name, type_support->getName(),
+                                                                            TOPIC_QOS_DEFAULT ) );
             if( topic == nullptr )
             {
                 LOG_ERROR( "Cannot create topic for discovered type '" << topic_name );
@@ -326,19 +329,19 @@ void dds_sniffer::on_type_discovery( char const * topic_name, DynamicType_ptr dy
             }
 
             StatusMask sub_mask = StatusMask::subscription_matched() << StatusMask::data_available();
-            DataReader * reader = _discovered_types_subscriber->create_datareader( topic,
-                                                                                   DATAREADER_QOS_DEFAULT,
-                                                                                   &_reader_listener,
-                                                                                   sub_mask );
+            DataReader * reader = DDS_API_CALL( _discovered_types_subscriber->create_datareader( topic,
+                                                                                                 DATAREADER_QOS_DEFAULT,
+                                                                                                 &_reader_listener,
+                                                                                                 sub_mask ) );
             if( reader == nullptr )
             {
                 LOG_ERROR( "Cannot create reader for discovered type '" << topic_name );
-                _participant.get()->delete_topic( topic );
+                DDS_API_CALL( _participant.get()->delete_topic( topic ) );
                 return;
             }
             _discovered_types_readers[reader] = topic;
 
-            DynamicData_ptr data( DynamicDataFactory::get_instance()->create_data( dyn_type ) );
+            DynamicData_ptr data( DDS_API_CALL( DynamicDataFactory::get_instance()->create_data( dyn_type ) ) );
             _discovered_types_datas[reader] = data;
         }
     }
@@ -351,8 +354,9 @@ dds_sniffer::dds_reader_listener::dds_reader_listener( std::map< DataReader *, D
 
 void dds_sniffer::dds_reader_listener::on_data_available( DataReader * reader )
 {
-    const TopicDescription * topic_desc = reader->get_topicdescription();
-    std::cout << "Received topic " << topic_desc->get_name() << " of type " << topic_desc->get_type_name() << std::endl;
+    const TopicDescription * topic_desc = DDS_API_CALL( reader->get_topicdescription() );
+    std::cout << "Received topic " << topic_desc->get_name() << " of type " 
+              << topic_desc->get_type_name() << std::endl;
 
     auto dit = _datas.find( reader );
 
@@ -360,7 +364,7 @@ void dds_sniffer::dds_reader_listener::on_data_available( DataReader * reader )
     {
         DynamicData_ptr data = dit->second;
         SampleInfo info;
-        if( reader->take_next_sample( data.get(), &info ) == ReturnCode_t::RETCODE_OK )
+        if( DDS_API_CALL( reader->take_next_sample( data.get(), &info ) ) == ReturnCode_t::RETCODE_OK )
         {
             if( info.valid_data )
             {
