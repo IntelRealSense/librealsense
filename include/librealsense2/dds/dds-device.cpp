@@ -128,14 +128,16 @@ private:
 
         LOG_DEBUG( "topic '" << topic_name << "' created" );
     }
+
     bool init()
     {
         size_t num_of_sensors = 0;
-        std::unordered_map< std::string, topics::device::notification::video_stream_profiles > sensor_to_video_profiles;
-        std::unordered_map< std::string, topics::device::notification::motion_stream_profiles > sensor_to_motion_profiles;
+        std::unordered_map< int , std::string> sensor_index_to_name;
+        std::unordered_map< std::string, topics::device::notification::video_stream_profiles_msg > sensor_to_video_profiles;
+        std::unordered_map< std::string, topics::device::notification::motion_stream_profiles_msg > sensor_to_motion_profiles;
 
         // We expect to receive all of the sensors data under a timeout
-        utilities::time::timer t( std::chrono::seconds( 5 ) );
+        utilities::time::timer t( std::chrono::seconds( 30) ); // TODO: refine time out
         state_type state = state_type::WAIT_FOR_DEVICE_HEADER;
 
         while( ! t.has_expired() && state_type::DONE != state )
@@ -162,7 +164,7 @@ private:
                         case topics::device::notification::msg_type::DEVICE_HEADER:
                             if( state_type::WAIT_FOR_DEVICE_HEADER == state )
                             {
-                                num_of_sensors = data.get< topics::device::notification::device_header >()->num_of_sensors;
+                                num_of_sensors = data.get< topics::device::notification::device_header_msg >()->num_of_sensors;
                                 LOG_INFO( "got DEVICE_HEADER message with " << num_of_sensors << " sensors" );
                                 state = state_type::WAIT_FOR_SENSOR_HEADER;
                             }
@@ -172,13 +174,13 @@ private:
                         case topics::device::notification::msg_type::SENSOR_HEADER: {
                             if( state_type::WAIT_FOR_SENSOR_HEADER == state )
                             {
-                                auto sensor_header = data.get< topics::device::notification::sensor_header >();
-                                std::cout << "got SENSOR_HEADER message for sensor: " << sensor_header->name << " of type: "
-                                          << ( sensor_header->type == topics::device::notification::sensor_header::sensor_type::VIDEO_SENSOR
+                                auto sensor_header = data.get< topics::device::notification::sensor_header_msg >();
+                                LOG_INFO( "got SENSOR_HEADER message for sensor: " << sensor_header->name << " of type: "
+                                          << ( sensor_header->type == topics::device::notification::sensor_header_msg::sensor_type::VIDEO_SENSOR
                                                    ? "VIDEO_SENSOR"
-                                                   : "MOTION_SENSOR" )
-                                          << std::endl;
+                                                   : "MOTION_SENSOR" ) );
 
+                                sensor_index_to_name.emplace( sensor_header->index, sensor_header->name );
                                 state = state_type::WAIT_FOR_PROFILES;
                             }
                             else
@@ -188,10 +190,12 @@ private:
                         case topics::device::notification::msg_type::VIDEO_STREAM_PROFILES:
                             if( state_type::WAIT_FOR_PROFILES == state )
                             {
-                                auto video_stream_profiles = data.get<topics::device::notification::video_stream_profiles >();
-                                std::cout << "got VIDEO_STREAM_PROFILES message" << std::endl;
-                                // sensor_to_video_profiles.insert()...  - ADD
-
+                                auto video_stream_profiles = data.get<topics::device::notification::video_stream_profiles_msg >();
+                                
+                                LOG_INFO( "got VIDEO_STREAM_PROFILES message" );
+                                
+                                sensor_to_video_profiles.emplace( sensor_index_to_name.at(video_stream_profiles->dds_sensor_index), *video_stream_profiles );
+                                
                                 if( sensor_to_video_profiles.size() + sensor_to_motion_profiles.size() < num_of_sensors )
                                     state = state_type::WAIT_FOR_SENSOR_HEADER;
                                 else
@@ -203,8 +207,10 @@ private:
                         case topics::device::notification::msg_type::MOTION_STREAM_PROFILES:
                             if( state_type::WAIT_FOR_PROFILES == state )
                             {
-                                std::cout << "got MOTION_STREAM_PROFILES message" << std::endl;
-                                // sensor_to_motion_profiles.insert()...  - ADD
+                                LOG_INFO( "got MOTION_STREAM_PROFILES message" );
+                                auto motion_stream_profiles = data.get<topics::device::notification::motion_stream_profiles_msg >();
+                                
+                                sensor_to_motion_profiles.emplace( sensor_index_to_name.at(motion_stream_profiles->dds_sensor_index), *motion_stream_profiles );
                                 if( sensor_to_video_profiles.size() + sensor_to_motion_profiles.size() < num_of_sensors )
                                     state = state_type::WAIT_FOR_SENSOR_HEADER;
                                 else
@@ -220,7 +226,6 @@ private:
                 }
             }
         }
-
         return ( state_type::DONE == state );
     }
 

@@ -191,6 +191,9 @@ public:
         wqos.history().kind = KEEP_LAST_HISTORY_QOS;;
         wqos.history().depth = 10;
         wqos.publish_mode().kind = SYNCHRONOUS_PUBLISH_MODE;
+        // Our message has dynamic size (unbounded) so we need a memory policy that supports it
+        wqos.endpoint().history_memory_policy
+            = eprosima::fastrtps::rtps::DYNAMIC_RESERVE_MEMORY_MODE;
         _data_writer = DDS_API_CALL( _publisher->create_datawriter( _topic, wqos, &_clients_listener ) );
         _notifications_loop.start();
         _active = true;

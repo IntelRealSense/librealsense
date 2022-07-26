@@ -13,8 +13,13 @@ namespace device {
 class notification
 {
 public:
-
     using type = raw::device::notificationPubSubType;
+
+    // Currently we use constant MAX size of profiles,
+    // If we decide we want a scaled solution we may need to split the profiles to 
+    // message for each profile (But then we have multiple transport overhead..)
+    static const size_t MAX_VIDEO_PROFILES = 200;
+    static const size_t MAX_MOTION_PROFILES = 20;
 
 #pragma pack( push, 1 )
     enum class msg_type : uint16_t
@@ -26,14 +31,14 @@ public:
         MAX_MSG_TYPE
     };
 
-    struct device_header
+    struct device_header_msg
     {
         size_t num_of_sensors;
     };
 
-    struct sensor_header
+    struct sensor_header_msg
     {
-        enum sensor_type
+        enum sensor_type // maybe enum class with 1 byte inheritance 
         {
             VIDEO_SENSOR,
             MOTION_SENSOR
@@ -42,15 +47,14 @@ public:
         sensor_type type;
         uint8_t index;           // Index of the current sensor [0-(num_of_sensors-1)]
         char name[32];           // Sensor name
-        size_t num_of_profiles;  // Profile count for this sensor
     };
 
 
     struct video_stream_profile
     {
-        int8_t index;           // Sensor index (Normally )
+        int8_t index;           // LRS Sensor index
         int16_t uid;            // Stream unique ID
-        int8_t framerate;
+        int16_t framerate;
         rs2_format format;      // Transfer as uint8_t?
         rs2_stream type;        // Transfer as uint8_t?
         int16_t width;          
@@ -60,21 +64,25 @@ public:
 
     struct motion_stream_profile
     {
-        int8_t index;           // Sensor index (Normally )
+        int8_t index;           // LRS Sensor index
         int16_t uid;            // Stream unique ID
-        int8_t framerate;
+        int16_t framerate;
         rs2_format format;      // Transfer as uint8_t?
         rs2_stream type;        // Transfer as uint8_t?
     };
 
-    struct video_stream_profiles
+    struct video_stream_profiles_msg
     {
-        std::vector<video_stream_profile> profiles_vec;
+        uint8_t dds_sensor_index;  // Index of the current dds sensor [0-(num_of_sensors-1)]
+        size_t num_of_profiles;  
+        video_stream_profile profiles[MAX_VIDEO_PROFILES];
     };
 
-    struct motion_stream_profiles
+    struct motion_stream_profiles_msg
     {
-        std::vector<motion_stream_profile> profiles_vec;
+        uint8_t dds_sensor_index; // Index of the current sensor [0-(num_of_sensors-1)]
+        size_t num_of_profiles; 
+        motion_stream_profile profiles[MAX_MOTION_PROFILES];
     };
 
 #pragma pack( pop )
@@ -87,8 +95,8 @@ public:
     template<typename T>
     static void construct_raw_message( msg_type msg_id, const T& msg, raw::device::notification& raw_msg )
     {
-        raw_msg.id() = static_cast<int16_t>(msg_id);
-        raw_msg.size() = sizeof( T );
+        raw_msg.id() = static_cast< int16_t >( msg_id );
+        raw_msg.size() = static_cast< uint32_t >( sizeof( msg ) );
         raw_msg.raw_data().assign( reinterpret_cast< const uint8_t * >( &msg ),
                                    reinterpret_cast< const uint8_t * >( &msg ) + raw_msg.size() );
     }

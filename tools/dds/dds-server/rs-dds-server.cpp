@@ -96,7 +96,7 @@ void add_init_device_header_msg( rs2::device dev, std::shared_ptr<librealsense::
 {
     using namespace librealsense::dds::topics;
    
-    device::notification::device_header device_header_msg;
+    device::notification::device_header_msg device_header_msg;
     auto &&sensors = dev.query_sensors();
     device_header_msg.num_of_sensors = sensors.size();
 
@@ -109,23 +109,16 @@ void add_init_device_header_msg( rs2::device dev, std::shared_ptr<librealsense::
     server->add_init_msgs( raw_msg );
 }
 
-void send_sensor_header_msg(  std::shared_ptr<librealsense::dds::dds_device_server> &server, rs2::sensor sensor, const int stream_idx, size_t profiles_count )
+void send_sensor_header_msg(  std::shared_ptr<librealsense::dds::dds_device_server> &server, rs2::sensor sensor, librealsense::dds::topics::device::notification::sensor_header_msg::sensor_type sensor_type, const int sensor_idx )
 {
     using namespace librealsense::dds::topics;
 
     // Send current stream header message
-    device::notification::sensor_header sensor_header_msg;
-    sensor_header_msg.index = stream_idx;
+    device::notification::sensor_header_msg sensor_header_msg;
+    sensor_header_msg.index = sensor_idx;
 
     strcpy( sensor_header_msg.name, sensor.get_info( RS2_CAMERA_INFO_NAME ) );
-    if( sensor.is<rs2::color_sensor>() || sensor.is<rs2::depth_sensor>() )
-        sensor_header_msg.type = device::notification::sensor_header::VIDEO_SENSOR;
-    else if( sensor.is<rs2::motion_sensor>() )
-        sensor_header_msg.type = device::notification::sensor_header::MOTION_SENSOR;
-    else
-        throw std::runtime_error("Sensor type is not supported (only video & motion sensors are supported)");
-
-    sensor_header_msg.num_of_profiles = profiles_count;
+    sensor_header_msg.type = sensor_type;
     raw::device::notification raw_sensor_header_msg;
     device::notification::construct_raw_message( device::notification::msg_type::SENSOR_HEADER,
                                                   sensor_header_msg,
@@ -134,12 +127,16 @@ void send_sensor_header_msg(  std::shared_ptr<librealsense::dds::dds_device_serv
     server->add_init_msgs( raw_sensor_header_msg );
 }
 
-void prepare_profiles_messeges( rs2::device dev,
-                               const std::vector< rs2::stream_profile > & stream_profiles, 
-    librealsense::dds::topics::device::notification::video_stream_profiles& video_stream_profiles_msg, 
-    librealsense::dds::topics::device::notification::motion_stream_profiles& motion_stream_profiles_msg)
+void prepare_video_profiles_messeges(
+    rs2::device dev,
+    const int sensor_idx,
+    const std::vector< rs2::stream_profile > & stream_profiles,
+    librealsense::dds::topics::device::notification::video_stream_profiles_msg & video_stream_profiles_msg )
 {
     using namespace librealsense::dds::topics;
+    video_stream_profiles_msg.dds_sensor_index = sensor_idx;
+
+    int index = 0;
     for( auto & stream_profile : stream_profiles )
     {
         if( stream_profile.is< rs2::video_stream_profile >() )
@@ -149,69 +146,122 @@ void prepare_profiles_messeges( rs2::device dev,
             device::notification::video_stream_profile vsp_msg
                 = { static_cast< int8_t >( vsp.stream_index() ),
                     static_cast< int16_t >( vsp.unique_id() ),
-                    static_cast< int8_t >( vsp.fps() ),
+                    static_cast< int16_t >( vsp.fps() ),
                     vsp.format(),
                     vsp.stream_type(),
                     static_cast< int16_t >( vsp.width() ),
                     static_cast< int16_t >( vsp.height() ) };
 
-
-            video_stream_profiles_msg.profiles_vec.push_back( std::move( vsp_msg ) );
+            video_stream_profiles_msg.profiles[index++] =  std::move( vsp_msg );
         }
-        else if( stream_profile.is< rs2::motion_stream_profile >() )
+        else
         {
-            const auto & msp = stream_profile.as< rs2::video_stream_profile >();
+            LOG_ERROR( "got illegal profile with uid:" << stream_profile.unique_id() );
+        }
+        video_stream_profiles_msg.num_of_profiles = index;
+    }
+}
+
+void prepare_motion_profiles_messeges(
+    rs2::device dev,
+    const int sensor_idx,
+    const std::vector< rs2::stream_profile > & stream_profiles,
+    librealsense::dds::topics::device::notification::motion_stream_profiles_msg & motion_stream_profiles_msg )
+{
+    using namespace librealsense::dds::topics;
+    motion_stream_profiles_msg.dds_sensor_index = sensor_idx;
+    int index = 0;
+    for( auto & stream_profile : stream_profiles )
+    {
+        if( stream_profile.is< rs2::motion_stream_profile >() )
+        {
+            const auto & msp = stream_profile.as< rs2::motion_stream_profile >();
             device::notification::motion_stream_profile msp_msg
                 = { static_cast< int8_t >( msp.stream_index() ),
                     static_cast< int16_t >( msp.unique_id() ),
-                    static_cast< int8_t >( msp.fps() ),
+                    static_cast< int16_t >( msp.fps() ),
                     msp.format(),
                     msp.stream_type() };
-            motion_stream_profiles_msg.profiles_vec.push_back(std::move(msp_msg));
+            motion_stream_profiles_msg.profiles[index++] = std::move( msp_msg );
         }
         else
         {
             LOG_ERROR( "got illegal profile with uid:" << stream_profile.unique_id() );
         }
     }
+    motion_stream_profiles_msg.num_of_profiles = index;
 }
 
 void add_init_profiles_msgs( rs2::device dev, std::shared_ptr<librealsense::dds::dds_device_server> &server )
 {
     using namespace librealsense::dds::topics;
-    auto stream_idx = 0;
-    device::notification::video_stream_profiles video_stream_profiles_msg;
-    device::notification::motion_stream_profiles motion_stream_profiles_msg;
+    auto sensor_idx = 0;
 
     // For each sensor publish all it's profiles
     for( auto &sensor : dev.query_sensors() )
     {
+        device::notification::sensor_header_msg::sensor_type sensor_type;
+
+        if( sensor.is< rs2::color_sensor >() || sensor.is< rs2::depth_sensor >() )
+            sensor_type = device::notification::sensor_header_msg::VIDEO_SENSOR;
+        else if( sensor.is< rs2::motion_sensor >() )
+            sensor_type = device::notification::sensor_header_msg::MOTION_SENSOR;
+        else
+            throw std::runtime_error(
+                "Sensor type is not supported (only video & motion sensors are supported)" );
+
         auto && stream_profiles = sensor.get_stream_profiles();
-        send_sensor_header_msg( server, sensor, stream_idx++, stream_profiles.size() );
+        send_sensor_header_msg( server, sensor, sensor_type, sensor_idx );
 
-        // Prepare stream profiles messages
-        prepare_profiles_messeges( dev,
-                                   stream_profiles,
-                                   video_stream_profiles_msg,
-                                   motion_stream_profiles_msg );
+        switch( sensor_type )
+        {
+        case device::notification::sensor_header_msg::VIDEO_SENSOR: 
+            {
+                device::notification::video_stream_profiles_msg video_stream_profiles_msg;
+                prepare_video_profiles_messeges( dev,
+                                                 sensor_idx,
+                                                 stream_profiles,
+                                                 video_stream_profiles_msg );
 
-        // Send video stream profiles
-        raw::device::notification raw_video_stream_profiles_msg;
-        device::notification::construct_raw_message(
-            device::notification::msg_type::VIDEO_STREAM_PROFILES,
-            video_stream_profiles_msg,
-            raw_video_stream_profiles_msg );
-        server->add_init_msgs( raw_video_stream_profiles_msg );
+                // Send video stream profiles
+                if( video_stream_profiles_msg.num_of_profiles > 0 )
+                {
+                    raw::device::notification raw_video_stream_profiles_msg;
+                    device::notification::construct_raw_message(
+                        device::notification::msg_type::VIDEO_STREAM_PROFILES,
+                        video_stream_profiles_msg,
+                        raw_video_stream_profiles_msg );
 
-        // Send motion stream profiles
-        raw::device::notification raw_motion_stream_profiles_msg;
-        device::notification::construct_raw_message(
-            device::notification::msg_type::MOTION_STREAM_PROFILES,
-            motion_stream_profiles_msg,
-            raw_motion_stream_profiles_msg );
-        server->add_init_msgs( raw_motion_stream_profiles_msg );
+                    server->add_init_msgs( raw_video_stream_profiles_msg );
+                }
+            }
+            break;
 
-        // Send pose stream profiles ? TODO
+        case device::notification::sensor_header_msg::MOTION_SENSOR: 
+            {
+                device::notification::motion_stream_profiles_msg motion_stream_profiles_msg;
+                prepare_motion_profiles_messeges( dev,
+                                                    sensor_idx,
+                                                    stream_profiles,
+                                                    motion_stream_profiles_msg );
+
+                // Send motion stream profiles
+                if( motion_stream_profiles_msg.num_of_profiles > 0 )
+                {
+                    raw::device::notification raw_motion_stream_profiles_msg;
+                    device::notification::construct_raw_message(
+                        device::notification::msg_type::MOTION_STREAM_PROFILES,
+                        motion_stream_profiles_msg,
+                        raw_motion_stream_profiles_msg );
+                    server->add_init_msgs( raw_motion_stream_profiles_msg );
+                }
+            }
+            break;
+        default:
+            break;
+        }
+        // Promote to next sensor index
+        sensor_idx++;
     }
 }
 
