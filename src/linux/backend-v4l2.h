@@ -312,11 +312,14 @@ namespace librealsense
             static bool is_usb_path_valid(const std::string& usb_video_path, const std::string &dev_name,
                                           std::string &busnum, std::string &devnum, std::string &devpath);
 
+            static bool is_usb_device_path(const std::string& video_path);
+
             static uvc_device_info handle_usb_device_path(const std::string& video_path, const std::string& name);
 
             static uvc_device_info handle_mipi_device_path(const std::string& video_path, const std::string& name);
 
-            static bool is_usb_device_path(const std::string& video_path);
+            static void get_mipi_device_info(const std::string& dev_name,
+                                             std::string& bus_info, std::string& card);
 
             v4l_uvc_device(const uvc_device_info& info, bool use_memory_map = false);
 

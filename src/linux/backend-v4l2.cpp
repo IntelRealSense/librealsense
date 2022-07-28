@@ -579,6 +579,25 @@ namespace librealsense
                 video_paths.push_back(real_path);
             }
             closedir(dir);
+
+
+            // UVC nodes shall be traversed in ascending order for metadata nodes assignment ("dev/video1, Video2..
+            // Replace lexicographic with numeric sort to ensure "video2" is listed before "video11"
+            std::sort(video_paths.begin(), video_paths.end(),
+                      [](const std::string& first, const std::string& second)
+            {
+                // getting videoXX
+                std::string first_video = first.substr(first.find_last_of('/') + 1);
+                std::string second_video = second.substr(second.find_last_of('/') + 1);
+
+                // getting the index XX from videoXX
+                std::stringstream first_index(first_video.substr(first_video.find_first_of("0123456789")));
+                std::stringstream second_index(second_video.substr(second_video.find_first_of("0123456789")));
+                int left_id = 0, right_id = 0;
+                first_index >> left_id;
+                second_index >> right_id;
+                return left_id < right_id;
+            });
             return video_paths;
         }
 
@@ -671,12 +690,49 @@ namespace librealsense
             return info;
         }
 
+        void v4l_uvc_device::get_mipi_device_info(const std::string& dev_name,
+                                                  std::string& bus_info, std::string& card)
+        {
+            struct v4l2_capability vcap;
+            int fd = open(dev_name.c_str(), O_RDWR);
+            if (fd < 0)
+                throw linux_backend_exception("Mipi device capability could not be grabbed");
+            int err = ioctl(fd, VIDIOC_QUERYCAP, &vcap);
+            if (err)
+            {
+                struct media_device_info mdi;
+
+                err = ioctl(fd, MEDIA_IOC_DEVICE_INFO, &mdi);
+                if (!err)
+                {
+                    if (mdi.bus_info[0])
+                        bus_info = mdi.bus_info;
+                    else
+                        bus_info = std::string("platform:") + mdi.driver;
+
+                    if (mdi.model[0])
+                        card = mdi.model;
+                    else
+                        card = mdi.driver;
+                 }
+            }
+            else
+            {
+                bus_info = reinterpret_cast<const char *>(vcap.bus_info);
+                card = reinterpret_cast<const char *>(vcap.card);
+            }
+            ::close(fd);
+        }
+
         uvc_device_info v4l_uvc_device::handle_mipi_device_path(const std::string& video_path, const std::string& name)
         {
             uint16_t vid{}, pid{}, mi{};
             usb_spec usb_specification(usb_undefined);
+            std::string bus_info, card;
 
             auto dev_name = "/dev/" + name;
+
+            get_mipi_device_info(dev_name, bus_info, card);
 
             // D457-specific
             // the follwing 2 lines need to be changed in order to enable multiple mipi devices support
@@ -697,34 +753,24 @@ namespace librealsense
                 throw linux_backend_exception("Unresolved Video4Linux device, device is skipped");
             }
 
-            switch(ind)
-            {
-                //  D457 exposes:
+            //  D457 exposes (assuming first_video_index = 0):
             // - video0 for Depth and video1 for Depth's md.
             // - video2 for RGB and video3 for RGB's md.
             // - video4 for IR stream. IR's md is currently not available.
             // - video5 for IMU (accel or gyro TBD)
-                case 0:
-                    mi = 0;
-                    break;
-                case 1:
-                    mi = 3;
-                    break;
-                case 2:   //added for D457
-                    mi = 0;
-                    break;
-                case 3:   //added for D457
-                    mi = 3;
-                    break;
-                case 4:   //added for D457
-                    mi = 0;
-                    break;
-                case 5:   //added for D457
-                    mi = 4;
-                    break;
-                default:
-                    LOG_WARNING("Unresolved Video4Linux device mi, device is skipped");
-                    throw linux_backend_exception("Unresolved Video4Linux device, device is skipped");
+            // next several lines permit to use D457 even if a usb device has already "taken" the video0,1,2 (for example)
+            // further development is needed to permit use of several mipi devices
+            static int  first_video_index = ind;
+            if (ind == first_video_index || ind == first_video_index + 2 || ind == first_video_index + 4)
+                mi = 0;
+            else if (ind == first_video_index + 1 | ind == first_video_index + 3)
+                mi = 3;
+            else if (ind == first_video_index + 5)
+                mi = 4;
+            else
+            {
+                LOG_WARNING("Unresolved Video4Linux device mi, device is skipped");
+                throw linux_backend_exception("Unresolved Video4Linux device, device is skipped");
             }
 
             uvc_device_info info{};
@@ -783,17 +829,7 @@ namespace librealsense
             }
 
             // Matching video and metadata nodes
-            // UVC nodes shall be traversed in ascending order for metadata nodes assignment ("dev/video1, Video2..
-            // Replace lexicographic with numeric sort to ensure "video2" is listed before "video11"
-            std::sort(begin(uvc_nodes),end(uvc_nodes),[](const node_info& lhs, const node_info& rhs)
-                        {
-                            std::stringstream index_l(lhs.first.id.substr(lhs.first.id.find_first_of("0123456789")));
-                            std::stringstream index_r(rhs.first.id.substr(rhs.first.id.find_first_of("0123456789")));
-                            int left_id = 0;  index_l >> left_id;
-                            int right_id = 0;  index_r >> right_id;
-                            return left_id < right_id;
-                        });
-
+            // Assume uvc_nodes is already sorted according to videoXX (video0, then vodeo1...)
             // Assume for each metadata node with index N there is a origin streaming node with index (N-1)
             for (auto&& cur_node : uvc_nodes)
             {
