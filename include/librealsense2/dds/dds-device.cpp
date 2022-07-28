@@ -194,7 +194,14 @@ private:
                                 
                                 LOG_INFO( "got VIDEO_STREAM_PROFILES message" );
                                 
-                                sensor_to_video_profiles.emplace( sensor_index_to_name.at(video_stream_profiles->dds_sensor_index), *video_stream_profiles );
+                                // TODO: Try to save the "emplace" profiles copy 
+                                topics::device::notification::video_stream_profiles_msg msg;
+                                msg.dds_sensor_index = video_stream_profiles->dds_sensor_index;
+                                msg.num_of_profiles = video_stream_profiles->num_of_profiles;
+                                for( int i = 0; i < video_stream_profiles->num_of_profiles; ++i )
+                                    msg.profiles[i] = video_stream_profiles->profiles[i];
+
+                                sensor_to_video_profiles.emplace( sensor_index_to_name.at(video_stream_profiles->dds_sensor_index), std::move( msg ) );
                                 
                                 if( sensor_to_video_profiles.size() + sensor_to_motion_profiles.size() < num_of_sensors )
                                     state = state_type::WAIT_FOR_SENSOR_HEADER;
@@ -210,7 +217,15 @@ private:
                                 LOG_INFO( "got MOTION_STREAM_PROFILES message" );
                                 auto motion_stream_profiles = data.get<topics::device::notification::motion_stream_profiles_msg >();
                                 
-                                sensor_to_motion_profiles.emplace( sensor_index_to_name.at(motion_stream_profiles->dds_sensor_index), *motion_stream_profiles );
+                                // TODO: Try to save the "emplace" profiles copy 
+                                topics::device::notification::motion_stream_profiles_msg msg;
+                                msg.dds_sensor_index = motion_stream_profiles->dds_sensor_index;
+                                msg.num_of_profiles = motion_stream_profiles->num_of_profiles;
+                                for( int i = 0; i < motion_stream_profiles->num_of_profiles; ++i )
+                                    msg.profiles[i] = motion_stream_profiles->profiles[i];
+
+                                sensor_to_motion_profiles.emplace( sensor_index_to_name.at(motion_stream_profiles->dds_sensor_index), std::move( msg ) );
+                                
                                 if( sensor_to_video_profiles.size() + sensor_to_motion_profiles.size() < num_of_sensors )
                                     state = state_type::WAIT_FOR_SENSOR_HEADER;
                                 else
