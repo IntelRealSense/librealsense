@@ -285,12 +285,29 @@ namespace librealsense
             std::queue<sync_buffer> _md_queue;
         };
 
+        struct v4l2_device_info
+        {
+            enum connection_type
+            {
+                CONNECTION_TYPE_USB = 0,
+                CONNECTION_TYPE_MIPI  = 1
+            };
+
+            std::string card;
+            std::string bus_info;
+            std::vector<std::string> video_nodes;
+
+            connection_type connection_from_bus_info(const std::string& bus_info);
+        };
+
         class v4l_uvc_device : public uvc_device, public v4l_uvc_interface
         {
         public:
             static void foreach_uvc_device(
                     std::function<void(const uvc_device_info&,
                                        const std::string&)> action);
+
+            static std::vector<v4l2_device_info> list_devices();
 
             v4l_uvc_device(const uvc_device_info& info, bool use_memory_map = false);
 

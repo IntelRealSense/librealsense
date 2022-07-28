@@ -43,6 +43,7 @@
 #include <sys/ioctl.h>
 #include <sys/sysmacros.h> // minor(...), major(...)
 #include <linux/usb/video.h>
+#include <linux/media.h>
 #include <linux/uvcvideo.h>
 #include <linux/videodev2.h>
 #include <regex>
@@ -543,10 +544,132 @@ namespace librealsense
             }
         }
 
+        std::vector<std::string> get_video_files()
+        {
+            std::vector<std::string> files;
+
+            const std::string dev_folder = "/dev/";
+
+            DIR *dir;
+            struct dirent *ent;
+            if ((dir = opendir(dev_folder.c_str())) != NULL)
+            {
+                while ((ent = readdir(dir)) != NULL)
+                {
+                    if (strlen(ent->d_name) > 5 && !strncmp("video", ent->d_name, 5)) {
+
+                        std::string file = dev_folder + ent->d_name;
+
+                        const int fd = open(file.c_str(), O_RDWR);
+                        v4l2_capability capability;
+                        if (fd >= 0) {
+                            if (ioctl(fd, VIDIOC_QUERYCAP, &capability) >= 0)
+                            {
+                                files.push_back(file);
+                            }
+                            close(fd);
+                        }
+                    }
+                }
+                closedir(dir);
+            }
+            else
+            {
+                std::string msg = "Cannot list " + dev_folder + " contents!";
+                throw std::runtime_error(msg);
+            }
+
+            std::sort(files.begin(), files.end());
+
+            return files;
+        }
+
+        v4l2_device_info::connection_type v4l2_device_info::connection_from_bus_info(const std::string& bus_info)
+        {
+            if (bus_info.substr(0, 3) == "usb")
+                return CONNECTION_TYPE_USB;
+            return CONNECTION_TYPE_MIPI;
+        }
+
+        std::vector<v4l2_device_info> v4l_uvc_device::list_devices()
+        {
+            // reference from:
+            // https://git.linuxtv.org/v4l-utils.git/tree/utils/v4l2-ctl/v4l2-ctl-common.cpp
+
+            // getting sorted vector of /dev/videoXX
+            std::vector<std::string> files = get_video_files();
+
+            struct v4l2_capability vcap;
+            std::map<std::string, v4l2_device_info> devices_map;
+
+            for (const auto &file : files)
+            {
+                int fd = open(file.c_str(), O_RDWR);
+                std::string bus_info;
+                std::string card;
+
+                if (fd < 0)
+                    continue;
+                int err = ioctl(fd, VIDIOC_QUERYCAP, &vcap);
+                if (err)
+                {
+                    struct media_device_info mdi;
+
+                    err = ioctl(fd, MEDIA_IOC_DEVICE_INFO, &mdi);
+                    if (!err)
+                    {
+                        if (mdi.bus_info[0])
+                            bus_info = mdi.bus_info;
+                        else
+                            bus_info = std::string("platform:") + mdi.driver;
+
+                        if (mdi.model[0])
+                            card = mdi.model;
+                        else
+                            card = mdi.driver;
+                    }
+                }
+                else
+                {
+                    bus_info = reinterpret_cast<const char *>(vcap.bus_info);
+                    card = reinterpret_cast<const char *>(vcap.card);
+                }
+                ::close(fd);
+
+                if (!bus_info.empty() && !card.empty())
+                {
+                    if (devices_map.find(bus_info) != devices_map.end())
+                    {
+                        auto& dev_info = devices_map.at(bus_info);
+                        dev_info.video_nodes.push_back(file);
+                    }
+                    else
+                    {
+                        v4l2_device_info dev_info;
+                        dev_info.bus_info = bus_info;
+                        dev_info.card = card;
+                        dev_info.video_nodes.push_back(file);
+                        devices_map.emplace(bus_info, dev_info);
+                    }
+                }
+            }
+
+            std::vector<v4l2_device_info> devices;
+            for (const auto &row : devices_map)
+            {
+                devices.push_back(row.second);
+            }
+
+            return devices;
+        }
+
         void v4l_uvc_device::foreach_uvc_device(
                 std::function<void(const uvc_device_info&,
                                    const std::string&)> action)
         {
+
+            std::vector<v4l2_device_info> nodes = list_devices();
+
             // Enumerate all subdevices present on the system
             DIR * dir = opendir("/sys/class/video4linux");
             if(!dir)
@@ -656,7 +779,7 @@ namespace librealsense
                         // /sys/devices/pci0000:00/0000:00:xx.0/ABC/M-N/version
                         usb_specification = get_usb_connection_type(real_path + "/../../../");
                     }
-                    else // Video4Linux Devices that are not listed as UVC
+                    else
                     {
                         //LOG_INFO("Enumerating v4l " << name << " realpath=" << real_path);
                         v4l_node = true;
