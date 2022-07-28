@@ -307,7 +307,16 @@ namespace librealsense
                     std::function<void(const uvc_device_info&,
                                        const std::string&)> action);
 
-            static std::vector<v4l2_device_info> list_devices();
+            static std::vector<std::string> get_video_paths();
+
+            static bool is_usb_path_valid(const std::string& usb_video_path, const std::string &dev_name,
+                                          std::string &busnum, std::string &devnum, std::string &devpath);
+
+            static uvc_device_info handle_usb_device_path(const std::string& video_path, const std::string& name);
+
+            static uvc_device_info handle_mipi_device_path(const std::string& video_path, const std::string& name);
+
+            static bool is_usb_device_path(const std::string& video_path);
 
             v4l_uvc_device(const uvc_device_info& info, bool use_memory_map = false);
 
