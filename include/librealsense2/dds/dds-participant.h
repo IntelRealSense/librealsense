@@ -28,8 +28,8 @@ public:
     dds_participant( const dds_participant & ) = delete;
     ~dds_participant();
 
-    //Creates the underlying DDS participant and sets the QoS
-    //If need to use callbacks set them before calling init, they may be called before init returns.
+    // Creates the underlying DDS participant and sets the QoS
+    // If need to use callbacks set them before calling init, they may be called before init returns.
     void init( dds_domain_id, std::string const & participant_name );
 
     bool is_valid() const { return ( nullptr != _participant ); }
@@ -42,44 +42,51 @@ public:
     {
         friend class dds_participant;
 
-        std::function< void( dds_guid, char const * topic_name ) > _on_writer_added;
-        std::function< void( dds_guid, char const * topic_name ) > _on_writer_removed;
-        std::function< void( dds_guid, char const * topic_name ) > _on_reader_added;
-        std::function< void( dds_guid, char const * topic_name ) > _on_reader_removed;
-        std::function< void( dds_guid, char const * participant_name ) > _on_participant_added;
-        std::function< void( dds_guid, char const * participant_name ) > _on_participant_removed;
+        std::function< void( dds_guid, char const* topic_name ) > _on_writer_added;
+        std::function< void( dds_guid, char const* topic_name ) > _on_writer_removed;
+        std::function< void( dds_guid, char const* topic_name ) > _on_reader_added;
+        std::function< void( dds_guid, char const* topic_name ) > _on_reader_removed;
+        std::function< void( dds_guid, char const* participant_name ) > _on_participant_added;
+        std::function< void( dds_guid, char const* participant_name ) > _on_participant_removed;
+        std::function< void( char const* topic_name, eprosima::fastrtps::types::DynamicType_ptr dyn_type ) > _on_type_discovery;
 
         listener() = default;
 
     public:
-        listener * on_writer_added( std::function< void( dds_guid guid, char const * topic_name ) > callback )
+        listener* on_writer_added( std::function< void( dds_guid guid, char const* topic_name ) > callback )
         {
             _on_writer_added = std::move( callback );
             return this;
         }
-        listener * on_writer_removed( std::function< void( dds_guid guid, char const * topic_name ) > callback )
+        listener* on_writer_removed( std::function< void( dds_guid guid, char const* topic_name ) > callback )
         {
             _on_writer_removed = std::move( callback );
             return this;
         }
-        listener * on_reader_added( std::function< void( dds_guid guid, char const * topic_name ) > callback )
+        listener* on_reader_added( std::function< void( dds_guid guid, char const* topic_name ) > callback )
         {
             _on_reader_added = std::move( callback );
             return this;
         }
-        listener * on_reader_removed( std::function< void( dds_guid guid, char const * topic_name ) > callback )
+        listener* on_reader_removed( std::function< void( dds_guid guid, char const* topic_name ) > callback )
         {
             _on_reader_removed = std::move( callback );
             return this;
         }
-        listener * on_participant_added( std::function< void( dds_guid guid, char const * participant_name ) > callback )
+        listener* on_participant_added( std::function< void( dds_guid guid, char const* participant_name ) > callback )
         {
             _on_participant_added = std::move( callback );
             return this;
         }
-        listener * on_participant_removed( std::function< void( dds_guid guid, char const * participant_name ) > callback )
+        listener* on_participant_removed( std::function< void( dds_guid guid, char const* participant_name ) > callback )
         {
             _on_participant_removed = std::move( callback );
+            return this;
+        }
+        listener* on_type_discovery( std::function< void( char const* topic_name,
+            eprosima::fastrtps::types::DynamicType_ptr dyn_type ) > callback )
+        {
+            _on_type_discovery = std::move( callback );
             return this;
         }
     };
@@ -113,8 +120,9 @@ private:
     void on_writer_removed( dds_guid, char const * topic_name );
     void on_reader_added( dds_guid, char const * topic_name );
     void on_reader_removed( dds_guid, char const * topic_name );
-    void on_participant_added( dds_guid, char const * participantc_name );
-    void on_participant_removed( dds_guid, char const * participantc_name );
+    void on_participant_added( dds_guid, char const * participant_name );
+    void on_participant_removed( dds_guid, char const * participant_name );
+    void on_type_discovery( char const * topic_name, eprosima::fastrtps::types::DynamicType_ptr dyn_type );
 };  // class dds_participant
 
 

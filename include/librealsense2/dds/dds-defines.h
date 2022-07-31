@@ -13,8 +13,11 @@ namespace dds {
 namespace fastrtps {
 namespace rtps {
     struct GUID_t;
-}  // namespace dds
-}  // namespace fastdds
+}  // namespace rtps
+namespace types {
+    class DynamicType_ptr;
+}  // namespace types
+}  // namespace fastrtps
 }  // namespace eprosima
 
 namespace librealsense {
