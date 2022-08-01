@@ -194,11 +194,11 @@ namespace rs2
         return false;
     }
 
-    void firmware_update_manager_mipi::process_flow(std::function<void()> cleanup, invoker invoke)
+    void firmware_update_manager::process_mipi()
     {
         if (!_is_signed)
         {
-            LOG_INFO("Only Signed Firmware can be burnt on MIPI device");
+            fail("Only Signed Firmware can be burnt on MIPI device");
             return;
         }
         auto dev_updatable = _dev.as<updatable>();
@@ -207,6 +207,8 @@ namespace rs2
             fail("Firmware Update failed - fw version must be newer than version 5.13.1.1");
             return;
         }
+
+        log("Burning Signed Firmware on MIPI device");
 
         // Enter DFU mode
         auto device_debug = _dev.as<rs2::debug_protocol>();
@@ -241,11 +243,10 @@ namespace rs2
         std::function<void()> cleanup,
         invoker invoke)
     {
-        auto str = _dev.get_info(RS2_CAMERA_INFO_PRODUCT_ID);
-        if (!strcmp(_dev.get_info(RS2_CAMERA_INFO_PRODUCT_ID), "ABCD")) // if device is D457
+        // if device is D457, and fw is signed - using mipi specific procedure
+        if (!strcmp(_dev.get_info(RS2_CAMERA_INFO_PRODUCT_ID), "ABCD") && _is_signed)
         {
-            firmware_update_manager_mipi fw_update_mgr_mipi(_not_model, _model, _dev, _ctx, _fw, _is_signed);
-            fw_update_mgr_mipi.process_flow(cleanup, invoke);
+            process_mipi();
             return;
         }
 
