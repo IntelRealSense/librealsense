@@ -16,6 +16,7 @@ char dummy;
 #endif  // _WIN32
 
 #include "notification.h"
+#include "notificationTypeObject.h"
 #include <fastcdr/Cdr.h>
 
 #include <fastcdr/exceptions/BadParamException.h>
@@ -25,13 +26,15 @@ using namespace eprosima::fastcdr::exception;
 
 librealsense::dds::topics::raw::device::notification::notification()
 {
-    // m_id com.eprosima.idl.parser.typecode.PrimitiveTypeCode@68ceda24
+    // m_id com.eprosima.idl.parser.typecode.PrimitiveTypeCode@587c290d
     m_id = 0;
-    // m_size com.eprosima.idl.parser.typecode.PrimitiveTypeCode@281e3708
+    // m_size com.eprosima.idl.parser.typecode.PrimitiveTypeCode@4ae82894
     m_size = 0;
-    // m_raw_data com.eprosima.idl.parser.typecode.SequenceTypeCode@35a50a4c
+    // m_raw_data com.eprosima.idl.parser.typecode.SequenceTypeCode@543788f3
 
 
+    // Just to register all known types
+    registernotificationTypes();
 }
 
 librealsense::dds::topics::raw::device::notification::~notification()
