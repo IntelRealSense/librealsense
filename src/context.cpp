@@ -217,6 +217,10 @@ namespace librealsense
             }
             _dds_watcher.instance( _dds_participant.get() );
 
+            // When building with DDS allowed, we want the DDS device watcher always on.
+            // Not only when it has device change callback.
+            // The initialize process is longer then USB. (getting all info from the device)
+            
             if( _dds_watcher && _dds_watcher->is_stopped() )
             {
                 start_dds_device_watcher();

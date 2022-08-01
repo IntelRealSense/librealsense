@@ -52,23 +52,23 @@ public:
 
     struct video_stream_profile
     {
-        int8_t index;           // LRS Sensor index
-        int16_t uid;            // Stream unique ID
-        int16_t framerate;
-        rs2_format format;      // Transfer as uint8_t?
-        rs2_stream type;        // Transfer as uint8_t?
-        int16_t width;          
-        int16_t height;         
+        int8_t stream_index;     // Normally used to distinguish IR L / R
+        int16_t uid;             // Stream unique ID
+        int16_t framerate;       // FPS
+        rs2_format format;       // Transfer as uint8_t?
+        rs2_stream type;         // Transfer as uint8_t?
+        int16_t width;           // Resolution width [pixels]
+        int16_t height;          // Resolution width [pixels]
         //intrinsics - TODO
     };
 
     struct motion_stream_profile
     {
-        int8_t index;           // LRS Sensor index
-        int16_t uid;            // Stream unique ID
-        int16_t framerate;
-        rs2_format format;      // Transfer as uint8_t?
-        rs2_stream type;        // Transfer as uint8_t?
+        int8_t stream_index;     // Normally used to distinguish IR L / R
+        int16_t uid;             // Stream unique ID
+        int16_t framerate;       // FPS
+        rs2_format format;       // Transfer as uint8_t?
+        rs2_stream type;         // Transfer as uint8_t?
     };
 
     struct video_stream_profiles_msg

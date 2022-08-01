@@ -26,7 +26,8 @@ dds_device_watcher::dds_device_watcher( std::shared_ptr< dds::dds_participant > 
     , _participant( participant )
     , _active_object( [this]( dispatcher::cancellable_timer timer ) {
 
-        if( _reader->wait_for_unread_message( { 1, 0 } ) )
+        eprosima::fastrtps::Duration_t one_second = { 1, 0 };
+        if( _reader->wait_for_unread_message( one_second ) )
         {
             dds::topics::raw::device_info raw_data;
             SampleInfo info;
@@ -75,6 +76,9 @@ void dds_device_watcher::start( platform::device_changed_callback callback )
     _callback = std::move( callback );
     if( ! _init_done )
     {
+        // Get all sensors & profiles data
+        // TODO: not sure we want to do it here in the C'tor, 
+        // it takes time and keeps the 'dds_device_server' busy
         init();
         _init_done = true;
     }

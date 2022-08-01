@@ -164,10 +164,10 @@ public:
                 if( _active && _new_instant_notification )
                 {
                     // Send all instant notifications
-                    topics::raw::device::notification msg;
-                    while( _instant_notifications.dequeue( &msg, 1000 ) )
+                    topics::raw::device::notification notification;
+                    while( _instant_notifications.dequeue( &notification, 1000 ) )
                     {
-                        DDS_API_CALL( _data_writer->write( &msg ) );
+                        DDS_API_CALL( _data_writer->write( &notification ) );
                     }
                     _new_instant_notification = false;
                 }
@@ -217,14 +217,14 @@ public:
         }
     };
 
-    void send_notification( const topics::raw::device::notification& msg ) 
+    void send_notification( const topics::raw::device::notification& notification ) 
     {
         std::unique_lock< std::mutex > lock( _notification_send_mutex );
-        topics::raw::device::notification msg_to_move( msg );
-        if( ! _instant_notifications.enqueue( std::move( msg_to_move ) ) )
+        if( ! _instant_notifications.enqueue(
+                std::move( const_cast< topics::raw::device::notification & >( notification ) ) ) )
         {
             LOG_ERROR( "error while trying to enqueue a message id:"
-                       << msg_to_move.id() << " to instant notifications queue" );
+                       << notification.id() << " to instant notifications queue" );
         }
     };
 
@@ -328,12 +328,12 @@ void dds_device_server::init( const std::vector<std::string> &supported_streams_
     }
 }
 
-void dds_device_server::publish_notification( const topics::raw::device::notification& notification_msg )
+void dds_device_server::publish_notification( const topics::raw::device::notification& notification )
 {
-    _dds_notifications_server->send_notification( notification_msg );
+    _dds_notifications_server->send_notification( notification );
 }
-void dds_device_server::add_init_msgs( const topics::raw::device::notification& notification_msg )
+void dds_device_server::add_init_msg( const topics::raw::device::notification& notification )
 {
-    _dds_notifications_server->add_init_notification( notification_msg );
+    _dds_notifications_server->add_init_notification( notification );
 }
 
