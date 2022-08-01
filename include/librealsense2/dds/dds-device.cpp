@@ -154,8 +154,7 @@ private:
                 while( ReturnCode_t::RETCODE_OK == _reader->take_next_sample( &raw_data, &info ) )
                 {
                     // Only samples for which valid_data is true should be accessed
-                    // valid_data indicates that the instance is still ALIVE and the `take` return
-                    // an updated sample
+                    // valid_data indicates that the `take` return an updated sample
                     if( info.valid_data )
                     {
                         data = raw_data;
