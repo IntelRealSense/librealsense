@@ -654,7 +654,7 @@ void log_callback_end( uint32_t fps,
     stream_profiles uvc_sensor::init_stream_profiles()
     {
         std::unordered_set<std::shared_ptr<video_stream_profile>> video_profiles;
-        // D457 development
+        // D457 development - only via mipi imu frames com from uvc instead of hid
         std::unordered_set<std::shared_ptr<motion_stream_profile>> motion_profiles;
         power on(std::dynamic_pointer_cast<uvc_sensor>(shared_from_this()));
 
@@ -965,8 +965,8 @@ void log_callback_end( uint32_t fps,
             last_timestamp = timestamp;
             frame_holder frame = _source.alloc_frame(RS2_EXTENSION_MOTION_FRAME, data_size, fr->additional_data, true);
             memcpy( (void *)frame->get_frame_data(),
-                    /*fr->data.data()*/ sensor_data.fo.pixels,
-                    /*fr->data.size()*/ sizeof( byte ) * sensor_data.fo.frame_size );
+                    sensor_data.fo.pixels,
+                    sizeof( byte ) * sensor_data.fo.frame_size );
             if (!frame)
             {
                 LOG_INFO("Dropped frame. alloc_frame(...) returned nullptr");

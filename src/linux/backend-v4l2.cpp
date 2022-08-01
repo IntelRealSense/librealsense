@@ -656,7 +656,7 @@ namespace librealsense
                         // /sys/devices/pci0000:00/0000:00:xx.0/ABC/M-N/version
                         usb_specification = get_usb_connection_type(real_path + "/../../../");
                     }
-                    else // COMMENT THIS TO MAKE USB ENUMERATION POSSIBLE - Video4Linux Devices that are not listed as UVC
+                    else // Video4Linux Devices that are not listed as UVC
                     {
                         //LOG_INFO("Enumerating v4l " << name << " realpath=" << real_path);
                         v4l_node = true;
