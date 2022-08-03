@@ -11,16 +11,16 @@
 namespace librealsense
 {
     struct y16i_pixel { uint8_t rl : 8, rh : 4, ll : 8, lh : 4; int l() const { return lh << 8 | ll; } int r() const { return rh << 8 | rl; } };
-    void unpack_y16_y16_from_y16i_10(byte* const dest[], const byte* source, int width, int height, int actual_size)
+    void unpack_y16_y16_from_y16i(byte* const dest[], const byte* source, int width, int height, int actual_size)
     {
         auto count = width * height;
 // CUDA TODO
 //#ifdef RS2_USE_CUDA
-//        rscuda::split_frame_y16_y16_from_y12i_cuda(dest, count, reinterpret_cast<const y12i_pixel*>(source));
+//        rscuda::split_frame_y16_y16_from_y16i_cuda(dest, count, reinterpret_cast<const y12i_pixel*>(source));
 //#else
         split_frame(dest, count, reinterpret_cast<const y16i_pixel*>(source),
-            [](const y16i_pixel& p) -> uint16_t { return p.l() << 6 | p.l() >> 4; },  // We want to convert 10-bit data to 16-bit data
-            [](const y16i_pixel& p) -> uint16_t { return p.r() << 6 | p.r() >> 4; }); // Multiply by 64 1/16 to efficiently approximate 65535/1023
+            [](const y16i_pixel& p) -> uint16_t { return static_cast<uint16_t>(p.l()); },  
+            [](const y16i_pixel& p) -> uint16_t { return static_cast<uint16_t>(p.r()); });
 //#endif
     }
 
@@ -34,6 +34,6 @@ namespace librealsense
 
     void y16i_to_y16y16::process_function(byte* const dest[], const byte* source, int width, int height, int actual_size, int input_size)
     {
-        unpack_y16_y16_from_y16i_10(dest, source, width, height, actual_size);
+        unpack_y16_y16_from_y16i(dest, source, width, height, actual_size);
     }
 }
