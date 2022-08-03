@@ -106,7 +106,7 @@ void add_init_device_header_msg( rs2::device dev, std::shared_ptr<librealsense::
         device_header_msg,
         raw_msg );
 
-    server->add_init_msg( raw_msg );
+    server->add_init_msg( std::move( raw_msg ) );
 }
 
 void send_sensor_header_msg(  const std::shared_ptr<librealsense::dds::dds_device_server> &server, rs2::sensor sensor, librealsense::dds::topics::device::notification::sensor_header_msg::sensor_type sensor_type, const int sensor_idx )
@@ -124,7 +124,7 @@ void send_sensor_header_msg(  const std::shared_ptr<librealsense::dds::dds_devic
                                                   sensor_header_msg,
                                                   raw_sensor_header_msg );
 
-    server->add_init_msg( raw_sensor_header_msg );
+    server->add_init_msg( std::move( raw_sensor_header_msg ) );
 }
 
 void prepare_video_profiles_messeges(
@@ -232,7 +232,7 @@ void add_init_profiles_msgs( rs2::device dev, std::shared_ptr<librealsense::dds:
                         video_stream_profiles_msg,
                         raw_video_stream_profiles_msg );
 
-                    server->add_init_msg( raw_video_stream_profiles_msg );
+                    server->add_init_msg( std::move( raw_video_stream_profiles_msg ) );
                 }
             }
             break;
@@ -253,7 +253,7 @@ void add_init_profiles_msgs( rs2::device dev, std::shared_ptr<librealsense::dds:
                         device::notification::msg_type::MOTION_STREAM_PROFILES,
                         motion_stream_profiles_msg,
                         raw_motion_stream_profiles_msg );
-                    server->add_init_msg( raw_motion_stream_profiles_msg );
+                    server->add_init_msg( std::move( raw_motion_stream_profiles_msg ) );
                 }
             }
             break;

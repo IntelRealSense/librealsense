@@ -70,9 +70,9 @@ public:
     void set_image_header( const std::string& stream_name, const image_header& header );
     // `Init` messages are sent when a new reader joins, it holds all required information about the device capabilities (sensors, profiles)
     // Currently it will broadcast the messages to all connected readers (not only the new reader)
-    void add_init_msg( const topics::raw::device::notification& notification );
+    void add_init_msg( topics::raw::device::notification&& notification );
     void publish_image( const std::string& stream_name, const uint8_t* data, size_t size );
-    void publish_notification( const topics::raw::device::notification& notification );
+    void publish_notification( topics::raw::device::notification&& notification );
     
 private:
     class dds_stream_server;

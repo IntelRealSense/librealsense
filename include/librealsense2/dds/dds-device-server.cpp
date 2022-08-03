@@ -217,18 +217,17 @@ public:
         }
     };
 
-    void send_notification( const topics::raw::device::notification& notification ) 
+    void send_notification( topics::raw::device::notification&& notification ) 
     {
         std::unique_lock< std::mutex > lock( _notification_send_mutex );
-        if( ! _instant_notifications.enqueue(
-                std::move( const_cast< topics::raw::device::notification & >( notification ) ) ) )
+        if( ! _instant_notifications.enqueue( std::move( notification ) ) )
         {
             LOG_ERROR( "error while trying to enqueue a message id:"
                        << notification.id() << " to instant notifications queue" );
         }
     };
 
-    void add_init_notification( const topics::raw::device::notification & msg ) 
+    void add_init_notification( topics::raw::device::notification && msg ) 
     {
         std::unique_lock< std::mutex > lock( _notification_send_mutex );
         topics::raw::device::notification msg_to_move( msg );
@@ -328,12 +327,12 @@ void dds_device_server::init( const std::vector<std::string> &supported_streams_
     }
 }
 
-void dds_device_server::publish_notification( const topics::raw::device::notification& notification )
+void dds_device_server::publish_notification( topics::raw::device::notification&& notification )
 {
-    _dds_notifications_server->send_notification( notification );
+    _dds_notifications_server->send_notification( std::move( notification ) );
 }
-void dds_device_server::add_init_msg( const topics::raw::device::notification& notification )
+void dds_device_server::add_init_msg( topics::raw::device::notification&& notification )
 {
-    _dds_notifications_server->add_init_notification( notification );
+    _dds_notifications_server->add_init_notification( std::move( notification ) );
 }
 
