@@ -172,7 +172,6 @@ void dds_device_watcher::init()
     rqos.durability().kind = VOLATILE_DURABILITY_QOS;  // The Subscriber receives samples from the
                                                        // moment it comes online, not before
     rqos.data_sharing().off();
-    rqos.ownership().kind = EXCLUSIVE_OWNERSHIP_QOS;
     _reader = DDS_API_CALL( _subscriber->create_datareader( _topic, rqos, nullptr ) );
 
     if( _reader == nullptr )
