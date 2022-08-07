@@ -33,13 +33,13 @@ public:
         , _topic( nullptr )
         , _data_writer( nullptr )
     {
-        _topic_name = librealsense::dds::topics::device::image::construct_stream_topic_name( topic_root,
+        std::string topic_name = librealsense::dds::topics::device::image::construct_topic_name( topic_root,
                                                                                      stream_name );
 
         eprosima::fastdds::dds::TypeSupport topic_type( new librealsense::dds::topics::device::image::type );
 
         DDS_API_CALL( _participant->register_type( topic_type ) );
-        _topic = DDS_API_CALL( _participant->create_topic( _topic_name, topic_type->getName(), TOPIC_QOS_DEFAULT ) );
+        _topic = DDS_API_CALL( _participant->create_topic( topic_name, topic_type->getName(), TOPIC_QOS_DEFAULT ) );
 
         // TODO:: Maybe we want to open a writer only when the stream is requested?
         DataWriterQos wqos = DATAWRITER_QOS_DEFAULT;
@@ -69,7 +69,7 @@ public:
 
     void publish_image( const uint8_t * data, size_t size )
     {
-        LOG_DEBUG( "publishing a DDS video frame for topic: " << _topic_name );
+        LOG_DEBUG( "publishing a DDS video frame for topic: " << this->_data_writer->get_topic()->get_name() );
         librealsense::dds::topics::raw::device::image raw_image;
         raw_image.size() = static_cast< uint32_t >( size );
         raw_image.format() = _image_header.format;
@@ -82,7 +82,6 @@ public:
     void set_image_header( const image_header & header ) { _image_header = header; }
 
 private:
-    std::string _topic_name;
     eprosima::fastdds::dds::DomainParticipant * _participant;
     eprosima::fastdds::dds::Publisher * _publisher;
     eprosima::fastdds::dds::Topic * _topic;
@@ -116,7 +115,7 @@ public:
                 {
                     {
                         std::lock_guard< std::mutex > lock( _owner->_notification_send_mutex );
-                        _owner->_new_reader_joined = true;
+                        _owner->_send_init_msgs = true;
                     }
                     _owner->_send_notification_cv.notify_all();
                 }
@@ -153,48 +152,48 @@ public:
                 //   resent to new readers
                 std::unique_lock< std::mutex > lock( _notification_send_mutex );
                 _send_notification_cv.wait( lock, [this]() {
-                    return ! _active || _new_reader_joined || _new_instant_notification;
+                    return ! _active || _send_init_msgs || _new_instant_notification;
                 } );
 
-                if( _active && _new_reader_joined )
+                if( _active && _send_init_msgs )
                 {
-                    // Send all latched notifications
-                    for( auto notification : _init_notifications )
-                    {
-                        DDS_API_CALL( _data_writer->write( &notification ) );
-                    }
-                    _new_reader_joined = false;
+                    send_init_msgs();
+                    _send_init_msgs = false;
                 }
 
                 if( _active && _new_instant_notification )
                 {
                     // Send all instant notifications
-                    topics::raw::device::notifications msg;
-                    while( _instant_notifications.dequeue( &msg, 1000 ) )
+                    topics::raw::device::notification notification;
+                    while( _instant_notifications.dequeue( &notification, 1000 ) )
                     {
-                        DDS_API_CALL( _data_writer->write( &msg ) );
+                        DDS_API_CALL( _data_writer->write( &notification ) );
                     }
                     _new_instant_notification = false;
                 }
             }
         } )
     {
-        _topic_name
-            = librealsense::dds::topics::device::notifications::construct_topic_name(
-                topic_root );
+        std::string topic_name
+            = librealsense::dds::topics::device::notification::construct_topic_name( topic_root );
 
         eprosima::fastdds::dds::TypeSupport topic_type(
-            new librealsense::dds::topics::device::notifications::type );
+            new librealsense::dds::topics::device::notification::type );
 
         DDS_API_CALL( _participant->register_type( topic_type ) );
         _topic = DDS_API_CALL(
-            _participant->create_topic( _topic_name, topic_type->getName(), TOPIC_QOS_DEFAULT ) );
+            _participant->create_topic( topic_name, topic_type->getName(), TOPIC_QOS_DEFAULT ) );
 
         DataWriterQos wqos = DATAWRITER_QOS_DEFAULT;
         wqos.data_sharing().off();
         wqos.reliability().kind = RELIABLE_RELIABILITY_QOS;
-        wqos.durability().kind = TRANSIENT_LOCAL_DURABILITY_QOS;
+        wqos.durability().kind = VOLATILE_DURABILITY_QOS;
+        wqos.history().kind = KEEP_LAST_HISTORY_QOS;;
+        wqos.history().depth = 10;
         wqos.publish_mode().kind = SYNCHRONOUS_PUBLISH_MODE;
+        // Our message has dynamic size (unbounded) so we need a memory policy that supports it
+        wqos.endpoint().history_memory_policy
+            = eprosima::fastrtps::rtps::DYNAMIC_RESERVE_MEMORY_MODE;
         _data_writer = DDS_API_CALL( _publisher->create_datawriter( _topic, wqos, &_clients_listener ) );
         _notifications_loop.start();
         _active = true;
@@ -218,38 +217,46 @@ public:
         }
     };
 
-    void send_notifications( const topics::raw::device::notifications& msg ) 
+    void send_notification( topics::raw::device::notification&& notification ) 
     {
         std::unique_lock< std::mutex > lock( _notification_send_mutex );
-        topics::raw::device::notifications msg_to_move( msg );
-        if( ! _instant_notifications.enqueue( std::move( msg_to_move ) ) )
+        if( ! _instant_notifications.enqueue( std::move( notification ) ) )
         {
             LOG_ERROR( "error while trying to enqueue a message id:"
-                       << msg_to_move.id() << " to _notifications_msg_queue" );
+                       << notification.id() << " to instant notifications queue" );
         }
     };
 
-    void add_init_notifications( const topics::raw::device::notifications & msg ) 
+    void add_init_notification( topics::raw::device::notification && msg ) 
     {
         std::unique_lock< std::mutex > lock( _notification_send_mutex );
-        topics::raw::device::notifications msg_to_move( msg );
+        topics::raw::device::notification msg_to_move( msg );
         _init_notifications.push_back( std::move( msg_to_move ) );
     };
     
 
 private:
-    std::string _topic_name;
+
+    void send_init_msgs()
+    {
+        // Send all initialization notifications
+        for( auto notification : _init_notifications )
+        {
+            DDS_API_CALL( _data_writer->write( &notification ) );
+        }
+    }
+
     eprosima::fastdds::dds::DomainParticipant * _participant;
     eprosima::fastdds::dds::Publisher * _publisher;
     eprosima::fastdds::dds::Topic * _topic;
     eprosima::fastdds::dds::DataWriter * _data_writer;
     dds_notifications_client_listener _clients_listener;
     active_object<> _notifications_loop;
-    single_consumer_queue< topics::raw::device::notifications > _instant_notifications;
-    std::vector<topics::raw::device::notifications> _init_notifications;
+    single_consumer_queue< topics::raw::device::notification > _instant_notifications;
+    std::vector< topics::raw::device::notification > _init_notifications;
     std::mutex _notification_send_mutex;
     std::condition_variable _send_notification_cv;
-    std::atomic_bool _new_reader_joined = { false };  // Used to indicate that a new reader has joined for the notifications writer
+    std::atomic_bool _send_init_msgs = { false }; 
     std::atomic_bool _new_instant_notification = { false };  
     std::atomic_bool _active = { false };
 };
@@ -320,12 +327,12 @@ void dds_device_server::init( const std::vector<std::string> &supported_streams_
     }
 }
 
-void dds_device_server::publish_notifications( const topics::raw::device::notifications& notifications_msg )
+void dds_device_server::publish_notification( topics::raw::device::notification&& notification )
 {
-    _dds_notifications_server->send_notifications( notifications_msg );
+    _dds_notifications_server->send_notification( std::move( notification ) );
 }
-void dds_device_server::add_init_msgs( const topics::raw::device::notifications& notifications_msg )
+void dds_device_server::add_init_msg( topics::raw::device::notification&& notification )
 {
-    _dds_notifications_server->add_init_notifications( notifications_msg );
+    _dds_notifications_server->add_init_notification( std::move( notification ) );
 }
 

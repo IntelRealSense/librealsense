@@ -21,7 +21,6 @@ include_directories(${REPO_ROOT}/third-party/tclap/include ${ELPP_INCLUDES} ${CM
 target_link_libraries(${PROJECT_NAME} ${DEPENDENCIES})
 set_target_properties (${PROJECT_NAME} PROPERTIES FOLDER Tools/dds)
 
-include("${REPO_ROOT}/include/librealsense2/dds/topics/dds-topics.cmake")
 include("${REPO_ROOT}/include/librealsense2/dds/dds-server.cmake")
 include("${REPO_ROOT}/include/librealsense2/utilities/easylogging/easyloggingpp.cmake")
 

@@ -33,7 +33,12 @@ public:
     bool foreach_device( std::function< bool( dds::dds_guid const &, std::shared_ptr< dds::dds_device > const & ) > );
 
 private:
-    void init();  // May throw
+    // The device exists - we know about it - but is unusable until we get details (sensors, profiles, etc.) and
+    // initialization is complete. This initialization depends on several messages from the server,
+    // and may take some time.
+    // Returns true if initialization was successful.
+    // Restrictions: May throw
+    void init();  
 
     std::shared_ptr< dds::dds_participant > _participant;
     std::shared_ptr< dds::dds_participant::listener > _listener;

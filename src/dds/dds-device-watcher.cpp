@@ -4,6 +4,7 @@
 #include <types.h>
 #include "dds-device-watcher.h"
 #include <librealsense2/dds/dds-device.h>
+#include <librealsense2/dds/dds-utilities.h>
 #include <librealsense2/dds/topics/dds-topics.h>
 #include <fastdds/dds/domain/DomainParticipantFactory.hpp>
 #include <fastdds/dds/domain/DomainParticipant.hpp>
@@ -25,7 +26,8 @@ dds_device_watcher::dds_device_watcher( std::shared_ptr< dds::dds_participant > 
     , _participant( participant )
     , _active_object( [this]( dispatcher::cancellable_timer timer ) {
 
-        if( _reader->wait_for_unread_message( { 1, 0 } ) )
+        eprosima::fastrtps::Duration_t one_second = { 1, 0 };
+        if( _reader->wait_for_unread_message( one_second ) )
         {
             dds::topics::raw::device_info raw_data;
             SampleInfo info;
@@ -74,6 +76,9 @@ void dds_device_watcher::start( platform::device_changed_callback callback )
     _callback = std::move( callback );
     if( ! _init_done )
     {
+        // Get all sensors & profiles data
+        // TODO: not sure we want to do it here in the C'tor, 
+        // it takes time and keeps the 'dds_device_server' busy
         init();
         _init_done = true;
     }
@@ -98,17 +103,17 @@ dds_device_watcher::~dds_device_watcher()
 
     if( _subscriber != nullptr && _reader != nullptr )
     {
-        _subscriber->delete_datareader( _reader );
+        DDS_API_CALL_NO_THROW( _subscriber->delete_datareader( _reader ) );
     }
     if( _participant->is_valid() )
     {
         if( _subscriber != nullptr )
         {
-            _participant->get()->delete_subscriber( _subscriber );
+            DDS_API_CALL_NO_THROW( _participant->get()->delete_subscriber( _subscriber ) );
         }
         if( _topic != nullptr )
         {
-            _participant->get()->delete_topic( _topic );
+            DDS_API_CALL_NO_THROW( _participant->get()->delete_topic( _topic ) );
         }
     }
 }
@@ -131,10 +136,10 @@ void dds_device_watcher::init()
         } );
 
     // REGISTER THE TYPE
-    _topic_type.register_type( _participant->get() );
+    DDS_API_CALL( _topic_type.register_type( _participant->get() ) );
 
     // CREATE THE SUBSCRIBER
-    _subscriber = _participant->get()->create_subscriber( SUBSCRIBER_QOS_DEFAULT, nullptr );
+    _subscriber = DDS_API_CALL( _participant->get()->create_subscriber( SUBSCRIBER_QOS_DEFAULT, nullptr ));
 
     if( _subscriber == nullptr )
     {
@@ -143,9 +148,10 @@ void dds_device_watcher::init()
     }
 
     // CREATE THE TOPIC
-    _topic = _participant->get()->create_topic( librealsense::dds::topics::device_info::TOPIC_NAME,
-                                                _topic_type->getName(),
-                                                TOPIC_QOS_DEFAULT );
+    _topic = DDS_API_CALL(
+        _participant->get()->create_topic( librealsense::dds::topics::device_info::TOPIC_NAME,
+                                           _topic_type->getName(),
+                                           TOPIC_QOS_DEFAULT ) );
 
     if( _topic == nullptr )
     {
@@ -165,14 +171,15 @@ void dds_device_watcher::init()
         = RELIABLE_RELIABILITY_QOS;  // We don't want to miss connection/disconnection events
     rqos.durability().kind = VOLATILE_DURABILITY_QOS;  // The Subscriber receives samples from the
                                                        // moment it comes online, not before
-    rqos.data_sharing().automatic();                   // If possible, use shared memory
-    rqos.ownership().kind = EXCLUSIVE_OWNERSHIP_QOS;
-    _reader = _subscriber->create_datareader( _topic, rqos, nullptr );
+    rqos.data_sharing().off();
+    _reader = DDS_API_CALL( _subscriber->create_datareader( _topic, rqos, nullptr ) );
 
     if( _reader == nullptr )
     {
-        throw librealsense::backend_exception( "Error creating a DDS reader",
-                                               RS2_EXCEPTION_TYPE_IO );
+        throw librealsense::backend_exception(
+            to_string() << "Error creating a DDS reader for "
+                        << librealsense::dds::topics::device_info::TOPIC_NAME,
+            RS2_EXCEPTION_TYPE_IO );
     }
 
     LOG_DEBUG( "DDS device watcher initialized successfully" );
