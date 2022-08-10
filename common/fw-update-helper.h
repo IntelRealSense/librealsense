@@ -4,6 +4,7 @@
 #pragma once
 
 #include "notifications.h"
+#include "../src/fw-update/fw-update-device-interface.h"
 
 
 namespace rs2
@@ -28,13 +29,30 @@ namespace rs2
         const device_model& get_device_model() const { return _model; }
         std::shared_ptr<notifications_model> get_protected_notification_model() { return _not_model.lock(); };
 
-    private:
+    protected:
         void process_flow(std::function<void()> cleanup,
             invoker invoke) override;
         bool check_for(
             std::function<bool()> action, std::function<void()> cleanup,
             std::chrono::system_clock::duration delta);
 
+        std::weak_ptr<notifications_model> _not_model;
+        device _dev;
+        context _ctx;
+        std::vector<uint8_t> _fw;
+        bool _is_signed;
+        device_model& _model;
+    };
+
+    class firmware_update_manager_mipi : public process_manager
+    {
+    public:
+        firmware_update_manager_mipi(std::weak_ptr<notifications_model> not_model, device_model& model, device dev, context ctx, std::vector<uint8_t> fw, bool is_signed)
+            : process_manager("Firmware Update Mipi"), _not_model(not_model), _model(model),
+              _fw(fw), _is_signed(is_signed), _dev(dev), _ctx(ctx) {}
+        void process_flow(std::function<void()> cleanup, invoker invoke);
+
+    private:
         std::weak_ptr<notifications_model> _not_model;
         device _dev;
         context _ctx;

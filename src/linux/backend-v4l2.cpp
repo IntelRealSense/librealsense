@@ -74,7 +74,7 @@ constexpr uint32_t RS_CAMERA_CID_AE_SETPOINT_GET            = (RS_CAMERA_CID_BAS
 constexpr uint32_t RS_CAMERA_CID_AE_SETPOINT_SET            = (RS_CAMERA_CID_BASE+12);
 constexpr uint32_t RS_CAMERA_CID_ERB                        = (RS_CAMERA_CID_BASE+13);
 constexpr uint32_t RS_CAMERA_CID_EWB                        = (RS_CAMERA_CID_BASE+14);
-constexpr uint32_t RS_CAMERA_CID_HWMC                       = (RS_CAMERA_CID_BASE+15);
+constexpr uint32_t RS_CAMERA_CID_HWMC_LEGACY                = (RS_CAMERA_CID_BASE+15);
 
 //const uint32_t RS_CAMERA_GENERIC_XU                     = (RS_CAMERA_CID_BASE+15); // RS_CAMERA_CID_HWMC duplicate??
 constexpr uint32_t RS_CAMERA_CID_LASER_POWER_MODE           = (RS_CAMERA_CID_BASE+16); // RS_CAMERA_CID_LASER_POWER duplicate ???
@@ -84,6 +84,7 @@ constexpr uint32_t RS_CAMERA_CID_EXPOSURE_MODE              = (RS_CAMERA_CID_BAS
 constexpr uint32_t RS_CAMERA_CID_WHITE_BALANCE_MODE         = (RS_CAMERA_CID_BASE+20); // Similar to RS_CAMERA_CID_EWB ??
 constexpr uint32_t RS_CAMERA_CID_PRESET                     = (RS_CAMERA_CID_BASE+21);
 
+constexpr uint32_t RS_CAMERA_CID_HWMC                       = (RS_CAMERA_CID_BASE+32);
 
 /* refe4rence for kernel 4.9 to be removed
 #define UVC_CID_GENERIC_XU          (V4L2_CID_PRIVATE_BASE+15)
@@ -1181,53 +1182,82 @@ namespace librealsense
                                 }
                                 else
                                 {
-                                    if (!is_metadata_streamed()) // when metadata is not enabled at all, streaming only video
+                                    if (!_info.has_metadata_node)
                                     {
-                                        auto timestamp = (double)buf.timestamp.tv_sec * 1000.f + (double)buf.timestamp.tv_usec / 1000.f;
-                                        timestamp = monotonic_to_realtime(timestamp);
-
-                                        LOG_DEBUG_V4L("no metadata streamed");
-                                        if (buf_mgr.verify_vd_md_sync())
+                                        if(has_metadata())
                                         {
-                                            buffer->attach_buffer(buf);
-                                            buf_mgr.handle_buffer(e_video_buf, -1); // transfer new buffer request to the frame callback
+                                            auto timestamp = (double)buf.timestamp.tv_sec*1000.f + (double)buf.timestamp.tv_usec/1000.f;
+                                            timestamp = monotonic_to_realtime(timestamp);
 
+                                            // Read metadata. Metadata node performs a blocking call to ensure video and metadata sync
+                                            acquire_metadata(buf_mgr,fds,compressed_format);
+                                            md_extracted = true;
 
-                                            auto frame_sz = buf_mgr.md_node_present() ? buf.bytesused :
-                                                                std::min(buf.bytesused - buf_mgr.metadata_size(),
-                                                                         buffer->get_length_frame_only());
-
-                                            uint8_t md_size = buf_mgr.metadata_size();
-                                            void* md_start = buf_mgr.metadata_start();
-
-                                            // D457 development - hid over uvc - md size for IMU is 64
-                                            metadata_hid_raw meta_data{};
-                                            if (md_size == 0 && buffer->get_length_frame_only() <= 64)
+                                            if (wa_applied)
                                             {
-                                                // Populate HID IMU data - Header
-                                                meta_data.header.report_type = md_hid_report_type::hid_report_imu;
-                                                meta_data.header.length = hid_header_size + metadata_imu_report_size;
-                                                meta_data.header.timestamp = *(reinterpret_cast<uint64_t *>(buffer->get_frame_start() + offsetof(hid_mipi_data, hwTs)));
-                                                // Payload:
-                                                meta_data.report_type.imu_report.header.md_type_id = md_type::META_DATA_HID_IMU_REPORT_ID;
-                                                meta_data.report_type.imu_report.header.md_size = metadata_imu_report_size;
-
-                                                md_size = sizeof(metadata_hid_raw);
-                                                md_start = &meta_data;
+                                                auto fn = *(uint32_t*)((char*)(buf_mgr.metadata_start())+28);
+                                                LOG_DEBUG_V4L("Extracting md buff, fn = " << fn);
                                             }
 
-                                            frame_object fo{ frame_sz, md_size,
-                                                        buffer->get_frame_start(), md_start, timestamp };
+                                            auto frame_sz = buf_mgr.md_node_present() ? buf.bytesused :
+                                                                std::min(buf.bytesused - buf_mgr.metadata_size(), buffer->get_length_frame_only());
+                                            frame_object fo{ frame_sz, buf_mgr.metadata_size(),
+                                                             buffer->get_frame_start(), buf_mgr.metadata_start(), timestamp };
 
-                                            //Invoke user callback and enqueue next frame
-                                            _callback(_profile, fo, [buf_mgr]() mutable {
-                                                buf_mgr.request_next_frame();
-                                            });
+                                            buffer->attach_buffer(buf);
+                                            buf_mgr.handle_buffer(e_video_buf,-1); // transfer new buffer request to the frame callback
 
+                                            if (buf_mgr.verify_vd_md_sync())
+                                            {
+                                                //Invoke user callback and enqueue next frame
+                                                _callback(_profile, fo, [buf_mgr]() mutable {
+                                                    buf_mgr.request_next_frame();
+                                                });
+                                            }
+                                            else
+                                            {
+                                                LOG_WARNING("Video frame dropped, video and metadata buffers inconsistency");
+                                            }
                                         }
-                                        else
+                                        else // when metadata is not enabled at all, streaming only video
                                         {
-                                            LOG_WARNING("Video frame dropped, video and metadata buffers inconsistency");
+                                            auto timestamp = (double)buf.timestamp.tv_sec * 1000.f + (double)buf.timestamp.tv_usec / 1000.f;
+                                            timestamp = monotonic_to_realtime(timestamp);
+
+                                            LOG_DEBUG_V4L("no metadata streamed");
+                                            if (buf_mgr.verify_vd_md_sync())
+                                            {
+                                                buffer->attach_buffer(buf);
+                                                buf_mgr.handle_buffer(e_video_buf, -1); // transfer new buffer request to the frame callback
+
+
+                                                auto frame_sz = buf_mgr.md_node_present() ? buf.bytesused :
+                                                                    std::min(buf.bytesused - buf_mgr.metadata_size(),
+                                                                             buffer->get_length_frame_only());
+
+                                                uint8_t md_size = buf_mgr.metadata_size();
+                                                void* md_start = buf_mgr.metadata_start();
+
+                                                // D457 development - hid over uvc - md size for IMU is 64
+                                                metadata_hid_raw meta_data{};
+                                                if (md_size == 0 && buffer->get_length_frame_only() <= 64)
+                                                {
+                                                    // Populate HID IMU data - Header
+                                                    populate_imu_data(meta_data, buffer->get_frame_start(), md_size, &md_start);
+                                                }
+
+                                                frame_object fo{ frame_sz, md_size,
+                                                            buffer->get_frame_start(), md_start, timestamp };
+
+                                                //Invoke user callback and enqueue next frame
+                                                _callback(_profile, fo, [buf_mgr]() mutable {
+                                                    buf_mgr.request_next_frame();
+                                                });
+                                            }
+                                            else
+                                            {
+                                                LOG_WARNING("Video frame dropped, video and metadata buffers inconsistency");
+                                            }
                                         }
                                     }
                                     else
@@ -1250,62 +1280,8 @@ namespace librealsense
                             LOG_DEBUG("FD_ISSET: no data on video node sink");
                         }
 
-                        // uploading to user's callback
-                        std::shared_ptr<v4l2_buffer> video_v4l2_buffer;
-                        std::shared_ptr<v4l2_buffer> md_v4l2_buffer;
-
-                        if (_is_started && is_metadata_streamed())
-                        {
-                            int video_fd = -1, md_fd = -1;
-                            if (_video_md_syncer.pull_video_with_metadata(video_v4l2_buffer, md_v4l2_buffer, video_fd, md_fd))
-                            {
-                                // Preparing video buffer
-                                auto video_buffer = get_video_buffer(video_v4l2_buffer->index);
-                                video_buffer->attach_buffer(*video_v4l2_buffer);
-
-                                // happens when the video did not arrive on
-                                // the current polling iteration (was taken from the syncer's video queue)
-                                if (buf_mgr.get_buffers()[e_video_buf]._file_desc == -1)
-                                {
-                                    buf_mgr.handle_buffer(e_video_buf, video_fd, *video_v4l2_buffer, video_buffer);
-                                }
-                                buf_mgr.handle_buffer(e_video_buf, -1); // transfer new buffer request to the frame callback
-
-                                // Preparing metadata buffer
-                                static const size_t uvc_md_start_offset = sizeof(uvc_meta_buffer::ns) + sizeof(uvc_meta_buffer::sof);
-                                auto metadata_buffer = get_md_buffer(md_v4l2_buffer->index);
-                                buf_mgr.set_md_attributes(md_v4l2_buffer->bytesused,
-                                                            metadata_buffer->get_frame_start());
-                                metadata_buffer->attach_buffer(*md_v4l2_buffer);
-
-                                if (buf_mgr.get_buffers()[e_metadata_buf]._file_desc == -1)
-                                {
-                                    buf_mgr.handle_buffer(e_metadata_buf, md_fd, *md_v4l2_buffer, metadata_buffer);
-                                }
-                                buf_mgr.handle_buffer(e_metadata_buf, -1); // transfer new buffer request to the frame callback
-
-                                auto frame_sz = buf_mgr.md_node_present() ? video_v4l2_buffer->bytesused :
-                                                    std::min(video_v4l2_buffer->bytesused - buf_mgr.metadata_size(),
-                                                             video_buffer->get_length_frame_only());
-
-                                auto timestamp = (double)video_v4l2_buffer->timestamp.tv_sec * 1000.f + (double)video_v4l2_buffer->timestamp.tv_usec / 1000.f;
-                                timestamp = monotonic_to_realtime(timestamp);
-
-                                // D457 work - to work with "normal camera", use frame_sz as the first input to the following frame_object:
-                                //frame_object fo{ buf.bytesused - MAX_META_DATA_SIZE, buf_mgr.metadata_size(),
-                                frame_object fo{ frame_sz, buf_mgr.metadata_size(),
-                                                 video_buffer->get_frame_start(), buf_mgr.metadata_start(), timestamp };
-
-                                //Invoke user callback and enqueue next frame
-                                _callback(_profile, fo, [buf_mgr]() mutable {
-                                    buf_mgr.request_next_frame();
-                                });
-                            }
-                            else
-                            {
-                                LOG_DEBUG("video_md_syncer - synchronized video and md could not be pulled");
-                            }
-                        }
+                        // pulling synchronized video and metadata and uploading them to user's callback
+                        upload_video_and_metadata_from_syncer(buf_mgr);
                     }
                 }
                 else // (val==0)
@@ -1318,7 +1294,92 @@ namespace librealsense
             }
         }
 
-        void v4l_uvc_device::acquire_metadata(buffers_mgr & buf_mgr,fd_set &, bool compressed_format)
+        void v4l_uvc_device::populate_imu_data(metadata_hid_raw& meta_data, uint8_t* frame_start, uint8_t& md_size, void** md_start) const
+        {
+            meta_data.header.report_type = md_hid_report_type::hid_report_imu;
+            meta_data.header.length = hid_header_size + metadata_imu_report_size;
+            meta_data.header.timestamp = *(reinterpret_cast<uint64_t *>(frame_start + offsetof(hid_mipi_data, hwTs)));
+            // Payload:
+            meta_data.report_type.imu_report.header.md_type_id = md_type::META_DATA_HID_IMU_REPORT_ID;
+            meta_data.report_type.imu_report.header.md_size = metadata_imu_report_size;
+
+            md_size = sizeof(metadata_hid_raw);
+            *md_start = &meta_data;
+        }
+
+
+        void v4l_uvc_device::upload_video_and_metadata_from_syncer(buffers_mgr& buf_mgr)
+        {
+            // uploading to user's callback
+            std::shared_ptr<v4l2_buffer> video_v4l2_buffer;
+            std::shared_ptr<v4l2_buffer> md_v4l2_buffer;
+
+            if (_is_started && is_metadata_streamed())
+            {
+                int video_fd = -1, md_fd = -1;
+                if (_video_md_syncer.pull_video_with_metadata(video_v4l2_buffer, md_v4l2_buffer, video_fd, md_fd))
+                {
+                    // Preparing video buffer
+                    auto video_buffer = get_video_buffer(video_v4l2_buffer->index);
+                    video_buffer->attach_buffer(*video_v4l2_buffer);
+
+                    // happens when the video did not arrive on
+                    // the current polling iteration (was taken from the syncer's video queue)
+                    if (buf_mgr.get_buffers()[e_video_buf]._file_desc == -1)
+                    {
+                        buf_mgr.handle_buffer(e_video_buf, video_fd, *video_v4l2_buffer, video_buffer);
+                    }
+                    buf_mgr.handle_buffer(e_video_buf, -1); // transfer new buffer request to the frame callback
+
+                    // Preparing metadata buffer
+                    auto metadata_buffer = get_md_buffer(md_v4l2_buffer->index);
+                    set_metadata_attributes(buf_mgr, md_v4l2_buffer->bytesused, metadata_buffer->get_frame_start());
+                    metadata_buffer->attach_buffer(*md_v4l2_buffer);
+
+                    if (buf_mgr.get_buffers()[e_metadata_buf]._file_desc == -1)
+                    {
+                        buf_mgr.handle_buffer(e_metadata_buf, md_fd, *md_v4l2_buffer, metadata_buffer);
+                    }
+                    buf_mgr.handle_buffer(e_metadata_buf, -1); // transfer new buffer request to the frame callback
+
+                    auto frame_sz = buf_mgr.md_node_present() ? video_v4l2_buffer->bytesused :
+                                        std::min(video_v4l2_buffer->bytesused - buf_mgr.metadata_size(),
+                                                 video_buffer->get_length_frame_only());
+
+                    auto timestamp = (double)video_v4l2_buffer->timestamp.tv_sec * 1000.f + (double)video_v4l2_buffer->timestamp.tv_usec / 1000.f;
+                    timestamp = monotonic_to_realtime(timestamp);
+
+                    // D457 work - to work with "normal camera", use frame_sz as the first input to the following frame_object:
+                    //frame_object fo{ buf.bytesused - MAX_META_DATA_SIZE, buf_mgr.metadata_size(),
+                    frame_object fo{ frame_sz, buf_mgr.metadata_size(),
+                                     video_buffer->get_frame_start(), buf_mgr.metadata_start(), timestamp };
+
+                    //Invoke user callback and enqueue next frame
+                    _callback(_profile, fo, [buf_mgr]() mutable {
+                        buf_mgr.request_next_frame();
+                    });
+                }
+                else
+                {
+                    LOG_DEBUG("video_md_syncer - synchronized video and md could not be pulled");
+                }
+            }
+        }
+
+        void v4l_uvc_device::set_metadata_attributes(buffers_mgr& buf_mgr, __u32 bytesused, uint8_t* md_start)
+        {
+            size_t uvc_md_start_offset = sizeof(uvc_meta_buffer::ns) + sizeof(uvc_meta_buffer::sof);
+            buf_mgr.set_md_attributes(bytesused - uvc_md_start_offset,
+                                        md_start + uvc_md_start_offset);
+        }
+
+        void v4l_mipi_device::set_metadata_attributes(buffers_mgr& buf_mgr, __u32 bytesused, uint8_t* md_start)
+        {
+            buf_mgr.set_md_attributes(bytesused, md_start);
+        }
+
+
+        void v4l_uvc_device::acquire_metadata(buffers_mgr& buf_mgr,fd_set &, bool compressed_format)
         {
             if (has_metadata())
                 buf_mgr.set_md_from_video_node(compressed_format);
@@ -2140,7 +2201,7 @@ namespace librealsense
                 xctrl.value = xctrl.value ? V4L2_EXPOSURE_APERTURE_PRIORITY : V4L2_EXPOSURE_MANUAL;
 
             // Extract the control group from the underlying control query
-            v4l2_ext_controls ctrls_block { xctrl.id&0xffff0000, 1, 0, {0, 0}, &xctrl };
+            v4l2_ext_controls ctrls_block { xctrl.id&0xffff0000, 1, 0, 0, 0, &xctrl };
 
             int retVal = xioctl(_fd, VIDIOC_S_EXT_CTRLS, &ctrls_block);
             if (retVal < 0)
@@ -2158,7 +2219,7 @@ namespace librealsense
             v4l2_ext_control xctrl{xu_to_cid(xu,control), uint32_t(size), 0, 0};
             xctrl.p_u8 = data;
 
-            struct v4l2_ext_controls ext {xctrl.id & 0xffff0000, 1, 0, {0, 0}, &xctrl};
+            v4l2_ext_controls ext {xctrl.id & 0xffff0000, 1, 0, 0, 0, &xctrl};
 
             // the ioctl fails once when performing send and receive right after it
             // it succeeds on the second time
@@ -2172,14 +2233,13 @@ namespace librealsense
                     continue;
                 }
 
-                // TODO check if parsing for non-integer values D457
-                //memcpy(data,(void*)(&ctrl.value),size);
-
                 if (control == RS_ENABLE_AUTO_EXPOSURE)
                   xctrl.value = (V4L2_EXPOSURE_MANUAL == xctrl.value) ? 0 : 1;
 
-                // used to parse values that have size > 1
-                memcpy(data,(void*)(&xctrl.value), size);
+                // used to parse the data when only a value is returned (e.g. laser power),
+                // and not a pointer to a buffer of data (e.g. gvd)
+                if (size < sizeof(__s64))
+                    memcpy(data,(void*)(&xctrl.value), size);
 
                 return true;
             }
@@ -2354,14 +2414,18 @@ namespace librealsense
             if (_video_queue.size() > 2)
             {
                 // Enqueue of video buffer before throwing its content away
-                enqueue_buffer_before_throwing_it(_video_queue.front());
-                _video_queue.pop();
+                enqueue_front_buffer_before_throwing_it(_video_queue);
             }
         }
 
         void v4l2_video_md_syncer::push_metadata(const sync_buffer& md_buffer)
         {
             std::lock_guard<std::mutex> lock(_syncer_mutex);
+
+            // override front buffer if it has the same sequence that the new buffer - happens with metadata sequence 0
+            if (_md_queue.size() > 0 && _md_queue.front()._v4l2_buf->sequence == md_buffer._v4l2_buf->sequence)
+                enqueue_front_buffer_before_throwing_it(_md_queue);
+
             _md_queue.push(md_buffer);
             LOG_DEBUG_V4L("video_md_syncer - md pushed with sequence " << md_buffer._v4l2_buf->sequence);
 
@@ -2369,8 +2433,7 @@ namespace librealsense
             if (_md_queue.size() > 2)
             {
                 // Enqueue of md buffer before throwing its content away
-                enqueue_buffer_before_throwing_it(_md_queue.front());
-                _md_queue.pop();
+                enqueue_front_buffer_before_throwing_it(_md_queue);
             }
         }
 
@@ -2463,6 +2526,18 @@ namespace librealsense
                 LOG_ERROR("xioctl(VIDIOC_QBUF) failed when requesting new frame! fd: " << sb._fd << " error: " << strerror(errno));
             }
         }
+
+        void v4l2_video_md_syncer::enqueue_front_buffer_before_throwing_it(std::queue<sync_buffer>& sync_queue)
+        {
+            // Enqueue of buffer before throwing its content away
+            LOG_DEBUG_V4L("video_md_syncer - Enqueue buf " << std::dec << sync_queue.front()._buffer_index << " for fd " << sync_queue.front()._fd << " before dropping it");
+            if (xioctl(sync_queue.front()._fd, VIDIOC_QBUF, sync_queue.front()._v4l2_buf.get()) < 0)
+            {
+                LOG_ERROR("xioctl(VIDIOC_QBUF) failed when requesting new frame! fd: " << sync_queue.front()._fd << " error: " << strerror(errno));
+            }
+            sync_queue.pop();
+        }
+
 
         void v4l2_video_md_syncer::flush()
         {

@@ -283,27 +283,15 @@ void log_callback_end( uint32_t fps,
     {
         auto system_time = environment::get_instance().get_time_service()->get_time();
         auto fr = std::make_shared<frame>();
-        byte* pix = (byte*)fo.pixels;
-        std::vector<byte> pixels;
+        
+        fr->set_stream(profile);
+
+        // D457 dev - computing relevant frame size
         const auto&& vsp = As<video_stream_profile, stream_profile_interface>(profile);
         int width = vsp ? vsp->get_width() : 0;
         int height = vsp ? vsp->get_height() : 0;
         int bpp = get_image_bpp(profile->get_format());
-
-        // method should be limited to use of MIPI - not for USB
-        // the aim is to grab the data from a bigger buffer, which is aligned to 64 bytes,
-        // when the resolution's width is not aligned to 64
-        if (width % 64 != 0 && fo.frame_size > compute_frame_expected_size(width, height, bpp))
-        {
-            pixels = align_width_to_64(width, height, bpp, pix);
-        }
-        else
-        {
-            pixels = std::vector<byte>(pix, pix + fo.frame_size);
-        }
-
-        fr->data = pixels;
-        fr->set_stream(profile);
+        auto frame_size = compute_frame_expected_size(width, height, bpp);
 
         frame_additional_data additional_data(0,
             0,
@@ -315,7 +303,7 @@ void log_callback_end( uint32_t fps,
             last_frame_number,
             false,
             0,
-            (uint32_t)pixels.size());
+            (uint32_t)frame_size);
 
         if (_metadata_modifier)
             _metadata_modifier(additional_data);
@@ -441,10 +429,20 @@ void log_callback_end( uint32_t fps,
 
                     if (fh.frame)
                     {
-                        assert( expected_size == sizeof(byte) * fr->data.size() ||
-                                expected_size == sizeof(byte) * fr->data.size() + 68); // added for D457 - need to understand why this happens (68 is size of md)
-
-                        memcpy((void*)fh->get_frame_data(), fr->data.data(), sizeof(byte) * fr->data.size());
+                        // method should be limited to use of MIPI - not for USB
+                        // the aim is to grab the data from a bigger buffer, which is aligned to 64 bytes,
+                        // when the resolution's width is not aligned to 64
+                        if ((width * bpp >> 3) % 64 != 0 && f.frame_size > expected_size)
+                        {
+                            std::vector<byte> pixels = align_width_to_64(width, height, bpp, (byte*)f.pixels);
+                            assert( expected_size == sizeof(byte) * pixels.size());
+                            memcpy( (void *)fh->get_frame_data(), pixels.data(), expected_size );
+                        }
+                        else
+                        {
+                            assert( expected_size == sizeof(byte) * f.frame_size );
+                            memcpy( (void *)fh->get_frame_data(), f.pixels, expected_size );
+                        }
 
                         auto&& video = dynamic_cast<video_frame*>(fh.frame);
                         if (video)
@@ -655,8 +653,9 @@ void log_callback_end( uint32_t fps,
 
     stream_profiles uvc_sensor::init_stream_profiles()
     {
-        // D457 development - std::unordered_set<std::shared_ptr<video_stream_profile>> profiles;
-        std::unordered_set<std::shared_ptr<stream_profile_base>> profiles;
+        std::unordered_set<std::shared_ptr<video_stream_profile>> video_profiles;
+        // D457 development - only via mipi imu frames com from uvc instead of hid
+        std::unordered_set<std::shared_ptr<motion_stream_profile>> motion_profiles;
         power on(std::dynamic_pointer_cast<uvc_sensor>(shared_from_this()));
 
         _uvc_profiles = _device->get_profiles();
@@ -675,7 +674,7 @@ void log_callback_end( uint32_t fps,
                 profile->set_stream_index(0);
                 profile->set_format(rs2_fmt);
                 profile->set_framerate(p.fps);
-                profiles.insert(profile);
+                motion_profiles.insert(profile);
             }
             else
             {
@@ -685,11 +684,12 @@ void log_callback_end( uint32_t fps,
                 profile->set_stream_index(0);
                 profile->set_format(rs2_fmt);
                 profile->set_framerate(p.fps);
-                profiles.insert(profile);
+                video_profiles.insert(profile);
             }
         }
 
-        stream_profiles result{ profiles.begin(), profiles.end() };
+        stream_profiles result{ video_profiles.begin(), video_profiles.end() };
+        result.insert(result.end(), motion_profiles.begin(), motion_profiles.end());
         return result;
     }
 
@@ -964,7 +964,9 @@ void log_callback_end( uint32_t fps,
             last_frame_number = frame_counter;
             last_timestamp = timestamp;
             frame_holder frame = _source.alloc_frame(RS2_EXTENSION_MOTION_FRAME, data_size, fr->additional_data, true);
-            memcpy((void*)frame->get_frame_data(), fr->data.data(), sizeof(byte)*fr->data.size());
+            memcpy( (void *)frame->get_frame_data(),
+                    sensor_data.fo.pixels,
+                    sizeof( byte ) * sensor_data.fo.frame_size );
             if (!frame)
             {
                 LOG_INFO("Dropped frame. alloc_frame(...) returned nullptr");
@@ -1549,8 +1551,6 @@ void log_callback_end( uint32_t fps,
 
         for (auto source : requests)
             add_source_profile_missing_data(source);
-
-
 
         const auto&& resolved_req = resolve_requests(requests);
 
