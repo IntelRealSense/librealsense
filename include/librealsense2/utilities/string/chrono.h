@@ -12,6 +12,8 @@
 #include <chrono>
 #include <string>
 #include <sstream>
+#include <ctime>
+
 
 inline std::string to_string( const std::time_t & time )
 {
