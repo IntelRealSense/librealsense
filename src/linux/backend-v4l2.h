@@ -402,8 +402,8 @@ namespace librealsense
             std::vector<int>  _fds;             // list the file descriptors to be monitored during frames polling
             buffers_mgr     _buf_dispatch;      // Holder for partial (MD only) frames that shall be preserved between 'select' calls when polling v4l buffers
             int _fd = 0;
-			frame_drop_monitor _frame_drop_monitor;           // used to check the frames drops kpi
-			v4l2_video_md_syncer _video_md_syncer;
+            frame_drop_monitor _frame_drop_monitor;           // used to check the frames drops kpi
+            v4l2_video_md_syncer _video_md_syncer;
 
         private:
             int _stop_pipe_fd[2]; // write to _stop_pipe_fd[1] and read from _stop_pipe_fd[0]
