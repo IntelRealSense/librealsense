@@ -285,21 +285,6 @@ namespace librealsense
             std::queue<sync_buffer> _md_queue;
         };
 
-        struct v4l2_device_info
-        {
-            enum connection_type
-            {
-                CONNECTION_TYPE_USB = 0,
-                CONNECTION_TYPE_MIPI  = 1
-            };
-
-            std::string card;
-            std::string bus_info;
-            std::vector<std::string> video_nodes;
-
-            connection_type connection_from_bus_info(const std::string& bus_info);
-        };
-
         class v4l_uvc_device : public uvc_device, public v4l_uvc_interface
         {
         public:
@@ -314,9 +299,9 @@ namespace librealsense
 
             static bool is_usb_device_path(const std::string& video_path);
 
-            static uvc_device_info handle_usb_device_path(const std::string& video_path, const std::string& name);
+            static uvc_device_info get_info_from_usb_device_path(const std::string& video_path, const std::string& name);
 
-            static uvc_device_info handle_mipi_device_path(const std::string& video_path, const std::string& name);
+            static uvc_device_info get_info_from_mipi_device_path(const std::string& video_path, const std::string& name);
 
             static void get_mipi_device_info(const std::string& dev_name,
                                              std::string& bus_info, std::string& card);

@@ -637,7 +637,7 @@ namespace librealsense
             return valid_path;
         }
 
-        uvc_device_info v4l_uvc_device::handle_usb_device_path(const std::string& video_path, const std::string& name)
+        uvc_device_info v4l_uvc_device::get_info_from_usb_device_path(const std::string& video_path, const std::string& name)
         {
             std::string busnum, devnum, devpath;
             auto dev_name = "/dev/" + name;
@@ -724,7 +724,7 @@ namespace librealsense
             ::close(fd);
         }
 
-        uvc_device_info v4l_uvc_device::handle_mipi_device_path(const std::string& video_path, const std::string& name)
+        uvc_device_info v4l_uvc_device::get_info_from_mipi_device_path(const std::string& video_path, const std::string& name)
         {
             uint16_t vid{}, pid{}, mi{};
             usb_spec usb_specification(usb_undefined);
@@ -812,11 +812,11 @@ namespace librealsense
                     uvc_device_info info{};
                     if (is_usb_device_path(video_path))
                     {
-                        info = handle_usb_device_path(video_path, name);
+                        info = get_info_from_usb_device_path(video_path, name);
                     }
-                    else //video4linux devices thar are not USB devices
+                    else //video4linux devices that are not USB devices
                     {
-                        info = handle_mipi_device_path(video_path, name);
+                        info = get_info_from_mipi_device_path(video_path, name);
                     }
 
                     auto dev_name = "/dev/" + name;
