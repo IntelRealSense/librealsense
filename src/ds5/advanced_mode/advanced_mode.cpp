@@ -22,7 +22,6 @@ namespace librealsense
         };
 
         // "Remove IR Pattern" visual preset is available only for D400, D410, D415, D460, D465
-        std::string pid = _depth_sensor.get_info(RS2_CAMERA_INFO_PRODUCT_ID);
         _preset_opt = std::make_shared<advanced_mode_preset_option>(*this,
             _depth_sensor,
             option_range{ 0,

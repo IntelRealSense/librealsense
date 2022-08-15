@@ -284,6 +284,26 @@ namespace librealsense
             std::queue<sync_buffer> _video_queue;
             std::queue<sync_buffer> _md_queue;
         };
+		
+		// The aim of the frame_drop_monitor is to check the frames drops kpi - which requires
+        // that no more than some percentage of the frames are dropped
+        // It is checked using the fps, and the previous corrupted frames, on the last 30 seconds
+        // for example, for frame rate of 30 fps, and kpi of 5%, the criteria will be:
+        // if at least 45 frames (= 30[fps] * 5%[kpi]* 30[sec]) drops have occured in the previous 30 seconds,
+        // then the kpi is violated
+        class frame_drop_monitor
+        {
+        public:
+            frame_drop_monitor(double kpi_frames_drops_percentage) : _kpi_frames_drops_pct(kpi_frames_drops_percentage) {}
+            // update_and_check_kpi method returns whether the kpi has been violated
+            // it should be called each time a partial frame is caught
+            bool update_and_check_kpi(const stream_profile& profile, const timeval& timestamp); 
+
+        private:
+            // container used to store the latest timestamps of the partial frames, per profile
+            std::vector<std::pair<stream_profile, std::deque<long int>>> drops_per_stream;
+            double _kpi_frames_drops_pct;
+        };
 
         class v4l_uvc_device : public uvc_device, public v4l_uvc_interface
         {
@@ -381,8 +401,9 @@ namespace librealsense
             int _max_fd = 0;                    // specifies the maximal pipe number the polling process will monitor
             std::vector<int>  _fds;             // list the file descriptors to be monitored during frames polling
             buffers_mgr     _buf_dispatch;      // Holder for partial (MD only) frames that shall be preserved between 'select' calls when polling v4l buffers
-            int _fd = 0;          // prevent unintentional abuse in derived class
-            v4l2_video_md_syncer _video_md_syncer;
+            int _fd = 0;
+			frame_drop_monitor _frame_drop_monitor;           // used to check the frames drops kpi
+			v4l2_video_md_syncer _video_md_syncer;
 
         private:
             int _stop_pipe_fd[2]; // write to _stop_pipe_fd[1] and read from _stop_pipe_fd[0]
