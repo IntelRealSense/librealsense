@@ -1191,7 +1191,7 @@ namespace librealsense
 
                             if (buf.flags & V4L2_BUF_FLAG_ERROR)
                             {
-                                LOG_DEBUG_V4L("VIDEO - VIDIOC_DQBUF flags with flag = " << std::hex << buf.flags <<", index = " << std::dec << buf.index << " for fd " << _fd << " seq " << buf.sequence);
+                                LOG_DEBUG_V4L("VIDEO - buffer dequeued with error = " << std::hex << buf.flags <<", index = " << std::dec << buf.index << " for fd " << _fd << " seq " << buf.sequence);
                             }
                             else
                             {
@@ -2183,7 +2183,7 @@ namespace librealsense
 
                 if (buf.flags & V4L2_BUF_FLAG_ERROR)
                 {
-                    LOG_DEBUG_V4L("METADATA - VIDIOC_DQBUF flags with flag = " << std::hex << buf.flags <<", index = " << std::dec << buf.index << " for fd " << _md_fd << " seq " << buf.sequence);
+                    LOG_DEBUG_V4L("METADATA - buffer dequeued with error flag = " << std::hex << buf.flags <<", index = " << std::dec << buf.index << " for fd " << _md_fd << " seq " << buf.sequence);
                 }
                 else
                 {
