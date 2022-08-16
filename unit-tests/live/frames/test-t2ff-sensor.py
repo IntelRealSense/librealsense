@@ -21,6 +21,7 @@ def time_to_first_frame(sensor, profile, max_delay_allowed):
     If the frame arrives it will return the seconds it took since open() call
     If no frame it will return 'max_delay_allowed'
     """
+    max_delay_allowed = 10
     first_frame_time = max_delay_allowed
     open_call_stopwatch = Stopwatch()
 
@@ -41,6 +42,7 @@ def time_to_first_frame(sensor, profile, max_delay_allowed):
 
     sensor.stop()
     sensor.close()
+    print("Time until first depth frame is: {:.3f} [sec]".format(first_frame_time))
 
     return first_frame_time
 
