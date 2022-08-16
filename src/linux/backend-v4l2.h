@@ -284,8 +284,8 @@ namespace librealsense
             std::queue<sync_buffer> _video_queue;
             std::queue<sync_buffer> _md_queue;
         };
-		
-		// The aim of the frame_drop_monitor is to check the frames drops kpi - which requires
+
+        // The aim of the frame_drop_monitor is to check the frames drops kpi - which requires
         // that no more than some percentage of the frames are dropped
         // It is checked using the fps, and the previous corrupted frames, on the last 30 seconds
         // for example, for frame rate of 30 fps, and kpi of 5%, the criteria will be:
