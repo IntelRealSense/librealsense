@@ -79,6 +79,7 @@ namespace librealsense
         void get_target_dots_info(rs2_frame_queue* frames, float dots_x[4], float dots_y[4], rs2::stream_profile & profile, rs2_intrinsics & fy, int progress, update_progress_callback_ptr progress_callback);
         uint16_t calc_fill_rate(const rs2_frame* f);
         void fill_missing_data(uint16_t data[256], int size);
+        void remove_leading_outliers(uint16_t data[256], int size);
         void collect_depth_frame_sum(const rs2_frame* f);
         DirectSearchCalibrationResult get_calibration_status(int timeout_ms, std::function<void(const int count)> progress_func, bool wait_for_final_results = true);
 

@@ -405,6 +405,12 @@ namespace rs2
         bool frame_arrived = false;
         try
         {
+            if (_sub->s->supports(RS2_OPTION_THERMAL_COMPENSATION))
+            {
+                thermal_loop_prev = _sub->s->get_option(RS2_OPTION_THERMAL_COMPENSATION);
+                _sub->s->set_option(RS2_OPTION_THERMAL_COMPENSATION, 0.f);
+            }
+
             bool run_fl_calib = ( (action == RS2_CALIB_ACTION_FL_CALIB) && (w == 1280) && (h == 720));
             if (action == RS2_CALIB_ACTION_TARE_GROUND_TRUTH)
             {
@@ -859,6 +865,7 @@ namespace rs2
 
     void on_chip_calib_manager::calibrate()
     {
+        std::cout << __FUNCTION__ << " was called" << std::endl;
         int occ_timeout_ms = 9000;
         if (action == RS2_CALIB_ACTION_ON_CHIP_OB_CALIB || action == RS2_CALIB_ACTION_ON_CHIP_FL_CALIB)
         {
@@ -908,7 +915,7 @@ namespace rs2
                   ",\n \"apply preset\":" << (apply_preset ? 1 : 0) <<
                   ",\n \"accuracy\":" << accuracy <<
                   ",\n \"scan only\":" << (host_assistance ? 1 : 0) <<
-                  ",\n \"interactive scan\":" << 1 << "}";
+                  ",\n \"interactive scan\":" << 0 << "}";
         }
         else if (action == RS2_CALIB_ACTION_ON_CHIP_FL_CALIB)
         {
@@ -961,7 +968,7 @@ namespace rs2
 
         bool calib_done(!_new_calib.empty());
 
-        int timeout_sec(30);
+        int timeout_sec(10);
         timeout_sec *= (1 + static_cast<int>(action == RS2_CALIB_ACTION_ON_CHIP_CALIB)); // when RS2_CALIB_ACTION_ON_CHIP_CALIB is in interactive-mode the process takes longer.
         auto start = std::chrono::high_resolution_clock::now();
         bool is_timed_out(std::chrono::high_resolution_clock::now() - start > std::chrono::seconds(timeout_sec));
@@ -1527,6 +1534,7 @@ namespace rs2
 
             // Make new calibration active
             apply_calib(true);
+            LOG_WARNING(std::string(to_string() << __LINE__ << " new calib applied"));
 
             // Capture metrics after
             auto metrics_after = get_depth_metrics(invoke);
@@ -2424,6 +2432,7 @@ namespace rs2
                     {
                         get_manager().apply_calib(true);     // Store the new calibration internally
                         get_manager().keep();            // Flash the new calibration
+                        LOG_WARNING(std::string(to_string() << __LINE__ << " new calib applied and flashed"));
                         if (RS2_CALIB_STATE_UVMAPPING_INPUT == update_state)
                             get_manager().reset_device(); // Workaround for reloading color calibration table. Other approach?
 
@@ -2810,6 +2819,7 @@ namespace rs2
                     {
                         use_new_calib = true;
                         get_manager().apply_calib(true);
+                        LOG_WARNING(std::string(to_string() << __LINE__ << " new calib applied"));
                     }
 
                     ImGui::SetCursorScreenPos({ float(x + 150), (get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_OB_CALIB || get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_FL_CALIB ? float(y + 70) + ImGui::GetTextLineHeightWithSpacing() : (get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_TARE_CALIB ? (get_manager().tare_health ? float(y + 70) : float(y + 15)) + ImGui::GetTextLineHeightWithSpacing() : float(y + 70))) });
@@ -2966,6 +2976,7 @@ namespace rs2
                     {
                         get_manager().apply_calib(true);
                         use_new_calib = true;
+                        LOG_WARNING(std::string(to_string() << __LINE__ << " new calib applied"));
                     }
                 }
 
@@ -3055,6 +3066,7 @@ namespace rs2
 
             ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, regular_blue);
             auto s = update_manager->get_log();
+            rs2::log(RS2_LOG_SEVERITY_INFO, s.c_str());
             ImGui::InputTextMultiline("##autocalib_log", const_cast<char*>(s.c_str()),
                 s.size() + 1, { 490,100 }, ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_ReadOnly);
             ImGui::PopStyleColor();
