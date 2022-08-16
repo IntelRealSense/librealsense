@@ -1116,7 +1116,8 @@ namespace librealsense
                         { return default_depth_units; })));
             }
 
-            if (!mipi_sensor) // D457 dev - this condition should be removed after bug resolved in FW
+            // D457 dev - auto gain and exposure limits disabled for all devices
+            if (false) // D457 dev - this condition should be removed after bug resolved in FW
             {
                 // Auto exposure and gain limit
                 if (_fw_version >= firmware_version("5.12.10.11"))
