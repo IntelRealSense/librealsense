@@ -338,6 +338,40 @@ void log_callback_end( uint32_t fps,
         }
     }
 
+    void uvc_sensor::verify_supported_requests(const stream_profiles& requests) const
+    {
+        // This method's aim is to send a relevant exception message when a user tries to stream
+        // twice the same stream (at least) with different configurations (fps, resolution)
+        std::map<rs2_stream, uint32_t> requests_map;
+        for (auto&& req : requests)
+        {
+            requests_map[req->get_stream_type()] = req->get_framerate();
+        }
+
+        if (requests_map.size() < requests.size())
+                throw(std::runtime_error("Wrong configuration requested"));
+
+        // D457 dev
+        // taking into account that only with D457, streams GYRo and ACCEL will be
+        // mapped as uvc instead of hid
+        uint32_t gyro_fps = -1;
+        uint32_t accel_fps = -1;
+        for (auto it = requests_map.begin(); it != requests_map.end(); ++it)
+        {
+            if (it->first == RS2_STREAM_GYRO)
+                gyro_fps = it->second;
+            else if (it->first == RS2_STREAM_ACCEL)
+                accel_fps = it->second;
+            if (gyro_fps != -1 && accel_fps != -1)
+                break;
+        }
+
+        if (gyro_fps != -1 && accel_fps != -1 && gyro_fps != accel_fps)
+        {
+            throw(std::runtime_error("Wrong configuration requested - GYRO and ACCEL streams' fps to be equal for this device"));
+        }
+    }
+
     void uvc_sensor::open(const stream_profiles& requests)
     {
         std::lock_guard<std::mutex> lock(_configure_lock);
@@ -352,6 +386,8 @@ void log_callback_end( uint32_t fps,
         _source.set_sensor(_source_owner->shared_from_this());
 
         std::vector<platform::stream_profile> commited;
+
+        verify_supported_requests(requests);
 
         for (auto&& req_profile : requests)
         {
