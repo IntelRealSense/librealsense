@@ -734,8 +734,7 @@ namespace librealsense
 
             get_mipi_device_info(dev_name, bus_info, card);
 
-            // D457-specific
-            // the follwing 2 lines need to be changed in order to enable multiple mipi devices support
+            // the following 2 lines need to be changed in order to enable multiple mipi devices support
             // or maybe another field in the info structure - TBD
             vid = 0x8086;
             pid = 0xABCD; // D457 dev
@@ -834,7 +833,7 @@ namespace librealsense
             }
 
             // Matching video and metadata nodes
-            // Assume uvc_nodes is already sorted according to videoXX (video0, then vodeo1...)
+            // Assume uvc_nodes is already sorted according to videoXX (video0, then video1...)
             // Assume for each metadata node with index N there is a origin streaming node with index (N-1)
             for (auto&& cur_node : uvc_nodes)
             {
