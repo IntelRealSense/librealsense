@@ -779,6 +779,11 @@ namespace librealsense
             info.mi = mi;
             info.id = dev_name;
             info.device_path = video_path;
+            // unique id for MIPI:
+            // it cannot be generated as in usb, because the params busnum, devpath and devnum
+            // are not available via mipi
+            // TODO - find a way to assign unique id for mipi
+            // maybe using bus_info and card params (see above in this method)
             //info.unique_id = busnum + "-" + devpath + "-" + devnum;
             info.conn_spec = usb_specification;
             info.uvc_capabilities = get_dev_capabilities(dev_name);
