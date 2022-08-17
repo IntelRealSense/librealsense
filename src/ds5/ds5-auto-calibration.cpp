@@ -492,7 +492,7 @@ namespace librealsense
             {
                 if (host_assistance == host_assistance_type::assistance_first_feed)
                 {
-                    command cmd(ds::AUTO_CALIB, interactive_scan_control, 0, 0);
+                    command cmd(ds::AUTO_CALIB, get_calibration_result, 0, 0); // Rectify interactive_scan_control
                     uint8_t* p = reinterpret_cast<uint8_t*>(&step_count_v3);
                     cmd.data.push_back(p[0]);
                     cmd.data.push_back(p[1]);
