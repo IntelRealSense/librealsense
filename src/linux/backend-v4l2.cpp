@@ -43,6 +43,7 @@
 #include <sys/ioctl.h>
 #include <sys/sysmacros.h> // minor(...), major(...)
 #include <linux/usb/video.h>
+#include <linux/media.h>
 #include <linux/uvcvideo.h>
 #include <linux/videodev2.h>
 #include <regex>
@@ -544,31 +545,23 @@ namespace librealsense
             }
         }
 
-        void v4l_uvc_device::foreach_uvc_device(
-                std::function<void(const uvc_device_info&,
-                                   const std::string&)> action)
+        std::vector<std::string> v4l_uvc_device::get_video_paths()
         {
+            std::vector<std::string> video_paths;
             // Enumerate all subdevices present on the system
             DIR * dir = opendir("/sys/class/video4linux");
             if(!dir)
             {
                 LOG_INFO("Cannot access /sys/class/video4linux");
-                return;
+                return video_paths;
             }
-
-            // Collect UVC nodes info to bundle metadata and video
-            typedef std::pair<uvc_device_info,std::string> node_info;
-            std::vector<node_info> uvc_nodes,uvc_devices;
-
             while (dirent * entry = readdir(dir))
             {
                 std::string name = entry->d_name;
                 if(name == "." || name == "..") continue;
 
                 // Resolve a pathname to ignore virtual video devices and  sub-devices
-                static const std::regex uvc_pattern("(\\/usb\\d+\\/)\\w+"); // Locate UVC device path pattern ../usbX/...
                 static const std::regex video_dev_pattern("(\\/video\\d+)$");
-                static std::regex video_dev_index("\\d+$");
 
                 std::string path = "/sys/class/video4linux/" + name;
                 std::string real_path{};
@@ -584,151 +577,254 @@ namespace librealsense
                         continue;
                     }
                 }
+                video_paths.push_back(real_path);
+            }
+            closedir(dir);
+
+
+            // UVC nodes shall be traversed in ascending order for metadata nodes assignment ("dev/video1, Video2..
+            // Replace lexicographic with numeric sort to ensure "video2" is listed before "video11"
+            std::sort(video_paths.begin(), video_paths.end(),
+                      [](const std::string& first, const std::string& second)
+            {
+                // getting videoXX
+                std::string first_video = first.substr(first.find_last_of('/') + 1);
+                std::string second_video = second.substr(second.find_last_of('/') + 1);
+
+                // getting the index XX from videoXX
+                std::stringstream first_index(first_video.substr(first_video.find_first_of("0123456789")));
+                std::stringstream second_index(second_video.substr(second_video.find_first_of("0123456789")));
+                int left_id = 0, right_id = 0;
+                first_index >> left_id;
+                second_index >> right_id;
+                return left_id < right_id;
+            });
+            return video_paths;
+        }
+
+        bool v4l_uvc_device::is_usb_path_valid(const std::string& usb_video_path, const std::string& dev_name,
+                                               std::string& busnum, std::string& devnum, std::string& devpath)
+        {
+            struct stat st = {};
+            if(stat(dev_name.c_str(), &st) < 0)
+            {
+                throw linux_backend_exception(to_string() << "Cannot identify '" << dev_name);
+            }
+            if(!S_ISCHR(st.st_mode))
+                throw linux_backend_exception(dev_name + " is no device");
+
+            // Search directory and up to three parent directories to find busnum/devnum
+            auto valid_path = false;
+            std::ostringstream ss;
+            ss << "/sys/dev/char/" << major(st.st_rdev) << ":" << minor(st.st_rdev) << "/device/";
+
+            auto char_dev_path = ss.str();
+
+            for(auto i=0U; i < MAX_DEV_PARENT_DIR; ++i)
+            {
+                if(std::ifstream(char_dev_path + "busnum") >> busnum)
+                {
+                    if(std::ifstream(char_dev_path + "devnum") >> devnum)
+                    {
+                        if(std::ifstream(char_dev_path + "devpath") >> devpath)
+                        {
+                            valid_path = true;
+                            break;
+                        }
+                    }
+                }
+                char_dev_path += "../";
+            }
+            return valid_path;
+        }
+
+        uvc_device_info v4l_uvc_device::get_info_from_usb_device_path(const std::string& video_path, const std::string& name)
+        {
+            std::string busnum, devnum, devpath;
+            auto dev_name = "/dev/" + name;
+
+            if (!is_usb_path_valid(video_path, dev_name, busnum, devnum, devpath))
+            {
+#ifndef RS2_USE_CUDA
+               /* On the Jetson TX, the camera module is CSI & I2C and does not report as this code expects
+               Patch suggested by JetsonHacks: https://github.com/jetsonhacks/buildLibrealsense2TX */
+               LOG_INFO("Failed to read busnum/devnum. Device Path: " << ("/sys/class/video4linux/" + name));
+#endif
+               throw linux_backend_exception("Failed to read busnum/devnum of usb device");
+            }
+
+            LOG_INFO("Enumerating UVC " << name << " realpath=" << video_path);
+            uint16_t vid{}, pid{}, mi{};
+            usb_spec usb_specification(usb_undefined);
+
+            std::string modalias;
+            if(!(std::ifstream("/sys/class/video4linux/" + name + "/device/modalias") >> modalias))
+                throw linux_backend_exception("Failed to read modalias");
+            if(modalias.size() < 14 || modalias.substr(0,5) != "usb:v" || modalias[9] != 'p')
+                throw linux_backend_exception("Not a usb format modalias");
+            if(!(std::istringstream(modalias.substr(5,4)) >> std::hex >> vid))
+                throw linux_backend_exception("Failed to read vendor ID");
+            if(!(std::istringstream(modalias.substr(10,4)) >> std::hex >> pid))
+                throw linux_backend_exception("Failed to read product ID");
+            if(!(std::ifstream("/sys/class/video4linux/" + name + "/device/bInterfaceNumber") >> std::hex >> mi))
+                throw linux_backend_exception("Failed to read interface number");
+
+            // Find the USB specification (USB2/3) type from the underlying device
+            // Use device mapping obtained in previous step to traverse node tree
+            // and extract the required descriptors
+            // Traverse from
+            // /sys/devices/pci0000:00/0000:00:xx.0/ABC/M-N/3-6:1.0/video4linux/video0
+            // to
+            // /sys/devices/pci0000:00/0000:00:xx.0/ABC/M-N/version
+            usb_specification = get_usb_connection_type(video_path + "/../../../");
+
+            uvc_device_info info{};
+            info.pid = pid;
+            info.vid = vid;
+            info.mi = mi;
+            info.id = dev_name;
+            info.device_path = video_path;
+            info.unique_id = busnum + "-" + devpath + "-" + devnum;
+            info.conn_spec = usb_specification;
+            info.uvc_capabilities = get_dev_capabilities(dev_name);
+
+            return info;
+        }
+
+        void v4l_uvc_device::get_mipi_device_info(const std::string& dev_name,
+                                                  std::string& bus_info, std::string& card)
+        {
+            struct v4l2_capability vcap;
+            int fd = open(dev_name.c_str(), O_RDWR);
+            if (fd < 0)
+                throw linux_backend_exception("Mipi device capability could not be grabbed");
+            int err = ioctl(fd, VIDIOC_QUERYCAP, &vcap);
+            if (err)
+            {
+                struct media_device_info mdi;
+
+                err = ioctl(fd, MEDIA_IOC_DEVICE_INFO, &mdi);
+                if (!err)
+                {
+                    if (mdi.bus_info[0])
+                        bus_info = mdi.bus_info;
+                    else
+                        bus_info = std::string("platform:") + mdi.driver;
+
+                    if (mdi.model[0])
+                        card = mdi.model;
+                    else
+                        card = mdi.driver;
+                 }
+            }
+            else
+            {
+                bus_info = reinterpret_cast<const char *>(vcap.bus_info);
+                card = reinterpret_cast<const char *>(vcap.card);
+            }
+            ::close(fd);
+        }
+
+        uvc_device_info v4l_uvc_device::get_info_from_mipi_device_path(const std::string& video_path, const std::string& name)
+        {
+            uint16_t vid{}, pid{}, mi{};
+            usb_spec usb_specification(usb_undefined);
+            std::string bus_info, card;
+
+            auto dev_name = "/dev/" + name;
+
+            get_mipi_device_info(dev_name, bus_info, card);
+
+            // the following 2 lines need to be changed in order to enable multiple mipi devices support
+            // or maybe another field in the info structure - TBD
+            vid = 0x8086;
+            pid = 0xABCD; // D457 dev
+
+            static std::regex video_dev_index("\\d+$");
+            std::smatch match;
+            uint8_t ind{};
+            if (std::regex_search(name, match, video_dev_index))
+            {
+                ind = static_cast<uint8_t>(std::stoi(match[0]));
+            }
+            else
+            {
+                LOG_WARNING("Unresolved Video4Linux device pattern: " << name << ", device is skipped");
+                throw linux_backend_exception("Unresolved Video4Linux device, device is skipped");
+            }
+
+            //  D457 exposes (assuming first_video_index = 0):
+            // - video0 for Depth and video1 for Depth's md.
+            // - video2 for RGB and video3 for RGB's md.
+            // - video4 for IR stream. IR's md is currently not available.
+            // - video5 for IMU (accel or gyro TBD)
+            // next several lines permit to use D457 even if a usb device has already "taken" the video0,1,2 (for example)
+            // further development is needed to permit use of several mipi devices
+            static int  first_video_index = ind;
+            if (ind == first_video_index || ind == first_video_index + 2 || ind == first_video_index + 4)
+                mi = 0;
+            else if (ind == first_video_index + 1 | ind == first_video_index + 3)
+                mi = 3;
+            else if (ind == first_video_index + 5)
+                mi = 4;
+            else
+            {
+                LOG_WARNING("Unresolved Video4Linux device mi, device is skipped");
+                throw linux_backend_exception("Unresolved Video4Linux device, device is skipped");
+            }
+
+            uvc_device_info info{};
+            info.pid = pid;
+            info.vid = vid;
+            info.mi = mi;
+            info.id = dev_name;
+            info.device_path = video_path;
+            // unique id for MIPI:
+            // it cannot be generated as in usb, because the params busnum, devpath and devnum
+            // are not available via mipi
+            // TODO - find a way to assign unique id for mipi
+            // maybe using bus_info and card params (see above in this method)
+            //info.unique_id = busnum + "-" + devpath + "-" + devnum;
+            info.conn_spec = usb_specification;
+            info.uvc_capabilities = get_dev_capabilities(dev_name);
+
+            return info;
+        }
+
+        bool v4l_uvc_device::is_usb_device_path(const std::string& video_path)
+        {
+            static const std::regex uvc_pattern("(\\/usb\\d+\\/)\\w+"); // Locate UVC device path pattern ../usbX/...
+            return std::regex_search(video_path, uvc_pattern);
+        }
+
+        void v4l_uvc_device::foreach_uvc_device(
+                std::function<void(const uvc_device_info&,
+                                   const std::string&)> action)
+        {
+            std::vector<std::string> video_paths = get_video_paths();
+
+            // Collect UVC nodes info to bundle metadata and video
+            typedef std::pair<uvc_device_info,std::string> node_info;
+            std::vector<node_info> uvc_nodes,uvc_devices;
+
+            for(auto&& video_path : video_paths)
+            {
+                // following line grabs video0 from
+                auto name = video_path.substr(video_path.find_last_of('/') + 1);
 
                 try
                 {
-                    uint16_t vid{}, pid{}, mi{};
-                    std::string busnum, devnum, devpath;
-                    usb_spec usb_specification(usb_undefined);
-                    bool v4l_node=false;
+                    uvc_device_info info{};
+                    if (is_usb_device_path(video_path))
+                    {
+                        info = get_info_from_usb_device_path(video_path, name);
+                    }
+                    else //video4linux devices that are not USB devices
+                    {
+                        info = get_info_from_mipi_device_path(video_path, name);
+                    }
 
                     auto dev_name = "/dev/" + name;
-
-                    struct stat st = {};
-                    if(stat(dev_name.c_str(), &st) < 0)
-                    {
-                        throw linux_backend_exception(to_string() << "Cannot identify '" << dev_name);
-                    }
-                    if(!S_ISCHR(st.st_mode))
-                        throw linux_backend_exception(dev_name + " is no device");
-
-
-                    if (std::regex_search(real_path, uvc_pattern))
-                    {
-                        LOG_INFO("Enumerating UVC " << name << " realpath=" << real_path);
-                        // Search directory and up to three parent directories to find busnum/devnum
-                        auto valid_path = false;
-                        std::ostringstream ss; ss << "/sys/dev/char/" << major(st.st_rdev) << ":" << minor(st.st_rdev) << "/device/";
-                        auto char_dev_path = ss.str();
-
-                        for(auto i=0U; i < MAX_DEV_PARENT_DIR; ++i)
-                        {
-                            if(std::ifstream(char_dev_path + "busnum") >> busnum)
-                            {
-                                if(std::ifstream(char_dev_path + "devnum") >> devnum)
-                                {
-                                    if(std::ifstream(char_dev_path + "devpath") >> devpath)
-                                    {
-                                        valid_path = true;
-                                        break;
-                                    }
-                                }
-                            }
-                            char_dev_path += "../";
-                        }
-                        if(!valid_path)
-                        {
-    #ifndef RS2_USE_CUDA
-                           /* On the Jetson TX, the camera module is CSI & I2C and does not report as this code expects
-                           Patch suggested by JetsonHacks: https://github.com/jetsonhacks/buildLibrealsense2TX */
-                            LOG_INFO("Failed to read busnum/devnum. Device Path: " << path);
-    #endif
-                            continue;
-                        }
-
-                        std::string modalias;
-                        if(!(std::ifstream("/sys/class/video4linux/" + name + "/device/modalias") >> modalias))
-                            throw linux_backend_exception("Failed to read modalias");
-                        if(modalias.size() < 14 || modalias.substr(0,5) != "usb:v" || modalias[9] != 'p')
-                            throw linux_backend_exception("Not a usb format modalias");
-                        if(!(std::istringstream(modalias.substr(5,4)) >> std::hex >> vid))
-                            throw linux_backend_exception("Failed to read vendor ID");
-                        if(!(std::istringstream(modalias.substr(10,4)) >> std::hex >> pid))
-                            throw linux_backend_exception("Failed to read product ID");
-                        if(!(std::ifstream("/sys/class/video4linux/" + name + "/device/bInterfaceNumber") >> std::hex >> mi))
-                            throw linux_backend_exception("Failed to read interface number");
-
-                        // Find the USB specification (USB2/3) type from the underlying device
-                        // Use device mapping obtained in previous step to traverse node tree
-                        // and extract the required descriptors
-                        // Traverse from
-                        // /sys/devices/pci0000:00/0000:00:xx.0/ABC/M-N/3-6:1.0/video4linux/video0
-                        // to
-                        // /sys/devices/pci0000:00/0000:00:xx.0/ABC/M-N/version
-                        usb_specification = get_usb_connection_type(real_path + "/../../../");
-                    }
-                    else // Video4Linux Devices that are not listed as UVC
-                    {
-                        //LOG_INFO("Enumerating v4l " << name << " realpath=" << real_path);
-                        v4l_node = true;
-
-                        // D457-specific
-                        vid = 0x8086;
-                        pid = 0xABCD; // D457 dev
-
-                        std::smatch match;
-                        uint8_t ind{};
-                        if (std::regex_search(name, match, video_dev_index))
-                        {
-                            ind = static_cast<uint8_t>(std::stoi(match[0]));
-                        }
-                        else
-                        {
-                            LOG_WARNING("Unresolved Video4Linux device pattern: " << name << ", device is skipped");
-                            continue;
-                        }
-
-                        switch(ind)
-                        {
-                            //  D457 exposes:
-                        // - video0 for Depth and video1 for Depth's md.
-                        // - video2 for RGB and video3 for RGB's md.
-                        // - video4 for IR stream. IR's md is currently not available.
-                        // - video5 for IMU (accel or gyro TBD)
-                            case 0:
-                                mi = 0;
-                                break;
-                            case 1:
-                                mi = 3;
-                                break;
-                            case 2:   //added for D457
-                                mi = 0;
-                                break;
-                            case 3:   //added for D457
-                                mi = 3;
-                                break;
-                            case 4:   //added for D457
-                                mi = 0;
-                                break;
-                            case 5:   //added for D457
-                                mi = 4;
-                                break;
-                            default:
-                                mi = 0xffff;
-                                break;
-                        }
-                    }
-
-                    // D457 Dev - skip unsupported devices. Do no upstream!
-                    // manually rectify descriptor inconsistencies
-                    if (0xffff == mi)
-                    {
-                        LOG_DEBUG("D457 - Uninitialized device " << name << ", skipped during enumeration");
-                        continue;
-                    }
-
-                    uvc_device_info info{};
-                    info.pid = pid;
-                    info.vid = vid;
-                    info.mi = mi;
-                    info.id = dev_name;
-                    info.device_path = std::string(buff);
-                    info.unique_id = busnum + "-" + devpath + "-" + devnum;
-                    info.conn_spec = usb_specification;
-                    info.uvc_capabilities = get_dev_capabilities(dev_name);
-
-                    //std::cout << "Device " << name << ":\n" << std::string(info);
-
                     uvc_nodes.emplace_back(info, dev_name);
                 }
                 catch(const std::exception & e)
@@ -736,20 +832,9 @@ namespace librealsense
                     LOG_INFO("Not a USB video device: " << e.what());
                 }
             }
-            closedir(dir);
 
             // Matching video and metadata nodes
-            // UVC nodes shall be traversed in ascending order for metadata nodes assignment ("dev/video1, Video2..
-            // Replace lexicographic with numeric sort to ensure "video2" is listed before "video11"
-            std::sort(begin(uvc_nodes),end(uvc_nodes),[](const node_info& lhs, const node_info& rhs)
-                        {
-                            std::stringstream index_l(lhs.first.id.substr(lhs.first.id.find_first_of("0123456789")));
-                            std::stringstream index_r(rhs.first.id.substr(rhs.first.id.find_first_of("0123456789")));
-                            int left_id = 0;  index_l >> left_id;
-                            int right_id = 0;  index_r >> right_id;
-                            return left_id < right_id;
-                        });
-
+            // Assume uvc_nodes is already sorted according to videoXX (video0, then video1...)
             // Assume for each metadata node with index N there is a origin streaming node with index (N-1)
             for (auto&& cur_node : uvc_nodes)
             {
