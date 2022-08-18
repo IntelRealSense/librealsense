@@ -7,16 +7,10 @@
 #include "cuda/cuda-conversion.cuh"
 #endif
 
-#define D457
-
 namespace librealsense
 {
-//D457 dev - padding of 8 bits added after each bits, should be removed after it is corrected in SerDes
-#ifndef D457
     struct y12i_pixel { uint8_t rl : 8, rh : 4, ll : 4, lh : 8; int l() const { return lh << 4 | ll; } int r() const { return rh << 8 | rl; } };
-#else
-    struct y12i_pixel { uint8_t rl : 8, rh : 4, ll : 4, lh : 8, padding : 8; int l() const { return lh << 4 | ll; } int r() const { return rh << 8 | rl; } };
-#endif
+
     void unpack_y16_y16_from_y12i_10(byte * const dest[], const byte * source, int width, int height, int actual_size)
     {
         auto count = width * height;
