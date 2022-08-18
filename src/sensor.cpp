@@ -476,8 +476,11 @@ void log_callback_end( uint32_t fps,
                         }
                         else
                         {
-                            assert( expected_size == sizeof(byte) * f.frame_size );
-                            memcpy( (void *)fh->get_frame_data(), f.pixels, expected_size );
+                            if (req_profile_base->get_format() == RS2_FORMAT_Y12I)
+                                expected_size *= (expected_size * 3 / 4 == sizeof(byte) * f.frame_size) ? 3 / 4 : 1;
+                            
+                            assert(expected_size == sizeof(byte) * f.frame_size);
+                            memcpy((void*)fh->get_frame_data(), f.pixels, expected_size);
                         }
 
                         auto&& video = dynamic_cast<video_frame*>(fh.frame);
