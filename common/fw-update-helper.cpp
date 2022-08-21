@@ -198,7 +198,7 @@ namespace rs2
     {
         if (!_is_signed)
         {
-            fail("Only Signed Firmware can be burnt on MIPI device");
+            fail("Signed FW update for MIPI device - This FW file is not signed ");
             return;
         }
         auto dev_updatable = _dev.as<updatable>();
