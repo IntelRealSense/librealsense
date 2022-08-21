@@ -29,6 +29,7 @@
 #include "proc/temporal-filter.h"
 #include "proc/y8i-to-y8y8.h"
 #include "proc/y12i-to-y16y16.h"
+#include "proc/y12i-to-y16y16-mipi.h"
 #include "proc/color-formats-converter.h"
 #include "proc/syncer-processing-block.h"
 #include "proc/hole-filling-filter.h"
@@ -858,11 +859,23 @@ namespace librealsense
                 []() { return std::make_shared<y8i_to_y8y8>(); }
             ); // L+R
 
-            depth_sensor.register_processing_block(
-                { RS2_FORMAT_Y12I },
-                { {RS2_FORMAT_Y16, RS2_STREAM_INFRARED, 1}, {RS2_FORMAT_Y16, RS2_STREAM_INFRARED, 2} },
-                []() {return std::make_shared<y12i_to_y16y16>(); }
-            );
+            if (!mipi_sensor)
+            {
+                depth_sensor.register_processing_block(
+                    { RS2_FORMAT_Y12I },
+                    { {RS2_FORMAT_Y16, RS2_STREAM_INFRARED, 1}, {RS2_FORMAT_Y16, RS2_STREAM_INFRARED, 2} },
+                    []() {return std::make_shared<y12i_to_y16y16>(); }
+                );
+            }
+            else
+            {
+                depth_sensor.register_processing_block(
+                    { RS2_FORMAT_Y12I },
+                    { {RS2_FORMAT_Y16, RS2_STREAM_INFRARED, 1}, {RS2_FORMAT_Y16, RS2_STREAM_INFRARED, 2} },
+                    []() {return std::make_shared<y12i_to_y16y16_mipi>(); }
+                );
+            }
+            
             pid_hex_str = hexify(_pid);
 
             if ((_pid == RS416_PID || _pid == RS416_RGB_PID) && _fw_version >= firmware_version("5.12.0.1"))
