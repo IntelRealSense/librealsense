@@ -256,6 +256,9 @@ namespace librealsense
             return 0;
         }
 
+        size_t pin_index = 0;
+        _has_metadata[pin_index] = true;
+
         auto md = (librealsense::metadata_hid_raw*)(f->additional_data.metadata_blob.data());
         if(md)
         {
