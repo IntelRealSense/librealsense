@@ -303,6 +303,9 @@ namespace librealsense
     rs2_timestamp_domain global_timestamp_reader::get_frame_timestamp_domain(const std::shared_ptr<frame_interface>& frame) const
     {
         rs2_timestamp_domain ts_domain = _device_timestamp_reader->get_frame_timestamp_domain(frame);
+        bool bool1 = _option_is_enabled->is_true();
+        bool bool2 = _ts_is_ready;
+        bool bool3 = ts_domain == RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK;
         return (_option_is_enabled->is_true() && _ts_is_ready && ts_domain == RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK) ? RS2_TIMESTAMP_DOMAIN_GLOBAL_TIME : ts_domain;
     }
 
@@ -317,12 +320,9 @@ namespace librealsense
 
     void global_time_interface::enable_time_diff_keeper(bool is_enable)
     {
-        if (_tf_keeper->is_enabled())
-        {
-            if (is_enable)
-                _tf_keeper->start();
-            else
-                _tf_keeper->stop();
-        }
+        if (is_enable)
+            _tf_keeper->start();
+        else
+            _tf_keeper->stop();
     }
 }
