@@ -487,9 +487,9 @@ void log_callback_end( uint32_t fps,
                         if (video)
                         {
                             video->assign(width, height, width * bpp / 8, bpp);
-                            video->set_timestamp_domain(timestamp_domain);
                         }
 
+                        fh->set_timestamp_domain(timestamp_domain);
                         fh->set_stream(req_profile_base);
                     }
                     else
