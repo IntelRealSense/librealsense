@@ -64,7 +64,7 @@ def usage():
 # get os and directories for future use
 # NOTE: WSL will read as 'Linux' but the build is Windows-based!
 system = platform.system()
-if system == 'Linux' and "microsoft" not in platform.uname()[3].lower():
+if system == 'Linux' and "microsoft" not in platform.release().lower():
     linux = True
 else:
     linux = False
