@@ -421,6 +421,8 @@ def by_configuration( config, exceptions = None ):
                 error = 'no device matches configuration "' + spec + '"'
                 if old_len:
                     error += ' (after already matching ' + str(sns) + ')'
+                if ignored_products:
+                    error += ' (!' + str(ignored_products) + ')'
                 if exceptions:
                     error += ' (-' + str(exceptions) + ')'
                 raise RuntimeError( error )
