@@ -664,7 +664,7 @@ namespace librealsense
                
                         std::lock_guard<std::mutex> lock(_temperature_mutex);
 
-                        memset(&_temperatures, sizeof(_temperatures), 0);
+                        memset(&_temperatures, 0, sizeof(_temperatures));
                         if (fw_version_support_nest)
                             _temperatures = *reinterpret_cast<extended_temperatures const *>(res.data());
                         else
