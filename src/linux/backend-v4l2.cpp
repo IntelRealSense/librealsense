@@ -1274,7 +1274,8 @@ namespace librealsense
                             auto buffer = _buffers[buf.index];
                             buf_mgr.handle_buffer(e_video_buf, _fd, buf, buffer);
 
-                            if (buf.flags & V4L2_BUF_FLAG_ERROR)
+                            // ignoring buffers with error flag when the bytes used in the buffer is less than the expected size
+                            if (buf.flags & V4L2_BUF_FLAG_ERROR && buf.bytesused < buffer->get_full_length() - MAX_META_DATA_SIZE)
                             {
                                 LOG_DEBUG_V4L("VIDEO - buffer dequeued with error = " << std::hex << buf.flags <<", index = " << std::dec << buf.index << " for fd " << _fd << " seq " << buf.sequence);
                             }
