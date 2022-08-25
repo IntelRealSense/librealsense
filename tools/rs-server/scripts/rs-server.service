@@ -1,0 +1,14 @@
+[Unit]
+Description=Intel RealSense Camera Service
+After=network-online.target
+
+[Service]
+ExecStart=/bin/bash /usr/bin/start-rs-server.sh
+WorkingDirectory=/
+StandardOutput=inherit
+StandardError=inherit
+Restart=always
+User=root
+
+[Install]
+WantedBy=multi-user.target

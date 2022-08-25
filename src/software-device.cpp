@@ -117,13 +117,6 @@ namespace librealsense
 
     std::shared_ptr<stream_profile_interface> software_sensor::add_motion_stream(rs2_motion_stream motion_stream, bool is_default)
     {
-        auto currProfile = find_profile_by_uid(motion_stream.uid);
-        if (currProfile)
-        {
-            LOG_WARNING("Motion stream unique ID already exist!");
-            throw rs2::error("Stream unique ID already exist!");
-        }
-
         auto profile = std::make_shared<motion_stream_profile>(
             platform::stream_profile{ 0, 0, (uint32_t)motion_stream.fps, 0 });
         profile->set_format(motion_stream.fmt);
@@ -265,6 +258,10 @@ namespace librealsense
         data.timestamp_domain = software_frame.domain;
         data.frame_number = software_frame.frame_number;
         data.depth_units = software_frame.depth_units;
+
+        if (software_frame.profile->profile->get_stream_type() == RS2_STREAM_DEPTH) {
+            data.depth_units = get_option(RS2_OPTION_DEPTH_UNITS).query();
+        }
 
         data.metadata_size = 0;
         for (auto i : _metadata_map)

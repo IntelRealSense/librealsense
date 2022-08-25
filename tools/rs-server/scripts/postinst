@@ -1,0 +1,4 @@
+#!/bin/bash
+systemctl enable rs-server
+systemctl start rs-server
+

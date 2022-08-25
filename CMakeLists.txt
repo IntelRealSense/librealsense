@@ -98,8 +98,7 @@ if(BUILD_UNIT_TESTS OR BUILD_LEGACY_LIVE_TEST)
 endif()
 
 if(BUILD_NETWORK_DEVICE)
-    add_subdirectory(src/ethernet)
-    add_subdirectory(src/compression)
+    add_subdirectory(src/network)
 endif()
 
 if(BUILD_WITH_TM2)
@@ -111,3 +110,26 @@ if(IMPORT_DEPTH_CAM_FW)
 endif()
 
 include(CMake/embedd_udev_rules.cmake)
+
+SET(CPACK_GENERATOR "DEB")
+SET(CPACK_DEBIAN_PACKAGE_MAINTAINER "lrs@intel.com")
+SET(CPACK_DEB_COMPONENT_INSTALL ON)
+SET(CPACK_DEBIAN_PACKAGE_NAME "librealsense")
+SET(CPACK_DEBIAN_PACKAGE_RELEASE "1")
+
+set(CPACK_PACKAGE_NAME "librealsense")
+set(CPACK_PACKAGE_VENDOR "Intel Corp.")
+
+set(CPACK_PACKAGE_VERSION_MAJOR "${REALSENSE_VERSION_MAJOR}")
+set(CPACK_PACKAGE_VERSION_MINOR "${REALSENSE_VERSION_MINOR}")
+set(CPACK_PACKAGE_VERSION_PATCH "0")
+set(CPACK_PACKAGE_VERSION "${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH}")
+
+set(CPACK_PACKAGE_DESCRIPTION "Intel® RealSense™ SDK 2.0 is a cross-platform library for Intel® RealSense™ depth cameras (D400 & L500 series and the SR300) and the T265 tracking camera.")
+set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "${CPACK_PACKAGE_DESCRIPTION}")
+
+set(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME}-${CPACK_PACKAGE_VERSION}-${CPACK_DEBIAN_PACKAGE_RELEASE}")
+
+SET(CPACK_DEBIAN_PACKAGE_CONTROL_EXTRA "${CMAKE_SOURCE_DIR}/tools/rs-server/scripts/postinst" "${CMAKE_SOURCE_DIR}/tools/rs-server/scripts/prerm")
+
+INCLUDE(CPack)

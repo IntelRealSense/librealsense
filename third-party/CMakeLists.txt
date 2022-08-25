@@ -27,6 +27,25 @@ if(BUILD_NETWORK_DEVICE)
           "-DCMAKE_GENERATOR=${CMAKE_GENERATOR}"
           "-DCMAKE_POSITION_INDEPENDENT_CODE=ON"
           "-DCMAKE_TOOLCHAIN_FILE=${CMAKE_TOOLCHAIN_FILE}"
+          "-DNEON_INTRINSICS=ON"
+	  # "-DWITH_JPEG8=1"
+        UPDATE_COMMAND ""
+        PATCH_COMMAND  ""
+    )
+
+    ### ZSTD ############################################################
+    ExternalProject_Add (zstd
+        PREFIX zstd
+        GIT_REPOSITORY "https://github.com/facebook/zstd.git"
+        GIT_TAG "master"
+        SOURCE_DIR "${CMAKE_BINARY_DIR}/third-party/zstd"
+        SOURCE_SUBDIR "build/cmake"
+        CMAKE_ARGS "-DCMAKE_INSTALL_PREFIX=${CMAKE_BINARY_DIR}/zstd"
+          "-DCMAKE_GENERATOR=${CMAKE_GENERATOR}"
+          "-DCMAKE_POSITION_INDEPENDENT_CODE=ON"
+          "-DCMAKE_TOOLCHAIN_FILE=${CMAKE_TOOLCHAIN_FILE}"
+        UPDATE_COMMAND ""
+        PATCH_COMMAND  ""
     )
 
 endif()

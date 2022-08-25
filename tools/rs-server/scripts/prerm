@@ -1,0 +1,3 @@
+#!/bin/bash
+systemctl stop rs-server
+systemctl disable rs-server

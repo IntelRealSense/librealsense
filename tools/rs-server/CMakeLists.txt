@@ -1,65 +1,32 @@
 # License: Apache 2.0. See LICENSE file in root directory.
-# Copyright(c) 2020 Intel Corporation. All Rights Reserved.
-
+# Copyright(c) 2019 Intel Corporation. All Rights Reserved.
 #  minimum required cmake version: 3.1.0
 cmake_minimum_required(VERSION 3.1.0)
 
-project(rs-server VERSION 1.0.0 LANGUAGES CXX C)
+project(RealsenseServer)
 
-set(THREADS_PREFER_PTHREAD_FLAG ON)
-find_package(Threads REQUIRED)
+add_executable(rs-server rs-server.cpp ${CMAKE_SOURCE_DIR}/third-party/easyloggingpp/src/easylogging++.cc)
+add_executable(rs-server-upgrade rs-server-upgrade.cpp)
 
-# Save the command line compile commands in the build output
-set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
+add_definitions(-DELPP_NO_DEFAULT_LOG_FILE)
+set_property(TARGET rs-server PROPERTY CXX_STANDARD 11)
+target_link_libraries(rs-server realsense2-net ${DEPENDENCIES})
+include_directories(rs-server 
+    ${CMAKE_SOURCE_DIR}/include 
+    ${CMAKE_SOURCE_DIR}/third-party/tclap/include 
+    ${CMAKE_SOURCE_DIR}/third-party/easyloggingpp/src 
+    ${CMAKE_SOURCE_DIR}/third-party/cpp-httplib
+)
+set_target_properties (rs-server PROPERTIES FOLDER "Tools")
 
-set(DEPENDENCIES ${DEPENDENCIES} realsense2 Threads::Threads)
+install(TARGETS rs-server RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
-set(CMAKE_CXX_FLAGS "-DNEWLOCALE_NOT_USED=1 -DBSD=1 -DSOCKLEN_T=socklen_t -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE=1 -DALLOW_RTSP_SERVER_PORT_REUSE=1 -DNO_OPENSSL=1 -latomic")
+install(FILES "${CMAKE_SOURCE_DIR}/tools/rs-server/scripts/start-rs-server.sh"
+    DESTINATION ${CMAKE_INSTALL_BINDIR}
+)
 
-SET(CMAKE_EXE_LINKER_FLAGS ${CMAKE_EXE_LINKER_FLAGS} "-pthread")
-
-set(LIVE ${CMAKE_BINARY_DIR}/third-party/live)
-
-if(WIN32)
-  message(SEND_ERROR "rs-server supports Linux only")
-else()
-  file(GLOB RS_SERVER_SOURCES LIST_DIRECTORIES false CONFIGURE_DEPENDS
-    "*.c*"
-    "../../src/ipDeviceCommon/*.c*"
-    "${LIVE}/*.c*"
-    "${LIVE}/groupsock/*.c*"
-    "${LIVE}/BasicUsageEnvironment/*.c*"
-    "${LIVE}/liveMedia/*.c*"
-    "${LIVE}/UsageEnvironment/*.c*"
-  )
-  list(REMOVE_ITEM RS_SERVER_SOURCES "${LIVE}/liveMedia/ADTSAudioStreamDiscreteFramer.cpp")
-  add_executable(${PROJECT_NAME} ${RS_SERVER_SOURCES})
-  add_definitions(-DELPP_NO_DEFAULT_LOG_FILE)
-
-  include_directories(
-    ../../common
-    ../../src
-    ../../src/ipDeviceCommon
-    ../../include/librealsense2
-    ../../third-party/tclap/include
-    ../../third-party/easyloggingpp/src
-    ${LIVE}/groupsock/include 
-    ${LIVE}/liveMedia/include  
-    ${LIVE}/UsageEnvironment/include 
-    ${LIVE}/BasicUsageEnvironment/include     
-  )
-
-  set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 11)
-
-  set(DEPENDENCIES ${DEPENDENCIES} realsense2 Threads::Threads realsense2-compression ${ZLIB_LIBRARIES} ${JPEG_LIBRARIES})
-  
-  target_link_libraries(${PROJECT_NAME} ${DEPENDENCIES})
-  
-  set_target_properties(${PROJECT_NAME} PROPERTIES FOLDER "Tools")
-
-  target_compile_definitions(${PROJECT_NAME} PUBLIC RESPONSE_BUFFER_SIZE=100000)
-
-  install(TARGETS ${PROJECT_NAME} RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
-endif()
+install(FILES "${CMAKE_SOURCE_DIR}/tools/rs-server/scripts/rs-server.service"
+    DESTINATION /lib/systemd/system/
+)
 
 
