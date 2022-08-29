@@ -418,7 +418,7 @@ void log_callback_end( uint32_t fps,
                     auto&& timestamp = fr->additional_data.timestamp;
 
                     // D457 development
-                    int expected_size;
+                    size_t expected_size;
                     auto&& msp = As<motion_stream_profile, stream_profile_interface>(req_profile);
                     if (msp)
                         expected_size = 64;//32; // D457 - WORKAROUND - SHOULD BE REMOVED AFTER CORRECTION IN DRIVER
@@ -476,8 +476,13 @@ void log_callback_end( uint32_t fps,
                         }
                         else
                         {
+                            // The calibration format Y12BPP is modified to be 32 bits instead of 24 due to an issue with MIPI driver
+                            // and padding that occurs in transmission.
+                            // For D4xx cameras the original 24 bit support is achieved by comparing actual vs expected size:
+                            // when it is exactly 75% of the MIPI-generated size (24/32bpp), then 24bpp-sized image will be processed
                             if (req_profile_base->get_format() == RS2_FORMAT_Y12I)
-                                expected_size *= (expected_size * 3 / 4 == sizeof(byte) * f.frame_size) ? 3 / 4 : 1;
+                                if (((expected_size>>2)*3)==sizeof(byte) * f.frame_size)
+                                    expected_size = sizeof(byte) * f.frame_size;
                             
                             assert(expected_size == sizeof(byte) * f.frame_size);
                             memcpy((void*)fh->get_frame_data(), f.pixels, expected_size);
