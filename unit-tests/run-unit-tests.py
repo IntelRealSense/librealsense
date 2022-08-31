@@ -84,7 +84,7 @@ required_tags = []
 list_tags = False
 list_tests = False
 no_exceptions = False
-context = None
+context = []
 repeat = 1
 forced_configurations = None
 no_reset = False
@@ -109,7 +109,7 @@ for opt, arg in opts:
     elif opt == '--no-exceptions':
         no_exceptions = True
     elif opt == '--context':
-        context = arg
+        context = arg.split()  # list of contexts
     elif opt == '--repeat':
         if not arg.isnumeric()  or  int(arg) < 1:
             log.e( "--repeat must be a number greater than 0" )

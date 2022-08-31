@@ -178,13 +178,13 @@ class TestConfigFromText( TestConfig ):
                 not_context = directive_context.startswith('!')
                 if not_context:
                     directive_context = directive_context[1:]
-                # not_context | directive_ctx==context | RESULT
-                # ----------- | ---------------------- | ------
-                #      0      |           0            | IGNORE
-                #      0      |           1            | USE
-                #      1      |           0            | USE
-                #      1      |           1            | IGNORE
-                if not_context == (directive_context == self.context):
+                # not_context | directive_ctx in context | RESULT
+                # ----------- | ------------------------ | ------
+                #      0      |            0             | IGNORE
+                #      0      |            1             | USE
+                #      1      |            0             | USE
+                #      1      |            1             | IGNORE
+                if not_context == (directive_context in self.context):
                     # log.d( "directive", line['line'], "ignored because of context mismatch with running context",
                     #       self.context)
                     continue
@@ -393,7 +393,7 @@ class PyTest( Test ):
                 cmd += ['--color']
             #
             if self.config.context:
-                cmd += ['--context', self.config.context]
+                cmd += ['--context', ' '.join(self.config.context)]
         return cmd
 
     def run_test( self, configuration = None, log_path = None, opts = set() ):
@@ -443,7 +443,7 @@ class ExeTest( Test ):
             # if log.is_color_on():
             #    cmd += ['--use-colour', 'yes']
             if self.config.context:
-                cmd += ['--context', self.config.context]
+                cmd += ['--context', ' '.join(self.config.context)]
         return cmd
 
     def run_test( self, configuration = None, log_path = None, opts = set() ):
