@@ -10,7 +10,10 @@
 
 namespace librealsense
 {
-    struct y16i_pixel { uint8_t rl : 8, rh : 4, ll : 8, lh : 4; int l() const { return lh << 8 | ll; } int r() const { return rh << 8 | rl; } };
+    struct y16i_pixel { uint16_t left : 16, right : 16;
+                        // left and right data are shifted 6 times so that the MSB 10 bit will hold the data
+                        uint16_t l() const { return left << 6; }
+                        uint16_t r() const { return right << 6; } };
     void unpack_y16_y16_from_y16i(byte* const dest[], const byte* source, int width, int height, int actual_size)
     {
         auto count = width * height;
@@ -19,8 +22,8 @@ namespace librealsense
 //        rscuda::split_frame_y16_y16_from_y16i_cuda(dest, count, reinterpret_cast<const y12i_pixel*>(source));
 //#else
         split_frame(dest, count, reinterpret_cast<const y16i_pixel*>(source),
-            [](const y16i_pixel& p) -> uint16_t { return static_cast<uint16_t>(p.l()); },  
-            [](const y16i_pixel& p) -> uint16_t { return static_cast<uint16_t>(p.r()); });
+            [](const y16i_pixel& p) -> uint16_t { return (p.l()); },
+            [](const y16i_pixel& p) -> uint16_t { return (p.r()); });
 //#endif
     }
 
