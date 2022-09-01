@@ -9,13 +9,13 @@
 
 namespace librealsense
 {
-    class y16i_to_y16y16 : public interleaved_functional_processing_block
+    class y16i_to_y10msby10msb : public interleaved_functional_processing_block
     {
     public:
-        y16i_to_y16y16(int left_idx = 1, int right_idx = 2);
+        y16i_to_y10msby10msb(int left_idx = 1, int right_idx = 2);
 
     protected:
-        y16i_to_y16y16(const char* name, int left_idx, int right_idx);
+        y16i_to_y10msby10msb(const char* name, int left_idx, int right_idx);
         void process_function(byte* const dest[], const byte* source, int width, int height, int actual_size, int input_size) override;
     };
 }
