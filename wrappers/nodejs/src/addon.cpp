@@ -4703,6 +4703,7 @@ void InitModule(v8::Local<v8::Object> exports) {
   _FORCE_SET_ENUM(RS2_FORMAT_Z16H);
   _FORCE_SET_ENUM(RS2_FORMAT_FG);
   _FORCE_SET_ENUM(RS2_FORMAT_Y411);
+  _FORCE_SET_ENUM(RS2_FORMAT_Y16I);
   _FORCE_SET_ENUM(RS2_FORMAT_COUNT);
 
   // rs2_frame_metadata_value
