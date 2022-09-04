@@ -7,15 +7,15 @@
 #if 0
 In file included from /home/administrator/lrs/src/libusb/request-libusb.h:6:0,
     from /home/administrator/lrs/src/libusb/request-libusb.cpp:4:
-/usr/include/libusb-1.0/libusb.h:736:4: warning: ISO C++ forbids zero-size array ‘dev_capability_data’ [-Wpedantic]
+/usr/include/libusb-1.0/libusb.h:736:4: warning: ISO C++ forbids zero-size array 'dev_capability_data' [-Wpedantic]
     [0] /* non-standard, but usually working code */
     ^
-/usr/include/libusb-1.0/libusb.h:767:4: warning: ISO C++ forbids zero-size array ‘dev_capability’ [-Wpedantic]
+/usr/include/libusb-1.0/libusb.h:767:4: warning: ISO C++ forbids zero-size array 'dev_capability' [-Wpedantic]
     [0] /* non-standard, but usually working code */
     ^
 In file included from /home/administrator/lrs/src/libusb/request-libusb.h:6:0,
     from /home/administrator/lrs/src/libusb/request-libusb.cpp:4:
-/usr/include/libusb-1.0/libusb.h:1260:4: warning: ISO C++ forbids zero-size array ‘iso_packet_desc’ [-Wpedantic]
+/usr/include/libusb-1.0/libusb.h:1260:4: warning: ISO C++ forbids zero-size array 'iso_packet_desc' [-Wpedantic]
     [0] /* non-standard, but usually working code */
     ^
 #endif
