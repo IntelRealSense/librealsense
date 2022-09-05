@@ -203,9 +203,9 @@ void add_init_profiles_msgs( rs2::device dev, std::shared_ptr<librealsense::dds:
         device::notification::sensor_header_msg::sensor_type sensor_type;
 
         if( sensor.is< rs2::color_sensor >() || sensor.is< rs2::depth_sensor >() )
-            sensor_type = device::notification::sensor_header_msg::VIDEO_SENSOR;
+            sensor_type = device::notification::sensor_header_msg::sensor_type::VIDEO;
         else if( sensor.is< rs2::motion_sensor >() )
-            sensor_type = device::notification::sensor_header_msg::MOTION_SENSOR;
+            sensor_type = device::notification::sensor_header_msg::sensor_type::MOTION;
         else
             throw std::runtime_error(
                 "Sensor type is not supported (only video & motion sensors are supported)" );
@@ -215,7 +215,7 @@ void add_init_profiles_msgs( rs2::device dev, std::shared_ptr<librealsense::dds:
 
         switch( sensor_type )
         {
-        case device::notification::sensor_header_msg::VIDEO_SENSOR: 
+        case device::notification::sensor_header_msg::sensor_type::VIDEO:
             {
                 device::notification::video_stream_profiles_msg video_stream_profiles_msg;
                 prepare_video_profiles_messeges( dev,
@@ -237,7 +237,7 @@ void add_init_profiles_msgs( rs2::device dev, std::shared_ptr<librealsense::dds:
             }
             break;
 
-        case device::notification::sensor_header_msg::MOTION_SENSOR: 
+        case device::notification::sensor_header_msg::sensor_type::MOTION:
             {
                 device::notification::motion_stream_profiles_msg motion_stream_profiles_msg;
                 prepare_motion_profiles_messeges( dev,
