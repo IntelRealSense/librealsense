@@ -255,7 +255,7 @@ namespace librealsense
         class v4l2_video_md_syncer
         {
         public:
-            v4l2_video_md_syncer() {}
+            v4l2_video_md_syncer() : _is_ready(false){}
 
             struct sync_buffer
             {
@@ -276,6 +276,9 @@ namespace librealsense
 
             void flush();
 
+            inline void enable() {_is_ready = true;}
+            inline void disable() {_is_ready = false;}
+
         private:
             void enqueue_buffer_before_throwing_it(const sync_buffer& sb) const;
             void enqueue_front_buffer_before_throwing_it(std::queue<sync_buffer>& sync_queue);
@@ -283,6 +286,7 @@ namespace librealsense
             std::mutex _syncer_mutex;
             std::queue<sync_buffer> _video_queue;
             std::queue<sync_buffer> _md_queue;
+            bool _is_ready;
         };
 
         // The aim of the frame_drop_monitor is to check the frames drops kpi - which requires
