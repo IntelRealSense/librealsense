@@ -3810,7 +3810,6 @@ class Helpers : base::StaticClass {
   }
   static inline void validateFileRolling(Logger* logger, Level level) {
     if (logger == nullptr) return;
-    if (ELPP == nullptr) return;
     logger->m_typedConfigurations->validateFileRolling(level, ELPP->preRollOutCallback());
   }
 };
