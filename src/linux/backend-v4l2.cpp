@@ -1071,8 +1071,8 @@ namespace librealsense
                 _is_capturing = true;
                 _thread = std::unique_ptr<std::thread>(new std::thread([this](){ capture_loop(); }));
 
-                // Enabling the video/metadata syncer
-                _video_md_syncer.enable();
+                // Starting the video/metadata syncer
+                _video_md_syncer.start();
             }
         }
 
@@ -1136,8 +1136,7 @@ namespace librealsense
 
         void v4l_uvc_device::signal_stop()
         {
-            _video_md_syncer.flush();
-            _video_md_syncer.disable();
+            _video_md_syncer.stop();;
             char buff[1]={};
             if (write(_stop_pipe_fd[1], buff, 1) < 0)
             {
@@ -2703,7 +2702,13 @@ namespace librealsense
         }
 
 
-        void v4l2_video_md_syncer::flush()
+        void v4l2_video_md_syncer::stop()
+        {
+             _is_ready = false;
+             flush_queues();
+        }
+
+        void v4l2_video_md_syncer::flush_queues()
         {
             // Empty queues
             LOG_DEBUG_V4L("video_md_syncer - flush video and md queues");

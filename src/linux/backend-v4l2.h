@@ -274,14 +274,13 @@ namespace librealsense
             // if returned value is false - no data is returned via the inout params because data could not be synced
             bool pull_video_with_metadata(std::shared_ptr<v4l2_buffer>& video_buffer, std::shared_ptr<v4l2_buffer>& md_buffer, int& video_fd, int& md_fd);
 
-            void flush();
-
-            inline void enable() {_is_ready = true;}
-            inline void disable() {_is_ready = false;}
+            inline void start() {_is_ready = true;}
+            void stop();
 
         private:
             void enqueue_buffer_before_throwing_it(const sync_buffer& sb) const;
             void enqueue_front_buffer_before_throwing_it(std::queue<sync_buffer>& sync_queue);
+            void flush_queues();
 
             std::mutex _syncer_mutex;
             std::queue<sync_buffer> _video_queue;
