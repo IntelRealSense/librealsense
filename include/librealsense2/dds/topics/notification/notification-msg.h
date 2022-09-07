@@ -18,7 +18,7 @@ public:
     // Currently we use constant MAX size of profiles,
     // If we decide we want a scaled solution we may need to split the profiles to 
     // message for each profile (But then we have multiple transport overhead..)
-    static const size_t MAX_VIDEO_PROFILES = 200;
+    static const size_t MAX_VIDEO_PROFILES = 400;
     static const size_t MAX_MOTION_PROFILES = 20;
 
 #pragma pack( push, 1 )
@@ -38,10 +38,10 @@ public:
 
     struct sensor_header_msg
     {
-        enum sensor_type // maybe enum class with 1 byte inheritance 
+        enum class sensor_type // maybe with 1 byte inheritance 
         {
-            VIDEO_SENSOR,
-            MOTION_SENSOR
+            VIDEO,
+            MOTION
         };
 
         sensor_type type;
@@ -59,6 +59,7 @@ public:
         rs2_stream type;         // Transfer as uint8_t?
         int16_t width;           // Resolution width [pixels]
         int16_t height;          // Resolution width [pixels]
+        bool default_profile;    // Is default stream of the sensor
         //intrinsics - TODO
     };
 
@@ -69,6 +70,7 @@ public:
         int16_t framerate;       // FPS
         rs2_format format;       // Transfer as uint8_t?
         rs2_stream type;         // Transfer as uint8_t?
+        bool default_profile;    // Is default stream of the sensor
     };
 
     struct video_stream_profiles_msg

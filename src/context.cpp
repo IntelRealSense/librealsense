@@ -25,6 +25,7 @@
 #include <librealsense2/dds/dds-participant.h>
 #include <librealsense2/dds/dds-device.h>
 #include "software-device.h"
+#include <librealsense2/h/rs_internal.h>
 #include <librealsense2/dds/topics/device-info/device-info-msg.h>
 #endif
 
@@ -437,7 +438,21 @@ namespace librealsense
             register_info( RS2_CAMERA_INFO_SERIAL_NUMBER, info.serial );
             register_info( RS2_CAMERA_INFO_CAMERA_LOCKED, info.locked ? "YES" : "NO" );
             register_info( RS2_CAMERA_INFO_PHYSICAL_PORT, info.topic_root );
+
+            //Assumes dds_device initialization finished
+            size_t count = _dds_dev->foreach_sensor( [&]( const std::string name ) { this->add_software_sensor( name ); } );
+            for ( size_t i = 0; i < count; ++i )
+            {
+                software_sensor& sensor = get_software_sensor( i );
+                _dds_dev->foreach_video_profile( i, [&]( const rs2_video_stream& profile, bool default_profile ) {
+                    sensor.add_video_stream( profile, default_profile );
+                } );
+                _dds_dev->foreach_motion_profile( i, [&]( const rs2_motion_stream& profile, bool default_profile ) {
+                    sensor.add_motion_stream( profile, default_profile );
+                } );
+            }
         }
+
     };
 
     class dds_device_info : public device_info

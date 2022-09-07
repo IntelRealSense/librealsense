@@ -66,6 +66,10 @@ class dds_device::impl
 public:
     topics::device_info _info;
     std::shared_ptr< dds::dds_participant > const _participant;
+    size_t _num_of_sensors = 0;
+    std::unordered_map< int, std::string> _sensor_index_to_name;
+    std::unordered_map< int, topics::device::notification::video_stream_profiles_msg > _sensor_to_video_profiles;
+    std::unordered_map< int, topics::device::notification::motion_stream_profiles_msg > _sensor_to_motion_profiles;
 
     impl( std::shared_ptr< dds::dds_participant > const & participant,
           dds::dds_guid const & guid,
@@ -131,11 +135,6 @@ private:
 
     bool init()
     {
-        size_t num_of_sensors = 0;
-        std::unordered_map< int , std::string> sensor_index_to_name;
-        std::unordered_map< std::string, topics::device::notification::video_stream_profiles_msg > sensor_to_video_profiles;
-        std::unordered_map< std::string, topics::device::notification::motion_stream_profiles_msg > sensor_to_motion_profiles;
-
         // We expect to receive all of the sensors data under a timeout
         utilities::time::timer t( std::chrono::seconds( 30) ); // TODO: refine time out
         state_type state = state_type::WAIT_FOR_DEVICE_HEADER;
@@ -146,26 +145,24 @@ private:
             if( _reader->wait_for_unread_message( one_second ) )
             {
                 dds::topics::raw::device::notification raw_data;
-                topics::device::notification data;
                 SampleInfo info;
                 // Process all the samples until no one is returned,
-                // We will distinguish info change vs new data by validating using `valid_data`
-                // field
+                // We will distinguish info change vs new data by validating using `valid_data` field
                 while( ReturnCode_t::RETCODE_OK == _reader->take_next_sample( &raw_data, &info ) )
                 {
                     // Only samples for which valid_data is true should be accessed
                     // valid_data indicates that the `take` return an updated sample
                     if( info.valid_data )
                     {
-                        data = raw_data;
+                        topics::device::notification data = raw_data;
                         auto msg_id = static_cast< topics::device::notification::msg_type >( raw_data.id() );
                         switch( msg_id )
                         {
                         case topics::device::notification::msg_type::DEVICE_HEADER:
                             if( state_type::WAIT_FOR_DEVICE_HEADER == state )
                             {
-                                num_of_sensors = data.get< topics::device::notification::device_header_msg >()->num_of_sensors;
-                                LOG_INFO( "got DEVICE_HEADER message with " << num_of_sensors << " sensors" );
+                                _num_of_sensors = data.get< topics::device::notification::device_header_msg >()->num_of_sensors;
+                                LOG_INFO( "got DEVICE_HEADER message with " << _num_of_sensors << " sensors" );
                                 state = state_type::WAIT_FOR_SENSOR_HEADER;
                             }
                             else
@@ -177,11 +174,11 @@ private:
                             {
                                 auto sensor_header = data.get< topics::device::notification::sensor_header_msg >();
                                 LOG_INFO( "got SENSOR_HEADER message for sensor: " << sensor_header->name << " of type: "
-                                          << ( sensor_header->type == topics::device::notification::sensor_header_msg::sensor_type::VIDEO_SENSOR
+                                          << ( sensor_header->type == topics::device::notification::sensor_header_msg::sensor_type::VIDEO
                                                    ? "VIDEO_SENSOR"
                                                    : "MOTION_SENSOR" ) );
 
-                                sensor_index_to_name.emplace( sensor_header->index, sensor_header->name );
+                                _sensor_index_to_name.emplace( sensor_header->index, sensor_header->name );
                                 state = state_type::WAIT_FOR_PROFILES;
                             }
                             else
@@ -203,12 +200,12 @@ private:
                                 for( int i = 0; i < video_stream_profiles->num_of_profiles; ++i )
                                     msg.profiles[i] = video_stream_profiles->profiles[i];
 
-                                auto sensor_name_it = sensor_index_to_name.find( video_stream_profiles->dds_sensor_index );
-                                if ( sensor_name_it != sensor_index_to_name.end() )
+                                auto sensor_name_it = _sensor_index_to_name.find( video_stream_profiles->dds_sensor_index );
+                                if ( sensor_name_it != _sensor_index_to_name.end() )
                                 {
-                                    sensor_to_video_profiles.emplace( sensor_name_it->second, std::move( msg ) );
+                                    _sensor_to_video_profiles.emplace( video_stream_profiles->dds_sensor_index, std::move( msg ) );
 
-                                    if( sensor_to_video_profiles.size() + sensor_to_motion_profiles.size() < num_of_sensors )
+                                    if( _sensor_to_video_profiles.size() + _sensor_to_motion_profiles.size() < _num_of_sensors )
                                         state = state_type::WAIT_FOR_SENSOR_HEADER;
                                     else
                                         state = state_type::DONE;
@@ -232,12 +229,12 @@ private:
                                 for( int i = 0; i < motion_stream_profiles->num_of_profiles; ++i )
                                     msg.profiles[i] = motion_stream_profiles->profiles[i];
 
-                                auto sensor_name_it = sensor_index_to_name.find( motion_stream_profiles->dds_sensor_index );
-                                if( sensor_name_it != sensor_index_to_name.end() )
+                                auto sensor_name_it = _sensor_index_to_name.find( motion_stream_profiles->dds_sensor_index );
+                                if( sensor_name_it != _sensor_index_to_name.end() )
                                 {
-                                    sensor_to_motion_profiles.emplace( sensor_name_it->second, std::move( msg ) );
+                                    _sensor_to_motion_profiles.emplace( motion_stream_profiles->dds_sensor_index, std::move( msg ) );
 
-                                    if( sensor_to_video_profiles.size() + sensor_to_motion_profiles.size() < num_of_sensors )
+                                    if( _sensor_to_video_profiles.size() + _sensor_to_motion_profiles.size() < _num_of_sensors )
                                         state = state_type::WAIT_FOR_SENSOR_HEADER;
                                     else
                                         state = state_type::DONE;
@@ -265,13 +262,8 @@ private:
 };
 
 
-std::shared_ptr< dds::dds_device >
-dds_device::find_or_create_dds_device( std::shared_ptr< dds::dds_participant > const & participant,
-                                       dds::dds_guid const & guid,
-                                       dds::topics::device_info const & info,
-                                       bool create_it )
+std::shared_ptr< dds::dds_device > dds_device::find( dds::dds_guid const & guid )
 {
-    std::weak_ptr< dds::dds_device > wdev;
     std::shared_ptr< dds::dds_device > dev;
 
     std::lock_guard< std::mutex > lock( devices_mutex );
@@ -285,8 +277,21 @@ dds_device::find_or_create_dds_device( std::shared_ptr< dds::dds_participant > c
             guid_to_device.erase( it );
         }
     }
-    else if( create_it )
+
+    return dev;
+}
+
+
+std::shared_ptr< dds::dds_device > dds_device::create( std::shared_ptr< dds::dds_participant > const & participant,
+                                                       dds::dds_guid const & guid,
+                                                       dds::topics::device_info const & info )
+{
+    std::shared_ptr< dds::dds_device > dev = find(guid);
+
+    if( ! dev )
     {
+        std::lock_guard< std::mutex > lock( devices_mutex );
+
         auto impl = std::make_shared< dds_device::impl >( participant, guid, info );
         // Use a custom deleter to automatically remove the device from the map when it's done with
         dev = std::shared_ptr< dds::dds_device >( new dds_device( impl ), [guid]( dds::dds_device * ptr ) {
@@ -296,6 +301,7 @@ dds_device::find_or_create_dds_device( std::shared_ptr< dds::dds_participant > c
         } );
         guid_to_device.emplace( guid, dev );
     }
+
     return dev;
 }
 
@@ -317,6 +323,62 @@ topics::device_info const& dds_device::device_info() const
 }
 
 
+size_t dds_device::num_of_sensors() const
+{
+    return _impl->_num_of_sensors;
+}
+
+
+size_t dds_device::foreach_sensor( std::function< void( const std::string& name ) > fn )
+{
+    for (auto sensor : _impl->_sensor_index_to_name)
+    {
+        fn( sensor.second );
+    }
+
+    return _impl->_num_of_sensors;
+}
+
+
+size_t dds_device::foreach_video_profile( size_t sensor_index, std::function< void( const rs2_video_stream& profile, bool def_prof ) > fn )
+{
+    size_t i = 0;
+    for (; i < _impl->_sensor_to_video_profiles[sensor_index].num_of_profiles ; ++i )
+    {
+        rs2_video_stream prof;
+        prof.type   = _impl->_sensor_to_video_profiles[sensor_index].profiles[i].type;
+        prof.index  = _impl->_sensor_to_video_profiles[sensor_index].profiles[i].stream_index;
+        prof.uid    = _impl->_sensor_to_video_profiles[sensor_index].profiles[i].uid;
+        prof.width  = _impl->_sensor_to_video_profiles[sensor_index].profiles[i].width;
+        prof.height = _impl->_sensor_to_video_profiles[sensor_index].profiles[i].height;
+        prof.fps    = _impl->_sensor_to_video_profiles[sensor_index].profiles[i].framerate;
+        //TODO - bpp needed?
+        prof.fmt    = _impl->_sensor_to_video_profiles[sensor_index].profiles[i].format;
+        //TODO - add intrinsics
+        fn( prof, _impl->_sensor_to_video_profiles[sensor_index].profiles[i].default_profile );
+    }
+
+    return i;
+}
+
+
+size_t dds_device::foreach_motion_profile( size_t sensor_index, std::function< void( const rs2_motion_stream& profile, bool def_prof ) > fn )
+{
+    size_t i = 0;
+    for (; i < _impl->_sensor_to_motion_profiles[sensor_index].num_of_profiles; ++i)
+    {
+        rs2_motion_stream prof;
+        prof.type   = _impl->_sensor_to_motion_profiles[sensor_index].profiles[i].type;
+        prof.index  = _impl->_sensor_to_motion_profiles[sensor_index].profiles[i].stream_index;
+        prof.uid    = _impl->_sensor_to_motion_profiles[sensor_index].profiles[i].uid;
+        prof.fps    = _impl->_sensor_to_motion_profiles[sensor_index].profiles[i].framerate;
+        prof.fmt    = _impl->_sensor_to_motion_profiles[sensor_index].profiles[i].format;
+        //TODO - add intrinsics
+        fn( prof, _impl->_sensor_to_motion_profiles[sensor_index].profiles[i].default_profile );
+    }
+
+    return i;
+}
 
 }  // namespace dds
 }  // namespace librealsense
