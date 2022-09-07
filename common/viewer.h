@@ -23,6 +23,14 @@ namespace rs2
         {
             return p.message == message;
         }
+      
+        popup& operator =(const popup& p)
+        {
+            const_cast<std::string&>(header) = p.header;
+            const_cast<std::string&>(message) = p.message;
+            const_cast<std::function<void()>&>(custom_command) = p.custom_command;
+            return *this;
+        }
     };
 
     class viewer_model;
