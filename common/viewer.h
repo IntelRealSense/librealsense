@@ -19,7 +19,7 @@ namespace rs2
         const std::string message;
         std::function<void()> custom_command;
 
-        bool operator =(const popup& p)
+        bool operator ==(const popup& p)
         {
             return p.message == message;
         }
