@@ -15,21 +15,13 @@ namespace rs2
 {
     struct popup
     {
-        const std::string header;
-        const std::string message;
-        std::function<void()> custom_command;
+        std::string header;
+        std::string message;
+        std::function< void() > custom_command;
 
-        bool operator ==(const popup& p)
+        bool operator==( const popup & p ) const
         {
             return p.message == message;
-        }
-      
-        popup& operator =(const popup& p)
-        {
-            const_cast<std::string&>(header) = p.header;
-            const_cast<std::string&>(message) = p.message;
-            const_cast<std::function<void()>&>(custom_command) = p.custom_command;
-            return *this;
         }
     };
 
