@@ -2491,7 +2491,7 @@ namespace rs2
         glPopAttrib();
     }
 
-    bool stream_model::is_stream_visible()
+    bool stream_model::is_stream_visible() const
     {
         if (dev &&
             (dev->is_paused() ||
@@ -4381,7 +4381,17 @@ namespace rs2
         for (auto&& f : first)
         {
             auto first_uid = f.get_profile().unique_id();
-            if (auto second_f = second.first_or_default(f.get_profile().stream_type()))
+
+            frame second_f;
+            if (f.get_profile().stream_type() == RS2_STREAM_INFRARED)
+            {
+                second_f = second.get_infrared_frame( f.get_profile().stream_index() );
+            }
+            else
+            {
+                second_f = second.first_or_default( f.get_profile().stream_type() );
+            }
+            if ( second_f )
             {
                 auto second_uid = second_f.get_profile().unique_id();
 

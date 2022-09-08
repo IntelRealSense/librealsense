@@ -23,6 +23,7 @@
 #include <src/proc/temporal-filter.h>
 #include <src/proc/y8i-to-y8y8.h>
 #include <src/proc/y12i-to-y16y16.h>
+#include <src/proc/y16i-to-y10msby10msb.h>
 #include <src/proc/color-formats-converter.h>
 #include <src/proc/syncer-processing-block.h>
 #include <src/proc/hole-filling-filter.h>
@@ -60,6 +61,7 @@ namespace librealsense
         {rs_fourcc('W','1','0',' '), RS2_FORMAT_W10},
         {rs_fourcc('Y','1','6',' '), RS2_FORMAT_Y16},
         {rs_fourcc('Y','1','2','I'), RS2_FORMAT_Y12I},
+        {rs_fourcc('Y','1','6','I'), RS2_FORMAT_Y16I},
         {rs_fourcc('Z','1','6',' '), RS2_FORMAT_Z16},
         {rs_fourcc('Z','1','6','H'), RS2_FORMAT_Z16H},
         {rs_fourcc('R','G','B','2'), RS2_FORMAT_BGR8},
@@ -76,6 +78,7 @@ namespace librealsense
         {rs_fourcc('W','1','0',' '), RS2_STREAM_INFRARED},
         {rs_fourcc('Y','1','6',' '), RS2_STREAM_INFRARED},
         {rs_fourcc('Y','1','2','I'), RS2_STREAM_INFRARED},
+        {rs_fourcc('Y','1','6','I'), RS2_STREAM_INFRARED},
         {rs_fourcc('R','G','B','2'), RS2_STREAM_INFRARED},
         {rs_fourcc('Z','1','6',' '), RS2_STREAM_DEPTH},
         {rs_fourcc('Z','1','6','H'), RS2_STREAM_DEPTH},
@@ -854,6 +857,12 @@ namespace librealsense
                 { RS2_FORMAT_Y12I },
                 { {RS2_FORMAT_Y16, RS2_STREAM_INFRARED, 1}, {RS2_FORMAT_Y16, RS2_STREAM_INFRARED, 2} },
                 []() {return std::make_shared<y12i_to_y16y16>(); }
+            );
+
+            depth_sensor.register_processing_block(
+                { RS2_FORMAT_Y16I },
+                { {RS2_FORMAT_Y16, RS2_STREAM_INFRARED, 1}, {RS2_FORMAT_Y16, RS2_STREAM_INFRARED, 2} },
+                []() {return std::make_shared<y16i_to_y10msby10msb>(); }
             );
 
             pid_hex_str = hexify(_pid);

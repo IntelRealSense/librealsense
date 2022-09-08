@@ -1,0 +1,30 @@
+commit 3df208ef6648357775bf092a4a57bdcb02dfeb5c
+Author: Yu MENG <yu1.meng@intel.com>
+Date:   Thu Jun 23 16:02:48 2022 +0800
+
+    fix the retval in [accel|gyro]_3d_capture_sample
+
+diff --git a/drivers/iio/accel/hid-sensor-accel-3d.c b/drivers/iio/accel/hid-sensor-accel-3d.c
+index a2def6f93..5eac7ea19 100644
+--- a/drivers/iio/accel/hid-sensor-accel-3d.c
++++ b/drivers/iio/accel/hid-sensor-accel-3d.c
+@@ -280,6 +280,7 @@ static int accel_3d_capture_sample(struct hid_sensor_hub_device *hsdev,
+ 			hid_sensor_convert_timestamp(
+ 					&accel_state->common_attributes,
+ 					*(int64_t *)raw_data);
++		ret = 0;
+ 	break;
+ 	default:
+ 		break;
+diff --git a/drivers/iio/gyro/hid-sensor-gyro-3d.c b/drivers/iio/gyro/hid-sensor-gyro-3d.c
+index 8f0ad022c..698c50da1 100644
+--- a/drivers/iio/gyro/hid-sensor-gyro-3d.c
++++ b/drivers/iio/gyro/hid-sensor-gyro-3d.c
+@@ -231,6 +231,7 @@ static int gyro_3d_capture_sample(struct hid_sensor_hub_device *hsdev,
+ 		gyro_state->timestamp =
+ 			hid_sensor_convert_timestamp(&gyro_state->common_attributes,
+ 						     *(s64 *)raw_data);
++		ret = 0;
+ 	break;
+ 	default:
+ 		break;

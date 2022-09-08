@@ -31,7 +31,7 @@ context = None
 if '--context' in sys.argv:
     context_index = sys.argv.index( '--context' )
     try:
-        context = sys.argv.pop(context_index + 1)
+        context = sys.argv.pop(context_index + 1).split()
     except IndexError:
         log.f( "Received context flag but no context" )
     sys.argv.pop( context_index )

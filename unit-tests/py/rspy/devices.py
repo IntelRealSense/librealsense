@@ -26,11 +26,11 @@ except ModuleNotFoundError:
     py_dir   = os.path.dirname( rspy_dir )
     sys.path.append( py_dir )
     from rspy import log
-    #
-    # And where to look for pyrealsense2
-    from rspy import repo
-    pyrs_dir = repo.find_pyrs_dir()
-    sys.path.insert( 1, pyrs_dir )
+#
+# And where to look for pyrealsense2
+from rspy import repo
+pyrs_dir = repo.find_pyrs_dir()
+sys.path.insert( 1, pyrs_dir )
 
 
 # We need both pyrealsense2 and acroname. We can work without acroname, but
@@ -391,6 +391,8 @@ def by_configuration( config, exceptions = None ):
                 error = 'no device matches configuration "' + spec + '"'
                 if old_len:
                     error += ' (after already matching ' + str(sns) + ')'
+                if ignored_products:
+                    error += ' (!' + str(ignored_products) + ')'
                 if exceptions:
                     error += ' (-' + str(exceptions) + ')'
                 raise RuntimeError( error )
@@ -694,9 +696,14 @@ if __name__ == '__main__':
     try:
         if acroname:
             if not acroname.hub:
-                acroname.connect()
-                if platform.system() == 'Linux':
-                    _acroname_hubs = set( acroname.find_all_hubs() )
+                try:
+                    acroname.connect()
+                    if platform.system() == 'Linux':
+                        _acroname_hubs = set( acroname.find_all_hubs() )
+                except NoneFoundError as e:
+                    # This can happen, e.g. on Jetson with D457...
+                    log.d( 'connect() failed:', e )
+                    acroname = None
         action = 'list'
         def get_handle(dev):
             return dev.handle

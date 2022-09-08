@@ -77,10 +77,10 @@ def find_image_or_exit( product_name, fw_version_regex = r'(\d+\.){3}(\d+)' ):
     """
     Searches for a FW image file for the given camera name and optional version. If none are
     found, exits with an error!
-    
+
     :param product_name: the name of the camera, from get_info(rs.camera_info.name)
     :param fw_version_regex: optional regular expression specifying which FW version image to find
-    
+
     :return: the image file corresponding to product_name and fw_version if exist, otherwise exit
     """
     pattern = re.compile( r'^Intel RealSense (((\S+?)(\d+))(\S*))' )
@@ -182,7 +182,7 @@ def compare_fw_versions( v1, v2 ):
 
 if compare_fw_versions( current_fw_version, bundled_fw_version ) == 0:
     # Current is same as bundled
-    if recovered or test.context != 'nightly':
+    if recovered or 'nightly' not in test.context:
         # In nightly, we always update; otherwise we try to save time, so do not do anything!
         log.d( 'versions are same; skipping FW update' )
         test.finish()

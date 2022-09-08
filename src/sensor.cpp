@@ -267,11 +267,12 @@ void log_callback_end( uint32_t fps,
     {
         auto system_time = environment::get_instance().get_time_service()->get_time();
         auto fr = std::make_shared<frame>();
-        byte* pix = (byte*)fo.pixels;
-        std::vector<byte> pixels(pix, pix + fo.frame_size);
-        fr->data = pixels;
+        
+        //REMOVED! - no need to add 2 copies to a frame
+        //byte* pix = (byte*)fo.pixels;
+        //std::vector<byte> pixels(pix, pix + fo.frame_size);
+        //fr->data = pixels;
         fr->set_stream(profile);
-
         frame_additional_data additional_data(0,
             0,
             system_time,
@@ -398,9 +399,12 @@ void log_callback_end( uint32_t fps,
 
                     if (fh.frame)
                     {
-                        assert( expected_size == sizeof(byte) * fr->data.size() );
+                        assert( expected_size == sizeof(byte) * /*fr->data.size()*/f.frame_size );
 
-                        memcpy((void*)fh->get_frame_data(), fr->data.data(), expected_size);
+                        memcpy( (void *)fh->get_frame_data(),
+                                /*fr->data.data()*/ f.pixels,
+                                expected_size );
+
                         auto&& video = (video_frame*)fh.frame;
                         video->assign(width, height, width * bpp / 8, bpp);
                         video->set_timestamp_domain(timestamp_domain);
@@ -898,7 +902,9 @@ void log_callback_end( uint32_t fps,
             last_frame_number = frame_counter;
             last_timestamp = timestamp;
             frame_holder frame = _source.alloc_frame(RS2_EXTENSION_MOTION_FRAME, data_size, fr->additional_data, true);
-            memcpy((void*)frame->get_frame_data(), fr->data.data(), sizeof(byte)*fr->data.size());
+            memcpy( (void *)frame->get_frame_data(),
+                    /*fr->data.data()*/ sensor_data.fo.pixels,
+                    /*fr->data.size()*/ sizeof( byte ) * sensor_data.fo.frame_size );
             if (!frame)
             {
                 LOG_INFO("Dropped frame. alloc_frame(...) returned nullptr");
