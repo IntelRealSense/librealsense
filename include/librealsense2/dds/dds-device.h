@@ -31,10 +31,10 @@ public:
 
     size_t num_of_sensors() const;
 
-    size_t foreach_sensor( std::function< void( const std::string& name ) > fn );
+    size_t foreach_sensor( std::function< void( const std::string& name ) > fn ) const;
 
-    size_t foreach_video_profile( size_t sensor_index, std::function< void( const rs2_video_stream& profile, bool def_prof ) > fn );
-    size_t foreach_motion_profile( size_t sensor_index, std::function< void( const rs2_motion_stream& profile, bool def_prof ) > fn );
+    size_t foreach_video_profile( size_t sensor_index, std::function< void( const rs2_video_stream& profile, bool def_prof ) > fn ) const;
+    size_t foreach_motion_profile( size_t sensor_index, std::function< void( const rs2_motion_stream& profile, bool def_prof ) > fn ) const;
 
 private:
     class impl;

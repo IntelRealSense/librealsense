@@ -329,7 +329,7 @@ size_t dds_device::num_of_sensors() const
 }
 
 
-size_t dds_device::foreach_sensor( std::function< void( const std::string& name ) > fn )
+size_t dds_device::foreach_sensor( std::function< void( const std::string & name ) > fn ) const
 {
     for (auto sensor : _impl->_sensor_index_to_name)
     {
@@ -340,44 +340,50 @@ size_t dds_device::foreach_sensor( std::function< void( const std::string& name 
 }
 
 
-size_t dds_device::foreach_video_profile( size_t sensor_index, std::function< void( const rs2_video_stream& profile, bool def_prof ) > fn )
+size_t
+dds_device::foreach_video_profile( size_t sensor_index,
+                                   std::function< void( const rs2_video_stream & profile, bool def_prof ) > fn ) const
 {
-    size_t i = 0;
-    for (; i < _impl->_sensor_to_video_profiles[sensor_index].num_of_profiles ; ++i )
+    auto const & msg = _impl->_sensor_to_video_profiles.at( int( sensor_index ) );  // may throw!
+    for( size_t i = 0; i < msg.num_of_profiles; ++i )
     {
+        auto const & profile = msg.profiles[i];
         rs2_video_stream prof;
-        prof.type   = _impl->_sensor_to_video_profiles[sensor_index].profiles[i].type;
-        prof.index  = _impl->_sensor_to_video_profiles[sensor_index].profiles[i].stream_index;
-        prof.uid    = _impl->_sensor_to_video_profiles[sensor_index].profiles[i].uid;
-        prof.width  = _impl->_sensor_to_video_profiles[sensor_index].profiles[i].width;
-        prof.height = _impl->_sensor_to_video_profiles[sensor_index].profiles[i].height;
-        prof.fps    = _impl->_sensor_to_video_profiles[sensor_index].profiles[i].framerate;
+        prof.type   = profile.type;
+        prof.index  = profile.stream_index;
+        prof.uid    = profile.uid;
+        prof.width  = profile.width;
+        prof.height = profile.height;
+        prof.fps    = profile.framerate;
         //TODO - bpp needed?
-        prof.fmt    = _impl->_sensor_to_video_profiles[sensor_index].profiles[i].format;
+        prof.fmt    = profile.format;
         //TODO - add intrinsics
-        fn( prof, _impl->_sensor_to_video_profiles[sensor_index].profiles[i].default_profile );
+        fn( prof, profile.default_profile );
     }
 
-    return i;
+    return msg.num_of_profiles;
 }
 
 
-size_t dds_device::foreach_motion_profile( size_t sensor_index, std::function< void( const rs2_motion_stream& profile, bool def_prof ) > fn )
+size_t
+dds_device::foreach_motion_profile( size_t sensor_index,
+                                    std::function< void( const rs2_motion_stream & profile, bool def_prof ) > fn ) const
 {
-    size_t i = 0;
-    for (; i < _impl->_sensor_to_motion_profiles[sensor_index].num_of_profiles; ++i)
+    auto const & msg = _impl->_sensor_to_motion_profiles.at( int( sensor_index ) );  // may throw!
+    for( size_t i = 0; i < msg.num_of_profiles; ++i )
     {
+        auto const & profile = msg.profiles[i];
         rs2_motion_stream prof;
-        prof.type   = _impl->_sensor_to_motion_profiles[sensor_index].profiles[i].type;
-        prof.index  = _impl->_sensor_to_motion_profiles[sensor_index].profiles[i].stream_index;
-        prof.uid    = _impl->_sensor_to_motion_profiles[sensor_index].profiles[i].uid;
-        prof.fps    = _impl->_sensor_to_motion_profiles[sensor_index].profiles[i].framerate;
-        prof.fmt    = _impl->_sensor_to_motion_profiles[sensor_index].profiles[i].format;
+        prof.type   = profile.type;
+        prof.index  = profile.stream_index;
+        prof.uid    = profile.uid;
+        prof.fps    = profile.framerate;
+        prof.fmt    = profile.format;
         //TODO - add intrinsics
-        fn( prof, _impl->_sensor_to_motion_profiles[sensor_index].profiles[i].default_profile );
+        fn( prof, profile.default_profile );
     }
 
-    return i;
+    return msg.num_of_profiles;
 }
 
 }  // namespace dds
