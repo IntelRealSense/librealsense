@@ -1,3 +1,5 @@
+# License: Apache 2.0. See LICENSE file in root directory.
+# Copyright(c) 2022 Intel Corporation. All Rights Reserved.
 cmake_minimum_required(VERSION 3.1.0)
 
 # Note: we use 'pyrs_dds_server' because Python doesn't deal with '-' in module
@@ -60,5 +62,26 @@ set_target_properties( ${PROJECT_NAME}
         PROJECT_LABEL pyrs-dds-server
     )
 
+target_include_directories( ${PROJECT_NAME} PRIVATE ${REPO_ROOT}/include )
+#include("${REPO_ROOT}/include/librealsense2/dds/dds-server.cmake")
+set(DDS_SERVER_FILES 
+    "${REPO_ROOT}/include/librealsense2/dds/dds-defines.h"
+    "${REPO_ROOT}/include/librealsense2/dds/dds-participant.h"
+    "${REPO_ROOT}/include/librealsense2/dds/dds-participant.cpp"
+#    "${CMAKE_CURRENT_LIST_DIR}/dds-device-broadcaster.h"
+#    "${CMAKE_CURRENT_LIST_DIR}/dds-device-broadcaster.cpp"
+#    "${CMAKE_CURRENT_LIST_DIR}/dds-device-server.h"
+#    "${CMAKE_CURRENT_LIST_DIR}/dds-device-server.cpp"
+    "${REPO_ROOT}/include/librealsense2/dds/dds-utilities.h"
+)
 
-#target_include_directories(${PROJECT_NAME} PRIVATE ../../src)
+source_group( "DDS" FILES ${DDS_SERVER_FILES} )
+# NOTE: this requires that your "project(...)" statement match the executable
+target_link_libraries( ${PROJECT_NAME} PRIVATE dds )
+target_sources( ${PROJECT_NAME} PRIVATE ${DDS_SERVER_FILES} )
+
+include("${REPO_ROOT}/include/librealsense2/dds/topics/dds-topics.cmake")
+
+
+include("${REPO_ROOT}/include/librealsense2/utilities/easylogging/easyloggingpp.cmake")
+include("${REPO_ROOT}/include/librealsense2/utilities/concurrency/CMakeLists.txt")
