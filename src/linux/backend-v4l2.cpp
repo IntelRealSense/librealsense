@@ -1070,6 +1070,9 @@ namespace librealsense
 
                 _is_capturing = true;
                 _thread = std::unique_ptr<std::thread>(new std::thread([this](){ capture_loop(); }));
+
+                // Starting the video/metadata syncer
+                _video_md_syncer.start();
             }
         }
 
@@ -1133,7 +1136,7 @@ namespace librealsense
 
         void v4l_uvc_device::signal_stop()
         {
-            _video_md_syncer.flush();
+            _video_md_syncer.stop();;
             char buff[1]={};
             if (write(_stop_pipe_fd[1], buff, 1) < 0)
             {
@@ -2549,8 +2552,13 @@ namespace librealsense
         void v4l2_video_md_syncer::push_video(const sync_buffer& video_buffer)
         {
             std::lock_guard<std::mutex> lock(_syncer_mutex);
+            if(!_is_ready)
+            {
+                LOG_DEBUG_V4L("video_md_syncer - push_video called but syncer not ready");
+                return;
+            }
             _video_queue.push(video_buffer);
-            LOG_DEBUG_V4L("video_md_syncer - video pushed with sequence " << video_buffer._v4l2_buf->sequence);
+            LOG_DEBUG_V4L("video_md_syncer - video pushed with sequence " << video_buffer._v4l2_buf->sequence << ", buf " << video_buffer._buffer_index);
 
             // remove old video_buffer
             if (_video_queue.size() > 2)
@@ -2563,17 +2571,25 @@ namespace librealsense
         void v4l2_video_md_syncer::push_metadata(const sync_buffer& md_buffer)
         {
             std::lock_guard<std::mutex> lock(_syncer_mutex);
-
+            if(!_is_ready)
+            {
+                LOG_DEBUG_V4L("video_md_syncer - push_metadata called but syncer not ready");
+                return;
+            }
             // override front buffer if it has the same sequence that the new buffer - happens with metadata sequence 0
             if (_md_queue.size() > 0 && _md_queue.front()._v4l2_buf->sequence == md_buffer._v4l2_buf->sequence)
+            {
+                LOG_DEBUG_V4L("video_md_syncer - calling enqueue_front_buffer_before_throwing_it - md buf " << md_buffer._buffer_index << " and md buf " << _md_queue.front()._buffer_index << " have same sequence");
                 enqueue_front_buffer_before_throwing_it(_md_queue);
-
+            }
             _md_queue.push(md_buffer);
-            LOG_DEBUG_V4L("video_md_syncer - md pushed with sequence " << md_buffer._v4l2_buf->sequence);
+            LOG_DEBUG_V4L("video_md_syncer - md pushed with sequence " << md_buffer._v4l2_buf->sequence << ", buf " << md_buffer._buffer_index);
+            LOG_DEBUG_V4L("video_md_syncer - md queue size = " << _md_queue.size());
 
             // remove old md_buffer
             if (_md_queue.size() > 2)
             {
+                LOG_DEBUG_V4L("video_md_syncer - calling enqueue_front_buffer_before_throwing_it - md queue size is: " << _md_queue.size());
                 // Enqueue of md buffer before throwing its content away
                 enqueue_front_buffer_before_throwing_it(_md_queue);
             }
@@ -2583,6 +2599,11 @@ namespace librealsense
                                                             int& video_fd, int& md_fd)
         {
             std::lock_guard<std::mutex> lock(_syncer_mutex);
+            if(!_is_ready)
+            {
+                LOG_DEBUG_V4L("video_md_syncer - pull_video_with_metadata called but syncer not ready");
+                return false;
+            }
             if (_video_queue.empty())
             {
                 LOG_DEBUG_V4L("video_md_syncer - video queue is empty");
@@ -2681,7 +2702,13 @@ namespace librealsense
         }
 
 
-        void v4l2_video_md_syncer::flush()
+        void v4l2_video_md_syncer::stop()
+        {
+             _is_ready = false;
+             flush_queues();
+        }
+
+        void v4l2_video_md_syncer::flush_queues()
         {
             // Empty queues
             LOG_DEBUG_V4L("video_md_syncer - flush video and md queues");
@@ -2694,6 +2721,7 @@ namespace librealsense
             {
                 _md_queue.pop();
             }
+            LOG_DEBUG_V4L("video_md_syncer - flush video and md queues done - mq_q size = " << _md_queue.size() << ", video_q size = " << _video_queue.size());
         }
     }
 }
