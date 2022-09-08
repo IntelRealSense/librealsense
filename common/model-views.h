@@ -747,7 +747,7 @@ namespace rs2
     public:
         stream_model();
         std::shared_ptr<texture_buffer> upload_frame(frame&& f);
-        bool is_stream_visible();
+        bool is_stream_visible() const;
         void update_ae_roi_rect(const rect& stream_rect, const mouse_info& mouse, std::string& error_message);
         void show_frame(const rect& stream_rect, const mouse_info& g, std::string& error_message);
         rect get_normalized_zoom(const rect& stream_rect, const mouse_info& g, bool is_middle_clicked, float zoom_val);
