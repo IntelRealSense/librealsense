@@ -21,7 +21,7 @@ Copyright(c) 2017 Intel Corporation. All Rights Reserved. */
 #include <pybind11/functional.h>
 
 #define NAME pyrs_dds_server
-#define SNAME #NAME
+#define SNAME "pyrs_dds_server"
 // For rs2_format
 //#include "../include/librealsense2/h/rs_sensor.h"
 
