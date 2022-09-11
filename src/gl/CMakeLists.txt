@@ -10,6 +10,8 @@ set(REALSENSE_GL_CPP
     synthetic-stream-gl.cpp
     yuy2rgb-gl.h
     yuy2rgb-gl.cpp
+    nv122rgb-gl.h
+    nv122rgb-gl.cpp
     y4112rgb-gl.h
     y4112rgb-gl.cpp
     pointcloud-gl.h
