@@ -20,7 +20,7 @@ namespace librealsense
 
         software_sensor& add_software_sensor(const std::string& name);
 
-        software_sensor& get_software_sensor(int index);
+        software_sensor& get_software_sensor( size_t index);
 
         void set_matcher_type(rs2_matchers matcher);
         
