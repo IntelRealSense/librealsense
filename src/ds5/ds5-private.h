@@ -46,6 +46,8 @@ namespace librealsense
         const uint16_t RS416_RGB_PID        = 0x0B52; // F416 RGB
         const uint16_t RS405_PID            = 0x0B5B; // D405
         const uint16_t RS455_PID            = 0x0B5C; // D455
+        const uint16_t RS580_PID            = 0x0580; // D580 // REMI TODO - update PID
+        const uint16_t RS585_PID            = 0x0585; // D585 // REMI TODO - update PID
 
         // DS5 depth XU identifiers
         const uint8_t DS5_HWMONITOR                       = 1;
@@ -85,6 +87,8 @@ namespace librealsense
             ds::RS416_PID,
             ds::RS405_PID,
             ds::RS455_PID,
+            ds::RS580_PID,
+            ds::RS585_PID
         };
 
         static const std::set<std::uint16_t> multi_sensors_pid = {
@@ -98,6 +102,8 @@ namespace librealsense
             ds::RS435I_PID,
             ds::RS465_PID,
             ds::RS455_PID,
+            ds::RS580_PID,
+            ds::RS585_PID!
         };
 
         static const std::set<std::uint16_t> hid_sensors_pid = {
@@ -105,16 +111,22 @@ namespace librealsense
             ds::RS430I_PID,
             ds::RS465_PID,
             ds::RS455_PID,
+            ds::RS580_PID,
+            ds::RS585_PID!
         };
 
         static const std::set<std::uint16_t> hid_bmi_055_pid = {
             ds::RS435I_PID,
             ds::RS430I_PID,
-            ds::RS455_PID
+            ds::RS455_PID,
+            ds::RS580_PID,
+            ds::RS585_PID!
         };
 
         static const std::set<std::uint16_t> hid_bmi_085_pid = {
-            RS465_PID
+            RS465_PID,
+            RS580_PID,
+            RS585_PID!
         };
 
         static const std::set<std::uint16_t> fisheye_pid = {
@@ -150,6 +162,8 @@ namespace librealsense
             { RS416_RGB_PID,        "Intel RealSense F416 with RGB Module"},
             { RS405_PID,            "Intel RealSense D405" },
             { RS455_PID,            "Intel RealSense D455" },
+            { RS580_PID,            "Intel RealSense D580" },
+            { RS585_PID,            "Intel RealSense D585" }
         };
 
         // DS5 fisheye XU identifiers
