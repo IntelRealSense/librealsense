@@ -17,7 +17,8 @@ namespace librealsense
         {rs_fourcc('Y','U','Y','V'), RS2_FORMAT_YUYV},
         {rs_fourcc('U','Y','V','Y'), RS2_FORMAT_UYVY},
         {rs_fourcc('M','J','P','G'), RS2_FORMAT_MJPEG},
-        {rs_fourcc('B','Y','R','2'), RS2_FORMAT_RAW16}
+        {rs_fourcc('B','Y','R','2'), RS2_FORMAT_RAW16},
+        {rs_fourcc('N','V','1','2'), RS2_FORMAT_NV12}
     };
     std::map<uint32_t, rs2_stream> ds5_color_fourcc_to_rs2_stream = {
         {rs_fourcc('Y','U','Y','2'), RS2_STREAM_COLOR},
@@ -25,6 +26,7 @@ namespace librealsense
         {rs_fourcc('U','Y','V','Y'), RS2_STREAM_COLOR},
         {rs_fourcc('B','Y','R','2'), RS2_STREAM_COLOR},
         {rs_fourcc('M','J','P','G'), RS2_STREAM_COLOR},
+        {rs_fourcc('N','V','1','2'), RS2_STREAM_COLOR}
     };
 
     ds5_color::ds5_color(std::shared_ptr<context> ctx,

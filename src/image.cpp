@@ -27,6 +27,7 @@ namespace librealsense
         case RS2_FORMAT_DISPARITY32: return 32;
         case RS2_FORMAT_XYZ32F: return 12 * 8;
         case RS2_FORMAT_YUYV:  return 16;
+        case RS2_FORMAT_NV12:  return 12;
         case RS2_FORMAT_RGB8: return 24;
         case RS2_FORMAT_BGR8: return 24;
         case RS2_FORMAT_RGBA8: return 32;

@@ -61,4 +61,16 @@ namespace librealsense
             color_converter(name, RS2_FORMAT_RGB8, RS2_STREAM_INFRARED) {};
         void process_function(byte * const dest[], const byte * source, int width, int height, int actual_size, int input_size) override;
     };
+
+    class LRS_EXTENSION_API nv12_converter : public color_converter
+    {
+    public:
+        nv12_converter(rs2_format target_format) :
+            nv12_converter("NV12 Converter", target_format) {};
+
+    protected:
+        nv12_converter(const char* name, rs2_format target_format) :
+            color_converter(name, target_format) {};
+        void process_function(byte* const dest[], const byte* source, int width, int height, int actual_size, int input_size) override;
+    };
 }
