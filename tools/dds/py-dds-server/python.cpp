@@ -43,39 +43,68 @@ std::string to_string( librealsense::dds::dds_guid const & guid )
     }
 
 
+// Convert FastDDS Log::Entry to EasyLogging log (see ELPP_WRITE_LOG)
+#define ISNULL(E) ((E) ? (E) : "n/a")
+#define LOG_ENTRY( ENTRY, LEVEL, ... )                                                                                 \
+    do                                                                                                                 \
+    {                                                                                                                  \
+        char const * filename = ( ENTRY ).context.filename;                                                            \
+        char const * func = ( ENTRY ).context.function;                                                                \
+        if( ! func )                                                                                                   \
+            func = "n/a";                                                                                              \
+        if( ! filename )                                                                                               \
+            filename = func;                                                                                           \
+        el::base::Writer writer( el::Level::LEVEL, filename, ( ENTRY ).context.line, func );                           \
+        writer.construct( 1, "librealsense" );                                                                         \
+        writer << __VA_ARGS__;                                                                                         \
+        writer << " [DDS]";                                                                                            \
+        if( ( ENTRY ).context.category )                                                                               \
+            writer << "[" << ( ENTRY ).context.category << "]";                                                        \
+    }                                                                                                                  \
+    while( false )
+
+
+struct log_consumer : eprosima::fastdds::dds::LogConsumer
+{
+    virtual void Consume( const eprosima::fastdds::dds::Log::Entry & e ) override
+    {
+        using eprosima::fastdds::dds::Log;
+        switch( e.kind )
+        {
+        case Log::Kind::Error:
+            LOG_ENTRY( e, Error, e.message );
+            break;
+        case Log::Kind::Warning:
+            LOG_ENTRY( e, Warning, e.message );
+            break;
+        case Log::Kind::Info:
+            LOG_ENTRY( e, Info, e.message );
+            break;
+        }
+    }
+};
+
+
 PYBIND11_MODULE(NAME, m) {
     m.doc() = R"pbdoc(
         RealSense DDS Server Python Bindings
     )pbdoc";
     m.attr( "__version__" ) = "0.1";  // RS2_API_VERSION_STR;
 
+    // Configure the same logger as librealsense, and default to only errors by default...
     el::Configurations defaultConf;
     defaultConf.setToDefault();
-    defaultConf.setGlobally( el::ConfigurationType::ToStandardOutput, "true" );
-    defaultConf.setGlobally( el::ConfigurationType::Format, " %datetime{%d/%M %H:%m:%s,%g} %level [%thread] (%fbase:%line) %msg" );
+    defaultConf.setGlobally( el::ConfigurationType::ToStandardOutput, "false" );
+    defaultConf.set( el::Level::Error, el::ConfigurationType::ToStandardOutput, "true" );
+    defaultConf.setGlobally( el::ConfigurationType::Format, "%levshort %datetime{%H:%m:%s.%g} %msg (%fbase:%line [%thread])" );
     el::Loggers::reconfigureLogger( "librealsense", defaultConf );
+    // And set the DDS logger similarly
+    std::unique_ptr< eprosima::fastdds::dds::LogConsumer > consumer( new log_consumer() );
+    eprosima::fastdds::dds::Log::ClearConsumers();
+    eprosima::fastdds::dds::Log::RegisterConsumer( std::move( consumer ) );
+    eprosima::fastdds::dds::Log::SetVerbosity( eprosima::fastdds::dds::Log::Error );
 
     m.def( "debug", []( bool enable = true ) {
-        struct log_consumer : eprosima::fastdds::dds::LogConsumer
-        {
-            virtual void Consume( const eprosima::fastdds::dds::Log::Entry & e ) override
-            {
-                using eprosima::fastdds::dds::Log;
-                switch( e.kind )
-                {
-                case Log::Kind::Error:
-                    LOG_ERROR( "[DDS] " << e.message );
-                    break;
-                case Log::Kind::Warning:
-                    LOG_WARNING( "[DDS] " << e.message );
-                    break;
-                case Log::Kind::Info:
-                    LOG_DEBUG( "[DDS] " << e.message );
-                    break;
-                }
-            }
-        };
-
         if( enable )
         {
             // rs2_log_to_console( RS2_LOG_SEVERITY_DEBUG, nullptr );
@@ -86,7 +115,13 @@ PYBIND11_MODULE(NAME, m) {
             eprosima::fastdds::dds::Log::SetVerbosity( eprosima::fastdds::dds::Log::Error );
             // rs2::log_to_console( RS2_LOG_SEVERITY_ERROR );
         }
-    });
+        el::Logger * logger = el::Loggers::getLogger( "librealsense" );
+        auto configs = logger->configurations();
+        configs->set( el::Level::Warning, el::ConfigurationType::ToStandardOutput, enable ? "true" : "false" );
+        configs->set( el::Level::Info, el::ConfigurationType::ToStandardOutput, enable ? "true" : "false" );
+        configs->set( el::Level::Debug, el::ConfigurationType::ToStandardOutput, enable ? "true" : "false" );
+        logger->reconfigure();
+    } );
 
     using librealsense::dds::dds_participant;
     using eprosima::fastrtps::types::ReturnCode_t;
