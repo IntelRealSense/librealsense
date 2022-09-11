@@ -33,7 +33,7 @@ if '--context' in sys.argv:
     try:
         context = sys.argv.pop(context_index + 1).split()
     except IndexError:
-        log.f( "Received context flag but no context" )
+        log.f( "Received --context flag but no context" )
     sys.argv.pop( context_index )
 
 # If --rslog flag was sent, enable LibRS logging (LOG_DEBUG, etc.)
@@ -43,6 +43,14 @@ try:
     rs.log_to_console( rs.log_severity.debug )
 except ValueError as e:
     pass  # No --rslog passed in
+
+if '--nested' in sys.argv:
+    nested_index = sys.argv.index( '--nested' )
+    try:
+        log.nested = sys.argv.pop(nested_index + 1)
+    except IndexError:
+        log.f( "Received --nested flag but no nested name" )
+    sys.argv.pop( nested_index )
 
 
 def set_env_vars( env_vars ):

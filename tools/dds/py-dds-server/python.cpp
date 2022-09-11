@@ -1,5 +1,5 @@
 /* License: Apache 2.0. See LICENSE file in root directory.
-Copyright(c) 2017 Intel Corporation. All Rights Reserved. */
+Copyright(c) 2022 Intel Corporation. All Rights Reserved. */
 
 #include "python.hpp"
 
@@ -96,7 +96,7 @@ PYBIND11_MODULE(NAME, m) {
     defaultConf.setToDefault();
     defaultConf.setGlobally( el::ConfigurationType::ToStandardOutput, "false" );
     defaultConf.set( el::Level::Error, el::ConfigurationType::ToStandardOutput, "true" );
-    defaultConf.setGlobally( el::ConfigurationType::Format, "%levshort %datetime{%H:%m:%s.%g} %msg (%fbase:%line [%thread])" );
+    defaultConf.setGlobally( el::ConfigurationType::Format, "-%levshort- %datetime{%H:%m:%s.%g} %msg (%fbase:%line [%thread])" );
     el::Loggers::reconfigureLogger( "librealsense", defaultConf );
     // And set the DDS logger similarly
     std::unique_ptr< eprosima::fastdds::dds::LogConsumer > consumer( new log_consumer() );
@@ -104,22 +104,24 @@ PYBIND11_MODULE(NAME, m) {
     eprosima::fastdds::dds::Log::RegisterConsumer( std::move( consumer ) );
     eprosima::fastdds::dds::Log::SetVerbosity( eprosima::fastdds::dds::Log::Error );
 
-    m.def( "debug", []( bool enable = true ) {
+    m.def( "debug", []( bool enable, std::string const & nested ) {
         if( enable )
         {
-            // rs2_log_to_console( RS2_LOG_SEVERITY_DEBUG, nullptr );
-            eprosima::fastdds::dds::Log::SetVerbosity( eprosima::fastdds::dds::Log::Info );
+            //eprosima::fastdds::dds::Log::SetVerbosity( eprosima::fastdds::dds::Log::Info );
         }
         else
         {
-            eprosima::fastdds::dds::Log::SetVerbosity( eprosima::fastdds::dds::Log::Error );
-            // rs2::log_to_console( RS2_LOG_SEVERITY_ERROR );
+            //eprosima::fastdds::dds::Log::SetVerbosity( eprosima::fastdds::dds::Log::Error );
         }
         el::Logger * logger = el::Loggers::getLogger( "librealsense" );
         auto configs = logger->configurations();
         configs->set( el::Level::Warning, el::ConfigurationType::ToStandardOutput, enable ? "true" : "false" );
         configs->set( el::Level::Info, el::ConfigurationType::ToStandardOutput, enable ? "true" : "false" );
         configs->set( el::Level::Debug, el::ConfigurationType::ToStandardOutput, enable ? "true" : "false" );
+        std::string format = "-%levshort- %datetime{%H:%m:%s.%g} %msg (%fbase:%line [%thread])";
+        if( ! nested.empty() )
+            format = '[' + nested + "] " + format;
+        configs->setGlobally( el::ConfigurationType::Format, format );
         logger->reconfigure();
     } );
 

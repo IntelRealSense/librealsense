@@ -3,6 +3,10 @@
 
 import sys
 
+# Set this string to show a "nesting" idetifier that can be used to distinguish output
+# from this process from others...
+nested = None
+
 
 def _write( s ):
     """
@@ -86,6 +90,9 @@ def quiet_on():
 
 
 def indent( str, line_prefix = '    ' ):
+    global nested
+    if nested:
+        line_prefix = '[' + nested + '] ' + ( line_prefix or '' )
     if line_prefix:
         str = line_prefix + str.replace( '\n', '\n' + line_prefix )
     return str
