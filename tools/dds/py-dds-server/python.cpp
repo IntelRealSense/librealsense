@@ -12,7 +12,9 @@ Copyright(c) 2022 Intel Corporation. All Rights Reserved. */
 #include <fastrtps/types/DynamicType.h>
 
 
+#ifndef BUILD_SHARED_LIBS
 INITIALIZE_EASYLOGGINGPP
+#endif
 
 
 namespace {
