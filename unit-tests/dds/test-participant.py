@@ -25,6 +25,10 @@ def run_server( server_script ):
     if sys.flags.verbose:
         cmd += ["-v"]
     #
+    import os.path
+    if not os.path.isabs( server_script ):
+        thisdir = os.path.dirname( os.path.realpath( __file__ ))
+        server_script = os.path.join( thisdir, server_script )
     cmd += [server_script]
     #
     if log.is_debug_on():
