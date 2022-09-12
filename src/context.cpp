@@ -446,7 +446,7 @@ namespace librealsense
                 } );
             for( size_t i = 0; i < count; ++i )
             {
-                software_sensor & sensor = get_software_sensor( int( i ) );
+                software_sensor & sensor = get_software_sensor( i );
                 _dds_dev->foreach_video_profile( i, [&]( const rs2_video_stream& profile, bool default_profile ) {
                     sensor.add_video_stream( profile, default_profile );
                 } );

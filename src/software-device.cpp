@@ -54,7 +54,7 @@ namespace librealsense
         _user_destruction_callback = std::move(callback);
     }
 
-    software_sensor& software_device::get_software_sensor(int index)
+    software_sensor& software_device::get_software_sensor( size_t index)
     {
         if (index >= _software_sensors.size())
         {

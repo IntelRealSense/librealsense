@@ -344,10 +344,16 @@ size_t
 dds_device::foreach_video_profile( size_t sensor_index,
                                    std::function< void( const rs2_video_stream & profile, bool def_prof ) > fn ) const
 {
-    auto const & msg = _impl->_sensor_to_video_profiles.at( int( sensor_index ) );  // may throw!
-    for( size_t i = 0; i < msg.num_of_profiles; ++i )
+    auto const & msg = _impl->_sensor_to_video_profiles.find( int( sensor_index ) );
+
+    if (msg == _impl->_sensor_to_video_profiles.end())
     {
-        auto const & profile = msg.profiles[i];
+        return 0; //Not a video sensor, nothing to do
+    }
+
+    for( size_t i = 0; i < msg->second.num_of_profiles; ++i )
+    {
+        auto const & profile = msg->second.profiles[i];
         rs2_video_stream prof;
         prof.type   = profile.type;
         prof.index  = profile.stream_index;
@@ -361,7 +367,7 @@ dds_device::foreach_video_profile( size_t sensor_index,
         fn( prof, profile.default_profile );
     }
 
-    return msg.num_of_profiles;
+    return msg->second.num_of_profiles;
 }
 
 
@@ -369,10 +375,16 @@ size_t
 dds_device::foreach_motion_profile( size_t sensor_index,
                                     std::function< void( const rs2_motion_stream & profile, bool def_prof ) > fn ) const
 {
-    auto const & msg = _impl->_sensor_to_motion_profiles.at( int( sensor_index ) );  // may throw!
-    for( size_t i = 0; i < msg.num_of_profiles; ++i )
+    auto const& msg = _impl->_sensor_to_motion_profiles.find( int( sensor_index ) );
+
+    if (msg == _impl->_sensor_to_motion_profiles.end())
     {
-        auto const & profile = msg.profiles[i];
+        return 0; //Not a motion sensor, nothing to do
+    }
+
+    for( size_t i = 0; i < msg->second.num_of_profiles; ++i )
+    {
+        auto const & profile = msg->second.profiles[i];
         rs2_motion_stream prof;
         prof.type   = profile.type;
         prof.index  = profile.stream_index;
@@ -383,7 +395,7 @@ dds_device::foreach_motion_profile( size_t sensor_index,
         fn( prof, profile.default_profile );
     }
 
-    return msg.num_of_profiles;
+    return msg->second.num_of_profiles;
 }
 
 }  // namespace dds
