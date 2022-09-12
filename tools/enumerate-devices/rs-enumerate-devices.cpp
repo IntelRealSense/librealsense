@@ -230,11 +230,6 @@ int main(int argc, char** argv) try
     if (!playback_dev_file.empty())
         d = ctx.load_device(playback_dev_file.data());
 
-#ifdef BUILD_WITH_DDS
-    //Sleep needed because DDS discovery process takes time
-    std::this_thread::sleep_for( std::chrono::seconds( 5 ) );
-#endif
-
     auto devices_list = ctx.query_devices();
     size_t device_count = devices_list.size();
     if (!device_count)

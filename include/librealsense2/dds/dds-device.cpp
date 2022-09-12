@@ -345,28 +345,29 @@ dds_device::foreach_video_profile( size_t sensor_index,
                                    std::function< void( const rs2_video_stream & profile, bool def_prof ) > fn ) const
 {
     auto const & msg = _impl->_sensor_to_video_profiles.find( int( sensor_index ) );
-    if(msg != _impl->_sensor_to_video_profiles.end())
-    {
-        for( size_t i = 0; i < msg->second.num_of_profiles; ++i )
-        {
-            auto const & profile = msg->second.profiles[i];
-            rs2_video_stream prof;
-            prof.type   = profile.type;
-            prof.index  = profile.stream_index;
-            prof.uid    = profile.uid;
-            prof.width  = profile.width;
-            prof.height = profile.height;
-            prof.fps    = profile.framerate;
-            //TODO - bpp needed?
-            prof.fmt    = profile.format;
-            //TODO - add intrinsics
-            fn( prof, profile.default_profile );
-        }
 
-        return msg->second.num_of_profiles;
+    if (msg == _impl->_sensor_to_video_profiles.end())
+    {
+        return 0; //Not a video sensor, nothing to do
     }
 
-    return 0; //Not a video sensor, nothing to do
+    for( size_t i = 0; i < msg->second.num_of_profiles; ++i )
+    {
+        auto const & profile = msg->second.profiles[i];
+        rs2_video_stream prof;
+        prof.type   = profile.type;
+        prof.index  = profile.stream_index;
+        prof.uid    = profile.uid;
+        prof.width  = profile.width;
+        prof.height = profile.height;
+        prof.fps    = profile.framerate;
+        //TODO - bpp needed?
+        prof.fmt    = profile.format;
+        //TODO - add intrinsics
+        fn( prof, profile.default_profile );
+    }
+
+    return msg->second.num_of_profiles;
 }
 
 
@@ -375,25 +376,26 @@ dds_device::foreach_motion_profile( size_t sensor_index,
                                     std::function< void( const rs2_motion_stream & profile, bool def_prof ) > fn ) const
 {
     auto const& msg = _impl->_sensor_to_motion_profiles.find( int( sensor_index ) );
-    if (msg != _impl->_sensor_to_motion_profiles.end())
-    {
-        for( size_t i = 0; i < msg->second.num_of_profiles; ++i )
-        {
-            auto const & profile = msg->second.profiles[i];
-            rs2_motion_stream prof;
-            prof.type   = profile.type;
-            prof.index  = profile.stream_index;
-            prof.uid    = profile.uid;
-            prof.fps    = profile.framerate;
-            prof.fmt    = profile.format;
-            //TODO - add intrinsics
-            fn( prof, profile.default_profile );
-        }
 
-        return msg->second.num_of_profiles;
+    if (msg == _impl->_sensor_to_motion_profiles.end())
+    {
+        return 0; //Not a motion sensor, nothing to do
     }
 
-    return 0; //Not a motion sensor, nothing to do
+    for( size_t i = 0; i < msg->second.num_of_profiles; ++i )
+    {
+        auto const & profile = msg->second.profiles[i];
+        rs2_motion_stream prof;
+        prof.type   = profile.type;
+        prof.index  = profile.stream_index;
+        prof.uid    = profile.uid;
+        prof.fps    = profile.framerate;
+        prof.fmt    = profile.format;
+        //TODO - add intrinsics
+        fn( prof, profile.default_profile );
+    }
+
+    return msg->second.num_of_profiles;
 }
 
 }  // namespace dds
