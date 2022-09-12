@@ -1,6 +1,8 @@
 # License: Apache 2.0. See LICENSE file in root directory.
 # Copyright(c) 2022 Intel Corporation. All Rights Reserved.
 
+#test:donotrun:!dds
+
 import pyrs_dds_server as client
 from rspy import log, test
 
@@ -83,6 +85,8 @@ run_server( 'participant-server.py' )
 test.check( server_added )
 test.check( server_removed )
 
+listener = None
+participant = None
 test.finish()
 #
 #############################################################################################
