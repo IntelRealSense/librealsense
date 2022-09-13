@@ -27,15 +27,16 @@ set( PYBIND11_CPP_STANDARD -std=c++11 )
 # Force Pybind11 not to share pyrealsense2 resources with other pybind modules.
 # With this definition we force the ABI version to be unique and not risk crashes on different modules.
 # (workaround for RS5-10582; see also https://github.com/pybind/pybind11/issues/2898)
-add_definitions( -DPYBIND11_COMPILER_TYPE="_librs_abi" )
+add_definitions( -DPYBIND11_COMPILER_TYPE="_pyrs_dds_server_abi" )
 
 include_directories( ${CMAKE_BINARY_DIR}/third-party/pybind11/include )
 
-set( PYRS_CPP
+set( PYRS_DDS_SERVER_FILES
     python.cpp
+    python.hpp
     )
 
-pybind11_add_module( ${PROJECT_NAME} SHARED python.hpp ${PYRS_CPP} )
+pybind11_add_module( ${PROJECT_NAME} SHARED ${PYRS_DDS_SERVER_FILES} )
 
 # pybind11 version 2.6.1 require find_package to run after pybind11_add_module call,
 # This way the pybind takes the python version set in PYTHON_EXECUTABLE variable.
@@ -68,8 +69,8 @@ set(DDS_SERVER_FILES
     "${REPO_ROOT}/include/librealsense2/dds/dds-defines.h"
     "${REPO_ROOT}/include/librealsense2/dds/dds-participant.h"
     "${REPO_ROOT}/include/librealsense2/dds/dds-participant.cpp"
-#    "${CMAKE_CURRENT_LIST_DIR}/dds-device-broadcaster.h"
-#    "${CMAKE_CURRENT_LIST_DIR}/dds-device-broadcaster.cpp"
+#    "${REPO_ROOT}/include/librealsense2/dds/dds-device-broadcaster.h"
+#    "${REPO_ROOT}/include/librealsense2/dds/dds-device-broadcaster.cpp"
 #    "${CMAKE_CURRENT_LIST_DIR}/dds-device-server.h"
 #    "${CMAKE_CURRENT_LIST_DIR}/dds-device-server.cpp"
     "${REPO_ROOT}/include/librealsense2/dds/dds-utilities.h"

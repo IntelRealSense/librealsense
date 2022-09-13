@@ -46,7 +46,6 @@ std::string to_string( librealsense::dds::dds_guid const & guid )
 
 
 // Convert FastDDS Log::Entry to EasyLogging log (see ELPP_WRITE_LOG)
-#define ISNULL(E) ((E) ? (E) : "n/a")
 #define LOG_ENTRY( ENTRY, LEVEL, ... )                                                                                 \
     do                                                                                                                 \
     {                                                                                                                  \
