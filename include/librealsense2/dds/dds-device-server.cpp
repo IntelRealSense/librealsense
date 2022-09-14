@@ -1,9 +1,8 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2022 Intel Corporation. All Rights Reserved.
 
-#include <iostream>
-
 #include "dds-device-server.h"
+
 #include "dds-participant.h"
 #include "dds-utilities.h"
 
@@ -14,6 +13,8 @@
 #include <fastdds/dds/publisher/qos/PublisherQos.hpp>
 #include <librealsense2/dds/topics/dds-topics.h>
 #include <librealsense2/utilities/concurrency/concurrency.h>
+
+#include <iostream>
 
 using namespace eprosima::fastdds::dds;
 using namespace librealsense::dds;

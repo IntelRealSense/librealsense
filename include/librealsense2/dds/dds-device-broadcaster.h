@@ -3,13 +3,14 @@
 
 #pragma once
 
+#include <librealsense2/dds/topics/device-info/device-info-msg.h>
+
 #include <unordered_map>
 #include <vector>
 #include <atomic>
 #include <mutex>
 #include <condition_variable>
 
-#include <librealsense2/rs.hpp>  // Include RealSense Cross Platform API
 #include <librealsense2/utilities/concurrency/concurrency.h>
 
 // Forward declare FastDDS types
@@ -28,30 +29,29 @@ class TypeSupport;
 
 namespace librealsense {
 namespace dds {
-namespace topics {
-namespace raw {
-class device_info;
-}  // namespace raw
-class device_info;
-}  // namespace topics
 
 
 class dds_participant;
 
+
+// We're responsible for broadcasting each device on realsense/device-info
+//
 class dds_device_broadcaster
 {
 public:
+    using device_info = librealsense::dds::topics::device_info;
+
     dds_device_broadcaster( librealsense::dds::dds_participant & participant );
     ~dds_device_broadcaster();
 
     // Start listening for device changes
     bool run();
 
-    // Create a new data writer for a new connected device and return its topic root
-    std::string add_device( rs2::device dev );
+    // Broadcast a device addition
+    void add_device( device_info const & dev_info );
 
-    // Destroy the removed device data writer
-    void remove_device( rs2::device dev );
+    // Broadcast that a device was removed and is no longer available
+    void remove_device( device_info const & dev_info );
 
 private:
 
@@ -59,7 +59,7 @@ private:
 
     struct dds_device_handle
     {
-        rs2::device device;
+        device_info info;
         eprosima::fastdds::dds::DataWriter * data_writer;
         std::shared_ptr< dds_client_listener > listener;
     };
@@ -75,19 +75,17 @@ private:
 
     void handle_device_changes(
         const std::vector< std::string > & devices_to_remove,
-        const std::vector< std::pair< std::string, rs2::device > > & devices_to_add );
+        const std::vector< device_info > & devices_to_add );
 
 
-    void remove_dds_device( const std::string & device_key );
-    bool add_dds_device( const std::string & device_key, const rs2::device & rs2_dev );
-    bool create_device_writer( const std::string & device_key, rs2::device rs2_device );
+    void remove_dds_device( const std::string & serial_number );
+    bool add_dds_device( const device_info & dev_info );
+    bool create_device_writer( device_info const & dev_info );
     void create_broadcast_topic();
-    bool send_device_info_msg( const librealsense::dds::topics::device_info & dev_info );
-    void fill_device_msg( const librealsense::dds::topics::device_info & dev_info,
+    bool send_device_info_msg( const dds_device_handle & handle );
+    void fill_device_msg( const device_info & dev_info,
                           librealsense::dds::topics::raw::device_info & msg ) const;
-    librealsense::dds::topics::device_info query_device_info( const rs2::device & rs2_dev ) const;
 
-    std::string get_topic_root( const std::string& dev_name, const std::string& dev_sn ) const;
     std::atomic_bool _trigger_msg_send;
     eprosima::fastdds::dds::DomainParticipant * _participant;
     eprosima::fastdds::dds::Publisher * _publisher;
@@ -99,5 +97,7 @@ private:
     std::mutex _new_client_mutex;
     std::atomic_bool _active = { false };
 };  // class dds_device_broadcaster
+
+
 }  // namespace dds
 }  // namespace librealsense

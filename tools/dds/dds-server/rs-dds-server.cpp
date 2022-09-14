@@ -10,6 +10,7 @@
 #include <librealsense2/dds/dds-device-server.h>
 #include <librealsense2/dds/dds-participant.h>
 #include <librealsense2/dds/topics/notification/notification-msg.h>
+#include <librealsense2/dds/topics/device-info/device-info-msg.h>
 #include <fastrtps/types/TypesBase.h>
 #include <fastdds/dds/log/Log.hpp>
 
@@ -272,6 +273,36 @@ void init_dds_device( rs2::device dev, std::shared_ptr<librealsense::dds::dds_de
     add_init_profiles_msgs( dev, server );
 }
 
+
+std::string get_topic_root( librealsense::dds::topics::device_info const & dev_info )
+{
+    // Build device root path (we use a device model only name like DXXX)
+    // example: /realsense/D435/11223344
+    constexpr char const * DEVICE_NAME_PREFIX = "Intel RealSense ";
+    constexpr size_t DEVICE_NAME_PREFIX_CCH = 16;
+    // We don't need the prefix in the path
+    std::string model_name = dev_info.name;
+    if( model_name.length() > DEVICE_NAME_PREFIX_CCH  &&  0 == strncmp( model_name.data(), DEVICE_NAME_PREFIX, DEVICE_NAME_PREFIX_CCH ))
+        model_name.erase( 0, DEVICE_NAME_PREFIX_CCH );
+    constexpr char const * RS_ROOT = "realsense/";
+    return RS_ROOT + model_name + '/' + dev_info.serial;
+}
+
+
+librealsense::dds::topics::device_info rs2_device_to_info( rs2::device const & dev )
+{
+    librealsense::dds::topics::device_info dev_info;
+    dev_info.name = dev.get_info( RS2_CAMERA_INFO_NAME );
+    dev_info.serial = dev.get_info( RS2_CAMERA_INFO_SERIAL_NUMBER );
+    dev_info.product_line = dev.get_info( RS2_CAMERA_INFO_PRODUCT_LINE );
+    dev_info.locked = ( dev.get_info( RS2_CAMERA_INFO_CAMERA_LOCKED ) == "YES" );
+
+    // Build device topic root path
+    dev_info.topic_root = get_topic_root( dev_info );
+    return dev_info;
+}
+
+
 struct log_consumer : eprosima::fastdds::dds::LogConsumer
 {
     virtual void Consume( const eprosima::fastdds::dds::Log::Entry & e ) override
@@ -348,7 +379,13 @@ try
         return EXIT_FAILURE;
     }
 
-    std::map<rs2::device, std::pair<std::shared_ptr<librealsense::dds::dds_device_server>, std::shared_ptr<tools::lrs_device_controller>>> device_handlers_list;
+    struct device_handler
+    {
+        librealsense::dds::topics::device_info info;
+        std::shared_ptr< librealsense::dds::dds_device_server > server;
+        std::shared_ptr< tools::lrs_device_controller > controller;
+    };
+    std::map< rs2::device, device_handler > device_handlers_list;
     
     std::cout << "Start listening to RS devices.." << std::endl;
 
@@ -363,8 +400,10 @@ try
         // Handle a device connection
         [&]( rs2::device dev ) {
 
+            auto dev_info = rs2_device_to_info( dev );
+
             // Broadcast the new connected device to all listeners
-            auto dev_topic_root = broadcaster.add_device( dev );
+            broadcaster.add_device( dev_info );
 
             // Create a supported streams list for initializing the relevant DDS topics
             std::vector<std::string> supported_streams_names_vec = get_supported_streams( dev );
@@ -372,7 +411,7 @@ try
             // Create a dds-device-server for this device
             std::shared_ptr< librealsense::dds::dds_device_server > dds_device_server
                 = std::make_shared< librealsense::dds::dds_device_server >( participant,
-                                                                            dev_topic_root );
+                                                                            dev_info.topic_root );
             // Initialize the DDS device server with the supported streams
             dds_device_server->init( supported_streams_names_vec );
 
@@ -381,8 +420,7 @@ try
                 = std::make_shared< tools::lrs_device_controller >( dev );
 
             // Keep a pair of device controller and server per RS device
-            device_handlers_list.insert(
-                { dev, { dds_device_server, lrs_device_controller } } );
+            device_handlers_list.emplace( dev, device_handler{ dev_info, dds_device_server, lrs_device_controller } );
 
             // We add initialization messages to be sent to a new reader (sensors & profiles info).
             init_dds_device( dev, dds_device_server );
@@ -401,13 +439,13 @@ try
         // Handle a device disconnection
         [&]( rs2::device dev ) {
             // Remove the dds-server for this device
-            auto & lrs_dev_manager = device_handlers_list.at( dev ).second;
+            auto const & handler = device_handlers_list.at( dev );
 
-            lrs_dev_manager->stop_all_streams();
+            handler.controller->stop_all_streams();
             device_handlers_list.erase( dev );
 
             // Remove this device from the DDS device broadcaster
-            broadcaster.remove_device( dev );
+            broadcaster.remove_device( handler.info );
         } );
 
     std::cin.ignore(std::numeric_limits<std::streamsize>::max(), 0);// Pend until CTRL + C is pressed 
