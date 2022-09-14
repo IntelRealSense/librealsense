@@ -64,6 +64,8 @@ The scripts and commands below invoke `wget, git, add-apt-repository` which may 
     *`./scripts/setup_udev_rules.sh --uninstall`*
 
   4. Build and apply patched kernel modules for: <br />
+   * **Ubuntu 20/22 (focal/jammy) with LTS kernel 5.13, 5.15 **<br />
+      `./scripts/patch-realsense-ubuntu-lts-hwe.sh`<br />
    * **Ubuntu 14/16/18/20 with LTS kernel**<br />
       `./scripts/patch-realsense-ubuntu-lts.sh`<br />
    * **Ubuntu with Kernel 4.16**<br />
