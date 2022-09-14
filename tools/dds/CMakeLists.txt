@@ -3,3 +3,7 @@
 
 add_subdirectory(dds-sniffer)
 add_subdirectory(dds-server)
+
+if (BUILD_PYTHON_BINDINGS)
+    add_subdirectory(py-dds-server)
+endif()

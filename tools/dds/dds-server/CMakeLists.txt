@@ -18,7 +18,7 @@ set(UTILITIES
 add_executable(${PROJECT_NAME} ${TOOL_FILES} ${UTILITIES} ${ELPP_SOURCES})
 set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 11)
 include_directories(${REPO_ROOT}/third-party/tclap/include ${ELPP_INCLUDES} ${CMAKE_BINARY_DIR} )
-target_link_libraries(${PROJECT_NAME} ${DEPENDENCIES})
+target_link_libraries(${PROJECT_NAME} PRIVATE ${DEPENDENCIES})
 set_target_properties (${PROJECT_NAME} PROPERTIES FOLDER Tools/dds)
 
 include("${REPO_ROOT}/include/librealsense2/dds/dds-server.cmake")
