@@ -64,17 +64,17 @@ set_target_properties( ${PROJECT_NAME}
     )
 
 target_include_directories( ${PROJECT_NAME} PRIVATE ${REPO_ROOT}/include )
-#include("${REPO_ROOT}/include/librealsense2/dds/dds-server.cmake")
-set(DDS_SERVER_FILES 
-    "${REPO_ROOT}/include/librealsense2/dds/dds-defines.h"
-    "${REPO_ROOT}/include/librealsense2/dds/dds-participant.h"
-    "${REPO_ROOT}/include/librealsense2/dds/dds-participant.cpp"
+include("${REPO_ROOT}/include/librealsense2/dds/dds-server.cmake")
+#set(DDS_SERVER_FILES 
+#    "${REPO_ROOT}/include/librealsense2/dds/dds-defines.h"
+#    "${REPO_ROOT}/include/librealsense2/dds/dds-participant.h"
+#    "${REPO_ROOT}/include/librealsense2/dds/dds-participant.cpp"
 #    "${REPO_ROOT}/include/librealsense2/dds/dds-device-broadcaster.h"
 #    "${REPO_ROOT}/include/librealsense2/dds/dds-device-broadcaster.cpp"
-#    "${CMAKE_CURRENT_LIST_DIR}/dds-device-server.h"
-#    "${CMAKE_CURRENT_LIST_DIR}/dds-device-server.cpp"
-    "${REPO_ROOT}/include/librealsense2/dds/dds-utilities.h"
-)
+#    "${REPO_ROOT}/include/librealsense2/dds/dds-device-server.h"
+#    "${REPO_ROOT}/include/librealsense2/dds/dds-device-server.cpp"
+#    "${REPO_ROOT}/include/librealsense2/dds/dds-utilities.h"
+#)
 
 source_group( "DDS" FILES ${DDS_SERVER_FILES} )
 # NOTE: this requires that your "project(...)" statement match the executable

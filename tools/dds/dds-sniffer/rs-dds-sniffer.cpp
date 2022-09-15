@@ -26,7 +26,12 @@ using namespace TCLAP;
 using namespace eprosima::fastdds::dds;
 using namespace eprosima::fastrtps::types;
 
-// FastDDS GUID_t - 4 MSB bytes host, 4 bytes process, 4 bytes participant, 4 bytes entity ID (reader/writer)
+// FastDDS GUID_t: (MSB first, little-endian; see GuidUtils.hpp)
+//     2 bytes  -  vendor ID
+//     2 bytes  -  host
+//     4 bytes  -  process (2 pid, 2 random)
+//     4 bytes  -  participant
+//     4 bytes  -  entity ID (reader/writer)
 // For example:
 //  Participant 1                 - 01.0f.be.05.f0.09.86.b6.01.00.00.00|0.0.1.c1
 //  Writer under participant 1    - 01.0f.be.05.f0.09.86.b6.01.00.00.00|0.0.1.2
@@ -59,6 +64,41 @@ struct log_consumer : eprosima::fastdds::dds::LogConsumer
 };
 
 
+static eprosima::fastrtps::rtps::GuidPrefix_t std_prefix;
+std::string print( const librealsense::dds::dds_guid & guid, bool shorten = true )
+{
+    std::ostringstream output;
+    if( guid != eprosima::fastrtps::rtps::c_Guid_Unknown )
+    {
+        output << std::hex;
+        char old_fill = output.fill( '0' );
+        size_t i = 0;
+        if( shorten )
+        {
+            while( i < std_prefix.size && guid.guidPrefix.value[i] == std_prefix.value[i] )
+                ++i;
+        }
+        if( i < std_prefix.size )
+        {
+            for( ; i < std_prefix.size; ++i )
+                output << std::setw( 2 ) << +guid.guidPrefix.value[i];  // << ".";
+
+            output << '|';  // between prefix and entity
+        }
+        for( uint8_t i = 0; i < guid.entityId.size; ++i )
+            output << std::setw( 2 ) << +guid.entityId.value[i];
+
+        output.fill( old_fill );
+        output << std::dec;
+    }
+    else
+    {
+        output << "|GUID UNKNOWN|";
+    }
+    return output.str();
+}
+
+
 int main( int argc, char ** argv ) try
 {
     librealsense::dds::dds_domain_id domain = 0;
@@ -81,6 +121,16 @@ int main( int argc, char ** argv ) try
     std::unique_ptr< eprosima::fastdds::dds::LogConsumer > consumer( new log_consumer() );
     eprosima::fastdds::dds::Log::ClearConsumers();
     eprosima::fastdds::dds::Log::RegisterConsumer( std::move( consumer ) );
+
+#ifdef BUILD_SHARED_LIBS
+    // Configure the same logger as librealsense, and default to only errors by default...
+    el::Configurations defaultConf;
+    defaultConf.setToDefault();
+    defaultConf.setGlobally( el::ConfigurationType::ToStandardOutput, "false" );
+    defaultConf.set( el::Level::Error, el::ConfigurationType::ToStandardOutput, "true" );
+    defaultConf.setGlobally( el::ConfigurationType::Format, "-%levshort- %datetime{%H:%m:%s.%g} %msg (%fbase:%line [%thread])" );
+    el::Loggers::reconfigureLogger( "librealsense", defaultConf );
+#endif
 
     if( debug_arg.isSet() )
     {
@@ -110,6 +160,7 @@ int main( int argc, char ** argv ) try
     dds_sniffer snif;
     if( snif.init( domain, snapshot_arg.isSet(), machine_readable_arg.isSet(), topic_samples_arg.isSet() ) )
     {
+        std_prefix = snif.get_participant().guid().guidPrefix;
         snif.run( seconds );
     }
     else
@@ -197,14 +248,12 @@ bool dds_sniffer::init( librealsense::dds::dds_domain_id domain,
 
     if( ! _print_machine_readable )
     {
+        std::cout << "rs-dds-sniffer (" << print( _participant.guid(), false ) << ") ";
         if( snapshot )
-        {
-            std::cout << "rs-dds-sniffer taking a snapshot of domain " << domain << std::endl;
-        }
+            std::cout << "taking a snapshot of ";
         else
-        {
-            std::cout << "rs-dds-sniffer listening on domain " << domain << std::endl;
-        }
+            std::cout << "listening on ";
+        std::cout << "domain " << domain << std::endl;
     }
 
     return _participant.is_valid();
@@ -304,7 +353,7 @@ void dds_sniffer::on_type_discovery( char const * topic_name, DynamicType_ptr dy
         // Register type with participant
         TypeSupport type_support( DDS_API_CALL( new DynamicPubSubType( dyn_type ) ) );
         DDS_API_CALL( type_support.register_type( _participant.get() ) );
-        std::cout << "Discovered topic " << topic_name << " of type: " << type_support->getName() << std::endl;
+        std::cout << "Discovered topic '" << topic_name << "' of type '" << type_support->getName() << "'" << std::endl;
 
         if( _print_topic_samples )
         {
@@ -458,11 +507,11 @@ void dds_sniffer::print_writer_discovered( librealsense::dds::dds_guid guid,
 {
     if( _print_machine_readable )
     {
-        std::cout << "DataWriter," << guid << "," << topic_name << ( discovered ? ",discovered" : ",removed" ) << std::endl;
+        std::cout << "DataWriter," << print(guid) << "," << topic_name << ( discovered ? ",discovered" : ",removed" ) << std::endl;
     }
     else
     {
-        std::cout << "DataWriter  " << guid << " publishing topic '" << topic_name
+        std::cout << "DataWriter " << print(guid) << " publishing topic '" << topic_name
                   << ( discovered ? "' discovered" : "' removed" ) << std::endl;
     }
 }
@@ -473,11 +522,11 @@ void dds_sniffer::print_reader_discovered( librealsense::dds::dds_guid guid,
 {
     if( _print_machine_readable )
     {
-        std::cout << "DataReader," << guid << "," << topic_name << ( discovered ? ",discovered" : ",removed" ) << std::endl;
+        std::cout << "DataReader," << print(guid) << "," << topic_name << ( discovered ? ",discovered" : ",removed" ) << std::endl;
     }
     else
     {
-        std::cout << "DataReader  " << guid << " reading topic '" << topic_name
+        std::cout << "DataReader " << print(guid) << " reading topic '" << topic_name
                   << ( discovered ? "' discovered" : "' removed" ) << std::endl;
     }
 }
@@ -488,15 +537,17 @@ void dds_sniffer::print_participant_discovered( librealsense::dds::dds_guid guid
 {
     if( _print_machine_readable )
     {
-        std::cout << "Participant," << guid << "," << participant_name << ( discovered ? ",discovered" : ",removed" )
+        std::cout << "Participant," << print(guid) << "," << participant_name << ( discovered ? ",discovered" : ",removed" )
                   << std::endl;
     }
     else
     {
-        uint16_t tmp( 0 );
-        memcpy( &tmp, &guid.guidPrefix.value[GUID_PROCESS_LOCATION], sizeof( tmp ) );
-        std::cout << "Participant " << guid << " " << participant_name << "_" << std::hex << tmp << std::dec
-                  << ( discovered ? " discovered" : " removed" ) << std::endl;
+        //prefix_.value[4] = static_cast<octet>( pid & 0xFF );
+        //prefix_.value[5] = static_cast<octet>( ( pid >> 8 ) & 0xFF );
+        uint16_t pid
+            = guid.guidPrefix.value[GUID_PROCESS_LOCATION] + ( guid.guidPrefix.value[GUID_PROCESS_LOCATION + 1] << 8 );
+        std::cout << "Participant " << print(guid) << " '" << participant_name << "' (" << std::hex << pid << std::dec
+                  << ") " << ( discovered ? " discovered" : " removed" ) << std::endl;
     }
 }
 

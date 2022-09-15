@@ -150,6 +150,12 @@ dds_participant::~dds_participant()
 }
 
 
+dds_guid const & dds_participant::guid() const
+{
+    return get()->guid();
+}
+
+
 void dds_participant::on_writer_added( dds_guid guid, char const * topic_name )
 {
     for( auto wl : _listeners )

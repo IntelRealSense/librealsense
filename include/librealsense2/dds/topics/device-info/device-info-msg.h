@@ -3,11 +3,16 @@
 
 #pragma once
 #include <string>
-#include "deviceInfoPubSubTypes.h"
 
 namespace librealsense {
 namespace dds {
 namespace topics {
+namespace raw {
+class device_infoPubSubType;
+class device_info;
+}
+
+
 class device_info
 {
 public:
@@ -15,15 +20,7 @@ public:
     static constexpr char const * TOPIC_NAME = "realsense/device-info";
 
     device_info() = default;
-
-    device_info( const raw::device_info & dev )
-        : name( dev.name().data() )
-        , serial( dev.serial_number().data() )
-        , product_line( dev.product_line().data() )
-        , topic_root( dev.topic_root().data() )
-        , locked( dev.locked() )
-    {
-    }
+    device_info( const raw::device_info & );
 
     std::string name;
     std::string serial;
@@ -31,6 +28,7 @@ public:
     std::string topic_root;
     bool locked = false;
 };
+
 
 }  // namespace topics
 }  // namespace dds

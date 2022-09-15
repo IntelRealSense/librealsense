@@ -1,9 +1,8 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2022 Intel Corporation. All Rights Reserved.
 
-#include <iostream>
-
 #include "dds-device-broadcaster.h"
+
 #include "dds-participant.h"
 #include "dds-utilities.h"
 
@@ -16,10 +15,10 @@
 #include <fastdds/dds/topic/TypeSupport.hpp>
 #include <fastdds/dds/publisher/qos/PublisherQos.hpp>
 #include <fastdds/rtps/participant/ParticipantDiscoveryInfo.h>
-#include <librealsense2/dds/topics/dds-topics.h>
+#include <librealsense2/dds/topics/device-info/device-info-msg.h>
+#include <librealsense2/dds/topics/device-info/deviceInfoPubSubTypes.h>
 
-#define RS_ROOT "realsense/"
-#define DEVICE_NAME_PREFIX "Intel RealSense "
+#include <iostream>
 
 using namespace eprosima::fastdds::dds;
 using namespace librealsense::dds;
@@ -86,12 +85,11 @@ dds_device_broadcaster::dds_device_broadcaster( dds_participant & participant )
             {
                 _trigger_msg_send = false;
                 _dds_device_dispatcher.invoke( [this]( dispatcher::cancellable_timer ) {
-                    for( auto sn_and_handle : _device_handle_by_sn )
+                    for( auto const & sn_and_handle : _device_handle_by_sn )
                     {
                         if( sn_and_handle.second.listener->_new_reader_joined )
                         {
-                            auto dev_info = query_device_info( sn_and_handle.second.device );
-                            if( send_device_info_msg( dev_info ) )
+                            if( send_device_info_msg( sn_and_handle.second ) )
                             {
                                 sn_and_handle.second.listener->_new_reader_joined = false;
                             }
@@ -102,15 +100,14 @@ dds_device_broadcaster::dds_device_broadcaster( dds_participant & participant )
         }
     } )
 {
+    if( ! _participant )
+        throw std::runtime_error( "dds_device_broadcaster called with a null participant" );
 }
 
 bool dds_device_broadcaster::run()
 {
-    if( ! _participant )
-    {
-        LOG_ERROR( "Error - Participant is not valid" );
-        return false;
-    }
+    if( _active )
+        throw std::runtime_error( "dds_device_broadcaster::run() called when already-active" );
 
     create_broadcast_topic();
 
@@ -120,49 +117,42 @@ bool dds_device_broadcaster::run()
     return true;
 }
 
-std::string dds_device_broadcaster::add_device( rs2::device dev )
+void dds_device_broadcaster::add_device( device_info const & dev_info )
 {
-    auto device_serial = dev.get_info( RS2_CAMERA_INFO_SERIAL_NUMBER );
-    std::vector< std::pair< std::string, rs2::device > > devices_to_add;
-    devices_to_add.push_back( { device_serial, dev } );
-
+    if( ! _active )
+        throw std::runtime_error( "dds_device_broadcaster::add_device called before run()" );
     // Post the connected device
-    handle_device_changes( {}, devices_to_add );
-
-    return get_topic_root( dev.get_info( RS2_CAMERA_INFO_NAME ), dev.get_info( RS2_CAMERA_INFO_SERIAL_NUMBER ) );
+    handle_device_changes( {}, { dev_info } );
 }
 
-void dds_device_broadcaster::remove_device( rs2::device dev )
+void dds_device_broadcaster::remove_device( device_info const & dev_info )
 {
-    auto device_serial = dev.get_info( RS2_CAMERA_INFO_SERIAL_NUMBER );
-    std::vector< std::string > devices_to_remove;
-    devices_to_remove.push_back( device_serial );
-
+    if( ! _active )
+        throw std::runtime_error( "dds_device_broadcaster::remove_device called before run()" );
     // Post the disconnected device
-    handle_device_changes( devices_to_remove, {} );
+    handle_device_changes( { dev_info.serial }, {} );
 }
 
 void dds_device_broadcaster::handle_device_changes(
     const std::vector< std::string > & devices_to_remove,
-    const std::vector< std::pair< std::string, rs2::device > > & devices_to_add )
+    const std::vector< device_info > & devices_to_add )
 {
     _dds_device_dispatcher.invoke( [this, devices_to_add, devices_to_remove]( dispatcher::cancellable_timer ) {
         try
         {
-            for( auto dev_to_remove : devices_to_remove )
+            for( auto const & dev_to_remove : devices_to_remove )
             {
                 remove_dds_device( dev_to_remove );
             }
 
-            for( auto dev_to_add : devices_to_add )
+            for( auto const & dev_to_add : devices_to_add )
             {
-                if( ! add_dds_device( dev_to_add.first, dev_to_add.second ) )
+                if( ! add_dds_device( dev_to_add ) )
                 {
                     LOG_ERROR( "Error creating a DDS writer" );
                 }
             }
         }
-
         catch( ... )
         {
             LOG_ERROR( "Unknown error when trying to remove/add a DDS device" );
@@ -170,24 +160,32 @@ void dds_device_broadcaster::handle_device_changes(
     } );
 }
 
-void dds_device_broadcaster::remove_dds_device( const std::string & device_key )
+void dds_device_broadcaster::remove_dds_device( const std::string & serial_number )
 {
+    auto it = _device_handle_by_sn.find( serial_number );
+    if( it == _device_handle_by_sn.end() )
+    {
+        LOG_ERROR( "failed to remove non-existing device by serial number " << serial_number );
+        return;
+    }
+    auto const & handle = it->second;
+
     // deleting a device also notify the clients internally
-    auto ret = _publisher->delete_datawriter( _device_handle_by_sn[device_key].data_writer );
+    auto ret = _publisher->delete_datawriter( handle.data_writer );
     if( ret != ReturnCode_t::RETCODE_OK )
     {
         LOG_ERROR( "Error code: " << ret() << " while trying to delete data writer ("
-                                  << _device_handle_by_sn[device_key].data_writer->guid() << ")" );
+                                  << handle.data_writer->guid() << ")" );
         return;
     }
-    _device_handle_by_sn.erase( device_key );
+    _device_handle_by_sn.erase( it );
 }
 
-bool dds_device_broadcaster::add_dds_device( const std::string & device_key, const rs2::device & rs2_dev )
+bool dds_device_broadcaster::add_dds_device( const device_info & dev_info )
 {
-    if( _device_handle_by_sn.find( device_key ) == _device_handle_by_sn.end() )
+    if( _device_handle_by_sn.find( dev_info.serial ) == _device_handle_by_sn.end() )
     {
-        if( ! create_device_writer( device_key, rs2_dev ) )
+        if( ! create_device_writer( dev_info ) )
         {
             return false;
         }
@@ -196,7 +194,7 @@ bool dds_device_broadcaster::add_dds_device( const std::string & device_key, con
     return true;
 }
 
-bool dds_device_broadcaster::create_device_writer( const std::string & device_key, rs2::device rs2_device )
+bool dds_device_broadcaster::create_device_writer( const device_info & dev_info )
 {
     // Create a data writer for the topic
     DataWriterQos wqos = DATAWRITER_QOS_DEFAULT;
@@ -224,11 +222,14 @@ bool dds_device_broadcaster::create_device_writer( const std::string & device_ke
 
     std::shared_ptr< dds_client_listener > writer_listener = std::make_shared< dds_client_listener >( this );
 
-    _device_handle_by_sn[device_key] = { rs2_device,
-                                         _publisher->create_datawriter( _topic, wqos, writer_listener.get() ),
-                                         writer_listener };
+    auto it_inserted = _device_handle_by_sn.emplace(
+        dev_info.serial,
+        dds_device_handle{ dev_info,
+                           _publisher->create_datawriter( _topic, wqos, writer_listener.get() ),
+                           writer_listener } );
+    assert( it_inserted.second );
 
-    return _device_handle_by_sn[device_key].data_writer != nullptr;
+    return it_inserted.first->second.data_writer != nullptr;  // TODO: if it can be null, should we insert??
 }
 
 void dds_device_broadcaster::create_broadcast_topic()
@@ -251,39 +252,26 @@ void dds_device_broadcaster::create_broadcast_topic()
     librealsense::dds::topics::raw::device_info raw_msg;
 }
 
-bool dds_device_broadcaster::send_device_info_msg( const librealsense::dds::topics::device_info & dev_info )
+bool dds_device_broadcaster::send_device_info_msg( const dds_device_handle & handle )
 {
     // Publish the device info, but only after a matching reader is found.
     librealsense::dds::topics::raw::device_info raw_msg;
-    fill_device_msg( dev_info, raw_msg );
+    fill_device_msg( handle.info, raw_msg );
 
     // Post a DDS message with the new added device
-    if( _device_handle_by_sn[dev_info.serial].data_writer->write( &raw_msg ) )
+    if( handle.data_writer->write( &raw_msg ) )
     {
         LOG_DEBUG( "DDS device message sent!" );
         return true;
     }
     else
     {
-        LOG_ERROR( "Error writing new device message for device : " << dev_info.serial );
+        LOG_ERROR( "Error writing new device message for device : " << handle.info.serial );
     }
     return false;
 }
 
-librealsense::dds::topics::device_info dds_device_broadcaster::query_device_info( const rs2::device & rs2_dev ) const
-{
-    librealsense::dds::topics::device_info dev_info;
-    dev_info.name = rs2_dev.get_info( RS2_CAMERA_INFO_NAME );
-    dev_info.serial = rs2_dev.get_info( RS2_CAMERA_INFO_SERIAL_NUMBER );
-    dev_info.product_line = rs2_dev.get_info( RS2_CAMERA_INFO_PRODUCT_LINE );
-    dev_info.locked = ( rs2_dev.get_info( RS2_CAMERA_INFO_CAMERA_LOCKED ) == "YES" );
-
-    // Build device topic root path
-    dev_info.topic_root = get_topic_root( dev_info.name, dev_info.serial );
-    return dev_info;
-}
-
-void dds_device_broadcaster::fill_device_msg( const librealsense::dds::topics::device_info & dev_info,
+void dds_device_broadcaster::fill_device_msg( const device_info & dev_info,
                                               librealsense::dds::topics::raw::device_info & msg ) const
 {
     strcpy( msg.name().data(), dev_info.name.c_str() );
@@ -291,15 +279,6 @@ void dds_device_broadcaster::fill_device_msg( const librealsense::dds::topics::d
     strcpy( msg.product_line().data(), dev_info.product_line.c_str() );
     strcpy( msg.topic_root().data(), dev_info.topic_root.c_str() );
     msg.locked() = dev_info.locked;
-}
-
-std::string dds_device_broadcaster::get_topic_root( const std::string & dev_name, const std::string & dev_sn ) const
-{
-    // Build device root path (we use a device model only name like DXXX)
-    // example: /realsense/D435/11223344
-    std::string rs_device_name_prefix = DEVICE_NAME_PREFIX;
-    std::string model_name = dev_name.substr( rs_device_name_prefix.length() );
-    return RS_ROOT + model_name + "/" + dev_sn;
 }
 
 dds_device_broadcaster::~dds_device_broadcaster()
@@ -311,11 +290,12 @@ dds_device_broadcaster::~dds_device_broadcaster()
     _dds_device_dispatcher.stop();
     _new_client_handler.stop();
 
-    for( auto sn_and_handle : _device_handle_by_sn )
+    for( auto const & sn_and_handle : _device_handle_by_sn )
     {
-        auto & dev_writer = sn_and_handle.second.data_writer;
+        auto dev_writer = sn_and_handle.second.data_writer;
         if( dev_writer )
         {
+            // TODO why not put this in dtor for handle?
             DDS_API_CALL_NO_THROW( _publisher->delete_datawriter( dev_writer ) );
         }
     }

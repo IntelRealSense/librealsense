@@ -24,6 +24,8 @@ public:
                bool topic_samples = false );
     void run( uint32_t seconds );
 
+    librealsense::dds::dds_participant const & get_participant() const { return _participant; }
+
 private:
     std::shared_ptr< librealsense::dds::dds_participant::listener > _listener;
     librealsense::dds::dds_participant _participant;

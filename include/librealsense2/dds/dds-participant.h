@@ -38,6 +38,8 @@ public:
     eprosima::fastdds::dds::DomainParticipant * get() const { return _participant; }
     eprosima::fastdds::dds::DomainParticipant * operator->() const { return get(); }
 
+    dds_guid const & guid() const;
+
     class listener
     {
         friend class dds_participant;

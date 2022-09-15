@@ -4,8 +4,9 @@
 #pragma once
 
 #include <unordered_map>
-#include <librealsense2/rs.hpp>  // Include RealSense Cross Platform API
-#include <librealsense2/utilities/easylogging/easyloggingpp.h>
+#include <vector>
+#include <memory>
+#include <string>
 
 // Forward declaration
 namespace eprosima {
@@ -47,6 +48,7 @@ class dds_participant;
 //         ...
 // The device server is meant to manage multiple streams and be able to publish frames to them, while
 // also receive instructions (controls) from a client and generate callbacks to the user.
+//
 class dds_device_server
 {
 public:
@@ -84,5 +86,7 @@ private:
     std::unordered_map<std::string, std::shared_ptr<dds_stream_server>> _stream_name_to_server;
     std::shared_ptr<dds_notifications_server> _dds_notifications_server;
 };  // class dds_device_server
+
+
 }  // namespace dds
 }  // namespace librealsense

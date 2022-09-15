@@ -4,8 +4,10 @@ Copyright(c) 2022 Intel Corporation. All Rights Reserved. */
 #include "python.hpp"
 
 #include <librealsense2/dds/dds-participant.h>
+#include <librealsense2/dds/topics/dds-topics.h>
+#include <librealsense2/dds/dds-device-broadcaster.h>
+
 #include <librealsense2/utilities/easylogging/easyloggingpp.h>
-//#include <librealsense2/rs.h>
 #include <fastdds/dds/log/Log.hpp>
 #include <fastdds/dds/domain/qos/DomainParticipantQos.hpp>
 #include <fastdds/dds/domain/DomainParticipant.hpp>
@@ -177,8 +179,8 @@ PYBIND11_MODULE(NAME, m) {
     participant.def( py::init<>() )
         .def( "init", &dds_participant::init, "domain-id"_a, "participant-name"_a )
         .def( "is_valid", &dds_participant::is_valid )
-        .def( "__nonzero__", &dds_participant::is_valid ) // Called to implement truth value testing in Python 2
-        .def( "__bool__", &dds_participant::is_valid )    // Called to implement truth value testing in Python 3
+        .def( "__nonzero__", &dds_participant::is_valid )  // Called to implement truth value testing in Python 2
+        .def( "__bool__", &dds_participant::is_valid )     // Called to implement truth value testing in Python 3
         .def( "__repr__",
               []( const dds_participant & self ) {
                   std::ostringstream os;
@@ -195,7 +197,37 @@ PYBIND11_MODULE(NAME, m) {
                   }
                   os << ">";
                   return os.str();
-            } )
+              } )
         .def( "create_listener", []( dds_participant & self ) { return self.create_listener(); } );
 
+    using librealsense::dds::topics::device_info;
+    py::class_< device_info >( m, "device_info" )
+        .def( py::init<>() )
+        .def_readwrite( "name", &device_info::name )
+        .def_readwrite( "serial", &device_info::serial )
+        .def_readwrite( "product_line", &device_info::product_line )
+        .def_readwrite( "locked", &device_info::locked )
+        .def_readwrite( "topic_root", &device_info::topic_root )
+        .def( "__repr__", []( device_info const & self ) {
+            std::ostringstream os;
+            os << "<" SNAME ".device_info[";
+            if( ! self.name.empty() )
+                os << "\"" << self.name << "\" ";
+            if( ! self.serial.empty() )
+                os << "s/n \"" << self.serial << "\" ";
+            if( ! self.topic_root.empty() )
+                os << "topic-root \"" << self.topic_root << "\" ";
+            if( ! self.product_line.empty() )
+                os << "product-line \"" << self.product_line << "\" ";
+            os << ( self.locked ? "locked" : "unlocked" );
+            os << "]>";
+            return os.str();
+        } );
+
+    using librealsense::dds::dds_device_broadcaster;
+    py::class_< dds_device_broadcaster >( m, "device_broadcaster" )
+        .def( py::init< dds_participant & >() )
+        .def( "run", &dds_device_broadcaster::run )
+        .def( "add_device", &dds_device_broadcaster::add_device )
+        .def( "remove_device", &dds_device_broadcaster::remove_device );
 }
