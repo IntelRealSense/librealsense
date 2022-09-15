@@ -73,8 +73,11 @@ std::string print( const librealsense::dds::dds_guid & guid, bool shorten = true
         output << std::hex;
         char old_fill = output.fill( '0' );
         size_t i = 0;
-        while( i < std_prefix.size  &&  guid.guidPrefix.value[i] == std_prefix.value[i] )
-            ++i;
+        if( shorten )
+        {
+            while( i < std_prefix.size && guid.guidPrefix.value[i] == std_prefix.value[i] )
+                ++i;
+        }
         if( i < std_prefix.size )
         {
             for( ; i < std_prefix.size; ++i )
