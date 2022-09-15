@@ -3,8 +3,6 @@
 
 #pragma once
 
-#include <librealsense2/dds/topics/device-info/device-info-msg.h>
-
 #include <unordered_map>
 #include <vector>
 #include <atomic>
@@ -29,6 +27,12 @@ class TypeSupport;
 
 namespace librealsense {
 namespace dds {
+namespace topics {
+namespace raw {
+class device_info;
+}  // namespace raw
+class device_info;
+}  // namespace topics
 
 
 class dds_participant;
@@ -57,12 +61,7 @@ private:
 
     class dds_client_listener;
 
-    struct dds_device_handle
-    {
-        device_info info;
-        eprosima::fastdds::dds::DataWriter * data_writer;
-        std::shared_ptr< dds_client_listener > listener;
-    };
+    struct dds_device_handle;
 
     // handles the DDS writers pool of connected/disconnected RS devices.
     // It dispatch the DDS work to a worker thread.

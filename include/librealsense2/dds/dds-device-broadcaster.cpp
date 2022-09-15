@@ -67,6 +67,14 @@ private:
 };
 
 
+struct dds_device_broadcaster::dds_device_handle
+{
+    device_info info;
+    eprosima::fastdds::dds::DataWriter* data_writer;
+    std::shared_ptr< dds_client_listener > listener;
+};
+
+
 dds_device_broadcaster::dds_device_broadcaster( dds_participant & participant )
     : _trigger_msg_send( false )
     , _participant( participant.get() )
@@ -99,15 +107,14 @@ dds_device_broadcaster::dds_device_broadcaster( dds_participant & participant )
         }
     } )
 {
+    if( ! _participant )
+        throw std::runtime_error( "dds_device_broadcaster called with a null participant" );
 }
 
 bool dds_device_broadcaster::run()
 {
-    if( ! _participant )
-    {
-        LOG_ERROR( "Error - Participant is not valid" );
-        return false;
-    }
+    if( _active )
+        throw std::runtime_error( "dds_device_broadcaster::run() called when already-active" );
 
     create_broadcast_topic();
 
@@ -119,12 +126,16 @@ bool dds_device_broadcaster::run()
 
 void dds_device_broadcaster::add_device( device_info const & dev_info )
 {
+    if( ! _active )
+        throw std::runtime_error( "dds_device_broadcaster::add_device called before run()" );
     // Post the connected device
     handle_device_changes( {}, { dev_info } );
 }
 
 void dds_device_broadcaster::remove_device( device_info const & dev_info )
 {
+    if( ! _active )
+        throw std::runtime_error( "dds_device_broadcaster::remove_device called before run()" );
     // Post the disconnected device
     handle_device_changes( { dev_info.serial }, {} );
 }
