@@ -22,7 +22,6 @@ target_link_libraries(${PROJECT_NAME} PRIVATE ${DEPENDENCIES})
 set_target_properties (${PROJECT_NAME} PROPERTIES FOLDER Tools/dds)
 
 include("${REPO_ROOT}/include/librealsense2/dds/dds-server.cmake")
-include("${REPO_ROOT}/include/librealsense2/utilities/easylogging/easyloggingpp.cmake")
 
 install(TARGETS ${PROJECT_NAME} RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 

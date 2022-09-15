@@ -15,7 +15,6 @@ set_target_properties (${PROJECT_NAME} PROPERTIES
                        CXX_STANDARD 11)
 
 include("${REPO_ROOT}/include/librealsense2/dds/dds-client.cmake")
-include("${REPO_ROOT}/include/librealsense2/utilities/easylogging/easyloggingpp.cmake")
 
 install(TARGETS ${PROJECT_NAME} RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
