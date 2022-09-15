@@ -21,7 +21,7 @@ execute_process(COMMAND "${CMAKE_COMMAND}" --build .
  if(configure_ret OR build_ret)
         message( FATAL_ERROR "Failed to build pybind11")
  endif()
-    
+
 # Add pybind11 makefile
 add_subdirectory("${CMAKE_BINARY_DIR}/third-party/pybind11"
                  "${CMAKE_BINARY_DIR}/third-party/pybind11"
@@ -150,6 +150,7 @@ if(${BUILD_EASYLOGGINGPP})
     list(APPEND RAW_RS
         ../../third-party/easyloggingpp/src/easylogging++.h
         ../../third-party/easyloggingpp/src/easylogging++.cc
+        ${REPO_ROOT}/include/librealsense2/utilities/easylogging/shared-init.cpp
     )
 endif()
 
@@ -178,6 +179,9 @@ set_target_properties(pybackend2 PROPERTIES
                         SOVERSION   ${REALSENSE_VERSION_MAJOR})
 set_target_properties(pybackend2 PROPERTIES FOLDER Wrappers/python)
 target_include_directories(pybackend2 PRIVATE ${CMAKE_SOURCE_DIR}/include)
+if(${BUILD_EASYLOGGINGPP})
+    target_include_directories( pybackend2 PRIVATE ${REPO_ROOT}/third-party/easyloggingpp/src )
+endif()
 
 if(${FORCE_RSUSB_BACKEND})
 if(APPLE)
