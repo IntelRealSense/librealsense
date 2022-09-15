@@ -5,7 +5,8 @@
 #include "dds-device-watcher.h"
 #include <librealsense2/dds/dds-device.h>
 #include <librealsense2/dds/dds-utilities.h>
-#include <librealsense2/dds/topics/dds-topics.h>
+#include <librealsense2/dds/topics/device-info/device-info-msg.h>
+#include <librealsense2/dds/topics/device-info/deviceInfoPubSubTypes.h>
 #include <fastdds/dds/domain/DomainParticipantFactory.hpp>
 #include <fastdds/dds/domain/DomainParticipant.hpp>
 #include <fastdds/dds/subscriber/qos/DataReaderQos.hpp>
