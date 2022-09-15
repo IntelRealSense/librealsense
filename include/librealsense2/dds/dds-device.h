@@ -8,6 +8,7 @@
 
 #include <memory>
 #include <functional>
+#include <string>
 
 namespace librealsense {
 namespace dds {
@@ -16,18 +17,33 @@ namespace dds {
 namespace topics {
 class device_info;
 }  // namespace topics
+
+
 class dds_participant;
 
+
+// Represents a device via the DDS system. Such a device exists as of its identification by the device-watcher, and
+// always contains a device-info.
+// 
+// The device may not be ready for use (will not contain sensors, profiles, etc.) until it is "run".
+//
 class dds_device
 {
 public:
-    static std::shared_ptr< dds_device > find( dds::dds_guid const & guid );
+    static std::shared_ptr< dds_device > find( dds_guid const & guid );
 
-    static std::shared_ptr< dds_device > create( std::shared_ptr< dds::dds_participant > const & participant,
-                                                 dds::dds_guid const & guid,
-                                                 dds::topics::device_info const & info );
+    static std::shared_ptr< dds_device > create( std::shared_ptr< dds_participant > const & participant,
+                                                 dds_guid const & guid,
+                                                 topics::device_info const & info );
 
     topics::device_info const & device_info() const;
+
+    bool is_running() const;
+
+    // Make the device ready for use. This may take time! Better to do it in the background...
+    void run();
+
+    //----------- below this line, a device must be running!
 
     size_t num_of_sensors() const;
 

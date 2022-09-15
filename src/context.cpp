@@ -21,7 +21,7 @@
 #include "context.h"
 #include "fw-update/fw-update-factory.h"
 #ifdef BUILD_WITH_DDS
-#include "dds/dds-device-watcher.h"
+#include <librealsense2/dds/dds-device-watcher.h>
 #include <librealsense2/dds/dds-participant.h>
 #include <librealsense2/dds/dds-device.h>
 #include "software-device.h"
@@ -654,11 +654,11 @@ namespace librealsense
 #ifdef BUILD_WITH_DDS
     void context::start_dds_device_watcher()
     {
-        _dds_watcher->start(
-            [this]( platform::backend_device_group old, platform::backend_device_group curr ) {
-                // TODO Here we should add DDS devices to the `on_device_changed`parameters
-                // on_device_changed(old, curr, _playback_devices, _playback_devices);
-            } );
+        // TODO Here we should add DDS devices to the `on_device_changed`parameters
+        // on_device_changed(old, curr, _playback_devices, _playback_devices);
+        _dds_watcher->on_device_added( [this]( std::shared_ptr< dds::dds_device > const & dev ) { dev->run(); } );
+        _dds_watcher->on_device_removed( [this]( std::shared_ptr< dds::dds_device > const & dev ) {} );
+        _dds_watcher->start();
     }
 #endif
 

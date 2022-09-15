@@ -64,25 +64,14 @@ set_target_properties( ${PROJECT_NAME}
     )
 
 target_include_directories( ${PROJECT_NAME} PRIVATE ${REPO_ROOT}/include )
-include("${REPO_ROOT}/include/librealsense2/dds/dds-server.cmake")
-#set(DDS_SERVER_FILES 
-#    "${REPO_ROOT}/include/librealsense2/dds/dds-defines.h"
-#    "${REPO_ROOT}/include/librealsense2/dds/dds-participant.h"
-#    "${REPO_ROOT}/include/librealsense2/dds/dds-participant.cpp"
-#    "${REPO_ROOT}/include/librealsense2/dds/dds-device-broadcaster.h"
-#    "${REPO_ROOT}/include/librealsense2/dds/dds-device-broadcaster.cpp"
-#    "${REPO_ROOT}/include/librealsense2/dds/dds-device-server.h"
-#    "${REPO_ROOT}/include/librealsense2/dds/dds-device-server.cpp"
-#    "${REPO_ROOT}/include/librealsense2/dds/dds-utilities.h"
-#)
 
-source_group( "DDS" FILES ${DDS_SERVER_FILES} )
+#set( DDS_SERVER_FILES 
+#    )
+#source_group( "DDS" FILES ${DDS_SERVER_FILES} )
+
 # NOTE: this requires that your "project(...)" statement match the executable
 target_link_libraries( ${PROJECT_NAME} PRIVATE dds )
 target_sources( ${PROJECT_NAME} PRIVATE ${DDS_SERVER_FILES} )
 
-include("${REPO_ROOT}/include/librealsense2/dds/topics/dds-topics.cmake")
-
-
-include("${REPO_ROOT}/include/librealsense2/utilities/easylogging/easyloggingpp.cmake")
-include("${REPO_ROOT}/include/librealsense2/utilities/concurrency/CMakeLists.txt")
+include("${REPO_ROOT}/include/librealsense2/dds/dds-server.cmake")
+include("${REPO_ROOT}/include/librealsense2/dds/dds-client.cmake")
