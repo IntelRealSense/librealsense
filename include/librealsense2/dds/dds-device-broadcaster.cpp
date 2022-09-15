@@ -15,7 +15,8 @@
 #include <fastdds/dds/topic/TypeSupport.hpp>
 #include <fastdds/dds/publisher/qos/PublisherQos.hpp>
 #include <fastdds/rtps/participant/ParticipantDiscoveryInfo.h>
-#include <librealsense2/dds/topics/dds-topics.h>
+#include <librealsense2/dds/topics/device-info/device-info-msg.h>
+#include <librealsense2/dds/topics/device-info/deviceInfoPubSubTypes.h>
 
 #include <iostream>
 

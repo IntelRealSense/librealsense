@@ -3,13 +3,14 @@
 
 #pragma once
 
+#include <librealsense2/dds/topics/device-info/device-info-msg.h>
+#include <librealsense2/utilities/concurrency/concurrency.h>
+
 #include <unordered_map>
 #include <vector>
 #include <atomic>
 #include <mutex>
 #include <condition_variable>
-
-#include <librealsense2/utilities/concurrency/concurrency.h>
 
 // Forward declare FastDDS types
 namespace eprosima {
@@ -27,12 +28,6 @@ class TypeSupport;
 
 namespace librealsense {
 namespace dds {
-namespace topics {
-namespace raw {
-class device_info;
-}  // namespace raw
-class device_info;
-}  // namespace topics
 
 
 class dds_participant;
