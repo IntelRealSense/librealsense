@@ -7,6 +7,7 @@
 
 namespace librealsense {
 namespace dds {
+namespace topics {
 
 
 device_info::device_info( raw::device_info const & dev )
@@ -19,5 +20,6 @@ device_info::device_info( raw::device_info const & dev )
 }
 
 
+}  // namespace topics
 }  // namespace dds
 }  // namespace librealsense
