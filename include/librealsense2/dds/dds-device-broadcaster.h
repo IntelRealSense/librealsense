@@ -56,7 +56,12 @@ private:
 
     class dds_client_listener;
 
-    struct dds_device_handle;
+    struct dds_device_handle
+    {
+        device_info info;
+        eprosima::fastdds::dds::DataWriter * data_writer;
+        std::shared_ptr< dds_client_listener > listener;
+    };
 
     // handles the DDS writers pool of connected/disconnected RS devices.
     // It dispatch the DDS work to a worker thread.

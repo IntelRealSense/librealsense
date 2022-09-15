@@ -68,14 +68,6 @@ private:
 };
 
 
-struct dds_device_broadcaster::dds_device_handle
-{
-    device_info info;
-    eprosima::fastdds::dds::DataWriter* data_writer;
-    std::shared_ptr< dds_client_listener > listener;
-};
-
-
 dds_device_broadcaster::dds_device_broadcaster( dds_participant & participant )
     : _trigger_msg_send( false )
     , _participant( participant.get() )
