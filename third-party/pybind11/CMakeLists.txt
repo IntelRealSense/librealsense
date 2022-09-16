@@ -8,7 +8,7 @@ ExternalProject_Add(
         pybind11
         PREFIX .
         GIT_REPOSITORY "https://github.com/pybind/pybind11.git"
-        GIT_TAG "8de7772cc72daca8e947b79b83fea46214931604" # v2.6.2
+        GIT_TAG v2.9.0  # 2.10 requires VS 2017+ and Python 3.6+
         SOURCE_DIR "${CMAKE_BINARY_DIR}/third-party/pybind11"
         # Override default steps with no action, we just want the clone step.
         CONFIGURE_COMMAND ""
