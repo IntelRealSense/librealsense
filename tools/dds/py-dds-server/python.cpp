@@ -14,6 +14,11 @@ Copyright(c) 2022 Intel Corporation. All Rights Reserved. */
 #include <fastrtps/types/DynamicType.h>
 
 
+#ifndef BUILD_SHARED_LIBS  // shared-init takes care of the else
+INITIALIZE_EASYLOGGINGPP
+#endif
+
+
 namespace {
 std::string to_string( librealsense::dds::dds_guid const & guid )
 {

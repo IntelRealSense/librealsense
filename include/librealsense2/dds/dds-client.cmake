@@ -19,6 +19,9 @@ target_link_libraries( ${PROJECT_NAME} PRIVATE dds )
 target_sources( ${PROJECT_NAME} PRIVATE ${DDS_CLIENT_FILES} )
 
 include("${REPO_ROOT}/include/librealsense2/dds/topics/dds-topics.cmake")
-include("${REPO_ROOT}/include/librealsense2/utilities/easylogging/easyloggingpp.cmake")
+# We don't include the following only because of librealsense: shared-init conflicts with log.cpp's
+# INIT_EASYLOGGINGPP. Attempts to remove the latter cause problems with initialization orders and
+# import of pyrealsense2 started crashing...
+#include("${REPO_ROOT}/include/librealsense2/utilities/easylogging/easyloggingpp.cmake")
 include("${REPO_ROOT}/include/librealsense2/utilities/concurrency/CMakeLists.txt")
 

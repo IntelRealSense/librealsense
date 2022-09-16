@@ -147,6 +147,3 @@ target_sources(${LRS_TARGET}
         "${CMAKE_CURRENT_LIST_DIR}/small-heap.h"
         "${CMAKE_CURRENT_LIST_DIR}/basics.h"
 )
-
-include("${REPO_ROOT}/include/librealsense2/utilities/easylogging/easyloggingpp.cmake")
-
