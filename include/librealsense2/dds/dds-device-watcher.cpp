@@ -1,28 +1,26 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2022 Intel Corporation. All Rights Reserved.
 
-#include <types.h>
 #include "dds-device-watcher.h"
+
 #include <librealsense2/dds/dds-device.h>
 #include <librealsense2/dds/dds-utilities.h>
 #include <librealsense2/dds/topics/device-info/device-info-msg.h>
 #include <librealsense2/dds/topics/device-info/deviceInfoPubSubTypes.h>
-#include <fastdds/dds/domain/DomainParticipantFactory.hpp>
+
 #include <fastdds/dds/domain/DomainParticipant.hpp>
-#include <fastdds/dds/subscriber/qos/DataReaderQos.hpp>
 #include <fastdds/dds/subscriber/DataReader.hpp>
 #include <fastdds/dds/subscriber/Subscriber.hpp>
 
 
 using namespace eprosima::fastdds::dds;
-using namespace librealsense;
+using namespace librealsense::dds;
 
 
-dds_device_watcher::dds_device_watcher( std::shared_ptr< dds::dds_participant > participant )
+dds_device_watcher::dds_device_watcher( std::shared_ptr< dds::dds_participant > const & participant )
     : _subscriber( nullptr )
     , _topic( nullptr )
     , _reader( nullptr )
-    , _topic_type( new dds::topics::device_info::type )
     , _init_done( false )
     , _participant( participant )
     , _active_object( [this]( dispatcher::cancellable_timer timer ) {
@@ -55,15 +53,13 @@ dds_device_watcher::dds_device_watcher( std::shared_ptr< dds::dds_participant > 
                         << "\n\tLocked:" << ( device_info.locked ? "yes" : "no" ) );
 
                     // Add a new device record into our dds devices map
-                    _dds_devices[guid] = dds::dds_device::create( _participant, guid, device_info );
+                    auto device = dds::dds_device::create( _participant, guid, device_info );
+                    _dds_devices[guid] = device;
 
-                    // TODO - Call LRS callback to create the RS devices
-                    // if( callback )
-                    // {
-                    //    callback_invocation_holder callback = { _callback_inflight.allocate(),
-                    //    &_callback_inflight }; _callback( _devices_data, curr );
-                    // }
-                        
+                    // NOTE: device removals are handled via the writer-removed notification; see the
+                    // listener callback in init().
+                    if( _on_device_added )
+                        _on_device_added( device );
                 }
             }
         }
@@ -71,10 +67,9 @@ dds_device_watcher::dds_device_watcher( std::shared_ptr< dds::dds_participant > 
 {
 }
 
-void dds_device_watcher::start( platform::device_changed_callback callback )
+void dds_device_watcher::start()
 {
     stop();
-    _callback = std::move( callback );
     if( ! _init_done )
     {
         // Get all sensors & profiles data
@@ -130,35 +125,27 @@ void dds_device_watcher::init()
             auto it = _dds_devices.find( guid );
             if( it != _dds_devices.end() )
             {
-                auto serial_number = it->second->device_info().serial;
-                _dds_devices.erase( it );
+                auto device = it->second;
+                auto serial_number = device->device_info().serial;
                 LOG_DEBUG( "DDS device s/n " << serial_number << " removed from domain" );
+                if( _on_device_removed )
+                    _on_device_removed( device );
+                _dds_devices.erase( it );
             }
         } );
 
     // REGISTER THE TYPE
-    DDS_API_CALL( _topic_type.register_type( _participant->get() ) );
+    eprosima::fastdds::dds::TypeSupport topic_type( new dds::topics::device_info::type );
+    DDS_API_CALL( topic_type.register_type( _participant->get() ) );
 
     // CREATE THE SUBSCRIBER
     _subscriber = DDS_API_CALL( _participant->get()->create_subscriber( SUBSCRIBER_QOS_DEFAULT, nullptr ));
 
-    if( _subscriber == nullptr )
-    {
-        throw librealsense::backend_exception( "Error creating a DDS subscriber",
-                                               RS2_EXCEPTION_TYPE_IO );
-    }
-
     // CREATE THE TOPIC
     _topic = DDS_API_CALL(
         _participant->get()->create_topic( librealsense::dds::topics::device_info::TOPIC_NAME,
-                                           _topic_type->getName(),
+                                           topic_type->getName(),
                                            TOPIC_QOS_DEFAULT ) );
-
-    if( _topic == nullptr )
-    {
-        throw librealsense::backend_exception( "Error creating a DDS Devices topic",
-                                               RS2_EXCEPTION_TYPE_IO );
-    }
 
     // CREATE THE READER
     DataReaderQos rqos = DATAREADER_QOS_DEFAULT;
@@ -174,14 +161,6 @@ void dds_device_watcher::init()
                                                        // moment it comes online, not before
     rqos.data_sharing().off();
     _reader = DDS_API_CALL( _subscriber->create_datareader( _topic, rqos, nullptr ) );
-
-    if( _reader == nullptr )
-    {
-        throw librealsense::backend_exception(
-            to_string() << "Error creating a DDS reader for "
-                        << librealsense::dds::topics::device_info::TOPIC_NAME,
-            RS2_EXCEPTION_TYPE_IO );
-    }
 
     LOG_DEBUG( "DDS device watcher initialized successfully" );
 }

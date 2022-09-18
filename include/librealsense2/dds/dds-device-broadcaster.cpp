@@ -137,6 +137,8 @@ void dds_device_broadcaster::handle_device_changes(
     const std::vector< std::string > & devices_to_remove,
     const std::vector< device_info > & devices_to_add )
 {
+    // We want to be as quick as possible and not wait for DDS in any way -- so we handle
+    // device changes in the background, using invoke:
     _dds_device_dispatcher.invoke( [this, devices_to_add, devices_to_remove]( dispatcher::cancellable_timer ) {
         try
         {

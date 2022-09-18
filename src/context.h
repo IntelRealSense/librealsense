@@ -42,8 +42,8 @@ namespace librealsense
     class device;
     class context;
 #ifdef BUILD_WITH_DDS
-    class dds_device_watcher;
     namespace dds {
+        class dds_device_watcher;
         class dds_participant;
     }
 #endif
@@ -159,7 +159,7 @@ namespace librealsense
         std::map<uint64_t, devices_changed_callback_ptr> _devices_changed_callbacks;
 #ifdef BUILD_WITH_DDS
         shared_ptr_singleton< dds::dds_participant > _dds_participant;  // common to all contexts!
-        shared_ptr_singleton< dds_device_watcher > _dds_watcher;
+        shared_ptr_singleton< dds::dds_device_watcher > _dds_watcher;
         void start_dds_device_watcher();
 #endif
 

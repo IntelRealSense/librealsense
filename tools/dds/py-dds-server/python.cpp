@@ -14,7 +14,7 @@ Copyright(c) 2022 Intel Corporation. All Rights Reserved. */
 #include <fastrtps/types/DynamicType.h>
 
 
-#ifndef BUILD_SHARED_LIBS
+#ifndef BUILD_SHARED_LIBS  // shared-init takes care of the else
 INITIALIZE_EASYLOGGINGPP
 #endif
 

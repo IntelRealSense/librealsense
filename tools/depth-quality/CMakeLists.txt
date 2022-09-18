@@ -15,9 +15,7 @@ find_package(Threads REQUIRED)
 
 include_directories(${CMAKE_BINARY_DIR})
 
-if(${BUILD_EASYLOGGINGPP})
-    include("${REPO_ROOT}/include/librealsense2/utilities/easylogging/easyloggingpp.cmake")
-endif()
+include("${REPO_ROOT}/include/librealsense2/utilities/easylogging/easyloggingpp.cmake")
 
 include(../../common/CMakeLists.txt)
 
