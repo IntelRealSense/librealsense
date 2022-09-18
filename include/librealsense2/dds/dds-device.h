@@ -58,7 +58,6 @@ private:
 
     // Ctor is private: use find() or create() instead. Same for dtor -- it should be automatic
     dds_device( std::shared_ptr< impl > );
-    ~dds_device();
 };  // class dds_device
 
 

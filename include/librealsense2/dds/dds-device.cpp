@@ -68,9 +68,6 @@ dds_device::dds_device( std::shared_ptr< impl > impl )
 }
 
 
-dds_device::~dds_device() {}
-
-
 bool dds_device::is_running() const
 {
     return _impl->_running;
