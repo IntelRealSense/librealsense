@@ -57,7 +57,7 @@ public:
     void stop();
     bool is_stopped() const { return ! _active_object.is_active(); }
 
-    bool foreach_device( std::function< bool( dds::dds_guid const &, std::shared_ptr< dds::dds_device > const & ) > );
+    bool foreach_device( std::function< bool( dds::dds_guid const &, std::shared_ptr< dds::dds_device > const & ) > ) const;
 
 private:
     // The device exists - we know about it - but is unusable until we get details (sensors, profiles, etc.) and
@@ -78,7 +78,7 @@ private:
     on_device_change_callback _on_device_added;
     on_device_change_callback _on_device_removed;
     std::map< dds::dds_guid, std::shared_ptr< dds::dds_device > > _dds_devices;
-    std::mutex _devices_mutex;
+    mutable std::mutex _devices_mutex;
 };
 
 
