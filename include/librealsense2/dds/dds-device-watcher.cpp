@@ -5,6 +5,7 @@
 
 #include <librealsense2/dds/dds-device.h>
 #include <librealsense2/dds/dds-utilities.h>
+#include <librealsense2/dds/dds-guid.h>
 #include <librealsense2/dds/topics/device-info/device-info-msg.h>
 #include <librealsense2/dds/topics/device-info/deviceInfoPubSubTypes.h>
 
@@ -45,7 +46,7 @@ dds_device_watcher::dds_device_watcher( std::shared_ptr< dds::dds_participant > 
                     eprosima::fastrtps::rtps::GUID_t guid;
                     eprosima::fastrtps::rtps::iHandle2GUID( guid, info.publication_handle );
 
-                    LOG_DEBUG( "DDS device (" << guid << ") detected:"
+                    LOG_DEBUG( "DDS device (" << print(guid,_participant->guid()) << ") detected:"
                         << "\n\tName: " << device_info.name
                         << "\n\tSerial: " << device_info.serial
                         << "\n\tProduct line: " << device_info.product_line

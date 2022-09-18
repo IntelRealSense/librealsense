@@ -40,6 +40,9 @@ public:
 
     dds_guid const & guid() const;
 
+    // Common utility: a participant is usually used as the base for printing guids...
+    std::string print( dds_guid const & guid_to_print ) const;
+
     class listener
     {
         friend class dds_participant;

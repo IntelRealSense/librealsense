@@ -5,6 +5,7 @@
 
 #include "dds-participant.h"
 #include "dds-utilities.h"
+#include "dds-guid.h"
 
 #include <librealsense2/utilities/easylogging/easyloggingpp.h>
 #include <fastdds/dds/domain/DomainParticipantFactory.hpp>
@@ -38,22 +39,18 @@ public:
     {
         if( info.current_count_change == 1 )
         {
-            LOG_DEBUG( "DataReader " << writer->guid() << " discovered" );
-            {
-                // We send the work to the dispatcher to avoid waiting on the mutex here.
-                _owner->_dds_device_dispatcher.invoke( [this]( dispatcher::cancellable_timer ) {
-                    {
-                        std::lock_guard< std::mutex > lock( _owner->_new_client_mutex );
-                        _new_reader_joined = true;
-                        _owner->_trigger_msg_send = true;
-                    }
-                    _owner->_new_client_cv.notify_all();
-                } );
-            }
+            // We send the work to the dispatcher to avoid waiting on the mutex here.
+            _owner->_dds_device_dispatcher.invoke( [this]( dispatcher::cancellable_timer ) {
+                {
+                    std::lock_guard< std::mutex > lock( _owner->_new_client_mutex );
+                    _new_reader_joined = true;
+                    _owner->_trigger_msg_send = true;
+                }
+                _owner->_new_client_cv.notify_all();
+            } );
         }
         else if( info.current_count_change == -1 )
         {
-            LOG_DEBUG( "DataReader " << writer->guid() << " disappeared" );
         }
         else
         {
@@ -177,7 +174,7 @@ void dds_device_broadcaster::remove_dds_device( const std::string & serial_numbe
     if( ret != ReturnCode_t::RETCODE_OK )
     {
         LOG_ERROR( "Error code: " << ret() << " while trying to delete data writer ("
-                                  << handle.data_writer->guid() << ")" );
+                                  << _participant->print( handle.data_writer->guid() ) << ")" );
         return;
     }
     _device_handle_by_sn.erase( it );

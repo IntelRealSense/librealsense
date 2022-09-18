@@ -3,6 +3,7 @@
 
 #include "dds-participant.h"
 #include "dds-utilities.h"
+#include "dds-guid.h"
 
 #include <librealsense2/utilities/easylogging/easyloggingpp.h>
 #include <fastdds/dds/domain/DomainParticipantFactory.hpp>
@@ -33,12 +34,14 @@ struct dds_participant::listener_impl : public eprosima::fastdds::dds::DomainPar
         switch( info.status )
         {
         case eprosima::fastrtps::rtps::ParticipantDiscoveryInfo::DISCOVERED_PARTICIPANT:
-            LOG_DEBUG( "participant '" << info.info.m_participantName << "' discovered" );
+            LOG_DEBUG( "participant '" << info.info.m_participantName << "' ("
+                                       << _owner.print( info.info.m_guid ) << ") discovered" );
             _owner.on_participant_added( info.info.m_guid, info.info.m_participantName.c_str() );
             break;
         case eprosima::fastrtps::rtps::ParticipantDiscoveryInfo::REMOVED_PARTICIPANT:
         case eprosima::fastrtps::rtps::ParticipantDiscoveryInfo::DROPPED_PARTICIPANT:
-            LOG_DEBUG( "participant '" << info.info.m_participantName << "' disappeared" );
+            LOG_DEBUG( "participant '" << info.info.m_participantName << "' ("
+                                       << _owner.print( info.info.m_guid ) << ") disappeared" );
             _owner.on_participant_removed( info.info.m_guid, info.info.m_participantName.c_str() );
             break;
         default:
@@ -53,15 +56,16 @@ struct dds_participant::listener_impl : public eprosima::fastdds::dds::DomainPar
         {
         case eprosima::fastrtps::rtps::WriterDiscoveryInfo::DISCOVERED_WRITER:
             /* Process the case when a new publisher was found in the domain */
-            LOG_DEBUG( "new DataWriter (" << info.info.guid() << ") publishing '" << info.info.topicName()
-                                          << "' of type '" << info.info.typeName() << "'" );
+            LOG_DEBUG( "new DataWriter (" << _owner.print( info.info.guid() ) << ") publishing '"
+                                          << info.info.topicName() << "' of type '" << info.info.typeName() << "'" );
             _owner.on_writer_added( info.info.guid(), info.info.topicName().c_str() );
             break;
 
         case eprosima::fastrtps::rtps::WriterDiscoveryInfo::REMOVED_WRITER:
             /* Process the case when a publisher was removed from the domain */
-            LOG_DEBUG( "DataWriter (" << info.info.guid() << ") publishing '" << info.info.topicName()
-                                      << "' of type '" << info.info.typeName() << "' left the domain" );
+            LOG_DEBUG( "DataWriter (" << _owner.print( info.info.guid() ) << ") publishing '"
+                                      << info.info.topicName() << "' of type '" << info.info.typeName()
+                                      << "' left the domain" );
             _owner.on_writer_removed( info.info.guid(), info.info.topicName().c_str() );
             break;
         }
@@ -73,14 +77,15 @@ struct dds_participant::listener_impl : public eprosima::fastdds::dds::DomainPar
         switch( info.status )
         {
         case eprosima::fastrtps::rtps::ReaderDiscoveryInfo::DISCOVERED_READER:
-            LOG_DEBUG( "new DataReader (" << info.info.guid() << ") reading topic '" << info.info.topicName()
-                                          << "' of type '" << info.info.typeName() << "'" );
+            LOG_DEBUG( "new DataReader (" << _owner.print( info.info.guid() ) << ") reading topic '"
+                                          << info.info.topicName() << "' of type '" << info.info.typeName() << "'" );
             _owner.on_reader_added( info.info.guid(), info.info.topicName().c_str() );
             break;
 
         case eprosima::fastrtps::rtps::ReaderDiscoveryInfo::REMOVED_READER:
-            LOG_DEBUG( "DataReader (" << info.info.guid() << ") reading topic '" << info.info.topicName()
-                                      << "' of type '" << info.info.typeName() << "' left the domain" );
+            LOG_DEBUG( "DataReader (" << _owner.print( info.info.guid() ) << ") reading topic '"
+                                      << info.info.topicName() << "' of type '" << info.info.typeName()
+                                      << "' left the domain" );
             _owner.on_reader_removed( info.info.guid(), info.info.topicName().c_str() );
             break;
         }
@@ -131,7 +136,7 @@ void dds_participant::init( dds_domain_id domain_id, std::string const & partici
                                   + std::to_string( domain_id ) );
     }
 
-    LOG_DEBUG( "participant '" << participant_name << "' is up on domain " << domain_id );
+    LOG_DEBUG( "participant '" << participant_name << "' (" << dds::print( guid() ) << ") is up on domain " << domain_id );
 }
 
 
@@ -153,6 +158,12 @@ dds_participant::~dds_participant()
 dds_guid const & dds_participant::guid() const
 {
     return get()->guid();
+}
+
+
+std::string dds_participant::print( dds_guid const& guid_to_print ) const
+{
+    return dds::print( guid_to_print, guid() );
 }
 
 

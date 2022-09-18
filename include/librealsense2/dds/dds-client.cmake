@@ -3,6 +3,7 @@
 
 set(DDS_CLIENT_FILES 
     "${CMAKE_CURRENT_LIST_DIR}/dds-defines.h"
+    "${CMAKE_CURRENT_LIST_DIR}/dds-guid.h"
     "${CMAKE_CURRENT_LIST_DIR}/dds-participant.h"
     "${CMAKE_CURRENT_LIST_DIR}/dds-participant.cpp"
     "${CMAKE_CURRENT_LIST_DIR}/dds-utilities.h"
