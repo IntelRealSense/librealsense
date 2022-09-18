@@ -38,9 +38,9 @@ class dds_participant;
 class dds_device_broadcaster
 {
 public:
-    using device_info = librealsense::dds::topics::device_info;
+    using device_info = topics::device_info;
 
-    dds_device_broadcaster( librealsense::dds::dds_participant & participant );
+    dds_device_broadcaster( std::shared_ptr< dds_participant > const & participant );
     ~dds_device_broadcaster();
 
     // Start listening for device changes
@@ -83,10 +83,10 @@ private:
     void create_broadcast_topic();
     bool send_device_info_msg( const dds_device_handle & handle );
     void fill_device_msg( const device_info & dev_info,
-                          librealsense::dds::topics::raw::device_info & msg ) const;
+                          topics::raw::device_info & msg ) const;
 
     std::atomic_bool _trigger_msg_send;
-    eprosima::fastdds::dds::DomainParticipant * _participant;
+    std::shared_ptr< dds_participant > _participant;
     eprosima::fastdds::dds::Publisher * _publisher;
     eprosima::fastdds::dds::Topic * _topic;
     std::unordered_map< std::string, dds_device_handle > _device_handle_by_sn;

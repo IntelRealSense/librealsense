@@ -226,7 +226,7 @@ PYBIND11_MODULE(NAME, m) {
 
     using librealsense::dds::dds_device_broadcaster;
     py::class_< dds_device_broadcaster >( m, "device_broadcaster" )
-        .def( py::init< dds_participant & >() )
+        .def( py::init< std::shared_ptr< dds_participant > const & >() )
         .def( "run", &dds_device_broadcaster::run )
         .def( "add_device", &dds_device_broadcaster::add_device )
         .def( "remove_device", &dds_device_broadcaster::remove_device );

@@ -68,9 +68,9 @@ private:
 };
 
 
-dds_device_broadcaster::dds_device_broadcaster( dds_participant & participant )
+dds_device_broadcaster::dds_device_broadcaster( std::shared_ptr< dds_participant > const & participant )
     : _trigger_msg_send( false )
-    , _participant( participant.get() )
+    , _participant( participant )
     , _publisher( nullptr )
     , _topic( nullptr )
     , _dds_device_dispatcher( 10 )
@@ -242,11 +242,11 @@ void dds_device_broadcaster::create_broadcast_topic()
     // Don't fill DDS X-Types TypeInformation, it is wasteful if you send TypeObject anyway
     topic_type.get()->auto_fill_type_information( false );
     // Registering the topic type with the participant enables topic instance creation by factory
-    DDS_API_CALL( _participant->register_type( topic_type ) );
-    _publisher = DDS_API_CALL( _participant->create_publisher( PUBLISHER_QOS_DEFAULT, nullptr ) );
-    _topic = DDS_API_CALL( _participant->create_topic( librealsense::dds::topics::device_info::TOPIC_NAME,
-                                                       topic_type->getName(),
-                                                       TOPIC_QOS_DEFAULT ) );
+    DDS_API_CALL( _participant->get()->register_type( topic_type ) );
+    _publisher = DDS_API_CALL( _participant->get()->create_publisher( PUBLISHER_QOS_DEFAULT, nullptr ) );
+    _topic = DDS_API_CALL( _participant->get()->create_topic( librealsense::dds::topics::device_info::TOPIC_NAME,
+                                                              topic_type->getName(),
+                                                              TOPIC_QOS_DEFAULT ) );
 
     // Topic constructor creates TypeObject that will be sent as part of the discovery phase
     // If this line is removed TypeObject will be sent only after constructing the topic in the first time
@@ -305,10 +305,10 @@ dds_device_broadcaster::~dds_device_broadcaster()
 
     if( _topic != nullptr )
     {
-        DDS_API_CALL_NO_THROW( _participant->delete_topic( _topic ) );
+        DDS_API_CALL_NO_THROW( _participant->get()->delete_topic( _topic ) );
     }
     if( _publisher != nullptr )
     {
-        DDS_API_CALL_NO_THROW( _participant->delete_publisher( _publisher ) );
+        DDS_API_CALL_NO_THROW( _participant->get()->delete_publisher( _publisher ) );
     }
 }
