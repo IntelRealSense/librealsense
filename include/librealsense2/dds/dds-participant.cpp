@@ -12,11 +12,18 @@
 #include <fastrtps/types/DynamicDataFactory.h>
 #include <fastdds/dds/core/status/SubscriptionMatchedStatus.hpp>
 
-#include <iostream>
-#include <memory>
+#include <map>
+#include <mutex>
 
 using namespace eprosima::fastdds::dds;
 using namespace librealsense::dds;
+
+
+namespace {
+    std::map< dds_guid_prefix, std::string > participants;
+    std::mutex participants_mutex;
+}
+
 
 struct dds_participant::listener_impl : public eprosima::fastdds::dds::DomainParticipantListener
 {
@@ -34,15 +41,22 @@ struct dds_participant::listener_impl : public eprosima::fastdds::dds::DomainPar
         switch( info.status )
         {
         case eprosima::fastrtps::rtps::ParticipantDiscoveryInfo::DISCOVERED_PARTICIPANT:
-            LOG_DEBUG( "participant '" << info.info.m_participantName << "' ("
-                                       << _owner.print( info.info.m_guid ) << ") discovered" );
+            LOG_DEBUG( "+participant '" << info.info.m_participantName << "' (" << _owner.print( info.info.m_guid )
+                                        << ")" );
+            {
+                std::lock_guard< std::mutex > lock( participants_mutex );
+                participants.emplace( info.info.m_guid.guidPrefix, info.info.m_participantName );
+            }
             _owner.on_participant_added( info.info.m_guid, info.info.m_participantName.c_str() );
             break;
         case eprosima::fastrtps::rtps::ParticipantDiscoveryInfo::REMOVED_PARTICIPANT:
         case eprosima::fastrtps::rtps::ParticipantDiscoveryInfo::DROPPED_PARTICIPANT:
-            LOG_DEBUG( "participant '" << info.info.m_participantName << "' ("
-                                       << _owner.print( info.info.m_guid ) << ") disappeared" );
+            LOG_DEBUG( "-participant " << _owner.print( info.info.m_guid ) );
             _owner.on_participant_removed( info.info.m_guid, info.info.m_participantName.c_str() );
+            {
+                std::lock_guard< std::mutex > lock( participants_mutex );
+                participants.erase( info.info.m_guid.guidPrefix );
+            }
             break;
         default:
             break;
@@ -164,6 +178,23 @@ dds_guid const & dds_participant::guid() const
 std::string dds_participant::print( dds_guid const& guid_to_print ) const
 {
     return dds::print( guid_to_print, guid() );
+}
+
+
+/*static*/ std::string dds_participant::name_from_guid( dds_guid_prefix const & pref )
+{
+    std::string participant;
+    std::lock_guard< std::mutex > lock( participants_mutex );
+    auto it = participants.find( pref );
+    if( it != participants.end() )
+        participant = it->second;
+    return participant;
+}
+
+
+/*static*/ std::string dds_participant::name_from_guid( dds_guid const & guid )
+{
+    return name_from_guid( guid.guidPrefix );
 }
 
 
