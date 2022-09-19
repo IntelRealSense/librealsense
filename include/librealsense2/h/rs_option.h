@@ -115,6 +115,7 @@ extern "C" {
         RS2_OPTION_RECEIVER_SENSITIVITY, /**< Control receiver sensitivity to incoming light, both projected and ambient (same as APD on L515). */
         RS2_OPTION_AUTO_EXPOSURE_LIMIT_TOGGLE, /**< Enable / disable color image auto-exposure*/
         RS2_OPTION_AUTO_GAIN_LIMIT_TOGGLE, /**< Enable / disable color image auto-gain*/
+        RS2_OPTION_EMITTER_FREQUENCY, /**< Select emitter (laser) frequency, see rs2_emitter_frequency for values */
         RS2_OPTION_COUNT /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
     } rs2_option;
 
@@ -203,6 +204,15 @@ extern "C" {
         RS2_HOST_PERF_COUNT         /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
     } rs2_host_perf_mode;
     const char* rs2_host_perf_mode_to_string( rs2_host_perf_mode perf );
+
+    /** \brief values for RS2_EMITTER_FREQUENCY option. */
+    typedef enum rs2_emitter_frequency_mode
+    {
+        RS2_EMITTER_FREQUENCY_57_KHZ = 0,  /**< Emitter frequency shall be 57 [KHZ] */
+        RS2_EMITTER_FREQUENCY_91_KHZ = 1,  /**< Emitter frequency shall be 91 [KHZ] */
+        RS2_EMITTER_FREQUENCY_COUNT        /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
+    } rs2_emitter_frequency_mode;
+    const char* rs2_emitter_frequency_mode_to_string( rs2_emitter_frequency_mode mode );
 
     /**
     * check if an option is read-only
