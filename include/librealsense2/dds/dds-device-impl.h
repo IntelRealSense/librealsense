@@ -59,6 +59,7 @@ class dds_device::impl
 {
 public:
     topics::device_info const _info;
+    dds_guid const _guid;
     std::shared_ptr< dds::dds_participant > const _participant;
 
     bool _running = false;
@@ -76,9 +77,9 @@ public:
         dds::dds_guid const& guid,
         dds::topics::device_info const& info )
         : _info( info )
+        , _guid( guid )
         , _participant( participant )
     {
-        (void) guid;
     }
 
     void run()
