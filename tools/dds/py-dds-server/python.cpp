@@ -6,6 +6,9 @@ Copyright(c) 2022 Intel Corporation. All Rights Reserved. */
 #include <librealsense2/dds/dds-participant.h>
 #include <librealsense2/dds/topics/dds-topics.h>
 #include <librealsense2/dds/dds-device-broadcaster.h>
+#include <librealsense2/dds/dds-device-watcher.h>
+#include <librealsense2/dds/dds-device.h>
+#include <librealsense2/dds/dds-guid.h>
 
 #include <librealsense2/utilities/easylogging/easyloggingpp.h>
 #include <fastdds/dds/log/Log.hpp>
@@ -23,7 +26,7 @@ namespace {
 std::string to_string( librealsense::dds::dds_guid const & guid )
 {
     std::ostringstream os;
-    os << guid;
+    os << librealsense::dds::print( guid );
     return os.str();
 }
 }  // namespace
@@ -32,18 +35,24 @@ std::string to_string( librealsense::dds::dds_guid const & guid )
 // "When calling a C++ function from Python, the GIL is always held"
 // -- since we're not being called from Python but instead are calling it,
 // we need to acquire it to not have issues with other threads...
+#define FN_FWD_CALL( CLS, FN_NAME, CODE )                                                                              \
+    try                                                                                                                \
+    {                                                                                                                  \
+        py::gil_scoped_acquire gil;                                                                                    \
+        CODE                                                                                                           \
+    }                                                                                                                  \
+    catch( std::exception const & e )                                                                                  \
+    {                                                                                                                  \
+        std::cerr << "?!?!?!!? exception in python " #CLS "." #FN_NAME " ?!?!?!?!?" << std::endl;                      \
+        std::cerr << e.what() << std::endl;                                                                            \
+    }                                                                                                                  \
+    catch( ... )                                                                                                       \
+    {                                                                                                                  \
+        std::cerr << "?!?!?!!? exception in python " #CLS "." #FN_NAME " ?!?!?!?!?" << std::endl;                      \
+    }
 #define FN_FWD( CLS, FN_NAME, PY_ARGS, FN_ARGS, CODE )                                                                 \
-    #FN_NAME,                                                                                                          \
-    []( CLS & self, std::function < void PY_ARGS > callback ) {                                                        \
-        self.FN_NAME( [callback] FN_ARGS {                                                                             \
-            try {                                                                                                      \
-                py::gil_scoped_acquire gil;                                                                            \
-                CODE                                                                                                   \
-            }                                                                                                          \
-            catch( ... ) {                                                                                             \
-                std::cerr << "?!?!?!!? exception in python " #CLS "." #FN_NAME " ?!?!?!?!?" << std::endl;              \
-            }                                                                                                          \
-        } );                                                                                                           \
+    #FN_NAME, []( CLS & self, std::function < void PY_ARGS > callback ) {                                              \
+        self.FN_NAME( [callback] FN_ARGS { FN_FWD_CALL( CLS, FN_NAME, CODE ); } );                                     \
     }
 
 
@@ -230,4 +239,96 @@ PYBIND11_MODULE(NAME, m) {
         .def( "run", &dds_device_broadcaster::run )
         .def( "add_device", &dds_device_broadcaster::add_device )
         .def( "remove_device", &dds_device_broadcaster::remove_device );
+
+    // same as in pyrs_internal.cpp
+    py::class_< rs2_video_stream > video_stream( m, "video_stream" );
+    video_stream.def( py::init<>() )
+        .def_readwrite( "type", &rs2_video_stream::type )
+        .def_readwrite( "index", &rs2_video_stream::index )
+        .def_readwrite( "uid", &rs2_video_stream::uid )
+        .def_readwrite( "width", &rs2_video_stream::width )
+        .def_readwrite( "height", &rs2_video_stream::height )
+        .def_readwrite( "fps", &rs2_video_stream::fps )
+        .def_readwrite( "bpp", &rs2_video_stream::bpp )
+        .def_readwrite( "fmt", &rs2_video_stream::fmt )
+        .def_readwrite( "intrinsics", &rs2_video_stream::intrinsics );
+
+    // same as in pyrs_internal.cpp
+    py::class_< rs2_motion_stream > motion_stream( m, "motion_stream" );
+    motion_stream.def( py::init<>() )
+        .def_readwrite( "type", &rs2_motion_stream::type )
+        .def_readwrite( "index", &rs2_motion_stream::index )
+        .def_readwrite( "uid", &rs2_motion_stream::uid )
+        .def_readwrite( "fps", &rs2_motion_stream::fps )
+        .def_readwrite( "fmt", &rs2_motion_stream::fmt )
+        .def_readwrite( "intrinsics", &rs2_motion_stream::intrinsics );
+
+    using librealsense::dds::dds_device;
+    py::class_< dds_device,
+                std::shared_ptr< dds_device >  // handled with a shared_ptr
+                >( m, "device" )
+        .def( "device_info", &dds_device::device_info )
+        .def( "guid", []( dds_device const & self ) { return to_string( self.guid() ); } )
+        .def( "is_running", &dds_device::is_running )
+        .def( "run", &dds_device::run )
+        .def( "num_of_sensors", &dds_device::num_of_sensors )
+        .def( FN_FWD( dds_device,
+            foreach_sensor,
+            ( std::string const & ),
+            ( std::string const & name ),
+            callback( name ); ) )
+        .def( "foreach_video_profile",
+              []( dds_device const & self,
+                  size_t sensor_index,
+                  std::function< void( rs2_video_stream const & profile, bool is_default ) > callback ) {
+                  self.foreach_video_profile(
+                      sensor_index,
+                      [callback]( rs2_video_stream const & profile, bool is_default ) {
+                          FN_FWD_CALL( dds_device, foreach_video_profile, callback( profile, is_default ); );
+                      } );
+              }, py::call_guard< py::gil_scoped_release >() )
+        .def( "foreach_motion_profile",
+              []( dds_device const & self,
+                  size_t sensor_index,
+                  std::function< void( rs2_motion_stream const & profile, bool is_default ) > callback ) {
+                  self.foreach_motion_profile(
+                      sensor_index,
+                      [callback]( rs2_motion_stream const & profile, bool is_default ) {
+                          FN_FWD_CALL( dds_device, foreach_motion_profile, callback( profile, is_default ); );
+                      } );
+              }, py::call_guard< py::gil_scoped_release >() )
+        .def( "__repr__", []( dds_device const & self ) {
+            std::ostringstream os;
+            os << "<" SNAME ".device[";
+            os << to_string( self.guid() );
+            if( ! self.device_info().name.empty() )
+                os << " \"" << self.device_info().name << "\"";
+            if( ! self.device_info().serial.empty() )
+                os << " s/n \"" << self.device_info().serial << "\"";
+            os << "]>";
+            return os.str();
+        } );
+
+    using librealsense::dds::dds_device_watcher;
+    py::class_< dds_device_watcher >( m, "device_watcher" )
+        .def( py::init< std::shared_ptr< dds_participant > const& >() )
+        .def( "start", &dds_device_watcher::start )
+        .def( "stop", &dds_device_watcher::stop )
+        .def( "is_stopped", &dds_device_watcher::is_stopped )
+        .def( FN_FWD( dds_device_watcher,
+                      on_device_added,
+                      (std::shared_ptr< dds_device > const &),
+                      ( std::shared_ptr< dds_device > const & dev ),
+                      callback( dev ); ) )
+        .def( FN_FWD( dds_device_watcher,
+                      on_device_removed,
+                      (std::shared_ptr< dds_device > const &),
+                      ( std::shared_ptr< dds_device > const & dev ),
+                      callback( dev ); ) )
+        .def( "foreach_device",
+              []( dds_device_watcher const & self,
+                  std::function< bool( std::shared_ptr< dds_device > const & ) > callback ) {
+                  self.foreach_device(
+                      [callback]( std::shared_ptr< dds_device > const & dev ) { return callback( dev ); } );
+              }, py::call_guard< py::gil_scoped_release >() );
 }
