@@ -57,7 +57,7 @@ public:
     void stop();
     bool is_stopped() const { return ! _active_object.is_active(); }
 
-    bool foreach_device( std::function< bool( dds::dds_guid const &, std::shared_ptr< dds::dds_device > const & ) > ) const;
+    bool foreach_device( std::function< bool( std::shared_ptr< dds::dds_device > const & ) > ) const;
 
 private:
     // The device exists - we know about it - but is unusable until we get details (sensors, profiles, etc.) and

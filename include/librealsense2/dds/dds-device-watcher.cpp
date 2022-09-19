@@ -168,12 +168,12 @@ void dds_device_watcher::init()
 
 
 bool dds_device_watcher::foreach_device(
-    std::function< bool( dds::dds_guid const &, std::shared_ptr< dds::dds_device > const & ) > fn ) const
+    std::function< bool( std::shared_ptr< dds::dds_device > const & ) > fn ) const
 {
     std::lock_guard< std::mutex > lock( _devices_mutex );
     for( auto && guid_to_dev_info : _dds_devices )
     {
-        if( ! fn( guid_to_dev_info.first, guid_to_dev_info.second ) )
+        if( ! fn( guid_to_dev_info.second ) )
             return false;
     }
     return true;
