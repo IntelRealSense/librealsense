@@ -70,16 +70,15 @@ struct dds_participant::listener_impl : public eprosima::fastdds::dds::DomainPar
         {
         case eprosima::fastrtps::rtps::WriterDiscoveryInfo::DISCOVERED_WRITER:
             /* Process the case when a new publisher was found in the domain */
-            LOG_DEBUG( "new DataWriter (" << _owner.print( info.info.guid() ) << ") publishing '"
-                                          << info.info.topicName() << "' of type '" << info.info.typeName() << "'" );
+            LOG_DEBUG( "+DataWriter (" << _owner.print( info.info.guid() ) << ") publishing '"
+                                       << info.info.topicName() << "' of type '" << info.info.typeName() << "'" );
             _owner.on_writer_added( info.info.guid(), info.info.topicName().c_str() );
             break;
 
         case eprosima::fastrtps::rtps::WriterDiscoveryInfo::REMOVED_WRITER:
             /* Process the case when a publisher was removed from the domain */
-            LOG_DEBUG( "DataWriter (" << _owner.print( info.info.guid() ) << ") publishing '"
-                                      << info.info.topicName() << "' of type '" << info.info.typeName()
-                                      << "' left the domain" );
+            LOG_DEBUG( "-DataWriter (" << _owner.print( info.info.guid() ) << ") publishing '"
+                                       << info.info.topicName() << "'" );
             _owner.on_writer_removed( info.info.guid(), info.info.topicName().c_str() );
             break;
         }
@@ -91,15 +90,14 @@ struct dds_participant::listener_impl : public eprosima::fastdds::dds::DomainPar
         switch( info.status )
         {
         case eprosima::fastrtps::rtps::ReaderDiscoveryInfo::DISCOVERED_READER:
-            LOG_DEBUG( "new DataReader (" << _owner.print( info.info.guid() ) << ") reading topic '"
-                                          << info.info.topicName() << "' of type '" << info.info.typeName() << "'" );
+            LOG_DEBUG( "+DataReader (" << _owner.print( info.info.guid() ) << ") reading topic '"
+                                       << info.info.topicName() << "' of type '" << info.info.typeName() << "'" );
             _owner.on_reader_added( info.info.guid(), info.info.topicName().c_str() );
             break;
 
         case eprosima::fastrtps::rtps::ReaderDiscoveryInfo::REMOVED_READER:
-            LOG_DEBUG( "DataReader (" << _owner.print( info.info.guid() ) << ") reading topic '"
-                                      << info.info.topicName() << "' of type '" << info.info.typeName()
-                                      << "' left the domain" );
+            LOG_DEBUG( "-DataReader (" << _owner.print( info.info.guid() ) << ") reading topic '"
+                                      << info.info.topicName() << "'" );
             _owner.on_reader_removed( info.info.guid(), info.info.topicName().c_str() );
             break;
         }
