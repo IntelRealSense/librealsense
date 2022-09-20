@@ -25,7 +25,7 @@ namespace librealsense
     {
         using namespace ds;
 
-        //Projector's capacity is established based on actual HW capabilities
+        // Projector's capacity is established based on actual HW capabilities
         auto pid = group.uvc_devices.front().pid;
         if ((pid != RS_USB2_PID) && ((_device_capabilities & d400_caps::CAP_ACTIVE_PROJECTOR) == d400_caps::CAP_ACTIVE_PROJECTOR))
         {
@@ -81,6 +81,15 @@ namespace librealsense
                     std::make_shared<asic_and_projector_temperature_options>(raw_depth_ep,
                         RS2_OPTION_PROJECTOR_TEMPERATURE));
             }
+
+            // EMITTER FREQUENCY OPTION
+            // TODO:: add FW minimal version check
+            auto emitter_frequency = std::make_shared<uvc_xu_option<uint16_t>>(raw_depth_ep,
+                                                                         depth_xu,
+                                                                         DS5_EMITTER_FREQUENCY,
+                                                                         "Controls the emitter frequency, 57 [KHZ] / 91 [KHZ]");
+            
+            depth_ep.register_option(RS2_OPTION_EMITTER_FREQUENCY, emitter_frequency);
 
         }
         else

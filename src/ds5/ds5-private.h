@@ -28,7 +28,7 @@ namespace librealsense
         const uint16_t RS415_PID            = 0x0ad3; // ASRC
         const uint16_t RS430_PID            = 0x0ad4; // AWG
         const uint16_t RS430_MM_PID         = 0x0ad5; // AWGT
-        const uint16_t RS_USB2_PID          = 0x0ad6; // USB2
+        const uint16_t RS_USB2_PID          = 0x0ad6; // USB2 - fallback for SKU unable to boot properly
         const uint16_t RS_RECOVERY_PID      = 0x0adb;
         const uint16_t RS_USB2_RECOVERY_PID = 0x0adc;
         const uint16_t RS400_IMU_PID        = 0x0af2; // IMU
@@ -39,7 +39,7 @@ namespace librealsense
         const uint16_t RS430_MM_RGB_PID     = 0x0b01; // AWGCT
         const uint16_t RS460_PID            = 0x0b03; // DS5U
         const uint16_t RS435_RGB_PID        = 0x0b07; // AWGC
-        const uint16_t RS405U_PID           = 0x0b0c; // DS5U
+        const uint16_t RS405U_PID           = 0x0b0c; // DS5U - Not used, should be removed with EOL devices clean up
         const uint16_t RS435I_PID           = 0x0b3a; // D435i
         const uint16_t RS416_PID            = 0x0b49; // F416
         const uint16_t RS430I_PID           = 0x0b4b; // D430i
@@ -61,6 +61,7 @@ namespace librealsense
         const uint8_t DS5_ENABLE_AUTO_EXPOSURE            = 0xB;
         const uint8_t DS5_LED_PWR                         = 0xE;
         const uint8_t DS5_THERMAL_COMPENSATION            = 0xF;
+        const uint8_t DS5_EMITTER_FREQUENCY               = 0x10; // TBD until we get the ID from FW
 
         // Devices supported by the current version
         static const std::set<std::uint16_t> rs400_sku_pid = {
