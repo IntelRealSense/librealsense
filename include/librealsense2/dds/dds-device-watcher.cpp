@@ -50,7 +50,7 @@ dds_device_watcher::dds_device_watcher( std::shared_ptr< dds::dds_participant > 
                         << "\n\tSerial: " << device_info.serial
                         << "\n\tProduct line: " << device_info.product_line
                         << "\n\tTopic root: " << device_info.topic_root
-                        << "\n\tLocked:" << ( device_info.locked ? "yes" : "no" ) );
+                        << "\n\tLocked: " << ( device_info.locked ? "yes" : "no" ) );
 
                     // Add a new device record into our dds devices map
                     auto device = dds::dds_device::create( _participant, guid, device_info );
@@ -132,7 +132,6 @@ void dds_device_watcher::init()
                 {
                     device = it->second;
                     auto serial_number = device->device_info().serial;
-                    //LOG_DEBUG( "DDS device s/n " << serial_number << " removed from domain" );
                     _dds_devices.erase( it );
                 }
             }
