@@ -3,6 +3,7 @@
 
 #include "dds-device.h"
 #include "dds-device-impl.h"
+#include "stream.h"
 
 namespace librealsense {
 namespace dds {
@@ -98,11 +99,11 @@ size_t dds_device::num_of_sensors() const
 }
 
 
-size_t dds_device::foreach_sensor( std::function< void( const std::string & name ) > fn ) const
+size_t dds_device::foreach_sensor( std::function< void( size_t sensor_index, const std::string & name ) > fn ) const
 {
     for( auto sensor : _impl->_sensor_index_to_name )
     {
-        fn( sensor.second );
+        fn( sensor.first, sensor.second );
     }
 
     return _impl->_num_of_sensors;
@@ -167,6 +168,62 @@ dds_device::foreach_motion_profile( size_t sensor_index,
     return msg->second.num_of_profiles;
 }
 
+void dds_device::sensor_open( size_t sensor_index, const stream_profiles & profiles )
+{
+    using namespace librealsense::dds::topics;
+
+    assert( profiles.size() < device::control::MAX_OPEN_PROFILES );
+
+    device::control::sensor_open_msg open_msg;
+    open_msg.message_id = _impl->_message_counter++;
+    open_msg.sensor_uid = static_cast<uint16_t>( sensor_index );
+    for ( size_t i = 0; i < profiles.size(); ++i )
+    {
+        open_msg.profiles[i].framerate = profiles[i]->get_framerate();
+        open_msg.profiles[i].format = profiles[i]->get_format();
+        open_msg.profiles[i].type = profiles[i]->get_stream_type();
+        const auto&& vsp = As<video_stream_profile, stream_profile_interface>( profiles[i] );
+        open_msg.profiles[i].width = vsp ? vsp->get_width() : 0;
+        open_msg.profiles[i].height = vsp ? vsp->get_height() : 0;
+    }
+
+    raw::device::control raw_msg;
+    device::control::construct_raw_message( device::control::control_type::SENSOR_OPEN,
+                                            open_msg,
+                                            raw_msg );
+
+    if ( _impl->write_control_message( &raw_msg ) )
+    {
+        LOG_DEBUG( "Sent SENSOR_OPEN message for sensor " << sensor_index );
+    }
+    else
+    {
+        LOG_ERROR( "Error writing SENSOR_OPEN message for sensor: " << sensor_index );
+    }
+}
+
+void dds_device::sensor_close( size_t sensor_index )
+{
+    using namespace librealsense::dds::topics;
+
+    device::control::sensor_close_msg close_msg;
+    close_msg.message_id = _impl->_message_counter++;
+    close_msg.sensor_uid = static_cast<uint16_t>( sensor_index );
+
+    raw::device::control raw_msg;
+    device::control::construct_raw_message( device::control::control_type::SENSOR_CLOSE,
+                                            close_msg,
+                                            raw_msg );
+
+    if ( _impl->write_control_message( &raw_msg ) )
+    {
+        LOG_DEBUG( "Sent SENSOR_CLOSE message for sensor " << sensor_index );
+    }
+    else
+    {
+        LOG_ERROR( "Error writing SENSOR_CLOSE message for sensor: " << sensor_index );
+    }
+}
 
 }  // namespace dds
 }  // namespace librealsense

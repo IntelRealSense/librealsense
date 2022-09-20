@@ -4,12 +4,14 @@
 include("${CMAKE_CURRENT_LIST_DIR}/device-info/device-info-topic-files.cmake")
 include("${CMAKE_CURRENT_LIST_DIR}/image/image-topic-files.cmake")
 include("${CMAKE_CURRENT_LIST_DIR}/notification/notification-topic-files.cmake")
+include("${CMAKE_CURRENT_LIST_DIR}/control/control-topic-files.cmake")
 
 
 set(DDS_TOPICS_FILES 
     ${DEVICE_INFO_TOPIC_FILES}
     ${IMAGE_TOPIC_FILES}
     ${NOTIFICATION_TOPIC_FILES}
+    ${CONTROL_TOPIC_FILES}
     "${CMAKE_CURRENT_LIST_DIR}/dds-topics.h"
     )
 

@@ -37,7 +37,7 @@ namespace librealsense
 
         void register_destruction_callback(software_device_destruction_callback_ptr);
 
-    private:
+    protected:
         std::vector<std::shared_ptr<software_sensor>> _software_sensors;
         librealsense::software_device_destruction_callback_ptr _user_destruction_callback;
         rs2_matchers _matcher = RS2_MATCHER_DEFAULT;
