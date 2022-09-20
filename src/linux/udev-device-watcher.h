@@ -50,7 +50,7 @@ public:
     bool is_stopped() const override { return ! _active_object.is_active(); }
 
 private:
-    bool foreach_device( std::function< bool( struct udev_device* udev_dev ) > );
+    void foreach_device( std::function< void( struct udev_device* udev_dev ) > );
 };
 
 
