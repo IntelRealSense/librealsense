@@ -15,8 +15,9 @@ namespace librealsense {
 namespace dds {
 
 
-// Encapsulate FastDDS "participant" entity
-// Use this class if you wish to create & pass a participant entity without the need to include 'FastDDS' headers
+// The starting point for any DDS interaction, a participant has a name and is the focal point for creating, destroying,
+// and managing other DDS objects. It defines the DDS domain (ID) in which every other object lives.
+//
 class dds_participant
 {
     eprosima::fastdds::dds::DomainParticipant * _participant = nullptr;
@@ -38,7 +39,26 @@ public:
     eprosima::fastdds::dds::DomainParticipant * get() const { return _participant; }
     eprosima::fastdds::dds::DomainParticipant * operator->() const { return get(); }
 
+    // Every participant in DDS has a global identifier, comprising a prefix- and entity-ID.
+    // The prefix (vendor, host, process, participant) usually does not vary within the same participant.
+    //
     dds_guid const & guid() const;
+
+    // Common utility: a participant is usually used as the base for printing guids, to better abbreviate
+    // prefixes and even completely remove the participant part of the GUID if it's a local one...
+    //
+    std::string print( dds_guid const & guid_to_print ) const;
+
+    // The participant tracks all known participants and maps them to names. This can be useful mostly for debugging
+    // and, in fact, is used to show human-readable string instead of GUIDs.
+    //
+    // If a participant name is not found, an empty string is returned.
+    //
+    static std::string name_from_guid( dds_guid_prefix const& );
+    //
+    // The name really depends on the prefix, but passing in the whole guid is possible, too:
+    //
+    static std::string name_from_guid( dds_guid const & );
 
     class listener
     {

@@ -6,7 +6,6 @@
 #include <thread>
 #include <memory>
 
-#include <fastdds/rtps/common/Guid.h>
 #include <fastdds/dds/domain/DomainParticipant.hpp>
 #include <fastdds/dds/subscriber/DataReader.hpp>
 #include <fastdds/dds/subscriber/DataReaderListener.hpp>
@@ -21,10 +20,12 @@
 #include <librealsense2/utilities/easylogging/easyloggingpp.h>
 #include <librealsense2/rs.hpp>  // Include RealSense Cross Platform API
 #include <librealsense2/dds/dds-utilities.h>
+#include <librealsense2/dds/dds-guid.h>
 
 using namespace TCLAP;
 using namespace eprosima::fastdds::dds;
 using namespace eprosima::fastrtps::types;
+using librealsense::dds::print;
 
 // FastDDS GUID_t: (MSB first, little-endian; see GuidUtils.hpp)
 //     2 bytes  -  vendor ID
@@ -65,38 +66,6 @@ struct log_consumer : eprosima::fastdds::dds::LogConsumer
 
 
 static eprosima::fastrtps::rtps::GuidPrefix_t std_prefix;
-std::string print( const librealsense::dds::dds_guid & guid, bool shorten = true )
-{
-    std::ostringstream output;
-    if( guid != eprosima::fastrtps::rtps::c_Guid_Unknown )
-    {
-        output << std::hex;
-        char old_fill = output.fill( '0' );
-        size_t i = 0;
-        if( shorten )
-        {
-            while( i < std_prefix.size && guid.guidPrefix.value[i] == std_prefix.value[i] )
-                ++i;
-        }
-        if( i < std_prefix.size )
-        {
-            for( ; i < std_prefix.size; ++i )
-                output << std::setw( 2 ) << +guid.guidPrefix.value[i];  // << ".";
-
-            output << '|';  // between prefix and entity
-        }
-        for( uint8_t i = 0; i < guid.entityId.size; ++i )
-            output << std::setw( 2 ) << +guid.entityId.value[i];
-
-        output.fill( old_fill );
-        output << std::dec;
-    }
-    else
-    {
-        output << "|GUID UNKNOWN|";
-    }
-    return output.str();
-}
 
 
 int main( int argc, char ** argv ) try
@@ -248,7 +217,7 @@ bool dds_sniffer::init( librealsense::dds::dds_domain_id domain,
 
     if( ! _print_machine_readable )
     {
-        std::cout << "rs-dds-sniffer (" << print( _participant.guid(), false ) << ") ";
+        std::cout << "rs-dds-sniffer (" << print( _participant.guid() ) << ") ";
         if( snapshot )
             std::cout << "taking a snapshot of ";
         else
@@ -507,11 +476,12 @@ void dds_sniffer::print_writer_discovered( librealsense::dds::dds_guid guid,
 {
     if( _print_machine_readable )
     {
-        std::cout << "DataWriter," << print(guid) << "," << topic_name << ( discovered ? ",discovered" : ",removed" ) << std::endl;
+        std::cout << "DataWriter," << print( guid, std_prefix ) << "," << topic_name
+                  << ( discovered ? ",discovered" : ",removed" ) << std::endl;
     }
     else
     {
-        std::cout << "DataWriter " << print(guid) << " publishing topic '" << topic_name
+        std::cout << "DataWriter " << print( guid, std_prefix ) << " publishing topic '" << topic_name
                   << ( discovered ? "' discovered" : "' removed" ) << std::endl;
     }
 }
@@ -522,11 +492,12 @@ void dds_sniffer::print_reader_discovered( librealsense::dds::dds_guid guid,
 {
     if( _print_machine_readable )
     {
-        std::cout << "DataReader," << print(guid) << "," << topic_name << ( discovered ? ",discovered" : ",removed" ) << std::endl;
+        std::cout << "DataReader," << print( guid, std_prefix ) << "," << topic_name
+                  << ( discovered ? ",discovered" : ",removed" ) << std::endl;
     }
     else
     {
-        std::cout << "DataReader " << print(guid) << " reading topic '" << topic_name
+        std::cout << "DataReader " << print( guid, std_prefix ) << " reading topic '" << topic_name
                   << ( discovered ? "' discovered" : "' removed" ) << std::endl;
     }
 }
@@ -537,7 +508,8 @@ void dds_sniffer::print_participant_discovered( librealsense::dds::dds_guid guid
 {
     if( _print_machine_readable )
     {
-        std::cout << "Participant," << print(guid) << "," << participant_name << ( discovered ? ",discovered" : ",removed" )
+        std::cout << "Participant," << print( guid, std_prefix ) << "," << participant_name
+                  << ( discovered ? ",discovered" : ",removed" )
                   << std::endl;
     }
     else
@@ -546,8 +518,8 @@ void dds_sniffer::print_participant_discovered( librealsense::dds::dds_guid guid
         //prefix_.value[5] = static_cast<octet>( ( pid >> 8 ) & 0xFF );
         uint16_t pid
             = guid.guidPrefix.value[GUID_PROCESS_LOCATION] + ( guid.guidPrefix.value[GUID_PROCESS_LOCATION + 1] << 8 );
-        std::cout << "Participant " << print(guid) << " '" << participant_name << "' (" << std::hex << pid << std::dec
-                  << ") " << ( discovered ? " discovered" : " removed" ) << std::endl;
+        std::cout << "Participant " << print( guid, std_prefix ) << " '" << participant_name << "' (" << std::hex << pid
+                  << std::dec << ") " << ( discovered ? " discovered" : " removed" ) << std::endl;
     }
 }
 

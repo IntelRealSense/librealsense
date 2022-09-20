@@ -23,7 +23,7 @@ class dds_participant;
 
 
 // Represents a device via the DDS system. Such a device exists as of its identification by the device-watcher, and
-// always contains a device-info.
+// always contains a device-info and GUID of the remote DataWriter to which it belongs.
 // 
 // The device may not be ready for use (will not contain sensors, profiles, etc.) until it is "run".
 //
@@ -37,6 +37,10 @@ public:
                                                  topics::device_info const & info );
 
     topics::device_info const & device_info() const;
+
+    // The device GUID is that of the DataWriter which declares it!
+    //
+    dds_guid const & guid() const;
 
     bool is_running() const;
 
@@ -58,7 +62,6 @@ private:
 
     // Ctor is private: use find() or create() instead. Same for dtor -- it should be automatic
     dds_device( std::shared_ptr< impl > );
-    ~dds_device();
 };  // class dds_device
 
 

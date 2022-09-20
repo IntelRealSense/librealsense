@@ -25,7 +25,7 @@ using namespace librealsense::dds;
 class dds_device_server::dds_stream_server
 {
 public:
-    dds_stream_server( eprosima::fastdds::dds::DomainParticipant * participant,
+    dds_stream_server( std::shared_ptr< dds_participant > const & participant,
                        eprosima::fastdds::dds::Publisher * publisher,
                        const std::string & topic_root,
                        const std::string & stream_name )
@@ -39,8 +39,8 @@ public:
 
         eprosima::fastdds::dds::TypeSupport topic_type( new librealsense::dds::topics::device::image::type );
 
-        DDS_API_CALL( _participant->register_type( topic_type ) );
-        _topic = DDS_API_CALL( _participant->create_topic( topic_name, topic_type->getName(), TOPIC_QOS_DEFAULT ) );
+        DDS_API_CALL( _participant->get()->register_type( topic_type ) );
+        _topic = DDS_API_CALL( _participant->get()->create_topic( topic_name, topic_type->getName(), TOPIC_QOS_DEFAULT ) );
 
         // TODO:: Maybe we want to open a writer only when the stream is requested?
         DataWriterQos wqos = DATAWRITER_QOS_DEFAULT;
@@ -63,7 +63,7 @@ public:
 
         if( nullptr != _topic )
         {
-            DDS_API_CALL_NO_THROW( _participant->delete_topic( _topic ) );
+            DDS_API_CALL_NO_THROW( _participant->get()->delete_topic( _topic ) );
         }
     }
 
@@ -83,7 +83,7 @@ public:
     void set_image_header( const image_header & header ) { _image_header = header; }
 
 private:
-    eprosima::fastdds::dds::DomainParticipant * _participant;
+    std::shared_ptr< dds_participant > _participant;
     eprosima::fastdds::dds::Publisher * _publisher;
     eprosima::fastdds::dds::Topic * _topic;
     eprosima::fastdds::dds::DataWriter * _data_writer;
@@ -136,7 +136,7 @@ public:
         dds_notifications_server * _owner;
     };
 
-    dds_notifications_server( eprosima::fastdds::dds::DomainParticipant * participant,
+    dds_notifications_server( std::shared_ptr< dds_participant > const & participant,
                               eprosima::fastdds::dds::Publisher * publisher,
                               const std::string & topic_root )
         : _participant( participant )
@@ -181,9 +181,9 @@ public:
         eprosima::fastdds::dds::TypeSupport topic_type(
             new librealsense::dds::topics::device::notification::type );
 
-        DDS_API_CALL( _participant->register_type( topic_type ) );
+        DDS_API_CALL( _participant->get()->register_type( topic_type ) );
         _topic = DDS_API_CALL(
-            _participant->create_topic( topic_name, topic_type->getName(), TOPIC_QOS_DEFAULT ) );
+            _participant->get()->create_topic( topic_name, topic_type->getName(), TOPIC_QOS_DEFAULT ) );
 
         DataWriterQos wqos = DATAWRITER_QOS_DEFAULT;
         wqos.data_sharing().off();
@@ -214,7 +214,7 @@ public:
 
         if( nullptr != _topic )
         {
-            DDS_API_CALL_NO_THROW( _participant->delete_topic( _topic ) );
+            DDS_API_CALL_NO_THROW( _participant->get()->delete_topic( _topic ) );
         }
     };
 
@@ -247,7 +247,7 @@ private:
         }
     }
 
-    eprosima::fastdds::dds::DomainParticipant * _participant;
+    std::shared_ptr< dds_participant > _participant;
     eprosima::fastdds::dds::Publisher * _publisher;
     eprosima::fastdds::dds::Topic * _topic;
     eprosima::fastdds::dds::DataWriter * _data_writer;
@@ -265,9 +265,9 @@ private:
 //-----------------------------------------------------------------------------------------------------//
 // DDS device server is in charge of handling the device control, streams and notifications
 //-----------------------------------------------------------------------------------------------------//
-dds_device_server::dds_device_server( dds_participant & participant,
+dds_device_server::dds_device_server( std::shared_ptr< dds_participant > const & participant,
                                       const std::string & topic_root )
-    : _participant( participant.get() )
+    : _participant( participant )
     , _publisher( nullptr )
     , _topic_root( topic_root )
 {
@@ -281,7 +281,7 @@ dds_device_server::~dds_device_server()
     {
         if( nullptr != _publisher )
         {
-            _participant->delete_publisher( _publisher );
+            _participant->get()->delete_publisher( _publisher );
         }
     }
 
@@ -313,7 +313,7 @@ void dds_device_server::init( const std::vector<std::string> &supported_streams_
         throw std::runtime_error( "device server '" + _topic_root + "' is already initialized" );
     }
 
-    _publisher = DDS_API_CALL(_participant->create_publisher( PUBLISHER_QOS_DEFAULT, nullptr ));
+    _publisher = DDS_API_CALL( _participant->get()->create_publisher( PUBLISHER_QOS_DEFAULT, nullptr ) );
 
     // Create a notifications server
     _dds_notifications_server = std::make_shared< dds_notifications_server >( _participant, _publisher, _topic_root );

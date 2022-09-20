@@ -368,8 +368,8 @@ try
     std::cout << "Starting RS DDS Server.." << std::endl;
 
     // Create a DDS publisher
-    librealsense::dds::dds_participant participant;
-    participant.init( domain, "rs-dds-server" );
+    auto participant = std::make_shared< librealsense::dds::dds_participant >();
+    participant->init( domain, "rs-dds-server" );
 
     // Run the DDS device broadcaster
     librealsense::dds::dds_device_broadcaster broadcaster( participant );
@@ -409,9 +409,8 @@ try
             std::vector<std::string> supported_streams_names_vec = get_supported_streams( dev );
 
             // Create a dds-device-server for this device
-            std::shared_ptr< librealsense::dds::dds_device_server > dds_device_server
-                = std::make_shared< librealsense::dds::dds_device_server >( participant,
-                                                                            dev_info.topic_root );
+            auto dds_device_server
+                = std::make_shared< librealsense::dds::dds_device_server >( participant, dev_info.topic_root );
             // Initialize the DDS device server with the supported streams
             dds_device_server->init( supported_streams_names_vec );
 

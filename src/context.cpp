@@ -534,7 +534,7 @@ namespace librealsense
 
 #ifdef BUILD_WITH_DDS
         if( _dds_watcher )
-            _dds_watcher->foreach_device( [&]( dds::dds_guid const &, std::shared_ptr< dds::dds_device > const & dev ) -> bool {
+            _dds_watcher->foreach_device( [&]( std::shared_ptr< dds::dds_device > const & dev ) -> bool {
                 //if( mask & RS2_PRODUCT_LINE_D400 )
                     //if( dev.product_line == "D400" )
                     {

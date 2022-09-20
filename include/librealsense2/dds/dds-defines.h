@@ -13,6 +13,7 @@ namespace dds {
 namespace fastrtps {
 namespace rtps {
     struct GUID_t;
+    struct GuidPrefix_t;
 }  // namespace rtps
 namespace types {
     class DynamicType_ptr;
@@ -25,6 +26,7 @@ namespace dds {
 
 
 using dds_guid = eprosima::fastrtps::rtps::GUID_t;
+using dds_guid_prefix = eprosima::fastrtps::rtps::GuidPrefix_t;
 typedef int dds_domain_id;
 
 

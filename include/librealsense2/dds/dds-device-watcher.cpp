@@ -5,6 +5,7 @@
 
 #include <librealsense2/dds/dds-device.h>
 #include <librealsense2/dds/dds-utilities.h>
+#include <librealsense2/dds/dds-guid.h>
 #include <librealsense2/dds/topics/device-info/device-info-msg.h>
 #include <librealsense2/dds/topics/device-info/deviceInfoPubSubTypes.h>
 
@@ -41,11 +42,10 @@ dds_device_watcher::dds_device_watcher( std::shared_ptr< dds::dds_participant > 
                 {
                     dds::topics::device_info device_info = raw_data;
 
-                    std::lock_guard< std::mutex > lock( _devices_mutex );
                     eprosima::fastrtps::rtps::GUID_t guid;
                     eprosima::fastrtps::rtps::iHandle2GUID( guid, info.publication_handle );
 
-                    LOG_DEBUG( "DDS device (" << guid << ") detected:"
+                    LOG_DEBUG( "DDS device (" << print(guid,_participant->guid()) << ") detected:"
                         << "\n\tName: " << device_info.name
                         << "\n\tSerial: " << device_info.serial
                         << "\n\tProduct line: " << device_info.product_line
@@ -54,7 +54,10 @@ dds_device_watcher::dds_device_watcher( std::shared_ptr< dds::dds_participant > 
 
                     // Add a new device record into our dds devices map
                     auto device = dds::dds_device::create( _participant, guid, device_info );
-                    _dds_devices[guid] = device;
+                    {
+                        std::lock_guard< std::mutex > lock( _devices_mutex );
+                        _dds_devices[guid] = device;
+                    }
 
                     // NOTE: device removals are handled via the writer-removed notification; see the
                     // listener callback in init().
@@ -121,17 +124,20 @@ void dds_device_watcher::init()
 
     if( ! _listener )
         _participant->create_listener( &_listener )->on_writer_removed( [this]( dds::dds_guid guid, char const * ) {
-            std::lock_guard< std::mutex > lock( _devices_mutex );
-            auto it = _dds_devices.find( guid );
-            if( it != _dds_devices.end() )
+            std::shared_ptr< dds_device > device;
             {
-                auto device = it->second;
-                auto serial_number = device->device_info().serial;
-                LOG_DEBUG( "DDS device s/n " << serial_number << " removed from domain" );
-                if( _on_device_removed )
-                    _on_device_removed( device );
-                _dds_devices.erase( it );
+                std::lock_guard< std::mutex > lock( _devices_mutex );
+                auto it = _dds_devices.find( guid );
+                if( it != _dds_devices.end() )
+                {
+                    device = it->second;
+                    auto serial_number = device->device_info().serial;
+                    //LOG_DEBUG( "DDS device s/n " << serial_number << " removed from domain" );
+                    _dds_devices.erase( it );
+                }
             }
+            if( device && _on_device_removed )
+                _on_device_removed( device );  // must happen outside the mutex
         } );
 
     // REGISTER THE TYPE
@@ -167,12 +173,12 @@ void dds_device_watcher::init()
 
 
 bool dds_device_watcher::foreach_device(
-    std::function< bool( dds::dds_guid const &, std::shared_ptr< dds::dds_device > const & ) > fn )
+    std::function< bool( std::shared_ptr< dds::dds_device > const & ) > fn ) const
 {
     std::lock_guard< std::mutex > lock( _devices_mutex );
     for( auto && guid_to_dev_info : _dds_devices )
     {
-        if( ! fn( guid_to_dev_info.first, guid_to_dev_info.second ) )
+        if( ! fn( guid_to_dev_info.second ) )
             return false;
     }
     return true;

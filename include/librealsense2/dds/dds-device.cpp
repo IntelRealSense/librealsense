@@ -43,7 +43,7 @@ std::shared_ptr< dds_device > dds_device::create( std::shared_ptr< dds_participa
                                                   topics::device_info const & info )
 {
     std::shared_ptr< dds_device > dev = find( guid );
-
+    // TODO a device may be created between find() and the next lock...
     if( ! dev )
     {
         std::lock_guard< std::mutex > lock( devices_mutex );
@@ -68,9 +68,6 @@ dds_device::dds_device( std::shared_ptr< impl > impl )
 }
 
 
-dds_device::~dds_device() {}
-
-
 bool dds_device::is_running() const
 {
     return _impl->_running;
@@ -86,6 +83,12 @@ void dds_device::run()
 topics::device_info const & dds_device::device_info() const
 {
     return _impl->_info;
+}
+
+
+dds_guid const & dds_device::guid() const
+{
+    return _impl->_guid;
 }
 
 
