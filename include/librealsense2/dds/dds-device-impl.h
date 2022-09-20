@@ -69,7 +69,7 @@ public:
     std::unordered_map< size_t, std::string> _sensor_index_to_name;
     std::unordered_map< size_t, topics::device::notification::video_stream_profiles_msg > _sensor_to_video_profiles;
     std::unordered_map< size_t, topics::device::notification::motion_stream_profiles_msg > _sensor_to_motion_profiles;
-    std::atomic<uint32_t> _message_counter = 0;
+    std::atomic<uint32_t> _message_counter = { 0 };
 
     eprosima::fastdds::dds::Subscriber * _subscriber = nullptr;
     eprosima::fastdds::dds::Publisher  * _publisher = nullptr;

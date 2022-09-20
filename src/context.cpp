@@ -431,7 +431,17 @@ namespace librealsense
 
         void open( const stream_profiles & profiles ) override
         {
-            _dev->sensor_open( _index, profiles );
+            std::vector< rs2_video_stream > rs2_profs;
+            for (size_t i = 0; i < profiles.size(); ++i)
+            {
+                rs2_profs[i].fps = profiles[i]->get_framerate();
+                rs2_profs[i].fmt = profiles[i]->get_format();
+                rs2_profs[i].type = profiles[i]->get_stream_type();
+                const auto&& vsp = As<video_stream_profile, stream_profile_interface>( profiles[i] );
+                rs2_profs[i].width = vsp ? vsp->get_width() : 0;
+                rs2_profs[i].height = vsp ? vsp->get_height() : 0;
+            }
+            _dev->sensor_open( _index, rs2_profs );
             software_sensor::open( profiles );
         }
 

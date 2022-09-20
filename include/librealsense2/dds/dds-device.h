@@ -13,9 +13,6 @@
 
 namespace librealsense {
 
-class stream_profile_interface;
-using stream_profiles = std::vector<std::shared_ptr<stream_profile_interface>>;
-
 namespace dds {
 
 namespace topics {
@@ -60,7 +57,7 @@ public:
     size_t foreach_video_profile( size_t sensor_index, std::function< void( const rs2_video_stream& profile, bool def_prof ) > fn ) const;
     size_t foreach_motion_profile( size_t sensor_index, std::function< void( const rs2_motion_stream& profile, bool def_prof ) > fn ) const;
 
-    void sensor_open( size_t sensor_index, const stream_profiles & profiles );
+    void sensor_open( size_t sensor_index, const std::vector< rs2_video_stream > & profiles );
     void sensor_close( size_t sensor_index );
 
 private:

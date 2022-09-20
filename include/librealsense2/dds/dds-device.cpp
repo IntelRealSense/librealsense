@@ -3,7 +3,6 @@
 
 #include "dds-device.h"
 #include "dds-device-impl.h"
-#include "stream.h"
 
 namespace librealsense {
 namespace dds {
@@ -168,7 +167,7 @@ dds_device::foreach_motion_profile( size_t sensor_index,
     return msg->second.num_of_profiles;
 }
 
-void dds_device::sensor_open( size_t sensor_index, const stream_profiles & profiles )
+void dds_device::sensor_open( size_t sensor_index, const std::vector< rs2_video_stream > & profiles )
 {
     using namespace librealsense::dds::topics;
 
@@ -179,12 +178,11 @@ void dds_device::sensor_open( size_t sensor_index, const stream_profiles & profi
     open_msg.sensor_uid = static_cast<uint16_t>( sensor_index );
     for ( size_t i = 0; i < profiles.size(); ++i )
     {
-        open_msg.profiles[i].framerate = profiles[i]->get_framerate();
-        open_msg.profiles[i].format = profiles[i]->get_format();
-        open_msg.profiles[i].type = profiles[i]->get_stream_type();
-        const auto&& vsp = As<video_stream_profile, stream_profile_interface>( profiles[i] );
-        open_msg.profiles[i].width = vsp ? vsp->get_width() : 0;
-        open_msg.profiles[i].height = vsp ? vsp->get_height() : 0;
+        open_msg.profiles[i].framerate = profiles[i].fps;
+        open_msg.profiles[i].format = profiles[i].fmt;
+        open_msg.profiles[i].type = profiles[i].type;
+        open_msg.profiles[i].width = profiles[i].width;
+        open_msg.profiles[i].height = profiles[i].height;
     }
 
     raw::device::control raw_msg;

@@ -274,9 +274,9 @@ PYBIND11_MODULE(NAME, m) {
         .def( "num_of_sensors", &dds_device::num_of_sensors )
         .def( FN_FWD( dds_device,
             foreach_sensor,
-            ( std::string const & ),
-            ( std::string const & name ),
-            callback( name ); ) )
+            ( size_t, std::string const & ),
+            ( size_t sensor_index, std::string const & name ),
+            callback( sensor_index, name ); ) )
         .def( "foreach_video_profile",
               []( dds_device const & self,
                   size_t sensor_index,
