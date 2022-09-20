@@ -2014,6 +2014,7 @@ namespace rs2
     {
         // checking format
         bool is_cal_format = false;
+        // checking that the SKU is D405 - otherwise, this method should return false
         if (dev.supports(RS2_CAMERA_INFO_PRODUCT_ID) && !strcmp(dev.get_info(RS2_CAMERA_INFO_PRODUCT_ID), "0B5B"))
         {
             for (auto it = stream_enabled.begin(); it != stream_enabled.end(); ++it)
