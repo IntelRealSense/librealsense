@@ -290,33 +290,51 @@ def enabled():
     return { device.serial_number for device in _device_by_sn.values() if device.enabled }
 
 
-def by_product_line( product_line ):
+def by_product_line( product_line, ignored_products ):
     """
     :param product_line: The product line we're interested in, as a string ("L500", etc.)
+    :param ignored_products: List of products we want to ignore. e.g. ['D455', 'D457', etc.]
     :return: A set of device serial-numbers
     """
     global _device_by_sn
-    return { device.serial_number for device in _device_by_sn.values() if device.product_line == product_line }
+    result = set()
+    for device in _device_by_sn.values():
+        if device.product_line == product_line:
+            for ignored_product in ignored_products:
+                if ignored_product in device.name:
+                    break
+            else:
+                result.add(device.serial_number)
+    return result
 
 
-def by_name( name ):
+def by_name( name, ignored_products ):
     """
     :param name: Part of the product name to search for ("L515" would match "Intel RealSense L515")
+    :param ignored_products: List of products we want to ignore. e.g. ['D455', 'D457', etc.]
     :return: A set of device serial-numbers
     """
     global _device_by_sn
-    return { device.serial_number for device in _device_by_sn.values() if device.name  and  device.name.find( name ) >= 0 }
+    result = set()
+    ignored_list_as_str = " ".join(ignored_products)
+    if name not in ignored_list_as_str:
+        for device in _device_by_sn.values():
+            if device.name and device.name.find( name ) >= 0:
+                result.add(device.serial_number)
+    return result
 
-
-def _get_sns_from_spec( spec ):
+def _get_sns_from_spec( spec, ignored_products ):
     """
     Helper function for by_configuration. Yields all serial-numbers matching the given spec
+    :param spec: A product name/line (as a string) we want to get serial number of
+    :param ignored_products: List of products we want to ignore. e.g. ['D455', 'D457', etc.]
+    :return: A set of device serial-numbers
     """
     if spec.endswith( '*' ):
-        for sn in by_product_line( spec[:-1] ):
+        for sn in by_product_line( spec[:-1], ignored_products ):
             yield sn
     else:
-        for sn in by_name( spec ):
+        for sn in by_name( spec, ignored_products ):
             yield sn
 
 
@@ -371,16 +389,28 @@ def by_configuration( config, exceptions = None ):
     raised!
     """
     exceptions = exceptions or set()
-    if len( config ) == 1 and re.fullmatch( r'each\(.+\)', config[0], re.IGNORECASE ):
-        spec = config[0][5:-1]
-        for sn in _get_sns_from_spec( spec ):
+    # split the current config to two lists:
+    #     1) new_config (the wanted products)
+    #     2) ignored_products (strings starting with !)
+    # For example: "each(D400*) !D457" ---> new_config = ['each(D400*)'], ignored_products = ['D457']
+    new_config = []
+    ignored_products = []
+    for p in config:
+        if p[0] == '!':
+            ignored_products.append(p[1:])  # remove the '!'
+        else:
+            new_config.append(p)
+
+    if len( new_config ) > 0 and re.fullmatch( r'each\(.+\)', new_config[0], re.IGNORECASE ):
+        spec = new_config[0][5:-1]
+        for sn in _get_sns_from_spec( spec, ignored_products ):
             if sn not in exceptions:
                 yield { sn }
     else:
         sns = set()
-        for spec in config:
+        for spec in new_config:
             old_len = len(sns)
-            for sn in _get_sns_from_spec( spec ):
+            for sn in _get_sns_from_spec( spec, ignored_products ):
                 if sn in exceptions:
                     continue
                 if sn not in sns:

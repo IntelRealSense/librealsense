@@ -99,6 +99,8 @@ then
 	#Ubuntu 18.04 kernel 4.18 + 20.04/ 5.4
 	require_package bison
 	require_package flex
+	# required if kernel >=5.11
+	require_package dwarves
 fi
 
 # Get the linux kernel and change into source tree

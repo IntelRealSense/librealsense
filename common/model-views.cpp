@@ -3202,7 +3202,8 @@ namespace rs2
                 if (profile.as<rs2::video_stream_profile>())
                 {
                     stream_details.push_back({ "Hardware Size",
-                        to_string() << original_size.x << " x " << original_size.y, "" });
+                        to_string() << original_size.x << " x " << original_size.y,
+                        "Hardware size is the original frame resolution we got from the sensor, before applying post processing filters." });
 
                     stream_details.push_back({ "Display Size",
                         to_string() << size.x << " x " << size.y,
