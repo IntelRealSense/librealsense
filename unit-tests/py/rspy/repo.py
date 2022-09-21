@@ -11,7 +11,11 @@ root = os.path.dirname( os.path.dirname( os.path.dirname( os.path.dirname( os.pa
 # ... but first check the expected LibCI build directories:
 #
 if platform.system() == 'Linux':
-    build = os.path.join( root, 'x86_64', 'static' )
+    if platform.processor() == 'aarch64':
+        # for jetson (arm)
+        build = os.path.join(root, 'arm64', 'static')
+    else:
+        build = os.path.join( root, 'x86_64', 'static' )
 else:
     build = os.path.join( root, 'win10', 'win64', 'static' )
 if not os.path.isdir( build ):

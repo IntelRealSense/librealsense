@@ -14,7 +14,7 @@ log.nested = 'cli'
 
 #############################################################################################
 #
-test.start( "Checking we can detect another participant..." )
+test.start( "Checking we can detect devices..." )
 
 devices_added = 0
 def on_device_added( dev ):

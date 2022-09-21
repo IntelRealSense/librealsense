@@ -10,7 +10,7 @@ server.debug( True, log.nested )
 
 #############################################################################################
 #
-test.start( "participant-init" )
+test.start( "broadcast two devices" )
 
 participant = server.participant()
 participant.init( 123, "test-watcher-server" )
