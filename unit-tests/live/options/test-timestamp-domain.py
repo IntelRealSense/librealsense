@@ -1,16 +1,16 @@
 # License: Apache 2.0. See LICENSE file in root directory.
 # Copyright(c) 2022 Intel Corporation. All Rights Reserved.
 
-# test: device D435i
+# test: device D400*
 
 import time
 import pyrealsense2 as rs
 from rspy import test
 
-# This test check Timestamp toggle option for color and depth sensor
+# This test checks Timestamp domain toggle option for color and depth sensor
 
 
-def callback(frame):
+def frame_callback(frame):
     global expected_time_stamp_domain
     test.check_equal(int(frame.get_frame_timestamp_domain()), expected_time_stamp_domain)
 
@@ -30,7 +30,6 @@ color_sensor = devices.first_color_sensor()
 depth_sensor.get_option(rs.option.global_time_enabled)
 color_sensor.get_option(rs.option.global_time_enabled)
 
-# Using a profile common to both L500 and D400
 depth_profile = next(p for p in depth_sensor.profiles if p.fps() == 30
                      and p.stream_type() == rs.stream.depth
                      and p.format() == rs.format.z16
@@ -44,7 +43,7 @@ color_profile = next(p for p in color_sensor.profiles if p.fps() == 30
                      and p.as_video_stream_profile().height() == 480)
 
 depth_sensor.open(depth_profile)
-depth_sensor.start(callback)
+depth_sensor.start(frame_callback)
 
 #############################################################################################
 # Test #1
@@ -66,7 +65,7 @@ depth_sensor.stop()
 depth_sensor.close()
 
 color_sensor.open(color_profile)
-color_sensor.start(callback)
+color_sensor.start(frame_callback)
 
 #############################################################################################
 # Test #3
