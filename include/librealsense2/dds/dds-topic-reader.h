@@ -4,6 +4,7 @@
 #pragma once
 
 #include <fastdds/dds/subscriber/DataReaderListener.hpp>
+#include <fastdds/dds/subscriber/qos/DataReaderQos.hpp>
 
 #include <functional>
 #include <memory>
@@ -53,8 +54,16 @@ public:
         _on_subscription_matched = std::move( callback );
     }
 
+    class reader_qos : public eprosima::fastdds::dds::DataReaderQos
+    {
+        using super = eprosima::fastdds::dds::DataReaderQos;
+
+    public:
+        reader_qos();
+    };
+
     // The callbacks should be set before we actually create the underlying DDS objects, so the reader does not
-    void run();
+    void run( reader_qos const & = reader_qos() );
 
     // DataReaderListener
 protected:

@@ -35,27 +35,50 @@ dds_topic_reader::~dds_topic_reader()
 }
 
 
-void dds_topic_reader::run()
+dds_topic_reader::reader_qos::reader_qos()
+    : super( eprosima::fastdds::dds::DATAREADER_QOS_DEFAULT )
 {
-    // CREATE THE SUBSCRIBER
-    _subscriber = DDS_API_CALL(
-        _topic->get_participant()->get()->create_subscriber( eprosima::fastdds::dds::SUBSCRIBER_QOS_DEFAULT,
-                                                             nullptr ) );
-
-    // CREATE THE READER
-    eprosima::fastdds::dds::DataReaderQos rqos = eprosima::fastdds::dds::DATAREADER_QOS_DEFAULT;
-
     // The 'depth' parameter of the History defines how many samples are stored before starting to
     // overwrite them with newer ones.
-    rqos.history().kind = eprosima::fastdds::dds::KEEP_LAST_HISTORY_QOS;
-    rqos.history().depth = 10;
+    history().kind = eprosima::fastdds::dds::KEEP_LAST_HISTORY_QOS;
+    history().depth = 10;
 
     // We don't want to miss connection/disconnection events
-    rqos.reliability().kind = eprosima::fastdds::dds::RELIABLE_RELIABILITY_QOS;
-    // The Subscriber receives samples from the moment it comes online, not before
-    rqos.durability().kind = eprosima::fastdds::dds::VOLATILE_DURABILITY_QOS;
-    rqos.data_sharing().off();
+    // (default is best-effort)
+    reliability().kind = eprosima::fastdds::dds::RELIABLE_RELIABILITY_QOS;
 
+    // The Subscriber receives samples from the moment it comes online, not before
+    // (this is the default, but bears repeating)
+    durability().kind = eprosima::fastdds::dds::VOLATILE_DURABILITY_QOS;
+
+    // The writer-reader handshake is always done on UDP, even when data_sharing (shared memory) is used for
+    // actual messaging. This means it is possible to send a message and receive it on the reader's
+    // side even before the UDP handshake is complete:
+    // 
+    //   1. The writer goes up and broadcasts its presence periodically; no readers exist
+    //   2. The reader joins and broadcasts its presence, again periodically; it doesn<92>t know about the writer yet
+    //   3. The writer sees the reader (in-between broadcasts) so sends a message
+    //   4. The reader gets the message and discards it because it does not yet recognize the writer
+    // 
+    // This depends on timing. When shared memory is on, step 3 is so fast that this miscommunication is much more
+    // likely. This is a known gap in the DDS standard.
+    //
+    // We can either insert a sleep between writer creation and message sending or we can disable
+    // data_sharing for this topic, which we did here.
+    // 
+    // See https://github.com/eProsima/Fast-DDS/issues/2641
+    //
+    data_sharing().off();
+}
+
+
+void dds_topic_reader::run( reader_qos const & rqos )
+{
+    // The Subscriber manages the activities of several DataReader entities
+    _subscriber = DDS_API_CALL(
+        _topic->get_participant()->get()->create_subscriber( eprosima::fastdds::dds::SUBSCRIBER_QOS_DEFAULT ) );
+
+    // The DataReader is the Entity used by the application to subscribe to updated values of the data
     eprosima::fastdds::dds::StatusMask status_mask;
     if( _on_subscription_matched )
         status_mask << eprosima::fastdds::dds::StatusMask::subscription_matched();
