@@ -49,15 +49,11 @@ def start_sensor_test(sensor, global_time_enabled: int):
         frame = frame_queue.wait_for_frame()
 
         if global_time_enabled == 0 and sensor.get_option(rs.option.global_time_enabled) == 0:
-
             test.check_equal(frame.get_frame_timestamp_domain(), rs.timestamp_domain.hardware_clock)
-            print('frame_timestamp_domain: ', int(frame.get_frame_timestamp_domain()))  # remove it
 
         elif global_time_enabled == 1 and sensor.get_option(rs.option.global_time_enabled) == 1:
-
             test.check_equal(frame.get_frame_timestamp_domain(),
                              rs.timestamp_domain.global_time)
-            print('frame_timestamp_domain: ', int(frame.get_frame_timestamp_domain()))  # remove it
 
     except:
         print('Exception: start_depth_sensor_test throw exception with value: ', global_time_enabled)
