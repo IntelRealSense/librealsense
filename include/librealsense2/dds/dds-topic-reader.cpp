@@ -41,7 +41,7 @@ dds_topic_reader::reader_qos::reader_qos()
     // The 'depth' parameter of the History defines how many samples are stored before starting to
     // overwrite them with newer ones.
     history().kind = eprosima::fastdds::dds::KEEP_LAST_HISTORY_QOS;
-    history().depth = 10;
+    history().depth = 10;  // default is 1
 
     // We don't want to miss connection/disconnection events
     // (default is best-effort)
