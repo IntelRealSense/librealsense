@@ -18,8 +18,8 @@ def get_connected_device():
     try:
         context = rs.context()
         dev = context.devices[0]
-    except:
-        print('Exception: Failed to find connected device')
+    except Exception as ex:
+        print('Exception: Failed to find connected device. ', str(ex))
     return dev
 
 
@@ -55,8 +55,8 @@ def start_sensor_test(sensor, global_time_enabled: int):
             test.check_equal(frame.get_frame_timestamp_domain(),
                              rs.timestamp_domain.global_time)
 
-    except:
-        print('Exception: start_depth_sensor_test throw exception with value: ', global_time_enabled)
+    except Exception as exc:
+        print(str(exc))
 
 
 depth_sensor = None
@@ -108,9 +108,10 @@ try:
     start_sensor_test(color_sensor, 1)
     test.finish()
 
+except ValueError as v:
+    print(str(v))
 except Exception as e:
-    print(str(e))
-    print("The device found has no depth sensor")
+    print("The device found has no depth sensor or ", str(e))
 finally:
     # close_resources(depth_sensor)
     close_resources(color_sensor)
