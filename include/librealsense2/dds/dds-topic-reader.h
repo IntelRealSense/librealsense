@@ -1,0 +1,73 @@
+// License: Apache 2.0. See LICENSE file in root directory.
+// Copyright(c) 2022 Intel Corporation. All Rights Reserved.
+
+#pragma once
+
+#include <fastdds/dds/subscriber/DataReaderListener.hpp>
+
+#include <functional>
+#include <memory>
+
+
+namespace eprosima {
+namespace fastdds {
+namespace dds {
+class Subscriber;
+}  // namespace dds
+}  // namespace fastdds
+}  // namespace eprosima
+
+
+namespace librealsense {
+namespace dds {
+
+
+class dds_topic;
+
+
+class dds_topic_reader : public eprosima::fastdds::dds::DataReaderListener
+{
+    std::shared_ptr< dds_topic > const _topic;
+
+    eprosima::fastdds::dds::Subscriber * _subscriber = nullptr;
+    eprosima::fastdds::dds::DataReader * _reader = nullptr;
+
+public:
+    dds_topic_reader( std::shared_ptr< dds_topic > const & topic );
+    ~dds_topic_reader();
+
+    eprosima::fastdds::dds::DataReader * get() const { return _reader; }
+    eprosima::fastdds::dds::DataReader * operator->() const { return get(); }
+
+    bool is_running() const { return ( get() != nullptr ); }
+
+    std::shared_ptr< dds_topic > const & topic() const { return _topic; }
+
+    typedef std::function< void() > on_data_available_callback;
+    typedef std::function< void( eprosima::fastdds::dds::SubscriptionMatchedStatus const & ) >
+        on_subscription_matched_callback;
+
+    void on_data_available( on_data_available_callback callback ) { _on_data_available = std::move( callback ); }
+    void on_subscription_matched( on_subscription_matched_callback callback )
+    {
+        _on_subscription_matched = std::move( callback );
+    }
+
+    // The callbacks should be set before we actually create the underlying DDS objects, so the reader does not
+    void run();
+
+    // DataReaderListener
+protected:
+    void on_subscription_matched( eprosima::fastdds::dds::DataReader *,
+                                  eprosima::fastdds::dds::SubscriptionMatchedStatus const & info ) override;
+
+    void on_data_available( eprosima::fastdds::dds::DataReader * ) override;
+
+private:
+    on_data_available_callback _on_data_available;
+    on_subscription_matched_callback _on_subscription_matched;
+};
+
+
+}  // namespace dds
+}  // namespace librealsense
