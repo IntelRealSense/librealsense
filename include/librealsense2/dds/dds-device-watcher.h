@@ -4,7 +4,6 @@
 #pragma once
 
 #include "dds-participant.h"
-//#include <fastdds/dds/domain/DomainParticipantListener.hpp>
 
 #include <librealsense2/utilities/concurrency/concurrency.h>
 
@@ -12,26 +11,16 @@
 #include <memory>
 
 
-// Forward declare FastDDS types
-namespace eprosima {
-namespace fastdds {
-namespace dds {
-class Subscriber;
-class Topic;
-class DataReader;
-}  // namespace dds
-}  // namespace fastdds
-}  // namespace eprosima
-
-
 namespace librealsense {
 namespace dds {
+
 namespace topics {
 class device_info;
 }  // namespace topics
 
 
 class dds_device;
+class dds_topic_reader;
 
 
 // Watches the device_info.TOPIC_NAME topic and sends out notifications of additions/removals.
@@ -44,7 +33,7 @@ class dds_device_watcher
 {
 public:
     dds_device_watcher() = delete;
-    dds_device_watcher( std::shared_ptr< dds::dds_participant > const & );
+    dds_device_watcher( std::shared_ptr< dds_participant > const & );
     ~dds_device_watcher();
 
     // The callback is called right after construction and right before deletion
@@ -57,7 +46,7 @@ public:
     void stop();
     bool is_stopped() const { return ! _active_object.is_active(); }
 
-    bool foreach_device( std::function< bool( std::shared_ptr< dds::dds_device > const & ) > ) const;
+    bool foreach_device( std::function< bool( std::shared_ptr< dds_device > const & ) > ) const;
 
 private:
     // The device exists - we know about it - but is unusable until we get details (sensors, profiles, etc.) and
@@ -67,17 +56,14 @@ private:
     // Restrictions: May throw
     void init();  
 
-    std::shared_ptr< dds::dds_participant > _participant;
-    std::shared_ptr< dds::dds_participant::listener > _listener;
-    eprosima::fastdds::dds::Subscriber * _subscriber;
-    eprosima::fastdds::dds::Topic * _topic;
-    eprosima::fastdds::dds::DataReader * _reader;
+    std::shared_ptr< dds_participant > _participant;
+    std::shared_ptr< dds_participant::listener > _listener;
+    std::shared_ptr< dds_topic_reader > _device_info_topic;
 
-    bool _init_done;
     active_object<> _active_object;
     on_device_change_callback _on_device_added;
     on_device_change_callback _on_device_removed;
-    std::map< dds::dds_guid, std::shared_ptr< dds::dds_device > > _dds_devices;
+    std::map< dds_guid, std::shared_ptr< dds_device > > _dds_devices;
     mutable std::mutex _devices_mutex;
 };
 
