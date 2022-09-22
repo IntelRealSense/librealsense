@@ -34,6 +34,7 @@ public:
                char const * topic_name );
     ~dds_topic();
 
+#if 0  // this doesn't work in gcc...
     // Helper function: given the class of the type you want (e.g., device_info), and given that this class
     // defines 'type' and 'TOPIC_NAME', this can make things a little more readable:
     //
@@ -44,6 +45,7 @@ public:
                                               eprosima::fastdds::dds::TypeSupport( new type::type ),
                                               type::TOPIC_NAME );
     }
+#endif
 
     eprosima::fastdds::dds::Topic * get() const { return _topic; }
     eprosima::fastdds::dds::Topic * operator->() const { return get(); }

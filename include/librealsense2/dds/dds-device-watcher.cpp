@@ -20,7 +20,8 @@ using namespace librealsense::dds;
 
 
 dds_device_watcher::dds_device_watcher( std::shared_ptr< dds::dds_participant > const & participant )
-    : _device_info_topic( new dds_topic_reader( dds_topic::of< topics::device_info >( participant ) ) )
+    : _device_info_topic( new dds_topic_reader( std::make_shared< dds_topic >(
+        participant, TypeSupport( new topics::device_info::type ), topics::device_info::TOPIC_NAME ) ) )
     , _participant( participant )
     , _active_object( [this]( dispatcher::cancellable_timer timer ) {
 
