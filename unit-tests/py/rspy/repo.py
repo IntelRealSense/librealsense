@@ -32,6 +32,8 @@ def find_pyrs():
     :return: the location (absolute path) of the pyrealsense2 .so (linux) or .pyd (windows)
     """
     global build
+    if not build:
+        return None
     from rspy import file
     if platform.system() == 'Linux':
         for so in file.find( build, '(^|/)pyrealsense2.*\.so$' ):
