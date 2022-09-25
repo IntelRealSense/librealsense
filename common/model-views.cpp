@@ -585,19 +585,19 @@ namespace rs2
             if (!new_line)
                 ImGui::SameLine();
 
-            if (is_checkbox())
+            if ( is_enum() )
             {
-                res = draw_checkbox( model, error_message, desc );
+                res = draw_combobox( model, error_message, desc, new_line, use_option_name );
             }
             else
             {
-                if( !is_enum() )
+                if( is_checkbox() )
                 {
-                    res = draw_slider( model, error_message, desc, use_cm_units );
+                    res = draw_checkbox( model, error_message, desc );
                 }
                 else
                 {
-                    res = draw_combobox( model, error_message, desc, new_line, use_option_name );
+                    res = draw_slider( model, error_message, desc, use_cm_units );
                 }
             }
 
@@ -693,7 +693,9 @@ namespace rs2
 
     bool option_model::is_enum() const
     {
-        if (range.step < 0.001f) return false;
+        // We do not expect enum values to have a step that is smaller than 1,
+        // and we don't want to compare a floating point value to an integer so 0.9 will do the work.
+        if (range.step < 0.9f) return false;
 
         for (auto i = range.min; i <= range.max; i += range.step)
         {
