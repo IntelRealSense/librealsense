@@ -341,7 +341,9 @@ namespace rs2
         bool is_all_integers() const;
         bool is_enum() const;
         bool is_checkbox() const;
-        bool allow_change(float val, std::string& error_message) const;
+        bool draw_checkbox( notifications_model& model, std::string& error_message, const char *description );
+        bool draw_combobox( notifications_model& model, std::string& error_message, const char* description, bool new_line, bool use_option_name );
+        bool draw_slider( notifications_model& model, std::string& error_message, const char* description, bool use_cm_units );
         bool slider_selected( rs2_option opt,
             float value,
             std::string& error_message,

@@ -37,10 +37,15 @@ namespace librealsense
                         "Emitter select, 0-disable all emitters, 1-enable laser, 2-enable laser auto (opt), 3-enable LED (opt)")
     {}
 
-    emitter_frequency::emitter_frequency(uvc_sensor& ep)
-    : uvc_xu_option(ep, ds::depth_xu, ds::DS5_EMITTER_FREQUENCY,
-                    "Controls the emitter frequency, 57 [KHZ] / 91 [KHZ]")
-    {}
+    emitter_frequency::emitter_frequency(
+        uvc_sensor & ep, const std::map< float, std::string > & description_per_value )
+        : uvc_xu_option( ep,
+                         ds::depth_xu,
+                         ds::DS5_EMITTER_FREQUENCY,
+                         "Controls the emitter frequency, 57 [KHZ] / 91 [KHZ]",
+                         description_per_value )
+    {
+    }
 
     void emitter_frequency::set( float value )
     {

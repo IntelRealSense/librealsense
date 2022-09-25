@@ -568,14 +568,6 @@ namespace rs2
             if (opt == RS2_OPTION_HOLES_FILL)
                 use_option_name = false;
 
-            // lambda function used to convert meters to cm - while the number is a string
-            auto convert_float_str = [](std::string float_str, float conversion_factor) {
-                if (float_str.size() == 0)
-                    return float_str;
-                float number_float = std::stof(float_str);
-                return std::to_string(number_float * conversion_factor);
-            };
-
             std::string desc_str (endpoint->get_option_description(opt));
 
             // Device D405 is for short range, therefore, its units are in cm - for better UX
@@ -595,304 +587,18 @@ namespace rs2
 
             if (is_checkbox())
             {
-                auto bool_value = value > 0.0f;
-                if (ImGui::Checkbox(label.c_str(), &bool_value))
-                {
-                    if (allow_change((bool_value ? 1.0f : 0.0f), error_message))
-                    {
-                        res = true;
-                        model.add_log(to_string() << "Setting " << opt << " to "
-                            << (bool_value? "1.0" : "0.0") << " (" << (bool_value ? "ON" : "OFF") << ")");
-
-                        set_option(opt, bool_value ? 1.f : 0.f, error_message);
-                        *invalidate_flag = true;
-                    }
-                }
-                if (ImGui::IsItemHovered() && desc)
-                {
-                    ImGui::SetTooltip("%s", desc);
-                }
+                res = draw_checkbox( model, error_message, desc );
             }
             else
             {
-                if (!is_enum())
+                if( !is_enum() )
                 {
-                    std::string txt = to_string() << endpoint->get_option_name(opt) << ":";
-                    ImGui::Text("%s", txt.c_str());
-
-                    ImGui::SameLine();
-                    ImGui::SetCursorPosX(read_only ? 268.f : 245.f);
-                    ImGui::PushStyleColor(ImGuiCol_Text, grey);
-                    ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, grey);
-                    ImGui::PushStyleColor(ImGuiCol_ButtonActive, { 1.f,1.f,1.f,0.f });
-                    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, { 1.f,1.f,1.f,0.f });
-                    ImGui::PushStyleColor(ImGuiCol_Button, { 1.f,1.f,1.f,0.f });
-                    ImGui::Button(textual_icons::question_mark, { 20, 20 });
-                    ImGui::PopStyleColor(5);
-                    if (ImGui::IsItemHovered() && desc)
-                    {
-                        ImGui::SetTooltip("%s", desc);
-                    }
-
-                    if (!read_only)
-                    {
-                        ImGui::SameLine();
-                        ImGui::SetCursorPosX(268);
-                        if (!edit_mode)
-                        {
-                            std::string edit_id = to_string() << textual_icons::edit << "##" << id;
-                            ImGui::PushStyleColor(ImGuiCol_Text, light_grey);
-                            ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_grey);
-                            ImGui::PushStyleColor(ImGuiCol_ButtonHovered, { 1.f,1.f,1.f,0.f });
-                            ImGui::PushStyleColor(ImGuiCol_Button, { 1.f,1.f,1.f,0.f });
-                            if (ImGui::Button(edit_id.c_str(), { 20, 20 }))
-                            {
-                                if (is_all_integers())
-                                    edit_value = to_string() << (int)value;
-                                else
-                                    edit_value = to_string() << value;
-                                edit_mode = true;
-                            }
-                            if (ImGui::IsItemHovered())
-                            {
-                                ImGui::SetTooltip("Enter text-edit mode");
-                            }
-                            ImGui::PopStyleColor(4);
-                        }
-                        else
-                        {
-                            std::string edit_id = to_string() << textual_icons::edit << "##" << id;
-                            ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
-                            ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue);
-                            ImGui::PushStyleColor(ImGuiCol_ButtonHovered, { 1.f,1.f,1.f,0.f });
-                            ImGui::PushStyleColor(ImGuiCol_Button, { 1.f,1.f,1.f,0.f });
-                            if (ImGui::Button(edit_id.c_str(), { 20, 20 }))
-                            {
-                                edit_mode = false;
-                            }
-                            if (ImGui::IsItemHovered())
-                            {
-                                ImGui::SetTooltip("Exit text-edit mode");
-                            }
-                            ImGui::PopStyleColor(4);
-                        }
-                    }
-
-                    ImGui::PushItemWidth(-1);
-
-                    try
-                    {
-                        if (read_only)
-                        {
-                            ImVec2 vec{ 0, 20 };
-                            std::string text = (value == (int)value) ? std::to_string((int)value) : std::to_string(value);
-                            if (range.min != range.max)
-                            {
-                                ImGui::ProgressBar((value / (range.max - range.min)), vec, text.c_str());
-                            }
-                            else //constant value options
-                            {
-                                auto c = ImGui::ColorConvertU32ToFloat4(ImGui::GetColorU32(ImGuiCol_FrameBg));
-                                ImGui::PushStyleColor(ImGuiCol_FrameBgActive, c);
-                                ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, c);
-                                float dummy = std::floor(value);
-                                if (ImGui::DragFloat(id.c_str(), &dummy, 1, 0, 0, text.c_str()))
-                                {
-                                    // Changing the depth units not on advanced mode is not allowed, 
-                                    // prompt the user to switch to advanced mode for chaging it.
-                                    if (RS2_OPTION_DEPTH_UNITS == opt)
-                                    {
-                                        auto advanced = dev->dev.as<advanced_mode>();
-                                        if (advanced)
-                                            if (!advanced.is_enabled())
-                                                dev->draw_advanced_mode_prompt = true;
-                                    }
-                                }
-                                ImGui::PopStyleColor(2);
-                            }
-                        }
-                        else if (edit_mode)
-                        {
-                            std::string buff_str = edit_value;
-
-                            // when cm must be used instead of meters
-                            if (use_cm_units)
-                                buff_str = convert_float_str(buff_str, 100.f);
-
-                            char buff[TEXT_BUFF_SIZE];
-                            memset(buff, 0, TEXT_BUFF_SIZE);
-                            strcpy(buff, buff_str.c_str());
-
-                            if (ImGui::InputText(id.c_str(), buff, TEXT_BUFF_SIZE,
-                                ImGuiInputTextFlags_EnterReturnsTrue))
-                            {
-                                if (use_cm_units)
-                                {
-                                    buff_str = convert_float_str(std::string(buff), 0.01f);
-                                    memset(buff, 0, TEXT_BUFF_SIZE);
-                                    strcpy(buff, buff_str.c_str());
-                                }
-                                float new_value;
-                                if (!utilities::string::string_to_value<float>(buff, new_value))
-                                {
-                                    error_message = "Invalid float input!";
-                                }
-                                else if (new_value < range.min || new_value > range.max)
-                                {
-                                    float val = use_cm_units ? new_value * 100.f : new_value;
-                                    float min = use_cm_units ? range.min * 100.f : range.min;
-                                    float max = use_cm_units ? range.max * 100.f : range.max;
-                                    
-                                    error_message = to_string() << val
-                                        << " is out of bounds [" << min << ", " << max << "]";
-                                }
-                                else
-                                {
-                                    set_option(opt, new_value, error_message);
-                                }
-                                edit_mode = false;
-                            }
-                            else if (use_cm_units)
-                            {
-                                buff_str = convert_float_str(buff_str, 0.01f);
-                                memset(buff, 0, TEXT_BUFF_SIZE);
-                                strcpy(buff, buff_str.c_str());
-                            }
-                            edit_value = buff;
-                        }
-                        else if (is_all_integers())
-                        {
-                            auto int_value = static_cast<int>(value);
-
-                            if (ImGui::SliderIntWithSteps(id.c_str(), &int_value,
-                                static_cast<int>(range.min),
-                                static_cast<int>(range.max),
-                                static_cast<int>(range.step)))
-                            {
-                                // TODO: Round to step?
-                                res = slider_selected( opt, static_cast< float >( int_value ), error_message, model );
-                            }
-                            else
-                            {
-                                res = slider_unselected( opt, static_cast< float >( int_value ), error_message, model );
-                            }
-                        }
-                        else
-                        {
-                            float tmp_value = value;
-                            float temp_value_displayed = tmp_value;
-                            float min_range_displayed = range.min;
-                            float max_range_displayed = range.max;
-
-                            // computing the number of decimal digits taken from the step options' property
-                            // this will then be used to format the displayed value
-                            auto num_of_decimal_digits = [](float f) {
-                                float f_0 = std::fabs(f - (int)f);
-                                std::string s = std::to_string(f_0);
-                                size_t cur_len = s.length();
-                                //removing trailing zeros
-                                while (cur_len > 3 && s[cur_len - 1] == '0')
-                                    cur_len--;
-                                return cur_len - 2;
-                            };
-                            int num_of_decimal_digits_displayed = (int)num_of_decimal_digits(range.step);
-
-                            // displaying in cm instead of meters for D405
-                            if (use_cm_units)
-                            {
-                                temp_value_displayed *= 100.f;
-                                min_range_displayed *= 100.f;
-                                max_range_displayed *= 100.f;
-                                int updated_num_of_decimal_digits_displayed = num_of_decimal_digits_displayed - 2;
-                                if (updated_num_of_decimal_digits_displayed > 0)
-                                    num_of_decimal_digits_displayed = updated_num_of_decimal_digits_displayed;
-                            }
-
-                            std::stringstream formatting_ss;
-                            formatting_ss << "%." << num_of_decimal_digits_displayed << "f";
-
-
-                            if (ImGui::SliderFloat(id.c_str(), &temp_value_displayed,
-                                min_range_displayed, max_range_displayed, formatting_ss.str().c_str()))
-                            {
-                                tmp_value = use_cm_units ? temp_value_displayed / 100.f : temp_value_displayed;
-                                auto loffset = std::abs(fmod(tmp_value, range.step));
-                                auto roffset = range.step - loffset;
-                                if (tmp_value >= 0)
-                                    tmp_value = (loffset < roffset) ? tmp_value - loffset : tmp_value + roffset;
-                                else
-                                    tmp_value = (loffset < roffset) ? tmp_value + loffset : tmp_value - roffset;
-                                tmp_value = (tmp_value < range.min) ? range.min : tmp_value;
-                                tmp_value = (tmp_value > range.max) ? range.max : tmp_value;
-
-                                res = slider_selected( opt, tmp_value, error_message, model );
-                            }
-                            else
-                            {
-                                res = slider_unselected( opt, tmp_value, error_message, model );
-                            }
-                        }
-                    }
-                    catch (const error& e)
-                    {
-                        error_message = error_to_string(e);
-                    }
+                    res = draw_slider( model, error_message, desc, use_cm_units );
                 }
                 else
                 {
-                    std::string txt = to_string() << (use_option_name ? endpoint->get_option_name(opt) : desc) << ":";
-
-                    auto pos_x = ImGui::GetCursorPosX();
-
-                    ImGui::Text("%s", txt.c_str());
-                    if (ImGui::IsItemHovered() && desc)
-                    {
-                        ImGui::SetTooltip("%s", desc);
-                    }
-
-                    ImGui::SameLine();
-                    if (new_line)
-                        ImGui::SetCursorPosX(pos_x + 120);
-
-                    ImGui::PushItemWidth(new_line ? -1.f : 100.f);
-
-                    std::vector<const char*> labels;
-                    auto selected = 0, counter = 0;
-                    for (auto i = range.min; i <= range.max; i += range.step, counter++)
-                    {
-                        if (std::fabs(i - value) < 0.001f) selected = counter;
-                        labels.push_back(endpoint->get_option_value_description(opt, i));
-                    }
-                    ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, { 1,1,1,1 });
-
-                    try
-                    {
-                        int tmp_selected = selected;
-                        float tmp_value = value;
-                        ImGui::PushItemWidth(135.f);
-                        if (ImGui::Combo(id.c_str(), &tmp_selected, labels.data(),
-                            static_cast<int>(labels.size())))
-                        {
-                            tmp_value = range.min + range.step * tmp_selected;
-                            model.add_log(to_string() << "Setting " << opt << " to "
-                                << tmp_value << " (" << labels[tmp_selected] << ")");
-                            set_option(opt, tmp_value, error_message);
-                            selected = tmp_selected;
-                            if (invalidate_flag) *invalidate_flag = true;
-                            res = true;
-                        }
-                    }
-                    catch (const error& e)
-                    {
-                        error_message = error_to_string(e);
-                    }
-
-                    ImGui::PopStyleColor();
-
-                    ImGui::PopItemWidth();
+                    res = draw_combobox( model, error_message, desc, new_line, use_option_name );
                 }
-
-
             }
 
             if (!read_only && opt == RS2_OPTION_ENABLE_AUTO_EXPOSURE && dev->auto_exposure_enabled  && dev->s->is<roi_sensor>() && dev->streaming)
@@ -997,6 +703,299 @@ namespace rs2
         return true;
     }
 
+    bool option_model::draw_combobox( notifications_model& model, std::string& error_message, const char *description, bool new_line, bool use_option_name )
+    {
+        bool item_clicked = false;
+        std::string txt = to_string() << ( use_option_name ? endpoint->get_option_name( opt ) : description ) << ":";
+
+        auto pos_x = ImGui::GetCursorPosX();
+
+        ImGui::Text( "%s", txt.c_str() );
+        if( ImGui::IsItemHovered() && description )
+        {
+            ImGui::SetTooltip( "%s", description );
+        }
+
+        ImGui::SameLine();
+        if( new_line )
+            ImGui::SetCursorPosX( pos_x + 120 );
+
+        ImGui::PushItemWidth( new_line ? -1.f : 100.f );
+
+        std::vector< const char * > labels;
+        auto selected = 0, counter = 0;
+        for( auto i = range.min; i <= range.max; i += range.step, counter++ )
+        {
+            if( std::fabs( i - value ) < 0.001f )
+                selected = counter;
+            labels.push_back( endpoint->get_option_value_description( opt, i ) );
+        }
+        ImGui::PushStyleColor( ImGuiCol_TextSelectedBg, { 1, 1, 1, 1 } );
+
+        try
+        {
+            int tmp_selected = selected;
+            float tmp_value = value;
+            ImGui::PushItemWidth( 135.f );
+            if( ImGui::Combo( id.c_str(),
+                              &tmp_selected,
+                              labels.data(),
+                              static_cast< int >( labels.size() ) ) )
+            {
+                tmp_value = range.min + range.step * tmp_selected;
+                model.add_log( to_string() << "Setting " << opt << " to " << tmp_value << " ("
+                                           << labels[tmp_selected] << ")" );
+                set_option( opt, tmp_value, error_message );
+                selected = tmp_selected;
+                if( invalidate_flag )
+                    *invalidate_flag = true;
+                item_clicked = true;
+            }
+        }
+        catch( const error & e )
+        {
+            error_message = error_to_string( e );
+        }
+
+        ImGui::PopStyleColor();
+        ImGui::PopItemWidth();
+        return item_clicked;
+    }
+    bool option_model::draw_slider( notifications_model& model, std::string& error_message, const char* description, bool use_cm_units )
+    {
+        bool slider_clicked = false;
+        std::string txt = to_string() << endpoint->get_option_name(opt) << ":";
+        ImGui::Text("%s", txt.c_str());
+
+        ImGui::SameLine();
+        ImGui::SetCursorPosX(read_only ? 268.f : 245.f);
+        ImGui::PushStyleColor(ImGuiCol_Text, grey);
+        ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, grey);
+        ImGui::PushStyleColor(ImGuiCol_ButtonActive, { 1.f,1.f,1.f,0.f });
+        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, { 1.f,1.f,1.f,0.f });
+        ImGui::PushStyleColor(ImGuiCol_Button, { 1.f,1.f,1.f,0.f });
+        ImGui::Button(textual_icons::question_mark, { 20, 20 });
+        ImGui::PopStyleColor(5);
+        if (ImGui::IsItemHovered() && description)
+        {
+            ImGui::SetTooltip("%s", description);
+        }
+
+        if (!read_only)
+        {
+            ImGui::SameLine();
+            ImGui::SetCursorPosX(268);
+            if (!edit_mode)
+            {
+                std::string edit_id = to_string() << textual_icons::edit << "##" << id;
+                ImGui::PushStyleColor(ImGuiCol_Text, light_grey);
+                ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_grey);
+                ImGui::PushStyleColor(ImGuiCol_ButtonHovered, { 1.f,1.f,1.f,0.f });
+                ImGui::PushStyleColor(ImGuiCol_Button, { 1.f,1.f,1.f,0.f });
+                if (ImGui::Button(edit_id.c_str(), { 20, 20 }))
+                {
+                    if (is_all_integers())
+                        edit_value = to_string() << (int)value;
+                    else
+                        edit_value = to_string() << value;
+                    edit_mode = true;
+                }
+                if (ImGui::IsItemHovered())
+                {
+                    ImGui::SetTooltip("Enter text-edit mode");
+                }
+                ImGui::PopStyleColor(4);
+            }
+            else
+            {
+                std::string edit_id = to_string() << textual_icons::edit << "##" << id;
+                ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
+                ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue);
+                ImGui::PushStyleColor(ImGuiCol_ButtonHovered, { 1.f,1.f,1.f,0.f });
+                ImGui::PushStyleColor(ImGuiCol_Button, { 1.f,1.f,1.f,0.f });
+                if (ImGui::Button(edit_id.c_str(), { 20, 20 }))
+                {
+                    edit_mode = false;
+                }
+                if (ImGui::IsItemHovered())
+                {
+                    ImGui::SetTooltip("Exit text-edit mode");
+                }
+                ImGui::PopStyleColor(4);
+            }
+        }
+
+        ImGui::PushItemWidth(-1);
+
+        try
+        {
+            if (read_only)
+            {
+                ImVec2 vec{ 0, 20 };
+                std::string text = (value == (int)value) ? std::to_string((int)value) : std::to_string(value);
+                if (range.min != range.max)
+                {
+                    ImGui::ProgressBar((value / (range.max - range.min)), vec, text.c_str());
+                }
+                else //constant value options
+                {
+                    auto c = ImGui::ColorConvertU32ToFloat4(ImGui::GetColorU32(ImGuiCol_FrameBg));
+                    ImGui::PushStyleColor(ImGuiCol_FrameBgActive, c);
+                    ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, c);
+                    float dummy = std::floor(value);
+                    if (ImGui::DragFloat(id.c_str(), &dummy, 1, 0, 0, text.c_str()))
+                    {
+                        // Changing the depth units not on advanced mode is not allowed, 
+                        // prompt the user to switch to advanced mode for chaging it.
+                        if (RS2_OPTION_DEPTH_UNITS == opt)
+                        {
+                            auto advanced = dev->dev.as<advanced_mode>();
+                            if (advanced)
+                                if (!advanced.is_enabled())
+                                    dev->draw_advanced_mode_prompt = true;
+                        }
+                    }
+                    ImGui::PopStyleColor(2);
+                }
+            }
+            else if (edit_mode)
+            {
+                std::string buff_str = edit_value;
+
+            // lambda function used to convert meters to cm - while the number is a string
+            auto convert_float_str = [](std::string float_str, float conversion_factor) {
+                if (float_str.size() == 0)
+                    return float_str;
+                float number_float = std::stof(float_str);
+                return std::to_string(number_float * conversion_factor);
+            };
+
+                // when cm must be used instead of meters
+                if (use_cm_units)
+                    buff_str = convert_float_str(buff_str, 100.f);
+
+                char buff[TEXT_BUFF_SIZE];
+                memset(buff, 0, TEXT_BUFF_SIZE);
+                strcpy(buff, buff_str.c_str());
+
+                if (ImGui::InputText(id.c_str(), buff, TEXT_BUFF_SIZE,
+                    ImGuiInputTextFlags_EnterReturnsTrue))
+                {
+                    if (use_cm_units)
+                    {
+                        buff_str = convert_float_str(std::string(buff), 0.01f);
+                        memset(buff, 0, TEXT_BUFF_SIZE);
+                        strcpy(buff, buff_str.c_str());
+                    }
+                    float new_value;
+                    if (!utilities::string::string_to_value<float>(buff, new_value))
+                    {
+                        error_message = "Invalid float input!";
+                    }
+                    else if (new_value < range.min || new_value > range.max)
+                    {
+                        float val = use_cm_units ? new_value * 100.f : new_value;
+                        float min = use_cm_units ? range.min * 100.f : range.min;
+                        float max = use_cm_units ? range.max * 100.f : range.max;
+                                    
+                        error_message = to_string() << val
+                            << " is out of bounds [" << min << ", " << max << "]";
+                    }
+                    else
+                    {
+                        set_option(opt, new_value, error_message);
+                    }
+                    edit_mode = false;
+                }
+                else if (use_cm_units)
+                {
+                    buff_str = convert_float_str(buff_str, 0.01f);
+                    memset(buff, 0, TEXT_BUFF_SIZE);
+                    strcpy(buff, buff_str.c_str());
+                }
+                edit_value = buff;
+            }
+            else if (is_all_integers())
+            {
+                auto int_value = static_cast<int>(value);
+
+                if (ImGui::SliderIntWithSteps(id.c_str(), &int_value,
+                    static_cast<int>(range.min),
+                    static_cast<int>(range.max),
+                    static_cast<int>(range.step)))
+                {
+                    // TODO: Round to step?
+                    slider_clicked = slider_selected( opt, static_cast< float >( int_value ), error_message, model );
+                }
+                else
+                {
+                    slider_clicked = slider_unselected( opt, static_cast< float >( int_value ), error_message, model );
+                }
+            }
+            else
+            {
+                float tmp_value = value;
+                float temp_value_displayed = tmp_value;
+                float min_range_displayed = range.min;
+                float max_range_displayed = range.max;
+
+                // computing the number of decimal digits taken from the step options' property
+                // this will then be used to format the displayed value
+                auto num_of_decimal_digits = [](float f) {
+                    float f_0 = std::fabs(f - (int)f);
+                    std::string s = std::to_string(f_0);
+                    size_t cur_len = s.length();
+                    //removing trailing zeros
+                    while (cur_len > 3 && s[cur_len - 1] == '0')
+                        cur_len--;
+                    return cur_len - 2;
+                };
+                int num_of_decimal_digits_displayed = (int)num_of_decimal_digits(range.step);
+
+                // displaying in cm instead of meters for D405
+                if (use_cm_units)
+                {
+                    temp_value_displayed *= 100.f;
+                    min_range_displayed *= 100.f;
+                    max_range_displayed *= 100.f;
+                    int updated_num_of_decimal_digits_displayed = num_of_decimal_digits_displayed - 2;
+                    if (updated_num_of_decimal_digits_displayed > 0)
+                        num_of_decimal_digits_displayed = updated_num_of_decimal_digits_displayed;
+                }
+
+                std::stringstream formatting_ss;
+                formatting_ss << "%." << num_of_decimal_digits_displayed << "f";
+
+
+                if (ImGui::SliderFloat(id.c_str(), &temp_value_displayed,
+                    min_range_displayed, max_range_displayed, formatting_ss.str().c_str()))
+                {
+                    tmp_value = use_cm_units ? temp_value_displayed / 100.f : temp_value_displayed;
+                    auto loffset = std::abs(fmod(tmp_value, range.step));
+                    auto roffset = range.step - loffset;
+                    if (tmp_value >= 0)
+                        tmp_value = (loffset < roffset) ? tmp_value - loffset : tmp_value + roffset;
+                    else
+                        tmp_value = (loffset < roffset) ? tmp_value + loffset : tmp_value - roffset;
+                    tmp_value = (tmp_value < range.min) ? range.min : tmp_value;
+                    tmp_value = (tmp_value > range.max) ? range.max : tmp_value;
+
+                    slider_clicked = slider_selected( opt, tmp_value, error_message, model );
+                }
+                else
+                {
+                    slider_clicked = slider_unselected( opt, tmp_value, error_message, model );
+                }
+            }
+        }
+        catch (const error& e)
+        {
+            error_message = error_to_string(e);
+        }
+        
+        return slider_clicked;
+    }
+
     bool option_model::is_checkbox() const
     {
         return range.max == 1.0f &&
@@ -1004,10 +1003,25 @@ namespace rs2
             range.step == 1.0f;
     }
 
-    bool option_model::allow_change(float val, std::string& error_message) const
+    bool option_model::draw_checkbox( notifications_model& model, std::string& error_message, const char *description )
     {
-        // Place here option restrictions
-        return true;
+        bool checkbox_was_clicked = false;
+
+        auto bool_value = value > 0.0f;
+        if( ImGui::Checkbox( label.c_str(), &bool_value ) )
+        {
+            checkbox_was_clicked = true;
+            model.add_log( to_string()
+                           << "Setting " << opt << " to " << ( bool_value ? "1.0" : "0.0" ) << " ("
+                           << ( bool_value ? "ON" : "OFF" ) << ")" );
+
+            set_option( opt, bool_value ? 1.f : 0.f, error_message );
+        }
+        if( ImGui::IsItemHovered() && description )
+        {
+            ImGui::SetTooltip( "%s", description );
+        }
+        return checkbox_was_clicked;
     }
 
     bool option_model::slider_selected( rs2_option opt,

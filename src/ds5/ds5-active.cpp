@@ -83,13 +83,18 @@ namespace librealsense
             }
 
             // EMITTER FREQUENCY OPTION
-            // TODO:: add FW minimal version check
-            auto emitter_frequency = std::make_shared<uvc_xu_option<uint16_t>>(raw_depth_ep,
-                                                                         depth_xu,
-                                                                         DS5_EMITTER_FREQUENCY,
-                                                                         "Controls the emitter frequency, 57 [KHZ] / 91 [KHZ]");
-            
-            depth_ep.register_option(RS2_OPTION_EMITTER_FREQUENCY, emitter_frequency);
+            // TODO:: verify FW minimal version check
+            if( ( _pid == ds::RS457_PID || _pid == ds::RS455_PID )
+                && _fw_version > firmware_version( "5.13.1.50" ) )
+            {
+                auto emitter_freq = std::make_shared< emitter_frequency >(
+                    raw_depth_ep,
+                    std::map< float, std::string >{
+                        { (float)RS2_EMITTER_FREQUENCY_57_KHZ, "57 KHZ" },
+                        { (float)RS2_EMITTER_FREQUENCY_91_KHZ, "91 KHZ" } } );
+
+                depth_ep.register_option( RS2_OPTION_EMITTER_FREQUENCY, emitter_freq );
+            }
 
         }
         else
