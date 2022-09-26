@@ -18,7 +18,6 @@ Copyright(c) 2022 Intel Corporation. All Rights Reserved. */
 #include <fastdds/dds/log/Log.hpp>
 #include <fastdds/dds/domain/qos/DomainParticipantQos.hpp>
 #include <fastdds/dds/domain/DomainParticipant.hpp>
-#include <fastdds/dds/subscriber/DataReader.hpp>
 #include <fastdds/dds/core/status/SubscriptionMatchedStatus.hpp>
 #include <fastrtps/types/DynamicType.h>
 
@@ -244,16 +243,26 @@ PYBIND11_MODULE(NAME, m) {
             return os.str();
         } );
 
+    using reader_qos = librealsense::dds::dds_topic_reader::reader_qos;
+    py::class_< reader_qos >( m, "reader_qos" )
+        .def( "__repr__", []( dds_topic const & self ) {
+            std::ostringstream os;
+            os << "<" SNAME ".reader_qos";
+            os << ">";
+            return os.str();
+        } );
+
     using librealsense::dds::dds_topic_reader;
     py::class_< dds_topic_reader, std::shared_ptr< dds_topic_reader > >( m, "topic_reader" )
         .def( py::init< std::shared_ptr< dds_topic > const & >() )
-        .def( FN_FWD( dds_topic_reader, on_data_available, ( ), ( ), callback(); ) )
+        .def( FN_FWD( dds_topic_reader, on_data_available, (), (), callback(); ) )
         .def( FN_FWD( dds_topic_reader,
                       on_subscription_matched,
                       (),
                       (eprosima::fastdds::dds::SubscriptionMatchedStatus const &),
                       callback(); ) )
-        .def( "run", &dds_topic_reader::run );
+        .def( "run", &dds_topic_reader::run )
+        .def( "qos", []() { return reader_qos(); } );
 
 
     // The actual types are declared as functions and not classes: the py::init<> inheritance rules are pretty strict
@@ -264,38 +273,48 @@ PYBIND11_MODULE(NAME, m) {
 
     py::class_< device_info >( m, "device_info" )
         .def( py::init<>() )
-        //.def( py::init< raw_device_info const & >() )
-        .def( py::init( []( dds_topic_reader const & reader ) {
-            auto actual_type = reader.topic()->get()->get_type_name();
-            if( actual_type != "librealsense::dds::topics::raw::device_info" )
-                throw std::runtime_error( "can't initialize raw::device_info from " + actual_type );
-            raw_device_info raw_data;
-            eprosima::fastdds::dds::SampleInfo info;
-            DDS_API_CALL( reader->take_next_sample( &raw_data, &info ) );
-            if( ! info.valid_data )
-                throw std::runtime_error( "invalid data" );
-            return raw_data;
-        } ) )
         .def_readwrite( "name", &device_info::name )
         .def_readwrite( "serial", &device_info::serial )
         .def_readwrite( "product_line", &device_info::product_line )
         .def_readwrite( "locked", &device_info::locked )
         .def_readwrite( "topic_root", &device_info::topic_root )
-        .def( "__repr__", []( device_info const & self ) {
-            std::ostringstream os;
-            os << "<" SNAME ".device_info[";
-            if( ! self.name.empty() )
-                os << "\"" << self.name << "\" ";
-            if( ! self.serial.empty() )
-                os << "s/n \"" << self.serial << "\" ";
-            if( ! self.topic_root.empty() )
-                os << "topic-root \"" << self.topic_root << "\" ";
-            if( ! self.product_line.empty() )
-                os << "product-line \"" << self.product_line << "\" ";
-            os << ( self.locked ? "locked" : "unlocked" );
-            os << "]>";
-            return os.str();
-        } );
+        .def( "invalidate", &device_info::invalidate )
+        .def( "is_valid", &device_info::is_valid )
+        .def( "__nonzero__", &device_info::is_valid )  // Called to implement truth value testing in Python 2
+        .def( "__bool__", &device_info::is_valid )     // Called to implement truth value testing in Python 3
+        .def( "__repr__",
+              []( device_info const & self ) {
+                  std::ostringstream os;
+                  os << "<" SNAME ".device_info ";
+                  if( ! self.is_valid() )
+                      os << "INVALID";
+                  else
+                  {
+                      if( !self.name.empty() )
+                          os << "\"" << self.name << "\" ";
+                      if( !self.serial.empty() )
+                          os << "s/n \"" << self.serial << "\" ";
+                      if( !self.topic_root.empty() )
+                          os << "topic-root \"" << self.topic_root << "\" ";
+                      if( !self.product_line.empty() )
+                          os << "product-line \"" << self.product_line << "\" ";
+                      os << ( self.locked ? "locked" : "unlocked" );
+                  }
+                  os << ">";
+                  return os.str();
+              } )
+        .def( "take_next",
+              []( dds_topic_reader & reader ) {
+                  auto actual_type = reader.topic()->get()->get_type_name();
+                  if( actual_type != device_info::type().getName() )
+                      throw std::runtime_error( "can't initialize raw::device_info from " + actual_type );
+                  device_info data;
+                  if( ! device_info::take_next( reader, &data ) )
+                      assert( ! data.is_valid() );
+                  return data;
+              } )
+        .def( "create_topic", &device_info::create_topic )
+        .attr( "TOPIC_NAME" ) = device_info::TOPIC_NAME;
 
     //py::class_< raw_device_info, std::shared_ptr< raw_device_info > >( raw, "device_info" )
     //    .def( py::init<>() )

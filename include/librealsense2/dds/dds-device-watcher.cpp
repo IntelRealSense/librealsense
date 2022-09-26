@@ -21,48 +21,41 @@ using namespace librealsense::dds;
 
 dds_device_watcher::dds_device_watcher( std::shared_ptr< dds::dds_participant > const & participant )
     : _device_info_topic(
-        new dds_topic_reader( topics::device_info::create( participant, topics::device_info::TOPIC_NAME ) ) )
+        new dds_topic_reader( topics::device_info::create_topic( participant, topics::device_info::TOPIC_NAME ) ) )
     , _participant( participant )
     , _active_object( [this]( dispatcher::cancellable_timer timer ) {
 
-        eprosima::fastrtps::Duration_t one_second = { 1, 0 };
+        eprosima::fastrtps::Duration_t const one_second = { 1, 0 };
         if( _device_info_topic->get()->wait_for_unread_message( one_second ) )
         {
-            dds::topics::raw::device_info raw_data;
-            SampleInfo info;
-            // Process all the samples until no one is returned,
-            // We will distinguish info change vs new data by validating using `valid_data` field
-            while( ReturnCode_t::RETCODE_OK == _device_info_topic->get()->take_next_sample( &raw_data, &info ) )
+            topics::device_info device_info;
+            eprosima::fastdds::dds::SampleInfo info;
+            while( topics::device_info::take_next( *_device_info_topic, &device_info, &info ) )
             {
-                // Only samples for which valid_data is true should be accessed
-                // valid_data indicates that the instance is still ALIVE and the `take` return an
-                // updated sample
-                if( info.valid_data )
+                if( ! device_info.is_valid() )
+                    continue;
+
+                eprosima::fastrtps::rtps::GUID_t guid;
+                eprosima::fastrtps::rtps::iHandle2GUID( guid, info.publication_handle );
+
+                LOG_DEBUG( "DDS device (" << _participant->print(guid) << ") detected:"
+                    << "\n\tName: " << device_info.name
+                    << "\n\tSerial: " << device_info.serial
+                    << "\n\tProduct line: " << device_info.product_line
+                    << "\n\tTopic root: " << device_info.topic_root
+                    << "\n\tLocked: " << ( device_info.locked ? "yes" : "no" ) );
+
+                // Add a new device record into our dds devices map
+                auto device = dds::dds_device::create( _participant, guid, device_info );
                 {
-                    dds::topics::device_info device_info = raw_data;
-
-                    eprosima::fastrtps::rtps::GUID_t guid;
-                    eprosima::fastrtps::rtps::iHandle2GUID( guid, info.publication_handle );
-
-                    LOG_DEBUG( "DDS device (" << _participant->print(guid) << ") detected:"
-                        << "\n\tName: " << device_info.name
-                        << "\n\tSerial: " << device_info.serial
-                        << "\n\tProduct line: " << device_info.product_line
-                        << "\n\tTopic root: " << device_info.topic_root
-                        << "\n\tLocked: " << ( device_info.locked ? "yes" : "no" ) );
-
-                    // Add a new device record into our dds devices map
-                    auto device = dds::dds_device::create( _participant, guid, device_info );
-                    {
-                        std::lock_guard< std::mutex > lock( _devices_mutex );
-                        _dds_devices[guid] = device;
-                    }
-
-                    // NOTE: device removals are handled via the writer-removed notification; see the
-                    // listener callback in init().
-                    if( _on_device_added )
-                        _on_device_added( device );
+                    std::lock_guard< std::mutex > lock( _devices_mutex );
+                    _dds_devices[guid] = device;
                 }
+
+                // NOTE: device removals are handled via the writer-removed notification; see the
+                // listener callback in init().
+                if( _on_device_added )
+                    _on_device_added( device );
             }
         }
     } )
