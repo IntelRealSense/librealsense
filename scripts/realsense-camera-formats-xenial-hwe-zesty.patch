@@ -1,22 +1,34 @@
-From ceb29b08b480a2a6a5e9dccf396a284378268037 Mon Sep 17 00:00:00 2001
-From: aangerma <Avishag.Angerman@intel.com>
-From: Evgeni Raikhel <evgeni.raikhel@intel.com>
-From: icarpis <itay.carpis@intel.com>
-Date: Thu, 30 Aug 2018 16:07:01 +0300
-Subject: [PATCH] Register realsense development formats. Kernel 4.10
+From 27e4e53acd1e4e4175bd2f4a5bc9ed19024d3113 Mon Sep 17 00:00:00 2001
+From: Dmitry Perchanov <dmitry.perchanov@intel.com>
+Date: Sun, 21 Aug 2022 15:57:47 +0300
+Subject: [PATCH] Register realsense development formats. Xenial hwe-zesty,
+ Kernel 4.10
 
+Signed-off-by: Dmitry Perchanov <dmitry.perchanov@intel.com>
 ---
- drivers/media/usb/uvc/uvc_driver.c   | 82 ++++++++++++++++++++++++++++++++++++
- drivers/media/usb/uvc/uvcvideo.h     | 42 ++++++++++++++++++
- drivers/media/v4l2-core/v4l2-ioctl.c |  8 +++-
- include/uapi/linux/videodev2.h       | 11 ++++-
- 4 files changed, 141 insertions(+), 2 deletions(-)
+ drivers/media/usb/uvc/uvc_driver.c   | 92 ++++++++++++++++++++++++++++
+ drivers/media/usb/uvc/uvcvideo.h     | 48 +++++++++++++++
+ drivers/media/v4l2-core/v4l2-ioctl.c | 10 ++-
+ include/uapi/linux/videodev2.h       | 13 +++-
+ 4 files changed, 161 insertions(+), 2 deletions(-)
 
 diff --git a/drivers/media/usb/uvc/uvc_driver.c b/drivers/media/usb/uvc/uvc_driver.c
-index 04bf350..bb8fefb 100644
+index 04bf35063c4c..c79677e15658 100644
 --- a/drivers/media/usb/uvc/uvc_driver.c
 +++ b/drivers/media/usb/uvc/uvc_driver.c
-@@ -188,6 +188,93 @@ static struct uvc_format_desc uvc_fmts[] = {
+@@ -158,6 +158,11 @@ static struct uvc_format_desc uvc_fmts[] = {
+ 		.guid		= UVC_GUID_FORMAT_Y12I,
+ 		.fcc		= V4L2_PIX_FMT_Y12I,
+ 	},
++	{
++		.name		= "Greyscale 16 L/R (Y16I)",
++		.guid		= UVC_GUID_FORMAT_Y16I,
++		.fcc		= V4L2_PIX_FMT_Y16I,
++	},
+ 	{
+ 		.name		= "Depth data 16-bit (Z16)",
+ 		.guid		= UVC_GUID_FORMAT_Z16,
+@@ -188,6 +193,93 @@ static struct uvc_format_desc uvc_fmts[] = {
  		.guid		= UVC_GUID_FORMAT_GR16,
  		.fcc		= V4L2_PIX_FMT_SGRBG16,
  	},
@@ -111,10 +123,19 @@ index 04bf350..bb8fefb 100644
  
  /* ------------------------------------------------------------------------
 diff --git a/drivers/media/usb/uvc/uvcvideo.h b/drivers/media/usb/uvc/uvcvideo.h
-index 3d6cc62..6ffdc0e 100644
+index 3d6cc62f3cd2..cf89ab33feb6 100644
 --- a/drivers/media/usb/uvc/uvcvideo.h
 +++ b/drivers/media/usb/uvc/uvcvideo.h
-@@ -143,6 +143,51 @@
+@@ -137,12 +137,60 @@
+ #define UVC_GUID_FORMAT_Y12I \
+ 	{ 'Y',  '1',  '2',  'I', 0x00, 0x00, 0x10, 0x00, \
+ 	 0x80, 0x00, 0x00, 0xaa, 0x00, 0x38, 0x9b, 0x71}
++#define UVC_GUID_FORMAT_Y16I \
++	{ 'Y',  '1',  '6',  'I', 0x00, 0x00, 0x10, 0x00, \
++	 0x80, 0x00, 0x00, 0xaa, 0x00, 0x38, 0x9b, 0x71}
+ #define UVC_GUID_FORMAT_Z16 \
+ 	{ 'Z',  '1',  '6',  ' ', 0x00, 0x00, 0x10, 0x00, \
+ 	 0x80, 0x00, 0x00, 0xaa, 0x00, 0x38, 0x9b, 0x71}
  #define UVC_GUID_FORMAT_RW10 \
  	{ 'R',  'W',  '1',  '0', 0x00, 0x00, 0x10, 0x00, \
  	 0x80, 0x00, 0x00, 0xaa, 0x00, 0x38, 0x9b, 0x71}
@@ -167,10 +188,18 @@ index 3d6cc62..6ffdc0e 100644
  /* ------------------------------------------------------------------------
   * Driver specific constants.
 diff --git a/drivers/media/v4l2-core/v4l2-ioctl.c b/drivers/media/v4l2-core/v4l2-ioctl.c
-index 0c3f238..5347286 100644
+index 0c3f238a2e76..ba436a17599f 100644
 --- a/drivers/media/v4l2-core/v4l2-ioctl.c
 +++ b/drivers/media/v4l2-core/v4l2-ioctl.c
-@@ -1217,7 +1217,14 @@ static void v4l_fill_fmtdesc(struct v4l2_fmtdesc *fmt)
+@@ -1130,6 +1130,7 @@ static void v4l_fill_fmtdesc(struct v4l2_fmtdesc *fmt)
+ 	case V4L2_PIX_FMT_Y10BPACK:	descr = "10-bit Greyscale (Packed)"; break;
+ 	case V4L2_PIX_FMT_Y8I:		descr = "Interleaved 8-bit Greyscale"; break;
+ 	case V4L2_PIX_FMT_Y12I:		descr = "Interleaved 12-bit Greyscale"; break;
++	case V4L2_PIX_FMT_Y16I:		descr = "Interleaved 16-bit Greyscale"; break;
+ 	case V4L2_PIX_FMT_Z16:		descr = "16-bit Depth"; break;
+ 	case V4L2_PIX_FMT_PAL8:		descr = "8-bit Palette"; break;
+ 	case V4L2_PIX_FMT_UV8:		descr = "8-bit Chrominance UV 4-4"; break;
+@@ -1217,7 +1218,14 @@ static void v4l_fill_fmtdesc(struct v4l2_fmtdesc *fmt)
  	case V4L2_TCH_FMT_DELTA_TD08:	descr = "8-bit signed deltas"; break;
  	case V4L2_TCH_FMT_TU16:		descr = "16-bit unsigned touch data"; break;
  	case V4L2_TCH_FMT_TU08:		descr = "8-bit unsigned touch data"; break;
@@ -187,11 +216,14 @@ index 0c3f238..5347286 100644
  		/* Compressed formats */
  		flags = V4L2_FMT_FLAG_COMPRESSED;
 diff --git a/include/uapi/linux/videodev2.h b/include/uapi/linux/videodev2.h
-index 45184a2..e7f6029 100644
+index 45184a2ef66c..3196ac01d84f 100644
 --- a/include/uapi/linux/videodev2.h
 +++ b/include/uapi/linux/videodev2.h
-@@ -661,7 +661,17 @@ struct v4l2_pix_format {
+@@ -659,9 +659,20 @@ struct v4l2_pix_format {
+ #define V4L2_PIX_FMT_S5C_UYVY_JPG v4l2_fourcc('S', '5', 'C', 'I') /* S5C73M3 interleaved UYVY/JPEG */
+ #define V4L2_PIX_FMT_Y8I      v4l2_fourcc('Y', '8', 'I', ' ') /* Greyscale 8-bit L/R interleaved */
  #define V4L2_PIX_FMT_Y12I     v4l2_fourcc('Y', '1', '2', 'I') /* Greyscale 12-bit L/R interleaved */
++#define V4L2_PIX_FMT_Y16I     v4l2_fourcc('Y', '1', '6', 'I') /* Greyscale 16-bit L/R interleaved */
  #define V4L2_PIX_FMT_Z16      v4l2_fourcc('Z', '1', '6', ' ') /* Depth data 16-bit */
  #define V4L2_PIX_FMT_MT21C    v4l2_fourcc('M', 'T', '2', '1') /* Mediatek compressed block mode  */
 -
@@ -210,5 +242,5 @@ index 45184a2..e7f6029 100644
  #define V4L2_SDR_FMT_CU8          v4l2_fourcc('C', 'U', '0', '8') /* IQ u8 */
  #define V4L2_SDR_FMT_CU16LE       v4l2_fourcc('C', 'U', '1', '6') /* IQ u16le */
 -- 
-2.7.4
+2.37.1
 

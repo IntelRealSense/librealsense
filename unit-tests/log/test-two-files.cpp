@@ -11,8 +11,8 @@ TEST_CASE( "Double file logging", "[log]" ) {
 
     // Try to log to multiple destinations: callback, console, file...
     char filename1[L_tmpnam], filename2[L_tmpnam];
-    tmpnam( filename1 );
-    tmpnam( filename2 );
+    REQUIRE( tmpnam( filename1 ));
+    REQUIRE( tmpnam( filename2 ));
 
     TRACE( "Filename1 logging to: " << filename1 );
     TRACE( "Filename2 logging to: " << filename2 );

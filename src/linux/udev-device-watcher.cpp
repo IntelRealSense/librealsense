@@ -181,27 +181,21 @@ udev_device_watcher::~udev_device_watcher()
 {
     stop();
 
-    if( _udev_monitor_fd == -1 )
-        LOG_ERROR( "monitor fd was -1" );
-    else
-    {
-        /* Release the udev monitor */
+    /* Release the udev monitor */
+    if( _udev_monitor )
         udev_monitor_unref( _udev_monitor );
-        _udev_monitor = nullptr;
-        _udev_monitor_fd = -1;
-    }
+    _udev_monitor = nullptr;
+    _udev_monitor_fd = -1;
 
     /* Clean up the udev context */
-    if (_udev_ctx)
-    {
+    if( _udev_ctx )
         udev_unref( _udev_ctx );
-        _udev_ctx = nullptr;
-    }
+    _udev_ctx = nullptr;
 }
 
 
 // Scan devices using udev
-bool udev_device_watcher::foreach_device( std::function< bool( struct udev_device * udev_dev ) > callback )
+void udev_device_watcher::foreach_device( std::function< void( struct udev_device * udev_dev ) > callback )
 {
     auto enumerator = udev_enumerate_new( _udev_ctx );
     if( ! enumerator )

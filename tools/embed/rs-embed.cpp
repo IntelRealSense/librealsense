@@ -144,7 +144,7 @@ int main(int argc, char** argv) try
         auto rawDataSize = (int)data.size();
         auto compressBufSize = LZ4_compressBound(rawDataSize);
         char* pchCompressed = new char[compressBufSize];
-        memset(pchCompressed, compressBufSize, 0);
+        memset(pchCompressed, 0, compressBufSize);
         int nCompressedSize = LZ4_compress_default((const char*)data.data(), pchCompressed, rawDataSize, compressBufSize);
 
   

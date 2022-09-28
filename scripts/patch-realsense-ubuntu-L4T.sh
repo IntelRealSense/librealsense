@@ -121,7 +121,7 @@ kernel_ver=`uname -r`
 sudo cp /usr/src/linux-headers-${kernel_ver}-ubuntu18.04_aarch64/kernel-4.9/Module.symvers .
 
 #Jetpack prior to 4.4.1 requires manual reconfiguration of kernel
-if [ "4.4" == PATCHES_REV ]; then
+if [ "4.4" = "$PATCHES_REV" ]; then
 	echo -e "\e[32mUpdate the kernel tree to support HID IMU sensors\e[0m"
 	sudo sed -i '/CONFIG_HID_SENSOR_ACCEL_3D/c\CONFIG_HID_SENSOR_ACCEL_3D=m' .config
 	sudo sed -i '/CONFIG_HID_SENSOR_GYRO_3D/c\CONFIG_HID_SENSOR_GYRO_3D=m' .config
@@ -134,7 +134,7 @@ sudo git reset --hard
 echo -e "\e[32mApply Librealsense Kernel Patches\e[0m"
 sudo -s patch -p1 < ./LRS_Patches/01-realsense-camera-formats-L4T-${PATCHES_REV}.patch
 sudo -s patch -p1 < ./LRS_Patches/02-realsense-metadata-L4T-${PATCHES_REV}.patch
-if [ "4.4" == PATCHES_REV ]; then # for Jetpack 4.4 and older
+if [ "4.4" = "$PATCHES_REV" ]; then # for Jetpack 4.4 and older
 	sudo -s patch -p1 < ./LRS_Patches/03-realsense-hid-L4T-4.9.patch
 fi
 sudo -s patch -p1 < ./LRS_Patches/04-media-uvcvideo-mark-buffer-error-where-overflow.patch
@@ -146,7 +146,7 @@ sudo -s make -j$(($(nproc)-1)) ARCH=arm64 M=drivers/media/usb/uvc/ modules
 echo -e "\e[32mCompiling v4l2-core modules\e[0m"
 #sudo -s make -j -C $KBASE M=$KBASE/drivers/media/v4l2-core modules
 sudo -s make -j$(($(nproc)-1)) ARCH=arm64  M=drivers/media/v4l2-core modules
-if [ "4.4" == PATCHES_REV ]; then # for Jetpack 4.4 and older
+if [ "4.4" = "$PATCHES_REV" ]; then # for Jetpack 4.4 and older
 	echo -e "\e[32mCompiling accelerometer and gyro modules\e[0m"
 	sudo -s make -j$(($(nproc)-1)) ARCH=arm64  M=drivers/iio modules
 fi
@@ -155,7 +155,7 @@ echo -e "\e[32mCopying the patched modules to (~/) \e[0m"
 sudo cp drivers/media/usb/uvc/uvcvideo.ko ~/${TEGRA_TAG}-uvcvideo.ko
 sudo cp drivers/media/v4l2-core/videobuf-vmalloc.ko ~/${TEGRA_TAG}-videobuf-vmalloc.ko
 sudo cp drivers/media/v4l2-core/videobuf-core.ko ~/${TEGRA_TAG}-videobuf-core.ko
-if [ "4.4" == PATCHES_REV ]; then # for Jetpack 4.4 and older
+if [ "4.4" = "$PATCHES_REV" ]; then # for Jetpack 4.4 and older
 	sudo cp drivers/iio/common/hid-sensors/hid-sensor-iio-common.ko ~/${TEGRA_TAG}-hid-sensor-iio-common.ko
 	sudo cp drivers/iio/common/hid-sensors/hid-sensor-trigger.ko ~/${TEGRA_TAG}-hid-sensor-trigger.ko
 	sudo cp drivers/iio/accel/hid-sensor-accel-3d.ko ~/${TEGRA_TAG}-hid-sensor-accel-3d.ko
@@ -164,7 +164,7 @@ fi
 popd
 
 echo -e "\e[32mMove the modified modules into the modules tree\e[0m"
-if [ "4.4" == PATCHES_REV ]; then # for Jetpack 4.4 and older
+if [ "4.4" = "$PATCHES_REV" ]; then # for Jetpack 4.4 and older
 #Optional - create kernel modules directories in kernel tree
 	sudo mkdir -p /lib/modules/`uname -r`/kernel/drivers/iio/accel
 	sudo mkdir -p /lib/modules/`uname -r`/kernel/drivers/iio/gyro
@@ -180,7 +180,7 @@ sudo depmod
 
 echo -e "\e[32mInsert the modified kernel modules\e[0m"
 try_module_insert uvcvideo              ~/${TEGRA_TAG}-uvcvideo.ko                /lib/modules/`uname -r`/kernel/drivers/media/usb/uvc/uvcvideo.ko
-if [ "4.4" == PATCHES_REV ]; then # for Jetpack 4.4 and older
+if [ "4.4" = "$PATCHES_REV" ]; then # for Jetpack 4.4 and older
 	try_module_insert hid_sensor_accel_3d   ~/${TEGRA_TAG}-hid-sensor-accel-3d.ko     /lib/modules/`uname -r`/kernel/drivers/iio/accel/hid-sensor-accel-3d.ko
 	try_module_insert hid_sensor_gyro_3d    ~/${TEGRA_TAG}-hid-sensor-gyro-3d.ko      /lib/modules/`uname -r`/kernel/drivers/iio/gyro/hid-sensor-gyro-3d.ko
 	#Preventively unload all HID-related modules
