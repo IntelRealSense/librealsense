@@ -1050,31 +1050,28 @@ namespace librealsense
                             options_and_reasons));
                 }
 
-                if (!mipi_sensor)
+                if (_fw_version >= hdr_firmware_version)
                 {
-                    if (_fw_version >= hdr_firmware_version)
-                    {
-                        std::vector<std::pair<std::shared_ptr<option>, std::string>> options_and_reasons = { std::make_pair(hdr_enabled_option, "Emitter ON/OFF cannot be set while HDR is enabled"),
-                                std::make_pair(emitter_always_on_opt, "Emitter ON/OFF cannot be set while Emitter always ON is enabled") };
-                        depth_sensor.register_option(RS2_OPTION_EMITTER_ON_OFF,
-                            std::make_shared<gated_option>(
-                                alternating_emitter_opt,
-                                options_and_reasons
-                                ));
-                    }
-                    else if ((_fw_version >= firmware_version("5.12.1.0")) && ((_device_capabilities & d400_caps::CAP_GLOBAL_SHUTTER) == d400_caps::CAP_GLOBAL_SHUTTER))
-                    {
-                        std::vector<std::pair<std::shared_ptr<option>, std::string>> options_and_reasons = { std::make_pair(emitter_always_on_opt,
-                            "Emitter ON/OFF cannot be set while Emitter always ON is enabled") };
-                        depth_sensor.register_option(RS2_OPTION_EMITTER_ON_OFF,
-                            std::make_shared<gated_option>(
-                                alternating_emitter_opt,
-                                options_and_reasons));
-                    }
-                    else
-                    {
-                        depth_sensor.register_option(RS2_OPTION_EMITTER_ON_OFF, alternating_emitter_opt);
-                    }
+                    std::vector<std::pair<std::shared_ptr<option>, std::string>> options_and_reasons = { std::make_pair(hdr_enabled_option, "Emitter ON/OFF cannot be set while HDR is enabled"),
+                            std::make_pair(emitter_always_on_opt, "Emitter ON/OFF cannot be set while Emitter always ON is enabled") };
+                    depth_sensor.register_option(RS2_OPTION_EMITTER_ON_OFF,
+                        std::make_shared<gated_option>(
+                            alternating_emitter_opt,
+                            options_and_reasons
+                            ));
+                }
+                else if ((_fw_version >= firmware_version("5.12.1.0")) && ((_device_capabilities & d400_caps::CAP_GLOBAL_SHUTTER) == d400_caps::CAP_GLOBAL_SHUTTER))
+                {
+                    std::vector<std::pair<std::shared_ptr<option>, std::string>> options_and_reasons = { std::make_pair(emitter_always_on_opt,
+                        "Emitter ON/OFF cannot be set while Emitter always ON is enabled") };
+                    depth_sensor.register_option(RS2_OPTION_EMITTER_ON_OFF,
+                        std::make_shared<gated_option>(
+                            alternating_emitter_opt,
+                            options_and_reasons));
+                }
+                else
+                {
+                    depth_sensor.register_option(RS2_OPTION_EMITTER_ON_OFF, alternating_emitter_opt);
                 }
 
             }
