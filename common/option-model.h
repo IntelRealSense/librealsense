@@ -4,7 +4,6 @@
 #pragma once
 #include <librealsense2/rs.hpp>
 #include <librealsense2/utilities/time/stopwatch.h>
-
 namespace rs2
 {
     struct notifications_model;
