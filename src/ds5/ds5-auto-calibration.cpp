@@ -185,7 +185,7 @@ namespace librealsense
           _collected_counter(-1),
           _collected_frame_num(-1),
           _collected_sum(-1.0),
-          _min_valid_depth(0),
+          _min_valid_depth(1),
           _max_valid_depth(uint16_t(-1)),
           _resize_factor(5),
           _skipped_frames(0)
@@ -421,7 +421,7 @@ namespace librealsense
             _json = json;
             _action = auto_calib_action::RS2_OCC_ACTION_ON_CHIP_CALIB;
             _interactive_state = interactive_calibration_state::RS2_OCC_STATE_WAIT_TO_CAMERA_START;
-            _interactive_scan = bool(interactive_scan_v3);
+            _interactive_scan = false;// Evgeni bool(interactive_scan_v3);
             switch (speed)
             {
             case auto_calib_speed::speed_very_fast:
@@ -491,15 +491,15 @@ namespace librealsense
             if (host_assistance == host_assistance_type::no_assistance || host_assistance == host_assistance_type::assistance_start)
             {
                 auto res = _hw_monitor->send(command{ ds::AUTO_CALIB, py_rx_calib_begin, speed, 0, p4 });
-                std::cout << __LINE__ << " send occ py_rx_calib_begin, speed = " << speed << ", p4 = " << p4 << " res size = " << res.size() << std::endl;
+                LOG_WARNING(std::string(to_string() << __LINE__ << " send occ py_rx_calib_begin, speed = " << speed << ", p4 = " << p4 << " res size = " << res.size()));
             }
 
             if (host_assistance != host_assistance_type::assistance_start)
             {
                 if (host_assistance == host_assistance_type::assistance_first_feed)
                 {
-                    command cmd(ds::AUTO_CALIB, get_calibration_result, 0, 0); // Rectify interactive_scan_control
-                    std::cout << __LINE__ << "occ interactive_scan_control 0,0 " << " res size = " << res.size() << std::endl;
+                    command cmd(ds::AUTO_CALIB, interactive_scan_control, 0, 0);
+                    LOG_WARNING(" occ interactive_scan_control 0,0 - save statistics ");
                     uint8_t* p = reinterpret_cast<uint8_t*>(&step_count_v3);
                     cmd.data.push_back(p[0]);
                     cmd.data.push_back(p[1]);
@@ -1333,18 +1333,17 @@ namespace librealsense
                         }
                         else
                         {
-                            std::cout << "Process frame id " << frame_counter << std::endl;
                             if (progress_callback)
                             {
                                 progress_callback->on_update_progress(static_cast<float>(20 + static_cast<int>(frame_counter * 60.0 / _total_frames)));
                             }
                             auto fr  = calc_fill_rate(f);
-                            if (frame_counter < 40) // Evgeni - handle discrepancy on stream/preset activation
+                            if (frame_counter < 20) // Evgeni - handle discrepancy on stream/preset activation
                                 fr = 0;
                             if (frame_counter + fw_host_offset < 256)
                             {
                                 _fill_factor[frame_counter + fw_host_offset] = fr;
-                                std::cout << "fc = " << frame_counter <<  ", _fill_factor[" << frame_counter + fw_host_offset << "] = " << fr << std::endl;
+                                LOG_WARNING(std::string(to_string() << __LINE__ << " fc = " << frame_counter <<  ", _fill_factor[" << frame_counter + fw_host_offset << "] = " << fr));
                             }
                             else
                                 std::cout << " trying to fill invalid fill index " << frame_counter + fw_host_offset << std::endl;
@@ -1452,7 +1451,7 @@ namespace librealsense
                         fout.close();
                     }
 #endif
-                    remove_leading_outliers(_fill_factor, _total_frames);
+                    //remove_leading_outliers(_fill_factor, _total_frames);
                     fill_missing_data(_fill_factor, _total_frames);
                     std::stringstream ss;
                     ss << "{\n \"calib type\":" << 0 <<
