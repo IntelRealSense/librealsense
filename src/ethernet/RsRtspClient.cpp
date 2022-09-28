@@ -10,6 +10,7 @@
 #include <algorithm>
 #include <iostream>
 #include <math.h>
+#include <locale.h>
 #include <string>
 #include <thread>
 #include <vector>
@@ -589,6 +590,7 @@ void RsRTSPClient::continueAfterPAUSE(RTSPClient *rtspClient, int resultCode, ch
 
 void RsRTSPClient::continueAfterOPTIONS(RTSPClient *rtspClient, int resultCode, char *resultString)
 {
+    setlocale(LC_NUMERIC, "C");
     std::string resultStr;
     if (nullptr != resultString)
     {
