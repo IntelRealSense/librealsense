@@ -245,7 +245,7 @@ PYBIND11_MODULE(NAME, m) {
 
     using reader_qos = librealsense::dds::dds_topic_reader::reader_qos;
     py::class_< reader_qos >( m, "reader_qos" )
-        .def( "__repr__", []( dds_topic const & self ) {
+        .def( "__repr__", []( reader_qos const & self ) {
             std::ostringstream os;
             os << "<" SNAME ".reader_qos";
             os << ">";
