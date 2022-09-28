@@ -15,7 +15,7 @@ module librealsense
                     {
                         unsigned short id; // See "librealsense::dds::topics::control::msg_type"
                         unsigned long size;
-                        sequence<octet> raw_data;
+                        sequence<octet> data;
                     };
                 };
             };

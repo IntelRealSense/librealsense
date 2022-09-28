@@ -38,7 +38,7 @@ public:
     struct sensor_open_msg
     {
         uint32_t message_id; // Running counter
-        int16_t sensor_uid;
+        int16_t sensor_uid;  // Sensor ID as received in notification::sensor_header_msg.index
         stream_profile profiles[MAX_OPEN_PROFILES];
     };
 
@@ -61,15 +61,15 @@ public:
     {
         raw_msg.id() = static_cast< int16_t >( msg_id );
         raw_msg.size() = static_cast< uint32_t >( sizeof( msg ) );
-        raw_msg.raw_data().assign( reinterpret_cast< const uint8_t * >( &msg ),
-                                   reinterpret_cast< const uint8_t * >( &msg ) + raw_msg.size() );
+        raw_msg.data().assign( reinterpret_cast< const uint8_t * >( &msg ),
+                               reinterpret_cast< const uint8_t * >( &msg ) + raw_msg.size() );
     }
 
     control() = default;
 
-    control( const raw::device::control& main )
+    control( const raw::device::control&& main )
         : _control_type( static_cast<control_type>(main.id()) )
-        , _raw_data(main.raw_data()) // TODO: avoid data copy?
+        , _raw_data(main.data()) // TODO: avoid data copy?
         , _size( main.size() )
     {
         if( _control_type >= control_type::MAX_CONTROL_TYPE )

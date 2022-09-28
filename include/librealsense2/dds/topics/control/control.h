@@ -156,30 +156,30 @@ namespace librealsense {
                         eProsima_user_DllExport uint32_t& size();
 
                         /*!
-                         * @brief This function copies the value in member raw_data
-                         * @param _raw_data New value to be copied in member raw_data
+                         * @brief This function copies the value in member data
+                         * @param _data New value to be copied in member data
                          */
-                        eProsima_user_DllExport void raw_data(
-                                const std::vector<uint8_t>& _raw_data);
+                        eProsima_user_DllExport void data(
+                                const std::vector<uint8_t>& _data);
 
                         /*!
-                         * @brief This function moves the value in member raw_data
-                         * @param _raw_data New value to be moved in member raw_data
+                         * @brief This function moves the value in member data
+                         * @param _data New value to be moved in member data
                          */
-                        eProsima_user_DllExport void raw_data(
-                                std::vector<uint8_t>&& _raw_data);
+                        eProsima_user_DllExport void data(
+                                std::vector<uint8_t>&& _data);
 
                         /*!
-                         * @brief This function returns a constant reference to member raw_data
-                         * @return Constant reference to member raw_data
+                         * @brief This function returns a constant reference to member data
+                         * @return Constant reference to member data
                          */
-                        eProsima_user_DllExport const std::vector<uint8_t>& raw_data() const;
+                        eProsima_user_DllExport const std::vector<uint8_t>& data() const;
 
                         /*!
-                         * @brief This function returns a reference to member raw_data
-                         * @return Reference to member raw_data
+                         * @brief This function returns a reference to member data
+                         * @return Reference to member data
                          */
-                        eProsima_user_DllExport std::vector<uint8_t>& raw_data();
+                        eProsima_user_DllExport std::vector<uint8_t>& data();
 
                         /*!
                          * @brief This function returns the maximum serialized size of an object
@@ -242,7 +242,7 @@ namespace librealsense {
 
                         uint16_t m_id;
                         uint32_t m_size;
-                        std::vector<uint8_t> m_raw_data;
+                        std::vector<uint8_t> m_data;
                     };
                 } // namespace device
             } // namespace raw

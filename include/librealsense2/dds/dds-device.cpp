@@ -171,10 +171,14 @@ void dds_device::sensor_open( size_t sensor_index, const std::vector< rs2_video_
 {
     using namespace librealsense::dds::topics;
 
-    assert( profiles.size() < device::control::MAX_OPEN_PROFILES );
+    if (profiles.size() < device::control::MAX_OPEN_PROFILES)
+    {
+        throw std::runtime_error( "Too many profiles (" + std::to_string( profiles.size() )
+                                + ") when opening sensor, max is " + std::to_string( device::control::MAX_OPEN_PROFILES ) );
+    }
 
     device::control::sensor_open_msg open_msg;
-    open_msg.message_id = _impl->_message_counter++;
+    open_msg.message_id = _impl->_control_message_counter++;
     open_msg.sensor_uid = static_cast<uint16_t>( sensor_index );
     for ( size_t i = 0; i < profiles.size(); ++i )
     {
@@ -205,7 +209,7 @@ void dds_device::sensor_close( size_t sensor_index )
     using namespace librealsense::dds::topics;
 
     device::control::sensor_close_msg close_msg;
-    close_msg.message_id = _impl->_message_counter++;
+    close_msg.message_id = _impl->_control_message_counter++;
     close_msg.sensor_uid = static_cast<uint16_t>( sensor_index );
 
     raw::device::control raw_msg;

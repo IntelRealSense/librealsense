@@ -129,24 +129,24 @@ namespace librealsense {
                         }
                         type_object->minimal().struct_type().member_seq().emplace_back(mst_size);
 
-                        MinimalStructMember mst_raw_data;
-                        mst_raw_data.common().member_id(memberId++);
-                        mst_raw_data.common().member_flags().TRY_CONSTRUCT1(false); // Unsupported
-                        mst_raw_data.common().member_flags().TRY_CONSTRUCT2(false); // Unsupported
-                        mst_raw_data.common().member_flags().IS_EXTERNAL(false); // Unsupported
-                        mst_raw_data.common().member_flags().IS_OPTIONAL(false);
-                        mst_raw_data.common().member_flags().IS_MUST_UNDERSTAND(false);
-                        mst_raw_data.common().member_flags().IS_KEY(false);
-                        mst_raw_data.common().member_flags().IS_DEFAULT(false); // Doesn't apply
-                        mst_raw_data.common().member_type_id(*TypeObjectFactory::get_instance()->get_sequence_identifier("uint8_t", 0, false));
+                        MinimalStructMember mst_data;
+                        mst_data.common().member_id(memberId++);
+                        mst_data.common().member_flags().TRY_CONSTRUCT1(false); // Unsupported
+                        mst_data.common().member_flags().TRY_CONSTRUCT2(false); // Unsupported
+                        mst_data.common().member_flags().IS_EXTERNAL(false); // Unsupported
+                        mst_data.common().member_flags().IS_OPTIONAL(false);
+                        mst_data.common().member_flags().IS_MUST_UNDERSTAND(false);
+                        mst_data.common().member_flags().IS_KEY(false);
+                        mst_data.common().member_flags().IS_DEFAULT(false); // Doesn't apply
+                        mst_data.common().member_type_id(*TypeObjectFactory::get_instance()->get_sequence_identifier("uint8_t", 0, false));
 
 
-                        MD5 raw_data_hash("raw_data");
+                        MD5 data_hash("data");
                         for(int i = 0; i < 4; ++i)
                         {
-                            mst_raw_data.detail().name_hash()[i] = raw_data_hash.digest[i];
+                            mst_data.detail().name_hash()[i] = data_hash.digest[i];
                         }
-                        type_object->minimal().struct_type().member_seq().emplace_back(mst_raw_data);
+                        type_object->minimal().struct_type().member_seq().emplace_back(mst_data);
 
 
                         // Header
@@ -230,21 +230,21 @@ namespace librealsense {
 
                         type_object->complete().struct_type().member_seq().emplace_back(cst_size);
 
-                        CompleteStructMember cst_raw_data;
-                        cst_raw_data.common().member_id(memberId++);
-                        cst_raw_data.common().member_flags().TRY_CONSTRUCT1(false); // Unsupported
-                        cst_raw_data.common().member_flags().TRY_CONSTRUCT2(false); // Unsupported
-                        cst_raw_data.common().member_flags().IS_EXTERNAL(false); // Unsupported
-                        cst_raw_data.common().member_flags().IS_OPTIONAL(false);
-                        cst_raw_data.common().member_flags().IS_MUST_UNDERSTAND(false);
-                        cst_raw_data.common().member_flags().IS_KEY(false);
-                        cst_raw_data.common().member_flags().IS_DEFAULT(false); // Doesn't apply
-                        cst_raw_data.common().member_type_id(*TypeObjectFactory::get_instance()->get_sequence_identifier("uint8_t", 0, true));
+                        CompleteStructMember cst_data;
+                        cst_data.common().member_id(memberId++);
+                        cst_data.common().member_flags().TRY_CONSTRUCT1(false); // Unsupported
+                        cst_data.common().member_flags().TRY_CONSTRUCT2(false); // Unsupported
+                        cst_data.common().member_flags().IS_EXTERNAL(false); // Unsupported
+                        cst_data.common().member_flags().IS_OPTIONAL(false);
+                        cst_data.common().member_flags().IS_MUST_UNDERSTAND(false);
+                        cst_data.common().member_flags().IS_KEY(false);
+                        cst_data.common().member_flags().IS_DEFAULT(false); // Doesn't apply
+                        cst_data.common().member_type_id(*TypeObjectFactory::get_instance()->get_sequence_identifier("uint8_t", 0, true));
 
 
-                        cst_raw_data.detail().name("raw_data");
+                        cst_data.detail().name("data");
 
-                        type_object->complete().struct_type().member_seq().emplace_back(cst_raw_data);
+                        type_object->complete().struct_type().member_seq().emplace_back(cst_data);
 
 
                         // Header

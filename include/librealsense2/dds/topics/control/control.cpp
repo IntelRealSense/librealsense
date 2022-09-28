@@ -30,7 +30,7 @@ librealsense::dds::topics::raw::device::control::control()
     m_id = 0;
     // m_size com.eprosima.idl.parser.typecode.PrimitiveTypeCode@617faa95
     m_size = 0;
-    // m_raw_data com.eprosima.idl.parser.typecode.SequenceTypeCode@1e127982
+    // m_data com.eprosima.idl.parser.typecode.SequenceTypeCode@1e127982
 
 
     // Just to register all known types
@@ -49,7 +49,7 @@ librealsense::dds::topics::raw::device::control::control(
 {
     m_id = x.m_id;
     m_size = x.m_size;
-    m_raw_data = x.m_raw_data;
+    m_data = x.m_data;
 }
 
 librealsense::dds::topics::raw::device::control::control(
@@ -57,7 +57,7 @@ librealsense::dds::topics::raw::device::control::control(
 {
     m_id = x.m_id;
     m_size = x.m_size;
-    m_raw_data = std::move(x.m_raw_data);
+    m_data = std::move(x.m_data);
 }
 
 librealsense::dds::topics::raw::device::control& librealsense::dds::topics::raw::device::control::operator =(
@@ -66,7 +66,7 @@ librealsense::dds::topics::raw::device::control& librealsense::dds::topics::raw:
 
     m_id = x.m_id;
     m_size = x.m_size;
-    m_raw_data = x.m_raw_data;
+    m_data = x.m_data;
 
     return *this;
 }
@@ -77,7 +77,7 @@ librealsense::dds::topics::raw::device::control& librealsense::dds::topics::raw:
 
     m_id = x.m_id;
     m_size = x.m_size;
-    m_raw_data = std::move(x.m_raw_data);
+    m_data = std::move(x.m_data);
 
     return *this;
 }
@@ -86,7 +86,7 @@ bool librealsense::dds::topics::raw::device::control::operator ==(
         const control& x) const
 {
 
-    return (m_id == x.m_id && m_size == x.m_size && m_raw_data == x.m_raw_data);
+    return (m_id == x.m_id && m_size == x.m_size && m_data == x.m_data);
 }
 
 bool librealsense::dds::topics::raw::device::control::operator !=(
@@ -133,9 +133,9 @@ size_t librealsense::dds::topics::raw::device::control::getCdrSerializedSize(
 
     current_alignment += 4 + eprosima::fastcdr::Cdr::alignment(current_alignment, 4);
 
-    if (data.raw_data().size() > 0)
+    if (data.data().size() > 0)
     {
-        current_alignment += (data.raw_data().size() * 1) + eprosima::fastcdr::Cdr::alignment(current_alignment, 1);
+        current_alignment += (data.data().size() * 1) + eprosima::fastcdr::Cdr::alignment(current_alignment, 1);
     }
 
 
@@ -150,7 +150,7 @@ void librealsense::dds::topics::raw::device::control::serialize(
 
     scdr << m_id;
     scdr << m_size;
-    scdr << m_raw_data;
+    scdr << m_data;
 
 }
 
@@ -160,7 +160,7 @@ void librealsense::dds::topics::raw::device::control::deserialize(
 
     dcdr >> m_id;
     dcdr >> m_size;
-    dcdr >> m_raw_data;
+    dcdr >> m_data;
 }
 
 /*!
@@ -220,41 +220,41 @@ uint32_t& librealsense::dds::topics::raw::device::control::size()
 }
 
 /*!
- * @brief This function copies the value in member raw_data
- * @param _raw_data New value to be copied in member raw_data
+ * @brief This function copies the value in member data
+ * @param _data New value to be copied in member data
  */
-void librealsense::dds::topics::raw::device::control::raw_data(
-        const std::vector<uint8_t>& _raw_data)
+void librealsense::dds::topics::raw::device::control::data(
+        const std::vector<uint8_t>& _data)
 {
-    m_raw_data = _raw_data;
+    m_data = _data;
 }
 
 /*!
- * @brief This function moves the value in member raw_data
- * @param _raw_data New value to be moved in member raw_data
+ * @brief This function moves the value in member data
+ * @param _data New value to be moved in member data
  */
-void librealsense::dds::topics::raw::device::control::raw_data(
-        std::vector<uint8_t>&& _raw_data)
+void librealsense::dds::topics::raw::device::control::data(
+        std::vector<uint8_t>&& _data)
 {
-    m_raw_data = std::move(_raw_data);
+    m_data = std::move(_data);
 }
 
 /*!
- * @brief This function returns a constant reference to member raw_data
- * @return Constant reference to member raw_data
+ * @brief This function returns a constant reference to member data
+ * @return Constant reference to member data
  */
-const std::vector<uint8_t>& librealsense::dds::topics::raw::device::control::raw_data() const
+const std::vector<uint8_t>& librealsense::dds::topics::raw::device::control::data() const
 {
-    return m_raw_data;
+    return m_data;
 }
 
 /*!
- * @brief This function returns a reference to member raw_data
- * @return Reference to member raw_data
+ * @brief This function returns a reference to member data
+ * @return Reference to member data
  */
-std::vector<uint8_t>& librealsense::dds::topics::raw::device::control::raw_data()
+std::vector<uint8_t>& librealsense::dds::topics::raw::device::control::data()
 {
-    return m_raw_data;
+    return m_data;
 }
 
 size_t librealsense::dds::topics::raw::device::control::getKeyMaxCdrSerializedSize(
