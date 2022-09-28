@@ -1343,6 +1343,12 @@ namespace rs2
 
     void on_chip_calib_manager::process_flow(std::function<void()> cleanup, invoker invoke)
     {
+        static auto_calib_action prev_action = RS2_CALIB_ACTION_ON_CHIP_OB_CALIB;
+        if (prev_action != action)
+        {
+            prev_action = action;
+            LOG_WARNING(std::string(to_string() << __LINE__ << " action = " << action ));
+        }
         if (action == RS2_CALIB_ACTION_FL_CALIB || action == RS2_CALIB_ACTION_UVMAPPING_CALIB || action == RS2_CALIB_ACTION_FL_PLUS_CALIB)
             stop_viewer(invoke);
 
@@ -1533,8 +1539,13 @@ namespace rs2
             try_start_viewer(0, 0, 0, invoke); // Start with default settings
 
             // Make new calibration active
+            LOG_WARNING(std::string(to_string() << __LINE__ << " wait 4"));
+            std::this_thread::sleep_for(std::chrono::milliseconds(4000)); // Evgeni  - debug
             apply_calib(true);
             LOG_WARNING(std::string(to_string() << __LINE__ << " new calib applied"));
+            LOG_WARNING(std::string(to_string() << __LINE__ << " wait 5"));
+            std::this_thread::sleep_for(std::chrono::milliseconds(5000)); // Evgeni  - debug
+            //LOG_WARNING(std::string(to_string() << __LINE__ << " wait done"));
 
             // Capture metrics after
             auto metrics_after = get_depth_metrics(invoke);

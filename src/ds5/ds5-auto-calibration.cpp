@@ -509,7 +509,25 @@ namespace librealsense
                         cmd.data.push_back(p[0]);
                         cmd.data.push_back(p[1]);
                     }
-                    _hw_monitor->send(cmd);
+                    bool success = false;
+                    int iter =0;
+                    do
+                    {
+                        try
+                        {
+                            if (iter==0) // apply only in the first iteration
+                                std::this_thread::sleep_for(std::chrono::milliseconds(1000));   // Debug sendng request below this threshold
+                            auto res = _hw_monitor->send(cmd);                              // most likely will fail with MIPI SKU and require retry
+                            LOG_WARNING("occ Save Statistics transfer FR buffer succeeded");
+                            success = true;
+                        }
+                        catch(...)
+                        {
+                            LOG_WARNING("occ Save Statistics result failed");
+                            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+                        };
+                    }
+                    while(( ++iter < 3) && (!success));
                 }
 
                 DirectSearchCalibrationResult result = get_calibration_status(timeout_ms, [progress_callback, host_assistance, speed](int count)
@@ -1765,7 +1783,14 @@ namespace librealsense
                 uint8_t* table = (uint8_t*)(calibration.data() + sizeof(table_header));
                 command write_calib(ds::CALIBRECALC, 0, 0, 0, 0xcafecafe);
                 write_calib.data.insert(write_calib.data.end(), (uint8_t*)table, ((uint8_t*)table) + hd->table_size);
-                _hw_monitor->send(write_calib);
+                try
+                {
+                    _hw_monitor->send(write_calib);
+                }
+                catch(...)
+                {
+                    LOG_ERROR("Flashing coefficients_table_id failed");
+                }
             }
             case rgb_calibration_id: // case fall-through by design. For RGB skip loading to RAM (not supported)
                 _curr_calibration = calibration;
