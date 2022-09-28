@@ -730,7 +730,7 @@ if __name__ == '__main__':
                     acroname.connect()
                     if platform.system() == 'Linux':
                         _acroname_hubs = set( acroname.find_all_hubs() )
-                except NoneFoundError as e:
+                except acroname.NoneFoundError as e:
                     # This can happen, e.g. on Jetson with D457...
                     log.d( 'connect() failed:', e )
                     acroname = None

@@ -2014,24 +2014,28 @@ namespace rs2
     {
         // checking format
         bool is_cal_format = false;
-        for (auto it = stream_enabled.begin(); it != stream_enabled.end(); ++it)
+        // checking that the SKU is D405 - otherwise, this method should return false
+        if (dev.supports(RS2_CAMERA_INFO_PRODUCT_ID) && !strcmp(dev.get_info(RS2_CAMERA_INFO_PRODUCT_ID), "0B5B"))
         {
-            if (it->second)
+            for (auto it = stream_enabled.begin(); it != stream_enabled.end(); ++it)
             {
-                int selected_format_index = -1;
-                if (ui.selected_format_id.count(it->first) > 0)
-                    selected_format_index = ui.selected_format_id.at(it->first);
-
-                if (format_values.count(it->first) > 0 && selected_format_index > -1)
+                if (it->second)
                 {
-                    auto formats = format_values.at(it->first);
-                    if (formats.size() > selected_format_index)
+                    int selected_format_index = -1;
+                    if (ui.selected_format_id.count(it->first) > 0)
+                        selected_format_index = ui.selected_format_id.at(it->first);
+
+                    if (format_values.count(it->first) > 0 && selected_format_index > -1)
                     {
-                        auto format = formats[selected_format_index];
-                        if (format == RS2_FORMAT_Y16)
+                        auto formats = format_values.at(it->first);
+                        if (formats.size() > selected_format_index)
                         {
-                            is_cal_format = true;
-                            break;
+                            auto format = formats[selected_format_index];
+                            if (format == RS2_FORMAT_Y16)
+                            {
+                                is_cal_format = true;
+                                break;
+                            }
                         }
                     }
                 }
@@ -2489,7 +2493,7 @@ namespace rs2
         glPopAttrib();
     }
 
-    bool stream_model::is_stream_visible()
+    bool stream_model::is_stream_visible() const
     {
         if (dev &&
             (dev->is_paused() ||
@@ -3200,7 +3204,8 @@ namespace rs2
                 if (profile.as<rs2::video_stream_profile>())
                 {
                     stream_details.push_back({ "Hardware Size",
-                        to_string() << original_size.x << " x " << original_size.y, "" });
+                        to_string() << original_size.x << " x " << original_size.y,
+                        "Hardware size is the original frame resolution we got from the sensor, before applying post processing filters." });
 
                     stream_details.push_back({ "Display Size",
                         to_string() << size.x << " x " << size.y,
@@ -4379,7 +4384,17 @@ namespace rs2
         for (auto&& f : first)
         {
             auto first_uid = f.get_profile().unique_id();
-            if (auto second_f = second.first_or_default(f.get_profile().stream_type()))
+
+            frame second_f;
+            if (f.get_profile().stream_type() == RS2_STREAM_INFRARED)
+            {
+                second_f = second.get_infrared_frame( f.get_profile().stream_index() );
+            }
+            else
+            {
+                second_f = second.first_or_default( f.get_profile().stream_type() );
+            }
+            if ( second_f )
             {
                 auto second_uid = second_f.get_profile().unique_id();
 
