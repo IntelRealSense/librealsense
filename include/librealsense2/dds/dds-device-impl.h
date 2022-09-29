@@ -6,11 +6,14 @@
 
 #include "topics/device-info/device-info-msg.h"
 #include "topics/notification/notification-msg.h"
+#include "topics/control/control-msg.h"
 
 #include <librealsense2/utilities/time/timer.h>
 
 #include <fastdds/dds/subscriber/Subscriber.hpp>
 #include <fastdds/dds/subscriber/DataReader.hpp>
+#include <fastdds/dds/publisher/Publisher.hpp>
+#include <fastdds/dds/publisher/DataWriter.hpp>
 #include <fastdds/dds/topic/Topic.hpp>
 #include <fastdds/dds/domain/DomainParticipant.hpp>
 
@@ -19,7 +22,6 @@ namespace dds {
 
 
 namespace {
-
 
 enum class state_type
 {
@@ -52,7 +54,6 @@ std::ostream & operator<<( std::ostream & s, state_type st )
     return s;
 }
 
-
 }  // namespace
 
 class dds_device::impl
@@ -65,13 +66,17 @@ public:
     bool _running = false;
 
     size_t _num_of_sensors = 0;
-    std::unordered_map< int, std::string > _sensor_index_to_name;
-    std::unordered_map< int, topics::device::notification::video_stream_profiles_msg > _sensor_to_video_profiles;
-    std::unordered_map< int, topics::device::notification::motion_stream_profiles_msg > _sensor_to_motion_profiles;
+    std::unordered_map< size_t, std::string > _sensor_index_to_name;
+    std::unordered_map< size_t, topics::device::notification::video_stream_profiles_msg > _sensor_to_video_profiles;
+    std::unordered_map< size_t, topics::device::notification::motion_stream_profiles_msg > _sensor_to_motion_profiles;
+    std::atomic<uint32_t> _control_message_counter = { 0 };
 
-    eprosima::fastdds::dds::Subscriber* _subscriber;
-    eprosima::fastdds::dds::Topic* _topic;
-    eprosima::fastdds::dds::DataReader* _reader;
+    eprosima::fastdds::dds::Subscriber * _subscriber = nullptr;
+    eprosima::fastdds::dds::Publisher  * _publisher = nullptr;
+    eprosima::fastdds::dds::DataReader * _notifications_reader = nullptr;
+    eprosima::fastdds::dds::DataWriter* _control_writer = nullptr;
+    eprosima::fastdds::dds::Topic* _notifications_topic = nullptr;
+    eprosima::fastdds::dds::Topic* _control_topic = nullptr;
 
     impl( std::shared_ptr< dds::dds_participant > const& participant,
         dds::dds_guid const& guid,
@@ -88,6 +93,7 @@ public:
             throw std::runtime_error( "trying to run() a device that's already running" );
 
         create_notifications_reader();
+        create_control_writer();
         if( ! init() )
             throw std::runtime_error( "failed getting sensors data from device: " + _info.topic_root );
 
@@ -95,47 +101,82 @@ public:
         _running = true;
     }
 
+    bool write_control_message( void* msg )
+    {
+        assert( _control_writer != nullptr );
+
+        return DDS_API_CALL( _control_writer->write( msg ) );
+    }
+
 private:
     void create_notifications_reader()
     {
         using namespace eprosima::fastdds::dds;
 
-        // CREATE THE SUBSCRIBER
-        _subscriber = DDS_API_CALL( _participant->get()->create_subscriber( SUBSCRIBER_QOS_DEFAULT, nullptr ) );
-        if( _subscriber == nullptr )
+        // Create the subscriber
+        if (_subscriber == nullptr)
         {
-            throw std::runtime_error( "Error creating a DDS subscriber" );
+            _subscriber = DDS_API_CALL( _participant->get()->create_subscriber( SUBSCRIBER_QOS_DEFAULT, nullptr ) );
         }
 
-        // CREATE TOPIC TYPE
+        // Create and register topic type
         eprosima::fastdds::dds::TypeSupport topic_type( new librealsense::dds::topics::device::notification::type );
-
-        // REGISTER THE TYPE
         DDS_API_CALL( topic_type.register_type( _participant->get() ) );
 
+        // Create the topic
+        std::string topic_name = librealsense::dds::topics::device::notification::construct_topic_name( _info.topic_root );
+        //TODO - When the last dds_device destruct we should delete the topic
+        eprosima::fastdds::dds::Topic* _notifications_topic = DDS_API_CALL( _participant->get()->create_topic( topic_name,
+                                                                                                               topic_type->getName(),
+                                                                                                               TOPIC_QOS_DEFAULT ) );
 
-        std::string topic_name
-            = librealsense::dds::topics::device::notification::construct_topic_name( _info.topic_root );
-
-        // CREATE THE TOPIC
-        _topic
-            = DDS_API_CALL( _participant->get()->create_topic( topic_name, topic_type->getName(), TOPIC_QOS_DEFAULT ) );
-
-        // CREATE THE READER
+        // Create the reader
         DataReaderQos rqos = DATAREADER_QOS_DEFAULT;
         rqos.data_sharing().off();
-        rqos.reliability().kind = RELIABLE_RELIABILITY_QOS;
-        rqos.durability().kind = VOLATILE_DURABILITY_QOS;
-        rqos.history().kind = KEEP_LAST_HISTORY_QOS;
-        rqos.history().depth = 10;
+        rqos.reliability().kind               = RELIABLE_RELIABILITY_QOS;
+        rqos.durability().kind                = VOLATILE_DURABILITY_QOS;
+        rqos.history().kind                   = KEEP_LAST_HISTORY_QOS;
+        rqos.history().depth                  = 10;
+        //Does not allocate for every sample but still gives flexibility. See https://github.com/eProsima/Fast-DDS/discussions/2707
         rqos.endpoint().history_memory_policy = eprosima::fastrtps::rtps::PREALLOCATED_WITH_REALLOC_MEMORY_MODE;
-        _reader = DDS_API_CALL( _subscriber->create_datareader( _topic, rqos, nullptr ) );
-        if( _reader == nullptr )
+
+        _notifications_reader = DDS_API_CALL( _subscriber->create_datareader( _notifications_topic, rqos, nullptr ) );
+
+        LOG_DEBUG( "topic '" << topic_name << "' and reader created" );
+    }
+
+    void create_control_writer()
+    {
+        using namespace eprosima::fastdds::dds;
+
+        if (_publisher == nullptr)
         {
-            throw std::runtime_error( "Error creating a DDS reader for " + topic_name );
+            _publisher = DDS_API_CALL( _participant->get()->create_publisher( PUBLISHER_QOS_DEFAULT, nullptr ) );
         }
 
-        LOG_DEBUG( "topic '" << topic_name << "' created" );
+        // Create and register topic type
+        eprosima::fastdds::dds::TypeSupport topic_type( new librealsense::dds::topics::device::control::type );
+        DDS_API_CALL( topic_type.register_type( _participant->get() ) );
+
+        // Create the topic
+        std::string topic_name = librealsense::dds::topics::device::control::construct_topic_name( _info.topic_root );
+        //TODO - When the last dds_device destruct we should delete the topic
+        eprosima::fastdds::dds::Topic* _control_topic = DDS_API_CALL( _participant->get()->create_topic( topic_name,
+                                                                                                         topic_type->getName(),
+                                                                                                         TOPIC_QOS_DEFAULT ) );
+
+        // Create the writer
+        DataWriterQos wqos = DATAWRITER_QOS_DEFAULT;
+        wqos.data_sharing().off();
+        wqos.reliability().kind               = RELIABLE_RELIABILITY_QOS;
+        wqos.durability().kind                = VOLATILE_DURABILITY_QOS;
+        wqos.history().kind                   = KEEP_LAST_HISTORY_QOS;
+        wqos.history().depth                  = 10;
+        wqos.endpoint().history_memory_policy = eprosima::fastrtps::rtps::PREALLOCATED_WITH_REALLOC_MEMORY_MODE;
+
+        _control_writer = DDS_API_CALL( _publisher->create_datawriter( _control_topic, wqos, nullptr ) );
+
+        LOG_DEBUG( "topic '" << topic_name << "' and writer created" );
     }
 
     bool init()
@@ -147,13 +188,13 @@ private:
         while( ! t.has_expired() && state_type::DONE != state )
         {
             eprosima::fastrtps::Duration_t one_second = { 1, 0 };
-            if( _reader->wait_for_unread_message( one_second ) )
+            if( _notifications_reader->wait_for_unread_message( one_second ) )
             {
                 dds::topics::raw::device::notification raw_data;
                 eprosima::fastdds::dds::SampleInfo info;
                 // Process all the samples until no one is returned,
                 // We will distinguish info change vs new data by validating using `valid_data` field
-                while( ReturnCode_t::RETCODE_OK == _reader->take_next_sample( &raw_data, &info ) )
+                while( ReturnCode_t::RETCODE_OK == _notifications_reader->take_next_sample( &raw_data, &info ) )
                 {
                     // Only samples for which valid_data is true should be accessed
                     // valid_data indicates that the `take` return an updated sample
@@ -267,6 +308,7 @@ private:
                                            << state );
                             break;
                         default:
+                            LOG_ERROR( "Wrong message received, got " << static_cast<uint16_t>(msg_id) << " when the state is: " << state );
                             break;
                         }
                     }

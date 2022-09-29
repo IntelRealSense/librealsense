@@ -98,11 +98,11 @@ size_t dds_device::num_of_sensors() const
 }
 
 
-size_t dds_device::foreach_sensor( std::function< void( const std::string & name ) > fn ) const
+size_t dds_device::foreach_sensor( std::function< void( size_t sensor_index, const std::string & name ) > fn ) const
 {
     for( auto sensor : _impl->_sensor_index_to_name )
     {
-        fn( sensor.second );
+        fn( sensor.first, sensor.second );
     }
 
     return _impl->_num_of_sensors;
@@ -167,6 +167,65 @@ dds_device::foreach_motion_profile( size_t sensor_index,
     return msg->second.num_of_profiles;
 }
 
+void dds_device::sensor_open( size_t sensor_index, const std::vector< rs2_video_stream > & profiles )
+{
+    using namespace librealsense::dds::topics;
+
+    if (profiles.size() < device::control::MAX_OPEN_PROFILES)
+    {
+        throw std::runtime_error( "Too many profiles (" + std::to_string( profiles.size() )
+                                + ") when opening sensor, max is " + std::to_string( device::control::MAX_OPEN_PROFILES ) );
+    }
+
+    device::control::sensor_open_msg open_msg;
+    open_msg.message_id = _impl->_control_message_counter++;
+    open_msg.sensor_uid = static_cast<uint16_t>( sensor_index );
+    for ( size_t i = 0; i < profiles.size(); ++i )
+    {
+        open_msg.profiles[i].framerate = profiles[i].fps;
+        open_msg.profiles[i].format = profiles[i].fmt;
+        open_msg.profiles[i].type = profiles[i].type;
+        open_msg.profiles[i].width = profiles[i].width;
+        open_msg.profiles[i].height = profiles[i].height;
+    }
+
+    raw::device::control raw_msg;
+    device::control::construct_raw_message( device::control::control_type::SENSOR_OPEN,
+                                            open_msg,
+                                            raw_msg );
+
+    if ( _impl->write_control_message( &raw_msg ) )
+    {
+        LOG_DEBUG( "Sent SENSOR_OPEN message for sensor " << sensor_index );
+    }
+    else
+    {
+        LOG_ERROR( "Error writing SENSOR_OPEN message for sensor: " << sensor_index );
+    }
+}
+
+void dds_device::sensor_close( size_t sensor_index )
+{
+    using namespace librealsense::dds::topics;
+
+    device::control::sensor_close_msg close_msg;
+    close_msg.message_id = _impl->_control_message_counter++;
+    close_msg.sensor_uid = static_cast<uint16_t>( sensor_index );
+
+    raw::device::control raw_msg;
+    device::control::construct_raw_message( device::control::control_type::SENSOR_CLOSE,
+                                            close_msg,
+                                            raw_msg );
+
+    if ( _impl->write_control_message( &raw_msg ) )
+    {
+        LOG_DEBUG( "Sent SENSOR_CLOSE message for sensor " << sensor_index );
+    }
+    else
+    {
+        LOG_ERROR( "Error writing SENSOR_CLOSE message for sensor: " << sensor_index );
+    }
+}
 
 }  // namespace dds
 }  // namespace librealsense

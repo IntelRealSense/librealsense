@@ -7,12 +7,13 @@
 #include <librealsense2/h/rs_internal.h>
 
 #include <memory>
+#include <vector>
 #include <functional>
 #include <string>
 
 namespace librealsense {
-namespace dds {
 
+namespace dds {
 
 namespace topics {
 class device_info;
@@ -51,10 +52,13 @@ public:
 
     size_t num_of_sensors() const;
 
-    size_t foreach_sensor( std::function< void( const std::string& name ) > fn ) const;
+    size_t foreach_sensor( std::function< void( size_t sensor_index, const std::string & name ) > fn ) const;
 
     size_t foreach_video_profile( size_t sensor_index, std::function< void( const rs2_video_stream& profile, bool def_prof ) > fn ) const;
     size_t foreach_motion_profile( size_t sensor_index, std::function< void( const rs2_motion_stream& profile, bool def_prof ) > fn ) const;
+
+    void sensor_open( size_t sensor_index, const std::vector< rs2_video_stream > & profiles );
+    void sensor_close( size_t sensor_index );
 
 private:
     class impl;

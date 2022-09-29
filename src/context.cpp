@@ -27,7 +27,7 @@
 #include "software-device.h"
 #include <librealsense2/h/rs_internal.h>
 #include <librealsense2/dds/topics/device-info/device-info-msg.h>
-#endif
+#endif //BUILD_WITH_DDS
 
 #include <third-party/json.hpp>
 using json = nlohmann::json;
@@ -160,6 +160,7 @@ namespace librealsense
         return true;
     }
 
+
     template< class T >
     static bool json_get_ex( json const & j, char const * key, T * pv )
     {
@@ -180,6 +181,8 @@ namespace librealsense
         LOG_DEBUG( key << " = " << *pv );
         return true;
     }
+
+
     template < class T >
     static T json_get( json const & j, char const * key, T const & default_value )
     {
@@ -415,6 +418,47 @@ namespace librealsense
     }
 
 #ifdef BUILD_WITH_DDS
+    class dds_sensor_proxy : public software_sensor
+    {
+    public:
+        dds_sensor_proxy( std::string name, software_device* owner,
+                          std::shared_ptr< dds::dds_device > const & dev, size_t index) :
+            software_sensor(name, owner),
+            _dev(dev),
+            _index(index)
+        {
+        }
+
+        void open( const stream_profiles & profiles ) override
+        {
+            std::vector< rs2_video_stream > rs2_profs;
+            for (size_t i = 0; i < profiles.size(); ++i)
+            {
+                rs2_profs[i].fps = profiles[i]->get_framerate();
+                rs2_profs[i].fmt = profiles[i]->get_format();
+                rs2_profs[i].type = profiles[i]->get_stream_type();
+                const auto&& vsp = As<video_stream_profile, stream_profile_interface>( profiles[i] );
+                rs2_profs[i].width = vsp ? vsp->get_width() : 0;
+                rs2_profs[i].height = vsp ? vsp->get_height() : 0;
+            }
+            _dev->sensor_open( _index, rs2_profs );
+            software_sensor::open( profiles );
+        }
+
+        void close() override
+        {
+            _dev->sensor_close( _index );
+            software_sensor::close();
+        }
+
+        //float get_option( rs2_option option ) const override;
+        //void set_option( rs2_option option, float value ) const override;
+
+    private:
+        std::shared_ptr< dds::dds_device > const & _dev;
+        size_t _index;
+    };
+
     // This is the rs2 device; it proxies to an actual DDS device that does all the actual
     // work. For example:
     //     auto dev_list = ctx.query_devices();
@@ -441,8 +485,8 @@ namespace librealsense
 
             //Assumes dds_device initialization finished
             size_t count = _dds_dev->foreach_sensor(
-                [&]( const std::string & name ) {
-                    this->add_software_sensor( name );
+                [&]( size_t sensor_index, const std::string & name ) {
+                    this->add_dds_sensor( _dds_dev, sensor_index, name );
                 } );
             for( size_t i = 0; i < count; ++i )
             {
@@ -456,6 +500,15 @@ namespace librealsense
             }
         }
 
+    private:
+        dds_sensor_proxy& add_dds_sensor( std::shared_ptr< dds::dds_device > const & dev, size_t index, const std::string & name )
+        {
+            auto sensor = std::make_shared<dds_sensor_proxy>( name, this, dev, index );
+            add_sensor( sensor );
+            _software_sensors.push_back( sensor );
+
+            return *sensor;
+        }
     };
 
     class dds_device_info : public device_info

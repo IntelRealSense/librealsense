@@ -28,6 +28,7 @@ public:
         SENSOR_HEADER,
         VIDEO_STREAM_PROFILES,
         MOTION_STREAM_PROFILES,
+        CONTROL_RESPONSE,
         MAX_MSG_TYPE
     };
 
@@ -85,6 +86,21 @@ public:
         uint8_t dds_sensor_index; // Index of the current sensor [0-(num_of_sensors-1)]
         size_t num_of_profiles; 
         motion_stream_profile profiles[MAX_MOTION_PROFILES];
+    };
+
+    enum class control_result : uint16_t
+    {
+        SUCCESSFUL,
+        FAILED,
+        MAX_CONTROL_RESULT  // TODO - for success/failure bool is enough. Consider how to pass exception information
+    };
+
+    struct control_response_msg
+    {
+        uint32_t message_id; // Running counter
+        uint32_t response_to; // message_id of the control this message is responding to
+        control_result result;
+        //TODO - double value for options or vector of bytes for HW monitor
     };
 
 #pragma pack( pop )
