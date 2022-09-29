@@ -400,17 +400,6 @@ namespace rs2
         bool frame_arrived = false;
         try
         {
-            if (_sub->s->supports(RS2_OPTION_EMITTER_ENABLED))
-            {
-                laser_status_prev = _sub->s->get_option(RS2_OPTION_EMITTER_ENABLED);
-                _sub->s->set_option(RS2_OPTION_EMITTER_ENABLED, 0.0f);
-            }
-            if (_sub->s->supports(RS2_OPTION_THERMAL_COMPENSATION))
-            {
-                thermal_loop_prev = _sub->s->get_option(RS2_OPTION_THERMAL_COMPENSATION);
-                _sub->s->set_option(RS2_OPTION_THERMAL_COMPENSATION, 0.f);
-            }
-
             bool run_fl_calib = ( (action == RS2_CALIB_ACTION_FL_CALIB) && (w == 1280) && (h == 720));
             if (action == RS2_CALIB_ACTION_TARE_GROUND_TRUTH)
             {
@@ -1139,6 +1128,18 @@ namespace rs2
         {
             try
             {
+                //Save options that are going to change during the calibration
+                if (_sub->s->supports( RS2_OPTION_EMITTER_ENABLED ))
+                {
+                    laser_status_prev = _sub->s->get_option( RS2_OPTION_EMITTER_ENABLED );
+                    _sub->s->set_option( RS2_OPTION_EMITTER_ENABLED, 0.0f );
+                }
+                if (_sub->s->supports( RS2_OPTION_THERMAL_COMPENSATION ))
+                {
+                    thermal_loop_prev = _sub->s->get_option( RS2_OPTION_THERMAL_COMPENSATION );
+                    _sub->s->set_option( RS2_OPTION_THERMAL_COMPENSATION, 0.f );
+                }
+
                 if (action == RS2_CALIB_ACTION_FL_CALIB)
                     calibrate_fl();
                 else if (action == RS2_CALIB_ACTION_UVMAPPING_CALIB)
@@ -1160,8 +1161,21 @@ namespace rs2
                     _sub_color->ui = *_ui_color;
                     _ui_color.reset();
                 }
+
+                //Restore options that were changed during the calibration.
+                //When calibration is successful options are restored in autocalib_notification_model::draw_content()
+                if (_sub->s->supports( RS2_OPTION_EMITTER_ENABLED ))
+                {
+                    _sub->s->set_option( RS2_OPTION_EMITTER_ENABLED, laser_status_prev );
+                }
+                if (_sub->s->supports( RS2_OPTION_THERMAL_COMPENSATION ))
+                {
+                    _sub->s->set_option( RS2_OPTION_THERMAL_COMPENSATION, thermal_loop_prev );
+                }
+
                 if (_was_streaming)
                     start_viewer(0, 0, 0, invoke);
+
                 throw;
             }
         }
@@ -1985,12 +1999,19 @@ namespace rs2
             }
             else if (update_state == RS2_CALIB_STATE_CALIB_COMPLETE)
             {
+                if (get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_CALIB)
+                {
+                    if (get_manager()._sub->s->supports( RS2_OPTION_EMITTER_ENABLED ))
+                        get_manager()._sub->s->set_option( RS2_OPTION_EMITTER_ENABLED, get_manager().laser_status_prev );
+                    if (get_manager()._sub->s->supports( RS2_OPTION_THERMAL_COMPENSATION ))
+                        get_manager()._sub->s->set_option( RS2_OPTION_THERMAL_COMPENSATION, get_manager().thermal_loop_prev );
+                }
                 if (get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_UVMAPPING_CALIB)
                 {
                     if (get_manager()._sub->s->supports(RS2_OPTION_EMITTER_ENABLED))
                         get_manager()._sub->s->set_option(RS2_OPTION_EMITTER_ENABLED, get_manager().laser_status_prev);
                     if (get_manager()._sub->s->supports(RS2_OPTION_THERMAL_COMPENSATION))
-                        get_manager()._sub->s->set_option(RS2_OPTION_THERMAL_COMPENSATION, get_manager().laser_status_prev);
+                        get_manager()._sub->s->set_option(RS2_OPTION_THERMAL_COMPENSATION, get_manager().thermal_loop_prev);
 
                     ImGui::SetCursorScreenPos({ float(x + 20), float(y + 33) });
                     ImGui::Text("%s", "Health-Check Number for PX: ");
