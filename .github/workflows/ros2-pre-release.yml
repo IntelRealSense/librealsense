@@ -1,0 +1,51 @@
+# This adds "pre-release" builds for Github Actions. These:
+#   - check if the package builds, installs without issues
+#   - if unit/system tests are defined, runs them
+# If these pass, we cover the general requirements of ROS-based repositories.
+#
+# These builds run on Github machines, but in the same environment and using the same flow as actual ROS
+# distro build farm releases, hence "pre-release".
+#
+# This config uses industrial_ci (https://github.com/ros-industrial/industrial_ci.git).
+# For troubleshooting, see readme (https://github.com/ros-industrial/industrial_ci/blob/master/README.rst)
+
+name: ros2-pre-release
+
+# Controls when the workflow will run
+on:
+  # Triggers the workflow on push or pull request events but only for the ros2-beta branch
+  push:
+    branches:
+      - development
+  pull_request:
+    branches:
+      - development
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+
+jobs:
+  build:
+    name: Build pre-release tests for ROS2 ${{ matrix.ros_distro }} and ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        ros_distro: [humble,galactic, foxy]
+        include:
+        - ros_distro: 'humble'
+          os: ubuntu-22.04
+        - ros_distro: 'galactic'
+          os: ubuntu-20.04
+        - ros_distro: 'foxy'
+          os: ubuntu-20.04
+          
+    env:
+      ROS_DISTRO: ${{ matrix.ros_distro }}
+      PRERELEASE: true
+      BASEDIR: ${{ github.workspace }}/.work
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: industrial_ci
+        uses: ros-industrial/industrial_ci@master
