@@ -11,17 +11,24 @@ set(TOOL_FILES
     lrs-device-controller.cpp
     )
 
-set(UTILITIES
-    "${REPO_ROOT}/include/librealsense2/utilities/concurrency/dispatcher.cpp"
-    )
-
 add_executable(${PROJECT_NAME} ${TOOL_FILES} ${UTILITIES} ${ELPP_SOURCES})
 set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 11)
-include_directories(${REPO_ROOT}/third-party/tclap/include ${ELPP_INCLUDES} ${CMAKE_BINARY_DIR} )
-target_link_libraries(${PROJECT_NAME} PRIVATE ${DEPENDENCIES})
+target_include_directories( ${PROJECT_NAME} PRIVATE
+    ${REPO_ROOT}/include
+    ${REPO_ROOT}/third-party/tclap/include
+)
+target_link_libraries( ${PROJECT_NAME} PRIVATE realdds ${DEPENDENCIES} )
 set_target_properties (${PROJECT_NAME} PROPERTIES FOLDER Tools/dds)
 
 include("${REPO_ROOT}/include/librealsense2/dds/dds-server.cmake")
+
+#include("${REPO_ROOT}/include/librealsense2/utilities/concurrency/CMakeLists.txt")
+target_sources( ${PROJECT_NAME} PRIVATE ${CONCURRENCY_SOURCE_FILES} )
+source_group( "Concurrency" FILES ${CONCURRENCY_SOURCE_FILES}  )
+
+#include("${REPO_ROOT}/include/librealsense2/utilities/easylogging/easyloggingpp.cmake")
+target_sources( ${PROJECT_NAME} PRIVATE ${ELPP_SOURCE_FILES} )
+source_group( "EasyLogging++" FILES ${ELPP_SOURCE_FILES}  )
 
 install(TARGETS ${PROJECT_NAME} RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 

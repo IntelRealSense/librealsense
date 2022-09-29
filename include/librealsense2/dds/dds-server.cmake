@@ -1,22 +1,25 @@
 # License: Apache 2.0. See LICENSE file in root directory.
 # Copyright(c) 2022 Intel Corporation. All Rights Reserved.
 
-set(DDS_SERVER_FILES 
+set( DDS_SERVER_HEADER_FILES 
     "${CMAKE_CURRENT_LIST_DIR}/dds-defines.h"
     "${CMAKE_CURRENT_LIST_DIR}/dds-guid.h"
-    "${CMAKE_CURRENT_LIST_DIR}/dds-guid.cpp"
     "${CMAKE_CURRENT_LIST_DIR}/dds-participant.h"
-    "${CMAKE_CURRENT_LIST_DIR}/dds-participant.cpp"
     "${CMAKE_CURRENT_LIST_DIR}/dds-topic.h"
-    "${CMAKE_CURRENT_LIST_DIR}/dds-topic.cpp"
     "${CMAKE_CURRENT_LIST_DIR}/dds-topic-reader.h"
-    "${CMAKE_CURRENT_LIST_DIR}/dds-topic-reader.cpp"
     "${CMAKE_CURRENT_LIST_DIR}/dds-device-broadcaster.h"
-    "${CMAKE_CURRENT_LIST_DIR}/dds-device-broadcaster.cpp"
     "${CMAKE_CURRENT_LIST_DIR}/dds-device-server.h"
-    "${CMAKE_CURRENT_LIST_DIR}/dds-device-server.cpp"
     "${CMAKE_CURRENT_LIST_DIR}/dds-utilities.h"
 )
+set( DDS_SERVER_SOURCE_FILES 
+    "${CMAKE_CURRENT_LIST_DIR}/dds-guid.cpp"
+    "${CMAKE_CURRENT_LIST_DIR}/dds-participant.cpp"
+    "${CMAKE_CURRENT_LIST_DIR}/dds-topic.cpp"
+    "${CMAKE_CURRENT_LIST_DIR}/dds-topic-reader.cpp"
+    "${CMAKE_CURRENT_LIST_DIR}/dds-device-broadcaster.cpp"
+    "${CMAKE_CURRENT_LIST_DIR}/dds-device-server.cpp"
+)
+set( DDS_SERVER_FILES ${DDS_SERVER_HEADER_FILES} )
 source_group( "DDS" FILES ${DDS_SERVER_FILES} )
 
 # NOTE: this requires that your "project(...)" statement match the executable
