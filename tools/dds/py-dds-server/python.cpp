@@ -5,15 +5,20 @@ Copyright(c) 2022 Intel Corporation. All Rights Reserved. */
 
 #include <librealsense2/dds/dds-participant.h>
 #include <librealsense2/dds/topics/dds-topics.h>
+#include <librealsense2/dds/topics/device-info/deviceInfoPubSubTypes.h>
 #include <librealsense2/dds/dds-device-broadcaster.h>
 #include <librealsense2/dds/dds-device-watcher.h>
 #include <librealsense2/dds/dds-device.h>
 #include <librealsense2/dds/dds-guid.h>
+#include <librealsense2/dds/dds-topic.h>
+#include <librealsense2/dds/dds-topic-reader.h>
+#include <librealsense2/dds/dds-utilities.h>
 
 #include <librealsense2/utilities/easylogging/easyloggingpp.h>
 #include <fastdds/dds/log/Log.hpp>
 #include <fastdds/dds/domain/qos/DomainParticipantQos.hpp>
 #include <fastdds/dds/domain/DomainParticipant.hpp>
+#include <fastdds/dds/core/status/SubscriptionMatchedStatus.hpp>
 #include <fastrtps/types/DynamicType.h>
 
 
@@ -193,7 +198,7 @@ PYBIND11_MODULE(NAME, m) {
         .def( "__repr__",
               []( const dds_participant & self ) {
                   std::ostringstream os;
-                  os << "<" SNAME ".dds_participant";
+                  os << "<" SNAME ".participant";
                   if( ! self.is_valid() )
                   {
                       os << " NULL";
@@ -209,7 +214,63 @@ PYBIND11_MODULE(NAME, m) {
               } )
         .def( "create_listener", []( dds_participant & self ) { return self.create_listener(); } );
 
+    // The 'types' submodule will contain all the known topic types in librs
+    // These are used alongside the 'dds_topic' class:
+    //      topic = dds.topic( p, dds.types.device_info(), "realsense/device-info" )
+    auto types = m.def_submodule( "types", "all the types that " SNAME " can work with" );
+
+    // We need to declare a basic TypeSupport or else dds_topic ctor won't work
+    using eprosima::fastdds::dds::TypeSupport;
+    py::class_< TypeSupport > topic_type( types, "topic_type" );
+
+    // Another submodule, 'raw' is used with dds_topic to actually send and receive messages, e.g.:
+    //      reader = dds.topic_reader( topic )
+    //      ...
+    //      info = dds.device_info( dds.raw.device_info( reader ) )
+    //auto raw = m.def_submodule( "raw", "all the topics that " SNAME " can work with" );
+
+
+    using librealsense::dds::dds_topic;
+    py::class_< dds_topic, std::shared_ptr< dds_topic > >( m, "topic" )
+        .def( py::init< std::shared_ptr< dds_participant > const &,
+                        eprosima::fastdds::dds::TypeSupport const &,
+                        char const * >() )
+        .def( "get_participant", &dds_topic::get_participant )
+        .def( "__repr__", []( dds_topic const & self ) {
+            std::ostringstream os;
+            os << "<" SNAME ".topic \"" << self->get_name() << "\"";
+            os << ">";
+            return os.str();
+        } );
+
+    using reader_qos = librealsense::dds::dds_topic_reader::reader_qos;
+    py::class_< reader_qos >( m, "reader_qos" )
+        .def( "__repr__", []( dds_topic const & self ) {
+            std::ostringstream os;
+            os << "<" SNAME ".reader_qos";
+            os << ">";
+            return os.str();
+        } );
+
+    using librealsense::dds::dds_topic_reader;
+    py::class_< dds_topic_reader, std::shared_ptr< dds_topic_reader > >( m, "topic_reader" )
+        .def( py::init< std::shared_ptr< dds_topic > const & >() )
+        .def( FN_FWD( dds_topic_reader, on_data_available, (), (), callback(); ) )
+        .def( FN_FWD( dds_topic_reader,
+                      on_subscription_matched,
+                      (),
+                      (eprosima::fastdds::dds::SubscriptionMatchedStatus const &),
+                      callback(); ) )
+        .def( "run", &dds_topic_reader::run )
+        .def( "qos", []() { return reader_qos(); } );
+
+
+    // The actual types are declared as functions and not classes: the py::init<> inheritance rules are pretty strict
+    // and, coupled with shared_ptr usage, are very hard to get around. This is much simpler...
     using librealsense::dds::topics::device_info;
+    using raw_device_info = librealsense::dds::topics::raw::device_info;
+    types.def( "device_info", []() { return TypeSupport( new device_info::type ); } );
+
     py::class_< device_info >( m, "device_info" )
         .def( py::init<>() )
         .def_readwrite( "name", &device_info::name )
@@ -217,21 +278,58 @@ PYBIND11_MODULE(NAME, m) {
         .def_readwrite( "product_line", &device_info::product_line )
         .def_readwrite( "locked", &device_info::locked )
         .def_readwrite( "topic_root", &device_info::topic_root )
-        .def( "__repr__", []( device_info const & self ) {
-            std::ostringstream os;
-            os << "<" SNAME ".device_info[";
-            if( ! self.name.empty() )
-                os << "\"" << self.name << "\" ";
-            if( ! self.serial.empty() )
-                os << "s/n \"" << self.serial << "\" ";
-            if( ! self.topic_root.empty() )
-                os << "topic-root \"" << self.topic_root << "\" ";
-            if( ! self.product_line.empty() )
-                os << "product-line \"" << self.product_line << "\" ";
-            os << ( self.locked ? "locked" : "unlocked" );
-            os << "]>";
-            return os.str();
-        } );
+        .def( "invalidate", &device_info::invalidate )
+        .def( "is_valid", &device_info::is_valid )
+        .def( "__nonzero__", &device_info::is_valid )  // Called to implement truth value testing in Python 2
+        .def( "__bool__", &device_info::is_valid )     // Called to implement truth value testing in Python 3
+        .def( "__repr__",
+              []( device_info const & self ) {
+                  std::ostringstream os;
+                  os << "<" SNAME ".device_info ";
+                  if( ! self.is_valid() )
+                      os << "INVALID";
+                  else
+                  {
+                      if( !self.name.empty() )
+                          os << "\"" << self.name << "\" ";
+                      if( !self.serial.empty() )
+                          os << "s/n \"" << self.serial << "\" ";
+                      if( !self.topic_root.empty() )
+                          os << "topic-root \"" << self.topic_root << "\" ";
+                      if( !self.product_line.empty() )
+                          os << "product-line \"" << self.product_line << "\" ";
+                      os << ( self.locked ? "locked" : "unlocked" );
+                  }
+                  os << ">";
+                  return os.str();
+              } )
+        .def( "take_next",
+              []( dds_topic_reader & reader ) {
+                  auto actual_type = reader.topic()->get()->get_type_name();
+                  if( actual_type != device_info::type().getName() )
+                      throw std::runtime_error( "can't initialize raw::device_info from " + actual_type );
+                  device_info data;
+                  if( ! device_info::take_next( reader, &data ) )
+                      assert( ! data.is_valid() );
+                  return data;
+              } )
+        .def( "create_topic", &device_info::create_topic )
+        .attr( "TOPIC_NAME" ) = device_info::TOPIC_NAME;
+
+    //py::class_< raw_device_info, std::shared_ptr< raw_device_info > >( raw, "device_info" )
+    //    .def( py::init<>() )
+    //    .def( py::init( []( dds_topic_reader const & reader ) {
+    //        auto actual_type = reader.topic()->get()->get_type_name();
+    //        if( actual_type != "librealsense::dds::topics::raw::device_info" )
+    //            throw std::runtime_error( "can't initialize raw::device_info from " + actual_type );
+    //        raw_device_info raw_data;
+    //        eprosima::fastdds::dds::SampleInfo info;
+    //        DDS_API_CALL( reader->take_next_sample( &raw_data, &info ) );
+    //        if( ! info.valid_data )
+    //            throw std::runtime_error( "invalid data" );
+    //        return raw_data;
+    //    } ) );
+
 
     using librealsense::dds::dds_device_broadcaster;
     py::class_< dds_device_broadcaster >( m, "device_broadcaster" )
@@ -311,7 +409,7 @@ PYBIND11_MODULE(NAME, m) {
 
     using librealsense::dds::dds_device_watcher;
     py::class_< dds_device_watcher >( m, "device_watcher" )
-        .def( py::init< std::shared_ptr< dds_participant > const& >() )
+        .def( py::init< std::shared_ptr< dds_participant > const & >() )
         .def( "start", &dds_device_watcher::start )
         .def( "stop", &dds_device_watcher::stop )
         .def( "is_stopped", &dds_device_watcher::is_stopped )
