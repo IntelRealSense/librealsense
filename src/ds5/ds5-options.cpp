@@ -41,7 +41,7 @@ namespace librealsense
         uvc_sensor & ep, const std::map< float, std::string > & description_per_value )
         : uvc_xu_option( ep,
                          ds::depth_xu,
-                         ds::DS5_PROJECTOR_FREQUENCY,
+                         ds::DS5_EMITTER_FREQUENCY,
                          "Controls the emitter frequency, 57 [KHZ] / 91 [KHZ]",
                          description_per_value )
     {

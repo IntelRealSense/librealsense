@@ -83,9 +83,8 @@ namespace librealsense
             }
 
             // EMITTER FREQUENCY OPTION
-            // TODO:: verify FW minimal version check
             if( ( _pid == ds::RS457_PID || _pid == ds::RS455_PID )
-                && _fw_version > firmware_version( "5.13.1.50" ) )
+                && _fw_version >= firmware_version( "5.13.1.53" ) )
             {
                 auto emitter_freq = std::make_shared< emitter_frequency >(
                     raw_depth_ep,
