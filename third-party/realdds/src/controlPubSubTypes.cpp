@@ -12,7 +12,7 @@
 #include <fastcdr/FastBuffer.h>
 #include <fastcdr/Cdr.h>
 
-#include <librealsense2/dds/topics/control/controlPubSubTypes.h>
+#include <realdds/topics/control/controlPubSubTypes.h>
 
 using SerializedPayload_t = eprosima::fastrtps::rtps::SerializedPayload_t;
 using InstanceHandle_t = eprosima::fastrtps::rtps::InstanceHandle_t;

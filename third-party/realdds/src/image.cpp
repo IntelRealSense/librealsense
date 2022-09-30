@@ -15,7 +15,7 @@ char dummy;
 }  // namespace
 #endif  // _WIN32
 
-#include <librealsense2/dds/topics/image/image.h>
+#include <realdds/topics/image/image.h>
 #include <fastcdr/Cdr.h>
 
 #include <fastcdr/exceptions/BadParamException.h>

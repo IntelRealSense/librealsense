@@ -1,7 +1,6 @@
 # License: Apache 2.0. See LICENSE file in root directory.
 # Copyright(c) 2022 Intel Corporation. All Rights Reserved.
 
-
 project(rs-dds-sniffer)
 
 set(SRC rs-dds-sniffer.cpp)
@@ -16,8 +15,6 @@ target_include_directories( ${PROJECT_NAME} PRIVATE
 set_target_properties (${PROJECT_NAME} PROPERTIES
                        FOLDER Tools/dds
                        CXX_STANDARD 11)
-
-include("${REPO_ROOT}/include/librealsense2/dds/dds-client.cmake")
 
 include("${REPO_ROOT}/include/librealsense2/utilities/easylogging/easyloggingpp.cmake")
 target_sources( ${PROJECT_NAME} PRIVATE ${ELPP_SOURCE_FILES} )

@@ -1,8 +1,8 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2022 Intel Corporation. All Rights Reserved.
 
-#include <librealsense2/dds/dds-device.h>
-#include <librealsense2/dds/dds-device-impl.h>
+#include <realdds/dds-device.h>
+#include <realdds/dds-device-impl.h>
 
 namespace librealsense {
 namespace dds {

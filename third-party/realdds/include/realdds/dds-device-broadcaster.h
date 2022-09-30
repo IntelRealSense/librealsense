@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include <librealsense2/dds/topics/device-info/device-info-msg.h>
+#include <realdds/topics/device-info/device-info-msg.h>
 #include <librealsense2/utilities/concurrency/concurrency.h>
 
 #include <unordered_map>

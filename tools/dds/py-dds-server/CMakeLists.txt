@@ -65,14 +65,13 @@ set_target_properties( ${PROJECT_NAME}
 
 target_include_directories( ${PROJECT_NAME} PRIVATE ${REPO_ROOT}/include )
 
-# NOTE: this requires that your "project(...)" statement match the executable
-target_link_libraries( ${PROJECT_NAME} PRIVATE dds )
-target_sources( ${PROJECT_NAME} PRIVATE ${DDS_SERVER_FILES} )
+target_link_libraries( ${PROJECT_NAME} PRIVATE realdds )
+target_sources( ${PROJECT_NAME} PRIVATE ${PYRS_DDS_SERVER_FILES} )
 
-include("${REPO_ROOT}/include/librealsense2/dds/dds-server.cmake")
-include("${REPO_ROOT}/include/librealsense2/dds/dds-client.cmake")
-
+include("${REPO_ROOT}/include/librealsense2/utilities/easylogging/easyloggingpp.cmake")
 target_sources( ${PROJECT_NAME} PRIVATE ${ELPP_SOURCE_FILES} )
-source_group( "EasyLogging++" FILES ${ELPP_SOURCE_FILES}  )
+source_group( "EasyLogging++" FILES ${ELPP_SOURCE_FILES} )
+
+include("${REPO_ROOT}/include/librealsense2/utilities/concurrency/CMakeLists.txt")
 target_sources( ${PROJECT_NAME} PRIVATE ${CONCURRENCY_SOURCE_FILES} )
 source_group( "Concurrency" FILES ${CONCURRENCY_SOURCE_FILES}  )

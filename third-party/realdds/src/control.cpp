@@ -15,7 +15,7 @@ char dummy;
 }  // namespace
 #endif  // _WIN32
 
-#include <librealsense2/dds/topics/control/control.h>
+#include <realdds/topics/control/control.h>
 #include "controlTypeObject.h"
 #include <fastcdr/Cdr.h>
 

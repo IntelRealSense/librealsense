@@ -6,11 +6,11 @@
 #include <unordered_set>
 
 #include <librealsense2/utilities/easylogging/easyloggingpp.h>
-#include <librealsense2/dds/dds-device-broadcaster.h>
-#include <librealsense2/dds/dds-device-server.h>
-#include <librealsense2/dds/dds-participant.h>
-#include <librealsense2/dds/topics/notification/notification-msg.h>
-#include <librealsense2/dds/topics/device-info/device-info-msg.h>
+#include <realdds/dds-device-broadcaster.h>
+#include <realdds/dds-device-server.h>
+#include <realdds/dds-participant.h>
+#include <realdds/topics/notification/notification-msg.h>
+#include <realdds/topics/device-info/device-info-msg.h>
 #include <fastrtps/types/TypesBase.h>
 #include <fastdds/dds/log/Log.hpp>
 

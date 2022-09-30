@@ -1,8 +1,8 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2022 Intel Corporation. All Rights Reserved.
 
-#include <librealsense2/dds/dds-guid.h>
-#include <librealsense2/dds/dds-participant.h>
+#include <realdds/dds-guid.h>
+#include <realdds/dds-participant.h>
 #include <sstream>
 
 

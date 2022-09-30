@@ -20,13 +20,11 @@ target_include_directories( ${PROJECT_NAME} PRIVATE
 target_link_libraries( ${PROJECT_NAME} PRIVATE realdds ${DEPENDENCIES} )
 set_target_properties (${PROJECT_NAME} PROPERTIES FOLDER Tools/dds)
 
-include("${REPO_ROOT}/include/librealsense2/dds/dds-server.cmake")
-
-#include("${REPO_ROOT}/include/librealsense2/utilities/concurrency/CMakeLists.txt")
+include("${REPO_ROOT}/include/librealsense2/utilities/concurrency/CMakeLists.txt")
 target_sources( ${PROJECT_NAME} PRIVATE ${CONCURRENCY_SOURCE_FILES} )
 source_group( "Concurrency" FILES ${CONCURRENCY_SOURCE_FILES}  )
 
-#include("${REPO_ROOT}/include/librealsense2/utilities/easylogging/easyloggingpp.cmake")
+include("${REPO_ROOT}/include/librealsense2/utilities/easylogging/easyloggingpp.cmake")
 target_sources( ${PROJECT_NAME} PRIVATE ${ELPP_SOURCE_FILES} )
 source_group( "EasyLogging++" FILES ${ELPP_SOURCE_FILES}  )
 

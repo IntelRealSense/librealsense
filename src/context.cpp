@@ -21,12 +21,12 @@
 #include "context.h"
 #include "fw-update/fw-update-factory.h"
 #ifdef BUILD_WITH_DDS
-#include <librealsense2/dds/dds-device-watcher.h>
-#include <librealsense2/dds/dds-participant.h>
-#include <librealsense2/dds/dds-device.h>
+#include <realdds/dds-device-watcher.h>
+#include <realdds/dds-participant.h>
+#include <realdds/dds-device.h>
 #include "software-device.h"
 #include <librealsense2/h/rs_internal.h>
-#include <librealsense2/dds/topics/device-info/device-info-msg.h>
+#include <realdds/topics/device-info/device-info-msg.h>
 #endif //BUILD_WITH_DDS
 
 #include <third-party/json.hpp>

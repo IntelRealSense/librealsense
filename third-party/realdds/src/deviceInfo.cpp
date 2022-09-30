@@ -15,7 +15,7 @@ char dummy;
 }  // namespace
 #endif  // _WIN32
 
-#include <librealsense2/dds/topics/device-info/deviceInfo.h>
+#include <realdds/topics/device-info/deviceInfo.h>
 #include "deviceInfoTypeObject.h"
 #include <fastcdr/Cdr.h>
 

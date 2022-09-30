@@ -13,7 +13,7 @@
 namespace { char dummy; }
 #endif
 
-#include <librealsense2/dds/topics/notification/notification.h>
+#include <realdds/topics/notification/notification.h>
 #include "notificationTypeObject.h"
 #include <utility>
 #include <sstream>

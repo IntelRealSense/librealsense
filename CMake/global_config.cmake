@@ -97,10 +97,6 @@ endmacro()
 macro(global_target_config)
     target_link_libraries(${LRS_TARGET} PRIVATE realsense-file ${CMAKE_THREAD_LIBS_INIT})
 
-    if( BUILD_WITH_DDS )
-        target_link_libraries( ${LRS_TARGET} PRIVATE realdds )
-    endif()
-
     set_target_properties (${LRS_TARGET} PROPERTIES FOLDER Library)
 
     target_include_directories(${LRS_TARGET}
