@@ -270,13 +270,27 @@ bool dds_device_broadcaster::send_device_info_msg( const dds_device_handle & han
     return false;
 }
 
+template< class Array >
+void copy_to_array( std::string const & source, Array & dest )
+{
+    // Workaround for "warning C4996: 'strcpy': This function or variable may be unsafe"
+    // Same with strncpy.
+    //
+    assert( dest.size() > 1 );
+    size_t const cch_copied = source.copy( dest.data(), dest.size() - 1 );
+    dest.at( cch_copied ) = 0;  // copy() does not append a null character
+    // Note that this does not pad the rest of the array with nulls is source was shorter!
+    //strncpy( dest.data(), source.c_str(), dest.size() );
+    //dest.back() = 0;  // make sure it's 0-terminated
+}
+
 void dds_device_broadcaster::fill_device_msg( const device_info & dev_info,
                                               librealsense::dds::topics::raw::device_info & msg ) const
 {
-    strcpy( msg.name().data(), dev_info.name.c_str() );
-    strcpy( msg.serial_number().data(), dev_info.serial.c_str() );
-    strcpy( msg.product_line().data(), dev_info.product_line.c_str() );
-    strcpy( msg.topic_root().data(), dev_info.topic_root.c_str() );
+    copy_to_array( dev_info.name, msg.name() );
+    copy_to_array( dev_info.serial, msg.serial_number() );
+    copy_to_array( dev_info.product_line, msg.product_line() );
+    copy_to_array( dev_info.topic_root, msg.topic_root() );
     msg.locked() = dev_info.locked;
 }
 
