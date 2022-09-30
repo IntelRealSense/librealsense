@@ -15,7 +15,7 @@ char dummy;
 }  // namespace
 #endif  // _WIN32
 
-#include "notification.h"
+#include <librealsense2/dds/topics/notification/notification.h>
 #include "notificationTypeObject.h"
 #include <fastcdr/Cdr.h>
 

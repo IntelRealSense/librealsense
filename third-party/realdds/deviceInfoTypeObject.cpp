@@ -13,7 +13,7 @@
 namespace { char dummy; }
 #endif
 
-#include "deviceInfo.h"
+#include <librealsense2/dds/topics/device-info/deviceInfo.h>
 #include "deviceInfoTypeObject.h"
 #include <utility>
 #include <sstream>

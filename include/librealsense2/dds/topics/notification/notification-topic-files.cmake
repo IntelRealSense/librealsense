@@ -3,13 +3,8 @@
 
 set(NOTIFICATION_TOPIC_HEADER_FILES
    "${CMAKE_CURRENT_LIST_DIR}/notificationPubSubTypes.h"
-   "${CMAKE_CURRENT_LIST_DIR}/notificationTypeObject.h"
    "${CMAKE_CURRENT_LIST_DIR}/notification.h"
    "${CMAKE_CURRENT_LIST_DIR}/notification-msg.h"
-)
-set(NOTIFICATION_TOPIC_SOURCE_FILES
-   "${CMAKE_CURRENT_LIST_DIR}/notificationPubSubTypes.cpp"
-   "${CMAKE_CURRENT_LIST_DIR}/notificationTypeObject.cpp"
-   "${CMAKE_CURRENT_LIST_DIR}/notification.cpp"
+   "${CMAKE_CURRENT_LIST_DIR}/notification-topic-files.cmake"
 )
 set( NOTIFICATION_TOPIC_FILES ${NOTIFICATION_TOPIC_HEADER_FILES} )

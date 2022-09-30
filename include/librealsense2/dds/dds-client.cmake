@@ -12,14 +12,6 @@ set( DDS_CLIENT_HEADER_FILES
     "${CMAKE_CURRENT_LIST_DIR}/dds-device-impl.h"
     "${CMAKE_CURRENT_LIST_DIR}/dds-device-watcher.h"
 )
-set( DDS_CLIENT_SOURCE_FILES 
-    "${CMAKE_CURRENT_LIST_DIR}/dds-guid.cpp"
-    "${CMAKE_CURRENT_LIST_DIR}/dds-participant.cpp"
-    "${CMAKE_CURRENT_LIST_DIR}/dds-topic.cpp"
-    "${CMAKE_CURRENT_LIST_DIR}/dds-topic-reader.cpp"
-    "${CMAKE_CURRENT_LIST_DIR}/dds-device.cpp"
-    "${CMAKE_CURRENT_LIST_DIR}/dds-device-watcher.cpp"
-)
 set( DDS_CLIENT_FILES ${DDS_CLIENT_HEADER_FILES} )
 source_group( "DDS" FILES ${DDS_CLIENT_FILES} )
 

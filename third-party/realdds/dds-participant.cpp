@@ -1,9 +1,9 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2022 Intel Corporation. All Rights Reserved.
 
-#include "dds-participant.h"
-#include "dds-utilities.h"
-#include "dds-guid.h"
+#include <librealsense2/dds/dds-participant.h>
+#include <librealsense2/dds/dds-utilities.h>
+#include <librealsense2/dds/dds-guid.h>
 
 #include <librealsense2/utilities/easylogging/easyloggingpp.h>
 #include <fastdds/dds/domain/DomainParticipantFactory.hpp>

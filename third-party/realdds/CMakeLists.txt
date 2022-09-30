@@ -17,24 +17,60 @@ target_include_directories( ${PROJECT_NAME}
 
 
 include("${REPO_ROOT}/include/librealsense2/dds/dds-server.cmake")
-source_group( "DDS/server" FILES ${DDS_SERVER_SOURCE_FILES} )
-target_sources( ${PROJECT_NAME} PRIVATE ${DDS_SERVER_SOURCE_FILES} )
+include("${REPO_ROOT}/include/librealsense2/dds/dds-client.cmake")
 
-#include("${REPO_ROOT}/include/librealsense2/dds/topics/dds-topics.cmake")
-source_group( "DDS/topics" FILES ${DDS_TOPICS_SOURCE_FILES} )
-target_sources( ${PROJECT_NAME} PRIVATE ${DDS_TOPICS_SOURCE_FILES} )
 
-#include("${REPO_ROOT}/include/librealsense2/utilities/easylogging/easyloggingpp.cmake")
+set( REALDDS_SRC_DIR "${CMAKE_CURRENT_LIST_DIR}" )
+
+
+set( CONTROL_TOPIC_SOURCE_FILES
+   "${REALDDS_SRC_DIR}/controlPubSubTypes.cpp"
+   "${REALDDS_SRC_DIR}/controlTypeObject.h"
+   "${REALDDS_SRC_DIR}/controlTypeObject.cpp"
+   "${REALDDS_SRC_DIR}/control.cpp"
+)
+set( DEVICE_INFO_TOPIC_SOURCE_FILES
+   "${REALDDS_SRC_DIR}/deviceInfo.cpp"
+   "${REALDDS_SRC_DIR}/device-info-msg.cpp"
+   "${REALDDS_SRC_DIR}/deviceInfoTypeObject.h"
+   "${REALDDS_SRC_DIR}/deviceInfoTypeObject.cpp"
+   "${REALDDS_SRC_DIR}/deviceInfoPubSubTypes.cpp"
+)
+set( IMAGE_TOPIC_SOURCE_FILES
+   "${REALDDS_SRC_DIR}/imagePubSubTypes.cpp"
+   "${REALDDS_SRC_DIR}/image.cpp"
+)
+set( NOTIFICATION_TOPIC_SOURCE_FILES
+   "${REALDDS_SRC_DIR}/notificationPubSubTypes.cpp"
+   "${REALDDS_SRC_DIR}/notificationTypeObject.h"
+   "${REALDDS_SRC_DIR}/notificationTypeObject.cpp"
+   "${REALDDS_SRC_DIR}/notification.cpp"
+)
+set( TOPICS_SOURCE_FILES
+    ${CONTROL_TOPIC_SOURCE_FILES}
+    ${DEVICE_INFO_TOPIC_SOURCE_FILES}
+    ${IMAGE_TOPIC_SOURCE_FILES}
+    ${NOTIFICATION_TOPIC_SOURCE_FILES}
+)
+source_group( "Source Files/topics" FILES ${TOPICS_SOURCE_FILES} )
+
+SET( REALDDS_SOURCE_FILES
+    "${REALDDS_SRC_DIR}/dds-guid.cpp"
+    "${REALDDS_SRC_DIR}/dds-participant.cpp"
+    "${REALDDS_SRC_DIR}/dds-topic.cpp"
+    "${REALDDS_SRC_DIR}/dds-topic-reader.cpp"
+    "${REALDDS_SRC_DIR}/dds-device.cpp"
+    "${REALDDS_SRC_DIR}/dds-device-watcher.cpp"
+    "${REALDDS_SRC_DIR}/dds-device-broadcaster.cpp"
+    "${REALDDS_SRC_DIR}/dds-device-server.cpp"
+    ${TOPICS_SOURCE_FILES}
+)
+target_sources( ${PROJECT_NAME} PRIVATE ${REALDDS_SOURCE_FILES} )
+
+SET( REALDDS_FILES
+    ${REALDDS_SOURCE_FILES}
+    ${TOPICS_SOURCE_FILES}
+)
 
 
 install( TARGETS realdds EXPORT realsense2Targets)
-
-
-include("${REPO_ROOT}/include/librealsense2/dds/dds-client.cmake")
-source_group( "DDS/client" FILES ${DDS_CLIENT_SOURCE_FILES} )
-target_sources( ${PROJECT_NAME} PRIVATE ${DDS_CLIENT_SOURCE_FILES} )
-
-#include("${REPO_ROOT}/include/librealsense2/dds/topics/dds-topics.cmake")
-
-#include("${REPO_ROOT}/include/librealsense2/utilities/concurrency/CMakeLists.txt")
-

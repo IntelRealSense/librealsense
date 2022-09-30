@@ -1,12 +1,12 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2022 Intel Corporation. All Rights Reserved.
 
-#include "device-info-msg.h"
-#include "deviceInfoPubSubTypes.h"
+#include <librealsense2/dds/topics/device-info/device-info-msg.h>
+#include <librealsense2/dds/topics/device-info/deviceInfoPubSubTypes.h>
 
-#include "../../dds-topic.h"
-#include "../../dds-topic-reader.h"
-#include "../../dds-utilities.h"
+#include <librealsense2/dds/dds-topic.h>
+#include <librealsense2/dds/dds-topic-reader.h>
+#include <librealsense2/dds/dds-utilities.h>
 
 #include <fastdds/dds/subscriber/DataReader.hpp>
 #include <fastdds/dds/topic/Topic.hpp>
