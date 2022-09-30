@@ -13,7 +13,7 @@
 namespace { char dummy; }
 #endif
 
-#include "control.h"
+#include <realdds/topics/control/control.h>
 #include "controlTypeObject.h"
 #include <utility>
 #include <sstream>
