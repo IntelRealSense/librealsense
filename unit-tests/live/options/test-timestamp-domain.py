@@ -78,6 +78,6 @@ test.start('Check setting global time domain: color sensor - timestamp domain is
 set_and_verify_timestamp_domain(color_sensor, True)
 test.finish()
 
-test.print_results_and_exit()
-
 close_resources(color_sensor)
+
+test.print_results_and_exit()
