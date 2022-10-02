@@ -5,11 +5,16 @@
 #test:device D457
 
 import pyrealsense2 as rs
-from rspy import test
+from rspy import test, log
 
 ctx = rs.context()
 device = test.find_first_device_or_exit();
 depth_sensor = device.first_depth_sensor()
+
+if not depth_sensor.supports(rs.option.emitter_frequency):
+    log.i("Connected device does not support EMITTER_FREQUENCY option, skipping...")
+    test.print_results_and_exit()
+
 
 EMITTER_FREQUENCY_57_KHZ = 0.0
 EMITTER_FREQUENCY_91_KHZ = 1.0
