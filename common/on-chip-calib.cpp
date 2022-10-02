@@ -1539,13 +1539,7 @@ namespace rs2
             try_start_viewer(0, 0, 0, invoke); // Start with default settings
 
             // Make new calibration active
-            LOG_WARNING(std::string(to_string() << __LINE__ << " wait 4"));
-            std::this_thread::sleep_for(std::chrono::milliseconds(4000)); // Evgeni  - debug
             apply_calib(true);
-            LOG_WARNING(std::string(to_string() << __LINE__ << " new calib applied"));
-            LOG_WARNING(std::string(to_string() << __LINE__ << " wait 5"));
-            std::this_thread::sleep_for(std::chrono::milliseconds(5000)); // Evgeni  - debug
-            //LOG_WARNING(std::string(to_string() << __LINE__ << " wait done"));
 
             // Capture metrics after
             auto metrics_after = get_depth_metrics(invoke);

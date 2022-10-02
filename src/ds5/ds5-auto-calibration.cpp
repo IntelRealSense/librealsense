@@ -185,7 +185,7 @@ namespace librealsense
           _collected_counter(-1),
           _collected_frame_num(-1),
           _collected_sum(-1.0),
-          _min_valid_depth(1),
+          _min_valid_depth(0),
           _max_valid_depth(uint16_t(-1)),
           _resize_factor(5),
           _skipped_frames(0)
@@ -885,10 +885,10 @@ namespace librealsense
 
         if (depth > 0)
         {
-            LOG_DEBUG("run_tare_calibration interactive control with parameters: depth = " << depth);
+            LOG_WARNING("run_tare_calibration interactive control (2) with parameters: depth = " << depth);
             _hw_monitor->send(command{ ds::AUTO_CALIB, interactive_scan_control, 2, depth });
-            std::cout << __LINE__ << "occ interactive_scan_control 2, res size = " << res.size() << std::endl;
-            LOG_DEBUG(std::string(to_string() << __LINE__ << "occ interactive_scan_control 2, res size = " << res.size()  ));
+            //std::cout << __LINE__ << "occ interactive_scan_control 2, res size = " << res.size() << std::endl;
+            //LOG_DEBUG(std::string(to_string() << __LINE__ << "occ interactive_scan_control 2, res size = " << res.size()  ));
         }
         else
         {
@@ -1237,6 +1237,7 @@ namespace librealsense
         {
             std::vector<uint8_t> res;
             rs2_metadata_type frame_counter = ((frame_interface*)f)->get_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER);
+            rs2_metadata_type frame_ts = ((frame_interface*)f)->get_frame_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP);
             //LOG_WARNING(std::string(to_string() << __FUNCTION__ << " fc = " << frame_counter));
             if (_interactive_state == interactive_calibration_state::RS2_OCC_STATE_WAIT_TO_CAMERA_START)
             {
@@ -1356,7 +1357,7 @@ namespace librealsense
                                 progress_callback->on_update_progress(static_cast<float>(20 + static_cast<int>(frame_counter * 60.0 / _total_frames)));
                             }
                             auto fr  = calc_fill_rate(f);
-                            if (frame_counter < 20) // Evgeni - handle discrepancy on stream/preset activation
+                            if (frame_counter < 10) // Evgeni - handle discrepancy on stream/preset activation
                                 fr = 0;
                             if (frame_counter + fw_host_offset < 256)
                             {
@@ -1397,6 +1398,8 @@ namespace librealsense
                             progress_callback->on_update_progress(static_cast<float>(20 + static_cast<int>(progress_rate * 60.0)));
                         }
                     }
+                    LOG_WARNING(std::string(to_string() << __LINE__ << " fr_c = " << frame_counter
+                        << " fr_ts = " << frame_ts << " _c_f_num = " << _collected_frame_num));
                     if (frame_counter < _total_frames)
                     {
                         if (_skipped_frames < FRAMES_TO_SKIP)
