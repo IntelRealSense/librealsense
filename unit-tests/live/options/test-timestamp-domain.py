@@ -27,70 +27,57 @@ def set_and_verify_timestamp_domain(sensor, global_time_enabled: bool):
     """
     global frame_queue
 
-    try:
-        sensor.set_option(rs.option.global_time_enabled, 1 if global_time_enabled else 0)
-        time.sleep(0.7)
-        frame = frame_queue.wait_for_frame()
+    sensor.set_option(rs.option.global_time_enabled, global_time_enabled)
+    time.sleep(0.3)  # Waiting for new frame from device. Need in case low FPS.
+    frame = frame_queue.wait_for_frame()
 
-        if frame_queue is None or frame_queue.size() == 0:
-            test.fail()
-
-        expected_ts_domain = rs.timestamp_domain.global_time if global_time_enabled else \
-            rs.timestamp_domain.hardware_clock
-
-        test.check_equal(sensor.get_option(rs.option.global_time_enabled), 1 if global_time_enabled else 0)
-        test.check_equal(frame.get_frame_timestamp_domain(), expected_ts_domain)
-
-    except Exception as exc:
-        print(str(exc))
+    if not frame:
         test.fail()
 
+    expected_ts_domain = rs.timestamp_domain.global_time if global_time_enabled else \
+        rs.timestamp_domain.hardware_clock
 
-depth_sensor = None
-color_sensor = None
+    test.check_equal(sensor.get_option(rs.option.global_time_enabled), global_time_enabled)
+    test.check_equal(frame.get_frame_timestamp_domain(), expected_ts_domain)
 
-try:
-    frame_queue = rs.frame_queue(capacity=5, keep_frames=False)
-    device = test.find_first_device_or_exit()
 
-    # Depth sensor test
-    depth_sensor = device.first_depth_sensor()
-    depth_profile = next(p for p in depth_sensor.profiles if p.stream_type() == rs.stream.depth)
-    depth_sensor.open(depth_profile)
-    depth_sensor.start(frame_queue)
+frame_queue = rs.frame_queue(capacity=1, keep_frames=False)
+device = test.find_first_device_or_exit()
 
-    # Test #1
-    test.start('Check setting global time domain: depth sensor - timestamp domain is OFF')
-    set_and_verify_timestamp_domain(depth_sensor, False)
-    test.finish()
+# Depth sensor test
+depth_sensor = device.first_depth_sensor()
+depth_profile = next(p for p in depth_sensor.profiles if p.stream_type() == rs.stream.depth)
+depth_sensor.open(depth_profile)
+depth_sensor.start(frame_queue)
 
-    # Test #2
-    test.start('Check setting global time domain: depth sensor - timestamp domain is ON')
-    set_and_verify_timestamp_domain(depth_sensor, True)
-    test.finish()
+# Test #1
+test.start('Check setting global time domain: depth sensor - timestamp domain is OFF')
+set_and_verify_timestamp_domain(depth_sensor, False)
+test.finish()
 
-    close_resources(depth_sensor)
+# Test #2
+test.start('Check setting global time domain: depth sensor - timestamp domain is ON')
+set_and_verify_timestamp_domain(depth_sensor, True)
+test.finish()
 
-    # Color sensor test
-    color_sensor = device.first_color_sensor()
-    color_profile = next(p for p in color_sensor.profiles if p.stream_type() == rs.stream.color)
-    color_sensor.open(color_profile)
-    color_sensor.start(frame_queue)
+close_resources(depth_sensor)
 
-    # Test #3
-    test.start('Check setting global time domain: color sensor - timestamp domain is OFF')
-    set_and_verify_timestamp_domain(color_sensor, False)
-    test.finish()
+# Color sensor test
+color_sensor = device.first_color_sensor()
+color_profile = next(p for p in color_sensor.profiles if p.stream_type() == rs.stream.color)
+color_sensor.open(color_profile)
+color_sensor.start(frame_queue)
 
-    # Test #4
-    test.start('Check setting global time domain: color sensor - timestamp domain is ON')
-    set_and_verify_timestamp_domain(color_sensor, True)
-    test.finish()
+# Test #3
+test.start('Check setting global time domain: color sensor - timestamp domain is OFF')
+set_and_verify_timestamp_domain(color_sensor, False)
+test.finish()
 
-    test.print_results_and_exit()
+# Test #4
+test.start('Check setting global time domain: color sensor - timestamp domain is ON')
+set_and_verify_timestamp_domain(color_sensor, True)
+test.finish()
 
-except Exception as e:
-    print(str(e))
-    test.fail()
-finally:
-    close_resources(color_sensor)
+test.print_results_and_exit()
+
+close_resources(color_sensor)
