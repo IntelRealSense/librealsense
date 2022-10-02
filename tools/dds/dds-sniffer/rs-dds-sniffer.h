@@ -8,7 +8,7 @@
 #include <mutex>
 #include <set>
 
-#include <librealsense2/dds/dds-participant.h>
+#include <realdds/dds-participant.h>
 
 #include <fastdds/dds/subscriber/Subscriber.hpp>
 #include <fastdds/dds/topic/Topic.hpp>

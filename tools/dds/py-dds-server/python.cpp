@@ -3,16 +3,16 @@ Copyright(c) 2022 Intel Corporation. All Rights Reserved. */
 
 #include "python.hpp"
 
-#include <librealsense2/dds/dds-participant.h>
-#include <librealsense2/dds/topics/dds-topics.h>
-#include <librealsense2/dds/topics/device-info/deviceInfoPubSubTypes.h>
-#include <librealsense2/dds/dds-device-broadcaster.h>
-#include <librealsense2/dds/dds-device-watcher.h>
-#include <librealsense2/dds/dds-device.h>
-#include <librealsense2/dds/dds-guid.h>
-#include <librealsense2/dds/dds-topic.h>
-#include <librealsense2/dds/dds-topic-reader.h>
-#include <librealsense2/dds/dds-utilities.h>
+#include <realdds/dds-participant.h>
+#include <realdds/topics/dds-topics.h>
+#include <realdds/topics/device-info/deviceInfoPubSubTypes.h>
+#include <realdds/dds-device-broadcaster.h>
+#include <realdds/dds-device-watcher.h>
+#include <realdds/dds-device.h>
+#include <realdds/dds-guid.h>
+#include <realdds/dds-topic.h>
+#include <realdds/dds-topic-reader.h>
+#include <realdds/dds-utilities.h>
 
 #include <librealsense2/utilities/easylogging/easyloggingpp.h>
 #include <fastdds/dds/log/Log.hpp>
@@ -245,7 +245,7 @@ PYBIND11_MODULE(NAME, m) {
 
     using reader_qos = librealsense::dds::dds_topic_reader::reader_qos;
     py::class_< reader_qos >( m, "reader_qos" )
-        .def( "__repr__", []( dds_topic const & self ) {
+        .def( "__repr__", []( reader_qos const & self ) {
             std::ostringstream os;
             os << "<" SNAME ".reader_qos";
             os << ">";

@@ -34,12 +34,8 @@ target_sources(${LRS_TARGET}
         "${CMAKE_CURRENT_LIST_DIR}/librealsense2/rsutil.h"
         "${CMAKE_CURRENT_LIST_DIR}/librealsense2/rs_advanced_mode.h"
         "${CMAKE_CURRENT_LIST_DIR}/librealsense2/rs_advanced_mode.hpp"
-        
+
 )
 
 include(${CMAKE_CURRENT_LIST_DIR}/librealsense2/utilities/CMakeLists.txt)
 
-if (${BUILD_WITH_DDS})
-    include("${CMAKE_CURRENT_LIST_DIR}/librealsense2/dds/dds-client.cmake")
-    include("${CMAKE_CURRENT_LIST_DIR}/librealsense2/dds/topics/dds-topics.cmake")
-endif()

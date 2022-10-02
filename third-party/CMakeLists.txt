@@ -30,3 +30,8 @@ if(BUILD_NETWORK_DEVICE)
     )
 
 endif()
+
+if( BUILD_WITH_DDS )
+    add_subdirectory( "${CMAKE_CURRENT_LIST_DIR}/realdds" )
+endif()
+

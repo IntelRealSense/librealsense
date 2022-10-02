@@ -19,8 +19,8 @@
 
 #include <librealsense2/utilities/easylogging/easyloggingpp.h>
 #include <librealsense2/rs.hpp>  // Include RealSense Cross Platform API
-#include <librealsense2/dds/dds-utilities.h>
-#include <librealsense2/dds/dds-guid.h>
+#include <realdds/dds-utilities.h>
+#include <realdds/dds-guid.h>
 
 using namespace TCLAP;
 using namespace eprosima::fastdds::dds;
