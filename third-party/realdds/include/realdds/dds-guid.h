@@ -7,8 +7,7 @@
 #include <fastdds/rtps/common/Guid.h>
 
 
-namespace librealsense {
-namespace dds {
+namespace realdds {
 
 
 // Custom GUID printer: attempts a more succinct representation
@@ -25,5 +24,4 @@ inline std::string print( dds_guid const & guid, dds_guid const & base_guid )
 }
 
 
-}  // namespace dds
-}  // namespace librealsense
+}  // namespace realdds

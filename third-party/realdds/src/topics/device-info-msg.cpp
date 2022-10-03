@@ -12,8 +12,7 @@
 #include <fastdds/dds/topic/Topic.hpp>
 
 
-namespace librealsense {
-namespace dds {
+namespace realdds {
 namespace topics {
 
 
@@ -71,5 +70,4 @@ device_info::take_next( dds_topic_reader & reader, device_info * output, eprosim
 
 
 }  // namespace topics
-}  // namespace dds
-}  // namespace librealsense
+}  // namespace realdds

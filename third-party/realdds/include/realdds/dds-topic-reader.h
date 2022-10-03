@@ -19,8 +19,7 @@ class Subscriber;
 }  // namespace eprosima
 
 
-namespace librealsense {
-namespace dds {
+namespace realdds {
 
 
 class dds_topic;
@@ -78,5 +77,4 @@ private:
 };
 
 
-}  // namespace dds
-}  // namespace librealsense
+}  // namespace realdds

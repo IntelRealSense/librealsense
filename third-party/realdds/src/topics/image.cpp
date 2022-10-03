@@ -23,22 +23,22 @@ using namespace eprosima::fastcdr::exception;
 
 #include <utility>
 
-librealsense::dds::topics::raw::device::image::image()
+realdds::topics::raw::device::image::image()
 {
-    // m_raw_data com.eprosima.idl.parser.typecode.SequenceTypeCode@6dde5c8c
+    // m_raw_data com.eprosima.idl.parser.typecode.SequenceTypeCode@184f6be2
 
-    // m_size com.eprosima.idl.parser.typecode.PrimitiveTypeCode@5123a213
+    // m_size com.eprosima.idl.parser.typecode.PrimitiveTypeCode@56aac163
     m_size = 0;
-    // m_width com.eprosima.idl.parser.typecode.PrimitiveTypeCode@52525845
+    // m_width com.eprosima.idl.parser.typecode.PrimitiveTypeCode@1f7030a6
     m_width = 0;
-    // m_height com.eprosima.idl.parser.typecode.PrimitiveTypeCode@3b94d659
+    // m_height com.eprosima.idl.parser.typecode.PrimitiveTypeCode@5a1c0542
     m_height = 0;
-    // m_format com.eprosima.idl.parser.typecode.PrimitiveTypeCode@24b1d79b
+    // m_format com.eprosima.idl.parser.typecode.PrimitiveTypeCode@396f6598
     m_format = 0;
 
 }
 
-librealsense::dds::topics::raw::device::image::~image()
+realdds::topics::raw::device::image::~image()
 {
 
 
@@ -47,7 +47,7 @@ librealsense::dds::topics::raw::device::image::~image()
 
 }
 
-librealsense::dds::topics::raw::device::image::image(
+realdds::topics::raw::device::image::image(
         const image& x)
 {
     m_raw_data = x.m_raw_data;
@@ -57,7 +57,7 @@ librealsense::dds::topics::raw::device::image::image(
     m_format = x.m_format;
 }
 
-librealsense::dds::topics::raw::device::image::image(
+realdds::topics::raw::device::image::image(
         image&& x)
 {
     m_raw_data = std::move(x.m_raw_data);
@@ -67,7 +67,7 @@ librealsense::dds::topics::raw::device::image::image(
     m_format = x.m_format;
 }
 
-librealsense::dds::topics::raw::device::image& librealsense::dds::topics::raw::device::image::operator =(
+realdds::topics::raw::device::image& realdds::topics::raw::device::image::operator =(
         const image& x)
 {
 
@@ -80,7 +80,7 @@ librealsense::dds::topics::raw::device::image& librealsense::dds::topics::raw::d
     return *this;
 }
 
-librealsense::dds::topics::raw::device::image& librealsense::dds::topics::raw::device::image::operator =(
+realdds::topics::raw::device::image& realdds::topics::raw::device::image::operator =(
         image&& x)
 {
 
@@ -93,20 +93,20 @@ librealsense::dds::topics::raw::device::image& librealsense::dds::topics::raw::d
     return *this;
 }
 
-bool librealsense::dds::topics::raw::device::image::operator ==(
+bool realdds::topics::raw::device::image::operator ==(
         const image& x) const
 {
 
     return (m_raw_data == x.m_raw_data && m_size == x.m_size && m_width == x.m_width && m_height == x.m_height && m_format == x.m_format);
 }
 
-bool librealsense::dds::topics::raw::device::image::operator !=(
+bool realdds::topics::raw::device::image::operator !=(
         const image& x) const
 {
     return !(*this == x);
 }
 
-size_t librealsense::dds::topics::raw::device::image::getMaxCdrSerializedSize(
+size_t realdds::topics::raw::device::image::getMaxCdrSerializedSize(
         size_t current_alignment)
 {
     size_t initial_alignment = current_alignment;
@@ -134,8 +134,8 @@ size_t librealsense::dds::topics::raw::device::image::getMaxCdrSerializedSize(
     return current_alignment - initial_alignment;
 }
 
-size_t librealsense::dds::topics::raw::device::image::getCdrSerializedSize(
-        const librealsense::dds::topics::raw::device::image& data,
+size_t realdds::topics::raw::device::image::getCdrSerializedSize(
+        const realdds::topics::raw::device::image& data,
         size_t current_alignment)
 {
     (void)data;
@@ -167,7 +167,7 @@ size_t librealsense::dds::topics::raw::device::image::getCdrSerializedSize(
     return current_alignment - initial_alignment;
 }
 
-void librealsense::dds::topics::raw::device::image::serialize(
+void realdds::topics::raw::device::image::serialize(
         eprosima::fastcdr::Cdr& scdr) const
 {
 
@@ -179,7 +179,7 @@ void librealsense::dds::topics::raw::device::image::serialize(
 
 }
 
-void librealsense::dds::topics::raw::device::image::deserialize(
+void realdds::topics::raw::device::image::deserialize(
         eprosima::fastcdr::Cdr& dcdr)
 {
 
@@ -194,7 +194,7 @@ void librealsense::dds::topics::raw::device::image::deserialize(
  * @brief This function copies the value in member raw_data
  * @param _raw_data New value to be copied in member raw_data
  */
-void librealsense::dds::topics::raw::device::image::raw_data(
+void realdds::topics::raw::device::image::raw_data(
         const std::vector<uint8_t>& _raw_data)
 {
     m_raw_data = _raw_data;
@@ -204,7 +204,7 @@ void librealsense::dds::topics::raw::device::image::raw_data(
  * @brief This function moves the value in member raw_data
  * @param _raw_data New value to be moved in member raw_data
  */
-void librealsense::dds::topics::raw::device::image::raw_data(
+void realdds::topics::raw::device::image::raw_data(
         std::vector<uint8_t>&& _raw_data)
 {
     m_raw_data = std::move(_raw_data);
@@ -214,7 +214,7 @@ void librealsense::dds::topics::raw::device::image::raw_data(
  * @brief This function returns a constant reference to member raw_data
  * @return Constant reference to member raw_data
  */
-const std::vector<uint8_t>& librealsense::dds::topics::raw::device::image::raw_data() const
+const std::vector<uint8_t>& realdds::topics::raw::device::image::raw_data() const
 {
     return m_raw_data;
 }
@@ -223,7 +223,7 @@ const std::vector<uint8_t>& librealsense::dds::topics::raw::device::image::raw_d
  * @brief This function returns a reference to member raw_data
  * @return Reference to member raw_data
  */
-std::vector<uint8_t>& librealsense::dds::topics::raw::device::image::raw_data()
+std::vector<uint8_t>& realdds::topics::raw::device::image::raw_data()
 {
     return m_raw_data;
 }
@@ -231,7 +231,7 @@ std::vector<uint8_t>& librealsense::dds::topics::raw::device::image::raw_data()
  * @brief This function sets a value in member size
  * @param _size New value for member size
  */
-void librealsense::dds::topics::raw::device::image::size(
+void realdds::topics::raw::device::image::size(
         uint32_t _size)
 {
     m_size = _size;
@@ -241,7 +241,7 @@ void librealsense::dds::topics::raw::device::image::size(
  * @brief This function returns the value of member size
  * @return Value of member size
  */
-uint32_t librealsense::dds::topics::raw::device::image::size() const
+uint32_t realdds::topics::raw::device::image::size() const
 {
     return m_size;
 }
@@ -250,7 +250,7 @@ uint32_t librealsense::dds::topics::raw::device::image::size() const
  * @brief This function returns a reference to member size
  * @return Reference to member size
  */
-uint32_t& librealsense::dds::topics::raw::device::image::size()
+uint32_t& realdds::topics::raw::device::image::size()
 {
     return m_size;
 }
@@ -259,7 +259,7 @@ uint32_t& librealsense::dds::topics::raw::device::image::size()
  * @brief This function sets a value in member width
  * @param _width New value for member width
  */
-void librealsense::dds::topics::raw::device::image::width(
+void realdds::topics::raw::device::image::width(
         uint16_t _width)
 {
     m_width = _width;
@@ -269,7 +269,7 @@ void librealsense::dds::topics::raw::device::image::width(
  * @brief This function returns the value of member width
  * @return Value of member width
  */
-uint16_t librealsense::dds::topics::raw::device::image::width() const
+uint16_t realdds::topics::raw::device::image::width() const
 {
     return m_width;
 }
@@ -278,7 +278,7 @@ uint16_t librealsense::dds::topics::raw::device::image::width() const
  * @brief This function returns a reference to member width
  * @return Reference to member width
  */
-uint16_t& librealsense::dds::topics::raw::device::image::width()
+uint16_t& realdds::topics::raw::device::image::width()
 {
     return m_width;
 }
@@ -287,7 +287,7 @@ uint16_t& librealsense::dds::topics::raw::device::image::width()
  * @brief This function sets a value in member height
  * @param _height New value for member height
  */
-void librealsense::dds::topics::raw::device::image::height(
+void realdds::topics::raw::device::image::height(
         uint16_t _height)
 {
     m_height = _height;
@@ -297,7 +297,7 @@ void librealsense::dds::topics::raw::device::image::height(
  * @brief This function returns the value of member height
  * @return Value of member height
  */
-uint16_t librealsense::dds::topics::raw::device::image::height() const
+uint16_t realdds::topics::raw::device::image::height() const
 {
     return m_height;
 }
@@ -306,7 +306,7 @@ uint16_t librealsense::dds::topics::raw::device::image::height() const
  * @brief This function returns a reference to member height
  * @return Reference to member height
  */
-uint16_t& librealsense::dds::topics::raw::device::image::height()
+uint16_t& realdds::topics::raw::device::image::height()
 {
     return m_height;
 }
@@ -315,7 +315,7 @@ uint16_t& librealsense::dds::topics::raw::device::image::height()
  * @brief This function sets a value in member format
  * @param _format New value for member format
  */
-void librealsense::dds::topics::raw::device::image::format(
+void realdds::topics::raw::device::image::format(
         uint8_t _format)
 {
     m_format = _format;
@@ -325,7 +325,7 @@ void librealsense::dds::topics::raw::device::image::format(
  * @brief This function returns the value of member format
  * @return Value of member format
  */
-uint8_t librealsense::dds::topics::raw::device::image::format() const
+uint8_t realdds::topics::raw::device::image::format() const
 {
     return m_format;
 }
@@ -334,13 +334,13 @@ uint8_t librealsense::dds::topics::raw::device::image::format() const
  * @brief This function returns a reference to member format
  * @return Reference to member format
  */
-uint8_t& librealsense::dds::topics::raw::device::image::format()
+uint8_t& realdds::topics::raw::device::image::format()
 {
     return m_format;
 }
 
 
-size_t librealsense::dds::topics::raw::device::image::getKeyMaxCdrSerializedSize(
+size_t realdds::topics::raw::device::image::getKeyMaxCdrSerializedSize(
         size_t current_alignment)
 {
     size_t current_align = current_alignment;
@@ -355,18 +355,17 @@ size_t librealsense::dds::topics::raw::device::image::getKeyMaxCdrSerializedSize
     return current_align;
 }
 
-bool librealsense::dds::topics::raw::device::image::isKeyDefined()
+bool realdds::topics::raw::device::image::isKeyDefined()
 {
     return false;
 }
 
-void librealsense::dds::topics::raw::device::image::serializeKey(
+void realdds::topics::raw::device::image::serializeKey(
         eprosima::fastcdr::Cdr& scdr) const
 {
     (void) scdr;
          
 }
-
 
 
 

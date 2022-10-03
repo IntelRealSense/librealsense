@@ -13,8 +13,7 @@
 #include <fastdds/dds/core/status/SubscriptionMatchedStatus.hpp>
 
 
-namespace librealsense {
-namespace dds {
+namespace realdds {
 
 
 dds_topic_reader::dds_topic_reader( std::shared_ptr< dds_topic > const & topic )
@@ -105,5 +104,4 @@ void dds_topic_reader::on_data_available( eprosima::fastdds::dds::DataReader * )
 }
 
 
-}  // namespace dds
-}  // namespace librealsense
+}  // namespace realdds

@@ -13,31 +13,28 @@
 
 // Here we covered this 2 options with our own functions which log the error and raise the appropriate exception
 // The static function are made to distinguish between the 2 calling formats
-namespace librealsense {
-namespace dds {
-inline std::string get_dds_error( eprosima::fastrtps::types::ReturnCode_t ret_code )
+namespace realdds {
+
+
+std::string get_dds_error( eprosima::fastrtps::types::ReturnCode_t );
+
+template< typename T >
+inline std::string get_dds_error( T * address )
 {
-    std::ostringstream s;
-    s << " Err:" << ret_code();
-    return s.str();
+    (void)address;
+    return "returned null";
 }
 
-template < typename T > 
-inline std::string get_dds_error( T *address )
-{
-    (void) address;
-    return " returned null"; 
-}
-}  // namespace dds
-}  // namespace librealsense
+
+}  // namespace realdds
 
 #define DDS_API_CALL( func )                                                                       \
     [&]() {                                                                                        \
         auto r = func;                                                                             \
         if( ! r )                                                                                  \
         {                                                                                          \
-            LOG_ERROR( "DDS API CALL '" << #func << "'"                                            \
-                                        << librealsense::dds::get_dds_error( r ) );                \
+            LOG_ERROR( "DDS API CALL '" << #func << "' "                                           \
+                                        << realdds::get_dds_error( r ) );                          \
             throw std::runtime_error( #func " failed" );                                           \
         }                                                                                          \
         return r;                                                                                  \
@@ -49,8 +46,8 @@ inline std::string get_dds_error( T *address )
         auto r = func;                                                                             \
         if( ! r )                                                                                  \
         {                                                                                          \
-            LOG_ERROR( "DDS API CALL '" << #func << "'"                                            \
-                                        << librealsense::dds::get_dds_error( r ) );                \
+            LOG_ERROR( "DDS API CALL '" << #func << "' "                                           \
+                                        << realdds::get_dds_error( r ) );                          \
         }                                                                                          \
         return r;                                                                                  \
     }()

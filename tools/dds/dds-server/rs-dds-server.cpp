@@ -65,11 +65,11 @@ rs2::stream_profile get_required_profile( rs2::sensor sensor,
 }
 
 void start_streaming( std::shared_ptr< tools::lrs_device_controller > lrs_device_controller,
-                      std::shared_ptr< librealsense::dds::dds_device_server > dds_dev_server,
+                      std::shared_ptr< realdds::dds_device_server > dds_dev_server,
                       const rs2::stream_profile & stream_profile )
 {
     // Configure DDS-server to the required frame header
-    librealsense::dds::dds_device_server::image_header header;
+    realdds::dds_device_server::image_header header;
     auto vsp = stream_profile.as< rs2::video_stream_profile >();
     header.format = static_cast< int >( vsp.format() );
     header.height = vsp.height();
@@ -93,9 +93,9 @@ void start_streaming( std::shared_ptr< tools::lrs_device_controller > lrs_device
     } );
 }
 
-void add_init_device_header_msg( rs2::device dev, std::shared_ptr<librealsense::dds::dds_device_server> &server )
+void add_init_device_header_msg( rs2::device dev, std::shared_ptr<realdds::dds_device_server> &server )
 {
-    using namespace librealsense::dds::topics;
+    using namespace realdds::topics;
    
     device::notification::device_header_msg device_header_msg;
     auto &&sensors = dev.query_sensors();
@@ -110,9 +110,9 @@ void add_init_device_header_msg( rs2::device dev, std::shared_ptr<librealsense::
     server->add_init_msg( std::move( raw_msg ) );
 }
 
-void send_sensor_header_msg(  const std::shared_ptr<librealsense::dds::dds_device_server> &server, rs2::sensor sensor, librealsense::dds::topics::device::notification::sensor_header_msg::sensor_type sensor_type, const int sensor_idx )
+void send_sensor_header_msg(  const std::shared_ptr<realdds::dds_device_server> &server, rs2::sensor sensor, realdds::topics::device::notification::sensor_header_msg::sensor_type sensor_type, const int sensor_idx )
 {
-    using namespace librealsense::dds::topics;
+    using namespace realdds::topics;
 
     // Send current stream header message
     device::notification::sensor_header_msg sensor_header_msg;
@@ -132,9 +132,9 @@ void prepare_video_profiles_messeges(
     rs2::device dev,
     const int sensor_idx,
     const std::vector< rs2::stream_profile > & stream_profiles,
-    librealsense::dds::topics::device::notification::video_stream_profiles_msg & video_stream_profiles_msg )
+    realdds::topics::device::notification::video_stream_profiles_msg & video_stream_profiles_msg )
 {
-    using namespace librealsense::dds::topics;
+    using namespace realdds::topics;
     video_stream_profiles_msg.dds_sensor_index = sensor_idx;
 
     int index = 0;
@@ -167,9 +167,9 @@ void prepare_motion_profiles_messeges(
     rs2::device dev,
     const int sensor_idx,
     const std::vector< rs2::stream_profile > & stream_profiles,
-    librealsense::dds::topics::device::notification::motion_stream_profiles_msg & motion_stream_profiles_msg )
+    realdds::topics::device::notification::motion_stream_profiles_msg & motion_stream_profiles_msg )
 {
-    using namespace librealsense::dds::topics;
+    using namespace realdds::topics;
     motion_stream_profiles_msg.dds_sensor_index = sensor_idx;
     int index = 0;
     for( auto & stream_profile : stream_profiles )
@@ -193,9 +193,9 @@ void prepare_motion_profiles_messeges(
     motion_stream_profiles_msg.num_of_profiles = index;
 }
 
-void add_init_profiles_msgs( rs2::device dev, std::shared_ptr<librealsense::dds::dds_device_server> &server )
+void add_init_profiles_msgs( rs2::device dev, std::shared_ptr<realdds::dds_device_server> &server )
 {
-    using namespace librealsense::dds::topics;
+    using namespace realdds::topics;
     auto sensor_idx = 0;
 
     // For each sensor publish all it's profiles
@@ -267,14 +267,14 @@ void add_init_profiles_msgs( rs2::device dev, std::shared_ptr<librealsense::dds:
 }
 
 
-void init_dds_device( rs2::device dev, std::shared_ptr<librealsense::dds::dds_device_server>& server )
+void init_dds_device( rs2::device dev, std::shared_ptr<realdds::dds_device_server>& server )
 {
     add_init_device_header_msg( dev, server );
     add_init_profiles_msgs( dev, server );
 }
 
 
-std::string get_topic_root( librealsense::dds::topics::device_info const & dev_info )
+std::string get_topic_root( realdds::topics::device_info const & dev_info )
 {
     // Build device root path (we use a device model only name like DXXX)
     // example: /realsense/D435/11223344
@@ -289,9 +289,9 @@ std::string get_topic_root( librealsense::dds::topics::device_info const & dev_i
 }
 
 
-librealsense::dds::topics::device_info rs2_device_to_info( rs2::device const & dev )
+realdds::topics::device_info rs2_device_to_info( rs2::device const & dev )
 {
-    librealsense::dds::topics::device_info dev_info;
+    realdds::topics::device_info dev_info;
     dev_info.name = dev.get_info( RS2_CAMERA_INFO_NAME );
     dev_info.serial = dev.get_info( RS2_CAMERA_INFO_SERIAL_NUMBER );
     dev_info.product_line = dev.get_info( RS2_CAMERA_INFO_PRODUCT_LINE );
@@ -327,14 +327,9 @@ struct log_consumer : eprosima::fastdds::dds::LogConsumer
 int main( int argc, char * argv[] )
 try
 {
-    librealsense::dds::dds_domain_id domain = 0;
+    realdds::dds_domain_id domain = 0;
     CmdLine cmd( "librealsense rs-dds-server tool, use CTRL + C to stop..", ' ' );
-    ValueArg< librealsense::dds::dds_domain_id > domain_arg( "d",
-                                                             "domain",
-                                                             "Select domain ID to listen on",
-                                                             false,
-                                                             0,
-                                                             "0-232" );
+    ValueArg< realdds::dds_domain_id > domain_arg( "d", "domain", "Select domain ID to listen on", false, 0, "0-232" );
     SwitchArg debug_arg( "", "debug", "Enable debug logging", false );
 
     cmd.add( domain_arg );
@@ -368,11 +363,11 @@ try
     std::cout << "Starting RS DDS Server.." << std::endl;
 
     // Create a DDS publisher
-    auto participant = std::make_shared< librealsense::dds::dds_participant >();
+    auto participant = std::make_shared< realdds::dds_participant >();
     participant->init( domain, "rs-dds-server" );
 
     // Run the DDS device broadcaster
-    librealsense::dds::dds_device_broadcaster broadcaster( participant );
+    realdds::dds_device_broadcaster broadcaster( participant );
     if( !broadcaster.run() )
     {
         std::cerr << "Failure running the DDS Device Broadcaster" << std::endl;
@@ -381,8 +376,8 @@ try
 
     struct device_handler
     {
-        librealsense::dds::topics::device_info info;
-        std::shared_ptr< librealsense::dds::dds_device_server > server;
+        realdds::topics::device_info info;
+        std::shared_ptr< realdds::dds_device_server > server;
         std::shared_ptr< tools::lrs_device_controller > controller;
     };
     std::map< rs2::device, device_handler > device_handlers_list;
@@ -410,7 +405,7 @@ try
 
             // Create a dds-device-server for this device
             auto dds_device_server
-                = std::make_shared< librealsense::dds::dds_device_server >( participant, dev_info.topic_root );
+                = std::make_shared< realdds::dds_device_server >( participant, dev_info.topic_root );
             // Initialize the DDS device server with the supported streams
             dds_device_server->init( supported_streams_names_vec );
 

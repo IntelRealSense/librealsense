@@ -25,7 +25,7 @@
 using namespace TCLAP;
 using namespace eprosima::fastdds::dds;
 using namespace eprosima::fastrtps::types;
-using librealsense::dds::print;
+using realdds::print;
 
 // FastDDS GUID_t: (MSB first, little-endian; see GuidUtils.hpp)
 //     2 bytes  -  vendor ID
@@ -70,7 +70,7 @@ static eprosima::fastrtps::rtps::GuidPrefix_t std_prefix;
 
 int main( int argc, char ** argv ) try
 {
-    librealsense::dds::dds_domain_id domain = 0;
+    realdds::dds_domain_id domain = 0;
     uint32_t seconds = 0;
 
     CmdLine cmd( "librealsense rs-dds-sniffer tool", ' ' );
@@ -78,7 +78,7 @@ int main( int argc, char ** argv ) try
     SwitchArg machine_readable_arg( "m", "machine-readable", "output entities in a way more suitable for automatic parsing" );
     SwitchArg topic_samples_arg( "t", "topic-samples", "register to topics that send TypeObject and print their samples" );
     SwitchArg debug_arg( "", "debug", "Enable debug logging", false );
-    ValueArg< librealsense::dds::dds_domain_id > domain_arg( "d", "domain", "select domain ID to listen on", false, 0, "0-232" );
+    ValueArg< realdds::dds_domain_id > domain_arg( "d", "domain", "select domain ID to listen on", false, 0, "0-232" );
     cmd.add( snapshot_arg );
     cmd.add( machine_readable_arg );
     cmd.add( topic_samples_arg );
@@ -179,7 +179,7 @@ dds_sniffer::~dds_sniffer()
     _discovered_types_datas.clear();
 }
 
-bool dds_sniffer::init( librealsense::dds::dds_domain_id domain,
+bool dds_sniffer::init( realdds::dds_domain_id domain,
                         bool snapshot,
                         bool machine_readable,
                         bool topic_samples )
@@ -191,22 +191,22 @@ bool dds_sniffer::init( librealsense::dds::dds_domain_id domain,
 
     // Set callbacks before calling _participant.init(), or some events, specifically on_participant_added, might get lost
     _participant.create_listener( &_listener )
-        ->on_writer_added( [this]( librealsense::dds::dds_guid guid, char const * topic_name ) {
+        ->on_writer_added( [this]( realdds::dds_guid guid, char const * topic_name ) {
             on_writer_added( guid, topic_name );
         } )
-        ->on_writer_removed( [this]( librealsense::dds::dds_guid guid, char const * topic_name ) {
+        ->on_writer_removed( [this]( realdds::dds_guid guid, char const * topic_name ) {
             on_writer_removed( guid, topic_name );
         } )
-        ->on_reader_added( [this]( librealsense::dds::dds_guid guid, char const * topic_name ) {
+        ->on_reader_added( [this]( realdds::dds_guid guid, char const * topic_name ) {
             on_reader_added( guid, topic_name );
         } )
-        ->on_reader_removed( [this]( librealsense::dds::dds_guid guid, char const * topic_name ) {
+        ->on_reader_removed( [this]( realdds::dds_guid guid, char const * topic_name ) {
             on_reader_removed( guid, topic_name );
         } )
-        ->on_participant_added( [this]( librealsense::dds::dds_guid guid, char const * participant_name ) {
+        ->on_participant_added( [this]( realdds::dds_guid guid, char const * participant_name ) {
             on_participant_added( guid, participant_name );
         } )
-        ->on_participant_removed( [this]( librealsense::dds::dds_guid guid, char const * participant_name ) {
+        ->on_participant_removed( [this]( realdds::dds_guid guid, char const * participant_name ) {
             on_participant_removed( guid, participant_name );
         } )
         ->on_type_discovery( [this]( char const * topic_name, DynamicType_ptr dyn_type ) {
@@ -252,7 +252,7 @@ void dds_sniffer::run( uint32_t seconds )
     }
 }
 
-void dds_sniffer::on_writer_added( librealsense::dds::dds_guid guid, const char * topic_name )
+void dds_sniffer::on_writer_added( realdds::dds_guid guid, const char * topic_name )
 {
     if( _print_discoveries )
     {
@@ -262,7 +262,7 @@ void dds_sniffer::on_writer_added( librealsense::dds::dds_guid guid, const char 
     save_topic_writer( guid, topic_name );
 }
 
-void dds_sniffer::on_writer_removed( librealsense::dds::dds_guid guid, const char * topic_name )
+void dds_sniffer::on_writer_removed( realdds::dds_guid guid, const char * topic_name )
 {
     if( _print_discoveries )
     {
@@ -272,7 +272,7 @@ void dds_sniffer::on_writer_removed( librealsense::dds::dds_guid guid, const cha
     remove_topic_writer( guid, topic_name );
 }
 
-void dds_sniffer::on_reader_added( librealsense::dds::dds_guid guid, const char * topic_name )
+void dds_sniffer::on_reader_added( realdds::dds_guid guid, const char * topic_name )
 {
     if( _print_discoveries )
     {
@@ -281,7 +281,7 @@ void dds_sniffer::on_reader_added( librealsense::dds::dds_guid guid, const char 
     save_topic_reader( guid, topic_name );
 }
 
-void dds_sniffer::on_reader_removed( librealsense::dds::dds_guid guid, const char * topic_name )
+void dds_sniffer::on_reader_removed( realdds::dds_guid guid, const char * topic_name )
 {
     if( _print_discoveries )
     {
@@ -291,7 +291,7 @@ void dds_sniffer::on_reader_removed( librealsense::dds::dds_guid guid, const cha
     remove_topic_reader( guid, topic_name );
 }
 
-void dds_sniffer::on_participant_added( librealsense::dds::dds_guid guid, const char * participant_name )
+void dds_sniffer::on_participant_added( realdds::dds_guid guid, const char * participant_name )
 {
     if( _print_discoveries )
     {
@@ -303,7 +303,7 @@ void dds_sniffer::on_participant_added( librealsense::dds::dds_guid guid, const 
     _discovered_participants[guid] = participant_name;
 }
 
-void dds_sniffer::on_participant_removed( librealsense::dds::dds_guid guid, const char * participant_name )
+void dds_sniffer::on_participant_removed( realdds::dds_guid guid, const char * participant_name )
 {
     if( _print_discoveries )
     {
@@ -408,14 +408,14 @@ void dds_sniffer::dds_reader_listener::on_subscription_matched( DataReader *, co
     }
 }
 
-void dds_sniffer::save_topic_writer( librealsense::dds::dds_guid guid, const char * topic_name )
+void dds_sniffer::save_topic_writer( realdds::dds_guid guid, const char * topic_name )
 {
     std::lock_guard< std::mutex > lock( _dds_entities_lock );
 
     _topics_info_by_name[topic_name].writers.insert( guid );
 }
 
-void dds_sniffer::remove_topic_writer( librealsense::dds::dds_guid guid, const char * topic_name )
+void dds_sniffer::remove_topic_writer( realdds::dds_guid guid, const char * topic_name )
 {
     std::lock_guard< std::mutex > lock( _dds_entities_lock );
 
@@ -430,14 +430,14 @@ void dds_sniffer::remove_topic_writer( librealsense::dds::dds_guid guid, const c
     }
 }
 
-void dds_sniffer::save_topic_reader( librealsense::dds::dds_guid guid, const char * topic_name )
+void dds_sniffer::save_topic_reader( realdds::dds_guid guid, const char * topic_name )
 {
     std::lock_guard< std::mutex > lock( _dds_entities_lock );
 
     _topics_info_by_name[topic_name].readers.insert( guid );
 }
 
-void dds_sniffer::remove_topic_reader( librealsense::dds::dds_guid guid, const char * topic_name )
+void dds_sniffer::remove_topic_reader( realdds::dds_guid guid, const char * topic_name )
 {
     std::lock_guard< std::mutex > lock( _dds_entities_lock );
 
@@ -470,7 +470,7 @@ uint32_t dds_sniffer::calc_max_indentation() const
     return max_indentation;
 }
 
-void dds_sniffer::print_writer_discovered( librealsense::dds::dds_guid guid,
+void dds_sniffer::print_writer_discovered( realdds::dds_guid guid,
                                            const char * topic_name,
                                            bool discovered ) const
 {
@@ -486,7 +486,7 @@ void dds_sniffer::print_writer_discovered( librealsense::dds::dds_guid guid,
     }
 }
 
-void dds_sniffer::print_reader_discovered( librealsense::dds::dds_guid guid,
+void dds_sniffer::print_reader_discovered( realdds::dds_guid guid,
                                            const char * topic_name,
                                            bool discovered ) const
 {
@@ -502,7 +502,7 @@ void dds_sniffer::print_reader_discovered( librealsense::dds::dds_guid guid,
     }
 }
 
-void dds_sniffer::print_participant_discovered( librealsense::dds::dds_guid guid,
+void dds_sniffer::print_participant_discovered( realdds::dds_guid guid,
                                                 const char * participant_name,
                                                 bool discovered ) const
 {
@@ -611,7 +611,7 @@ void dds_sniffer::ident( uint32_t indentation ) const
     std::cout << "- ";
 }
 
-void dds_sniffer::print_topic_writer( librealsense::dds::dds_guid guid, uint32_t indentation ) const
+void dds_sniffer::print_topic_writer( realdds::dds_guid guid, uint32_t indentation ) const
 {
     auto iter = _discovered_participants.begin();
     for( ; iter != _discovered_participants.end(); ++iter )  //_dds_entities_lock locked by caller
@@ -641,7 +641,7 @@ void dds_sniffer::print_topic_writer( librealsense::dds::dds_guid guid, uint32_t
     }
 }
 
-void dds_sniffer::print_topic_reader( librealsense::dds::dds_guid guid, uint32_t indentation ) const
+void dds_sniffer::print_topic_reader( realdds::dds_guid guid, uint32_t indentation ) const
 {
     auto iter = _discovered_participants.begin();
     for( ; iter != _discovered_participants.end(); ++iter )  //_dds_entities_lock locked by caller

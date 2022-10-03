@@ -1,22 +1,19 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2022 Intel Corporation. All Rights Reserved.
 
-module librealsense
+module realdds
 {
-    module dds
+    module topics
     {
-        module topics
+        module raw
         {
-            module raw
+            module device
             {
-                module device
+                struct control
                 {
-                    struct control
-                    {
-                        unsigned short id; // See "librealsense::dds::topics::control::msg_type"
-                        unsigned long size;
-                        sequence<octet> data;
-                    };
+                    unsigned short id; // See "librealsense::dds::topics::control::msg_type"
+                    unsigned long size;
+                    sequence<octet> data;
                 };
             };
         };

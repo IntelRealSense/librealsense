@@ -16,7 +16,7 @@
 #include <mutex>
 
 using namespace eprosima::fastdds::dds;
-using namespace librealsense::dds;
+using namespace realdds;
 
 
 namespace {
@@ -148,7 +148,7 @@ void dds_participant::init( dds_domain_id domain_id, std::string const & partici
                                   + std::to_string( domain_id ) );
     }
 
-    LOG_DEBUG( "participant '" << participant_name << "' (" << dds::print( guid() ) << ") is up on domain " << domain_id );
+    LOG_DEBUG( "participant '" << participant_name << "' (" << print( guid() ) << ") is up on domain " << domain_id );
 }
 
 
@@ -175,7 +175,7 @@ dds_guid const & dds_participant::guid() const
 
 std::string dds_participant::print( dds_guid const& guid_to_print ) const
 {
-    return dds::print( guid_to_print, guid() );
+    return realdds::print( guid_to_print, guid() );
 }
 
 

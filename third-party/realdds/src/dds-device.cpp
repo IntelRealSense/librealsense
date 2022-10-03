@@ -4,8 +4,7 @@
 #include <realdds/dds-device.h>
 #include <realdds/dds-device-impl.h>
 
-namespace librealsense {
-namespace dds {
+namespace realdds {
 
 
 namespace {
@@ -169,7 +168,7 @@ dds_device::foreach_motion_profile( size_t sensor_index,
 
 void dds_device::sensor_open( size_t sensor_index, const std::vector< rs2_video_stream > & profiles )
 {
-    using namespace librealsense::dds::topics;
+    using namespace topics;
 
     if (profiles.size() < device::control::MAX_OPEN_PROFILES)
     {
@@ -206,7 +205,7 @@ void dds_device::sensor_open( size_t sensor_index, const std::vector< rs2_video_
 
 void dds_device::sensor_close( size_t sensor_index )
 {
-    using namespace librealsense::dds::topics;
+    using namespace topics;
 
     device::control::sensor_close_msg close_msg;
     close_msg.message_id = _impl->_control_message_counter++;
@@ -227,5 +226,5 @@ void dds_device::sensor_close( size_t sensor_index )
     }
 }
 
-}  // namespace dds
-}  // namespace librealsense
+
+}  // namespace realdds

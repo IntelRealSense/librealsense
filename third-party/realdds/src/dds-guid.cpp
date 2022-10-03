@@ -6,8 +6,7 @@
 #include <sstream>
 
 
-namespace librealsense {
-namespace dds {
+namespace realdds {
 
 
 std::string print( dds_guid const & guid,
@@ -52,5 +51,4 @@ std::string print( dds_guid const & guid,
 }
 
 
-}  // namespace dds
-}  // namespace librealsense
+}  // namespace realdds

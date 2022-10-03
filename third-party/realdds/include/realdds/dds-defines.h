@@ -21,8 +21,7 @@ namespace types {
 }  // namespace fastrtps
 }  // namespace eprosima
 
-namespace librealsense {
-namespace dds {
+namespace realdds {
 
 
 using dds_guid = eprosima::fastrtps::rtps::GUID_t;
@@ -30,5 +29,4 @@ using dds_guid_prefix = eprosima::fastrtps::rtps::GuidPrefix_t;
 typedef int dds_domain_id;
 
 
-}  // namespace dds
-}  // namespace librealsense
+}  // namespace realdds

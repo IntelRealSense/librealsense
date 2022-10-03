@@ -24,24 +24,24 @@ using namespace eprosima::fastcdr::exception;
 
 #include <utility>
 
-librealsense::dds::topics::raw::device_info::device_info()
+realdds::topics::raw::device_info::device_info()
 {
-    // m_name com.eprosima.idl.parser.typecode.ArrayTypeCode@13deb50e
+    // m_name com.eprosima.idl.parser.typecode.ArrayTypeCode@627551fb
     memset(&m_name, 0, (128) * 1);
-    // m_serial_number com.eprosima.idl.parser.typecode.ArrayTypeCode@239963d8
+    // m_serial_number com.eprosima.idl.parser.typecode.ArrayTypeCode@2b552920
     memset(&m_serial_number, 0, (32) * 1);
-    // m_product_line com.eprosima.idl.parser.typecode.ArrayTypeCode@3abbfa04
+    // m_product_line com.eprosima.idl.parser.typecode.ArrayTypeCode@2758fe70
     memset(&m_product_line, 0, (16) * 1);
-    // m_topic_root com.eprosima.idl.parser.typecode.ArrayTypeCode@57fffcd7
+    // m_topic_root com.eprosima.idl.parser.typecode.ArrayTypeCode@1f36e637
     memset(&m_topic_root, 0, (256) * 1);
-    // m_locked com.eprosima.idl.parser.typecode.PrimitiveTypeCode@598067a5
+    // m_locked com.eprosima.idl.parser.typecode.PrimitiveTypeCode@551aa95a
     m_locked = false;
 
     // Just to register all known types
     registerdeviceInfoTypes();
 }
 
-librealsense::dds::topics::raw::device_info::~device_info()
+realdds::topics::raw::device_info::~device_info()
 {
 
 
@@ -50,7 +50,7 @@ librealsense::dds::topics::raw::device_info::~device_info()
 
 }
 
-librealsense::dds::topics::raw::device_info::device_info(
+realdds::topics::raw::device_info::device_info(
         const device_info& x)
 {
     m_name = x.m_name;
@@ -60,7 +60,7 @@ librealsense::dds::topics::raw::device_info::device_info(
     m_locked = x.m_locked;
 }
 
-librealsense::dds::topics::raw::device_info::device_info(
+realdds::topics::raw::device_info::device_info(
         device_info&& x)
 {
     m_name = std::move(x.m_name);
@@ -70,7 +70,7 @@ librealsense::dds::topics::raw::device_info::device_info(
     m_locked = x.m_locked;
 }
 
-librealsense::dds::topics::raw::device_info& librealsense::dds::topics::raw::device_info::operator =(
+realdds::topics::raw::device_info& realdds::topics::raw::device_info::operator =(
         const device_info& x)
 {
 
@@ -83,7 +83,7 @@ librealsense::dds::topics::raw::device_info& librealsense::dds::topics::raw::dev
     return *this;
 }
 
-librealsense::dds::topics::raw::device_info& librealsense::dds::topics::raw::device_info::operator =(
+realdds::topics::raw::device_info& realdds::topics::raw::device_info::operator =(
         device_info&& x)
 {
 
@@ -96,20 +96,20 @@ librealsense::dds::topics::raw::device_info& librealsense::dds::topics::raw::dev
     return *this;
 }
 
-bool librealsense::dds::topics::raw::device_info::operator ==(
+bool realdds::topics::raw::device_info::operator ==(
         const device_info& x) const
 {
 
     return (m_name == x.m_name && m_serial_number == x.m_serial_number && m_product_line == x.m_product_line && m_topic_root == x.m_topic_root && m_locked == x.m_locked);
 }
 
-bool librealsense::dds::topics::raw::device_info::operator !=(
+bool realdds::topics::raw::device_info::operator !=(
         const device_info& x) const
 {
     return !(*this == x);
 }
 
-size_t librealsense::dds::topics::raw::device_info::getMaxCdrSerializedSize(
+size_t realdds::topics::raw::device_info::getMaxCdrSerializedSize(
         size_t current_alignment)
 {
     size_t initial_alignment = current_alignment;
@@ -134,8 +134,8 @@ size_t librealsense::dds::topics::raw::device_info::getMaxCdrSerializedSize(
     return current_alignment - initial_alignment;
 }
 
-size_t librealsense::dds::topics::raw::device_info::getCdrSerializedSize(
-        const librealsense::dds::topics::raw::device_info& data,
+size_t realdds::topics::raw::device_info::getCdrSerializedSize(
+        const realdds::topics::raw::device_info& data,
         size_t current_alignment)
 {
     (void)data;
@@ -169,7 +169,7 @@ size_t librealsense::dds::topics::raw::device_info::getCdrSerializedSize(
     return current_alignment - initial_alignment;
 }
 
-void librealsense::dds::topics::raw::device_info::serialize(
+void realdds::topics::raw::device_info::serialize(
         eprosima::fastcdr::Cdr& scdr) const
 {
 
@@ -185,7 +185,7 @@ void librealsense::dds::topics::raw::device_info::serialize(
 
 }
 
-void librealsense::dds::topics::raw::device_info::deserialize(
+void realdds::topics::raw::device_info::deserialize(
         eprosima::fastcdr::Cdr& dcdr)
 {
 
@@ -204,7 +204,7 @@ void librealsense::dds::topics::raw::device_info::deserialize(
  * @brief This function copies the value in member name
  * @param _name New value to be copied in member name
  */
-void librealsense::dds::topics::raw::device_info::name(
+void realdds::topics::raw::device_info::name(
         const std::array<char, 128>& _name)
 {
     m_name = _name;
@@ -214,7 +214,7 @@ void librealsense::dds::topics::raw::device_info::name(
  * @brief This function moves the value in member name
  * @param _name New value to be moved in member name
  */
-void librealsense::dds::topics::raw::device_info::name(
+void realdds::topics::raw::device_info::name(
         std::array<char, 128>&& _name)
 {
     m_name = std::move(_name);
@@ -224,7 +224,7 @@ void librealsense::dds::topics::raw::device_info::name(
  * @brief This function returns a constant reference to member name
  * @return Constant reference to member name
  */
-const std::array<char, 128>& librealsense::dds::topics::raw::device_info::name() const
+const std::array<char, 128>& realdds::topics::raw::device_info::name() const
 {
     return m_name;
 }
@@ -233,7 +233,7 @@ const std::array<char, 128>& librealsense::dds::topics::raw::device_info::name()
  * @brief This function returns a reference to member name
  * @return Reference to member name
  */
-std::array<char, 128>& librealsense::dds::topics::raw::device_info::name()
+std::array<char, 128>& realdds::topics::raw::device_info::name()
 {
     return m_name;
 }
@@ -241,7 +241,7 @@ std::array<char, 128>& librealsense::dds::topics::raw::device_info::name()
  * @brief This function copies the value in member serial_number
  * @param _serial_number New value to be copied in member serial_number
  */
-void librealsense::dds::topics::raw::device_info::serial_number(
+void realdds::topics::raw::device_info::serial_number(
         const std::array<char, 32>& _serial_number)
 {
     m_serial_number = _serial_number;
@@ -251,7 +251,7 @@ void librealsense::dds::topics::raw::device_info::serial_number(
  * @brief This function moves the value in member serial_number
  * @param _serial_number New value to be moved in member serial_number
  */
-void librealsense::dds::topics::raw::device_info::serial_number(
+void realdds::topics::raw::device_info::serial_number(
         std::array<char, 32>&& _serial_number)
 {
     m_serial_number = std::move(_serial_number);
@@ -261,7 +261,7 @@ void librealsense::dds::topics::raw::device_info::serial_number(
  * @brief This function returns a constant reference to member serial_number
  * @return Constant reference to member serial_number
  */
-const std::array<char, 32>& librealsense::dds::topics::raw::device_info::serial_number() const
+const std::array<char, 32>& realdds::topics::raw::device_info::serial_number() const
 {
     return m_serial_number;
 }
@@ -270,7 +270,7 @@ const std::array<char, 32>& librealsense::dds::topics::raw::device_info::serial_
  * @brief This function returns a reference to member serial_number
  * @return Reference to member serial_number
  */
-std::array<char, 32>& librealsense::dds::topics::raw::device_info::serial_number()
+std::array<char, 32>& realdds::topics::raw::device_info::serial_number()
 {
     return m_serial_number;
 }
@@ -278,7 +278,7 @@ std::array<char, 32>& librealsense::dds::topics::raw::device_info::serial_number
  * @brief This function copies the value in member product_line
  * @param _product_line New value to be copied in member product_line
  */
-void librealsense::dds::topics::raw::device_info::product_line(
+void realdds::topics::raw::device_info::product_line(
         const std::array<char, 16>& _product_line)
 {
     m_product_line = _product_line;
@@ -288,7 +288,7 @@ void librealsense::dds::topics::raw::device_info::product_line(
  * @brief This function moves the value in member product_line
  * @param _product_line New value to be moved in member product_line
  */
-void librealsense::dds::topics::raw::device_info::product_line(
+void realdds::topics::raw::device_info::product_line(
         std::array<char, 16>&& _product_line)
 {
     m_product_line = std::move(_product_line);
@@ -298,7 +298,7 @@ void librealsense::dds::topics::raw::device_info::product_line(
  * @brief This function returns a constant reference to member product_line
  * @return Constant reference to member product_line
  */
-const std::array<char, 16>& librealsense::dds::topics::raw::device_info::product_line() const
+const std::array<char, 16>& realdds::topics::raw::device_info::product_line() const
 {
     return m_product_line;
 }
@@ -307,7 +307,7 @@ const std::array<char, 16>& librealsense::dds::topics::raw::device_info::product
  * @brief This function returns a reference to member product_line
  * @return Reference to member product_line
  */
-std::array<char, 16>& librealsense::dds::topics::raw::device_info::product_line()
+std::array<char, 16>& realdds::topics::raw::device_info::product_line()
 {
     return m_product_line;
 }
@@ -315,7 +315,7 @@ std::array<char, 16>& librealsense::dds::topics::raw::device_info::product_line(
  * @brief This function copies the value in member topic_root
  * @param _topic_root New value to be copied in member topic_root
  */
-void librealsense::dds::topics::raw::device_info::topic_root(
+void realdds::topics::raw::device_info::topic_root(
         const std::array<char, 256>& _topic_root)
 {
     m_topic_root = _topic_root;
@@ -325,7 +325,7 @@ void librealsense::dds::topics::raw::device_info::topic_root(
  * @brief This function moves the value in member topic_root
  * @param _topic_root New value to be moved in member topic_root
  */
-void librealsense::dds::topics::raw::device_info::topic_root(
+void realdds::topics::raw::device_info::topic_root(
         std::array<char, 256>&& _topic_root)
 {
     m_topic_root = std::move(_topic_root);
@@ -335,7 +335,7 @@ void librealsense::dds::topics::raw::device_info::topic_root(
  * @brief This function returns a constant reference to member topic_root
  * @return Constant reference to member topic_root
  */
-const std::array<char, 256>& librealsense::dds::topics::raw::device_info::topic_root() const
+const std::array<char, 256>& realdds::topics::raw::device_info::topic_root() const
 {
     return m_topic_root;
 }
@@ -344,7 +344,7 @@ const std::array<char, 256>& librealsense::dds::topics::raw::device_info::topic_
  * @brief This function returns a reference to member topic_root
  * @return Reference to member topic_root
  */
-std::array<char, 256>& librealsense::dds::topics::raw::device_info::topic_root()
+std::array<char, 256>& realdds::topics::raw::device_info::topic_root()
 {
     return m_topic_root;
 }
@@ -352,7 +352,7 @@ std::array<char, 256>& librealsense::dds::topics::raw::device_info::topic_root()
  * @brief This function sets a value in member locked
  * @param _locked New value for member locked
  */
-void librealsense::dds::topics::raw::device_info::locked(
+void realdds::topics::raw::device_info::locked(
         bool _locked)
 {
     m_locked = _locked;
@@ -362,7 +362,7 @@ void librealsense::dds::topics::raw::device_info::locked(
  * @brief This function returns the value of member locked
  * @return Value of member locked
  */
-bool librealsense::dds::topics::raw::device_info::locked() const
+bool realdds::topics::raw::device_info::locked() const
 {
     return m_locked;
 }
@@ -371,13 +371,13 @@ bool librealsense::dds::topics::raw::device_info::locked() const
  * @brief This function returns a reference to member locked
  * @return Reference to member locked
  */
-bool& librealsense::dds::topics::raw::device_info::locked()
+bool& realdds::topics::raw::device_info::locked()
 {
     return m_locked;
 }
 
 
-size_t librealsense::dds::topics::raw::device_info::getKeyMaxCdrSerializedSize(
+size_t realdds::topics::raw::device_info::getKeyMaxCdrSerializedSize(
         size_t current_alignment)
 {
     size_t current_align = current_alignment;
@@ -392,18 +392,17 @@ size_t librealsense::dds::topics::raw::device_info::getKeyMaxCdrSerializedSize(
     return current_align;
 }
 
-bool librealsense::dds::topics::raw::device_info::isKeyDefined()
+bool realdds::topics::raw::device_info::isKeyDefined()
 {
     return false;
 }
 
-void librealsense::dds::topics::raw::device_info::serializeKey(
+void realdds::topics::raw::device_info::serializeKey(
         eprosima::fastcdr::Cdr& scdr) const
 {
     (void) scdr;
          
 }
-
 
 
 

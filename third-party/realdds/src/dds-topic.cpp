@@ -9,8 +9,7 @@
 #include <fastdds/dds/topic/Topic.hpp>
 
 
-namespace librealsense {
-namespace dds {
+namespace realdds {
 
 
 dds_topic::dds_topic( std::shared_ptr< dds_participant > const & participant,
@@ -36,5 +35,4 @@ dds_topic::~dds_topic()
 }
 
 
-}  // namespace dds
-}  // namespace librealsense
+}  // namespace realdds

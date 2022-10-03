@@ -17,8 +17,7 @@ struct SampleInfo;
 }  // namespace eprosima
 
 
-namespace librealsense {
-namespace dds {
+namespace realdds {
 
 
 class dds_participant;
@@ -66,5 +65,4 @@ public:
 
 
 }  // namespace topics
-}  // namespace dds
-}  // namespace librealsense
+}  // namespace realdds

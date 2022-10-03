@@ -17,7 +17,7 @@
 #include <iostream>
 
 using namespace eprosima::fastdds::dds;
-using namespace librealsense::dds;
+using namespace realdds;
 
 //-----------------------------------------------------------------------------------------------------//
 // DDS stream server is in charge of distributing the relevant stream frames into it's dedicated topic
@@ -34,10 +34,9 @@ public:
         , _topic( nullptr )
         , _data_writer( nullptr )
     {
-        std::string topic_name = librealsense::dds::topics::device::image::construct_topic_name( topic_root,
-                                                                                     stream_name );
+        std::string topic_name = topics::device::image::construct_topic_name( topic_root, stream_name );
 
-        eprosima::fastdds::dds::TypeSupport topic_type( new librealsense::dds::topics::device::image::type );
+        eprosima::fastdds::dds::TypeSupport topic_type( new topics::device::image::type );
 
         DDS_API_CALL( _participant->get()->register_type( topic_type ) );
         _topic = DDS_API_CALL( _participant->get()->create_topic( topic_name, topic_type->getName(), TOPIC_QOS_DEFAULT ) );
@@ -71,7 +70,7 @@ public:
     void publish_image( const uint8_t * data, size_t size )
     {
         LOG_DEBUG( "publishing a DDS video frame for topic: " << this->_data_writer->get_topic()->get_name() );
-        librealsense::dds::topics::raw::device::image raw_image;
+        topics::raw::device::image raw_image;
         raw_image.size() = static_cast< uint32_t >( size );
         raw_image.format() = _image_header.format;
         raw_image.height() = _image_header.height;
@@ -175,11 +174,9 @@ public:
             }
         } )
     {
-        std::string topic_name
-            = librealsense::dds::topics::device::notification::construct_topic_name( topic_root );
+        std::string topic_name = topics::device::notification::construct_topic_name( topic_root );
 
-        eprosima::fastdds::dds::TypeSupport topic_type(
-            new librealsense::dds::topics::device::notification::type );
+        eprosima::fastdds::dds::TypeSupport topic_type( new topics::device::notification::type );
 
         DDS_API_CALL( _participant->get()->register_type( topic_type ) );
         _topic = DDS_API_CALL(
