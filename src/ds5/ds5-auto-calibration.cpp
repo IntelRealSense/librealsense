@@ -1235,6 +1235,9 @@ namespace librealsense
             rs2_metadata_type frame_counter = ((frame_interface*)f)->get_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER);
             rs2_metadata_type frame_ts = ((frame_interface*)f)->get_frame_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP);
             bool tare_fc_workaround = (_action == auto_calib_action::RS2_OCC_ACTION_TARE_CALIB); //Ev - work-around tare implementation using rolling frame counter
+            bool mipi_sku = ((frame_interface*)f)->supports_frame_metadata(RS2_FRAME_METADATA_CALIB_INFO);
+            if (mipi_sku)
+                frame_counter = ((frame_interface*)f)->get_frame_metadata(RS2_FRAME_METADATA_CALIB_INFO);
 
             if (_interactive_state == interactive_calibration_state::RS2_OCC_STATE_WAIT_TO_CAMERA_START)
             {
@@ -1269,9 +1272,9 @@ namespace librealsense
             {
                 LOG_WARNING(std::string(to_string() << "fc = " << frame_counter));
                 bool still_waiting(frame_counter >= _prev_frame_counter || frame_counter >= _total_frames);
-                if (tare_fc_workaround)
-                    still_waiting = (frame_counter <= _prev_frame_counter+10); //Ev - bypass for Tare
-                else
+//                if (tare_fc_workaround)
+//                    still_waiting = (frame_counter <= _prev_frame_counter+10); //Ev - bypass for Tare
+//                else
                     _prev_frame_counter = frame_counter;
                 if (still_waiting)
                 {
@@ -1383,8 +1386,8 @@ namespace librealsense
                 {
                     static const int FRAMES_TO_SKIP(1);
                     bool cond = (frame_counter != _prev_frame_counter);
-                    if (tare_fc_workaround)
-                        cond = ((frame_counter/25) != _prev_frame_counter); // Evgeni - W/A for FW not handling Frame counters correctly
+//                    if (tare_fc_workaround)
+//                        cond = ((frame_counter/25) != _prev_frame_counter); // Evgeni - W/A for FW not handling Frame counters correctly
                     if (cond)
                     {
                         _collected_counter = 0;
@@ -1400,8 +1403,8 @@ namespace librealsense
                     LOG_WARNING(std::string(to_string() << __LINE__ << " fr_c = " << frame_counter
                         << " fr_ts = " << frame_ts << " _c_f_num = " << _collected_frame_num));
                     cond = (frame_counter < _total_frames);
-                    if (tare_fc_workaround)
-                        cond = (frame_counter < 200);
+//                    if (tare_fc_workaround)
+//                        cond = (frame_counter < 200);
 
                     if (cond) //(frame_counter < _total_frames) // Evgeni - see above
                     {
@@ -1429,8 +1432,8 @@ namespace librealsense
                             ++_collected_frame_num;
                         }
                         _prev_frame_counter = frame_counter;
-                        if (tare_fc_workaround)
-                            _prev_frame_counter = (frame_counter/25); // Evgeni. W/A for Tare with rolling frame counter
+//                        if (tare_fc_workaround)
+//                            _prev_frame_counter = (frame_counter/25); // Evgeni. W/A for Tare with rolling frame counter
                     }
                     else
                     {
