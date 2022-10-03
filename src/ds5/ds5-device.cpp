@@ -1314,9 +1314,13 @@ namespace librealsense
                                        make_attribute_parser(&md_mipi_depth_mode::input_height,
                                                              md_mipi_depth_control_attributes::input_height_attribute,
                                                              md_prop_offset));
-        depth_sensor.register_metadata(RS2_FRAME_METADATA_SUB_PRESET_INFO, // added for mipi
+        depth_sensor.register_metadata(RS2_FRAME_METADATA_SUB_PRESET_INFO,
                                        make_attribute_parser(&md_mipi_depth_mode::sub_preset_info,
                                                              md_mipi_depth_control_attributes::sub_preset_info_attribute,
+                                                             md_prop_offset));
+        depth_sensor.register_metadata(RS2_FRAME_METADATA_CALIB_INFO,
+                                       make_attribute_parser(&md_mipi_depth_mode::calib_info,
+                                                             md_mipi_depth_control_attributes::calibration_info_attribute,
                                                              md_prop_offset));
         depth_sensor.register_metadata(RS2_FRAME_METADATA_CRC, // added for mipi
                                        make_attribute_parser(&md_mipi_depth_mode::crc,

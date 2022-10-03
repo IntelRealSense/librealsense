@@ -136,7 +136,8 @@ namespace librealsense
         input_width_attribute           = (1u << 10),
         input_height_attribute          = (1u << 11),
         sub_preset_info_attribute       = (1u << 12),
-        crc_attribute                   = (1u << 13)
+        calibration_info_attribute      = (1u << 13), // shall be used to stire the frame counter in calibration routines
+        crc_attribute                   = (1u << 14)
     };
 
     /**\brief md_mipi_rgb_control_attributes - bit mask to find active attributes,
@@ -368,7 +369,9 @@ namespace librealsense
     struct md_mipi_depth_mode
     {
         md_header   header;
-        uint32_t    version;  // maybe need to replace by uint8_t for version and 3 others for reserved
+        uint8_t     version;  // maybe need to replace by uint8_t for version and 3 others for reserved
+        uint16_t    calib_info;
+        uint8_t     reserved;
         uint32_t    flags;              // Bit array to specify attributes that are valid
         uint32_t    hw_timestamp;
         uint32_t    optical_timestamp;   //In microsecond unit

@@ -530,6 +530,7 @@ const char * get_string( rs2_frame_metadata_value value )
     CASE( INPUT_WIDTH )
     CASE( INPUT_HEIGHT )
     CASE( SUB_PRESET_INFO )
+    CASE( CALIB_INFO )
     CASE( CRC )
 
     default:
