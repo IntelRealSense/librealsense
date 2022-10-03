@@ -15,10 +15,10 @@
 
 
 using namespace eprosima::fastdds::dds;
-using namespace librealsense::dds;
+using namespace realdds;
 
 
-dds_device_watcher::dds_device_watcher( std::shared_ptr< dds::dds_participant > const & participant )
+dds_device_watcher::dds_device_watcher( std::shared_ptr< dds_participant > const & participant )
     : _device_info_topic(
         new dds_topic_reader( topics::device_info::create_topic( participant, topics::device_info::TOPIC_NAME ) ) )
     , _participant( participant )
@@ -45,7 +45,7 @@ dds_device_watcher::dds_device_watcher( std::shared_ptr< dds::dds_participant > 
                     << "\n\tLocked: " << ( device_info.locked ? "yes" : "no" ) );
 
                 // Add a new device record into our dds devices map
-                auto device = dds::dds_device::create( _participant, guid, device_info );
+                auto device = dds_device::create( _participant, guid, device_info );
                 {
                     std::lock_guard< std::mutex > lock( _devices_mutex );
                     _dds_devices[guid] = device;
@@ -96,7 +96,7 @@ dds_device_watcher::~dds_device_watcher()
 void dds_device_watcher::init()
 {
     if( ! _listener )
-        _participant->create_listener( &_listener )->on_writer_removed( [this]( dds::dds_guid guid, char const * ) {
+        _participant->create_listener( &_listener )->on_writer_removed( [this]( dds_guid guid, char const * ) {
             std::shared_ptr< dds_device > device;
             {
                 std::lock_guard< std::mutex > lock( _devices_mutex );
@@ -120,7 +120,7 @@ void dds_device_watcher::init()
 
 
 bool dds_device_watcher::foreach_device(
-    std::function< bool( std::shared_ptr< dds::dds_device > const & ) > fn ) const
+    std::function< bool( std::shared_ptr< dds_device > const & ) > fn ) const
 {
     std::lock_guard< std::mutex > lock( _devices_mutex );
     for( auto && guid_to_dev_info : _dds_devices )

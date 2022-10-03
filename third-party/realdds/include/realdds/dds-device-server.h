@@ -21,8 +21,7 @@ class DataWriter;
 }  // namespace fastdds
 }  // namespace eprosima
 
-namespace librealsense {
-namespace dds {
+namespace realdds {
 
 // Forward declaration
 namespace topics {
@@ -88,5 +87,4 @@ private:
 };  // class dds_device_server
 
 
-}  // namespace dds
-}  // namespace librealsense
+}  // namespace realdds

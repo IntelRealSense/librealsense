@@ -3,7 +3,7 @@
 
 #test:donotrun:!dds
 
-import pyrs_dds_server as client
+import pyrealdds as client
 from rspy import log, test
 
 

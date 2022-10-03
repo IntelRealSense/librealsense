@@ -17,8 +17,7 @@
 #include <fastdds/dds/topic/Topic.hpp>
 #include <fastdds/dds/domain/DomainParticipant.hpp>
 
-namespace librealsense {
-namespace dds {
+namespace realdds {
 
 
 namespace {
@@ -61,7 +60,7 @@ class dds_device::impl
 public:
     topics::device_info const _info;
     dds_guid const _guid;
-    std::shared_ptr< dds::dds_participant > const _participant;
+    std::shared_ptr< dds_participant > const _participant;
 
     bool _running = false;
 
@@ -78,9 +77,9 @@ public:
     eprosima::fastdds::dds::Topic* _notifications_topic = nullptr;
     eprosima::fastdds::dds::Topic* _control_topic = nullptr;
 
-    impl( std::shared_ptr< dds::dds_participant > const& participant,
-        dds::dds_guid const& guid,
-        dds::topics::device_info const& info )
+    impl( std::shared_ptr< dds_participant > const & participant,
+          dds_guid const & guid,
+          topics::device_info const & info )
         : _info( info )
         , _guid( guid )
         , _participant( participant )
@@ -120,11 +119,11 @@ private:
         }
 
         // Create and register topic type
-        eprosima::fastdds::dds::TypeSupport topic_type( new librealsense::dds::topics::device::notification::type );
+        eprosima::fastdds::dds::TypeSupport topic_type( new topics::device::notification::type );
         DDS_API_CALL( topic_type.register_type( _participant->get() ) );
 
         // Create the topic
-        std::string topic_name = librealsense::dds::topics::device::notification::construct_topic_name( _info.topic_root );
+        std::string topic_name = topics::device::notification::construct_topic_name( _info.topic_root );
         //TODO - When the last dds_device destruct we should delete the topic
         eprosima::fastdds::dds::Topic* _notifications_topic = DDS_API_CALL( _participant->get()->create_topic( topic_name,
                                                                                                                topic_type->getName(),
@@ -155,11 +154,11 @@ private:
         }
 
         // Create and register topic type
-        eprosima::fastdds::dds::TypeSupport topic_type( new librealsense::dds::topics::device::control::type );
+        eprosima::fastdds::dds::TypeSupport topic_type( new topics::device::control::type );
         DDS_API_CALL( topic_type.register_type( _participant->get() ) );
 
         // Create the topic
-        std::string topic_name = librealsense::dds::topics::device::control::construct_topic_name( _info.topic_root );
+        std::string topic_name = topics::device::control::construct_topic_name( _info.topic_root );
         //TODO - When the last dds_device destruct we should delete the topic
         eprosima::fastdds::dds::Topic* _control_topic = DDS_API_CALL( _participant->get()->create_topic( topic_name,
                                                                                                          topic_type->getName(),
@@ -190,7 +189,7 @@ private:
             eprosima::fastrtps::Duration_t one_second = { 1, 0 };
             if( _notifications_reader->wait_for_unread_message( one_second ) )
             {
-                dds::topics::raw::device::notification raw_data;
+                topics::raw::device::notification raw_data;
                 eprosima::fastdds::dds::SampleInfo info;
                 // Process all the samples until no one is returned,
                 // We will distinguish info change vs new data by validating using `valid_data` field
@@ -320,5 +319,4 @@ private:
 };
 
 
-}  // namespace dds
-}  // namespace librealsense
+}  // namespace realdds

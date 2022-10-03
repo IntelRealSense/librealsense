@@ -11,9 +11,7 @@
 #include <functional>
 #include <string>
 
-namespace librealsense {
-
-namespace dds {
+namespace realdds {
 
 namespace topics {
 class device_info;
@@ -69,5 +67,4 @@ private:
 };  // class dds_device
 
 
-}  // namespace dds
-}  // namespace librealsense
+}  // namespace realdds

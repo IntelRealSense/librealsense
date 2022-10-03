@@ -20,8 +20,8 @@
 // makes std::function conversions work
 #include <pybind11/functional.h>
 
-#define NAME pyrs_dds_server
-#define SNAME "pyrs_dds_server"
+#define NAME pyrealdds
+#define SNAME "pyrealdds"
 
 namespace py = pybind11;
 using namespace pybind11::literals;

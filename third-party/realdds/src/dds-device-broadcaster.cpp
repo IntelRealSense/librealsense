@@ -22,7 +22,7 @@
 #include <iostream>
 
 using namespace eprosima::fastdds::dds;
-using namespace librealsense::dds;
+using namespace realdds;
 
 // We want to know when readers join our topic
 class dds_device_broadcaster::dds_client_listener : public eprosima::fastdds::dds::DataWriterListener
@@ -233,7 +233,7 @@ bool dds_device_broadcaster::create_device_writer( const device_info & dev_info 
 
 void dds_device_broadcaster::create_broadcast_topic()
 {
-    eprosima::fastdds::dds::TypeSupport topic_type( new librealsense::dds::topics::device_info::type );
+    eprosima::fastdds::dds::TypeSupport topic_type( new topics::device_info::type );
     // Auto fill DDS X-Types TypeObject so other applications (e.g sniffer) can dynamically match a reader for this topic
     topic_type.get()->auto_fill_type_object( true );
     // Don't fill DDS X-Types TypeInformation, it is wasteful if you send TypeObject anyway
@@ -241,20 +241,20 @@ void dds_device_broadcaster::create_broadcast_topic()
     // Registering the topic type with the participant enables topic instance creation by factory
     DDS_API_CALL( _participant->get()->register_type( topic_type ) );
     _publisher = DDS_API_CALL( _participant->get()->create_publisher( PUBLISHER_QOS_DEFAULT, nullptr ) );
-    _topic = DDS_API_CALL( _participant->get()->create_topic( librealsense::dds::topics::device_info::TOPIC_NAME,
+    _topic = DDS_API_CALL( _participant->get()->create_topic( topics::device_info::TOPIC_NAME,
                                                               topic_type->getName(),
                                                               TOPIC_QOS_DEFAULT ) );
 
     // Topic constructor creates TypeObject that will be sent as part of the discovery phase
     // If this line is removed TypeObject will be sent only after constructing the topic in the first time
     // send_device_info_msg is called (after having a matching reader)
-    librealsense::dds::topics::raw::device_info raw_msg;
+    topics::raw::device_info raw_msg;
 }
 
 bool dds_device_broadcaster::send_device_info_msg( const dds_device_handle & handle )
 {
     // Publish the device info, but only after a matching reader is found.
-    librealsense::dds::topics::raw::device_info raw_msg;
+    topics::raw::device_info raw_msg;
     fill_device_msg( handle.info, raw_msg );
 
     // Post a DDS message with the new added device
@@ -285,7 +285,7 @@ void copy_to_array( std::string const & source, Array & dest )
 }
 
 void dds_device_broadcaster::fill_device_msg( const device_info & dev_info,
-                                              librealsense::dds::topics::raw::device_info & msg ) const
+                                              topics::raw::device_info & msg ) const
 {
     copy_to_array( dev_info.name, msg.name() );
     copy_to_array( dev_info.serial, msg.serial_number() );

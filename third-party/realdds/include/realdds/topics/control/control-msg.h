@@ -6,10 +6,11 @@
 #include <librealsense2/h/rs_sensor.h>
 #include "controlPubSubTypes.h"
 
-namespace librealsense {
-namespace dds {
+namespace realdds {
 namespace topics {
 namespace device {
+
+    
 class control
 {
 public:
@@ -92,7 +93,7 @@ public:
     int _size;
 };
 
+
 }  // namespace device
 }  // namespace topics
-}  // namespace dds
-}  // namespace librealsense
+}  // namespace realdds

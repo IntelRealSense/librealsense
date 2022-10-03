@@ -1,7 +1,7 @@
 # License: Apache 2.0. See LICENSE file in root directory.
 # Copyright(c) 2022 Intel Corporation. All Rights Reserved.
 
-import pyrs_dds_server as client
+import pyrealdds
 from rspy import log, test
 
 

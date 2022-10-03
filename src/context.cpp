@@ -422,7 +422,7 @@ namespace librealsense
     {
     public:
         dds_sensor_proxy( std::string name, software_device* owner,
-                          std::shared_ptr< dds::dds_device > const & dev, size_t index) :
+                          std::shared_ptr< realdds::dds_device > const & dev, size_t index) :
             software_sensor(name, owner),
             _dev(dev),
             _index(index)
@@ -455,7 +455,7 @@ namespace librealsense
         //void set_option( rs2_option option, float value ) const override;
 
     private:
-        std::shared_ptr< dds::dds_device > const & _dev;
+        std::shared_ptr< realdds::dds_device > const & _dev;
         size_t _index;
     };
 
@@ -468,10 +468,10 @@ namespace librealsense
     //
     class dds_device_proxy : public software_device
     {
-        std::shared_ptr< dds::dds_device > _dds_dev;
+        std::shared_ptr< realdds::dds_device > _dds_dev;
 
     public:
-        dds_device_proxy( std::shared_ptr< context > ctx, std::shared_ptr< dds::dds_device > const & dev )
+        dds_device_proxy( std::shared_ptr< context > ctx, std::shared_ptr< realdds::dds_device > const & dev )
             : software_device( ctx )
             , _dds_dev( dev )
         {
@@ -501,7 +501,7 @@ namespace librealsense
         }
 
     private:
-        dds_sensor_proxy& add_dds_sensor( std::shared_ptr< dds::dds_device > const & dev, size_t index, const std::string & name )
+        dds_sensor_proxy& add_dds_sensor( std::shared_ptr< realdds::dds_device > const & dev, size_t index, const std::string & name )
         {
             auto sensor = std::make_shared<dds_sensor_proxy>( name, this, dev, index );
             add_sensor( sensor );
@@ -513,10 +513,10 @@ namespace librealsense
 
     class dds_device_info : public device_info
     {
-        std::shared_ptr< dds::dds_device > _dev;
+        std::shared_ptr< realdds::dds_device > _dev;
 
     public:
-        dds_device_info( std::shared_ptr< context > const & ctx, std::shared_ptr< dds::dds_device > const & dev )
+        dds_device_info( std::shared_ptr< context > const & ctx, std::shared_ptr< realdds::dds_device > const & dev )
             : device_info( ctx )
             , _dev( dev )
         {
@@ -587,7 +587,7 @@ namespace librealsense
 
 #ifdef BUILD_WITH_DDS
         if( _dds_watcher )
-            _dds_watcher->foreach_device( [&]( std::shared_ptr< dds::dds_device > const & dev ) -> bool {
+            _dds_watcher->foreach_device( [&]( std::shared_ptr< realdds::dds_device > const & dev ) -> bool {
                 //if( mask & RS2_PRODUCT_LINE_D400 )
                     //if( dev.product_line == "D400" )
                     {
@@ -709,8 +709,8 @@ namespace librealsense
     {
         // TODO Here we should add DDS devices to the `on_device_changed`parameters
         // on_device_changed(old, curr, _playback_devices, _playback_devices);
-        _dds_watcher->on_device_added( [this]( std::shared_ptr< dds::dds_device > const & dev ) { dev->run(); } );
-        _dds_watcher->on_device_removed( [this]( std::shared_ptr< dds::dds_device > const & dev ) {} );
+        _dds_watcher->on_device_added( [this]( std::shared_ptr< realdds::dds_device > const & dev ) { dev->run(); } );
+        _dds_watcher->on_device_removed( [this]( std::shared_ptr< realdds::dds_device > const & dev ) {} );
         _dds_watcher->start();
     }
 #endif

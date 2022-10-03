@@ -1,10 +1,7 @@
 # License: Apache 2.0. See LICENSE file in root directory.
 # Copyright(c) 2022 Intel Corporation. All Rights Reserved.
 cmake_minimum_required(VERSION 3.1.0)
-
-# Note: we use 'pyrs_dds_server' because Python doesn't deal with '-' in module
-# names very well... see the PROJECT_LABEL below...
-project( pyrs_dds_server )
+project( pyrealdds )
 
 # To make sure pybind11 is already built, we set pyrealsense2 as a dependency (but it's not really)
 set( DEPENDENCIES pyrealsense2 realdds )
@@ -21,22 +18,22 @@ execute_process(COMMAND "${CMAKE_COMMAND}" --build .
 if(configure_ret OR build_ret)
     message( FATAL_ERROR "Failed to build pybind11")
 endif()
-    
+
 set( PYBIND11_CPP_STANDARD -std=c++11 )
 
 # Force Pybind11 not to share pyrealsense2 resources with other pybind modules.
 # With this definition we force the ABI version to be unique and not risk crashes on different modules.
 # (workaround for RS5-10582; see also https://github.com/pybind/pybind11/issues/2898)
-add_definitions( -DPYBIND11_COMPILER_TYPE="_pyrs_dds_server_abi" )
+add_definitions( -DPYBIND11_COMPILER_TYPE="_pyrealdds_abi" )
 
 include_directories( ${CMAKE_BINARY_DIR}/third-party/pybind11/include )
 
-set( PYRS_DDS_SERVER_FILES
+set( PYREALDDS_FILES
     python.cpp
     python.hpp
     )
 
-pybind11_add_module( ${PROJECT_NAME} SHARED ${PYRS_DDS_SERVER_FILES} )
+pybind11_add_module( ${PROJECT_NAME} SHARED ${PYREALDDS_FILES} )
 
 # pybind11 version 2.6.1 require find_package to run after pybind11_add_module call,
 # This way the pybind takes the python version set in PYTHON_EXECUTABLE variable.
@@ -60,13 +57,13 @@ set_target_properties( ${PROJECT_NAME}
 set_target_properties( ${PROJECT_NAME}
     PROPERTIES
         FOLDER Tools/dds
-        PROJECT_LABEL pyrs-dds-server
+        PROJECT_LABEL realdds-py
     )
 
 target_include_directories( ${PROJECT_NAME} PRIVATE ${REPO_ROOT}/include )
 
 target_link_libraries( ${PROJECT_NAME} PRIVATE realdds )
-target_sources( ${PROJECT_NAME} PRIVATE ${PYRS_DDS_SERVER_FILES} )
+target_sources( ${PROJECT_NAME} PRIVATE ${PYREALDDS_FILES} )
 
 include("${REPO_ROOT}/include/librealsense2/utilities/easylogging/easyloggingpp.cmake")
 target_sources( ${PROJECT_NAME} PRIVATE ${ELPP_SOURCE_FILES} )

@@ -6,10 +6,11 @@
 #include <librealsense2/h/rs_sensor.h>
 #include "notificationPubSubTypes.h"
 
-namespace librealsense {
-namespace dds {
+namespace realdds {
 namespace topics {
 namespace device {
+
+    
 class notification
 {
 public:
@@ -146,7 +147,7 @@ public:
     int _size;
 };
 
+
 }  // namespace device
 }  // namespace topics
-}  // namespace dds
-}  // namespace librealsense
+}  // namespace realdds

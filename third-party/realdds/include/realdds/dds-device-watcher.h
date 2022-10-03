@@ -11,8 +11,7 @@
 #include <memory>
 
 
-namespace librealsense {
-namespace dds {
+namespace realdds {
 
 namespace topics {
 class device_info;
@@ -68,5 +67,4 @@ private:
 };
 
 
-}  // namespace dds
-}  // namespace librealsense
+}  // namespace realdds

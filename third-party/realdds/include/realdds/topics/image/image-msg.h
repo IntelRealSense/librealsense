@@ -5,16 +5,17 @@
 #include <string>
 #include "imagePubSubTypes.h"
 
-namespace librealsense {
-namespace dds {
+namespace realdds {
 namespace topics {
 namespace device {
+
+    
 class image
 {
 public:
     using type = raw::device::imagePubSubType;
 
-    static std::string construct_topic_name( const std::string& topic_root, const std::string& stream )
+    static std::string construct_topic_name( const std::string & topic_root, const std::string & stream )
     {
         return topic_root + "/" + stream;
     }
@@ -35,7 +36,7 @@ public:
     int format;
 };
 
+
 }  // namespace device
 }  // namespace topics
-}  // namespace dds
-}  // namespace librealsense
+}  // namespace realdds

@@ -26,8 +26,7 @@ class TypeSupport;
 }  // namespace eprosima
 
 
-namespace librealsense {
-namespace dds {
+namespace realdds {
 
 
 class dds_participant;
@@ -98,5 +97,4 @@ private:
 };  // class dds_device_broadcaster
 
 
-}  // namespace dds
-}  // namespace librealsense
+}  // namespace realdds

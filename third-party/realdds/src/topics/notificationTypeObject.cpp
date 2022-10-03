@@ -30,11 +30,10 @@ using namespace eprosima::fastrtps::rtps;
 void registernotificationTypes()
 {
     TypeObjectFactory *factory = TypeObjectFactory::get_instance();
-    factory->add_type_object("librealsense::dds::topics::raw::device::notification", librealsense::dds::topics::raw::device::GetnotificationIdentifier(true),
-            librealsense::dds::topics::raw::device::GetnotificationObject(true));
-    factory->add_type_object("librealsense::dds::topics::raw::device::notification", librealsense::dds::topics::raw::device::GetnotificationIdentifier(false),
-            librealsense::dds::topics::raw::device::GetnotificationObject(false));
-
+    factory->add_type_object("realdds::topics::raw::device::notification", realdds::topics::raw::device::GetnotificationIdentifier(true),
+            realdds::topics::raw::device::GetnotificationObject(true));
+    factory->add_type_object("realdds::topics::raw::device::notification", realdds::topics::raw::device::GetnotificationIdentifier(false),
+            realdds::topics::raw::device::GetnotificationObject(false));
 
 
 
@@ -42,245 +41,243 @@ void registernotificationTypes()
 
 }
 
-namespace librealsense {
-    namespace dds {
-        namespace topics {
-            namespace raw {
-                namespace device {
-                    const TypeIdentifier* GetnotificationIdentifier(bool complete)
+namespace realdds {
+    namespace topics {
+        namespace raw {
+            namespace device {
+                const TypeIdentifier* GetnotificationIdentifier(bool complete)
+                {
+                    const TypeIdentifier * c_identifier = TypeObjectFactory::get_instance()->get_type_identifier("notification", complete);
+                    if (c_identifier != nullptr && (!complete || c_identifier->_d() == EK_COMPLETE))
                     {
-                        const TypeIdentifier * c_identifier = TypeObjectFactory::get_instance()->get_type_identifier("notification", complete);
-                        if (c_identifier != nullptr && (!complete || c_identifier->_d() == EK_COMPLETE))
-                        {
-                            return c_identifier;
-                        }
-
-                        GetnotificationObject(complete); // Generated inside
-                        return TypeObjectFactory::get_instance()->get_type_identifier("notification", complete);
+                        return c_identifier;
                     }
 
-                    const TypeObject* GetnotificationObject(bool complete)
+                    GetnotificationObject(complete); // Generated inside
+                    return TypeObjectFactory::get_instance()->get_type_identifier("notification", complete);
+                }
+
+                const TypeObject* GetnotificationObject(bool complete)
+                {
+                    const TypeObject* c_type_object = TypeObjectFactory::get_instance()->get_type_object("notification", complete);
+                    if (c_type_object != nullptr)
                     {
-                        const TypeObject* c_type_object = TypeObjectFactory::get_instance()->get_type_object("notification", complete);
-                        if (c_type_object != nullptr)
-                        {
-                            return c_type_object;
-                        }
-                        else if (complete)
-                        {
-                            return GetCompletenotificationObject();
-                        }
-                        //else
-                        return GetMinimalnotificationObject();
+                        return c_type_object;
+                    }
+                    else if (complete)
+                    {
+                        return GetCompletenotificationObject();
+                    }
+                    //else
+                    return GetMinimalnotificationObject();
+                }
+
+                const TypeObject* GetMinimalnotificationObject()
+                {
+                    const TypeObject* c_type_object = TypeObjectFactory::get_instance()->get_type_object("notification", false);
+                    if (c_type_object != nullptr)
+                    {
+                        return c_type_object;
                     }
 
-                    const TypeObject* GetMinimalnotificationObject()
+                    TypeObject *type_object = new TypeObject();
+                    type_object->_d(EK_MINIMAL);
+                    type_object->minimal()._d(TK_STRUCTURE);
+
+                    type_object->minimal().struct_type().struct_flags().IS_FINAL(false);
+                    type_object->minimal().struct_type().struct_flags().IS_APPENDABLE(false);
+                    type_object->minimal().struct_type().struct_flags().IS_MUTABLE(false);
+                    type_object->minimal().struct_type().struct_flags().IS_NESTED(false);
+                    type_object->minimal().struct_type().struct_flags().IS_AUTOID_HASH(false); // Unsupported
+
+                    MemberId memberId = 0;
+                    MinimalStructMember mst_id;
+                    mst_id.common().member_id(memberId++);
+                    mst_id.common().member_flags().TRY_CONSTRUCT1(false); // Unsupported
+                    mst_id.common().member_flags().TRY_CONSTRUCT2(false); // Unsupported
+                    mst_id.common().member_flags().IS_EXTERNAL(false); // Unsupported
+                    mst_id.common().member_flags().IS_OPTIONAL(false);
+                    mst_id.common().member_flags().IS_MUST_UNDERSTAND(false);
+                    mst_id.common().member_flags().IS_KEY(false);
+                    mst_id.common().member_flags().IS_DEFAULT(false); // Doesn't apply
+                    mst_id.common().member_type_id(*TypeObjectFactory::get_instance()->get_type_identifier("int16_t", false));
+
+                    MD5 id_hash("id");
+                    for(int i = 0; i < 4; ++i)
                     {
-                        const TypeObject* c_type_object = TypeObjectFactory::get_instance()->get_type_object("notification", false);
-                        if (c_type_object != nullptr)
-                        {
-                            return c_type_object;
-                        }
+                        mst_id.detail().name_hash()[i] = id_hash.digest[i];
+                    }
+                    type_object->minimal().struct_type().member_seq().emplace_back(mst_id);
 
-                        TypeObject *type_object = new TypeObject();
-                        type_object->_d(EK_MINIMAL);
-                        type_object->minimal()._d(TK_STRUCTURE);
+                    MinimalStructMember mst_size;
+                    mst_size.common().member_id(memberId++);
+                    mst_size.common().member_flags().TRY_CONSTRUCT1(false); // Unsupported
+                    mst_size.common().member_flags().TRY_CONSTRUCT2(false); // Unsupported
+                    mst_size.common().member_flags().IS_EXTERNAL(false); // Unsupported
+                    mst_size.common().member_flags().IS_OPTIONAL(false);
+                    mst_size.common().member_flags().IS_MUST_UNDERSTAND(false);
+                    mst_size.common().member_flags().IS_KEY(false);
+                    mst_size.common().member_flags().IS_DEFAULT(false); // Doesn't apply
+                    mst_size.common().member_type_id(*TypeObjectFactory::get_instance()->get_type_identifier("uint32_t", false));
 
-                        type_object->minimal().struct_type().struct_flags().IS_FINAL(false);
-                        type_object->minimal().struct_type().struct_flags().IS_APPENDABLE(false);
-                        type_object->minimal().struct_type().struct_flags().IS_MUTABLE(false);
-                        type_object->minimal().struct_type().struct_flags().IS_NESTED(false);
-                        type_object->minimal().struct_type().struct_flags().IS_AUTOID_HASH(false); // Unsupported
+                    MD5 size_hash("size");
+                    for(int i = 0; i < 4; ++i)
+                    {
+                        mst_size.detail().name_hash()[i] = size_hash.digest[i];
+                    }
+                    type_object->minimal().struct_type().member_seq().emplace_back(mst_size);
 
-                        MemberId memberId = 0;
-                        MinimalStructMember mst_id;
-                        mst_id.common().member_id(memberId++);
-                        mst_id.common().member_flags().TRY_CONSTRUCT1(false); // Unsupported
-                        mst_id.common().member_flags().TRY_CONSTRUCT2(false); // Unsupported
-                        mst_id.common().member_flags().IS_EXTERNAL(false); // Unsupported
-                        mst_id.common().member_flags().IS_OPTIONAL(false);
-                        mst_id.common().member_flags().IS_MUST_UNDERSTAND(false);
-                        mst_id.common().member_flags().IS_KEY(false);
-                        mst_id.common().member_flags().IS_DEFAULT(false); // Doesn't apply
-                        mst_id.common().member_type_id(*TypeObjectFactory::get_instance()->get_type_identifier("int16_t", false));
-
-                        MD5 id_hash("id");
-                        for(int i = 0; i < 4; ++i)
-                        {
-                            mst_id.detail().name_hash()[i] = id_hash.digest[i];
-                        }
-                        type_object->minimal().struct_type().member_seq().emplace_back(mst_id);
-
-                        MinimalStructMember mst_size;
-                        mst_size.common().member_id(memberId++);
-                        mst_size.common().member_flags().TRY_CONSTRUCT1(false); // Unsupported
-                        mst_size.common().member_flags().TRY_CONSTRUCT2(false); // Unsupported
-                        mst_size.common().member_flags().IS_EXTERNAL(false); // Unsupported
-                        mst_size.common().member_flags().IS_OPTIONAL(false);
-                        mst_size.common().member_flags().IS_MUST_UNDERSTAND(false);
-                        mst_size.common().member_flags().IS_KEY(false);
-                        mst_size.common().member_flags().IS_DEFAULT(false); // Doesn't apply
-                        mst_size.common().member_type_id(*TypeObjectFactory::get_instance()->get_type_identifier("uint32_t", false));
-
-                        MD5 size_hash("size");
-                        for(int i = 0; i < 4; ++i)
-                        {
-                            mst_size.detail().name_hash()[i] = size_hash.digest[i];
-                        }
-                        type_object->minimal().struct_type().member_seq().emplace_back(mst_size);
-
-                        MinimalStructMember mst_raw_data;
-                        mst_raw_data.common().member_id(memberId++);
-                        mst_raw_data.common().member_flags().TRY_CONSTRUCT1(false); // Unsupported
-                        mst_raw_data.common().member_flags().TRY_CONSTRUCT2(false); // Unsupported
-                        mst_raw_data.common().member_flags().IS_EXTERNAL(false); // Unsupported
-                        mst_raw_data.common().member_flags().IS_OPTIONAL(false);
-                        mst_raw_data.common().member_flags().IS_MUST_UNDERSTAND(false);
-                        mst_raw_data.common().member_flags().IS_KEY(false);
-                        mst_raw_data.common().member_flags().IS_DEFAULT(false); // Doesn't apply
-                        mst_raw_data.common().member_type_id(*TypeObjectFactory::get_instance()->get_sequence_identifier("uint8_t", 0, false));
+                    MinimalStructMember mst_raw_data;
+                    mst_raw_data.common().member_id(memberId++);
+                    mst_raw_data.common().member_flags().TRY_CONSTRUCT1(false); // Unsupported
+                    mst_raw_data.common().member_flags().TRY_CONSTRUCT2(false); // Unsupported
+                    mst_raw_data.common().member_flags().IS_EXTERNAL(false); // Unsupported
+                    mst_raw_data.common().member_flags().IS_OPTIONAL(false);
+                    mst_raw_data.common().member_flags().IS_MUST_UNDERSTAND(false);
+                    mst_raw_data.common().member_flags().IS_KEY(false);
+                    mst_raw_data.common().member_flags().IS_DEFAULT(false); // Doesn't apply
+                    mst_raw_data.common().member_type_id(*TypeObjectFactory::get_instance()->get_sequence_identifier("uint8_t", 0, false));
 
 
-                        MD5 raw_data_hash("raw_data");
-                        for(int i = 0; i < 4; ++i)
-                        {
-                            mst_raw_data.detail().name_hash()[i] = raw_data_hash.digest[i];
-                        }
-                        type_object->minimal().struct_type().member_seq().emplace_back(mst_raw_data);
+                    MD5 raw_data_hash("raw_data");
+                    for(int i = 0; i < 4; ++i)
+                    {
+                        mst_raw_data.detail().name_hash()[i] = raw_data_hash.digest[i];
+                    }
+                    type_object->minimal().struct_type().member_seq().emplace_back(mst_raw_data);
 
 
-                        // Header
-                        // TODO Inheritance
-                        //type_object->minimal().struct_type().header().base_type()._d(EK_MINIMAL);
-                        //type_object->minimal().struct_type().header().base_type().equivalence_hash()[0..13];
+                    // Header
+                    // TODO Inheritance
+                    //type_object->minimal().struct_type().header().base_type()._d(EK_MINIMAL);
+                    //type_object->minimal().struct_type().header().base_type().equivalence_hash()[0..13];
 
-                        TypeIdentifier identifier;
-                        identifier._d(EK_MINIMAL);
+                    TypeIdentifier identifier;
+                    identifier._d(EK_MINIMAL);
 
-                        SerializedPayload_t payload(static_cast<uint32_t>(
-                            MinimalStructType::getCdrSerializedSize(type_object->minimal().struct_type()) + 4));
-                        eprosima::fastcdr::FastBuffer fastbuffer((char*) payload.data, payload.max_size);
-                        // Fixed endian (Page 221, EquivalenceHash definition of Extensible and Dynamic Topic Types for DDS document)
-                        eprosima::fastcdr::Cdr ser(
-                            fastbuffer, eprosima::fastcdr::Cdr::LITTLE_ENDIANNESS,
-                            eprosima::fastcdr::Cdr::DDS_CDR); // Object that serializes the data.
-                        payload.encapsulation = CDR_LE;
+                    SerializedPayload_t payload(static_cast<uint32_t>(
+                        MinimalStructType::getCdrSerializedSize(type_object->minimal().struct_type()) + 4));
+                    eprosima::fastcdr::FastBuffer fastbuffer((char*) payload.data, payload.max_size);
+                    // Fixed endian (Page 221, EquivalenceHash definition of Extensible and Dynamic Topic Types for DDS document)
+                    eprosima::fastcdr::Cdr ser(
+                        fastbuffer, eprosima::fastcdr::Cdr::LITTLE_ENDIANNESS,
+                        eprosima::fastcdr::Cdr::DDS_CDR); // Object that serializes the data.
+                    payload.encapsulation = CDR_LE;
 
-                        type_object->serialize(ser);
-                        payload.length = (uint32_t)ser.getSerializedDataLength(); //Get the serialized length
-                        MD5 objectHash;
-                        objectHash.update((char*)payload.data, payload.length);
-                        objectHash.finalize();
-                        for(int i = 0; i < 14; ++i)
-                        {
-                            identifier.equivalence_hash()[i] = objectHash.digest[i];
-                        }
-
-                        TypeObjectFactory::get_instance()->add_type_object("notification", &identifier, type_object);
-                        delete type_object;
-                        return TypeObjectFactory::get_instance()->get_type_object("notification", false);
+                    type_object->serialize(ser);
+                    payload.length = (uint32_t)ser.getSerializedDataLength(); //Get the serialized length
+                    MD5 objectHash;
+                    objectHash.update((char*)payload.data, payload.length);
+                    objectHash.finalize();
+                    for(int i = 0; i < 14; ++i)
+                    {
+                        identifier.equivalence_hash()[i] = objectHash.digest[i];
                     }
 
-                    const TypeObject* GetCompletenotificationObject()
+                    TypeObjectFactory::get_instance()->add_type_object("notification", &identifier, type_object);
+                    delete type_object;
+                    return TypeObjectFactory::get_instance()->get_type_object("notification", false);
+                }
+
+                const TypeObject* GetCompletenotificationObject()
+                {
+                    const TypeObject* c_type_object = TypeObjectFactory::get_instance()->get_type_object("notification", true);
+                    if (c_type_object != nullptr && c_type_object->_d() == EK_COMPLETE)
                     {
-                        const TypeObject* c_type_object = TypeObjectFactory::get_instance()->get_type_object("notification", true);
-                        if (c_type_object != nullptr && c_type_object->_d() == EK_COMPLETE)
-                        {
-                            return c_type_object;
-                        }
-
-                        TypeObject *type_object = new TypeObject();
-                        type_object->_d(EK_COMPLETE);
-                        type_object->complete()._d(TK_STRUCTURE);
-
-                        type_object->complete().struct_type().struct_flags().IS_FINAL(false);
-                        type_object->complete().struct_type().struct_flags().IS_APPENDABLE(false);
-                        type_object->complete().struct_type().struct_flags().IS_MUTABLE(false);
-                        type_object->complete().struct_type().struct_flags().IS_NESTED(false);
-                        type_object->complete().struct_type().struct_flags().IS_AUTOID_HASH(false); // Unsupported
-
-                        MemberId memberId = 0;
-                        CompleteStructMember cst_id;
-                        cst_id.common().member_id(memberId++);
-                        cst_id.common().member_flags().TRY_CONSTRUCT1(false); // Unsupported
-                        cst_id.common().member_flags().TRY_CONSTRUCT2(false); // Unsupported
-                        cst_id.common().member_flags().IS_EXTERNAL(false); // Unsupported
-                        cst_id.common().member_flags().IS_OPTIONAL(false);
-                        cst_id.common().member_flags().IS_MUST_UNDERSTAND(false);
-                        cst_id.common().member_flags().IS_KEY(false);
-                        cst_id.common().member_flags().IS_DEFAULT(false); // Doesn't apply
-                        cst_id.common().member_type_id(*TypeObjectFactory::get_instance()->get_type_identifier("int16_t", false));
-
-                        cst_id.detail().name("id");
-
-                        type_object->complete().struct_type().member_seq().emplace_back(cst_id);
-
-                        CompleteStructMember cst_size;
-                        cst_size.common().member_id(memberId++);
-                        cst_size.common().member_flags().TRY_CONSTRUCT1(false); // Unsupported
-                        cst_size.common().member_flags().TRY_CONSTRUCT2(false); // Unsupported
-                        cst_size.common().member_flags().IS_EXTERNAL(false); // Unsupported
-                        cst_size.common().member_flags().IS_OPTIONAL(false);
-                        cst_size.common().member_flags().IS_MUST_UNDERSTAND(false);
-                        cst_size.common().member_flags().IS_KEY(false);
-                        cst_size.common().member_flags().IS_DEFAULT(false); // Doesn't apply
-                        cst_size.common().member_type_id(*TypeObjectFactory::get_instance()->get_type_identifier("uint32_t", false));
-
-                        cst_size.detail().name("size");
-
-                        type_object->complete().struct_type().member_seq().emplace_back(cst_size);
-
-                        CompleteStructMember cst_raw_data;
-                        cst_raw_data.common().member_id(memberId++);
-                        cst_raw_data.common().member_flags().TRY_CONSTRUCT1(false); // Unsupported
-                        cst_raw_data.common().member_flags().TRY_CONSTRUCT2(false); // Unsupported
-                        cst_raw_data.common().member_flags().IS_EXTERNAL(false); // Unsupported
-                        cst_raw_data.common().member_flags().IS_OPTIONAL(false);
-                        cst_raw_data.common().member_flags().IS_MUST_UNDERSTAND(false);
-                        cst_raw_data.common().member_flags().IS_KEY(false);
-                        cst_raw_data.common().member_flags().IS_DEFAULT(false); // Doesn't apply
-                        cst_raw_data.common().member_type_id(*TypeObjectFactory::get_instance()->get_sequence_identifier("uint8_t", 0, true));
-
-
-                        cst_raw_data.detail().name("raw_data");
-
-                        type_object->complete().struct_type().member_seq().emplace_back(cst_raw_data);
-
-
-                        // Header
-                        type_object->complete().struct_type().header().detail().type_name("notification");
-                        // TODO inheritance
-
-
-                        TypeIdentifier identifier;
-                        identifier._d(EK_COMPLETE);
-
-                        SerializedPayload_t payload(static_cast<uint32_t>(
-                            CompleteStructType::getCdrSerializedSize(type_object->complete().struct_type()) + 4));
-                        eprosima::fastcdr::FastBuffer fastbuffer((char*) payload.data, payload.max_size);
-                        // Fixed endian (Page 221, EquivalenceHash definition of Extensible and Dynamic Topic Types for DDS document)
-                        eprosima::fastcdr::Cdr ser(
-                            fastbuffer, eprosima::fastcdr::Cdr::LITTLE_ENDIANNESS,
-                            eprosima::fastcdr::Cdr::DDS_CDR); // Object that serializes the data.
-                        payload.encapsulation = CDR_LE;
-
-                        type_object->serialize(ser);
-                        payload.length = (uint32_t)ser.getSerializedDataLength(); //Get the serialized length
-                        MD5 objectHash;
-                        objectHash.update((char*)payload.data, payload.length);
-                        objectHash.finalize();
-                        for(int i = 0; i < 14; ++i)
-                        {
-                            identifier.equivalence_hash()[i] = objectHash.digest[i];
-                        }
-
-                        TypeObjectFactory::get_instance()->add_type_object("notification", &identifier, type_object);
-                        delete type_object;
-                        return TypeObjectFactory::get_instance()->get_type_object("notification", true);
+                        return c_type_object;
                     }
 
-                } // namespace device
-            } // namespace raw
-        } // namespace topics
-    } // namespace dds
-} // namespace librealsense
+                    TypeObject *type_object = new TypeObject();
+                    type_object->_d(EK_COMPLETE);
+                    type_object->complete()._d(TK_STRUCTURE);
+
+                    type_object->complete().struct_type().struct_flags().IS_FINAL(false);
+                    type_object->complete().struct_type().struct_flags().IS_APPENDABLE(false);
+                    type_object->complete().struct_type().struct_flags().IS_MUTABLE(false);
+                    type_object->complete().struct_type().struct_flags().IS_NESTED(false);
+                    type_object->complete().struct_type().struct_flags().IS_AUTOID_HASH(false); // Unsupported
+
+                    MemberId memberId = 0;
+                    CompleteStructMember cst_id;
+                    cst_id.common().member_id(memberId++);
+                    cst_id.common().member_flags().TRY_CONSTRUCT1(false); // Unsupported
+                    cst_id.common().member_flags().TRY_CONSTRUCT2(false); // Unsupported
+                    cst_id.common().member_flags().IS_EXTERNAL(false); // Unsupported
+                    cst_id.common().member_flags().IS_OPTIONAL(false);
+                    cst_id.common().member_flags().IS_MUST_UNDERSTAND(false);
+                    cst_id.common().member_flags().IS_KEY(false);
+                    cst_id.common().member_flags().IS_DEFAULT(false); // Doesn't apply
+                    cst_id.common().member_type_id(*TypeObjectFactory::get_instance()->get_type_identifier("int16_t", false));
+
+                    cst_id.detail().name("id");
+
+                    type_object->complete().struct_type().member_seq().emplace_back(cst_id);
+
+                    CompleteStructMember cst_size;
+                    cst_size.common().member_id(memberId++);
+                    cst_size.common().member_flags().TRY_CONSTRUCT1(false); // Unsupported
+                    cst_size.common().member_flags().TRY_CONSTRUCT2(false); // Unsupported
+                    cst_size.common().member_flags().IS_EXTERNAL(false); // Unsupported
+                    cst_size.common().member_flags().IS_OPTIONAL(false);
+                    cst_size.common().member_flags().IS_MUST_UNDERSTAND(false);
+                    cst_size.common().member_flags().IS_KEY(false);
+                    cst_size.common().member_flags().IS_DEFAULT(false); // Doesn't apply
+                    cst_size.common().member_type_id(*TypeObjectFactory::get_instance()->get_type_identifier("uint32_t", false));
+
+                    cst_size.detail().name("size");
+
+                    type_object->complete().struct_type().member_seq().emplace_back(cst_size);
+
+                    CompleteStructMember cst_raw_data;
+                    cst_raw_data.common().member_id(memberId++);
+                    cst_raw_data.common().member_flags().TRY_CONSTRUCT1(false); // Unsupported
+                    cst_raw_data.common().member_flags().TRY_CONSTRUCT2(false); // Unsupported
+                    cst_raw_data.common().member_flags().IS_EXTERNAL(false); // Unsupported
+                    cst_raw_data.common().member_flags().IS_OPTIONAL(false);
+                    cst_raw_data.common().member_flags().IS_MUST_UNDERSTAND(false);
+                    cst_raw_data.common().member_flags().IS_KEY(false);
+                    cst_raw_data.common().member_flags().IS_DEFAULT(false); // Doesn't apply
+                    cst_raw_data.common().member_type_id(*TypeObjectFactory::get_instance()->get_sequence_identifier("uint8_t", 0, true));
+
+
+                    cst_raw_data.detail().name("raw_data");
+
+                    type_object->complete().struct_type().member_seq().emplace_back(cst_raw_data);
+
+
+                    // Header
+                    type_object->complete().struct_type().header().detail().type_name("notification");
+                    // TODO inheritance
+
+
+                    TypeIdentifier identifier;
+                    identifier._d(EK_COMPLETE);
+
+                    SerializedPayload_t payload(static_cast<uint32_t>(
+                        CompleteStructType::getCdrSerializedSize(type_object->complete().struct_type()) + 4));
+                    eprosima::fastcdr::FastBuffer fastbuffer((char*) payload.data, payload.max_size);
+                    // Fixed endian (Page 221, EquivalenceHash definition of Extensible and Dynamic Topic Types for DDS document)
+                    eprosima::fastcdr::Cdr ser(
+                        fastbuffer, eprosima::fastcdr::Cdr::LITTLE_ENDIANNESS,
+                        eprosima::fastcdr::Cdr::DDS_CDR); // Object that serializes the data.
+                    payload.encapsulation = CDR_LE;
+
+                    type_object->serialize(ser);
+                    payload.length = (uint32_t)ser.getSerializedDataLength(); //Get the serialized length
+                    MD5 objectHash;
+                    objectHash.update((char*)payload.data, payload.length);
+                    objectHash.finalize();
+                    for(int i = 0; i < 14; ++i)
+                    {
+                        identifier.equivalence_hash()[i] = objectHash.digest[i];
+                    }
+
+                    TypeObjectFactory::get_instance()->add_type_object("notification", &identifier, type_object);
+                    delete type_object;
+                    return TypeObjectFactory::get_instance()->get_type_object("notification", true);
+                }
+
+            } // namespace device
+        } // namespace raw
+    } // namespace topics
+} // namespace realdds

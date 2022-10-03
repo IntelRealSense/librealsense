@@ -11,8 +11,7 @@
 #include <list>
 
 
-namespace librealsense {
-namespace dds {
+namespace realdds {
 
 
 // The starting point for any DDS interaction, a participant has a name and is the focal point for creating, destroying,
@@ -148,5 +147,4 @@ private:
 };  // class dds_participant
 
 
-}  // namespace dds
-}  // namespace librealsense
+}  // namespace realdds

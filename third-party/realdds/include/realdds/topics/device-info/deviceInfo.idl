@@ -1,24 +1,21 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2022 Intel Corporation. All Rights Reserved.
 
-module librealsense
+module realdds
 {
-    module dds
+    module topics
     {
-        module topics
+        module raw
         {
-            module raw
+            struct device_info
             {
-                struct device_info
-                {
-                    char name[128];
-                    char serial_number[32];
-                    char product_line[16];
-                    char topic_root[256];
-                    boolean locked;
-                };
+                char name[128];
+                char serial_number[32];
+                char product_line[16];
+                char topic_root[256];
+                boolean locked;
             };
-            
         };
+        
     };
 };

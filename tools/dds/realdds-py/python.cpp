@@ -28,10 +28,10 @@ INITIALIZE_EASYLOGGINGPP
 
 
 namespace {
-std::string to_string( librealsense::dds::dds_guid const & guid )
+std::string to_string( realdds::dds_guid const & guid )
 {
     std::ostringstream os;
-    os << librealsense::dds::print( guid );
+    os << realdds::print( guid );
     return os.str();
 }
 }  // namespace
@@ -142,7 +142,7 @@ PYBIND11_MODULE(NAME, m) {
         logger->reconfigure();
     } );
 
-    using librealsense::dds::dds_participant;
+    using realdds::dds_participant;
     using eprosima::fastrtps::types::ReturnCode_t;
     
     py::class_< dds_participant::listener,
@@ -153,32 +153,32 @@ PYBIND11_MODULE(NAME, m) {
         .def( FN_FWD( dds_participant::listener,
                       on_writer_added,
                       ( std::string const & guid, std::string const & topic_name ),
-                      ( librealsense::dds::dds_guid guid, char const * topic_name ),
+                      ( realdds::dds_guid guid, char const * topic_name ),
                       callback( to_string( guid ), topic_name ); ) )
         .def( FN_FWD( dds_participant::listener,
                       on_writer_removed,
                       ( std::string const & guid, std::string const & topic_name ),
-                      ( librealsense::dds::dds_guid guid, char const * topic_name ),
+                      ( realdds::dds_guid guid, char const * topic_name ),
                       callback( to_string( guid ), topic_name ); ) )
         .def( FN_FWD( dds_participant::listener,
                       on_reader_added,
                       ( std::string const & guid, std::string const & topic_name ),
-                      ( librealsense::dds::dds_guid guid, char const * topic_name ),
+                      ( realdds::dds_guid guid, char const * topic_name ),
                       callback( to_string( guid ), topic_name ); ) )
         .def( FN_FWD( dds_participant::listener,
                       on_reader_removed,
                       ( std::string const & guid, std::string const & topic_name ),
-                      ( librealsense::dds::dds_guid guid, char const * topic_name ),
+                      ( realdds::dds_guid guid, char const * topic_name ),
                       callback( to_string( guid ), topic_name ); ) )
         .def( FN_FWD( dds_participant::listener,
                       on_participant_added,
                       ( std::string const & guid, std::string const & name ),
-                      ( librealsense::dds::dds_guid guid, char const * name ),
+                      ( realdds::dds_guid guid, char const * name ),
                       callback( to_string( guid ), name ); ) )
         .def( FN_FWD( dds_participant::listener,
                       on_participant_removed,
                       ( std::string const & guid, std::string const & name ),
-                      ( librealsense::dds::dds_guid guid, char const * name ),
+                      ( realdds::dds_guid guid, char const * name ),
                       callback( to_string( guid ), name ); ) )
         .def( FN_FWD( dds_participant::listener,
                       on_type_discovery,
@@ -230,7 +230,7 @@ PYBIND11_MODULE(NAME, m) {
     //auto raw = m.def_submodule( "raw", "all the topics that " SNAME " can work with" );
 
 
-    using librealsense::dds::dds_topic;
+    using realdds::dds_topic;
     py::class_< dds_topic, std::shared_ptr< dds_topic > >( m, "topic" )
         .def( py::init< std::shared_ptr< dds_participant > const &,
                         eprosima::fastdds::dds::TypeSupport const &,
@@ -243,7 +243,7 @@ PYBIND11_MODULE(NAME, m) {
             return os.str();
         } );
 
-    using reader_qos = librealsense::dds::dds_topic_reader::reader_qos;
+    using reader_qos = realdds::dds_topic_reader::reader_qos;
     py::class_< reader_qos >( m, "reader_qos" )
         .def( "__repr__", []( reader_qos const & self ) {
             std::ostringstream os;
@@ -252,7 +252,7 @@ PYBIND11_MODULE(NAME, m) {
             return os.str();
         } );
 
-    using librealsense::dds::dds_topic_reader;
+    using realdds::dds_topic_reader;
     py::class_< dds_topic_reader, std::shared_ptr< dds_topic_reader > >( m, "topic_reader" )
         .def( py::init< std::shared_ptr< dds_topic > const & >() )
         .def( FN_FWD( dds_topic_reader, on_data_available, (), (), callback(); ) )
@@ -267,8 +267,8 @@ PYBIND11_MODULE(NAME, m) {
 
     // The actual types are declared as functions and not classes: the py::init<> inheritance rules are pretty strict
     // and, coupled with shared_ptr usage, are very hard to get around. This is much simpler...
-    using librealsense::dds::topics::device_info;
-    using raw_device_info = librealsense::dds::topics::raw::device_info;
+    using realdds::topics::device_info;
+    using raw_device_info = realdds::topics::raw::device_info;
     types.def( "device_info", []() { return TypeSupport( new device_info::type ); } );
 
     py::class_< device_info >( m, "device_info" )
@@ -320,7 +320,7 @@ PYBIND11_MODULE(NAME, m) {
     //    .def( py::init<>() )
     //    .def( py::init( []( dds_topic_reader const & reader ) {
     //        auto actual_type = reader.topic()->get()->get_type_name();
-    //        if( actual_type != "librealsense::dds::topics::raw::device_info" )
+    //        if( actual_type != "realdds::topics::raw::device_info" )
     //            throw std::runtime_error( "can't initialize raw::device_info from " + actual_type );
     //        raw_device_info raw_data;
     //        eprosima::fastdds::dds::SampleInfo info;
@@ -331,7 +331,7 @@ PYBIND11_MODULE(NAME, m) {
     //    } ) );
 
 
-    using librealsense::dds::dds_device_broadcaster;
+    using realdds::dds_device_broadcaster;
     py::class_< dds_device_broadcaster >( m, "device_broadcaster" )
         .def( py::init< std::shared_ptr< dds_participant > const & >() )
         .def( "run", &dds_device_broadcaster::run )
@@ -361,7 +361,7 @@ PYBIND11_MODULE(NAME, m) {
         .def_readwrite( "fmt", &rs2_motion_stream::fmt )
         .def_readwrite( "intrinsics", &rs2_motion_stream::intrinsics );
 
-    using librealsense::dds::dds_device;
+    using realdds::dds_device;
     py::class_< dds_device,
                 std::shared_ptr< dds_device >  // handled with a shared_ptr
                 >( m, "device" )
@@ -407,7 +407,7 @@ PYBIND11_MODULE(NAME, m) {
             return os.str();
         } );
 
-    using librealsense::dds::dds_device_watcher;
+    using realdds::dds_device_watcher;
     py::class_< dds_device_watcher >( m, "device_watcher" )
         .def( py::init< std::shared_ptr< dds_participant > const & >() )
         .def( "start", &dds_device_watcher::start )
