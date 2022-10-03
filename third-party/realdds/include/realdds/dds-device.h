@@ -50,13 +50,13 @@ public:
 
     size_t num_of_sensors() const;
 
-    size_t foreach_sensor( std::function< void( size_t sensor_index, const std::string & name ) > fn ) const;
+    size_t foreach_sensor( std::function< void( const std::string & name ) > fn ) const;
 
-    size_t foreach_video_profile( size_t sensor_index, std::function< void( const rs2_video_stream& profile, bool def_prof ) > fn ) const;
-    size_t foreach_motion_profile( size_t sensor_index, std::function< void( const rs2_motion_stream& profile, bool def_prof ) > fn ) const;
+    size_t foreach_video_profile( std::string group_name, std::function< void( const rs2_video_stream& profile, bool def_prof ) > fn ) const;
+    size_t foreach_motion_profile( std::string group_name, std::function< void( const rs2_motion_stream& profile, bool def_prof ) > fn ) const;
 
-    void sensor_open( size_t sensor_index, const std::vector< rs2_video_stream > & profiles );
-    void sensor_close( size_t sensor_index );
+    void open( const std::vector< rs2_video_stream > & profiles );
+    void close( const std::vector< int16_t >& profile_uids );
 
 private:
     class impl;

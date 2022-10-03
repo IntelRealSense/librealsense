@@ -26,7 +26,7 @@ public:
     enum class msg_type : uint16_t
     {
         DEVICE_HEADER,
-        SENSOR_HEADER,
+        STREAM_HEADER,
         VIDEO_STREAM_PROFILES,
         MOTION_STREAM_PROFILES,
         CONTROL_RESPONSE,
@@ -35,22 +35,8 @@ public:
 
     struct device_header_msg
     {
-        size_t num_of_sensors;
+        size_t num_of_streams;
     };
-
-    struct sensor_header_msg
-    {
-        enum class sensor_type // maybe with 1 byte inheritance 
-        {
-            VIDEO,
-            MOTION
-        };
-
-        sensor_type type;
-        uint8_t index;           // Index of the current sensor [0-(num_of_sensors-1)]
-        char name[32];           // Sensor name
-    };
-
 
     struct video_stream_profile
     {
@@ -77,14 +63,14 @@ public:
 
     struct video_stream_profiles_msg
     {
-        uint8_t dds_sensor_index;  // Index of the current dds sensor [0-(num_of_sensors-1)]
+        char group_name[32];     // Streams are grouped in the server
         size_t num_of_profiles;  
         video_stream_profile profiles[MAX_VIDEO_PROFILES];
     };
 
     struct motion_stream_profiles_msg
     {
-        uint8_t dds_sensor_index; // Index of the current sensor [0-(num_of_sensors-1)]
+        char group_name[32];     // Streams are grouped in the server
         size_t num_of_profiles; 
         motion_stream_profile profiles[MAX_MOTION_PROFILES];
     };

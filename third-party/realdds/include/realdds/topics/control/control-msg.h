@@ -22,13 +22,14 @@ public:
 #pragma pack( push, 1 )
     enum class control_type : uint16_t
     {
-        SENSOR_OPEN,
-        SENSOR_CLOSE,
+        PROFILES_OPEN,
+        PROFILES_CLOSE,
         MAX_CONTROL_TYPE
     };
 
     struct stream_profile
     {
+        int16_t uid;             // Stream unique ID
         int16_t framerate;       // FPS
         rs2_format format;       // Transfer as uint8_t?
         rs2_stream type;         // Transfer as uint8_t?
@@ -36,17 +37,16 @@ public:
         int16_t height;          // Resolution width [pixels]
     };
 
-    struct sensor_open_msg
+    struct profiles_open_msg
     {
         uint32_t message_id; // Running counter
-        int16_t sensor_uid;  // Sensor ID as received in notification::sensor_header_msg.index
         stream_profile profiles[MAX_OPEN_PROFILES];
     };
 
-    struct sensor_close_msg
+    struct profiles_close_msg
     {
         uint32_t message_id; // Running counter
-        int16_t sensor_uid;
+        int16_t profile_uids[MAX_OPEN_PROFILES];
     };
 
 

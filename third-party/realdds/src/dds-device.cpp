@@ -4,6 +4,8 @@
 #include <realdds/dds-device.h>
 #include <realdds/dds-device-impl.h>
 
+#include <set>
+
 namespace realdds {
 
 
@@ -93,35 +95,47 @@ dds_guid const & dds_device::guid() const
 
 size_t dds_device::num_of_sensors() const
 {
-    return _impl->_num_of_sensors;
+    std::set< std::string > sensors;
+    for (auto p : _impl->_profile_to_profile_group)
+    {
+        sensors.insert( p.second );
+    }
+
+    return sensors.size();
 }
 
 
-size_t dds_device::foreach_sensor( std::function< void( size_t sensor_index, const std::string & name ) > fn ) const
+size_t dds_device::foreach_sensor( std::function< void( const std::string & name ) > fn ) const
 {
-    for( auto sensor : _impl->_sensor_index_to_name )
+    std::set< std::string > sensors;
+    for (auto p : _impl->_profile_to_profile_group)
     {
-        fn( sensor.first, sensor.second );
+        sensors.insert( p.second );
     }
 
-    return _impl->_num_of_sensors;
+    for( auto sensor : sensors)
+    {
+        fn( sensor );
+    }
+
+    return sensors.size();
 }
 
 
 size_t
-dds_device::foreach_video_profile( size_t sensor_index,
+dds_device::foreach_video_profile( std::string group_name,
                                    std::function< void( const rs2_video_stream & profile, bool def_prof ) > fn ) const
 {
-    auto const & msg = _impl->_sensor_to_video_profiles.find( int( sensor_index ) );
+    auto const & profiles = _impl->_video_profile_indexes_in_profile_group.find( group_name );
 
-    if( msg == _impl->_sensor_to_video_profiles.end() )
+    if(profiles == _impl->_video_profile_indexes_in_profile_group.end() )
     {
-        return 0;  // Not a video sensor, nothing to do
+        return 0;  // Not video profiles for this group, nothing to do
     }
 
-    for( size_t i = 0; i < msg->second.num_of_profiles; ++i )
+    for( size_t i = 0; i < profiles->second.size(); ++i )
     {
-        auto const & profile = msg->second.profiles[i];
+        auto const & profile = _impl->_video_profiles[i];
         rs2_video_stream prof;
         prof.type = profile.type;
         prof.index = profile.stream_index;
@@ -135,24 +149,24 @@ dds_device::foreach_video_profile( size_t sensor_index,
         fn( prof, profile.default_profile );
     }
 
-    return msg->second.num_of_profiles;
+    return profiles->second.size();
 }
 
 
 size_t
-dds_device::foreach_motion_profile( size_t sensor_index,
+dds_device::foreach_motion_profile( std::string group_name,
                                     std::function< void( const rs2_motion_stream & profile, bool def_prof ) > fn ) const
 {
-    auto const & msg = _impl->_sensor_to_motion_profiles.find( int( sensor_index ) );
+    auto const& profiles = _impl->_motion_profile_indexes_in_profile_group.find( group_name );
 
-    if( msg == _impl->_sensor_to_motion_profiles.end() )
+    if (profiles == _impl->_motion_profile_indexes_in_profile_group.end())
     {
-        return 0;  // Not a motion sensor, nothing to do
+        return 0;  // Not motion profiles for this group, nothing to do
     }
 
-    for( size_t i = 0; i < msg->second.num_of_profiles; ++i )
+    for (size_t i = 0; i < profiles->second.size(); ++i)
     {
-        auto const & profile = msg->second.profiles[i];
+        auto const& profile = _impl->_motion_profiles[i];
         rs2_motion_stream prof;
         prof.type = profile.type;
         prof.index = profile.stream_index;
@@ -163,24 +177,24 @@ dds_device::foreach_motion_profile( size_t sensor_index,
         fn( prof, profile.default_profile );
     }
 
-    return msg->second.num_of_profiles;
+    return profiles->second.size();
 }
 
-void dds_device::sensor_open( size_t sensor_index, const std::vector< rs2_video_stream > & profiles )
+void dds_device::open( const std::vector< rs2_video_stream > & profiles )
 {
     using namespace topics;
 
-    if (profiles.size() < device::control::MAX_OPEN_PROFILES)
+    if (profiles.size() > device::control::MAX_OPEN_PROFILES)
     {
-        throw std::runtime_error( "Too many profiles (" + std::to_string( profiles.size() )
-                                + ") when opening sensor, max is " + std::to_string( device::control::MAX_OPEN_PROFILES ) );
+        throw std::runtime_error( "Too many profiles to open (" + std::to_string( profiles.size() )
+                                + "), max is " + std::to_string( device::control::MAX_OPEN_PROFILES ) );
     }
 
-    device::control::sensor_open_msg open_msg;
+    device::control::profiles_open_msg open_msg;
     open_msg.message_id = _impl->_control_message_counter++;
-    open_msg.sensor_uid = static_cast<uint16_t>( sensor_index );
     for ( size_t i = 0; i < profiles.size(); ++i )
     {
+        open_msg.profiles[i].uid = profiles[i].uid;
         open_msg.profiles[i].framerate = profiles[i].fps;
         open_msg.profiles[i].format = profiles[i].fmt;
         open_msg.profiles[i].type = profiles[i].type;
@@ -189,40 +203,49 @@ void dds_device::sensor_open( size_t sensor_index, const std::vector< rs2_video_
     }
 
     raw::device::control raw_msg;
-    device::control::construct_raw_message( device::control::control_type::SENSOR_OPEN,
+    device::control::construct_raw_message( device::control::control_type::PROFILES_OPEN,
                                             open_msg,
                                             raw_msg );
 
     if ( _impl->write_control_message( &raw_msg ) )
     {
-        LOG_DEBUG( "Sent SENSOR_OPEN message for sensor " << sensor_index );
+        LOG_DEBUG( "Sent PROFILES_OPEN message for " << profiles.size() << " profiles" ); // sensor " << sensor_index );
     }
     else
     {
-        LOG_ERROR( "Error writing SENSOR_OPEN message for sensor: " << sensor_index );
+        LOG_ERROR( "Error writing PROFILES_OPEN message for " << profiles.size() << " profiles" ); // sensor " << sensor_index );
     }
 }
 
-void dds_device::sensor_close( size_t sensor_index )
+void dds_device::close( const std::vector< int16_t >& profile_uids )
 {
     using namespace topics;
 
-    device::control::sensor_close_msg close_msg;
+    if (profile_uids.size() > device::control::MAX_OPEN_PROFILES)
+    {
+        throw std::runtime_error( "Too many profiles to close (" + std::to_string( profile_uids.size() )
+                                + "), max is " + std::to_string( device::control::MAX_OPEN_PROFILES ) );
+    }
+
+    device::control::profiles_close_msg close_msg;
     close_msg.message_id = _impl->_control_message_counter++;
-    close_msg.sensor_uid = static_cast<uint16_t>( sensor_index );
+    for (size_t i = 0; i < profile_uids.size(); ++i)
+    {
+        close_msg.profile_uids[i] = profile_uids[i];
+    }
 
     raw::device::control raw_msg;
-    device::control::construct_raw_message( device::control::control_type::SENSOR_CLOSE,
+    device::control::construct_raw_message( device::control::control_type::PROFILES_CLOSE,
                                             close_msg,
                                             raw_msg );
 
-    if ( _impl->write_control_message( &raw_msg ) )
+    if (_impl->write_control_message( &raw_msg ))
     {
-        LOG_DEBUG( "Sent SENSOR_CLOSE message for sensor " << sensor_index );
+        LOG_DEBUG( "Sent PROFILES_CLOSE message for " << profile_uids.size() << " profiles" );
     }
     else
     {
-        LOG_ERROR( "Error writing SENSOR_CLOSE message for sensor: " << sensor_index );
+        LOG_ERROR( "Error writing PROFILES_CLOSE message for " << profile_uids.size() << " profiles" );
     }
 }
 

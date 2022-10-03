@@ -422,10 +422,10 @@ namespace librealsense
     {
     public:
         dds_sensor_proxy( std::string name, software_device* owner,
-                          std::shared_ptr< realdds::dds_device > const & dev, size_t index) :
+                          std::shared_ptr< realdds::dds_device > const & dev) :
             software_sensor(name, owner),
             _dev(dev),
-            _index(index)
+            _name(name)
         {
         }
 
@@ -441,22 +441,28 @@ namespace librealsense
                 rs2_profs[i].width = vsp ? vsp->get_width() : 0;
                 rs2_profs[i].height = vsp ? vsp->get_height() : 0;
             }
-            _dev->sensor_open( _index, rs2_profs );
+            _dev->open( rs2_profs );
             software_sensor::open( profiles );
         }
 
         void close() override
         {
-            _dev->sensor_close( _index );
+            std::vector< int16_t > profiles_to_close;
+            for (auto profile : sensor_base::get_active_streams())
+            {
+                profiles_to_close.push_back( profile->get_unique_id() );
+            }
+            _dev->close( profiles_to_close );
             software_sensor::close();
         }
 
         //float get_option( rs2_option option ) const override;
         //void set_option( rs2_option option, float value ) const override;
 
+        const std::string& get_name() { return _name; }
     private:
         std::shared_ptr< realdds::dds_device > const & _dev;
-        size_t _index;
+        std::string _name; // TODO - redundant? sensor_base registers name as info
     };
 
     // This is the rs2 device; it proxies to an actual DDS device that does all the actual
@@ -485,25 +491,25 @@ namespace librealsense
 
             //Assumes dds_device initialization finished
             size_t count = _dds_dev->foreach_sensor(
-                [&]( size_t sensor_index, const std::string & name ) {
-                    this->add_dds_sensor( _dds_dev, sensor_index, name );
+                [&]( const std::string & name ) {
+                    this->add_dds_sensor( _dds_dev, name );
                 } );
             for( size_t i = 0; i < count; ++i )
             {
-                software_sensor & sensor = get_software_sensor( i );
-                _dds_dev->foreach_video_profile( i, [&]( const rs2_video_stream& profile, bool default_profile ) {
+                dds_sensor_proxy & sensor = reinterpret_cast<dds_sensor_proxy &>(get_software_sensor( i ));
+                _dds_dev->foreach_video_profile( sensor.get_name(), [&]( const rs2_video_stream& profile, bool default_profile ) {
                     sensor.add_video_stream( profile, default_profile );
                 } );
-                _dds_dev->foreach_motion_profile( i, [&]( const rs2_motion_stream& profile, bool default_profile ) {
+                _dds_dev->foreach_motion_profile( sensor.get_name(), [&]( const rs2_motion_stream& profile, bool default_profile ) {
                     sensor.add_motion_stream( profile, default_profile );
                 } );
             }
         }
 
     private:
-        dds_sensor_proxy& add_dds_sensor( std::shared_ptr< realdds::dds_device > const & dev, size_t index, const std::string & name )
+        dds_sensor_proxy& add_dds_sensor( std::shared_ptr< realdds::dds_device > const & dev, const std::string & name )
         {
-            auto sensor = std::make_shared<dds_sensor_proxy>( name, this, dev, index );
+            auto sensor = std::make_shared<dds_sensor_proxy>( name, this, dev );
             add_sensor( sensor );
             _software_sensors.push_back( sensor );
 

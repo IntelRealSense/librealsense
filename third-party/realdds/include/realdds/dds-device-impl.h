@@ -25,7 +25,6 @@ namespace {
 enum class state_type
 {
     WAIT_FOR_DEVICE_HEADER,
-    WAIT_FOR_SENSOR_HEADER,
     WAIT_FOR_PROFILES,
     DONE
 };
@@ -36,9 +35,6 @@ std::ostream & operator<<( std::ostream & s, state_type st )
     {
     case state_type::WAIT_FOR_DEVICE_HEADER:
         s << "WAIT_FOR_DEVICE_HEADER";
-        break;
-    case state_type::WAIT_FOR_SENSOR_HEADER:
-        s << "WAIT_FOR_SENSOR_HEADER";
         break;
     case state_type::WAIT_FOR_PROFILES:
         s << "WAIT_FOR_PROFILES";
@@ -64,10 +60,12 @@ public:
 
     bool _running = false;
 
-    size_t _num_of_sensors = 0;
-    std::unordered_map< size_t, std::string > _sensor_index_to_name;
-    std::unordered_map< size_t, topics::device::notification::video_stream_profiles_msg > _sensor_to_video_profiles;
-    std::unordered_map< size_t, topics::device::notification::motion_stream_profiles_msg > _sensor_to_motion_profiles;
+    size_t _num_of_profiles = 0;
+    std::vector< topics::device::notification::video_stream_profile > _video_profiles;
+    std::vector< topics::device::notification::motion_stream_profile > _motion_profiles;
+    std::unordered_map< size_t, std::string > _profile_to_profile_group;
+    std::unordered_map< std::string, std::vector< size_t > > _video_profile_indexes_in_profile_group;
+    std::unordered_map< std::string, std::vector< size_t > > _motion_profile_indexes_in_profile_group;
     std::atomic<uint32_t> _control_message_counter = { 0 };
 
     eprosima::fastdds::dds::Subscriber * _subscriber = nullptr;
@@ -206,66 +204,38 @@ private:
                         case topics::device::notification::msg_type::DEVICE_HEADER:
                             if( state_type::WAIT_FOR_DEVICE_HEADER == state )
                             {
-                                _num_of_sensors
-                                    = data.get< topics::device::notification::device_header_msg >()->num_of_sensors;
-                                LOG_INFO( "got DEVICE_HEADER message with " << _num_of_sensors << " sensors" );
-                                state = state_type::WAIT_FOR_SENSOR_HEADER;
-                            }
-                            else
-                                LOG_ERROR( "Wrong message received, got 'DEVICE_HEADER' when the state is: " << state );
-                            break;
-                        case topics::device::notification::msg_type::SENSOR_HEADER:
-
-                            if( state_type::WAIT_FOR_SENSOR_HEADER == state )
-                            {
-                                auto sensor_header = data.get< topics::device::notification::sensor_header_msg >();
-                                LOG_INFO(
-                                    "got SENSOR_HEADER message for sensor: "
-                                    << sensor_header->name << " of type: "
-                                    << ( sensor_header->type
-                                                 == topics::device::notification::sensor_header_msg::sensor_type::VIDEO
-                                             ? "VIDEO_SENSOR"
-                                             : "MOTION_SENSOR" ) );
-
-                                _sensor_index_to_name.emplace( sensor_header->index, sensor_header->name );
+                                _num_of_profiles = data.get< topics::device::notification::device_header_msg >()->num_of_streams;
+                                LOG_INFO( "got DEVICE_HEADER message with " << _num_of_profiles << " streams" );
                                 state = state_type::WAIT_FOR_PROFILES;
                             }
                             else
-                                LOG_ERROR( "Wrong message received, got 'SENSOR_HEADER' when the state is: " << state );
-
+                                LOG_ERROR( "Wrong message received, got 'DEVICE_HEADER' when the state is: " << state );
                             break;
 
                         case topics::device::notification::msg_type::VIDEO_STREAM_PROFILES:
                             if( state_type::WAIT_FOR_PROFILES == state )
                             {
-                                auto video_stream_profiles
-                                    = data.get< topics::device::notification::video_stream_profiles_msg >();
-
                                 LOG_INFO( "got VIDEO_STREAM_PROFILES message" );
 
-                                // TODO: Find a way to remove the "emplace" profiles copy
-                                topics::device::notification::video_stream_profiles_msg msg;
-                                msg.dds_sensor_index = video_stream_profiles->dds_sensor_index;
-                                msg.num_of_profiles = video_stream_profiles->num_of_profiles;
-                                for( int i = 0; i < video_stream_profiles->num_of_profiles; ++i )
-                                    msg.profiles[i] = video_stream_profiles->profiles[i];
+                                auto profiles_msg = data.get< topics::device::notification::video_stream_profiles_msg >();
 
-                                auto sensor_name_it
-                                    = _sensor_index_to_name.find( video_stream_profiles->dds_sensor_index );
-                                if( sensor_name_it != _sensor_index_to_name.end() )
+                                for ( size_t i = 0; i < profiles_msg->num_of_profiles; ++i )
                                 {
-                                    _sensor_to_video_profiles.emplace( video_stream_profiles->dds_sensor_index,
-                                                                       std::move( msg ) );
-
-                                    if( _sensor_to_video_profiles.size() + _sensor_to_motion_profiles.size()
-                                        < _num_of_sensors )
-                                        state = state_type::WAIT_FOR_SENSOR_HEADER;
-                                    else
-                                        state = state_type::DONE;
+                                    _video_profiles.push_back( profiles_msg->profiles[i] );
+                                    _profile_to_profile_group[profiles_msg->profiles[i].uid] = profiles_msg->group_name;
+                                    _video_profile_indexes_in_profile_group[profiles_msg->group_name].push_back( profiles_msg->profiles[i].uid );
                                 }
-                                else
-                                    LOG_ERROR( "Error on video profiles message, DDS sensor with index: "
-                                               << video_stream_profiles->dds_sensor_index << " could not be found " );
+
+                                size_t received_profiles_num = _video_profiles.size() + _motion_profiles.size();
+                                if (received_profiles_num >= _num_of_profiles )
+                                {
+                                    state = state_type::DONE;
+                                    if (received_profiles_num > _num_of_profiles)
+                                    {
+                                        LOG_INFO( "Received more streams (" << received_profiles_num
+                                                  << ") than in device header (" << _num_of_profiles << ")" );
+                                    }
+                                }
                             }
                             else
                                 LOG_ERROR( "Wrong message received, got 'VIDEO_STREAM_PROFILES' when the state is: "
@@ -275,48 +245,44 @@ private:
                             if( state_type::WAIT_FOR_PROFILES == state )
                             {
                                 LOG_INFO( "got MOTION_STREAM_PROFILES message" );
-                                auto motion_stream_profiles
-                                    = data.get< topics::device::notification::motion_stream_profiles_msg >();
 
-                                // TODO: Try to save the "emplace" profiles copy
-                                topics::device::notification::motion_stream_profiles_msg msg;
-                                msg.dds_sensor_index = motion_stream_profiles->dds_sensor_index;
-                                msg.num_of_profiles = motion_stream_profiles->num_of_profiles;
-                                for( int i = 0; i < motion_stream_profiles->num_of_profiles; ++i )
-                                    msg.profiles[i] = motion_stream_profiles->profiles[i];
+                                auto profiles_msg = data.get< topics::device::notification::motion_stream_profiles_msg >();
 
-                                auto sensor_name_it
-                                    = _sensor_index_to_name.find( motion_stream_profiles->dds_sensor_index );
-                                if( sensor_name_it != _sensor_index_to_name.end() )
+                                for (size_t i = 0; i < profiles_msg->num_of_profiles; ++i)
                                 {
-                                    _sensor_to_motion_profiles.emplace( motion_stream_profiles->dds_sensor_index,
-                                                                        std::move( msg ) );
-
-                                    if( _sensor_to_video_profiles.size() + _sensor_to_motion_profiles.size()
-                                        < _num_of_sensors )
-                                        state = state_type::WAIT_FOR_SENSOR_HEADER;
-                                    else
-                                        state = state_type::DONE;
+                                    _motion_profiles.push_back( profiles_msg->profiles[i] );
+                                    _profile_to_profile_group[profiles_msg->profiles[i].uid] = profiles_msg->group_name;
+                                    _motion_profile_indexes_in_profile_group[profiles_msg->group_name].push_back( profiles_msg->profiles[i].uid );
                                 }
-                                else
-                                    LOG_ERROR( "Error on motion profiles message, DDS sensor with index: "
-                                               << motion_stream_profiles->dds_sensor_index << " could not be found " );
+
+                                size_t received_profiles_num = _video_profiles.size() + _motion_profiles.size();
+                                if (received_profiles_num >= _num_of_profiles)
+                                {
+                                    state = state_type::DONE;
+                                    if (received_profiles_num > _num_of_profiles)
+                                    {
+                                        LOG_INFO( "Received more streams (" << received_profiles_num
+                                                  << ") than in device header (" << _num_of_profiles << ")" );
+                                    }
+                                }
                             }
                             else
                                 LOG_ERROR( "Wrong message received, got 'MOTION_STREAM_PROFILES' when the state is: "
                                            << state );
                             break;
                         default:
-                            LOG_ERROR( "Wrong message received, got " << static_cast<uint16_t>(msg_id) << " when the state is: " << state );
+                            LOG_ERROR( "Wrong message received, got " << static_cast<uint16_t>(msg_id)
+                                       << " when the state is: " << state );
                             break;
                         }
                     }
                 }
             }
         }
+
         return ( state_type::DONE == state );
     }
-};
+}; //class dds_device::impl
 
 
 }  // namespace realdds
