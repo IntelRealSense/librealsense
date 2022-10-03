@@ -421,7 +421,7 @@ namespace librealsense
             _json = json;
             _action = auto_calib_action::RS2_OCC_ACTION_ON_CHIP_CALIB;
             _interactive_state = interactive_calibration_state::RS2_OCC_STATE_WAIT_TO_CAMERA_START;
-            _interactive_scan = false;// Evgeni bool(interactive_scan_v3);
+            _interactive_scan = false;//Ev bool(interactive_scan_v3);
             switch (speed)
             {
             case auto_calib_speed::speed_very_fast:
@@ -1068,10 +1068,6 @@ namespace librealsense
         }
 #endif
         double tmp = static_cast<double>(counter) / static_cast<double>(data_size) * 10000.0;
-//        LOG_WARNING(std::string(to_string() << __LINE__ << " roi_w = " << roi_w << " roi_h = " << roi_h
-//                                << " _min_valid_depth = " << _min_valid_depth
-//                                << " _max_valid_depth = " << _max_valid_depth
-//                                << " counter = " << counter << " data_size = " << data_size << " fillrate = " << tmp)); // Evgeni  -Debug
         return static_cast<uint16_t>(tmp + 0.5f);
 
     }
@@ -1238,7 +1234,8 @@ namespace librealsense
             std::vector<uint8_t> res;
             rs2_metadata_type frame_counter = ((frame_interface*)f)->get_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER);
             rs2_metadata_type frame_ts = ((frame_interface*)f)->get_frame_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP);
-            //LOG_WARNING(std::string(to_string() << __FUNCTION__ << " fc = " << frame_counter));
+            bool tare_fc_workaround = (_action == auto_calib_action::RS2_OCC_ACTION_TARE_CALIB); //Ev - work-around tare implementation using rolling frame counter
+
             if (_interactive_state == interactive_calibration_state::RS2_OCC_STATE_WAIT_TO_CAMERA_START)
             {
                 if (frame_counter <= 2)
@@ -1262,7 +1259,8 @@ namespace librealsense
                 {
                     res = run_on_chip_calibration(timeout_ms, _json, health, progress_callback);
                 }
-                _prev_frame_counter = frame_counter;//+10;//*2; // Evgeni  - bypass the async (+10 addition to trigger transition to collect stage)
+                _prev_frame_counter = frame_counter; //Ev - bypass the async (+10 addition to trigger transition to collect stage)
+                if (!tare_fc_workaround) _prev_frame_counter +=10; // for OCC calib Evgeni
                 _interactive_state = interactive_calibration_state::RS2_OCC_STATE_WAIT_TO_CALIB_START;
                 LOG_WARNING(std::string(to_string() << "switch INITIAL_FW_CALL=>WAIT_TO_CALIB_START, prev_fc is reset to " << _prev_frame_counter));
                 return res;
@@ -1270,16 +1268,17 @@ namespace librealsense
             if (_interactive_state == interactive_calibration_state::RS2_OCC_STATE_WAIT_TO_CALIB_START)
             {
                 LOG_WARNING(std::string(to_string() << "fc = " << frame_counter));
-               //Evgeni bool still_waiting(frame_counter >= _prev_frame_counter || frame_counter >= _total_frames);
-                 bool still_waiting(frame_counter <= _prev_frame_counter+10); // Evgeni - bypass FW bug
-                //_prev_frame_counter = frame_counter; // Evgeni - to be removed
+                bool still_waiting(frame_counter >= _prev_frame_counter || frame_counter >= _total_frames);
+                if (tare_fc_workaround)
+                    still_waiting = (frame_counter <= _prev_frame_counter+10); //Ev - bypass for Tare
+                else
+                    _prev_frame_counter = frame_counter;
                 if (still_waiting)
                 {
                     if (progress_callback)
                     {
                         progress_callback->on_update_progress(static_cast<float>(15));
                     }
-                    //LOG_WARNING(std::string(to_string() << __LINE__ << " return on still waiting"));
                     return res;
                 }
                 if (progress_callback)
@@ -1383,7 +1382,10 @@ namespace librealsense
                 else if (_action == auto_calib_action::RS2_OCC_ACTION_TARE_CALIB)
                 {
                     static const int FRAMES_TO_SKIP(1);
-                    if ((frame_counter/25) != _prev_frame_counter) // Evgeni - W/A for FW not handling Frame counters correctly
+                    bool cond = (frame_counter != _prev_frame_counter);
+                    if (tare_fc_workaround)
+                        cond = ((frame_counter/25) != _prev_frame_counter); // Evgeni - W/A for FW not handling Frame counters correctly
+                    if (cond)
                     {
                         _collected_counter = 0;
                         _collected_sum = 0.0;
@@ -1397,7 +1399,11 @@ namespace librealsense
                     }
                     LOG_WARNING(std::string(to_string() << __LINE__ << " fr_c = " << frame_counter
                         << " fr_ts = " << frame_ts << " _c_f_num = " << _collected_frame_num));
-                    if (frame_counter < 200) //(frame_counter < _total_frames) // Evgeni - see above
+                    cond = (frame_counter < _total_frames);
+                    if (tare_fc_workaround)
+                        cond = (frame_counter < 200);
+
+                    if (cond) //(frame_counter < _total_frames) // Evgeni - see above
                     {
                         if (_skipped_frames < FRAMES_TO_SKIP)
                         {
@@ -1422,7 +1428,9 @@ namespace librealsense
                             }
                             ++_collected_frame_num;
                         }
-                        _prev_frame_counter = (frame_counter/25); // Evgeni
+                        _prev_frame_counter = frame_counter;
+                        if (tare_fc_workaround)
+                            _prev_frame_counter = (frame_counter/25); // Evgeni. W/A for Tare with rolling frame counter
                     }
                     else
                     {

@@ -159,7 +159,6 @@ namespace librealsense
         };
 
 
-        //Debug Evgeni
         // RAII for buffer exchange with kernel
         struct kernel_buf_guard
         {
