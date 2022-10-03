@@ -60,6 +60,26 @@ def pretty_fw_version( fw_version_as_string ):
     return '.'.join( [str(int(c)) for c in fw_version_as_string.split( '.' )] )
 
 
+def compare_fw_versions( v1, v2 ):
+    """
+    :param v1: left FW version
+    :param v2: right FW version
+    :return: 1 if v1 > v2; -1 is v1 < v2; 0 if they're equal
+    """
+    v1_list = v1.split( '.' )
+    v2_list = v2.split( '.' )
+    if len(v1_list) != 4:
+        raise RuntimeError( "FW version (left) '" + v1 + "' is invalid" )
+    if len(v2_list) != 4:
+        raise RuntimeError( "FW version (right) '" + v2 + "' is invalid" )
+    for n1, n2 in zip( v1_list, v2_list ):
+        if int(n1) > int(n2):
+            return 1
+        if int(n1) < int(n2):
+            return -1
+    return 0
+
+
 def find_built_exe( source, name ):
     """
     Find an executable that was built in the repo

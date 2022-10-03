@@ -1,18 +1,19 @@
 # License: Apache 2.0. See LICENSE file in root directory.
 # Copyright(c) 2022 Intel Corporation. All Rights Reserved.
 
-#test:device D455
-#test:device D457
+#test:device:jetson D457
+#test:device:!jetson D455
 
 import pyrealsense2 as rs
-from rspy import test, log
+from rspy import test, log, repo
 
 ctx = rs.context()
 device = test.find_first_device_or_exit();
 depth_sensor = device.first_depth_sensor()
 
-if not depth_sensor.supports(rs.option.emitter_frequency):
-    log.i("Connected device does not support EMITTER_FREQUENCY option, skipping...")
+fw_version = repo.pretty_fw_version( device.get_info( rs.camera_info.firmware_version ))
+if repo.compare_fw_versions( fw_version, "5.13.1.53" ) <= 0:
+    log.i(f"FW version {fw_version} does not support EMITTER_FREQUENCY option, skipping test...")
     test.print_results_and_exit()
 
 
