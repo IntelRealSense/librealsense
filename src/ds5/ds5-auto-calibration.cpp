@@ -1262,20 +1262,17 @@ namespace librealsense
                 {
                     res = run_on_chip_calibration(timeout_ms, _json, health, progress_callback);
                 }
-                _prev_frame_counter = frame_counter+10;//*2; // Evgeni  - bypass the async (+10 addition to trigger transition to collect stage)
+                _prev_frame_counter = frame_counter;//+10;//*2; // Evgeni  - bypass the async (+10 addition to trigger transition to collect stage)
                 _interactive_state = interactive_calibration_state::RS2_OCC_STATE_WAIT_TO_CALIB_START;
-                LOG_WARNING(std::string(to_string() << "swith INITIAL_FW_CALL=>WAIT_TO_CALIB_START, prev_fc is reset to " << _prev_frame_counter));
+                LOG_WARNING(std::string(to_string() << "switch INITIAL_FW_CALL=>WAIT_TO_CALIB_START, prev_fc is reset to " << _prev_frame_counter));
                 return res;
             }
             if (_interactive_state == interactive_calibration_state::RS2_OCC_STATE_WAIT_TO_CALIB_START)
             {
-                bool still_waiting(frame_counter >= _prev_frame_counter || frame_counter >= _total_frames);
-                if (_prev_frame_counter !=frame_counter)
-                {
-                    LOG_WARNING(std::string(to_string() << __FUNCTION__ << " _prev_frame_counter = " << _prev_frame_counter
-                                        << ", frames_counter = " << frame_counter << ", tf = " << _total_frames));
-                }
-                _prev_frame_counter = frame_counter;
+                LOG_WARNING(std::string(to_string() << "fc = " << frame_counter));
+               //Evgeni bool still_waiting(frame_counter >= _prev_frame_counter || frame_counter >= _total_frames);
+                 bool still_waiting(frame_counter <= _prev_frame_counter+10); // Evgeni - bypass FW bug
+                //_prev_frame_counter = frame_counter; // Evgeni - to be removed
                 if (still_waiting)
                 {
                     if (progress_callback)
@@ -1386,7 +1383,7 @@ namespace librealsense
                 else if (_action == auto_calib_action::RS2_OCC_ACTION_TARE_CALIB)
                 {
                     static const int FRAMES_TO_SKIP(1);
-                    if (frame_counter != _prev_frame_counter)
+                    if ((frame_counter/25) != _prev_frame_counter) // Evgeni - W/A for FW not handling Frame counters correctly
                     {
                         _collected_counter = 0;
                         _collected_sum = 0.0;
@@ -1400,7 +1397,7 @@ namespace librealsense
                     }
                     LOG_WARNING(std::string(to_string() << __LINE__ << " fr_c = " << frame_counter
                         << " fr_ts = " << frame_ts << " _c_f_num = " << _collected_frame_num));
-                    if (frame_counter < _total_frames)
+                    if (frame_counter < 200) //(frame_counter < _total_frames) // Evgeni - see above
                     {
                         if (_skipped_frames < FRAMES_TO_SKIP)
                         {
@@ -1425,7 +1422,7 @@ namespace librealsense
                             }
                             ++_collected_frame_num;
                         }
-                        _prev_frame_counter = frame_counter;
+                        _prev_frame_counter = (frame_counter/25); // Evgeni
                     }
                     else
                     {
