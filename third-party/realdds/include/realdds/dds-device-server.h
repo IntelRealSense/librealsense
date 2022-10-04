@@ -36,11 +36,14 @@ class device_info;
 
 
 class dds_participant;
+class dds_stream_server;
+struct image_header;
+
 
 // Responsible for representing a device at the DDS level.
 // Each device has a root path under which the device topics are created, e.g.:
 //     realsense/L515/F0090353    <- root
-//         /main
+//         /notification
 //         /control
 //         /stream1
 //         /stream2
@@ -51,13 +54,6 @@ class dds_participant;
 class dds_device_server
 {
 public:
-    struct image_header
-    {
-        int format;
-        int height;
-        int width;
-    };
-
     dds_device_server( std::shared_ptr< dds_participant > const & participant, const std::string & topic_root );
     ~dds_device_server();
 
@@ -76,7 +72,6 @@ public:
     void publish_notification( topics::raw::device::notification&& notification );
     
 private:
-    class dds_stream_server;
     class dds_notifications_server;
     
     std::shared_ptr< dds_participant > _participant;

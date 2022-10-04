@@ -8,6 +8,7 @@
 #include <librealsense2/utilities/easylogging/easyloggingpp.h>
 #include <realdds/dds-device-broadcaster.h>
 #include <realdds/dds-device-server.h>
+#include <realdds/dds-stream-server.h>
 #include <realdds/dds-participant.h>
 #include <realdds/topics/notification/notification-msg.h>
 #include <realdds/topics/device-info/device-info-msg.h>
@@ -69,7 +70,7 @@ void start_streaming( std::shared_ptr< tools::lrs_device_controller > lrs_device
                       const rs2::stream_profile & stream_profile )
 {
     // Configure DDS-server to the required frame header
-    realdds::dds_device_server::image_header header;
+    realdds::image_header header;
     auto vsp = stream_profile.as< rs2::video_stream_profile >();
     header.format = static_cast< int >( vsp.format() );
     header.height = vsp.height();
