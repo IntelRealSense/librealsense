@@ -223,7 +223,7 @@ private:
                                 {
                                     _video_profiles.push_back( profiles_msg->profiles[i] );
                                     _profile_to_profile_group[profiles_msg->profiles[i].uid] = profiles_msg->group_name;
-                                    _video_profile_indexes_in_profile_group[profiles_msg->group_name].push_back( profiles_msg->profiles[i].uid );
+                                    _video_profile_indexes_in_profile_group[profiles_msg->group_name].push_back( _video_profiles.size() - 1 );
                                 }
 
                                 size_t received_profiles_num = _video_profiles.size() + _motion_profiles.size();
@@ -252,7 +252,7 @@ private:
                                 {
                                     _motion_profiles.push_back( profiles_msg->profiles[i] );
                                     _profile_to_profile_group[profiles_msg->profiles[i].uid] = profiles_msg->group_name;
-                                    _motion_profile_indexes_in_profile_group[profiles_msg->group_name].push_back( profiles_msg->profiles[i].uid );
+                                    _motion_profile_indexes_in_profile_group[profiles_msg->group_name].push_back( _motion_profiles.size() - 1 );
                                 }
 
                                 size_t received_profiles_num = _video_profiles.size() + _motion_profiles.size();

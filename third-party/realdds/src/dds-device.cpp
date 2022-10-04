@@ -135,7 +135,7 @@ dds_device::foreach_video_profile( std::string group_name,
 
     for( size_t i = 0; i < profiles->second.size(); ++i )
     {
-        auto const & profile = _impl->_video_profiles[i];
+        auto const & profile = _impl->_video_profiles[profiles->second[i]];
         rs2_video_stream prof;
         prof.type = profile.type;
         prof.index = profile.stream_index;
@@ -166,7 +166,7 @@ dds_device::foreach_motion_profile( std::string group_name,
 
     for (size_t i = 0; i < profiles->second.size(); ++i)
     {
-        auto const& profile = _impl->_motion_profiles[i];
+        auto const& profile = _impl->_motion_profiles[profiles->second[i]];
         rs2_motion_stream prof;
         prof.type = profile.type;
         prof.index = profile.stream_index;
