@@ -68,7 +68,7 @@ public class UsbUtilities {
 
         if(!permission) {
             Log.i(TAG, "grantUsbPermissions:\ndevice: " + usbDevice.toString());
-            PendingIntent pi = PendingIntent.getBroadcast(context, 0, new Intent(UsbUtilities.ACTION_USB_PERMISSION), 0);
+            PendingIntent pi = PendingIntent.getBroadcast(context, 0, new Intent(UsbUtilities.ACTION_USB_PERMISSION), PendingIntent.FLAG_IMMUTABLE);
             usbManager.requestPermission(usbDevice, pi);
         }
     }
