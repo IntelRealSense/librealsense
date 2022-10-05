@@ -2,7 +2,8 @@
     <application android:allowBackup="true" android:supportsRtl="true">
         <activity android:name=".DeviceWatcherActivity"
             android:theme="@android:style/Theme.NoDisplay"
-            android:directBootAware="true">
+            android:directBootAware="true"
+            android:exported="true">
             <intent-filter>
                 <action android:name="android.hardware.usb.action.USB_DEVICE_ATTACHED" />
             </intent-filter>
