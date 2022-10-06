@@ -4,7 +4,6 @@
 #include <iostream>
 #include <map>
 #include <unordered_set>
-#include <string.h>
 
 #include <librealsense2/utilities/easylogging/easyloggingpp.h>
 #include <realdds/dds-device-broadcaster.h>
@@ -121,7 +120,7 @@ void prepare_video_profiles_messeges( rs2::device dev,
                                       const std::vector< rs2::stream_profile > & stream_profiles,
                                       topics::device::notification::video_stream_profiles_msg & video_stream_profiles_msg )
 {
-    strcpy_s( video_stream_profiles_msg.group_name, sizeof( video_stream_profiles_msg.group_name ), sensor_name.c_str() );
+    strncpy( video_stream_profiles_msg.group_name, sensor_name.c_str(), sizeof( video_stream_profiles_msg.group_name ) );
 
     int index = 0;
     for( auto & stream_profile : stream_profiles )
@@ -154,7 +153,7 @@ void prepare_motion_profiles_messeges( rs2::device dev,
                                        const std::vector< rs2::stream_profile > & stream_profiles,
                                        topics::device::notification::motion_stream_profiles_msg & motion_stream_profiles_msg )
 {
-    strcpy_s( motion_stream_profiles_msg.group_name, sizeof( motion_stream_profiles_msg.group_name ), sensor_name.c_str() );
+    strncpy( motion_stream_profiles_msg.group_name, sensor_name.c_str(), sizeof( motion_stream_profiles_msg.group_name ) );
 
     int index = 0;
     for( auto & stream_profile : stream_profiles )
