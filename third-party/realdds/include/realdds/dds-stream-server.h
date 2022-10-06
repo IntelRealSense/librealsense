@@ -23,14 +23,17 @@ class DataWriter;
 namespace realdds {
 
 
-class dds_participant;
+class dds_topic;
+class dds_topic_writer;
 
 
 struct image_header
 {
     int format;
-    int height;
-    int width;
+    int height = 0;
+    int width = 0;
+
+    bool is_valid() const { return width != 0 && height != 0; }
 };
 
 
@@ -39,21 +42,18 @@ struct image_header
 class dds_stream_server
 {
 public:
-    dds_stream_server( std::shared_ptr< dds_participant > const& participant,
-        eprosima::fastdds::dds::Publisher* publisher,
-        const std::string& topic_root,
-        const std::string& stream_name );
+    dds_stream_server( std::shared_ptr< dds_topic_writer > const & topic );
     ~dds_stream_server();
 
+    bool is_streaming() const { return _image_header.is_valid(); }
+    void start_streaming( const image_header & header );
 
-    void publish_image( const uint8_t* data, size_t size );
-    void set_image_header( const image_header & header ) { _image_header = header; }
+    void publish_image( const uint8_t * data, size_t size );
+
+    std::shared_ptr< dds_topic > const & get_topic() const;
 
 private:
-    std::shared_ptr< dds_participant > _participant;
-    eprosima::fastdds::dds::Publisher * _publisher;
-    eprosima::fastdds::dds::Topic * _topic;
-    eprosima::fastdds::dds::DataWriter * _data_writer;
+    std::shared_ptr< dds_topic_writer > _writer;
     image_header _image_header;
 };
 
