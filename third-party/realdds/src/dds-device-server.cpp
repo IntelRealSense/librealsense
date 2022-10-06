@@ -63,7 +63,7 @@ void dds_device_server::init( const std::vector<std::string> &supported_streams_
     }
 
     // Create a notifications server
-    _dds_notification_server
+    _notification_server
         = std::make_shared< dds_notification_server >( _publisher, _topic_root + "/notification" );
 
     // Create streams servers per each supporting stream of the device
@@ -83,12 +83,12 @@ void dds_device_server::init( const std::vector<std::string> &supported_streams_
 
 void dds_device_server::publish_notification( topics::raw::device::notification&& notification )
 {
-    _dds_notification_server->send_notification( std::move( notification ) );
+    _notification_server->send_notification( std::move( notification ) );
 }
 
 
 void dds_device_server::add_init_msg( topics::raw::device::notification&& notification )
 {
-    _dds_notification_server->add_init_notification( std::move( notification ) );
+    _notification_server->add_init_notification( std::move( notification ) );
 }
 

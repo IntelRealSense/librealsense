@@ -67,7 +67,7 @@ public:
     // to subscribe.
     void init( const std::vector<std::string>& supported_streams_names );
 
-    bool is_valid() const { return( nullptr != _dds_notification_server.get() ); }
+    bool is_valid() const { return( nullptr != _notification_server.get() ); }
     bool operator!() const { return ! is_valid(); }
 
     void start_streaming( const std::string & stream_name, const image_header & header );
@@ -83,7 +83,7 @@ private:
     std::shared_ptr< dds_publisher > _publisher;
     std::string _topic_root;
     std::unordered_map<std::string, std::shared_ptr<dds_stream_server>> _stream_name_to_server;
-    std::shared_ptr< dds_notification_server > _dds_notification_server;
+    std::shared_ptr< dds_notification_server > _notification_server;
 };  // class dds_device_server
 
 
