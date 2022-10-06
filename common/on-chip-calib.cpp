@@ -865,7 +865,6 @@ namespace rs2
 
     void on_chip_calib_manager::calibrate()
     {
-        std::cout << __FUNCTION__ << " was called" << std::endl;
         int occ_timeout_ms = 9000;
         if (action == RS2_CALIB_ACTION_ON_CHIP_OB_CALIB || action == RS2_CALIB_ACTION_ON_CHIP_FL_CALIB)
         {
@@ -1343,12 +1342,6 @@ namespace rs2
 
     void on_chip_calib_manager::process_flow(std::function<void()> cleanup, invoker invoke)
     {
-        static auto_calib_action prev_action = RS2_CALIB_ACTION_ON_CHIP_OB_CALIB;
-        if (prev_action != action)
-        {
-            prev_action = action;
-            LOG_WARNING(std::string(to_string() << __LINE__ << " action = " << action ));
-        }
         if (action == RS2_CALIB_ACTION_FL_CALIB || action == RS2_CALIB_ACTION_UVMAPPING_CALIB || action == RS2_CALIB_ACTION_FL_PLUS_CALIB)
             stop_viewer(invoke);
 
@@ -2437,7 +2430,6 @@ namespace rs2
                     {
                         get_manager().apply_calib(true);     // Store the new calibration internally
                         get_manager().keep();            // Flash the new calibration
-                        LOG_WARNING(std::string(to_string() << __LINE__ << " new calib applied and flashed"));
                         if (RS2_CALIB_STATE_UVMAPPING_INPUT == update_state)
                             get_manager().reset_device(); // Workaround for reloading color calibration table. Other approach?
 
@@ -2824,7 +2816,6 @@ namespace rs2
                     {
                         use_new_calib = true;
                         get_manager().apply_calib(true);
-                        LOG_WARNING(std::string(to_string() << __LINE__ << " new calib applied"));
                     }
 
                     ImGui::SetCursorScreenPos({ float(x + 150), (get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_OB_CALIB || get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_FL_CALIB ? float(y + 70) + ImGui::GetTextLineHeightWithSpacing() : (get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_TARE_CALIB ? (get_manager().tare_health ? float(y + 70) : float(y + 15)) + ImGui::GetTextLineHeightWithSpacing() : float(y + 70))) });
@@ -2981,7 +2972,6 @@ namespace rs2
                     {
                         get_manager().apply_calib(true);
                         use_new_calib = true;
-                        LOG_WARNING(std::string(to_string() << __LINE__ << " new calib applied"));
                     }
                 }
 
@@ -3071,7 +3061,6 @@ namespace rs2
 
             ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, regular_blue);
             auto s = update_manager->get_log();
-            rs2::log(RS2_LOG_SEVERITY_INFO, s.c_str());
             ImGui::InputTextMultiline("##autocalib_log", const_cast<char*>(s.c_str()),
                 s.size() + 1, { 490,100 }, ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_ReadOnly);
             ImGui::PopStyleColor();
