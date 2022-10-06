@@ -87,7 +87,7 @@ rs2_processing_block* rs2_gl_create_nv12_decoder(int api_version, rs2_error** er
     verify_version_compatibility(api_version);
 
     auto block = std::make_shared<librealsense::gl::nv122rgb>();
-    auto backup = std::make_shared<librealsense::nv12_converter>(RS2_FORMAT_RGB8);
+    auto backup = std::make_shared<librealsense::nv12i_converter>(RS2_FORMAT_RGB8);
     auto dual = std::make_shared<librealsense::gl::dual_processing_block>();
     dual->add(block);
     dual->add(backup);
