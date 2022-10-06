@@ -2,11 +2,30 @@
 // Copyright(c) 2022 Intel Corporation. All Rights Reserved.
 
 #pragma once
+
+
 #include <string>
-#include "imagePubSubTypes.h"
+#include <memory>
+#include <vector>
+
 
 namespace realdds {
+
+
+class dds_participant;
+class dds_topic;
+
+
 namespace topics {
+namespace raw {
+namespace device {
+class imagePubSubType;
+class image;
+}  // namespace device
+}  // namespace raw
+
+    
+    
 namespace device {
 
     
@@ -15,23 +34,17 @@ class image
 public:
     using type = raw::device::imagePubSubType;
 
-    static std::string construct_topic_name( const std::string & topic_root, const std::string & stream )
-    {
-        return topic_root + "/" + stream;
-    }
+    image( const raw::device::image & );
 
-    image( const raw::device::image & image )
-        : raw_data(image.raw_data()) // TODO: avoid image copy?
-        , width( image.width())
-        , height( image.height() )
-        , size( image.size() )
-        , format( image.format() )
-    {
-    }
+    bool is_valid() const { return width == 0 || height == 0; }
+    void invalidate() { width = 0; }
+
+    static std::shared_ptr< dds_topic > create_topic( std::shared_ptr< dds_participant > const & participant,
+                                                      char const * topic_name );
 
     std::vector<uint8_t> raw_data;
-    int width;
-    int height;
+    int width = 0;
+    int height = 0;
     int size;
     int format;
 };
