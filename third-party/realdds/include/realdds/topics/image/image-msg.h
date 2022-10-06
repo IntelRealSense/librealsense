@@ -36,7 +36,7 @@ public:
 
     image( const raw::device::image & );
 
-    bool is_valid() const { return width == 0 || height == 0; }
+    bool is_valid() const { return width != 0 && height != 0; }
     void invalidate() { width = 0; }
 
     static std::shared_ptr< dds_topic > create_topic( std::shared_ptr< dds_participant > const & participant,

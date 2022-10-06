@@ -28,7 +28,7 @@ class dds_topic_writer;
 
 
 // A notification is a generic message, with data, in a specific direction: the server (this class) sends and a client
-// received and interprets.
+// receives and interprets.
 // 
 // Notifications are either on-demand (i.e., send this message right now) or on-discovery (send these messages to any
 // client that connects). We optionally store and automatically send such messages.
