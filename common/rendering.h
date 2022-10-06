@@ -602,7 +602,7 @@ namespace rs2
                         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_LUMINANCE_ALPHA, GL_UNSIGNED_BYTE, data);
                     }
                     break;
-                case RS2_FORMAT_NV12:
+                case RS2_FORMAT_NV12I:
                     if (nv122rgb)
                     {
                         if (auto colorized_frame = nv122rgb->process(frame).as<video_frame>())
