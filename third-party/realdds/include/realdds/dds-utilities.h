@@ -29,7 +29,7 @@ inline std::string get_dds_error( T * address )
 }  // namespace realdds
 
 #define DDS_THROW( ERR_TYPE, STR )                                                                 \
-    throw dds_ ## ERR_TYPE ( STR )
+    throw realdds::dds_ ## ERR_TYPE ( STR )
 
 #define DDS_API_CALL( func )                                                                       \
     [&]() {                                                                                        \
