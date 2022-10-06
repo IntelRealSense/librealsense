@@ -17,14 +17,13 @@ log.nested = 'cli'
 test.start( "Checking we can detect devices..." )
 
 devices_added = 0
-def on_device_added( dev ):
+def on_device_added( watcher, dev ):
     global devices_added
     devices_added += 1
     log.d( 'added', dev )
-    global watcher
     watcher.foreach_device( lambda dev: log.d( dev ) )
 devices_removed = 0
-def on_device_removed( dev ):
+def on_device_removed( watcher, dev ):
     global devices_removed
     devices_removed += 1
     log.d( 'removed', dev )
