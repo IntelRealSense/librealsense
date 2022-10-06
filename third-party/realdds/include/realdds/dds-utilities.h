@@ -5,7 +5,7 @@
 
 #include <fastrtps/types/TypesBase.h>
 #include <librealsense2/utilities/easylogging/easyloggingpp.h>
-#include <sstream>
+#include "dds-exceptions.h"
 
 // FastDDS, in most case, is using two error conventions:
 // 1. ReturnCode_t api_call(...)   -> return ReturnCode_t != RETCODE_OK
@@ -28,14 +28,15 @@ inline std::string get_dds_error( T * address )
 
 }  // namespace realdds
 
+#define DDS_THROW( ERR_TYPE, STR )                                                                 \
+    throw dds_ ## ERR_TYPE ( std::ostringstream() << STR )
+
 #define DDS_API_CALL( func )                                                                       \
     [&]() {                                                                                        \
         auto r = func;                                                                             \
         if( ! r )                                                                                  \
         {                                                                                          \
-            LOG_ERROR( "DDS API CALL '" << #func << "' "                                           \
-                                        << realdds::get_dds_error( r ) );                          \
-            throw std::runtime_error( #func " failed" );                                           \
+            DDS_THROW( runtime_error, "DDS API CALL '" #func "' " << realdds::get_dds_error( r ) ); \
         }                                                                                          \
         return r;                                                                                  \
     }()
@@ -51,3 +52,22 @@ inline std::string get_dds_error( T * address )
         }                                                                                          \
         return r;                                                                                  \
     }()
+
+// Convert FastDDS Log::Entry to EasyLogging log (see ELPP_WRITE_LOG)
+#define LOG_DDS_ENTRY( ENTRY, LEVEL, ... )                                                                                 \
+    do                                                                                                                 \
+    {                                                                                                                  \
+        char const * filename = ( ENTRY ).context.filename;                                                            \
+        char const * func = ( ENTRY ).context.function;                                                                \
+        if( ! func )                                                                                                   \
+            func = "n/a";                                                                                              \
+        if( ! filename )                                                                                               \
+            filename = func;                                                                                           \
+        el::base::Writer writer( el::Level::LEVEL, filename, ( ENTRY ).context.line, func );                           \
+        writer.construct( 1, "librealsense" );                                                                         \
+        writer << __VA_ARGS__;                                                                                         \
+        writer << " [DDS]";                                                                                            \
+        if( ( ENTRY ).context.category )                                                                               \
+            writer << "[" << ( ENTRY ).context.category << "]";                                                        \
+    }                                                                                                                  \
+    while( false )
