@@ -29,14 +29,14 @@ inline std::string get_dds_error( T * address )
 }  // namespace realdds
 
 #define DDS_THROW( ERR_TYPE, STR )                                                                 \
-    throw dds_ ## ERR_TYPE ( std::ostringstream() << STR )
+    throw dds_ ## ERR_TYPE ( STR )
 
 #define DDS_API_CALL( func )                                                                       \
     [&]() {                                                                                        \
         auto r = func;                                                                             \
         if( ! r )                                                                                  \
         {                                                                                          \
-            DDS_THROW( runtime_error, "DDS API CALL '" #func "' " << realdds::get_dds_error( r ) ); \
+            DDS_THROW( runtime_error, "DDS API CALL '" #func "' " + realdds::get_dds_error( r ) ); \
         }                                                                                          \
         return r;                                                                                  \
     }()
@@ -47,8 +47,7 @@ inline std::string get_dds_error( T * address )
         auto r = func;                                                                             \
         if( ! r )                                                                                  \
         {                                                                                          \
-            LOG_ERROR( "DDS API CALL '" << #func << "' "                                           \
-                                        << realdds::get_dds_error( r ) );                          \
+            LOG_ERROR( "DDS API CALL '" << #func << "' " << realdds::get_dds_error( r ) );         \
         }                                                                                          \
         return r;                                                                                  \
     }()

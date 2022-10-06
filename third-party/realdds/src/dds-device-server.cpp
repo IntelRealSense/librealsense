@@ -49,7 +49,7 @@ void dds_device_server::publish_image( const std::string & stream_name, const ui
 
     if( ! stream->is_streaming() )
         DDS_THROW( runtime_error,
-                   "Cannot publish_image() to non-streaming '" << stream->get_topic()->get()->get_name() << "'" );
+                   "Cannot publish_image() to non-streaming '" + stream->get_topic()->get()->get_name() + "'" );
 
     stream->publish_image( data, size );
 }
@@ -59,7 +59,7 @@ void dds_device_server::init( const std::vector<std::string> &supported_streams_
 {
     if( is_valid() )
     {
-        DDS_THROW( runtime_error, "device server '" << _topic_root << "' is already initialized" );
+        DDS_THROW( runtime_error, "device server '" + _topic_root + "' is already initialized" );
     }
 
     // Create a notifications server

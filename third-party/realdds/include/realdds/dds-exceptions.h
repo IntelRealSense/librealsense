@@ -6,7 +6,6 @@
 #include <librealsense2/utilities/easylogging/easyloggingpp.h>
 #include <stdexcept>
 #include <string>
-#include <sstream>
 
 
 namespace realdds {
@@ -25,12 +24,6 @@ public:
         : std::runtime_error( lpsz )
     {
         LOG_ERROR( "throwing: " << lpsz );
-    }
-
-    dds_runtime_error( std::ostringstream const& os )
-        : std::runtime_error( os.str() )
-    {
-        LOG_ERROR( "throwing: " << what() );
     }
 };
 
