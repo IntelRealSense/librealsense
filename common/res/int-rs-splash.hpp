@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2021 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2022 Intel Corporation. All Rights Reserved.
 
 // This file is auto-generated from .png using rs-embed tool version: 0.0.0.1
 // Generation time: 10/03/2022 17:29:01.
