@@ -7,7 +7,7 @@ This is the Node.js wrapper for the C++ `librealsense2` for Intel® RealSense™
 
 **To Node.js users**: if you're using Node.js and want to use [Node.js librealsense API](https://www.npmjs.com/package/node-librealsense), please use the following command to install it directly:
 ```
-npm install --save node-librealsense
+npm install node-librealsense
 ```
 If it fails to install, please refer to [install prerequisites](https://www.npmjs.com/package/node-librealsense#1-install-prerequisites). Usage examples can be found in `node_modules/node-librealsense/examples` dir.
 
