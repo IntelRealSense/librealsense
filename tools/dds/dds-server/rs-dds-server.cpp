@@ -8,6 +8,7 @@
 #include <realdds/dds-participant.h>
 #include <realdds/dds-utilities.h>
 #include <realdds/topics/notification/notification-msg.h>
+#include <realdds/topics/notification/notificationPubSubTypes.h>  // raw::device::notification
 #include <realdds/topics/device-info/device-info-msg.h>
 #include <fastrtps/types/TypesBase.h>
 #include <fastdds/dds/log/Log.hpp>
