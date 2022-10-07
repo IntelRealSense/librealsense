@@ -8,6 +8,13 @@
 #include <string>
 
 
+// E.g.:
+//     DDS_THROW( runtime_error, "what happened" );
+//
+#define DDS_THROW( ERR_TYPE, WHAT )                                                                 \
+    throw realdds::dds_ ## ERR_TYPE ( WHAT )
+
+
 namespace realdds {
 
 

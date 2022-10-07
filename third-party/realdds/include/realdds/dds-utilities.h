@@ -28,15 +28,15 @@ inline std::string get_dds_error( T * address )
 
 }  // namespace realdds
 
-#define DDS_THROW( ERR_TYPE, STR )                                                                 \
-    throw realdds::dds_ ## ERR_TYPE ( STR )
+#define DDS_API_CALL_THROW( desc, r )                                                              \
+    DDS_THROW( runtime_error, "DDS API CALL '" desc "' " + realdds::get_dds_error( r ) )
 
 #define DDS_API_CALL( func )                                                                       \
     [&]() {                                                                                        \
         auto r = func;                                                                             \
         if( ! r )                                                                                  \
         {                                                                                          \
-            DDS_THROW( runtime_error, "DDS API CALL '" #func "' " + realdds::get_dds_error( r ) ); \
+            DDS_API_CALL_THROW( #func, r );                                                        \
         }                                                                                          \
         return r;                                                                                  \
     }()
@@ -53,20 +53,20 @@ inline std::string get_dds_error( T * address )
     }()
 
 // Convert FastDDS Log::Entry to EasyLogging log (see ELPP_WRITE_LOG)
-#define LOG_DDS_ENTRY( ENTRY, LEVEL, ... )                                                                                 \
-    do                                                                                                                 \
-    {                                                                                                                  \
-        char const * filename = ( ENTRY ).context.filename;                                                            \
-        char const * func = ( ENTRY ).context.function;                                                                \
-        if( ! func )                                                                                                   \
-            func = "n/a";                                                                                              \
-        if( ! filename )                                                                                               \
-            filename = func;                                                                                           \
-        el::base::Writer writer( el::Level::LEVEL, filename, ( ENTRY ).context.line, func );                           \
-        writer.construct( 1, "librealsense" );                                                                         \
-        writer << __VA_ARGS__;                                                                                         \
-        writer << " [DDS]";                                                                                            \
-        if( ( ENTRY ).context.category )                                                                               \
-            writer << "[" << ( ENTRY ).context.category << "]";                                                        \
-    }                                                                                                                  \
+#define LOG_DDS_ENTRY( ENTRY, LEVEL, ... )                                                         \
+    do                                                                                             \
+    {                                                                                              \
+        char const * filename = ( ENTRY ).context.filename;                                        \
+        char const * func = ( ENTRY ).context.function;                                            \
+        if( ! func )                                                                               \
+            func = "n/a";                                                                          \
+        if( ! filename )                                                                           \
+            filename = func;                                                                       \
+        el::base::Writer writer( el::Level::LEVEL, filename, ( ENTRY ).context.line, func );       \
+        writer.construct( 1, "librealsense" );                                                     \
+        writer << __VA_ARGS__;                                                                     \
+        writer << " [DDS]";                                                                        \
+        if( ( ENTRY ).context.category )                                                           \
+            writer << "[" << ( ENTRY ).context.category << "]";                                    \
+    }                                                                                              \
     while( false )
