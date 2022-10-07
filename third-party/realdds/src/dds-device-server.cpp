@@ -8,7 +8,8 @@
 #include <realdds/dds-stream-server.h>
 #include <realdds/dds-notification-server.h>
 #include <realdds/dds-utilities.h>
-#include <realdds/topics/dds-topics.h>
+#include <realdds/topics/device-info/device-info-msg.h>
+#include <realdds/topics/image/image-msg.h>
 #include <realdds/dds-topic.h>
 #include <realdds/dds-topic-writer.h>
 

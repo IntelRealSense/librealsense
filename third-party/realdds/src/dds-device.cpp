@@ -2,7 +2,7 @@
 // Copyright(c) 2022 Intel Corporation. All Rights Reserved.
 
 #include <realdds/dds-device.h>
-#include <realdds/dds-device-impl.h>
+#include "dds-device-impl.h"
 #include <realdds/dds-exceptions.h>
 
 namespace realdds {
