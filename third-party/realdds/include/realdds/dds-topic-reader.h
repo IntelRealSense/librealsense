@@ -58,7 +58,10 @@ public:
         using super = eprosima::fastdds::dds::DataReaderQos;
 
     public:
-        reader_qos();
+        reader_qos( eprosima::fastdds::dds::ReliabilityQosPolicyKind reliability
+                        = eprosima::fastdds::dds::RELIABLE_RELIABILITY_QOS,  // default
+                    eprosima::fastdds::dds::DurabilityQosPolicyKind durability
+                        = eprosima::fastdds::dds::VOLATILE_DURABILITY_QOS );  // default is transient local
     };
 
     // The callbacks should be set before we actually create the underlying DDS objects, so the reader does not
