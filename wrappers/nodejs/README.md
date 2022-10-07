@@ -1,4 +1,4 @@
-﻿# librealsense2 Node.js Wrapper
+# librealsense2 Node.js Wrapper
 This is the Node.js wrapper for the C++ `librealsense2` for Intel® RealSense™ depth cameras (D400 series and the SR300).
 
 ## Notice: Before You Go Further ##
@@ -25,7 +25,7 @@ curl -sL https://deb.nodesource.com/setup_6.x | sudo -E bash -
 sudo apt-get install -y nodejs
 ```
 #### Windows 10
-Please download the latest .msi from [here](https://nodejs.org/en/download/) and install it.
+Please download a NodeJS .msi ([currently up to version 14](https://github.com/IntelRealSense/librealsense/issues/10322)) from [here](https://nodejs.org/en/download/) and install it.
 
 #### Mac OS
 **Note:** OSX support for the full range of functionality offered by the SDK is not yet complete.
@@ -57,9 +57,9 @@ Environment is ready if you're using Ubuntu 16.04.
 
 If you're using Windows 10, please do the following steps:
 
- 1. Install Python 2.7.xx, make sure "`Add python.exe to Path`" is checked during the installation.
+ 1. Install Python 2.7 or higher (including Python 3), make sure "`Add python.exe to Path`" is checked during the installation.
 
- 1. Install Visual Studio 2015 or 2017. The `Community` version also works.
+ 1. Install Visual Studio >= 2015 or Visual Studio BuildTools >= 2015. The `Community` version also works. Make sure to install "`C++ ATL for latest &lt;version&gt; build tools`" (or similar)
 
  1. Install CMake, make sure `CMake` is in system PATH (Choose "`Add CMake to the system PATH for all users`" or "`Add CMake to the system PATH for the current user`" during the installation). This step is for `npm install` of Node.js GLFW module that is used in `wrappers/nodejs/examples`.
 
