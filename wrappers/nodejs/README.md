@@ -11,6 +11,8 @@ npm install node-librealsense
 ```
 If it fails to install, please refer to [install prerequisites](https://www.npmjs.com/package/node-librealsense#1-install-prerequisites). Usage examples can be found in `node_modules/node-librealsense/examples` dir.
 
+**Warning**: as of October 2022, the newest `librealsense` SDK version on NPM is 2.13.0, which is from 2018 and doesn't support NodeJS 14 yet.
+
 # 1. Build from Source #
 
 ## 1.1. Install Build Prerequisites
