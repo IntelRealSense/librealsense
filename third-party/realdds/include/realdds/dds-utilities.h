@@ -51,22 +51,3 @@ inline std::string get_dds_error( T * address )
         }                                                                                          \
         return r;                                                                                  \
     }()
-
-// Convert FastDDS Log::Entry to EasyLogging log (see ELPP_WRITE_LOG)
-#define LOG_DDS_ENTRY( ENTRY, LEVEL, ... )                                                         \
-    do                                                                                             \
-    {                                                                                              \
-        char const * filename = ( ENTRY ).context.filename;                                        \
-        char const * func = ( ENTRY ).context.function;                                            \
-        if( ! func )                                                                               \
-            func = "n/a";                                                                          \
-        if( ! filename )                                                                           \
-            filename = func;                                                                       \
-        el::base::Writer writer( el::Level::LEVEL, filename, ( ENTRY ).context.line, func );       \
-        writer.construct( 1, "librealsense" );                                                     \
-        writer << __VA_ARGS__;                                                                     \
-        writer << " [DDS]";                                                                        \
-        if( ( ENTRY ).context.category )                                                           \
-            writer << "[" << ( ENTRY ).context.category << "]";                                    \
-    }                                                                                              \
-    while( false )

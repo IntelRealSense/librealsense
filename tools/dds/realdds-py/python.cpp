@@ -14,10 +14,10 @@ Copyright(c) 2022 Intel Corporation. All Rights Reserved. */
 #include <realdds/dds-topic.h>
 #include <realdds/dds-topic-reader.h>
 #include <realdds/dds-utilities.h>
+#include <realdds/dds-log-consumer.h>
 
 #include <librealsense2/h/rs_internal.h>
 #include <librealsense2/utilities/easylogging/easyloggingpp.h>
-#include <fastdds/dds/log/Log.hpp>
 #include <fastdds/dds/domain/qos/DomainParticipantQos.hpp>
 #include <fastdds/dds/domain/DomainParticipant.hpp>
 #include <fastdds/dds/core/status/SubscriptionMatchedStatus.hpp>
@@ -30,12 +30,12 @@ INITIALIZE_EASYLOGGINGPP
 
 
 namespace {
+
 std::string to_string( realdds::dds_guid const & guid )
 {
-    std::ostringstream os;
-    os << realdds::print( guid );
-    return os.str();
+    return realdds::print( guid );
 }
+
 }  // namespace
 
 
@@ -62,27 +62,6 @@ std::string to_string( realdds::dds_guid const & guid )
     }
 
 
-struct log_consumer : eprosima::fastdds::dds::LogConsumer
-{
-    virtual void Consume( const eprosima::fastdds::dds::Log::Entry & e ) override
-    {
-        using eprosima::fastdds::dds::Log;
-        switch( e.kind )
-        {
-        case Log::Kind::Error:
-            LOG_DDS_ENTRY( e, Error, e.message );
-            break;
-        case Log::Kind::Warning:
-            LOG_DDS_ENTRY( e, Warning, e.message );
-            break;
-        case Log::Kind::Info:
-            LOG_DDS_ENTRY( e, Info, e.message );
-            break;
-        }
-    }
-};
-
-
 PYBIND11_MODULE(NAME, m) {
     m.doc() = R"pbdoc(
         RealSense DDS Server Python Bindings
@@ -97,9 +76,8 @@ PYBIND11_MODULE(NAME, m) {
     defaultConf.setGlobally( el::ConfigurationType::Format, "-%levshort- %datetime{%H:%m:%s.%g} %msg (%fbase:%line [%thread])" );
     el::Loggers::reconfigureLogger( "librealsense", defaultConf );
     // And set the DDS logger similarly
-    std::unique_ptr< eprosima::fastdds::dds::LogConsumer > consumer( new log_consumer() );
     eprosima::fastdds::dds::Log::ClearConsumers();
-    eprosima::fastdds::dds::Log::RegisterConsumer( std::move( consumer ) );
+    eprosima::fastdds::dds::Log::RegisterConsumer( realdds::log_consumer::create() );
     eprosima::fastdds::dds::Log::SetVerbosity( eprosima::fastdds::dds::Log::Error );
 
     m.def( "debug", []( bool enable, std::string const & nested ) {

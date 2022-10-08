@@ -7,6 +7,7 @@
 #include <realdds/dds-stream-server.h>
 #include <realdds/dds-participant.h>
 #include <realdds/dds-utilities.h>
+#include <realdds/dds-log-consumer.h>
 #include <realdds/topics/notification/notification-msg.h>
 #include <realdds/topics/notification/notificationPubSubTypes.h>  // raw::device::notification
 #include <realdds/topics/device-info/device-info-msg.h>
@@ -280,27 +281,6 @@ topics::device_info rs2_device_to_info( rs2::device const & dev )
 }
 
 
-struct log_consumer : eprosima::fastdds::dds::LogConsumer
-{
-    virtual void Consume( const eprosima::fastdds::dds::Log::Entry & e ) override
-    {
-        using eprosima::fastdds::dds::Log;
-        switch( e.kind )
-        {
-        case Log::Kind::Error:
-            LOG_DDS_ENTRY( e, Error, e.message );
-            break;
-        case Log::Kind::Warning:
-            LOG_DDS_ENTRY( e, Warning, e.message );
-            break;
-        case Log::Kind::Info:
-            LOG_DDS_ENTRY( e, Info, e.message );
-            break;
-        }
-    }
-};
-
-
 int main( int argc, char * argv[] )
 try
 {
@@ -328,9 +308,8 @@ try
     el::Loggers::reconfigureLogger( "librealsense", defaultConf );
 
     // Intercept DDS messages and redirect them to our own logging mechanism
-    std::unique_ptr< eprosima::fastdds::dds::LogConsumer > consumer( new log_consumer() );
     eprosima::fastdds::dds::Log::ClearConsumers();
-    eprosima::fastdds::dds::Log::RegisterConsumer( std::move( consumer ) );
+    eprosima::fastdds::dds::Log::RegisterConsumer( realdds::log_consumer::create() );
 
     if( debug_arg.isSet() )
     {
