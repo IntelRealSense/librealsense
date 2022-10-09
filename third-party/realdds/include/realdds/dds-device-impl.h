@@ -17,6 +17,8 @@
 #include <fastdds/dds/topic/Topic.hpp>
 #include <fastdds/dds/domain/DomainParticipant.hpp>
 
+#include <map>
+
 namespace realdds {
 
 
@@ -51,6 +53,51 @@ std::ostream & operator<<( std::ostream & s, state_type st )
 
 }  // namespace
 
+class dds_device::dds_stream::impl
+{
+public:
+    impl( rs2_stream type, std::string group_name )
+        : _type( type )
+        , _group_name( group_name )
+    {
+    }
+
+    rs2_stream _type;
+    std::string _group_name;
+
+    std::vector< std::pair< rs2_video_stream, bool > > _video_profiles;
+    std::vector< std::pair< rs2_motion_stream, bool > > _motion_profiles;
+};
+
+rs2_video_stream to_rs2_format( const topics::device::notification::video_stream_profile & profile )
+{
+    rs2_video_stream prof;
+    prof.type = profile.type;
+    prof.index = profile.stream_index;
+    prof.uid = profile.uid;
+    prof.width = profile.width;
+    prof.height = profile.height;
+    prof.fps = profile.framerate;
+    // TODO - bpp needed?
+    prof.fmt = profile.format;
+    // TODO - add intrinsics
+
+    return prof;
+}
+
+rs2_motion_stream to_rs2_format( const topics::device::notification::motion_stream_profile & profile )
+{
+    rs2_motion_stream prof;
+    prof.type = profile.type;
+    prof.index = profile.stream_index;
+    prof.uid = profile.uid;
+    prof.fps = profile.framerate;
+    prof.fmt = profile.format;
+    // TODO - add intrinsics
+
+    return prof;
+}
+
 class dds_device::impl
 {
 public:
@@ -60,12 +107,10 @@ public:
 
     bool _running = false;
 
-    size_t _num_of_profiles = 0;
-    std::vector< topics::device::notification::video_stream_profile > _video_profiles;
-    std::vector< topics::device::notification::motion_stream_profile > _motion_profiles;
-    std::unordered_map< size_t, std::string > _profile_to_profile_group;
-    std::unordered_map< std::string, std::vector< size_t > > _video_profile_indexes_in_profile_group;
-    std::unordered_map< std::string, std::vector< size_t > > _motion_profile_indexes_in_profile_group;
+    size_t _expected_num_of_streams = 0;
+    size_t _received_num_of_streams = 0;
+    std::map< size_t, std::shared_ptr< dds_stream > > _streams;
+    std::map< std::string, std::vector< std::shared_ptr< dds_stream > > > _streams_in_group;
     std::atomic<uint32_t> _control_message_counter = { 0 };
 
     eprosima::fastdds::dds::Subscriber * _subscriber = nullptr;
@@ -204,8 +249,8 @@ private:
                         case topics::device::notification::msg_type::DEVICE_HEADER:
                             if( state_type::WAIT_FOR_DEVICE_HEADER == state )
                             {
-                                _num_of_profiles = data.get< topics::device::notification::device_header_msg >()->num_of_streams;
-                                LOG_INFO( "got DEVICE_HEADER message with " << _num_of_profiles << " streams" );
+                                _expected_num_of_streams = data.get< topics::device::notification::device_header_msg >()->num_of_streams;
+                                LOG_INFO( "got DEVICE_HEADER message with " << _expected_num_of_streams << " streams" );
                                 state = state_type::WAIT_FOR_PROFILES;
                             }
                             else
@@ -221,19 +266,23 @@ private:
 
                                 for ( size_t i = 0; i < profiles_msg->num_of_profiles; ++i )
                                 {
-                                    _video_profiles.push_back( profiles_msg->profiles[i] );
-                                    _profile_to_profile_group[profiles_msg->profiles[i].uid] = profiles_msg->group_name;
-                                    _video_profile_indexes_in_profile_group[profiles_msg->group_name].push_back( _video_profiles.size() - 1 );
+                                    auto profile = profiles_msg->profiles[i];
+                                    if ( !_streams[profile.uid] )
+                                    {
+                                        _streams[profile.uid] = std::make_shared<dds_stream>( profile.type, profiles_msg->group_name );
+                                        _streams_in_group[profiles_msg->group_name].push_back( _streams[profile.uid] );
+                                    }
+                                    _streams[profile.uid]->add_video_profile( to_rs2_format( profile ), profile.default_profile );
                                 }
 
-                                size_t received_profiles_num = _video_profiles.size() + _motion_profiles.size();
-                                if (received_profiles_num >= _num_of_profiles )
+                                _received_num_of_streams += profiles_msg->num_of_profiles;
+                                if ( _received_num_of_streams >= _expected_num_of_streams )
                                 {
                                     state = state_type::DONE;
-                                    if (received_profiles_num > _num_of_profiles)
+                                    if ( _received_num_of_streams > _expected_num_of_streams)
                                     {
-                                        LOG_INFO( "Received more streams (" << received_profiles_num
-                                                  << ") than in device header (" << _num_of_profiles << ")" );
+                                        LOG_INFO( "Received more streams (" << _received_num_of_streams
+                                                  << ") than expected (" << _expected_num_of_streams << ")" );
                                     }
                                 }
                             }
@@ -242,27 +291,31 @@ private:
                                            << state );
                             break;
                         case topics::device::notification::msg_type::MOTION_STREAM_PROFILES:
-                            if( state_type::WAIT_FOR_PROFILES == state )
+                            if ( state_type::WAIT_FOR_PROFILES == state )
                             {
                                 LOG_INFO( "got MOTION_STREAM_PROFILES message" );
 
                                 auto profiles_msg = data.get< topics::device::notification::motion_stream_profiles_msg >();
 
-                                for (size_t i = 0; i < profiles_msg->num_of_profiles; ++i)
+                                for ( size_t i = 0; i < profiles_msg->num_of_profiles; ++i )
                                 {
-                                    _motion_profiles.push_back( profiles_msg->profiles[i] );
-                                    _profile_to_profile_group[profiles_msg->profiles[i].uid] = profiles_msg->group_name;
-                                    _motion_profile_indexes_in_profile_group[profiles_msg->group_name].push_back( _motion_profiles.size() - 1 );
+                                    auto profile = profiles_msg->profiles[i];
+                                    if ( !_streams[profile.uid] )
+                                    {
+                                        _streams[profile.uid] = std::make_shared<dds_stream>( profile.type, profiles_msg->group_name );
+                                        _streams_in_group[profiles_msg->group_name].push_back( _streams[profile.uid] );
+                                    }
+                                    _streams[profile.uid]->add_motion_profile( to_rs2_format( profile ), profile.default_profile );
                                 }
 
-                                size_t received_profiles_num = _video_profiles.size() + _motion_profiles.size();
-                                if (received_profiles_num >= _num_of_profiles)
+                                _received_num_of_streams += profiles_msg->num_of_profiles;
+                                if ( _received_num_of_streams >= _expected_num_of_streams )
                                 {
                                     state = state_type::DONE;
-                                    if (received_profiles_num > _num_of_profiles)
+                                    if ( _received_num_of_streams > _expected_num_of_streams )
                                     {
-                                        LOG_INFO( "Received more streams (" << received_profiles_num
-                                                  << ") than in device header (" << _num_of_profiles << ")" );
+                                        LOG_INFO( "Received more streams (" << _received_num_of_streams
+                                                  << ") than expected (" << _expected_num_of_streams << ")" );
                                     }
                                 }
                             }

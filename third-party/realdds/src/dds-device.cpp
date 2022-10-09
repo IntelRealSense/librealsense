@@ -19,11 +19,91 @@ std::mutex devices_mutex;
 }  // namespace
 
 
+dds_device::dds_stream::dds_stream( rs2_stream type, std::string group_name )
+    : _impl(std::make_shared< dds_stream::impl >( type, group_name ))
+{
+}
+
+void dds_device::dds_stream::add_video_profile( const rs2_video_stream & profile, bool default_profile )
+{
+    if ( _impl->_type != profile.type )
+    {
+        throw std::runtime_error( "profile of different type then stream" );
+    }
+
+    _impl->_video_profiles.push_back( { profile, default_profile } );
+}
+
+void dds_device::dds_stream::add_motion_profile( const rs2_motion_stream & profile, bool default_profile )
+{
+    if ( _impl->_type != profile.type )
+    {
+        throw std::runtime_error( "profile of different type then stream" );
+    }
+
+    _impl->_motion_profiles.push_back( { profile, default_profile } );
+}
+
+size_t dds_device::dds_stream::foreach_video_profile( std::function< void( const rs2_video_stream & profile, bool def_prof ) > fn ) const
+{
+    for ( auto profile : _impl->_video_profiles )
+    {
+        fn( profile.first, profile.second );
+    }
+
+    return _impl->_video_profiles.size();
+}
+
+size_t dds_device::dds_stream::foreach_motion_profile( std::function< void( const rs2_motion_stream & profile, bool def_prof ) > fn ) const
+{
+    for ( auto profile : _impl->_motion_profiles )
+    {
+        fn( profile.first, profile.second );
+    }
+
+    return _impl->_motion_profiles.size();
+}
+
+//std::string dds_device::dds_stream::get_name()
+//{
+//    std::stringstream ss;
+//    ss << rs2_stream_to_string( _impl->_type );
+//
+//    //Add index number to the name
+//    if ( _impl->_type == RS2_STREAM_DEPTH || _impl->_type == RS2_STREAM_COLOR || _impl->_type == RS2_STREAM_INFRARED )
+//    {
+//        if ( ! _impl->_video_profiles.empty() && _impl->_video_profiles[0].first.index != 0 )
+//        {
+//            ss << " " << _impl->_video_profiles[0].first.index;
+//        }
+//    }
+//    else if ( _impl->_type == RS2_STREAM_GYRO || _impl->_type == RS2_STREAM_ACCEL )
+//    {
+//        if ( ! _impl->_motion_profiles.empty() && _impl->_motion_profiles[0].first.index != 0 )
+//        {
+//            ss << " " << _impl->_motion_profiles[0].first.index;
+//        }
+//    }
+//    else
+//    {
+//        throw std::runtime_error( "trying to get name of unsupported stream type " + std::to_string( _impl->_type ) );
+//    }
+//
+//    return ss.str();
+//}
+
 std::shared_ptr< dds_device > dds_device::find( dds_guid const & guid )
+{
+    return find_internal( guid, true );
+}
+
+std::shared_ptr< dds_device > dds_device::find_internal( dds_guid const & guid, bool shouldLock )
 {
     std::shared_ptr< dds_device > dev;
 
-    std::lock_guard< std::mutex > lock( devices_mutex );
+    if( shouldLock )
+        devices_mutex.lock();
+
     auto it = guid_to_device.find( guid );
     if( it != guid_to_device.end() )
     {
@@ -35,20 +115,23 @@ std::shared_ptr< dds_device > dds_device::find( dds_guid const & guid )
         }
     }
 
+    if ( shouldLock )
+        devices_mutex.unlock();
+
     return dev;
 }
-
 
 std::shared_ptr< dds_device > dds_device::create( std::shared_ptr< dds_participant > const & participant,
                                                   dds_guid const & guid,
                                                   topics::device_info const & info )
 {
-    std::shared_ptr< dds_device > dev = find( guid );
-    // TODO a device may be created between find() and the next lock...
+    // Locking before find_internal() to avoid a device created between search and creation
+    std::lock_guard< std::mutex > lock( devices_mutex );
+
+    std::shared_ptr< dds_device > dev = find_internal( guid, false );
+
     if( ! dev )
     {
-        std::lock_guard< std::mutex > lock( devices_mutex );
-
         auto impl = std::make_shared< dds_device::impl >( participant, guid, info );
         // Use a custom deleter to automatically remove the device from the map when it's done with
         dev = std::shared_ptr< dds_device >( new dds_device( impl ), [guid]( dds_device * ptr ) {
@@ -62,122 +145,113 @@ std::shared_ptr< dds_device > dds_device::create( std::shared_ptr< dds_participa
     return dev;
 }
 
-
 dds_device::dds_device( std::shared_ptr< impl > impl )
     : _impl( impl )
 {
 }
-
 
 bool dds_device::is_running() const
 {
     return _impl->_running;
 }
 
-
 void dds_device::run()
 {
     _impl->run();
 }
-
 
 topics::device_info const & dds_device::device_info() const
 {
     return _impl->_info;
 }
 
-
 dds_guid const & dds_device::guid() const
 {
     return _impl->_guid;
 }
 
-
-size_t dds_device::num_of_sensors() const
+size_t dds_device::num_of_streams() const
 {
-    std::set< std::string > sensors;
-    for (auto p : _impl->_profile_to_profile_group)
-    {
-        sensors.insert( p.second );
-    }
-
-    return sensors.size();
+    return _impl->_streams.size();
 }
 
-
-size_t dds_device::foreach_sensor( std::function< void( const std::string & name ) > fn ) const
+size_t dds_device::num_of_stream_groups() const
 {
-    std::set< std::string > sensors;
-    for (auto p : _impl->_profile_to_profile_group)
-    {
-        sensors.insert( p.second );
-    }
-
-    for( auto sensor : sensors)
-    {
-        fn( sensor );
-    }
-
-    return sensors.size();
+    return _impl->_streams_in_group.size();
 }
 
+//size_t dds_device::foreach_stream( std::function< void( const std::string & name ) > fn ) const
+//{
+//    for ( auto const & stream : _impl->_streams )
+//    {
+//        fn( stream.second->get_name() );
+//    }
+//
+//    return _impl->_streams.size();
+//}
+
+size_t dds_device::foreach_stream_group( std::function< void( const std::string & name ) > fn ) const
+{
+    for ( auto const & group : _impl->_streams_in_group )
+    {
+        fn( group.first );
+    }
+
+    return _impl->_streams_in_group.size();
+}
 
 size_t
-dds_device::foreach_video_profile( std::string group_name,
-                                   std::function< void( const rs2_video_stream & profile, bool def_prof ) > fn ) const
+dds_device::foreach_video_profile( std::function< void( const rs2_video_stream & profile, bool def_prof ) > fn ) const
 {
-    auto const & profiles = _impl->_video_profile_indexes_in_profile_group.find( group_name );
+    size_t profiles_num = 0;
 
-    if(profiles == _impl->_video_profile_indexes_in_profile_group.end() )
+    for ( auto const & stream : _impl->_streams )
     {
-        return 0;  // Not video profiles for this group, nothing to do
+        profiles_num += stream.second->foreach_video_profile( fn );
     }
 
-    for( size_t i = 0; i < profiles->second.size(); ++i )
-    {
-        auto const & profile = _impl->_video_profiles[profiles->second[i]];
-        rs2_video_stream prof;
-        prof.type = profile.type;
-        prof.index = profile.stream_index;
-        prof.uid = profile.uid;
-        prof.width = profile.width;
-        prof.height = profile.height;
-        prof.fps = profile.framerate;
-        // TODO - bpp needed?
-        prof.fmt = profile.format;
-        // TODO - add intrinsics
-        fn( prof, profile.default_profile );
-    }
-
-    return profiles->second.size();
+    return profiles_num;
 }
 
+size_t
+dds_device::foreach_motion_profile( std::function< void( const rs2_motion_stream & profile, bool def_prof ) > fn ) const
+{
+    size_t profiles_num = 0;
+
+    for ( auto const & stream : _impl->_streams )
+    {
+        profiles_num += stream.second->foreach_motion_profile( fn );
+    }
+
+    return profiles_num;
+}
 
 size_t
-dds_device::foreach_motion_profile( std::string group_name,
-                                    std::function< void( const rs2_motion_stream & profile, bool def_prof ) > fn ) const
+dds_device::foreach_video_profile_in_group( const std::string & group_name,
+                                            std::function< void( const rs2_video_stream & profile, bool def_prof ) > fn ) const
 {
-    auto const& profiles = _impl->_motion_profile_indexes_in_profile_group.find( group_name );
-
-    if (profiles == _impl->_motion_profile_indexes_in_profile_group.end())
+    auto group = _impl->_streams_in_group.find( group_name );
+    if( group != _impl->_streams_in_group.end() )
+    for ( auto const & stream : group->second )
     {
-        return 0;  // Not motion profiles for this group, nothing to do
+        stream->foreach_video_profile( fn );
     }
 
-    for (size_t i = 0; i < profiles->second.size(); ++i)
+    return group->second.size();
+}
+
+size_t
+dds_device::foreach_motion_profile_in_group( const std::string & group_name,
+                                             std::function< void( const rs2_motion_stream & profile, bool def_prof ) > fn ) const
+{
+    auto group = _impl->_streams_in_group.find( group_name );
+    if( group != _impl->_streams_in_group.end() )
+    for ( auto const & stream : group->second )
     {
-        auto const& profile = _impl->_motion_profiles[profiles->second[i]];
-        rs2_motion_stream prof;
-        prof.type = profile.type;
-        prof.index = profile.stream_index;
-        prof.uid = profile.uid;
-        prof.fps = profile.framerate;
-        prof.fmt = profile.format;
-        // TODO - add intrinsics
-        fn( prof, profile.default_profile );
+        stream->foreach_motion_profile( fn );
     }
 
-    return profiles->second.size();
+    return group->second.size();
 }
 
 void dds_device::open( const std::vector< rs2_video_stream > & profiles )

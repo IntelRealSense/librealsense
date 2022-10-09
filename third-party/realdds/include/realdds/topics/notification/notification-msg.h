@@ -26,7 +26,6 @@ public:
     enum class msg_type : uint16_t
     {
         DEVICE_HEADER,
-        STREAM_HEADER,
         VIDEO_STREAM_PROFILES,
         MOTION_STREAM_PROFILES,
         CONTROL_RESPONSE,
@@ -40,7 +39,7 @@ public:
 
     struct video_stream_profile
     {
-        int8_t stream_index;     // Normally used to distinguish IR L / R
+        int8_t stream_index;     // Normally used to distinguish IR L / R, not related to stream_header_msg::index
         int16_t uid;             // Stream unique ID
         int16_t framerate;       // FPS
         rs2_format format;       // Transfer as uint8_t?
@@ -53,7 +52,7 @@ public:
 
     struct motion_stream_profile
     {
-        int8_t stream_index;     // Normally used to distinguish IR L / R
+        int8_t stream_index;     // Normally used to distinguish IR L / R, not related to stream_header_msg::index
         int16_t uid;             // Stream unique ID
         int16_t framerate;       // FPS
         rs2_format format;       // Transfer as uint8_t?
@@ -63,14 +62,14 @@ public:
 
     struct video_stream_profiles_msg
     {
-        char group_name[32];     // Streams are grouped in the server
+        char group_name[32];     // Streams can be grouped together to indicate physical or logical connection
         size_t num_of_profiles;  
         video_stream_profile profiles[MAX_VIDEO_PROFILES];
     };
 
     struct motion_stream_profiles_msg
     {
-        char group_name[32];     // Streams are grouped in the server
+        char group_name[32];     // Streams can be grouped together to indicate physical or logical connection
         size_t num_of_profiles; 
         motion_stream_profile profiles[MAX_MOTION_PROFILES];
     };

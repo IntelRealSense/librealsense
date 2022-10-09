@@ -369,29 +369,49 @@ PYBIND11_MODULE(NAME, m) {
         .def( "guid", []( dds_device const & self ) { return to_string( self.guid() ); } )
         .def( "is_running", &dds_device::is_running )
         .def( "run", &dds_device::run )
-        .def( "num_of_sensors", &dds_device::num_of_sensors )
+        .def( "num_of_streams", &dds_device::num_of_streams )
+        .def( "num_of_stream_groups", &dds_device::num_of_stream_groups )
+        //.def( FN_FWD( dds_device,
+        //              foreach_stream,
+        //              ( std::string const & ),
+        //              ( std::string const & name ),
+        //              callback( name ); ) )
         .def( FN_FWD( dds_device,
-            foreach_sensor,
-            ( std::string const & ),
-            ( std::string const & name ),
-            callback( name ); ) )
+                      foreach_stream_group,
+                      ( std::string const & ),
+                      ( std::string const & name ),
+                      callback( name ); ) )
         .def( "foreach_video_profile",
               []( dds_device const & self,
-                  std::string group_name,
                   std::function< void( rs2_video_stream const & profile, bool is_default ) > callback ) {
-                  self.foreach_video_profile( group_name,
-                                              [callback]( rs2_video_stream const & profile, bool is_default ) {
+                  self.foreach_video_profile( [callback]( rs2_video_stream const & profile, bool is_default ) {
                                                   FN_FWD_CALL( dds_device, foreach_video_profile, callback( profile, is_default ); );
                                               } );
               }, py::call_guard< py::gil_scoped_release >() )
         .def( "foreach_motion_profile",
               []( dds_device const & self,
-                  std::string group_name,
                   std::function< void( rs2_motion_stream const & profile, bool is_default ) > callback ) {
-                  self.foreach_motion_profile( group_name,
-                                               [callback]( rs2_motion_stream const & profile, bool is_default ) {
+                  self.foreach_motion_profile( [callback]( rs2_motion_stream const & profile, bool is_default ) {
                                                    FN_FWD_CALL( dds_device, foreach_motion_profile, callback( profile, is_default ); );
                                                } );
+              }, py::call_guard< py::gil_scoped_release >() )
+        .def( "foreach_video_profile_in_group",
+              []( dds_device const & self,
+                  std::string group_name,
+                  std::function< void( rs2_video_stream const & profile, bool is_default ) > callback ) {
+                  self.foreach_video_profile_in_group( group_name,
+                                                       [callback]( rs2_video_stream const & profile, bool is_default ) {
+                                                           FN_FWD_CALL( dds_device, foreach_video_profile, callback( profile, is_default ); );
+                                                       } );
+              }, py::call_guard< py::gil_scoped_release >() )
+        .def( "foreach_motion_profile_in_group",
+              []( dds_device const & self,
+                  std::string group_name,
+                  std::function< void( rs2_motion_stream const & profile, bool is_default ) > callback ) {
+                  self.foreach_motion_profile_in_group( group_name,
+                                                        [callback]( rs2_motion_stream const & profile, bool is_default ) {
+                                                            FN_FWD_CALL( dds_device, foreach_motion_profile, callback( profile, is_default ); );
+                                                        } );
               }, py::call_guard< py::gil_scoped_release >() )
         .def( "__repr__", []( dds_device const & self ) {
             std::ostringstream os;

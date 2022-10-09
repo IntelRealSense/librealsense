@@ -490,17 +490,17 @@ namespace librealsense
             register_info( RS2_CAMERA_INFO_PHYSICAL_PORT, info.topic_root );
 
             //Assumes dds_device initialization finished
-            size_t count = _dds_dev->foreach_sensor(
-                [&]( const std::string & name ) {
+            size_t count = _dds_dev->foreach_stream_group( [&]( const std::string & name ) {
                     this->add_dds_sensor( _dds_dev, name );
                 } );
             for( size_t i = 0; i < count; ++i )
             {
-                dds_sensor_proxy & sensor = reinterpret_cast<dds_sensor_proxy &>(get_software_sensor( i ));
-                _dds_dev->foreach_video_profile( sensor.get_name(), [&]( const rs2_video_stream& profile, bool default_profile ) {
-                    sensor.add_video_stream( profile, default_profile );
+                software_sensor & sensor = get_software_sensor( i );
+                auto sensor_name = sensor.get_info( RS2_CAMERA_INFO_NAME );
+                _dds_dev->foreach_video_profile_in_group( sensor_name, [&]( const rs2_video_stream& profile, bool default_profile ) {
+                    sensor.add_video_stream(profile, default_profile );
                 } );
-                _dds_dev->foreach_motion_profile( sensor.get_name(), [&]( const rs2_motion_stream& profile, bool default_profile ) {
+                _dds_dev->foreach_motion_profile_in_group( sensor_name, [&]( const rs2_motion_stream& profile, bool default_profile ) {
                     sensor.add_motion_stream( profile, default_profile );
                 } );
             }
