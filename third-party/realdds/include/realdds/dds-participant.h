@@ -38,10 +38,23 @@ public:
     eprosima::fastdds::dds::DomainParticipant * get() const { return _participant; }
     eprosima::fastdds::dds::DomainParticipant * operator->() const { return get(); }
 
-    // Every participant in DDS has a global identifier, comprising a prefix- and entity-ID.
-    // The prefix (vendor, host, process, participant) usually does not vary within the same participant.
+    // RTPS 8.2.4.2 "Every Participant has GUID <prefix, ENTITYID_PARTICIPANT>, where the constant ENTITYID_PARTICIPANT
+    //     is a special value defined by the RTPS protocol. Its actual value depends on the PSM."
+    // In FastDDS, this constant is ENTITYID_RTPSParticipant = 0x1c1.
+    // 
+    // RTPS 8.2.4.3 "GUIDs of all Endpoints within a Participant have the same prefix.
+    //     - Once the GUID of an Endpoint is known, the GUID of the Participant that contains the endpoint is also
+    //     known.
+    //     - The GUID of any endpoint can be deduced from the GUID of the Participant to which it belongs and its
+    //     entityId."
+    // 
+    // The prefix is a combination of (vendor, host, process, participant-id).
     //
     dds_guid const & guid() const;
+
+    // Utility to create a custom GUID, to help
+    //
+    dds_guid create_guid();
 
     // Common utility: a participant is usually used as the base for printing guids, to better abbreviate
     // prefixes and even completely remove the participant part of the GUID if it's a local one...
@@ -136,6 +149,7 @@ public:
 private:
     std::list< std::weak_ptr< listener > > _listeners;
     std::shared_ptr< listener_impl > _domain_listener;
+    uint32_t _next_entity_id = 0;  // for create_guid()
 
     void on_writer_added( dds_guid, char const * topic_name );
     void on_writer_removed( dds_guid, char const * topic_name );

@@ -101,6 +101,13 @@ PYBIND11_MODULE(NAME, m) {
         logger->reconfigure();
     } );
 
+    using realdds::dds_guid;
+    py::class_< dds_guid >( m, "guid" )
+        .def( py::init<>() )
+        .def( "__nonzero__", []( dds_guid const& self ) { return self != dds_guid::unknown(); } )  // Called to implement truth value testing in Python 2
+        .def( "__bool__", []( dds_guid const& self ) { return self != dds_guid::unknown(); } )     // Called to implement truth value testing in Python 3
+        .def( "__repr__", []( dds_guid const& self ) { return to_string( self ); } );
+
     using realdds::dds_participant;
     using eprosima::fastrtps::types::ReturnCode_t;
     
@@ -111,34 +118,34 @@ PYBIND11_MODULE(NAME, m) {
     listener  // no ctor: use participant.create_listener()
         .def( FN_FWD( dds_participant::listener,
                       on_writer_added,
-                      ( std::string const & guid, std::string const & topic_name ),
-                      ( realdds::dds_guid guid, char const * topic_name ),
-                      callback( to_string( guid ), topic_name ); ) )
+                      ( dds_guid guid, char const * topic_name ),
+                      ( dds_guid guid, char const * topic_name ),
+                      callback( guid, topic_name ); ) )
         .def( FN_FWD( dds_participant::listener,
                       on_writer_removed,
-                      ( std::string const & guid, std::string const & topic_name ),
-                      ( realdds::dds_guid guid, char const * topic_name ),
-                      callback( to_string( guid ), topic_name ); ) )
+                      ( dds_guid guid, char const * topic_name ),
+                      ( dds_guid guid, char const * topic_name ),
+                      callback( guid, topic_name ); ) )
         .def( FN_FWD( dds_participant::listener,
                       on_reader_added,
-                      ( std::string const & guid, std::string const & topic_name ),
-                      ( realdds::dds_guid guid, char const * topic_name ),
-                      callback( to_string( guid ), topic_name ); ) )
+                      ( dds_guid guid, char const * topic_name ),
+                      ( dds_guid guid, char const * topic_name ),
+                      callback( guid, topic_name ); ) )
         .def( FN_FWD( dds_participant::listener,
                       on_reader_removed,
-                      ( std::string const & guid, std::string const & topic_name ),
-                      ( realdds::dds_guid guid, char const * topic_name ),
-                      callback( to_string( guid ), topic_name ); ) )
+                      ( dds_guid guid, char const * topic_name ),
+                      ( dds_guid guid, char const * topic_name ),
+                      callback( guid, topic_name ); ) )
         .def( FN_FWD( dds_participant::listener,
                       on_participant_added,
-                      ( std::string const & guid, std::string const & name ),
-                      ( realdds::dds_guid guid, char const * name ),
-                      callback( to_string( guid ), name ); ) )
+                      ( dds_guid guid, char const * name ),
+                      ( dds_guid guid, char const * name ),
+                      callback( guid, name ); ) )
         .def( FN_FWD( dds_participant::listener,
                       on_participant_removed,
-                      ( std::string const & guid, std::string const & name ),
-                      ( realdds::dds_guid guid, char const * name ),
-                      callback( to_string( guid ), name ); ) )
+                      ( dds_guid guid, char const * name ),
+                      ( dds_guid guid, char const * name ),
+                      callback( guid, name ); ) )
         .def( FN_FWD( dds_participant::listener,
                       on_type_discovery,
                       ( std::string const & topic_name, std::string const & type_name ),
@@ -152,6 +159,8 @@ PYBIND11_MODULE(NAME, m) {
     participant.def( py::init<>() )
         .def( "init", &dds_participant::init, "domain-id"_a, "participant-name"_a )
         .def( "is_valid", &dds_participant::is_valid )
+        .def( "guid", &dds_participant::guid )
+        .def( "create_guid", &dds_participant::create_guid )
         .def( "__nonzero__", &dds_participant::is_valid )  // Called to implement truth value testing in Python 2
         .def( "__bool__", &dds_participant::is_valid )     // Called to implement truth value testing in Python 3
         .def( "__repr__",
@@ -322,26 +331,24 @@ PYBIND11_MODULE(NAME, m) {
 
     using realdds::dds_stream;
     py::class_< dds_stream,
-                std::shared_ptr< dds_stream > //handled with a shared_ptr
+                std::shared_ptr< dds_stream > // handled with a shared_ptr
                 >( m, "stream" )
         .def( "get_type", &dds_stream::get_type )
         .def( "get_group_name", &dds_stream::get_group_name );
-        //TODO - add stream profile class and then other dds_stream functions
-
 
     using realdds::dds_device;
     py::class_< dds_device,
                 std::shared_ptr< dds_device >  // handled with a shared_ptr
                 >( m, "device" )
         .def( "device_info", &dds_device::device_info )
-        .def( "guid", []( dds_device const & self ) { return to_string( self.guid() ); } )
+        .def( "guid", &dds_device::guid )
         .def( "is_running", &dds_device::is_running )
         .def( "run", &dds_device::run )
         .def( "num_of_streams", &dds_device::number_of_streams )
         .def( FN_FWD( dds_device,
                       foreach_stream,
-                      ( std::shared_ptr< dds_stream > ),
-                      ( std::shared_ptr< dds_stream > stream ),
+                      ( std::shared_ptr< dds_stream > const & ),
+                      ( std::shared_ptr< dds_stream > const & stream ),
                       callback( stream ); ) )
         //.def( FN_FWD( dds_device,
         //              foreach_profile,
