@@ -110,6 +110,7 @@ namespace rs2
         return b * t + a * (1 - t);
     }
 
+    // A 3D plane based on the equation Ax + By + Cz - D = 0
     struct plane
     {
         float a;
