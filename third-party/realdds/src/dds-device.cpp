@@ -231,10 +231,16 @@ dds_device::foreach_video_profile_in_group( const std::string & group_name,
                                             std::function< void( const rs2_video_stream & profile, bool def_prof ) > fn ) const
 {
     auto group = _impl->_streams_in_group.find( group_name );
-    if( group != _impl->_streams_in_group.end() )
-    for ( auto const & stream : group->second )
+    if ( group != _impl->_streams_in_group.end() )
     {
-        stream->foreach_video_profile( fn );
+        for ( auto const & stream : group->second )
+        {
+            stream->foreach_video_profile( fn );
+        }
+    }
+    else
+    {
+        LOG_ERROR( "Unknown group " << group_name );
     }
 
     return group->second.size();
@@ -245,81 +251,87 @@ dds_device::foreach_motion_profile_in_group( const std::string & group_name,
                                              std::function< void( const rs2_motion_stream & profile, bool def_prof ) > fn ) const
 {
     auto group = _impl->_streams_in_group.find( group_name );
-    if( group != _impl->_streams_in_group.end() )
-    for ( auto const & stream : group->second )
+    if ( group != _impl->_streams_in_group.end() )
     {
-        stream->foreach_motion_profile( fn );
+        for ( auto const & stream : group->second )
+        {
+            stream->foreach_motion_profile( fn );
+        }
+    }
+    else
+    {
+        LOG_ERROR( "Unknown group " << group_name );
     }
 
     return group->second.size();
 }
 
-void dds_device::open( const std::vector< rs2_video_stream > & profiles )
+void dds_device::open( const std::vector< rs2_video_stream > & streams )
 {
     using namespace topics;
 
-    if (profiles.size() > device::control::MAX_OPEN_PROFILES)
+    if ( streams.size() > device::control::MAX_OPEN_STREAMS )
     {
-        throw std::runtime_error( "Too many profiles to open (" + std::to_string( profiles.size() )
-                                + "), max is " + std::to_string( device::control::MAX_OPEN_PROFILES ) );
+        throw std::runtime_error( "Too many streams to open (" + std::to_string( streams.size() )
+                                + "), max is " + std::to_string( device::control::MAX_OPEN_STREAMS ) );
     }
 
-    device::control::profiles_open_msg open_msg;
+    device::control::streams_open_msg open_msg;
     open_msg.message_id = _impl->_control_message_counter++;
-    for ( size_t i = 0; i < profiles.size(); ++i )
+    for ( size_t i = 0; i < streams.size(); ++i )
     {
-        open_msg.profiles[i].uid = profiles[i].uid;
-        open_msg.profiles[i].framerate = profiles[i].fps;
-        open_msg.profiles[i].format = profiles[i].fmt;
-        open_msg.profiles[i].type = profiles[i].type;
-        open_msg.profiles[i].width = profiles[i].width;
-        open_msg.profiles[i].height = profiles[i].height;
+        open_msg.streams[i].uid       = streams[i].uid;
+        open_msg.streams[i].framerate = streams[i].fps;
+        open_msg.streams[i].format    = streams[i].fmt;
+        open_msg.streams[i].type      = streams[i].type;
+        open_msg.streams[i].width     = streams[i].width;
+        open_msg.streams[i].height    = streams[i].height;
     }
 
     raw::device::control raw_msg;
-    device::control::construct_raw_message( device::control::control_type::PROFILES_OPEN,
+    device::control::construct_raw_message( device::control::msg_type::STREAMS_OPEN,
                                             open_msg,
                                             raw_msg );
 
     if ( _impl->write_control_message( &raw_msg ) )
     {
-        LOG_DEBUG( "Sent PROFILES_OPEN message for " << profiles.size() << " profiles" ); // sensor " << sensor_index );
+        LOG_DEBUG( "Sent PROFILES_OPEN message for " << streams.size() << " streams" );
     }
     else
     {
-        LOG_ERROR( "Error writing PROFILES_OPEN message for " << profiles.size() << " profiles" ); // sensor " << sensor_index );
+        LOG_ERROR( "Error writing PROFILES_OPEN message for " << streams.size() << " streams" );
     }
 }
 
-void dds_device::close( const std::vector< int16_t >& profile_uids )
+void dds_device::close( const std::vector< int16_t >& stream_uids )
 {
     using namespace topics;
 
-    if (profile_uids.size() > device::control::MAX_OPEN_PROFILES)
+    if ( stream_uids.size() > device::control::MAX_OPEN_STREAMS )
     {
-        throw std::runtime_error( "Too many profiles to close (" + std::to_string( profile_uids.size() )
-                                + "), max is " + std::to_string( device::control::MAX_OPEN_PROFILES ) );
+        throw std::runtime_error( "Too many profiles to close (" + std::to_string( stream_uids.size() )
+                                + "), max is " + std::to_string( device::control::MAX_OPEN_STREAMS ) );
     }
 
-    device::control::profiles_close_msg close_msg;
+    device::control::streams_close_msg close_msg;
     close_msg.message_id = _impl->_control_message_counter++;
-    for (size_t i = 0; i < profile_uids.size(); ++i)
+    for (size_t i = 0; i < stream_uids.size(); ++i)
     {
-        close_msg.profile_uids[i] = profile_uids[i];
+        close_msg.stream_uids[i] = stream_uids[i];
     }
 
     raw::device::control raw_msg;
-    device::control::construct_raw_message( device::control::control_type::PROFILES_CLOSE,
+    device::control::construct_raw_message( device::control::msg_type::STREAMS_CLOSE,
                                             close_msg,
                                             raw_msg );
 
     if (_impl->write_control_message( &raw_msg ))
     {
-        LOG_DEBUG( "Sent PROFILES_CLOSE message for " << profile_uids.size() << " profiles" );
+        LOG_DEBUG( "Sent STREAMS_CLOSE message for " << stream_uids.size() << " streams" );
     }
     else
     {
-        LOG_ERROR( "Error writing PROFILES_CLOSE message for " << profile_uids.size() << " profiles" );
+        LOG_ERROR( "Error writing STREAMS_CLOSE message for " << stream_uids.size() << " streams" );
     }
 }
 

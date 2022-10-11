@@ -249,7 +249,14 @@ private:
                         case topics::device::notification::msg_type::DEVICE_HEADER:
                             if( state_type::WAIT_FOR_DEVICE_HEADER == state )
                             {
-                                _expected_num_of_streams = data.get< topics::device::notification::device_header_msg >()->num_of_streams;
+                                auto msg = data.get< topics::device::notification::device_header_msg >();
+                                if ( msg  == nullptr )
+                                {
+                                    throw std::runtime_error( "get< topics::device::notification::device_header_msg > return nullptr" );
+                                }
+
+                                _expected_num_of_streams = msg->num_of_streams;
+
                                 LOG_INFO( "got DEVICE_HEADER message with " << _expected_num_of_streams << " streams" );
                                 state = state_type::WAIT_FOR_PROFILES;
                             }
@@ -263,6 +270,10 @@ private:
                                 LOG_INFO( "got VIDEO_STREAM_PROFILES message" );
 
                                 auto profiles_msg = data.get< topics::device::notification::video_stream_profiles_msg >();
+                                if ( profiles_msg == nullptr )
+                                {
+                                    throw std::runtime_error( "get< topics::device::notification::video_stream_profiles_msg > return nullptr" );
+                                }
 
                                 for ( size_t i = 0; i < profiles_msg->num_of_profiles; ++i )
                                 {
@@ -296,6 +307,10 @@ private:
                                 LOG_INFO( "got MOTION_STREAM_PROFILES message" );
 
                                 auto profiles_msg = data.get< topics::device::notification::motion_stream_profiles_msg >();
+                                if ( profiles_msg == nullptr )
+                                {
+                                    throw std::runtime_error( "get< topics::device::notification::motion_stream_profiles_msg > return nullptr" );
+                                }
 
                                 for ( size_t i = 0; i < profiles_msg->num_of_profiles; ++i )
                                 {

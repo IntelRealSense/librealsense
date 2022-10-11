@@ -78,8 +78,8 @@ public:
     size_t foreach_motion_profile_in_group( const std::string & group_name,
                                             std::function< void( const rs2_motion_stream & profile, bool def_prof ) > fn ) const;
 
-    void open( const std::vector< rs2_video_stream > & profiles );
-    void close( const std::vector< int16_t >& profile_uids );
+    void open( const std::vector< rs2_video_stream > & streams );
+    void close( const std::vector< int16_t >& stream_uids );
 
 private:
     class impl;
