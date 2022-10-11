@@ -7,6 +7,7 @@ Copyright(c) 2022 Intel Corporation. All Rights Reserved. */
 #include <realdds/topics/dds-topics.h>
 #include <realdds/topics/device-info/deviceInfoPubSubTypes.h>
 #include <realdds/dds-device-broadcaster.h>
+#include <realdds/dds-device-server.h>
 #include <realdds/dds-device-watcher.h>
 #include <realdds/dds-device.h>
 #include <realdds/dds-stream.h>
@@ -306,6 +307,11 @@ PYBIND11_MODULE(NAME, m) {
         .def( "run", &dds_device_broadcaster::run )
         .def( "add_device", &dds_device_broadcaster::add_device )
         .def( "remove_device", &dds_device_broadcaster::remove_device );
+
+    using realdds::dds_device_server;
+    py::class_< dds_device_server >( m, "device_server" )
+        .def( py::init< std::shared_ptr< dds_participant > const &, std::string const & >() )
+        .def( "init", &dds_device_server::init );
 
     // same as in pyrs_internal.cpp
     py::class_< rs2_video_stream > video_stream( m, "video_stream" );
