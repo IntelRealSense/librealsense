@@ -86,18 +86,18 @@ public:
     void run()
     {
         if( _running )
-            throw std::runtime_error( "trying to run() a device that's already running" );
+            DDS_THROW( runtime_error, "trying to run() a device that's already running" );
 
         create_notifications_reader();
         create_control_writer();
         if( ! init() )
-            throw std::runtime_error( "failed getting sensors data from device: " + _info.topic_root );
+            DDS_THROW( runtime_error, "failed getting stream data from '" + _info.topic_root + "'" );
 
-        LOG_DEBUG( "Device" << _info.topic_root << " was initialized successfully" );
+        LOG_DEBUG( "device '" << _info.topic_root << "' initialized successfully" );
         _running = true;
     }
 
-    bool write_control_message( void* msg )
+    bool write_control_message( void * msg )
     {
         assert( _control_writer != nullptr );
 
@@ -107,23 +107,25 @@ public:
 private:
     void create_notifications_reader()
     {
+        if( _notifications_reader )
+            return;
+
         auto topic = topics::device::notification::create_topic( _participant, _info.topic_root + "/notification" );
 
         _notifications_reader = std::make_shared< dds_topic_reader >( topic );
         _notifications_reader->run( dds_topic_reader::reader_qos( eprosima::fastdds::dds::RELIABLE_RELIABILITY_QOS ) );
-
-        LOG_DEBUG( "topic '" << topic->get()->get_name() << "' and reader created" );
     }
 
     void create_control_writer()
     {
+        if( _control_writer )
+            return;
+
         auto topic = topics::device::control::create_topic( _participant, _info.topic_root + "/control" );
         _control_writer = std::make_shared< dds_topic_writer >( topic );
         dds_topic_writer::writer_qos wqos( eprosima::fastdds::dds::RELIABLE_RELIABILITY_QOS );
         wqos.history().depth = 10;  // default is 1
         _control_writer->run( wqos );
-
-        LOG_DEBUG( "topic '" << topic->get()->get_name() << "' and writer created" );
     }
 
     bool init()

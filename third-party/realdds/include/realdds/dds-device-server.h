@@ -65,7 +65,7 @@ public:
     // A server is not valid until init() is called with a list of streams that we want to publish.
     // On successful return from init(), each of the streams will be alive so clients will be able
     // to subscribe.
-    void init( const std::vector<std::string>& supported_streams_names );
+    void init( const std::vector< std::string > & supported_streams_names );
 
     bool is_valid() const { return( nullptr != _notification_server.get() ); }
     bool operator!() const { return ! is_valid(); }

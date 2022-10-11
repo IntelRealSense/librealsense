@@ -35,6 +35,7 @@ public:
                                                  dds_guid const & guid,
                                                  topics::device_info const & info );
 
+    std::shared_ptr< dds_participant > const & participant() const;
     topics::device_info const & device_info() const;
 
     // The device GUID is that of the DataWriter which declares it!

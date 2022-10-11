@@ -176,6 +176,7 @@ PYBIND11_MODULE(NAME, m) {
                       eprosima::fastdds::dds::DomainParticipantQos qos;
                       if( ReturnCode_t::RETCODE_OK == self.get()->get_qos( qos ) )
                           os << " \"" << qos.name() << "\"";
+                      os << " " << to_string( self.guid() );
                   }
                   os << ">";
                   return os.str();
@@ -258,13 +259,13 @@ PYBIND11_MODULE(NAME, m) {
                       os << "INVALID";
                   else
                   {
-                      if( !self.name.empty() )
+                      if( ! self.name.empty() )
                           os << "\"" << self.name << "\" ";
-                      if( !self.serial.empty() )
+                      if( ! self.serial.empty() )
                           os << "s/n \"" << self.serial << "\" ";
-                      if( !self.topic_root.empty() )
-                          os << "topic-root \"" << self.topic_root << "\" ";
-                      if( !self.product_line.empty() )
+                      if( ! self.topic_root.empty() )
+                          os << "@ \"" << self.topic_root << "\" ";
+                      if( ! self.product_line.empty() )
                           os << "product-line \"" << self.product_line << "\" ";
                       os << ( self.locked ? "locked" : "unlocked" );
                   }
@@ -340,7 +341,9 @@ PYBIND11_MODULE(NAME, m) {
     py::class_< dds_device,
                 std::shared_ptr< dds_device >  // handled with a shared_ptr
                 >( m, "device" )
+        .def( py::init( &dds_device::create ))
         .def( "device_info", &dds_device::device_info )
+        .def( "participant", &dds_device::participant )
         .def( "guid", &dds_device::guid )
         .def( "is_running", &dds_device::is_running )
         .def( "run", &dds_device::run )
@@ -357,13 +360,13 @@ PYBIND11_MODULE(NAME, m) {
         //              callback( prof, def_prof ); ) )
         .def( "__repr__", []( dds_device const & self ) {
             std::ostringstream os;
-            os << "<" SNAME ".device[";
-            os << to_string( self.guid() );
+            os << "<" SNAME ".device ";
+            os << self.participant()->print( self.guid() );
             if( ! self.device_info().name.empty() )
                 os << " \"" << self.device_info().name << "\"";
             if( ! self.device_info().serial.empty() )
                 os << " s/n \"" << self.device_info().serial << "\"";
-            os << "]>";
+            os << ">";
             return os.str();
         } );
 
