@@ -86,7 +86,7 @@ public:
     void run()
     {
         if( _running )
-            DDS_THROW( runtime_error, "trying to run() a device that's already running" );
+            DDS_THROW( runtime_error, "device '" + _info.name + "'is already running" );
 
         create_notifications_reader();
         create_control_writer();
@@ -136,6 +136,7 @@ private:
 
         while( ! t.has_expired() && state_type::DONE != state )
         {
+            LOG_DEBUG( state << "..." );
             eprosima::fastrtps::Duration_t one_second = { 1, 0 };
             if( _notifications_reader->get()->wait_for_unread_message( one_second ) )
             {
@@ -158,11 +159,15 @@ private:
                                 break;
                             }
                             _num_of_sensors = device_header->num_of_sensors;
-                            LOG_INFO( "got DEVICE_HEADER message with " << _num_of_sensors << " sensors" );
-                            state = state_type::WAIT_FOR_SENSOR_HEADER;
+                            LOG_INFO( "... DEVICE_HEADER: " << _num_of_sensors << " streams" );
+
+                            if( _num_of_sensors )
+                                state = state_type::WAIT_FOR_SENSOR_HEADER;
+                            else
+                                state = state_type::DONE;
                         }
                         else
-                            LOG_ERROR( "Wrong message received, got 'DEVICE_HEADER' when the state is: " << state );
+                            LOG_ERROR( "DEVICE_HEADER unexpected: state is " << state );
                         break;
 
                     case topics::device::notification::msg_type::SENSOR_HEADER:
@@ -175,18 +180,19 @@ private:
                                 break;
                             }
                             LOG_INFO(
-                                "got SENSOR_HEADER message for sensor: "
-                                << sensor_header->name << " of type: "
+                                "... SENSOR_HEADER: '"
+                                << sensor_header->name << "' of type '"
                                 << ( sensor_header->type
                                              == topics::device::notification::sensor_header_msg::sensor_type::VIDEO
                                          ? "VIDEO_SENSOR"
-                                         : "MOTION_SENSOR" ) );
+                                         : "MOTION_SENSOR" )
+                                << "'" );
 
                             _sensor_index_to_name.emplace( sensor_header->index, sensor_header->name );
                             state = state_type::WAIT_FOR_PROFILES;
                         }
                         else
-                            LOG_ERROR( "Wrong message received, got 'SENSOR_HEADER' when the state is: " << state );
+                            LOG_ERROR( "SENSOR_HEADER unexpected: state is " << state );
                         break;
 
                     case topics::device::notification::msg_type::VIDEO_STREAM_PROFILES:
@@ -199,7 +205,7 @@ private:
                                 LOG_ERROR( "Got VIDEO_STREAM_PROFILES with no data" );
                                 break;
                             }
-                            LOG_INFO( "got VIDEO_STREAM_PROFILES message" );
+                            LOG_INFO( "... VIDEO_STREAM_PROFILES" );
 
                             // TODO: Find a way to remove the "emplace" profiles copy
                             topics::device::notification::video_stream_profiles_msg msg;
@@ -225,8 +231,7 @@ private:
                                            << video_stream_profiles->dds_sensor_index << " could not be found " );
                         }
                         else
-                            LOG_ERROR(
-                                "Wrong message received, got 'VIDEO_STREAM_PROFILES' when the state is: " << state );
+                            LOG_ERROR( "VIDEO_STREAM_PROFILES unexpected: state is " << state );
                         break;
 
                     case topics::device::notification::msg_type::MOTION_STREAM_PROFILES:
@@ -277,6 +282,8 @@ private:
                 }
             }
         }
+        if( state_type::DONE != state )
+            LOG_DEBUG( "timed out; state is " << state );
         return ( state_type::DONE == state );
     }
 };

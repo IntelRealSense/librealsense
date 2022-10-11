@@ -79,6 +79,8 @@ public:
     void publish_notification( topics::raw::device::notification&& notification );
     
 private:
+    void on_discovery_device_header( size_t n_streams );
+
     std::shared_ptr< dds_participant > _participant;
     std::shared_ptr< dds_publisher > _publisher;
     std::string _topic_root;

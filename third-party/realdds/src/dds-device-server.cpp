@@ -10,6 +10,7 @@
 #include <realdds/dds-utilities.h>
 #include <realdds/topics/device-info/device-info-msg.h>
 #include <realdds/topics/image/image-msg.h>
+#include <realdds/topics/notification/notification-msg.h>
 #include <realdds/dds-topic.h>
 #include <realdds/dds-topic-writer.h>
 
@@ -26,14 +27,14 @@ dds_device_server::dds_device_server( std::shared_ptr< dds_participant > const &
     , _publisher( std::make_shared< dds_publisher >( participant ))
     , _topic_root( topic_root )
 {
-    LOG_DEBUG( "DDS device server for device topic root: " << _topic_root << " created" );
+    LOG_DEBUG( "device server created @ '" << _topic_root << "'" );
 }
 
 
 dds_device_server::~dds_device_server()
 {
     _stream_name_to_server.clear();
-    LOG_DEBUG( "DDS device server '" << _topic_root << "' deleted" );
+    LOG_DEBUG( "device server deleted @ '" << _topic_root << "'" );
 }
 
 
@@ -56,7 +57,20 @@ void dds_device_server::publish_image( const std::string & stream_name, const ui
 }
 
 
-void dds_device_server::init( const std::vector<std::string> &supported_streams_names )
+void dds_device_server::on_discovery_device_header( size_t const n_streams )
+{
+    topics::device::notification::device_header_msg device_header;
+    device_header.num_of_sensors = n_streams;
+
+    topics::raw::device::notification notification;
+    topics::device::notification::construct_raw_message( topics::device::notification::msg_type::DEVICE_HEADER,
+                                                         device_header,
+                                                         notification );
+    add_init_msg( std::move( notification ) );
+}
+
+
+void dds_device_server::init( const std::vector< std::string > & supported_streams_names )
 {
     if( is_valid() )
     {
@@ -66,6 +80,8 @@ void dds_device_server::init( const std::vector<std::string> &supported_streams_
     // Create a notifications server
     _notification_server
         = std::make_shared< dds_notification_server >( _publisher, _topic_root + "/notification" );
+
+    on_discovery_device_header( supported_streams_names.size() );
 
     // Create streams servers per each supporting stream of the device
     for( auto stream_name : supported_streams_names )
