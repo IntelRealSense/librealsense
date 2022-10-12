@@ -11,7 +11,8 @@ npm install node-librealsense
 ```
 If it fails to install, please refer to [install prerequisites](https://www.npmjs.com/package/node-librealsense#1-install-prerequisites). Usage examples can be found in `node_modules/node-librealsense/examples` dir.
 
-**Warning**: as of October 2022, the newest `librealsense` SDK version on NPM is 2.13.0, which is from 2018 and doesn't support NodeJS 14 yet.
+**Warning**: as of October 2022, the newest `librealsense` SDK version on NPM is 2.13.0, which is from 2018 and doesn't support NodeJS 14 yet.<br>
+There is a more recent community package that has been tested on Windows up to NodeJS 16, [@cza_li/node-librealsense](https://www.npmjs.com/package/@cza_li/node-librealsense)<br>
 
 # 1. Build from Source #
 
@@ -27,7 +28,14 @@ curl -sL https://deb.nodesource.com/setup_6.x | sudo -E bash -
 sudo apt-get install -y nodejs
 ```
 #### Windows 10
-Please download a NodeJS .msi ([currently up to version 14](https://github.com/IntelRealSense/librealsense/issues/10322)) from [here](https://nodejs.org/en/download/) and install it.
+Please download a NodeJS .msi ([currently officially supported up to version 14](https://github.com/IntelRealSense/librealsense/issues/10322)) from [here](https://nodejs.org/en/download/) and install it.
+
+Alternatively, use [Chocolatey](https://chocolatey.org):
+```
+choco install -y nodejs-lts
+npm i -g npm
+```
+At the time of writing, `nodejs-lts` is NodeJS version 16, which seems to work. Newer versions may not.
 
 #### Mac OS
 **Note:** OSX support for the full range of functionality offered by the SDK is not yet complete.
@@ -55,7 +63,11 @@ You will probably need to setup [proxy of npm](https://docs.npmjs.com/misc/confi
 
 ### Setup Build Environment
 
+#### Ubuntu 16.04
+
 Environment is ready if you're using Ubuntu 16.04.
+
+#### Windows 10
 
 If you're using Windows 10, please do the following steps:
 
@@ -70,6 +82,16 @@ Note#1: The npm module `windows-build-tools` also works for `npm install` Node.j
 Note#2: for Node.js GLFW module, add `msbuild` to system PATH, e.g "`C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\MSBuild\15.0\Bin`"
 
 Note#3: When running `Node.js` 6.x, you might need to [upgrade npm-bundled `node-gyp`](https://github.com/nodejs/node-gyp/wiki/Updating-npm%27s-bundled-node-gyp) to support Visual Studio 2017 (if you're using it)
+
+##### Chocolatey
+
+You can install the required build tools with [Chocolatey](https://chocolatey.org):
+```
+choco install -y python cmake visualstudio2022buildtools
+choco install -y visualstudio2022-workload-vctools --package-parameters "--includeOptional"
+```
+
+Note that these will not be added to your `PATH` and you will need to do that manually.
 
 ## 1.2. Build Native C++ `librealsense` ##
 
