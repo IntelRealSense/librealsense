@@ -62,8 +62,7 @@ private:
     // Ctor is private: use find() or create() instead. Same for dtor -- it should be automatic
     dds_device( std::shared_ptr< impl > );
 
-    //should_lock false only for internal functions already holding the lock to avoid multiple locking
-    static std::shared_ptr< dds_device > find_internal( dds_guid const & guid, bool should_lock = true );
+    static std::shared_ptr< dds_device > find_internal( dds_guid const & guid );
 };  // class dds_device
 
 

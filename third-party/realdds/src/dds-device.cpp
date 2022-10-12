@@ -21,15 +21,15 @@ std::mutex devices_mutex;
 
 std::shared_ptr< dds_device > dds_device::find( dds_guid const & guid )
 {
-    return find_internal( guid, true );
+    std::lock_guard< std::mutex > lock( devices_mutex );
+    return find_internal( guid );
 }
 
-std::shared_ptr< dds_device > dds_device::find_internal( dds_guid const & guid, bool shouldLock )
+std::shared_ptr< dds_device > dds_device::find_internal( dds_guid const & guid)
 {
-    std::shared_ptr< dds_device > dev;
+    //Assumes devices_mutex is locked outside this function to protect access to guid_to_device
 
-    if( shouldLock )
-        devices_mutex.lock();
+    std::shared_ptr< dds_device > dev;
 
     auto it = guid_to_device.find( guid );
     if( it != guid_to_device.end() )
@@ -42,9 +42,6 @@ std::shared_ptr< dds_device > dds_device::find_internal( dds_guid const & guid, 
         }
     }
 
-    if ( shouldLock )
-        devices_mutex.unlock();
-
     return dev;
 }
 
@@ -55,7 +52,7 @@ std::shared_ptr< dds_device > dds_device::create( std::shared_ptr< dds_participa
     // Locking before find_internal() to avoid a device created between search and creation
     std::lock_guard< std::mutex > lock( devices_mutex );
 
-    std::shared_ptr< dds_device > dev = find_internal( guid, false );
+    std::shared_ptr< dds_device > dev = find_internal( guid );
 
     if( ! dev )
     {
