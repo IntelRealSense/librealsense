@@ -4,7 +4,8 @@
 #pragma once
 
 #include "dds-defines.h"
-#include <librealsense2/h/rs_internal.h>
+
+#include "dds-stream.h"
 
 #include <memory>
 #include <vector>
@@ -28,24 +29,6 @@ class dds_participant;
 class dds_device
 {
 public:
-    class dds_stream
-    {
-    public:
-        dds_stream( rs2_stream type, std::string group_name );
-
-        void add_video_profile( const rs2_video_stream & profile, bool default_profile );
-        void add_motion_profile( const rs2_motion_stream & profile, bool default_profile );
-
-        size_t foreach_video_profile( std::function< void( const rs2_video_stream & profile, bool def_prof ) > fn ) const;
-        size_t foreach_motion_profile( std::function< void( const rs2_motion_stream & profile, bool def_prof ) > fn ) const;
-
-        //std::string get_name();
-
-    private:
-        class impl;
-        std::shared_ptr< impl > _impl;
-    };
-
     static std::shared_ptr< dds_device > find( dds_guid const & guid );
 
     static std::shared_ptr< dds_device > create( std::shared_ptr< dds_participant > const & participant,
@@ -64,22 +47,18 @@ public:
 
     //----------- below this line, a device must be running!
 
-    size_t num_of_streams() const;
-    size_t num_of_stream_groups() const;
+    size_t number_of_streams() const;
 
-    //size_t foreach_stream( std::function< void( const std::string & name ) > fn ) const;
-    size_t foreach_stream_group( std::function< void( const std::string & name ) > fn ) const;
+    size_t foreach_stream( std::function< void( std::shared_ptr< const dds_stream > stream ) > fn ) const;
+    size_t foreach_profile( std::function< void( const dds_stream::profile & prof, bool def_prof ) > fn ) const;
 
-    size_t foreach_video_profile( std::function< void( const rs2_video_stream & profile, bool def_prof ) > fn ) const;
-    size_t foreach_motion_profile( std::function< void( const rs2_motion_stream & profile, bool def_prof ) > fn ) const;
+    //size_t foreach_stream_group( std::function< void( const std::string & name ) > fn ) const;
+    //size_t foreach_profile_in_group( const std::string & group_name,
+    //                                 std::function< void( const dds_stream::profile & prof, bool def_prof ) > fn ) const;
 
-    size_t foreach_video_profile_in_group( const std::string & group_name,
-                                           std::function< void( const rs2_video_stream & profile, bool def_prof ) > fn ) const;
-    size_t foreach_motion_profile_in_group( const std::string & group_name,
-                                            std::function< void( const rs2_motion_stream & profile, bool def_prof ) > fn ) const;
-
-    void open( const std::vector< rs2_video_stream > & streams );
-    void close( const std::vector< int16_t >& stream_uids );
+    void open( const std::vector< dds_video_stream::profile > & profiles );
+    void open( const std::vector< dds_motion_stream::profile > & profiles);
+    void close( const std::vector< int16_t > & stream_uids );
 
 private:
     class impl;

@@ -99,12 +99,16 @@ void add_init_device_header_msg( rs2::device dev, std::shared_ptr< dds_device_se
 {   
     topics::device::notification::device_header_msg device_header_msg;
     auto &&sensors = dev.query_sensors();
-    size_t num_of_streams = 0;
+    std::map<std::pair<rs2_stream, int>, int> unique_streams;
     for (auto sensor : sensors)
     {
-        num_of_streams += sensor.get_stream_profiles().size();
+        std::vector<rs2::stream_profile> stream_profiles = sensor.get_stream_profiles();
+        for ( auto && sp : stream_profiles )
+        {
+            unique_streams[std::make_pair( sp.stream_type(), sp.stream_index() )]++;
+        }
     }
-    device_header_msg.num_of_streams = num_of_streams;
+    device_header_msg.num_of_streams = unique_streams.size();
 
     topics::raw::device::notification raw_msg;
     topics::device::notification::construct_raw_message( topics::device::notification::msg_type::DEVICE_HEADER,

@@ -1,6 +1,8 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2022 Intel Corporation. All Rights Reserved.
 
+#pragma once
+
 #include "dds-participant.h"
 #include "dds-utilities.h"
 
@@ -29,6 +31,9 @@ enum class state_type
     WAIT_FOR_DEVICE_HEADER,
     WAIT_FOR_PROFILES,
     DONE
+    //TODO - Assuming all profiles of a stream will be sent in a single video_stream_profiles_msg
+    //Otherwise need a stream header message with expected number of profiles for each stream
+    //But then need all stream header messages to be sent before any profile message for a simple state machine
 };
 
 std::ostream & operator<<( std::ostream & s, state_type st )
@@ -51,52 +56,36 @@ std::ostream & operator<<( std::ostream & s, state_type st )
     return s;
 }
 
-}  // namespace
 
-class dds_device::dds_stream::impl
+dds_video_stream::profile to_realdds_format( const topics::device::notification::video_stream_profile & profile )
 {
-public:
-    impl( rs2_stream type, std::string group_name )
-        : _type( type )
-        , _group_name( group_name )
-    {
-    }
-
-    rs2_stream _type;
-    std::string _group_name;
-
-    std::vector< std::pair< rs2_video_stream, bool > > _video_profiles;
-    std::vector< std::pair< rs2_motion_stream, bool > > _motion_profiles;
-};
-
-rs2_video_stream to_rs2_format( const topics::device::notification::video_stream_profile & profile )
-{
-    rs2_video_stream prof;
+    dds_video_stream::profile prof;
     prof.type = profile.type;
     prof.index = profile.stream_index;
     prof.uid = profile.uid;
+    prof.framerate = profile.framerate;
+    prof.format = profile.format;
     prof.width = profile.width;
     prof.height = profile.height;
-    prof.fps = profile.framerate;
-    // TODO - bpp needed?
-    prof.fmt = profile.format;
     // TODO - add intrinsics
 
     return prof;
 }
 
-rs2_motion_stream to_rs2_format( const topics::device::notification::motion_stream_profile & profile )
+dds_motion_stream::profile to_realdds_format( const topics::device::notification::motion_stream_profile & profile )
 {
-    rs2_motion_stream prof;
-    prof.type = profile.type;
-    prof.index = profile.stream_index;
-    prof.uid = profile.uid;
-    prof.fps = profile.framerate;
-    prof.fmt = profile.format;
-    // TODO - add intrinsics
+    dds_motion_stream::profile prof;
+    prof.type      = profile.type;
+    prof.index     = profile.stream_index;
+    prof.uid       = profile.uid;
+    prof.framerate = profile.framerate;
+    prof.format    = profile.format;
 
     return prof;
 }
+
+}  // namespace
+
 
 class dds_device::impl
 {
@@ -108,9 +97,7 @@ public:
     bool _running = false;
 
     size_t _expected_num_of_streams = 0;
-    size_t _received_num_of_streams = 0;
-    std::map< size_t, std::shared_ptr< dds_stream > > _streams;
-    std::map< std::string, std::vector< std::shared_ptr< dds_stream > > > _streams_in_group;
+    std::map< size_t, std::shared_ptr< dds_stream > > _streams; // Map streams by their unique IDs
     std::atomic<uint32_t> _control_message_counter = { 0 };
 
     eprosima::fastdds::dds::Subscriber * _subscriber = nullptr;
@@ -280,19 +267,17 @@ private:
                                     auto profile = profiles_msg->profiles[i];
                                     if ( !_streams[profile.uid] )
                                     {
-                                        _streams[profile.uid] = std::make_shared<dds_stream>( profile.type, profiles_msg->group_name );
-                                        _streams_in_group[profiles_msg->group_name].push_back( _streams[profile.uid] );
+                                        _streams[profile.uid] = std::make_shared<dds_video_stream>( profile.type, profiles_msg->group_name );
                                     }
-                                    _streams[profile.uid]->add_video_profile( to_rs2_format( profile ), profile.default_profile );
+                                    _streams[profile.uid]->add_profile( to_realdds_format( profile ), profile.default_profile );
                                 }
 
-                                _received_num_of_streams += profiles_msg->num_of_profiles;
-                                if ( _received_num_of_streams >= _expected_num_of_streams )
+                                if ( _streams.size() >= _expected_num_of_streams )
                                 {
                                     state = state_type::DONE;
-                                    if ( _received_num_of_streams > _expected_num_of_streams)
+                                    if ( _streams.size() > _expected_num_of_streams)
                                     {
-                                        LOG_INFO( "Received more streams (" << _received_num_of_streams
+                                        LOG_INFO( "Received more streams (" << _streams.size()
                                                   << ") than expected (" << _expected_num_of_streams << ")" );
                                     }
                                 }
@@ -317,19 +302,17 @@ private:
                                     auto profile = profiles_msg->profiles[i];
                                     if ( !_streams[profile.uid] )
                                     {
-                                        _streams[profile.uid] = std::make_shared<dds_stream>( profile.type, profiles_msg->group_name );
-                                        _streams_in_group[profiles_msg->group_name].push_back( _streams[profile.uid] );
+                                        _streams[profile.uid] = std::make_shared<dds_motion_stream>( profile.type, profiles_msg->group_name );
                                     }
-                                    _streams[profile.uid]->add_motion_profile( to_rs2_format( profile ), profile.default_profile );
+                                    _streams[profile.uid]->add_profile( to_realdds_format( profile ), profile.default_profile );
                                 }
 
-                                _received_num_of_streams += profiles_msg->num_of_profiles;
-                                if ( _received_num_of_streams >= _expected_num_of_streams )
+                                if ( _streams.size() >= _expected_num_of_streams )
                                 {
                                     state = state_type::DONE;
-                                    if ( _received_num_of_streams > _expected_num_of_streams )
+                                    if ( _streams.size() > _expected_num_of_streams )
                                     {
-                                        LOG_INFO( "Received more streams (" << _received_num_of_streams
+                                        LOG_INFO( "Received more streams (" << _streams.size()
                                                   << ") than expected (" << _expected_num_of_streams << ")" );
                                     }
                                 }

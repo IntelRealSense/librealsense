@@ -19,79 +19,6 @@ std::mutex devices_mutex;
 }  // namespace
 
 
-dds_device::dds_stream::dds_stream( rs2_stream type, std::string group_name )
-    : _impl(std::make_shared< dds_stream::impl >( type, group_name ))
-{
-}
-
-void dds_device::dds_stream::add_video_profile( const rs2_video_stream & profile, bool default_profile )
-{
-    if ( _impl->_type != profile.type )
-    {
-        throw std::runtime_error( "profile of different type then stream" );
-    }
-
-    _impl->_video_profiles.push_back( { profile, default_profile } );
-}
-
-void dds_device::dds_stream::add_motion_profile( const rs2_motion_stream & profile, bool default_profile )
-{
-    if ( _impl->_type != profile.type )
-    {
-        throw std::runtime_error( "profile of different type then stream" );
-    }
-
-    _impl->_motion_profiles.push_back( { profile, default_profile } );
-}
-
-size_t dds_device::dds_stream::foreach_video_profile( std::function< void( const rs2_video_stream & profile, bool def_prof ) > fn ) const
-{
-    for ( auto profile : _impl->_video_profiles )
-    {
-        fn( profile.first, profile.second );
-    }
-
-    return _impl->_video_profiles.size();
-}
-
-size_t dds_device::dds_stream::foreach_motion_profile( std::function< void( const rs2_motion_stream & profile, bool def_prof ) > fn ) const
-{
-    for ( auto profile : _impl->_motion_profiles )
-    {
-        fn( profile.first, profile.second );
-    }
-
-    return _impl->_motion_profiles.size();
-}
-
-//std::string dds_device::dds_stream::get_name()
-//{
-//    std::stringstream ss;
-//    ss << rs2_stream_to_string( _impl->_type );
-//
-//    //Add index number to the name
-//    if ( _impl->_type == RS2_STREAM_DEPTH || _impl->_type == RS2_STREAM_COLOR || _impl->_type == RS2_STREAM_INFRARED )
-//    {
-//        if ( ! _impl->_video_profiles.empty() && _impl->_video_profiles[0].first.index != 0 )
-//        {
-//            ss << " " << _impl->_video_profiles[0].first.index;
-//        }
-//    }
-//    else if ( _impl->_type == RS2_STREAM_GYRO || _impl->_type == RS2_STREAM_ACCEL )
-//    {
-//        if ( ! _impl->_motion_profiles.empty() && _impl->_motion_profiles[0].first.index != 0 )
-//        {
-//            ss << " " << _impl->_motion_profiles[0].first.index;
-//        }
-//    }
-//    else
-//    {
-//        throw std::runtime_error( "trying to get name of unsupported stream type " + std::to_string( _impl->_type ) );
-//    }
-//
-//    return ss.str();
-//}
-
 std::shared_ptr< dds_device > dds_device::find( dds_guid const & guid )
 {
     return find_internal( guid, true );
@@ -170,122 +97,121 @@ dds_guid const & dds_device::guid() const
     return _impl->_guid;
 }
 
-size_t dds_device::num_of_streams() const
+size_t dds_device::number_of_streams() const
 {
     return _impl->_streams.size();
 }
 
-size_t dds_device::num_of_stream_groups() const
+size_t dds_device::foreach_stream( std::function< void( std::shared_ptr< const dds_stream > stream ) > fn ) const
 {
-    return _impl->_streams_in_group.size();
+    for ( auto const & stream : _impl->_streams )
+    {
+        fn( stream.second );
+    }
+
+    return _impl->_streams.size();
 }
 
-//size_t dds_device::foreach_stream( std::function< void( const std::string & name ) > fn ) const
+size_t
+dds_device::foreach_profile( std::function< void( const dds_stream::profile & prof, bool def_prof ) > fn ) const
+{
+    size_t profiles_num = 0;
+
+    for ( auto const & stream : _impl->_streams )
+    {
+        profiles_num += stream.second->foreach_profile( fn );
+    }
+
+    return profiles_num;
+}
+
+//size_t dds_device::foreach_stream_group( std::function< void( const std::string & name ) > fn ) const
 //{
-//    for ( auto const & stream : _impl->_streams )
+//    for ( auto const & group : _impl->_streams_in_group )
 //    {
-//        fn( stream.second->get_name() );
+//        fn( group.first );
 //    }
 //
-//    return _impl->_streams.size();
+//    return _impl->_streams_in_group.size();
 //}
 
-size_t dds_device::foreach_stream_group( std::function< void( const std::string & name ) > fn ) const
-{
-    for ( auto const & group : _impl->_streams_in_group )
-    {
-        fn( group.first );
-    }
+//size_t
+//dds_device::foreach_profile_in_group( const std::string & group_name,
+//                                      std::function< void( const dds_stream::profile & prof, bool def_prof ) > fn ) const
+//{
+//    auto group = _impl->_streams_in_group.find( group_name );
+//    if ( group != _impl->_streams_in_group.end() )
+//    {
+//        for ( auto const & stream : group->second )
+//        {
+//            stream->foreach_profile( fn );
+//        }
+//    }
+//    else
+//    {
+//        LOG_ERROR( "Unknown group " << group_name );
+//    }
+//
+//    return group->second.size();
+//}
 
-    return _impl->_streams_in_group.size();
-}
-
-size_t
-dds_device::foreach_video_profile( std::function< void( const rs2_video_stream & profile, bool def_prof ) > fn ) const
-{
-    size_t profiles_num = 0;
-
-    for ( auto const & stream : _impl->_streams )
-    {
-        profiles_num += stream.second->foreach_video_profile( fn );
-    }
-
-    return profiles_num;
-}
-
-size_t
-dds_device::foreach_motion_profile( std::function< void( const rs2_motion_stream & profile, bool def_prof ) > fn ) const
-{
-    size_t profiles_num = 0;
-
-    for ( auto const & stream : _impl->_streams )
-    {
-        profiles_num += stream.second->foreach_motion_profile( fn );
-    }
-
-    return profiles_num;
-}
-
-size_t
-dds_device::foreach_video_profile_in_group( const std::string & group_name,
-                                            std::function< void( const rs2_video_stream & profile, bool def_prof ) > fn ) const
-{
-    auto group = _impl->_streams_in_group.find( group_name );
-    if ( group != _impl->_streams_in_group.end() )
-    {
-        for ( auto const & stream : group->second )
-        {
-            stream->foreach_video_profile( fn );
-        }
-    }
-    else
-    {
-        LOG_ERROR( "Unknown group " << group_name );
-    }
-
-    return group->second.size();
-}
-
-size_t
-dds_device::foreach_motion_profile_in_group( const std::string & group_name,
-                                             std::function< void( const rs2_motion_stream & profile, bool def_prof ) > fn ) const
-{
-    auto group = _impl->_streams_in_group.find( group_name );
-    if ( group != _impl->_streams_in_group.end() )
-    {
-        for ( auto const & stream : group->second )
-        {
-            stream->foreach_motion_profile( fn );
-        }
-    }
-    else
-    {
-        LOG_ERROR( "Unknown group " << group_name );
-    }
-
-    return group->second.size();
-}
-
-void dds_device::open( const std::vector< rs2_video_stream > & streams )
+void dds_device::open( const std::vector< dds_video_stream::profile > & profiles )
 {
     using namespace topics;
 
-    if ( streams.size() > device::control::MAX_OPEN_STREAMS )
+    if ( profiles.size() > device::control::MAX_OPEN_STREAMS )
     {
-        throw std::runtime_error( "Too many streams to open (" + std::to_string( streams.size() )
-                                + "), max is " + std::to_string( device::control::MAX_OPEN_STREAMS ) );
+        throw std::length_error( "Too many streams to open (" + std::to_string( profiles.size() )
+            + "), max is " + std::to_string( device::control::MAX_OPEN_STREAMS ) );
     }
 
     device::control::streams_open_msg open_msg;
     open_msg.message_id = _impl->_control_message_counter++;
-    for ( size_t i = 0; i < streams.size(); ++i )
+    for ( size_t i = 0; i < profiles.size(); ++i )
     {
-        open_msg.streams[i].uid       = streams[i].uid;
-        open_msg.streams[i].framerate = streams[i].fps;
-        open_msg.streams[i].format    = streams[i].fmt;
-        open_msg.streams[i].type      = streams[i].type;
-        open_msg.streams[i].width     = streams[i].width;
-        open_msg.streams[i].height    = streams[i].height;
+        open_msg.streams[i].uid = profiles[i].uid;
+        open_msg.streams[i].framerate = profiles[i].framerate;
+        open_msg.streams[i].format = profiles[i].format;
+        open_msg.streams[i].type = profiles[i].type;
+        open_msg.streams[i].width = profiles[i].width;
+        open_msg.streams[i].height = profiles[i].height;
+    }
+
+    raw::device::control raw_msg;
+    device::control::construct_raw_message( device::control::msg_type::STREAMS_OPEN,
+        open_msg,
+        raw_msg );
+
+    if ( _impl->write_control_message( &raw_msg ) )
+    {
+        LOG_DEBUG( "Sent STREAMS_OPEN message for " << profiles.size() << " streams" );
+    }
+    else
+    {
+        LOG_ERROR( "Error writing STREAMS_OPEN message for " << profiles.size() << " streams" );
+    }
+}
+
+void dds_device::open( const std::vector< dds_motion_stream::profile > & profiles )
+{
+    using namespace topics;
+
+    if ( profiles.size() > device::control::MAX_OPEN_STREAMS )
+    {
+        throw std::length_error( "Too many streams to open (" + std::to_string( profiles.size() )
+                                 + "), max is " + std::to_string( device::control::MAX_OPEN_STREAMS ) );
+    }
+
+    device::control::streams_open_msg open_msg;
+    open_msg.message_id = _impl->_control_message_counter++;
+    for ( size_t i = 0; i < profiles.size(); ++i )
+    {
+        open_msg.streams[i].uid       = profiles[i].uid;
+        open_msg.streams[i].framerate = profiles[i].framerate;
+        open_msg.streams[i].format    = profiles[i].format;
+        open_msg.streams[i].type      = profiles[i].type;
+        open_msg.streams[i].width     = 0;
+        open_msg.streams[i].height    = 0;
     }
 
     raw::device::control raw_msg;
@@ -295,11 +221,11 @@ void dds_device::open( const std::vector< rs2_video_stream > & streams )
 
     if ( _impl->write_control_message( &raw_msg ) )
     {
-        LOG_DEBUG( "Sent PROFILES_OPEN message for " << streams.size() << " streams" );
+        LOG_DEBUG( "Sent STREAMS_OPEN message for " << profiles.size() << " streams" );
     }
     else
     {
-        LOG_ERROR( "Error writing PROFILES_OPEN message for " << streams.size() << " streams" );
+        LOG_ERROR( "Error writing STREAMS_OPEN message for " << profiles.size() << " streams" );
     }
 }
 

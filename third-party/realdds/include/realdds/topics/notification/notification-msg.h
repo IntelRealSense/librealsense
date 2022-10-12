@@ -2,9 +2,10 @@
 // Copyright(c) 2022 Intel Corporation. All Rights Reserved.
 
 #pragma once
-#include <string>
-#include <librealsense2/h/rs_sensor.h>
+
 #include "notificationPubSubTypes.h"
+
+#include <string>
 
 namespace realdds {
 namespace topics {
@@ -42,8 +43,8 @@ public:
         int8_t stream_index;     // Normally used to distinguish IR L / R, not related to stream_header_msg::index
         int16_t uid;             // Stream unique ID
         int16_t framerate;       // FPS
-        rs2_format format;       // Transfer as uint8_t?
-        rs2_stream type;         // Transfer as uint8_t?
+        int8_t format;           // Corresponds to rs2_format
+        int8_t type;             // Corresponds to rs2_stream
         int16_t width;           // Resolution width [pixels]
         int16_t height;          // Resolution width [pixels]
         bool default_profile;    // Is default stream of the sensor
@@ -55,8 +56,8 @@ public:
         int8_t stream_index;     // Normally used to distinguish IR L / R, not related to stream_header_msg::index
         int16_t uid;             // Stream unique ID
         int16_t framerate;       // FPS
-        rs2_format format;       // Transfer as uint8_t?
-        rs2_stream type;         // Transfer as uint8_t?
+        int8_t format;           // Corresponds to rs2_format
+        int8_t type;             // Corresponds to rs2_stream
         bool default_profile;    // Is default stream of the sensor
     };
 
@@ -83,7 +84,7 @@ public:
 
     struct control_response_msg
     {
-        uint32_t message_id; // Running counter
+        uint32_t message_id;  // Running counter
         uint32_t response_to; // message_id of the control this message is responding to
         control_result result;
         //TODO - double value for options or vector of bytes for HW monitor

@@ -31,8 +31,8 @@ public:
     {
         int16_t uid;             // Stream unique ID
         int16_t framerate;       // FPS
-        rs2_format format;       // Transfer as uint8_t?
-        rs2_stream type;         // Transfer as uint8_t?
+        int8_t format;           // Corresponds to rs2_format
+        int8_t type;             // Corresponds to rs2_stream
         int16_t width;           // Resolution width [pixels]
         int16_t height;          // Resolution width [pixels]
     };
