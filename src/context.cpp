@@ -549,31 +549,34 @@ namespace librealsense
 
             //Assumes dds_device initialization finished
             std::set< std::string > sensor_names;
-            size_t count = _dds_dev->foreach_stream( [&]( std::shared_ptr< const realdds::dds_stream > stream ) {
+            _dds_dev->foreach_stream( [&]( std::shared_ptr< const realdds::dds_stream > stream ) {
                     if( sensor_names.find( stream->get_group_name() ) == sensor_names.end() )
                     {
                         sensor_names.insert( stream->get_group_name() );
                         this->add_dds_sensor( _dds_dev, stream->get_group_name() );
                     }
                 } );
-            for( size_t i = 0; i < count; ++i )
+            for( size_t i = 0; i < sensor_names.size(); ++i )
             {
                 software_sensor & sensor = get_software_sensor( i );
                 auto sensor_name = sensor.get_info( RS2_CAMERA_INFO_NAME );
-                _dds_dev->foreach_stream( [&]( std::shared_ptr< const realdds::dds_stream > stream ) {
-                    rs2_stream type = static_cast< rs2_stream >( stream->get_type() );
-                    stream->foreach_profile( [&]( const realdds::dds_stream::profile & profile, bool default_profile ) {
-                        if ( type == RS2_STREAM_DEPTH || type == RS2_STREAM_COLOR || type == RS2_STREAM_INFRARED )
-                        {
-                            sensor.add_video_stream( to_rs2_format( static_cast< const realdds::dds_video_stream::profile & >(profile) ),
-                                                     default_profile );
-                        }
-                        if ( type == RS2_STREAM_GYRO || type == RS2_STREAM_ACCEL )
-                        {
-                            sensor.add_motion_stream( to_rs2_format( static_cast< const realdds::dds_motion_stream::profile & >( profile ) ),
-                                                      default_profile );
-                        }
-                    } ); //End foreach_profile lambda
+                _dds_dev->foreach_stream( [&]( std::shared_ptr< realdds::dds_stream > stream ) {
+                    if ( sensor_name.compare( stream->get_group_name() ) == 0 )
+                    {
+                        rs2_stream type = static_cast< rs2_stream >( stream->get_type() );
+                        stream->foreach_profile( [&]( const realdds::dds_stream::profile & profile, bool default_profile ) {
+                            if ( type == RS2_STREAM_DEPTH || type == RS2_STREAM_COLOR || type == RS2_STREAM_INFRARED )
+                            {
+                                sensor.add_video_stream( to_rs2_format( static_cast< const realdds::dds_video_stream::profile & >( profile ) ),
+                                    default_profile );
+                            }
+                            if ( type == RS2_STREAM_GYRO || type == RS2_STREAM_ACCEL )
+                            {
+                                sensor.add_motion_stream( to_rs2_format( static_cast< const realdds::dds_motion_stream::profile & >( profile ) ),
+                                    default_profile );
+                            }
+                        } ); //End foreach_profile lambda
+                    }
                 } ); //End foreach_stream lambda
             }
         } //End dds_device_proxy constructor

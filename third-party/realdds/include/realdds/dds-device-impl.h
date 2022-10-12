@@ -97,7 +97,7 @@ public:
     bool _running = false;
 
     size_t _expected_num_of_streams = 0;
-    std::map< size_t, std::shared_ptr< dds_stream > > _streams; // Map streams by their unique IDs
+    std::map< std::pair< size_t, size_t >, std::shared_ptr< dds_stream > > _streams; // Map streams by their unique ID+index pairs
     std::atomic<uint32_t> _control_message_counter = { 0 };
 
     eprosima::fastdds::dds::Subscriber * _subscriber = nullptr;
@@ -265,11 +265,12 @@ private:
                                 for ( size_t i = 0; i < profiles_msg->num_of_profiles; ++i )
                                 {
                                     auto profile = profiles_msg->profiles[i];
-                                    if ( !_streams[profile.uid] )
+                                    auto key = std::make_pair( profile.uid, profile.stream_index );
+                                    if ( !_streams[key] )
                                     {
-                                        _streams[profile.uid] = std::make_shared<dds_video_stream>( profile.type, profiles_msg->group_name );
+                                        _streams[key] = std::make_shared<dds_video_stream>( profile.type, profiles_msg->group_name );
                                     }
-                                    _streams[profile.uid]->add_profile( to_realdds_format( profile ), profile.default_profile );
+                                    _streams[key]->add_profile( to_realdds_format( profile ), profile.default_profile );
                                 }
 
                                 if ( _streams.size() >= _expected_num_of_streams )
@@ -300,11 +301,12 @@ private:
                                 for ( size_t i = 0; i < profiles_msg->num_of_profiles; ++i )
                                 {
                                     auto profile = profiles_msg->profiles[i];
-                                    if ( !_streams[profile.uid] )
+                                    auto key = std::make_pair( profile.uid, profile.stream_index );
+                                    if ( !_streams[key] )
                                     {
-                                        _streams[profile.uid] = std::make_shared<dds_motion_stream>( profile.type, profiles_msg->group_name );
+                                        _streams[key] = std::make_shared<dds_motion_stream>( profile.type, profiles_msg->group_name );
                                     }
-                                    _streams[profile.uid]->add_profile( to_realdds_format( profile ), profile.default_profile );
+                                    _streams[key]->add_profile( to_realdds_format( profile ), profile.default_profile );
                                 }
 
                                 if ( _streams.size() >= _expected_num_of_streams )

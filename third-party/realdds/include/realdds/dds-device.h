@@ -49,12 +49,7 @@ public:
 
     size_t number_of_streams() const;
 
-    size_t foreach_stream( std::function< void( std::shared_ptr< const dds_stream > stream ) > fn ) const;
-    size_t foreach_profile( std::function< void( const dds_stream::profile & prof, bool def_prof ) > fn ) const;
-
-    //size_t foreach_stream_group( std::function< void( const std::string & name ) > fn ) const;
-    //size_t foreach_profile_in_group( const std::string & group_name,
-    //                                 std::function< void( const dds_stream::profile & prof, bool def_prof ) > fn ) const;
+    size_t foreach_stream( std::function< void( std::shared_ptr< dds_stream > stream ) > fn ) const;
 
     void open( const std::vector< dds_video_stream::profile > & profiles );
     void open( const std::vector< dds_motion_stream::profile > & profiles);

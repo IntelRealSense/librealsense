@@ -102,7 +102,7 @@ size_t dds_device::number_of_streams() const
     return _impl->_streams.size();
 }
 
-size_t dds_device::foreach_stream( std::function< void( std::shared_ptr< const dds_stream > stream ) > fn ) const
+size_t dds_device::foreach_stream( std::function< void( std::shared_ptr< dds_stream > stream ) > fn ) const
 {
     for ( auto const & stream : _impl->_streams )
     {
@@ -111,49 +111,6 @@ size_t dds_device::foreach_stream( std::function< void( std::shared_ptr< const d
 
     return _impl->_streams.size();
 }
-
-size_t
-dds_device::foreach_profile( std::function< void( const dds_stream::profile & prof, bool def_prof ) > fn ) const
-{
-    size_t profiles_num = 0;
-
-    for ( auto const & stream : _impl->_streams )
-    {
-        profiles_num += stream.second->foreach_profile( fn );
-    }
-
-    return profiles_num;
-}
-
-//size_t dds_device::foreach_stream_group( std::function< void( const std::string & name ) > fn ) const
-//{
-//    for ( auto const & group : _impl->_streams_in_group )
-//    {
-//        fn( group.first );
-//    }
-//
-//    return _impl->_streams_in_group.size();
-//}
-
-//size_t
-//dds_device::foreach_profile_in_group( const std::string & group_name,
-//                                      std::function< void( const dds_stream::profile & prof, bool def_prof ) > fn ) const
-//{
-//    auto group = _impl->_streams_in_group.find( group_name );
-//    if ( group != _impl->_streams_in_group.end() )
-//    {
-//        for ( auto const & stream : group->second )
-//        {
-//            stream->foreach_profile( fn );
-//        }
-//    }
-//    else
-//    {
-//        LOG_ERROR( "Unknown group " << group_name );
-//    }
-//
-//    return group->second.size();
-//}
 
 void dds_device::open( const std::vector< dds_video_stream::profile > & profiles )
 {
