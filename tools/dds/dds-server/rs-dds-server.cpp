@@ -137,8 +137,8 @@ void prepare_video_profiles_messeges( rs2::device dev,
             topics::device::notification::video_stream_profile vsp_msg = { static_cast< int8_t >( vsp.stream_index() ),
                                                                            static_cast< int16_t >( vsp.unique_id() ),
                                                                            static_cast< int16_t >( vsp.fps() ),
-                                                                           vsp.format(),
-                                                                           vsp.stream_type(),
+                                                                           static_cast< int8_t >( vsp.format() ),
+                                                                           static_cast< int8_t >( vsp.stream_type() ),
                                                                            static_cast< int16_t >( vsp.width() ),
                                                                            static_cast< int16_t >( vsp.height() ),
                                                                            vsp.is_default() };
@@ -170,8 +170,8 @@ void prepare_motion_profiles_messeges( rs2::device dev,
             topics::device::notification::motion_stream_profile msp_msg = { static_cast< int8_t >( msp.stream_index() ),
                                                                             static_cast< int16_t >( msp.unique_id() ),
                                                                             static_cast< int16_t >( msp.fps() ),
-                                                                            msp.format(),
-                                                                            msp.stream_type(),
+                                                                            static_cast< int8_t >( msp.format() ),
+                                                                            static_cast< int8_t >( msp.stream_type() ),
                                                                             msp.is_default() };
             motion_stream_profiles_msg.profiles[index++] = std::move( msp_msg );
         }
