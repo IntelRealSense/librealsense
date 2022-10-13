@@ -50,37 +50,16 @@ std::string to_string( realdds::dds_guid const & guid )
     }                                                                                                                  \
     catch( std::exception const & e )                                                                                  \
     {                                                                                                                  \
-        std::cerr << "?!?!?!!? exception in python " #CLS "." #FN_NAME " ?!?!?!?!?" << std::endl;                      \
-        std::cerr << e.what() << std::endl;                                                                            \
+        LOG_ERROR( "EXCEPTION in python " #CLS "." #FN_NAME ": " << e.what() ); \
     }                                                                                                                  \
     catch( ... )                                                                                                       \
     {                                                                                                                  \
-        std::cerr << "?!?!?!!? exception in python " #CLS "." #FN_NAME " ?!?!?!?!?" << std::endl;                      \
+        LOG_ERROR( "UNKNOWN EXCEPTION in python " #CLS "." #FN_NAME ); \
     }
 #define FN_FWD( CLS, FN_NAME, PY_ARGS, FN_ARGS, CODE )                                                                 \
     #FN_NAME, []( CLS & self, std::function < void PY_ARGS > callback ) {                                              \
-        self.FN_NAME( [callback] FN_ARGS { FN_FWD_CALL( CLS, FN_NAME, CODE ); } );                                     \
+        self.FN_NAME( [&self,callback] FN_ARGS { FN_FWD_CALL( CLS, FN_NAME, CODE ); } );                                     \
     }
-
-
-// Convert FastDDS Log::Entry to EasyLogging log (see ELPP_WRITE_LOG)
-#define LOG_ENTRY( ENTRY, LEVEL, ... )                                                                                 \
-    do                                                                                                                 \
-    {                                                                                                                  \
-        char const * filename = ( ENTRY ).context.filename;                                                            \
-        char const * func = ( ENTRY ).context.function;                                                                \
-        if( ! func )                                                                                                   \
-            func = "n/a";                                                                                              \
-        if( ! filename )                                                                                               \
-            filename = func;                                                                                           \
-        el::base::Writer writer( el::Level::LEVEL, filename, ( ENTRY ).context.line, func );                           \
-        writer.construct( 1, "librealsense" );                                                                         \
-        writer << __VA_ARGS__;                                                                                         \
-        writer << " [DDS]";                                                                                            \
-        if( ( ENTRY ).context.category )                                                                               \
-            writer << "[" << ( ENTRY ).context.category << "]";                                                        \
-    }                                                                                                                  \
-    while( false )
 
 
 struct log_consumer : eprosima::fastdds::dds::LogConsumer
@@ -91,13 +70,13 @@ struct log_consumer : eprosima::fastdds::dds::LogConsumer
         switch( e.kind )
         {
         case Log::Kind::Error:
-            LOG_ENTRY( e, Error, e.message );
+            LOG_DDS_ENTRY( e, Error, e.message );
             break;
         case Log::Kind::Warning:
-            LOG_ENTRY( e, Warning, e.message );
+            LOG_DDS_ENTRY( e, Warning, e.message );
             break;
         case Log::Kind::Info:
-            LOG_ENTRY( e, Info, e.message );
+            LOG_DDS_ENTRY( e, Info, e.message );
             break;
         }
     }
@@ -411,14 +390,14 @@ PYBIND11_MODULE(NAME, m) {
         .def( "is_stopped", &dds_device_watcher::is_stopped )
         .def( FN_FWD( dds_device_watcher,
                       on_device_added,
-                      (std::shared_ptr< dds_device > const &),
+                      ( dds_device_watcher const &, std::shared_ptr< dds_device > const & ),
                       ( std::shared_ptr< dds_device > const & dev ),
-                      callback( dev ); ) )
+                      callback( self, dev ); ) )
         .def( FN_FWD( dds_device_watcher,
                       on_device_removed,
-                      (std::shared_ptr< dds_device > const &),
+                      ( dds_device_watcher const &, std::shared_ptr< dds_device > const & ),
                       ( std::shared_ptr< dds_device > const & dev ),
-                      callback( dev ); ) )
+                      callback( self, dev ); ) )
         .def( "foreach_device",
               []( dds_device_watcher const & self,
                   std::function< bool( std::shared_ptr< dds_device > const & ) > callback ) {

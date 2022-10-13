@@ -148,7 +148,8 @@ void dds_participant::init( dds_domain_id domain_id, std::string const & partici
                                   + std::to_string( domain_id ) );
     }
 
-    LOG_DEBUG( "participant '" << participant_name << "' (" << print( guid() ) << ") is up on domain " << domain_id );
+    LOG_DEBUG( "participant '" << participant_name << "' (" << realdds::print( guid() ) << ") is up on domain "
+                               << domain_id );
 }
 
 

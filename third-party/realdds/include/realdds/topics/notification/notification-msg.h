@@ -8,6 +8,12 @@
 #include <string>
 
 namespace realdds {
+
+
+class dds_participant;
+class dds_topic;
+
+
 namespace topics {
 namespace device {
 
@@ -16,6 +22,9 @@ class notification
 {
 public:
     using type = raw::device::notificationPubSubType;
+
+    static std::shared_ptr< dds_topic > create_topic( std::shared_ptr< dds_participant > const & participant,
+                                                      char const * topic_name );
 
     // Currently we use constant MAX size of profiles,
     // If we decide we want a scaled solution we may need to split the profiles to 
@@ -40,7 +49,7 @@ public:
 
     struct video_stream_profile
     {
-        int8_t stream_index;     // Normally used to distinguish IR L / R, not related to stream_header_msg::index
+        int8_t stream_index;     // Used to distinguish similar streams like IR L / R
         int16_t uid;             // Stream unique ID
         int16_t framerate;       // FPS
         int8_t format;           // Corresponds to rs2_format
@@ -53,7 +62,7 @@ public:
 
     struct motion_stream_profile
     {
-        int8_t stream_index;     // Normally used to distinguish IR L / R, not related to stream_header_msg::index
+        int8_t stream_index;     // Used to distinguish similar streams like IR L / R
         int16_t uid;             // Stream unique ID
         int16_t framerate;       // FPS
         int8_t format;           // Corresponds to rs2_format

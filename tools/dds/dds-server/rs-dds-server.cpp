@@ -1,15 +1,12 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2022 Intel Corporation. All Rights Reserved.
 
-#include <iostream>
-#include <map>
-#include <unordered_set>
-
 #include <librealsense2/utilities/easylogging/easyloggingpp.h>
 #include <realdds/dds-device-broadcaster.h>
 #include <realdds/dds-device-server.h>
 #include <realdds/dds-stream-server.h>
 #include <realdds/dds-participant.h>
+#include <realdds/dds-utilities.h>
 #include <realdds/topics/notification/notification-msg.h>
 #include <realdds/topics/device-info/device-info-msg.h>
 #include <fastrtps/types/TypesBase.h>
@@ -18,8 +15,13 @@
 #include "lrs-device-watcher.h"
 #include "lrs-device-controller.h"
 
-#include "tclap/CmdLine.h"
-#include "tclap/ValueArg.h"
+#include <tclap/CmdLine.h>
+#include <tclap/ValueArg.h>
+
+#include <iostream>
+#include <map>
+#include <unordered_set>
+
 
 using namespace TCLAP;
 using namespace realdds;
@@ -76,7 +78,7 @@ void start_streaming( std::shared_ptr< tools::lrs_device_controller > lrs_device
     header.format = static_cast< int >( vsp.format() );
     header.height = vsp.height();
     header.width = vsp.width();
-    dds_dev_server->set_image_header( stream_profile.stream_name(), header );
+    dds_dev_server->start_streaming( stream_profile.stream_name(), header );
 
     // Start streaming
     lrs_device_controller->start_stream( stream_profile, [&, dds_dev_server]( rs2::frame f ) {
@@ -283,13 +285,13 @@ struct log_consumer : eprosima::fastdds::dds::LogConsumer
         switch( e.kind )
         {
         case Log::Kind::Error:
-            LOG_ERROR( "[DDS] " << e.message );
+            LOG_DDS_ENTRY( e, Error, e.message );
             break;
         case Log::Kind::Warning:
-            LOG_WARNING( "[DDS] " << e.message );
+            LOG_DDS_ENTRY( e, Warning, e.message );
             break;
         case Log::Kind::Info:
-            LOG_DEBUG( "[DDS] " << e.message );
+            LOG_DDS_ENTRY( e, Info, e.message );
             break;
         }
     }
@@ -313,6 +315,15 @@ try
     cmd.add( debug_arg );
     cmd.parse( argc, argv );
 
+    // Configure the same logger as librealsense
+    el::Configurations defaultConf;
+    defaultConf.setToDefault();
+    defaultConf.setGlobally( el::ConfigurationType::ToStandardOutput, debug_arg.isSet() ? "true" : "false" );
+    if( ! debug_arg.isSet() )
+        defaultConf.set( el::Level::Error, el::ConfigurationType::ToStandardOutput, "true" );
+    defaultConf.setGlobally( el::ConfigurationType::Format, "-%levshort- %datetime{%H:%m:%s.%g} %msg (%fbase:%line [%thread])" );
+    el::Loggers::reconfigureLogger( "librealsense", defaultConf );
+
     // Intercept DDS messages and redirect them to our own logging mechanism
     std::unique_ptr< eprosima::fastdds::dds::LogConsumer > consumer( new log_consumer() );
     eprosima::fastdds::dds::Log::ClearConsumers();
@@ -326,7 +337,9 @@ try
     else
     {
         rs2::log_to_console( RS2_LOG_SEVERITY_ERROR );
+        eprosima::fastdds::dds::Log::SetVerbosity( eprosima::fastdds::dds::Log::Error );
     }
+
     if( domain_arg.isSet() )
     {
         domain = domain_arg.getValue();
