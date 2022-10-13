@@ -5,6 +5,7 @@
 
 #include "dds-participant.h"
 #include "dds-utilities.h"
+#include "dds-exceptions.h"
 
 #include "topics/device-info/device-info-msg.h"
 #include "topics/notification/notification-msg.h"
@@ -119,12 +120,12 @@ public:
     void run()
     {
         if( _running )
-            throw std::runtime_error( "trying to run() a device that's already running" );
+            DDS_THROW( runtime_error, "trying to run() a device that's already running" );
 
         create_notifications_reader();
         create_control_writer();
         if( ! init() )
-            throw std::runtime_error( "failed getting sensors data from device: " + _info.topic_root );
+            DDS_THROW( runtime_error, "failed getting sensors data from device: " + _info.topic_root );
 
         LOG_DEBUG( "Device" << _info.topic_root << " was initialized successfully" );
         _running = true;
@@ -239,7 +240,7 @@ private:
                                 auto msg = data.get< topics::device::notification::device_header_msg >();
                                 if ( msg  == nullptr )
                                 {
-                                    throw std::runtime_error( "get< topics::device::notification::device_header_msg > return nullptr" );
+                                    DDS_THROW( runtime_error, "get< topics::device::notification::device_header_msg > return nullptr" );
                                 }
 
                                 _expected_num_of_streams = msg->num_of_streams;
@@ -259,18 +260,19 @@ private:
                                 auto profiles_msg = data.get< topics::device::notification::video_stream_profiles_msg >();
                                 if ( profiles_msg == nullptr )
                                 {
-                                    throw std::runtime_error( "get< topics::device::notification::video_stream_profiles_msg > return nullptr" );
+                                    DDS_THROW( runtime_error, "get< topics::device::notification::video_stream_profiles_msg > return nullptr" );
                                 }
 
                                 for ( size_t i = 0; i < profiles_msg->num_of_profiles; ++i )
                                 {
                                     auto profile = profiles_msg->profiles[i];
                                     auto key = std::make_pair( profile.uid, profile.stream_index );
-                                    if ( !_streams[key] )
+                                    auto & stream = _streams[key];
+                                    if ( ! stream)
                                     {
-                                        _streams[key] = std::make_shared<dds_video_stream>( profile.type, profiles_msg->group_name );
+                                        stream = std::make_shared<dds_video_stream>( profile.type, profiles_msg->group_name );
                                     }
-                                    _streams[key]->add_profile( to_realdds_format( profile ), profile.default_profile );
+                                    stream->add_profile( to_realdds_format( profile ), profile.default_profile );
                                 }
 
                                 if ( _streams.size() >= _expected_num_of_streams )
@@ -295,18 +297,19 @@ private:
                                 auto profiles_msg = data.get< topics::device::notification::motion_stream_profiles_msg >();
                                 if ( profiles_msg == nullptr )
                                 {
-                                    throw std::runtime_error( "get< topics::device::notification::motion_stream_profiles_msg > return nullptr" );
+                                    DDS_THROW( runtime_error, "get< topics::device::notification::motion_stream_profiles_msg > return nullptr" );
                                 }
 
                                 for ( size_t i = 0; i < profiles_msg->num_of_profiles; ++i )
                                 {
                                     auto profile = profiles_msg->profiles[i];
                                     auto key = std::make_pair( profile.uid, profile.stream_index );
-                                    if ( !_streams[key] )
+                                    auto & stream = _streams[key];
+                                    if ( !stream )
                                     {
-                                        _streams[key] = std::make_shared<dds_motion_stream>( profile.type, profiles_msg->group_name );
+                                        stream = std::make_shared<dds_motion_stream>( profile.type, profiles_msg->group_name );
                                     }
-                                    _streams[key]->add_profile( to_realdds_format( profile ), profile.default_profile );
+                                    stream->add_profile( to_realdds_format( profile ), profile.default_profile );
                                 }
 
                                 if ( _streams.size() >= _expected_num_of_streams )

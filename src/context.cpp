@@ -478,10 +478,10 @@ namespace librealsense
 
         void close() override
         {
-            std::vector< int16_t > profiles_to_close;
+            std::vector< std::pair< int16_t, int8_t > > profiles_to_close;
             for (auto profile : sensor_base::get_active_streams())
             {
-                profiles_to_close.push_back( profile->get_unique_id() );
+                profiles_to_close.push_back( std::make_pair( profile->get_unique_id(), profile->get_stream_index() ) );
             }
             _dev->close( profiles_to_close );
             software_sensor::close();

@@ -53,7 +53,7 @@ public:
 
     void open( const std::vector< dds_video_stream::profile > & profiles );
     void open( const std::vector< dds_motion_stream::profile > & profiles);
-    void close( const std::vector< int16_t > & stream_uids );
+    void close( const std::vector< std::pair< int16_t, int8_t > > & stream_uids );
 
 private:
     class impl;

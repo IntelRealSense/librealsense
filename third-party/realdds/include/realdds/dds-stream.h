@@ -10,17 +10,6 @@
 
 namespace realdds {
 
-template<typename T, typename P>
-inline bool is( std::shared_ptr<P> ptr )
-{
-    return std::dynamic_pointer_cast< T >( ptr ) != nullptr;
-}
-
-template<typename T, typename P>
-inline bool is( P * ptr )
-{
-    return dynamic_cast< T * >( ptr ) != nullptr;
-}
 
 // Represents a stream of information (images, motion data, etc..) from a single source received via the DDS system.
 // A stream can have several profiles, i.e different data frequency, image resolution, etc..

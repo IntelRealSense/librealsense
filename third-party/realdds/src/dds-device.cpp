@@ -3,8 +3,7 @@
 
 #include <realdds/dds-device.h>
 #include <realdds/dds-device-impl.h>
-
-#include <set>
+#include <realdds/dds-exceptions.h>
 
 namespace realdds {
 
@@ -115,12 +114,13 @@ void dds_device::open( const std::vector< dds_video_stream::profile > & profiles
 
     if ( profiles.size() > device::control::MAX_OPEN_STREAMS )
     {
-        throw std::length_error( "Too many streams to open (" + std::to_string( profiles.size() )
-            + "), max is " + std::to_string( device::control::MAX_OPEN_STREAMS ) );
+        DDS_THROW(length_error, "Too many streams to open (" + std::to_string( profiles.size() )
+                  + "), max is " + std::to_string( device::control::MAX_OPEN_STREAMS ) );
     }
 
     device::control::streams_open_msg open_msg;
     open_msg.message_id = _impl->_control_message_counter++;
+    open_msg.number_of_streams = static_cast< uint8_t >( profiles.size() );
     for ( size_t i = 0; i < profiles.size(); ++i )
     {
         open_msg.streams[i].uid = profiles[i].uid;
@@ -158,6 +158,7 @@ void dds_device::open( const std::vector< dds_motion_stream::profile > & profile
 
     device::control::streams_open_msg open_msg;
     open_msg.message_id = _impl->_control_message_counter++;
+    open_msg.number_of_streams = static_cast< uint8_t >( profiles.size() );
     for ( size_t i = 0; i < profiles.size(); ++i )
     {
         open_msg.streams[i].uid       = profiles[i].uid;
@@ -183,21 +184,23 @@ void dds_device::open( const std::vector< dds_motion_stream::profile > & profile
     }
 }
 
-void dds_device::close( const std::vector< int16_t >& stream_uids )
+void dds_device::close( const std::vector< std::pair< int16_t, int8_t > >& stream_uids )
 {
     using namespace topics;
 
     if ( stream_uids.size() > device::control::MAX_OPEN_STREAMS )
     {
-        throw std::runtime_error( "Too many profiles to close (" + std::to_string( stream_uids.size() )
-                                + "), max is " + std::to_string( device::control::MAX_OPEN_STREAMS ) );
+        DDS_THROW( runtime_error,  "Too many profiles to close (" + std::to_string( stream_uids.size() )
+                  + "), max is " + std::to_string( device::control::MAX_OPEN_STREAMS ) );
     }
 
     device::control::streams_close_msg close_msg;
     close_msg.message_id = _impl->_control_message_counter++;
+    close_msg.number_of_streams = static_cast< uint8_t >( stream_uids.size() );
     for (size_t i = 0; i < stream_uids.size(); ++i)
     {
-        close_msg.stream_uids[i] = stream_uids[i];
+        close_msg.stream_uids[i] = stream_uids[i].first;
+        close_msg.stream_indexes[i] = stream_uids[i].second;
     }
 
     raw::device::control raw_msg;

@@ -2,7 +2,7 @@
 // Copyright(c) 2022 Intel Corporation. All Rights Reserved.
 
 #include <realdds/dds-stream.h>
-#include <realdds/dds-stream-impl.h>
+#include "dds-stream-impl.h"
 
 #include <stdexcept>
 
@@ -31,14 +31,7 @@ void dds_video_stream::add_profile( const dds_stream::profile & prof, bool defau
         throw std::runtime_error( "profile of different type then stream" );
     }
 
-    if ( is< dds_video_stream, dds_stream >( this ) )
-    {
-        _impl->_profiles.push_back( std::make_pair( static_cast< const dds_video_stream::profile & >( prof ), default_profile ) );
-    }
-    else
-    {
-        throw std::runtime_error( "Trying to add a non dds_video_stream::profile to dds_video_stream" );
-    }
+    _impl->_profiles.push_back( std::make_pair( static_cast< const dds_video_stream::profile & >( prof ), default_profile ) );
 }
 
 size_t dds_video_stream::foreach_profile( std::function< void( const dds_stream::profile & prof, bool def_prof ) > fn ) const
@@ -73,14 +66,7 @@ void dds_motion_stream::add_profile( const dds_stream::profile & prof, bool defa
         throw std::runtime_error( "profile of different type then stream" );
     }
 
-    if ( is< dds_motion_stream, dds_stream >( this ) )
-    {
-        _impl->_profiles.push_back( std::make_pair( static_cast< const dds_motion_stream::profile & >( prof ), default_profile ) );
-    }
-    else
-    {
-        throw std::runtime_error( "Trying to add a non dds_motion_stream::profile to dds_motion_stream" );
-    }
+    _impl->_profiles.push_back( std::make_pair( static_cast< const dds_motion_stream::profile & >( prof ), default_profile ) );
 }
 
 size_t dds_motion_stream::foreach_profile( std::function< void( const dds_stream::profile & prof, bool def_prof ) > fn ) const

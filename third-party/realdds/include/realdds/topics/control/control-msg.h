@@ -17,7 +17,7 @@ public:
     using type = raw::device::controlPubSubType;
 
     //Open uses a vector of profiles, to have constant message size we limit it
-    static const size_t MAX_OPEN_STREAMS = 8;
+    static const uint8_t MAX_OPEN_STREAMS = 8;
 
 #pragma pack( push, 1 )
     enum class msg_type : uint16_t
@@ -40,13 +40,16 @@ public:
     struct streams_open_msg
     {
         uint32_t message_id; // Running counter
+        uint8_t number_of_streams;
         stream_profile streams[MAX_OPEN_STREAMS];
     };
 
     struct streams_close_msg
     {
         uint32_t message_id; // Running counter
+        uint8_t number_of_streams;
         int16_t stream_uids[MAX_OPEN_STREAMS];
+        int8_t stream_indexes[MAX_OPEN_STREAMS];
     };
 
 
