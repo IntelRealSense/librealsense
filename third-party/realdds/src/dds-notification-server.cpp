@@ -42,7 +42,7 @@ dds_notification_server::dds_notification_server( std::shared_ptr< dds_publisher
 
             if( _active && _send_init_msgs )
             {
-                send_init_msgs();
+                send_discovery_notifications();
                 _send_init_msgs = false;
             }
 
@@ -50,7 +50,8 @@ dds_notification_server::dds_notification_server( std::shared_ptr< dds_publisher
             {
                 // Send all instant notifications
                 topics::raw::device::notification notification;
-                while( _instant_notifications.dequeue( &notification, 1000 ) )
+                constexpr unsigned timeout_in_ms = 1000;
+                while( _instant_notifications.dequeue( &notification, timeout_in_ms ) )
                 {
                     DDS_API_CALL( _writer->get()->write( &notification ) );
                 }
@@ -117,18 +118,18 @@ void dds_notification_server::send_notification( topics::raw::device::notificati
 };
 
 
-void dds_notification_server::add_init_notification( topics::raw::device::notification && msg )
+void dds_notification_server::add_discovery_notification( topics::raw::device::notification && msg )
 {
     std::unique_lock< std::mutex > lock( _notification_send_mutex );
     topics::raw::device::notification msg_to_move( msg );
-    _init_notifications.push_back( std::move( msg_to_move ) );
+    _discovery_notifications.push_back( std::move( msg_to_move ) );
 };
 
 
-void dds_notification_server::send_init_msgs()
+void dds_notification_server::send_discovery_notifications()
 {
     // Send all initialization notifications
-    for( auto notification : _init_notifications )
+    for( auto notification : _discovery_notifications )
     {
         DDS_API_CALL( _writer->get()->write( &notification ) );
     }
