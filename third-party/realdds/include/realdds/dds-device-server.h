@@ -36,7 +36,9 @@ class device_info;
 
 
 class dds_participant;
+class dds_publisher;
 class dds_stream_server;
+class dds_notification_server;
 struct image_header;
 
 
@@ -50,6 +52,9 @@ struct image_header;
 //         ...
 // The device server is meant to manage multiple streams and be able to publish frames to them, while
 // also receive instructions (controls) from a client and generate callbacks to the user.
+// 
+// Streams are named, and are referred to by names, to maintain synchronization (e.g., when starting
+// to stream, a notification may be sent, and the metadata may be split to another stream).
 //
 class dds_device_server
 {
@@ -62,9 +67,11 @@ public:
     // to subscribe.
     void init( const std::vector<std::string>& supported_streams_names );
 
-    bool is_valid() const { return ( nullptr != _publisher ); }
+    bool is_valid() const { return( nullptr != _notification_server.get() ); }
     bool operator!() const { return ! is_valid(); }
-    void set_image_header( const std::string & stream_name, const image_header & header );
+
+    void start_streaming( const std::string & stream_name, const image_header & header );
+
     // `Init` messages are sent when a new reader joins, it holds all required information about the device capabilities (sensors, profiles)
     // Currently it will broadcast the messages to all connected readers (not only the new reader)
     void add_init_msg( topics::raw::device::notification&& notification );
@@ -72,13 +79,11 @@ public:
     void publish_notification( topics::raw::device::notification&& notification );
     
 private:
-    class dds_notifications_server;
-    
     std::shared_ptr< dds_participant > _participant;
-    eprosima::fastdds::dds::Publisher * _publisher;
+    std::shared_ptr< dds_publisher > _publisher;
     std::string _topic_root;
     std::unordered_map<std::string, std::shared_ptr<dds_stream_server>> _stream_name_to_server;
-    std::shared_ptr<dds_notifications_server> _dds_notifications_server;
+    std::shared_ptr< dds_notification_server > _notification_server;
 };  // class dds_device_server
 
 

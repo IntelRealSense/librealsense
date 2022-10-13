@@ -2,11 +2,21 @@
 // Copyright(c) 2022 Intel Corporation. All Rights Reserved.
 
 #pragma once
+
+
 #include <string>
+
 #include <librealsense2/h/rs_sensor.h>
 #include "notificationPubSubTypes.h"
 
+
 namespace realdds {
+
+
+class dds_participant;
+class dds_topic;
+
+
 namespace topics {
 namespace device {
 
@@ -15,6 +25,9 @@ class notification
 {
 public:
     using type = raw::device::notificationPubSubType;
+
+    static std::shared_ptr< dds_topic > create_topic( std::shared_ptr< dds_participant > const & participant,
+                                                      char const * topic_name );
 
     // Currently we use constant MAX size of profiles,
     // If we decide we want a scaled solution we may need to split the profiles to 
