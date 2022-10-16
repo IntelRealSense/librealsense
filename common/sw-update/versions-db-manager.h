@@ -9,6 +9,7 @@
 #include <vector>
 #include "http-downloader.h"
 #include <regex>
+#include <sstream>
 
 namespace rs2
 {
