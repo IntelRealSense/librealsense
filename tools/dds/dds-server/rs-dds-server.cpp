@@ -28,21 +28,72 @@
 using namespace TCLAP;
 using namespace realdds;
 
-std::vector< std::string > get_supported_streams( rs2::device dev )
+
+std::vector< std::shared_ptr< realdds::dds_stream_server > > get_supported_streams( rs2::device dev )
 {
-    auto device_sensors = dev.query_sensors();
-    std::unordered_set< std::string > supported_streams_names;
-    for( auto sensor : device_sensors )
+    std::map< std::string, realdds::dds_stream_profiles > name_to_profiles;
+    std::map< std::string, int > name_to_default_profile;
+    for( auto sensor : dev.query_sensors() )
     {
         auto stream_profiles = sensor.get_stream_profiles();
-        std::for_each( stream_profiles.begin(),
-                       stream_profiles.end(),
-                       [&]( const rs2::stream_profile & sp ) {
-                           supported_streams_names.insert( sp.stream_name() );
-                       } );
+        std::for_each( stream_profiles.begin(), stream_profiles.end(), [&]( const rs2::stream_profile & sp ) {
+            std::string stream_name = sp.stream_name();
+            auto & profiles = name_to_profiles[stream_name];
+            std::shared_ptr< realdds::dds_stream_profile > profile;
+            if( sp.is< rs2::video_stream_profile >() )
+            {
+                auto const & vsp = sp.as< rs2::video_stream_profile >();
+                profile = std::make_shared< realdds::dds_video_stream_profile >(
+                    realdds::dds_stream_uid( vsp.unique_id(), vsp.stream_index() ),
+                    realdds::dds_stream_format::from_rs2( vsp.format() ),
+                    static_cast< int16_t >( vsp.fps() ),
+                    static_cast< uint16_t >( vsp.width() ),
+                    static_cast< int16_t >( vsp.height() ),
+                    0 );  // bytes per pixel - todo
+            }
+            else if( sp.is< rs2::motion_stream_profile >() )
+            {
+                const auto & msp = sp.as< rs2::motion_stream_profile >();
+                profile = std::make_shared< realdds::dds_motion_stream_profile >(
+                    realdds::dds_stream_uid( msp.unique_id(), msp.stream_index() ),
+                    realdds::dds_stream_format::from_rs2( msp.format() ),
+                    static_cast< int16_t >( msp.fps() ) );
+            }
+            else
+            {
+                LOG_ERROR( "unknown profile type of uid " << sp.unique_id() );
+                return;
+            }
+            if( sp.is_default() )
+                name_to_default_profile[stream_name] = static_cast< int >( profiles.size() );
+            profiles.push_back( profile );
+            LOG_DEBUG( stream_name << ": " << profile->to_string() );
+        } );
     }
+    std::vector< std::shared_ptr< realdds::dds_stream_server > > servers;
+    for( auto& it : name_to_profiles )
+    {
+        auto const & stream_name = it.first;
+        
+        int default_profile_index = 0;
+        auto default_profile_it = name_to_default_profile.find( stream_name );
+        if( default_profile_it != name_to_default_profile.end() )
+            default_profile_index = default_profile_it->second;
 
-    return std::vector< std::string >( supported_streams_names.begin(), supported_streams_names.end() );
+        auto const& profiles = it.second;
+        if( profiles.empty() )
+        {
+            LOG_ERROR( "ignoring stream '" << stream_name << "' with no profiles" );
+            continue;
+        }
+        std::shared_ptr< realdds::dds_stream_server > server;
+        if( std::dynamic_pointer_cast<realdds::dds_video_stream_profile>( profiles.front() ) )
+            server = std::make_shared< realdds::dds_video_stream_server >( stream_name, profiles, default_profile_index );
+        else
+            server = std::make_shared< realdds::dds_motion_stream_server >( stream_name, profiles, default_profile_index );
+        servers.push_back( server );
+    }
+    return servers;
 }
 
 
@@ -97,9 +148,6 @@ void start_streaming( std::shared_ptr< tools::lrs_device_controller > lrs_device
                                                               << " frame: " << e.what() );
         }
     } );
-}
-
-
 std::string get_topic_root( topics::device_info const & dev_info )
 {
     // Build device root path (we use a device model only name like DXXX)
@@ -223,13 +271,15 @@ try
             // Broadcast the new connected device to all listeners
             broadcaster.add_device( dev_info );
 
-            // Create a supported streams list for initializing the relevant DDS topics
-            std::vector<std::string> supported_streams_names_vec = get_supported_streams( dev );
-
             // Create a dds-device-server for this device
-            auto server = std::make_shared< dds_device_server >( participant, dev_info.topic_root );
+            auto dds_device_server
+                = std::make_shared< realdds::dds_device_server >( participant, dev_info.topic_root );
+
+            // Create a supported streams list for initializing the relevant DDS topics
+            auto supported_streams = get_supported_streams( dev );
+
             // Initialize the DDS device server with the supported streams
-            server->init( supported_streams_names_vec );
+            dds_device_server->init( supported_streams );
 
             // Create a lrs_device_manager for this device
             std::shared_ptr< tools::lrs_device_controller > lrs_device_controller
@@ -237,9 +287,6 @@ try
 
             // Keep a pair of device controller and server per RS device
             device_handlers_list.emplace( dev, device_handler{ dev_info, server, lrs_device_controller } );
-
-            // We add initialization messages to be sent to a new reader (sensors & profiles info).
-            init_dds_device( dev, server );
 
             // Get the desired stream profile
             auto profile = get_required_profile( dev.first< rs2::color_sensor >(),

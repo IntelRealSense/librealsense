@@ -48,7 +48,7 @@ protected:
 public:
     virtual ~dds_stream_server();
 
-    std::string const& name() const { return _name; }
+    std::string const & name() const { return _name; }
     dds_stream_profiles const & profiles() const { return _profiles; }
     int default_profile_index() const { return _default_profile_index; }
 

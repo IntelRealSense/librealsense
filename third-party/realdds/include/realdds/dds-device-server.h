@@ -8,20 +8,9 @@
 #include <memory>
 #include <string>
 
-// Forward declaration
-namespace eprosima {
-namespace fastdds {
-namespace dds {
-class DomainParticipant;
-class Publisher;
-class Topic;
-class TypeSupport;
-class DataWriter;
-}  // namespace dds
-}  // namespace fastdds
-}  // namespace eprosima
 
 namespace realdds {
+
 
 // Forward declaration
 namespace topics {
@@ -65,23 +54,17 @@ public:
     // A server is not valid until init() is called with a list of streams that we want to publish.
     // On successful return from init(), each of the streams will be alive so clients will be able
     // to subscribe.
-    void init( const std::vector< std::string > & supported_streams_names );
+    void init( const std::vector< std::shared_ptr< dds_stream_server > > & streams );
 
     bool is_valid() const { return( nullptr != _notification_server.get() ); }
     bool operator!() const { return ! is_valid(); }
 
     void start_streaming( const std::string & stream_name, const image_header & header );
-
-    // `Init` messages are sent when a new reader joins, it holds all required information about the device capabilities (sensors, profiles)
-    // Currently it will broadcast the messages to all connected readers (not only the new reader)
-    void add_init_msg( topics::raw::device::notification&& notification );
+    
     void publish_image( const std::string& stream_name, const uint8_t* data, size_t size );
     void publish_notification( topics::raw::device::notification&& notification );
     
 private:
-    void on_discovery_device_header( size_t n_streams );
-
-    std::shared_ptr< dds_participant > _participant;
     std::shared_ptr< dds_publisher > _publisher;
     std::string _topic_root;
     std::unordered_map<std::string, std::shared_ptr<dds_stream_server>> _stream_name_to_server;
