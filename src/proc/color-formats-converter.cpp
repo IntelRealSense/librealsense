@@ -512,24 +512,20 @@ namespace librealsense
         {
             for (int k = 0; k < src_height; k += 3)
             {
-                // fill the y_buffer and uv_buffer
+                // fill the destination with y values
                 // while y is on 2 lines, and uv on the third line
                 auto start_of_y = src + k * width;
-                auto end_of_y = start_of_y + 2 * width;
-                auto start_of_uv = end_of_y;
-                auto end_of_uv = start_of_uv + width;
-
-                std::vector<uint8_t> y_buffer(start_of_y, end_of_y);
 
                 for (int pix = 0; pix < 2 * width; pix += 16)
                 {
-                    uint16_t y[16];
-                    for (int i = 0; i < 16; ++i)
+                    uint8_t y[32];
+                    for (int dst_idx = 0, src_idx = 0; dst_idx < 32; dst_idx += 2, ++src_idx)
                     {
-                        y[i] = y_buffer[pix + i];
+                        y[dst_idx] = 0;
+                        y[dst_idx + 1] = start_of_y[src_idx + pix];
                     }
-                    librealsense::copy(dst, &y[0], 16);
-                    dst += 16;
+                    librealsense::copy(dst, y, sizeof y);
+                    dst += sizeof y;
                 }
             }
             return;
