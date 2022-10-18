@@ -498,16 +498,12 @@ namespace librealsense
 
         if (FORMAT == RS2_FORMAT_Y8)
         {
-            // TODO REMI - check height is correct here (shall be equal to 1.5 * height - for height = 480, shall be 720)
             for (int k = 0; k < src_height; k += 3)
             {
-                // fill the y_buffer and uv_buffer
+                // fill the destination with y values
                 // while y is on 2 lines, and uv on the third line
                 auto start_of_y = src + k * width;
-                auto end_of_y = start_of_y + 2 * width;
-
-                std::vector<uint8_t> y_buffer(start_of_y, end_of_y);
-                librealsense::copy(dst, y_buffer.data(), 2 * width);
+                librealsense::copy(dst, start_of_y, 2 * width);
                 dst += 2 * width;
             }
             return;
