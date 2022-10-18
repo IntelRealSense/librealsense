@@ -405,7 +405,7 @@ namespace rs2
     public:
         std::shared_ptr<colorizer> colorize;
         std::shared_ptr<yuy_decoder> yuy2rgb;
-        std::shared_ptr<nv12i_decoder> nv122rgb;
+        std::shared_ptr<m420_decoder> m4202rgb;
         std::shared_ptr<y411_decoder> y411;
         std::shared_ptr<depth_huffman_decoder> depth_decode;
         bool zoom_preview = false;
@@ -602,10 +602,10 @@ namespace rs2
                         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_LUMINANCE_ALPHA, GL_UNSIGNED_BYTE, data);
                     }
                     break;
-                case RS2_FORMAT_NV12I:
-                    if (nv122rgb)
+                case RS2_FORMAT_M420:
+                    if (m4202rgb)
                     {
-                        if (auto colorized_frame = nv122rgb->process(frame).as<video_frame>())
+                        if (auto colorized_frame = m4202rgb->process(frame).as<video_frame>())
                         {
                             if (!colorized_frame.is<gl::gpu_frame>())
                             {

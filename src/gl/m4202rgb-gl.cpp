@@ -1,12 +1,12 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2021 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2022 Intel Corporation. All Rights Reserved.
 
 #include <librealsense2/hpp/rs_sensor.hpp>
 #include <librealsense2/hpp/rs_processing.hpp>
 #include <librealsense2-gl/rs_processing_gl.hpp>
 
 #include "../proc/synthetic-stream.h"
-#include "nv122rgb-gl.h"
+#include "m4202rgb-gl.h"
 #include "../option.h"
 
 #ifndef NOMINMAX
@@ -68,10 +68,10 @@ static const char* fragment_shader_text =
 using namespace rs2;
 using namespace librealsense::gl;
 
-class nv122rgb_shader : public texture_2d_shader
+class m4202rgb_shader : public texture_2d_shader
 {
 public:
-    nv122rgb_shader()
+    m4202rgb_shader()
         : texture_2d_shader(shader_program::load(
             texture_2d_shader::default_vertex_shader(), 
             fragment_shader_text, "position", "textureCoords"))
@@ -91,22 +91,22 @@ private:
     uint32_t _height_location;
 };
 
-void nv122rgb::cleanup_gpu_resources()
+void m4202rgb::cleanup_gpu_resources()
 {
     _viz.reset();
     _fbo.reset();
     _enabled = 0;
 }
 
-void nv122rgb::create_gpu_resources()
+void m4202rgb::create_gpu_resources()
 {
-    _viz = std::make_shared<visualizer_2d>(std::make_shared<nv122rgb_shader>());
+    _viz = std::make_shared<visualizer_2d>(std::make_shared<m4202rgb_shader>());
     _fbo = std::make_shared<fbo>(_width, _height);
     _enabled = glsl_enabled() ? 1 : 0;
 }
 
-nv122rgb::nv122rgb()
-    : stream_filter_processing_block("NV12 Converter (GLSL)")
+m4202rgb::m4202rgb()
+    : stream_filter_processing_block("M420 Converter (GLSL)")
 {
     _source.add_extension<gpu_video_frame>(RS2_EXTENSION_VIDEO_FRAME_GL);
 
@@ -117,7 +117,7 @@ nv122rgb::nv122rgb()
     initialize();
 }
 
-nv122rgb::~nv122rgb()
+m4202rgb::~m4202rgb()
 {
     perform_gl_action([&]()
     {
@@ -125,9 +125,9 @@ nv122rgb::~nv122rgb()
     }, []{});
 }
 
-rs2::frame nv122rgb::process_frame(const rs2::frame_source& src, const rs2::frame& f)
+rs2::frame m4202rgb::process_frame(const rs2::frame_source& src, const rs2::frame& f)
 {
-    //scoped_timer t("nv122rgb");
+    //scoped_timer t("m4202rgb");
 
     if (f.get_profile().get() != _input_profile.get())
     {
@@ -150,7 +150,7 @@ rs2::frame nv122rgb::process_frame(const rs2::frame_source& src, const rs2::fram
 
     perform_gl_action([&]()
     {
-        //scoped_timer t("nv122rgb.gl");
+        //scoped_timer t("m4202rgb.gl");
 
         res = src.allocate_video_frame(_output_profile, f, 3, _width, _height, _width * 3, RS2_EXTENSION_VIDEO_FRAME_GL);
         if (!res) return;
@@ -191,7 +191,7 @@ rs2::frame nv122rgb::process_frame(const rs2::frame_source& src, const rs2::fram
         glClearColor(1, 0, 0, 1);
         glClear(GL_COLOR_BUFFER_BIT);
 
-        auto& shader = (nv122rgb_shader&)_viz->get_shader();
+        auto& shader = (m4202rgb_shader&)_viz->get_shader();
         shader.begin();
         shader.set_size(_width, _height);
         shader.end();

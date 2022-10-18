@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2021 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2022 Intel Corporation. All Rights Reserved.
 
 #pragma once
 
@@ -24,11 +24,11 @@ namespace librealsense
 {
     namespace gl
     {
-        class nv122rgb : public stream_filter_processing_block, public gpu_processing_object
+        class m4202rgb : public stream_filter_processing_block, public gpu_processing_object
         {
         public:
-            nv122rgb();
-            ~nv122rgb() override;
+            m4202rgb();
+            ~m4202rgb() override;
 
             void cleanup_gpu_resources() override;
             void create_gpu_resources() override;

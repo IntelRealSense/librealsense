@@ -76,13 +76,12 @@ struct glfw_binding
 rs2_processing_block* rs2_gl_create_yuy_decoder(int api_version, rs2_error** error);
 
 /**
-* REWRITE!!!!
-* Creates a processing block that can efficiently convert YUY image format to RGB variants
+* Creates a processing block that can efficiently convert M420 image format to RGB variants
 * This is specifically useful for rendering the RGB frame to the screen (since the output is ready for rendering on the GPU)
 * \param[in] api_version Users are expected to pass their version of \c RS2_API_VERSION to make sure they are running the correct librealsense version.
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 */
-rs2_processing_block* rs2_gl_create_nv12i_decoder(int api_version, rs2_error** error);
+rs2_processing_block* rs2_gl_create_m420_decoder(int api_version, rs2_error** error);
 
 
 /**
