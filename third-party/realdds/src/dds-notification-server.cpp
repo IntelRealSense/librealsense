@@ -66,9 +66,6 @@ dds_notification_server::dds_notification_server( std::shared_ptr< dds_publisher
     _writer->on_publication_matched( [this]( PublicationMatchedStatus const & info ) {
         if( info.current_count_change == 1 )
         {
-            LOG_DEBUG( "DataReader " << _writer->topic()->get_participant()->print(
-                           (const dds_guid &)info.last_subscription_handle )
-                                     << " for '" << _writer->topic()->get()->get_name() << "' discovered" );
             {
                 std::lock_guard< std::mutex > lock( _notification_send_mutex );
                 _send_init_msgs = true;
@@ -77,9 +74,6 @@ dds_notification_server::dds_notification_server( std::shared_ptr< dds_publisher
         }
         else if( info.current_count_change == -1 )
         {
-            LOG_DEBUG( "DataReader " << _writer->topic()->get_participant()->print(
-                           (const dds_guid &)info.last_subscription_handle )
-                                     << " for '" << _writer->topic()->get()->get_name() << "' disappeared" );
         }
         else
         {
@@ -129,6 +123,7 @@ void dds_notification_server::add_discovery_notification( topics::raw::device::n
 void dds_notification_server::send_discovery_notifications()
 {
     // Send all initialization notifications
+    LOG_DEBUG( "broadcasting discovery notifications" );
     for( auto notification : _discovery_notifications )
     {
         DDS_API_CALL( _writer->get()->write( &notification ) );

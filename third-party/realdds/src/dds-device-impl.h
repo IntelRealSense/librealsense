@@ -86,7 +86,7 @@ public:
     void run()
     {
         if( _running )
-            DDS_THROW( runtime_error, "device '" + _info.name + "'is already running" );
+            DDS_THROW( runtime_error, "device '" + _info.name + "' is already running" );
 
         create_notifications_reader();
         create_control_writer();
