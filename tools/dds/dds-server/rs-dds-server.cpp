@@ -101,6 +101,8 @@ void add_init_device_header_msg( rs2::device dev, std::shared_ptr< dds_device_se
 {   
     topics::device::notification::device_header_msg device_header_msg;
     auto &&sensors = dev.query_sensors();
+
+    //Split sensor profiles to streams by < type, index >. Value is number of profiles of this stream.
     std::map<std::pair<rs2_stream, int>, int> unique_streams;
     for (auto sensor : sensors)
     {

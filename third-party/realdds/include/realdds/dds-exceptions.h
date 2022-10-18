@@ -34,21 +34,5 @@ public:
     }
 };
 
-class dds_length_error : public std::length_error
-{
-public:
-    dds_length_error( std::string const & str )
-        : std::length_error( str )
-    {
-        LOG_ERROR( "throwing: " << str );
-    }
-
-    dds_length_error( char const * lpsz )
-        : std::length_error( lpsz )
-    {
-        LOG_ERROR( "throwing: " << lpsz );
-    }
-};
-
 
 }  // namespace realdds

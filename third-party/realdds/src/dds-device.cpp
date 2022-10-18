@@ -114,7 +114,7 @@ void dds_device::open( const std::vector< dds_video_stream::profile > & profiles
 
     if ( profiles.size() > device::control::MAX_OPEN_STREAMS )
     {
-        DDS_THROW(length_error, "Too many streams to open (" + std::to_string( profiles.size() )
+        DDS_THROW(runtime_error, "Too many streams to open (" + std::to_string( profiles.size() )
                   + "), max is " + std::to_string( device::control::MAX_OPEN_STREAMS ) );
     }
 
@@ -152,7 +152,7 @@ void dds_device::open( const std::vector< dds_motion_stream::profile > & profile
 
     if ( profiles.size() > device::control::MAX_OPEN_STREAMS )
     {
-        throw std::length_error( "Too many streams to open (" + std::to_string( profiles.size() )
+        DDS_THROW( runtime_error, "Too many streams to open (" + std::to_string( profiles.size() )
                                  + "), max is " + std::to_string( device::control::MAX_OPEN_STREAMS ) );
     }
 

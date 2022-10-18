@@ -58,7 +58,7 @@ std::ostream & operator<<( std::ostream & s, state_type st )
 }
 
 
-dds_video_stream::profile to_realdds_format( const topics::device::notification::video_stream_profile & profile )
+dds_video_stream::profile to_realdds_profile( const topics::device::notification::video_stream_profile & profile )
 {
     dds_video_stream::profile prof;
     prof.type = profile.type;
@@ -73,7 +73,7 @@ dds_video_stream::profile to_realdds_format( const topics::device::notification:
     return prof;
 }
 
-dds_motion_stream::profile to_realdds_format( const topics::device::notification::motion_stream_profile & profile )
+dds_motion_stream::profile to_realdds_profile( const topics::device::notification::motion_stream_profile & profile )
 {
     dds_motion_stream::profile prof;
     prof.type      = profile.type;
@@ -272,7 +272,7 @@ private:
                                     {
                                         stream = std::make_shared<dds_video_stream>( profile.type, profiles_msg->group_name );
                                     }
-                                    stream->add_profile( to_realdds_format( profile ), profile.default_profile );
+                                    stream->add_profile( to_realdds_profile( profile ), profile.default_profile );
                                 }
 
                                 if ( _streams.size() >= _expected_num_of_streams )
@@ -309,7 +309,7 @@ private:
                                     {
                                         stream = std::make_shared<dds_motion_stream>( profile.type, profiles_msg->group_name );
                                     }
-                                    stream->add_profile( to_realdds_format( profile ), profile.default_profile );
+                                    stream->add_profile( to_realdds_profile( profile ), profile.default_profile );
                                 }
 
                                 if ( _streams.size() >= _expected_num_of_streams )

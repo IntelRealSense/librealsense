@@ -62,6 +62,8 @@ private:
     // Ctor is private: use find() or create() instead. Same for dtor -- it should be automatic
     dds_device( std::shared_ptr< impl > );
 
+    //Called internally by other functions, mutex should be locked prior to calling this function
+    //Solves possible race conditions when serching for an item and creating if does not exist.
     static std::shared_ptr< dds_device > find_internal( dds_guid const & guid );
 };  // class dds_device
 

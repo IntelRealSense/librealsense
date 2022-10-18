@@ -28,7 +28,8 @@ void dds_video_stream::add_profile( const dds_stream::profile & prof, bool defau
 {
     if ( _impl->_type != prof.type )
     {
-        throw std::runtime_error( "profile of different type then stream" );
+        throw std::runtime_error( "profile of different type (" + std::to_string( _impl->_type)
+                                + ") then stream (" + std::to_string( prof.type ));
     }
 
     _impl->_profiles.push_back( std::make_pair( static_cast< const dds_video_stream::profile & >( prof ), default_profile ) );
@@ -63,7 +64,8 @@ void dds_motion_stream::add_profile( const dds_stream::profile & prof, bool defa
 {
     if ( _impl->_type != prof.type )
     {
-        throw std::runtime_error( "profile of different type then stream" );
+        throw std::runtime_error( "profile of different type (" + std::to_string( _impl->_type)
+                                + ") then stream (" + std::to_string( prof.type ));
     }
 
     _impl->_profiles.push_back( std::make_pair( static_cast< const dds_motion_stream::profile & >( prof ), default_profile ) );

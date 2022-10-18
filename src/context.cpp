@@ -478,6 +478,7 @@ namespace librealsense
 
         void close() override
         {
+            //dds_device::close expects <stream_uid, stream_index> pairs
             std::vector< std::pair< int16_t, int8_t > > profiles_to_close;
             for (auto profile : sensor_base::get_active_streams())
             {
@@ -507,7 +508,7 @@ namespace librealsense
     {
         std::shared_ptr< realdds::dds_device > _dds_dev;
 
-        rs2_video_stream to_rs2_format( const realdds::dds_video_stream::profile & profile )
+        rs2_video_stream to_rs2_video_stream( const realdds::dds_video_stream::profile & profile )
         {
             rs2_video_stream prof;
             prof.type = static_cast< rs2_stream >(profile.type);
@@ -522,7 +523,7 @@ namespace librealsense
             return prof;
         }
 
-        rs2_motion_stream to_rs2_format( const realdds::dds_motion_stream::profile & profile )
+        rs2_motion_stream to_rs2_motion_stream( const realdds::dds_motion_stream::profile & profile )
         {
             rs2_motion_stream prof;
             prof.type = static_cast< rs2_stream >( profile.type );
@@ -567,12 +568,12 @@ namespace librealsense
                         stream->foreach_profile( [&]( const realdds::dds_stream::profile & profile, bool default_profile ) {
                             if ( type == RS2_STREAM_DEPTH || type == RS2_STREAM_COLOR || type == RS2_STREAM_INFRARED )
                             {
-                                sensor.add_video_stream( to_rs2_format( static_cast< const realdds::dds_video_stream::profile & >( profile ) ),
+                                sensor.add_video_stream( to_rs2_video_stream( static_cast< const realdds::dds_video_stream::profile & >( profile ) ),
                                     default_profile );
                             }
                             if ( type == RS2_STREAM_GYRO || type == RS2_STREAM_ACCEL )
                             {
-                                sensor.add_motion_stream( to_rs2_format( static_cast< const realdds::dds_motion_stream::profile & >( profile ) ),
+                                sensor.add_motion_stream( to_rs2_motion_stream( static_cast< const realdds::dds_motion_stream::profile & >( profile ) ),
                                     default_profile );
                             }
                         } ); //End foreach_profile lambda
