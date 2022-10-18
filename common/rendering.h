@@ -404,7 +404,7 @@ namespace rs2
     public:
         std::shared_ptr<colorizer> colorize;
         std::shared_ptr<yuy_decoder> yuy2rgb;
-        std::shared_ptr<nv12_decoder> nv122rgb;
+        std::shared_ptr<nv12i_decoder> nv122rgb;
         std::shared_ptr<y411_decoder> y411;
         std::shared_ptr<depth_huffman_decoder> depth_decode;
         bool zoom_preview = false;

@@ -139,20 +139,20 @@ namespace rs2
         };
 
         /**
-        * yuy_decoder can be used for YUY->RGB conversion
-        * Similar in functionality to rs2::yuy_decoder but performed on the GPU
+        * nv12i_decoder can be used for NV12I->RGB conversion
+        * Similar in functionality to rs2::nv12i_decoder but performed on the GPU
         */
-        class nv12_decoder : public rs2::nv12_decoder
+        class nv12i_decoder : public rs2::nv12i_decoder
         {
         public:
-            nv12_decoder() : rs2::nv12_decoder(init()) { }
+            nv12i_decoder() : rs2::nv12i_decoder(init()) { }
 
         private:
             std::shared_ptr<rs2_processing_block> init()
             {
                 rs2_error* e = nullptr;
                 auto block = std::shared_ptr<rs2_processing_block>(
-                    rs2_gl_create_nv12_decoder(RS2_API_VERSION, &e),
+                    rs2_gl_create_nv12i_decoder(RS2_API_VERSION, &e),
                     rs2_delete_processing_block);
                 error::handle(e);
 
