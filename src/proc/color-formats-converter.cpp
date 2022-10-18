@@ -359,10 +359,10 @@ namespace librealsense
     }
 
     template<rs2_format FORMAT>
-    void parse_one_line(const std::vector<uint8_t>& y_one_line, const std::vector<uint8_t>& uv_one_line, uint8_t** dst)
+    void parse_one_line(const byte* y_one_line, const byte* uv_one_line, uint8_t** dst, int width)
     {
         // building 16 pixels at each iteration 
-        for (int y_pix = 0, uv_pix = 0; y_pix < y_one_line.size(); y_pix += 16, uv_pix += 16)
+        for (int y_pix = 0, uv_pix = 0; y_pix < width; y_pix += 16, uv_pix += 16)
         {
             // grabbing matching y,u,v values
             uint8_t y[16] = { 0 };
@@ -545,12 +545,8 @@ namespace librealsense
             auto start_of_uv = end_of_y;
             auto end_of_uv = start_of_uv + width;
 
-            std::vector<uint8_t> y_buffer_first_line(start_of_y, start_of_second_line);
-            std::vector<uint8_t> y_buffer_second_line(start_of_second_line, end_of_y);
-            std::vector<uint8_t> uv_buffer(start_of_uv, end_of_uv);
-
-            parse_one_line<FORMAT>(y_buffer_first_line, uv_buffer, &dst);
-            parse_one_line<FORMAT>(y_buffer_second_line, uv_buffer, &dst);
+            parse_one_line<FORMAT>(start_of_y, start_of_uv, &dst, width);
+            parse_one_line<FORMAT>(start_of_second_line, start_of_uv, &dst, width);
         }
         return;       
     }
