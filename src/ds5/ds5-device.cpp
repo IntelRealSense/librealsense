@@ -877,7 +877,7 @@ namespace librealsense
             }
             else
             {
-                depth_sensor.register_processing_block(
+                 depth_sensor.register_processing_block(
                     { RS2_FORMAT_Y12I },
                     { {RS2_FORMAT_Y16, RS2_STREAM_INFRARED, 1}, {RS2_FORMAT_Y16, RS2_STREAM_INFRARED, 2} },
                     []() {return std::make_shared<y12i_to_y16y16_mipi>(); }
