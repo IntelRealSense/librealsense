@@ -472,13 +472,13 @@ namespace librealsense
     }
 
     /////////////////////////////
-    // NV12 unpacking routines //
+    // M420 unpacking routines //
     /////////////////////////////
-    // This templated function unpacks NV12i into Y8/Y16/RGB8/RGBA8/BGR8/BGRA8, depending on the compile-time parameter FORMAT.
+    // This templated function unpacks M420 into Y8/Y16/RGB8/RGBA8/BGR8/BGRA8, depending on the compile-time parameter FORMAT.
     // It is expected that all branching outside of the loop control variable will be removed due to constant-folding.
-    // This NV12i format is an INTERNAL FORMAT. Its configuration is as following: 2 lines of Y then one line of UV (line size is width)
+    // The M420 is a standard format - see: https://www.kernel.org/doc/html/v4.10/media/uapi/v4l/pixfmt-m420.html
+    // Its configuration is as following: 2 lines of Y then one line of UV (line size is width)
     // There is one Y value for each pixel, and one pair of U,V values for 4 pixels. 
-    // Their matching is similar to NV12 format - see: https://www.kernel.org/doc/html/v4.9/media/uapi/v4l/pixfmt-nv12.html?highlight=nv12
     // For example: for the first 3 lines of the frame:
     // Y0  Y1   Y2   Y3   ....
     // Yw  Yw+1 Yw+2 Yw+3 .... (Yw:Ywidth)
@@ -486,7 +486,7 @@ namespace librealsense
     // The first pixel is (Y0, U0, V0), second pixel is (Y1, U0, V0)
     // The first pixel in the second line is (Yw, U0, V0) second pixel in second line is (Yw+1, U0, V0)
     // The third pixel in second line is (Yw+2, U1, V1)
-    template<rs2_format FORMAT> void unpack_nv12i(byte* const d[], const byte* s, int width, int height, int actual_size)
+    template<rs2_format FORMAT> void unpack_m420(byte* const d[], const byte* s, int width, int height, int actual_size)
     {
         auto n = width * height;
         assert(n % 16 == 0); // All currently supported color resolutions are multiples of 16 pixels. Could easily extend support to other resolutions by copying final n<16 pixels into a zero-padded buffer and recursively calling self for final iteration.
@@ -575,28 +575,28 @@ namespace librealsense
         }
     }
 
-    void unpack_nv12i(rs2_format dst_format, rs2_stream dst_stream, byte* const d[], const byte* s, int w, int h, int actual_size)
+    void unpack_m420(rs2_format dst_format, rs2_stream dst_stream, byte* const d[], const byte* s, int w, int h, int actual_size)
     {
-        LOG_DEBUG("unpack nv12i called with dst_format: " << rs2_format_to_string(dst_format));
+        LOG_DEBUG("unpack m420 called with dst_format: " << rs2_format_to_string(dst_format));
         switch (dst_format)
         {
         case RS2_FORMAT_Y8:
-            unpack_nv12i<RS2_FORMAT_Y8>(d, s, w, h, actual_size);
+            unpack_m420<RS2_FORMAT_Y8>(d, s, w, h, actual_size);
             break;
         case RS2_FORMAT_Y16:
-            unpack_nv12i<RS2_FORMAT_Y16>(d, s, w, h, actual_size);
+            unpack_m420<RS2_FORMAT_Y16>(d, s, w, h, actual_size);
             break;
         case RS2_FORMAT_RGB8:
-            unpack_nv12i<RS2_FORMAT_RGB8>(d, s, w, h, actual_size);
+            unpack_m420<RS2_FORMAT_RGB8>(d, s, w, h, actual_size);
             break;
         case RS2_FORMAT_RGBA8:
-            unpack_nv12i<RS2_FORMAT_RGBA8>(d, s, w, h, actual_size);
+            unpack_m420<RS2_FORMAT_RGBA8>(d, s, w, h, actual_size);
             break;
         case RS2_FORMAT_BGR8:
-            unpack_nv12i<RS2_FORMAT_BGR8>(d, s, w, h, actual_size);
+            unpack_m420<RS2_FORMAT_BGR8>(d, s, w, h, actual_size);
             break;
         case RS2_FORMAT_BGRA8:
-            unpack_nv12i<RS2_FORMAT_BGRA8>(d, s, w, h, actual_size);
+            unpack_m420<RS2_FORMAT_BGRA8>(d, s, w, h, actual_size);
             break;
         default:
             LOG_ERROR("Unsupported format for YUY2 conversion.");
@@ -923,8 +923,8 @@ namespace librealsense
         unpack_rgb_from_bgr(dest, source, width, height, actual_size);
     }
 
-    void nv12i_converter::process_function(byte* const dest[], const byte* source, int width, int height, int actual_size, int input_size)
+    void m420_converter::process_function(byte* const dest[], const byte* source, int width, int height, int actual_size, int input_size)
     {
-        unpack_nv12i(_target_format, _target_stream, dest, source, width, height, actual_size);
+        unpack_m420(_target_format, _target_stream, dest, source, width, height, actual_size);
     } 
 }

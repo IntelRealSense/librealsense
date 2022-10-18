@@ -17,7 +17,7 @@ namespace librealsense
         {rs_fourcc('U','Y','V','Y'), RS2_FORMAT_UYVY},
         {rs_fourcc('M','J','P','G'), RS2_FORMAT_MJPEG},
         {rs_fourcc('B','Y','R','2'), RS2_FORMAT_RAW16},
-        {rs_fourcc('N','V','1','2'), RS2_FORMAT_NV12I}
+        {rs_fourcc('N','V','1','2'), RS2_FORMAT_M420}  // REMI - TODO - GUID TO BE CHANGED
     };
     std::map<uint32_t, rs2_stream> ds5_color_fourcc_to_rs2_stream = {
         {rs_fourcc('Y','U','Y','2'), RS2_STREAM_COLOR},
@@ -25,7 +25,7 @@ namespace librealsense
         {rs_fourcc('U','Y','V','Y'), RS2_STREAM_COLOR},
         {rs_fourcc('B','Y','R','2'), RS2_STREAM_COLOR},
         {rs_fourcc('M','J','P','G'), RS2_STREAM_COLOR},
-        {rs_fourcc('N','V','1','2'), RS2_STREAM_COLOR}
+        {rs_fourcc('N','V','1','2'), RS2_STREAM_COLOR}  // REMI - TODO - GUID TO BE CHANGED
     };
 
     ds5_color::ds5_color(std::shared_ptr<context> ctx,
@@ -258,7 +258,7 @@ namespace librealsense
         }
         
         if (_pid == ds::RS455_PID)
-            color_ep.register_processing_block(processing_block_factory::create_pbf_vector<nv12i_converter>(RS2_FORMAT_NV12I, map_supported_color_formats(RS2_FORMAT_NV12I), RS2_STREAM_COLOR));
+            color_ep.register_processing_block(processing_block_factory::create_pbf_vector<m420_converter>(RS2_FORMAT_M420, map_supported_color_formats(RS2_FORMAT_M420), RS2_STREAM_COLOR));
         else
             color_ep.register_processing_block(processing_block_factory::create_pbf_vector<yuy2_converter>(RS2_FORMAT_YUYV, map_supported_color_formats(RS2_FORMAT_YUYV), RS2_STREAM_COLOR));
     }

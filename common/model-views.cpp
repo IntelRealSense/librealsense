@@ -1149,7 +1149,7 @@ namespace rs2
         streaming(false), _pause(false),
         depth_colorizer(std::make_shared<rs2::gl::colorizer>()),
         yuy2rgb(std::make_shared<rs2::gl::yuy_decoder>()),
-        nv12i_to_rgb(std::make_shared<rs2::gl::nv12i_decoder>()),
+        m420_to_rgb(std::make_shared<rs2::gl::m420_decoder>()),
         y411(std::make_shared<rs2::gl::y411_decoder>()),
         depth_decoder(std::make_shared<rs2::depth_huffman_decoder>()),
         viewer(viewer),
@@ -1158,7 +1158,7 @@ namespace rs2
         supported_options = s->get_supported_options();
         restore_processing_block("colorizer", depth_colorizer);
         restore_processing_block("yuy2rgb", yuy2rgb);
-        restore_processing_block("nv122rgb", nv12i_to_rgb);
+        restore_processing_block("m4202rgb", m420_to_rgb);
         restore_processing_block("y411", y411);
 
         std::string device_name(dev.get_info(RS2_CAMERA_INFO_NAME));
@@ -2281,7 +2281,7 @@ namespace rs2
 
             save_processing_block_to_config_file("colorizer", depth_colorizer);
             save_processing_block_to_config_file("yuy2rgb", yuy2rgb);
-            save_processing_block_to_config_file("nv122rgb", nv12i_to_rgb);
+            save_processing_block_to_config_file("m4202rgb", m420_to_rgb);
             save_processing_block_to_config_file("y411", y411);
 
             for (auto&& pbm : post_processing) pbm->save_to_config_file();
@@ -2536,7 +2536,7 @@ namespace rs2
         profile = p;
         texture->colorize = d->depth_colorizer;
         texture->yuy2rgb = d->yuy2rgb;
-        texture->nv122rgb = d->nv12i_to_rgb;
+        texture->m4202rgb = d->m420_to_rgb;
         texture->y411 = d->y411;
         texture->depth_decode = d->depth_decoder;
 
