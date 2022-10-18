@@ -412,7 +412,6 @@ namespace rs2
                         break;
                     }
                 }
-
             }
             else if (action == RS2_CALIB_ACTION_UVMAPPING_CALIB)
             {
@@ -1122,8 +1121,23 @@ namespace rs2
         else
             try_start_viewer(256, 144, 90, invoke);
 
-        if (action == RS2_CALIB_ACTION_TARE_GROUND_TRUTH)
+        if ( action == RS2_CALIB_ACTION_TARE_GROUND_TRUTH )
+        {
+            //Laser should be turned off during ground truth calculation
+            if ( _sub->s->supports( RS2_OPTION_EMITTER_ENABLED ) )
+            {
+                laser_status_prev = _sub->s->get_option( RS2_OPTION_EMITTER_ENABLED );
+                _sub->s->set_option( RS2_OPTION_EMITTER_ENABLED, 0.0f );
+            }
+
             get_ground_truth();
+            
+            //Restore laser
+            if ( _sub->s->supports( RS2_OPTION_EMITTER_ENABLED ) )
+            {
+                _sub->s->set_option( RS2_OPTION_EMITTER_ENABLED, laser_status_prev );
+            }
+        }
         else
         {
             try
@@ -1132,7 +1146,7 @@ namespace rs2
                 if (_sub->s->supports( RS2_OPTION_EMITTER_ENABLED ))
                 {
                     laser_status_prev = _sub->s->get_option( RS2_OPTION_EMITTER_ENABLED );
-                    _sub->s->set_option( RS2_OPTION_EMITTER_ENABLED, 0.0f );
+                    _sub->s->set_option( RS2_OPTION_EMITTER_ENABLED, 1.0f );
                 }
                 if (_sub->s->supports( RS2_OPTION_THERMAL_COMPENSATION ))
                 {
@@ -1999,7 +2013,8 @@ namespace rs2
             }
             else if (update_state == RS2_CALIB_STATE_CALIB_COMPLETE)
             {
-                if (get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_CALIB)
+                if (get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_CALIB ||
+                    get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_TARE_CALIB )
                 {
                     if (get_manager()._sub->s->supports( RS2_OPTION_EMITTER_ENABLED ))
                         get_manager()._sub->s->set_option( RS2_OPTION_EMITTER_ENABLED, get_manager().laser_status_prev );
