@@ -82,7 +82,7 @@ rs2_processing_block* rs2_gl_create_yuy_decoder(int api_version, rs2_error** err
 }
 NOARGS_HANDLE_EXCEPTIONS_AND_RETURN(nullptr)
 
-rs2_processing_block* rs2_gl_create_nv12_decoder(int api_version, rs2_error** error) BEGIN_API_CALL
+rs2_processing_block* rs2_gl_create_nv12i_decoder(int api_version, rs2_error** error) BEGIN_API_CALL
 {
     verify_version_compatibility(api_version);
 

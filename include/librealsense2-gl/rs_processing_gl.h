@@ -82,7 +82,7 @@ rs2_processing_block* rs2_gl_create_yuy_decoder(int api_version, rs2_error** err
 * \param[in] api_version Users are expected to pass their version of \c RS2_API_VERSION to make sure they are running the correct librealsense version.
 * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
 */
-rs2_processing_block* rs2_gl_create_nv12_decoder(int api_version, rs2_error** error);
+rs2_processing_block* rs2_gl_create_nv12i_decoder(int api_version, rs2_error** error);
 
 
 /**

@@ -526,28 +526,32 @@ namespace rs2
         }
     };
 
-    class nv12_decoder : public filter
+    class nv12i_decoder : public filter
     {
     public:
         /**
-        * Creates YUY decoder processing block. This block accepts raw YUY frames and outputs frames of other formats.
-        * YUY is a common video format used by a variety of web-cams. It benefits from packing pixels into 2 bytes per pixel
-        * without signficant quality drop. YUY representation can be converted back to more usable RGB form,
-        * but this requires somewhat costly conversion.
+        * Creates NV12i decoder processing block.
+        * This block accepts raw NV12i frames and outputs frames of other formats.
+        * NV12i is an internal format that looks like the standard NV12 format,see:
+        *     https://www.kernel.org/doc/html/v4.8/media/uapi/v4l/pixfmt-nv12.html
+        * Except that instead of getting all the luminance values and then the chrome values,
+        * Two lines (of length equal to width of the current resolution) of luminance are followed by
+        * One line (of length width) of chrome values.
         * The SDK will automatically try to use SSE2 and AVX instructions and CUDA where available to get
         * best performance. Other implementations (using GLSL, OpenCL, Neon and NCS) should follow.
+        * \param[out] error  if non-null, receives any error that occurs during this call, otherwise, errors are ignored
         */
-        nv12_decoder() : filter(init(), 1) { }
+        nv12i_decoder() : filter(init(), 1) { }
 
     protected:
-        nv12_decoder(std::shared_ptr<rs2_processing_block> block) : filter(block, 1) {}
+        nv12i_decoder(std::shared_ptr<rs2_processing_block> block) : filter(block, 1) {}
 
     private:
         std::shared_ptr<rs2_processing_block> init()
         {
             rs2_error* e = nullptr;
             auto block = std::shared_ptr<rs2_processing_block>(
-                rs2_create_nv12_decoder(&e),
+                rs2_create_nv12i_decoder(&e),
                 rs2_delete_processing_block);
             error::handle(e);
 
