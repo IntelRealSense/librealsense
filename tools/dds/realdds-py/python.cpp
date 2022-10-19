@@ -9,11 +9,13 @@ Copyright(c) 2022 Intel Corporation. All Rights Reserved. */
 #include <realdds/dds-device-broadcaster.h>
 #include <realdds/dds-device-watcher.h>
 #include <realdds/dds-device.h>
+#include <realdds/dds-stream.h>
 #include <realdds/dds-guid.h>
 #include <realdds/dds-topic.h>
 #include <realdds/dds-topic-reader.h>
 #include <realdds/dds-utilities.h>
 
+#include <librealsense2/h/rs_internal.h>
 #include <librealsense2/utilities/easylogging/easyloggingpp.h>
 #include <fastdds/dds/log/Log.hpp>
 #include <fastdds/dds/domain/qos/DomainParticipantQos.hpp>
@@ -340,6 +342,15 @@ PYBIND11_MODULE(NAME, m) {
         .def_readwrite( "fmt", &rs2_motion_stream::fmt )
         .def_readwrite( "intrinsics", &rs2_motion_stream::intrinsics );
 
+    using realdds::dds_stream;
+    py::class_< dds_stream,
+                std::shared_ptr< dds_stream > //handled with a shared_ptr
+                >( m, "stream" )
+        .def( "get_type", &dds_stream::get_type )
+        .def( "get_group_name", &dds_stream::get_group_name );
+        //TODO - add stream profile class and then other dds_stream functions
+
+
     using realdds::dds_device;
     py::class_< dds_device,
                 std::shared_ptr< dds_device >  // handled with a shared_ptr
@@ -348,32 +359,17 @@ PYBIND11_MODULE(NAME, m) {
         .def( "guid", []( dds_device const & self ) { return to_string( self.guid() ); } )
         .def( "is_running", &dds_device::is_running )
         .def( "run", &dds_device::run )
-        .def( "num_of_sensors", &dds_device::num_of_sensors )
+        .def( "num_of_streams", &dds_device::number_of_streams )
         .def( FN_FWD( dds_device,
-            foreach_sensor,
-            ( size_t, std::string const & ),
-            ( size_t sensor_index, std::string const & name ),
-            callback( sensor_index, name ); ) )
-        .def( "foreach_video_profile",
-              []( dds_device const & self,
-                  size_t sensor_index,
-                  std::function< void( rs2_video_stream const & profile, bool is_default ) > callback ) {
-                  self.foreach_video_profile(
-                      sensor_index,
-                      [callback]( rs2_video_stream const & profile, bool is_default ) {
-                          FN_FWD_CALL( dds_device, foreach_video_profile, callback( profile, is_default ); );
-                      } );
-              }, py::call_guard< py::gil_scoped_release >() )
-        .def( "foreach_motion_profile",
-              []( dds_device const & self,
-                  size_t sensor_index,
-                  std::function< void( rs2_motion_stream const & profile, bool is_default ) > callback ) {
-                  self.foreach_motion_profile(
-                      sensor_index,
-                      [callback]( rs2_motion_stream const & profile, bool is_default ) {
-                          FN_FWD_CALL( dds_device, foreach_motion_profile, callback( profile, is_default ); );
-                      } );
-              }, py::call_guard< py::gil_scoped_release >() )
+                      foreach_stream,
+                      ( std::shared_ptr< dds_stream > ),
+                      ( std::shared_ptr< dds_stream > stream ),
+                      callback( stream ); ) )
+        //.def( FN_FWD( dds_device,
+        //              foreach_profile,
+        //              ( dds_stream::profile, bool),
+        //              ( const dds_stream::profile & prof, bool def_prof ),
+        //              callback( prof, def_prof ); ) )
         .def( "__repr__", []( dds_device const & self ) {
             std::ostringstream os;
             os << "<" SNAME ".device[";

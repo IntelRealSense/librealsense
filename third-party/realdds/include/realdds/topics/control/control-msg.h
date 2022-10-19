@@ -17,36 +17,39 @@ public:
     using type = raw::device::controlPubSubType;
 
     //Open uses a vector of profiles, to have constant message size we limit it
-    static const size_t MAX_OPEN_PROFILES = 8;
+    static const uint8_t MAX_OPEN_STREAMS = 8;
 
 #pragma pack( push, 1 )
-    enum class control_type : uint16_t
+    enum class msg_type : uint16_t
     {
-        SENSOR_OPEN,
-        SENSOR_CLOSE,
+        STREAMS_OPEN,
+        STREAMS_CLOSE,
         MAX_CONTROL_TYPE
     };
 
     struct stream_profile
     {
+        int16_t uid;             // Stream unique ID
         int16_t framerate;       // FPS
-        rs2_format format;       // Transfer as uint8_t?
-        rs2_stream type;         // Transfer as uint8_t?
+        int8_t format;           // Corresponds to rs2_format
+        int8_t type;             // Corresponds to rs2_stream
         int16_t width;           // Resolution width [pixels]
         int16_t height;          // Resolution width [pixels]
     };
 
-    struct sensor_open_msg
+    struct streams_open_msg
     {
         uint32_t message_id; // Running counter
-        int16_t sensor_uid;  // Sensor ID as received in notification::sensor_header_msg.index
-        stream_profile profiles[MAX_OPEN_PROFILES];
+        uint8_t number_of_streams;
+        stream_profile streams[MAX_OPEN_STREAMS];
     };
 
-    struct sensor_close_msg
+    struct streams_close_msg
     {
         uint32_t message_id; // Running counter
-        int16_t sensor_uid;
+        uint8_t number_of_streams;
+        int16_t stream_uids[MAX_OPEN_STREAMS];
+        int8_t stream_indexes[MAX_OPEN_STREAMS];
     };
 
 
@@ -58,7 +61,7 @@ public:
     }
 
     template<typename T>
-    static void construct_raw_message( control_type msg_id, const T& msg, raw::device::control& raw_msg )
+    static void construct_raw_message( msg_type msg_id, const T& msg, raw::device::control& raw_msg )
     {
         raw_msg.id() = static_cast< int16_t >( msg_id );
         raw_msg.size() = static_cast< uint32_t >( sizeof( msg ) );
@@ -69,11 +72,11 @@ public:
     control() = default;
 
     control( const raw::device::control&& main )
-        : _control_type( static_cast<control_type>(main.id()) )
+        : _msg_type( static_cast< msg_type >(main.id()) )
         , _raw_data(main.data()) // TODO: avoid data copy?
         , _size( main.size() )
     {
-        if( _control_type >= control_type::MAX_CONTROL_TYPE )
+        if( _msg_type >= msg_type::MAX_CONTROL_TYPE )
         {
             throw std::runtime_error(" unsupported message type received, id:" + main.id());
         }
@@ -88,7 +91,7 @@ public:
         return _raw_data.size() > 0 ? reinterpret_cast< T * >( _raw_data.data() ) : nullptr;
     }
 
-    control_type _control_type;
+    msg_type _msg_type;
     std::vector<uint8_t> _raw_data;
     int _size;
 };

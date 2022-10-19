@@ -4,7 +4,8 @@
 #pragma once
 
 #include "dds-defines.h"
-#include <librealsense2/h/rs_internal.h>
+
+#include "dds-stream.h"
 
 #include <memory>
 #include <vector>
@@ -19,7 +20,6 @@ class device_info;
 
 
 class dds_participant;
-
 
 // Represents a device via the DDS system. Such a device exists as of its identification by the device-watcher, and
 // always contains a device-info and GUID of the remote DataWriter to which it belongs.
@@ -38,7 +38,6 @@ public:
     topics::device_info const & device_info() const;
 
     // The device GUID is that of the DataWriter which declares it!
-    //
     dds_guid const & guid() const;
 
     bool is_running() const;
@@ -48,15 +47,13 @@ public:
 
     //----------- below this line, a device must be running!
 
-    size_t num_of_sensors() const;
+    size_t number_of_streams() const;
 
-    size_t foreach_sensor( std::function< void( size_t sensor_index, const std::string & name ) > fn ) const;
+    size_t foreach_stream( std::function< void( std::shared_ptr< dds_stream > stream ) > fn ) const;
 
-    size_t foreach_video_profile( size_t sensor_index, std::function< void( const rs2_video_stream& profile, bool def_prof ) > fn ) const;
-    size_t foreach_motion_profile( size_t sensor_index, std::function< void( const rs2_motion_stream& profile, bool def_prof ) > fn ) const;
-
-    void sensor_open( size_t sensor_index, const std::vector< rs2_video_stream > & profiles );
-    void sensor_close( size_t sensor_index );
+    void open( const std::vector< dds_video_stream::profile > & profiles );
+    void open( const std::vector< dds_motion_stream::profile > & profiles);
+    void close( const std::vector< std::pair< int16_t, int8_t > > & stream_uids );
 
 private:
     class impl;
@@ -64,6 +61,10 @@ private:
 
     // Ctor is private: use find() or create() instead. Same for dtor -- it should be automatic
     dds_device( std::shared_ptr< impl > );
+
+    //Called internally by other functions, mutex should be locked prior to calling this function
+    //Solves possible race conditions when serching for an item and creating if does not exist.
+    static std::shared_ptr< dds_device > find_internal( dds_guid const & guid );
 };  // class dds_device
 
 

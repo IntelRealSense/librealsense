@@ -3,6 +3,7 @@
 
 #include <realdds/dds-device.h>
 #include <realdds/dds-device-impl.h>
+#include <realdds/dds-exceptions.h>
 
 namespace realdds {
 
@@ -19,9 +20,16 @@ std::mutex devices_mutex;
 
 std::shared_ptr< dds_device > dds_device::find( dds_guid const & guid )
 {
+    std::lock_guard< std::mutex > lock( devices_mutex );
+    return find_internal( guid );
+}
+
+std::shared_ptr< dds_device > dds_device::find_internal( dds_guid const & guid)
+{
+    //Assumes devices_mutex is locked outside this function to protect access to guid_to_device
+
     std::shared_ptr< dds_device > dev;
 
-    std::lock_guard< std::mutex > lock( devices_mutex );
     auto it = guid_to_device.find( guid );
     if( it != guid_to_device.end() )
     {
@@ -36,17 +44,17 @@ std::shared_ptr< dds_device > dds_device::find( dds_guid const & guid )
     return dev;
 }
 
-
 std::shared_ptr< dds_device > dds_device::create( std::shared_ptr< dds_participant > const & participant,
                                                   dds_guid const & guid,
                                                   topics::device_info const & info )
 {
-    std::shared_ptr< dds_device > dev = find( guid );
-    // TODO a device may be created between find() and the next lock...
+    // Locking before find_internal() to avoid a device created between search and creation
+    std::lock_guard< std::mutex > lock( devices_mutex );
+
+    std::shared_ptr< dds_device > dev = find_internal( guid );
+
     if( ! dev )
     {
-        std::lock_guard< std::mutex > lock( devices_mutex );
-
         auto impl = std::make_shared< dds_device::impl >( participant, guid, info );
         // Use a custom deleter to automatically remove the device from the map when it's done with
         dev = std::shared_ptr< dds_device >( new dds_device( impl ), [guid]( dds_device * ptr ) {
@@ -60,169 +68,153 @@ std::shared_ptr< dds_device > dds_device::create( std::shared_ptr< dds_participa
     return dev;
 }
 
-
 dds_device::dds_device( std::shared_ptr< impl > impl )
     : _impl( impl )
 {
 }
-
 
 bool dds_device::is_running() const
 {
     return _impl->_running;
 }
 
-
 void dds_device::run()
 {
     _impl->run();
 }
-
 
 topics::device_info const & dds_device::device_info() const
 {
     return _impl->_info;
 }
 
-
 dds_guid const & dds_device::guid() const
 {
     return _impl->_guid;
 }
 
-
-size_t dds_device::num_of_sensors() const
+size_t dds_device::number_of_streams() const
 {
-    return _impl->_num_of_sensors;
+    return _impl->_streams.size();
 }
 
-
-size_t dds_device::foreach_sensor( std::function< void( size_t sensor_index, const std::string & name ) > fn ) const
+size_t dds_device::foreach_stream( std::function< void( std::shared_ptr< dds_stream > stream ) > fn ) const
 {
-    for( auto sensor : _impl->_sensor_index_to_name )
+    for ( auto const & stream : _impl->_streams )
     {
-        fn( sensor.first, sensor.second );
+        fn( stream.second );
     }
 
-    return _impl->_num_of_sensors;
+    return _impl->_streams.size();
 }
 
-
-size_t
-dds_device::foreach_video_profile( size_t sensor_index,
-                                   std::function< void( const rs2_video_stream & profile, bool def_prof ) > fn ) const
-{
-    auto const & msg = _impl->_sensor_to_video_profiles.find( int( sensor_index ) );
-
-    if( msg == _impl->_sensor_to_video_profiles.end() )
-    {
-        return 0;  // Not a video sensor, nothing to do
-    }
-
-    for( size_t i = 0; i < msg->second.num_of_profiles; ++i )
-    {
-        auto const & profile = msg->second.profiles[i];
-        rs2_video_stream prof;
-        prof.type = profile.type;
-        prof.index = profile.stream_index;
-        prof.uid = profile.uid;
-        prof.width = profile.width;
-        prof.height = profile.height;
-        prof.fps = profile.framerate;
-        // TODO - bpp needed?
-        prof.fmt = profile.format;
-        // TODO - add intrinsics
-        fn( prof, profile.default_profile );
-    }
-
-    return msg->second.num_of_profiles;
-}
-
-
-size_t
-dds_device::foreach_motion_profile( size_t sensor_index,
-                                    std::function< void( const rs2_motion_stream & profile, bool def_prof ) > fn ) const
-{
-    auto const & msg = _impl->_sensor_to_motion_profiles.find( int( sensor_index ) );
-
-    if( msg == _impl->_sensor_to_motion_profiles.end() )
-    {
-        return 0;  // Not a motion sensor, nothing to do
-    }
-
-    for( size_t i = 0; i < msg->second.num_of_profiles; ++i )
-    {
-        auto const & profile = msg->second.profiles[i];
-        rs2_motion_stream prof;
-        prof.type = profile.type;
-        prof.index = profile.stream_index;
-        prof.uid = profile.uid;
-        prof.fps = profile.framerate;
-        prof.fmt = profile.format;
-        // TODO - add intrinsics
-        fn( prof, profile.default_profile );
-    }
-
-    return msg->second.num_of_profiles;
-}
-
-void dds_device::sensor_open( size_t sensor_index, const std::vector< rs2_video_stream > & profiles )
+void dds_device::open( const std::vector< dds_video_stream::profile > & profiles )
 {
     using namespace topics;
 
-    if (profiles.size() < device::control::MAX_OPEN_PROFILES)
+    if ( profiles.size() > device::control::MAX_OPEN_STREAMS )
     {
-        throw std::runtime_error( "Too many profiles (" + std::to_string( profiles.size() )
-                                + ") when opening sensor, max is " + std::to_string( device::control::MAX_OPEN_PROFILES ) );
+        DDS_THROW(runtime_error, "Too many streams to open (" + std::to_string( profiles.size() )
+                  + "), max is " + std::to_string( device::control::MAX_OPEN_STREAMS ) );
     }
 
-    device::control::sensor_open_msg open_msg;
+    device::control::streams_open_msg open_msg;
     open_msg.message_id = _impl->_control_message_counter++;
-    open_msg.sensor_uid = static_cast<uint16_t>( sensor_index );
+    open_msg.number_of_streams = static_cast< uint8_t >( profiles.size() );
     for ( size_t i = 0; i < profiles.size(); ++i )
     {
-        open_msg.profiles[i].framerate = profiles[i].fps;
-        open_msg.profiles[i].format = profiles[i].fmt;
-        open_msg.profiles[i].type = profiles[i].type;
-        open_msg.profiles[i].width = profiles[i].width;
-        open_msg.profiles[i].height = profiles[i].height;
+        open_msg.streams[i].uid = profiles[i].uid;
+        open_msg.streams[i].framerate = profiles[i].framerate;
+        open_msg.streams[i].format = profiles[i].format;
+        open_msg.streams[i].type = profiles[i].type;
+        open_msg.streams[i].width = profiles[i].width;
+        open_msg.streams[i].height = profiles[i].height;
     }
 
     raw::device::control raw_msg;
-    device::control::construct_raw_message( device::control::control_type::SENSOR_OPEN,
+    device::control::construct_raw_message( device::control::msg_type::STREAMS_OPEN,
+        open_msg,
+        raw_msg );
+
+    if ( _impl->write_control_message( &raw_msg ) )
+    {
+        LOG_DEBUG( "Sent STREAMS_OPEN message for " << profiles.size() << " streams" );
+    }
+    else
+    {
+        LOG_ERROR( "Error writing STREAMS_OPEN message for " << profiles.size() << " streams" );
+    }
+}
+
+void dds_device::open( const std::vector< dds_motion_stream::profile > & profiles )
+{
+    using namespace topics;
+
+    if ( profiles.size() > device::control::MAX_OPEN_STREAMS )
+    {
+        DDS_THROW( runtime_error, "Too many streams to open (" + std::to_string( profiles.size() )
+                                 + "), max is " + std::to_string( device::control::MAX_OPEN_STREAMS ) );
+    }
+
+    device::control::streams_open_msg open_msg;
+    open_msg.message_id = _impl->_control_message_counter++;
+    open_msg.number_of_streams = static_cast< uint8_t >( profiles.size() );
+    for ( size_t i = 0; i < profiles.size(); ++i )
+    {
+        open_msg.streams[i].uid       = profiles[i].uid;
+        open_msg.streams[i].framerate = profiles[i].framerate;
+        open_msg.streams[i].format    = profiles[i].format;
+        open_msg.streams[i].type      = profiles[i].type;
+        open_msg.streams[i].width     = 0;
+        open_msg.streams[i].height    = 0;
+    }
+
+    raw::device::control raw_msg;
+    device::control::construct_raw_message( device::control::msg_type::STREAMS_OPEN,
                                             open_msg,
                                             raw_msg );
 
     if ( _impl->write_control_message( &raw_msg ) )
     {
-        LOG_DEBUG( "Sent SENSOR_OPEN message for sensor " << sensor_index );
+        LOG_DEBUG( "Sent STREAMS_OPEN message for " << profiles.size() << " streams" );
     }
     else
     {
-        LOG_ERROR( "Error writing SENSOR_OPEN message for sensor: " << sensor_index );
+        LOG_ERROR( "Error writing STREAMS_OPEN message for " << profiles.size() << " streams" );
     }
 }
 
-void dds_device::sensor_close( size_t sensor_index )
+void dds_device::close( const std::vector< std::pair< int16_t, int8_t > >& stream_uids )
 {
     using namespace topics;
 
-    device::control::sensor_close_msg close_msg;
+    if ( stream_uids.size() > device::control::MAX_OPEN_STREAMS )
+    {
+        DDS_THROW( runtime_error,  "Too many profiles to close (" + std::to_string( stream_uids.size() )
+                  + "), max is " + std::to_string( device::control::MAX_OPEN_STREAMS ) );
+    }
+
+    device::control::streams_close_msg close_msg;
     close_msg.message_id = _impl->_control_message_counter++;
-    close_msg.sensor_uid = static_cast<uint16_t>( sensor_index );
+    close_msg.number_of_streams = static_cast< uint8_t >( stream_uids.size() );
+    for (size_t i = 0; i < stream_uids.size(); ++i)
+    {
+        close_msg.stream_uids[i] = stream_uids[i].first;
+        close_msg.stream_indexes[i] = stream_uids[i].second;
+    }
 
     raw::device::control raw_msg;
-    device::control::construct_raw_message( device::control::control_type::SENSOR_CLOSE,
+    device::control::construct_raw_message( device::control::msg_type::STREAMS_CLOSE,
                                             close_msg,
                                             raw_msg );
 
-    if ( _impl->write_control_message( &raw_msg ) )
+    if (_impl->write_control_message( &raw_msg ))
     {
-        LOG_DEBUG( "Sent SENSOR_CLOSE message for sensor " << sensor_index );
+        LOG_DEBUG( "Sent STREAMS_CLOSE message for " << stream_uids.size() << " streams" );
     }
     else
     {
-        LOG_ERROR( "Error writing SENSOR_CLOSE message for sensor: " << sensor_index );
+        LOG_ERROR( "Error writing STREAMS_CLOSE message for " << stream_uids.size() << " streams" );
     }
 }
 

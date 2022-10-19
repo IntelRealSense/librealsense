@@ -3,12 +3,9 @@
 
 #pragma once
 
-
-#include <string>
-
-#include <librealsense2/h/rs_sensor.h>
 #include "notificationPubSubTypes.h"
 
+#include <string>
 
 namespace realdds {
 
@@ -39,7 +36,6 @@ public:
     enum class msg_type : uint16_t
     {
         DEVICE_HEADER,
-        SENSOR_HEADER,
         VIDEO_STREAM_PROFILES,
         MOTION_STREAM_PROFILES,
         CONTROL_RESPONSE,
@@ -48,30 +44,16 @@ public:
 
     struct device_header_msg
     {
-        size_t num_of_sensors;
+        size_t num_of_streams;
     };
-
-    struct sensor_header_msg
-    {
-        enum class sensor_type // maybe with 1 byte inheritance 
-        {
-            VIDEO,
-            MOTION
-        };
-
-        sensor_type type;
-        uint8_t index;           // Index of the current sensor [0-(num_of_sensors-1)]
-        char name[32];           // Sensor name
-    };
-
 
     struct video_stream_profile
     {
-        int8_t stream_index;     // Normally used to distinguish IR L / R
+        int8_t stream_index;     // Used to distinguish similar streams like IR L / R
         int16_t uid;             // Stream unique ID
         int16_t framerate;       // FPS
-        rs2_format format;       // Transfer as uint8_t?
-        rs2_stream type;         // Transfer as uint8_t?
+        int8_t format;           // Corresponds to rs2_format
+        int8_t type;             // Corresponds to rs2_stream
         int16_t width;           // Resolution width [pixels]
         int16_t height;          // Resolution width [pixels]
         bool default_profile;    // Is default stream of the sensor
@@ -80,24 +62,24 @@ public:
 
     struct motion_stream_profile
     {
-        int8_t stream_index;     // Normally used to distinguish IR L / R
+        int8_t stream_index;     // Used to distinguish similar streams like IR L / R
         int16_t uid;             // Stream unique ID
         int16_t framerate;       // FPS
-        rs2_format format;       // Transfer as uint8_t?
-        rs2_stream type;         // Transfer as uint8_t?
+        int8_t format;           // Corresponds to rs2_format
+        int8_t type;             // Corresponds to rs2_stream
         bool default_profile;    // Is default stream of the sensor
     };
 
     struct video_stream_profiles_msg
     {
-        uint8_t dds_sensor_index;  // Index of the current dds sensor [0-(num_of_sensors-1)]
+        char group_name[32];     // Streams can be grouped together to indicate physical or logical connection
         size_t num_of_profiles;  
         video_stream_profile profiles[MAX_VIDEO_PROFILES];
     };
 
     struct motion_stream_profiles_msg
     {
-        uint8_t dds_sensor_index; // Index of the current sensor [0-(num_of_sensors-1)]
+        char group_name[32];     // Streams can be grouped together to indicate physical or logical connection
         size_t num_of_profiles; 
         motion_stream_profile profiles[MAX_MOTION_PROFILES];
     };
@@ -111,7 +93,7 @@ public:
 
     struct control_response_msg
     {
-        uint32_t message_id; // Running counter
+        uint32_t message_id;  // Running counter
         uint32_t response_to; // message_id of the control this message is responding to
         control_result result;
         //TODO - double value for options or vector of bytes for HW monitor
