@@ -18,6 +18,14 @@ namespace librealsense
         explicit emitter_option(uvc_sensor& ep);
     };
 
+    class emitter_frequency : public uvc_xu_option<uint16_t>
+    {
+    public:
+        explicit emitter_frequency( uvc_sensor & ep,
+                                    const std::map< float, std::string > & description_per_value );
+        void set( float value ) override;
+    };
+
     class asic_and_projector_temperature_options : public readonly_option
     {
     public:

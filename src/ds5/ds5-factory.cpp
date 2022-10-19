@@ -67,7 +67,7 @@ namespace librealsense
         };
     };
 
-    // DS5U_S
+    // Not used, should be removed with EOL devices clean up
     class rs405u_device : public ds5u_device,
         public ds5_advanced_mode_base,
         public firmware_logger_device

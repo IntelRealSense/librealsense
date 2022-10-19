@@ -4,6 +4,7 @@ Copyright(c) 2017 Intel Corporation. All Rights Reserved. */
 #include "python.hpp"
 #include "../include/librealsense2/rsutil.h"
 
+
 void init_util(py::module &m) {
     /** rsutil.h **/
     m.def("rs2_project_point_to_pixel", [](const rs2_intrinsics& intrin, const std::array<float, 3>& point)->std::array<float, 2>
