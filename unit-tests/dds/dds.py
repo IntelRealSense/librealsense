@@ -6,33 +6,8 @@ from rspy import log, test
 
 
 def run_server( server_script ):
-    import sys
-    cmd = [sys.executable]
-    #
-    # PYTHON FLAGS
-    #
-    #     -u     : force the stdout and stderr streams to be unbuffered; same as PYTHONUNBUFFERED=1
-    # With buffering we may end up losing output in case of crashes! (in Python 3.7 the text layer of the
-    # streams is unbuffered, but we assume 3.6)
-    cmd += ['-u']
-    #
-    if sys.flags.verbose:
-        cmd += ["-v"]
-    #
     import os.path
-    if not os.path.isabs( server_script ):
-        thisdir = os.path.dirname( os.path.realpath( __file__ ))
-        server_script = os.path.join( thisdir, server_script )
-    cmd += [server_script]
-    #
-    if log.is_debug_on():
-        cmd += ['--debug']
-    #
-    if log.is_color_on():
-        cmd += ['--color']
-    #
-    cmd += ['--nested', 'svr']
-    #
+    cmd = test.nested_cmd( server_script, cwd = os.path.dirname(os.path.realpath(__file__)) )
     import subprocess, time
     log.d( 'running:', cmd )
     start_time = time.time()

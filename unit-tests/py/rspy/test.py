@@ -51,6 +51,9 @@ if '--nested' in sys.argv:
     except IndexError:
         log.f( "Received --nested flag but no nested name" )
     sys.argv.pop( nested_index )
+    # Use a special prompt when interactive mode is requested (-i)
+    if sys.flags.interactive and not hasattr( sys, 'ps1' ):
+        sys.ps1 = '___\n'  # sys.ps2 will get the default '...'
 
 
 def set_env_vars( env_vars ):
@@ -445,3 +448,236 @@ def print_results_and_exit():
         sys.exit(1)
     log.out("All tests passed (" + str(n_assertions) + " assertions in " + str(n_tests) + " test cases)")
     sys.exit(0)
+
+
+def nested_cmd( script, nested_indent = 'svr', interactive = False, cwd = None ):
+    """
+    Builds the command list for running a nested script, given the current context etc.
+
+    :param script: the path to the other script
+    :param nested_indent: some short identifier to help you distinguish the remote vs the local stdout
+    """
+
+    import sys
+    cmd = [sys.executable]
+    #
+    # PYTHON FLAGS
+    #
+    #     -u     : force the stdout and stderr streams to be unbuffered; same as PYTHONUNBUFFERED=1
+    # With buffering we may end up losing output in case of crashes! (in Python 3.7 the text layer of the
+    # streams is unbuffered, but we assume 3.6)
+    cmd += ['-u']
+    #
+    #     -v     : verbose (trace import statements); can be supplied multiple times to increase verbosity
+    if sys.flags.verbose:
+        cmd += ["-v"]
+    #
+    #     -i     : inspect interactively after running script; forces a prompt even if stdin does not appear
+    #              to be a terminal
+    if interactive:
+        cmd += ["-i"]
+    #
+    if not os.path.isabs( script ):
+        cwd = cwd or os.getcwd()
+        script = os.path.join( cwd, script )
+    cmd += [script]
+    #
+    if log.is_debug_on():
+        cmd += ['--debug']
+    #
+    if log.is_color_on():
+        cmd += ['--color']
+    #
+    cmd += ['--nested', nested_indent]
+    #
+    return cmd
+
+
+class remote:
+    """
+    Start another script, in a "remote" process, in interactive mode that you can control.
+    I.e., you're running the script and can then give it commands, but not interpret any return values
+    (unless you parse stdout).
+
+    All stdout from the process is dumped to the current stdout. This includes the prompt (see below) and
+    return values from functions: same as you'd see in a prompt!
+
+    This is useful when you need finer control over another Python process, such as when running client-
+    server tests.
+
+    Usage:
+        with test.remote( <script-name> ) as remote:
+            remote.send( 'foo()' )
+            ...
+    Or possibly using try:
+        remote = test.script( <script-name> )
+        try:
+            remote.start()
+            remote.send( 'bar()' )
+            ...
+        finally:
+            remote.stop()
+    This way, proper "destruction" will occur, stop() will get called, and no hangups will occur.
+
+    About the implementation:
+    This takes advantage of the python interpreter's interactive mode (-i) after loading a script. This mode
+    uses a default prompt (sys.ps1) that would normally be part of stdout. We don't usually want to see this.
+    So, to remove, either the script has to have its own custom interactive loop (without -i) or we need to
+    intercept the interactive mode and "cancel" the default prompt. The 'test' module does the latter when it
+    sees '--nested' in the command-line.
+    """
+
+    def __init__( self, script, interactive=True ):
+        self._script = script
+        self._interactive = interactive
+        self._cmd = nested_cmd( script, interactive=interactive )
+        self._process = None
+        self._thread = None
+        self._status = None     # last return-code
+        self._on_finish = None  # callback
+
+    def __enter__( self ):
+        """
+        Called when entering a 'with' statement. We automatically start and wait until ready:
+        """
+        self.start()
+        return self
+
+    def __exit__( self, exc_type, exc_value, traceback ):
+        """
+        Called when exiting scope of a 'with' statement, so we can properly clean up.
+        NOTE: this effectively kills the process! If you want all output to be handled, use wait()
+        """
+        self.wait()
+
+    def is_running( self ):
+        return self._process and self._process.returncode is None or False
+
+    def status( self ):
+        return self._status
+
+    def on_finish( self, callback ):
+        self._on_finish = callback
+
+    def _output_reader( self ):
+        """
+        This is the worker function called from a thread to output the process stdout.
+        It is in danger of HANGING UP our own process because readline blocks forever! To avoid this
+        please follow the usage guidelines in the class notes.
+        """
+        for line in iter( self._process.stdout.readline, '' ):
+            # NOTE: line will include the terminating \n EOL
+            # NOTE: so readline will return '' (with no EOL) when EOF is reached - the "sentinel"
+            #       2nd argument to iter()
+            if line == '___\n':
+                log.d( 'remote is ready' )
+                if self._on_ready:  # a queue of callbacks
+                    callback = self._on_ready.pop(0)
+                    if callback:
+                        callback()
+                if self._events:
+                    event = self._events.pop(0)
+                    if event:
+                        event.set()
+                continue
+            if line.find( '[svr] ' ) < 0:
+                print( '[svr] ', end='' )
+            print( line, end='', flush=True )
+        #
+        log.d( 'remote stdout is finished' )
+        self._terminate()
+        if self._on_finish:
+            self._on_finish( self._status )
+
+    def start( self ):
+        """
+        Start the process
+        """
+        import subprocess, threading
+        log.d( 'starting:', self._cmd )
+        self._process = subprocess.Popen( self._cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True )
+        self._thread = threading.Thread( target = remote._output_reader, args=(self,) )
+        #
+        # We allow waiting until the script is ready for input: see wait_until_ready()
+        self._initialized_event = threading.Event()
+        def set_initialized():
+            nonlocal self
+            self._initialized_event = None
+        self._on_ready = [ set_initialized ]
+        self._events = [ self._initialized_event ]
+        #
+        self._thread.start()
+
+    def wait_until_ready( self, timeout=30 ):
+        """
+        The initial script can take a bit of time to load and run, and more if it does something "heavy". The user may want
+        to wait until it's "ready" to take input...
+        """
+        if not self._initialized_event.wait( timeout ):
+            raise RuntimeError( "timeout" )
+
+    def run( self, line, on_ready=None, timeout=None ):
+        """
+        Run in a command asynchronously in the remote process: returns immediately without waiting for the command to
+        finish.
+        :param line: the line, as if you typed it in an interactive shell
+        :param on_ready: a callback that will be called when the command finishes
+        :param timeout: if not None, how long to wait for the command to finish
+        """
+        log.d( 'running:', line )
+        assert self._interactive
+        self._on_ready.append( on_ready )  # even if None
+        import threading
+        event = timeout and threading.Event() or None
+        self._events.append( event )
+        self._process.stdin.write( line + '\n' )
+        self._process.stdin.flush()
+        if event:
+            if not event.wait( timeout ):
+                raise RuntimeError( "timeout" )
+
+    def wait( self, timeout = 30 ):
+        """
+        Waits until all stdout has been consumed and the remote exited
+        :param timeout: seconds before we stop waiting (default is big enough to be reasonable sure something
+                        unusual is happening)
+        :return: the exit status from the process
+        """
+        if self._thread and self._thread.is_alive():
+            if self._interactive:
+                self._process.stdin.write( 'exit()\n' )  # make sure we respond to it to avoid timeouts
+                self._process.stdin.flush()
+            log.d( "waiting for remote to finish..." )
+            self._thread.join( timeout )
+            if self._thread.is_alive():
+                log.d( "remote process wait timed out after", timeout, "seconds" )
+        self._terminate()
+        return self.status()
+
+    def _terminate( self ):
+        """
+        Internal termination helper. The remote process will be killed.
+        If you want to wait until it finishes and all stdout is consumed, use exit() or wait()
+        """
+        if self._process is not None:
+            process = self._process
+            self._process = None
+            process.terminate()
+            try:
+                process.wait( timeout=0.2 )
+                self._status = process.returncode
+                log.d( 'remote exited with status', self._status )
+            except subprocess.TimeoutExpired:
+                log.d( 'remote process terminate timed out' )
+
+    def stop( self ):
+        """
+        Terminates the remote process.
+        If you want to wait until it finishes and all stdout is consumed, use wait()
+        """
+        if self.is_running():
+            log.d( 'stopping remote process' )
+            self._terminate()
+            self._thread.join()
+            self._thread = None
+
