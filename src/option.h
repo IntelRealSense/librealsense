@@ -651,7 +651,7 @@ namespace librealsense
             {
                 auto strong = gated.first.lock();
                 if (!strong)
-                    return;
+                    continue;
                 auto val = strong->query();
                 if (val)
                 {
