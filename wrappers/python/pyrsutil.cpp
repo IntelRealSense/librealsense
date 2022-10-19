@@ -4,7 +4,6 @@ Copyright(c) 2017 Intel Corporation. All Rights Reserved. */
 #include "python.hpp"
 #include "../include/librealsense2/rsutil.h"
 
-#include <regex>
 
 void init_util(py::module &m) {
     /** rsutil.h **/

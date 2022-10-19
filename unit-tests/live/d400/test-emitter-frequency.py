@@ -22,13 +22,13 @@ EMITTER_FREQUENCY_91_KHZ = 1.0
 ################################################################################################
 
 test.start("Verify camera defaults")
-device_nane = device.get_info(rs.camera_info.name)
-if "D455" in device_nane:
+device_name = device.get_info(rs.camera_info.name)
+if "D455" in device_name:
     test.check_equal(depth_sensor.get_option(rs.option.emitter_frequency), EMITTER_FREQUENCY_57_KHZ)
-elif "D457" in device_nane:
+elif "D457" in device_name:
     test.check_equal(depth_sensor.get_option(rs.option.emitter_frequency), EMITTER_FREQUENCY_91_KHZ)
 else:
-    test.fail("Unexpected device name found: " + device_nane)
+    test.fail("Unexpected device name found: " + device_name)
 test.finish()
 
 ################################################################################################
