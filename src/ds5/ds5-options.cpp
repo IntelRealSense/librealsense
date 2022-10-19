@@ -53,6 +53,7 @@ namespace librealsense
             throw wrong_api_call_sequence_exception( "Setting the emitter frequency during streaming is not allowed" );
 
         uvc_xu_option::set( value );
+        _recording_function( *this );
     }
 
 
