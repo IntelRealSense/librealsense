@@ -550,13 +550,6 @@ namespace rs2
         }
         return option;
     }
-    std::string adjust_description(const std::string& str_in, const std::string& to_be_replaced, const std::string& to_replace)
-    {
-        std::string adjusted_string(str_in);
-        auto pos = adjusted_string.find(to_be_replaced);
-        adjusted_string.replace(pos, to_be_replaced.size(), to_replace);
-        return adjusted_string;
-    }
   
     void subdevice_model::populate_options(std::map<int, option_model>& opt_container,
         const std::string& opt_base_label,

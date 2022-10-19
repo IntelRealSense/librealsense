@@ -9,7 +9,7 @@
 
 using namespace rs2;
 
-std::string adjust_description(const std::string& str_in, const std::string& to_be_replaced, const std::string& to_replace)
+std::string option_model::adjust_description(const std::string& str_in, const std::string& to_be_replaced, const std::string& to_replace)
 {
     std::string adjusted_string(str_in);
     auto pos = adjusted_string.find(to_be_replaced);

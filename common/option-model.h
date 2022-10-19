@@ -55,5 +55,7 @@ namespace rs2
             float value,
             std::string& error_message,
             notifications_model& model );
+
+        std::string adjust_description( const std::string& str_in, const std::string& to_be_replaced, const std::string& to_replace );
     };
 }
