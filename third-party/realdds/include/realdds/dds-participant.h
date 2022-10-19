@@ -9,6 +9,7 @@
 #include <functional>
 #include <string>
 #include <list>
+#include <atomic>
 
 
 namespace realdds {
@@ -149,7 +150,7 @@ public:
 private:
     std::list< std::weak_ptr< listener > > _listeners;
     std::shared_ptr< listener_impl > _domain_listener;
-    uint32_t _next_entity_id = 0;  // for create_guid()
+    std::atomic< uint32_t > _next_entity_id = 0;  // for create_guid()
 
     void on_writer_added( dds_guid, char const * topic_name );
     void on_writer_removed( dds_guid, char const * topic_name );
