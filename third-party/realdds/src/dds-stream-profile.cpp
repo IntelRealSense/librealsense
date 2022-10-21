@@ -9,6 +9,9 @@
 namespace realdds {
 
 
+static_assert( sizeof( dds_stream_uid ) == sizeof( dds_stream_uid::whole ), "no padding should occur" );
+
+
 std::string dds_stream_uid::to_string() const
 {
     std::ostringstream os;

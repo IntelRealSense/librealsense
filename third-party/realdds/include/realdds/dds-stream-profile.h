@@ -65,9 +65,6 @@ struct dds_stream_format
 
 class dds_stream_profile
 {
-public:
-
-private:
     dds_stream_uid _uid;
     dds_stream_format _format;
     int16_t _frequency;  // "Frames" per second
