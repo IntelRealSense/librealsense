@@ -65,7 +65,7 @@ void dds_device_server::publish_image( const std::string & stream_name, const ui
 static void on_discovery_device_header( size_t const n_streams, dds_notification_server & notifications )
 {
     topics::device::notification::device_header_msg device_header;
-    device_header.num_of_sensors = n_streams;
+    device_header.num_of_streams = n_streams;
 
     topics::raw::device::notification notification;
     topics::device::notification::construct_raw_message( topics::device::notification::msg_type::DEVICE_HEADER,
@@ -76,107 +76,79 @@ static void on_discovery_device_header( size_t const n_streams, dds_notification
 
 
 static void on_discovery_stream_header( std::shared_ptr< dds_stream_server > const & stream,
-                                        int stream_index,
-                                        topics::device::notification::sensor_header_msg::sensor_type stream_type,
                                         dds_notification_server & notifications )
 {
-    topics::device::notification::sensor_header_msg sensor_header;
-    sensor_header.index = stream_index;
-    sensor_header.name[stream->name().copy( sensor_header.name, 32-1 )] = 0;
-    sensor_header.type = stream_type;
+    // No stream header at this time
+}
+
+
+static void on_discovery_video_stream( std::shared_ptr< dds_video_stream_server > const & stream,
+                                       dds_notification_server & notifications )
+{
+    // Send current stream header message
+    on_discovery_stream_header( stream, notifications );
+
+    // Send stream profiles
+    topics::device::notification::video_stream_profiles_msg video_stream_profiles;
+    video_stream_profiles.group_name[stream->name().copy( video_stream_profiles.group_name, sizeof( video_stream_profiles.group_name - 1 ))] = 0;
+    int index = 0;
+    for( auto & sp : stream->profiles() )
+    {
+        auto vsp = std::dynamic_pointer_cast< dds_video_stream_profile >( sp );
+        if( ! vsp )
+            DDS_THROW( runtime_error, "profile " + sp->to_string() + " is not a video profile" );
+        topics::device::notification::video_stream_profile vsp_msg = { vsp->uid().index,
+                                                                       vsp->uid().sid,
+                                                                       vsp->frequency(),
+                                                                       (int8_t)vsp->format().to_rs2(),
+                                                                       0,  // RS2_STREAM_ANY,
+                                                                       (int16_t)vsp->width(),
+                                                                       (int16_t)vsp->height(),
+                                                                       stream->default_profile_index() == index };
+
+        video_stream_profiles.profiles[index++] = std::move( vsp_msg );
+    }
+    video_stream_profiles.num_of_profiles = index;
 
     topics::raw::device::notification notification;
-    topics::device::notification::construct_raw_message( topics::device::notification::msg_type::SENSOR_HEADER,
-                                                         sensor_header,
-                                                         notification );
+    topics::device::notification::construct_raw_message(
+        topics::device::notification::msg_type::VIDEO_STREAM_PROFILES,
+        video_stream_profiles,
+        notification );
     notifications.add_discovery_notification( std::move( notification ) );
 }
 
 
-static void on_discovery_video_stream( int stream_index,
-                                       std::shared_ptr< dds_video_stream_server > const & stream,
-                                       dds_notification_server & notifications )
-{
-    // Send current stream header message
-    on_discovery_stream_header( stream,
-                                stream_index,
-                                topics::device::notification::sensor_header_msg::sensor_type::VIDEO,
-                                notifications );
-
-    // Send stream profiles
-    auto & profiles = stream->profiles();
-    if( ! profiles.empty() )
-    {
-        topics::device::notification::video_stream_profiles_msg video_stream_profiles;
-        video_stream_profiles.dds_sensor_index = stream_index;
-        int index = 0;
-        for( auto & sp : profiles )
-        {
-            auto vsp = std::dynamic_pointer_cast< dds_video_stream_profile >( sp );
-            if( ! vsp )
-                DDS_THROW( runtime_error, "profile " + sp->to_string() + " is not a video profile" );
-            topics::device::notification::video_stream_profile vsp_msg = { vsp->uid().index,
-                                                                           vsp->uid().sid,
-                                                                           vsp->frequency(),
-                                                                           (rs2_format)vsp->format().to_rs2(),
-                                                                           RS2_STREAM_ANY,
-                                                                           (int16_t)vsp->width(),
-                                                                           (int16_t)vsp->height(),
-                                                                           stream->default_profile_index() == index };
-
-            video_stream_profiles.profiles[index++] = std::move( vsp_msg );
-        }
-        video_stream_profiles.num_of_profiles = index;
-
-        topics::raw::device::notification notification;
-        topics::device::notification::construct_raw_message(
-            topics::device::notification::msg_type::VIDEO_STREAM_PROFILES,
-            video_stream_profiles,
-            notification );
-        notifications.add_discovery_notification( std::move( notification ) );
-    }
-}
-
-
-static void on_discovery_motion_stream( int stream_index,
-                                        std::shared_ptr< dds_motion_stream_server > const & stream,
+static void on_discovery_motion_stream( std::shared_ptr< dds_motion_stream_server > const & stream,
                                         dds_notification_server & notifications )
 {
     // Send current stream header message
-    on_discovery_stream_header( stream,
-                                stream_index,
-                                topics::device::notification::sensor_header_msg::sensor_type::MOTION,
-                                notifications );
+    on_discovery_stream_header( stream, notifications );
 
     // Send stream profiles
-    auto & profiles = stream->profiles();
-    if( ! profiles.empty() )
+    topics::device::notification::motion_stream_profiles_msg motion_stream_profiles;
+    motion_stream_profiles.group_name[stream->name().copy( motion_stream_profiles.group_name, sizeof( motion_stream_profiles.group_name - 1 ))] = 0;
+    int index = 0;
+    for( auto & sp : stream->profiles() )
     {
-        topics::device::notification::motion_stream_profiles_msg motion_stream_profiles;
-        motion_stream_profiles.dds_sensor_index = stream_index;
-        int index = 0;
-        for( auto & sp : profiles )
-        {
-            auto msp = std::dynamic_pointer_cast< dds_motion_stream_profile >( sp );
-            if( ! msp )
-                DDS_THROW( runtime_error, "profile " + sp->to_string() + " is not a motion profile" );
-            topics::device::notification::motion_stream_profile msp_msg = { msp->uid().index,
-                                                                            msp->uid().sid,
-                                                                            msp->frequency(),
-                                                                            (rs2_format)msp->format().to_rs2(),
-                                                                            RS2_STREAM_ANY };
+        auto msp = std::dynamic_pointer_cast< dds_motion_stream_profile >( sp );
+        if( ! msp )
+            DDS_THROW( runtime_error, "profile " + sp->to_string() + " is not a motion profile" );
+        topics::device::notification::motion_stream_profile msp_msg = { msp->uid().index,
+                                                                        msp->uid().sid,
+                                                                        msp->frequency(),
+                                                                        (int8_t)msp->format().to_rs2(),
+                                                                        0 };  // RS2_STREAM_ANY
 
-            motion_stream_profiles.profiles[index++] = std::move( msp_msg );
-        }
-        motion_stream_profiles.num_of_profiles = index;
-
-        topics::raw::device::notification notification;
-        topics::device::notification::construct_raw_message(
-            topics::device::notification::msg_type::VIDEO_STREAM_PROFILES,
-            motion_stream_profiles,
-            notification );
-        notifications.add_discovery_notification( std::move( notification ) );
+        motion_stream_profiles.profiles[index++] = std::move( msp_msg );
     }
+    motion_stream_profiles.num_of_profiles = index;
+
+    topics::raw::device::notification notification;
+    topics::device::notification::construct_raw_message( topics::device::notification::msg_type::VIDEO_STREAM_PROFILES,
+                                                         motion_stream_profiles,
+                                                         notification );
+    notifications.add_discovery_notification( std::move( notification ) );
 }
 
 
@@ -191,7 +163,6 @@ void dds_device_server::init( std::vector< std::shared_ptr< dds_stream_server > 
 
     on_discovery_device_header( streams.size(), *_notification_server );
 
-    int stream_index = 0;
     for( auto & stream : streams )
     {
         std::string topic_name = _topic_root + '/' + stream->name();
@@ -199,12 +170,11 @@ void dds_device_server::init( std::vector< std::shared_ptr< dds_stream_server > 
         _stream_name_to_server[stream->name()] = stream;
 
         if( auto video_stream = std::dynamic_pointer_cast< dds_video_stream_server >( stream ) )
-            on_discovery_video_stream( stream_index, video_stream, *_notification_server );
+            on_discovery_video_stream( video_stream, *_notification_server );
         else if( auto motion_stream = std::dynamic_pointer_cast< dds_motion_stream_server >( stream ) )
-            on_discovery_motion_stream( stream_index, motion_stream, *_notification_server );
+            on_discovery_motion_stream( motion_stream, *_notification_server );
         else
             DDS_THROW( runtime_error, "unexpected stream '" + stream->name() + "' type" );
-        ++stream_index;
     }
 }
 
