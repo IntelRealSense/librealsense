@@ -148,6 +148,9 @@ void start_streaming( std::shared_ptr< tools::lrs_device_controller > lrs_device
                                                               << " frame: " << e.what() );
         }
     } );
+}
+
+
 std::string get_topic_root( topics::device_info const & dev_info )
 {
     // Build device root path (we use a device model only name like DXXX)
@@ -286,7 +289,7 @@ try
                 = std::make_shared< tools::lrs_device_controller >( dev );
 
             // Keep a pair of device controller and server per RS device
-            device_handlers_list.emplace( dev, device_handler{ dev_info, server, lrs_device_controller } );
+            device_handlers_list.emplace( dev, device_handler{ dev_info, dds_device_server, lrs_device_controller } );
 
             // Get the desired stream profile
             auto profile = get_required_profile( dev.first< rs2::color_sensor >(),
@@ -297,7 +300,7 @@ try
                                                  720 );
 
             // Start streaming 
-            start_streaming( lrs_device_controller, server, profile );
+            start_streaming( lrs_device_controller, dds_device_server, profile );
         },
         // Handle a device disconnection
         [&]( rs2::device dev ) {
