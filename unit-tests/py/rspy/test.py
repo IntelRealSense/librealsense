@@ -527,14 +527,21 @@ class remote:
     sees '--nested' in the command-line.
     """
 
-    def __init__( self, script, interactive=True ):
+    class Error( Exception ):
+        def __init__( self, message ):
+            super().__init__( message )
+
+    def __init__( self, script, interactive=True, name="remote", nested_indent="svr" ):
         self._script = script
         self._interactive = interactive
-        self._cmd = nested_cmd( script, interactive=interactive )
+        self._name = name
+        self._nested_indent = nested_indent
+        self._cmd = nested_cmd( script, nested_indent=nested_indent, interactive=interactive )
         self._process = None
         self._thread = None
         self._status = None     # last return-code
         self._on_finish = None  # callback
+        self._exception = None
 
     def __enter__( self ):
         """
@@ -568,9 +575,9 @@ class remote:
         for line in iter( self._process.stdout.readline, '' ):
             # NOTE: line will include the terminating \n EOL
             # NOTE: so readline will return '' (with no EOL) when EOF is reached - the "sentinel"
-            #       2nd argument to iter()
+            #       2nd argument to iter() - and we'll break out of the loop
             if line == '___\n':
-                log.d( 'remote is ready' )
+                log.d( self._name, self._exception and 'raised an error' or 'is ready' )
                 if self._on_ready:  # a queue of callbacks
                     callback = self._on_ready.pop(0)
                     if callback:
@@ -579,12 +586,23 @@ class remote:
                     event = self._events.pop(0)
                     if event:
                         event.set()
+                else:
+                    # We raise the error here only as a last resort: we prefer handling it over to
+                    # the waiting thread on the event!
+                    self._raise_if_needed()
                 continue
-            if line.find( '[svr] ' ) < 0:
-                print( '[svr] ', end='' )
-            print( line, end='', flush=True )
+            if line.find( '['+self._nested_indent+'] ' ) < 0:
+                if self._exception:
+                    self._exception += [line[:-1]]
+                    # We cannot raise an error here -- it'll just exit the thread and not be
+                    # caught in the main... Instead we have to wait until the remote is ready...
+                elif line.startswith( 'Traceback '):
+                    self._exception = [line[:-1]]
+                print( '['+self._nested_indent+']', line, end='', flush=True )
+            else:
+                print( line, end='', flush=True )
         #
-        log.d( 'remote stdout is finished' )
+        log.d( self._name, 'stdout is finished' )
         self._terminate()
         if self._on_finish:
             self._on_finish( self._status )
@@ -594,7 +612,7 @@ class remote:
         Start the process
         """
         import subprocess, threading
-        log.d( 'starting:', self._cmd )
+        log.d( self._name, 'starting:', self._cmd )
         self._process = subprocess.Popen( self._cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True )
         self._thread = threading.Thread( target = remote._output_reader, args=(self,) )
         #
@@ -603,10 +621,17 @@ class remote:
         def set_initialized():
             nonlocal self
             self._initialized_event = None
+            self._raise_if_needed()
         self._on_ready = [ set_initialized ]
         self._events = [ self._initialized_event ]
         #
         self._thread.start()
+
+    def _raise_if_needed( self ):
+        if self._exception:
+            what = self._exception[-1]
+            self._exception = None
+            raise remote.Error( what )
 
     def wait_until_ready( self, timeout=30 ):
         """
@@ -614,27 +639,28 @@ class remote:
         to wait until it's "ready" to take input...
         """
         if not self._initialized_event.wait( timeout ):
-            raise RuntimeError( "timeout" )
+            raise RuntimeError( f'{self._name} timeout' )
 
-    def run( self, line, on_ready=None, timeout=None ):
+    def run( self, command, on_ready=None, timeout=None ):
         """
         Run in a command asynchronously in the remote process: returns immediately without waiting for the command to
         finish.
-        :param line: the line, as if you typed it in an interactive shell
+        :param command: the line, as if you typed it in an interactive shell
         :param on_ready: a callback that will be called when the command finishes
         :param timeout: if not None, how long to wait for the command to finish
         """
-        log.d( 'running:', line )
+        log.d( self._name, 'running:', command )
         assert self._interactive
         self._on_ready.append( on_ready )  # even if None
         import threading
         event = timeout and threading.Event() or None
         self._events.append( event )
-        self._process.stdin.write( line + '\n' )
+        self._process.stdin.write( command + '\n' )
         self._process.stdin.flush()
         if event:
             if not event.wait( timeout ):
-                raise RuntimeError( "timeout" )
+                raise RuntimeError( f'{self._name} command timed out' )
+            self._raise_if_needed()
 
     def wait( self, timeout = 30 ):
         """
@@ -647,10 +673,10 @@ class remote:
             if self._interactive:
                 self._process.stdin.write( 'exit()\n' )  # make sure we respond to it to avoid timeouts
                 self._process.stdin.flush()
-            log.d( "waiting for remote to finish..." )
+            log.d( 'waiting for', self._name, 'to finish...' )
             self._thread.join( timeout )
             if self._thread.is_alive():
-                log.d( "remote process wait timed out after", timeout, "seconds" )
+                log.d( self._name, 'waiting for thread join timed out after', timeout, 'seconds' )
         self._terminate()
         return self.status()
 
@@ -666,9 +692,9 @@ class remote:
             try:
                 process.wait( timeout=0.2 )
                 self._status = process.returncode
-                log.d( 'remote exited with status', self._status )
+                log.d( self._name, 'exited with status', self._status )
             except subprocess.TimeoutExpired:
-                log.d( 'remote process terminate timed out' )
+                log.d( self._name, 'process terminate timed out' )
 
     def stop( self ):
         """
@@ -676,7 +702,7 @@ class remote:
         If you want to wait until it finishes and all stdout is consumed, use wait()
         """
         if self.is_running():
-            log.d( 'stopping remote process' )
+            log.d( 'stopping', self_name, 'process' )
             self._terminate()
             self._thread.join()
             self._thread = None
