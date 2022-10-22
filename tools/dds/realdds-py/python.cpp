@@ -459,8 +459,8 @@ PYBIND11_MODULE(NAME, m) {
         .def( "participant", &dds_device::participant )
         .def( "guid", &dds_device::guid )
         .def( "is_running", &dds_device::is_running )
-        .def( "run", &dds_device::run )
-        .def( "num_of_streams", &dds_device::number_of_streams )
+        .def( "run", &dds_device::run, py::call_guard< py::gil_scoped_release >() )
+        .def( "n_streams", &dds_device::number_of_streams )
         .def( FN_FWD( dds_device,
                       foreach_stream,
                       ( std::shared_ptr< dds_stream > const & ),
