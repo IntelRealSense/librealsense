@@ -37,6 +37,12 @@ union dds_stream_uid
 };
 
 
+inline bool operator<( dds_stream_uid const & l, dds_stream_uid const & r )
+{
+    return l.whole < r.whole;
+}
+
+
 // Similar to fourcc, this describes how a stream data is organized. The characters are zero-terminated so it can be
 // shorter than 'size' and can be easily converted from/to string.
 //
