@@ -19,11 +19,15 @@ using namespace eprosima::fastdds::dds;
 using namespace realdds;
 
 
-dds_stream_server::dds_stream_server( std::string const & name, dds_stream_profiles const & profiles, int default_profile_index )
+dds_stream_server::dds_stream_server( std::string const & name,
+                                      dds_stream_profiles const & profiles,
+                                      int default_profile_index )
     : _name( name )
     , _profiles( profiles )
     , _default_profile_index( default_profile_index )
 {
+    if( profiles.empty() )
+        DDS_THROW( runtime_error, "at least one profile is required in stream '" + name + "'" );
 }
 
 
@@ -39,7 +43,7 @@ dds_video_stream_server::dds_video_stream_server( std::string const & name,
 {
     for( auto & profile : profiles )
         if( ! std::dynamic_pointer_cast< dds_video_stream_profile >( profile ) )
-            DDS_THROW( runtime_error, "profile " + profile->to_string() + " is not a video profile" );
+            DDS_THROW( runtime_error, "profile '" + profile->to_string() + "' is not a video profile" );
 }
 
 
@@ -50,7 +54,7 @@ dds_motion_stream_server::dds_motion_stream_server( std::string const & name,
 {
     for( auto & profile : profiles )
         if( ! std::dynamic_pointer_cast< dds_motion_stream_profile >( profile ) )
-            DDS_THROW( runtime_error, "profile " + profile->to_string() + " is not a motion profile" );
+            DDS_THROW( runtime_error, "profile '" + profile->to_string() + "' is not a motion profile" );
 }
 
 
