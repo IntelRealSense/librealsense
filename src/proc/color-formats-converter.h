@@ -66,7 +66,7 @@ namespace librealsense
     {
     public:
         m420_converter(rs2_format target_format) :
-            m420_converter("NV12i Converter", target_format) {};
+            m420_converter("M420 Converter", target_format) {};
 
     protected:
         m420_converter(const char* name, rs2_format target_format) :
