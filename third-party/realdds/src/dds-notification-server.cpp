@@ -82,7 +82,7 @@ dds_notification_server::dds_notification_server( std::shared_ptr< dds_publisher
         }
     } );
 
-    dds_topic_writer::writer_qos wqos( RELIABLE_RELIABILITY_QOS );
+    dds_topic_writer::qos wqos( RELIABLE_RELIABILITY_QOS );
     wqos.history().depth = 10;                                                                      // default is 1
     wqos.endpoint().history_memory_policy = eprosima::fastrtps::rtps::DYNAMIC_RESERVE_MEMORY_MODE;  // TODO: why?
     _writer->run( wqos );

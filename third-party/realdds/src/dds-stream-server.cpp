@@ -66,7 +66,7 @@ void dds_video_stream_server::open( std::string const & topic_name, std::shared_
     auto topic = topics::device::image::create_topic( publisher->get_participant(), topic_name.c_str() );
 
     _writer = std::make_shared< dds_topic_writer >( topic, publisher );
-    _writer->run( dds_topic_writer::writer_qos( BEST_EFFORT_RELIABILITY_QOS ) );  // no retries
+    _writer->run( dds_topic_writer::qos( BEST_EFFORT_RELIABILITY_QOS ) );  // no retries
 }
 
 
@@ -79,7 +79,7 @@ void dds_motion_stream_server::open( std::string const & topic_name,
     auto topic = topics::device::image::create_topic( publisher->get_participant(), topic_name.c_str() );
 
     _writer = std::make_shared< dds_topic_writer >( topic, publisher );
-    _writer->run( dds_topic_writer::writer_qos( BEST_EFFORT_RELIABILITY_QOS ) );  // no retries
+    _writer->run( dds_topic_writer::qos( BEST_EFFORT_RELIABILITY_QOS ) );  // no retries
 }
 
 

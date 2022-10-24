@@ -34,8 +34,8 @@ dds_topic_reader::~dds_topic_reader()
 }
 
 
-dds_topic_reader::reader_qos::reader_qos( eprosima::fastdds::dds::ReliabilityQosPolicyKind reliability_kind,
-                                          eprosima::fastdds::dds::DurabilityQosPolicyKind durability_kind )
+dds_topic_reader::qos::qos( eprosima::fastdds::dds::ReliabilityQosPolicyKind reliability_kind,
+                            eprosima::fastdds::dds::DurabilityQosPolicyKind durability_kind )
     : super( eprosima::fastdds::dds::DATAREADER_QOS_DEFAULT )
 {
     // The 'depth' parameter of the History defines how many samples are stored before starting to
@@ -77,7 +77,7 @@ dds_topic_reader::reader_qos::reader_qos( eprosima::fastdds::dds::ReliabilityQos
 }
 
 
-void dds_topic_reader::run( reader_qos const & rqos )
+void dds_topic_reader::run( qos const & rqos )
 {
     // The Subscriber manages the activities of several DataReader entities
     _subscriber = DDS_API_CALL(

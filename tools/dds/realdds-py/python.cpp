@@ -215,7 +215,7 @@ PYBIND11_MODULE(NAME, m) {
             return os.str();
         } );
 
-    using reader_qos = realdds::dds_topic_reader::reader_qos;
+    using reader_qos = realdds::dds_topic_reader::qos;
     py::class_< reader_qos >( m, "reader_qos" )
         .def( "__repr__", []( reader_qos const & self ) {
             std::ostringstream os;

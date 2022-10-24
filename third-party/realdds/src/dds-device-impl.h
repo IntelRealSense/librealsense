@@ -141,7 +141,7 @@ private:
         auto topic = topics::device::notification::create_topic( _participant, _info.topic_root + "/notification" );
 
         _notifications_reader = std::make_shared< dds_topic_reader >( topic );
-        _notifications_reader->run( dds_topic_reader::reader_qos( eprosima::fastdds::dds::RELIABLE_RELIABILITY_QOS ) );
+        _notifications_reader->run( dds_topic_reader::qos( eprosima::fastdds::dds::RELIABLE_RELIABILITY_QOS ) );
     }
 
     void create_control_writer()
@@ -151,7 +151,7 @@ private:
 
         auto topic = topics::device::control::create_topic( _participant, _info.topic_root + "/control" );
         _control_writer = std::make_shared< dds_topic_writer >( topic );
-        dds_topic_writer::writer_qos wqos( eprosima::fastdds::dds::RELIABLE_RELIABILITY_QOS );
+        dds_topic_writer::qos wqos( eprosima::fastdds::dds::RELIABLE_RELIABILITY_QOS );
         wqos.history().depth = 10;  // default is 1
         _control_writer->run( wqos );
     }

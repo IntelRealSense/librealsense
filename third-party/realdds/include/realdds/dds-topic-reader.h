@@ -56,19 +56,19 @@ public:
         _on_subscription_matched = std::move( callback );
     }
 
-    class reader_qos : public eprosima::fastdds::dds::DataReaderQos
+    class qos : public eprosima::fastdds::dds::DataReaderQos
     {
         using super = eprosima::fastdds::dds::DataReaderQos;
 
     public:
-        reader_qos( eprosima::fastdds::dds::ReliabilityQosPolicyKind reliability
-                        = eprosima::fastdds::dds::RELIABLE_RELIABILITY_QOS,  // default
-                    eprosima::fastdds::dds::DurabilityQosPolicyKind durability
-                        = eprosima::fastdds::dds::VOLATILE_DURABILITY_QOS );  // default is transient local
+        qos( eprosima::fastdds::dds::ReliabilityQosPolicyKind reliability
+               = eprosima::fastdds::dds::RELIABLE_RELIABILITY_QOS,  // default
+             eprosima::fastdds::dds::DurabilityQosPolicyKind durability
+               = eprosima::fastdds::dds::VOLATILE_DURABILITY_QOS );  // default is transient local
     };
 
     // The callbacks should be set before we actually create the underlying DDS objects, so the reader does not
-    void run( reader_qos const & = reader_qos() );
+    void run( qos const & = qos() );
 
     // DataReaderListener
 protected:
