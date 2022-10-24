@@ -4,13 +4,13 @@
 SET(STRING_TARGETS "${CMAKE_CURRENT_LIST_DIR}/split.h"
         "${CMAKE_CURRENT_LIST_DIR}/string-utilities.h"
         "${CMAKE_CURRENT_LIST_DIR}/trim-newlines.h")
-        
+
 if(WIN32)
     SET(STRING_TARGETS ${STRING_TARGETS} "${CMAKE_CURRENT_LIST_DIR}/windows.h")
-endif()      
+endif()
 
 
-target_sources(${LRS_TARGET}
+target_sources(${PROJECT_NAME}
     PRIVATE
     ${STRING_TARGETS})
 

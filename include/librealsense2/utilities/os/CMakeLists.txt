@@ -2,7 +2,7 @@
 # Copyright(c) 2021 Intel Corporation. All Rights Reserved.
 
 if(WIN32)
-    target_sources(${LRS_TARGET}
+    target_sources( ${PROJECT_NAME}
         PRIVATE
             "${CMAKE_CURRENT_LIST_DIR}/hresult.h")
 
