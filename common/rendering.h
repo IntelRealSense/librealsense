@@ -404,7 +404,7 @@ namespace rs2
     public:
         std::shared_ptr<colorizer> colorize;
         std::shared_ptr<yuy_decoder> yuy2rgb;
-        std::shared_ptr<m420_decoder> m4202rgb;
+        std::shared_ptr<m420_decoder> m420_to_rgb;
         std::shared_ptr<y411_decoder> y411;
         std::shared_ptr<depth_huffman_decoder> depth_decode;
         bool zoom_preview = false;
@@ -602,9 +602,9 @@ namespace rs2
                     }
                     break;
                 case RS2_FORMAT_M420:
-                    if (m4202rgb)
+                    if (m420_to_rgb)
                     {
-                        if (auto colorized_frame = m4202rgb->process(frame).as<video_frame>())
+                        if (auto colorized_frame = m420_to_rgb->process(frame).as<video_frame>())
                         {
                             if (!colorized_frame.is<gl::gpu_frame>())
                             {

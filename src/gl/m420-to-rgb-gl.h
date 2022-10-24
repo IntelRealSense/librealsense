@@ -24,11 +24,11 @@ namespace librealsense
 {
     namespace gl
     {
-        class m4202rgb : public stream_filter_processing_block, public gpu_processing_object
+        class m420_to_rgb : public stream_filter_processing_block, public gpu_processing_object
         {
         public:
-            m4202rgb();
-            ~m4202rgb() override;
+            m420_to_rgb();
+            ~m420_to_rgb() override;
 
             void cleanup_gpu_resources() override;
             void create_gpu_resources() override;
