@@ -28,6 +28,10 @@ dds_stream_server::dds_stream_server( std::string const & name,
 {
     if( profiles.empty() )
         DDS_THROW( runtime_error, "at least one profile is required in stream '" + name + "'" );
+    if( _default_profile_index < 0 || _default_profile_index >= profiles.size() )
+        DDS_THROW( runtime_error,
+                   "invalid default profile index (" + std::to_string( _default_profile_index ) + " for "
+                       + std::to_string( profiles.size() ) + " stream profiles" );
 }
 
 
