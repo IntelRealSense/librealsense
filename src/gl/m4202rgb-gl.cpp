@@ -127,6 +127,7 @@ m4202rgb::~m4202rgb()
 
 rs2::frame m4202rgb::process_frame(const rs2::frame_source& src, const rs2::frame& f)
 {
+    throw std::runtime_error("Format M420 cannot be rendered with GLSL yet");
     //scoped_timer t("m4202rgb");
 
     if (f.get_profile().get() != _input_profile.get())
