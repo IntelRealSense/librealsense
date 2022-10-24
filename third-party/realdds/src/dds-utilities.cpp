@@ -2,6 +2,7 @@
 // Copyright(c) 2022 Intel Corporation. All Rights Reserved.
 
 #include <realdds/dds-utilities.h>
+#include <realdds/dds-log-consumer.h>
 
 namespace realdds {
 
@@ -28,6 +29,24 @@ std::string get_dds_error( eprosima::fastrtps::types::ReturnCode_t ret_code )
     std::ostringstream os;
     os << "error " << ret_code();
     return os.str();
+}
+
+
+void log_consumer::Consume( const eprosima::fastdds::dds::Log::Entry & e )
+{
+    using eprosima::fastdds::dds::Log;
+    switch( e.kind )
+    {
+    case Log::Kind::Error:
+        LOG_DDS_ENTRY( e, Error, e.message );
+        break;
+    case Log::Kind::Warning:
+        LOG_DDS_ENTRY( e, Warning, e.message );
+        break;
+    case Log::Kind::Info:
+        LOG_DDS_ENTRY( e, Info, e.message );
+        break;
+    }
 }
 
 

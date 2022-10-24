@@ -7,7 +7,9 @@
 #include <realdds/dds-stream-server.h>
 #include <realdds/dds-participant.h>
 #include <realdds/dds-utilities.h>
+#include <realdds/dds-log-consumer.h>
 #include <realdds/topics/notification/notification-msg.h>
+#include <realdds/topics/notification/notificationPubSubTypes.h>  // raw::device::notification
 #include <realdds/topics/device-info/device-info-msg.h>
 #include <fastrtps/types/TypesBase.h>
 #include <fastdds/dds/log/Log.hpp>
@@ -26,21 +28,72 @@
 using namespace TCLAP;
 using namespace realdds;
 
-std::vector< std::string > get_supported_streams( rs2::device dev )
+
+std::vector< std::shared_ptr< realdds::dds_stream_server > > get_supported_streams( rs2::device dev )
 {
-    auto device_sensors = dev.query_sensors();
-    std::unordered_set< std::string > supported_streams_names;
-    for( auto sensor : device_sensors )
+    std::map< std::string, realdds::dds_stream_profiles > name_to_profiles;
+    std::map< std::string, int > name_to_default_profile;
+    for( auto sensor : dev.query_sensors() )
     {
         auto stream_profiles = sensor.get_stream_profiles();
-        std::for_each( stream_profiles.begin(),
-                       stream_profiles.end(),
-                       [&]( const rs2::stream_profile & sp ) {
-                           supported_streams_names.insert( sp.stream_name() );
-                       } );
+        std::for_each( stream_profiles.begin(), stream_profiles.end(), [&]( const rs2::stream_profile & sp ) {
+            std::string stream_name = sp.stream_name();
+            auto & profiles = name_to_profiles[stream_name];
+            std::shared_ptr< realdds::dds_stream_profile > profile;
+            if( sp.is< rs2::video_stream_profile >() )
+            {
+                auto const & vsp = sp.as< rs2::video_stream_profile >();
+                profile = std::make_shared< realdds::dds_video_stream_profile >(
+                    realdds::dds_stream_uid( vsp.unique_id(), vsp.stream_index() ),
+                    realdds::dds_stream_format::from_rs2( vsp.format() ),
+                    static_cast< int16_t >( vsp.fps() ),
+                    static_cast< uint16_t >( vsp.width() ),
+                    static_cast< int16_t >( vsp.height() ),
+                    0 );  // bytes per pixel - todo
+            }
+            else if( sp.is< rs2::motion_stream_profile >() )
+            {
+                const auto & msp = sp.as< rs2::motion_stream_profile >();
+                profile = std::make_shared< realdds::dds_motion_stream_profile >(
+                    realdds::dds_stream_uid( msp.unique_id(), msp.stream_index() ),
+                    realdds::dds_stream_format::from_rs2( msp.format() ),
+                    static_cast< int16_t >( msp.fps() ) );
+            }
+            else
+            {
+                LOG_ERROR( "unknown profile type of uid " << sp.unique_id() );
+                return;
+            }
+            if( sp.is_default() )
+                name_to_default_profile[stream_name] = static_cast< int >( profiles.size() );
+            profiles.push_back( profile );
+            LOG_DEBUG( stream_name << ": " << profile->to_string() );
+        } );
     }
+    std::vector< std::shared_ptr< realdds::dds_stream_server > > servers;
+    for( auto& it : name_to_profiles )
+    {
+        auto const & stream_name = it.first;
+        
+        int default_profile_index = 0;
+        auto default_profile_it = name_to_default_profile.find( stream_name );
+        if( default_profile_it != name_to_default_profile.end() )
+            default_profile_index = default_profile_it->second;
 
-    return std::vector< std::string >( supported_streams_names.begin(), supported_streams_names.end() );
+        auto const& profiles = it.second;
+        if( profiles.empty() )
+        {
+            LOG_ERROR( "ignoring stream '" << stream_name << "' with no profiles" );
+            continue;
+        }
+        std::shared_ptr< realdds::dds_stream_server > server;
+        if( std::dynamic_pointer_cast<realdds::dds_video_stream_profile>( profiles.front() ) )
+            server = std::make_shared< realdds::dds_video_stream_server >( stream_name, profiles, default_profile_index );
+        else
+            server = std::make_shared< realdds::dds_motion_stream_server >( stream_name, profiles, default_profile_index );
+        servers.push_back( server );
+    }
+    return servers;
 }
 
 
@@ -97,155 +150,6 @@ void start_streaming( std::shared_ptr< tools::lrs_device_controller > lrs_device
     } );
 }
 
-void add_init_device_header_msg( rs2::device dev, std::shared_ptr< dds_device_server > &server )
-{   
-    topics::device::notification::device_header_msg device_header_msg;
-    auto &&sensors = dev.query_sensors();
-
-    //Split sensor profiles to streams by < type, index >. Value is number of profiles of this stream.
-    std::map<std::pair<rs2_stream, int>, int> unique_streams;
-    for (auto sensor : sensors)
-    {
-        std::vector<rs2::stream_profile> stream_profiles = sensor.get_stream_profiles();
-        for ( auto && sp : stream_profiles )
-        {
-            unique_streams[std::make_pair( sp.stream_type(), sp.stream_index() )]++;
-        }
-    }
-    device_header_msg.num_of_streams = unique_streams.size();
-
-    topics::raw::device::notification raw_msg;
-    topics::device::notification::construct_raw_message( topics::device::notification::msg_type::DEVICE_HEADER,
-                                                         device_header_msg,
-                                                         raw_msg );
-
-    server->add_init_msg( std::move( raw_msg ) );
-}
-
-
-void prepare_video_profiles_messeges( rs2::device dev,
-                                      std::string sensor_name,
-                                      const std::vector< rs2::stream_profile > & stream_profiles,
-                                      topics::device::notification::video_stream_profiles_msg & video_stream_profiles_msg )
-{
-    strncpy( video_stream_profiles_msg.group_name, sensor_name.c_str(), sizeof( video_stream_profiles_msg.group_name ) );
-
-    int index = 0;
-    for( auto & stream_profile : stream_profiles )
-    {
-        if( stream_profile.is< rs2::video_stream_profile >() )
-        {
-            const auto & vsp = stream_profile.as< rs2::video_stream_profile >();
-            topics::device::notification::video_stream_profile vsp_msg = { static_cast< int8_t >( vsp.stream_index() ),
-                                                                           static_cast< int16_t >( vsp.unique_id() ),
-                                                                           static_cast< int16_t >( vsp.fps() ),
-                                                                           static_cast< int8_t >( vsp.format() ),
-                                                                           static_cast< int8_t >( vsp.stream_type() ),
-                                                                           static_cast< int16_t >( vsp.width() ),
-                                                                           static_cast< int16_t >( vsp.height() ),
-                                                                           vsp.is_default() };
-
-            video_stream_profiles_msg.profiles[index++] =  std::move( vsp_msg );
-        }
-        else
-        {
-            LOG_ERROR( "got illegal profile with uid:" << stream_profile.unique_id() );
-        }
-    }
-
-    video_stream_profiles_msg.num_of_profiles = index;
-}
-
-void prepare_motion_profiles_messeges( rs2::device dev,
-                                       std::string sensor_name,
-                                       const std::vector< rs2::stream_profile > & stream_profiles,
-                                       topics::device::notification::motion_stream_profiles_msg & motion_stream_profiles_msg )
-{
-    strncpy( motion_stream_profiles_msg.group_name, sensor_name.c_str(), sizeof( motion_stream_profiles_msg.group_name ) );
-
-    int index = 0;
-    for( auto & stream_profile : stream_profiles )
-    {
-        if( stream_profile.is< rs2::motion_stream_profile >() )
-        {
-            const auto & msp = stream_profile.as< rs2::motion_stream_profile >();
-            topics::device::notification::motion_stream_profile msp_msg = { static_cast< int8_t >( msp.stream_index() ),
-                                                                            static_cast< int16_t >( msp.unique_id() ),
-                                                                            static_cast< int16_t >( msp.fps() ),
-                                                                            static_cast< int8_t >( msp.format() ),
-                                                                            static_cast< int8_t >( msp.stream_type() ),
-                                                                            msp.is_default() };
-            motion_stream_profiles_msg.profiles[index++] = std::move( msp_msg );
-        }
-        else
-        {
-            LOG_ERROR( "got illegal profile with uid:" << stream_profile.unique_id() );
-        }
-    }
-
-    motion_stream_profiles_msg.num_of_profiles = index;
-}
-
-void add_init_profiles_msgs( rs2::device dev, std::shared_ptr<dds_device_server> &server )
-{
-    auto sensor_idx = 0;
-
-    // For each sensor publish all it's profiles
-    for( auto &sensor : dev.query_sensors() )
-    {
-        auto&& stream_profiles = sensor.get_stream_profiles();
-        if( sensor.is< rs2::color_sensor >() || sensor.is< rs2::depth_sensor >() )
-        {
-            topics::device::notification::video_stream_profiles_msg video_stream_profiles_msg;
-            prepare_video_profiles_messeges( dev,
-                                             sensor.get_info( RS2_CAMERA_INFO_NAME ),
-                                             stream_profiles,
-                                             video_stream_profiles_msg );
-
-            // Send video stream profiles
-            if (video_stream_profiles_msg.num_of_profiles > 0)
-            {
-                topics::raw::device::notification raw_video_stream_profiles_msg;
-                topics::device::notification::construct_raw_message( topics::device::notification::msg_type::VIDEO_STREAM_PROFILES,
-                                                                     video_stream_profiles_msg,
-                                                                     raw_video_stream_profiles_msg );
-
-                server->add_init_msg( std::move( raw_video_stream_profiles_msg ) );
-            }
-        }
-        else if( sensor.is< rs2::motion_sensor >() )
-        {
-            topics::device::notification::motion_stream_profiles_msg motion_stream_profiles_msg;
-            prepare_motion_profiles_messeges( dev,
-                                              sensor.get_info( RS2_CAMERA_INFO_NAME ),
-                                              stream_profiles,
-                                              motion_stream_profiles_msg );
-
-            // Send motion stream profiles
-            if (motion_stream_profiles_msg.num_of_profiles > 0)
-            {
-                topics::raw::device::notification raw_motion_stream_profiles_msg;
-                topics::device::notification::construct_raw_message( topics::device::notification::msg_type::MOTION_STREAM_PROFILES,
-                                                                     motion_stream_profiles_msg,
-                                                                     raw_motion_stream_profiles_msg );
-                server->add_init_msg( std::move( raw_motion_stream_profiles_msg ) );
-            }
-        }
-        else
-            throw std::runtime_error( "Sensor type is not supported (only video & motion sensors are supported)" );
-
-        // Promote to next sensor index
-        sensor_idx++;
-    }
-}
-
-
-void init_dds_device( rs2::device dev, std::shared_ptr< dds_device_server > & server )
-{
-    add_init_device_header_msg( dev, server );
-    add_init_profiles_msgs( dev, server );
-}
-
 
 std::string get_topic_root( topics::device_info const & dev_info )
 {
@@ -279,27 +183,6 @@ topics::device_info rs2_device_to_info( rs2::device const & dev )
 }
 
 
-struct log_consumer : eprosima::fastdds::dds::LogConsumer
-{
-    virtual void Consume( const eprosima::fastdds::dds::Log::Entry & e ) override
-    {
-        using eprosima::fastdds::dds::Log;
-        switch( e.kind )
-        {
-        case Log::Kind::Error:
-            LOG_DDS_ENTRY( e, Error, e.message );
-            break;
-        case Log::Kind::Warning:
-            LOG_DDS_ENTRY( e, Warning, e.message );
-            break;
-        case Log::Kind::Info:
-            LOG_DDS_ENTRY( e, Info, e.message );
-            break;
-        }
-    }
-};
-
-
 int main( int argc, char * argv[] )
 try
 {
@@ -327,9 +210,8 @@ try
     el::Loggers::reconfigureLogger( "librealsense", defaultConf );
 
     // Intercept DDS messages and redirect them to our own logging mechanism
-    std::unique_ptr< eprosima::fastdds::dds::LogConsumer > consumer( new log_consumer() );
     eprosima::fastdds::dds::Log::ClearConsumers();
-    eprosima::fastdds::dds::Log::RegisterConsumer( std::move( consumer ) );
+    eprosima::fastdds::dds::Log::RegisterConsumer( realdds::log_consumer::create() );
 
     if( debug_arg.isSet() )
     {
@@ -392,23 +274,22 @@ try
             // Broadcast the new connected device to all listeners
             broadcaster.add_device( dev_info );
 
-            // Create a supported streams list for initializing the relevant DDS topics
-            std::vector<std::string> supported_streams_names_vec = get_supported_streams( dev );
-
             // Create a dds-device-server for this device
-            auto server = std::make_shared< dds_device_server >( participant, dev_info.topic_root );
+            auto dds_device_server
+                = std::make_shared< realdds::dds_device_server >( participant, dev_info.topic_root );
+
+            // Create a supported streams list for initializing the relevant DDS topics
+            auto supported_streams = get_supported_streams( dev );
+
             // Initialize the DDS device server with the supported streams
-            server->init( supported_streams_names_vec );
+            dds_device_server->init( supported_streams );
 
             // Create a lrs_device_manager for this device
             std::shared_ptr< tools::lrs_device_controller > lrs_device_controller
                 = std::make_shared< tools::lrs_device_controller >( dev );
 
             // Keep a pair of device controller and server per RS device
-            device_handlers_list.emplace( dev, device_handler{ dev_info, server, lrs_device_controller } );
-
-            // We add initialization messages to be sent to a new reader (sensors & profiles info).
-            init_dds_device( dev, server );
+            device_handlers_list.emplace( dev, device_handler{ dev_info, dds_device_server, lrs_device_controller } );
 
             // Get the desired stream profile
             auto profile = get_required_profile( dev.first< rs2::color_sensor >(),
@@ -419,7 +300,7 @@ try
                                                  720 );
 
             // Start streaming 
-            start_streaming( lrs_device_controller, server, profile );
+            start_streaming( lrs_device_controller, dds_device_server, profile );
         },
         // Handle a device disconnection
         [&]( rs2::device dev ) {

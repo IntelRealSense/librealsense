@@ -37,8 +37,8 @@ dds_topic_writer::~dds_topic_writer()
 }
 
 
-dds_topic_writer::writer_qos::writer_qos( eprosima::fastdds::dds::ReliabilityQosPolicyKind reliability_kind,
-                                          eprosima::fastdds::dds::DurabilityQosPolicyKind durability_kind )
+dds_topic_writer::qos::qos( eprosima::fastdds::dds::ReliabilityQosPolicyKind reliability_kind,
+                            eprosima::fastdds::dds::DurabilityQosPolicyKind durability_kind )
     : super( eprosima::fastdds::dds::DATAWRITER_QOS_DEFAULT )
 {
     // NOTE: might want to match these with the corresponding values in dds_topic_reader
@@ -75,7 +75,7 @@ dds_topic_writer::writer_qos::writer_qos( eprosima::fastdds::dds::ReliabilityQos
 }
 
 
-void dds_topic_writer::run( writer_qos const & wqos )
+void dds_topic_writer::run( qos const & wqos )
 {
     eprosima::fastdds::dds::StatusMask status_mask;
     if( _on_publication_matched )

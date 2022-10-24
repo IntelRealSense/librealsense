@@ -21,6 +21,7 @@
 #include <librealsense2/rs.hpp>  // Include RealSense Cross Platform API
 #include <realdds/dds-utilities.h>
 #include <realdds/dds-guid.h>
+#include <realdds/dds-log-consumer.h>
 
 using namespace TCLAP;
 using namespace eprosima::fastdds::dds;
@@ -42,28 +43,6 @@ using realdds::print;
 // Note same host for all, participant and entity IDs may be repeat for different processes
 // To differentiate entities of different participant with same name we append process GUID values to the name
 constexpr uint8_t GUID_PROCESS_LOCATION = 4;
-
-// Redirect DDS log messages to our own logging mechanism
-struct log_consumer : eprosima::fastdds::dds::LogConsumer
-{
-    virtual void Consume( const eprosima::fastdds::dds::Log::Entry & e ) override
-    {
-        using eprosima::fastdds::dds::Log;
-        switch( e.kind )
-        {
-        case Log::Kind::Error:
-            LOG_ERROR( "[DDS] " << e.message );
-            break;
-        case Log::Kind::Warning:
-            LOG_WARNING( "[DDS] " << e.message );
-            break;
-        case Log::Kind::Info:
-            LOG_DEBUG( "[DDS] " << e.message );
-            break;
-        }
-    }
-};
-
 
 static eprosima::fastrtps::rtps::GuidPrefix_t std_prefix;
 
@@ -87,9 +66,8 @@ int main( int argc, char ** argv ) try
     cmd.parse( argc, argv );
 
     // Intercept DDS messages and redirect them to our own logging mechanism
-    std::unique_ptr< eprosima::fastdds::dds::LogConsumer > consumer( new log_consumer() );
     eprosima::fastdds::dds::Log::ClearConsumers();
-    eprosima::fastdds::dds::Log::RegisterConsumer( std::move( consumer ) );
+    eprosima::fastdds::dds::Log::RegisterConsumer( realdds::log_consumer::create() );
 
 #ifdef BUILD_SHARED_LIBS
     // Configure the same logger as librealsense, and default to only errors by default...

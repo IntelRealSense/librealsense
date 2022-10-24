@@ -52,14 +52,15 @@ if _have_color:
         s = indent( sep.join( [str(s) for s in args] ), line_prefix )
         if color:
             s = color + s + reset
-        _write( s )
-        clear_to_eol = len(_progress) > 0  and  end  and  end[-1] == '\n'
-        if clear_to_eol:
-            sys.stdout.write( clear_eol + end )
-            progress( *_progress )
+        if end:
+            clear_to_eol = len(_progress) > 0  and  end[-1] == '\n'
+            if clear_to_eol:
+                sys.stdout.write( s + clear_eol + end )
+                progress( *_progress )
+            else:
+                sys.stdout.write( s + end )
         else:
-            if end:
-                sys.stdout.write( end )
+            _write( s )
     def progress(*args):
         global _progress
         sys.stdout.flush()

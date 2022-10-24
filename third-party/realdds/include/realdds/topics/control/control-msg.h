@@ -7,6 +7,12 @@
 #include "controlPubSubTypes.h"
 
 namespace realdds {
+
+    
+class dds_participant;
+class dds_topic;
+
+
 namespace topics {
 namespace device {
 
@@ -15,6 +21,14 @@ class control
 {
 public:
     using type = raw::device::controlPubSubType;
+
+    static std::shared_ptr< dds_topic > create_topic( std::shared_ptr< dds_participant > const & participant,
+                                                      char const * topic_name );
+    static std::shared_ptr< dds_topic > create_topic( std::shared_ptr< dds_participant > const & participant,
+                                                      std::string const & topic_name )
+    {
+        return create_topic( participant, topic_name.c_str() );
+    }
 
     //Open uses a vector of profiles, to have constant message size we limit it
     static const uint8_t MAX_OPEN_STREAMS = 8;

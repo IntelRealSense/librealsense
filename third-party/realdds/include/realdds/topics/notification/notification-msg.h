@@ -3,18 +3,40 @@
 
 #pragma once
 
-#include "notificationPubSubTypes.h"
 
 #include <string>
+#include <memory>
+#include <vector>
+
+
+namespace eprosima {
+namespace fastdds {
+namespace dds {
+struct SampleInfo;
+}
+}  // namespace fastdds
+}  // namespace eprosima
+
 
 namespace realdds {
 
 
 class dds_participant;
 class dds_topic;
+class dds_topic_reader;
 
 
 namespace topics {
+
+    
+namespace raw {
+namespace device {
+class notificationPubSubType;
+class notification;
+}  // namespace device
+}  // namespace raw
+
+
 namespace device {
 
     
@@ -23,8 +45,25 @@ class notification
 public:
     using type = raw::device::notificationPubSubType;
 
+    bool is_valid() const { return _msg_type < msg_type::MAX_MSG_TYPE; }
+    void invalidate() { _msg_type = msg_type::MAX_MSG_TYPE; }
+
     static std::shared_ptr< dds_topic > create_topic( std::shared_ptr< dds_participant > const & participant,
                                                       char const * topic_name );
+    static std::shared_ptr< dds_topic > create_topic( std::shared_ptr< dds_participant > const & participant,
+                                                      std::string const & topic_name )
+    {
+        return create_topic( participant, topic_name.c_str() );
+    }
+
+    // This helper method will take the next sample from a reader.
+    //
+    // Returns true if successful. Make sure you still check is_valid() in case the sample info isn't!
+    // Returns false if no more data is available.
+    // Will throw if an unexpected error occurs.
+    //
+    static bool
+    take_next( dds_topic_reader &, notification * output, eprosima::fastdds::dds::SampleInfo * optional_info = nullptr );
 
     // Currently we use constant MAX size of profiles,
     // If we decide we want a scaled solution we may need to split the profiles to 
@@ -116,17 +155,7 @@ public:
     }
 
     notification() = default;
-
-    notification( const raw::device::notification & main )
-        : _msg_type( static_cast<msg_type>(main.id()) )
-        , _raw_data(main.raw_data()) // TODO: avoid data copy?
-        , _size( main.size() )
-    {
-        if( _msg_type >= msg_type::MAX_MSG_TYPE )
-        {
-            throw std::runtime_error(" unsupported message type received, id:" + main.id());
-        }
-    }
+    notification( const raw::device::notification & );
 
     // Get the raw data with casting to the desired type
     // Syntax: auto msg = raw_msg.get<DEVICE_STREAMS_INFO>();
@@ -137,7 +166,7 @@ public:
         return _raw_data.size() > 0 ? reinterpret_cast< T * >( _raw_data.data() ) : nullptr;
     }
 
-    msg_type _msg_type;
+    msg_type _msg_type = msg_type::MAX_MSG_TYPE;
     std::vector<uint8_t> _raw_data;
     int _size;
 };

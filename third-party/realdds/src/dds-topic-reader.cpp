@@ -34,7 +34,8 @@ dds_topic_reader::~dds_topic_reader()
 }
 
 
-dds_topic_reader::reader_qos::reader_qos()
+dds_topic_reader::qos::qos( eprosima::fastdds::dds::ReliabilityQosPolicyKind reliability_kind,
+                            eprosima::fastdds::dds::DurabilityQosPolicyKind durability_kind )
     : super( eprosima::fastdds::dds::DATAREADER_QOS_DEFAULT )
 {
     // The 'depth' parameter of the History defines how many samples are stored before starting to
@@ -42,13 +43,13 @@ dds_topic_reader::reader_qos::reader_qos()
     history().kind = eprosima::fastdds::dds::KEEP_LAST_HISTORY_QOS;
     history().depth = 10;  // default is 1
 
-    // We don't want to miss connection/disconnection events
+    // reliable = We don't want to miss connection/disconnection events
     // (default is best-effort)
-    reliability().kind = eprosima::fastdds::dds::RELIABLE_RELIABILITY_QOS;
+    reliability().kind = reliability_kind;
 
-    // The Subscriber receives samples from the moment it comes online, not before
+    // volatile = The Subscriber receives samples from the moment it comes online, not before
     // (this is the default, but bears repeating)
-    durability().kind = eprosima::fastdds::dds::VOLATILE_DURABILITY_QOS;
+    durability().kind = durability_kind;
 
     // The writer-reader handshake is always done on UDP, even when data_sharing (shared memory) is used for
     // actual messaging. This means it is possible to send a message and receive it on the reader's
@@ -68,10 +69,15 @@ dds_topic_reader::reader_qos::reader_qos()
     // See https://github.com/eProsima/Fast-DDS/issues/2641
     //
     data_sharing().off();
+
+    // Does not allocate for every sample but still gives flexibility. See:
+    //     https://github.com/eProsima/Fast-DDS/discussions/2707
+    // (default is PREALLOCATED_MEMORY_MODE)
+    endpoint().history_memory_policy = eprosima::fastrtps::rtps::PREALLOCATED_WITH_REALLOC_MEMORY_MODE;
 }
 
 
-void dds_topic_reader::run( reader_qos const & rqos )
+void dds_topic_reader::run( qos const & rqos )
 {
     // The Subscriber manages the activities of several DataReader entities
     _subscriber = DDS_API_CALL(

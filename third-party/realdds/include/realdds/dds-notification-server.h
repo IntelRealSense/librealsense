@@ -31,7 +31,7 @@ class dds_topic_writer;
 // receives and interprets.
 // 
 // Notifications are either on-demand (i.e., send this message right now) or on-discovery (send these messages to any
-// client that connects). We optionally store and automatically send such messages.
+// new client that connects). We optionally store and automatically send such messages.
 //
 class dds_notification_server
 {
@@ -43,16 +43,16 @@ public:
     void send_notification( topics::raw::device::notification && notification );
 
     // On-discovery notification: when a new client is detected
-    void add_init_notification( topics::raw::device::notification && notification );
+    void add_discovery_notification( topics::raw::device::notification && notification );
 
 private:
-    void send_init_msgs();
+    void send_discovery_notifications();
 
     std::shared_ptr< dds_publisher > _publisher;
     std::shared_ptr< dds_topic_writer > _writer;
     active_object<> _notifications_loop;
     single_consumer_queue< topics::raw::device::notification > _instant_notifications;
-    std::vector< topics::raw::device::notification > _init_notifications;
+    std::vector< topics::raw::device::notification > _discovery_notifications;
     std::mutex _notification_send_mutex;
     std::condition_variable _send_notification_cv;
     std::atomic_bool _send_init_msgs = { false };

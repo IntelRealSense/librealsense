@@ -42,7 +42,7 @@ dds_notification_server::dds_notification_server( std::shared_ptr< dds_publisher
 
             if( _active && _send_init_msgs )
             {
-                send_init_msgs();
+                send_discovery_notifications();
                 _send_init_msgs = false;
             }
 
@@ -50,7 +50,8 @@ dds_notification_server::dds_notification_server( std::shared_ptr< dds_publisher
             {
                 // Send all instant notifications
                 topics::raw::device::notification notification;
-                while( _instant_notifications.dequeue( &notification, 1000 ) )
+                constexpr unsigned timeout_in_ms = 1000;
+                while( _instant_notifications.dequeue( &notification, timeout_in_ms ) )
                 {
                     DDS_API_CALL( _writer->get()->write( &notification ) );
                 }
@@ -65,9 +66,6 @@ dds_notification_server::dds_notification_server( std::shared_ptr< dds_publisher
     _writer->on_publication_matched( [this]( PublicationMatchedStatus const & info ) {
         if( info.current_count_change == 1 )
         {
-            LOG_DEBUG( "DataReader " << _writer->topic()->get_participant()->print(
-                           (const dds_guid &)info.last_subscription_handle )
-                                     << " for '" << _writer->topic()->get()->get_name() << "' discovered" );
             {
                 std::lock_guard< std::mutex > lock( _notification_send_mutex );
                 _send_init_msgs = true;
@@ -76,9 +74,6 @@ dds_notification_server::dds_notification_server( std::shared_ptr< dds_publisher
         }
         else if( info.current_count_change == -1 )
         {
-            LOG_DEBUG( "DataReader " << _writer->topic()->get_participant()->print(
-                           (const dds_guid &)info.last_subscription_handle )
-                                     << " for '" << _writer->topic()->get()->get_name() << "' disappeared" );
         }
         else
         {
@@ -87,7 +82,7 @@ dds_notification_server::dds_notification_server( std::shared_ptr< dds_publisher
         }
     } );
 
-    dds_topic_writer::writer_qos wqos( RELIABLE_RELIABILITY_QOS );
+    dds_topic_writer::qos wqos( RELIABLE_RELIABILITY_QOS );
     wqos.history().depth = 10;                                                                      // default is 1
     wqos.endpoint().history_memory_policy = eprosima::fastrtps::rtps::DYNAMIC_RESERVE_MEMORY_MODE;  // TODO: why?
     _writer->run( wqos );
@@ -117,18 +112,19 @@ void dds_notification_server::send_notification( topics::raw::device::notificati
 };
 
 
-void dds_notification_server::add_init_notification( topics::raw::device::notification && msg )
+void dds_notification_server::add_discovery_notification( topics::raw::device::notification && msg )
 {
     std::unique_lock< std::mutex > lock( _notification_send_mutex );
     topics::raw::device::notification msg_to_move( msg );
-    _init_notifications.push_back( std::move( msg_to_move ) );
+    _discovery_notifications.push_back( std::move( msg_to_move ) );
 };
 
 
-void dds_notification_server::send_init_msgs()
+void dds_notification_server::send_discovery_notifications()
 {
     // Send all initialization notifications
-    for( auto notification : _init_notifications )
+    LOG_DEBUG( "broadcasting discovery notifications" );
+    for( auto notification : _discovery_notifications )
     {
         DDS_API_CALL( _writer->get()->write( &notification ) );
     }

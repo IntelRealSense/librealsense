@@ -2,7 +2,7 @@
 // Copyright(c) 2022 Intel Corporation. All Rights Reserved.
 
 #include <realdds/dds-device.h>
-#include <realdds/dds-device-impl.h>
+#include "dds-device-impl.h"
 #include <realdds/dds-exceptions.h>
 
 namespace realdds {
@@ -82,6 +82,13 @@ void dds_device::run()
 {
     _impl->run();
 }
+
+
+std::shared_ptr< dds_participant > const& dds_device::participant() const
+{
+    return _impl->_participant;
+}
+
 
 topics::device_info const & dds_device::device_info() const
 {

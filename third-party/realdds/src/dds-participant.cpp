@@ -70,15 +70,15 @@ struct dds_participant::listener_impl : public eprosima::fastdds::dds::DomainPar
         {
         case eprosima::fastrtps::rtps::WriterDiscoveryInfo::DISCOVERED_WRITER:
             /* Process the case when a new publisher was found in the domain */
-            LOG_DEBUG( "+DataWriter (" << _owner.print( info.info.guid() ) << ") publishing '"
-                                       << info.info.topicName() << "' of type '" << info.info.typeName() << "'" );
+            LOG_DEBUG( "+writer (" << _owner.print( info.info.guid() ) << ") publishing '" << info.info.topicName()
+                                   << "' of type '" << info.info.typeName() << "'" );
             _owner.on_writer_added( info.info.guid(), info.info.topicName().c_str() );
             break;
 
         case eprosima::fastrtps::rtps::WriterDiscoveryInfo::REMOVED_WRITER:
             /* Process the case when a publisher was removed from the domain */
-            LOG_DEBUG( "-DataWriter (" << _owner.print( info.info.guid() ) << ") publishing '"
-                                       << info.info.topicName() << "'" );
+            LOG_DEBUG( "-writer (" << _owner.print( info.info.guid() ) << ") publishing '" << info.info.topicName()
+                                   << "'" );
             _owner.on_writer_removed( info.info.guid(), info.info.topicName().c_str() );
             break;
         }
@@ -90,14 +90,13 @@ struct dds_participant::listener_impl : public eprosima::fastdds::dds::DomainPar
         switch( info.status )
         {
         case eprosima::fastrtps::rtps::ReaderDiscoveryInfo::DISCOVERED_READER:
-            LOG_DEBUG( "+DataReader (" << _owner.print( info.info.guid() ) << ") reading topic '"
-                                       << info.info.topicName() << "' of type '" << info.info.typeName() << "'" );
+            LOG_DEBUG( "+reader (" << _owner.print( info.info.guid() ) << ") of '" << info.info.topicName()
+                                   << "' of type '" << info.info.typeName() << "'" );
             _owner.on_reader_added( info.info.guid(), info.info.topicName().c_str() );
             break;
 
         case eprosima::fastrtps::rtps::ReaderDiscoveryInfo::REMOVED_READER:
-            LOG_DEBUG( "-DataReader (" << _owner.print( info.info.guid() ) << ") reading topic '"
-                                      << info.info.topicName() << "'" );
+            LOG_DEBUG( "-reader (" << _owner.print( info.info.guid() ) << ") of '" << info.info.topicName() << "'" );
             _owner.on_reader_removed( info.info.guid(), info.info.topicName().c_str() );
             break;
         }
@@ -111,7 +110,7 @@ struct dds_participant::listener_impl : public eprosima::fastdds::dds::DomainPar
                                     eprosima::fastrtps::types::DynamicType_ptr dyn_type ) override
     {
         TypeSupport type_support( new eprosima::fastrtps::types::DynamicPubSubType( dyn_type ) );
-        LOG_DEBUG( "Discovered topic " << topic_name << " of type: " << type_support->getName() );
+        LOG_DEBUG( "discovered topic " << topic_name << " of type: " << type_support->getName() );
         _owner.on_type_discovery( topic_name.c_str(), dyn_type );
     }
 };
@@ -174,7 +173,7 @@ dds_guid const & dds_participant::guid() const
 }
 
 
-std::string dds_participant::print( dds_guid const& guid_to_print ) const
+std::string dds_participant::print( dds_guid const & guid_to_print ) const
 {
     return realdds::print( guid_to_print, guid() );
 }
@@ -285,4 +284,44 @@ void dds_participant::on_type_discovery( char const * topic_name, eprosima::fast
                 l->_on_type_discovery( topic_name, dyn_type );
         }
     }
+}
+
+
+dds_guid dds_participant::create_guid()
+{
+    using eprosima::fastrtps::rtps::octet;
+
+    // RTPS 9.3.1.2 "the EntityId_t is the unique identification of the Endpoint within the Participant. The PSM
+    //      maps the EntityId_t to the following structure:
+    //          struct EntityId_t {
+    //              octet entityKey[3];
+    //              octet entityKind;
+    //          };
+    //      The reserved constant ENTITYID_UNKNOWN defined by the PIM is mapped to :
+    //          #define ENTITYID_UNKNOWN {{0x00, 0x00, 0x00}, 0x00}
+    //      The entityKind field within EntityId_t encodes the kind of Entity (Participant, Reader, Writer, Reader
+    //      Group, Writer Group) and whether the Entity is a built-in Entity (fully pre-defined by the
+    //      Protocol, automatically instantiated), a user-defined Entity (defined by the Protocol, but
+    //      instantiated by the user only as needed by the application) or a vendor-specific Entity (defined by a
+    //      vendor-specific extension to the Protocol, can therefore be ignored by another vendor’s
+    //      implementation)
+    // 
+    //      ...
+    // 
+    //      The information on whether the object is a built-in entity, a vendor-specific entity, or a user-defined
+    //      entity is encoded in the two most-significant bits of the entityKind. These two bits are set to:
+    //          - 00 for user-defined entities
+    //          - 11 for built-in entities
+    //          - 01 for vendor-specific entities"
+    // 
+    // The FastDDS implementations use 0x01 (vendor-specific). We use 0x00 (user-defined).
+    // See DomainParticipantImpl::create_instance_handle and RTPSParticipantImpl::get_new_entity_id
+    //
+    ++_next_entity_id;
+    auto e = guid().entityId;
+    e.value[3] = 0x00;  // user-defined; fastdds sets this to 0x01
+    e.value[2] = static_cast< octet >( _next_entity_id & 0xFF );
+    e.value[1] = static_cast< octet >( ( _next_entity_id >> 8 ) & 0xFF );
+    e.value[0] = static_cast< octet >( ( _next_entity_id >> 16 ) & 0xFF );
+    return dds_guid( guid().guidPrefix, e );
 }

@@ -63,9 +63,7 @@ device_info::take_next( dds_topic_reader & reader, device_info * output, eprosim
         // This is an expected return code and is not an error
         return false;
     }
-    auto err = get_dds_error( status );
-    LOG_ERROR( "DDS API CALL 'take_next_sample'" << err );
-    throw std::runtime_error( "take_next_sample" + err );
+    DDS_API_CALL_THROW( "device_info::take_next", status );
 }
 
 

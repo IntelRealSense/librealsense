@@ -7,6 +7,9 @@ Copyright(c) 2022 Intel Corporation. All Rights Reserved. */
 #include <realdds/topics/dds-topics.h>
 #include <realdds/topics/device-info/deviceInfoPubSubTypes.h>
 #include <realdds/dds-device-broadcaster.h>
+#include <realdds/dds-device-server.h>
+#include <realdds/dds-stream-server.h>
+#include <realdds/dds-stream-profile.h>
 #include <realdds/dds-device-watcher.h>
 #include <realdds/dds-device.h>
 #include <realdds/dds-stream.h>
@@ -14,10 +17,10 @@ Copyright(c) 2022 Intel Corporation. All Rights Reserved. */
 #include <realdds/dds-topic.h>
 #include <realdds/dds-topic-reader.h>
 #include <realdds/dds-utilities.h>
+#include <realdds/dds-log-consumer.h>
 
 #include <librealsense2/h/rs_internal.h>
 #include <librealsense2/utilities/easylogging/easyloggingpp.h>
-#include <fastdds/dds/log/Log.hpp>
 #include <fastdds/dds/domain/qos/DomainParticipantQos.hpp>
 #include <fastdds/dds/domain/DomainParticipant.hpp>
 #include <fastdds/dds/core/status/SubscriptionMatchedStatus.hpp>
@@ -30,12 +33,12 @@ INITIALIZE_EASYLOGGINGPP
 
 
 namespace {
+
 std::string to_string( realdds::dds_guid const & guid )
 {
-    std::ostringstream os;
-    os << realdds::print( guid );
-    return os.str();
+    return realdds::print( guid );
 }
+
 }  // namespace
 
 
@@ -62,27 +65,6 @@ std::string to_string( realdds::dds_guid const & guid )
     }
 
 
-struct log_consumer : eprosima::fastdds::dds::LogConsumer
-{
-    virtual void Consume( const eprosima::fastdds::dds::Log::Entry & e ) override
-    {
-        using eprosima::fastdds::dds::Log;
-        switch( e.kind )
-        {
-        case Log::Kind::Error:
-            LOG_DDS_ENTRY( e, Error, e.message );
-            break;
-        case Log::Kind::Warning:
-            LOG_DDS_ENTRY( e, Warning, e.message );
-            break;
-        case Log::Kind::Info:
-            LOG_DDS_ENTRY( e, Info, e.message );
-            break;
-        }
-    }
-};
-
-
 PYBIND11_MODULE(NAME, m) {
     m.doc() = R"pbdoc(
         RealSense DDS Server Python Bindings
@@ -97,9 +79,8 @@ PYBIND11_MODULE(NAME, m) {
     defaultConf.setGlobally( el::ConfigurationType::Format, "-%levshort- %datetime{%H:%m:%s.%g} %msg (%fbase:%line [%thread])" );
     el::Loggers::reconfigureLogger( "librealsense", defaultConf );
     // And set the DDS logger similarly
-    std::unique_ptr< eprosima::fastdds::dds::LogConsumer > consumer( new log_consumer() );
     eprosima::fastdds::dds::Log::ClearConsumers();
-    eprosima::fastdds::dds::Log::RegisterConsumer( std::move( consumer ) );
+    eprosima::fastdds::dds::Log::RegisterConsumer( realdds::log_consumer::create() );
     eprosima::fastdds::dds::Log::SetVerbosity( eprosima::fastdds::dds::Log::Error );
 
     m.def( "debug", []( bool enable, std::string const & nested ) {
@@ -123,6 +104,13 @@ PYBIND11_MODULE(NAME, m) {
         logger->reconfigure();
     } );
 
+    using realdds::dds_guid;
+    py::class_< dds_guid >( m, "guid" )
+        .def( py::init<>() )
+        .def( "__nonzero__", []( dds_guid const& self ) { return self != dds_guid::unknown(); } )  // Called to implement truth value testing in Python 2
+        .def( "__bool__", []( dds_guid const& self ) { return self != dds_guid::unknown(); } )     // Called to implement truth value testing in Python 3
+        .def( "__repr__", []( dds_guid const& self ) { return to_string( self ); } );
+
     using realdds::dds_participant;
     using eprosima::fastrtps::types::ReturnCode_t;
     
@@ -133,34 +121,34 @@ PYBIND11_MODULE(NAME, m) {
     listener  // no ctor: use participant.create_listener()
         .def( FN_FWD( dds_participant::listener,
                       on_writer_added,
-                      ( std::string const & guid, std::string const & topic_name ),
-                      ( realdds::dds_guid guid, char const * topic_name ),
-                      callback( to_string( guid ), topic_name ); ) )
+                      ( dds_guid guid, char const * topic_name ),
+                      ( dds_guid guid, char const * topic_name ),
+                      callback( guid, topic_name ); ) )
         .def( FN_FWD( dds_participant::listener,
                       on_writer_removed,
-                      ( std::string const & guid, std::string const & topic_name ),
-                      ( realdds::dds_guid guid, char const * topic_name ),
-                      callback( to_string( guid ), topic_name ); ) )
+                      ( dds_guid guid, char const * topic_name ),
+                      ( dds_guid guid, char const * topic_name ),
+                      callback( guid, topic_name ); ) )
         .def( FN_FWD( dds_participant::listener,
                       on_reader_added,
-                      ( std::string const & guid, std::string const & topic_name ),
-                      ( realdds::dds_guid guid, char const * topic_name ),
-                      callback( to_string( guid ), topic_name ); ) )
+                      ( dds_guid guid, char const * topic_name ),
+                      ( dds_guid guid, char const * topic_name ),
+                      callback( guid, topic_name ); ) )
         .def( FN_FWD( dds_participant::listener,
                       on_reader_removed,
-                      ( std::string const & guid, std::string const & topic_name ),
-                      ( realdds::dds_guid guid, char const * topic_name ),
-                      callback( to_string( guid ), topic_name ); ) )
+                      ( dds_guid guid, char const * topic_name ),
+                      ( dds_guid guid, char const * topic_name ),
+                      callback( guid, topic_name ); ) )
         .def( FN_FWD( dds_participant::listener,
                       on_participant_added,
-                      ( std::string const & guid, std::string const & name ),
-                      ( realdds::dds_guid guid, char const * name ),
-                      callback( to_string( guid ), name ); ) )
+                      ( dds_guid guid, char const * name ),
+                      ( dds_guid guid, char const * name ),
+                      callback( guid, name ); ) )
         .def( FN_FWD( dds_participant::listener,
                       on_participant_removed,
-                      ( std::string const & guid, std::string const & name ),
-                      ( realdds::dds_guid guid, char const * name ),
-                      callback( to_string( guid ), name ); ) )
+                      ( dds_guid guid, char const * name ),
+                      ( dds_guid guid, char const * name ),
+                      callback( guid, name ); ) )
         .def( FN_FWD( dds_participant::listener,
                       on_type_discovery,
                       ( std::string const & topic_name, std::string const & type_name ),
@@ -174,6 +162,8 @@ PYBIND11_MODULE(NAME, m) {
     participant.def( py::init<>() )
         .def( "init", &dds_participant::init, "domain-id"_a, "participant-name"_a )
         .def( "is_valid", &dds_participant::is_valid )
+        .def( "guid", &dds_participant::guid )
+        .def( "create_guid", &dds_participant::create_guid )
         .def( "__nonzero__", &dds_participant::is_valid )  // Called to implement truth value testing in Python 2
         .def( "__bool__", &dds_participant::is_valid )     // Called to implement truth value testing in Python 3
         .def( "__repr__",
@@ -189,6 +179,7 @@ PYBIND11_MODULE(NAME, m) {
                       eprosima::fastdds::dds::DomainParticipantQos qos;
                       if( ReturnCode_t::RETCODE_OK == self.get()->get_qos( qos ) )
                           os << " \"" << qos.name() << "\"";
+                      os << " " << to_string( self.guid() );
                   }
                   os << ">";
                   return os.str();
@@ -224,7 +215,7 @@ PYBIND11_MODULE(NAME, m) {
             return os.str();
         } );
 
-    using reader_qos = realdds::dds_topic_reader::reader_qos;
+    using reader_qos = realdds::dds_topic_reader::qos;
     py::class_< reader_qos >( m, "reader_qos" )
         .def( "__repr__", []( reader_qos const & self ) {
             std::ostringstream os;
@@ -271,13 +262,13 @@ PYBIND11_MODULE(NAME, m) {
                       os << "INVALID";
                   else
                   {
-                      if( !self.name.empty() )
+                      if( ! self.name.empty() )
                           os << "\"" << self.name << "\" ";
-                      if( !self.serial.empty() )
+                      if( ! self.serial.empty() )
                           os << "s/n \"" << self.serial << "\" ";
-                      if( !self.topic_root.empty() )
-                          os << "topic-root \"" << self.topic_root << "\" ";
-                      if( !self.product_line.empty() )
+                      if( ! self.topic_root.empty() )
+                          os << "@ \"" << self.topic_root << "\" ";
+                      if( ! self.product_line.empty() )
                           os << "product-line \"" << self.product_line << "\" ";
                       os << ( self.locked ? "locked" : "unlocked" );
                   }
@@ -319,6 +310,116 @@ PYBIND11_MODULE(NAME, m) {
         .def( "add_device", &dds_device_broadcaster::add_device )
         .def( "remove_device", &dds_device_broadcaster::remove_device );
 
+    using realdds::dds_stream_format;
+    py::class_< dds_stream_format >( m, "stream_format" )
+        .def( py::init<>() )
+        .def( py::init< std::string const & >() )
+        .def( "is_valid", &dds_stream_format::is_valid )
+        .def( "to_rs2", &dds_stream_format::to_rs2 )
+        .def( "__nonzero__", &dds_stream_format::is_valid )  // Called to implement truth value testing in Python 2
+        .def( "__bool__", &dds_stream_format::is_valid )     // Called to implement truth value testing in Python 3
+        .def( "__repr__", []( dds_stream_format const & self ) { return self.to_string(); } );
+
+    using realdds::dds_stream_uid;
+    py::class_< dds_stream_uid >( m, "stream_uid" )
+        .def( py::init<>() )
+        .def( py::init< uint32_t >() )
+        .def( py::init< int, int >() )
+        .def_readwrite( "whole", &dds_stream_uid::whole )
+        .def_readwrite( "sid", &dds_stream_uid::sid )
+        .def_readwrite( "index", &dds_stream_uid::index )
+        .def( "to_string", &dds_stream_uid::to_string )
+        .def( "__repr__", &dds_stream_uid::to_string );
+
+    using realdds::dds_stream_profile;
+    py::class_< dds_stream_profile, std::shared_ptr< dds_stream_profile > > stream_profile_base( m, "stream_profile" );
+    stream_profile_base
+        .def( "uid", &dds_stream_profile::uid )
+        .def( "frequency", &dds_stream_profile::frequency )
+        .def( "format", &dds_stream_profile::format )
+        .def( "to_string", &dds_stream_profile::to_string )
+        .def( "details_to_string", &dds_stream_profile::details_to_string )
+        .def( "__repr__", []( dds_stream_profile const & self ) {
+            std::ostringstream os;
+            std::string self_as_string = self.to_string();  // <video 0xUID ...>
+            std::string type = self.type_to_string();
+            os << "<" SNAME "." << type << "_stream_profile " << ( self_as_string.c_str() + type.length() + 2 );
+            return os.str();
+        } );
+
+    using realdds::dds_video_stream_profile;
+    py::class_< dds_video_stream_profile, std::shared_ptr< dds_video_stream_profile > >( m, "video_stream_profile", stream_profile_base )
+        .def( py::init< dds_stream_uid, dds_stream_format, int16_t, uint16_t, uint16_t, uint8_t >() )
+        .def( "width", &dds_video_stream_profile::width )
+        .def( "height", &dds_video_stream_profile::height )
+        .def( "bytes_per_pixel", &dds_video_stream_profile::bytes_per_pixel );
+
+    using realdds::dds_motion_stream_profile;
+    py::class_< dds_motion_stream_profile, std::shared_ptr< dds_motion_stream_profile > >( m, "motion_stream_profile", stream_profile_base )
+        .def( py::init< dds_stream_uid, dds_stream_format, int16_t >() );
+
+    using realdds::dds_stream_server;
+    py::class_< dds_stream_server, std::shared_ptr< dds_stream_server > > stream_server_base( m, "stream_server" );
+    stream_server_base
+        .def( "name", &dds_stream_server::name )
+        .def( "default_profile_index", &dds_stream_server::default_profile_index )
+        .def( "is_open", &dds_stream_server::is_open )
+        .def( "is_streaming", &dds_stream_server::is_streaming )
+        .def( "get_topic", &dds_stream_server::get_topic )
+        .def( "__repr__", []( dds_stream_server const & self ) {
+            std::ostringstream os;
+            os << "<" SNAME ".stream_server \"" << self.name() << "\" [";
+            for( auto & p : self.profiles() )
+                os << p->to_string();
+            os << ']';
+            os << ' ' << self.default_profile_index();
+            os << '>';
+            return os.str();
+        } );
+
+    using realdds::dds_video_stream_server;
+    py::class_< dds_video_stream_server, std::shared_ptr< dds_video_stream_server > >( m, "video_stream_server", stream_server_base )
+        .def( py::init( []( std::string const & name,
+                            std::vector< std::shared_ptr< dds_video_stream_profile > > const & profiles ) {
+            realdds::dds_stream_profiles p( profiles.begin(), profiles.end() );
+            return std::shared_ptr< dds_video_stream_server >( new dds_video_stream_server( name, p ));
+        } ) )
+        .def( "__repr__", []( dds_video_stream_server const & self ) {
+            std::ostringstream os;
+            os << "<" SNAME ".video_stream_server \"" << self.name() << "\" [";
+            for( auto & p : self.profiles() )
+                os << p->to_string();
+            os << ']';
+            os << ' ' << self.default_profile_index();
+            os << '>';
+            return os.str();
+        } );
+
+    using realdds::dds_motion_stream_server;
+    py::class_< dds_motion_stream_server, std::shared_ptr< dds_motion_stream_server > >( m,
+                                                                                         "motion_stream_server",
+                                                                                         stream_server_base )
+        .def( py::init( []( std::string const & name,
+                            std::vector< std::shared_ptr< dds_motion_stream_profile > > const & profiles ) {
+            realdds::dds_stream_profiles p( profiles.begin(), profiles.end() );
+            return std::shared_ptr< dds_motion_stream_server >( new dds_motion_stream_server( name, p ) );
+        } ) )
+        .def( "__repr__", []( dds_motion_stream_server const & self ) {
+            std::ostringstream os;
+            os << "<" SNAME ".motion_stream_server \"" << self.name() << "\" [";
+            for( auto & p : self.profiles() )
+                os << p->to_string();
+            os << ']';
+            os << ' ' << self.default_profile_index();
+            os << '>';
+            return os.str();
+        } );
+
+    using realdds::dds_device_server;
+    py::class_< dds_device_server >( m, "device_server" )
+        .def( py::init< std::shared_ptr< dds_participant > const&, std::string const& >() )
+        .def( "init", &dds_device_server::init );
+
     // same as in pyrs_internal.cpp
     py::class_< rs2_video_stream > video_stream( m, "video_stream" );
     video_stream.def( py::init<>() )
@@ -344,26 +445,26 @@ PYBIND11_MODULE(NAME, m) {
 
     using realdds::dds_stream;
     py::class_< dds_stream,
-                std::shared_ptr< dds_stream > //handled with a shared_ptr
+                std::shared_ptr< dds_stream > // handled with a shared_ptr
                 >( m, "stream" )
         .def( "get_type", &dds_stream::get_type )
         .def( "get_group_name", &dds_stream::get_group_name );
-        //TODO - add stream profile class and then other dds_stream functions
-
 
     using realdds::dds_device;
     py::class_< dds_device,
                 std::shared_ptr< dds_device >  // handled with a shared_ptr
                 >( m, "device" )
+        .def( py::init( &dds_device::create ))
         .def( "device_info", &dds_device::device_info )
-        .def( "guid", []( dds_device const & self ) { return to_string( self.guid() ); } )
+        .def( "participant", &dds_device::participant )
+        .def( "guid", &dds_device::guid )
         .def( "is_running", &dds_device::is_running )
-        .def( "run", &dds_device::run )
-        .def( "num_of_streams", &dds_device::number_of_streams )
+        .def( "run", &dds_device::run, py::call_guard< py::gil_scoped_release >() )
+        .def( "n_streams", &dds_device::number_of_streams )
         .def( FN_FWD( dds_device,
                       foreach_stream,
-                      ( std::shared_ptr< dds_stream > ),
-                      ( std::shared_ptr< dds_stream > stream ),
+                      ( std::shared_ptr< dds_stream > const & ),
+                      ( std::shared_ptr< dds_stream > const & stream ),
                       callback( stream ); ) )
         //.def( FN_FWD( dds_device,
         //              foreach_profile,
@@ -372,13 +473,13 @@ PYBIND11_MODULE(NAME, m) {
         //              callback( prof, def_prof ); ) )
         .def( "__repr__", []( dds_device const & self ) {
             std::ostringstream os;
-            os << "<" SNAME ".device[";
-            os << to_string( self.guid() );
+            os << "<" SNAME ".device ";
+            os << self.participant()->print( self.guid() );
             if( ! self.device_info().name.empty() )
                 os << " \"" << self.device_info().name << "\"";
             if( ! self.device_info().serial.empty() )
                 os << " s/n \"" << self.device_info().serial << "\"";
-            os << "]>";
+            os << ">";
             return os.str();
         } );
 

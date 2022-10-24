@@ -11,8 +11,13 @@
 // E.g.:
 //     DDS_THROW( runtime_error, "what happened" );
 //
-#define DDS_THROW( ERR_TYPE, WHAT )                                                                 \
-    throw realdds::dds_ ## ERR_TYPE ( WHAT )
+#define DDS_THROW( ERR_TYPE, WHAT )                                                                                    \
+    do                                                                                                                 \
+    {                                                                                                                  \
+        LOG_ERROR( "throwing: " << ( WHAT ) );                                                                         \
+        throw realdds::dds_##ERR_TYPE( WHAT );                                                                         \
+    }                                                                                                                  \
+    while( 0 )
 
 
 namespace realdds {
@@ -24,13 +29,11 @@ public:
     dds_runtime_error( std::string const& str )
         : std::runtime_error( str )
     {
-        LOG_ERROR( "throwing: " << str);
     }
 
     dds_runtime_error( char const* lpsz )
         : std::runtime_error( lpsz )
     {
-        LOG_ERROR( "throwing: " << lpsz );
     }
 };
 

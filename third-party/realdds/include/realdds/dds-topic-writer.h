@@ -25,6 +25,11 @@ class dds_topic;
 class dds_publisher;
 
 
+// The 'writer' is used to write data to a topic, bound at creation time (and therefore bound to a specific type).
+// 
+// You may choose to create one via a 'publisher' that manages the activities of several writers and determines when the
+// data is actually sent. By default, data is sent as soon as the writer’s write() function is called.
+//
 class dds_topic_writer : public eprosima::fastdds::dds::DataWriterListener
 {
     std::shared_ptr< dds_topic > const _topic;
@@ -51,19 +56,19 @@ public:
         _on_publication_matched = std::move( callback );
     }
 
-    class writer_qos : public eprosima::fastdds::dds::DataWriterQos
+    class qos : public eprosima::fastdds::dds::DataWriterQos
     {
         using super = eprosima::fastdds::dds::DataWriterQos;
 
     public:
-        writer_qos( eprosima::fastdds::dds::ReliabilityQosPolicyKind reliability
-                        = eprosima::fastdds::dds::RELIABLE_RELIABILITY_QOS,   // default
-                    eprosima::fastdds::dds::DurabilityQosPolicyKind durability
-                        = eprosima::fastdds::dds::VOLATILE_DURABILITY_QOS );  // default is transient local
+        qos( eprosima::fastdds::dds::ReliabilityQosPolicyKind reliability
+               = eprosima::fastdds::dds::RELIABLE_RELIABILITY_QOS,  // default
+             eprosima::fastdds::dds::DurabilityQosPolicyKind durability
+               = eprosima::fastdds::dds::VOLATILE_DURABILITY_QOS );  // default is transient local
     };
 
     // The callbacks should be set before we actually create the underlying DDS objects, so the writer does not
-    void run( writer_qos const & = writer_qos() );
+    void run( qos const & = qos() );
 
     // DataWriterListener
 protected:
