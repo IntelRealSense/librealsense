@@ -6,7 +6,7 @@
 #include <librealsense2-gl/rs_processing_gl.hpp>
 
 #include "../proc/synthetic-stream.h"
-#include "m4202rgb-gl.h"
+#include "m420-to-rgb-gl.h"
 #include "../option.h"
 
 #ifndef NOMINMAX
@@ -68,10 +68,10 @@ static const char* fragment_shader_text =
 using namespace rs2;
 using namespace librealsense::gl;
 
-class m4202rgb_shader : public texture_2d_shader
+class m420_to_rgb_shader : public texture_2d_shader
 {
 public:
-    m4202rgb_shader()
+    m420_to_rgb_shader()
         : texture_2d_shader(shader_program::load(
             texture_2d_shader::default_vertex_shader(), 
             fragment_shader_text, "position", "textureCoords"))
@@ -91,21 +91,21 @@ private:
     uint32_t _height_location;
 };
 
-void m4202rgb::cleanup_gpu_resources()
+void m420_to_rgb::cleanup_gpu_resources()
 {
     _viz.reset();
     _fbo.reset();
     _enabled = 0;
 }
 
-void m4202rgb::create_gpu_resources()
+void m420_to_rgb::create_gpu_resources()
 {
-    _viz = std::make_shared<visualizer_2d>(std::make_shared<m4202rgb_shader>());
+    _viz = std::make_shared<visualizer_2d>(std::make_shared<m420_to_rgb_shader>());
     _fbo = std::make_shared<fbo>(_width, _height);
     _enabled = glsl_enabled() ? 1 : 0;
 }
 
-m4202rgb::m4202rgb()
+m420_to_rgb::m420_to_rgb()
     : stream_filter_processing_block("M420 Converter (GLSL)")
 {
     _source.add_extension<gpu_video_frame>(RS2_EXTENSION_VIDEO_FRAME_GL);
@@ -117,7 +117,7 @@ m4202rgb::m4202rgb()
     initialize();
 }
 
-m4202rgb::~m4202rgb()
+m420_to_rgb::~m420_to_rgb()
 {
     perform_gl_action([&]()
     {
@@ -125,7 +125,7 @@ m4202rgb::~m4202rgb()
     }, []{});
 }
 
-rs2::frame m4202rgb::process_frame(const rs2::frame_source& src, const rs2::frame& f)
+rs2::frame m420_to_rgb::process_frame(const rs2::frame_source& src, const rs2::frame& f)
 {
     throw std::runtime_error("Format M420 cannot be rendered with GLSL yet");
     //scoped_timer t("m4202rgb");
@@ -192,7 +192,7 @@ rs2::frame m4202rgb::process_frame(const rs2::frame_source& src, const rs2::fram
         glClearColor(1, 0, 0, 1);
         glClear(GL_COLOR_BUFFER_BIT);
 
-        auto& shader = (m4202rgb_shader&)_viz->get_shader();
+        auto& shader = (m420_to_rgb_shader&)_viz->get_shader();
         shader.begin();
         shader.set_size(_width, _height);
         shader.end();
