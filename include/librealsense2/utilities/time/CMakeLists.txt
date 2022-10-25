@@ -1,7 +1,7 @@
 # License: Apache 2.0. See LICENSE file in root directory.
 # Copyright(c) 2022 Intel Corporation. All Rights Reserved.
 
-target_sources(${LRS_TARGET}
+target_sources(${PROJECT_NAME}
     PRIVATE
         "${CMAKE_CURRENT_LIST_DIR}/common.h"
         "${CMAKE_CURRENT_LIST_DIR}/periodic-timer.h"
