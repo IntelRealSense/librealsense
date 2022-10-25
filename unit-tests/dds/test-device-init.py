@@ -68,7 +68,7 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
         remote.run( 'close_server()', timeout=5 )
     except test.remote.Error as e:
         # this fails because streams require at least one profile
-        test.check_exception( e, test.remote.Error, "RuntimeError: at least one profile is required in stream 's1'" )
+        test.check_exception( e, test.remote.Error, "RuntimeError: at least one profile is required to initialize stream 's1'" )
     except:
         test.unexpected_exception()
     device = None

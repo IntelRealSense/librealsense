@@ -168,4 +168,14 @@ std::string dds_video_stream_profile::details_to_string() const
 }
 
 
+void dds_stream_profile::set_stream( std::weak_ptr< dds_stream_base > const & stream )
+{
+    if( ! stream.lock() )
+        DDS_THROW( runtime_error, "cannot set stream to null" );
+    if( _stream.lock() )
+        DDS_THROW( runtime_error, "profile is already associated with a stream" );
+    _stream = stream;
+}
+
+
 }  // namespace realdds

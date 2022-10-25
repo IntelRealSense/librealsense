@@ -19,19 +19,9 @@ using namespace eprosima::fastdds::dds;
 using namespace realdds;
 
 
-dds_stream_server::dds_stream_server( std::string const & name,
-                                      dds_stream_profiles const & profiles,
-                                      int default_profile_index )
-    : _name( name )
-    , _profiles( profiles )
-    , _default_profile_index( default_profile_index )
+dds_stream_server::dds_stream_server( std::string const & stream_name, std::string const & sensor_name )
+    : dds_stream_base( stream_name, sensor_name )
 {
-    if( profiles.empty() )
-        DDS_THROW( runtime_error, "at least one profile is required in stream '" + name + "'" );
-    if( _default_profile_index < 0 || _default_profile_index >= profiles.size() )
-        DDS_THROW( runtime_error,
-                   "invalid default profile index (" + std::to_string( _default_profile_index ) + " for "
-                       + std::to_string( profiles.size() ) + " stream profiles" );
 }
 
 
@@ -40,25 +30,31 @@ dds_stream_server::~dds_stream_server()
 }
 
 
-dds_video_stream_server::dds_video_stream_server( std::string const & name,
-                                                  dds_stream_profiles const & profiles,
-                                                  int default_profile_index )
-    : dds_stream_server( name, profiles, default_profile_index )
+dds_video_stream_server::dds_video_stream_server( std::string const& stream_name, std::string const& sensor_name )
+    : dds_stream_server( stream_name, sensor_name )
 {
-    for( auto & profile : profiles )
-        if( ! std::dynamic_pointer_cast< dds_video_stream_profile >( profile ) )
-            DDS_THROW( runtime_error, "profile '" + profile->to_string() + "' is not a video profile" );
 }
 
 
-dds_motion_stream_server::dds_motion_stream_server( std::string const & name,
-                                                    dds_stream_profiles const & profiles,
-                                                    int default_profile_index )
-    : dds_stream_server( name, profiles, default_profile_index )
+void dds_video_stream_server::check_profile( std::shared_ptr< dds_stream_profile > const & profile ) const
 {
-    for( auto & profile : profiles )
-        if( ! std::dynamic_pointer_cast< dds_motion_stream_profile >( profile ) )
-            DDS_THROW( runtime_error, "profile '" + profile->to_string() + "' is not a motion profile" );
+    super::check_profile( profile );
+    if( ! std::dynamic_pointer_cast< dds_video_stream_profile >( profile ) )
+        DDS_THROW( runtime_error, "profile '" + profile->to_string() + "' is not a video profile" );
+}
+
+
+dds_motion_stream_server::dds_motion_stream_server( std::string const & stream_name, std::string const & sensor_name )
+    : dds_stream_server( stream_name, sensor_name )
+{
+}
+
+
+void dds_motion_stream_server::check_profile( std::shared_ptr< dds_stream_profile > const & profile ) const
+{
+    super::check_profile( profile );
+    if( ! std::dynamic_pointer_cast< dds_motion_stream_profile >( profile ) )
+        DDS_THROW( runtime_error, "profile '" + profile->to_string() + "' is not a motion profile" );
 }
 
 
@@ -66,6 +62,8 @@ void dds_video_stream_server::open( std::string const & topic_name, std::shared_
 {
     if( is_open() )
         DDS_THROW( runtime_error, "stream '" + name() + "' is already open" );
+    if( profiles().empty() )
+        DDS_THROW( runtime_error, "stream '" + name() + "' has no profiles" );
 
     auto topic = topics::device::image::create_topic( publisher->get_participant(), topic_name.c_str() );
 
@@ -79,6 +77,8 @@ void dds_motion_stream_server::open( std::string const & topic_name,
 {
     if( is_open() )
         DDS_THROW( runtime_error, "stream '" + name() + "' is already open" );
+    if( profiles().empty() )
+        DDS_THROW( runtime_error, "stream '" + name() + "' has no profiles" );
 
     auto topic = topics::device::image::create_topic( publisher->get_participant(), topic_name.c_str() );
 
