@@ -44,9 +44,9 @@ public:
     struct stream_profile
     {
         int16_t uid;             // Stream unique ID
+        int8_t stream_index;     // Used to distinguish similar streams like IR L / R
         int16_t framerate;       // FPS
         int8_t format;           // Corresponds to rs2_format
-        int8_t type;             // Corresponds to rs2_stream
         int16_t width;           // Resolution width [pixels]
         int16_t height;          // Resolution width [pixels]
     };

@@ -115,7 +115,7 @@ size_t dds_device::foreach_stream( std::function< void( std::shared_ptr< dds_str
     return _impl->_streams.size();
 }
 
-void dds_device::open( const std::vector< dds_video_stream::profile > & profiles )
+void dds_device::open( const std::vector< dds_video_stream_profile > & profiles )
 {
     using namespace topics;
 
@@ -130,12 +130,12 @@ void dds_device::open( const std::vector< dds_video_stream::profile > & profiles
     open_msg.number_of_streams = static_cast< uint8_t >( profiles.size() );
     for ( size_t i = 0; i < profiles.size(); ++i )
     {
-        open_msg.streams[i].uid = profiles[i].uid;
-        open_msg.streams[i].framerate = profiles[i].framerate;
-        open_msg.streams[i].format = profiles[i].format;
-        open_msg.streams[i].type = profiles[i].type;
-        open_msg.streams[i].width = profiles[i].width;
-        open_msg.streams[i].height = profiles[i].height;
+        open_msg.streams[i].uid = profiles[i].uid().sid;
+        open_msg.streams[i].stream_index= profiles[i].uid().index;
+        open_msg.streams[i].framerate = profiles[i].frequency();
+        open_msg.streams[i].format = profiles[i].format().to_rs2();
+        open_msg.streams[i].width = profiles[i].width();
+        open_msg.streams[i].height = profiles[i].height();
     }
 
     raw::device::control raw_msg;
@@ -153,7 +153,7 @@ void dds_device::open( const std::vector< dds_video_stream::profile > & profiles
     }
 }
 
-void dds_device::open( const std::vector< dds_motion_stream::profile > & profiles )
+void dds_device::open( const std::vector< dds_motion_stream_profile > & profiles )
 {
     using namespace topics;
 
@@ -168,10 +168,10 @@ void dds_device::open( const std::vector< dds_motion_stream::profile > & profile
     open_msg.number_of_streams = static_cast< uint8_t >( profiles.size() );
     for ( size_t i = 0; i < profiles.size(); ++i )
     {
-        open_msg.streams[i].uid       = profiles[i].uid;
-        open_msg.streams[i].framerate = profiles[i].framerate;
-        open_msg.streams[i].format    = profiles[i].format;
-        open_msg.streams[i].type      = profiles[i].type;
+        open_msg.streams[i].uid = profiles[i].uid().sid;
+        open_msg.streams[i].stream_index = profiles[i].uid().index;
+        open_msg.streams[i].framerate = profiles[i].frequency();
+        open_msg.streams[i].format    = profiles[i].format().to_rs2();
         open_msg.streams[i].width     = 0;
         open_msg.streams[i].height    = 0;
     }

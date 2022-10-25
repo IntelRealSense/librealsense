@@ -443,7 +443,6 @@ PYBIND11_MODULE(NAME, m) {
     py::class_< dds_stream,
                 std::shared_ptr< dds_stream > // handled with a shared_ptr
                 >( m, "stream" )
-        .def( "get_type", &dds_stream::get_type )
         .def( "get_group_name", &dds_stream::get_group_name );
 
     using realdds::dds_device;
