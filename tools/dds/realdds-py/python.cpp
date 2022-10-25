@@ -365,7 +365,7 @@ PYBIND11_MODULE(NAME, m) {
         .def( "name", &dds_stream_server::name )
         .def( "sensor_name", &dds_stream_server::sensor_name )
         .def( "profiles", &dds_stream_server::profiles )
-        .def( "set_profiles", &dds_stream_server::set_profviles )
+        .def( "set_profiles", &dds_stream_server::set_profiles )
         .def( "default_profile_index", &dds_stream_server::default_profile_index )
         .def( "is_open", &dds_stream_server::is_open )
         .def( "is_streaming", &dds_stream_server::is_streaming )
