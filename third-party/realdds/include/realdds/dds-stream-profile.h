@@ -94,9 +94,9 @@ protected:
     }
 
 public:
-    std::shared_ptr< dds_stream_base > get_stream() const { return _stream.lock(); }
+    std::shared_ptr< dds_stream_base > stream() const { return _stream.lock(); }
     // This is for initialization and is called from dds_stream_base only!
-    void set_stream( std::weak_ptr< dds_stream_base > const & stream );
+    void init_stream( std::weak_ptr< dds_stream_base > const & stream );
 
     dds_stream_uid uid() const { return _uid; }
     dds_stream_format format() const { return _format; }

@@ -26,11 +26,11 @@ void dds_stream_base::set_profiles( dds_stream_profiles const & profiles, int de
         DDS_THROW( runtime_error,
                    "invalid default profile index (" + std::to_string( _default_profile_index ) + " for "
                        + std::to_string( profiles.size() ) + " stream profiles" );
-    auto us = weak_from_this();
+    auto self = weak_from_this();
     for( auto const & profile : profiles )
     {
         check_profile( profile );
-        profile->set_stream( us );
+        profile->init_stream( self );
     }
     _profiles = profiles;
 }

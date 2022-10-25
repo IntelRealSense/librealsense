@@ -337,6 +337,7 @@ PYBIND11_MODULE(NAME, m) {
         .def( "uid", &dds_stream_profile::uid )
         .def( "frequency", &dds_stream_profile::frequency )
         .def( "format", &dds_stream_profile::format )
+        .def( "stream", &dds_stream_profile::stream )
         .def( "to_string", &dds_stream_profile::to_string )
         .def( "details_to_string", &dds_stream_profile::details_to_string )
         .def( "__repr__", []( dds_stream_profile const & self ) {
