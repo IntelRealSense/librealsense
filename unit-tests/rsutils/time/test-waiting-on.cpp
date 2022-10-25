@@ -38,7 +38,7 @@ TEST_CASE( "Basic wait" )
 
 TEST_CASE( "Timeout" )
 {
-    REQUIRE( !invoke( 10 /* seconds in thread */, 1 /* timeout */ ) );
+    REQUIRE( ! invoke( 10 /* seconds in thread */, 1 /* timeout */ ) );
 }
 
 TEST_CASE( "Struct usage" )
@@ -46,7 +46,7 @@ TEST_CASE( "Struct usage" )
     struct value_t
     {
         double d;
-        std::atomic_int i { 0 };
+        std::atomic_int i{ 0 };
     };
 
     std::condition_variable cv;
@@ -58,32 +58,32 @@ TEST_CASE( "Struct usage" )
     std::thread( [&m, output_]() {
         auto p_output = output_.still_alive();
         auto & output = *p_output;
-        while ( output->i < 30 )
+        while( output->i < 30 )
         {
             std::this_thread::sleep_for( std::chrono::milliseconds( 50 ) );
             std::lock_guard< std::mutex > lock( m );
             ++output->i;
             output.signal();
         }
-        } ).detach();
+    } ).detach();
 
-        // Within a second, i should reach ~20, but we'll ask it top stop when it reaches 10
-        output.wait_until( std::chrono::seconds( 1 ), [&]() { return output->i == 10; } );
+    // Within a second, i should reach ~20, but we'll ask it top stop when it reaches 10
+    output.wait_until( std::chrono::seconds( 1 ), [&]() { return output->i == 10; } );
 
-        auto i1 = output->i.load();
-        CHECK( i1 >= 10 );  // the thread is still running!
-        CHECK( i1 < 16 );
-        // std::cout << "i1= " << i1 << std::endl;
+    auto i1 = output->i.load();
+    CHECK( i1 >= 10 );  // the thread is still running!
+    CHECK( i1 < 16 );
+    // std::cout << "i1= " << i1 << std::endl;
 
-        std::this_thread::sleep_for( std::chrono::milliseconds( 100 ) );
-        auto i2 = output->i.load();
-        CHECK( i2 > i1 );  // the thread is still running!
-        // std::cout << "i2= " << i2 << std::endl;
+    std::this_thread::sleep_for( std::chrono::milliseconds( 100 ) );
+    auto i2 = output->i.load();
+    CHECK( i2 > i1 );  // the thread is still running!
+    // std::cout << "i2= " << i2 << std::endl;
 
-        // Wait until it's done, ~30x50ms = 1.5 seconds total
-        REQUIRE( output->i < 30 );
-        output.wait_until( std::chrono::seconds( 3 ), [&]() { return false; } );
-        REQUIRE( output->i == 30 );
+    // Wait until it's done, ~30x50ms = 1.5 seconds total
+    REQUIRE( output->i < 30 );
+    output.wait_until( std::chrono::seconds( 3 ), [&]() { return false; } );
+    REQUIRE( output->i == 30 );
 }
 
 TEST_CASE( "Not invoked but still notified by destructor" )
@@ -108,16 +108,16 @@ TEST_CASE( "Not invoked but still notified by destructor" )
     std::thread( [&]() {
         std::this_thread::sleep_for( std::chrono::seconds( 2 ) );
         delete dispatcher;
-        } ).detach();
+    } ).detach();
 
-        // Wait for it -- we'd expect that, when 'invoked_in_thread' is destroyed, it'll wake us up and
-        // not wait for the timeout
-        stopwatch sw;
-        invoked.wait_until( std::chrono::seconds( 5 ), [&]() { return invoked; } );
-        auto waited = sw.get_elapsed();
+    // Wait for it -- we'd expect that, when 'invoked_in_thread' is destroyed, it'll wake us up and
+    // not wait for the timeout
+    stopwatch sw;
+    invoked.wait_until( std::chrono::seconds( 5 ), [&]() { return invoked; } );
+    auto waited = sw.get_elapsed();
 
-        REQUIRE( waited > std::chrono::milliseconds( 1990 ) );
-        REQUIRE( waited < std::chrono::milliseconds( 3000 ) );  // Up to a second buffer
+    REQUIRE( waited > std::chrono::milliseconds( 1990 ) );
+    REQUIRE( waited < std::chrono::milliseconds( 3000 ) );  // Up to a second buffer
 }
 
 TEST_CASE( "Not invoked but still notified by predicate (stopped)" )
@@ -134,20 +134,20 @@ TEST_CASE( "Not invoked but still notified by predicate (stopped)" )
         std::lock_guard< std::mutex > lock( m );
         stopped = true;
         cv.notify_all();
-        } ).detach();
+    } ).detach();
 
-        // When 'stopped' is turned on , it'll wake us up and not wait for the timeout
-        stopwatch sw;
-        auto wait_start = std::chrono::high_resolution_clock::now();
-        invoked.wait_until( std::chrono::seconds( 5 ), [&]() {
-            return invoked || stopped;  // Without stopped, invoked will be false and we'll wait again
-                                        // even after we're signalled!
-            } );
-        auto wait_end = std::chrono::high_resolution_clock::now();
-        auto waited = sw.get_elapsed();
+    // When 'stopped' is turned on , it'll wake us up and not wait for the timeout
+    stopwatch sw;
+    auto wait_start = std::chrono::high_resolution_clock::now();
+    invoked.wait_until( std::chrono::seconds( 5 ), [&]() {
+        return invoked || stopped;  // Without stopped, invoked will be false and we'll wait again
+                                    // even after we're signalled!
+    } );
+    auto wait_end = std::chrono::high_resolution_clock::now();
+    auto waited = sw.get_elapsed();
 
-        REQUIRE( waited > std::chrono::milliseconds( 1990 ) );
-        REQUIRE( waited < std::chrono::milliseconds( 3000 ) );  // Up to a second buffer
+    REQUIRE( waited > std::chrono::milliseconds( 1990 ) );
+    REQUIRE( waited < std::chrono::milliseconds( 3000 ) );  // Up to a second buffer
 }
 
 TEST_CASE( "Not invoked flush timeout expected" )
@@ -164,7 +164,5 @@ TEST_CASE( "Not invoked flush timeout expected" )
 
     INFO( wait_time.count() );
     INFO( timeout.count() );
-    INFO( wait_time );
-    INFO( timeout );
     REQUIRE( wait_time >= timeout );
 }
