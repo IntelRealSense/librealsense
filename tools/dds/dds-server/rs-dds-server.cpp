@@ -95,7 +95,7 @@ std::vector< std::shared_ptr< realdds::dds_stream_server > > get_supported_strea
             server = std::make_shared< realdds::dds_video_stream_server >( stream_name, sensor_name );
         else
             server = std::make_shared< realdds::dds_motion_stream_server >( stream_name, sensor_name );
-        server->set_profiles( profiles, default_profile_index );
+        server->init_profiles( profiles, default_profile_index );
         servers.push_back( server );
     }
     return servers;

@@ -33,7 +33,7 @@ public:
     virtual ~dds_stream_base() = default;
 
     // This function can only be called once!
-    void set_profiles( dds_stream_profiles const & profiles, int default_profile_index = 0 );
+    void init_profiles( dds_stream_profiles const & profiles, int default_profile_index = 0 );
 
     std::string const & name() const { return _name; }
     std::string const & sensor_name() const { return _sensor_name; }
@@ -47,7 +47,7 @@ public:
     virtual std::shared_ptr< dds_topic > const & get_topic() const = 0;
 
 protected:
-    // Allows custom checking of each profile from set_profiles() - if there's a problem, throws
+    // Allows custom checking of each profile from init_profiles() - if there's a problem, throws
     virtual void check_profile( std::shared_ptr< dds_stream_profile > const & ) const;
 };
 

@@ -16,7 +16,7 @@ dds_stream_base::dds_stream_base( std::string const & name,
 }
 
 
-void dds_stream_base::set_profiles( dds_stream_profiles const & profiles, int default_profile_index )
+void dds_stream_base::init_profiles( dds_stream_profiles const & profiles, int default_profile_index )
 {
     if( ! _profiles.empty() )
         DDS_THROW( runtime_error, "stream '" + _name + "' is already initialized" );

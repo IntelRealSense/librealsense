@@ -15,7 +15,7 @@ def test_one_stream():
     s1p1 = dds.video_stream_profile( dds.stream_uid(23,45), dds.stream_format("RGB8"), 9, 10, 10, 123 )
     s1profiles = [s1p1]
     s1 = dds.video_stream_server( "s1", "sensor" )
-    s1.set_profiles( s1profiles, 0 )
+    s1.init_profiles( s1profiles, 0 )
     log.d( s1.profiles() )
     global server
     server = dds.device_server( participant, "realdds/device/topic-root" )
@@ -24,7 +24,7 @@ def test_one_stream():
 def test_no_profiles():
     s1profiles = []
     s1 = dds.video_stream_server( "s1", "sensor" )
-    s1.set_profiles( s1profiles, 0 )
+    s1.init_profiles( s1profiles, 0 )
     global server
     server = dds.device_server( participant, "realdds/device/topic-root" )
     server.init( [s1] )
