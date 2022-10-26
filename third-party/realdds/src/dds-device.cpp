@@ -115,7 +115,7 @@ size_t dds_device::foreach_stream( std::function< void( std::shared_ptr< dds_str
     return _impl->_streams.size();
 }
 
-void dds_device::open( const std::vector< dds_video_stream_profile > & profiles )
+void dds_device::open( const dds_stream_profiles & profiles )
 {
     using namespace topics;
 
@@ -130,56 +130,19 @@ void dds_device::open( const std::vector< dds_video_stream_profile > & profiles 
     open_msg.number_of_streams = static_cast< uint8_t >( profiles.size() );
     for ( size_t i = 0; i < profiles.size(); ++i )
     {
-        open_msg.streams[i].uid = profiles[i].uid().sid;
-        open_msg.streams[i].stream_index= profiles[i].uid().index;
-        open_msg.streams[i].framerate = profiles[i].frequency();
-        open_msg.streams[i].format = profiles[i].format().to_rs2();
-        open_msg.streams[i].width = profiles[i].width();
-        open_msg.streams[i].height = profiles[i].height();
+        auto vsp = std::dynamic_pointer_cast< dds_video_stream_profile >( profiles[i] );
+        open_msg.streams[i].uid         = profiles[i]->uid().sid;
+        open_msg.streams[i].stream_index= profiles[i]->uid().index;
+        open_msg.streams[i].framerate   = profiles[i]->frequency();
+        open_msg.streams[i].format      = profiles[i]->format().to_rs2();
+        open_msg.streams[i].width       = vsp ? vsp->width() : 0;
+        open_msg.streams[i].height      = vsp ? vsp->height() : 0;
     }
 
     raw::device::control raw_msg;
     device::control::construct_raw_message( device::control::msg_type::STREAMS_OPEN,
         open_msg,
         raw_msg );
-
-    if ( _impl->write_control_message( &raw_msg ) )
-    {
-        LOG_DEBUG( "Sent STREAMS_OPEN message for " << profiles.size() << " streams" );
-    }
-    else
-    {
-        LOG_ERROR( "Error writing STREAMS_OPEN message for " << profiles.size() << " streams" );
-    }
-}
-
-void dds_device::open( const std::vector< dds_motion_stream_profile > & profiles )
-{
-    using namespace topics;
-
-    if ( profiles.size() > device::control::MAX_OPEN_STREAMS )
-    {
-        DDS_THROW( runtime_error, "Too many streams to open (" + std::to_string( profiles.size() )
-                                 + "), max is " + std::to_string( device::control::MAX_OPEN_STREAMS ) );
-    }
-
-    device::control::streams_open_msg open_msg;
-    open_msg.message_id = _impl->_control_message_counter++;
-    open_msg.number_of_streams = static_cast< uint8_t >( profiles.size() );
-    for ( size_t i = 0; i < profiles.size(); ++i )
-    {
-        open_msg.streams[i].uid = profiles[i].uid().sid;
-        open_msg.streams[i].stream_index = profiles[i].uid().index;
-        open_msg.streams[i].framerate = profiles[i].frequency();
-        open_msg.streams[i].format    = profiles[i].format().to_rs2();
-        open_msg.streams[i].width     = 0;
-        open_msg.streams[i].height    = 0;
-    }
-
-    raw::device::control raw_msg;
-    device::control::construct_raw_message( device::control::msg_type::STREAMS_OPEN,
-                                            open_msg,
-                                            raw_msg );
 
     if ( _impl->write_control_message( &raw_msg ) )
     {

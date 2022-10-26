@@ -433,14 +433,13 @@ namespace librealsense
 
         void open( const stream_profiles & profiles ) override
         {
-            std::vector< realdds::dds_video_stream_profile > video_profiles;
-            std::vector< realdds::dds_motion_stream_profile > motion_profiles;
+            realdds::dds_stream_profiles realdds_profiles;
             for (size_t i = 0; i < profiles.size(); ++i)
             {
                 if ( Is<video_stream_profile, stream_profile_interface>( profiles[i] ) )
                 {
                     const auto && vsp = As<video_stream_profile, stream_profile_interface>( profiles[i] );
-                    realdds::dds_video_stream_profile video_profile(
+                    std::shared_ptr< realdds::dds_stream_profile > video_profile = std::make_shared< realdds::dds_video_stream_profile >(
                         realdds::dds_stream_uid( profiles[i]->get_unique_id(), profiles[i]->get_stream_index() ),
                         realdds::dds_stream_format::from_rs2( profiles[i]->get_format() ),
                         profiles[i]->get_framerate(),
@@ -448,27 +447,23 @@ namespace librealsense
                         vsp->get_height(),
                         0 ); //TODO - bpp
 
-                    video_profiles.push_back( video_profile );
+                    realdds_profiles.push_back( video_profile );
                 }
                 else if ( Is<motion_stream_profile, stream_profile_interface>( profiles[i] ) )
                 {
-                    realdds::dds_motion_stream_profile motion_profile(
+                    std::shared_ptr< realdds::dds_motion_stream_profile > motion_profile = std::make_shared< realdds::dds_motion_stream_profile >(
                         realdds::dds_stream_uid( profiles[i]->get_unique_id(), profiles[i]->get_stream_index() ),
                         realdds::dds_stream_format::from_rs2( profiles[i]->get_format() ),
                         profiles[i]->get_framerate() );
 
-                    motion_profiles.push_back( motion_profile );
+                    realdds_profiles.push_back( motion_profile );
                 }
 
             }
 
-            if ( video_profiles.size() > 0 )
+            if ( profiles.size() > 0 )
             {
-                _dev->open( video_profiles );
-            }
-            if ( motion_profiles.size() > 0 )
-            {
-                _dev->open( motion_profiles );
+                _dev->open( realdds_profiles );
             }
 
             software_sensor::open( profiles );

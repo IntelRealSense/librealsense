@@ -52,8 +52,7 @@ public:
 
     size_t foreach_stream( std::function< void( std::shared_ptr< dds_stream > stream ) > fn ) const;
 
-    void open( const std::vector< dds_video_stream_profile > & profiles );
-    void open( const std::vector< dds_motion_stream_profile > & profiles);
+    void open( const dds_stream_profiles & profiles );
     void close( const std::vector< std::pair< int16_t, int8_t > > & stream_uids );
 
 private:
