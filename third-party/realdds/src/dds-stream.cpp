@@ -26,7 +26,7 @@ void dds_video_stream::add_profile( dds_video_stream_profile && prof, bool defau
 
 size_t dds_video_stream::foreach_profile( std::function< void( const dds_stream_profile & prof, bool def_prof ) > fn ) const
 {
-    for ( auto profile : _impl->_profiles )
+    for ( auto & profile : _impl->_profiles )
     {
         fn( profile.first, profile.second );
     }
@@ -51,7 +51,7 @@ void dds_motion_stream::add_profile( dds_motion_stream_profile && prof, bool def
 
 size_t dds_motion_stream::foreach_profile( std::function< void( const dds_stream_profile & prof, bool def_prof ) > fn ) const
 {
-    for ( auto profile : _impl->_profiles )
+    for ( auto & profile : _impl->_profiles )
     {
         fn( profile.first, profile.second );
     }

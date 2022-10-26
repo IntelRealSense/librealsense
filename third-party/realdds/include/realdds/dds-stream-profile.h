@@ -95,7 +95,6 @@ protected:
         , _frequency( frequency )
     {
     }
-    dds_stream_profile( dds_stream_profile const & ) = default;
     dds_stream_profile( dds_stream_profile && ) = default;
 
 public:
@@ -131,7 +130,6 @@ public:
         , _bytes_per_pixel( bytes_per_pixel )
     {
     }
-    dds_video_stream_profile( dds_video_stream_profile const & ) = default;
     dds_video_stream_profile( dds_video_stream_profile && ) = default;
 
     uint16_t width() const { return _width; }
@@ -150,7 +148,6 @@ public:
         : dds_stream_profile( uid, format, frequency )
     {
     }
-    dds_motion_stream_profile( dds_motion_stream_profile const & ) = default;
     dds_motion_stream_profile( dds_motion_stream_profile && ) = default;
 
     char const * type_to_string() const override { return "motion"; }
