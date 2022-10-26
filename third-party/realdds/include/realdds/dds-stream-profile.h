@@ -24,6 +24,7 @@ union dds_stream_uid
 
     dds_stream_uid() = default;
     dds_stream_uid( dds_stream_uid const & ) = default;
+    dds_stream_uid( dds_stream_uid && ) = default;
 
     dds_stream_uid( uint32_t whole_ )
         : whole( whole_ )
@@ -59,6 +60,8 @@ struct dds_stream_format
     }
 
     dds_stream_format( std::string const & s );
+    dds_stream_format( dds_stream_format const & ) = default;
+    dds_stream_format( dds_stream_format && ) = default;
 
     bool is_valid() const { return data[0] != 0; }
     operator bool() const { return is_valid(); }
@@ -92,6 +95,7 @@ protected:
         , _frequency( frequency )
     {
     }
+    dds_stream_profile( dds_stream_profile && ) = default;
 
 public:
     std::shared_ptr< dds_stream_base > stream() const { return _stream.lock(); }
@@ -126,6 +130,7 @@ public:
         , _bytes_per_pixel( bytes_per_pixel )
     {
     }
+    dds_video_stream_profile( dds_video_stream_profile && ) = default;
 
     uint16_t width() const { return _width; }
     uint16_t height() const { return _height; }
@@ -143,6 +148,7 @@ public:
         : dds_stream_profile( uid, format, frequency )
     {
     }
+    dds_motion_stream_profile( dds_motion_stream_profile && ) = default;
 
     char const * type_to_string() const override { return "motion"; }
 };

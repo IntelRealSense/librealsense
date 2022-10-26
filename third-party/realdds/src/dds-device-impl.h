@@ -55,29 +55,25 @@ std::ostream & operator<<( std::ostream & s, state_type st )
 }
 
 
-dds_video_stream::profile to_realdds_profile( const topics::device::notification::video_stream_profile & profile )
+dds_video_stream_profile to_realdds_profile( const topics::device::notification::video_stream_profile & profile )
 {
-    dds_video_stream::profile prof;
-    prof.type = profile.type;
-    prof.index = profile.stream_index;
-    prof.uid = profile.uid;
-    prof.framerate = profile.framerate;
-    prof.format = profile.format;
-    prof.width = profile.width;
-    prof.height = profile.height;
+    dds_video_stream_profile prof( dds_stream_uid( profile.uid, profile.stream_index )
+                                 , dds_stream_format::from_rs2( profile.format )
+                                 , profile.framerate
+                                 , profile.width
+                                 , profile.height
+                                 , 0 ); //TODO - bpp
     // TODO - add intrinsics
 
     return prof;
 }
 
-dds_motion_stream::profile to_realdds_profile( const topics::device::notification::motion_stream_profile & profile )
+dds_motion_stream_profile to_realdds_profile( const topics::device::notification::motion_stream_profile & profile )
 {
-    dds_motion_stream::profile prof;
-    prof.type = profile.type;
-    prof.index = profile.stream_index;
-    prof.uid = profile.uid;
-    prof.framerate = profile.framerate;
-    prof.format = profile.format;
+    dds_motion_stream_profile prof( dds_stream_uid( profile.uid, profile.stream_index )
+                                  , dds_stream_format::from_rs2( profile.format )
+                                  , profile.framerate);
+    // TODO - add intrinsics
 
     return prof;
 }
@@ -215,9 +211,9 @@ private:
                                 auto key = dds_stream_uid( profile.uid, profile.stream_index );
                                 auto & stream = _streams[key];
                                 if( ! stream )
-                                    stream = std::make_shared< dds_video_stream >( profile.type,
-                                                                                   video_stream_profiles->group_name );
-                                stream->add_profile( to_realdds_profile( profile ), profile.default_profile );
+                                    stream = std::make_shared< dds_video_stream >( video_stream_profiles->group_name );
+                                std::dynamic_pointer_cast< dds_video_stream>( stream )->
+                                    add_profile( to_realdds_profile( profile ), profile.default_profile );
                             }
                             if( _streams.size() >= _expected_num_of_streams )
                             {
@@ -256,9 +252,9 @@ private:
                                 auto & stream = _streams[key];
                                 if( ! stream )
                                     stream
-                                        = std::make_shared< dds_motion_stream >( profile.type,
-                                                                                 motion_stream_profiles->group_name );
-                                stream->add_profile( to_realdds_profile( profile ), profile.default_profile );
+                                        = std::make_shared< dds_motion_stream >( motion_stream_profiles->group_name );
+                                std::dynamic_pointer_cast< dds_motion_stream >( stream )->
+                                    add_profile( to_realdds_profile( profile ), profile.default_profile );
                             }
                             if( _streams.size() >= _expected_num_of_streams )
                             {

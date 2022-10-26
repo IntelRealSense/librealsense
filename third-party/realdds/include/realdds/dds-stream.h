@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include "dds-stream-profile.h"
 
 #include <functional>
 #include <memory>
@@ -16,20 +17,9 @@ namespace realdds {
 class dds_stream
 {
 public:
-    struct profile
-    {
-        int16_t uid;       // Stream unique ID
-        int16_t framerate; // FPS
-        int8_t type;       // Kind of video, motion etc..
-        int8_t format;     // Data format specification
-        int8_t index;      // Used to distinguish similar streams like IR L / R
-    };
-
-    virtual int8_t get_type() const = 0;
     virtual const std::string & get_group_name() const = 0;
 
-    virtual void add_profile( const dds_stream::profile & prof, bool default_profile ) = 0;
-    virtual size_t foreach_profile( std::function< void( const dds_stream::profile & prof, bool def_prof ) > fn ) const = 0;
+    virtual size_t foreach_profile( std::function< void( const dds_stream_profile & prof, bool def_prof ) > fn ) const = 0;
 
     virtual ~dds_stream() = default;
 };
@@ -37,20 +27,12 @@ public:
 class dds_video_stream : public dds_stream
 {
 public:
-    struct profile : public dds_stream::profile
-    {
-        int16_t width;     // Resolution width [pixels]
-        int16_t height;    // Resolution height [pixels]
-        //intrinsics - TODO
-    };
+    dds_video_stream( const std::string & group_name );
 
-    dds_video_stream( int8_t type, const std::string & group_name );
-
-    int8_t get_type() const override;
     const std::string & get_group_name() const override;
 
-    void add_profile( const dds_stream::profile & prof, bool default_profile ) override;
-    size_t foreach_profile( std::function< void( const dds_stream::profile & prof, bool def_prof ) > fn ) const override;
+    void add_profile( dds_video_stream_profile && prof, bool default_profile );
+    size_t foreach_profile( std::function< void( const dds_stream_profile & prof, bool def_prof ) > fn ) const override;
 
 private:
     class impl;
@@ -60,17 +42,12 @@ private:
 class dds_motion_stream : public dds_stream
 {
 public:
-    struct profile : public dds_stream::profile
-    {
-    };
+    dds_motion_stream( const std::string & group_name );
 
-    dds_motion_stream( int8_t type, const std::string & group_name );
-
-    int8_t get_type() const override;
     const std::string & get_group_name() const override;
 
-    void add_profile( const dds_stream::profile & prof, bool default_profile );
-    size_t foreach_profile( std::function< void( const dds_stream::profile & prof, bool def_prof ) > fn ) const override;
+    void add_profile( dds_motion_stream_profile && prof, bool default_profile );
+    size_t foreach_profile( std::function< void( const dds_stream_profile & prof, bool def_prof ) > fn ) const override;
 
 private:
     class impl;
