@@ -6,6 +6,8 @@
 
 #include <stdint.h>
 #include <string>
+#include <vector>
+#include <memory>
 
 
 namespace realdds {
@@ -69,11 +71,16 @@ struct dds_stream_format
 };
 
 
+class dds_stream_base;
+
+
 class dds_stream_profile
 {
     dds_stream_uid _uid;
     dds_stream_format _format;
     int16_t _frequency;  // "Frames" per second
+
+    std::weak_ptr< dds_stream_base > _stream;
 
 public:
     virtual ~dds_stream_profile() {}
@@ -87,6 +94,10 @@ protected:
     }
 
 public:
+    std::shared_ptr< dds_stream_base > stream() const { return _stream.lock(); }
+    // This is for initialization and is called from dds_stream_base only!
+    void init_stream( std::weak_ptr< dds_stream_base > const & stream );
+
     dds_stream_uid uid() const { return _uid; }
     dds_stream_format format() const { return _format; }
     int16_t frequency() const { return _frequency; }
@@ -96,6 +107,9 @@ public:
     virtual char const * type_to_string() const = 0;
     virtual std::string details_to_string() const;
 };
+
+
+typedef std::vector< std::shared_ptr< dds_stream_profile > > dds_stream_profiles;
 
 
 class dds_video_stream_profile : public dds_stream_profile

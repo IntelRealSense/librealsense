@@ -1,8 +1,6 @@
 # License: Apache 2.0. See LICENSE file in root directory.
 # Copyright(c) 2022 Intel Corporation. All Rights Reserved.
 
-message( STATUS "  ----->  LRS_TARGET = ${LRS_TARGET}    PROJECT_NAME = ${PROJECT_NAME}  <-----" )
-
 include(${CMAKE_CURRENT_LIST_DIR}/easylogging/CMakeLists.txt)
 target_sources( ${PROJECT_NAME} PRIVATE ${ELPP_SOURCE_FILES} )
 source_group( "EasyLogging++" FILES ${ELPP_SOURCE_FILES}  )
