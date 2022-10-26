@@ -162,5 +162,7 @@ TEST_CASE( "Not invoked flush timeout expected" )
     invoked.wait_until( timeout, [&]() { return invoked; } );
     auto wait_time = sw.get_elapsed();
 
+    INFO( wait_time.count() );
+    INFO( timeout.count() );
     REQUIRE( wait_time >= timeout );
 }
