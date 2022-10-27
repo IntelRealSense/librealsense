@@ -879,11 +879,6 @@ namespace librealsense
                 );
             }
             
-            depth_sensor.register_processing_block(
-                { RS2_FORMAT_Y16I },
-                { {RS2_FORMAT_Y16, RS2_STREAM_INFRARED, 1}, {RS2_FORMAT_Y16, RS2_STREAM_INFRARED, 2} },
-                []() {return std::make_shared<y16i_to_y10msby10msb>(); }
-            );
 
             pid_hex_str = hexify(_pid);
 
@@ -1133,42 +1128,6 @@ namespace librealsense
                 depth_sensor.register_option(RS2_OPTION_DEPTH_UNITS, std::make_shared<const_value_option>("Number of meters represented by a single depth unit",
                     lazy<float>([default_depth_units]()
                         { return default_depth_units; })));
-            }
-
-            // D457 dev - auto gain and exposure limits disabled for all devices
-            if (false) // D457 dev - this condition should be removed after bug resolved in FW
-            {
-                // Auto exposure and gain limit
-                if (_fw_version >= firmware_version("5.12.10.11"))
-                {
-                    auto exposure_range = depth_sensor.get_option(RS2_OPTION_EXPOSURE).get_range();
-                    auto gain_range = depth_sensor.get_option(RS2_OPTION_GAIN).get_range();
-
-                    option_range enable_range = { 0.f /*min*/, 1.f /*max*/, 1.f /*step*/, 0.f /*default*/ };
-
-                    //GAIN Limit
-                    auto gain_limit_toggle_control = std::make_shared<limits_option>(RS2_OPTION_AUTO_GAIN_LIMIT_TOGGLE, enable_range, "Toggle Auto-Gain Limit", *_hw_monitor);
-                    _gain_limit_value_control = std::make_shared<auto_gain_limit_option>(*_hw_monitor, &depth_sensor, gain_range, gain_limit_toggle_control);
-                    depth_sensor.register_option(RS2_OPTION_AUTO_GAIN_LIMIT_TOGGLE, gain_limit_toggle_control);
-
-                    depth_sensor.register_option(RS2_OPTION_AUTO_GAIN_LIMIT,
-                        std::make_shared<auto_disabling_control>(
-                            _gain_limit_value_control,
-                            gain_limit_toggle_control
-
-                            ));
-
-                    // EXPOSURE Limit
-                    auto ae_limit_toggle_control = std::make_shared<limits_option>(RS2_OPTION_AUTO_EXPOSURE_LIMIT_TOGGLE, enable_range, "Toggle Auto-Exposure Limit", *_hw_monitor);
-                    _ae_limit_value_control = std::make_shared<auto_exposure_limit_option>(*_hw_monitor, &depth_sensor, exposure_range, ae_limit_toggle_control);
-                    depth_sensor.register_option(RS2_OPTION_AUTO_EXPOSURE_LIMIT_TOGGLE, ae_limit_toggle_control);
-
-                    depth_sensor.register_option(RS2_OPTION_AUTO_EXPOSURE_LIMIT,
-                        std::make_shared<auto_disabling_control>(
-                            _ae_limit_value_control,
-                            ae_limit_toggle_control
-                            ));
-                }
             }
         }); //group_multiple_fw_calls
 
