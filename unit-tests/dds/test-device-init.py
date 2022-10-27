@@ -35,6 +35,14 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
         device.run()  # If no device is available in 30 seconds, this will throw
         test.check( device.is_running() )
         test.check_equal( device.n_streams(), 1 )
+        for stream in device.streams():
+            profiles = stream.profiles()
+            test.check_equal( stream.name(), "s1" )
+            test.check_equal( stream.sensor_name(), "s1" )  # TODO: sensor name isn't communicated yet
+            test.check_equal( 1, len( profiles ))
+            test.check_equal( '<pyrealdds.video_stream_profile 0x2d0017 RGB8 9 Hz 10x10 @0 Bpp>', str(profiles[0]) )
+            test.check_equal( profiles[0].stream(), stream )
+            test.check_equal( stream.default_profile_index(), 0 )
         remote.run( 'close_server()', timeout=5 )
     except:
         test.unexpected_exception()
@@ -50,6 +58,8 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
         device.run()  # If no device is available in 30 seconds, this will throw
         test.check( device.is_running() )
         test.check_equal( device.n_streams(), 0 )
+        for stream in device.streams():
+            test.unreachable()
         remote.run( 'close_server()', timeout=5 )
     except:
         test.unexpected_exception()
@@ -61,11 +71,6 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
     test.start( "Test no profiles... (should fail on server side)" )
     try:
         remote.run( 'test_no_profiles()', timeout=5 )
-        device = dds.device( participant, participant.create_guid(), info )
-        device.run()  # If no device is available in 30 seconds, this will throw
-        test.check( device.is_running() )
-        test.check_equal( device.n_streams(), 1 )
-        remote.run( 'close_server()', timeout=5 )
     except test.remote.Error as e:
         # this fails because streams require at least one profile
         test.check_exception( e, test.remote.Error, "RuntimeError: at least one profile is required to initialize stream 's1'" )
