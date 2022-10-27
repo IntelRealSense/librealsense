@@ -201,16 +201,21 @@ def check_equal(result, expected, abort_if_failed = False):
         return False
     global n_assertions
     n_assertions += 1
-    if result != expected:
+    if type(expected) != type(result):
+        print_stack()
+        log.out( "    left  type:", type(result) )
+        log.out( "    right type:", type(expected) )
+    elif result != expected:
         print_stack()
         log.out( "    left  :", result )
         log.out( "    right :", expected )
-        check_failed()
-        if abort_if_failed:
-            abort()
-        return False
-    reset_info()
-    return True
+    else:
+        reset_info()
+        return True
+    check_failed()
+    if abort_if_failed:
+        abort()
+    return False
 
 
 def unreachable( abort_if_failed = False ):

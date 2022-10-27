@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include "dds-stream-base.h"
 #include "dds-stream-profile.h"
 
 #include <functional>
@@ -14,25 +15,30 @@ namespace realdds {
 
 // Represents a stream of information (images, motion data, etc..) from a single source received via the DDS system.
 // A stream can have several profiles, i.e different data frequency, image resolution, etc..
-class dds_stream
+// 
+// This is a base class: you need to specify the type of stream via the instantiation of a video_stream, etc.
+//
+class dds_stream : public dds_stream_base
 {
+    typedef dds_stream_base super;
+
+protected:
+    dds_stream( std::string const & stream_name, std::string const & sensor_name );
+
+    // dds_stream_base
 public:
-    virtual const std::string & get_group_name() const = 0;
+    bool is_open() const override;
+    bool is_streaming() const override;
 
-    virtual size_t foreach_profile( std::function< void( const dds_stream_profile & prof, bool def_prof ) > fn ) const = 0;
-
-    virtual ~dds_stream() = default;
+    std::shared_ptr< dds_topic > const & get_topic() const override;
 };
 
 class dds_video_stream : public dds_stream
 {
+    typedef dds_stream super;
+
 public:
-    dds_video_stream( const std::string & group_name );
-
-    const std::string & get_group_name() const override;
-
-    void add_profile( dds_video_stream_profile && prof, bool default_profile );
-    size_t foreach_profile( std::function< void( const dds_stream_profile & prof, bool def_prof ) > fn ) const override;
+    dds_video_stream( std::string const & stream_name, std::string const & sensor_name );
 
 private:
     class impl;
@@ -41,13 +47,10 @@ private:
 
 class dds_motion_stream : public dds_stream
 {
+    typedef dds_stream super;
+
 public:
-    dds_motion_stream( const std::string & group_name );
-
-    const std::string & get_group_name() const override;
-
-    void add_profile( dds_motion_stream_profile && prof, bool default_profile );
-    size_t foreach_profile( std::function< void( const dds_stream_profile & prof, bool def_prof ) > fn ) const override;
+    dds_motion_stream( std::string const & stream_name, std::string const & sensor_name );
 
 private:
     class impl;

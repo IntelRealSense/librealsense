@@ -15,7 +15,7 @@ namespace realdds {
 
 union dds_stream_uid
 {
-    uint32_t whole;
+    uint32_t whole = 0;
     struct
     {
         int16_t sid;   // Stream ID; assigned by the server, but may not be unique because of index
@@ -32,9 +32,11 @@ union dds_stream_uid
     }
 
     dds_stream_uid( int sid_, int index_ )
-        : sid( static_cast< int16_t >( sid_ ))
-        , index( static_cast< int8_t >( index_ ))
-    {}
+    {
+        whole = 0;  // it covers an extra byte, which needs to be 0
+        sid = static_cast<int16_t>( sid_ );
+        index = static_cast<int8_t>( index_ );
+    }
 
     std::string to_string() const;
 };

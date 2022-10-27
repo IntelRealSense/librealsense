@@ -501,29 +501,29 @@ namespace librealsense
     {
         std::shared_ptr< realdds::dds_device > _dds_dev;
 
-        rs2_video_stream to_rs2_video_stream( const realdds::dds_video_stream_profile & profile )
+        rs2_video_stream to_rs2_video_stream( std::shared_ptr< realdds::dds_video_stream_profile > const & profile )
         {
             rs2_video_stream prof;
             prof.type = RS2_STREAM_ANY;
-            prof.index = profile.uid().index;
-            prof.uid = profile.uid().sid;
-            prof.width = profile.width();
-            prof.height = profile.height();
-            prof.fps = profile.frequency();
-            prof.fmt = static_cast< rs2_format >( profile.format().to_rs2() );
+            prof.index = profile->uid().index;
+            prof.uid = profile->uid().sid;
+            prof.width = profile->width();
+            prof.height = profile->height();
+            prof.fps = profile->frequency();
+            prof.fmt = static_cast< rs2_format >( profile->format().to_rs2() );
             // TODO - add intrinsics
 
             return prof;
         }
 
-        rs2_motion_stream to_rs2_motion_stream( const realdds::dds_motion_stream_profile & profile )
+        rs2_motion_stream to_rs2_motion_stream( std::shared_ptr< realdds::dds_motion_stream_profile > const & profile )
         {
             rs2_motion_stream prof;
             prof.type = RS2_STREAM_ANY;
-            prof.index = profile.uid().index;
-            prof.uid = profile.uid().sid;
-            prof.fps = profile.frequency();
-            prof.fmt = static_cast< rs2_format >( profile.format().to_rs2() );
+            prof.index = profile->uid().index;
+            prof.uid = profile->uid().sid;
+            prof.fps = profile->frequency();
+            prof.fmt = static_cast< rs2_format >( profile->format().to_rs2() );
 
             return prof;
         }
@@ -543,32 +543,41 @@ namespace librealsense
 
             //Assumes dds_device initialization finished
             std::set< std::string > sensor_names;
-            _dds_dev->foreach_stream( [&]( std::shared_ptr< const realdds::dds_stream > stream ) {
-                    if( sensor_names.find( stream->get_group_name() ) == sensor_names.end() )
-                    {
-                        sensor_names.insert( stream->get_group_name() );
-                        this->add_dds_sensor( _dds_dev, stream->get_group_name() );
-                    }
-                } );
+            _dds_dev->foreach_stream( [&]( std::shared_ptr< const realdds::dds_stream > const & stream ) {
+                if( sensor_names.find( stream->sensor_name() ) == sensor_names.end() )
+                {
+                    sensor_names.insert( stream->sensor_name() );
+                    this->add_dds_sensor( _dds_dev, stream->sensor_name() );
+                }
+            } );
             for( size_t i = 0; i < sensor_names.size(); ++i )
             {
                 software_sensor & sensor = get_software_sensor( i );
                 auto sensor_name = sensor.get_info( RS2_CAMERA_INFO_NAME );
-                _dds_dev->foreach_stream( [&]( std::shared_ptr< realdds::dds_stream > stream ) {
-                    if ( sensor_name.compare( stream->get_group_name() ) == 0 )
+                _dds_dev->foreach_stream( [&]( std::shared_ptr< realdds::dds_stream > const & stream ) {
+                    if ( sensor_name.compare( stream->sensor_name() ) == 0 )
                     {
-                        stream->foreach_profile( [&]( const realdds::dds_stream_profile & profile, bool default_profile ) {
-                            if(std::dynamic_pointer_cast< realdds::dds_video_stream >( stream ) )
+                        auto video_stream = std::dynamic_pointer_cast< realdds::dds_video_stream >( stream );
+                        auto motion_stream = std::dynamic_pointer_cast< realdds::dds_motion_stream >( stream );
+                        auto & profiles = stream->profiles();
+                        auto default_profile = profiles[stream->default_profile_index()];
+                        for( auto & profile : profiles )
+                        {
+                            if( video_stream )
                             {
-                                sensor.add_video_stream( to_rs2_video_stream( static_cast< const realdds::dds_video_stream_profile & >( profile ) ),
-                                    default_profile );
+                                sensor.add_video_stream(
+                                    to_rs2_video_stream(
+                                        std::static_pointer_cast< realdds::dds_video_stream_profile >( profile ) ),
+                                    profile == default_profile );
                             }
-                            if ( std::dynamic_pointer_cast< realdds::dds_motion_stream >( stream ) )
+                            else if( motion_stream )
                             {
-                                sensor.add_motion_stream( to_rs2_motion_stream( static_cast< const realdds::dds_motion_stream_profile & >( profile ) ),
-                                    default_profile );
+                                sensor.add_motion_stream(
+                                    to_rs2_motion_stream(
+                                        std::static_pointer_cast< realdds::dds_motion_stream_profile >( profile ) ),
+                                    profile == default_profile );
                             }
-                        } ); //End foreach_profile lambda
+                        }
                     }
                 } ); //End foreach_stream lambda
             }
