@@ -450,11 +450,13 @@ PYBIND11_MODULE(NAME, m) {
         .def( "is_running", &dds_device::is_running )
         .def( "run", &dds_device::run, py::call_guard< py::gil_scoped_release >() )
         .def( "n_streams", &dds_device::number_of_streams )
-        .def( FN_FWD( dds_device,
-                      foreach_stream,
-                      ( std::shared_ptr< dds_stream > const & ),
-                      ( std::shared_ptr< dds_stream > const & stream ),
-                      callback( stream ); ) )
+        .def( "streams",
+              []( dds_device const & self ) {
+                  std::vector< std::shared_ptr< dds_stream > > streams;
+                  self.foreach_stream(
+                      [&]( std::shared_ptr< dds_stream > const & stream ) { streams.push_back( stream ); } );
+                  return streams;
+              } )
         .def( "__repr__", []( dds_device const & self ) {
             std::ostringstream os;
             os << "<" SNAME ".device ";
