@@ -3,6 +3,8 @@
 
 #include <realdds/dds-device.h>
 #include "dds-device-impl.h"
+
+#include <realdds/topics/control/control-msg.h>
 #include <realdds/dds-exceptions.h>
 
 namespace realdds {
