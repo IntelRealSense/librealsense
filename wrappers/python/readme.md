@@ -45,7 +45,8 @@ Windows users can install the RealSense SDK 2.0 from the release tab to get pre-
   * `make -j4`
   * `sudo make install`
 4. update your PYTHONPATH environment variable to add the path to the pyrealsense library
-  * `export PYTHONPATH=$PYTHONPATH:/usr/local/lib`
+  * export PYTHONPATH=$PYTHONPATH:/usr/local/lib/python3.6/pyrealsense2
+  * Please Refer youtube vid comment : https://www.youtube.com/watch?v=EeT-pzM8n-o
 5. Alternatively, copy the build output (`librealsense2.so` and `pyrealsense2.so`) next to your script.
   * **Note:** Python 3 module filenames may contain additional information, e.g. `pyrealsense2.cpython-35m-arm-linux-gnueabihf.so`)
 
