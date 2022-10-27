@@ -4,59 +4,48 @@
 #include <realdds/dds-stream.h>
 #include "dds-stream-impl.h"
 
-#include <stdexcept>
+#include <realdds/dds-exceptions.h>
+
 
 namespace realdds {
 
 
-dds_video_stream::dds_video_stream( const std::string & group_name )
-    : _impl( std::make_shared< dds_video_stream::impl >( group_name ) )
+dds_stream::dds_stream( std::string const & stream_name, std::string const & sensor_name )
+    : super( stream_name, sensor_name )
 {
 }
 
-const std::string & dds_video_stream::get_group_name() const
+
+bool dds_stream::is_open() const
 {
-    return _impl->_group_name;
+    return false;
 }
 
-void dds_video_stream::add_profile( dds_video_stream_profile && prof, bool default_profile )
+
+bool dds_stream::is_streaming() const
 {
-    _impl->_profiles.push_back( std::make_pair( std::move( prof ), default_profile ) );
+    return false;
 }
 
-size_t dds_video_stream::foreach_profile( std::function< void( const dds_stream_profile & prof, bool def_prof ) > fn ) const
-{
-    for ( auto & profile : _impl->_profiles )
-    {
-        fn( profile.first, profile.second );
-    }
 
-    return _impl->_profiles.size();
+std::shared_ptr< dds_topic > const & dds_stream::get_topic() const
+{
+    DDS_THROW( runtime_error, "stream '" + name() + "' must be open to get_topic()" );
 }
 
-dds_motion_stream::dds_motion_stream( const std::string & group_name )
-    : _impl( std::make_shared< dds_motion_stream::impl >( group_name ) )
+
+dds_video_stream::dds_video_stream( std::string const & stream_name, std::string const & sensor_name )
+    : super( stream_name, sensor_name )
+    , _impl( std::make_shared< dds_video_stream::impl >() )
 {
 }
 
-const std::string & dds_motion_stream::get_group_name() const
+
+dds_motion_stream::dds_motion_stream( std::string const & stream_name, std::string const & sensor_name )
+    : super( stream_name, sensor_name )
+    , _impl( std::make_shared< dds_motion_stream::impl >() )
 {
-    return _impl->_group_name;
 }
 
-void dds_motion_stream::add_profile( dds_motion_stream_profile && prof, bool default_profile )
-{
-    _impl->_profiles.push_back( std::make_pair( std::move( prof ), default_profile ) );
-}
-
-size_t dds_motion_stream::foreach_profile( std::function< void( const dds_stream_profile & prof, bool def_prof ) > fn ) const
-{
-    for ( auto & profile : _impl->_profiles )
-    {
-        fn( profile.first, profile.second );
-    }
-
-    return _impl->_profiles.size();
-}
 
 }  // namespace realdds

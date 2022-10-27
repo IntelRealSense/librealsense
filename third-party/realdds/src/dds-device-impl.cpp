@@ -52,24 +52,26 @@ std::ostream & operator<<( std::ostream & s, state_type st )
 }
 
 
-dds_video_stream_profile to_realdds_profile( const topics::device::notification::video_stream_profile & profile )
+std::shared_ptr< dds_stream_profile >
+to_realdds_profile( const topics::device::notification::video_stream_profile & profile )
 {
-    dds_video_stream_profile prof( dds_stream_uid( profile.uid, profile.stream_index ),
-                                   dds_stream_format::from_rs2( profile.format ),
-                                   profile.framerate,
-                                   profile.width,
-                                   profile.height,
-                                   0 );  // TODO - bpp
+    auto prof = std::make_shared< dds_video_stream_profile >( dds_stream_uid( profile.uid, profile.stream_index ),
+                                                              dds_stream_format::from_rs2( profile.format ),
+                                                              profile.framerate,
+                                                              profile.width,
+                                                              profile.height,
+                                                              0 );  // TODO - bpp
     // TODO - add intrinsics
 
     return prof;
 }
 
-dds_motion_stream_profile to_realdds_profile( const topics::device::notification::motion_stream_profile & profile )
+std::shared_ptr< dds_stream_profile >
+to_realdds_profile( const topics::device::notification::motion_stream_profile & profile )
 {
-    dds_motion_stream_profile prof( dds_stream_uid( profile.uid, profile.stream_index ),
-                                    dds_stream_format::from_rs2( profile.format ),
-                                    profile.framerate );
+    auto prof = std::make_shared< dds_motion_stream_profile >( dds_stream_uid( profile.uid, profile.stream_index ),
+                                                               dds_stream_format::from_rs2( profile.format ),
+                                                               profile.framerate );
     // TODO - add intrinsics
 
     return prof;
@@ -184,32 +186,31 @@ bool dds_device::impl::init()
                             LOG_ERROR( "Got VIDEO_STREAM_PROFILES with no data" );
                             break;
                         }
+                        if( _streams.size() >= _expected_num_of_streams )
+                            DDS_THROW( runtime_error,
+                                       "more streams than expected (" + std::to_string( _expected_num_of_streams )
+                                           + ") received" );
 
-                        for( size_t i = 0; i < video_stream_profiles->num_of_profiles; ++i )
+                        std::string stream_name = video_stream_profiles->group_name;  // todo
+                        std::string sensor_name = stream_name;  // todo
+                        auto & stream = _streams[stream_name];
+                        if( stream )
+                            DDS_THROW( runtime_error, "stream '" + stream_name + "' already exists" );
+                        stream = std::make_shared< dds_video_stream >( stream_name, sensor_name );
+                        dds_stream_profiles profiles;
+                        int default_profile_index = 0;
+                        for( int i = 0; i < video_stream_profiles->num_of_profiles; ++i )
                         {
                             auto const & profile = video_stream_profiles->profiles[i];
-                            auto key = dds_stream_uid( profile.uid, profile.stream_index );
-                            auto & stream = _streams[key];
-                            if( ! stream )
-                                stream = std::make_shared< dds_video_stream >( video_stream_profiles->group_name );
-                            std::dynamic_pointer_cast< dds_video_stream >( stream )->add_profile(
-                                to_realdds_profile( profile ),
-                                profile.default_profile );
+                            profiles.push_back( to_realdds_profile( profile ) );
+                            if( profile.default_profile )
+                                default_profile_index = i;
                         }
+                        stream->init_profiles( profiles, default_profile_index );
+                        LOG_INFO( "... VIDEO_STREAM_PROFILES: " << _streams.size() << "/" << _expected_num_of_streams
+                                                                << " streams received" );
                         if( _streams.size() >= _expected_num_of_streams )
-                        {
                             state = state_type::DONE;
-                            if( _streams.size() > _expected_num_of_streams )
-                            {
-                                LOG_ERROR( "... VIDEO_STREAM_PROFILES: more streams ("
-                                           << _streams.size() << ") than expected (" << _expected_num_of_streams
-                                           << ") received" );
-                            }
-                            else
-                                LOG_INFO( "... VIDEO_STREAM_PROFILES: " << _streams.size() << "/"
-                                                                        << _expected_num_of_streams
-                                                                        << " streams received" );
-                        }
                     }
                     else
                         LOG_ERROR( "... VIDEO_STREAM_PROFILES unexpected" );
@@ -225,33 +226,31 @@ bool dds_device::impl::init()
                             LOG_ERROR( "Got MOTION_STREAM_PROFILES with no data" );
                             break;
                         }
-                        LOG_INFO( "... MOTION_STREAM_PROFILES" );
+                        if( _streams.size() >= _expected_num_of_streams )
+                            DDS_THROW( runtime_error,
+                                       "more streams than expected (" + std::to_string( _expected_num_of_streams )
+                                           + ") received" );
 
-                        for( size_t i = 0; i < motion_stream_profiles->num_of_profiles; ++i )
+                        std::string stream_name = motion_stream_profiles->group_name;  // todo
+                        std::string sensor_name = stream_name;                         // todo
+                        auto & stream = _streams[stream_name];
+                        if( stream )
+                            DDS_THROW( runtime_error, "stream '" + stream_name + "' already exists" );
+                        stream = std::make_shared< dds_motion_stream >( stream_name, sensor_name );
+                        dds_stream_profiles profiles;
+                        int default_profile_index = 0;
+                        for( int i = 0; i < motion_stream_profiles->num_of_profiles; ++i )
                         {
                             auto const & profile = motion_stream_profiles->profiles[i];
-                            auto key = dds_stream_uid( profile.uid, profile.stream_index );
-                            auto & stream = _streams[key];
-                            if( ! stream )
-                                stream = std::make_shared< dds_motion_stream >( motion_stream_profiles->group_name );
-                            std::dynamic_pointer_cast< dds_motion_stream >( stream )->add_profile(
-                                to_realdds_profile( profile ),
-                                profile.default_profile );
+                            profiles.push_back( to_realdds_profile( profile ) );
+                            if( profile.default_profile )
+                                default_profile_index = i;
                         }
+                        stream->init_profiles( profiles, default_profile_index );
+                        LOG_INFO( "... MOTION_STREAM_PROFILES: " << _streams.size() << "/" << _expected_num_of_streams
+                                                                 << " streams received" );
                         if( _streams.size() >= _expected_num_of_streams )
-                        {
                             state = state_type::DONE;
-                            if( _streams.size() > _expected_num_of_streams )
-                            {
-                                LOG_ERROR( "... MOTION_STREAM_PROFILES: more streams ("
-                                           << _streams.size() << ") than expected (" << _expected_num_of_streams
-                                           << ") received" );
-                            }
-                            else
-                                LOG_INFO( "... MOTION_STREAM_PROFILES: " << _streams.size() << "/"
-                                                                         << _expected_num_of_streams
-                                                                         << " streams received" );
-                        }
                     }
                     else
                         LOG_ERROR( "... MOTION_STREAM_PROFILES unexpected" );

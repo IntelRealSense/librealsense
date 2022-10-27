@@ -33,15 +33,15 @@ public:
     bool _running = false;
 
     size_t _expected_num_of_streams = 0;
-    std::map< dds_stream_uid, std::shared_ptr< dds_stream > > _streams;
+    std::map< std::string, std::shared_ptr< dds_stream > > _streams;
     std::atomic<uint32_t> _control_message_counter = { 0 };
 
     std::shared_ptr< dds_topic_reader > _notifications_reader;
     std::shared_ptr< dds_topic_writer > _control_writer;
 
-    impl( std::shared_ptr< dds_participant > const& participant,
-        dds_guid const& guid,
-        topics::device_info const& info );
+    impl( std::shared_ptr< dds_participant > const & participant,
+          dds_guid const & guid,
+          topics::device_info const & info );
 
     void run();
 

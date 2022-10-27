@@ -19,7 +19,6 @@ Copyright(c) 2022 Intel Corporation. All Rights Reserved. */
 #include <realdds/dds-utilities.h>
 #include <realdds/dds-log-consumer.h>
 
-#include <librealsense2/h/rs_internal.h>
 #include <librealsense2/utilities/easylogging/easyloggingpp.h>
 #include <fastdds/dds/domain/qos/DomainParticipantQos.hpp>
 #include <fastdds/dds/domain/DomainParticipant.hpp>
@@ -359,27 +358,20 @@ PYBIND11_MODULE(NAME, m) {
     py::class_< dds_motion_stream_profile, std::shared_ptr< dds_motion_stream_profile > >( m, "motion_stream_profile", stream_profile_base )
         .def( py::init< dds_stream_uid, dds_stream_format, int16_t >() );
 
+    using realdds::dds_stream_base;
+    py::class_< dds_stream_base, std::shared_ptr< dds_stream_base > > stream_base( m, "stream_base" );
+    stream_base
+        .def( "name", &dds_stream_base::name )
+        .def( "sensor_name", &dds_stream_base::sensor_name )
+        .def( "profiles", &dds_stream_base::profiles )
+        .def( "init_profiles", &dds_stream_base::init_profiles )
+        .def( "default_profile_index", &dds_stream_base::default_profile_index )
+        .def( "is_open", &dds_stream_base::is_open )
+        .def( "is_streaming", &dds_stream_base::is_streaming )
+        .def( "get_topic", &dds_stream_base::get_topic );
+
     using realdds::dds_stream_server;
-    py::class_< dds_stream_server, std::shared_ptr< dds_stream_server > > stream_server_base( m, "stream_server" );
-    stream_server_base
-        .def( "name", &dds_stream_server::name )
-        .def( "sensor_name", &dds_stream_server::sensor_name )
-        .def( "profiles", &dds_stream_server::profiles )
-        .def( "init_profiles", &dds_stream_server::init_profiles )
-        .def( "default_profile_index", &dds_stream_server::default_profile_index )
-        .def( "is_open", &dds_stream_server::is_open )
-        .def( "is_streaming", &dds_stream_server::is_streaming )
-        .def( "get_topic", &dds_stream_server::get_topic )
-        .def( "__repr__", []( dds_stream_server const & self ) {
-            std::ostringstream os;
-            os << "<" SNAME ".stream_server \"" << self.name() << "\" [";
-            for( auto & p : self.profiles() )
-                os << p->to_string();
-            os << ']';
-            os << ' ' << self.default_profile_index();
-            os << '>';
-            return os.str();
-        } );
+    py::class_< dds_stream_server, std::shared_ptr< dds_stream_server > > stream_server_base( m, "stream_server", stream_base );
 
     using realdds::dds_video_stream_server;
     py::class_< dds_video_stream_server, std::shared_ptr< dds_video_stream_server > >( m, "video_stream_server", stream_server_base )
@@ -416,34 +408,36 @@ PYBIND11_MODULE(NAME, m) {
         .def( py::init< std::shared_ptr< dds_participant > const&, std::string const& >() )
         .def( "init", &dds_device_server::init );
 
-    // same as in pyrs_internal.cpp
-    py::class_< rs2_video_stream > video_stream( m, "video_stream" );
-    video_stream.def( py::init<>() )
-        .def_readwrite( "type", &rs2_video_stream::type )
-        .def_readwrite( "index", &rs2_video_stream::index )
-        .def_readwrite( "uid", &rs2_video_stream::uid )
-        .def_readwrite( "width", &rs2_video_stream::width )
-        .def_readwrite( "height", &rs2_video_stream::height )
-        .def_readwrite( "fps", &rs2_video_stream::fps )
-        .def_readwrite( "bpp", &rs2_video_stream::bpp )
-        .def_readwrite( "fmt", &rs2_video_stream::fmt )
-        .def_readwrite( "intrinsics", &rs2_video_stream::intrinsics );
-
-    // same as in pyrs_internal.cpp
-    py::class_< rs2_motion_stream > motion_stream( m, "motion_stream" );
-    motion_stream.def( py::init<>() )
-        .def_readwrite( "type", &rs2_motion_stream::type )
-        .def_readwrite( "index", &rs2_motion_stream::index )
-        .def_readwrite( "uid", &rs2_motion_stream::uid )
-        .def_readwrite( "fps", &rs2_motion_stream::fps )
-        .def_readwrite( "fmt", &rs2_motion_stream::fmt )
-        .def_readwrite( "intrinsics", &rs2_motion_stream::intrinsics );
-
     using realdds::dds_stream;
-    py::class_< dds_stream,
-                std::shared_ptr< dds_stream > // handled with a shared_ptr
-                >( m, "stream" )
-        .def( "get_group_name", &dds_stream::get_group_name );
+    py::class_< dds_stream, std::shared_ptr< dds_stream > > stream_client_base( m, "stream", stream_base );
+
+    using realdds::dds_video_stream;
+    py::class_< dds_video_stream, std::shared_ptr< dds_video_stream > >( m, "video_stream", stream_client_base )
+        .def( py::init< std::string const &, std::string const & >(), "stream_name"_a, "sensor_name"_a )
+        .def( "__repr__", []( dds_video_stream const & self ) {
+            std::ostringstream os;
+            os << "<" SNAME ".video_stream \"" << self.name() << "\" [";
+            for( auto & p : self.profiles() )
+                os << p->to_string();
+            os << ']';
+            os << ' ' << self.default_profile_index();
+            os << '>';
+            return os.str();
+        } );
+
+    using realdds::dds_motion_stream;
+    py::class_< dds_motion_stream, std::shared_ptr< dds_motion_stream > >( m, "motion_stream", stream_client_base )
+        .def( py::init< std::string const &, std::string const & >(), "stream_name"_a, "sensor_name"_a )
+        .def( "__repr__", []( dds_motion_stream const & self ) {
+            std::ostringstream os;
+            os << "<" SNAME ".motion_stream \"" << self.name() << "\" [";
+            for( auto & p : self.profiles() )
+                os << p->to_string();
+            os << ']';
+            os << ' ' << self.default_profile_index();
+            os << '>';
+            return os.str();
+        } );
 
     using realdds::dds_device;
     py::class_< dds_device,
@@ -461,11 +455,6 @@ PYBIND11_MODULE(NAME, m) {
                       ( std::shared_ptr< dds_stream > const & ),
                       ( std::shared_ptr< dds_stream > const & stream ),
                       callback( stream ); ) )
-        //.def( FN_FWD( dds_device,
-        //              foreach_profile,
-        //              ( dds_stream::profile, bool),
-        //              ( const dds_stream::profile & prof, bool def_prof ),
-        //              callback( prof, def_prof ); ) )
         .def( "__repr__", []( dds_device const & self ) {
             std::ostringstream os;
             os << "<" SNAME ".device ";
