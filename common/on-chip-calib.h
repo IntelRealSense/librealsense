@@ -191,6 +191,7 @@ namespace rs2
         void dismiss(bool snooze) override;
 
         bool use_new_calib = true;
+        bool ground_truth_use_laser = false;
         std::string _error_message = "";
     };
 
