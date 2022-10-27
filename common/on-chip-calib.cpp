@@ -1124,18 +1124,21 @@ namespace rs2
         if ( action == RS2_CALIB_ACTION_TARE_GROUND_TRUTH )
         {
             //Laser should be turned off during ground truth calculation
-            if ( _sub->s->supports( RS2_OPTION_EMITTER_ENABLED ) )
+            //Use options_model::set_option to update GUI after change
+            std::string ignored_error_message { "" };
+            auto it = _sub->options_metadata.find( RS2_OPTION_EMITTER_ENABLED );
+            if ( it != _sub->options_metadata.end() ) //Option supported
             {
                 laser_status_prev = _sub->s->get_option( RS2_OPTION_EMITTER_ENABLED );
-                _sub->s->set_option( RS2_OPTION_EMITTER_ENABLED, 0.0f );
+                it->second.set_option( RS2_OPTION_EMITTER_ENABLED, 0.0f, ignored_error_message );
             }
 
             get_ground_truth();
             
             //Restore laser
-            if ( _sub->s->supports( RS2_OPTION_EMITTER_ENABLED ) )
+            if ( it != _sub->options_metadata.end() ) //Option supported
             {
-                _sub->s->set_option( RS2_OPTION_EMITTER_ENABLED, laser_status_prev );
+                it->second.set_option( RS2_OPTION_EMITTER_ENABLED, laser_status_prev, ignored_error_message );
             }
         }
         else
@@ -1143,15 +1146,19 @@ namespace rs2
             try
             {
                 //Save options that are going to change during the calibration
-                if (_sub->s->supports( RS2_OPTION_EMITTER_ENABLED ))
+                //Use options_model::set_option to update GUI after change
+                std::string ignored_error_message { "" };
+                auto it = _sub->options_metadata.find( RS2_OPTION_EMITTER_ENABLED );
+                if ( it != _sub->options_metadata.end() ) //Option supported
                 {
                     laser_status_prev = _sub->s->get_option( RS2_OPTION_EMITTER_ENABLED );
-                    _sub->s->set_option( RS2_OPTION_EMITTER_ENABLED, 1.0f );
+                    it->second.set_option( RS2_OPTION_EMITTER_ENABLED, 1.0f, ignored_error_message );
                 }
-                if (_sub->s->supports( RS2_OPTION_THERMAL_COMPENSATION ))
+                it = _sub->options_metadata.find( RS2_OPTION_THERMAL_COMPENSATION );
+                if ( it != _sub->options_metadata.end() ) //Option supported
                 {
                     thermal_loop_prev = _sub->s->get_option( RS2_OPTION_THERMAL_COMPENSATION );
-                    _sub->s->set_option( RS2_OPTION_THERMAL_COMPENSATION, 0.f );
+                    it->second.set_option( RS2_OPTION_THERMAL_COMPENSATION, 0.0f, ignored_error_message );
                 }
 
                 if (action == RS2_CALIB_ACTION_FL_CALIB)
@@ -1178,13 +1185,17 @@ namespace rs2
 
                 //Restore options that were changed during the calibration.
                 //When calibration is successful options are restored in autocalib_notification_model::draw_content()
-                if (_sub->s->supports( RS2_OPTION_EMITTER_ENABLED ))
+                //Use options_model::set_option to update GUI after change
+                std::string ignored_error_message { "" };
+                auto it = _sub->options_metadata.find( RS2_OPTION_EMITTER_ENABLED );
+                if ( it != _sub->options_metadata.end() ) //Option supported
                 {
-                    _sub->s->set_option( RS2_OPTION_EMITTER_ENABLED, laser_status_prev );
+                    it->second.set_option( RS2_OPTION_EMITTER_ENABLED, laser_status_prev, ignored_error_message );
                 }
-                if (_sub->s->supports( RS2_OPTION_THERMAL_COMPENSATION ))
+                it = _sub->options_metadata.find( RS2_OPTION_THERMAL_COMPENSATION );
+                if ( it != _sub->options_metadata.end() ) //Option supported
                 {
-                    _sub->s->set_option( RS2_OPTION_THERMAL_COMPENSATION, thermal_loop_prev );
+                    it->second.set_option( RS2_OPTION_THERMAL_COMPENSATION, thermal_loop_prev, ignored_error_message );
                 }
 
                 if (_was_streaming)
@@ -2016,10 +2027,19 @@ namespace rs2
                 if (get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_ON_CHIP_CALIB ||
                     get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_TARE_CALIB )
                 {
-                    if (get_manager()._sub->s->supports( RS2_OPTION_EMITTER_ENABLED ))
-                        get_manager()._sub->s->set_option( RS2_OPTION_EMITTER_ENABLED, get_manager().laser_status_prev );
-                    if (get_manager()._sub->s->supports( RS2_OPTION_THERMAL_COMPENSATION ))
-                        get_manager()._sub->s->set_option( RS2_OPTION_THERMAL_COMPENSATION, get_manager().thermal_loop_prev );
+                    //Restore options that were changed during the calibration.
+                    //Use options_model::set_option to update GUI after change
+                    std::string ignored_error_message { "" };
+                    auto it = get_manager()._sub->options_metadata.find( RS2_OPTION_EMITTER_ENABLED );
+                    if ( it != get_manager()._sub->options_metadata.end() ) //Option supported
+                    {
+                        it->second.set_option( RS2_OPTION_EMITTER_ENABLED, get_manager().laser_status_prev, ignored_error_message );
+                    }
+                    it = get_manager()._sub->options_metadata.find( RS2_OPTION_THERMAL_COMPENSATION );
+                    if ( it != get_manager()._sub->options_metadata.end() ) //Option supported
+                    {
+                        it->second.set_option( RS2_OPTION_THERMAL_COMPENSATION, get_manager().thermal_loop_prev, ignored_error_message );
+                    }
                 }
                 if (get_manager().action == on_chip_calib_manager::RS2_CALIB_ACTION_UVMAPPING_CALIB)
                 {
