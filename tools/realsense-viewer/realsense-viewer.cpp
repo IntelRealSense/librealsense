@@ -282,7 +282,7 @@ int main(int argc, const char** argv) try
 {
 
 #ifdef BUILD_EASYLOGGINGPP
-    rs2::log_to_console(RS2_LOG_SEVERITY_WARN);
+    rs2::log_to_console(RS2_LOG_SEVERITY_INFO);
 #endif
 
     std::shared_ptr<device_models_list> device_models = std::make_shared<device_models_list>();
