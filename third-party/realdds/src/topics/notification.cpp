@@ -24,92 +24,93 @@ using namespace eprosima::fastcdr::exception;
 
 #include <utility>
 
-realdds::topics::raw::device::notification::notification()
+
+realdds::topics::raw::notification::notification()
 {
-    // m_id com.eprosima.idl.parser.typecode.PrimitiveTypeCode@1d29cf23
-    m_id = 0;
-    // m_size com.eprosima.idl.parser.typecode.PrimitiveTypeCode@5f282abb
-    m_size = 0;
-    // m_raw_data com.eprosima.idl.parser.typecode.SequenceTypeCode@167fdd33
+    // m_data_type com.eprosima.idl.parser.typecode.EnumTypeCode@b7dd107
+    m_data_type = realdds::topics::raw::NOTIFICATION_DATA_JSON;
+    // m_version com.eprosima.idl.parser.typecode.ArrayTypeCode@42eca56e
+    memset(&m_version, 0, (4) * 1);
+    // m_data com.eprosima.idl.parser.typecode.SequenceTypeCode@52f759d7
 
 
     // Just to register all known types
     registernotificationTypes();
 }
 
-realdds::topics::raw::device::notification::~notification()
+realdds::topics::raw::notification::~notification()
 {
 
 
 
 }
 
-realdds::topics::raw::device::notification::notification(
+realdds::topics::raw::notification::notification(
         const notification& x)
 {
-    m_id = x.m_id;
-    m_size = x.m_size;
-    m_raw_data = x.m_raw_data;
+    m_data_type = x.m_data_type;
+    m_version = x.m_version;
+    m_data = x.m_data;
 }
 
-realdds::topics::raw::device::notification::notification(
+realdds::topics::raw::notification::notification(
         notification&& x)
 {
-    m_id = x.m_id;
-    m_size = x.m_size;
-    m_raw_data = std::move(x.m_raw_data);
+    m_data_type = x.m_data_type;
+    m_version = std::move(x.m_version);
+    m_data = std::move(x.m_data);
 }
 
-realdds::topics::raw::device::notification& realdds::topics::raw::device::notification::operator =(
+realdds::topics::raw::notification& realdds::topics::raw::notification::operator =(
         const notification& x)
 {
 
-    m_id = x.m_id;
-    m_size = x.m_size;
-    m_raw_data = x.m_raw_data;
+    m_data_type = x.m_data_type;
+    m_version = x.m_version;
+    m_data = x.m_data;
 
     return *this;
 }
 
-realdds::topics::raw::device::notification& realdds::topics::raw::device::notification::operator =(
+realdds::topics::raw::notification& realdds::topics::raw::notification::operator =(
         notification&& x)
 {
 
-    m_id = x.m_id;
-    m_size = x.m_size;
-    m_raw_data = std::move(x.m_raw_data);
+    m_data_type = x.m_data_type;
+    m_version = std::move(x.m_version);
+    m_data = std::move(x.m_data);
 
     return *this;
 }
 
-bool realdds::topics::raw::device::notification::operator ==(
+bool realdds::topics::raw::notification::operator ==(
         const notification& x) const
 {
 
-    return (m_id == x.m_id && m_size == x.m_size && m_raw_data == x.m_raw_data);
+    return (m_data_type == x.m_data_type && m_version == x.m_version && m_data == x.m_data);
 }
 
-bool realdds::topics::raw::device::notification::operator !=(
+bool realdds::topics::raw::notification::operator !=(
         const notification& x) const
 {
     return !(*this == x);
 }
 
-size_t realdds::topics::raw::device::notification::getMaxCdrSerializedSize(
+size_t realdds::topics::raw::notification::getMaxCdrSerializedSize(
         size_t current_alignment)
 {
     size_t initial_alignment = current_alignment;
 
 
-    current_alignment += 2 + eprosima::fastcdr::Cdr::alignment(current_alignment, 2);
+    current_alignment += 4 + eprosima::fastcdr::Cdr::alignment(current_alignment, 4);
+
+
+    current_alignment += ((4) * 1) + eprosima::fastcdr::Cdr::alignment(current_alignment, 1);
 
 
     current_alignment += 4 + eprosima::fastcdr::Cdr::alignment(current_alignment, 4);
 
-
-    current_alignment += 4 + eprosima::fastcdr::Cdr::alignment(current_alignment, 4);
-
-    current_alignment += (100 * 1) + eprosima::fastcdr::Cdr::alignment(current_alignment, 1);
+    current_alignment += (4096 * 1) + eprosima::fastcdr::Cdr::alignment(current_alignment, 1);
 
 
 
@@ -117,25 +118,27 @@ size_t realdds::topics::raw::device::notification::getMaxCdrSerializedSize(
     return current_alignment - initial_alignment;
 }
 
-size_t realdds::topics::raw::device::notification::getCdrSerializedSize(
-        const realdds::topics::raw::device::notification& data,
+size_t realdds::topics::raw::notification::getCdrSerializedSize(
+        const realdds::topics::raw::notification& data,
         size_t current_alignment)
 {
     (void)data;
     size_t initial_alignment = current_alignment;
 
 
-    current_alignment += 2 + eprosima::fastcdr::Cdr::alignment(current_alignment, 2);
-
-
     current_alignment += 4 + eprosima::fastcdr::Cdr::alignment(current_alignment, 4);
 
 
-    current_alignment += 4 + eprosima::fastcdr::Cdr::alignment(current_alignment, 4);
-
-    if (data.raw_data().size() > 0)
+    if ((4) > 0)
     {
-        current_alignment += (data.raw_data().size() * 1) + eprosima::fastcdr::Cdr::alignment(current_alignment, 1);
+        current_alignment += ((4) * 1) + eprosima::fastcdr::Cdr::alignment(current_alignment, 1);
+    }
+
+    current_alignment += 4 + eprosima::fastcdr::Cdr::alignment(current_alignment, 4);
+
+    if (data.data().size() > 0)
+    {
+        current_alignment += (data.data().size() * 1) + eprosima::fastcdr::Cdr::alignment(current_alignment, 1);
     }
 
 
@@ -144,120 +147,136 @@ size_t realdds::topics::raw::device::notification::getCdrSerializedSize(
     return current_alignment - initial_alignment;
 }
 
-void realdds::topics::raw::device::notification::serialize(
+void realdds::topics::raw::notification::serialize(
         eprosima::fastcdr::Cdr& scdr) const
 {
 
-    scdr << m_id;
-    scdr << m_size;
-    scdr << m_raw_data;
+    scdr << (uint32_t)m_data_type;
+    scdr << m_version;
+
+    scdr << m_data;
 
 }
 
-void realdds::topics::raw::device::notification::deserialize(
+void realdds::topics::raw::notification::deserialize(
         eprosima::fastcdr::Cdr& dcdr)
 {
 
-    dcdr >> m_id;
-    dcdr >> m_size;
-    dcdr >> m_raw_data;
+    {
+        uint32_t enum_value = 0;
+        dcdr >> enum_value;
+        m_data_type = (realdds::topics::raw::notification_data_type)enum_value;
+    }
+
+    dcdr >> m_version;
+
+    dcdr >> m_data;
 }
 
 /*!
- * @brief This function sets a value in member id
- * @param _id New value for member id
+ * @brief This function sets a value in member data_type
+ * @param _data_type New value for member data_type
  */
-void realdds::topics::raw::device::notification::id(
-        int16_t _id)
+void realdds::topics::raw::notification::data_type(
+        realdds::topics::raw::notification_data_type _data_type)
 {
-    m_id = _id;
+    m_data_type = _data_type;
 }
 
 /*!
- * @brief This function returns the value of member id
- * @return Value of member id
+ * @brief This function returns the value of member data_type
+ * @return Value of member data_type
  */
-int16_t realdds::topics::raw::device::notification::id() const
+realdds::topics::raw::notification_data_type realdds::topics::raw::notification::data_type() const
 {
-    return m_id;
+    return m_data_type;
 }
 
 /*!
- * @brief This function returns a reference to member id
- * @return Reference to member id
+ * @brief This function returns a reference to member data_type
+ * @return Reference to member data_type
  */
-int16_t& realdds::topics::raw::device::notification::id()
+realdds::topics::raw::notification_data_type& realdds::topics::raw::notification::data_type()
 {
-    return m_id;
+    return m_data_type;
 }
 
 /*!
- * @brief This function sets a value in member size
- * @param _size New value for member size
+ * @brief This function copies the value in member version
+ * @param _version New value to be copied in member version
  */
-void realdds::topics::raw::device::notification::size(
-        uint32_t _size)
+void realdds::topics::raw::notification::version(
+        const std::array<uint8_t, 4>& _version)
 {
-    m_size = _size;
+    m_version = _version;
 }
 
 /*!
- * @brief This function returns the value of member size
- * @return Value of member size
+ * @brief This function moves the value in member version
+ * @param _version New value to be moved in member version
  */
-uint32_t realdds::topics::raw::device::notification::size() const
+void realdds::topics::raw::notification::version(
+        std::array<uint8_t, 4>&& _version)
 {
-    return m_size;
+    m_version = std::move(_version);
 }
 
 /*!
- * @brief This function returns a reference to member size
- * @return Reference to member size
+ * @brief This function returns a constant reference to member version
+ * @return Constant reference to member version
  */
-uint32_t& realdds::topics::raw::device::notification::size()
+const std::array<uint8_t, 4>& realdds::topics::raw::notification::version() const
 {
-    return m_size;
+    return m_version;
 }
 
 /*!
- * @brief This function copies the value in member raw_data
- * @param _raw_data New value to be copied in member raw_data
+ * @brief This function returns a reference to member version
+ * @return Reference to member version
  */
-void realdds::topics::raw::device::notification::raw_data(
-        const std::vector<uint8_t>& _raw_data)
+std::array<uint8_t, 4>& realdds::topics::raw::notification::version()
 {
-    m_raw_data = _raw_data;
+    return m_version;
+}
+/*!
+ * @brief This function copies the value in member data
+ * @param _data New value to be copied in member data
+ */
+void realdds::topics::raw::notification::data(
+        const std::vector<uint8_t>& _data)
+{
+    m_data = _data;
 }
 
 /*!
- * @brief This function moves the value in member raw_data
- * @param _raw_data New value to be moved in member raw_data
+ * @brief This function moves the value in member data
+ * @param _data New value to be moved in member data
  */
-void realdds::topics::raw::device::notification::raw_data(
-        std::vector<uint8_t>&& _raw_data)
+void realdds::topics::raw::notification::data(
+        std::vector<uint8_t>&& _data)
 {
-    m_raw_data = std::move(_raw_data);
+    m_data = std::move(_data);
 }
 
 /*!
- * @brief This function returns a constant reference to member raw_data
- * @return Constant reference to member raw_data
+ * @brief This function returns a constant reference to member data
+ * @return Constant reference to member data
  */
-const std::vector<uint8_t>& realdds::topics::raw::device::notification::raw_data() const
+const std::vector<uint8_t>& realdds::topics::raw::notification::data() const
 {
-    return m_raw_data;
+    return m_data;
 }
 
 /*!
- * @brief This function returns a reference to member raw_data
- * @return Reference to member raw_data
+ * @brief This function returns a reference to member data
+ * @return Reference to member data
  */
-std::vector<uint8_t>& realdds::topics::raw::device::notification::raw_data()
+std::vector<uint8_t>& realdds::topics::raw::notification::data()
 {
-    return m_raw_data;
+    return m_data;
 }
 
-size_t realdds::topics::raw::device::notification::getKeyMaxCdrSerializedSize(
+size_t realdds::topics::raw::notification::getKeyMaxCdrSerializedSize(
         size_t current_alignment)
 {
     size_t current_align = current_alignment;
@@ -270,18 +289,17 @@ size_t realdds::topics::raw::device::notification::getKeyMaxCdrSerializedSize(
     return current_align;
 }
 
-bool realdds::topics::raw::device::notification::isKeyDefined()
+bool realdds::topics::raw::notification::isKeyDefined()
 {
     return false;
 }
 
-void realdds::topics::raw::device::notification::serializeKey(
+void realdds::topics::raw::notification::serializeKey(
         eprosima::fastcdr::Cdr& scdr) const
 {
     (void) scdr;
        
 }
-
 
 
 

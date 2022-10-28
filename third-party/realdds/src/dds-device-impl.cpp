@@ -15,6 +15,9 @@
 
 #include <cassert>
 
+#include <librealsense2/utilities/json.h>
+using nlohmann::json;
+
 
 namespace realdds {
 
@@ -31,50 +34,25 @@ enum class state_type
     // But then need all stream header messages to be sent before any profile message for a simple state machine
 };
 
-std::ostream & operator<<( std::ostream & s, state_type st )
+char const * to_string( state_type st )
 {
     switch( st )
     {
     case state_type::WAIT_FOR_DEVICE_HEADER:
-        s << "WAIT_FOR_DEVICE_HEADER";
-        break;
+        return "WAIT_FOR_DEVICE_HEADER";
     case state_type::WAIT_FOR_PROFILES:
-        s << "WAIT_FOR_PROFILES";
-        break;
+        return "WAIT_FOR_PROFILES";
     case state_type::DONE:
-        s << "DONE";
-        break;
+        return "DONE";
     default:
-        s << "UNKNOWN";
-        break;
+        return "UNKNOWN";
     }
+}
+
+std::ostream& operator<<( std::ostream& s, state_type st )
+{
+    s << to_string( st );
     return s;
-}
-
-
-std::shared_ptr< dds_stream_profile >
-to_realdds_profile( const topics::device::notification::video_stream_profile & profile )
-{
-    auto prof = std::make_shared< dds_video_stream_profile >( dds_stream_uid( profile.uid, profile.stream_index ),
-                                                              dds_stream_format::from_rs2( profile.format ),
-                                                              profile.framerate,
-                                                              profile.width,
-                                                              profile.height,
-                                                              0 );  // TODO - bpp
-    // TODO - add intrinsics
-
-    return prof;
-}
-
-std::shared_ptr< dds_stream_profile >
-to_realdds_profile( const topics::device::notification::motion_stream_profile & profile )
-{
-    auto prof = std::make_shared< dds_motion_stream_profile >( dds_stream_uid( profile.uid, profile.stream_index ),
-                                                               dds_stream_format::from_rs2( profile.format ),
-                                                               profile.framerate );
-    // TODO - add intrinsics
-
-    return prof;
 }
 
 }  // namespace
@@ -116,7 +94,7 @@ void dds_device::impl::create_notifications_reader()
     if( _notifications_reader )
         return;
 
-    auto topic = topics::device::notification::create_topic( _participant, _info.topic_root + "/notification" );
+    auto topic = topics::notification::create_topic( _participant, _info.topic_root + "/notification" );
 
     _notifications_reader = std::make_shared< dds_topic_reader >( topic );
     _notifications_reader->run( dds_topic_reader::qos( eprosima::fastdds::dds::RELIABLE_RELIABILITY_QOS ) );
@@ -139,126 +117,89 @@ bool dds_device::impl::init()
     // We expect to receive all of the sensors data under a timeout
     utilities::time::timer t( std::chrono::seconds( 30 ) );  // TODO: refine time out
     state_type state = state_type::WAIT_FOR_DEVICE_HEADER;
-
     while( ! t.has_expired() && state_type::DONE != state )
     {
         LOG_DEBUG( state << "..." );
         eprosima::fastrtps::Duration_t one_second = { 1, 0 };
         if( _notifications_reader->get()->wait_for_unread_message( one_second ) )
         {
-            topics::device::notification data;
+            topics::notification notification;
             eprosima::fastdds::dds::SampleInfo info;
-            while( topics::device::notification::take_next( *_notifications_reader, &data, &info ) )
+            while( topics::notification::take_next( *_notifications_reader, &notification, &info ) )
             {
-                if( ! data.is_valid() )
+                if( ! notification.is_valid() )
                     continue;
-
-                switch( data._msg_type )
+                auto j = notification.json_data();
+                auto id = j["id"].get< std::string >();
+                if( state_type::WAIT_FOR_DEVICE_HEADER == state && id == "device-header" )
                 {
-                case topics::device::notification::msg_type::DEVICE_HEADER:
-                    if( state_type::WAIT_FOR_DEVICE_HEADER == state )
+                    _expected_num_of_streams = utilities::json::get< size_t >( j, "n-streams" );
+                    LOG_INFO( "... device-header: " << _expected_num_of_streams << " streams" );
+                    if( _expected_num_of_streams )
+                        state = state_type::WAIT_FOR_PROFILES;
+                    else
+                        state = state_type::DONE;
+                }
+                else if( state_type::WAIT_FOR_PROFILES == state && id == "stream-header" )
+                {
+                    if( _streams.size() >= _expected_num_of_streams )
+                        DDS_THROW( runtime_error,
+                                   "more streams than expected (" + std::to_string( _expected_num_of_streams )
+                                       + ") received" );
+                    auto type = utilities::json::get< std::string >( j, "type" );
+                    auto stream_name = utilities::json::get< std::string >( j, "name" );
+                    auto sensor_name = utilities::json::get< std::string >( j, "sensor-name" );
+                    auto default_profile_index = utilities::json::get< int >( j, "default-profile-index" );
+                    dds_stream_profiles profiles;
+                    if( type == "video" )
                     {
-                        auto device_header = data.get< topics::device::notification::device_header_msg >();
-                        if( ! device_header )
+                        for( auto profile : j["profiles"] )
                         {
-                            LOG_ERROR( "Got DEVICE_HEADER with no data" );
-                            break;
+                            auto frequency = utilities::json::get< int16_t >( profile, "frequency" );
+                            dds_stream_format format( utilities::json::get< std::string >( profile, "format" ) );
+                            auto width = utilities::json::get< int16_t >( profile, "width" );
+                            auto height = utilities::json::get< int16_t >( profile, "height" );
+                            profiles.push_back( std::make_shared< dds_video_stream_profile >(
+                                dds_stream_uid( (uint32_t)_streams.size() ),
+                                format,
+                                frequency,
+                                width,
+                                height,
+                                0 ) );  // bpp
                         }
-                        _expected_num_of_streams = device_header->num_of_streams;
-                        LOG_INFO( "... DEVICE_HEADER: " << _expected_num_of_streams << " streams" );
-
-                        if( _expected_num_of_streams )
-                            state = state_type::WAIT_FOR_PROFILES;
-                        else
-                            state = state_type::DONE;
+                    }
+                    else if( type == "motion" )
+                    {
+                        for( auto profile : j["profiles"] )
+                        {
+                            auto frequency = utilities::json::get< int16_t >( profile, "frequency" );
+                            dds_stream_format format( utilities::json::get< std::string >( profile, "format" ) );
+                            profiles.push_back( std::make_shared< dds_motion_stream_profile >(
+                                dds_stream_uid( (uint32_t)_streams.size() ),
+                                format,
+                                frequency ) );
+                        }
                     }
                     else
-                        LOG_ERROR( "... DEVICE_HEADER unexpected" );
-                    break;
+                        DDS_THROW( runtime_error, "stream '" + stream_name + "' is of unknown type '" + type + "'" );
+                    if( default_profile_index < 0 || default_profile_index >= profiles.size() )
+                        DDS_THROW( runtime_error,
+                                   "stream '" + stream_name + "' default profile index "
+                                       + std::to_string( default_profile_index ) + " is out of bounds" );
 
-                case topics::device::notification::msg_type::VIDEO_STREAM_PROFILES:
-                    if( state_type::WAIT_FOR_PROFILES == state )
-                    {
-                        auto video_stream_profiles
-                            = data.get< topics::device::notification::video_stream_profiles_msg >();
-                        if( ! video_stream_profiles )
-                        {
-                            LOG_ERROR( "Got VIDEO_STREAM_PROFILES with no data" );
-                            break;
-                        }
-                        if( _streams.size() >= _expected_num_of_streams )
-                            DDS_THROW( runtime_error,
-                                       "more streams than expected (" + std::to_string( _expected_num_of_streams )
-                                           + ") received" );
-
-                        std::string stream_name = video_stream_profiles->group_name;  // todo
-                        std::string sensor_name = stream_name;  // todo
-                        auto & stream = _streams[stream_name];
-                        if( stream )
-                            DDS_THROW( runtime_error, "stream '" + stream_name + "' already exists" );
-                        stream = std::make_shared< dds_video_stream >( stream_name, sensor_name );
-                        dds_stream_profiles profiles;
-                        int default_profile_index = 0;
-                        for( int i = 0; i < video_stream_profiles->num_of_profiles; ++i )
-                        {
-                            auto const & profile = video_stream_profiles->profiles[i];
-                            profiles.push_back( to_realdds_profile( profile ) );
-                            if( profile.default_profile )
-                                default_profile_index = i;
-                        }
-                        stream->init_profiles( profiles, default_profile_index );
-                        LOG_INFO( "... VIDEO_STREAM_PROFILES: " << _streams.size() << "/" << _expected_num_of_streams
-                                                                << " streams received" );
-                        if( _streams.size() >= _expected_num_of_streams )
-                            state = state_type::DONE;
-                    }
-                    else
-                        LOG_ERROR( "... VIDEO_STREAM_PROFILES unexpected" );
-                    break;
-
-                case topics::device::notification::msg_type::MOTION_STREAM_PROFILES:
-                    if( state_type::WAIT_FOR_PROFILES == state )
-                    {
-                        auto motion_stream_profiles
-                            = data.get< topics::device::notification::motion_stream_profiles_msg >();
-                        if( ! motion_stream_profiles )
-                        {
-                            LOG_ERROR( "Got MOTION_STREAM_PROFILES with no data" );
-                            break;
-                        }
-                        if( _streams.size() >= _expected_num_of_streams )
-                            DDS_THROW( runtime_error,
-                                       "more streams than expected (" + std::to_string( _expected_num_of_streams )
-                                           + ") received" );
-
-                        std::string stream_name = motion_stream_profiles->group_name;  // todo
-                        std::string sensor_name = stream_name;                         // todo
-                        auto & stream = _streams[stream_name];
-                        if( stream )
-                            DDS_THROW( runtime_error, "stream '" + stream_name + "' already exists" );
-                        stream = std::make_shared< dds_motion_stream >( stream_name, sensor_name );
-                        dds_stream_profiles profiles;
-                        int default_profile_index = 0;
-                        for( int i = 0; i < motion_stream_profiles->num_of_profiles; ++i )
-                        {
-                            auto const & profile = motion_stream_profiles->profiles[i];
-                            profiles.push_back( to_realdds_profile( profile ) );
-                            if( profile.default_profile )
-                                default_profile_index = i;
-                        }
-                        stream->init_profiles( profiles, default_profile_index );
-                        LOG_INFO( "... MOTION_STREAM_PROFILES: " << _streams.size() << "/" << _expected_num_of_streams
-                                                                 << " streams received" );
-                        if( _streams.size() >= _expected_num_of_streams )
-                            state = state_type::DONE;
-                    }
-                    else
-                        LOG_ERROR( "... MOTION_STREAM_PROFILES unexpected" );
-                    break;
-
-                default:
-                    LOG_ERROR( "... Wrong message (" << (int)data._msg_type << ") received" );
-                    break;
+                    auto & stream = _streams[stream_name];
+                    if( stream )
+                        DDS_THROW( runtime_error, "stream '" + stream_name + "' already exists" );
+                    stream = std::make_shared< dds_video_stream >( stream_name, sensor_name );
+                    stream->init_profiles( profiles, default_profile_index );
+                    LOG_INFO( "... stream-header: stream (" << _streams.size() << "/" << _expected_num_of_streams
+                                                    << ") received with " << profiles.size() << " profiles" );
+                    if( _streams.size() >= _expected_num_of_streams )
+                        state = state_type::DONE;
+                }
+                else
+                {
+                    DDS_THROW( runtime_error, "unexpected notification '" + id + "' in " + to_string( state ) );
                 }
             }
         }

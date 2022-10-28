@@ -49,7 +49,7 @@ dds_notification_server::dds_notification_server( std::shared_ptr< dds_publisher
             if( _active && _new_instant_notification )
             {
                 // Send all instant notifications
-                topics::raw::device::notification notification;
+                topics::raw::notification notification;
                 constexpr unsigned timeout_in_ms = 1000;
                 while( _instant_notifications.dequeue( &notification, timeout_in_ms ) )
                 {
@@ -60,7 +60,7 @@ dds_notification_server::dds_notification_server( std::shared_ptr< dds_publisher
         }
     } )
 {
-    auto topic = topics::device::notification::create_topic( publisher->get_participant(), topic_name.c_str() );
+    auto topic = topics::notification::create_topic( publisher->get_participant(), topic_name.c_str() );
     _writer = std::make_shared< dds_topic_writer >( topic, publisher );
 
     _writer->on_publication_matched( [this]( PublicationMatchedStatus const & info ) {
@@ -101,22 +101,34 @@ dds_notification_server::~dds_notification_server()
 }
 
 
-void dds_notification_server::send_notification( topics::raw::device::notification && notification )
+void dds_notification_server::send_notification( topics::notification && notification )
 {
+    topics::raw::notification raw_notification;
+    raw_notification.data_type( (topics::raw::notification_data_type)notification._data_type );
+    raw_notification.version()[0] = notification._version >> 24 & 0xFF;
+    raw_notification.version()[1] = notification._version >> 16 & 0xFF;
+    raw_notification.version()[2] = notification._version >>  8 & 0xFF;
+    raw_notification.version()[3] = notification._version       & 0xFF;
+    raw_notification.data( std::move( notification._data ) );
+
     std::unique_lock< std::mutex > lock( _notification_send_mutex );
-    if( ! _instant_notifications.enqueue( std::move( notification ) ) )
-    {
-        LOG_ERROR( "error while trying to enqueue a message id:" << notification.id()
-                                                                 << " to instant notifications queue" );
-    }
+    if( ! _instant_notifications.enqueue( std::move( raw_notification ) ) )
+        LOG_ERROR( "error while trying to enqueue a notification" );
 };
 
 
-void dds_notification_server::add_discovery_notification( topics::raw::device::notification && msg )
+void dds_notification_server::add_discovery_notification( topics::notification && notification )
 {
+    topics::raw::notification raw_notification;
+    raw_notification.data_type( (topics::raw::notification_data_type) notification._data_type );
+    raw_notification.version()[0] = notification._version >> 24 & 0xFF;
+    raw_notification.version()[1] = notification._version >> 16 & 0xFF;
+    raw_notification.version()[2] = notification._version >> 8 & 0xFF;
+    raw_notification.version()[3] = notification._version & 0xFF;
+    raw_notification.data( std::move( notification._data ) );
+
     std::unique_lock< std::mutex > lock( _notification_send_mutex );
-    topics::raw::device::notification msg_to_move( msg );
-    _discovery_notifications.push_back( std::move( msg_to_move ) );
+    _discovery_notifications.push_back( std::move( raw_notification ) );
 };
 
 

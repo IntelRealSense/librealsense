@@ -7,14 +7,17 @@ module realdds
     {
         module raw
         {
-            module device
+            enum notification_data_type
             {
-                struct notification
-                {
-                    short id; // See "librealsense::dds::topics::device::msg_type"
-                    unsigned long size;
-                    sequence<octet> raw_data;
-                };
+                NOTIFICATION_DATA_JSON,
+                NOTIFICATION_DATA_CBOR,
+                NOTIFICATION_DATA_CUSTOM
+            };
+            struct notification
+            {
+                notification_data_type data_type;
+                octet version[4];  // in decreasing importance, so version[0] is highest
+                sequence<octet,4096> data;  // bound to 4K
             };
         };
     };

@@ -30,11 +30,15 @@ using namespace eprosima::fastrtps::rtps;
 void registernotificationTypes()
 {
     TypeObjectFactory *factory = TypeObjectFactory::get_instance();
-    factory->add_type_object("realdds::topics::raw::device::notification", realdds::topics::raw::device::GetnotificationIdentifier(true),
-            realdds::topics::raw::device::GetnotificationObject(true));
-    factory->add_type_object("realdds::topics::raw::device::notification", realdds::topics::raw::device::GetnotificationIdentifier(false),
-            realdds::topics::raw::device::GetnotificationObject(false));
+    factory->add_type_object("realdds::topics::raw::notification_data_type", realdds::topics::raw::Getnotification_data_typeIdentifier(true),
+            realdds::topics::raw::Getnotification_data_typeObject(true));
+    factory->add_type_object("realdds::topics::raw::notification_data_type", realdds::topics::raw::Getnotification_data_typeIdentifier(false),
+            realdds::topics::raw::Getnotification_data_typeObject(false));
 
+    factory->add_type_object("realdds::topics::raw::notification", realdds::topics::raw::GetnotificationIdentifier(true),
+            realdds::topics::raw::GetnotificationObject(true));
+    factory->add_type_object("realdds::topics::raw::notification", realdds::topics::raw::GetnotificationIdentifier(false),
+            realdds::topics::raw::GetnotificationObject(false));
 
 
 
@@ -44,240 +48,454 @@ void registernotificationTypes()
 namespace realdds {
     namespace topics {
         namespace raw {
-            namespace device {
-                const TypeIdentifier* GetnotificationIdentifier(bool complete)
+            const TypeIdentifier* Getnotification_data_typeIdentifier(bool complete)
+            {
+                const TypeIdentifier* c_identifier = TypeObjectFactory::get_instance()->get_type_identifier("notification_data_type", complete);
+                if (c_identifier != nullptr && (!complete || c_identifier->_d() == EK_COMPLETE))
                 {
-                    const TypeIdentifier * c_identifier = TypeObjectFactory::get_instance()->get_type_identifier("notification", complete);
-                    if (c_identifier != nullptr && (!complete || c_identifier->_d() == EK_COMPLETE))
-                    {
-                        return c_identifier;
-                    }
-
-                    GetnotificationObject(complete); // Generated inside
-                    return TypeObjectFactory::get_instance()->get_type_identifier("notification", complete);
+                    return c_identifier;
                 }
 
-                const TypeObject* GetnotificationObject(bool complete)
+                Getnotification_data_typeObject(complete); // Generated inside
+                return TypeObjectFactory::get_instance()->get_type_identifier("notification_data_type", complete);
+            }
+
+            const TypeObject* Getnotification_data_typeObject(bool complete)
+            {
+                const TypeObject* c_type_object = TypeObjectFactory::get_instance()->get_type_object("notification_data_type", complete);
+                if (c_type_object != nullptr)
                 {
-                    const TypeObject* c_type_object = TypeObjectFactory::get_instance()->get_type_object("notification", complete);
-                    if (c_type_object != nullptr)
-                    {
-                        return c_type_object;
-                    }
-                    else if (complete)
-                    {
-                        return GetCompletenotificationObject();
-                    }
-                    //else
-                    return GetMinimalnotificationObject();
+                    return c_type_object;
+                }
+                else if (complete)
+                {
+                    return GetCompletenotification_data_typeObject();
+                }
+                // else
+                return GetMinimalnotification_data_typeObject();
+            }
+
+            const TypeObject* GetMinimalnotification_data_typeObject()
+            {
+                const TypeObject* c_type_object = TypeObjectFactory::get_instance()->get_type_object("notification_data_type", false);
+                if (c_type_object != nullptr)
+                {
+                    return c_type_object;
                 }
 
-                const TypeObject* GetMinimalnotificationObject()
+                TypeObject *type_object = new TypeObject();
+                type_object->_d(EK_MINIMAL);
+                type_object->minimal()._d(TK_ENUM);
+
+                // No flags apply
+                //type_object->minimal().enumerated_type().enum_flags().IS_FINAL(false);
+                //type_object->minimal().enumerated_type().enum_flags().IS_APPENDABLE(false);
+                //type_object->minimal().enumerated_type().enum_flags().IS_MUTABLE(false);
+                //type_object->minimal().enumerated_type().enum_flags().IS_NESTED(false);
+                //type_object->minimal().enumerated_type().enum_flags().IS_AUTOID_HASH(false);
+
+                type_object->minimal().enumerated_type().header().common().bit_bound(32); // TODO fixed by IDL, isn't?
+
+                uint32_t value = 0;
+                MinimalEnumeratedLiteral mel_NOTIFICATION_DATA_JSON;
+                mel_NOTIFICATION_DATA_JSON.common().flags().TRY_CONSTRUCT1(false); // Doesn't apply
+                mel_NOTIFICATION_DATA_JSON.common().flags().TRY_CONSTRUCT2(false); // Doesn't apply
+                mel_NOTIFICATION_DATA_JSON.common().flags().IS_EXTERNAL(false); // Doesn't apply
+                mel_NOTIFICATION_DATA_JSON.common().flags().IS_OPTIONAL(false); // Doesn't apply
+                mel_NOTIFICATION_DATA_JSON.common().flags().IS_MUST_UNDERSTAND(false); // Doesn't apply
+                mel_NOTIFICATION_DATA_JSON.common().flags().IS_KEY(false); // Doesn't apply
+                mel_NOTIFICATION_DATA_JSON.common().flags().IS_DEFAULT(false);
+                mel_NOTIFICATION_DATA_JSON.common().value(value++);
+                MD5 NOTIFICATION_DATA_JSON_hash("NOTIFICATION_DATA_JSON");
+                for(int i = 0; i < 4; ++i)
                 {
-                    const TypeObject* c_type_object = TypeObjectFactory::get_instance()->get_type_object("notification", false);
-                    if (c_type_object != nullptr)
-                    {
-                        return c_type_object;
-                    }
+                    mel_NOTIFICATION_DATA_JSON.detail().name_hash()[i] = NOTIFICATION_DATA_JSON_hash.digest[i];
+                }
+                type_object->minimal().enumerated_type().literal_seq().emplace_back(mel_NOTIFICATION_DATA_JSON);
 
-                    TypeObject *type_object = new TypeObject();
-                    type_object->_d(EK_MINIMAL);
-                    type_object->minimal()._d(TK_STRUCTURE);
+                MinimalEnumeratedLiteral mel_NOTIFICATION_DATA_CBOR;
+                mel_NOTIFICATION_DATA_CBOR.common().flags().TRY_CONSTRUCT1(false); // Doesn't apply
+                mel_NOTIFICATION_DATA_CBOR.common().flags().TRY_CONSTRUCT2(false); // Doesn't apply
+                mel_NOTIFICATION_DATA_CBOR.common().flags().IS_EXTERNAL(false); // Doesn't apply
+                mel_NOTIFICATION_DATA_CBOR.common().flags().IS_OPTIONAL(false); // Doesn't apply
+                mel_NOTIFICATION_DATA_CBOR.common().flags().IS_MUST_UNDERSTAND(false); // Doesn't apply
+                mel_NOTIFICATION_DATA_CBOR.common().flags().IS_KEY(false); // Doesn't apply
+                mel_NOTIFICATION_DATA_CBOR.common().flags().IS_DEFAULT(false);
+                mel_NOTIFICATION_DATA_CBOR.common().value(value++);
+                MD5 NOTIFICATION_DATA_CBOR_hash("NOTIFICATION_DATA_CBOR");
+                for(int i = 0; i < 4; ++i)
+                {
+                    mel_NOTIFICATION_DATA_CBOR.detail().name_hash()[i] = NOTIFICATION_DATA_CBOR_hash.digest[i];
+                }
+                type_object->minimal().enumerated_type().literal_seq().emplace_back(mel_NOTIFICATION_DATA_CBOR);
 
-                    type_object->minimal().struct_type().struct_flags().IS_FINAL(false);
-                    type_object->minimal().struct_type().struct_flags().IS_APPENDABLE(false);
-                    type_object->minimal().struct_type().struct_flags().IS_MUTABLE(false);
-                    type_object->minimal().struct_type().struct_flags().IS_NESTED(false);
-                    type_object->minimal().struct_type().struct_flags().IS_AUTOID_HASH(false); // Unsupported
-
-                    MemberId memberId = 0;
-                    MinimalStructMember mst_id;
-                    mst_id.common().member_id(memberId++);
-                    mst_id.common().member_flags().TRY_CONSTRUCT1(false); // Unsupported
-                    mst_id.common().member_flags().TRY_CONSTRUCT2(false); // Unsupported
-                    mst_id.common().member_flags().IS_EXTERNAL(false); // Unsupported
-                    mst_id.common().member_flags().IS_OPTIONAL(false);
-                    mst_id.common().member_flags().IS_MUST_UNDERSTAND(false);
-                    mst_id.common().member_flags().IS_KEY(false);
-                    mst_id.common().member_flags().IS_DEFAULT(false); // Doesn't apply
-                    mst_id.common().member_type_id(*TypeObjectFactory::get_instance()->get_type_identifier("int16_t", false));
-
-                    MD5 id_hash("id");
-                    for(int i = 0; i < 4; ++i)
-                    {
-                        mst_id.detail().name_hash()[i] = id_hash.digest[i];
-                    }
-                    type_object->minimal().struct_type().member_seq().emplace_back(mst_id);
-
-                    MinimalStructMember mst_size;
-                    mst_size.common().member_id(memberId++);
-                    mst_size.common().member_flags().TRY_CONSTRUCT1(false); // Unsupported
-                    mst_size.common().member_flags().TRY_CONSTRUCT2(false); // Unsupported
-                    mst_size.common().member_flags().IS_EXTERNAL(false); // Unsupported
-                    mst_size.common().member_flags().IS_OPTIONAL(false);
-                    mst_size.common().member_flags().IS_MUST_UNDERSTAND(false);
-                    mst_size.common().member_flags().IS_KEY(false);
-                    mst_size.common().member_flags().IS_DEFAULT(false); // Doesn't apply
-                    mst_size.common().member_type_id(*TypeObjectFactory::get_instance()->get_type_identifier("uint32_t", false));
-
-                    MD5 size_hash("size");
-                    for(int i = 0; i < 4; ++i)
-                    {
-                        mst_size.detail().name_hash()[i] = size_hash.digest[i];
-                    }
-                    type_object->minimal().struct_type().member_seq().emplace_back(mst_size);
-
-                    MinimalStructMember mst_raw_data;
-                    mst_raw_data.common().member_id(memberId++);
-                    mst_raw_data.common().member_flags().TRY_CONSTRUCT1(false); // Unsupported
-                    mst_raw_data.common().member_flags().TRY_CONSTRUCT2(false); // Unsupported
-                    mst_raw_data.common().member_flags().IS_EXTERNAL(false); // Unsupported
-                    mst_raw_data.common().member_flags().IS_OPTIONAL(false);
-                    mst_raw_data.common().member_flags().IS_MUST_UNDERSTAND(false);
-                    mst_raw_data.common().member_flags().IS_KEY(false);
-                    mst_raw_data.common().member_flags().IS_DEFAULT(false); // Doesn't apply
-                    mst_raw_data.common().member_type_id(*TypeObjectFactory::get_instance()->get_sequence_identifier("uint8_t", 0, false));
+                MinimalEnumeratedLiteral mel_NOTIFICATION_DATA_CUSTOM;
+                mel_NOTIFICATION_DATA_CUSTOM.common().flags().TRY_CONSTRUCT1(false); // Doesn't apply
+                mel_NOTIFICATION_DATA_CUSTOM.common().flags().TRY_CONSTRUCT2(false); // Doesn't apply
+                mel_NOTIFICATION_DATA_CUSTOM.common().flags().IS_EXTERNAL(false); // Doesn't apply
+                mel_NOTIFICATION_DATA_CUSTOM.common().flags().IS_OPTIONAL(false); // Doesn't apply
+                mel_NOTIFICATION_DATA_CUSTOM.common().flags().IS_MUST_UNDERSTAND(false); // Doesn't apply
+                mel_NOTIFICATION_DATA_CUSTOM.common().flags().IS_KEY(false); // Doesn't apply
+                mel_NOTIFICATION_DATA_CUSTOM.common().flags().IS_DEFAULT(false);
+                mel_NOTIFICATION_DATA_CUSTOM.common().value(value++);
+                MD5 NOTIFICATION_DATA_CUSTOM_hash("NOTIFICATION_DATA_CUSTOM");
+                for(int i = 0; i < 4; ++i)
+                {
+                    mel_NOTIFICATION_DATA_CUSTOM.detail().name_hash()[i] = NOTIFICATION_DATA_CUSTOM_hash.digest[i];
+                }
+                type_object->minimal().enumerated_type().literal_seq().emplace_back(mel_NOTIFICATION_DATA_CUSTOM);
 
 
-                    MD5 raw_data_hash("raw_data");
-                    for(int i = 0; i < 4; ++i)
-                    {
-                        mst_raw_data.detail().name_hash()[i] = raw_data_hash.digest[i];
-                    }
-                    type_object->minimal().struct_type().member_seq().emplace_back(mst_raw_data);
+                TypeIdentifier identifier;
+                identifier._d(EK_MINIMAL);
 
+                SerializedPayload_t payload(static_cast<uint32_t>(
+                    MinimalEnumeratedType::getCdrSerializedSize(type_object->minimal().enumerated_type()) + 4));
+                eprosima::fastcdr::FastBuffer fastbuffer((char*) payload.data, payload.max_size);
+                // Fixed endian (Page 221, EquivalenceHash definition of Extensible and Dynamic Topic Types for DDS document)
+                eprosima::fastcdr::Cdr ser(
+                    fastbuffer, eprosima::fastcdr::Cdr::LITTLE_ENDIANNESS,
+                    eprosima::fastcdr::Cdr::DDS_CDR); // Object that serializes the data.
+                payload.encapsulation = CDR_LE;
 
-                    // Header
-                    // TODO Inheritance
-                    //type_object->minimal().struct_type().header().base_type()._d(EK_MINIMAL);
-                    //type_object->minimal().struct_type().header().base_type().equivalence_hash()[0..13];
-
-                    TypeIdentifier identifier;
-                    identifier._d(EK_MINIMAL);
-
-                    SerializedPayload_t payload(static_cast<uint32_t>(
-                        MinimalStructType::getCdrSerializedSize(type_object->minimal().struct_type()) + 4));
-                    eprosima::fastcdr::FastBuffer fastbuffer((char*) payload.data, payload.max_size);
-                    // Fixed endian (Page 221, EquivalenceHash definition of Extensible and Dynamic Topic Types for DDS document)
-                    eprosima::fastcdr::Cdr ser(
-                        fastbuffer, eprosima::fastcdr::Cdr::LITTLE_ENDIANNESS,
-                        eprosima::fastcdr::Cdr::DDS_CDR); // Object that serializes the data.
-                    payload.encapsulation = CDR_LE;
-
-                    type_object->serialize(ser);
-                    payload.length = (uint32_t)ser.getSerializedDataLength(); //Get the serialized length
-                    MD5 objectHash;
-                    objectHash.update((char*)payload.data, payload.length);
-                    objectHash.finalize();
-                    for(int i = 0; i < 14; ++i)
-                    {
-                        identifier.equivalence_hash()[i] = objectHash.digest[i];
-                    }
-
-                    TypeObjectFactory::get_instance()->add_type_object("notification", &identifier, type_object);
-                    delete type_object;
-                    return TypeObjectFactory::get_instance()->get_type_object("notification", false);
+                type_object->serialize(ser);
+                payload.length = (uint32_t)ser.getSerializedDataLength(); //Get the serialized length
+                MD5 objectHash;
+                objectHash.update((char*)payload.data, payload.length);
+                objectHash.finalize();
+                for(int i = 0; i < 14; ++i)
+                {
+                    identifier.equivalence_hash()[i] = objectHash.digest[i];
                 }
 
-                const TypeObject* GetCompletenotificationObject()
+                TypeObjectFactory::get_instance()->add_type_object("notification_data_type", &identifier, type_object);
+                delete type_object;
+                return TypeObjectFactory::get_instance()->get_type_object("notification_data_type", false);
+            }
+
+            const TypeObject* GetCompletenotification_data_typeObject()
+            {
+                const TypeObject* c_type_object = TypeObjectFactory::get_instance()->get_type_object("notification_data_type", true);
+                if (c_type_object != nullptr && c_type_object->_d() == EK_COMPLETE)
                 {
-                    const TypeObject* c_type_object = TypeObjectFactory::get_instance()->get_type_object("notification", true);
-                    if (c_type_object != nullptr && c_type_object->_d() == EK_COMPLETE)
-                    {
-                        return c_type_object;
-                    }
-
-                    TypeObject *type_object = new TypeObject();
-                    type_object->_d(EK_COMPLETE);
-                    type_object->complete()._d(TK_STRUCTURE);
-
-                    type_object->complete().struct_type().struct_flags().IS_FINAL(false);
-                    type_object->complete().struct_type().struct_flags().IS_APPENDABLE(false);
-                    type_object->complete().struct_type().struct_flags().IS_MUTABLE(false);
-                    type_object->complete().struct_type().struct_flags().IS_NESTED(false);
-                    type_object->complete().struct_type().struct_flags().IS_AUTOID_HASH(false); // Unsupported
-
-                    MemberId memberId = 0;
-                    CompleteStructMember cst_id;
-                    cst_id.common().member_id(memberId++);
-                    cst_id.common().member_flags().TRY_CONSTRUCT1(false); // Unsupported
-                    cst_id.common().member_flags().TRY_CONSTRUCT2(false); // Unsupported
-                    cst_id.common().member_flags().IS_EXTERNAL(false); // Unsupported
-                    cst_id.common().member_flags().IS_OPTIONAL(false);
-                    cst_id.common().member_flags().IS_MUST_UNDERSTAND(false);
-                    cst_id.common().member_flags().IS_KEY(false);
-                    cst_id.common().member_flags().IS_DEFAULT(false); // Doesn't apply
-                    cst_id.common().member_type_id(*TypeObjectFactory::get_instance()->get_type_identifier("int16_t", false));
-
-                    cst_id.detail().name("id");
-
-                    type_object->complete().struct_type().member_seq().emplace_back(cst_id);
-
-                    CompleteStructMember cst_size;
-                    cst_size.common().member_id(memberId++);
-                    cst_size.common().member_flags().TRY_CONSTRUCT1(false); // Unsupported
-                    cst_size.common().member_flags().TRY_CONSTRUCT2(false); // Unsupported
-                    cst_size.common().member_flags().IS_EXTERNAL(false); // Unsupported
-                    cst_size.common().member_flags().IS_OPTIONAL(false);
-                    cst_size.common().member_flags().IS_MUST_UNDERSTAND(false);
-                    cst_size.common().member_flags().IS_KEY(false);
-                    cst_size.common().member_flags().IS_DEFAULT(false); // Doesn't apply
-                    cst_size.common().member_type_id(*TypeObjectFactory::get_instance()->get_type_identifier("uint32_t", false));
-
-                    cst_size.detail().name("size");
-
-                    type_object->complete().struct_type().member_seq().emplace_back(cst_size);
-
-                    CompleteStructMember cst_raw_data;
-                    cst_raw_data.common().member_id(memberId++);
-                    cst_raw_data.common().member_flags().TRY_CONSTRUCT1(false); // Unsupported
-                    cst_raw_data.common().member_flags().TRY_CONSTRUCT2(false); // Unsupported
-                    cst_raw_data.common().member_flags().IS_EXTERNAL(false); // Unsupported
-                    cst_raw_data.common().member_flags().IS_OPTIONAL(false);
-                    cst_raw_data.common().member_flags().IS_MUST_UNDERSTAND(false);
-                    cst_raw_data.common().member_flags().IS_KEY(false);
-                    cst_raw_data.common().member_flags().IS_DEFAULT(false); // Doesn't apply
-                    cst_raw_data.common().member_type_id(*TypeObjectFactory::get_instance()->get_sequence_identifier("uint8_t", 0, true));
-
-
-                    cst_raw_data.detail().name("raw_data");
-
-                    type_object->complete().struct_type().member_seq().emplace_back(cst_raw_data);
-
-
-                    // Header
-                    type_object->complete().struct_type().header().detail().type_name("notification");
-                    // TODO inheritance
-
-
-                    TypeIdentifier identifier;
-                    identifier._d(EK_COMPLETE);
-
-                    SerializedPayload_t payload(static_cast<uint32_t>(
-                        CompleteStructType::getCdrSerializedSize(type_object->complete().struct_type()) + 4));
-                    eprosima::fastcdr::FastBuffer fastbuffer((char*) payload.data, payload.max_size);
-                    // Fixed endian (Page 221, EquivalenceHash definition of Extensible and Dynamic Topic Types for DDS document)
-                    eprosima::fastcdr::Cdr ser(
-                        fastbuffer, eprosima::fastcdr::Cdr::LITTLE_ENDIANNESS,
-                        eprosima::fastcdr::Cdr::DDS_CDR); // Object that serializes the data.
-                    payload.encapsulation = CDR_LE;
-
-                    type_object->serialize(ser);
-                    payload.length = (uint32_t)ser.getSerializedDataLength(); //Get the serialized length
-                    MD5 objectHash;
-                    objectHash.update((char*)payload.data, payload.length);
-                    objectHash.finalize();
-                    for(int i = 0; i < 14; ++i)
-                    {
-                        identifier.equivalence_hash()[i] = objectHash.digest[i];
-                    }
-
-                    TypeObjectFactory::get_instance()->add_type_object("notification", &identifier, type_object);
-                    delete type_object;
-                    return TypeObjectFactory::get_instance()->get_type_object("notification", true);
+                    return c_type_object;
                 }
 
-            } // namespace device
+                TypeObject *type_object = new TypeObject();
+                type_object->_d(EK_COMPLETE);
+                type_object->complete()._d(TK_ENUM);
+
+                // No flags apply
+                //type_object->complete().enumerated_type().enum_flags().IS_FINAL(false);
+                //type_object->complete().enumerated_type().enum_flags().IS_APPENDABLE(false);
+                //type_object->complete().enumerated_type().enum_flags().IS_MUTABLE(false);
+                //type_object->complete().enumerated_type().enum_flags().IS_NESTED(false);
+                //type_object->complete().enumerated_type().enum_flags().IS_AUTOID_HASH(false);
+
+                type_object->complete().enumerated_type().header().common().bit_bound(32); // TODO fixed by IDL, isn't?
+                type_object->complete().enumerated_type().header().detail().type_name("notification_data_type");
+
+
+                uint32_t value = 0;
+                CompleteEnumeratedLiteral cel_NOTIFICATION_DATA_JSON;
+                cel_NOTIFICATION_DATA_JSON.common().flags().TRY_CONSTRUCT1(false); // Doesn't apply
+                cel_NOTIFICATION_DATA_JSON.common().flags().TRY_CONSTRUCT2(false); // Doesn't apply
+                cel_NOTIFICATION_DATA_JSON.common().flags().IS_EXTERNAL(false); // Doesn't apply
+                cel_NOTIFICATION_DATA_JSON.common().flags().IS_OPTIONAL(false); // Doesn't apply
+                cel_NOTIFICATION_DATA_JSON.common().flags().IS_MUST_UNDERSTAND(false); // Doesn't apply
+                cel_NOTIFICATION_DATA_JSON.common().flags().IS_KEY(false); // Doesn't apply
+                cel_NOTIFICATION_DATA_JSON.common().flags().IS_DEFAULT(false);
+                cel_NOTIFICATION_DATA_JSON.common().value(value++);
+                cel_NOTIFICATION_DATA_JSON.detail().name("NOTIFICATION_DATA_JSON");
+
+                type_object->complete().enumerated_type().literal_seq().emplace_back(cel_NOTIFICATION_DATA_JSON);
+
+                CompleteEnumeratedLiteral cel_NOTIFICATION_DATA_CBOR;
+                cel_NOTIFICATION_DATA_CBOR.common().flags().TRY_CONSTRUCT1(false); // Doesn't apply
+                cel_NOTIFICATION_DATA_CBOR.common().flags().TRY_CONSTRUCT2(false); // Doesn't apply
+                cel_NOTIFICATION_DATA_CBOR.common().flags().IS_EXTERNAL(false); // Doesn't apply
+                cel_NOTIFICATION_DATA_CBOR.common().flags().IS_OPTIONAL(false); // Doesn't apply
+                cel_NOTIFICATION_DATA_CBOR.common().flags().IS_MUST_UNDERSTAND(false); // Doesn't apply
+                cel_NOTIFICATION_DATA_CBOR.common().flags().IS_KEY(false); // Doesn't apply
+                cel_NOTIFICATION_DATA_CBOR.common().flags().IS_DEFAULT(false);
+                cel_NOTIFICATION_DATA_CBOR.common().value(value++);
+                cel_NOTIFICATION_DATA_CBOR.detail().name("NOTIFICATION_DATA_CBOR");
+
+                type_object->complete().enumerated_type().literal_seq().emplace_back(cel_NOTIFICATION_DATA_CBOR);
+
+                CompleteEnumeratedLiteral cel_NOTIFICATION_DATA_CUSTOM;
+                cel_NOTIFICATION_DATA_CUSTOM.common().flags().TRY_CONSTRUCT1(false); // Doesn't apply
+                cel_NOTIFICATION_DATA_CUSTOM.common().flags().TRY_CONSTRUCT2(false); // Doesn't apply
+                cel_NOTIFICATION_DATA_CUSTOM.common().flags().IS_EXTERNAL(false); // Doesn't apply
+                cel_NOTIFICATION_DATA_CUSTOM.common().flags().IS_OPTIONAL(false); // Doesn't apply
+                cel_NOTIFICATION_DATA_CUSTOM.common().flags().IS_MUST_UNDERSTAND(false); // Doesn't apply
+                cel_NOTIFICATION_DATA_CUSTOM.common().flags().IS_KEY(false); // Doesn't apply
+                cel_NOTIFICATION_DATA_CUSTOM.common().flags().IS_DEFAULT(false);
+                cel_NOTIFICATION_DATA_CUSTOM.common().value(value++);
+                cel_NOTIFICATION_DATA_CUSTOM.detail().name("NOTIFICATION_DATA_CUSTOM");
+
+                type_object->complete().enumerated_type().literal_seq().emplace_back(cel_NOTIFICATION_DATA_CUSTOM);
+
+
+                TypeIdentifier identifier;
+                identifier._d(EK_COMPLETE);
+
+                SerializedPayload_t payload(static_cast<uint32_t>(
+                    CompleteEnumeratedType::getCdrSerializedSize(type_object->complete().enumerated_type()) + 4));
+                eprosima::fastcdr::FastBuffer fastbuffer((char*) payload.data, payload.max_size);
+                // Fixed endian (Page 221, EquivalenceHash definition of Extensible and Dynamic Topic Types for DDS document)
+                eprosima::fastcdr::Cdr ser(
+                    fastbuffer, eprosima::fastcdr::Cdr::LITTLE_ENDIANNESS,
+                    eprosima::fastcdr::Cdr::DDS_CDR); // Object that serializes the data.
+                payload.encapsulation = CDR_LE;
+
+                type_object->serialize(ser);
+                payload.length = (uint32_t)ser.getSerializedDataLength(); //Get the serialized length
+                MD5 objectHash;
+                objectHash.update((char*)payload.data, payload.length);
+                objectHash.finalize();
+                for(int i = 0; i < 14; ++i)
+                {
+                    identifier.equivalence_hash()[i] = objectHash.digest[i];
+                }
+
+                TypeObjectFactory::get_instance()->add_type_object("notification_data_type", &identifier, type_object);
+                delete type_object;
+                return TypeObjectFactory::get_instance()->get_type_object("notification_data_type", true);
+            }
+
+            const TypeIdentifier* GetnotificationIdentifier(bool complete)
+            {
+                const TypeIdentifier * c_identifier = TypeObjectFactory::get_instance()->get_type_identifier("notification", complete);
+                if (c_identifier != nullptr && (!complete || c_identifier->_d() == EK_COMPLETE))
+                {
+                    return c_identifier;
+                }
+
+                GetnotificationObject(complete); // Generated inside
+                return TypeObjectFactory::get_instance()->get_type_identifier("notification", complete);
+            }
+
+            const TypeObject* GetnotificationObject(bool complete)
+            {
+                const TypeObject* c_type_object = TypeObjectFactory::get_instance()->get_type_object("notification", complete);
+                if (c_type_object != nullptr)
+                {
+                    return c_type_object;
+                }
+                else if (complete)
+                {
+                    return GetCompletenotificationObject();
+                }
+                //else
+                return GetMinimalnotificationObject();
+            }
+
+            const TypeObject* GetMinimalnotificationObject()
+            {
+                const TypeObject* c_type_object = TypeObjectFactory::get_instance()->get_type_object("notification", false);
+                if (c_type_object != nullptr)
+                {
+                    return c_type_object;
+                }
+
+                TypeObject *type_object = new TypeObject();
+                type_object->_d(EK_MINIMAL);
+                type_object->minimal()._d(TK_STRUCTURE);
+
+                type_object->minimal().struct_type().struct_flags().IS_FINAL(false);
+                type_object->minimal().struct_type().struct_flags().IS_APPENDABLE(false);
+                type_object->minimal().struct_type().struct_flags().IS_MUTABLE(false);
+                type_object->minimal().struct_type().struct_flags().IS_NESTED(false);
+                type_object->minimal().struct_type().struct_flags().IS_AUTOID_HASH(false); // Unsupported
+
+                MemberId memberId = 0;
+                MinimalStructMember mst_data_type;
+                mst_data_type.common().member_id(memberId++);
+                mst_data_type.common().member_flags().TRY_CONSTRUCT1(false); // Unsupported
+                mst_data_type.common().member_flags().TRY_CONSTRUCT2(false); // Unsupported
+                mst_data_type.common().member_flags().IS_EXTERNAL(false); // Unsupported
+                mst_data_type.common().member_flags().IS_OPTIONAL(false);
+                mst_data_type.common().member_flags().IS_MUST_UNDERSTAND(false);
+                mst_data_type.common().member_flags().IS_KEY(false);
+                mst_data_type.common().member_flags().IS_DEFAULT(false); // Doesn't apply
+                mst_data_type.common().member_type_id(*realdds::topics::raw::Getnotification_data_typeIdentifier(false));
+                MD5 data_type_hash("data_type");
+                for(int i = 0; i < 4; ++i)
+                {
+                    mst_data_type.detail().name_hash()[i] = data_type_hash.digest[i];
+                }
+                type_object->minimal().struct_type().member_seq().emplace_back(mst_data_type);
+
+                MinimalStructMember mst_version;
+                mst_version.common().member_id(memberId++);
+                mst_version.common().member_flags().TRY_CONSTRUCT1(false); // Unsupported
+                mst_version.common().member_flags().TRY_CONSTRUCT2(false); // Unsupported
+                mst_version.common().member_flags().IS_EXTERNAL(false); // Unsupported
+                mst_version.common().member_flags().IS_OPTIONAL(false);
+                mst_version.common().member_flags().IS_MUST_UNDERSTAND(false);
+                mst_version.common().member_flags().IS_KEY(false);
+                mst_version.common().member_flags().IS_DEFAULT(false); // Doesn't apply
+                mst_version.common().member_type_id(*TypeObjectFactory::get_instance()->get_array_identifier("uint8_t", {4}, false));
+
+
+                MD5 version_hash("version");
+                for(int i = 0; i < 4; ++i)
+                {
+                    mst_version.detail().name_hash()[i] = version_hash.digest[i];
+                }
+                type_object->minimal().struct_type().member_seq().emplace_back(mst_version);
+
+                MinimalStructMember mst_data;
+                mst_data.common().member_id(memberId++);
+                mst_data.common().member_flags().TRY_CONSTRUCT1(false); // Unsupported
+                mst_data.common().member_flags().TRY_CONSTRUCT2(false); // Unsupported
+                mst_data.common().member_flags().IS_EXTERNAL(false); // Unsupported
+                mst_data.common().member_flags().IS_OPTIONAL(false);
+                mst_data.common().member_flags().IS_MUST_UNDERSTAND(false);
+                mst_data.common().member_flags().IS_KEY(false);
+                mst_data.common().member_flags().IS_DEFAULT(false); // Doesn't apply
+                mst_data.common().member_type_id(*TypeObjectFactory::get_instance()->get_sequence_identifier("uint8_t", 4096, false));
+
+
+                MD5 data_hash("data");
+                for(int i = 0; i < 4; ++i)
+                {
+                    mst_data.detail().name_hash()[i] = data_hash.digest[i];
+                }
+                type_object->minimal().struct_type().member_seq().emplace_back(mst_data);
+
+
+                // Header
+                // TODO Inheritance
+                //type_object->minimal().struct_type().header().base_type()._d(EK_MINIMAL);
+                //type_object->minimal().struct_type().header().base_type().equivalence_hash()[0..13];
+
+                TypeIdentifier identifier;
+                identifier._d(EK_MINIMAL);
+
+                SerializedPayload_t payload(static_cast<uint32_t>(
+                    MinimalStructType::getCdrSerializedSize(type_object->minimal().struct_type()) + 4));
+                eprosima::fastcdr::FastBuffer fastbuffer((char*) payload.data, payload.max_size);
+                // Fixed endian (Page 221, EquivalenceHash definition of Extensible and Dynamic Topic Types for DDS document)
+                eprosima::fastcdr::Cdr ser(
+                    fastbuffer, eprosima::fastcdr::Cdr::LITTLE_ENDIANNESS,
+                    eprosima::fastcdr::Cdr::DDS_CDR); // Object that serializes the data.
+                payload.encapsulation = CDR_LE;
+
+                type_object->serialize(ser);
+                payload.length = (uint32_t)ser.getSerializedDataLength(); //Get the serialized length
+                MD5 objectHash;
+                objectHash.update((char*)payload.data, payload.length);
+                objectHash.finalize();
+                for(int i = 0; i < 14; ++i)
+                {
+                    identifier.equivalence_hash()[i] = objectHash.digest[i];
+                }
+
+                TypeObjectFactory::get_instance()->add_type_object("notification", &identifier, type_object);
+                delete type_object;
+                return TypeObjectFactory::get_instance()->get_type_object("notification", false);
+            }
+
+            const TypeObject* GetCompletenotificationObject()
+            {
+                const TypeObject* c_type_object = TypeObjectFactory::get_instance()->get_type_object("notification", true);
+                if (c_type_object != nullptr && c_type_object->_d() == EK_COMPLETE)
+                {
+                    return c_type_object;
+                }
+
+                TypeObject *type_object = new TypeObject();
+                type_object->_d(EK_COMPLETE);
+                type_object->complete()._d(TK_STRUCTURE);
+
+                type_object->complete().struct_type().struct_flags().IS_FINAL(false);
+                type_object->complete().struct_type().struct_flags().IS_APPENDABLE(false);
+                type_object->complete().struct_type().struct_flags().IS_MUTABLE(false);
+                type_object->complete().struct_type().struct_flags().IS_NESTED(false);
+                type_object->complete().struct_type().struct_flags().IS_AUTOID_HASH(false); // Unsupported
+
+                MemberId memberId = 0;
+                CompleteStructMember cst_data_type;
+                cst_data_type.common().member_id(memberId++);
+                cst_data_type.common().member_flags().TRY_CONSTRUCT1(false); // Unsupported
+                cst_data_type.common().member_flags().TRY_CONSTRUCT2(false); // Unsupported
+                cst_data_type.common().member_flags().IS_EXTERNAL(false); // Unsupported
+                cst_data_type.common().member_flags().IS_OPTIONAL(false);
+                cst_data_type.common().member_flags().IS_MUST_UNDERSTAND(false);
+                cst_data_type.common().member_flags().IS_KEY(false);
+                cst_data_type.common().member_flags().IS_DEFAULT(false); // Doesn't apply
+                cst_data_type.common().member_type_id(*realdds::topics::raw::Getnotification_data_typeIdentifier(true));
+                cst_data_type.detail().name("data_type");
+
+                type_object->complete().struct_type().member_seq().emplace_back(cst_data_type);
+
+                CompleteStructMember cst_version;
+                cst_version.common().member_id(memberId++);
+                cst_version.common().member_flags().TRY_CONSTRUCT1(false); // Unsupported
+                cst_version.common().member_flags().TRY_CONSTRUCT2(false); // Unsupported
+                cst_version.common().member_flags().IS_EXTERNAL(false); // Unsupported
+                cst_version.common().member_flags().IS_OPTIONAL(false);
+                cst_version.common().member_flags().IS_MUST_UNDERSTAND(false);
+                cst_version.common().member_flags().IS_KEY(false);
+                cst_version.common().member_flags().IS_DEFAULT(false); // Doesn't apply
+                cst_version.common().member_type_id(*TypeObjectFactory::get_instance()->get_array_identifier("uint8_t", {4}, true));
+
+
+                cst_version.detail().name("version");
+
+                type_object->complete().struct_type().member_seq().emplace_back(cst_version);
+
+                CompleteStructMember cst_data;
+                cst_data.common().member_id(memberId++);
+                cst_data.common().member_flags().TRY_CONSTRUCT1(false); // Unsupported
+                cst_data.common().member_flags().TRY_CONSTRUCT2(false); // Unsupported
+                cst_data.common().member_flags().IS_EXTERNAL(false); // Unsupported
+                cst_data.common().member_flags().IS_OPTIONAL(false);
+                cst_data.common().member_flags().IS_MUST_UNDERSTAND(false);
+                cst_data.common().member_flags().IS_KEY(false);
+                cst_data.common().member_flags().IS_DEFAULT(false); // Doesn't apply
+                cst_data.common().member_type_id(*TypeObjectFactory::get_instance()->get_sequence_identifier("uint8_t", 4096, true));
+
+
+                cst_data.detail().name("data");
+
+                type_object->complete().struct_type().member_seq().emplace_back(cst_data);
+
+
+                // Header
+                type_object->complete().struct_type().header().detail().type_name("notification");
+                // TODO inheritance
+
+
+                TypeIdentifier identifier;
+                identifier._d(EK_COMPLETE);
+
+                SerializedPayload_t payload(static_cast<uint32_t>(
+                    CompleteStructType::getCdrSerializedSize(type_object->complete().struct_type()) + 4));
+                eprosima::fastcdr::FastBuffer fastbuffer((char*) payload.data, payload.max_size);
+                // Fixed endian (Page 221, EquivalenceHash definition of Extensible and Dynamic Topic Types for DDS document)
+                eprosima::fastcdr::Cdr ser(
+                    fastbuffer, eprosima::fastcdr::Cdr::LITTLE_ENDIANNESS,
+                    eprosima::fastcdr::Cdr::DDS_CDR); // Object that serializes the data.
+                payload.encapsulation = CDR_LE;
+
+                type_object->serialize(ser);
+                payload.length = (uint32_t)ser.getSerializedDataLength(); //Get the serialized length
+                MD5 objectHash;
+                objectHash.update((char*)payload.data, payload.length);
+                objectHash.finalize();
+                for(int i = 0; i < 14; ++i)
+                {
+                    identifier.equivalence_hash()[i] = objectHash.digest[i];
+                }
+
+                TypeObjectFactory::get_instance()->add_type_object("notification", &identifier, type_object);
+                delete type_object;
+                return TypeObjectFactory::get_instance()->get_type_object("notification", true);
+            }
+
         } // namespace raw
     } // namespace topics
 } // namespace realdds
