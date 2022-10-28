@@ -11,7 +11,7 @@ namespace realdds {
 dds_stream_base::dds_stream_base( std::string const & name,
                                   std::string const & sensor_name )
     : _name( name )
-    , _sensor_name( name )
+    , _sensor_name( sensor_name )
 {
 }
 
