@@ -14,6 +14,7 @@ include(${CMAKE_CURRENT_LIST_DIR}/string/CMakeLists.txt)
 
 target_sources( ${PROJECT_NAME}
     PRIVATE
+        "${CMAKE_CURRENT_LIST_DIR}/json.h"
         "${CMAKE_CURRENT_LIST_DIR}/shared-ptr-singleton.h"
     )
 

@@ -31,7 +31,7 @@
 #include <realdds/topics/device-info/device-info-msg.h>
 #endif //BUILD_WITH_DDS
 
-#include <third-party/json.hpp>
+#include <librealsense2/utilities/json.h>
 using json = nlohmann::json;
 
 #ifdef WITH_TRACKING
@@ -154,48 +154,6 @@ namespace librealsense
     }
 
 
-    static bool json_has_value( json const & j, char const * key )
-    {
-        auto it = j.find( key );
-        if( it == j.end() || it->is_null() )
-            return false;
-        return true;
-    }
-
-
-    template< class T >
-    static bool json_get_ex( json const & j, char const * key, T * pv )
-    {
-        auto it = j.find( key );
-        if( it == j.end()  ||  it->is_null() )
-            return false;
-        try
-        {
-            // This will throw for type mismatches, etc.
-            *pv = it->get< T >();
-        }
-        catch( std::exception const & e )
-        {
-            std::ostringstream s;
-            s << e.what() << " - while parsing '" << key << "'";
-            throw std::runtime_error( s.str() );
-        }
-        LOG_DEBUG( key << " = " << *pv );
-        return true;
-    }
-
-
-    template < class T >
-    static T json_get( json const & j, char const * key, T const & default_value )
-    {
-        T v;
-        if( json_get_ex< T >( j, key, &v ) )
-            return v;
-        LOG_DEBUG( key << " = " << default_value << " (default)" );
-        return default_value;
-    }
-
-
     context::context( char const * json_settings )
         : context()
     {
@@ -209,15 +167,16 @@ namespace librealsense
         assert( _device_watcher->is_stopped() );
 
 #ifdef BUILD_WITH_DDS
-        if( json_get< bool >( settings, "dds-discovery", true ) )
+        if( utilities::json::get< bool >( settings, "dds-discovery", true ) )
         {
             if( ! _dds_participant.instance()->is_valid() )
             {
                 _dds_participant->init(
-                    json_get< int >( settings, "dds-domain", 0 ),
-                    json_get< std::string >( settings, "dds-participant-name", "librealsense" ) );
+                    utilities::json::get< int >( settings, "dds-domain", 0 ),
+                    utilities::json::get< std::string >( settings, "dds-participant-name", "librealsense" ) );
             }
-            else if( json_has_value( settings, "dds-domain" ) || json_has_value( settings, "dds-participant-name" ) )
+            else if( utilities::json::has_value( settings, "dds-domain" )
+                     || utilities::json::has_value( settings, "dds-participant-name" ) )
             {
                 LOG_WARNING( "DDS participant has already been created; ignoring DDS settings" );
             }
