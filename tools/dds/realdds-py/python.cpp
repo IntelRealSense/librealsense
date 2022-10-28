@@ -25,6 +25,8 @@ Copyright(c) 2022 Intel Corporation. All Rights Reserved. */
 #include <fastdds/dds/core/status/SubscriptionMatchedStatus.hpp>
 #include <fastrtps/types/DynamicType.h>
 
+#include <third-party/json.hpp>
+
 
 #ifndef BUILD_SHARED_LIBS  // shared-init takes care of the else
 INITIALIZE_EASYLOGGINGPP
@@ -339,6 +341,7 @@ PYBIND11_MODULE(NAME, m) {
         .def( "stream", &dds_stream_profile::stream )
         .def( "to_string", &dds_stream_profile::to_string )
         .def( "details_to_string", &dds_stream_profile::details_to_string )
+        .def( "to_json", []( dds_stream_profile const & self ) { return self.to_json().dump(); } )
         .def( "__repr__", []( dds_stream_profile const & self ) {
             std::ostringstream os;
             std::string self_as_string = self.to_string();  // <video 0xUID ...>

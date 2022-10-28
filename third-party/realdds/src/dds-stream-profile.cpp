@@ -3,6 +3,10 @@
 
 #include <realdds/dds-stream-profile.h>
 #include <realdds/dds-exceptions.h>
+
+#include <third-party/json.hpp>
+using nlohmann::json;
+
 #include <map>
 
 
@@ -162,7 +166,7 @@ std::string dds_stream_profile::details_to_string() const
 std::string dds_video_stream_profile::details_to_string() const
 {
     std::ostringstream os;
-    os << dds_stream_profile::details_to_string();
+    os << super::details_to_string();
     os << ' ' << _width << 'x' << _height << " @" << +_bytes_per_pixel << " Bpp";
     return os.str();
 }
@@ -175,6 +179,27 @@ void dds_stream_profile::init_stream( std::weak_ptr< dds_stream_base > const & s
     if( _stream.lock() )
         DDS_THROW( runtime_error, "profile is already associated with a stream" );
     _stream = stream;
+}
+
+
+json dds_stream_profile::to_json() const
+{
+    json profile = { { "frequency", frequency() },
+                     { "format", format().to_string() } };
+    return profile;
+}
+
+
+json dds_video_stream_profile::to_json() const
+{
+    auto profile = super::to_json();
+    profile += { "width", width() };
+    profile += { "height", height() };
+    //profile["width"] = width();
+    //profile["height"] = height();
+    //profile += { { "width", width() },
+    //             { "height", height() } };
+    return profile;
 }
 
 

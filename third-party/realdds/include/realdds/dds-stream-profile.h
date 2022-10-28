@@ -4,6 +4,8 @@
 #pragma once
 
 
+#include <third-party/json_fwd.hpp>
+
 #include <stdint.h>
 #include <string>
 #include <vector>
@@ -112,6 +114,9 @@ public:
     virtual std::string to_string() const;
     virtual char const * type_to_string() const = 0;
     virtual std::string details_to_string() const;
+
+    // Serialization to a JSON representation
+    virtual nlohmann::json to_json() const;
 };
 
 
@@ -120,6 +125,8 @@ typedef std::vector< std::shared_ptr< dds_stream_profile > > dds_stream_profiles
 
 class dds_video_stream_profile : public dds_stream_profile
 {
+    typedef dds_stream_profile super;
+
     uint16_t _width;   // Resolution width [pixels]
     uint16_t _height;  // Resolution height [pixels]
     uint8_t _bytes_per_pixel;
@@ -140,11 +147,15 @@ public:
 
     std::string details_to_string() const override;
     char const * type_to_string() const override { return "video"; }
+
+    nlohmann::json to_json() const override;
 };
 
 
 class dds_motion_stream_profile : public dds_stream_profile
 {
+    typedef dds_stream_profile super;
+
 public:
     dds_motion_stream_profile( dds_stream_uid uid, dds_stream_format format, int16_t frequency )
         : dds_stream_profile( uid, format, frequency )
