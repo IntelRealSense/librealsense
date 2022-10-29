@@ -117,6 +117,7 @@ bool dds_device::impl::init()
     // We expect to receive all of the sensors data under a timeout
     utilities::time::timer t( std::chrono::seconds( 30 ) );  // TODO: refine time out
     state_type state = state_type::WAIT_FOR_DEVICE_HEADER;
+    size_t n_streams_expected = 0;
     while( ! t.has_expired() && state_type::DONE != state )
     {
         LOG_DEBUG( state << "..." );
@@ -133,18 +134,18 @@ bool dds_device::impl::init()
                 auto id = j["id"].get< std::string >();
                 if( state_type::WAIT_FOR_DEVICE_HEADER == state && id == "device-header" )
                 {
-                    _expected_num_of_streams = utilities::json::get< size_t >( j, "n-streams" );
-                    LOG_INFO( "... device-header: " << _expected_num_of_streams << " streams" );
-                    if( _expected_num_of_streams )
+                    n_streams_expected = utilities::json::get< size_t >( j, "n-streams" );
+                    LOG_INFO( "... device-header: " << n_streams_expected << " streams expected" );
+                    if( n_streams_expected )
                         state = state_type::WAIT_FOR_PROFILES;
                     else
                         state = state_type::DONE;
                 }
                 else if( state_type::WAIT_FOR_PROFILES == state && id == "stream-header" )
                 {
-                    if( _streams.size() >= _expected_num_of_streams )
+                    if( _streams.size() >= n_streams_expected )
                         DDS_THROW( runtime_error,
-                                   "more streams than expected (" + std::to_string( _expected_num_of_streams )
+                                   "more streams than expected (" + std::to_string( n_streams_expected )
                                        + ") received" );
                     auto type = utilities::json::get< std::string >( j, "type" );
                     auto stream_name = utilities::json::get< std::string >( j, "name" );
@@ -192,9 +193,9 @@ bool dds_device::impl::init()
                         DDS_THROW( runtime_error, "stream '" + stream_name + "' already exists" );
                     stream = std::make_shared< dds_video_stream >( stream_name, sensor_name );
                     stream->init_profiles( profiles, default_profile_index );
-                    LOG_INFO( "... stream-header: stream (" << _streams.size() << "/" << _expected_num_of_streams
-                                                    << ") received with " << profiles.size() << " profiles" );
-                    if( _streams.size() >= _expected_num_of_streams )
+                    LOG_INFO( "... stream '" << stream_name << "' (" << _streams.size() << "/" << n_streams_expected
+                                             << ") received with " << profiles.size() << " profiles" );
+                    if( _streams.size() >= n_streams_expected )
                         state = state_type::DONE;
                 }
                 else
