@@ -104,6 +104,7 @@ int dds_stream_format::to_rs2() const
         { rs_fourcc( 'R', 'G', 'B', '2' ), RS2_FORMAT_BGR8 },
         { rs_fourcc( 'B', 'G', 'R', 'A' ), RS2_FORMAT_BGRA8 },
         { rs_fourcc( 'M', 'J', 'P', 'G' ), RS2_FORMAT_MJPEG },
+        { rs_fourcc( 'C', 'N', 'F', '4' ), RS2_FORMAT_RAW8 },
         { rs_fourcc( 'B', 'Y', 'R', '2' ), RS2_FORMAT_RAW16 },
         { rs_fourcc( 'M', 'X', 'Y', 'Z' ), RS2_FORMAT_MOTION_XYZ32F },
     };
@@ -137,6 +138,7 @@ dds_stream_format dds_stream_format::from_rs2( int rs2_format )
     case RS2_FORMAT_BGR8: fourcc = "RGB2"; break;
     case RS2_FORMAT_BGRA8: fourcc = "BGRA"; break;  // todo
     case RS2_FORMAT_MJPEG: fourcc = "MJPG"; break;
+    case RS2_FORMAT_RAW8: fourcc = "CNF4"; break;
     case RS2_FORMAT_RAW16: fourcc = "BYR2"; break;
     case RS2_FORMAT_MOTION_XYZ32F: fourcc = "MXYZ"; break;  // todo
     default:
