@@ -103,18 +103,27 @@ void dds_device_server::init( std::vector< std::shared_ptr< dds_stream_server > 
     if( is_valid() )
         DDS_THROW( runtime_error, "device server '" + _topic_root + "' is already initialized" );
 
-    // Create a notifications server
-    _notification_server
-        = std::make_shared< dds_notification_server >( _publisher, _topic_root + "/notification" );
-
-    on_discovery_device_header( streams.size(), *_notification_server );
-
-    for( auto & stream : streams )
+    try
     {
-        std::string topic_name = _topic_root + '/' + stream->name();
-        stream->open( topic_name, _publisher );
-        _stream_name_to_server[stream->name()] = stream;
-        on_discovery_stream_header( stream, *_notification_server );
+        _notification_server = std::make_shared< dds_notification_server >( _publisher, _topic_root + "/notification" );
+
+        // If a previous init failed (e.g., one of the streams has no profiles):
+        _stream_name_to_server.clear();
+
+        on_discovery_device_header( streams.size(), *_notification_server );
+        for( auto& stream : streams )
+        {
+            std::string topic_name = _topic_root + '/' + stream->name();
+            stream->open( topic_name, _publisher );
+            _stream_name_to_server[stream->name()] = stream;
+            on_discovery_stream_header( stream, *_notification_server );
+        }
+    }
+    catch( std::exception const & )
+    {
+        _notification_server.reset();
+        _stream_name_to_server.clear();
+        throw;
     }
 }
 
