@@ -167,6 +167,15 @@ PYBIND11_MODULE(NAME, m) {
         .def( "create_guid", &dds_participant::create_guid )
         .def( "__nonzero__", &dds_participant::is_valid )  // Called to implement truth value testing in Python 2
         .def( "__bool__", &dds_participant::is_valid )     // Called to implement truth value testing in Python 3
+        .def( "name",
+              []( dds_participant const & self ) {
+                  eprosima::fastdds::dds::DomainParticipantQos qos;
+                  if( ReturnCode_t::RETCODE_OK == self.get()->get_qos( qos ) )
+                      return std::string( qos.name() );
+                  return std::string();
+              } )
+        .def( "name_from_guid", []( dds_guid const & guid ) { return dds_participant::name_from_guid( guid ); } )
+        .def( "names", []( dds_participant const & self ) { return self.get()->get_participant_names(); } )
         .def( "__repr__",
               []( const dds_participant & self ) {
                   std::ostringstream os;
