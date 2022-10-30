@@ -52,7 +52,8 @@ std::vector< std::shared_ptr< realdds::dds_stream_server > > get_supported_strea
                     static_cast< int16_t >( vsp.fps() ),
                     static_cast< uint16_t >( vsp.width() ),
                     static_cast< int16_t >( vsp.height() ),
-                    0 );  // bytes per pixel - todo
+                    0, // bytes per pixel - todo
+                    static_cast< int8_t >(vsp.stream_type() ) );
             }
             else if( sp.is< rs2::motion_stream_profile >() )
             {
@@ -60,7 +61,8 @@ std::vector< std::shared_ptr< realdds::dds_stream_server > > get_supported_strea
                 profile = std::make_shared< realdds::dds_motion_stream_profile >(
                     realdds::dds_stream_uid( msp.unique_id(), msp.stream_index() ),
                     realdds::dds_stream_format::from_rs2( msp.format() ),
-                    static_cast< int16_t >( msp.fps() ) );
+                    static_cast< int16_t >( msp.fps() ),
+                    static_cast< int8_t >(msp.stream_type() ) );
             }
             else
             {

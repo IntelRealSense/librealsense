@@ -105,7 +105,7 @@ static void on_discovery_video_stream( std::shared_ptr< dds_video_stream_server 
                                                                        vsp->uid().sid,
                                                                        vsp->frequency(),
                                                                        (int8_t)vsp->format().to_rs2(),
-                                                                       0,  // RS2_STREAM_ANY,
+                                                                       vsp->type(),
                                                                        (int16_t)vsp->width(),
                                                                        (int16_t)vsp->height(),
                                                                        stream->default_profile_index() == index };
@@ -141,7 +141,7 @@ static void on_discovery_motion_stream( std::shared_ptr< dds_motion_stream_serve
                                                                         msp->uid().sid,
                                                                         msp->frequency(),
                                                                         (int8_t)msp->format().to_rs2(),
-                                                                        0 };  // RS2_STREAM_ANY
+                                                                        msp->type() };
 
         motion_stream_profiles.profiles[index++] = std::move( msp_msg );
     }

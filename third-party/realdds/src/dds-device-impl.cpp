@@ -60,7 +60,8 @@ to_realdds_profile( const topics::device::notification::video_stream_profile & p
                                                               profile.framerate,
                                                               profile.width,
                                                               profile.height,
-                                                              0 );  // TODO - bpp
+                                                              0, // TODO - bpp
+                                                              profile.type);
     // TODO - add intrinsics
 
     return prof;
@@ -71,7 +72,8 @@ to_realdds_profile( const topics::device::notification::motion_stream_profile & 
 {
     auto prof = std::make_shared< dds_motion_stream_profile >( dds_stream_uid( profile.uid, profile.stream_index ),
                                                                dds_stream_format::from_rs2( profile.format ),
-                                                               profile.framerate );
+                                                               profile.framerate,
+                                                               profile.type );
     // TODO - add intrinsics
 
     return prof;

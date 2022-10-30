@@ -504,7 +504,7 @@ namespace librealsense
         rs2_video_stream to_rs2_video_stream( std::shared_ptr< realdds::dds_video_stream_profile > const & profile )
         {
             rs2_video_stream prof;
-            prof.type = RS2_STREAM_ANY;
+            prof.type = static_cast< rs2_stream >(profile->type());
             prof.index = profile->uid().index;
             prof.uid = profile->uid().sid;
             prof.width = profile->width();
@@ -519,7 +519,7 @@ namespace librealsense
         rs2_motion_stream to_rs2_motion_stream( std::shared_ptr< realdds::dds_motion_stream_profile > const & profile )
         {
             rs2_motion_stream prof;
-            prof.type = RS2_STREAM_ANY;
+            prof.type = static_cast< rs2_stream >( profile->type() );
             prof.index = profile->uid().index;
             prof.uid = profile->uid().sid;
             prof.fps = profile->frequency();
