@@ -118,6 +118,8 @@ void dds_device_server::init( std::vector< std::shared_ptr< dds_stream_server > 
             _stream_name_to_server[stream->name()] = stream;
             on_discovery_stream_header( stream, *_notification_server );
         }
+
+        _notification_server->start();
     }
     catch( std::exception const & )
     {

@@ -42,8 +42,9 @@ dds_notification_server::dds_notification_server( std::shared_ptr< dds_publisher
 
             if( _active && _send_init_msgs )
             {
-                send_discovery_notifications();
+                // Note: new discoveries can happen while we're sending them! (though they'll wait on the mutex)
                 _send_init_msgs = false;
+                send_discovery_notifications();
             }
 
             if( _active && _new_instant_notification )
@@ -86,23 +87,37 @@ dds_notification_server::dds_notification_server( std::shared_ptr< dds_publisher
     wqos.history().depth = 10;                                                                      // default is 1
     wqos.endpoint().history_memory_policy = eprosima::fastrtps::rtps::DYNAMIC_RESERVE_MEMORY_MODE;  // TODO: why?
     _writer->run( wqos );
+}
 
-    _notifications_loop.start();
-    _active = true;
+
+void dds_notification_server::start()
+{
+    if( ! _active )
+    {
+        _active = true;
+        _notifications_loop.start();
+        // if any discovery happened before we started, _send_init_msgs will be true and we shouldn't even wait...
+    }
 }
 
 
 dds_notification_server::~dds_notification_server()
 {
     // Mark us inactive and wake up the active object so we can properly stop it
-    _active = false;
-    _send_notification_cv.notify_all();
-    _notifications_loop.stop();
+    if( _active )
+    {
+        _active = false;
+        _send_notification_cv.notify_all();
+        _notifications_loop.stop();
+    }
 }
 
 
 void dds_notification_server::send_notification( topics::notification && notification )
 {
+    if( ! is_started() )
+        DDS_THROW( runtime_error, "cannot send notification while server isn't running" );
+
     topics::raw::notification raw_notification;
     raw_notification.data_type( (topics::raw::notification_data_type)notification._data_type );
     raw_notification.version()[0] = notification._version >> 24 & 0xFF;
@@ -119,6 +134,9 @@ void dds_notification_server::send_notification( topics::notification && notific
 
 void dds_notification_server::add_discovery_notification( topics::notification && notification )
 {
+    if( is_started() )
+        DDS_THROW( runtime_error, "cannot add discovery notification while server is running" );
+
     topics::raw::notification raw_notification;
     raw_notification.data_type( (topics::raw::notification_data_type) notification._data_type );
     raw_notification.version()[0] = notification._version >> 24 & 0xFF;
@@ -127,7 +145,6 @@ void dds_notification_server::add_discovery_notification( topics::notification &
     raw_notification.version()[3] = notification._version & 0xFF;
     raw_notification.data( std::move( notification._data ) );
 
-    std::unique_lock< std::mutex > lock( _notification_send_mutex );
     _discovery_notifications.push_back( std::move( raw_notification ) );
 };
 
