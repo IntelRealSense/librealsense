@@ -115,10 +115,9 @@ static void on_discovery_video_stream( std::shared_ptr< dds_video_stream_server 
     video_stream_profiles.num_of_profiles = index;
 
     topics::raw::device::notification notification;
-    topics::device::notification::construct_raw_message(
-        topics::device::notification::msg_type::VIDEO_STREAM_PROFILES,
-        video_stream_profiles,
-        notification );
+    topics::device::notification::construct_raw_message( topics::device::notification::msg_type::VIDEO_STREAM_PROFILES,
+                                                         video_stream_profiles,
+                                                         notification );
     notifications.add_discovery_notification( std::move( notification ) );
 }
 
@@ -149,7 +148,7 @@ static void on_discovery_motion_stream( std::shared_ptr< dds_motion_stream_serve
     motion_stream_profiles.num_of_profiles = index;
 
     topics::raw::device::notification notification;
-    topics::device::notification::construct_raw_message( topics::device::notification::msg_type::VIDEO_STREAM_PROFILES,
+    topics::device::notification::construct_raw_message( topics::device::notification::msg_type::MOTION_STREAM_PROFILES,
                                                          motion_stream_profiles,
                                                          notification );
     notifications.add_discovery_notification( std::move( notification ) );
