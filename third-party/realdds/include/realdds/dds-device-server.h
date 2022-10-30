@@ -18,6 +18,7 @@ namespace raw {
 class device_info;
 namespace device {
 class notification;
+class control;
 }  // namespace device
 }  // namespace raw
 class device_info;
@@ -26,8 +27,10 @@ class device_info;
 
 class dds_participant;
 class dds_publisher;
+class dds_subscriber;
 class dds_stream_server;
 class dds_notification_server;
+class dds_control_server;
 struct image_header;
 
 
@@ -65,10 +68,14 @@ public:
     void publish_notification( topics::raw::device::notification&& notification );
     
 private:
+    void on_control_message_received();
+
     std::shared_ptr< dds_publisher > _publisher;
+    std::shared_ptr< dds_subscriber > _subscriber;
     std::string _topic_root;
     std::unordered_map<std::string, std::shared_ptr<dds_stream_server>> _stream_name_to_server;
     std::shared_ptr< dds_notification_server > _notification_server;
+    std::shared_ptr< dds_control_server > _control_server;
 };  // class dds_device_server
 
 

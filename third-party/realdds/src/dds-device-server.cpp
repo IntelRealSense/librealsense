@@ -5,13 +5,16 @@
 
 #include <realdds/dds-participant.h>
 #include <realdds/dds-publisher.h>
+#include <realdds/dds-subscriber.h>
 #include <realdds/dds-stream-server.h>
 #include <realdds/dds-stream-profile.h>
 #include <realdds/dds-notification-server.h>
+#include <realdds/dds-control-server.h>
 #include <realdds/dds-utilities.h>
 #include <realdds/topics/device-info/device-info-msg.h>
 #include <realdds/topics/image/image-msg.h>
 #include <realdds/topics/notification/notification-msg.h>
+#include <realdds/topics/control/control-msg.h>
 #include <realdds/dds-topic.h>
 #include <realdds/dds-topic-writer.h>
 
@@ -25,6 +28,7 @@ using namespace realdds;
 dds_device_server::dds_device_server( std::shared_ptr< dds_participant > const & participant,
                                       const std::string & topic_root )
     : _publisher( std::make_shared< dds_publisher >( participant ))
+    , _subscriber( std::make_shared< dds_subscriber >( participant ))
     , _topic_root( topic_root )
 {
     LOG_DEBUG( "device server created @ '" << _topic_root << "'" );
@@ -157,7 +161,7 @@ void dds_device_server::init( std::vector< std::shared_ptr< dds_stream_server > 
     if( is_valid() )
         DDS_THROW( runtime_error, "device server '" + _topic_root + "' is already initialized" );
 
-    // Create a notifications server
+    // Create a notifications server and set discovery notifications
     _notification_server
         = std::make_shared< dds_notification_server >( _publisher, _topic_root + "/notification" );
 
@@ -176,11 +180,22 @@ void dds_device_server::init( std::vector< std::shared_ptr< dds_stream_server > 
         else
             DDS_THROW( runtime_error, "unexpected stream '" + stream->name() + "' type" );
     }
+
+    // Create a control server and set callback
+    _control_server = std::make_shared< dds_control_server >( _subscriber, _topic_root + "/control" );
+
+    _control_server->on_control_message_received( [&]() { on_control_message_received(); } );
 }
 
 
 void dds_device_server::publish_notification( topics::raw::device::notification&& notification )
 {
     _notification_server->send_notification( std::move( notification ) );
+}
+
+
+void dds_device_server::on_control_message_received()
+{
+    //TODO - handle control
 }
 

@@ -4,6 +4,7 @@
 #include <realdds/dds-topic-reader.h>
 #include <realdds/dds-topic.h>
 #include <realdds/dds-participant.h>
+#include <realdds/dds-subscriber.h>
 #include <realdds/dds-utilities.h>
 
 #include <fastdds/dds/domain/DomainParticipant.hpp>
@@ -17,7 +18,15 @@ namespace realdds {
 
 
 dds_topic_reader::dds_topic_reader( std::shared_ptr< dds_topic > const & topic )
+    : dds_topic_reader( topic, std::make_shared< dds_subscriber >( topic->get_participant() ) )
+{
+}
+
+
+dds_topic_reader::dds_topic_reader( std::shared_ptr< dds_topic > const & topic,
+                                    std::shared_ptr< dds_subscriber > const & subscriber )
     : _topic( topic )
+    , _subscriber( subscriber )
 {
 }
 
@@ -27,9 +36,7 @@ dds_topic_reader::~dds_topic_reader()
     if( _subscriber )
     {
         if( _reader )
-            DDS_API_CALL_NO_THROW( _subscriber->delete_datareader( _reader ) );
-        if( _topic->get_participant()->is_valid() )
-            DDS_API_CALL_NO_THROW( _topic->get_participant()->get()->delete_subscriber( _subscriber ) );
+            DDS_API_CALL_NO_THROW( _subscriber->get()->delete_datareader( _reader ) );
     }
 }
 
@@ -79,10 +86,6 @@ dds_topic_reader::qos::qos( eprosima::fastdds::dds::ReliabilityQosPolicyKind rel
 
 void dds_topic_reader::run( qos const & rqos )
 {
-    // The Subscriber manages the activities of several DataReader entities
-    _subscriber = DDS_API_CALL(
-        _topic->get_participant()->get()->create_subscriber( eprosima::fastdds::dds::SUBSCRIBER_QOS_DEFAULT ) );
-
     // The DataReader is the Entity used by the application to subscribe to updated values of the data
     eprosima::fastdds::dds::StatusMask status_mask;
     if( _on_subscription_matched )
@@ -90,7 +93,7 @@ void dds_topic_reader::run( qos const & rqos )
     if( _on_data_available )
         status_mask << eprosima::fastdds::dds::StatusMask::data_available();
     _reader = DDS_API_CALL(
-        _subscriber->create_datareader( _topic->get(), rqos, status_mask.any() ? this : nullptr, status_mask ) );
+        _subscriber->get()->create_datareader( _topic->get(), rqos, status_mask.any() ? this : nullptr, status_mask ) );
 }
 
 
