@@ -94,7 +94,7 @@ static void on_discovery_video_stream( std::shared_ptr< dds_video_stream_server 
 
     // Send stream profiles
     topics::device::notification::video_stream_profiles_msg video_stream_profiles;
-    video_stream_profiles.group_name[stream->name().copy( video_stream_profiles.group_name, sizeof( video_stream_profiles.group_name - 1 ))] = 0;
+    video_stream_profiles.group_name[stream->name().copy( video_stream_profiles.group_name, sizeof( video_stream_profiles.group_name ) - 1 )] = 0;
     int index = 0;
     for( auto & sp : stream->profiles() )
     {
@@ -130,7 +130,7 @@ static void on_discovery_motion_stream( std::shared_ptr< dds_motion_stream_serve
 
     // Send stream profiles
     topics::device::notification::motion_stream_profiles_msg motion_stream_profiles;
-    motion_stream_profiles.group_name[stream->name().copy( motion_stream_profiles.group_name, sizeof( motion_stream_profiles.group_name - 1 ))] = 0;
+    motion_stream_profiles.group_name[stream->name().copy( motion_stream_profiles.group_name, sizeof( motion_stream_profiles.group_name ) - 1 )] = 0;
     int index = 0;
     for( auto & sp : stream->profiles() )
     {
