@@ -134,6 +134,7 @@ dds_stream_format dds_stream_format::from_rs2( int rs2_format )
     case RS2_FORMAT_BGRA8: fourcc = "BGRA"; break;  // todo
     case RS2_FORMAT_MJPEG: fourcc = "MJPG"; break;
     case RS2_FORMAT_RAW16: fourcc = "BYR2"; break;
+    case RS2_FORMAT_UYVY: fourcc = "UYVY"; break;
     case RS2_FORMAT_MOTION_XYZ32F: fourcc = "MXYZ"; break;  // todo
     default:
         DDS_THROW( runtime_error, "cannot translate rs2_format " + std::to_string( rs2_format ) + " to any known dds_stream_format" );
