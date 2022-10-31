@@ -80,7 +80,7 @@ static void on_discovery_stream_header( std::shared_ptr< dds_stream_server > con
 {
     nlohmann::ordered_json profiles = {};
     for( auto & sp : stream->profiles() )
-        profiles += sp->to_json();
+        profiles.push_back( std::move( sp->to_json() ) );
     json msg = {
         { "id", "stream-header" },
         { "type", stream->profiles().front()->type_to_string() },
