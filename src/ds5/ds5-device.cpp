@@ -726,6 +726,7 @@ namespace librealsense
 
         depth_ep->register_option(RS2_OPTION_GLOBAL_TIME_ENABLED, enable_global_time_option);
 
+        depth_ep->register_processing_block(processing_block_factory::create_id_pbf(RS2_FORMAT_Y8I, RS2_STREAM_INFRARED));
         depth_ep->register_processing_block(processing_block_factory::create_id_pbf(RS2_FORMAT_Y8, RS2_STREAM_INFRARED, 1));
         depth_ep->register_processing_block(processing_block_factory::create_id_pbf(RS2_FORMAT_Z16, RS2_STREAM_DEPTH));
 
