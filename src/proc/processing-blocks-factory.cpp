@@ -1,6 +1,7 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2017 Intel Corporation. All Rights Reserved.
 
+#include "../include/librealsense2/rsutil_gpu.h"
 #include "processing-blocks-factory.h"
 
 #include "sse/sse-align.h"
@@ -10,24 +11,20 @@
 
 namespace librealsense
 {
+    std::shared_ptr<librealsense::align> create_align(rs2_stream align_to)
+    {
 #ifdef RS2_USE_CUDA
-    std::shared_ptr<librealsense::align> create_align(rs2_stream align_to)
-    {
+      if (rs2_is_gpu_available())
+      {
         return std::make_shared<librealsense::align_cuda>(align_to);
-    }
-#else
-#ifdef __SSSE3__
-    std::shared_ptr<librealsense::align> create_align(rs2_stream align_to)
-    {
-        return std::make_shared<librealsense::align_sse>(align_to);
-    }
-#else // No optimizations
-    std::shared_ptr<librealsense::align> create_align(rs2_stream align_to)
-    {
-        return std::make_shared<librealsense::align>(align_to);
-    }
-#endif // __SSSE3__
+      }
 #endif // RS2_USE_CUDA
+#ifdef __SSSE3__
+      return std::make_shared<librealsense::align_sse>(align_to);
+#else // No optimizations
+      return std::make_shared<librealsense::align>(align_to);
+#endif // __SSSE3__
+    }
 
     processing_block_factory::processing_block_factory(const std::vector<stream_profile>& from, const std::vector<stream_profile>& to, std::function<std::shared_ptr<processing_block>(void)> generate_func) :
         _source_info(from), _target_info(to), generate_processing_block(generate_func)

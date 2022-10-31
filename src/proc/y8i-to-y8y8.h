@@ -15,5 +15,8 @@ namespace librealsense
     protected:
         y8i_to_y8y8(const char* name, int left_idx, int right_idx);
         void process_function(byte * const dest[], const byte * source, int width, int height, int actual_size, int input_size) override;
+
+   private:
+        void (*unpack_y8_y8_from_y8i)(byte * const dest[], const byte * source, int width, int height, int actual_size);
     };
 }

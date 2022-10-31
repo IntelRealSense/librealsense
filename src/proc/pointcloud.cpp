@@ -2,6 +2,8 @@
 // Copyright(c) 2017 Intel Corporation. All Rights Reserved.
 
 #include "../include/librealsense2/rs.hpp"
+#include "../include/librealsense2/rsutil.h"
+#include "../include/librealsense2/rsutil_gpu.h"
 #include "environment.h"
 #include "proc/occlusion-filter.h"
 #include "proc/pointcloud.h"
@@ -387,15 +389,17 @@ namespace librealsense
 
     std::shared_ptr<pointcloud> pointcloud::create()
     {
-        #ifdef RS2_USE_CUDA
-            return std::make_shared<librealsense::pointcloud_cuda>();
-        #else
-        #ifdef __SSSE3__
-            return std::make_shared<librealsense::pointcloud_sse>();
-        #else
-            return std::make_shared<librealsense::pointcloud>();
-        #endif
-        #endif
+#ifdef RS2_USE_CUDA
+      if (rs2_is_gpu_available())
+      {
+        return std::make_shared<librealsense::pointcloud_cuda>();
+      }
+#endif
+#ifdef __SSSE3__
+      return std::make_shared<librealsense::pointcloud_sse>();
+#else
+      return std::make_shared<librealsense::pointcloud>();
+#endif
     }
 
     bool pointcloud::run__occlusion_filter(const rs2_extrinsics& extr)
