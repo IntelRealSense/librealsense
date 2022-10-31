@@ -216,13 +216,13 @@ bool updates_model::draw_software_section(const char * window_name, update_profi
                 if (!essential_found)
                 {
                     essential_found = essential_found || sw_update.name_for_display.find("ESSENTIAL") != std::string::npos;
-                    essential_sw_update_needed = essential_sw_update_needed || essential_found && (selected_profile.profile.software_version < sw_update.ver);
+                    essential_sw_update_needed = essential_sw_update_needed || (essential_found && (selected_profile.profile.software_version < sw_update.ver));
                 }
 
                 if (!recommended_found)
                 {
                     recommended_found = recommended_found || sw_update.name_for_display.find("RECOMMENDED") != std::string::npos;
-                    recommended_sw_update_needed = recommended_sw_update_needed || recommended_found && (selected_profile.profile.software_version < sw_update.ver);
+                    recommended_sw_update_needed = recommended_sw_update_needed || (recommended_found && (selected_profile.profile.software_version < sw_update.ver));
                 }
             }
 
@@ -477,13 +477,13 @@ bool updates_model::draw_firmware_section(std::shared_ptr<notifications_model> n
             if (!essential_found)
             {
                 essential_found = essential_found || fw_update.name_for_display.find("ESSENTIAL") != std::string::npos;
-                essential_fw_update_needed = essential_fw_update_needed || essential_found && (selected_profile.profile.firmware_version < fw_update.ver);
+                essential_fw_update_needed = essential_fw_update_needed || (essential_found && (selected_profile.profile.firmware_version < fw_update.ver));
             }
 
             if (!recommended_found)
             {
                 recommended_found = recommended_found || fw_update.name_for_display.find("RECOMMENDED") != std::string::npos;
-                recommended_fw_update_needed = recommended_fw_update_needed || recommended_found && (selected_profile.profile.firmware_version < fw_update.ver);
+                recommended_fw_update_needed = recommended_fw_update_needed || (recommended_found && (selected_profile.profile.firmware_version < fw_update.ver));
             }
         }
 

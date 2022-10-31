@@ -75,17 +75,17 @@ static inline void CONSOLE_BRIDGE_DEPRECATED console_bridge_deprecated() {}
 
     \}
 */
-#define CONSOLE_BRIDGE_logError(fmt, ...)  \
-  console_bridge::log(__FILE__, __LINE__, console_bridge::CONSOLE_BRIDGE_LOG_ERROR, fmt, ##__VA_ARGS__)
+#define CONSOLE_BRIDGE_logError(...)  \
+  console_bridge::log(__FILE__, __LINE__, console_bridge::CONSOLE_BRIDGE_LOG_ERROR, __VA_ARGS__)
 
-#define CONSOLE_BRIDGE_logWarn(fmt, ...)   \
-  console_bridge::log(__FILE__, __LINE__, console_bridge::CONSOLE_BRIDGE_LOG_WARN,  fmt, ##__VA_ARGS__)
+#define CONSOLE_BRIDGE_logWarn(...)   \
+  console_bridge::log(__FILE__, __LINE__, console_bridge::CONSOLE_BRIDGE_LOG_WARN, __VA_ARGS__)
 
-#define CONSOLE_BRIDGE_logInform(fmt, ...) \
-  console_bridge::log(__FILE__, __LINE__, console_bridge::CONSOLE_BRIDGE_LOG_INFO,  fmt, ##__VA_ARGS__)
+#define CONSOLE_BRIDGE_logInform(...) \
+  console_bridge::log(__FILE__, __LINE__, console_bridge::CONSOLE_BRIDGE_LOG_INFO, __VA_ARGS__)
 
-#define CONSOLE_BRIDGE_logDebug(fmt, ...)  \
-  console_bridge::log(__FILE__, __LINE__, console_bridge::CONSOLE_BRIDGE_LOG_DEBUG, fmt, ##__VA_ARGS__)
+#define CONSOLE_BRIDGE_logDebug(...)  \
+  console_bridge::log(__FILE__, __LINE__, console_bridge::CONSOLE_BRIDGE_LOG_DEBUG, __VA_ARGS__)
 
 //#define logError(fmt, ...)  \
 //  console_bridge::log_deprecated(__FILE__, __LINE__, console_bridge::CONSOLE_BRIDGE_LOG_ERROR, fmt, ##__VA_ARGS__)
