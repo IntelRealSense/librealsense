@@ -122,9 +122,7 @@ namespace librealsense
         static const std::set<std::uint16_t> hid_bmi_055_pid = {
             ds::RS435I_PID,
             ds::RS430I_PID,
-            ds::RS455_PID,
-            ds::RS_D585_PID,
-            ds::RS_S585_PID
+            ds::RS455_PID
         };
 
         static const std::set<std::uint16_t> hid_bmi_085_pid = {
