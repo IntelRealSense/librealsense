@@ -84,7 +84,6 @@ class dds_stream_profile
     dds_stream_uid _uid;
     dds_stream_format _format;
     int16_t _frequency; // "Frames" per second
-    int8_t _inner_type; // User defined type
 
     std::weak_ptr< dds_stream_base > _stream;
 
@@ -92,11 +91,10 @@ public:
     virtual ~dds_stream_profile() {}
 
 protected:
-    dds_stream_profile( dds_stream_uid uid, dds_stream_format format, int16_t frequency, int8_t inner_type = 0 )
+    dds_stream_profile( dds_stream_uid uid, dds_stream_format format, int16_t frequency )
         : _uid( uid )
         , _format( format )
         , _frequency( frequency )
-        , _inner_type( inner_type )
     {
     }
     dds_stream_profile( dds_stream_profile && ) = default;
@@ -109,7 +107,6 @@ public:
     dds_stream_uid uid() const { return _uid; }
     dds_stream_format format() const { return _format; }
     int16_t frequency() const { return _frequency; }
-    int8_t type() const { return _inner_type; }
 
     // These are for debugging - not functional
     virtual std::string to_string() const;
@@ -129,8 +126,8 @@ class dds_video_stream_profile : public dds_stream_profile
 
 public:
     dds_video_stream_profile( dds_stream_uid uid, dds_stream_format format, int16_t frequency, uint16_t width, uint16_t height,
-                              uint8_t bytes_per_pixel, int8_t inner_type = 0 )
-        : dds_stream_profile( uid, format, frequency, inner_type )
+                              uint8_t bytes_per_pixel )
+        : dds_stream_profile( uid, format, frequency )
         , _width( width )
         , _height( height )
         , _bytes_per_pixel( bytes_per_pixel )
@@ -150,8 +147,8 @@ public:
 class dds_motion_stream_profile : public dds_stream_profile
 {
 public:
-    dds_motion_stream_profile( dds_stream_uid uid, dds_stream_format format, int16_t frequency, int8_t inner_type = 0 )
-        : dds_stream_profile( uid, format, frequency, inner_type )
+    dds_motion_stream_profile( dds_stream_uid uid, dds_stream_format format, int16_t frequency )
+        : dds_stream_profile( uid, format, frequency )
     {
     }
     dds_motion_stream_profile( dds_motion_stream_profile && ) = default;

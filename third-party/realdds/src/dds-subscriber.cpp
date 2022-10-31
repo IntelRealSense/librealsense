@@ -12,7 +12,7 @@
 namespace realdds {
 
 
-    dds_subscriber::dds_subscriber( std::shared_ptr< dds_participant > const & participant )
+dds_subscriber::dds_subscriber( std::shared_ptr< dds_participant > const & participant )
     : _participant( participant )
 {
     _subscriber = DDS_API_CALL(
@@ -20,7 +20,7 @@ namespace realdds {
 }
 
 
-    dds_subscriber::~dds_subscriber()
+dds_subscriber::~dds_subscriber()
 {
     if( _subscriber &&  _participant->is_valid() )
         DDS_API_CALL_NO_THROW( _participant->get()->delete_subscriber( _subscriber ) );

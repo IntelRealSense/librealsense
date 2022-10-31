@@ -104,10 +104,10 @@ static void on_discovery_video_stream( std::shared_ptr< dds_video_stream_server 
         topics::device::notification::video_stream_profile vsp_msg = { vsp->uid().index,
                                                                        vsp->uid().sid,
                                                                        vsp->frequency(),
-                                                                       (int8_t)vsp->format().to_rs2(),
-                                                                       vsp->type(),
-                                                                       (int16_t)vsp->width(),
-                                                                       (int16_t)vsp->height(),
+                                                                       static_cast< int8_t >( vsp->format().to_rs2() ),
+                                                                       static_cast< int8_t >( stream->type() ),
+                                                                       static_cast< int16_t >( vsp->width() ),
+                                                                       static_cast< int16_t >( vsp->height() ),
                                                                        stream->default_profile_index() == index };
 
         video_stream_profiles.profiles[index++] = std::move( vsp_msg );
@@ -140,8 +140,8 @@ static void on_discovery_motion_stream( std::shared_ptr< dds_motion_stream_serve
         topics::device::notification::motion_stream_profile msp_msg = { msp->uid().index,
                                                                         msp->uid().sid,
                                                                         msp->frequency(),
-                                                                        (int8_t)msp->format().to_rs2(),
-                                                                        msp->type() };
+                                                                        static_cast< int8_t >( msp->format().to_rs2() ),
+                                                                        static_cast< int8_t >( stream->type() ) };
 
         motion_stream_profiles.profiles[index++] = std::move( msp_msg );
     }

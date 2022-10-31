@@ -34,10 +34,12 @@ std::vector< std::shared_ptr< realdds::dds_stream_server > > get_supported_strea
     std::map< std::string, realdds::dds_stream_profiles > name_to_profiles;
     std::map< std::string, int > name_to_default_profile;
     std::map< std::string, std::string > name_to_sensor;
+    std::map< std::string, int > name_to_type;
     for( auto sensor : dev.query_sensors() )
     {
         std::string const sensor_name = sensor.get_info( RS2_CAMERA_INFO_NAME );
         auto stream_profiles = sensor.get_stream_profiles();
+        name_to_type[sensor_name] = stream_profiles.empty() ? 0 : stream_profiles[0].stream_type();
         std::for_each( stream_profiles.begin(), stream_profiles.end(), [&]( const rs2::stream_profile & sp ) {
             std::string stream_name = sp.stream_name();
             name_to_sensor[stream_name] = sensor_name;
@@ -52,8 +54,7 @@ std::vector< std::shared_ptr< realdds::dds_stream_server > > get_supported_strea
                     static_cast< int16_t >( vsp.fps() ),
                     static_cast< uint16_t >( vsp.width() ),
                     static_cast< int16_t >( vsp.height() ),
-                    0, // bytes per pixel - todo
-                    static_cast< int8_t >(vsp.stream_type() ) );
+                    0 ); // bytes per pixel - todo
             }
             else if( sp.is< rs2::motion_stream_profile >() )
             {
@@ -61,8 +62,7 @@ std::vector< std::shared_ptr< realdds::dds_stream_server > > get_supported_strea
                 profile = std::make_shared< realdds::dds_motion_stream_profile >(
                     realdds::dds_stream_uid( msp.unique_id(), msp.stream_index() ),
                     realdds::dds_stream_format::from_rs2( msp.format() ),
-                    static_cast< int16_t >( msp.fps() ),
-                    static_cast< int8_t >(msp.stream_type() ) );
+                    static_cast< int16_t >( msp.fps() ) );
             }
             else
             {
@@ -94,9 +94,9 @@ std::vector< std::shared_ptr< realdds::dds_stream_server > > get_supported_strea
         std::string const & sensor_name = name_to_sensor[stream_name];
         std::shared_ptr< realdds::dds_stream_server > server;
         if( std::dynamic_pointer_cast<realdds::dds_video_stream_profile>( profiles.front() ) )
-            server = std::make_shared< realdds::dds_video_stream_server >( stream_name, sensor_name );
+            server = std::make_shared< realdds::dds_video_stream_server >( stream_name, sensor_name, name_to_type[sensor_name] );
         else
-            server = std::make_shared< realdds::dds_motion_stream_server >( stream_name, sensor_name );
+            server = std::make_shared< realdds::dds_motion_stream_server >( stream_name, sensor_name, name_to_type[sensor_name] );
         server->init_profiles( profiles, default_profile_index );
         servers.push_back( server );
     }

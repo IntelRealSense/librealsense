@@ -83,8 +83,11 @@ dds_notification_server::dds_notification_server( std::shared_ptr< dds_publisher
     } );
 
     dds_topic_writer::qos wqos( RELIABLE_RELIABILITY_QOS );
-    wqos.history().depth = 10;                                                                      // default is 1
-    wqos.endpoint().history_memory_policy = eprosima::fastrtps::rtps::DYNAMIC_RESERVE_MEMORY_MODE;  // TODO: why?
+    wqos.history().depth = 10; // default is 1
+    // Does not allocate for every sample but still gives flexibility. See:
+    //     https://github.com/eProsima/Fast-DDS/discussions/2707
+    // (default is PREALLOCATED_MEMORY_MODE)
+    wqos.endpoint().history_memory_policy = eprosima::fastrtps::rtps::PREALLOCATED_WITH_REALLOC_MEMORY_MODE;
     _writer->run( wqos );
 
     _notifications_loop.start();

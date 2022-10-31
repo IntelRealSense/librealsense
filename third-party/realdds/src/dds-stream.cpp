@@ -10,8 +10,8 @@
 namespace realdds {
 
 
-dds_stream::dds_stream( std::string const & stream_name, std::string const & sensor_name )
-    : super( stream_name, sensor_name )
+dds_stream::dds_stream( std::string const & stream_name, std::string const & sensor_name, int type )
+    : super( stream_name, sensor_name, type )
 {
 }
 
@@ -34,15 +34,15 @@ std::shared_ptr< dds_topic > const & dds_stream::get_topic() const
 }
 
 
-dds_video_stream::dds_video_stream( std::string const & stream_name, std::string const & sensor_name )
-    : super( stream_name, sensor_name )
+dds_video_stream::dds_video_stream( std::string const & stream_name, std::string const & sensor_name, int type )
+    : super( stream_name, sensor_name, type )
     , _impl( std::make_shared< dds_video_stream::impl >() )
 {
 }
 
 
-dds_motion_stream::dds_motion_stream( std::string const & stream_name, std::string const & sensor_name )
-    : super( stream_name, sensor_name )
+dds_motion_stream::dds_motion_stream( std::string const & stream_name, std::string const & sensor_name, int type )
+    : super( stream_name, sensor_name, type )
     , _impl( std::make_shared< dds_motion_stream::impl >() )
 {
 }

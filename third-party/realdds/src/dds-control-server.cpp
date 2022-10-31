@@ -33,8 +33,11 @@ dds_control_server::dds_control_server( std::shared_ptr< dds_subscriber > const 
     _reader = std::make_shared< dds_topic_reader >( topic, subscriber );
 
     dds_topic_reader::qos rqos( RELIABLE_RELIABILITY_QOS );
-    rqos.history().depth = 10;                                                                      // default is 1
-    rqos.endpoint().history_memory_policy = eprosima::fastrtps::rtps::DYNAMIC_RESERVE_MEMORY_MODE;
+    rqos.history().depth = 10; // default is 1
+    // Does not allocate for every sample but still gives flexibility. See:
+    //     https://github.com/eProsima/Fast-DDS/discussions/2707
+    // (default is PREALLOCATED_MEMORY_MODE)
+    rqos.endpoint().history_memory_policy = eprosima::fastrtps::rtps::PREALLOCATED_WITH_REALLOC_MEMORY_MODE;
     _reader->run( rqos );
 }
 
@@ -46,9 +49,6 @@ dds_control_server::~dds_control_server()
 
 void dds_control_server::on_control_message_received( on_control_message_received_callback callback )
 {
-    if ( !_reader )
-        DDS_THROW( runtime_error, "setting callback when reader is not created" );
-
     _reader->on_data_available( callback );
 }
 

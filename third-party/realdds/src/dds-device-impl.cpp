@@ -60,8 +60,7 @@ to_realdds_profile( const topics::device::notification::video_stream_profile & p
                                                               profile.framerate,
                                                               profile.width,
                                                               profile.height,
-                                                              0, // TODO - bpp
-                                                              profile.type);
+                                                              0 ); // TODO - bpp
     // TODO - add intrinsics
 
     return prof;
@@ -72,8 +71,7 @@ to_realdds_profile( const topics::device::notification::motion_stream_profile & 
 {
     auto prof = std::make_shared< dds_motion_stream_profile >( dds_stream_uid( profile.uid, profile.stream_index ),
                                                                dds_stream_format::from_rs2( profile.format ),
-                                                               profile.framerate,
-                                                               profile.type );
+                                                               profile.framerate );
     // TODO - add intrinsics
 
     return prof;
@@ -198,7 +196,11 @@ bool dds_device::impl::init()
                         auto & stream = _streams[stream_name];
                         if( stream )
                             DDS_THROW( runtime_error, "stream '" + stream_name + "' already exists" );
-                        stream = std::make_shared< dds_video_stream >( stream_name, sensor_name );
+                        int stream_type = 0;
+                        if ( video_stream_profiles->num_of_profiles > 0 )
+                            stream_type = video_stream_profiles->profiles[0].type;
+                        stream = std::make_shared< dds_video_stream >( stream_name, sensor_name, stream_type );
+
                         dds_stream_profiles profiles;
                         int default_profile_index = 0;
                         for( int i = 0; i < video_stream_profiles->num_of_profiles; ++i )
@@ -209,8 +211,10 @@ bool dds_device::impl::init()
                                 default_profile_index = i;
                         }
                         stream->init_profiles( profiles, default_profile_index );
+
                         LOG_INFO( "... VIDEO_STREAM_PROFILES: " << _streams.size() << "/" << _expected_num_of_streams
                                                                 << " streams received" );
+
                         if( _streams.size() >= _expected_num_of_streams )
                             state = state_type::DONE;
                     }
@@ -238,7 +242,11 @@ bool dds_device::impl::init()
                         auto & stream = _streams[stream_name];
                         if( stream )
                             DDS_THROW( runtime_error, "stream '" + stream_name + "' already exists" );
-                        stream = std::make_shared< dds_motion_stream >( stream_name, sensor_name );
+                        int stream_type = 0;
+                        if ( motion_stream_profiles->num_of_profiles > 0 )
+                            stream_type = motion_stream_profiles->profiles[0].type;
+                        stream = std::make_shared< dds_motion_stream >( stream_name, sensor_name, stream_type );
+
                         dds_stream_profiles profiles;
                         int default_profile_index = 0;
                         for( int i = 0; i < motion_stream_profiles->num_of_profiles; ++i )
@@ -249,8 +257,10 @@ bool dds_device::impl::init()
                                 default_profile_index = i;
                         }
                         stream->init_profiles( profiles, default_profile_index );
+
                         LOG_INFO( "... MOTION_STREAM_PROFILES: " << _streams.size() << "/" << _expected_num_of_streams
                                                                  << " streams received" );
+
                         if( _streams.size() >= _expected_num_of_streams )
                             state = state_type::DONE;
                     }
