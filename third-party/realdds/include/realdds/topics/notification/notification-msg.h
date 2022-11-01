@@ -43,7 +43,7 @@ class notification
 public:
     using type = raw::notificationPubSubType;
 
-    enum class data_type
+    enum class data_format
     {
         // Note: these need to be kept in sync with the raw version
         JSON = raw::NOTIFICATION_DATA_JSON,
@@ -76,12 +76,12 @@ public:
     notification() = default;
     notification( raw::notification && );
     notification( nlohmann::json const &, uint32_t version = 0 );
-    notification( data_type type, nlohmann::json const &, uint32_t version = 0 );
+    notification( data_format format, nlohmann::json const &, uint32_t version = 0 );
 
     nlohmann::json json_data() const;
 
     // Get the custom data with casting to the desired type
-    // Syntax: auto stream_info = msg.get< STREAM_INFO >();
+    // Syntax: auto stream_info = msg.custom_data< STREAM_INFO >();
     //         if ( msg ) do something with it;
     template< typename T >
     T const * custom_data() const
@@ -94,7 +94,7 @@ public:
         return _data.size() > 0 ? reinterpret_cast< T * >( _data.data() ) : nullptr;
     }
 
-    data_type _data_type;
+    data_format _data_format;
     uint32_t _version = 0;
     std::vector< uint8_t > _data;
 };

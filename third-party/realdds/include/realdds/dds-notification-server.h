@@ -30,9 +30,9 @@ public:
     dds_notification_server( std::shared_ptr< dds_publisher > const & publisher, const std::string & topic_name );
     ~dds_notification_server();
 
-    // By default we're not started, to avoid on-discovery before all discovery messages have been collected
-    void start();
-    bool is_started() const { return _active; }
+    // By default we're not running, to avoid on-discovery before all discovery messages have been collected
+    void run();
+    bool is_running() const { return _active; }
 
     // On-demand notification: these happen sequentially and from another thread
     void send_notification( topics::notification && notification );

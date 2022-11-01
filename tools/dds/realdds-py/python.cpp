@@ -354,8 +354,11 @@ PYBIND11_MODULE(NAME, m) {
         .def( "__repr__", []( dds_stream_profile const & self ) {
             std::ostringstream os;
             std::string self_as_string = self.to_string();  // <video 0xUID ...>
-            std::string type = self.type_to_string();
-            os << "<" SNAME "." << type << "_stream_profile " << ( self_as_string.c_str() + type.length() + 2 );
+            std::string type;
+            auto stream = self.stream();
+            if( stream )
+                type = std::string( stream->type_string() ) + '_';
+            os << "<" SNAME "." << type << "stream_profile " << ( self_as_string.c_str() + 1 );
             return os.str();
         } );
 
@@ -375,6 +378,7 @@ PYBIND11_MODULE(NAME, m) {
     stream_base
         .def( "name", &dds_stream_base::name )
         .def( "sensor_name", &dds_stream_base::sensor_name )
+        .def( "type_string", &dds_stream_base::type_string )
         .def( "profiles", &dds_stream_base::profiles )
         .def( "init_profiles", &dds_stream_base::init_profiles )
         .def( "default_profile_index", &dds_stream_base::default_profile_index )
@@ -384,36 +388,25 @@ PYBIND11_MODULE(NAME, m) {
 
     using realdds::dds_stream_server;
     py::class_< dds_stream_server, std::shared_ptr< dds_stream_server > > stream_server_base( m, "stream_server", stream_base );
+    stream_server_base  //
+        .def( "__repr__", []( dds_stream_server const & self ) {
+            std::ostringstream os;
+            os << "<" SNAME "." << self.type_string() << "_stream_server \"" << self.name() << "\" [";
+            for( auto & p : self.profiles() )
+                os << p->to_string();
+            os << ']';
+            os << ' ' << self.default_profile_index();
+            os << '>';
+            return os.str();
+        } );
 
     using realdds::dds_video_stream_server;
     py::class_< dds_video_stream_server, std::shared_ptr< dds_video_stream_server > >( m, "video_stream_server", stream_server_base )
-        .def( py::init< std::string const &, std::string const & >(), "stream_name"_a, "sensor_name"_a )
-        .def( "__repr__", []( dds_video_stream_server const & self ) {
-            std::ostringstream os;
-            os << "<" SNAME ".video_stream_server \"" << self.name() << "\" [";
-            for( auto & p : self.profiles() )
-                os << p->to_string();
-            os << ']';
-            os << ' ' << self.default_profile_index();
-            os << '>';
-            return os.str();
-        } );
+        .def( py::init< std::string const &, std::string const & >(), "stream_name"_a, "sensor_name"_a );
 
     using realdds::dds_motion_stream_server;
-    py::class_< dds_motion_stream_server, std::shared_ptr< dds_motion_stream_server > >( m,
-                                                                                         "motion_stream_server",
-                                                                                         stream_server_base )
-        .def( py::init< std::string const &, std::string const & >(), "stream_name"_a, "sensor_name"_a )
-        .def( "__repr__", []( dds_motion_stream_server const & self ) {
-            std::ostringstream os;
-            os << "<" SNAME ".motion_stream_server \"" << self.name() << "\" [";
-            for( auto & p : self.profiles() )
-                os << p->to_string();
-            os << ']';
-            os << ' ' << self.default_profile_index();
-            os << '>';
-            return os.str();
-        } );
+    py::class_< dds_motion_stream_server, std::shared_ptr< dds_motion_stream_server > >( m, "motion_stream_server", stream_server_base )
+        .def( py::init< std::string const &, std::string const & >(), "stream_name"_a, "sensor_name"_a );
 
     using realdds::dds_device_server;
     py::class_< dds_device_server >( m, "device_server" )

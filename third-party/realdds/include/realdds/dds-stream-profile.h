@@ -112,7 +112,6 @@ public:
 
     // These are for debugging - not functional
     virtual std::string to_string() const;
-    virtual char const * type_to_string() const = 0;
     virtual std::string details_to_string() const;
 
     // Serialization to a JSON representation
@@ -146,7 +145,6 @@ public:
     uint8_t bytes_per_pixel() const { return _bytes_per_pixel; }
 
     std::string details_to_string() const override;
-    char const * type_to_string() const override { return "video"; }
 
     nlohmann::json to_json() const override;
 };
@@ -162,8 +160,6 @@ public:
     {
     }
     dds_motion_stream_profile( dds_motion_stream_profile && ) = default;
-
-    char const * type_to_string() const override { return "motion"; }
 };
 
 

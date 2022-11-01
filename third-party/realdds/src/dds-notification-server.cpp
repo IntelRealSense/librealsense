@@ -90,7 +90,7 @@ dds_notification_server::dds_notification_server( std::shared_ptr< dds_publisher
 }
 
 
-void dds_notification_server::start()
+void dds_notification_server::run()
 {
     if( ! _active )
     {
@@ -115,11 +115,11 @@ dds_notification_server::~dds_notification_server()
 
 void dds_notification_server::send_notification( topics::notification && notification )
 {
-    if( ! is_started() )
+    if( ! is_running() )
         DDS_THROW( runtime_error, "cannot send notification while server isn't running" );
 
     topics::raw::notification raw_notification;
-    raw_notification.data_type( (topics::raw::notification_data_type)notification._data_type );
+    raw_notification.data_format( (topics::raw::notification_data_format)notification._data_format );
     raw_notification.version()[0] = notification._version >> 24 & 0xFF;
     raw_notification.version()[1] = notification._version >> 16 & 0xFF;
     raw_notification.version()[2] = notification._version >>  8 & 0xFF;
@@ -134,11 +134,11 @@ void dds_notification_server::send_notification( topics::notification && notific
 
 void dds_notification_server::add_discovery_notification( topics::notification && notification )
 {
-    if( is_started() )
+    if( is_running() )
         DDS_THROW( runtime_error, "cannot add discovery notification while server is running" );
 
     topics::raw::notification raw_notification;
-    raw_notification.data_type( (topics::raw::notification_data_type) notification._data_type );
+    raw_notification.data_format( (topics::raw::notification_data_format) notification._data_format );
     raw_notification.version()[0] = notification._version >> 24 & 0xFF;
     raw_notification.version()[1] = notification._version >> 16 & 0xFF;
     raw_notification.version()[2] = notification._version >> 8 & 0xFF;

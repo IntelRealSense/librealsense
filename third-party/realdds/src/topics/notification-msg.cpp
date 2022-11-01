@@ -20,7 +20,7 @@ namespace topics {
 
 
 notification::notification( raw::notification && main )
-    : _data_type( static_cast< data_type >( main.data_type() ) )
+    : _data_format( static_cast< data_format >( main.data_format() ) )
     , _data( std::move( main.data() ))
     , _version(( main.version()[0] << 24 ) + ( main.version()[1] << 16 ) + ( main.version()[2] << 8 ) + main.version()[3] )
 {
@@ -28,7 +28,7 @@ notification::notification( raw::notification && main )
 
 
 notification::notification( json const & j, uint32_t version )
-    : _data_type( data_type::JSON )
+    : _data_format( data_format::JSON )
     , _version( version )
 {
     std::string json_as_string = j.dump();
@@ -37,15 +37,15 @@ notification::notification( json const & j, uint32_t version )
 }
 
 
-notification::notification( data_type type, json const & j, uint32_t version )
-    : _data_type( type )
+notification::notification( data_format format, json const & j, uint32_t version )
+    : _data_format( format )
     , _version( version )
 {
-    if( data_type::CBOR == type )
+    if( data_format::CBOR == format )
     {
         _data = std::move( json::to_cbor( j ) );
     }
-    else if( data_type::JSON == type )
+    else if( data_format::JSON == format )
     {
         std::string json_as_string = j.dump();
         _data.resize( json_as_string.length() );
@@ -101,7 +101,7 @@ notification::take_next( dds_topic_reader & reader, notification * output, epros
 
 json notification::json_data() const
 {
-    if( _data_type != topics::notification::data_type::JSON )
+    if( _data_format != data_format::JSON )
         DDS_THROW( runtime_error, "non-json notification data is still unsupported" );
     char const * begin = (char const *)_data.data();
     char const * end = begin + _data.size();

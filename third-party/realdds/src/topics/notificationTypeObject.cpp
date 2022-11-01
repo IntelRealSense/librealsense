@@ -30,10 +30,10 @@ using namespace eprosima::fastrtps::rtps;
 void registernotificationTypes()
 {
     TypeObjectFactory *factory = TypeObjectFactory::get_instance();
-    factory->add_type_object("realdds::topics::raw::notification_data_type", realdds::topics::raw::Getnotification_data_typeIdentifier(true),
-            realdds::topics::raw::Getnotification_data_typeObject(true));
-    factory->add_type_object("realdds::topics::raw::notification_data_type", realdds::topics::raw::Getnotification_data_typeIdentifier(false),
-            realdds::topics::raw::Getnotification_data_typeObject(false));
+    factory->add_type_object("realdds::topics::raw::notification_data_format", realdds::topics::raw::Getnotification_data_formatIdentifier(true),
+            realdds::topics::raw::Getnotification_data_formatObject(true));
+    factory->add_type_object("realdds::topics::raw::notification_data_format", realdds::topics::raw::Getnotification_data_formatIdentifier(false),
+            realdds::topics::raw::Getnotification_data_formatObject(false));
 
     factory->add_type_object("realdds::topics::raw::notification", realdds::topics::raw::GetnotificationIdentifier(true),
             realdds::topics::raw::GetnotificationObject(true));
@@ -48,36 +48,36 @@ void registernotificationTypes()
 namespace realdds {
     namespace topics {
         namespace raw {
-            const TypeIdentifier* Getnotification_data_typeIdentifier(bool complete)
+            const TypeIdentifier* Getnotification_data_formatIdentifier(bool complete)
             {
-                const TypeIdentifier* c_identifier = TypeObjectFactory::get_instance()->get_type_identifier("notification_data_type", complete);
+                const TypeIdentifier* c_identifier = TypeObjectFactory::get_instance()->get_type_identifier("notification_data_format", complete);
                 if (c_identifier != nullptr && (!complete || c_identifier->_d() == EK_COMPLETE))
                 {
                     return c_identifier;
                 }
 
-                Getnotification_data_typeObject(complete); // Generated inside
-                return TypeObjectFactory::get_instance()->get_type_identifier("notification_data_type", complete);
+                Getnotification_data_formatObject(complete); // Generated inside
+                return TypeObjectFactory::get_instance()->get_type_identifier("notification_data_format", complete);
             }
 
-            const TypeObject* Getnotification_data_typeObject(bool complete)
+            const TypeObject* Getnotification_data_formatObject(bool complete)
             {
-                const TypeObject* c_type_object = TypeObjectFactory::get_instance()->get_type_object("notification_data_type", complete);
+                const TypeObject* c_type_object = TypeObjectFactory::get_instance()->get_type_object("notification_data_format", complete);
                 if (c_type_object != nullptr)
                 {
                     return c_type_object;
                 }
                 else if (complete)
                 {
-                    return GetCompletenotification_data_typeObject();
+                    return GetCompletenotification_data_formatObject();
                 }
                 // else
-                return GetMinimalnotification_data_typeObject();
+                return GetMinimalnotification_data_formatObject();
             }
 
-            const TypeObject* GetMinimalnotification_data_typeObject()
+            const TypeObject* GetMinimalnotification_data_formatObject()
             {
-                const TypeObject* c_type_object = TypeObjectFactory::get_instance()->get_type_object("notification_data_type", false);
+                const TypeObject* c_type_object = TypeObjectFactory::get_instance()->get_type_object("notification_data_format", false);
                 if (c_type_object != nullptr)
                 {
                     return c_type_object;
@@ -168,14 +168,14 @@ namespace realdds {
                     identifier.equivalence_hash()[i] = objectHash.digest[i];
                 }
 
-                TypeObjectFactory::get_instance()->add_type_object("notification_data_type", &identifier, type_object);
+                TypeObjectFactory::get_instance()->add_type_object("notification_data_format", &identifier, type_object);
                 delete type_object;
-                return TypeObjectFactory::get_instance()->get_type_object("notification_data_type", false);
+                return TypeObjectFactory::get_instance()->get_type_object("notification_data_format", false);
             }
 
-            const TypeObject* GetCompletenotification_data_typeObject()
+            const TypeObject* GetCompletenotification_data_formatObject()
             {
-                const TypeObject* c_type_object = TypeObjectFactory::get_instance()->get_type_object("notification_data_type", true);
+                const TypeObject* c_type_object = TypeObjectFactory::get_instance()->get_type_object("notification_data_format", true);
                 if (c_type_object != nullptr && c_type_object->_d() == EK_COMPLETE)
                 {
                     return c_type_object;
@@ -193,7 +193,7 @@ namespace realdds {
                 //type_object->complete().enumerated_type().enum_flags().IS_AUTOID_HASH(false);
 
                 type_object->complete().enumerated_type().header().common().bit_bound(32); // TODO fixed by IDL, isn't?
-                type_object->complete().enumerated_type().header().detail().type_name("notification_data_type");
+                type_object->complete().enumerated_type().header().detail().type_name("notification_data_format");
 
 
                 uint32_t value = 0;
@@ -259,9 +259,9 @@ namespace realdds {
                     identifier.equivalence_hash()[i] = objectHash.digest[i];
                 }
 
-                TypeObjectFactory::get_instance()->add_type_object("notification_data_type", &identifier, type_object);
+                TypeObjectFactory::get_instance()->add_type_object("notification_data_format", &identifier, type_object);
                 delete type_object;
-                return TypeObjectFactory::get_instance()->get_type_object("notification_data_type", true);
+                return TypeObjectFactory::get_instance()->get_type_object("notification_data_format", true);
             }
 
             const TypeIdentifier* GetnotificationIdentifier(bool complete)
@@ -310,22 +310,22 @@ namespace realdds {
                 type_object->minimal().struct_type().struct_flags().IS_AUTOID_HASH(false); // Unsupported
 
                 MemberId memberId = 0;
-                MinimalStructMember mst_data_type;
-                mst_data_type.common().member_id(memberId++);
-                mst_data_type.common().member_flags().TRY_CONSTRUCT1(false); // Unsupported
-                mst_data_type.common().member_flags().TRY_CONSTRUCT2(false); // Unsupported
-                mst_data_type.common().member_flags().IS_EXTERNAL(false); // Unsupported
-                mst_data_type.common().member_flags().IS_OPTIONAL(false);
-                mst_data_type.common().member_flags().IS_MUST_UNDERSTAND(false);
-                mst_data_type.common().member_flags().IS_KEY(false);
-                mst_data_type.common().member_flags().IS_DEFAULT(false); // Doesn't apply
-                mst_data_type.common().member_type_id(*realdds::topics::raw::Getnotification_data_typeIdentifier(false));
-                MD5 data_type_hash("data_type");
+                MinimalStructMember mst_data_format;
+                mst_data_format.common().member_id(memberId++);
+                mst_data_format.common().member_flags().TRY_CONSTRUCT1(false); // Unsupported
+                mst_data_format.common().member_flags().TRY_CONSTRUCT2(false); // Unsupported
+                mst_data_format.common().member_flags().IS_EXTERNAL(false); // Unsupported
+                mst_data_format.common().member_flags().IS_OPTIONAL(false);
+                mst_data_format.common().member_flags().IS_MUST_UNDERSTAND(false);
+                mst_data_format.common().member_flags().IS_KEY(false);
+                mst_data_format.common().member_flags().IS_DEFAULT(false); // Doesn't apply
+                mst_data_format.common().member_type_id(*realdds::topics::raw::Getnotification_data_formatIdentifier(false));
+                MD5 data_format_hash("data_format");
                 for(int i = 0; i < 4; ++i)
                 {
-                    mst_data_type.detail().name_hash()[i] = data_type_hash.digest[i];
+                    mst_data_format.detail().name_hash()[i] = data_format_hash.digest[i];
                 }
-                type_object->minimal().struct_type().member_seq().emplace_back(mst_data_type);
+                type_object->minimal().struct_type().member_seq().emplace_back(mst_data_format);
 
                 MinimalStructMember mst_version;
                 mst_version.common().member_id(memberId++);
@@ -417,19 +417,19 @@ namespace realdds {
                 type_object->complete().struct_type().struct_flags().IS_AUTOID_HASH(false); // Unsupported
 
                 MemberId memberId = 0;
-                CompleteStructMember cst_data_type;
-                cst_data_type.common().member_id(memberId++);
-                cst_data_type.common().member_flags().TRY_CONSTRUCT1(false); // Unsupported
-                cst_data_type.common().member_flags().TRY_CONSTRUCT2(false); // Unsupported
-                cst_data_type.common().member_flags().IS_EXTERNAL(false); // Unsupported
-                cst_data_type.common().member_flags().IS_OPTIONAL(false);
-                cst_data_type.common().member_flags().IS_MUST_UNDERSTAND(false);
-                cst_data_type.common().member_flags().IS_KEY(false);
-                cst_data_type.common().member_flags().IS_DEFAULT(false); // Doesn't apply
-                cst_data_type.common().member_type_id(*realdds::topics::raw::Getnotification_data_typeIdentifier(true));
-                cst_data_type.detail().name("data_type");
+                CompleteStructMember cst_data_format;
+                cst_data_format.common().member_id(memberId++);
+                cst_data_format.common().member_flags().TRY_CONSTRUCT1(false); // Unsupported
+                cst_data_format.common().member_flags().TRY_CONSTRUCT2(false); // Unsupported
+                cst_data_format.common().member_flags().IS_EXTERNAL(false); // Unsupported
+                cst_data_format.common().member_flags().IS_OPTIONAL(false);
+                cst_data_format.common().member_flags().IS_MUST_UNDERSTAND(false);
+                cst_data_format.common().member_flags().IS_KEY(false);
+                cst_data_format.common().member_flags().IS_DEFAULT(false); // Doesn't apply
+                cst_data_format.common().member_type_id(*realdds::topics::raw::Getnotification_data_formatIdentifier(true));
+                cst_data_format.detail().name("data_format");
 
-                type_object->complete().struct_type().member_seq().emplace_back(cst_data_type);
+                type_object->complete().struct_type().member_seq().emplace_back(cst_data_format);
 
                 CompleteStructMember cst_version;
                 cst_version.common().member_id(memberId++);

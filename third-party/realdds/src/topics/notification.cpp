@@ -27,8 +27,8 @@ using namespace eprosima::fastcdr::exception;
 
 realdds::topics::raw::notification::notification()
 {
-    // m_data_type com.eprosima.idl.parser.typecode.EnumTypeCode@b7dd107
-    m_data_type = realdds::topics::raw::NOTIFICATION_DATA_JSON;
+    // m_data_format com.eprosima.idl.parser.typecode.EnumTypeCode@b7dd107
+    m_data_format = realdds::topics::raw::NOTIFICATION_DATA_JSON;
     // m_version com.eprosima.idl.parser.typecode.ArrayTypeCode@42eca56e
     memset(&m_version, 0, (4) * 1);
     // m_data com.eprosima.idl.parser.typecode.SequenceTypeCode@52f759d7
@@ -48,7 +48,7 @@ realdds::topics::raw::notification::~notification()
 realdds::topics::raw::notification::notification(
         const notification& x)
 {
-    m_data_type = x.m_data_type;
+    m_data_format = x.m_data_format;
     m_version = x.m_version;
     m_data = x.m_data;
 }
@@ -56,7 +56,7 @@ realdds::topics::raw::notification::notification(
 realdds::topics::raw::notification::notification(
         notification&& x)
 {
-    m_data_type = x.m_data_type;
+    m_data_format = x.m_data_format;
     m_version = std::move(x.m_version);
     m_data = std::move(x.m_data);
 }
@@ -65,7 +65,7 @@ realdds::topics::raw::notification& realdds::topics::raw::notification::operator
         const notification& x)
 {
 
-    m_data_type = x.m_data_type;
+    m_data_format = x.m_data_format;
     m_version = x.m_version;
     m_data = x.m_data;
 
@@ -76,7 +76,7 @@ realdds::topics::raw::notification& realdds::topics::raw::notification::operator
         notification&& x)
 {
 
-    m_data_type = x.m_data_type;
+    m_data_format = x.m_data_format;
     m_version = std::move(x.m_version);
     m_data = std::move(x.m_data);
 
@@ -87,7 +87,7 @@ bool realdds::topics::raw::notification::operator ==(
         const notification& x) const
 {
 
-    return (m_data_type == x.m_data_type && m_version == x.m_version && m_data == x.m_data);
+    return (m_data_format == x.m_data_format && m_version == x.m_version && m_data == x.m_data);
 }
 
 bool realdds::topics::raw::notification::operator !=(
@@ -151,7 +151,7 @@ void realdds::topics::raw::notification::serialize(
         eprosima::fastcdr::Cdr& scdr) const
 {
 
-    scdr << (uint32_t)m_data_type;
+    scdr << (uint32_t)m_data_format;
     scdr << m_version;
 
     scdr << m_data;
@@ -165,7 +165,7 @@ void realdds::topics::raw::notification::deserialize(
     {
         uint32_t enum_value = 0;
         dcdr >> enum_value;
-        m_data_type = (realdds::topics::raw::notification_data_type)enum_value;
+        m_data_format = (realdds::topics::raw::notification_data_format)enum_value;
     }
 
     dcdr >> m_version;
@@ -174,31 +174,31 @@ void realdds::topics::raw::notification::deserialize(
 }
 
 /*!
- * @brief This function sets a value in member data_type
- * @param _data_type New value for member data_type
+ * @brief This function sets a value in member data_format
+ * @param _data_format New value for member data_format
  */
-void realdds::topics::raw::notification::data_type(
-        realdds::topics::raw::notification_data_type _data_type)
+void realdds::topics::raw::notification::data_format(
+        realdds::topics::raw::notification_data_format _data_format)
 {
-    m_data_type = _data_type;
+    m_data_format = _data_format;
 }
 
 /*!
- * @brief This function returns the value of member data_type
- * @return Value of member data_type
+ * @brief This function returns the value of member data_format
+ * @return Value of member data_format
  */
-realdds::topics::raw::notification_data_type realdds::topics::raw::notification::data_type() const
+realdds::topics::raw::notification_data_format realdds::topics::raw::notification::data_format() const
 {
-    return m_data_type;
+    return m_data_format;
 }
 
 /*!
- * @brief This function returns a reference to member data_type
- * @return Reference to member data_type
+ * @brief This function returns a reference to member data_format
+ * @return Reference to member data_format
  */
-realdds::topics::raw::notification_data_type& realdds::topics::raw::notification::data_type()
+realdds::topics::raw::notification_data_format& realdds::topics::raw::notification::data_format()
 {
-    return m_data_type;
+    return m_data_format;
 }
 
 /*!

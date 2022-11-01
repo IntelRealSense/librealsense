@@ -46,10 +46,10 @@ eProsima_user_DllExport void registernotificationTypes();
 namespace realdds {
     namespace topics {
         namespace raw {
-            eProsima_user_DllExport const TypeIdentifier* Getnotification_data_typeIdentifier(bool complete = false);
-            eProsima_user_DllExport const TypeObject* Getnotification_data_typeObject(bool complete = false);
-            eProsima_user_DllExport const TypeObject* GetMinimalnotification_data_typeObject();
-            eProsima_user_DllExport const TypeObject* GetCompletenotification_data_typeObject();
+            eProsima_user_DllExport const TypeIdentifier* Getnotification_data_formatIdentifier(bool complete = false);
+            eProsima_user_DllExport const TypeObject* Getnotification_data_formatObject(bool complete = false);
+            eProsima_user_DllExport const TypeObject* GetMinimalnotification_data_formatObject();
+            eProsima_user_DllExport const TypeObject* GetCompletenotification_data_formatObject();
 
             eProsima_user_DllExport const TypeIdentifier* GetnotificationIdentifier(bool complete = false);
             eProsima_user_DllExport const TypeObject* GetnotificationObject(bool complete = false);

@@ -56,10 +56,10 @@ namespace realdds {
     namespace topics {
         namespace raw {
             /*!
-             * @brief This class represents the enumeration notification_data_type defined by the user in the IDL file.
+             * @brief This class represents the enumeration notification_data_format defined by the user in the IDL file.
              * @ingroup NOTIFICATION
              */
-            enum notification_data_type : uint32_t
+            enum notification_data_format : uint32_t
             {
                 NOTIFICATION_DATA_JSON,
                 NOTIFICATION_DATA_CBOR,
@@ -126,23 +126,23 @@ namespace realdds {
                         const notification& x) const;
 
                 /*!
-                 * @brief This function sets a value in member data_type
-                 * @param _data_type New value for member data_type
+                 * @brief This function sets a value in member data_format
+                 * @param _data_format New value for member data_format
                  */
-                eProsima_user_DllExport void data_type(
-                        realdds::topics::raw::notification_data_type _data_type);
+                eProsima_user_DllExport void data_format(
+                        realdds::topics::raw::notification_data_format _data_format);
 
                 /*!
-                 * @brief This function returns the value of member data_type
-                 * @return Value of member data_type
+                 * @brief This function returns the value of member data_format
+                 * @return Value of member data_format
                  */
-                eProsima_user_DllExport realdds::topics::raw::notification_data_type data_type() const;
+                eProsima_user_DllExport realdds::topics::raw::notification_data_format data_format() const;
 
                 /*!
-                 * @brief This function returns a reference to member data_type
-                 * @return Reference to member data_type
+                 * @brief This function returns a reference to member data_format
+                 * @return Reference to member data_format
                  */
-                eProsima_user_DllExport realdds::topics::raw::notification_data_type& data_type();
+                eProsima_user_DllExport realdds::topics::raw::notification_data_format& data_format();
 
                 /*!
                  * @brief This function copies the value in member version
@@ -254,7 +254,7 @@ namespace realdds {
 
             private:
 
-                realdds::topics::raw::notification_data_type m_data_type;
+                realdds::topics::raw::notification_data_format m_data_format;
                 std::array<uint8_t, 4> m_version;
                 std::vector<uint8_t> m_data;
             };

@@ -422,9 +422,9 @@ def finish():
     global test_failed, n_failed_tests, test_in_progress
     if test_failed:
         n_failed_tests += 1
-        log.out("Test failed")
+        log.e("Test failed")
     else:
-        log.out("Test passed")
+        log.i("Test passed")
     test_in_progress = False
 
 

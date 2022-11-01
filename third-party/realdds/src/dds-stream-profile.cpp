@@ -151,8 +151,7 @@ dds_stream_format dds_stream_format::from_rs2( int rs2_format )
 std::string dds_stream_profile::to_string() const
 {
     std::ostringstream os;
-    os << '<' << type_to_string();
-    os << ' '  << _uid.to_string();
+    os << '<' << _uid.to_string();
     os << ' ' << details_to_string();
     os << '>';
     return os.str();

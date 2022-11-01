@@ -83,7 +83,7 @@ static void on_discovery_stream_header( std::shared_ptr< dds_stream_server > con
         profiles.push_back( std::move( sp->to_json() ) );
     json msg = {
         { "id", "stream-header" },
-        { "type", stream->profiles().front()->type_to_string() },
+        { "type", stream->type_string() },
         { "name", stream->name() },
         { "sensor-name", stream->sensor_name() },
         { "profiles", profiles },
@@ -119,7 +119,7 @@ void dds_device_server::init( std::vector< std::shared_ptr< dds_stream_server > 
             on_discovery_stream_header( stream, *_notification_server );
         }
 
-        _notification_server->start();
+        _notification_server->run();
     }
     catch( std::exception const & )
     {

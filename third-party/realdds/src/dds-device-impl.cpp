@@ -147,12 +147,15 @@ bool dds_device::impl::init()
                         DDS_THROW( runtime_error,
                                    "more streams than expected (" + std::to_string( n_streams_expected )
                                        + ") received" );
-                    auto type = utilities::json::get< std::string >( j, "type" );
+                    auto stream_type = utilities::json::get< std::string >( j, "type" );
                     auto stream_name = utilities::json::get< std::string >( j, "name" );
                     auto sensor_name = utilities::json::get< std::string >( j, "sensor-name" );
+                    auto & stream = _streams[stream_name];
+                    if( stream )
+                        DDS_THROW( runtime_error, "stream '" + stream_name + "' already exists" );
                     auto default_profile_index = utilities::json::get< int >( j, "default-profile-index" );
                     dds_stream_profiles profiles;
-                    if( type == "video" )
+                    if( stream_type == "video" )
                     {
                         for( auto profile : j["profiles"] )
                         {
@@ -168,8 +171,9 @@ bool dds_device::impl::init()
                                 height,
                                 0 ) );  // bpp
                         }
+                        stream = std::make_shared< dds_video_stream >( stream_name, sensor_name );
                     }
-                    else if( type == "motion" )
+                    else if( stream_type == "motion" )
                     {
                         for( auto profile : j["profiles"] )
                         {
@@ -180,18 +184,18 @@ bool dds_device::impl::init()
                                 format,
                                 frequency ) );
                         }
+                        stream = std::make_shared< dds_motion_stream >( stream_name, sensor_name );
                     }
                     else
-                        DDS_THROW( runtime_error, "stream '" + stream_name + "' is of unknown type '" + type + "'" );
+                        DDS_THROW( runtime_error, "stream '" + stream_name + "' is of unknown type '" + stream_type + "'" );
                     if( default_profile_index < 0 || default_profile_index >= profiles.size() )
                         DDS_THROW( runtime_error,
                                    "stream '" + stream_name + "' default profile index "
                                        + std::to_string( default_profile_index ) + " is out of bounds" );
-
-                    auto & stream = _streams[stream_name];
-                    if( stream )
-                        DDS_THROW( runtime_error, "stream '" + stream_name + "' already exists" );
-                    stream = std::make_shared< dds_video_stream >( stream_name, sensor_name );
+                    if( strcmp( stream->type_string(), stream_type.c_str() ) != 0 )
+                        DDS_THROW( runtime_error,
+                                   "failed to instantiate stream type '" + stream_type + "' (instead, got '"
+                                       + stream->type_string() + "')" );
                     stream->init_profiles( profiles, default_profile_index );
                     LOG_INFO( "... stream '" << stream_name << "' (" << _streams.size() << "/" << n_streams_expected
                                              << ") received with " << profiles.size() << " profiles" );
