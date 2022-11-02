@@ -393,25 +393,22 @@ namespace librealsense
         void open( const stream_profiles & profiles ) override
         {
             realdds::dds_stream_profiles realdds_profiles;
-            for (size_t i = 0; i < profiles.size(); ++i)
+            for( size_t i = 0; i < profiles.size(); ++i )
             {
-                if ( Is<video_stream_profile, stream_profile_interface>( profiles[i] ) )
+                if( Is< video_stream_profile, stream_profile_interface >( profiles[i] ) )
                 {
                     const auto && vsp = As<video_stream_profile, stream_profile_interface>( profiles[i] );
-                    std::shared_ptr< realdds::dds_stream_profile > video_profile = std::make_shared< realdds::dds_video_stream_profile >(
-                        realdds::dds_stream_uid( profiles[i]->get_unique_id(), profiles[i]->get_stream_index() ),
+                    auto video_profile = std::make_shared< realdds::dds_video_stream_profile >(
                         realdds::dds_stream_format::from_rs2( profiles[i]->get_format() ),
                         profiles[i]->get_framerate(),
                         vsp->get_width(),
-                        vsp->get_height(),
-                        0 ); //TODO - bpp
+                        vsp->get_height() );
 
                     realdds_profiles.push_back( video_profile );
                 }
-                else if ( Is<motion_stream_profile, stream_profile_interface>( profiles[i] ) )
+                else if( Is< motion_stream_profile, stream_profile_interface >( profiles[i] ) )
                 {
-                    std::shared_ptr< realdds::dds_motion_stream_profile > motion_profile = std::make_shared< realdds::dds_motion_stream_profile >(
-                        realdds::dds_stream_uid( profiles[i]->get_unique_id(), profiles[i]->get_stream_index() ),
+                    auto motion_profile = std::make_shared< realdds::dds_motion_stream_profile >(
                         realdds::dds_stream_format::from_rs2( profiles[i]->get_format() ),
                         profiles[i]->get_framerate() );
 
@@ -483,13 +480,14 @@ namespace librealsense
         }
 
         rs2_video_stream to_rs2_video_stream( rs2_stream const stream_type,
-                                              realdds::dds_stream_uid const & uid,
+                                              size_t const sensor_index,
+                                              int const stream_index,
                                               std::shared_ptr< realdds::dds_video_stream_profile > const & profile )
         {
             rs2_video_stream prof;
             prof.type = stream_type;
-            prof.index = uid.index;
-            prof.uid = uid.sid;
+            prof.index = stream_index;
+            prof.uid = static_cast< int >( sensor_index );
             prof.width = profile->width();
             prof.height = profile->height();
             prof.fps = profile->frequency();
@@ -500,13 +498,14 @@ namespace librealsense
         }
 
         rs2_motion_stream to_rs2_motion_stream( rs2_stream const stream_type,
-                                                realdds::dds_stream_uid const & uid,
+                                                size_t const sensor_index,
+                                                int const stream_index,
                                                 std::shared_ptr< realdds::dds_motion_stream_profile > const & profile )
         {
             rs2_motion_stream prof;
             prof.type = stream_type;
-            prof.index = uid.index;
-            prof.uid = uid.sid;
+            prof.index = stream_index;
+            prof.uid = static_cast< int >( sensor_index );
             prof.fps = profile->frequency();
             prof.fmt = static_cast< rs2_format >( profile->format().to_rs2() );
 
@@ -538,7 +537,7 @@ namespace librealsense
                 // sensor, in which case they'd get the same sid but a different index...
                 auto it_is_new = sensor_name_to_info.emplace( stream->sensor_name(),
                                                               sensor_info{ sensor_name_to_info.size(), 0 } );
-                int const sensor_index = static_cast< int >( it_is_new.first->second.sensor_index );
+                size_t const sensor_index = it_is_new.first->second.sensor_index;
                 auto & stream_index = it_is_new.first->second.stream_count;
                 if( it_is_new.second )
                     this->add_dds_sensor( _dds_dev, stream->sensor_name() );
@@ -557,7 +556,7 @@ namespace librealsense
                         sensor.add_video_stream(
                             to_rs2_video_stream(
                                 stream_type,
-                                realdds::dds_stream_uid( sensor_index, stream_index ),
+                                sensor_index, stream_index,
                                 std::static_pointer_cast< realdds::dds_video_stream_profile >( profile ) ),
                             profile == default_profile );
                     }
@@ -566,7 +565,7 @@ namespace librealsense
                         sensor.add_motion_stream(
                             to_rs2_motion_stream(
                                 stream_type,
-                                realdds::dds_stream_uid( sensor_index, stream_index ),
+                                sensor_index, stream_index,
                                 std::static_pointer_cast< realdds::dds_motion_stream_profile >( profile ) ),
                             profile == default_profile );
                     }

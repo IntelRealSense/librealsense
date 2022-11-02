@@ -13,17 +13,6 @@ using nlohmann::json;
 namespace realdds {
 
 
-static_assert( sizeof( dds_stream_uid ) == sizeof( dds_stream_uid::whole ), "no padding should occur" );
-
-
-std::string dds_stream_uid::to_string() const
-{
-    std::ostringstream os;
-    os << "0x" << std::hex << whole;
-    return os.str();
-}
-
-
 dds_stream_format::dds_stream_format( std::string const & s )
 {
     if( s.length() > size )
@@ -151,8 +140,7 @@ dds_stream_format dds_stream_format::from_rs2( int rs2_format )
 std::string dds_stream_profile::to_string() const
 {
     std::ostringstream os;
-    os << '<' << _uid.to_string();
-    os << ' ' << details_to_string();
+    os << '<' << details_to_string();
     os << '>';
     return os.str();
 }
@@ -160,15 +148,15 @@ std::string dds_stream_profile::to_string() const
 std::string dds_stream_profile::details_to_string() const
 {
     std::ostringstream os;
-    os << _format.to_string() << ' ' << _frequency << " Hz";
+    os << _format.to_string() << " @ " << _frequency << " Hz";
     return os.str();
 }
 
 std::string dds_video_stream_profile::details_to_string() const
 {
     std::ostringstream os;
+    os << _width << 'x' << _height << ' ';
     os << super::details_to_string();
-    os << ' ' << _width << 'x' << _height << " @" << +_bytes_per_pixel << " Bpp";
     return os.str();
 }
 

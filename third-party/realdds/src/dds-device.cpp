@@ -121,20 +121,14 @@ void dds_device::open( const dds_stream_profiles & profiles )
 {
     using namespace topics;
 
-    if ( profiles.size() > device::control::MAX_OPEN_STREAMS )
-    {
-        DDS_THROW(runtime_error, "Too many streams to open (" + std::to_string( profiles.size() )
-                  + "), max is " + std::to_string( device::control::MAX_OPEN_STREAMS ) );
-    }
-
     device::control::streams_open_msg open_msg;
     open_msg.message_id = _impl->_control_message_counter++;
     open_msg.number_of_streams = static_cast< uint8_t >( profiles.size() );
     for ( size_t i = 0; i < profiles.size(); ++i )
     {
         auto vsp = std::dynamic_pointer_cast< dds_video_stream_profile >( profiles[i] );
-        open_msg.streams[i].uid         = profiles[i]->uid().sid;
-        open_msg.streams[i].stream_index= profiles[i]->uid().index;
+        open_msg.streams[i].uid = 0;           // profiles[i]->uid().sid;
+        open_msg.streams[i].stream_index = 0;  // profiles[i]->uid().index;
         open_msg.streams[i].framerate   = profiles[i]->frequency();
         open_msg.streams[i].format      = profiles[i]->format().to_rs2();
         open_msg.streams[i].width       = vsp ? vsp->width() : 0;
