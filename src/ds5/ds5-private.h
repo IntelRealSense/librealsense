@@ -353,6 +353,16 @@ namespace librealsense
             uint32_t                crc32;          // crc of all the actual table data excluding header/CRC
         };
 
+        struct sc_table_header
+        {
+            big_endian<uint16_t>    version;        // major.minor. Big-endian
+            uint16_t                table_type;     // ctCalibration
+            uint32_t                table_size;     // full size including: TOC header + TOC + actual tables
+            uint16_t                counter;
+            uint16_t                test_cal_version;
+            uint32_t                crc32;          // crc of all the actual table data excluding header/CRC
+        };
+
         enum ds5_rect_resolutions : unsigned short
         {
             res_1920_1080,
@@ -387,6 +397,52 @@ namespace librealsense
             uint8_t             reserved1[88];
             float4              rect_params[max_ds5_rect_resolutions];
             uint8_t             reserved2[64];
+        };
+
+        struct sc_undist_configuration
+        {
+            uint32_t     fx;
+            uint32_t     fy;
+            uint32_t     x0;
+            uint32_t     y0;
+            uint32_t     x_shift_in;
+            uint32_t     y_shift_in;
+            uint32_t     x_scale_in;
+            uint32_t     y_scale_in;
+        };
+
+        struct mini_intrisics
+        {
+            uint16_t    image_width;    /**< Width of the image in pixels */
+            uint16_t    image_height;   /**< Height of the image in pixels */
+            float4      ppx;            /**< Horizontal coordinate of the principal point of the image, as a pixel offset from the left edge */
+            float4      ppy;            /**< Vertical coordinate of the principal point of the image, as a pixel offset from the top edge */
+            float4      fx;             /**< Focal length of the image plane, as a multiple of pixel width */
+            float4      fy;             /**< Focal length of the image plane, as a multiple of pixel height */
+        };
+
+        struct single_sensor_coef_table
+        {
+            mini_intrisics            base_instrinsics;
+            float3x3                  rotation_matrix;
+            uint32_t                  distortion_non_parametric;
+            rs2_distortion            distortion_model;          /**< Distortion model of the image */
+            float                     distortion_coeffs[5];      /**< Distortion coefficients. Order for Brown-Conrady: [k1, k2, p1, p2, k3]. Order for F-Theta Fish-eye: [k1, k2, k3, k4, 0]. Other models are subject to their own interpretations */
+            float                     reserved[14];
+            float4                    radial_distortion_lut_range_degs;
+            float4                    radial_distortion_lut_focal_range;
+            sc_undist_configuration   undist_config;
+        };
+
+        struct sc_coefficients_table
+        {
+            sc_table_header           header;
+            single_sensor_coef_table  left_coefficients_table;
+            single_sensor_coef_table  right_coefficients_table;
+            float4                    baseline;                   //  the baseline between the cameras in mm units
+            uint32_t                  translation_dir;
+            mini_intrisics            rectified_intrinsics;
+            uint8_t                   reserved[154];
         };
 
         struct new_calibration_item
