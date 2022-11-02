@@ -44,6 +44,13 @@ set(L53X_FW_URL "${REALSENSE_FIRMWARE_URL}/Releases/L5xx/FW")
 
 add_library(${PROJECT_NAME} STATIC empty.c)
 
+# disable link time optimization for fw by adding -fno-lto to disable -flto flag
+# jammy debian has build errors without it
+if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+  message(STATUS "disable link time optimization for fw project")
+  target_compile_options(${PROJECT_NAME} PRIVATE -fno-lto)
+endif()
+
 if (MSVC)
   # lib.exe can't handle multiple .res files, so include them in one.
   # even then, the linker won't grab a .res out of a .lib object, so it needs to be explicitly listed
