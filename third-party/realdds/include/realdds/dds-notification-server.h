@@ -4,7 +4,7 @@
 #pragma once
 
 
-#include <realdds/topics/notification/notification-msg.h>
+#include <realdds/topics/flexible/flexible-msg.h>
 #include <librealsense2/utilities/concurrency/concurrency.h>
 
 #include <memory>
@@ -35,10 +35,10 @@ public:
     bool is_running() const { return _active; }
 
     // On-demand notification: these happen sequentially and from another thread
-    void send_notification( topics::notification && notification );
+    void send_notification( topics::flexible_msg && notification );
 
     // On-discovery notification: when a new client is detected
-    void add_discovery_notification( topics::notification && notification );
+    void add_discovery_notification( topics::flexible_msg && notification );
 
 private:
     void send_discovery_notifications();
@@ -46,8 +46,8 @@ private:
     std::shared_ptr< dds_publisher > _publisher;
     std::shared_ptr< dds_topic_writer > _writer;
     active_object<> _notifications_loop;
-    single_consumer_queue< topics::raw::notification > _instant_notifications;
-    std::vector< topics::raw::notification > _discovery_notifications;
+    single_consumer_queue< topics::raw::flexible > _instant_notifications;
+    std::vector< topics::raw::flexible > _discovery_notifications;
     std::mutex _notification_send_mutex;
     std::condition_variable _send_notification_cv;
     std::atomic_bool _send_init_msgs = { false };

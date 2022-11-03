@@ -94,7 +94,7 @@ void dds_device::impl::create_notifications_reader()
     if( _notifications_reader )
         return;
 
-    auto topic = topics::notification::create_topic( _participant, _info.topic_root + "/notification" );
+    auto topic = topics::flexible_msg::create_topic( _participant, _info.topic_root + "/notification" );
 
     _notifications_reader = std::make_shared< dds_topic_reader >( topic );
     _notifications_reader->run( dds_topic_reader::qos( eprosima::fastdds::dds::RELIABLE_RELIABILITY_QOS ) );
@@ -125,9 +125,9 @@ bool dds_device::impl::init()
         eprosima::fastrtps::Duration_t one_second = { 1, 0 };
         if( _notifications_reader->get()->wait_for_unread_message( one_second ) )
         {
-            topics::notification notification;
+            topics::flexible_msg notification;
             eprosima::fastdds::dds::SampleInfo info;
-            while( topics::notification::take_next( *_notifications_reader, &notification, &info ) )
+            while( topics::flexible_msg::take_next( *_notifications_reader, &notification, &info ) )
             {
                 if( ! notification.is_valid() )
                     continue;

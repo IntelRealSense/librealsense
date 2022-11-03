@@ -1,8 +1,8 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2022 Intel Corporation. All Rights Reserved.
 
-#include <realdds/topics/notification/notification-msg.h>
-#include <realdds/topics/notification/notificationPubSubTypes.h>
+#include <realdds/topics/flexible/flexible-msg.h>
+#include <realdds/topics/flexible/flexiblePubSubTypes.h>
 
 #include <realdds/dds-topic.h>
 #include <realdds/dds-topic-reader.h>
@@ -19,7 +19,7 @@ namespace realdds {
 namespace topics {
 
 
-notification::notification( raw::notification && main )
+flexible_msg::flexible_msg( raw::flexible && main )
     : _data_format( static_cast< data_format >( main.data_format() ) )
     , _data( std::move( main.data() ))
     , _version(( main.version()[0] << 24 ) + ( main.version()[1] << 16 ) + ( main.version()[2] << 8 ) + main.version()[3] )
@@ -27,7 +27,7 @@ notification::notification( raw::notification && main )
 }
 
 
-notification::notification( json const & j, uint32_t version )
+flexible_msg::flexible_msg( json const & j, uint32_t version )
     : _data_format( data_format::JSON )
     , _version( version )
 {
@@ -37,7 +37,7 @@ notification::notification( json const & j, uint32_t version )
 }
 
 
-notification::notification( data_format format, json const & j, uint32_t version )
+flexible_msg::flexible_msg( data_format format, json const & j, uint32_t version )
     : _data_format( format )
     , _version( version )
 {
@@ -53,24 +53,24 @@ notification::notification( data_format format, json const & j, uint32_t version
     }
     else
     {
-        DDS_THROW( runtime_error, "invalid format for json notification" );
+        DDS_THROW( runtime_error, "invalid format for json flexible message" );
     }
 }
 
 
 /*static*/ std::shared_ptr< dds_topic >
-notification::create_topic( std::shared_ptr< dds_participant > const & participant, char const * topic_name )
+flexible_msg::create_topic( std::shared_ptr< dds_participant > const & participant, char const * topic_name )
 {
     return std::make_shared< dds_topic >( participant,
-                                          eprosima::fastdds::dds::TypeSupport( new notification::type ),
+                                          eprosima::fastdds::dds::TypeSupport( new flexible_msg::type ),
                                           topic_name );
 }
 
 
 /*static*/ bool
-notification::take_next( dds_topic_reader & reader, notification * output, eprosima::fastdds::dds::SampleInfo * info )
+flexible_msg::take_next( dds_topic_reader & reader, flexible_msg * output, eprosima::fastdds::dds::SampleInfo * info )
 {
-    raw::notification raw_data;
+    raw::flexible raw_data;
     eprosima::fastdds::dds::SampleInfo info_;
     if( ! info )
         info = &info_;  // use the local copy if the user hasn't provided their own
@@ -95,14 +95,14 @@ notification::take_next( dds_topic_reader & reader, notification * output, epros
         // This is an expected return code and is not an error
         return false;
     }
-    DDS_API_CALL_THROW( "notification::take_next", status );
+    DDS_API_CALL_THROW( "flexible_msg::take_next", status );
 }
 
 
-json notification::json_data() const
+json flexible_msg::json_data() const
 {
     if( _data_format != data_format::JSON )
-        DDS_THROW( runtime_error, "non-json notification data is still unsupported" );
+        DDS_THROW( runtime_error, "non-json flexible data is still unsupported" );
     char const * begin = (char const *)_data.data();
     char const * end = begin + _data.size();
     return json::parse( begin, end );

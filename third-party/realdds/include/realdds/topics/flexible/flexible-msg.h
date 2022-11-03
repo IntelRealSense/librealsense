@@ -4,7 +4,7 @@
 #pragma once
 
 
-#include "notification.h"
+#include "flexible.h"
 
 #include <string>
 #include <memory>
@@ -34,21 +34,21 @@ namespace topics {
 
     
 namespace raw {
-class notificationPubSubType;
+class flexiblePubSubType;
 }  // namespace raw
 
 
-class notification
+class flexible_msg
 {
 public:
-    using type = raw::notificationPubSubType;
+    using type = raw::flexiblePubSubType;
 
     enum class data_format
     {
         // Note: these need to be kept in sync with the raw version
-        JSON = raw::NOTIFICATION_DATA_JSON,
-        CBOR = raw::NOTIFICATION_DATA_CBOR,
-        CUSTOM = raw::NOTIFICATION_DATA_CUSTOM,
+        JSON = raw::FLEXIBLE_DATA_JSON,
+        CBOR = raw::FLEXIBLE_DATA_CBOR,
+        CUSTOM = raw::FLEXIBLE_DATA_CUSTOM,
     };
 
     bool is_valid() const { return ! _data.empty(); }
@@ -69,14 +69,14 @@ public:
     // Will throw if an unexpected error occurs.
     //
     static bool take_next( dds_topic_reader &,
-                           notification * output,
+                           flexible_msg * output,
                            eprosima::fastdds::dds::SampleInfo * optional_info = nullptr );
 
 
-    notification() = default;
-    notification( raw::notification && );
-    notification( nlohmann::json const &, uint32_t version = 0 );
-    notification( data_format format, nlohmann::json const &, uint32_t version = 0 );
+    flexible_msg() = default;
+    flexible_msg( raw::flexible&& );
+    flexible_msg( nlohmann::json const &, uint32_t version = 0 );
+    flexible_msg( data_format format, nlohmann::json const &, uint32_t version = 0 );
 
     nlohmann::json json_data() const;
 

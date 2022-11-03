@@ -50,7 +50,7 @@ dds_notification_server::dds_notification_server( std::shared_ptr< dds_publisher
             if( _active && _new_instant_notification )
             {
                 // Send all instant notifications
-                topics::raw::notification notification;
+                topics::raw::flexible notification;
                 constexpr unsigned timeout_in_ms = 1000;
                 while( _instant_notifications.dequeue( &notification, timeout_in_ms ) )
                 {
@@ -61,7 +61,7 @@ dds_notification_server::dds_notification_server( std::shared_ptr< dds_publisher
         }
     } )
 {
-    auto topic = topics::notification::create_topic( publisher->get_participant(), topic_name.c_str() );
+    auto topic = topics::flexible_msg::create_topic( publisher->get_participant(), topic_name.c_str() );
     _writer = std::make_shared< dds_topic_writer >( topic, publisher );
 
     _writer->on_publication_matched( [this]( PublicationMatchedStatus const & info ) {
@@ -113,13 +113,13 @@ dds_notification_server::~dds_notification_server()
 }
 
 
-void dds_notification_server::send_notification( topics::notification && notification )
+void dds_notification_server::send_notification( topics::flexible_msg && notification )
 {
     if( ! is_running() )
         DDS_THROW( runtime_error, "cannot send notification while server isn't running" );
 
-    topics::raw::notification raw_notification;
-    raw_notification.data_format( (topics::raw::notification_data_format)notification._data_format );
+    topics::raw::flexible raw_notification;
+    raw_notification.data_format( (topics::raw::flexible_data_format)notification._data_format );
     raw_notification.version()[0] = notification._version >> 24 & 0xFF;
     raw_notification.version()[1] = notification._version >> 16 & 0xFF;
     raw_notification.version()[2] = notification._version >>  8 & 0xFF;
@@ -132,13 +132,13 @@ void dds_notification_server::send_notification( topics::notification && notific
 };
 
 
-void dds_notification_server::add_discovery_notification( topics::notification && notification )
+void dds_notification_server::add_discovery_notification( topics::flexible_msg && notification )
 {
     if( is_running() )
         DDS_THROW( runtime_error, "cannot add discovery notification while server is running" );
 
-    topics::raw::notification raw_notification;
-    raw_notification.data_format( (topics::raw::notification_data_format) notification._data_format );
+    topics::raw::flexible raw_notification;
+    raw_notification.data_format( (topics::raw::flexible_data_format) notification._data_format );
     raw_notification.version()[0] = notification._version >> 24 & 0xFF;
     raw_notification.version()[1] = notification._version >> 16 & 0xFF;
     raw_notification.version()[2] = notification._version >> 8 & 0xFF;

@@ -8,7 +8,7 @@
 #include <realdds/dds-utilities.h>
 
 #include <realdds/topics/device-info/device-info-msg.h>
-#include <realdds/topics/notification/notification-msg.h>
+#include <realdds/topics/flexible/flexible-msg.h>
 #include <fastdds/rtps/common/Guid.h>
 
 #include <map>
