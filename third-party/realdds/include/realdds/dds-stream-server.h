@@ -65,6 +65,8 @@ class dds_video_stream_server : public dds_stream_server
 public:
     dds_video_stream_server( std::string const & stream_name, std::string const & sensor_name );
 
+    char const * type_string() const override { return "video"; }
+
     void open( std::string const & topic_name, std::shared_ptr< dds_publisher > const & ) override;
 
 private:
@@ -79,6 +81,8 @@ class dds_motion_stream_server : public dds_stream_server
 public:
     dds_motion_stream_server( std::string const & stream_name, std::string const & sensor_name );
     
+    char const * type_string() const override { return "motion"; }
+
     void open( std::string const & topic_name, std::shared_ptr< dds_publisher > const & ) override;
 
 private:

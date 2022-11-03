@@ -40,6 +40,9 @@ public:
     dds_stream_profiles const & profiles() const { return _profiles; }
     int default_profile_index() const { return _default_profile_index; }
 
+    // For serialization, we need a string representation of the stream type (also the profile types)
+    virtual char const * type_string() const = 0;
+
     virtual bool is_open() const = 0;
     virtual bool is_streaming() const = 0;
 

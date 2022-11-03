@@ -3,6 +3,10 @@
 
 #include <realdds/dds-stream-profile.h>
 #include <realdds/dds-exceptions.h>
+
+#include <third-party/json.hpp>
+using nlohmann::json;
+
 #include <map>
 
 
@@ -100,6 +104,7 @@ int dds_stream_format::to_rs2() const
         { rs_fourcc( 'R', 'G', 'B', '2' ), RS2_FORMAT_BGR8 },
         { rs_fourcc( 'B', 'G', 'R', 'A' ), RS2_FORMAT_BGRA8 },
         { rs_fourcc( 'M', 'J', 'P', 'G' ), RS2_FORMAT_MJPEG },
+        { rs_fourcc( 'C', 'N', 'F', '4' ), RS2_FORMAT_RAW8 },
         { rs_fourcc( 'B', 'Y', 'R', '2' ), RS2_FORMAT_RAW16 },
         { rs_fourcc( 'M', 'X', 'Y', 'Z' ), RS2_FORMAT_MOTION_XYZ32F },
     };
@@ -133,6 +138,7 @@ dds_stream_format dds_stream_format::from_rs2( int rs2_format )
     case RS2_FORMAT_BGR8: fourcc = "RGB2"; break;
     case RS2_FORMAT_BGRA8: fourcc = "BGRA"; break;  // todo
     case RS2_FORMAT_MJPEG: fourcc = "MJPG"; break;
+    case RS2_FORMAT_RAW8: fourcc = "CNF4"; break;
     case RS2_FORMAT_RAW16: fourcc = "BYR2"; break;
     case RS2_FORMAT_MOTION_XYZ32F: fourcc = "MXYZ"; break;  // todo
     default:
@@ -145,8 +151,7 @@ dds_stream_format dds_stream_format::from_rs2( int rs2_format )
 std::string dds_stream_profile::to_string() const
 {
     std::ostringstream os;
-    os << '<' << type_to_string();
-    os << ' '  << _uid.to_string();
+    os << '<' << _uid.to_string();
     os << ' ' << details_to_string();
     os << '>';
     return os.str();
@@ -162,7 +167,7 @@ std::string dds_stream_profile::details_to_string() const
 std::string dds_video_stream_profile::details_to_string() const
 {
     std::ostringstream os;
-    os << dds_stream_profile::details_to_string();
+    os << super::details_to_string();
     os << ' ' << _width << 'x' << _height << " @" << +_bytes_per_pixel << " Bpp";
     return os.str();
 }
@@ -175,6 +180,27 @@ void dds_stream_profile::init_stream( std::weak_ptr< dds_stream_base > const & s
     if( _stream.lock() )
         DDS_THROW( runtime_error, "profile is already associated with a stream" );
     _stream = stream;
+}
+
+
+json dds_stream_profile::to_json() const
+{
+    json profile = { { "frequency", frequency() },
+                     { "format", format().to_string() } };
+    return profile;
+}
+
+
+json dds_video_stream_profile::to_json() const
+{
+    auto profile = super::to_json();
+    profile += { "width", width() };
+    profile += { "height", height() };
+    //profile["width"] = width();
+    //profile["height"] = height();
+    //profile += { { "width", width() },
+    //             { "height", height() } };
+    return profile;
 }
 
 

@@ -14,11 +14,9 @@ namespace realdds {
 
 // Forward declaration
 namespace topics {
+class notification;
 namespace raw {
 class device_info;
-namespace device {
-class notification;
-}  // namespace device
 }  // namespace raw
 class device_info;
 }  // namespace topics
@@ -61,8 +59,8 @@ public:
 
     void start_streaming( const std::string & stream_name, const image_header & header );
     
-    void publish_image( const std::string& stream_name, const uint8_t* data, size_t size );
-    void publish_notification( topics::raw::device::notification&& notification );
+    void publish_image( const std::string & stream_name, const uint8_t * data, size_t size );
+    void publish_notification( topics::notification && );
     
 private:
     std::shared_ptr< dds_publisher > _publisher;

@@ -21,6 +21,16 @@ def test_one_stream():
     server = dds.device_server( participant, "realdds/device/topic-root" )
     server.init( [s1] )
 
+def test_one_motion_stream():
+    s1p1 = dds.motion_stream_profile( dds.stream_uid(67,89), dds.stream_format("RGB8"), 30 )
+    s1profiles = [s1p1]
+    s1 = dds.motion_stream_server( "s2", "sensor2" )
+    s1.init_profiles( s1profiles, 0 )
+    log.d( s1.profiles() )
+    global server
+    server = dds.device_server( participant, "realdds/device/topic-root" )
+    server.init( [s1] )
+
 def test_no_profiles():
     s1profiles = []
     s1 = dds.video_stream_server( "s1", "sensor" )
@@ -33,6 +43,23 @@ def test_no_streams():
     global server
     server = dds.device_server( participant, "realdds/device/topic-root" )
     server.init( [] )
+
+def test_n_profiles( n_profiles ):
+    assert n_profiles > 0
+    s1profiles = []
+    fibo = [0,1]
+    for i in range(n_profiles):
+        width = i
+        height = fibo[-2] + fibo[-1]
+        fibo[-2] = fibo[-1]
+        fibo[-1] = height
+        s1profiles += [dds.video_stream_profile( dds.stream_uid(23,45), dds.stream_format("RGB8"), 9, width, height, 123 )]
+    s1 = dds.video_stream_server( "s1", "sensor" )
+    s1.init_profiles( s1profiles, 0 )
+    log.d( s1.profiles() )
+    global server
+    server = dds.device_server( participant, "realdds/device/topic-root" )
+    server.init( [s1] )
 
 
 def close_server():

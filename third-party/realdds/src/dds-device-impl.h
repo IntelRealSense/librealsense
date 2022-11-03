@@ -32,7 +32,6 @@ public:
 
     bool _running = false;
 
-    size_t _expected_num_of_streams = 0;
     std::map< std::string, std::shared_ptr< dds_stream > > _streams;
     std::atomic<uint32_t> _control_message_counter = { 0 };
 
