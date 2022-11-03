@@ -6,9 +6,9 @@
 #include "dds-stream-base.h"
 #include "dds-stream-profile.h"
 
-#include <functional>
 #include <memory>
 #include <string>
+#include <vector>
 
 namespace realdds {
 
@@ -60,6 +60,9 @@ private:
     class impl;
     std::shared_ptr< impl > _impl;
 };
+
+
+typedef std::vector< std::shared_ptr< dds_stream > > dds_streams;
 
 
 }  // namespace realdds
