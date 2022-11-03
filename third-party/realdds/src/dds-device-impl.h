@@ -23,6 +23,11 @@ class dds_topic_reader;
 class dds_topic_writer;
 
 
+namespace topics {
+class flexible_msg;
+}
+
+
 class dds_device::impl
 {
 public:
@@ -44,7 +49,7 @@ public:
 
     void run();
 
-    bool write_control_message( void * msg );
+    void write_control_message( topics::flexible_msg && );
 
 private:
     void create_notifications_reader();

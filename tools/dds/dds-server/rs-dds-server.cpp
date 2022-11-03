@@ -307,11 +307,11 @@ try
             // Remove the dds-server for this device
             auto const & handler = device_handlers_list.at( dev );
 
-            handler.controller->stop_all_streams();
-            device_handlers_list.erase( dev );
-
             // Remove this device from the DDS device broadcaster
             broadcaster.remove_device( handler.info );
+
+            handler.controller->stop_all_streams();
+            device_handlers_list.erase( dev );
         } );
 
     std::cin.ignore(std::numeric_limits<std::streamsize>::max(), 0);// Pend until CTRL + C is pressed 

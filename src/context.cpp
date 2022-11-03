@@ -382,39 +382,60 @@ namespace librealsense
     class dds_sensor_proxy : public software_sensor
     {
     public:
-        dds_sensor_proxy( std::shared_ptr< realdds::dds_stream > const & stream,
+        dds_sensor_proxy( std::string const & sensor_name,
                           software_device * owner,
                           std::shared_ptr< realdds::dds_device > const & dev )
-            : software_sensor( stream->name(), owner )
+            : software_sensor( sensor_name, owner )
             , _dev( dev )
-            , _stream( stream )
+            , _name( sensor_name )
         {
         }
 
-        std::shared_ptr< realdds::dds_video_stream_profile >
-        find_profile( realdds::dds_video_stream_profile const & profile )
+        int add_dds_stream( std::shared_ptr< realdds::dds_stream > const & stream )
         {
-            for( auto & sp : _stream->profiles() )
+            int stream_index = static_cast< int >( _streams.size() );
+            _streams.push_back( stream );
+            return stream_index;
+        }
+
+        std::shared_ptr< realdds::dds_video_stream_profile >
+        find_profile( int stream_index, realdds::dds_video_stream_profile const & profile )
+        {
+            if( stream_index < 0 || stream_index >= _streams.size() )
             {
-                auto vsp = std::static_pointer_cast< realdds::dds_video_stream_profile >( sp );
-                if( profile.width() == vsp->width() && profile.height() == vsp->height()
-                    && profile.format() == vsp->format() && profile.frequency() == vsp->frequency() )
+                LOG_ERROR( "Invalid stream index " << stream_index << " in rs2 profile for sensor " << get_name() );
+            }
+            else
+            {
+                for( auto & sp : _streams[stream_index]->profiles() )
                 {
-                    return vsp;
+                    auto vsp = std::static_pointer_cast< realdds::dds_video_stream_profile >( sp );
+                    if( profile.width() == vsp->width() && profile.height() == vsp->height()
+                        && profile.format() == vsp->format() && profile.frequency() == vsp->frequency() )
+                    {
+                        return vsp;
+                    }
                 }
             }
             return std::shared_ptr< realdds::dds_video_stream_profile >();
         }
 
         std::shared_ptr< realdds::dds_motion_stream_profile >
-        find_profile( realdds::dds_motion_stream_profile const & profile )
+        find_profile( int stream_index, realdds::dds_motion_stream_profile const & profile )
         {
-            for( auto & sp : _stream->profiles() )
+            if( stream_index < 0 || stream_index >= _streams.size() )
             {
-                auto msp = std::static_pointer_cast< realdds::dds_motion_stream_profile >( sp );
-                if( profile.format() == msp->format() && profile.frequency() == msp->frequency() )
+                LOG_ERROR( "Invalid stream index " << stream_index << " in rs2 profile for sensor " << get_name() );
+            }
+            else
+            {
+                for( auto & sp : _streams[stream_index]->profiles() )
                 {
-                    return msp;
+                    auto msp = std::static_pointer_cast< realdds::dds_motion_stream_profile >( sp );
+                    if( profile.format() == msp->format() && profile.frequency() == msp->frequency() )
+                    {
+                        return msp;
+                    }
                 }
             }
             return std::shared_ptr< realdds::dds_motion_stream_profile >();
@@ -428,11 +449,14 @@ namespace librealsense
                 if( Is< video_stream_profile >( profiles[i] ) )
                 {
                     const auto && vsp = As< video_stream_profile >( profiles[i] );
-                    auto video_profile = find_profile( realdds::dds_video_stream_profile(
-                        realdds::dds_stream_format::from_rs2( profiles[i]->get_format() ),
-                        profiles[i]->get_framerate(),
-                        vsp->get_width(),
-                        vsp->get_height() ) );
+                    auto stream_index = vsp->get_stream_index();
+                    auto video_profile
+                        = find_profile( stream_index,
+                                        realdds::dds_video_stream_profile(
+                                            realdds::dds_stream_format::from_rs2( profiles[i]->get_format() ),
+                                            profiles[i]->get_framerate(),
+                                            vsp->get_width(),
+                                            vsp->get_height() ) );
                     if( video_profile )
                         realdds_profiles.push_back( video_profile );
                     else
@@ -440,15 +464,17 @@ namespace librealsense
                 }
                 else if( Is< motion_stream_profile >( profiles[i] ) )
                 {
-                    auto motion_profile = find_profile( realdds::dds_motion_stream_profile(
-                        realdds::dds_stream_format::from_rs2( profiles[i]->get_format() ),
-                        profiles[i]->get_framerate() ) );
+                    auto stream_index = profiles[i]->get_stream_index();
+                    auto motion_profile
+                        = find_profile( stream_index,
+                                        realdds::dds_motion_stream_profile(
+                                            realdds::dds_stream_format::from_rs2( profiles[i]->get_format() ),
+                                            profiles[i]->get_framerate() ) );
                     if( motion_profile )
                         realdds_profiles.push_back( motion_profile );
                     else
                         LOG_ERROR( "no profile found in stream for rs2 profile " << profiles[i] );
                 }
-
             }
 
             if ( profiles.size() > 0 )
@@ -462,22 +488,24 @@ namespace librealsense
         void close() override
         {
             //dds_device::close expects <stream_uid, stream_index> pairs
-            std::vector< std::pair< int16_t, int8_t > > profiles_to_close;
+            realdds::dds_streams streams_to_close;
             for (auto profile : sensor_base::get_active_streams())
             {
-                profiles_to_close.push_back( std::make_pair( profile->get_unique_id(), profile->get_stream_index() ) );
+                streams_to_close.push_back( _streams[profile->get_stream_index()] );
             }
-            _dev->close( profiles_to_close );
+            _dev->close( streams_to_close );
             software_sensor::close();
         }
 
         //float get_option( rs2_option option ) const override;
         //void set_option( rs2_option option, float value ) const override;
 
-        const std::string & get_name() { return _stream->name(); }
+        const std::string & get_name() { return _name; }
+
     private:
         std::shared_ptr< realdds::dds_device > const & _dev;
-        std::shared_ptr< realdds::dds_stream > const & _stream;
+        std::string _name;
+        realdds::dds_streams _streams;
     };
 
     // This is the rs2 device; it proxies to an actual DDS device that does all the actual
@@ -503,6 +531,8 @@ namespace librealsense
                 { "gpio", RS2_STREAM_GPIO },
                 { "pose", RS2_STREAM_POSE },
                 { "confidence", RS2_STREAM_CONFIDENCE },
+                { "video", RS2_STREAM_COLOR },
+                { "motion", RS2_STREAM_GYRO },
             };
             auto it = type_to_rs2.find( type_string );
             if( it == type_to_rs2.end() )
@@ -564,22 +594,26 @@ namespace librealsense
             //Assumes dds_device initialization finished
             struct sensor_info
             {
-                size_t sensor_index;
-                int stream_count;
+                std::shared_ptr< dds_sensor_proxy > proxy;
+                int sensor_index;
             };
             std::map< std::string, sensor_info > sensor_name_to_info;
             _dds_dev->foreach_stream( [&]( std::shared_ptr< realdds::dds_stream > const & stream ) {
                 // We assign (sid,index) based on the sensor: multiple streams can come from the same
                 // sensor, in which case they'd get the same sid but a different index...
-                auto it_is_new = sensor_name_to_info.emplace( stream->sensor_name(),
-                                                              sensor_info{ sensor_name_to_info.size(), 0 } );
-                size_t const sensor_index = it_is_new.first->second.sensor_index;
-                auto & stream_index = it_is_new.first->second.stream_count;
-                if( it_is_new.second )
-                    this->add_dds_sensor( _dds_dev, stream );
-                else
-                    ++stream_index;
-                software_sensor & sensor = get_software_sensor( sensor_index );
+                auto & info = sensor_name_to_info[stream->sensor_name()];
+                if( ! info.proxy )
+                {
+                    // This is a new sensor we haven't seen yet
+                    info.proxy = std::make_shared< dds_sensor_proxy >( stream->sensor_name(), this, _dds_dev );
+                    info.sensor_index = add_sensor( info.proxy );
+                    assert( info.sensor_index == _software_sensors.size() );
+                    _software_sensors.push_back( info.proxy );
+                }
+                auto stream_index = info.proxy->add_dds_stream( stream );
+                LOG_DEBUG( info.sensor_index << " " << stream->sensor_name() << " : " << stream->name() << " " << stream_index );
+
+                software_sensor & sensor = get_software_sensor( info.sensor_index );
                 auto video_stream = std::dynamic_pointer_cast< realdds::dds_video_stream >( stream );
                 auto motion_stream = std::dynamic_pointer_cast< realdds::dds_motion_stream >( stream );
                 auto stream_type = to_rs2_stream_type( stream->type_string() );
@@ -592,7 +626,7 @@ namespace librealsense
                         sensor.add_video_stream(
                             to_rs2_video_stream(
                                 stream_type,
-                                sensor_index, stream_index,
+                                info.sensor_index, stream_index,
                                 std::static_pointer_cast< realdds::dds_video_stream_profile >( profile ) ),
                             profile == default_profile );
                     }
@@ -601,23 +635,13 @@ namespace librealsense
                         sensor.add_motion_stream(
                             to_rs2_motion_stream(
                                 stream_type,
-                                sensor_index, stream_index,
+                                info.sensor_index, stream_index,
                                 std::static_pointer_cast< realdds::dds_motion_stream_profile >( profile ) ),
                             profile == default_profile );
                     }
                 }
             } );  // End foreach_stream lambda
         } //End dds_device_proxy constructor
-
-    private:
-        dds_sensor_proxy& add_dds_sensor( std::shared_ptr< realdds::dds_device > const & dev, std::shared_ptr< realdds::dds_stream > const & stream )
-        {
-            auto sensor = std::make_shared< dds_sensor_proxy >( stream, this, dev );
-            add_sensor( sensor );
-            _software_sensors.push_back( sensor );
-
-            return *sensor;
-        }
     };
 
     class dds_device_info : public device_info

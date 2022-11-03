@@ -4,8 +4,10 @@
 #include <realdds/dds-device.h>
 #include "dds-device-impl.h"
 
-#include <realdds/topics/control/control-msg.h>
+#include <realdds/topics/flexible/flexible-msg.h>
 #include <realdds/dds-exceptions.h>
+
+#include <third-party/json.hpp>
 
 namespace realdds {
 
@@ -119,69 +121,37 @@ size_t dds_device::foreach_stream( std::function< void( std::shared_ptr< dds_str
 
 void dds_device::open( const dds_stream_profiles & profiles )
 {
-    using namespace topics;
-
-    device::control::streams_open_msg open_msg;
-    open_msg.message_id = _impl->_control_message_counter++;
-    open_msg.number_of_streams = static_cast< uint8_t >( profiles.size() );
-    for ( size_t i = 0; i < profiles.size(); ++i )
+    using nlohmann::json;
+    auto stream_profiles = json::array();
+    for( auto & profile : profiles )
     {
-        auto vsp = std::dynamic_pointer_cast< dds_video_stream_profile >( profiles[i] );
-        open_msg.streams[i].uid = 0;           // profiles[i]->uid().sid;
-        open_msg.streams[i].stream_index = 0;  // profiles[i]->uid().index;
-        open_msg.streams[i].framerate   = profiles[i]->frequency();
-        open_msg.streams[i].format      = profiles[i]->format().to_rs2();
-        open_msg.streams[i].width       = vsp ? vsp->width() : 0;
-        open_msg.streams[i].height      = vsp ? vsp->height() : 0;
+        auto stream = profile->stream();
+        if( ! stream )
+            DDS_THROW( runtime_error, "profile (" + profile->to_string() + ") is not part of any stream" );
+        stream_profiles += json::array( { stream->name(), profile->to_json() } );
     }
-
-    raw::device::control raw_msg;
-    device::control::construct_raw_message( device::control::msg_type::STREAMS_OPEN,
-        open_msg,
-        raw_msg );
-
-    if ( _impl->write_control_message( &raw_msg ) )
-    {
-        LOG_DEBUG( "Sent STREAMS_OPEN message for " << profiles.size() << " streams" );
-    }
-    else
-    {
-        LOG_ERROR( "Error writing STREAMS_OPEN message for " << profiles.size() << " streams" );
-    }
+    json j = {
+        { "id", "open-streams" },
+        { "stream-profiles", stream_profiles },
+    };
+    _impl->write_control_message( j );
 }
 
-void dds_device::close( const std::vector< std::pair< int16_t, int8_t > >& stream_uids )
+void dds_device::close( dds_streams const & streams )
 {
-    using namespace topics;
-
-    if ( stream_uids.size() > device::control::MAX_OPEN_STREAMS )
+    using nlohmann::json;
+    auto stream_names = json::array();
+    for( auto & stream : streams )
     {
-        DDS_THROW( runtime_error,  "Too many profiles to close (" + std::to_string( stream_uids.size() )
-                  + "), max is " + std::to_string( device::control::MAX_OPEN_STREAMS ) );
+        if( ! stream )
+            DDS_THROW( runtime_error, "null stream passed in" );
+        stream_names += stream->name();
     }
-
-    device::control::streams_close_msg close_msg;
-    close_msg.message_id = _impl->_control_message_counter++;
-    close_msg.number_of_streams = static_cast< uint8_t >( stream_uids.size() );
-    for (size_t i = 0; i < stream_uids.size(); ++i)
-    {
-        close_msg.stream_uids[i] = stream_uids[i].first;
-        close_msg.stream_indexes[i] = stream_uids[i].second;
-    }
-
-    raw::device::control raw_msg;
-    device::control::construct_raw_message( device::control::msg_type::STREAMS_CLOSE,
-                                            close_msg,
-                                            raw_msg );
-
-    if (_impl->write_control_message( &raw_msg ))
-    {
-        LOG_DEBUG( "Sent STREAMS_CLOSE message for " << stream_uids.size() << " streams" );
-    }
-    else
-    {
-        LOG_ERROR( "Error writing STREAMS_CLOSE message for " << stream_uids.size() << " streams" );
-    }
+    json j = {
+        { "id", "close-streams" },
+        { "stream-names", stream_names },
+    };
+    _impl->write_control_message( j );
 }
 
 

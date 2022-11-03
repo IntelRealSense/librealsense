@@ -28,6 +28,7 @@ namespace realdds {
 class dds_participant;
 class dds_topic;
 class dds_topic_reader;
+class dds_topic_writer;
 
 
 namespace topics {
@@ -72,6 +73,10 @@ public:
                            flexible_msg * output,
                            eprosima::fastdds::dds::SampleInfo * optional_info = nullptr );
 
+    // WARNING: this moves the message content!
+    raw::flexible to_raw();
+    // WARNING: this moves the message content!
+    void write_to( dds_topic_writer & );
 
     flexible_msg() = default;
     flexible_msg( raw::flexible&& );

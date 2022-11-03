@@ -118,13 +118,7 @@ void dds_notification_server::send_notification( topics::flexible_msg && notific
     if( ! is_running() )
         DDS_THROW( runtime_error, "cannot send notification while server isn't running" );
 
-    topics::raw::flexible raw_notification;
-    raw_notification.data_format( (topics::raw::flexible_data_format)notification._data_format );
-    raw_notification.version()[0] = notification._version >> 24 & 0xFF;
-    raw_notification.version()[1] = notification._version >> 16 & 0xFF;
-    raw_notification.version()[2] = notification._version >>  8 & 0xFF;
-    raw_notification.version()[3] = notification._version       & 0xFF;
-    raw_notification.data( std::move( notification._data ) );
+    auto raw_notification = notification.to_raw();
 
     std::unique_lock< std::mutex > lock( _notification_send_mutex );
     if( ! _instant_notifications.enqueue( std::move( raw_notification ) ) )
@@ -137,15 +131,7 @@ void dds_notification_server::add_discovery_notification( topics::flexible_msg &
     if( is_running() )
         DDS_THROW( runtime_error, "cannot add discovery notification while server is running" );
 
-    topics::raw::flexible raw_notification;
-    raw_notification.data_format( (topics::raw::flexible_data_format) notification._data_format );
-    raw_notification.version()[0] = notification._version >> 24 & 0xFF;
-    raw_notification.version()[1] = notification._version >> 16 & 0xFF;
-    raw_notification.version()[2] = notification._version >> 8 & 0xFF;
-    raw_notification.version()[3] = notification._version & 0xFF;
-    raw_notification.data( std::move( notification._data ) );
-
-    _discovery_notifications.push_back( std::move( raw_notification ) );
+    _discovery_notifications.push_back( notification.to_raw() );
 };
 
 

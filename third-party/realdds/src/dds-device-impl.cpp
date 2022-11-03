@@ -7,7 +7,7 @@
 #include <realdds/dds-topic-reader.h>
 #include <realdds/dds-topic-writer.h>
 
-#include <realdds/topics/control/control-msg.h>
+#include <realdds/topics/flexible/flexible-msg.h>
 #include <librealsense2/utilities/time/timer.h>
 
 #include <fastdds/dds/publisher/DataWriter.hpp>
@@ -82,11 +82,10 @@ void dds_device::impl::run()
     _running = true;
 }
 
-bool dds_device::impl::write_control_message( void * msg )
+void dds_device::impl::write_control_message( topics::flexible_msg && msg )
 {
     assert( _control_writer != nullptr );
-
-    return DDS_API_CALL( _control_writer->get()->write( msg ) );
+    msg.write_to( *_control_writer );
 }
 
 void dds_device::impl::create_notifications_reader()
@@ -105,7 +104,7 @@ void dds_device::impl::create_control_writer()
     if( _control_writer )
         return;
 
-    auto topic = topics::device::control::create_topic( _participant, _info.topic_root + "/control" );
+    auto topic = topics::flexible_msg::create_topic( _participant, _info.topic_root + "/control" );
     _control_writer = std::make_shared< dds_topic_writer >( topic );
     dds_topic_writer::qos wqos( eprosima::fastdds::dds::RELIABLE_RELIABILITY_QOS );
     wqos.history().depth = 10;  // default is 1

@@ -6,9 +6,11 @@
 
 #include <realdds/dds-topic.h>
 #include <realdds/dds-topic-reader.h>
+#include <realdds/dds-topic-writer.h>
 #include <realdds/dds-utilities.h>
 
 #include <fastdds/dds/subscriber/DataReader.hpp>
+#include <fastdds/dds/publisher/DataWriter.hpp>
 #include <fastdds/dds/topic/Topic.hpp>
 
 #include <third-party/json.hpp>
@@ -108,6 +110,29 @@ json flexible_msg::json_data() const
     return json::parse( begin, end );
 }
 
+
+raw::flexible flexible_msg::to_raw()
+{
+    raw::flexible raw_msg;
+    raw_msg.data_format( (raw::flexible_data_format) _data_format );
+    raw_msg.version()[0] = _version >> 24 & 0xFF;
+    raw_msg.version()[1] = _version >> 16 & 0xFF;
+    raw_msg.version()[2] = _version >> 8 & 0xFF;
+    raw_msg.version()[3] = _version & 0xFF;
+    raw_msg.data( std::move( _data ) );
+    return raw_msg;
+}
+
+
+void flexible_msg::write_to( dds_topic_writer & writer )
+{
+    auto raw_msg = to_raw();
+    bool success = DDS_API_CALL( writer.get()->write( &raw_msg ) );
+    if( ! success )
+    {
+        LOG_ERROR( "Error writing message" );
+    }
+}
 
 
 }  // namespace topics
