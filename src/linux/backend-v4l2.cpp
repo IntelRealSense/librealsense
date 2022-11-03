@@ -761,11 +761,12 @@ namespace librealsense
             // next several lines permit to use D457 even if a usb device has already "taken" the video0,1,2 (for example)
             // further development is needed to permit use of several mipi devices
             static int  first_video_index = ind;
-            if (ind == first_video_index || ind == first_video_index + 2 || ind == first_video_index + 4)
+            ind = (ind - first_video_index) % 6; // yhsu - offset from first mipi video node and assume 6 nodes per mipi camera
+            if (ind == 0 || ind == 2 || ind == 4)
                 mi = 0;
-            else if (ind == first_video_index + 1 | ind == first_video_index + 3)
+            else if (ind == 1 | ind == 3)
                 mi = 3;
-            else if (ind == first_video_index + 5)
+            else if (ind == 5)
                 mi = 4;
             else
             {
@@ -785,6 +786,7 @@ namespace librealsense
             // TODO - find a way to assign unique id for mipi
             // maybe using bus_info and card params (see above in this method)
             //info.unique_id = busnum + "-" + devpath + "-" + devnum;
+            info.unique_id = bus_info + "-" + std::to_string(ind/6); // yhsu - use bus info and first video node of each mipi camera
             info.conn_spec = usb_specification;
             info.uvc_capabilities = get_dev_capabilities(dev_name);
 
