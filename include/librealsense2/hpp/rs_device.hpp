@@ -117,6 +117,12 @@ namespace rs2
         {
             return _dev;
         }
+        bool operator<( device const & other ) const
+        {
+            return (
+                strcmp( get_info( RS2_CAMERA_INFO_SERIAL_NUMBER ), other.get_info( RS2_CAMERA_INFO_SERIAL_NUMBER ) )
+                < 0 );
+        }
 
         template<class T>
         bool is() const
