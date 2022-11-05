@@ -78,9 +78,9 @@ static void on_discovery_device_header( size_t const n_streams, dds_notification
 static void on_discovery_stream_header( std::shared_ptr< dds_stream_server > const & stream,
                                         dds_notification_server & notifications )
 {
-    auto profiles = nlohmann::ordered_json::array();
+    auto profiles = nlohmann::json::array();
     for( auto & sp : stream->profiles() )
-        profiles.push_back( nlohmann::ordered_json( std::move( sp->to_json() ) ) );
+        profiles.push_back( std::move( sp->to_json() ) );
     json msg = {
         { "id", "stream-header" },
         { "type", stream->type_string() },
