@@ -117,7 +117,7 @@ T get( nlohmann::json const & j, nlohmann::json::const_iterator const & it )
     }
     catch( nlohmann::json::exception & e )
     {
-        throw std::runtime_error( "[getting iterator]" + e.what() );
+        throw std::runtime_error( std::string( "[getting iterator]" ) + e.what() );
     }
 }
 
