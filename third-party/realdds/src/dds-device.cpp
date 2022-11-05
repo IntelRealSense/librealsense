@@ -122,13 +122,15 @@ size_t dds_device::foreach_stream( std::function< void( std::shared_ptr< dds_str
 void dds_device::open( const dds_stream_profiles & profiles )
 {
     using nlohmann::json;
-    auto stream_profiles = json::array();
+    auto stream_profiles = json();
     for( auto & profile : profiles )
     {
         auto stream = profile->stream();
         if( ! stream )
             DDS_THROW( runtime_error, "profile (" + profile->to_string() + ") is not part of any stream" );
-        stream_profiles += json::array( { stream->name(), profile->to_json() } );
+        if( stream_profiles.find( stream->name() ) != stream_profiles.end() )
+            DDS_THROW( runtime_error, "more than one profile found for stream '" + stream->name() + "'" );
+        stream_profiles[stream->name()] = profile->to_json();
     }
     json j = {
         { "id", "open-streams" },
