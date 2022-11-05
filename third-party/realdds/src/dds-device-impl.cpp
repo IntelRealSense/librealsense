@@ -157,25 +157,14 @@ bool dds_device::impl::init()
                     dds_stream_profiles profiles;
                     if( stream_type == "video" )
                     {
-                        for( auto profile : j["profiles"] )
-                        {
-                            auto frequency = utilities::json::get< int16_t >( profile, "frequency" );
-                            dds_stream_format format( utilities::json::get< std::string >( profile, "format" ) );
-                            auto width = utilities::json::get< int16_t >( profile, "width" );
-                            auto height = utilities::json::get< int16_t >( profile, "height" );
-                            profiles.push_back(
-                                std::make_shared< dds_video_stream_profile >( format, frequency, width, height ) );
-                        }
+                        for( auto & profile : j["profiles"] )
+                            profiles.push_back( dds_stream_profile::from_json< dds_video_stream_profile >( profile ) );
                         stream = std::make_shared< dds_video_stream >( stream_name, sensor_name );
                     }
                     else if( stream_type == "motion" )
                     {
-                        for( auto profile : j["profiles"] )
-                        {
-                            auto frequency = utilities::json::get< int16_t >( profile, "frequency" );
-                            dds_stream_format format( utilities::json::get< std::string >( profile, "format" ) );
-                            profiles.push_back( std::make_shared< dds_motion_stream_profile >( format, frequency ) );
-                        }
+                        for( auto & profile : j["profiles"] )
+                            profiles.push_back( dds_stream_profile::from_json< dds_motion_stream_profile >( profile ) );
                         stream = std::make_shared< dds_motion_stream >( stream_name, sensor_name );
                     }
                     else

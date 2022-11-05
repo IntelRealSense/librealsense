@@ -48,8 +48,8 @@ class dds_stream_base;
 
 class dds_stream_profile
 {
-    dds_stream_format _format;
     int16_t _frequency;  // "Frames" per second
+    dds_stream_format _format;
 
     std::weak_ptr< dds_stream_base > _stream;
 
@@ -63,6 +63,7 @@ protected:
     {
     }
     dds_stream_profile( dds_stream_profile && ) = default;
+    dds_stream_profile( nlohmann::json const &, int & index );
 
 public:
     std::shared_ptr< dds_stream_base > stream() const { return _stream.lock(); }
@@ -76,8 +77,23 @@ public:
     virtual std::string to_string() const;
     virtual std::string details_to_string() const;
 
-    // Serialization to a JSON representation
+    // Serialization to a JSON array representation
     virtual nlohmann::json to_json() const;
+
+    // Build a profile from a json array object, e.g.:
+    //      auto profile = dds_stream_profile::from_json< dds_video_stream_profile >( j );
+    // This is the reverse of to_json() which returns a json array
+    template< class final_stream_profile >
+    static std::shared_ptr< final_stream_profile > from_json( nlohmann::json const & j )
+    {
+        int it = 0;
+        auto profile = std::make_shared< final_stream_profile >( j, it );
+        verify_end_of_json( j, it );  // just so it's not in the header
+        return profile;
+    }
+
+private:
+    static void verify_end_of_json( nlohmann::json const &, int index );
 };
 
 
@@ -98,6 +114,7 @@ public:
         , _height( height )
     {
     }
+    dds_video_stream_profile( nlohmann::json const &, int & index );
     dds_video_stream_profile( dds_video_stream_profile && ) = default;
 
     uint16_t width() const { return _width; }
@@ -116,6 +133,10 @@ class dds_motion_stream_profile : public dds_stream_profile
 public:
     dds_motion_stream_profile( dds_stream_format format, int16_t frequency )
         : super( format, frequency )
+    {
+    }
+    dds_motion_stream_profile( nlohmann::json const & j, int & index )
+        : super( j, index )
     {
     }
     dds_motion_stream_profile( dds_motion_stream_profile && ) = default;

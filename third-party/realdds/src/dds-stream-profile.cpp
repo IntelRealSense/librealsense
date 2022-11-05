@@ -4,7 +4,7 @@
 #include <realdds/dds-stream-profile.h>
 #include <realdds/dds-exceptions.h>
 
-#include <third-party/json.hpp>
+#include <librealsense2/utilities/json.h>
 using nlohmann::json;
 
 #include <map>
@@ -137,6 +137,22 @@ dds_stream_format dds_stream_format::from_rs2( int rs2_format )
 }
 
 
+dds_stream_profile::dds_stream_profile( json const & j, int & it )
+    : _frequency( utilities::json::get< int16_t >( j, it++ ) )
+    , _format( utilities::json::get< std::string >( j, it++ ) )
+{
+    // NOTE: the order of construction is the order of declaration -- therefore the to_json() function
+    // should use the same ordering!
+}
+
+
+/* static */ void dds_stream_profile::verify_end_of_json( nlohmann::json const & j, int index )
+{
+    if( index != j.size() )
+        DDS_THROW( runtime_error, "expected end of json at index " + std::to_string( index ) );
+}
+
+
 std::string dds_stream_profile::to_string() const
 {
     std::ostringstream os;
@@ -173,21 +189,24 @@ void dds_stream_profile::init_stream( std::weak_ptr< dds_stream_base > const & s
 
 json dds_stream_profile::to_json() const
 {
-    json profile = { { "frequency", frequency() },
-                     { "format", format().to_string() } };
-    return profile;
+    // NOTE: same ordering as construction!
+    return json::array( { frequency(), format().to_string() } );
+}
+
+
+dds_video_stream_profile::dds_video_stream_profile( nlohmann::json const & j, int & index )
+    : super( j, index )
+{
+    _width = utilities::json::get< int16_t >( j, index++ );
+    _height = utilities::json::get< int16_t >( j, index++ );
 }
 
 
 json dds_video_stream_profile::to_json() const
 {
     auto profile = super::to_json();
-    profile += { "width", width() };
-    profile += { "height", height() };
-    //profile["width"] = width();
-    //profile["height"] = height();
-    //profile += { { "width", width() },
-    //             { "height", height() } };
+    profile += width();
+    profile += height();
     return profile;
 }
 

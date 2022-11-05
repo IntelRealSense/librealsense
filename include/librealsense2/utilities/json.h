@@ -79,7 +79,45 @@ T get( nlohmann::json const & j, char const * key )
     }
     catch( nlohmann::json::exception & e )
     {
-        throw std::runtime_error( "[while getting '" + std::string( key ) + "']" + e.what() );
+        throw std::runtime_error( "[getting '" + std::string( key ) + "']" + e.what() );
+    }
+}
+
+
+// If there, returns the value at the given index (in an array); otherwise throws!
+// Turns json exceptions into runtime errors with additional info.
+template < class T >
+T get( nlohmann::json const & j, int index )
+{
+    try
+    {
+        // This will throw for type mismatches, etc.
+        // Does not check for existence: will throw, too!
+        return j.at( index ).get< T >();
+    }
+    catch( nlohmann::json::exception & e )
+    {
+        throw std::runtime_error( "[getting index " + std::to_string( index ) + "]" + e.what() );
+    }
+}
+
+
+// If there, returns the value at the given iterator; otherwise throws!
+// Turns json exceptions into runtime errors with additional info.
+template < class T >
+T get( nlohmann::json const & j, nlohmann::json::const_iterator const & it )
+{
+    if( it == j.end() )
+        throw std::runtime_error( "unexpected end of json" );
+    try
+    {
+        // This will throw for type mismatches, etc.
+        // Does not check for existence: will throw, too!
+        return it->get< T >();
+    }
+    catch( nlohmann::json::exception & e )
+    {
+        throw std::runtime_error( "[getting iterator]" + e.what() );
     }
 }
 
