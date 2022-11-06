@@ -90,6 +90,7 @@ namespace librealsense
                 default_430(p);
                 break;
             case ds::RS455_PID:
+            case ds::RS457_PID:
                 default_450_mid_low_res(p);
                 switch (res)
                 {
