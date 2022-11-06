@@ -476,8 +476,8 @@ namespace librealsense
     // Its configuration is as following: 2 lines of Y then one line of UV (line size is width)
     // There is one Y value for each pixel, and one pair of U,V values for 4 pixels. 
     // For example: for the first 3 lines of the frame:
-    // Y0  Y1   Y2   Y3   ....
-    // Yw  Yw+1 Yw+2 Yw+3 .... (Yw:Ywidth)
+    // Y0  Y1   Y2   Y3   .... Yw-1  (Yw:Ywidth)
+    // Yw  Yw+1 Yw+2 Yw+3 .... Y2w-1
     // U0  V0   U1   V1
     // The first pixel is (Y0, U0, V0), second pixel is (Y1, U0, V0)
     // The first pixel in the second line is (Yw, U0, V0) second pixel in second line is (Yw+1, U0, V0)
@@ -514,11 +514,10 @@ namespace librealsense
 
                 for (int pix = 0; pix < 2 * width; pix += 16)
                 {
-                    uint8_t y[32];
-                    for (int dst_idx = 0, src_idx = 0; dst_idx < 32; dst_idx += 2, ++src_idx)
+                    uint16_t y[16];
+                    for (int dst_idx = 0, src_idx = 0; dst_idx < 16; dst_idx += 1, ++src_idx)
                     {
-                        y[dst_idx] = 0;
-                        y[dst_idx + 1] = start_of_y[src_idx + pix];
+                        y[dst_idx] = start_of_y[src_idx + pix] << 8;
                     }
                     librealsense::copy(dst, y, sizeof y);
                     dst += sizeof y;
