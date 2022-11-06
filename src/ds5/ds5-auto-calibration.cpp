@@ -1114,13 +1114,13 @@ namespace librealsense
         }
     }
 
-    void auto_calibrated::remove_leading_outliers(uint16_t data[256], int size)
+    void auto_calibrated::remove_outliers(uint16_t data[256], int size)
     {
         //Due to the async between the preset activation and the flow, the initial frames of the sample may include unrelated data.
         // the purpose of the function is to eliminate those by replacing them with a single value. 
         // This assumes that the fill_rate is contiguous during scan (i.e. grows or shrinks monotonically)
+        // Additionally, this function rectifies singular sporadic outliers which are in the top 5% that may skew the results
         uint16_t base_fr = 0;
-        bool gap_identified = false;
         for (int i = 255; i >= 0; i--)
         {
             // Initialize reference value
@@ -1134,18 +1134,28 @@ namespace librealsense
             // Rectify missing values
             if (!data[i])
                 data[i] = base_fr;
-            else
+        }
+
+        static const int _outlier_percentile = 9500; // The outlier value is expected to be significantly above this value
+        for (int i = 0; i <= 253; i++) // Check for single outliers by assessing triples
+        {
+            auto val1 = data[i];
+            auto val2 = data[i+1];
+            auto val3 = data[i+2];
+
+            // Check for rectification candidate
+            if ((val2 > val1) && (val2 > val3))
             {
-                if (gap_identified)
+                auto diff = val3-val1;
+                auto delta = std::max(std::abs(val2-val1),std::abs(val2-val3));
+                // Actual outlier is a
+                // - spike 3 times or more than the expected gap
+                // - in the 5 top percentile
+                // - with neighbour values being smaller by at least 500 points to avoid clamping around the peak
+                if ((delta > 500) && (delta > (std::abs(diff) * 3)) && (val2 > _outlier_percentile))
                 {
-                    data[i] = base_fr;
-                    continue;
-                }
-                float change_scale = (float)base_fr / data[i];
-                if (change_scale > 1.5f || change_scale < 0.67f)  // use 50% increment/decrement from previous sample
-                {
-                    gap_identified = true;
-                    LOG_OCC_DEBUG(std::string(to_string() << "Start rectifying data from index " << i << " due to jump from " << base_fr << " to " << data[i]));
+                    data[i+1] = data[i] + diff/2;
+                    LOG_OCC_DEBUG(std::string(to_string() << "Outlier with value " << val2 << " was changed to be " << data[i+1] ));
                 }
             }
         }
@@ -1462,8 +1472,8 @@ namespace librealsense
                     }
 #endif
                     // Do not delete - to be used to improve algo robustness
-                    //remove_leading_outliers(_fill_factor, _total_frames);
                     fill_missing_data(_fill_factor, _total_frames);
+                    remove_outliers(_fill_factor, _total_frames);
                     std::stringstream ss;
                     ss << "{\n \"calib type\":" << 0 <<
                         ",\n \"host assistance\":" << 2 <<
