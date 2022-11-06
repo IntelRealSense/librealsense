@@ -330,21 +330,9 @@ PYBIND11_MODULE(NAME, m) {
         .def( "__bool__", &dds_stream_format::is_valid )     // Called to implement truth value testing in Python 3
         .def( "__repr__", []( dds_stream_format const & self ) { return self.to_string(); } );
 
-    using realdds::dds_stream_uid;
-    py::class_< dds_stream_uid >( m, "stream_uid" )
-        .def( py::init<>() )
-        .def( py::init< uint32_t >() )
-        .def( py::init< int, int >() )
-        .def_readwrite( "whole", &dds_stream_uid::whole )
-        .def_readwrite( "sid", &dds_stream_uid::sid )
-        .def_readwrite( "index", &dds_stream_uid::index )
-        .def( "to_string", &dds_stream_uid::to_string )
-        .def( "__repr__", &dds_stream_uid::to_string );
-
     using realdds::dds_stream_profile;
     py::class_< dds_stream_profile, std::shared_ptr< dds_stream_profile > > stream_profile_base( m, "stream_profile" );
     stream_profile_base
-        .def( "uid", &dds_stream_profile::uid )
         .def( "frequency", &dds_stream_profile::frequency )
         .def( "format", &dds_stream_profile::format )
         .def( "stream", &dds_stream_profile::stream )
@@ -364,14 +352,13 @@ PYBIND11_MODULE(NAME, m) {
 
     using realdds::dds_video_stream_profile;
     py::class_< dds_video_stream_profile, std::shared_ptr< dds_video_stream_profile > >( m, "video_stream_profile", stream_profile_base )
-        .def( py::init< dds_stream_uid, dds_stream_format, int16_t, uint16_t, uint16_t, uint8_t >() )
+        .def( py::init< dds_stream_format, int16_t, uint16_t, uint16_t >() )
         .def( "width", &dds_video_stream_profile::width )
-        .def( "height", &dds_video_stream_profile::height )
-        .def( "bytes_per_pixel", &dds_video_stream_profile::bytes_per_pixel );
+        .def( "height", &dds_video_stream_profile::height );
 
     using realdds::dds_motion_stream_profile;
     py::class_< dds_motion_stream_profile, std::shared_ptr< dds_motion_stream_profile > >( m, "motion_stream_profile", stream_profile_base )
-        .def( py::init< dds_stream_uid, dds_stream_format, int16_t >() );
+        .def( py::init< dds_stream_format, int16_t >() );
 
     using realdds::dds_stream_base;
     py::class_< dds_stream_base, std::shared_ptr< dds_stream_base > > stream_base( m, "stream_base" );

@@ -7,15 +7,15 @@ module realdds
     {
         module raw
         {
-            enum notification_data_format
+            enum flexible_data_format
             {
-                NOTIFICATION_DATA_JSON,
-                NOTIFICATION_DATA_CBOR,
-                NOTIFICATION_DATA_CUSTOM
+                FLEXIBLE_DATA_JSON,
+                FLEXIBLE_DATA_CBOR,
+                FLEXIBLE_DATA_CUSTOM
             };
-            struct notification
+            struct flexible
             {
-                notification_data_format data_format;
+                flexible_data_format data_format;
                 octet version[4];  // in decreasing importance, so version[0] is highest
                 sequence<octet,4096> data;  // bound to 4K
             };

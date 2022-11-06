@@ -8,7 +8,7 @@
 #include <realdds/dds-utilities.h>
 
 #include <realdds/topics/device-info/device-info-msg.h>
-#include <realdds/topics/notification/notification-msg.h>
+#include <realdds/topics/flexible/flexible-msg.h>
 #include <fastdds/rtps/common/Guid.h>
 
 #include <map>
@@ -21,6 +21,11 @@ namespace realdds {
 
 class dds_topic_reader;
 class dds_topic_writer;
+
+
+namespace topics {
+class flexible_msg;
+}
 
 
 class dds_device::impl
@@ -44,7 +49,7 @@ public:
 
     void run();
 
-    bool write_control_message( void * msg );
+    void write_control_message( topics::flexible_msg && );
 
 private:
     void create_notifications_reader();

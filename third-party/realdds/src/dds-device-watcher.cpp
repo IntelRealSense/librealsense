@@ -60,7 +60,7 @@ dds_device_watcher::dds_device_watcher( std::shared_ptr< dds_participant > const
     } )
 {
     if( ! _participant->is_valid() )
-        throw std::runtime_error( "participant was not initialized" );
+        DDS_THROW( runtime_error, "participant was not initialized" );
 }
 
 void dds_device_watcher::start()

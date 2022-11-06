@@ -7,7 +7,7 @@
 #include <realdds/dds-topic-reader.h>
 #include <realdds/dds-topic-writer.h>
 
-#include <realdds/topics/control/control-msg.h>
+#include <realdds/topics/flexible/flexible-msg.h>
 #include <librealsense2/utilities/time/timer.h>
 
 #include <fastdds/dds/publisher/DataWriter.hpp>
@@ -82,11 +82,10 @@ void dds_device::impl::run()
     _running = true;
 }
 
-bool dds_device::impl::write_control_message( void * msg )
+void dds_device::impl::write_control_message( topics::flexible_msg && msg )
 {
     assert( _control_writer != nullptr );
-
-    return DDS_API_CALL( _control_writer->get()->write( msg ) );
+    msg.write_to( *_control_writer );
 }
 
 void dds_device::impl::create_notifications_reader()
@@ -94,7 +93,7 @@ void dds_device::impl::create_notifications_reader()
     if( _notifications_reader )
         return;
 
-    auto topic = topics::notification::create_topic( _participant, _info.topic_root + "/notification" );
+    auto topic = topics::flexible_msg::create_topic( _participant, _info.topic_root + "/notification" );
 
     _notifications_reader = std::make_shared< dds_topic_reader >( topic );
     _notifications_reader->run( dds_topic_reader::qos( eprosima::fastdds::dds::RELIABLE_RELIABILITY_QOS ) );
@@ -105,7 +104,7 @@ void dds_device::impl::create_control_writer()
     if( _control_writer )
         return;
 
-    auto topic = topics::device::control::create_topic( _participant, _info.topic_root + "/control" );
+    auto topic = topics::flexible_msg::create_topic( _participant, _info.topic_root + "/control" );
     _control_writer = std::make_shared< dds_topic_writer >( topic );
     dds_topic_writer::qos wqos( eprosima::fastdds::dds::RELIABLE_RELIABILITY_QOS );
     wqos.history().depth = 10;  // default is 1
@@ -117,6 +116,7 @@ bool dds_device::impl::init()
     // We expect to receive all of the sensors data under a timeout
     utilities::time::timer t( std::chrono::seconds( 30 ) );  // TODO: refine time out
     state_type state = state_type::WAIT_FOR_DEVICE_HEADER;
+    std::map< std::string, int > sensor_name_to_index;
     size_t n_streams_expected = 0;
     while( ! t.has_expired() && state_type::DONE != state )
     {
@@ -124,9 +124,9 @@ bool dds_device::impl::init()
         eprosima::fastrtps::Duration_t one_second = { 1, 0 };
         if( _notifications_reader->get()->wait_for_unread_message( one_second ) )
         {
-            topics::notification notification;
+            topics::flexible_msg notification;
             eprosima::fastdds::dds::SampleInfo info;
-            while( topics::notification::take_next( *_notifications_reader, &notification, &info ) )
+            while( topics::flexible_msg::take_next( *_notifications_reader, &notification, &info ) )
             {
                 if( ! notification.is_valid() )
                     continue;
@@ -149,41 +149,22 @@ bool dds_device::impl::init()
                                        + ") received" );
                     auto stream_type = utilities::json::get< std::string >( j, "type" );
                     auto stream_name = utilities::json::get< std::string >( j, "name" );
-                    auto sensor_name = utilities::json::get< std::string >( j, "sensor-name" );
                     auto & stream = _streams[stream_name];
                     if( stream )
                         DDS_THROW( runtime_error, "stream '" + stream_name + "' already exists" );
+                    auto sensor_name = utilities::json::get< std::string >( j, "sensor-name" );
                     auto default_profile_index = utilities::json::get< int >( j, "default-profile-index" );
                     dds_stream_profiles profiles;
                     if( stream_type == "video" )
                     {
-                        for( auto profile : j["profiles"] )
-                        {
-                            auto frequency = utilities::json::get< int16_t >( profile, "frequency" );
-                            dds_stream_format format( utilities::json::get< std::string >( profile, "format" ) );
-                            auto width = utilities::json::get< int16_t >( profile, "width" );
-                            auto height = utilities::json::get< int16_t >( profile, "height" );
-                            profiles.push_back( std::make_shared< dds_video_stream_profile >(
-                                dds_stream_uid( (uint32_t)_streams.size() ),
-                                format,
-                                frequency,
-                                width,
-                                height,
-                                0 ) );  // bpp
-                        }
+                        for( auto & profile : j["profiles"] )
+                            profiles.push_back( dds_stream_profile::from_json< dds_video_stream_profile >( profile ) );
                         stream = std::make_shared< dds_video_stream >( stream_name, sensor_name );
                     }
                     else if( stream_type == "motion" )
                     {
-                        for( auto profile : j["profiles"] )
-                        {
-                            auto frequency = utilities::json::get< int16_t >( profile, "frequency" );
-                            dds_stream_format format( utilities::json::get< std::string >( profile, "format" ) );
-                            profiles.push_back( std::make_shared< dds_motion_stream_profile >(
-                                dds_stream_uid( (uint32_t)_streams.size() ),
-                                format,
-                                frequency ) );
-                        }
+                        for( auto & profile : j["profiles"] )
+                            profiles.push_back( dds_stream_profile::from_json< dds_motion_stream_profile >( profile ) );
                         stream = std::make_shared< dds_motion_stream >( stream_name, sensor_name );
                     }
                     else
