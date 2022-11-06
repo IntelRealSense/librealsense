@@ -4,6 +4,8 @@
 #pragma once
 
 
+#include <third-party/json_fwd.hpp>
+
 #include <stdint.h>
 #include <string>
 #include <vector>
@@ -11,41 +13,6 @@
 
 
 namespace realdds {
-
-
-union dds_stream_uid
-{
-    uint32_t whole = 0;
-    struct
-    {
-        int16_t sid;   // Stream ID; assigned by the server, but may not be unique because of index
-        int8_t index;  // Used to distinguish similar streams like IR L / R, 0 otherwise
-    };
-
-    dds_stream_uid() = default;
-    dds_stream_uid( dds_stream_uid const & ) = default;
-    dds_stream_uid( dds_stream_uid && ) = default;
-
-    dds_stream_uid( uint32_t whole_ )
-        : whole( whole_ )
-    {
-    }
-
-    dds_stream_uid( int sid_, int index_ )
-    {
-        whole = 0;  // it covers an extra byte, which needs to be 0
-        sid = static_cast<int16_t>( sid_ );
-        index = static_cast<int8_t>( index_ );
-    }
-
-    std::string to_string() const;
-};
-
-
-inline bool operator<( dds_stream_uid const & l, dds_stream_uid const & r )
-{
-    return l.whole < r.whole;
-}
 
 
 // Similar to fourcc, this describes how a stream data is organized. The characters are zero-terminated so it can be
@@ -81,9 +48,8 @@ class dds_stream_base;
 
 class dds_stream_profile
 {
-    dds_stream_uid _uid;
+    int16_t _frequency;  // "Frames" per second
     dds_stream_format _format;
-    int16_t _frequency; // "Frames" per second
 
     std::weak_ptr< dds_stream_base > _stream;
 
@@ -91,27 +57,43 @@ public:
     virtual ~dds_stream_profile() {}
 
 protected:
-    dds_stream_profile( dds_stream_uid uid, dds_stream_format format, int16_t frequency )
-        : _uid( uid )
-        , _format( format )
+    dds_stream_profile( dds_stream_format format, int16_t frequency )
+        : _format( format )
         , _frequency( frequency )
     {
     }
     dds_stream_profile( dds_stream_profile && ) = default;
+    dds_stream_profile( nlohmann::json const &, int & index );
 
 public:
     std::shared_ptr< dds_stream_base > stream() const { return _stream.lock(); }
     // This is for initialization and is called from dds_stream_base only!
     void init_stream( std::weak_ptr< dds_stream_base > const & stream );
 
-    dds_stream_uid uid() const { return _uid; }
     dds_stream_format format() const { return _format; }
     int16_t frequency() const { return _frequency; }
 
     // These are for debugging - not functional
     virtual std::string to_string() const;
-    virtual char const * type_to_string() const = 0;
     virtual std::string details_to_string() const;
+
+    // Serialization to a JSON array representation
+    virtual nlohmann::json to_json() const;
+
+    // Build a profile from a json array object, e.g.:
+    //      auto profile = dds_stream_profile::from_json< dds_video_stream_profile >( j );
+    // This is the reverse of to_json() which returns a json array
+    template< class final_stream_profile >
+    static std::shared_ptr< final_stream_profile > from_json( nlohmann::json const & j )
+    {
+        int it = 0;
+        auto profile = std::make_shared< final_stream_profile >( j, it );
+        verify_end_of_json( j, it );  // just so it's not in the header
+        return profile;
+    }
+
+private:
+    static void verify_end_of_json( nlohmann::json const &, int index );
 };
 
 
@@ -120,40 +102,44 @@ typedef std::vector< std::shared_ptr< dds_stream_profile > > dds_stream_profiles
 
 class dds_video_stream_profile : public dds_stream_profile
 {
+    typedef dds_stream_profile super;
+
     uint16_t _width;   // Resolution width [pixels]
     uint16_t _height;  // Resolution height [pixels]
-    uint8_t _bytes_per_pixel;
 
 public:
-    dds_video_stream_profile( dds_stream_uid uid, dds_stream_format format, int16_t frequency, uint16_t width, uint16_t height,
-                              uint8_t bytes_per_pixel )
-        : dds_stream_profile( uid, format, frequency )
+    dds_video_stream_profile( dds_stream_format format, int16_t frequency, uint16_t width, uint16_t height )
+        : super( format, frequency )
         , _width( width )
         , _height( height )
-        , _bytes_per_pixel( bytes_per_pixel )
     {
     }
+    dds_video_stream_profile( nlohmann::json const &, int & index );
     dds_video_stream_profile( dds_video_stream_profile && ) = default;
 
     uint16_t width() const { return _width; }
     uint16_t height() const { return _height; }
-    uint8_t bytes_per_pixel() const { return _bytes_per_pixel; }
 
     std::string details_to_string() const override;
-    char const * type_to_string() const override { return "video"; }
+
+    nlohmann::json to_json() const override;
 };
 
 
 class dds_motion_stream_profile : public dds_stream_profile
 {
+    typedef dds_stream_profile super;
+
 public:
-    dds_motion_stream_profile( dds_stream_uid uid, dds_stream_format format, int16_t frequency )
-        : dds_stream_profile( uid, format, frequency )
+    dds_motion_stream_profile( dds_stream_format format, int16_t frequency )
+        : super( format, frequency )
+    {
+    }
+    dds_motion_stream_profile( nlohmann::json const & j, int & index )
+        : super( j, index )
     {
     }
     dds_motion_stream_profile( dds_motion_stream_profile && ) = default;
-
-    char const * type_to_string() const override { return "motion"; }
 };
 
 

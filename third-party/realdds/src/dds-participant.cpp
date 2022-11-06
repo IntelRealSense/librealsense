@@ -120,8 +120,9 @@ void dds_participant::init( dds_domain_id domain_id, std::string const & partici
 {
     if( is_valid() )
     {
-        throw std::runtime_error( "participant is already initialized; cannot init '" + participant_name
-                                  + "' on domain id " + std::to_string( domain_id ) );
+        DDS_THROW( runtime_error,
+                   "participant is already initialized; cannot init '" + participant_name + "' on domain id "
+                       + std::to_string( domain_id ) );
     }
 
     _domain_listener = std::make_shared< listener_impl >( *this );
@@ -143,8 +144,8 @@ void dds_participant::init( dds_domain_id domain_id, std::string const & partici
 
     if( ! _participant )
     {
-        throw std::runtime_error( "failed creating participant " + participant_name + " on domain id "
-                                  + std::to_string( domain_id ) );
+        DDS_THROW( runtime_error,
+                   "failed creating participant " + participant_name + " on domain id " + std::to_string( domain_id ) );
     }
 
     LOG_DEBUG( "participant '" << participant_name << "' (" << realdds::print( guid() ) << ") is up on domain "

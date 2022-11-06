@@ -8,7 +8,7 @@
 #include <realdds/dds-utilities.h>
 
 #include <realdds/topics/device-info/device-info-msg.h>
-#include <realdds/topics/notification/notification-msg.h>
+#include <realdds/topics/flexible/flexible-msg.h>
 #include <fastdds/rtps/common/Guid.h>
 
 #include <map>
@@ -23,6 +23,11 @@ class dds_topic_reader;
 class dds_topic_writer;
 
 
+namespace topics {
+class flexible_msg;
+}
+
+
 class dds_device::impl
 {
 public:
@@ -32,7 +37,6 @@ public:
 
     bool _running = false;
 
-    size_t _expected_num_of_streams = 0;
     std::map< std::string, std::shared_ptr< dds_stream > > _streams;
     std::atomic<uint32_t> _control_message_counter = { 0 };
 
@@ -45,7 +49,7 @@ public:
 
     void run();
 
-    bool write_control_message( void * msg );
+    void write_control_message( topics::flexible_msg && );
 
 private:
     void create_notifications_reader();

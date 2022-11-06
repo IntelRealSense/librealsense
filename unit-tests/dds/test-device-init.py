@@ -38,9 +38,33 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
         for stream in device.streams():
             profiles = stream.profiles()
             test.check_equal( stream.name(), "s1" )
-            test.check_equal( stream.sensor_name(), "s1" )  # TODO: sensor name isn't communicated yet
-            test.check_equal( 1, len( profiles ))
-            test.check_equal( '<pyrealdds.video_stream_profile 0x2d0017 RGB8 9 Hz 10x10 @0 Bpp>', str(profiles[0]) )
+            test.check_equal( stream.sensor_name(), "sensor" )
+            test.check_equal( len( profiles ), 1 )
+            test.check_equal( str(profiles[0]), '<pyrealdds.video_stream_profile 10x10 RGB8 @ 9 Hz>' )
+            test.check_equal( profiles[0].stream(), stream )
+            test.check_equal( stream.default_profile_index(), 0 )
+        remote.run( 'close_server()', timeout=5 )
+    except:
+        test.unexpected_exception()
+    device = None
+    test.finish()
+    #
+    #############################################################################################
+    #
+    test.start( "Test motion stream..." )
+    try:
+        remote.run( 'test_one_motion_stream()', timeout=5 )
+        device = dds.device( participant, participant.create_guid(), info )
+        device.run()  # If no device is available in 30 seconds, this will throw
+        test.check( device.is_running() )
+        test.check_equal( device.n_streams(), 1 )
+        for stream in device.streams():
+            profiles = stream.profiles()
+            test.check_equal( stream.name(), "s2" )
+            test.check_equal( stream.sensor_name(), "sensor2" )
+            test.check_equal( stream.type_string(), "motion" )
+            test.check_equal( len( profiles ), 1 )
+            test.check_equal( str(profiles[0]), '<pyrealdds.motion_stream_profile RGB8 @ 30 Hz>' )
             test.check_equal( profiles[0].stream(), stream )
             test.check_equal( stream.default_profile_index(), 0 )
         remote.run( 'close_server()', timeout=5 )
@@ -74,6 +98,32 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
     except test.remote.Error as e:
         # this fails because streams require at least one profile
         test.check_exception( e, test.remote.Error, "RuntimeError: at least one profile is required to initialize stream 's1'" )
+    except:
+        test.unexpected_exception()
+    device = None
+    test.finish()
+    #
+    #############################################################################################
+    #
+    test.start( "Test 10 profiles..." )
+    try:
+        remote.run( 'test_n_profiles(10)', timeout=5 )
+        device = dds.device( participant, participant.create_guid(), info )
+        device.run()  # If no device is available in 30 seconds, this will throw
+        test.check( device.is_running() )
+        test.check_equal( device.n_streams(), 1 )
+        for stream in device.streams():
+            profiles = stream.profiles() 
+        test.check_equal( 10, len( profiles ))
+        # Go thru the profiles, make sure they're in the right order (json is unordered)
+        fibo = [0,1]
+        for i in range(10):
+            v = fibo[-2] + fibo[-1]
+            fibo[-2] = fibo[-1]
+            fibo[-1] = v
+            test.check_equal( profiles[i].width(), i )
+            test.check_equal( profiles[i].height(), v )
+        remote.run( 'close_server()', timeout=5 )
     except:
         test.unexpected_exception()
     device = None

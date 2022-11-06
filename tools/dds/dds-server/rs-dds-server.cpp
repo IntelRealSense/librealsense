@@ -8,8 +8,6 @@
 #include <realdds/dds-participant.h>
 #include <realdds/dds-utilities.h>
 #include <realdds/dds-log-consumer.h>
-#include <realdds/topics/notification/notification-msg.h>
-#include <realdds/topics/notification/notificationPubSubTypes.h>  // raw::device::notification
 #include <realdds/topics/device-info/device-info-msg.h>
 #include <fastrtps/types/TypesBase.h>
 #include <fastdds/dds/log/Log.hpp>
@@ -47,18 +45,15 @@ std::vector< std::shared_ptr< realdds::dds_stream_server > > get_supported_strea
             {
                 auto const & vsp = sp.as< rs2::video_stream_profile >();
                 profile = std::make_shared< realdds::dds_video_stream_profile >(
-                    realdds::dds_stream_uid( vsp.unique_id(), vsp.stream_index() ),
                     realdds::dds_stream_format::from_rs2( vsp.format() ),
                     static_cast< int16_t >( vsp.fps() ),
                     static_cast< uint16_t >( vsp.width() ),
-                    static_cast< int16_t >( vsp.height() ),
-                    0 ); // bytes per pixel - todo
+                    static_cast< int16_t >( vsp.height() ) );
             }
             else if( sp.is< rs2::motion_stream_profile >() )
             {
                 const auto & msp = sp.as< rs2::motion_stream_profile >();
                 profile = std::make_shared< realdds::dds_motion_stream_profile >(
-                    realdds::dds_stream_uid( msp.unique_id(), msp.stream_index() ),
                     realdds::dds_stream_format::from_rs2( msp.format() ),
                     static_cast< int16_t >( msp.fps() ) );
             }
@@ -312,11 +307,11 @@ try
             // Remove the dds-server for this device
             auto const & handler = device_handlers_list.at( dev );
 
-            handler.controller->stop_all_streams();
-            device_handlers_list.erase( dev );
-
             // Remove this device from the DDS device broadcaster
             broadcaster.remove_device( handler.info );
+
+            handler.controller->stop_all_streams();
+            device_handlers_list.erase( dev );
         } );
 
     std::cin.ignore(std::numeric_limits<std::streamsize>::max(), 0);// Pend until CTRL + C is pressed 

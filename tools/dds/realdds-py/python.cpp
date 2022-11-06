@@ -25,6 +25,8 @@ Copyright(c) 2022 Intel Corporation. All Rights Reserved. */
 #include <fastdds/dds/core/status/SubscriptionMatchedStatus.hpp>
 #include <fastrtps/types/DynamicType.h>
 
+#include <third-party/json.hpp>
+
 
 #ifndef BUILD_SHARED_LIBS  // shared-init takes care of the else
 INITIALIZE_EASYLOGGINGPP
@@ -165,6 +167,15 @@ PYBIND11_MODULE(NAME, m) {
         .def( "create_guid", &dds_participant::create_guid )
         .def( "__nonzero__", &dds_participant::is_valid )  // Called to implement truth value testing in Python 2
         .def( "__bool__", &dds_participant::is_valid )     // Called to implement truth value testing in Python 3
+        .def( "name",
+              []( dds_participant const & self ) {
+                  eprosima::fastdds::dds::DomainParticipantQos qos;
+                  if( ReturnCode_t::RETCODE_OK == self.get()->get_qos( qos ) )
+                      return std::string( qos.name() );
+                  return std::string();
+              } )
+        .def( "name_from_guid", []( dds_guid const & guid ) { return dds_participant::name_from_guid( guid ); } )
+        .def( "names", []( dds_participant const & self ) { return self.get()->get_participant_names(); } )
         .def( "__repr__",
               []( const dds_participant & self ) {
                   std::ostringstream os;
@@ -319,50 +330,42 @@ PYBIND11_MODULE(NAME, m) {
         .def( "__bool__", &dds_stream_format::is_valid )     // Called to implement truth value testing in Python 3
         .def( "__repr__", []( dds_stream_format const & self ) { return self.to_string(); } );
 
-    using realdds::dds_stream_uid;
-    py::class_< dds_stream_uid >( m, "stream_uid" )
-        .def( py::init<>() )
-        .def( py::init< uint32_t >() )
-        .def( py::init< int, int >() )
-        .def_readwrite( "whole", &dds_stream_uid::whole )
-        .def_readwrite( "sid", &dds_stream_uid::sid )
-        .def_readwrite( "index", &dds_stream_uid::index )
-        .def( "to_string", &dds_stream_uid::to_string )
-        .def( "__repr__", &dds_stream_uid::to_string );
-
     using realdds::dds_stream_profile;
     py::class_< dds_stream_profile, std::shared_ptr< dds_stream_profile > > stream_profile_base( m, "stream_profile" );
     stream_profile_base
-        .def( "uid", &dds_stream_profile::uid )
         .def( "frequency", &dds_stream_profile::frequency )
         .def( "format", &dds_stream_profile::format )
         .def( "stream", &dds_stream_profile::stream )
         .def( "to_string", &dds_stream_profile::to_string )
         .def( "details_to_string", &dds_stream_profile::details_to_string )
+        .def( "to_json", []( dds_stream_profile const & self ) { return self.to_json().dump(); } )
         .def( "__repr__", []( dds_stream_profile const & self ) {
             std::ostringstream os;
             std::string self_as_string = self.to_string();  // <video 0xUID ...>
-            std::string type = self.type_to_string();
-            os << "<" SNAME "." << type << "_stream_profile " << ( self_as_string.c_str() + type.length() + 2 );
+            std::string type;
+            auto stream = self.stream();
+            if( stream )
+                type = std::string( stream->type_string() ) + '_';
+            os << "<" SNAME "." << type << "stream_profile " << ( self_as_string.c_str() + 1 );
             return os.str();
         } );
 
     using realdds::dds_video_stream_profile;
     py::class_< dds_video_stream_profile, std::shared_ptr< dds_video_stream_profile > >( m, "video_stream_profile", stream_profile_base )
-        .def( py::init< dds_stream_uid, dds_stream_format, int16_t, uint16_t, uint16_t, uint8_t >() )
+        .def( py::init< dds_stream_format, int16_t, uint16_t, uint16_t >() )
         .def( "width", &dds_video_stream_profile::width )
-        .def( "height", &dds_video_stream_profile::height )
-        .def( "bytes_per_pixel", &dds_video_stream_profile::bytes_per_pixel );
+        .def( "height", &dds_video_stream_profile::height );
 
     using realdds::dds_motion_stream_profile;
     py::class_< dds_motion_stream_profile, std::shared_ptr< dds_motion_stream_profile > >( m, "motion_stream_profile", stream_profile_base )
-        .def( py::init< dds_stream_uid, dds_stream_format, int16_t >() );
+        .def( py::init< dds_stream_format, int16_t >() );
 
     using realdds::dds_stream_base;
     py::class_< dds_stream_base, std::shared_ptr< dds_stream_base > > stream_base( m, "stream_base" );
     stream_base
         .def( "name", &dds_stream_base::name )
         .def( "sensor_name", &dds_stream_base::sensor_name )
+        .def( "type_string", &dds_stream_base::type_string )
         .def( "profiles", &dds_stream_base::profiles )
         .def( "init_profiles", &dds_stream_base::init_profiles )
         .def( "default_profile_index", &dds_stream_base::default_profile_index )
@@ -372,36 +375,25 @@ PYBIND11_MODULE(NAME, m) {
 
     using realdds::dds_stream_server;
     py::class_< dds_stream_server, std::shared_ptr< dds_stream_server > > stream_server_base( m, "stream_server", stream_base );
+    stream_server_base  //
+        .def( "__repr__", []( dds_stream_server const & self ) {
+            std::ostringstream os;
+            os << "<" SNAME "." << self.type_string() << "_stream_server \"" << self.name() << "\" [";
+            for( auto & p : self.profiles() )
+                os << p->to_string();
+            os << ']';
+            os << ' ' << self.default_profile_index();
+            os << '>';
+            return os.str();
+        } );
 
     using realdds::dds_video_stream_server;
     py::class_< dds_video_stream_server, std::shared_ptr< dds_video_stream_server > >( m, "video_stream_server", stream_server_base )
-        .def( py::init< std::string const &, std::string const & >(), "stream_name"_a, "sensor_name"_a )
-        .def( "__repr__", []( dds_video_stream_server const & self ) {
-            std::ostringstream os;
-            os << "<" SNAME ".video_stream_server \"" << self.name() << "\" [";
-            for( auto & p : self.profiles() )
-                os << p->to_string();
-            os << ']';
-            os << ' ' << self.default_profile_index();
-            os << '>';
-            return os.str();
-        } );
+        .def( py::init< std::string const &, std::string const & >(), "stream_name"_a, "sensor_name"_a );
 
     using realdds::dds_motion_stream_server;
-    py::class_< dds_motion_stream_server, std::shared_ptr< dds_motion_stream_server > >( m,
-                                                                                         "motion_stream_server",
-                                                                                         stream_server_base )
-        .def( py::init< std::string const &, std::string const & >(), "stream_name"_a, "sensor_name"_a )
-        .def( "__repr__", []( dds_motion_stream_server const & self ) {
-            std::ostringstream os;
-            os << "<" SNAME ".motion_stream_server \"" << self.name() << "\" [";
-            for( auto & p : self.profiles() )
-                os << p->to_string();
-            os << ']';
-            os << ' ' << self.default_profile_index();
-            os << '>';
-            return os.str();
-        } );
+    py::class_< dds_motion_stream_server, std::shared_ptr< dds_motion_stream_server > >( m, "motion_stream_server", stream_server_base )
+        .def( py::init< std::string const &, std::string const & >(), "stream_name"_a, "sensor_name"_a );
 
     using realdds::dds_device_server;
     py::class_< dds_device_server >( m, "device_server" )

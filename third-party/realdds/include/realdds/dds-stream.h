@@ -6,9 +6,9 @@
 #include "dds-stream-base.h"
 #include "dds-stream-profile.h"
 
-#include <functional>
 #include <memory>
 #include <string>
+#include <vector>
 
 namespace realdds {
 
@@ -40,6 +40,8 @@ class dds_video_stream : public dds_stream
 public:
     dds_video_stream( std::string const & stream_name, std::string const & sensor_name );
 
+    char const * type_string() const override { return "video"; }
+
 private:
     class impl;
     std::shared_ptr< impl > _impl;
@@ -52,10 +54,15 @@ class dds_motion_stream : public dds_stream
 public:
     dds_motion_stream( std::string const & stream_name, std::string const & sensor_name );
 
+    char const * type_string() const override { return "motion"; }
+
 private:
     class impl;
     std::shared_ptr< impl > _impl;
 };
+
+
+typedef std::vector< std::shared_ptr< dds_stream > > dds_streams;
 
 
 }  // namespace realdds

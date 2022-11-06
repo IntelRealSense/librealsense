@@ -3,21 +3,14 @@
 
 #include <realdds/dds-stream-profile.h>
 #include <realdds/dds-exceptions.h>
+
+#include <librealsense2/utilities/json.h>
+using nlohmann::json;
+
 #include <map>
 
 
 namespace realdds {
-
-
-static_assert( sizeof( dds_stream_uid ) == sizeof( dds_stream_uid::whole ), "no padding should occur" );
-
-
-std::string dds_stream_uid::to_string() const
-{
-    std::ostringstream os;
-    os << "0x" << std::hex << whole;
-    return os.str();
-}
 
 
 dds_stream_format::dds_stream_format( std::string const & s )
@@ -100,6 +93,7 @@ int dds_stream_format::to_rs2() const
         { rs_fourcc( 'R', 'G', 'B', '2' ), RS2_FORMAT_BGR8 },
         { rs_fourcc( 'B', 'G', 'R', 'A' ), RS2_FORMAT_BGRA8 },
         { rs_fourcc( 'M', 'J', 'P', 'G' ), RS2_FORMAT_MJPEG },
+        { rs_fourcc( 'C', 'N', 'F', '4' ), RS2_FORMAT_RAW8 },
         { rs_fourcc( 'B', 'Y', 'R', '2' ), RS2_FORMAT_RAW16 },
         { rs_fourcc( 'M', 'X', 'Y', 'Z' ), RS2_FORMAT_MOTION_XYZ32F },
     };
@@ -133,6 +127,7 @@ dds_stream_format dds_stream_format::from_rs2( int rs2_format )
     case RS2_FORMAT_BGR8: fourcc = "RGB2"; break;
     case RS2_FORMAT_BGRA8: fourcc = "BGRA"; break;  // todo
     case RS2_FORMAT_MJPEG: fourcc = "MJPG"; break;
+    case RS2_FORMAT_RAW8: fourcc = "CNF4"; break;
     case RS2_FORMAT_RAW16: fourcc = "BYR2"; break;
     case RS2_FORMAT_UYVY: fourcc = "UYVY"; break;
     case RS2_FORMAT_MOTION_XYZ32F: fourcc = "MXYZ"; break;  // todo
@@ -143,12 +138,26 @@ dds_stream_format dds_stream_format::from_rs2( int rs2_format )
 }
 
 
+dds_stream_profile::dds_stream_profile( json const & j, int & it )
+    : _frequency( utilities::json::get< int16_t >( j, it++ ) )
+    , _format( utilities::json::get< std::string >( j, it++ ) )
+{
+    // NOTE: the order of construction is the order of declaration -- therefore the to_json() function
+    // should use the same ordering!
+}
+
+
+/* static */ void dds_stream_profile::verify_end_of_json( nlohmann::json const & j, int index )
+{
+    if( index != j.size() )
+        DDS_THROW( runtime_error, "expected end of json at index " + std::to_string( index ) );
+}
+
+
 std::string dds_stream_profile::to_string() const
 {
     std::ostringstream os;
-    os << '<' << type_to_string();
-    os << ' '  << _uid.to_string();
-    os << ' ' << details_to_string();
+    os << '<' << details_to_string();
     os << '>';
     return os.str();
 }
@@ -156,15 +165,15 @@ std::string dds_stream_profile::to_string() const
 std::string dds_stream_profile::details_to_string() const
 {
     std::ostringstream os;
-    os << _format.to_string() << ' ' << _frequency << " Hz";
+    os << _format.to_string() << " @ " << _frequency << " Hz";
     return os.str();
 }
 
 std::string dds_video_stream_profile::details_to_string() const
 {
     std::ostringstream os;
-    os << dds_stream_profile::details_to_string();
-    os << ' ' << _width << 'x' << _height << " @" << +_bytes_per_pixel << " Bpp";
+    os << _width << 'x' << _height << ' ';
+    os << super::details_to_string();
     return os.str();
 }
 
@@ -176,6 +185,30 @@ void dds_stream_profile::init_stream( std::weak_ptr< dds_stream_base > const & s
     if( _stream.lock() )
         DDS_THROW( runtime_error, "profile is already associated with a stream" );
     _stream = stream;
+}
+
+
+json dds_stream_profile::to_json() const
+{
+    // NOTE: same ordering as construction!
+    return json::array( { frequency(), format().to_string() } );
+}
+
+
+dds_video_stream_profile::dds_video_stream_profile( nlohmann::json const & j, int & index )
+    : super( j, index )
+{
+    _width = utilities::json::get< int16_t >( j, index++ );
+    _height = utilities::json::get< int16_t >( j, index++ );
+}
+
+
+json dds_video_stream_profile::to_json() const
+{
+    auto profile = super::to_json();
+    profile += width();
+    profile += height();
+    return profile;
 }
 
 

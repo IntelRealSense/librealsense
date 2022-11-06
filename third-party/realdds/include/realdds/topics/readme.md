@@ -61,7 +61,7 @@ Instead, we found it easiest to download a Docker image for FastDDS (last used i
     docker kill $cid
     cd out
     for cxx in *.cxx; do mv -- "$cxx" "../../../../../src/topics/${cxx%.cxx}.cpp"; done
-    mv -- "*TypeObject.h" "../../../../../src/topics/"
+    mv -- *TypeObject.h "../../../../../src/topics/"
     mv * ..
     cd ..
     rmdir out

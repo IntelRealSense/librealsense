@@ -60,7 +60,7 @@ dds_device_watcher::dds_device_watcher( std::shared_ptr< dds_participant > const
     } )
 {
     if( ! _participant->is_valid() )
-        throw std::runtime_error( "participant was not initialized" );
+        DDS_THROW( runtime_error, "participant was not initialized" );
 }
 
 void dds_device_watcher::start()
@@ -101,15 +101,20 @@ void dds_device_watcher::init()
             {
                 std::lock_guard< std::mutex > lock( _devices_mutex );
                 auto it = _dds_devices.find( guid );
-                if( it != _dds_devices.end() )
-                {
-                    device = it->second;
-                    auto serial_number = device->device_info().serial;
-                    _dds_devices.erase( it );
-                }
+                if( it == _dds_devices.end() )
+                    return;
+                device = it->second;
+                _dds_devices.erase( it );
             }
-            if( device && _on_device_removed )
-                _on_device_removed( device );  // must happen outside the mutex
+            // rest must happen outside the mutex
+            std::thread( [device, on_device_removed = _on_device_removed]() {
+                if( on_device_removed )
+                    on_device_removed( device );
+                // If we're holding the device, it will get destroyed here, from another thread.
+                // Not sure why, but if we delete the outside this thread (in the listener callback), it will cause some
+                // sort of invalid state in DDS. The thread will get killed and we won't get any notification of the
+                // remote participant getting removed... and the process will even hang on exit.
+            } ).detach();
         } );
 
     if( ! _device_info_topic->is_running() )
