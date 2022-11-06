@@ -353,7 +353,7 @@ namespace librealsense
             uint32_t                crc32;          // crc of all the actual table data excluding header/CRC
         };
 
-        struct sc_table_header
+        struct sc_depth_table_header
         {
             big_endian<uint16_t>    version;        // major.minor. Big-endian
             uint16_t                table_type;     // ctCalibration
@@ -436,13 +436,22 @@ namespace librealsense
 
         struct sc_coefficients_table
         {
-            sc_table_header           header;
+            sc_depth_table_header     header;
             single_sensor_coef_table  left_coefficients_table;
             single_sensor_coef_table  right_coefficients_table;
             float4                    baseline;                   //  the baseline between the cameras in mm units
             uint32_t                  translation_dir;
             mini_intrisics            rectified_intrinsics;
             uint8_t                   reserved[154];
+        };
+
+        struct sc_rgb_calibration_table
+        {
+            table_header              header;
+            single_sensor_coef_table  rgb_coefficients_table;
+            float3                    translation_rect;           // Translation vector for rectification
+            mini_intrisics            rectified_intrinsics;
+            uint8_t                   reserved[64];
         };
 
         struct new_calibration_item
