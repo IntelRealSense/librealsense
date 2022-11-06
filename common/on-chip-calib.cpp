@@ -21,10 +21,11 @@ namespace rs2
     on_chip_calib_manager::on_chip_calib_manager(viewer_model& viewer, std::shared_ptr<subdevice_model> sub, device_model& model, device dev, std::shared_ptr<subdevice_model> sub_color, bool uvmapping_calib_full)
         : process_manager("On-Chip Calibration"), _model(model), _dev(dev), _sub(sub), _viewer(viewer), _sub_color(sub_color), py_px_only(!uvmapping_calib_full)
     {
+        device_id_string = "Unknown";
         if (dev.supports(RS2_CAMERA_INFO_PRODUCT_ID))
         {
-            std::string dev_pid = dev.get_info(RS2_CAMERA_INFO_PRODUCT_ID);
-            if (val_in_range(dev_pid, { std::string("0AD3") }))
+            device_id_string = _dev.get_info(RS2_CAMERA_INFO_PRODUCT_ID);
+            if (val_in_range(device_id_string, { std::string("0AD3") }))
                 speed = 4;
         }
         if (dev.supports(RS2_CAMERA_INFO_FIRMWARE_VERSION))
@@ -2069,6 +2070,7 @@ namespace rs2
                     ImGui::SetTooltip("%s", "Calculate ground truth for the specific target");
 
                 ImGui::SetCursorScreenPos({ float(x + 9), float(y + height - ImGui::GetTextLineHeightWithSpacing() - 30) });
+                get_manager().host_assistance = (get_manager().device_id_string ==  std::string("ABCD") ); // To be used for MIPI SKU only
                 bool assistance = (get_manager().host_assistance != 0);
                 if (ImGui::Checkbox("Host Assistance", &assistance))
                     get_manager().host_assistance = (assistance ? 1 : 0);
@@ -2164,9 +2166,9 @@ namespace rs2
                 //    ImGui::SetTooltip("%s", "On-Chip Calibration Extended");
 
                 ImGui::SetCursorScreenPos({ float(x + 9), float(y + height - ImGui::GetTextLineHeightWithSpacing() - 31) });
+                get_manager().host_assistance = (get_manager().device_id_string ==  std::string("ABCD") ); // To be used for MIPI SKU only
                 bool assistance = (get_manager().host_assistance != 0);
-                if (ImGui::Checkbox("Host Assistance", &assistance))
-                    get_manager().host_assistance = (assistance ? 1 : 0);
+                ImGui::Checkbox("Host Assistance", &assistance);
                 if (ImGui::IsItemHovered())
                     ImGui::SetTooltip("%s", "check = host assitance for statistics data, uncheck = no host assistance");
 
