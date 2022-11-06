@@ -26,9 +26,8 @@ protected:
     std::string const _sensor_name;
     int _default_profile_index = 0;
     dds_stream_profiles _profiles;
-    int _type;
 
-    dds_stream_base( std::string const & stream_name, std::string const & sensor_name, int type = 0);
+    dds_stream_base( std::string const & stream_name, std::string const & sensor_name );
     
 public:
     virtual ~dds_stream_base() = default;
@@ -40,7 +39,6 @@ public:
     std::string const & sensor_name() const { return _sensor_name; }
     dds_stream_profiles const & profiles() const { return _profiles; }
     int default_profile_index() const { return _default_profile_index; }
-    int type() const { return _type; }
 
     virtual bool is_open() const = 0;
     virtual bool is_streaming() const = 0;

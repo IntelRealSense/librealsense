@@ -501,11 +501,9 @@ namespace librealsense
     {
         std::shared_ptr< realdds::dds_device > _dds_dev;
 
-        rs2_video_stream to_rs2_video_stream( std::shared_ptr< realdds::dds_video_stream_profile > const & profile,
-                                              int stream_type)
+        rs2_video_stream to_rs2_video_stream( std::shared_ptr< realdds::dds_video_stream_profile > const & profile )
         {
             rs2_video_stream prof;
-            prof.type = static_cast< rs2_stream >( stream_type );
             prof.index = profile->uid().index;
             prof.uid = profile->uid().sid;
             prof.width = profile->width();
@@ -517,11 +515,9 @@ namespace librealsense
             return prof;
         }
 
-        rs2_motion_stream to_rs2_motion_stream( std::shared_ptr< realdds::dds_motion_stream_profile > const & profile,
-                                                int stream_type )
+        rs2_motion_stream to_rs2_motion_stream( std::shared_ptr< realdds::dds_motion_stream_profile > const & profile )
         {
             rs2_motion_stream prof;
-            prof.type = static_cast< rs2_stream >( stream_type );
             prof.index = profile->uid().index;
             prof.uid = profile->uid().sid;
             prof.fps = profile->frequency();
@@ -568,13 +564,13 @@ namespace librealsense
                             if( video_stream )
                             {
                                 auto const & vp = std::static_pointer_cast< realdds::dds_video_stream_profile >( profile );
-                                sensor.add_video_stream( to_rs2_video_stream( vp, stream->type() ),
+                                sensor.add_video_stream( to_rs2_video_stream( vp ),
                                                          profile == default_profile );
                             }
                             else if( motion_stream )
                             {
                                 auto const & mp = std::static_pointer_cast< realdds::dds_motion_stream_profile >( profile );
-                                sensor.add_motion_stream( to_rs2_motion_stream( mp, stream->type() ),
+                                sensor.add_motion_stream( to_rs2_motion_stream( mp ),
                                                           profile == default_profile );
                             }
                         }

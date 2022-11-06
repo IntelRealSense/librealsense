@@ -196,10 +196,7 @@ bool dds_device::impl::init()
                         auto & stream = _streams[stream_name];
                         if( stream )
                             DDS_THROW( runtime_error, "stream '" + stream_name + "' already exists" );
-                        int stream_type = 0;
-                        if ( video_stream_profiles->num_of_profiles > 0 )
-                            stream_type = video_stream_profiles->profiles[0].type;
-                        stream = std::make_shared< dds_video_stream >( stream_name, sensor_name, stream_type );
+                        stream = std::make_shared< dds_video_stream >( stream_name, sensor_name );
 
                         dds_stream_profiles profiles;
                         int default_profile_index = 0;
@@ -242,10 +239,7 @@ bool dds_device::impl::init()
                         auto & stream = _streams[stream_name];
                         if( stream )
                             DDS_THROW( runtime_error, "stream '" + stream_name + "' already exists" );
-                        int stream_type = 0;
-                        if ( motion_stream_profiles->num_of_profiles > 0 )
-                            stream_type = motion_stream_profiles->profiles[0].type;
-                        stream = std::make_shared< dds_motion_stream >( stream_name, sensor_name, stream_type );
+                        stream = std::make_shared< dds_motion_stream >( stream_name, sensor_name );
 
                         dds_stream_profiles profiles;
                         int default_profile_index = 0;

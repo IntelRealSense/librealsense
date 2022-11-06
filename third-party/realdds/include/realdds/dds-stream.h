@@ -23,7 +23,7 @@ class dds_stream : public dds_stream_base
     typedef dds_stream_base super;
 
 protected:
-    dds_stream( std::string const & stream_name, std::string const & sensor_name, int type = 0 );
+    dds_stream( std::string const & stream_name, std::string const & sensor_name );
 
     // dds_stream_base
 public:
@@ -38,7 +38,7 @@ class dds_video_stream : public dds_stream
     typedef dds_stream super;
 
 public:
-    dds_video_stream( std::string const & stream_name, std::string const & sensor_name, int type = 0 );
+    dds_video_stream( std::string const & stream_name, std::string const & sensor_name );
 
 private:
     class impl;
@@ -50,7 +50,7 @@ class dds_motion_stream : public dds_stream
     typedef dds_stream super;
 
 public:
-    dds_motion_stream( std::string const & stream_name, std::string const & sensor_name, int type = 0 );
+    dds_motion_stream( std::string const & stream_name, std::string const & sensor_name );
 
 private:
     class impl;

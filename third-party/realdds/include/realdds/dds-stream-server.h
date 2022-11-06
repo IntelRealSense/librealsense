@@ -36,7 +36,7 @@ struct image_header
 class dds_stream_server : public dds_stream_base
 {
 protected:
-    dds_stream_server( std::string const & stream_name, std::string const & sensor_name, int type = 0 );
+    dds_stream_server( std::string const & stream_name, std::string const & sensor_name );
 
 public:
     virtual ~dds_stream_server();
@@ -63,7 +63,7 @@ class dds_video_stream_server : public dds_stream_server
     typedef dds_stream_server super;
 
 public:
-    dds_video_stream_server( std::string const & stream_name, std::string const & sensor_name, int type = 0 );
+    dds_video_stream_server( std::string const & stream_name, std::string const & sensor_name );
 
     void open( std::string const & topic_name, std::shared_ptr< dds_publisher > const & ) override;
 
@@ -77,7 +77,7 @@ class dds_motion_stream_server : public dds_stream_server
     typedef dds_stream_server super;
 
 public:
-    dds_motion_stream_server( std::string const & stream_name, std::string const & sensor_name, int type = 0 );
+    dds_motion_stream_server( std::string const & stream_name, std::string const & sensor_name );
     
     void open( std::string const & topic_name, std::shared_ptr< dds_publisher > const & ) override;
 

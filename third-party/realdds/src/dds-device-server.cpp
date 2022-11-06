@@ -19,6 +19,7 @@
 #include <realdds/dds-topic-writer.h>
 
 #include <fastdds/dds/topic/Topic.hpp>
+#include <fastdds/dds/subscriber/SampleInfo.hpp>
 
 
 using namespace eprosima::fastdds::dds;
@@ -46,9 +47,9 @@ void dds_device_server::start_streaming( const std::string & stream_name,
                                          const image_header & header )
 {
     auto it = _stream_name_to_server.find( stream_name );
-    if( it == _stream_name_to_server.end() )
+    if ( it == _stream_name_to_server.end() )
         DDS_THROW( runtime_error, "stream '" + stream_name + "' does not exist" );
-    auto& stream = it->second;
+    auto & stream = it->second;
     stream->start_streaming( header );
 }
 
@@ -105,7 +106,7 @@ static void on_discovery_video_stream( std::shared_ptr< dds_video_stream_server 
                                                                        vsp->uid().sid,
                                                                        vsp->frequency(),
                                                                        static_cast< int8_t >( vsp->format().to_rs2() ),
-                                                                       static_cast< int8_t >( stream->type() ),
+                                                                       static_cast< int8_t >( 0 ), // RS2_STREAM_ANY
                                                                        static_cast< int16_t >( vsp->width() ),
                                                                        static_cast< int16_t >( vsp->height() ),
                                                                        stream->default_profile_index() == index };
@@ -141,7 +142,7 @@ static void on_discovery_motion_stream( std::shared_ptr< dds_motion_stream_serve
                                                                         msp->uid().sid,
                                                                         msp->frequency(),
                                                                         static_cast< int8_t >( msp->format().to_rs2() ),
-                                                                        static_cast< int8_t >( stream->type() ) };
+                                                                        static_cast< int8_t >( 0 ) }; // RS2_STREAM_ANY
 
         motion_stream_profiles.profiles[index++] = std::move( msp_msg );
     }

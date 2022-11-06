@@ -19,8 +19,8 @@ using namespace eprosima::fastdds::dds;
 using namespace realdds;
 
 
-dds_stream_server::dds_stream_server( std::string const & stream_name, std::string const & sensor_name, int type )
-    : dds_stream_base( stream_name, sensor_name, type )
+dds_stream_server::dds_stream_server( std::string const & stream_name, std::string const & sensor_name )
+    : dds_stream_base( stream_name, sensor_name )
 {
 }
 
@@ -31,9 +31,8 @@ dds_stream_server::~dds_stream_server()
 
 
 dds_video_stream_server::dds_video_stream_server( std::string const& stream_name,
-                                                  std::string const& sensor_name,
-                                                  int type )
-    : dds_stream_server( stream_name, sensor_name, type )
+                                                  std::string const& sensor_name )
+    : dds_stream_server( stream_name, sensor_name )
 {
 }
 
@@ -47,9 +46,8 @@ void dds_video_stream_server::check_profile( std::shared_ptr< dds_stream_profile
 
 
 dds_motion_stream_server::dds_motion_stream_server( std::string const & stream_name,
-                                                    std::string const & sensor_name,
-                                                    int type )
-    : dds_stream_server( stream_name, sensor_name, type )
+                                                    std::string const & sensor_name )
+    : dds_stream_server( stream_name, sensor_name )
 {
 }
 
