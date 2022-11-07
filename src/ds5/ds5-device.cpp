@@ -852,18 +852,20 @@ namespace librealsense
                 []() { return std::make_shared<y8i_to_y8y8>(); }
             ); // L+R
 
-            depth_sensor.register_processing_block(
-                { RS2_FORMAT_Y12I },
-                { {RS2_FORMAT_Y16, RS2_STREAM_INFRARED, 1}, {RS2_FORMAT_Y16, RS2_STREAM_INFRARED, 2} },
-                []() {return std::make_shared<y12i_to_y16y16>(); }
-            );
-
-            if (_pid == RS455_PID) // HKR as D455
+            if (_pid == RS_D585_PID || _pid == RS_S585_PID)
             {
                 depth_sensor.register_processing_block(
                     { RS2_FORMAT_Y16I },
                     { {RS2_FORMAT_Y16, RS2_STREAM_INFRARED, 1}, {RS2_FORMAT_Y16, RS2_STREAM_INFRARED, 2} },
                     []() {return std::make_shared<y16i_to_y10msby10msb>(); }
+                );
+            }
+            else
+            {
+                depth_sensor.register_processing_block(
+                    { RS2_FORMAT_Y12I },
+                    { {RS2_FORMAT_Y16, RS2_STREAM_INFRARED, 1}, {RS2_FORMAT_Y16, RS2_STREAM_INFRARED, 2} },
+                    []() {return std::make_shared<y12i_to_y16y16>(); }
                 );
             }
                 

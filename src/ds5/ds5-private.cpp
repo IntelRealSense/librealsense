@@ -296,6 +296,8 @@ namespace librealsense
                     case RS420_MM_PID:
                     case RS435I_PID:
                     case RS455_PID:
+                    case RS_D585_PID:
+                    case RS_S585_PID:
                         found = (result.mi == 6);
                         break;
                     case RS415_PID:
