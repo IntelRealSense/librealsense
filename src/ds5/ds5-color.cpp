@@ -392,15 +392,15 @@ namespace librealsense
                                        make_attribute_parser(&md_mipi_rgb_mode::low_light_compensation,
                                                              md_mipi_rgb_control_attributes::low_light_compensation_attribute,
                                                              md_prop_offset));
-        color_ep.register_metadata(RS2_FRAME_METADATA_INPUT_WIDTH, // added for mipi - use RS2_FRAME_METADATA_WIDTH (internal only) ??
+        color_ep.register_metadata(RS2_FRAME_METADATA_INPUT_WIDTH,
                                        make_attribute_parser(&md_mipi_rgb_mode::input_width,
                                                              md_mipi_rgb_control_attributes::input_width_attribute,
                                                              md_prop_offset));
-        color_ep.register_metadata(RS2_FRAME_METADATA_INPUT_HEIGHT, // added for mipi - use RS2_FRAME_METADATA_HEIGHT (internal only) ??
+        color_ep.register_metadata(RS2_FRAME_METADATA_INPUT_HEIGHT,
                                        make_attribute_parser(&md_mipi_rgb_mode::input_height,
                                                              md_mipi_rgb_control_attributes::input_height_attribute,
                                                              md_prop_offset));
-        color_ep.register_metadata(RS2_FRAME_METADATA_CRC, // added for mipi
+        color_ep.register_metadata(RS2_FRAME_METADATA_CRC,
                                        make_attribute_parser(&md_mipi_rgb_mode::crc,
                                                              md_mipi_rgb_control_attributes::crc_attribute,
                                                              md_prop_offset));

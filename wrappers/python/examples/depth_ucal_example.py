@@ -1,9 +1,10 @@
 ## License: Apache 2.0. See LICENSE file in root directory.
 ## Copyright(c) 2022 Intel Corporation. All Rights Reserved.
 
-#####################################################
-##                   auto calibration              ##
-#####################################################
+#########################################################################################################################################
+##                   This example exercises the auto-calibration APIs for OCC and Tare calib flows                                     ##
+##                   Shall be used as reference for users who are willing to integrate calibration flows into their respective UC-es   ##
+#########################################################################################################################################
 
 # First import the library
 import sys

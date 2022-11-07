@@ -10,12 +10,12 @@
 #include "librealsense2/rsutil.h"
 #include "../algo.h"
 
-#undef UCAL_DEBUG
-#ifdef UCAL_DEBUG
-#define LOG_OCC_DEBUG(...)   do { CLOG(WARNING   ,"librealsense") << __VA_ARGS__; } while(false)
+#undef UCAL_PROFILE
+#ifdef UCAL_PROFILE
+#define LOG_OCC_WARN(...)   do { CLOG(WARNING   ,"librealsense") << __VA_ARGS__; } while(false)
 #else
-#define LOG_OCC_DEBUG(...)
-#endif //UCAL_DEBUG
+#define LOG_OCC_WARN(...)
+#endif //UCAL_PROFILE
 
 namespace librealsense
 {
@@ -292,7 +292,7 @@ namespace librealsense
             {
                 // Check calibration status
                 auto res = _hw_monitor->send(command{ ds::AUTO_CALIB, py_rx_calib_check_status });
-                LOG_OCC_DEBUG(std::string(to_string() << __LINE__  << " check occ status, res size = " << res.size()));
+                LOG_OCC_WARN(std::string(to_string() << __LINE__  << " check occ status, res size = " << res.size()));
                 if (res.size() < sizeof(DirectSearchCalibrationResult))
                 {
                     if (!((retries++) % 5)) // Add log debug once in a sec
@@ -426,7 +426,7 @@ namespace librealsense
             _json = json;
             _action = auto_calib_action::RS2_OCC_ACTION_ON_CHIP_CALIB;
             _interactive_state = interactive_calibration_state::RS2_OCC_STATE_WAIT_TO_CAMERA_START;
-            _interactive_scan = false;//bool(interactive_scan_v3); - enforce non-interactive run
+            _interactive_scan = false; // Production code must enforce non-interactive runs. Interactive scans for development only
             switch (speed)
             {
             case auto_calib_speed::speed_very_fast:
@@ -496,7 +496,8 @@ namespace librealsense
             if (host_assistance == host_assistance_type::no_assistance || host_assistance == host_assistance_type::assistance_start)
             {
                 auto res = _hw_monitor->send(command{ ds::AUTO_CALIB, py_rx_calib_begin, speed, 0, p4 });
-                LOG_OCC_DEBUG(std::string(to_string() << __LINE__ << " send occ py_rx_calib_begin, speed = " << speed << ", p4 = " << p4 << " res size = " << res.size()));
+                LOG_OCC_WARN(std::string(to_string() << __LINE__
+                    << " send occ py_rx_calib_begin, speed = " << speed << ", p4 = " << p4 << " res size = " << res.size()));
             }
 
             if (host_assistance != host_assistance_type::assistance_start)
@@ -504,7 +505,7 @@ namespace librealsense
                 if (host_assistance == host_assistance_type::assistance_first_feed)
                 {
                     command cmd(ds::AUTO_CALIB, interactive_scan_control, 0, 0);
-                    LOG_OCC_DEBUG(" occ interactive_scan_control 0,0 - save statistics ");
+                    LOG_OCC_WARN(" occ interactive_scan_control 0,0 - save statistics ");
                     uint8_t* p = reinterpret_cast<uint8_t*>(&step_count_v3);
                     cmd.data.push_back(p[0]);
                     cmd.data.push_back(p[1]);
@@ -516,18 +517,18 @@ namespace librealsense
                     }
                     bool success = false;
                     int iter =0;
-                    do
+                    do // Retries are needed to overcome MIPI SKU occasionaly reporting busy state
                     {
                         try
                         {
                             if (iter==0) // apply only in the first iteration
-                                std::this_thread::sleep_for(std::chrono::milliseconds(1000));   // TODO: sending shorter request
-                            auto res = _hw_monitor->send(cmd);                                  // is likely to fail with MIPI SKU
+                                std::this_thread::sleep_for(std::chrono::milliseconds(1000));   // Sending shorter request may fail with MIPI SKU
+                            auto res = _hw_monitor->send(cmd);
                             success = true;
                         }
                         catch(...)
                         {
-                            LOG_OCC_DEBUG("occ Save Statistics result failed");
+                            LOG_OCC_WARN("occ Save Statistics result failed");
                             std::this_thread::sleep_for(std::chrono::milliseconds(100));
                         };
                     }
@@ -556,7 +557,7 @@ namespace librealsense
                 if (progress_callback)
                     progress_callback->on_update_progress(static_cast<float>(100));
                 res = get_calibration_results(health);
-                LOG_OCC_DEBUG(std::string(to_string() << "Py: " << result.rightPy));
+                LOG_OCC_WARN(std::string(to_string() << "Py: " << result.rightPy));
             }
         }
         else if (calib_type == 1)
@@ -600,7 +601,7 @@ namespace librealsense
                 if (host_assistance == host_assistance_type::assistance_first_feed)
                 {
                     command cmd(ds::AUTO_CALIB, interactive_scan_control, 0, 0);
-                    LOG_OCC_DEBUG(std::string(to_string() << __LINE__ << "occ interactive_scan_control 0,0 " << " res size = " << res.size()));
+                    LOG_OCC_WARN(std::string(to_string() << __LINE__ << "occ interactive_scan_control 0,0 " << " res size = " << res.size()));
                     uint8_t* p = reinterpret_cast<uint8_t*>(&step_count_v3);
                     cmd.data.push_back(p[0]);
                     cmd.data.push_back(p[1]);
@@ -709,7 +710,7 @@ namespace librealsense
             if (host_assistance == host_assistance_type::no_assistance || host_assistance == host_assistance_type::assistance_start)
             {
                 _hw_monitor->send(command{ ds::AUTO_CALIB, py_rx_plus_fl_calib_begin, speed_fl, 0, p4 });
-                LOG_OCC_DEBUG(std::string(to_string() << __LINE__ << "occ py_rx_plus_fl_calib_begin speed_fl = " << speed_fl <<  " res size = " << res.size()));
+                LOG_OCC_WARN(std::string(to_string() << __LINE__ << "occ py_rx_plus_fl_calib_begin speed_fl = " << speed_fl <<  " res size = " << res.size()));
             }
 
             if (host_assistance != host_assistance_type::assistance_start)
@@ -717,7 +718,7 @@ namespace librealsense
                 if ((host_assistance == host_assistance_type::assistance_first_feed) || (host_assistance == host_assistance_type::assistance_second_feed))
                 {
                     command cmd(ds::AUTO_CALIB, interactive_scan_control, 0, 0);
-                    LOG_OCC_DEBUG(std::string(to_string() << __LINE__ << "occ interactive_scan_control 0,0"));
+                    LOG_OCC_WARN(std::string(to_string() << __LINE__ << "occ interactive_scan_control 0,0"));
                     uint8_t* p = reinterpret_cast<uint8_t*>(&step_count_v3);
                     cmd.data.push_back(p[0]);
                     cmd.data.push_back(p[1]);
@@ -751,7 +752,7 @@ namespace librealsense
                         try
                         {
                             auto res = _hw_monitor->send(command{ ds::AUTO_CALIB, get_py_rx_plus_fl_calib_result });
-                            LOG_OCC_DEBUG(std::string(to_string() << __LINE__ << "occ get_py_rx_plus_fl_calib_result res size = " << res.size() ));
+                            LOG_OCC_WARN(std::string(to_string() << __LINE__ << "occ get_py_rx_plus_fl_calib_result res size = " << res.size() ));
 
                             if (res.size() < sizeof(DscPyRxFLCalibrationTableResult))
                                 throw std::runtime_error("Not enough data from CALIB_STATUS!");
@@ -885,7 +886,7 @@ namespace librealsense
 
         if (depth > 0)
         {
-            LOG_OCC_DEBUG("run_tare_calibration interactive control (2) with parameters: depth = " << depth);
+            LOG_OCC_WARN("run_tare_calibration interactive control (2) with parameters: depth = " << depth);
             _hw_monitor->send(command{ ds::AUTO_CALIB, interactive_scan_control, 2, depth });
         }
         else
@@ -1155,7 +1156,7 @@ namespace librealsense
                 if ((delta > 500) && (delta > (std::abs(diff) * 3)) && (val2 > _outlier_percentile))
                 {
                     data[i+1] = data[i] + diff/2;
-                    LOG_OCC_DEBUG(std::string(to_string() << "Outlier with value " << val2 << " was changed to be " << data[i+1] ));
+                    LOG_OCC_WARN(std::string(to_string() << "Outlier with value " << val2 << " was changed to be " << data[i+1] ));
                 }
             }
         }
@@ -1242,7 +1243,7 @@ namespace librealsense
             std::vector<uint8_t> res;
             rs2_metadata_type frame_counter = ((frame_interface*)f)->get_frame_metadata(RS2_FRAME_METADATA_FRAME_COUNTER);
             rs2_metadata_type frame_ts = ((frame_interface*)f)->get_frame_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP);
-            bool tare_fc_workaround = (_action == auto_calib_action::RS2_OCC_ACTION_TARE_CALIB); //Ev - work-around tare implementation using rolling frame counter
+            bool tare_fc_workaround = (_action == auto_calib_action::RS2_OCC_ACTION_TARE_CALIB); //Tare calib shall use rolling frame counter
             bool mipi_sku = ((frame_interface*)f)->supports_frame_metadata(RS2_FRAME_METADATA_CALIB_INFO);
             if (mipi_sku)
                 frame_counter = ((frame_interface*)f)->get_frame_metadata(RS2_FRAME_METADATA_CALIB_INFO);
@@ -1272,7 +1273,7 @@ namespace librealsense
                 _prev_frame_counter = frame_counter;
                 if ((!tare_fc_workaround) && mipi_sku) _prev_frame_counter +=10; //  Compensate for MIPI OCC calib. invoke delay
                 _interactive_state = interactive_calibration_state::RS2_OCC_STATE_WAIT_TO_CALIB_START;
-                LOG_OCC_DEBUG(std::string(to_string() << "switch INITIAL_FW_CALL=>WAIT_TO_CALIB_START, prev_fc is reset to " << _prev_frame_counter));
+                LOG_OCC_WARN(std::string(to_string() << "switch INITIAL_FW_CALL=>WAIT_TO_CALIB_START, prev_fc is reset to " << _prev_frame_counter));
                 return res;
             }
             if (_interactive_state == interactive_calibration_state::RS2_OCC_STATE_WAIT_TO_CALIB_START)
@@ -1297,7 +1298,7 @@ namespace librealsense
                 _skipped_frames = 0;
                 _prev_frame_counter = -1;
                 _interactive_state = interactive_calibration_state::RS2_OCC_STATE_DATA_COLLECT;
-                LOG_OCC_DEBUG(std::string(to_string() << __LINE__ << " switch to RS2_OCC_STATE_DATA_COLLECT"));
+                LOG_OCC_WARN(std::string(to_string() << __LINE__ << " switch to RS2_OCC_STATE_DATA_COLLECT"));
             }
             if (_interactive_state == interactive_calibration_state::RS2_OCC_STATE_DATA_COLLECT)
             {
@@ -1357,19 +1358,19 @@ namespace librealsense
                             {
                                 progress_callback->on_update_progress(static_cast<float>(20 + static_cast<int>(frame_counter * 60.0 / _total_frames)));
                             }
-                            auto fr  = calc_fill_rate(f);
+                            auto fill_rate  = calc_fill_rate(f);
                             if (frame_counter < 10) // handle discrepancy on stream/preset activation
-                                fr = 0;
+                                fill_rate = 0;
                             if (frame_counter + fw_host_offset < 256)
                             {
-                                _fill_factor[frame_counter + fw_host_offset] = fr;
-                                LOG_OCC_DEBUG(std::string(to_string() << __LINE__ << " fc = " << frame_counter <<  ", _fill_factor[" << frame_counter + fw_host_offset << "] = " << fr));
+                                _fill_factor[frame_counter + fw_host_offset] = fill_rate;
+                                LOG_OCC_WARN(std::string(to_string() << __LINE__ << " fc = " << frame_counter <<  ", _fill_factor[" << frame_counter + fw_host_offset << "] = " << fill_rate));
                             }
 
                             if (_interactive_scan)
                             {
                                 auto res = _hw_monitor->send(command{ ds::AUTO_CALIB, interactive_scan_control, 1});
-                                LOG_OCC_DEBUG(std::string(to_string() << __LINE__ << " occ interactive_scan_control 1,"));
+                                LOG_OCC_WARN(std::string(to_string() << __LINE__ << " occ interactive_scan_control 1,"));
                             }
                             _skipped_frames = 0;
                             _prev_frame_counter = frame_counter;
@@ -1378,7 +1379,7 @@ namespace librealsense
                     else
                     {
                         _interactive_state = interactive_calibration_state::RS2_OCC_STATE_WAIT_FOR_FINAL_FW_CALL;
-                        LOG_OCC_DEBUG(std::string(to_string() << __LINE__ << " go to final FW call"));
+                        LOG_OCC_WARN(std::string(to_string() << __LINE__ << " go to final FW call"));
                     }
                 }
                 else if (_action == auto_calib_action::RS2_OCC_ACTION_TARE_CALIB)
@@ -1396,7 +1397,7 @@ namespace librealsense
                             progress_callback->on_update_progress(static_cast<float>(20 + static_cast<int>(progress_rate * 60.0)));
                         }
                     }
-                    LOG_OCC_DEBUG(std::string(to_string() << __LINE__ << " fr_c = " << frame_counter
+                    LOG_OCC_WARN(std::string(to_string() << __LINE__ << " fr_c = " << frame_counter
                         << " fr_ts = " << frame_ts << " _c_f_num = " << _collected_frame_num));
 
                     if (frame_counter < _total_frames)
@@ -1434,7 +1435,7 @@ namespace librealsense
             }
             if (_interactive_state == interactive_calibration_state::RS2_OCC_STATE_WAIT_FOR_FINAL_FW_CALL)
             {
-                LOG_OCC_DEBUG(std::string(to_string() << __LINE__ << " :RS2_OCC_STATE_WAIT_FOR_FINAL_FW_CALL"));
+                LOG_OCC_WARN(std::string(to_string() << __LINE__ << " :RS2_OCC_STATE_WAIT_FOR_FINAL_FW_CALL"));
                 if (frame_counter > _total_frames)
                 {
                     _interactive_state = interactive_calibration_state::RS2_OCC_STATE_FINAL_FW_CALL;
@@ -1442,12 +1443,12 @@ namespace librealsense
                 else if (_interactive_scan)
                 {
                     _hw_monitor->send(command{ ds::AUTO_CALIB, interactive_scan_control, 1 });
-                    LOG_OCC_DEBUG(std::string(to_string() << __LINE__ << "Call for interactive_scan_control, 1"));
+                    LOG_OCC_WARN(std::string(to_string() << __LINE__ << "Call for interactive_scan_control, 1"));
                 }
             }
             if (_interactive_state == interactive_calibration_state::RS2_OCC_STATE_FINAL_FW_CALL)
             {
-                LOG_OCC_DEBUG(std::string(to_string() << __LINE__ << " :RS2_OCC_STATE_FINAL_FW_CALL"));
+                LOG_OCC_WARN(std::string(to_string() << __LINE__ << " :RS2_OCC_STATE_FINAL_FW_CALL"));
                 if (progress_callback)
                 {
                     progress_callback->on_update_progress(static_cast<float>(80));
