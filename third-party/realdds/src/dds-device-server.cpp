@@ -18,6 +18,7 @@
 #include <realdds/dds-topic-writer.h>
 
 #include <fastdds/dds/topic/Topic.hpp>
+#include <fastdds/dds/subscriber/SampleInfo.hpp>
 
 #include <third-party/json.hpp>
 using nlohmann::json;
@@ -32,6 +33,7 @@ dds_device_server::dds_device_server( std::shared_ptr< dds_participant > const &
     : _publisher( std::make_shared< dds_publisher >( participant ))
     , _subscriber( std::make_shared< dds_subscriber >( participant ))
     , _topic_root( topic_root )
+    , _control_dispatcher( QUEUE_MAX_SIZE )
 {
     LOG_DEBUG( "device server created @ '" << _topic_root << "'" );
 }
@@ -44,14 +46,18 @@ dds_device_server::~dds_device_server()
 }
 
 
-void dds_device_server::start_streaming( const std::string & stream_name,
-                                         const image_header & header )
+void dds_device_server::start_streaming( const std::vector< std::pair < std::string, image_header > > & streams_to_open )
 {
-    auto it = _stream_name_to_server.find( stream_name );
-    if ( it == _stream_name_to_server.end() )
-        DDS_THROW( runtime_error, "stream '" + stream_name + "' does not exist" );
-    auto & stream = it->second;
-    stream->start_streaming( header );
+    for ( auto & p : streams_to_open )
+    {
+        auto & stream_name = p.first;
+        auto & header = p.second;
+        auto it = _stream_name_to_server.find( stream_name );
+        if ( it == _stream_name_to_server.end() )
+            DDS_THROW( runtime_error, "stream '" + stream_name + "' does not exist" );
+        auto & stream = it->second;
+        stream->start_streaming( header );
+    }
 }
 
 
@@ -108,7 +114,7 @@ void dds_device_server::init( std::vector< std::shared_ptr< dds_stream_server > 
 
     try
     {
-	    // Create a notifications server and set discovery notifications
+        // Create a notifications server and set discovery notifications
         _notification_server = std::make_shared< dds_notification_server >( _publisher, _topic_root + "/notification" );
 
         // If a previous init failed (e.g., one of the streams has no profiles):
@@ -147,6 +153,24 @@ void dds_device_server::publish_notification( topics::flexible_msg && notificati
 
 void dds_device_server::on_control_message_received()
 {
-    //TODO - handle control
+    topics::flexible_msg data;
+    eprosima::fastdds::dds::SampleInfo info;
+    while ( topics::flexible_msg::take_next( *_control_server->reader(), &data, &info ) )
+    {
+        if ( !data.is_valid() )
+            continue;
+
+        _control_dispatcher.invoke( [&]( dispatcher::cancellable_timer ) { handle_control_message( data ); } );
+    }
 }
 
+void dds_device_server::handle_control_message( topics::flexible_msg & control_message )
+{
+    auto & j = control_message.json_data();
+    auto id = j["id"].get< std::string >();
+    if ( id.compare("open-streams") == 0 )
+    {
+        if ( _open_streams_callback )
+            _open_streams_callback( j, this );
+    }
+}

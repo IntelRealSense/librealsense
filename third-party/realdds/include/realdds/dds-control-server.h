@@ -4,7 +4,7 @@
 #pragma once
 
 
-#include <realdds/topics/control/controlPubSubTypes.h>  // raw::device::control
+#include <realdds/topics/flexible/flexiblePubSubTypes.h>
 #include <librealsense2/utilities/concurrency/concurrency.h>
 
 #include <memory>
@@ -37,6 +37,8 @@ public:
 
     typedef std::function< void() > on_control_message_received_callback;
     void on_control_message_received( on_control_message_received_callback callback );
+
+    std::shared_ptr< dds_topic_reader > reader() { return _reader; }
 
 private:
     std::shared_ptr< dds_subscriber > _subscriber;

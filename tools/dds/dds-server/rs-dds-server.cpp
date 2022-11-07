@@ -2,6 +2,8 @@
 // Copyright(c) 2022 Intel Corporation. All Rights Reserved.
 
 #include <librealsense2/utilities/easylogging/easyloggingpp.h>
+#include <librealsense2/utilities/json.h>
+
 #include <realdds/dds-device-broadcaster.h>
 #include <realdds/dds-device-server.h>
 #include <realdds/dds-stream-server.h>
@@ -9,6 +11,8 @@
 #include <realdds/dds-utilities.h>
 #include <realdds/dds-log-consumer.h>
 #include <realdds/topics/device-info/device-info-msg.h>
+#include <realdds/topics/flexible/flexible-msg.h>
+
 #include <fastrtps/types/TypesBase.h>
 #include <fastdds/dds/log/Log.hpp>
 
@@ -18,10 +22,12 @@
 #include <tclap/CmdLine.h>
 #include <tclap/ValueArg.h>
 
+#include <string>
 #include <iostream>
 #include <map>
 #include <unordered_set>
 
+using nlohmann::json;
 
 using namespace TCLAP;
 using namespace realdds;
@@ -120,7 +126,7 @@ rs2::stream_profile get_required_profile( rs2::sensor sensor,
 
     return *found_profiles;
 }
-
+    
 void start_streaming( std::shared_ptr< tools::lrs_device_controller > lrs_device_controller,
                       std::shared_ptr< dds_device_server > dds_dev_server,
                       const rs2::stream_profile & stream_profile )
@@ -131,7 +137,9 @@ void start_streaming( std::shared_ptr< tools::lrs_device_controller > lrs_device
     header.format = static_cast< int >( vsp.format() );
     header.height = vsp.height();
     header.width = vsp.width();
-    dds_dev_server->start_streaming( stream_profile.stream_name(), header );
+    std::vector< std::pair < std::string, image_header > > as_vec;
+    as_vec.push_back( std::make_pair( stream_profile.stream_name(), header ) );
+    dds_dev_server->start_streaming( as_vec );
 
     // Start streaming
     lrs_device_controller->start_stream( stream_profile, [&, dds_dev_server]( rs2::frame f ) {
@@ -147,6 +155,53 @@ void start_streaming( std::shared_ptr< tools::lrs_device_controller > lrs_device
             LOG_ERROR( "Exception raised during DDS publish " << vf.get_profile().stream_name()
                                                               << " frame: " << e.what() );
         }
+    } );
+}
+
+void open_streams_callback( const json & msg, dds_device_server * dds_dev_server )
+{
+    auto msg_profiles = msg["stream-profiles"];
+    dds_stream_profiles stream_profiles;
+
+    std::vector< rs2::stream_profile > rs_profiles_to_open;
+    std::vector< std::pair < std::string, image_header > > realdds_streams_to_start;
+
+    //Find requested sensor
+    rs2::context ctx;
+    auto sensors = ctx.query_all_sensors();
+    size_t sensor_index = 0;
+    std::string sensor_name( "Color" ); //TODO - add sensor_name to open_msg and find sensor
+    for ( ; sensor_index < sensors.size(); ++sensor_index )
+    {
+        if ( sensor_name.compare( sensors[sensor_index].get_info( RS2_CAMERA_INFO_NAME ) ) == 0 )
+            break; //Found the requested sensor
+    }
+    if( sensor_index == sensors.size() )
+        throw std::runtime_error( "Could not find sensor to open streams for" );
+
+    //Find requested profiles
+    for ( auto it = msg_profiles.begin(); it != msg_profiles.end(); ++it)
+    {
+        std::string stream_name = it.key();
+        auto dds_profile = dds_stream_profile::from_json< dds_video_stream_profile >( it.value() );
+
+        auto rs2_profile = get_required_profile( sensors[sensor_index],
+                                                 RS2_STREAM_COLOR, //Get rs2_stream type from stream name
+                                                 dds_profile->frequency(),
+                                                 static_cast< rs2_format >( dds_profile->format().to_rs2() ),
+                                                 dds_profile->width(),
+                                                 dds_profile->height() );
+        rs_profiles_to_open.push_back( rs2_profile );
+
+        realdds::image_header header = { dds_profile->format().to_rs2(), dds_profile->width(), dds_profile->height() };
+        realdds_streams_to_start.push_back( std::make_pair( stream_name, header ) );
+    }
+
+    //Start streaming
+    dds_dev_server->start_streaming( realdds_streams_to_start );
+    sensors[sensor_index].open( rs_profiles_to_open );
+    sensors[sensor_index].start( [&]( rs2::frame f ) {
+        dds_dev_server->publish_image( f.get_profile().stream_name(), static_cast< const uint8_t * >( f.get_data() ), f.get_data_size() );
     } );
 }
 
@@ -277,6 +332,7 @@ try
             // Create a dds-device-server for this device
             auto dds_device_server
                 = std::make_shared< realdds::dds_device_server >( participant, dev_info.topic_root );
+            dds_device_server->on_open_streams( open_streams_callback );
 
             // Create a supported streams list for initializing the relevant DDS topics
             auto supported_streams = get_supported_streams( dev );

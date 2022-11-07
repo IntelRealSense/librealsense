@@ -29,7 +29,7 @@ namespace realdds {
 dds_control_server::dds_control_server( std::shared_ptr< dds_subscriber > const & subscriber, const std::string & topic_name )
     : _subscriber( subscriber )
 {
-    auto topic = topics::device::control::create_topic( subscriber->get_participant(), topic_name.c_str() );
+    auto topic = topics::flexible_msg::create_topic( subscriber->get_participant(), topic_name.c_str() );
     _reader = std::make_shared< dds_topic_reader >( topic, subscriber );
 
     dds_topic_reader::qos rqos( RELIABLE_RELIABILITY_QOS );

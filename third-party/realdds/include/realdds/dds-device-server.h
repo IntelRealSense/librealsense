@@ -3,22 +3,26 @@
 
 #pragma once
 
+#include <librealsense2/utilities/concurrency/concurrency.h>
+#include <third-party/json.hpp>
+
 #include <unordered_map>
 #include <vector>
 #include <memory>
 #include <string>
-
+#include <functional>
 
 namespace realdds {
 
 
 // Forward declaration
 namespace topics {
-class flexible_msg;
-namespace raw {
-class device_info;
-}  // namespace raw
-class device_info;
+    class flexible_msg;
+    class device_info;
+
+    namespace raw {
+        class device_info;
+    }  // namespace raw
 }  // namespace topics
 
 
@@ -59,13 +63,17 @@ public:
     bool is_valid() const { return( nullptr != _notification_server.get() ); }
     bool operator!() const { return ! is_valid(); }
 
-    void start_streaming( const std::string & stream_name, const image_header & header );
+    void start_streaming( const std::vector< std::pair < std::string, image_header > > &); //< stream_name, header > pairs
     
     void publish_image( const std::string & stream_name, const uint8_t * data, size_t size );
     void publish_notification( topics::flexible_msg && );
     
+    typedef std::function< void( nlohmann::json msg, dds_device_server * server ) > open_streams_callback;
+    void on_open_streams( open_streams_callback callback ) { _open_streams_callback = std::move( callback ); }
+
 private:
     void on_control_message_received();
+    void handle_control_message( topics::flexible_msg & control_message );
 
     std::shared_ptr< dds_publisher > _publisher;
     std::shared_ptr< dds_subscriber > _subscriber;
@@ -73,6 +81,8 @@ private:
     std::unordered_map<std::string, std::shared_ptr<dds_stream_server>> _stream_name_to_server;
     std::shared_ptr< dds_notification_server > _notification_server;
     std::shared_ptr< dds_control_server > _control_server;
+    dispatcher _control_dispatcher;
+    open_streams_callback _open_streams_callback;
 };  // class dds_device_server
 
 
