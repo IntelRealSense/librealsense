@@ -453,8 +453,8 @@ namespace librealsense
                     auto video_profile
                         = find_profile( stream_index,
                                         realdds::dds_video_stream_profile(
-                                            realdds::dds_stream_format::from_rs2( profiles[i]->get_format() ),
                                             profiles[i]->get_framerate(),
+                                            realdds::dds_stream_format::from_rs2( profiles[i]->get_format() ),
                                             vsp->get_width(),
                                             vsp->get_height() ) );
                     if( video_profile )
@@ -468,8 +468,8 @@ namespace librealsense
                     auto motion_profile
                         = find_profile( stream_index,
                                         realdds::dds_motion_stream_profile(
-                                            realdds::dds_stream_format::from_rs2( profiles[i]->get_format() ),
-                                            profiles[i]->get_framerate() ) );
+                                            profiles[i]->get_framerate(),
+                                            realdds::dds_stream_format::from_rs2( profiles[i]->get_format() ) ) );
                     if( motion_profile )
                         realdds_profiles.push_back( motion_profile );
                     else

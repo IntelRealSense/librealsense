@@ -352,13 +352,13 @@ PYBIND11_MODULE(NAME, m) {
 
     using realdds::dds_video_stream_profile;
     py::class_< dds_video_stream_profile, std::shared_ptr< dds_video_stream_profile > >( m, "video_stream_profile", stream_profile_base )
-        .def( py::init< dds_stream_format, int16_t, uint16_t, uint16_t >() )
+        .def( py::init< int16_t, dds_stream_format, uint16_t, uint16_t >() )
         .def( "width", &dds_video_stream_profile::width )
         .def( "height", &dds_video_stream_profile::height );
 
     using realdds::dds_motion_stream_profile;
     py::class_< dds_motion_stream_profile, std::shared_ptr< dds_motion_stream_profile > >( m, "motion_stream_profile", stream_profile_base )
-        .def( py::init< dds_stream_format, int16_t >() );
+        .def( py::init< int16_t, dds_stream_format >() );
 
     using realdds::dds_stream_base;
     py::class_< dds_stream_base, std::shared_ptr< dds_stream_base > > stream_base( m, "stream_base" );
