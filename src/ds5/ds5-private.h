@@ -46,8 +46,8 @@ namespace librealsense
         const uint16_t RS416_RGB_PID        = 0x0B52; // F416 RGB
         const uint16_t RS405_PID            = 0x0B5B; // D405
         const uint16_t RS455_PID            = 0x0B5C; // D455
-        const uint16_t RS_D585_PID          = 0x0B6A; // D585 // D for depth
-        const uint16_t RS_S585_PID          = 0x0B6B; // S585 // S for safety
+        const uint16_t RS_D585_PID          = 0x0B6A; // D585, D for depth
+        const uint16_t RS_S585_PID          = 0x0B6B; // S585, S for safety
 
         // DS5 depth XU identifiers
         const uint8_t DS5_HWMONITOR                       = 1;
