@@ -682,9 +682,13 @@ namespace librealsense
 
     std::vector<std::shared_ptr<device_info>> context::query_devices(int mask) const
     {
-        platform::backend_device_group devices( _backend->query_uvc_devices(),
-                                                _backend->query_usb_devices(),
-                                                _backend->query_hid_devices() );
+        platform::backend_device_group devices;
+        if( ! ( mask & RS2_PRODUCT_LINE_SW_ONLY ) )
+        {
+            devices.uvc_devices = _backend->query_uvc_devices();
+            devices.usb_devices = _backend->query_usb_devices();
+            devices.hid_devices = _backend->query_hid_devices();
+        }
         return create_devices( devices, _playback_devices, mask );
     }
 
