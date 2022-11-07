@@ -5685,7 +5685,10 @@ const frame_metadata = {
    */
   FRAME_METADATA_LOW_LIGHT_COMPENSATION: RS2.RS2_FRAME_METADATA_LOW_LIGHT_COMPENSATION,
   /**
-   * Emitter mode: 0 - all emitters disabled. 1 - laser enabled. 2 - auto laser enabled (opt). 3 - LED enabled (opt).
+   * Emitter mode: 0 - all emitters disabled.
+   * 1- laser enabled.
+   * 2 - auto laser enabled (opt).
+   * 3 - LED enabled (opt).
    * <br>Equivalent to its lowercase counterpart
    * @type {Integer}
    */
