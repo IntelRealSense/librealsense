@@ -3,6 +3,7 @@
 
 import pyrealdds as dds
 from rspy import log, test
+import d435i
 
 dds.debug( True, log.nested )
 
@@ -60,6 +61,11 @@ def test_n_profiles( n_profiles ):
     global server
     server = dds.device_server( participant, "realdds/device/topic-root" )
     server.init( [s1] )
+
+
+def test_d435i():
+    global server
+    server = d435i.build( participant )
 
 
 def close_server():
