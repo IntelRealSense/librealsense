@@ -670,37 +670,71 @@ namespace librealsense
         _hw_monitor->get_gvd(gvd_buf.size(), gvd_buf.data(), GVD);
 
         // Opaque retrieval
-        d400_caps val{d400_caps::CAP_UNDEFINED};
-        if (gvd_buf[active_projector])  // DepthActiveMode
-            val |= d400_caps::CAP_ACTIVE_PROJECTOR;
-        if (gvd_buf[rgb_sensor])                           // WithRGB
-            val |= d400_caps::CAP_RGB_SENSOR;
-        if (gvd_buf[imu_sensor])
-        {
-            val |= d400_caps::CAP_IMU_SENSOR;
-            if (gvd_buf[imu_acc_chip_id] == I2C_IMU_BMI055_ID_ACC)
-                val |= d400_caps::CAP_BMI_055;
-            else if (gvd_buf[imu_acc_chip_id] == I2C_IMU_BMI085_ID_ACC)
-                val |= d400_caps::CAP_BMI_085;
-            else if (hid_bmi_055_pid.end() != hid_bmi_055_pid.find(_pid))
-                val |= d400_caps::CAP_BMI_055;
-            else if (hid_bmi_085_pid.end() != hid_bmi_085_pid.find(_pid))
-                val |= d400_caps::CAP_BMI_085;
-            else
-                LOG_WARNING("The IMU sensor is undefined for PID " << std::hex << _pid << " and imu_chip_id: " << gvd_buf[imu_acc_chip_id] << std::dec);
-        }
-        if (0xFF != (gvd_buf[fisheye_sensor_lb] & gvd_buf[fisheye_sensor_hb]))
-            val |= d400_caps::CAP_FISHEYE_SENSOR;
-        if (0x1 == gvd_buf[depth_sensor_type])
-            val |= d400_caps::CAP_ROLLING_SHUTTER;  // e.g. ASRC
-        if (0x2 == gvd_buf[depth_sensor_type])
-            val |= d400_caps::CAP_GLOBAL_SHUTTER;   // e.g. AWGC
-        // Option INTER_CAM_SYNC_MODE is not enabled in D405
-        if (_pid != ds::RS405_PID)
-            val |= d400_caps::CAP_INTERCAM_HW_SYNC;
+        d400_caps val{ d400_caps::CAP_UNDEFINED };
 
+        if (!(_pid == RS_D585_PID || _pid == RS_S585_PID))
+        {
+            if (gvd_buf[active_projector])  // DepthActiveMode
+                val |= d400_caps::CAP_ACTIVE_PROJECTOR;
+            if (gvd_buf[rgb_sensor])                           // WithRGB
+                val |= d400_caps::CAP_RGB_SENSOR;
+            if (gvd_buf[imu_sensor])
+            {
+                val |= d400_caps::CAP_IMU_SENSOR;
+                if (gvd_buf[imu_acc_chip_id] == I2C_IMU_BMI055_ID_ACC)
+                    val |= d400_caps::CAP_BMI_055;
+                else if (gvd_buf[imu_acc_chip_id] == I2C_IMU_BMI085_ID_ACC)
+                    val |= d400_caps::CAP_BMI_085;
+                else if (hid_bmi_055_pid.end() != hid_bmi_055_pid.find(_pid))
+                    val |= d400_caps::CAP_BMI_055;
+                else if (hid_bmi_085_pid.end() != hid_bmi_085_pid.find(_pid))
+                    val |= d400_caps::CAP_BMI_085;
+                else
+                    LOG_WARNING("The IMU sensor is undefined for PID " << std::hex << _pid << " and imu_chip_id: " << gvd_buf[imu_acc_chip_id] << std::dec);
+            }
+            if (0xFF != (gvd_buf[fisheye_sensor_lb] & gvd_buf[fisheye_sensor_hb]))
+                val |= d400_caps::CAP_FISHEYE_SENSOR;
+            if (0x1 == gvd_buf[depth_sensor_type])
+                val |= d400_caps::CAP_ROLLING_SHUTTER;  // e.g. ASRC
+            if (0x2 == gvd_buf[depth_sensor_type])
+                val |= d400_caps::CAP_GLOBAL_SHUTTER;   // e.g. AWGC
+            // Option INTER_CAM_SYNC_MODE is not enabled in D405
+            if (_pid != ds::RS405_PID)
+                val |= d400_caps::CAP_INTERCAM_HW_SYNC;
+        }
+        else
+        {
+            if (gvd_buf[gvd_sc_active_projector])  // DepthActiveMode
+                val |= d400_caps::CAP_ACTIVE_PROJECTOR;
+            if (gvd_buf[gvd_sc_rgb_sensor])        // WithRGB
+                val |= d400_caps::CAP_RGB_SENSOR;
+            if (gvd_buf[gvd_sc_imu_sensor])
+            {
+                val |= d400_caps::CAP_IMU_SENSOR;
+                if (gvd_buf[gvd_sc_imu_acc_chip_id] == I2C_IMU_BMI055_ID_ACC)
+                    val |= d400_caps::CAP_BMI_055;
+                else if (gvd_buf[gvd_sc_imu_acc_chip_id] == I2C_IMU_BMI085_ID_ACC)
+                    val |= d400_caps::CAP_BMI_085;
+                else if (hid_bmi_055_pid.end() != hid_bmi_055_pid.find(_pid))
+                    val |= d400_caps::CAP_BMI_055;
+                else if (hid_bmi_085_pid.end() != hid_bmi_085_pid.find(_pid))
+                    val |= d400_caps::CAP_BMI_085;
+                else
+                    LOG_WARNING("The IMU sensor is undefined for PID " << std::hex << _pid << " and imu_chip_id: " << gvd_buf[gvd_sc_imu_acc_chip_id] << std::dec);
+            }
+            if (0xFF != (gvd_buf[gvd_sc_fisheye_sensor_lb] & gvd_buf[fisheye_sensor_hb]))
+                val |= d400_caps::CAP_FISHEYE_SENSOR;
+            if (0x1 == gvd_buf[gvd_sc_depth_sensor_type])
+                val |= d400_caps::CAP_ROLLING_SHUTTER;  // e.g. ASRC
+            if (0x2 == gvd_buf[gvd_sc_depth_sensor_type])
+                val |= d400_caps::CAP_GLOBAL_SHUTTER;   // e.g. AWGC
+
+            val |= d400_caps::CAP_INTERCAM_HW_SYNC;  // TODO - check if available for sc
+        }
+        
         return val;
     }
+
 
     std::shared_ptr<synthetic_sensor> ds5_device::create_depth_device(std::shared_ptr<context> ctx,
         const std::vector<platform::uvc_device_info>& all_device_infos)
@@ -817,10 +851,20 @@ namespace librealsense
         group_multiple_fw_calls(depth_sensor, [&]() {
 
             _hw_monitor->get_gvd(gvd_buff.size(), gvd_buff.data(), GVD);
-
-            optic_serial = _hw_monitor->get_module_serial_string(gvd_buff, module_serial_offset);
-            asic_serial = _hw_monitor->get_module_serial_string(gvd_buff, module_asic_serial_offset);
-            auto fwv = _hw_monitor->get_firmware_version_string(gvd_buff, camera_fw_version_offset);
+            std::string fwv;
+            if (!(_pid == RS_D585_PID || _pid == RS_S585_PID))
+            {
+                optic_serial = _hw_monitor->get_module_serial_string(gvd_buff, module_serial_offset);
+                asic_serial = _hw_monitor->get_module_serial_string(gvd_buff, module_asic_serial_offset);
+                fwv = _hw_monitor->get_firmware_version_string(gvd_buff, camera_fw_version_offset);
+            }
+            else
+            {
+                optic_serial = _hw_monitor->get_module_serial_string(gvd_buff, gvd_sc_module_serial_offset);
+                asic_serial = _hw_monitor->get_module_serial_string(gvd_buff, gvd_sc_module_asic_serial_offset);
+                fwv = _hw_monitor->get_firmware_version_string(gvd_buff, gvd_sc_camera_fw_version_offset);
+            }
+            
             _fw_version = firmware_version(fwv);
 
             _recommended_fw_version = firmware_version(D4XX_RECOMMENDED_FIRMWARE_VERSION);
@@ -883,7 +927,10 @@ namespace librealsense
 
             if (_fw_version >= firmware_version("5.6.3.0"))
             {
-                _is_locked = _hw_monitor->is_camera_locked(GVD, is_camera_locked_offset);
+                if(!(_pid == RS_D585_PID || _pid == RS_S585_PID))
+                    _is_locked = _hw_monitor->is_camera_locked(GVD, is_camera_locked_offset);
+                else
+                    _is_locked = _hw_monitor->is_camera_locked(GVD, gvd_sc_is_camera_locked_offset);
             }
 
             if (_fw_version >= firmware_version("5.5.8.0"))

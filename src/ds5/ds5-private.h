@@ -649,6 +649,23 @@ namespace librealsense
             motion_module_fw_version_offset = 212
         };
 
+        enum gvd_sc_fields      // gvd fields for Safety Camera
+        {
+            // Keep sorted
+            gvd_sc_camera_fw_version_offset = 12,
+            gvd_sc_is_camera_locked_offset = 25,
+            gvd_sc_module_serial_offset = 48,
+            gvd_sc_module_asic_serial_offset = 64,
+            gvd_sc_fisheye_sensor_lb = 112,
+            gvd_sc_fisheye_sensor_hb = 113,
+            gvd_sc_imu_acc_chip_id = 124,
+            gvd_sc_depth_sensor_type = 166,
+            gvd_sc_active_projector = 170,
+            gvd_sc_rgb_sensor = 174,
+            gvd_sc_imu_sensor = 178,
+            gvd_sc_motion_module_fw_version_offset = 212
+        };
+
         const uint8_t I2C_IMU_BMI055_ID_ACC = 0xfa;
         const uint8_t I2C_IMU_BMI085_ID_ACC = 0x1f;
 
