@@ -31,7 +31,8 @@ class dds_publisher;
 class dds_subscriber;
 class dds_stream_server;
 class dds_notification_server;
-class dds_control_server;
+//class dds_control_server;
+class dds_topic_reader;
 struct image_header;
 
 
@@ -80,7 +81,8 @@ private:
     std::string _topic_root;
     std::unordered_map<std::string, std::shared_ptr<dds_stream_server>> _stream_name_to_server;
     std::shared_ptr< dds_notification_server > _notification_server;
-    std::shared_ptr< dds_control_server > _control_server;
+    //std::shared_ptr< dds_control_server > _control_server;
+    std::shared_ptr< dds_topic_reader > _control_reader;
     dispatcher _control_dispatcher;
     open_streams_callback _open_streams_callback;
 };  // class dds_device_server

@@ -9,7 +9,8 @@
 #include <realdds/dds-stream-server.h>
 #include <realdds/dds-stream-profile.h>
 #include <realdds/dds-notification-server.h>
-#include <realdds/dds-control-server.h>
+//#include <realdds/dds-control-server.h>
+#include <realdds/dds-topic-reader.h>
 #include <realdds/dds-utilities.h>
 #include <realdds/topics/device-info/device-info-msg.h>
 #include <realdds/topics/image/image-msg.h>
@@ -36,6 +37,7 @@ dds_device_server::dds_device_server( std::shared_ptr< dds_participant > const &
     , _control_dispatcher( QUEUE_MAX_SIZE )
 {
     LOG_DEBUG( "device server created @ '" << _topic_root << "'" );
+    _control_dispatcher.start();
 }
 
 
@@ -139,9 +141,20 @@ void dds_device_server::init( std::vector< std::shared_ptr< dds_stream_server > 
     }
 
     // Create a control server and set callback
-    _control_server = std::make_shared< dds_control_server >( _subscriber, _topic_root + "/control" );
+    //_control_server = std::make_shared< dds_control_server >( _subscriber, _topic_root + "/control" );
+    auto topic = topics::flexible_msg::create_topic( _subscriber->get_participant(), _topic_root + "/control" );
+    _control_reader = std::make_shared< dds_topic_reader >( topic, _subscriber );
 
-    _control_server->on_control_message_received( [&]() { on_control_message_received(); } );
+    dds_topic_reader::qos rqos( RELIABLE_RELIABILITY_QOS );
+    rqos.history().depth = 10; // default is 1
+    // Does not allocate for every sample but still gives flexibility. See:
+    //     https://github.com/eProsima/Fast-DDS/discussions/2707
+    // (default is PREALLOCATED_MEMORY_MODE)
+    rqos.endpoint().history_memory_policy = eprosima::fastrtps::rtps::PREALLOCATED_WITH_REALLOC_MEMORY_MODE;
+
+    //_control_server->on_control_message_received( [&]() { on_control_message_received(); } );
+    _control_reader->on_data_available( [&]() { on_control_message_received(); } );
+    _control_reader->run( rqos );
 }
 
 
@@ -155,12 +168,13 @@ void dds_device_server::on_control_message_received()
 {
     topics::flexible_msg data;
     eprosima::fastdds::dds::SampleInfo info;
-    while ( topics::flexible_msg::take_next( *_control_server->reader(), &data, &info ) )
+    while ( topics::flexible_msg::take_next( *_control_reader, &data, &info ) )
     {
         if ( !data.is_valid() )
             continue;
 
-        _control_dispatcher.invoke( [&]( dispatcher::cancellable_timer ) { handle_control_message( data ); } );
+        //_control_dispatcher.invoke( [&]( dispatcher::cancellable_timer ) { handle_control_message( data ); } );
+        handle_control_message( data );
     }
 }
 
