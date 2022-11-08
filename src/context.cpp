@@ -381,12 +381,12 @@ namespace librealsense
 #ifdef BUILD_WITH_DDS
     struct sid_index
     {
-        int16_t sid;   // Stream ID; assigned based on the stream TYPE, really
-        int8_t index;  // Used to distinguish similar streams like IR L / R, 0 otherwise
+        int sid;    // Stream ID; assigned based on the stream TYPE, really
+        int index;  // Used to distinguish similar streams like IR L / R, 0 otherwise
 
         sid_index( int sid_, int index_ )
-            : sid( static_cast< int16_t >( sid_ ) )
-            , index( static_cast< int8_t >( index_ ) )
+            : sid( sid_ )
+            , index( index_ )
         {
         }
 
@@ -396,7 +396,10 @@ namespace librealsense
 
         std::string to_string() const { return '(' + std::to_string( sid ) + '.' + std::to_string( index ) + ')'; }
 
-        inline bool operator<( sid_index const & r ) const { return this->sid < r.sid  ||  this->index < r.index; }
+        inline bool operator<( sid_index const & r ) const
+        {
+            return this->sid < r.sid || this->sid == r.sid && this->index < r.index;
+        }
     };
 
 
