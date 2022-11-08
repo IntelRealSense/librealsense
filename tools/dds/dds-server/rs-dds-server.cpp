@@ -170,7 +170,7 @@ void open_streams_callback( const json & msg, dds_device_server * dds_dev_server
     rs2::context ctx;
     auto sensors = ctx.query_all_sensors();
     size_t sensor_index = 0;
-    std::string sensor_name( "Color" ); //TODO - add sensor_name to open_msg and find sensor
+    std::string sensor_name( "RGB Camera" ); //TODO - add sensor_name to open_msg and find sensor
     for ( ; sensor_index < sensors.size(); ++sensor_index )
     {
         if ( sensor_name.compare( sensors[sensor_index].get_info( RS2_CAMERA_INFO_NAME ) ) == 0 )
@@ -203,6 +203,7 @@ void open_streams_callback( const json & msg, dds_device_server * dds_dev_server
     sensors[sensor_index].start( [&]( rs2::frame f ) {
         dds_dev_server->publish_image( f.get_profile().stream_name(), static_cast< const uint8_t * >( f.get_data() ), f.get_data_size() );
     } );
+    std::cout << realdds_streams_to_start[0].first << " stream started" << std::endl;
 }
 
 
@@ -347,16 +348,16 @@ try
             // Keep a pair of device controller and server per RS device
             device_handlers_list.emplace( dev, device_handler{ dev_info, dds_device_server, lrs_device_controller } );
 
-            // Get the desired stream profile
-            auto profile = get_required_profile( dev.first< rs2::color_sensor >(),
-                                                 RS2_STREAM_COLOR,
-                                                 30,
-                                                 RS2_FORMAT_RGB8,
-                                                 1280,
-                                                 720 );
+            //// Get the desired stream profile
+            //auto profile = get_required_profile( dev.first< rs2::color_sensor >(),
+            //                                     RS2_STREAM_COLOR,
+            //                                     30,
+            //                                     RS2_FORMAT_RGB8,
+            //                                     1280,
+            //                                     720 );
 
-            // Start streaming 
-            start_streaming( lrs_device_controller, dds_device_server, profile );
+            //// Start streaming 
+            //start_streaming( lrs_device_controller, dds_device_server, profile );
         },
         // Handle a device disconnection
         [&]( rs2::device dev ) {
