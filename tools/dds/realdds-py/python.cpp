@@ -352,13 +352,13 @@ PYBIND11_MODULE(NAME, m) {
 
     using realdds::dds_video_stream_profile;
     py::class_< dds_video_stream_profile, std::shared_ptr< dds_video_stream_profile > >( m, "video_stream_profile", stream_profile_base )
-        .def( py::init< dds_stream_format, int16_t, uint16_t, uint16_t >() )
+        .def( py::init< int16_t, dds_stream_format, uint16_t, uint16_t >() )
         .def( "width", &dds_video_stream_profile::width )
         .def( "height", &dds_video_stream_profile::height );
 
     using realdds::dds_motion_stream_profile;
     py::class_< dds_motion_stream_profile, std::shared_ptr< dds_motion_stream_profile > >( m, "motion_stream_profile", stream_profile_base )
-        .def( py::init< dds_stream_format, int16_t >() );
+        .def( py::init< int16_t, dds_stream_format >() );
 
     using realdds::dds_stream_base;
     py::class_< dds_stream_base, std::shared_ptr< dds_stream_base > > stream_base( m, "stream_base" );
@@ -388,12 +388,44 @@ PYBIND11_MODULE(NAME, m) {
         } );
 
     using realdds::dds_video_stream_server;
-    py::class_< dds_video_stream_server, std::shared_ptr< dds_video_stream_server > >( m, "video_stream_server", stream_server_base )
+    py::class_< dds_video_stream_server, std::shared_ptr< dds_video_stream_server > >
+        video_stream_server_base( m, "video_stream_server", stream_server_base );
+
+    using realdds::dds_depth_stream_server;
+    py::class_< dds_depth_stream_server, std::shared_ptr< dds_depth_stream_server > >( m, "depth_stream_server", video_stream_server_base )
         .def( py::init< std::string const &, std::string const & >(), "stream_name"_a, "sensor_name"_a );
 
+    using realdds::dds_ir_stream_server;
+    py::class_< dds_ir_stream_server, std::shared_ptr< dds_ir_stream_server > >( m, "ir_stream_server", video_stream_server_base )
+        .def( py::init< std::string const&, std::string const& >(), "stream_name"_a, "sensor_name"_a );
+
+    using realdds::dds_color_stream_server;
+    py::class_< dds_color_stream_server, std::shared_ptr< dds_color_stream_server > >( m, "color_stream_server", video_stream_server_base )
+        .def( py::init< std::string const&, std::string const& >(), "stream_name"_a, "sensor_name"_a );
+
+    using realdds::dds_fisheye_stream_server;
+    py::class_< dds_fisheye_stream_server, std::shared_ptr< dds_fisheye_stream_server > >( m, "fisheye_stream_server", video_stream_server_base )
+        .def( py::init< std::string const&, std::string const& >(), "stream_name"_a, "sensor_name"_a );
+
+    using realdds::dds_confidence_stream_server;
+    py::class_< dds_confidence_stream_server, std::shared_ptr< dds_confidence_stream_server > >( m, "confidence_stream_server", video_stream_server_base )
+        .def( py::init< std::string const&, std::string const& >(), "stream_name"_a, "sensor_name"_a );
+
     using realdds::dds_motion_stream_server;
-    py::class_< dds_motion_stream_server, std::shared_ptr< dds_motion_stream_server > >( m, "motion_stream_server", stream_server_base )
+    py::class_< dds_motion_stream_server, std::shared_ptr< dds_motion_stream_server > >
+        motion_stream_server_base( m, "motion_stream_server", stream_server_base );
+
+    using realdds::dds_accel_stream_server;
+    py::class_< dds_accel_stream_server, std::shared_ptr< dds_accel_stream_server > >( m, "accel_stream_server", motion_stream_server_base )
         .def( py::init< std::string const &, std::string const & >(), "stream_name"_a, "sensor_name"_a );
+
+    using realdds::dds_gyro_stream_server;
+    py::class_< dds_gyro_stream_server, std::shared_ptr< dds_gyro_stream_server > >( m, "gyro_stream_server", motion_stream_server_base )
+        .def( py::init< std::string const&, std::string const& >(), "stream_name"_a, "sensor_name"_a );
+
+    using realdds::dds_pose_stream_server;
+    py::class_< dds_pose_stream_server, std::shared_ptr< dds_pose_stream_server > >( m, "pose_stream_server", motion_stream_server_base )
+        .def( py::init< std::string const&, std::string const& >(), "stream_name"_a, "sensor_name"_a );
 
     using realdds::dds_device_server;
     py::class_< dds_device_server >( m, "device_server" )
@@ -402,34 +434,57 @@ PYBIND11_MODULE(NAME, m) {
 
     using realdds::dds_stream;
     py::class_< dds_stream, std::shared_ptr< dds_stream > > stream_client_base( m, "stream", stream_base );
+    stream_client_base  //
+        .def( "__repr__", []( dds_stream const & self ) {
+            std::ostringstream os;
+            os << "<" SNAME "." << self.type_string() << "_stream \"" << self.name() << "\" [";
+            for( auto & p : self.profiles() )
+                os << p->to_string();
+            os << ']';
+            os << ' ' << self.default_profile_index();
+            os << '>';
+            return os.str();
+        } );
 
     using realdds::dds_video_stream;
-    py::class_< dds_video_stream, std::shared_ptr< dds_video_stream > >( m, "video_stream", stream_client_base )
-        .def( py::init< std::string const &, std::string const & >(), "stream_name"_a, "sensor_name"_a )
-        .def( "__repr__", []( dds_video_stream const & self ) {
-            std::ostringstream os;
-            os << "<" SNAME ".video_stream \"" << self.name() << "\" [";
-            for( auto & p : self.profiles() )
-                os << p->to_string();
-            os << ']';
-            os << ' ' << self.default_profile_index();
-            os << '>';
-            return os.str();
-        } );
+    py::class_< dds_video_stream, std::shared_ptr< dds_video_stream > >
+        video_stream_client_base( m, "video_stream", stream_client_base );
+
+    using realdds::dds_depth_stream;
+    py::class_< dds_depth_stream, std::shared_ptr< dds_depth_stream > >( m, "depth_stream", video_stream_client_base )
+        .def( py::init< std::string const &, std::string const & >(), "stream_name"_a, "sensor_name"_a );
+
+    using realdds::dds_ir_stream;
+    py::class_< dds_ir_stream, std::shared_ptr< dds_ir_stream > >( m, "ir_stream", video_stream_client_base )
+        .def( py::init< std::string const &, std::string const & >(), "stream_name"_a, "sensor_name"_a );
+
+    using realdds::dds_color_stream;
+    py::class_< dds_color_stream, std::shared_ptr< dds_color_stream > >( m, "color_stream", video_stream_client_base )
+        .def( py::init< std::string const &, std::string const & >(), "stream_name"_a, "sensor_name"_a );
+
+    using realdds::dds_fisheye_stream;
+    py::class_< dds_fisheye_stream, std::shared_ptr< dds_fisheye_stream > >( m, "fisheye_stream", video_stream_client_base )
+        .def( py::init< std::string const &, std::string const & >(), "stream_name"_a, "sensor_name"_a );
+
+    using realdds::dds_confidence_stream;
+    py::class_< dds_confidence_stream, std::shared_ptr< dds_confidence_stream > >( m, "confidence_stream", video_stream_client_base )
+        .def( py::init< std::string const &, std::string const & >(), "stream_name"_a, "sensor_name"_a );
 
     using realdds::dds_motion_stream;
-    py::class_< dds_motion_stream, std::shared_ptr< dds_motion_stream > >( m, "motion_stream", stream_client_base )
-        .def( py::init< std::string const &, std::string const & >(), "stream_name"_a, "sensor_name"_a )
-        .def( "__repr__", []( dds_motion_stream const & self ) {
-            std::ostringstream os;
-            os << "<" SNAME ".motion_stream \"" << self.name() << "\" [";
-            for( auto & p : self.profiles() )
-                os << p->to_string();
-            os << ']';
-            os << ' ' << self.default_profile_index();
-            os << '>';
-            return os.str();
-        } );
+    py::class_< dds_motion_stream, std::shared_ptr< dds_motion_stream > >
+        motion_stream_client_base( m, "motion_stream", stream_client_base );
+
+    using realdds::dds_accel_stream;
+    py::class_< dds_accel_stream, std::shared_ptr< dds_accel_stream > >( m, "accel_stream", motion_stream_client_base )
+        .def( py::init< std::string const &, std::string const & >(), "stream_name"_a, "sensor_name"_a );
+
+    using realdds::dds_gyro_stream;
+    py::class_< dds_gyro_stream, std::shared_ptr< dds_gyro_stream > >( m, "gyro_stream", motion_stream_client_base )
+        .def( py::init< std::string const &, std::string const & >(), "stream_name"_a, "sensor_name"_a );
+
+    using realdds::dds_pose_stream;
+    py::class_< dds_pose_stream, std::shared_ptr< dds_pose_stream > >( m, "pose_stream", motion_stream_client_base )
+        .def( py::init< std::string const &, std::string const & >(), "stream_name"_a, "sensor_name"_a );
 
     using realdds::dds_device;
     py::class_< dds_device,

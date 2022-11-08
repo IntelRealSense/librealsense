@@ -27,17 +27,50 @@ using namespace TCLAP;
 using namespace realdds;
 
 
+#define NAME2SERVER( X )                                                                                               \
+    if( server )                                                                                                       \
+    {                                                                                                                  \
+        if( strcmp( server->type_string(), #X ) )                                                                      \
+        {                                                                                                              \
+            LOG_ERROR( #X " profile type on a stream '" << stream_name << "' that already has type "                   \
+                                                        << server->type_string() );                                    \
+            return;                                                                                                    \
+        }                                                                                                              \
+    }                                                                                                                  \
+    else                                                                                                               \
+    {                                                                                                                  \
+        server = std::make_shared< realdds::dds_##X##_stream_server >( stream_name, sensor_name );                     \
+    }                                                                                                                  \
+    break
+
+
 std::vector< std::shared_ptr< realdds::dds_stream_server > > get_supported_streams( rs2::device dev )
 {
     std::map< std::string, realdds::dds_stream_profiles > name_to_profiles;
     std::map< std::string, int > name_to_default_profile;
     std::map< std::string, std::string > name_to_sensor;
+    std::map< std::string, std::shared_ptr< realdds::dds_stream_server > > name_to_server;
     for( auto sensor : dev.query_sensors() )
     {
         std::string const sensor_name = sensor.get_info( RS2_CAMERA_INFO_NAME );
         auto stream_profiles = sensor.get_stream_profiles();
         std::for_each( stream_profiles.begin(), stream_profiles.end(), [&]( const rs2::stream_profile & sp ) {
             std::string stream_name = sp.stream_name();
+            auto & server = name_to_server[stream_name];
+            switch( sp.stream_type() )
+            {
+            case RS2_STREAM_DEPTH: NAME2SERVER( depth );
+            case RS2_STREAM_INFRARED: NAME2SERVER( ir );
+            case RS2_STREAM_COLOR: NAME2SERVER( color );
+            case RS2_STREAM_FISHEYE: NAME2SERVER( fisheye );
+            case RS2_STREAM_CONFIDENCE: NAME2SERVER( confidence );
+            case RS2_STREAM_ACCEL: NAME2SERVER( accel );
+            case RS2_STREAM_GYRO: NAME2SERVER( gyro );
+            case RS2_STREAM_POSE: NAME2SERVER( pose );
+            default:
+                LOG_ERROR( "unsupported stream type " << sp.stream_type() );
+                return;
+            }
             name_to_sensor[stream_name] = sensor_name;
             auto & profiles = name_to_profiles[stream_name];
             std::shared_ptr< realdds::dds_stream_profile > profile;
@@ -45,8 +78,8 @@ std::vector< std::shared_ptr< realdds::dds_stream_server > > get_supported_strea
             {
                 auto const & vsp = sp.as< rs2::video_stream_profile >();
                 profile = std::make_shared< realdds::dds_video_stream_profile >(
+                    static_cast<int16_t>( vsp.fps() ),
                     realdds::dds_stream_format::from_rs2( vsp.format() ),
-                    static_cast< int16_t >( vsp.fps() ),
                     static_cast< uint16_t >( vsp.width() ),
                     static_cast< int16_t >( vsp.height() ) );
             }
@@ -54,8 +87,8 @@ std::vector< std::shared_ptr< realdds::dds_stream_server > > get_supported_strea
             {
                 const auto & msp = sp.as< rs2::motion_stream_profile >();
                 profile = std::make_shared< realdds::dds_motion_stream_profile >(
-                    realdds::dds_stream_format::from_rs2( msp.format() ),
-                    static_cast< int16_t >( msp.fps() ) );
+                    static_cast< int16_t >( msp.fps() ),
+                    realdds::dds_stream_format::from_rs2( msp.format() ) );
             }
             else
             {
@@ -69,7 +102,7 @@ std::vector< std::shared_ptr< realdds::dds_stream_server > > get_supported_strea
         } );
     }
     std::vector< std::shared_ptr< realdds::dds_stream_server > > servers;
-    for( auto& it : name_to_profiles )
+    for( auto & it : name_to_profiles )
     {
         auto const & stream_name = it.first;
         
@@ -85,16 +118,20 @@ std::vector< std::shared_ptr< realdds::dds_stream_server > > get_supported_strea
             continue;
         }
         std::string const & sensor_name = name_to_sensor[stream_name];
-        std::shared_ptr< realdds::dds_stream_server > server;
-        if( std::dynamic_pointer_cast<realdds::dds_video_stream_profile>( profiles.front() ) )
-            server = std::make_shared< realdds::dds_video_stream_server >( stream_name, sensor_name );
-        else
-            server = std::make_shared< realdds::dds_motion_stream_server >( stream_name, sensor_name );
+        auto server = name_to_server[stream_name];
+        if( ! server )
+        {
+            LOG_ERROR( "ignoring stream '" << stream_name << "' with no server" );
+            continue;
+        }
         server->init_profiles( profiles, default_profile_index );
         servers.push_back( server );
     }
     return servers;
 }
+
+
+#undef NAME2SERVER
 
 
 rs2::stream_profile get_required_profile( rs2::sensor sensor,
