@@ -186,24 +186,33 @@ int main(int argc, char** argv) try
 {
     CmdLine cmd("librealsense rs-enumerate-devices tool", ' ', RS2_API_VERSION_STR);
 
+    SwitchArg debug_arg( "", "debug", "Turn on LibRS debug logs" );
     SwitchArg short_view_arg("s", "short", "Provide a one-line summary of the devices");
     SwitchArg compact_view_arg("S", "compact", "Provide a short summary of the devices");
     SwitchArg show_options_arg("o", "option", "Show all the supported options per subdevice");
-    SwitchArg show_calibration_data_arg("c", "calib_data", "Show extrinsic and intrinsic of all subdevices");
+    SwitchArg show_calibration_data_arg( "c", "calib_data", "Show extrinsic and intrinsic of all subdevices" );
     SwitchArg show_defaults("d", "defaults", "Show the default streams configuration");
+    SwitchArg only_sw_arg( "", "sw-only", "Show only software devices (playback, dds, etc. -- but not USB/HID/etc.)" );
     ValueArg<string> show_playback_device_arg("p", "playback_device", "Inspect and enumerate playback device (from file)",
         false, "", "Playback device - ROSBag record full path");
+    cmd.add(debug_arg);
     cmd.add(short_view_arg);
     cmd.add(compact_view_arg);
     cmd.add(show_options_arg);
     cmd.add(show_calibration_data_arg);
+    cmd.add(only_sw_arg);
+#ifdef BUILD_WITH_DDS
+    ValueArg< int > domain_arg( "", "dds-domain", "Set the DDS domain ID", false, 0, "domain ID" );
+    cmd.add( domain_arg );
+#endif
     cmd.add(show_defaults);
     cmd.add(show_playback_device_arg);
 
     cmd.parse(argc, argv);
 
 #ifdef BUILD_EASYLOGGINGPP
-    log_to_console(RS2_LOG_SEVERITY_ERROR);
+    bool debugging = debug_arg.getValue();
+    log_to_console(debugging ? RS2_LOG_SEVERITY_DEBUG : RS2_LOG_SEVERITY_ERROR);
 #endif
 
     bool short_view = short_view_arg.getValue();
@@ -225,23 +234,27 @@ int main(int argc, char** argv) try
     }
 
     // Obtain a list of devices currently present on the system
+#ifdef BUILD_WITH_DDS
+    auto domain_id = domain_arg.getValue();
+    std::string settings = "{\"dds-domain\":" + std::to_string( domain_id ) + "}";
+    context ctx( settings.c_str() );
+    std::this_thread::sleep_for( std::chrono::seconds( 5 ) );
+#else
     context ctx;
+#endif
     rs2::device d;
     if (!playback_dev_file.empty())
         d = ctx.load_device(playback_dev_file.data());
 
-    auto devices_list = ctx.query_devices();
-    size_t device_count = devices_list.size();
-    if (!device_count)
-    {
-        cout << "No device detected. Is it plugged in?\n";
-        return EXIT_SUCCESS;
-    }
+    int mask = RS2_PRODUCT_LINE_ANY_INTEL;
+    if( only_sw_arg.getValue() )
+        mask |= RS2_PRODUCT_LINE_SW_ONLY;
+    auto devices_list = ctx.query_devices( mask );
 
     // Retrieve the viable devices
     std::vector<rs2::device> devices;
 
-    for ( auto i = 0u; i < device_count; i++)
+    for ( auto i = 0u; i < devices_list.size(); i++)
     {
         try
         {
@@ -258,6 +271,13 @@ int main(int argc, char** argv) try
         }
     }
 
+    size_t device_count = devices.size();
+    if( !device_count )
+    {
+        cout << "No device detected. Is it plugged in?\n";
+        return EXIT_SUCCESS;
+    }
+
     if (short_view || compact_view)
     {
         cout << left << setw(30) << "Device Name"
@@ -265,13 +285,20 @@ int main(int argc, char** argv) try
             << setw(20) << "Firmware Version"
             << endl;
 
+        auto dev_info = []( rs2::device dev, rs2_camera_info info )
+        {
+            if( dev.supports( info ) )
+                return dev.get_info( info );
+            return "N/A";
+        };
+
         for (auto i = 0u; i < devices.size(); ++i)
         {
             auto dev = devices[i];
 
-            cout << left << setw(30) << dev.get_info(RS2_CAMERA_INFO_NAME)
-                << setw(20) << dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER)
-                << setw(20) << dev.get_info(RS2_CAMERA_INFO_FIRMWARE_VERSION)
+            cout << left << setw(30) << dev_info(dev,RS2_CAMERA_INFO_NAME)
+                << setw(20) << dev_info(dev,RS2_CAMERA_INFO_SERIAL_NUMBER)
+                << setw(20) << dev_info(dev,RS2_CAMERA_INFO_FIRMWARE_VERSION)
                 << endl;
         }
 

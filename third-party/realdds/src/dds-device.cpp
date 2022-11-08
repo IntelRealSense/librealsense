@@ -121,6 +121,8 @@ size_t dds_device::foreach_stream( std::function< void( std::shared_ptr< dds_str
 
 void dds_device::open( const dds_stream_profiles & profiles )
 {
+    if( profiles.empty() )
+        DDS_THROW( runtime_error, "must provide at least one profile" );
     using nlohmann::json;
     auto stream_profiles = json();
     for( auto & profile : profiles )
@@ -141,6 +143,8 @@ void dds_device::open( const dds_stream_profiles & profiles )
 
 void dds_device::close( dds_streams const & streams )
 {
+    if( streams.empty() )
+        DDS_THROW( runtime_error, "must provide at least one stream" );
     using nlohmann::json;
     auto stream_names = json::array();
     for( auto & stream : streams )

@@ -57,12 +57,11 @@ public:
     virtual ~dds_stream_profile() {}
 
 protected:
-    dds_stream_profile( dds_stream_format format, int16_t frequency )
+    dds_stream_profile( int16_t frequency, dds_stream_format format )
         : _format( format )
         , _frequency( frequency )
     {
     }
-    dds_stream_profile( dds_stream_profile && ) = default;
     dds_stream_profile( nlohmann::json const &, int & index );
 
 public:
@@ -108,14 +107,13 @@ class dds_video_stream_profile : public dds_stream_profile
     uint16_t _height;  // Resolution height [pixels]
 
 public:
-    dds_video_stream_profile( dds_stream_format format, int16_t frequency, uint16_t width, uint16_t height )
-        : super( format, frequency )
+    dds_video_stream_profile( int16_t frequency, dds_stream_format format, uint16_t width, uint16_t height )
+        : super( frequency, format )
         , _width( width )
         , _height( height )
     {
     }
     dds_video_stream_profile( nlohmann::json const &, int & index );
-    dds_video_stream_profile( dds_video_stream_profile && ) = default;
 
     uint16_t width() const { return _width; }
     uint16_t height() const { return _height; }
@@ -131,15 +129,14 @@ class dds_motion_stream_profile : public dds_stream_profile
     typedef dds_stream_profile super;
 
 public:
-    dds_motion_stream_profile( dds_stream_format format, int16_t frequency )
-        : super( format, frequency )
+    dds_motion_stream_profile( int16_t frequency, dds_stream_format format )
+        : super( frequency, format )
     {
     }
     dds_motion_stream_profile( nlohmann::json const & j, int & index )
         : super( j, index )
     {
     }
-    dds_motion_stream_profile( dds_motion_stream_profile && ) = default;
 };
 
 

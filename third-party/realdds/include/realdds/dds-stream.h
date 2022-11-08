@@ -40,11 +40,59 @@ class dds_video_stream : public dds_stream
 public:
     dds_video_stream( std::string const & stream_name, std::string const & sensor_name );
 
-    char const * type_string() const override { return "video"; }
-
 private:
     class impl;
     std::shared_ptr< impl > _impl;
+};
+
+class dds_depth_stream : public dds_video_stream
+{
+    typedef dds_video_stream super;
+
+public:
+    dds_depth_stream( std::string const & stream_name, std::string const & sensor_name );
+
+    char const * type_string() const override { return "depth"; }
+};
+
+class dds_ir_stream : public dds_video_stream
+{
+    typedef dds_video_stream super;
+
+public:
+    dds_ir_stream( std::string const & stream_name, std::string const & sensor_name );
+
+    char const * type_string() const override { return "ir"; }
+};
+
+class dds_color_stream : public dds_video_stream
+{
+    typedef dds_video_stream super;
+
+public:
+    dds_color_stream( std::string const & stream_name, std::string const & sensor_name );
+
+    char const * type_string() const override { return "color"; }
+};
+
+class dds_fisheye_stream : public dds_video_stream
+{
+    typedef dds_video_stream super;
+
+public:
+    dds_fisheye_stream( std::string const & stream_name, std::string const & sensor_name );
+
+    char const * type_string() const override { return "fisheye"; }
+};
+
+class dds_confidence_stream : public dds_video_stream
+{
+    typedef dds_video_stream super;
+
+public:
+    dds_confidence_stream( std::string const & stream_name, std::string const & sensor_name );
+
+    char const * type_string() const override { return "confidence"; }
 };
 
 class dds_motion_stream : public dds_stream
@@ -54,11 +102,39 @@ class dds_motion_stream : public dds_stream
 public:
     dds_motion_stream( std::string const & stream_name, std::string const & sensor_name );
 
-    char const * type_string() const override { return "motion"; }
-
 private:
     class impl;
     std::shared_ptr< impl > _impl;
+};
+
+class dds_accel_stream : public dds_motion_stream
+{
+    typedef dds_motion_stream super;
+
+public:
+    dds_accel_stream( std::string const & stream_name, std::string const & sensor_name );
+
+    char const * type_string() const override { return "accel"; }
+};
+
+class dds_gyro_stream : public dds_motion_stream
+{
+    typedef dds_motion_stream super;
+
+public:
+    dds_gyro_stream( std::string const & stream_name, std::string const & sensor_name );
+
+    char const * type_string() const override { return "gyro"; }
+};
+
+class dds_pose_stream : public dds_motion_stream
+{
+    typedef dds_motion_stream super;
+
+public:
+    dds_pose_stream( std::string const & stream_name, std::string const & sensor_name );
+
+    char const * type_string() const override { return "pose"; }
 };
 
 
