@@ -6365,7 +6365,7 @@ namespace rs2
             else if(dev.supports(RS2_CAMERA_INFO_PRODUCT_ID))
             {
                 std::string device_pid = dev.get_info(RS2_CAMERA_INFO_PRODUCT_ID);
-                if(device_pid == "0xabcd")// Specific for D457
+                if(device_pid == "abcd")// Specific for D457
                 {
                     ss.str( "" );
                     ss << "GMSL ";
