@@ -62,7 +62,6 @@ protected:
         , _frequency( frequency )
     {
     }
-    dds_stream_profile( dds_stream_profile && ) = default;
     dds_stream_profile( nlohmann::json const &, int & index );
 
 public:
@@ -115,7 +114,6 @@ public:
     {
     }
     dds_video_stream_profile( nlohmann::json const &, int & index );
-    dds_video_stream_profile( dds_video_stream_profile && ) = default;
 
     uint16_t width() const { return _width; }
     uint16_t height() const { return _height; }
@@ -139,7 +137,6 @@ public:
         : super( j, index )
     {
     }
-    dds_motion_stream_profile( dds_motion_stream_profile && ) = default;
 };
 
 

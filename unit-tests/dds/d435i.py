@@ -13,7 +13,7 @@ device_info.topic_root = "realdds/D435I/" + device_info.serial
 
 
 def accel_stream():
-    stream = dds.motion_stream_server( "Accel", "Motion Module" )
+    stream = dds.accel_stream_server( "Accel", "Motion Module" )
     profiles = [
         dds.motion_stream_profile( 200, dds.stream_format("MXYZ") ),
         dds.motion_stream_profile( 100, dds.stream_format("MXYZ") )
@@ -23,7 +23,7 @@ def accel_stream():
 
 
 def gyro_stream():
-    stream = dds.motion_stream_server( "Gyro", "Motion Module" )
+    stream = dds.gyro_stream_server( "Gyro", "Motion Module" )
     profiles = [
         dds.motion_stream_profile( 400, dds.stream_format("MXYZ") ),
         dds.motion_stream_profile( 200, dds.stream_format("MXYZ") )
@@ -33,7 +33,7 @@ def gyro_stream():
 
 
 def depth_stream():
-    stream = dds.video_stream_server( "Depth", "Stereo Module" )
+    stream = dds.depth_stream_server( "Depth", "Stereo Module" )
     profiles = [
         dds.video_stream_profile( 30, dds.stream_format("Z16"), 1280,720 ),
         dds.video_stream_profile( 15, dds.stream_format("Z16"), 1280,720 ),
@@ -73,7 +73,7 @@ def depth_stream():
 
 
 def ir_stream( number ):
-    stream = dds.video_stream_server( "Infrared " + str(number), "Stereo Module" )
+    stream = dds.ir_stream_server( "Infrared " + str(number), "Stereo Module" )
     profiles = [
         dds.video_stream_profile( 30, dds.stream_format("GREY"), 1280,800 ),
         dds.video_stream_profile( 25, dds.stream_format("Y16"), 1280,800 ),
@@ -117,7 +117,7 @@ def ir_stream( number ):
 
 
 def color_stream():
-    stream = dds.video_stream_server( "Color",  "RGB Camera" )
+    stream = dds.color_stream_server( "Color",  "RGB Camera" )
     profiles = [
         dds.video_stream_profile( 30, dds.stream_format("RGB8"), 1920,1080 ),
         dds.video_stream_profile( 30, dds.stream_format("BYR2"), 1920,1080 ),

@@ -155,20 +155,26 @@ bool dds_device::impl::init()
                     auto sensor_name = utilities::json::get< std::string >( j, "sensor-name" );
                     auto default_profile_index = utilities::json::get< int >( j, "default-profile-index" );
                     dds_stream_profiles profiles;
-                    if( stream_type == "video" )
-                    {
-                        for( auto & profile : j["profiles"] )
-                            profiles.push_back( dds_stream_profile::from_json< dds_video_stream_profile >( profile ) );
-                        stream = std::make_shared< dds_video_stream >( stream_name, sensor_name );
-                    }
-                    else if( stream_type == "motion" )
-                    {
-                        for( auto & profile : j["profiles"] )
-                            profiles.push_back( dds_stream_profile::from_json< dds_motion_stream_profile >( profile ) );
-                        stream = std::make_shared< dds_motion_stream >( stream_name, sensor_name );
-                    }
-                    else
+
+#define TYPE2STREAM( S, P )                                                                                            \
+    if( stream_type == #S )                                                                                            \
+    {                                                                                                                  \
+        for( auto & profile : j["profiles"] )                                                                          \
+            profiles.push_back( dds_stream_profile::from_json< dds_##P##_stream_profile >( profile ) );                \
+        stream = std::make_shared< dds_##S##_stream >( stream_name, sensor_name );                                     \
+    }                                                                                                                  \
+    else
+
+                    TYPE2STREAM( depth, video )
+                    TYPE2STREAM( ir, video )
+                    TYPE2STREAM( color, video )
+                    TYPE2STREAM( accel, motion )
+                    TYPE2STREAM( gyro, motion )
+                    TYPE2STREAM( fisheye, video )
+                    TYPE2STREAM( confidence, video )
+                    TYPE2STREAM( pose, motion )
                         DDS_THROW( runtime_error, "stream '" + stream_name + "' is of unknown type '" + stream_type + "'" );
+
                     if( default_profile_index < 0 || default_profile_index >= profiles.size() )
                         DDS_THROW( runtime_error,
                                    "stream '" + stream_name + "' default profile index "
