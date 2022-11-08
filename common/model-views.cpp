@@ -6362,6 +6362,16 @@ namespace rs2
                 ImGui::PopStyleColor();
                 ImGui::PopFont();
             }
+            else if(dev.supports(RS2_CAMERA_INFO_PRODUCT_ID))
+            {
+                std::string device_pid = dev.get_info(RS2_CAMERA_INFO_PRODUCT_ID);
+                if(device_pid == "0xabcd")// Specific for D457
+                {
+                    ss.str( "" );
+                    ss << "GMSL ";
+                    ImGui::Text(" %s", ss.str().c_str());
+                }
+            }
         }
 
         //ImGui::Text(" %s", dev.get_info(RS2_CAMERA_INFO_NAME));
