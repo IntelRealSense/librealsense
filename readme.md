@@ -18,14 +18,13 @@ Information about the Intel® RealSense™ technology at [www.intelrealsense.com
 
 ## Special notice from Intel® RealSense™ regarding the recent press announcement
 
-Intel has decided to wind down the RealSense business and is announcing the EOL of LiDAR, Facial Authentication, and Tracking product lines this month. Intel will continue to provide Stereo products to its current distribution customers.  Intel will focus our new development on advancing innovative technologies that better support our core businesses and IDM 2.0 strategy.
-The products identified in this notification will be discontinued and unavailable for additional orders after Feb 28, 2022.
+Intel has decided to wind down the RealSense business and is announcing the EOL of LiDAR, Facial Authentication, and Tracking product lines this month. Intel will continue to provide Stereo products to its current distribution customers. The products identified in this notification will be discontinued and unavailable for additional orders after Feb 28, 2022.
 
 The following Stereo Product Lines WILL continue to be supported: D410, D415, D430, D450 modules and D415, D435, D435i, D455 depth cameras. 
 
 We will also continue the work to support and develop our LibRealSense open source SDK.
 
-In the coming future Intel and the RealSense team will focus our new development on advancing innovative technologies that better support our core businesses and IDM 2.0 strategy.
+> In the coming future Intel and the RealSense team will focus our new development on advancing innovative technologies that better support our core businesses and [IDM 2.0 strategy](https://www.intel.com/content/www/us/en/newsroom/news/idm-manufacturing-innovation-product-leadership.html#gs.s97of1).
 
 ## Building librealsense - Using vcpkg
 
