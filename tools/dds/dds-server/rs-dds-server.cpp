@@ -195,35 +195,64 @@ void start_streaming( std::shared_ptr< tools::lrs_device_controller > lrs_device
     } );
 }
 
+rs2_stream to_rs2_stream_type( std::string const & type_string )
+{
+    static const std::map< std::string, rs2_stream > type_to_rs2 = {
+        { "depth", RS2_STREAM_DEPTH },
+        { "color", RS2_STREAM_COLOR },
+        { "ir", RS2_STREAM_INFRARED },
+        { "fisheye", RS2_STREAM_FISHEYE },
+        { "gyro", RS2_STREAM_GYRO },
+        { "accel", RS2_STREAM_ACCEL },
+        { "gpio", RS2_STREAM_GPIO },
+        { "pose", RS2_STREAM_POSE },
+        { "confidence", RS2_STREAM_CONFIDENCE },
+    };
+    auto it = type_to_rs2.find( type_string );
+    if ( it == type_to_rs2.end() )
+    {
+        LOG_ERROR( "Unknown stream type '" << type_string << "'" );
+        return RS2_STREAM_ANY;
+    }
+    return it->second;
+}
+
 void open_streams_callback( const json & msg, dds_device_server * dds_dev_server )
 {
     auto msg_profiles = msg["stream-profiles"];
-    dds_stream_profiles stream_profiles;
 
     std::vector< rs2::stream_profile > rs_profiles_to_open;
     std::vector< std::pair < std::string, image_header > > realdds_streams_to_start;
 
-    //Find requested sensor
     rs2::context ctx;
     auto sensors = ctx.query_all_sensors();
     size_t sensor_index = 0;
-    std::string sensor_name( "RGB Camera" ); //TODO - add sensor_name to open_msg and find sensor
-    for ( ; sensor_index < sensors.size(); ++sensor_index )
+    for ( auto it = msg_profiles.begin(); it != msg_profiles.end(); ++it )
     {
-        if ( sensor_name.compare( sensors[sensor_index].get_info( RS2_CAMERA_INFO_NAME ) ) == 0 )
-            break; //Found the requested sensor
-    }
-    if( sensor_index == sensors.size() )
-        throw std::runtime_error( "Could not find sensor to open streams for" );
+        //To get actual rs2::stream_profile to open we need to pass an rs2::sensor to `get_required_profile`.
+        //For every profile to open we will iterate over all the sensors, if a sensor have a profile with a name
+        //corresponding to the requested, we have found our sensor.
+        bool found = false;
+        std::string requested_stream_name = it.key();
+        for ( ; ! found && sensor_index < sensors.size(); ++sensor_index )
+        {
+            for ( auto & profile : sensors[sensor_index].get_stream_profiles() )
+            {
+                if ( profile.stream_name() == requested_stream_name )
+                {
+                    found = true;
+                    break;
+                }
+            }
+        }
 
-    //Find requested profiles
-    for ( auto it = msg_profiles.begin(); it != msg_profiles.end(); ++it)
-    {
-        std::string stream_name = it.key();
-        auto dds_profile = dds_stream_profile::from_json< dds_video_stream_profile >( it.value() );
+        if ( sensor_index == sensors.size() )
+            throw std::runtime_error( "Could not find sensor to open streams for" );
 
+        //Now that we have the sensor get the rs2::stream_profile
+        auto dds_profile = dds_stream_profile::from_json< dds_video_stream_profile >( it.value() ); //TODO - motion...
         auto rs2_profile = get_required_profile( sensors[sensor_index],
-                                                 RS2_STREAM_COLOR, //Get rs2_stream type from stream name
+                                                 to_rs2_stream_type( dds_profile->stream()->type_string() ),
                                                  dds_profile->frequency(),
                                                  static_cast< rs2_format >( dds_profile->format().to_rs2() ),
                                                  dds_profile->width(),
@@ -231,10 +260,11 @@ void open_streams_callback( const json & msg, dds_device_server * dds_dev_server
         rs_profiles_to_open.push_back( rs2_profile );
 
         realdds::image_header header = { dds_profile->format().to_rs2(), dds_profile->width(), dds_profile->height() };
-        realdds_streams_to_start.push_back( std::make_pair( stream_name, header ) );
+        realdds_streams_to_start.push_back( std::make_pair( requested_stream_name, header ) );
     }
 
     //Start streaming
+    //TODO - currently assumes all streams are from one sensor. Add support for multiple sensors
     dds_dev_server->start_streaming( realdds_streams_to_start );
     sensors[sensor_index].open( rs_profiles_to_open );
     sensors[sensor_index].start( [&]( rs2::frame f ) {
