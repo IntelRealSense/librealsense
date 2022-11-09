@@ -136,33 +136,8 @@ std::vector< std::shared_ptr< realdds::dds_stream_server > > get_supported_strea
     return servers;
 }
 
-
 #undef NAME2SERVER
 
-
-rs2::stream_profile get_required_profile( rs2::sensor sensor,
-                                          const rs2_stream stream,
-                                          const int fps,
-                                          rs2_format const format,
-                                          const int width,
-                                          const int height )
-{
-    auto sensor_stream_profiles = sensor.get_stream_profiles();
-    auto found_profiles = std::find_if( sensor_stream_profiles.begin(),
-                                        sensor_stream_profiles.end(),
-                                        [&]( rs2::stream_profile sp ) {
-                                            auto vp = sp.as< rs2::video_stream_profile >();
-                                            return sp.stream_type() == stream && sp.fps() == fps
-                                                && sp.format() == format && vp.width() == width
-                                                && vp.height() == height;
-                                        } );
-    if( found_profiles == sensor_stream_profiles.end() )
-    {
-        throw std::runtime_error( "Could not find required profile" );
-    }
-
-    return *found_profiles;
-}
     
 void start_streaming( std::shared_ptr< tools::lrs_device_controller > lrs_device_controller,
                       std::shared_ptr< dds_device_server > dds_dev_server,
@@ -195,18 +170,20 @@ void start_streaming( std::shared_ptr< tools::lrs_device_controller > lrs_device
     } );
 }
 
-rs2_stream to_rs2_stream_type( std::string const & type_string )
+rs2_stream stream_name_to_type( std::string const & type_string )
 {
     static const std::map< std::string, rs2_stream > type_to_rs2 = {
-        { "depth", RS2_STREAM_DEPTH },
-        { "color", RS2_STREAM_COLOR },
-        { "ir", RS2_STREAM_INFRARED },
-        { "fisheye", RS2_STREAM_FISHEYE },
-        { "gyro", RS2_STREAM_GYRO },
-        { "accel", RS2_STREAM_ACCEL },
-        { "gpio", RS2_STREAM_GPIO },
-        { "pose", RS2_STREAM_POSE },
-        { "confidence", RS2_STREAM_CONFIDENCE },
+        { "Depth", RS2_STREAM_DEPTH },
+        { "Color", RS2_STREAM_COLOR },
+        { "Infrared", RS2_STREAM_INFRARED },
+        { "Infrared 1", RS2_STREAM_INFRARED },
+        { "Infrared 2", RS2_STREAM_INFRARED },
+        { "Fisheye", RS2_STREAM_FISHEYE },
+        { "Gyro", RS2_STREAM_GYRO },
+        { "Accel", RS2_STREAM_ACCEL },
+        { "Gpio", RS2_STREAM_GPIO },
+        { "Pose", RS2_STREAM_POSE },
+        { "Confidence", RS2_STREAM_CONFIDENCE },
     };
     auto it = type_to_rs2.find( type_string );
     if ( it == type_to_rs2.end() )
@@ -215,6 +192,68 @@ rs2_stream to_rs2_stream_type( std::string const & type_string )
         return RS2_STREAM_ANY;
     }
     return it->second;
+}
+
+int stream_name_to_index( std::string const & type_string )
+{
+    int index = 0;
+    static const std::map< std::string, int > type_to_index = {
+        { "Infrared 1", 1 },
+        { "Infrared 2", 2 },
+    };
+    auto it = type_to_index.find( type_string );
+    if ( it != type_to_index.end() )
+    {
+        index = it->second;
+    }
+
+    return index;
+}
+
+std::shared_ptr< dds_stream_profile > create_dds_stream_profile( rs2_stream type, nlohmann::json const & j )
+{
+    switch ( type )
+    {
+    case RS2_STREAM_DEPTH:
+    case RS2_STREAM_COLOR:
+    case RS2_STREAM_INFRARED:
+    case RS2_STREAM_FISHEYE:
+    case RS2_STREAM_CONFIDENCE:
+        return std::dynamic_pointer_cast< dds_stream_profile >( dds_stream_profile::from_json< dds_video_stream_profile>( j ) );
+    case RS2_STREAM_GYRO:
+    case RS2_STREAM_ACCEL:
+    case RS2_STREAM_POSE:
+        return std::dynamic_pointer_cast< dds_stream_profile >( dds_stream_profile::from_json< dds_motion_stream_profile >( j ) );
+    }
+
+    throw std::runtime_error( "Unsupported stream type" );
+}
+
+rs2::stream_profile get_required_profile( rs2::sensor sensor,
+    std::string stream_name,
+    std::shared_ptr< dds_stream_profile > profile )
+{
+    auto sensor_stream_profiles = sensor.get_stream_profiles();
+    auto profile_iter = std::find_if( sensor_stream_profiles.begin(),
+        sensor_stream_profiles.end(),
+        [&]( rs2::stream_profile sp ) {
+            auto vp = sp.as< rs2::video_stream_profile >();
+            auto dds_vp = std::dynamic_pointer_cast< dds_video_stream_profile >( profile );
+            bool video_params = true;
+            if ( vp && dds_vp )
+                video_params = vp.width() == dds_vp->width() && vp.height() == dds_vp->height();
+            return sp.stream_type() == stream_name_to_type( stream_name )
+                && sp.stream_index() == stream_name_to_index( stream_name )
+                && sp.fps() == profile->frequency()
+                && sp.format() == profile->format().to_rs2()
+                && video_params;
+        } );
+    if ( profile_iter == sensor_stream_profiles.end() )
+    {
+        throw std::runtime_error( "Could not find required profile" );
+    }
+
+    return *profile_iter;
 }
 
 void open_streams_callback( const json & msg, dds_device_server * dds_dev_server )
@@ -234,7 +273,7 @@ void open_streams_callback( const json & msg, dds_device_server * dds_dev_server
         //corresponding to the requested, we have found our sensor.
         bool found = false;
         std::string requested_stream_name = it.key();
-        for ( ; ! found && sensor_index < sensors.size(); ++sensor_index )
+        for ( ; sensor_index < sensors.size(); ++sensor_index )
         {
             for ( auto & profile : sensors[sensor_index].get_stream_profiles() )
             {
@@ -244,22 +283,23 @@ void open_streams_callback( const json & msg, dds_device_server * dds_dev_server
                     break;
                 }
             }
+
+            if ( found )
+                break;
         }
 
         if ( sensor_index == sensors.size() )
             throw std::runtime_error( "Could not find sensor to open streams for" );
 
         //Now that we have the sensor get the rs2::stream_profile
-        auto dds_profile = dds_stream_profile::from_json< dds_video_stream_profile >( it.value() ); //TODO - motion...
+        auto dds_profile = create_dds_stream_profile( stream_name_to_type( requested_stream_name ), it.value() );
         auto rs2_profile = get_required_profile( sensors[sensor_index],
-                                                 to_rs2_stream_type( dds_profile->stream()->type_string() ),
-                                                 dds_profile->frequency(),
-                                                 static_cast< rs2_format >( dds_profile->format().to_rs2() ),
-                                                 dds_profile->width(),
-                                                 dds_profile->height() );
+                                                 requested_stream_name,
+                                                 dds_profile );
         rs_profiles_to_open.push_back( rs2_profile );
 
-        realdds::image_header header = { dds_profile->format().to_rs2(), dds_profile->width(), dds_profile->height() };
+        auto dds_vp = std::dynamic_pointer_cast< dds_video_stream_profile >( dds_profile );
+        realdds::image_header header = { dds_profile->format().to_rs2(), dds_vp ? dds_vp->width() : 0, dds_vp ? dds_vp->height() : 0 };
         realdds_streams_to_start.push_back( std::make_pair( requested_stream_name, header ) );
     }
 
@@ -268,7 +308,7 @@ void open_streams_callback( const json & msg, dds_device_server * dds_dev_server
     dds_dev_server->start_streaming( realdds_streams_to_start );
     sensors[sensor_index].open( rs_profiles_to_open );
     sensors[sensor_index].start( [&]( rs2::frame f ) {
-        dds_dev_server->publish_image( f.get_profile().stream_name(), static_cast< const uint8_t * >( f.get_data() ), f.get_data_size() );
+        //dds_dev_server->publish_image( f.get_profile().stream_name(), static_cast< const uint8_t * >( f.get_data() ), f.get_data_size() );
     } );
     std::cout << realdds_streams_to_start[0].first << " stream started" << std::endl;
 }
@@ -414,17 +454,6 @@ try
 
             // Keep a pair of device controller and server per RS device
             device_handlers_list.emplace( dev, device_handler{ dev_info, dds_device_server, lrs_device_controller } );
-
-            //// Get the desired stream profile
-            //auto profile = get_required_profile( dev.first< rs2::color_sensor >(),
-            //                                     RS2_STREAM_COLOR,
-            //                                     30,
-            //                                     RS2_FORMAT_RGB8,
-            //                                     1280,
-            //                                     720 );
-
-            //// Start streaming 
-            //start_streaming( lrs_device_controller, dds_device_server, profile );
         },
         // Handle a device disconnection
         [&]( rs2::device dev ) {
