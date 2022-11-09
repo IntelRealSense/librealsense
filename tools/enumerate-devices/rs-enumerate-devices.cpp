@@ -11,6 +11,9 @@
 #include <limits>
 #include <thread>
 
+#include <third-party/json.hpp>
+using nlohmann::json;
+
 #include "tclap/CmdLine.h"
 
 using namespace std;
@@ -237,14 +240,12 @@ int main(int argc, char** argv) try
     }
 
     // Obtain a list of devices currently present on the system
+    json settings;
 #ifdef BUILD_WITH_DDS
-    auto domain_id = domain_arg.getValue();
-    std::string settings = "{\"dds-domain\":" + std::to_string( domain_id ) + "}";
-    context ctx( settings.c_str() );
-    std::this_thread::sleep_for( std::chrono::seconds( 5 ) );
-#else
-    context ctx;
+    settings["dds-domain"] = domain_arg.getValue();
 #endif
+    context ctx( settings.dump() );
+    
     rs2::device d;
     if (!playback_dev_file.empty())
         d = ctx.load_device(playback_dev_file.data());
@@ -253,6 +254,19 @@ int main(int argc, char** argv) try
     if( only_sw_arg.getValue() )
         mask |= RS2_PRODUCT_LINE_SW_ONLY;
     auto devices_list = ctx.query_devices( mask );
+    if( only_sw_arg.getValue() )
+    {
+        // For SW-only devices, allow some time for DDS devices to connect
+        int tries = 3;
+        cout << "No device detected. Waiting..." << flush;
+        while( ! devices_list.size() && tries-- )
+        {
+            cout << "." << flush;
+            std::this_thread::sleep_for( std::chrono::seconds( 1 ) );
+            devices_list = ctx.query_devices( mask );
+        }
+        cout << endl;
+    }
 
     // Retrieve the viable devices
     std::vector<rs2::device> devices;
