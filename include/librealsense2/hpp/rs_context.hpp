@@ -104,6 +104,10 @@ namespace rs2
                 rs2_delete_context);
             error::handle(e);
         }
+        context( std::string const & json_settings )
+            : context( json_settings.c_str() )
+        {
+        }
 
         /**
         * create a static snapshot of all connected devices at the time of the call
