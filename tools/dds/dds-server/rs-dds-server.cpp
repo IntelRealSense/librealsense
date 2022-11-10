@@ -32,6 +32,10 @@ using nlohmann::json;
 using namespace TCLAP;
 using namespace realdds;
 
+//Pointer to the context created in main, for access from other functions
+//Need to create a context only once or new context will create a dds_device_watcher and discover
+//devices we published as new DDS devices
+rs2::context * main_ctx = nullptr;
 
 #define NAME2SERVER( X )                                                                                               \
     if( server )                                                                                                       \
@@ -263,8 +267,9 @@ void open_streams_callback( const json & msg, dds_device_server * dds_dev_server
     std::vector< rs2::stream_profile > rs_profiles_to_open;
     std::vector< std::pair < std::string, image_header > > realdds_streams_to_start;
 
-    rs2::context ctx;
-    auto sensors = ctx.query_all_sensors();
+    if ( !main_ctx )
+        throw std::runtime_error( "No context available" );
+    auto sensors = main_ctx->query_all_sensors();
     size_t sensor_index = 0;
     for ( auto it = msg_profiles.begin(); it != msg_profiles.end(); ++it )
     {
@@ -308,7 +313,7 @@ void open_streams_callback( const json & msg, dds_device_server * dds_dev_server
     dds_dev_server->start_streaming( realdds_streams_to_start );
     sensors[sensor_index].open( rs_profiles_to_open );
     sensors[sensor_index].start( [&]( rs2::frame f ) {
-        //dds_dev_server->publish_image( f.get_profile().stream_name(), static_cast< const uint8_t * >( f.get_data() ), f.get_data_size() );
+        dds_dev_server->publish_image( f.get_profile().stream_name(), static_cast< const uint8_t * >( f.get_data() ), f.get_data_size() );
     } );
     std::cout << realdds_streams_to_start[0].first << " stream started" << std::endl;
 }
@@ -425,6 +430,7 @@ try
     rs2::context ctx( "{"
         "\"dds-discovery\" : false"
         "}" );
+    main_ctx = &ctx;
 
     // Run the LRS device watcher
     tools::lrs_device_watcher dev_watcher( ctx );
