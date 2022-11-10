@@ -26,6 +26,7 @@ struct image_header
     int width = -1;
 
     bool is_valid() const { return width != -1 && height != -1; }
+    void invalidate() { width = -1; height = -1; }
 };
 
 

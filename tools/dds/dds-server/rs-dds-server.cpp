@@ -237,6 +237,7 @@ void open_streams_callback( const json & msg, dds_device_server * dds_dev_server
 
     if ( !main_ctx )
         throw std::runtime_error( "No context available" );
+
     auto sensors = main_ctx->query_all_sensors();
     size_t sensor_index = 0;
     for ( auto it = msg_profiles.begin(); it != msg_profiles.end(); ++it )
@@ -289,6 +290,44 @@ void open_streams_callback( const json & msg, dds_device_server * dds_dev_server
     std::cout << realdds_streams_to_start[0].first << " stream started" << std::endl;
 }
 
+void close_streams_callback( const json & msg, dds_device_server * dds_dev_server )
+{
+    auto stream_names = msg["stream-names"];
+
+    if ( !main_ctx )
+        throw std::runtime_error( "No context available" );
+
+    auto sensors = main_ctx->query_all_sensors();
+    size_t sensor_index = 0;
+    for ( std::string requested_stream_name : stream_names )
+    {
+        //Find sensor to close
+        bool found = false;
+        for ( ; sensor_index < sensors.size(); ++sensor_index )
+        {
+            for ( auto & profile : sensors[sensor_index].get_stream_profiles() )
+            {
+                if ( profile.stream_name() == requested_stream_name )
+                {
+                    found = true;
+                    break;
+                }
+            }
+
+            if ( found )
+                break;
+        }
+
+        if ( sensor_index == sensors.size() )
+            throw std::runtime_error( "Could not find sensor to open streams for" );
+    }
+
+    //Stop streaming
+    //TODO - currently assumes all streams are from one sensor. Add support for multiple sensors
+    sensors[sensor_index].close();
+    dds_dev_server->stop_streaming( stream_names );
+    std::cout << sensors[sensor_index].get_info(RS2_CAMERA_INFO_NAME) << " closed. Streams requested to stop: " << stream_names << std::endl;
+}
 
 std::string get_topic_root( topics::device_info const & dev_info )
 {
@@ -418,6 +457,7 @@ try
             auto dds_device_server
                 = std::make_shared< realdds::dds_device_server >( participant, dev_info.topic_root );
             dds_device_server->on_open_streams( open_streams_callback );
+            dds_device_server->on_close_streams( close_streams_callback );
 
             // Create a supported streams list for initializing the relevant DDS topics
             auto supported_streams = get_supported_streams( dev );

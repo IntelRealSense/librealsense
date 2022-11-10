@@ -153,6 +153,10 @@ void dds_stream_server::start_streaming( const image_header & header )
     _image_header = header;
 }
 
+void dds_stream_server::stop_streaming()
+{
+    _image_header.invalidate();
+}
 
 void dds_stream_server::publish_image( const uint8_t * data, size_t size )
 {

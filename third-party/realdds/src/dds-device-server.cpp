@@ -59,6 +59,19 @@ void dds_device_server::start_streaming( const std::vector< std::pair < std::str
 }
 
 
+void dds_device_server::stop_streaming( const std::vector< std::string > & stream_to_close )
+{
+    for ( auto & stream_name : stream_to_close )
+    {
+        auto it = _stream_name_to_server.find( stream_name );
+        if ( it == _stream_name_to_server.end() )
+            DDS_THROW( runtime_error, "stream '" + stream_name + "' does not exist" );
+        auto & stream = it->second;
+        stream->stop_streaming();
+    }
+}
+
+
 void dds_device_server::publish_image( const std::string & stream_name, const uint8_t * data, size_t size )
 {
     auto it = _stream_name_to_server.find( stream_name );
@@ -182,4 +195,10 @@ void dds_device_server::handle_control_message( topics::flexible_msg control_mes
         if ( _open_streams_callback )
             _open_streams_callback( j, this );
     }
+    else if( id.compare( "close-streams" ) == 0 )
+    {
+        if ( _close_streams_callback )
+            _close_streams_callback( j, this );
+    }
+
 }

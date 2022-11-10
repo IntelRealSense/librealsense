@@ -62,13 +62,15 @@ public:
     bool is_valid() const { return( nullptr != _notification_server.get() ); }
     bool operator!() const { return ! is_valid(); }
 
-    void start_streaming( const std::vector< std::pair < std::string, image_header > > &); //< stream_name, header > pairs
-    
+    void start_streaming( const std::vector< std::pair < std::string, image_header > > & ); //< stream_name, header > pairs
+    void stop_streaming( const std::vector< std::string > & stream_to_close );
+
     void publish_image( const std::string & stream_name, const uint8_t * data, size_t size );
     void publish_notification( topics::flexible_msg && );
     
-    typedef std::function< void( nlohmann::json msg, dds_device_server * server ) > open_streams_callback;
-    void on_open_streams( open_streams_callback callback ) { _open_streams_callback = std::move( callback ); }
+    typedef std::function< void( nlohmann::json msg, dds_device_server * server ) > control_callback;
+    void on_open_streams( control_callback callback ) { _open_streams_callback = std::move( callback ); }
+    void on_close_streams( control_callback callback ) { _close_streams_callback = std::move( callback ); }
 
 private:
     void on_control_message_received();
@@ -81,7 +83,8 @@ private:
     std::shared_ptr< dds_notification_server > _notification_server;
     std::shared_ptr< dds_topic_reader > _control_reader;
     dispatcher _control_dispatcher;
-    open_streams_callback _open_streams_callback;
+    control_callback _open_streams_callback = nullptr;
+    control_callback _close_streams_callback = nullptr;
 };  // class dds_device_server
 
 
