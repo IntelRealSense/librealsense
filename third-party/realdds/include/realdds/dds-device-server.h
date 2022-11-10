@@ -17,12 +17,11 @@ namespace realdds {
 
 // Forward declaration
 namespace topics {
-    class flexible_msg;
-    class device_info;
-
-    namespace raw {
-        class device_info;
-    }  // namespace raw
+class flexible_msg;
+class device_info;
+namespace raw {
+class device_info;
+}  // namespace raw
 }  // namespace topics
 
 
@@ -31,7 +30,6 @@ class dds_publisher;
 class dds_subscriber;
 class dds_stream_server;
 class dds_notification_server;
-//class dds_control_server;
 class dds_topic_reader;
 struct image_header;
 
@@ -74,14 +72,13 @@ public:
 
 private:
     void on_control_message_received();
-    void handle_control_message( topics::flexible_msg & control_message );
+    void handle_control_message( topics::flexible_msg control_message );
 
     std::shared_ptr< dds_publisher > _publisher;
     std::shared_ptr< dds_subscriber > _subscriber;
     std::string _topic_root;
     std::unordered_map<std::string, std::shared_ptr<dds_stream_server>> _stream_name_to_server;
     std::shared_ptr< dds_notification_server > _notification_server;
-    //std::shared_ptr< dds_control_server > _control_server;
     std::shared_ptr< dds_topic_reader > _control_reader;
     dispatcher _control_dispatcher;
     open_streams_callback _open_streams_callback;

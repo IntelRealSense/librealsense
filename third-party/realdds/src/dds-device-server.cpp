@@ -9,7 +9,6 @@
 #include <realdds/dds-stream-server.h>
 #include <realdds/dds-stream-profile.h>
 #include <realdds/dds-notification-server.h>
-//#include <realdds/dds-control-server.h>
 #include <realdds/dds-topic-reader.h>
 #include <realdds/dds-utilities.h>
 #include <realdds/topics/device-info/device-info-msg.h>
@@ -21,10 +20,7 @@
 #include <fastdds/dds/topic/Topic.hpp>
 #include <fastdds/dds/subscriber/SampleInfo.hpp>
 
-#include <third-party/json.hpp>
 using nlohmann::json;
-
-
 using namespace eprosima::fastdds::dds;
 using namespace realdds;
 
@@ -132,29 +128,29 @@ void dds_device_server::init( std::vector< std::shared_ptr< dds_stream_server > 
         }
 
         _notification_server->run();
+
+        // Create a control reader and set callback
+        auto topic = topics::flexible_msg::create_topic( _subscriber->get_participant(), _topic_root + "/control" );
+        _control_reader = std::make_shared< dds_topic_reader >( topic, _subscriber );
+
+        dds_topic_reader::qos rqos( RELIABLE_RELIABILITY_QOS );
+        rqos.history().depth = 10; // default is 1
+        // Does not allocate for every sample but still gives flexibility. See:
+        //     https://github.com/eProsima/Fast-DDS/discussions/2707
+        // (default is PREALLOCATED_MEMORY_MODE)
+        rqos.endpoint().history_memory_policy = eprosima::fastrtps::rtps::PREALLOCATED_WITH_REALLOC_MEMORY_MODE;
+
+        //_control_server->on_control_message_received( [&]() { on_control_message_received(); } );
+        _control_reader->on_data_available( [&]() { on_control_message_received(); } );
+        _control_reader->run( rqos );
     }
     catch( std::exception const & )
     {
         _notification_server.reset();
         _stream_name_to_server.clear();
+        _control_reader.reset();
         throw;
     }
-
-    // Create a control server and set callback
-    //_control_server = std::make_shared< dds_control_server >( _subscriber, _topic_root + "/control" );
-    auto topic = topics::flexible_msg::create_topic( _subscriber->get_participant(), _topic_root + "/control" );
-    _control_reader = std::make_shared< dds_topic_reader >( topic, _subscriber );
-
-    dds_topic_reader::qos rqos( RELIABLE_RELIABILITY_QOS );
-    rqos.history().depth = 10; // default is 1
-    // Does not allocate for every sample but still gives flexibility. See:
-    //     https://github.com/eProsima/Fast-DDS/discussions/2707
-    // (default is PREALLOCATED_MEMORY_MODE)
-    rqos.endpoint().history_memory_policy = eprosima::fastrtps::rtps::PREALLOCATED_WITH_REALLOC_MEMORY_MODE;
-
-    //_control_server->on_control_message_received( [&]() { on_control_message_received(); } );
-    _control_reader->on_data_available( [&]() { on_control_message_received(); } );
-    _control_reader->run( rqos );
 }
 
 
@@ -173,12 +169,11 @@ void dds_device_server::on_control_message_received()
         if ( !data.is_valid() )
             continue;
 
-        //_control_dispatcher.invoke( [&]( dispatcher::cancellable_timer ) { handle_control_message( data ); } );
-        handle_control_message( data );
+        _control_dispatcher.invoke( [&]( dispatcher::cancellable_timer ) { handle_control_message( data ); } );
     }
 }
 
-void dds_device_server::handle_control_message( topics::flexible_msg & control_message )
+void dds_device_server::handle_control_message( topics::flexible_msg control_message )
 {
     auto & j = control_message.json_data();
     auto id = j["id"].get< std::string >();
