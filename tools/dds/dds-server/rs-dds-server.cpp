@@ -142,38 +142,6 @@ std::vector< std::shared_ptr< realdds::dds_stream_server > > get_supported_strea
 
 #undef NAME2SERVER
 
-    
-void start_streaming( std::shared_ptr< tools::lrs_device_controller > lrs_device_controller,
-                      std::shared_ptr< dds_device_server > dds_dev_server,
-                      const rs2::stream_profile & stream_profile )
-{
-    // Configure DDS-server to the required frame header
-    realdds::image_header header;
-    auto vsp = stream_profile.as< rs2::video_stream_profile >();
-    header.format = static_cast< int >( vsp.format() );
-    header.height = vsp.height();
-    header.width = vsp.width();
-    std::vector< std::pair < std::string, image_header > > as_vec;
-    as_vec.push_back( std::make_pair( stream_profile.stream_name(), header ) );
-    dds_dev_server->start_streaming( as_vec );
-
-    // Start streaming
-    lrs_device_controller->start_stream( stream_profile, [&, dds_dev_server]( rs2::frame f ) {
-        auto vf = f.as< rs2::video_frame >();
-        try
-        {
-            dds_dev_server->publish_image( vf.get_profile().stream_name(),
-                                           (const uint8_t *)f.get_data(),
-                                           f.get_data_size() );
-        }
-        catch( std::exception & e )
-        {
-            LOG_ERROR( "Exception raised during DDS publish " << vf.get_profile().stream_name()
-                                                              << " frame: " << e.what() );
-        }
-    } );
-}
-
 rs2_stream stream_name_to_type( std::string const & type_string )
 {
     static const std::map< std::string, rs2_stream > type_to_rs2 = {
@@ -304,8 +272,11 @@ void open_streams_callback( const json & msg, dds_device_server * dds_dev_server
         rs_profiles_to_open.push_back( rs2_profile );
 
         auto dds_vp = std::dynamic_pointer_cast< dds_video_stream_profile >( dds_profile );
-        realdds::image_header header = { dds_profile->format().to_rs2(), dds_vp ? dds_vp->width() : 0, dds_vp ? dds_vp->height() : 0 };
-        realdds_streams_to_start.push_back( std::make_pair( requested_stream_name, header ) );
+        realdds::image_header header;
+        header.format = dds_profile->format().to_rs2();
+        header.width = dds_vp ? dds_vp->width() : 0;
+        header.height = dds_vp ? dds_vp->height() : 0;
+        realdds_streams_to_start.push_back( std::make_pair( requested_stream_name, std::move(header) ) );
     }
 
     //Start streaming

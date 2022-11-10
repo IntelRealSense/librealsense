@@ -175,7 +175,7 @@ void dds_device_server::on_control_message_received()
 
 void dds_device_server::handle_control_message( topics::flexible_msg control_message )
 {
-    auto & j = control_message.json_data();
+    auto const & j = control_message.json_data();
     auto id = j["id"].get< std::string >();
     if ( id.compare("open-streams") == 0 )
     {
