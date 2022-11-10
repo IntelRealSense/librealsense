@@ -1285,7 +1285,7 @@ namespace librealsense
                                        make_attribute_parser(&md_mipi_depth_mode::laser_power,
                                                              md_mipi_depth_control_attributes::laser_power_attribute,
                                                              md_prop_offset));
-        depth_sensor.register_metadata(RS2_FRAME_METADATA_TRIGGER,   // added for mipi
+        depth_sensor.register_metadata(RS2_FRAME_METADATA_TRIGGER,
                                        make_attribute_parser(&md_mipi_depth_mode::trigger,
                                                              md_mipi_depth_control_attributes::trigger_attribute,
                                                              md_prop_offset));
@@ -1293,7 +1293,7 @@ namespace librealsense
                                        make_attribute_parser(&md_mipi_depth_mode::projector_mode,
                                                              md_mipi_depth_control_attributes::projector_mode_attribute,
                                                              md_prop_offset));
-        depth_sensor.register_metadata(RS2_FRAME_METADATA_PRESET,    // added for mipi
+        depth_sensor.register_metadata(RS2_FRAME_METADATA_PRESET,
                                        make_attribute_parser(&md_mipi_depth_mode::preset,
                                                              md_mipi_depth_control_attributes::preset_attribute,
                                                              md_prop_offset));
@@ -1306,19 +1306,23 @@ namespace librealsense
                                        make_attribute_parser(&md_mipi_depth_mode::auto_exposure_mode,
                                                              md_mipi_depth_control_attributes::auto_exposure_mode_attribute,
                                                              md_prop_offset));
-        depth_sensor.register_metadata(RS2_FRAME_METADATA_INPUT_WIDTH, // added for mipi - use RS2_FRAME_METADATA_WIDTH (internal only) ??
+        depth_sensor.register_metadata(RS2_FRAME_METADATA_INPUT_WIDTH,
                                        make_attribute_parser(&md_mipi_depth_mode::input_width,
                                                              md_mipi_depth_control_attributes::input_width_attribute,
                                                              md_prop_offset));
-        depth_sensor.register_metadata(RS2_FRAME_METADATA_INPUT_HEIGHT, // added for mipi - use RS2_FRAME_METADATA_HEIGHT (internal only) ??
+        depth_sensor.register_metadata(RS2_FRAME_METADATA_INPUT_HEIGHT,
                                        make_attribute_parser(&md_mipi_depth_mode::input_height,
                                                              md_mipi_depth_control_attributes::input_height_attribute,
                                                              md_prop_offset));
-        depth_sensor.register_metadata(RS2_FRAME_METADATA_SUB_PRESET_INFO, // added for mipi
+        depth_sensor.register_metadata(RS2_FRAME_METADATA_SUB_PRESET_INFO,
                                        make_attribute_parser(&md_mipi_depth_mode::sub_preset_info,
                                                              md_mipi_depth_control_attributes::sub_preset_info_attribute,
                                                              md_prop_offset));
-        depth_sensor.register_metadata(RS2_FRAME_METADATA_CRC, // added for mipi
+        depth_sensor.register_metadata(RS2_FRAME_METADATA_CALIB_INFO,
+                                       make_attribute_parser(&md_mipi_depth_mode::calib_info,
+                                                             md_mipi_depth_control_attributes::calibration_info_attribute,
+                                                             md_prop_offset));
+        depth_sensor.register_metadata(RS2_FRAME_METADATA_CRC,
                                        make_attribute_parser(&md_mipi_depth_mode::crc,
                                                              md_mipi_depth_control_attributes::crc_attribute,
                                                              md_prop_offset));

@@ -62,17 +62,18 @@ typedef enum rs2_frame_metadata_value
     RS2_FRAME_METADATA_FRAME_LED_POWER                      , /**< Led power value 0-360. */
     RS2_FRAME_METADATA_RAW_FRAME_SIZE                       , /**< The number of transmitted payload bytes, not including metadata */
     RS2_FRAME_METADATA_GPIO_INPUT_DATA                      , /**< GPIO input data */
-    RS2_FRAME_METADATA_SEQUENCE_NAME                         , /**< sub-preset id */
-    RS2_FRAME_METADATA_SEQUENCE_ID                , /**< sub-preset sequence id */
-    RS2_FRAME_METADATA_SEQUENCE_SIZE              , /**< sub-preset sequence size */
+    RS2_FRAME_METADATA_SEQUENCE_NAME                        , /**< sub-preset id */
+    RS2_FRAME_METADATA_SEQUENCE_ID                          , /**< sub-preset sequence id */
+    RS2_FRAME_METADATA_SEQUENCE_SIZE                        , /**< sub-preset sequence size */
 
     //mipi metadata_values
-    RS2_FRAME_METADATA_TRIGGER,
-    RS2_FRAME_METADATA_PRESET,
-    RS2_FRAME_METADATA_INPUT_WIDTH,
-    RS2_FRAME_METADATA_INPUT_HEIGHT,
-    RS2_FRAME_METADATA_SUB_PRESET_INFO,
-    RS2_FRAME_METADATA_CRC,
+    RS2_FRAME_METADATA_TRIGGER                              , /**< Frame trigger type */
+    RS2_FRAME_METADATA_PRESET                               , /**< Preset id, used in MIPI SKU Metadata */
+    RS2_FRAME_METADATA_INPUT_WIDTH                          , /**< Frame input width in pixels, used as safety attribute */
+    RS2_FRAME_METADATA_INPUT_HEIGHT                         , /**< Frame input height in pixels, used as safety attribute */
+    RS2_FRAME_METADATA_SUB_PRESET_INFO                      , /**< Sub-preset information */
+    RS2_FRAME_METADATA_CALIB_INFO                           , /**< FW-controlled frame counter to be using in Calibration scenarios */
+    RS2_FRAME_METADATA_CRC                                  , /**< CRC checksum of the Metadata */
 
     RS2_FRAME_METADATA_COUNT
 } rs2_frame_metadata_value;
