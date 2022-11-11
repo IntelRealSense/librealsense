@@ -65,12 +65,12 @@ namespace librealsense
         std::mutex bulk_mutex;
         template<typename Request, typename Response> platform::usb_status bulk_request_response(const Request &request, Response &response, size_t max_response_size = 0, bool assert_success = true);
 
-        platform::rs_usb_request interrupt_read_request(std::vector<uint8_t> & buffer, std::shared_ptr<platform::usb_request_callback> callback);
+        platform::rs_usb_request interrupt_read_request(std::vector<uint8_t> && buffer, std::shared_ptr<platform::usb_request_callback> callback);
 
         std::mutex stream_mutex;
         platform::usb_status stream_write(const t265::bulk_message_request_header * request);
 
-        platform::rs_usb_request stream_read_request(std::vector<uint8_t> & buffer, std::shared_ptr<platform::usb_request_callback> callback);
+        platform::rs_usb_request stream_read_request(std::vector<uint8_t> && buffer, std::shared_ptr<platform::usb_request_callback> callback);
 
         void submit_request(platform::rs_usb_request request);
         bool cancel_request(platform::rs_usb_request request);

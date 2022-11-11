@@ -678,7 +678,7 @@ namespace librealsense
                      });
 
             _interrupt_request = _messenger->create_request(iep);
-            _interrupt_request->set_buffer(std::vector<uint8_t>(INTERRUPT_BUFFER_SIZE));
+            _interrupt_request->set_buffer(std::move(std::vector<uint8_t>(INTERRUPT_BUFFER_SIZE)));
             _interrupt_request->set_callback(_interrupt_callback);
             auto sts = _messenger->submit_request(_interrupt_request);
             if (sts != RS2_USB_STATUS_SUCCESS)

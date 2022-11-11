@@ -173,7 +173,7 @@ namespace librealsense
                 for(auto&& r : _requests)
                 {
                     r = _messenger->create_request(get_hid_endpoint());
-                    r->set_buffer(std::vector<uint8_t>(sizeof(REALSENSE_HID_REPORT)));
+                    r->set_buffer(std::move(std::vector<uint8_t>(sizeof(REALSENSE_HID_REPORT))));
                     r->set_callback(_request_callback);
                 }
 #endif
