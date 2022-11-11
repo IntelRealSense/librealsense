@@ -3,6 +3,7 @@
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <NoWarn>$(NoWarn);NU1701;NU1803;SYSLIB0003;SYSLIB0004</NoWarn>
   </PropertyGroup>
 
 </Project>
