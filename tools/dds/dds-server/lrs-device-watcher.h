@@ -14,8 +14,8 @@ class lrs_device_watcher : public std::enable_shared_from_this<lrs_device_watche
 public:
     lrs_device_watcher( rs2::context &_ctx );
     ~lrs_device_watcher();
-    void run( std::function< void( rs2::device ) > add_device_cb,
-              std::function< void( rs2::device ) > remove_device_cb );
+    void run( std::function< void( rs2::device && ) > add_device_cb,
+              std::function< void( rs2::device && ) > remove_device_cb );
 
 private:
     void notify_connected_devices_on_wake_up( std::function< void( rs2::device ) > add_device_cb );

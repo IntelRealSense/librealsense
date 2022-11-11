@@ -193,12 +193,12 @@ void dds_device_server::handle_control_message( topics::flexible_msg control_mes
     if ( id.compare("open-streams") == 0 )
     {
         if ( _open_streams_callback )
-            _open_streams_callback( j, this );
+            _open_streams_callback( j );
     }
     else if( id.compare( "close-streams" ) == 0 )
     {
         if ( _close_streams_callback )
-            _close_streams_callback( j, this );
+            _close_streams_callback( j );
     }
 
 }

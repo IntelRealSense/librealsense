@@ -68,7 +68,7 @@ public:
     void publish_image( const std::string & stream_name, const uint8_t * data, size_t size );
     void publish_notification( topics::flexible_msg && );
     
-    typedef std::function< void( nlohmann::json msg, dds_device_server * server ) > control_callback;
+    typedef std::function< void( nlohmann::json msg ) > control_callback;
     void on_open_streams( control_callback callback ) { _open_streams_callback = std::move( callback ); }
     void on_close_streams( control_callback callback ) { _close_streams_callback = std::move( callback ); }
 

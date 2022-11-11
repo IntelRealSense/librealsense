@@ -2,47 +2,119 @@
 // Copyright(c) 2022 Intel Corporation. All Rights Reserved.
 
 #include "lrs-device-controller.h"
+
 #include <librealsense2/utilities/easylogging/easyloggingpp.h>
+
+#include <realdds/dds-device-server.h>
+#include <realdds/dds-stream-server.h>
+
 #include <algorithm>
 #include <iostream>
 
+using nlohmann::json;
+using namespace realdds;
 using namespace tools;
 
-// This is a wrapper around a RealSense sensor, automatically opening and streaming it in the ctor
-// and stopping/closing on destruction
-class lrs_device_controller::lrs_sensor_streamer
+
+std::shared_ptr< dds_stream_profile > create_dds_stream_profile( rs2_stream type, nlohmann::json const & j )
 {
-public:
-    lrs_sensor_streamer( rs2::sensor rs2_sensor,
-                    rs2::stream_profile stream_profile,
-                    frame_callback_type cb )
-        : _rs2_sensor( rs2_sensor )
-        , _stream_profile( stream_profile )
-        , _frame_callback(std::move( cb ))
+    switch ( type )
     {
-        _rs2_sensor.open( _stream_profile );
-        _rs2_sensor.start( [&]( rs2::frame f ) 
-            {
-                _frame_callback( f );
-            } );
-        std::cout << _stream_profile.stream_name() << " stream started"  << std::endl;
+    case RS2_STREAM_DEPTH:
+    case RS2_STREAM_COLOR:
+    case RS2_STREAM_INFRARED:
+    case RS2_STREAM_FISHEYE:
+    case RS2_STREAM_CONFIDENCE:
+        return std::dynamic_pointer_cast< dds_stream_profile >( dds_stream_profile::from_json< dds_video_stream_profile>( j ) );
+    case RS2_STREAM_GYRO:
+    case RS2_STREAM_ACCEL:
+    case RS2_STREAM_POSE:
+        return std::dynamic_pointer_cast< dds_stream_profile >( dds_stream_profile::from_json< dds_motion_stream_profile >( j ) );
     }
-    ~lrs_sensor_streamer()
-    {
-        _rs2_sensor.stop();
-        _rs2_sensor.close();
-        std::cout << _stream_profile.stream_name() << " stream stopped"  << std::endl;
-    };
 
-private:
-    rs2::sensor _rs2_sensor;
-    rs2::stream_profile _stream_profile;
-    frame_callback_type _frame_callback;
-};
+    throw std::runtime_error( "Unsupported stream type" );
+}
 
-lrs_device_controller::lrs_device_controller( rs2::device dev )
-    : _rs_dev( dev )
+rs2_stream stream_name_to_type( std::string const & type_string )
 {
+    static const std::map< std::string, rs2_stream > type_to_rs2 = {
+        { "Depth", RS2_STREAM_DEPTH },
+        { "Color", RS2_STREAM_COLOR },
+        { "Infrared", RS2_STREAM_INFRARED },
+        { "Infrared 1", RS2_STREAM_INFRARED },
+        { "Infrared 2", RS2_STREAM_INFRARED },
+        { "Fisheye", RS2_STREAM_FISHEYE },
+        { "Gyro", RS2_STREAM_GYRO },
+        { "Accel", RS2_STREAM_ACCEL },
+        { "Gpio", RS2_STREAM_GPIO },
+        { "Pose", RS2_STREAM_POSE },
+        { "Confidence", RS2_STREAM_CONFIDENCE },
+    };
+    auto it = type_to_rs2.find( type_string );
+    if ( it == type_to_rs2.end() )
+    {
+        LOG_ERROR( "Unknown stream type '" << type_string << "'" );
+        return RS2_STREAM_ANY;
+    }
+    return it->second;
+}
+
+int stream_name_to_index( std::string const & type_string )
+{
+    int index = 0;
+    static const std::map< std::string, int > type_to_index = {
+        { "Infrared 1", 1 },
+        { "Infrared 2", 2 },
+    };
+    auto it = type_to_index.find( type_string );
+    if ( it != type_to_index.end() )
+    {
+        index = it->second;
+    }
+
+    return index;
+}
+
+rs2::stream_profile get_required_profile( const rs2::sensor & sensor,
+                                          std::string stream_name,
+                                          std::shared_ptr< dds_stream_profile > profile )
+{
+    auto sensor_stream_profiles = sensor.get_stream_profiles();
+    auto profile_iter = std::find_if( sensor_stream_profiles.begin(),
+                                      sensor_stream_profiles.end(),
+                                      [&]( rs2::stream_profile sp ) {
+                                          auto vp = sp.as< rs2::video_stream_profile >();
+                                          auto dds_vp = std::dynamic_pointer_cast< dds_video_stream_profile >( profile );
+                                          bool video_params_match = ( vp && dds_vp ) ?
+                                              vp.width() == dds_vp->width() && vp.height() == dds_vp->height() : true;
+                                          return sp.stream_type() == stream_name_to_type( stream_name )
+                                              && sp.stream_index() == stream_name_to_index( stream_name )
+                                              && sp.fps() == profile->frequency()
+                                              && sp.format() == profile->format().to_rs2()
+                                              && video_params_match;
+                                      } );
+    if ( profile_iter == sensor_stream_profiles.end() )
+    {
+        throw std::runtime_error( "Could not find required profile" );
+    }
+
+    return *profile_iter;
+}
+
+lrs_device_controller::lrs_device_controller( rs2::device dev, std::shared_ptr< realdds::dds_device_server > dds_device_server )
+    : _rs_dev( dev )
+    , _dds_device_server( dds_device_server )
+{
+    if ( ! _dds_device_server )
+        throw std::runtime_error( "Empty dds_device_server" );
+
+    _dds_device_server->on_open_streams( [&]( const json & msg ) { start_streaming( msg ); } );
+    _dds_device_server->on_close_streams( [&]( const json & msg ) { stop_streaming( msg ); } );
+
+    //query_sensors returns a copy of the sensors, we keep it to use same copy throughout the run time.
+    //Otherwise problems could arise like opening streams and they would close at start_streaming scope end.
+    _sensors = _rs_dev.query_sensors();
+
     _device_sn = _rs_dev.get_info( RS2_CAMERA_INFO_SERIAL_NUMBER );
     LOG_DEBUG( "LRS device manager for device: " << _device_sn << " created" );
 }
@@ -50,51 +122,85 @@ lrs_device_controller::lrs_device_controller( rs2::device dev )
 
 lrs_device_controller::~lrs_device_controller()
 {
-    stop_all_streams();
     LOG_DEBUG( "LRS device manager for device: " << _device_sn << " deleted" );
 }
-void lrs_device_controller::start_stream( rs2::stream_profile sp, frame_callback_type cb )
-{
-    switch( sp.stream_type() )
-    {
-    case RS2_STREAM_COLOR: {
-        auto cs = _rs_dev.first< rs2::color_sensor >();
-        stream_to_rs2_sensor[RS2_STREAM_COLOR] = std::make_shared< lrs_sensor_streamer >( cs, sp, cb );
-    }
-    break;
-    case RS2_STREAM_DEPTH: {
-        auto ds = _rs_dev.first< rs2::depth_sensor >();
-        stream_to_rs2_sensor[RS2_STREAM_DEPTH] = std::make_shared< lrs_sensor_streamer >( ds, sp, cb );
-    }
-    break;
 
-    // TODO::: Add this streams
-    case RS2_STREAM_INFRARED:
-    case RS2_STREAM_FISHEYE:
-    case RS2_STREAM_GYRO:
-    case RS2_STREAM_ACCEL:
-    case RS2_STREAM_GPIO:
-    case RS2_STREAM_POSE:
-    case RS2_STREAM_CONFIDENCE:
-    default:
-        throw std::runtime_error( "start_stream failed: unsupported stream: "
-                                  + std::string( rs2_stream_to_string( sp.stream_type() ) ) );
+void lrs_device_controller::start_streaming( const json & msg )
+{
+    auto msg_profiles = msg["stream-profiles"];
+
+    std::vector< rs2::stream_profile > rs_profiles_to_open;
+    std::vector< std::pair < std::string, image_header > > realdds_streams_to_start;
+
+    size_t sensor_index = 0;
+    for ( auto it = msg_profiles.begin(); it != msg_profiles.end(); ++it )
+    {
+        //To get actual rs2::stream_profile to open we need to pass an rs2::sensor to `get_required_profile`.
+        std::string requested_stream_name = it.key();
+        if ( ! find_sensor( requested_stream_name, sensor_index ) )
+            throw std::runtime_error( "Could not find sensor to open stream `" + requested_stream_name + "` for" );
+
+        //Now that we have the sensor get the rs2::stream_profile
+        auto dds_profile = create_dds_stream_profile( stream_name_to_type( requested_stream_name ), it.value() );
+        auto rs2_profile = get_required_profile( _sensors[sensor_index],
+                                                 requested_stream_name,
+                                                 dds_profile );
+        rs_profiles_to_open.push_back( rs2_profile );
+
+        auto dds_vp = std::dynamic_pointer_cast< dds_video_stream_profile >( dds_profile );
+        realdds::image_header header;
+        header.format = dds_profile->format().to_rs2();
+        header.width = dds_vp ? dds_vp->width() : 0;
+        header.height = dds_vp ? dds_vp->height() : 0;
+        realdds_streams_to_start.push_back( std::make_pair( requested_stream_name, std::move( header ) ) );
     }
+
+    //Start streaming
+    //TODO - currently assumes all streams are from one sensor. Add support for multiple sensors
+    _dds_device_server->start_streaming( realdds_streams_to_start );
+    _sensors[sensor_index].open( rs_profiles_to_open );
+    _sensors[sensor_index].start( [&]( rs2::frame f ) {
+        _dds_device_server->publish_image( f.get_profile().stream_name(), static_cast< const uint8_t * >( f.get_data() ), f.get_data_size() );
+    } );
+    std::cout << realdds_streams_to_start[0].first << " stream started" << std::endl;
 }
 
-void lrs_device_controller::stop_stream( rs2_stream stream )
+void lrs_device_controller::stop_streaming( const json & msg )
 {
-    auto sensor_to_erase_it = stream_to_rs2_sensor.find( stream );
-    if( sensor_to_erase_it == stream_to_rs2_sensor.end() )
+    auto stream_names = msg["stream-names"];
+
+    size_t sensor_index = 0;
+    for ( std::string requested_stream_name : stream_names )
     {
-        throw std::runtime_error( "Cannot stop stream:"
-                                  + std::string( rs2_stream_to_string( stream ) ) + " as it is not streaming" );
+        //Find sensor to close
+        if ( find_sensor( requested_stream_name, sensor_index ) )
+            break; //TODO - currently assumes all streams are from one sensor. Add support for multiple sensors
+
+        if ( sensor_index == _sensors.size() )
+            throw std::runtime_error( "Could not find sensor to close `" + requested_stream_name + "` for" );
     }
 
-    stream_to_rs2_sensor.erase( sensor_to_erase_it );
+    //Stop streaming
+    _sensors[sensor_index].stop();
+    _sensors[sensor_index].close();
+    _dds_device_server->stop_streaming( stream_names );
+    std::cout << _sensors[sensor_index].get_info( RS2_CAMERA_INFO_NAME ) << " closed. Streams requested to stop: " << stream_names << std::endl;
 }
 
-void lrs_device_controller::stop_all_streams()
+bool tools::lrs_device_controller::find_sensor( const std::string & requested_stream_name, size_t & sensor_index )
 {
-    stream_to_rs2_sensor.clear();
+    //Iterate over all the sensors, if a sensor have a profile with a name
+    //corresponding to the requested, we have found our sensor.
+    for ( sensor_index = 0; sensor_index < _sensors.size(); ++sensor_index )
+    {
+        for ( auto & profile : _sensors[sensor_index].get_stream_profiles() )
+        {
+            if ( profile.stream_name() == requested_stream_name )
+            {
+                return true;
+            }
+        }
+    }
+
+    return false;
 }
