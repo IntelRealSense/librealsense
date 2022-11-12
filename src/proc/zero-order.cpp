@@ -169,7 +169,7 @@ namespace librealsense
 
             if (!strong_p_option->is_valid(val))
                 throw invalid_value_exception(to_string()
-                    << "Unsupported " << strong_p_option->get_description() << " " << val << " is out of range.");
+                    << "Unsupported value for " << strong_p_option->get_description() << ": " << val << " is out of range.");
         });
     }
 
