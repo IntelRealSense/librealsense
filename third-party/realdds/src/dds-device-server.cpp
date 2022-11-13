@@ -20,6 +20,8 @@
 #include <fastdds/dds/topic/Topic.hpp>
 #include <fastdds/dds/subscriber/SampleInfo.hpp>
 
+#include <librealsense2/utilities/json.h>
+
 using nlohmann::json;
 using namespace eprosima::fastdds::dds;
 using namespace realdds;
@@ -146,15 +148,9 @@ void dds_device_server::init( std::vector< std::shared_ptr< dds_stream_server > 
         auto topic = topics::flexible_msg::create_topic( _subscriber->get_participant(), _topic_root + "/control" );
         _control_reader = std::make_shared< dds_topic_reader >( topic, _subscriber );
 
-        dds_topic_reader::qos rqos( RELIABLE_RELIABILITY_QOS );
-        rqos.history().depth = 10; // default is 1
-        // Does not allocate for every sample but still gives flexibility. See:
-        //     https://github.com/eProsima/Fast-DDS/discussions/2707
-        // (default is PREALLOCATED_MEMORY_MODE)
-        rqos.endpoint().history_memory_policy = eprosima::fastrtps::rtps::PREALLOCATED_WITH_REALLOC_MEMORY_MODE;
-
-        //_control_server->on_control_message_received( [&]() { on_control_message_received(); } );
         _control_reader->on_data_available( [&]() { on_control_message_received(); } );
+
+        dds_topic_reader::qos rqos( RELIABLE_RELIABILITY_QOS );
         _control_reader->run( rqos );
     }
     catch( std::exception const & )
@@ -188,8 +184,8 @@ void dds_device_server::on_control_message_received()
 
 void dds_device_server::handle_control_message( topics::flexible_msg control_message )
 {
-    auto const & j = control_message.json_data();
-    auto id = j["id"].get< std::string >();
+    auto j = control_message.json_data();
+    auto id = utilities::json::get< std::string >( j, "id" );
     if ( id.compare("open-streams") == 0 )
     {
         if ( _open_streams_callback )
@@ -200,5 +196,4 @@ void dds_device_server::handle_control_message( topics::flexible_msg control_mes
         if ( _close_streams_callback )
             _close_streams_callback( j );
     }
-
 }

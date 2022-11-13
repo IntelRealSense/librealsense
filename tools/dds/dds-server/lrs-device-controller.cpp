@@ -4,6 +4,7 @@
 #include "lrs-device-controller.h"
 
 #include <librealsense2/utilities/easylogging/easyloggingpp.h>
+#include <librealsense2/utilities/json.h>
 
 #include <realdds/dds-device-server.h>
 #include <realdds/dds-stream-server.h>
@@ -138,7 +139,7 @@ void lrs_device_controller::start_streaming( const json & msg )
         //To get actual rs2::stream_profile to open we need to pass an rs2::sensor to `get_required_profile`.
         std::string requested_stream_name = it.key();
         if ( ! find_sensor( requested_stream_name, sensor_index ) )
-            throw std::runtime_error( "Could not find sensor to open stream `" + requested_stream_name + "` for" );
+            throw std::runtime_error( "Could not find sensor to open stream `" + requested_stream_name + "`" );
 
         //Now that we have the sensor get the rs2::stream_profile
         auto dds_profile = create_dds_stream_profile( stream_name_to_type( requested_stream_name ), it.value() );

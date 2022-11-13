@@ -32,11 +32,6 @@ using nlohmann::json;
 using namespace TCLAP;
 using namespace realdds;
 
-//Pointer to the context created in main, for access from other functions
-//Need to create a context only once or new context will create a dds_device_watcher and discover
-//devices we published as new DDS devices
-rs2::context * main_ctx = nullptr;
-
 #define NAME2SERVER( X )                                                                                               \
     if( server )                                                                                                       \
     {                                                                                                                  \
@@ -254,7 +249,6 @@ try
     rs2::context ctx( "{"
         "\"dds-discovery\" : false"
         "}" );
-    main_ctx = &ctx;
 
     // Run the LRS device watcher
     tools::lrs_device_watcher dev_watcher( ctx );

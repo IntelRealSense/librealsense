@@ -3,7 +3,7 @@
 
 #pragma once
 #include <librealsense2/rs.hpp>  // Include RealSense Cross Platform API
-#include <librealsense2/utilities/json.h>
+#include <third-party/json_fwd.hpp>
 
 #include <unordered_map>
 

@@ -131,7 +131,7 @@ bool dds_device::impl::init()
                 if( ! notification.is_valid() )
                     continue;
                 auto j = notification.json_data();
-                auto id = j["id"].get< std::string >();
+                auto id = utilities::json::get< std::string >( j, "id" );
                 if( state_type::WAIT_FOR_DEVICE_HEADER == state && id == "device-header" )
                 {
                     n_streams_expected = utilities::json::get< size_t >( j, "n-streams" );
