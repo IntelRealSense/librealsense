@@ -423,9 +423,10 @@ int main(int argc, char** argv) try
                 w_stream += 2;
 
                 // Heading
-                cout << "    ";
                 if( verbose )
-                    cout << "       ";  // (sid,index)
+                    cout << "   (UID.IDX)  ";
+                else
+                    cout << "    ";
                 cout << setw( w_stream ) << "STREAM";
                 if( video_stream )
                     cout << setw( w_res ) << "RESOLUTION";
@@ -437,7 +438,7 @@ int main(int argc, char** argv) try
                 {
                     cout << "    ";
                     if( verbose )
-                        cout << '(' << profile.unique_id() << '.' << profile.stream_index() << ")  ";
+                        cout << " (" << profile.unique_id() << '.' << profile.stream_index() << ")    ";
                     cout << setw( w_stream ) << profile.stream_name();
                     if (auto video = profile.as<video_stream_profile>())
                     {
