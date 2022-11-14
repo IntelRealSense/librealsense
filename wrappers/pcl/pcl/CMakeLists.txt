@@ -4,7 +4,7 @@ cmake_minimum_required(VERSION 3.1.0)
 project(RealSensePCLExample)
 
 add_executable(rs-pcl rs-pcl.cpp)
-set_property(TARGET rs-pcl PROPERTY CXX_STANDARD 11)
+set_property(TARGET rs-pcl PROPERTY CXX_STANDARD 14)
 target_link_libraries(rs-pcl ${DEPENDENCIES})
 if(NOT glfw3_DIR)
     target_include_directories(rs-pcl PUBLIC "${CMAKE_SOURCE_DIR}/third-party/glfw/include")

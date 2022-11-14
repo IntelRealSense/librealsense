@@ -7,7 +7,7 @@ project(RealsenseExamplesCapture)
 
 if(BUILD_GRAPHICAL_EXAMPLES)
     add_executable(rs-capture rs-capture.cpp ../example.hpp)
-    set_property(TARGET rs-capture PROPERTY CXX_STANDARD 11)
+    set_property(TARGET rs-capture PROPERTY CXX_STANDARD 14)
     target_link_libraries(rs-capture ${DEPENDENCIES})
     include_directories(../ ../../third-party/tclap/include ../../examples)
     set_target_properties (rs-capture PROPERTIES FOLDER "Examples")

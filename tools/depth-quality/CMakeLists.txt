@@ -54,7 +54,7 @@ if(BUILD_GRAPHICAL_EXAMPLES)
                 ${CMAKE_CURRENT_SOURCE_DIR}/res/realsense-viewer.rc
                 ../../common/windows-app-bootstrap.cpp)
 
-        set_property(TARGET rs-depth-quality PROPERTY CXX_STANDARD 11)
+        set_property(TARGET rs-depth-quality PROPERTY CXX_STANDARD 14)
         source_group("Resources" FILES
                 ${CMAKE_CURRENT_SOURCE_DIR}/res/resource.h
                 ${CMAKE_CURRENT_SOURCE_DIR}/res/realsense-viewer.rc)

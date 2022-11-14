@@ -7,7 +7,7 @@ project(RealsenseExamplesPosePredict)
 
 if(BUILD_EXAMPLES)
     add_executable(rs-pose-predict rs-pose-predict.cpp)
-    set_property(TARGET rs-pose-predict PROPERTY CXX_STANDARD 11)
+    set_property(TARGET rs-pose-predict PROPERTY CXX_STANDARD 14)
     target_link_libraries(rs-pose-predict ${DEPENDENCIES})
     include_directories(../../examples)
     set_target_properties (rs-pose-predict PROPERTIES FOLDER Examples)

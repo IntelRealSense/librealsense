@@ -7,8 +7,8 @@ project(hello_librealsense2)
 # Find librealsense2 installed package
 find_package(realsense2 REQUIRED)
 
-# Enable C++11
-set(CMAKE_CXX_STANDARD 11)
+# Enable C++14
+set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
 
 # Add the application sources to the target

@@ -10,7 +10,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
 
 if(BUILD_GRAPHICAL_EXAMPLES)
     add_executable(rs-software-device rs-software-device.cpp)
-    set_property(TARGET rs-software-device PROPERTY CXX_STANDARD 11)
+    set_property(TARGET rs-software-device PROPERTY CXX_STANDARD 14)
     target_link_libraries(rs-software-device ${DEPENDENCIES})
     include_directories(../ ../../third-party/tclap/include ../../third-party/ ../../common/res)
     set_target_properties (rs-software-device PROPERTIES FOLDER "Examples")

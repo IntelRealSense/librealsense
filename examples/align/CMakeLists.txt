@@ -7,7 +7,7 @@ project(RealsenseExamplesAlign)
 
 if(BUILD_GRAPHICAL_EXAMPLES)
     add_executable(rs-align rs-align.cpp ../../third-party/imgui/imgui.cpp ../../third-party/imgui/imgui_draw.cpp ../../third-party/imgui/imgui_impl_glfw.cpp)
-    set_property(TARGET rs-align PROPERTY CXX_STANDARD 11)
+    set_property(TARGET rs-align PROPERTY CXX_STANDARD 14)
     target_link_libraries(rs-align ${DEPENDENCIES})
     include_directories(../../common ../../third-party/imgui ../../examples)
     set_target_properties (rs-align PROPERTIES FOLDER Examples)

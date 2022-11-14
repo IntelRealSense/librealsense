@@ -10,7 +10,7 @@ find_package(Threads REQUIRED)
 
 if(BUILD_GRAPHICAL_EXAMPLES)
     add_executable(rs-measure rs-measure.cpp ../example.hpp)
-    set_property(TARGET rs-measure PROPERTY CXX_STANDARD 11)
+    set_property(TARGET rs-measure PROPERTY CXX_STANDARD 14)
     target_link_libraries(rs-measure ${DEPENDENCIES} Threads::Threads)
     include_directories(../)
     set_target_properties (rs-measure PROPERTIES FOLDER "Examples")

@@ -7,7 +7,7 @@ project(RealsenseExamplesPointcloud)
 
 if(BUILD_GRAPHICAL_EXAMPLES)
     add_executable(rs-pointcloud rs-pointcloud.cpp ../example.hpp)
-    set_property(TARGET rs-pointcloud PROPERTY CXX_STANDARD 11)
+    set_property(TARGET rs-pointcloud PROPERTY CXX_STANDARD 14)
     target_link_libraries(rs-pointcloud ${DEPENDENCIES})
     include_directories(../)
     set_target_properties (rs-pointcloud PROPERTIES FOLDER Examples)

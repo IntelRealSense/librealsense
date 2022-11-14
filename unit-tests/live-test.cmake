@@ -12,7 +12,7 @@ set (unit_tests_sources
 )
 
 add_executable(live-test ${unit_tests_sources})
-set_property(TARGET live-test PROPERTY CXX_STANDARD 11)
+set_property(TARGET live-test PROPERTY CXX_STANDARD 14)
 target_link_libraries(live-test ${DEPENDENCIES} Threads::Threads)
 
 set_target_properties (live-test PROPERTIES

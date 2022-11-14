@@ -29,10 +29,10 @@ Find librealsense installation, this feature is currently available only for Lin
 find_package(realsense2 REQUIRED)
 ```
 
-Enable C++ 11 standard in the application
+Enable C++14 standard in the application
 ```
-# Enable C++11
-set(CMAKE_CXX_STANDARD 11)
+# Enable C++14
+set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
 ```
 

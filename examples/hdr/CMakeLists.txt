@@ -7,7 +7,7 @@ project(RealsenseExamplesHdr)
 
 if(BUILD_GRAPHICAL_EXAMPLES)
     add_executable(rs-hdr rs-hdr.cpp ../example.hpp ../../third-party/imgui/imgui.cpp ../../third-party/imgui/imgui_draw.cpp ../../third-party/imgui/imgui_impl_glfw.cpp)
-    set_property(TARGET rs-hdr PROPERTY CXX_STANDARD 11)
+    set_property(TARGET rs-hdr PROPERTY CXX_STANDARD 14)
     target_link_libraries(rs-hdr ${DEPENDENCIES})
     include_directories(../ ../../third-party/tclap/include ../../third-party/imgui ../../third-party/glfw/include)
     set_target_properties (rs-hdr PROPERTIES FOLDER "Examples")

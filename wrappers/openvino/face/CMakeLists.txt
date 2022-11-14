@@ -32,7 +32,7 @@ endif()
 source_group("OpenVINO" FILES ${OPENVINO_FILES})
 source_group("EasyLogging++" FILES ${ELPP_FILES})
 
-set_property(TARGET rs-face-vino PROPERTY CXX_STANDARD 11)
+set_property(TARGET rs-face-vino PROPERTY CXX_STANDARD 14)
 target_link_libraries(rs-face-vino ${DEPENDENCIES})
 set_target_properties (rs-face-vino PROPERTIES
 	FOLDER "Examples/openvino"

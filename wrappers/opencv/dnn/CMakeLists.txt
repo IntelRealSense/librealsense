@@ -4,7 +4,7 @@ cmake_minimum_required(VERSION 3.1.0)
 project(RealSenseDNNExample)
 
 add_executable(rs-dnn rs-dnn.cpp ../cv-helpers.hpp)
-set_property(TARGET rs-dnn PROPERTY CXX_STANDARD 11)
+set_property(TARGET rs-dnn PROPERTY CXX_STANDARD 14)
 target_link_libraries(rs-dnn ${DEPENDENCIES})
 set_target_properties (rs-dnn PROPERTIES
 	FOLDER "Examples/OpenCV"

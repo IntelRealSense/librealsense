@@ -16,7 +16,7 @@ set(RS_TERMINAL_SOURCES
         ../../common/parser.hpp
     )
 add_executable(rs-terminal ${RS_TERMINAL_SOURCES})
-set_property(TARGET rs-terminal PROPERTY CXX_STANDARD 11)
+set_property(TARGET rs-terminal PROPERTY CXX_STANDARD 14)
 if(WIN32 OR ANDROID)
     target_link_libraries(rs-terminal ${DEPENDENCIES})
 else()

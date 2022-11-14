@@ -6,7 +6,7 @@ cmake_minimum_required(VERSION 3.1.0)
 project(RealsenseExamplesEnumerateDevices)
 
 add_executable(rs-enumerate-devices rs-enumerate-devices.cpp)
-set_property(TARGET rs-enumerate-devices PROPERTY CXX_STANDARD 11)
+set_property(TARGET rs-enumerate-devices PROPERTY CXX_STANDARD 14)
 target_link_libraries(rs-enumerate-devices ${DEPENDENCIES})
 include_directories(../../third-party/tclap/include)
 set_target_properties (rs-enumerate-devices PROPERTIES

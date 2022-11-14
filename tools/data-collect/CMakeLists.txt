@@ -6,7 +6,7 @@ cmake_minimum_required(VERSION 3.1.0)
 project(RealsenseToolsDataCollect)
 
 add_executable(rs-data-collect rs-data-collect.h rs-data-collect.cpp)
-set_property(TARGET rs-data-collect PROPERTY CXX_STANDARD 11)
+set_property(TARGET rs-data-collect PROPERTY CXX_STANDARD 14)
 target_link_libraries(rs-data-collect ${DEPENDENCIES})
 include_directories(../../common ../../third-party/tclap/include)
 set_target_properties (rs-data-collect PROPERTIES

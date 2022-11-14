@@ -224,7 +224,7 @@ include_directories(
     )
 
 
-set_property(TARGET realsense-viewer PROPERTY CXX_STANDARD 11)
+set_property(TARGET realsense-viewer PROPERTY CXX_STANDARD 14)
 
 set(RS_VIEWER_LIBS ${GTK3_LIBRARIES} Threads::Threads realsense2-gl)
 

@@ -6,7 +6,7 @@ cmake_minimum_required(VERSION 3.1.0)
 project(RealsenseToolsRecorder)
 
 add_executable(rs-record rs-record.cpp)
-set_property(TARGET rs-record PROPERTY CXX_STANDARD 11)
+set_property(TARGET rs-record PROPERTY CXX_STANDARD 14)
 target_link_libraries(rs-record ${DEPENDENCIES})
 include_directories(../../common ../../third-party/tclap/include)
 set_target_properties (rs-record PROPERTIES

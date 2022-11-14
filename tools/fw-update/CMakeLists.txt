@@ -6,7 +6,7 @@ cmake_minimum_required(VERSION 3.1.0)
 project(rs-fw-update)
 
 add_executable(${PROJECT_NAME} rs-fw-update.cpp)
-set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 11)
+set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 14)
 target_link_libraries(${PROJECT_NAME} ${DEPENDENCIES})
 include_directories(../../third-party/tclap/include ${CMAKE_BINARY_DIR})
 set_target_properties (${PROJECT_NAME} PROPERTIES FOLDER Tools)

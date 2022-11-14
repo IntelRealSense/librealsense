@@ -7,7 +7,7 @@ project(rs-callback)
 
 if(BUILD_GRAPHICAL_EXAMPLES)
     add_executable(${PROJECT_NAME} ${PROJECT_NAME}.cpp)
-    set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 11)
+    set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 14)
     target_link_libraries(${PROJECT_NAME} ${DEPENDENCIES})
     include_directories(${PROJECT_NAME} ../ ../../third-party/tclap/include)
     set_target_properties (${PROJECT_NAME} PROPERTIES FOLDER "Examples")

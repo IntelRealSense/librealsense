@@ -10,7 +10,7 @@ add_executable(rs-face-dlib
 	validate_face.h
 	render_face.h
 )
-set_property(TARGET rs-face-dlib PROPERTY CXX_STANDARD 11)
+set_property(TARGET rs-face-dlib PROPERTY CXX_STANDARD 14)
 target_link_libraries(rs-face-dlib ${DEPENDENCIES})
 set_target_properties (rs-face-dlib PROPERTIES
 	FOLDER "Examples/dlib"

@@ -7,7 +7,7 @@ project(RealsenseExamplesPost-Processing)
 
 if(BUILD_GRAPHICAL_EXAMPLES)
     add_executable(rs-post-processing rs-post-processing.cpp ../example.hpp ../../third-party/imgui/imgui.cpp ../../third-party/imgui/imgui_draw.cpp ../../third-party/imgui/imgui_impl_glfw.cpp)
-    set_property(TARGET rs-post-processing PROPERTY CXX_STANDARD 11)
+    set_property(TARGET rs-post-processing PROPERTY CXX_STANDARD 14)
     target_link_libraries(rs-post-processing ${DEPENDENCIES})
     include_directories(../ ../../third-party/tclap/include ../../third-party/imgui)
     set_target_properties (rs-post-processing PROPERTIES FOLDER "Examples")

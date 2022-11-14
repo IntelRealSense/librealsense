@@ -4,7 +4,7 @@ cmake_minimum_required(VERSION 3.1.0)
 project(RealSenseGrabCutsExample)
 
 add_executable(rs-grabcuts rs-grabcuts.cpp ../cv-helpers.hpp)
-set_property(TARGET rs-grabcuts PROPERTY CXX_STANDARD 11)
+set_property(TARGET rs-grabcuts PROPERTY CXX_STANDARD 14)
 target_link_libraries(rs-grabcuts ${DEPENDENCIES})
 set_target_properties (rs-grabcuts PROPERTIES
 	FOLDER "Examples/OpenCV"

@@ -7,7 +7,7 @@ project(RealsenseExamplesPose)
 
 if(BUILD_EXAMPLES)
     add_executable(rs-pose rs-pose.cpp)
-    set_property(TARGET rs-pose PROPERTY CXX_STANDARD 11)
+    set_property(TARGET rs-pose PROPERTY CXX_STANDARD 14)
     target_link_libraries(rs-pose ${DEPENDENCIES})
     include_directories(../../examples)
     set_target_properties (rs-pose PROPERTIES FOLDER Examples)

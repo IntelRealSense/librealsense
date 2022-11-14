@@ -6,7 +6,7 @@ cmake_minimum_required(VERSION 3.1.0)
 project(RealsenseToolsFirmwareLogger)
 
 add_executable(rs-fw-logger rs-fw-logger.cpp)
-set_property(TARGET rs-fw-logger PROPERTY CXX_STANDARD 11)
+set_property(TARGET rs-fw-logger PROPERTY CXX_STANDARD 14)
 if(WIN32 OR ANDROID)
     target_link_libraries(rs-fw-logger ${DEPENDENCIES})
 else()

@@ -8,13 +8,13 @@ project(RealsenseToolsEmbed)
 # Save the command line compile commands in the build output
 set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
 
-add_executable(rs-embed 
+add_executable(rs-embed
    rs-embed.cpp
    ${LZ4_DIR}/lz4.h
    ${LZ4_DIR}/lz4.c
 )
 
-set_property(TARGET rs-embed PROPERTY CXX_STANDARD 11)
+set_property(TARGET rs-embed PROPERTY CXX_STANDARD 14)
 
 include_directories(rs-embed ${LZ4_DIR} ../../third-party ../../third-party/tclap/include)
 set_target_properties (rs-embed PROPERTIES FOLDER Tools)

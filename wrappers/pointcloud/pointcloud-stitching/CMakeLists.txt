@@ -17,7 +17,7 @@ list(APPEND DEPENDENCIES ${OPENGL_LIBRARIES})
 list(APPEND DEPENDENCIES glfw)
 
 add_executable(rs-pointcloud-stitching rs-pointcloud-stitching.cpp rs-pointcloud-stitching.h ../../../examples/example.hpp ../../../third-party/imgui/imgui.cpp ../../../third-party/imgui/imgui_draw.cpp ../../../third-party/imgui/imgui_impl_glfw.cpp)
-set_property(TARGET rs-pointcloud-stitching PROPERTY CXX_STANDARD 11)
+set_property(TARGET rs-pointcloud-stitching PROPERTY CXX_STANDARD 14)
 target_link_libraries(rs-pointcloud-stitching ${DEPENDENCIES} )
 include_directories(./ ../../../examples ../../../third-party/tclap/include ../../../third-party/ ../../../third-party/imgui ../../../third-party/glfw/include ../../../common/res)
 set_target_properties (rs-pointcloud-stitching PROPERTIES FOLDER "Examples")

@@ -34,7 +34,7 @@ if(BUILD_GRAPHICAL_EXAMPLES)
         include_directories(../../third-party/imgui ../../common ../../third-party/glad
                                              ../../third-party/tinyfiledialogs ../../third-party)
     endif()
-    set_property(TARGET rs-rosbag-inspector PROPERTY CXX_STANDARD 11)
+    set_property(TARGET rs-rosbag-inspector PROPERTY CXX_STANDARD 14)
 
     target_include_directories(rs-rosbag-inspector PRIVATE
         ${ROSBAG_HEADER_DIRS}

@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.1.0)
 project(RealSensePCLColorExample)
 
 add_executable (rs-pcl-color rs-pcl-color.cpp)
-set_property(TARGET rs-pcl-color PROPERTY CXX_STANDARD 11)
+set_property(TARGET rs-pcl-color PROPERTY CXX_STANDARD 14)
 find_package(PCL REQUIRED)
 include_directories(${PCL_INCLUDE_DIRS})
 link_directories(${PCL_LIBRARY_DIRS})
