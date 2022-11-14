@@ -103,11 +103,17 @@ flexible_msg::take_next( dds_topic_reader & reader, flexible_msg * output, epros
 
 json flexible_msg::json_data() const
 {
-    if( _data_format != data_format::JSON )
-        DDS_THROW( runtime_error, "non-json flexible data is still unsupported" );
-    char const * begin = (char const *)_data.data();
-    char const * end = begin + _data.size();
-    return json::parse( begin, end );
+    if( _data_format == data_format::JSON )
+    {
+        char const * begin = (char const *)_data.data();
+        char const * end = begin + _data.size();
+        return json::parse( begin, end );
+    }
+    if( _data_format == data_format::CBOR )
+    {
+        return json::from_cbor( _data.begin(), _data.end() );
+    }
+    DDS_THROW( runtime_error, "non-json flexible data is still unsupported" );
 }
 
 
