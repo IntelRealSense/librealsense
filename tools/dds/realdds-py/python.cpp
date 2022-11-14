@@ -221,12 +221,23 @@ PYBIND11_MODULE(NAME, m) {
                         eprosima::fastdds::dds::TypeSupport const &,
                         char const * >() )
         .def( "get_participant", &dds_topic::get_participant )
+        .def( "name", []( dds_topic const & self ) { return self->get_name(); } )
         .def( "__repr__", []( dds_topic const & self ) {
             std::ostringstream os;
             os << "<" SNAME ".topic \"" << self->get_name() << "\"";
             os << ">";
             return os.str();
         } );
+
+    using durability = eprosima::fastdds::dds::DurabilityQosPolicyKind;
+    py::enum_< durability >( m, "durability" )
+        .value( "volatile", eprosima::fastdds::dds::DurabilityQosPolicyKind::VOLATILE_DURABILITY_QOS )
+        .value( "transient_local", eprosima::fastdds::dds::DurabilityQosPolicyKind::TRANSIENT_LOCAL_DURABILITY_QOS )
+        .value( "transient", eprosima::fastdds::dds::DurabilityQosPolicyKind::TRANSIENT_DURABILITY_QOS );
+    using reliability = eprosima::fastdds::dds::ReliabilityQosPolicyKind;
+    py::enum_< reliability >( m, "reliability" )
+        .value( "reliable", eprosima::fastdds::dds::ReliabilityQosPolicyKind::RELIABLE_RELIABILITY_QOS )
+        .value( "best_effort", eprosima::fastdds::dds::ReliabilityQosPolicyKind::BEST_EFFORT_RELIABILITY_QOS );
 
     using reader_qos = realdds::dds_topic_reader::qos;
     py::class_< reader_qos >( m, "reader_qos" )  //
@@ -240,14 +251,16 @@ PYBIND11_MODULE(NAME, m) {
     using realdds::dds_topic_reader;
     py::class_< dds_topic_reader, std::shared_ptr< dds_topic_reader > >( m, "topic_reader" )
         .def( py::init< std::shared_ptr< dds_topic > const & >() )
-        .def( FN_FWD( dds_topic_reader, on_data_available, (), (), callback(); ) )
+        .def( FN_FWD( dds_topic_reader, on_data_available, (dds_topic_reader &), (), callback( self ); ) )
         .def( FN_FWD( dds_topic_reader,
                       on_subscription_matched,
                       (),
                       (eprosima::fastdds::dds::SubscriptionMatchedStatus const &),
                       callback(); ) )
+        .def( "topic", &dds_topic_reader::topic )
         .def( "run", &dds_topic_reader::run )
-        .def( "qos", []() { return reader_qos(); } );
+        .def( "qos", []() { return reader_qos(); } )
+        .def( "qos", []( reliability r, durability d ) { return reader_qos( r, d ); } );
 
     using writer_qos = realdds::dds_topic_writer::qos;
     py::class_< writer_qos >( m, "writer_qos" )  //
@@ -266,8 +279,10 @@ PYBIND11_MODULE(NAME, m) {
                       (int),
                       ( eprosima::fastdds::dds::PublicationMatchedStatus const & status ),
                       callback( status.total_count_change ); ) )
+        .def( "topic", &dds_topic_writer::topic )
         .def( "run", &dds_topic_writer::run )
-        .def( "qos", []() { return writer_qos(); } );
+        .def( "qos", []() { return writer_qos(); } )
+        .def( "qos", []( reliability r, durability d ) { return writer_qos( r, d ); } );
 
 
     // The actual types are declared as functions and not classes: the py::init<> inheritance rules are pretty strict
