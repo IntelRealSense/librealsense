@@ -11,6 +11,9 @@
 #include <limits>
 #include <thread>
 
+#include <third-party/json.hpp>
+using nlohmann::json;
+
 #include "tclap/CmdLine.h"
 
 using namespace std;
@@ -193,6 +196,7 @@ int main(int argc, char** argv) try
     SwitchArg show_calibration_data_arg( "c", "calib_data", "Show extrinsic and intrinsic of all subdevices" );
     SwitchArg show_defaults("d", "defaults", "Show the default streams configuration");
     SwitchArg only_sw_arg( "", "sw-only", "Show only software devices (playback, dds, etc. -- but not USB/HID/etc.)" );
+    SwitchArg verbose_arg( "v", "verbose", "Show extra information" );
     ValueArg<string> show_playback_device_arg("p", "playback_device", "Inspect and enumerate playback device (from file)",
         false, "", "Playback device - ROSBag record full path");
     cmd.add(debug_arg);
@@ -201,6 +205,7 @@ int main(int argc, char** argv) try
     cmd.add(show_options_arg);
     cmd.add(show_calibration_data_arg);
     cmd.add(only_sw_arg);
+    cmd.add(verbose_arg);
 #ifdef BUILD_WITH_DDS
     ValueArg< int > domain_arg( "", "dds-domain", "Set the DDS domain ID", false, 0, "domain ID" );
     cmd.add( domain_arg );
@@ -221,6 +226,7 @@ int main(int argc, char** argv) try
     bool show_calibration_data = show_calibration_data_arg.getValue();
     bool show_modes = !(compact_view || short_view);
     auto playback_dev_file = show_playback_device_arg.getValue();
+    bool verbose = verbose_arg.getValue();
 
     if ((short_view || compact_view) && (show_options || show_calibration_data))
     {
@@ -234,14 +240,12 @@ int main(int argc, char** argv) try
     }
 
     // Obtain a list of devices currently present on the system
+    json settings;
 #ifdef BUILD_WITH_DDS
-    auto domain_id = domain_arg.getValue();
-    std::string settings = "{\"dds-domain\":" + std::to_string( domain_id ) + "}";
-    context ctx( settings.c_str() );
-    std::this_thread::sleep_for( std::chrono::seconds( 5 ) );
-#else
-    context ctx;
+    settings["dds-domain"] = domain_arg.getValue();
 #endif
+    context ctx( settings.dump() );
+    
     rs2::device d;
     if (!playback_dev_file.empty())
         d = ctx.load_device(playback_dev_file.data());
@@ -250,6 +254,19 @@ int main(int argc, char** argv) try
     if( only_sw_arg.getValue() )
         mask |= RS2_PRODUCT_LINE_SW_ONLY;
     auto devices_list = ctx.query_devices( mask );
+    if( only_sw_arg.getValue() )
+    {
+        // For SW-only devices, allow some time for DDS devices to connect
+        int tries = 3;
+        cout << "No device detected. Waiting..." << flush;
+        while( ! devices_list.size() && tries-- )
+        {
+            cout << "." << flush;
+            std::this_thread::sleep_for( std::chrono::seconds( 1 ) );
+            devices_list = ctx.query_devices( mask );
+        }
+        cout << endl;
+    }
 
     // Retrieve the viable devices
     std::vector<rs2::device> devices;
@@ -386,25 +403,50 @@ int main(int argc, char** argv) try
 
         if (show_modes)
         {
-            for (auto&& sensor : dev.query_sensors())
-            {
-                cout << "Stream Profiles supported by " << sensor.get_info(RS2_CAMERA_INFO_NAME) << endl;
+            size_t w_res = 12;
+            size_t w_fps = 10;
+            size_t w_format = 10;
 
-                cout << " Supported modes:\n" << setw(16) << "    stream" << setw(16)
-                    << " resolution" << setw(10) << " fps" << setw(10) << " format" << endl;
+            for( auto&& sensor : dev.query_sensors() )
+            {
+                cout << "Stream Profiles supported by " << sensor.get_info( RS2_CAMERA_INFO_NAME ) << endl;
+                cout << " Supported modes:\n";
+
+                size_t w_stream = 10;
+                bool video_stream = false;
+                for( auto&& profile : sensor.get_stream_profiles() )
+                {
+                    w_stream = std::max( profile.stream_name().length(), w_stream );
+                    if( auto video = profile.as<video_stream_profile>() )
+                        video_stream = true;
+                }
+                w_stream += 2;
+
+                // Heading
+                if( verbose )
+                    cout << "   (UID.IDX)  ";
+                else
+                    cout << "    ";
+                cout << setw( w_stream ) << "STREAM";
+                if( video_stream )
+                    cout << setw( w_res ) << "RESOLUTION";
+                cout << setw( w_fps ) << "FPS";
+                cout << setw( w_format ) << "FORMAT";
+                cout << endl;
                 // Show which streams are supported by this device
                 for (auto&& profile : sensor.get_stream_profiles())
                 {
+                    cout << "    ";
+                    if( verbose )
+                        cout << " (" << profile.unique_id() << '.' << profile.stream_index() << ")    ";
+                    cout << setw( w_stream ) << profile.stream_name();
                     if (auto video = profile.as<video_stream_profile>())
                     {
-                        cout << "    " << profile.stream_name() << "\t  " << video.width() << "x"
-                            << video.height() << "\t@ " << profile.fps() << setw(6) << "Hz\t" << profile.format() << endl;
+                        cout << setw( w_res ) << ( std::to_string( video.width() ) + 'x' + std::to_string( video.height() ));
                     }
-                    else
-                    {
-                        cout << "    " << profile.stream_name() << "\t N/A\t\t@ " << profile.fps()
-                            << setw(6) << "Hz\t" << profile.format() << endl;
-                    }
+                    cout << setw( w_fps ) << ( "@ " + std::to_string( profile.fps() ) + "Hz" );
+                    cout << setw( w_format ) << profile.format();
+                    cout << endl;
                 }
 
                 cout << endl;
