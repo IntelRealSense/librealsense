@@ -84,6 +84,12 @@ dds_notification_server::dds_notification_server( std::shared_ptr< dds_publisher
     } );
 
     dds_topic_writer::qos wqos( RELIABLE_RELIABILITY_QOS ); //RELIABLE_RELIABILITY_QOS default but worth mentioning
+    // Writer can finish reader-writer handshake and start transmitting the discovery messages before the reader have
+    // finished the handshake and can receivethe messages.
+    // If history is too small writer will not be able to re-transmit needed samples.
+    // Setting history to cover known streams in Safety Camera plus some spare
+    wqos.history().depth = 16;
+
     _writer->run( wqos );
 }
 

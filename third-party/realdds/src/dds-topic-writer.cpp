@@ -81,8 +81,7 @@ void dds_topic_writer::run( qos const & wqos )
     if( _on_publication_matched )
         status_mask << eprosima::fastdds::dds::StatusMask::publication_matched();
     _writer = DDS_API_CALL(
-        _publisher->get()->create_datawriter( _topic->get(), wqos,
-                                              status_mask.any() ? this : nullptr, status_mask ) );
+        _publisher->get()->create_datawriter( _topic->get(), wqos, status_mask.any() ? this : nullptr, status_mask ) );
 }
 
 

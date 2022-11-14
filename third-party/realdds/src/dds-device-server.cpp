@@ -178,7 +178,7 @@ void dds_device_server::on_control_message_received()
         if ( !data.is_valid() )
             continue;
 
-        _control_dispatcher.invoke( [&]( dispatcher::cancellable_timer ) { handle_control_message( data ); } );
+        _control_dispatcher.invoke( [x = std::move(data), this]( dispatcher::cancellable_timer ) { handle_control_message( x ); } );
     }
 }
 
