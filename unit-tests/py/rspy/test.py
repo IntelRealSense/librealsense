@@ -195,10 +195,7 @@ def check_equal(result, expected, abort_if_failed = False):
     :return: True if assertion passed, False otherwise
     """
     if type(expected) == list:
-        log.out("check_equal should not be used for lists. Use check_equal_lists instead")
-        if abort_if_failed:
-            abort()
-        return False
+        raise RuntimeError( "check_equal should not be used for lists. Use check_equal_lists instead" )
     global n_assertions
     n_assertions += 1
     if type(expected) != type(result):
