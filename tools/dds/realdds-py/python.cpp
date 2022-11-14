@@ -6,6 +6,7 @@ Copyright(c) 2022 Intel Corporation. All Rights Reserved. */
 #include <realdds/dds-participant.h>
 #include <realdds/topics/dds-topics.h>
 #include <realdds/topics/device-info/deviceInfoPubSubTypes.h>
+#include <realdds/topics/flexible/flexiblePubSubTypes.h>
 #include <realdds/dds-device-broadcaster.h>
 #include <realdds/dds-device-server.h>
 #include <realdds/dds-stream-server.h>
@@ -16,6 +17,7 @@ Copyright(c) 2022 Intel Corporation. All Rights Reserved. */
 #include <realdds/dds-guid.h>
 #include <realdds/dds-topic.h>
 #include <realdds/dds-topic-reader.h>
+#include <realdds/dds-topic-writer.h>
 #include <realdds/dds-utilities.h>
 #include <realdds/dds-log-consumer.h>
 
@@ -23,6 +25,7 @@ Copyright(c) 2022 Intel Corporation. All Rights Reserved. */
 #include <fastdds/dds/domain/qos/DomainParticipantQos.hpp>
 #include <fastdds/dds/domain/DomainParticipant.hpp>
 #include <fastdds/dds/core/status/SubscriptionMatchedStatus.hpp>
+#include <fastdds/dds/core/status/PublicationMatchedStatus.hpp>
 #include <fastrtps/types/DynamicType.h>
 
 #include <third-party/json.hpp>
@@ -226,7 +229,7 @@ PYBIND11_MODULE(NAME, m) {
         } );
 
     using reader_qos = realdds::dds_topic_reader::qos;
-    py::class_< reader_qos >( m, "reader_qos" )
+    py::class_< reader_qos >( m, "reader_qos" )  //
         .def( "__repr__", []( reader_qos const & self ) {
             std::ostringstream os;
             os << "<" SNAME ".reader_qos";
@@ -245,6 +248,26 @@ PYBIND11_MODULE(NAME, m) {
                       callback(); ) )
         .def( "run", &dds_topic_reader::run )
         .def( "qos", []() { return reader_qos(); } );
+
+    using writer_qos = realdds::dds_topic_writer::qos;
+    py::class_< writer_qos >( m, "writer_qos" )  //
+        .def( "__repr__", []( writer_qos const & self ) {
+            std::ostringstream os;
+            os << "<" SNAME ".writer_qos";
+            os << ">";
+            return os.str();
+        } );
+
+    using realdds::dds_topic_writer;
+    py::class_< dds_topic_writer, std::shared_ptr< dds_topic_writer > >( m, "topic_writer" )
+        .def( py::init< std::shared_ptr< dds_topic > const & >() )
+        .def( FN_FWD( dds_topic_writer,
+                      on_publication_matched,
+                      (int),
+                      ( eprosima::fastdds::dds::PublicationMatchedStatus const & status ),
+                      callback( status.total_count_change ); ) )
+        .def( "run", &dds_topic_writer::run )
+        .def( "qos", []() { return writer_qos(); } );
 
 
     // The actual types are declared as functions and not classes: the py::init<> inheritance rules are pretty strict
@@ -298,19 +321,82 @@ PYBIND11_MODULE(NAME, m) {
         .def( "create_topic", &device_info::create_topic )
         .attr( "TOPIC_NAME" ) = device_info::TOPIC_NAME;
 
-    //py::class_< raw_device_info, std::shared_ptr< raw_device_info > >( raw, "device_info" )
-    //    .def( py::init<>() )
-    //    .def( py::init( []( dds_topic_reader const & reader ) {
-    //        auto actual_type = reader.topic()->get()->get_type_name();
-    //        if( actual_type != "realdds::topics::raw::device_info" )
-    //            throw std::runtime_error( "can't initialize raw::device_info from " + actual_type );
-    //        raw_device_info raw_data;
-    //        eprosima::fastdds::dds::SampleInfo info;
-    //        DDS_API_CALL( reader->take_next_sample( &raw_data, &info ) );
-    //        if( ! info.valid_data )
-    //            throw std::runtime_error( "invalid data" );
-    //        return raw_data;
-    //    } ) );
+    using realdds::topics::flexible_msg;
+    using raw_flexible = realdds::topics::raw::flexible;
+    types.def( "flexible", []() { return TypeSupport( new flexible_msg::type ); } );
+
+    py::enum_< flexible_msg::data_format >( m, "flexible.data_format" )
+        .value( "json", flexible_msg::data_format::JSON )
+        .value( "cbor", flexible_msg::data_format::CBOR )
+        .value( "custom", flexible_msg::data_format::CUSTOM );
+
+    typedef std::shared_ptr< dds_topic > flexible_msg_create_topic( std::shared_ptr< dds_participant > const &,
+                                                                    char const * );
+    py::class_< flexible_msg >( m, "flexible_msg" )
+        .def( py::init<>() )
+        .def( py::init( []( std::string const & json_string ) {
+            return flexible_msg( flexible_msg::data_format::JSON, nlohmann::json::parse( json_string ) );
+        } ) )
+        .def_readwrite( "data_format", &flexible_msg::_data_format )
+        .def_readwrite( "version", &flexible_msg::_version )
+        .def_readwrite( "data", &flexible_msg::_data )
+        .def( "invalidate", &flexible_msg::invalidate )
+        .def( "is_valid", &flexible_msg::is_valid )
+        .def( "__nonzero__", &flexible_msg::is_valid )  // Called to implement truth value testing in Python 2
+        .def( "__bool__", &flexible_msg::is_valid )     // Called to implement truth value testing in Python 3
+        .def( "__repr__",
+              []( flexible_msg const & self ) {
+                  std::ostringstream os;
+                  os << "<" SNAME ".flexible_msg ";
+                  switch( self._data_format )
+                  {
+                  case flexible_msg::data_format::JSON:
+                      os << "JSON";
+                      break;
+                  case flexible_msg::data_format::CBOR:
+                      os << "CBOR";
+                      break;
+                  case flexible_msg::data_format::CUSTOM:
+                      os << "CUSTOM";
+                      break;
+                  default:
+                      os << "UNKNOWN(" << (int)self._data_format << ")";
+                      break;
+                  }
+                  os << ' ';
+                  if( ! self.is_valid() )
+                      os << "INVALID";
+                  else
+                  {
+                      os << self._data.size();
+                      switch( self._data_format )
+                      {
+                      case flexible_msg::data_format::JSON:
+                          os << ' ';
+                          os << std::string( (char const *)self._data.data(), self._data.size() );
+                          break;
+                      default:
+                          break;
+                      }
+                  }
+                  os << ">";
+                  return os.str();
+              } )
+        .def( "take_next",
+              []( dds_topic_reader & reader ) {
+                  auto actual_type = reader.topic()->get()->get_type_name();
+                  if( actual_type != flexible_msg::type().getName() )
+                      throw std::runtime_error( "can't initialize raw::flexible from " + actual_type );
+                  flexible_msg data;
+                  if( ! flexible_msg::take_next( reader, &data ) )
+                      assert( ! data.is_valid() );
+                  return data;
+              } )
+        .def( "create_topic", static_cast<flexible_msg_create_topic *>( &flexible_msg::create_topic ))
+        .def( "json_data", []( flexible_msg const & self ) {
+            return std::string( (char const *)self._data.data(), self._data.size() );
+        } )
+        .def( "write_to", &flexible_msg::write_to );
 
 
     using realdds::dds_device_broadcaster;
