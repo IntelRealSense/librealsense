@@ -5,9 +5,9 @@ import pyrealdds
 from rspy import log, test
 
 
-def run_server( server_script ):
+def run_server( server_script, nested_indent = 'svr' ):
     import os.path
-    cmd = test.nested_cmd( server_script, cwd = os.path.dirname(os.path.realpath(__file__)) )
+    cmd = test.nested_cmd( server_script, cwd = os.path.dirname(os.path.realpath(__file__)), nested_indent = nested_indent )
     import subprocess, time
     log.d( 'running:', cmd )
     start_time = time.time()

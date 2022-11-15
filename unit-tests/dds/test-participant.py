@@ -8,8 +8,8 @@ from rspy import log, test
 
 
 import dds
-client.debug( True, 'cli' )
-log.nested = 'cli'
+client.debug( True, 'C  ' )
+log.nested = 'C  '
 
 
 #############################################################################################
@@ -33,7 +33,7 @@ listener = participant.create_listener()
 listener.on_participant_added( on_participant_added )
 listener.on_participant_removed( on_participant_removed )
 
-dds.run_server( 'participant-server.py' )
+dds.run_server( 'participant-server.py', nested_indent="  S" )
 
 test.check( server_added )
 test.check( server_removed )
