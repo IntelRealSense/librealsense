@@ -22,10 +22,11 @@ class dds_stream_profile;
 struct image_header
 {
     int format;
-    int height = 0;
-    int width = 0;
+    int height = -1;
+    int width = -1;
 
-    bool is_valid() const { return width != 0 && height != 0; }
+    bool is_valid() const { return width != -1 && height != -1; }
+    void invalidate() { width = -1; height = -1; }
 };
 
 

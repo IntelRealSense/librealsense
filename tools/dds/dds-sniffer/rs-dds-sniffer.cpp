@@ -8,6 +8,7 @@
 
 #include <fastdds/dds/domain/DomainParticipant.hpp>
 #include <fastdds/dds/subscriber/DataReader.hpp>
+#include <fastdds/dds/subscriber/qos/DataReaderQos.hpp>
 #include <fastdds/dds/subscriber/DataReaderListener.hpp>
 #include <fastdds/dds/log/Log.hpp>
 #include <fastrtps/types/DynamicDataHelper.hpp>
@@ -325,8 +326,10 @@ void dds_sniffer::on_type_discovery( char const * topic_name, DynamicType_ptr dy
             }
 
             StatusMask sub_mask = StatusMask::subscription_matched() << StatusMask::data_available();
+            DataReaderQos rqos = DATAREADER_QOS_DEFAULT;
+            rqos.endpoint().history_memory_policy = eprosima::fastrtps::rtps::PREALLOCATED_WITH_REALLOC_MEMORY_MODE;
             DataReader * reader = DDS_API_CALL( _discovered_types_subscriber->create_datareader( topic,
-                                                                                                 DATAREADER_QOS_DEFAULT,
+                                                                                                 rqos,
                                                                                                  &_reader_listener,
                                                                                                  sub_mask ) );
             if( reader == nullptr )

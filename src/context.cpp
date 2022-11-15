@@ -136,7 +136,7 @@ namespace librealsense
             if( ! _dds_participant.instance()->is_valid() )
                 _dds_participant->init( 0, "librealsense" );
             _dds_watcher.instance( _dds_participant.get() );
-#endif
+#endif //BUILD_WITH_DDS
             break;
         case backend_type::record:
             _backend = std::make_shared<platform::record_backend>(platform::create_backend(), filename, section, mode);
@@ -192,7 +192,7 @@ namespace librealsense
             }
             //_dds_backend = ...; TODO
         }
-#endif
+#endif //BUILD_WITH_DDS
     }
 
 
@@ -710,7 +710,7 @@ namespace librealsense
             return platform::backend_device_group{};
         }
     };
-#endif
+#endif //BUILD_WITH_DDS
 
     context::~context()
     {
@@ -721,7 +721,7 @@ namespace librealsense
 #ifdef BUILD_WITH_DDS
         if( _dds_watcher )
             _dds_watcher->stop();
-#endif
+#endif //BUILD_WITH_DDS
     }
 
     std::vector<std::shared_ptr<device_info>> context::query_devices(int mask) const
@@ -777,7 +777,7 @@ namespace librealsense
                     }
                 return true;
             } );
-#endif
+#endif //BUILD_WITH_DDS
 
 #ifdef WITH_TRACKING
         if (mask & RS2_PRODUCT_LINE_T200)
@@ -785,7 +785,7 @@ namespace librealsense
             auto tm2_devices = tm2_info::pick_tm2_devices(ctx, devices.usb_devices);
             std::copy(begin(tm2_devices), end(tm2_devices), std::back_inserter(list));
         }
-#endif
+#endif //WITH_TRACKING
         // Supported recovery devices
         if( mask & RS2_PRODUCT_LINE_D400 || mask & RS2_PRODUCT_LINE_SR300 || mask & RS2_PRODUCT_LINE_L500 ) 
         {
@@ -894,7 +894,7 @@ namespace librealsense
         _dds_watcher->on_device_removed( [this]( std::shared_ptr< realdds::dds_device > const & dev ) {} );
         _dds_watcher->start();
     }
-#endif
+#endif //BUILD_WITH_DDS
 
     uint64_t context::register_internal_device_callback(devices_changed_callback_ptr callback)
     {
@@ -920,7 +920,7 @@ namespace librealsense
 #ifdef BUILD_WITH_DDS
             if( _dds_watcher )
                 _dds_watcher->stop();
-#endif
+#endif //BUILD_WITH_DDS
         }
     }
 

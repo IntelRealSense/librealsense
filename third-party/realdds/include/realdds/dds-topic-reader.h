@@ -23,20 +23,24 @@ namespace realdds {
 
 
 class dds_topic;
-
+class dds_subscriber;
 
 // The 'reader' is the entity used to subscribe to updated values of data in a topic. It is bound at creation to this
 // topic.
+// 
+// You may choose to create one via a 'subscriber' that manages the activities of several readers.
+// on_data_available callback will be called when a sample is received.
 //
 class dds_topic_reader : public eprosima::fastdds::dds::DataReaderListener
 {
     std::shared_ptr< dds_topic > const _topic;
+    std::shared_ptr < dds_subscriber > const _subscriber;
 
-    eprosima::fastdds::dds::Subscriber * _subscriber = nullptr;
     eprosima::fastdds::dds::DataReader * _reader = nullptr;
 
 public:
     dds_topic_reader( std::shared_ptr< dds_topic > const & topic );
+    dds_topic_reader( std::shared_ptr< dds_topic > const & topic, std::shared_ptr< dds_subscriber > const & subscriber );
     ~dds_topic_reader();
 
     eprosima::fastdds::dds::DataReader * get() const { return _reader; }

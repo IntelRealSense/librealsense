@@ -2,6 +2,8 @@
 // Copyright(c) 2022 Intel Corporation. All Rights Reserved.
 
 #include <librealsense2/utilities/easylogging/easyloggingpp.h>
+#include <librealsense2/utilities/json.h>
+
 #include <realdds/dds-device-broadcaster.h>
 #include <realdds/dds-device-server.h>
 #include <realdds/dds-stream-server.h>
@@ -9,6 +11,8 @@
 #include <realdds/dds-utilities.h>
 #include <realdds/dds-log-consumer.h>
 #include <realdds/topics/device-info/device-info-msg.h>
+#include <realdds/topics/flexible/flexible-msg.h>
+
 #include <fastrtps/types/TypesBase.h>
 #include <fastdds/dds/log/Log.hpp>
 
@@ -18,14 +22,15 @@
 #include <tclap/CmdLine.h>
 #include <tclap/ValueArg.h>
 
+#include <string>
 #include <iostream>
 #include <map>
 #include <unordered_set>
 
+using nlohmann::json;
 
 using namespace TCLAP;
 using namespace realdds;
-
 
 #define NAME2SERVER( X )                                                                                               \
     if( server )                                                                                                       \
@@ -130,62 +135,7 @@ std::vector< std::shared_ptr< realdds::dds_stream_server > > get_supported_strea
     return servers;
 }
 
-
 #undef NAME2SERVER
-
-
-rs2::stream_profile get_required_profile( rs2::sensor sensor,
-                                          const rs2_stream stream,
-                                          const int fps,
-                                          rs2_format const format,
-                                          const int width,
-                                          const int height )
-{
-    auto sensor_stream_profiles = sensor.get_stream_profiles();
-    auto found_profiles = std::find_if( sensor_stream_profiles.begin(),
-                                        sensor_stream_profiles.end(),
-                                        [&]( rs2::stream_profile sp ) {
-                                            auto vp = sp.as< rs2::video_stream_profile >();
-                                            return sp.stream_type() == stream && sp.fps() == fps
-                                                && sp.format() == format && vp.width() == width
-                                                && vp.height() == height;
-                                        } );
-    if( found_profiles == sensor_stream_profiles.end() )
-    {
-        throw std::runtime_error( "Could not find required profile" );
-    }
-
-    return *found_profiles;
-}
-
-void start_streaming( std::shared_ptr< tools::lrs_device_controller > lrs_device_controller,
-                      std::shared_ptr< dds_device_server > dds_dev_server,
-                      const rs2::stream_profile & stream_profile )
-{
-    // Configure DDS-server to the required frame header
-    realdds::image_header header;
-    auto vsp = stream_profile.as< rs2::video_stream_profile >();
-    header.format = static_cast< int >( vsp.format() );
-    header.height = vsp.height();
-    header.width = vsp.width();
-    dds_dev_server->start_streaming( stream_profile.stream_name(), header );
-
-    // Start streaming
-    lrs_device_controller->start_stream( stream_profile, [&, dds_dev_server]( rs2::frame f ) {
-        auto vf = f.as< rs2::video_frame >();
-        try
-        {
-            dds_dev_server->publish_image( vf.get_profile().stream_name(),
-                                           (const uint8_t *)f.get_data(),
-                                           f.get_data_size() );
-        }
-        catch( std::exception & e )
-        {
-            LOG_ERROR( "Exception raised during DDS publish " << vf.get_profile().stream_name()
-                                                              << " frame: " << e.what() );
-        }
-    } );
-}
 
 
 std::string get_topic_root( topics::device_info const & dev_info )
@@ -314,6 +264,10 @@ try
             // Create a dds-device-server for this device
             auto dds_device_server
                 = std::make_shared< realdds::dds_device_server >( participant, dev_info.topic_root );
+ 
+            // Create a lrs_device_manager for this device
+            std::shared_ptr< tools::lrs_device_controller > lrs_device_controller
+                = std::make_shared< tools::lrs_device_controller >( dev, dds_device_server );
 
             // Create a supported streams list for initializing the relevant DDS topics
             auto supported_streams = get_supported_streams( dev );
@@ -321,23 +275,8 @@ try
             // Initialize the DDS device server with the supported streams
             dds_device_server->init( supported_streams );
 
-            // Create a lrs_device_manager for this device
-            std::shared_ptr< tools::lrs_device_controller > lrs_device_controller
-                = std::make_shared< tools::lrs_device_controller >( dev );
-
             // Keep a pair of device controller and server per RS device
             device_handlers_list.emplace( dev, device_handler{ dev_info, dds_device_server, lrs_device_controller } );
-
-            // Get the desired stream profile
-            auto profile = get_required_profile( dev.first< rs2::color_sensor >(),
-                                                 RS2_STREAM_COLOR,
-                                                 30,
-                                                 RS2_FORMAT_RGB8,
-                                                 1280,
-                                                 720 );
-
-            // Start streaming 
-            start_streaming( lrs_device_controller, dds_device_server, profile );
         },
         // Handle a device disconnection
         [&]( rs2::device dev ) {
@@ -347,7 +286,6 @@ try
             // Remove this device from the DDS device broadcaster
             broadcaster.remove_device( handler.info );
 
-            handler.controller->stop_all_streams();
             device_handlers_list.erase( dev );
         } );
 

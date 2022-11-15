@@ -5,9 +5,11 @@
 
 #include <realdds/dds-participant.h>
 #include <realdds/dds-publisher.h>
+#include <realdds/dds-subscriber.h>
 #include <realdds/dds-stream-server.h>
 #include <realdds/dds-stream-profile.h>
 #include <realdds/dds-notification-server.h>
+#include <realdds/dds-topic-reader.h>
 #include <realdds/dds-utilities.h>
 #include <realdds/topics/device-info/device-info-msg.h>
 #include <realdds/topics/image/image-msg.h>
@@ -16,11 +18,11 @@
 #include <realdds/dds-topic-writer.h>
 
 #include <fastdds/dds/topic/Topic.hpp>
+#include <fastdds/dds/subscriber/SampleInfo.hpp>
 
-#include <third-party/json.hpp>
+#include <librealsense2/utilities/json.h>
+
 using nlohmann::json;
-
-
 using namespace eprosima::fastdds::dds;
 using namespace realdds;
 
@@ -28,9 +30,12 @@ using namespace realdds;
 dds_device_server::dds_device_server( std::shared_ptr< dds_participant > const & participant,
                                       const std::string & topic_root )
     : _publisher( std::make_shared< dds_publisher >( participant ))
+    , _subscriber( std::make_shared< dds_subscriber >( participant ))
     , _topic_root( topic_root )
+    , _control_dispatcher( QUEUE_MAX_SIZE )
 {
     LOG_DEBUG( "device server created @ '" << _topic_root << "'" );
+    _control_dispatcher.start();
 }
 
 
@@ -41,14 +46,31 @@ dds_device_server::~dds_device_server()
 }
 
 
-void dds_device_server::start_streaming( const std::string & stream_name,
-                                         const image_header & header )
+void dds_device_server::start_streaming( const std::vector< std::pair < std::string, image_header > > & streams_to_open )
 {
-    auto it = _stream_name_to_server.find( stream_name );
-    if( it == _stream_name_to_server.end() )
-        DDS_THROW( runtime_error, "stream '" + stream_name + "' does not exist" );
-    auto& stream = it->second;
-    stream->start_streaming( header );
+    for ( auto & p : streams_to_open )
+    {
+        auto & stream_name = p.first;
+        auto & header = p.second;
+        auto it = _stream_name_to_server.find( stream_name );
+        if ( it == _stream_name_to_server.end() )
+            DDS_THROW( runtime_error, "stream '" + stream_name + "' does not exist" );
+        auto & stream = it->second;
+        stream->start_streaming( header );
+    }
+}
+
+
+void dds_device_server::stop_streaming( const std::vector< std::string > & stream_to_close )
+{
+    for ( auto & stream_name : stream_to_close )
+    {
+        auto it = _stream_name_to_server.find( stream_name );
+        if ( it == _stream_name_to_server.end() )
+            DDS_THROW( runtime_error, "stream '" + stream_name + "' does not exist" );
+        auto & stream = it->second;
+        stream->stop_streaming();
+    }
 }
 
 
@@ -105,6 +127,7 @@ void dds_device_server::init( std::vector< std::shared_ptr< dds_stream_server > 
 
     try
     {
+        // Create a notifications server and set discovery notifications
         _notification_server = std::make_shared< dds_notification_server >( _publisher, _topic_root + "/notification" );
 
         // If a previous init failed (e.g., one of the streams has no profiles):
@@ -120,11 +143,21 @@ void dds_device_server::init( std::vector< std::shared_ptr< dds_stream_server > 
         }
 
         _notification_server->run();
+
+        // Create a control reader and set callback
+        auto topic = topics::flexible_msg::create_topic( _subscriber->get_participant(), _topic_root + "/control" );
+        _control_reader = std::make_shared< dds_topic_reader >( topic, _subscriber );
+
+        _control_reader->on_data_available( [&]() { on_control_message_received(); } );
+
+        dds_topic_reader::qos rqos( RELIABLE_RELIABILITY_QOS );
+        _control_reader->run( rqos );
     }
     catch( std::exception const & )
     {
         _notification_server.reset();
         _stream_name_to_server.clear();
+        _control_reader.reset();
         throw;
     }
 }
@@ -135,3 +168,32 @@ void dds_device_server::publish_notification( topics::flexible_msg && notificati
     _notification_server->send_notification( std::move( notification ) );
 }
 
+
+void dds_device_server::on_control_message_received()
+{
+    topics::flexible_msg data;
+    eprosima::fastdds::dds::SampleInfo info;
+    while ( topics::flexible_msg::take_next( *_control_reader, &data, &info ) )
+    {
+        if ( !data.is_valid() )
+            continue;
+
+        _control_dispatcher.invoke( [x = std::move(data), this]( dispatcher::cancellable_timer ) { handle_control_message( x ); } );
+    }
+}
+
+void dds_device_server::handle_control_message( topics::flexible_msg control_message )
+{
+    auto j = control_message.json_data();
+    auto id = utilities::json::get< std::string >( j, "id" );
+    if ( id.compare("open-streams") == 0 )
+    {
+        if ( _open_streams_callback )
+            _open_streams_callback( j );
+    }
+    else if( id.compare( "close-streams" ) == 0 )
+    {
+        if ( _close_streams_callback )
+            _close_streams_callback( j );
+    }
+}

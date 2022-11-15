@@ -131,11 +131,11 @@ bool dds_device::impl::init()
                 if( ! notification.is_valid() )
                     continue;
                 auto j = notification.json_data();
-                auto id = j["id"].get< std::string >();
+                auto id = utilities::json::get< std::string >( j, "id" );
                 if( state_type::WAIT_FOR_DEVICE_HEADER == state && id == "device-header" )
                 {
                     n_streams_expected = utilities::json::get< size_t >( j, "n-streams" );
-                    LOG_INFO( "... device-header: " << n_streams_expected << " streams expected" );
+                    LOG_DEBUG( "... device-header: " << n_streams_expected << " streams expected" );
                     if( n_streams_expected )
                         state = state_type::WAIT_FOR_PROFILES;
                     else
@@ -184,8 +184,8 @@ bool dds_device::impl::init()
                                    "failed to instantiate stream type '" + stream_type + "' (instead, got '"
                                        + stream->type_string() + "')" );
                     stream->init_profiles( profiles, default_profile_index );
-                    LOG_INFO( "... stream '" << stream_name << "' (" << _streams.size() << "/" << n_streams_expected
-                                             << ") received with " << profiles.size() << " profiles" );
+                    LOG_DEBUG( "... stream '" << stream_name << "' (" << _streams.size() << "/" << n_streams_expected
+                                              << ") received with " << profiles.size() << " profiles" );
                     if( _streams.size() >= n_streams_expected )
                         state = state_type::DONE;
                 }
@@ -196,8 +196,9 @@ bool dds_device::impl::init()
             }
         }
     }
-    if( state_type::DONE != state )
-        LOG_DEBUG( "timed out; state is " << state );
+
+    LOG_DEBUG( "... " << ( state_type::DONE == state ? "" : "timed out; state is " ) << state );
+
     return ( state_type::DONE == state );
 }
 
