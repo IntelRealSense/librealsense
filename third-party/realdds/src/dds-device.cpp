@@ -4,10 +4,6 @@
 #include <realdds/dds-device.h>
 #include "dds-device-impl.h"
 
-#include <realdds/topics/flexible/flexible-msg.h>
-#include <realdds/dds-exceptions.h>
-
-#include <third-party/json.hpp>
 
 namespace realdds {
 
@@ -87,12 +83,10 @@ void dds_device::run()
     _impl->run();
 }
 
-
 std::shared_ptr< dds_participant > const& dds_device::participant() const
 {
     return _impl->_participant;
 }
-
 
 topics::device_info const & dds_device::device_info() const
 {
@@ -121,43 +115,12 @@ size_t dds_device::foreach_stream( std::function< void( std::shared_ptr< dds_str
 
 void dds_device::open( const dds_stream_profiles & profiles )
 {
-    if( profiles.empty() )
-        DDS_THROW( runtime_error, "must provide at least one profile" );
-    using nlohmann::json;
-    auto stream_profiles = json();
-    for( auto & profile : profiles )
-    {
-        auto stream = profile->stream();
-        if( ! stream )
-            DDS_THROW( runtime_error, "profile (" + profile->to_string() + ") is not part of any stream" );
-        if( stream_profiles.find( stream->name() ) != stream_profiles.end() )
-            DDS_THROW( runtime_error, "more than one profile found for stream '" + stream->name() + "'" );
-        stream_profiles[stream->name()] = profile->to_json();
-    }
-    json j = {
-        { "id", "open-streams" },
-        { "stream-profiles", stream_profiles },
-    };
-    _impl->write_control_message( j );
+    _impl->open( profiles );
 }
 
 void dds_device::close( dds_streams const & streams )
 {
-    if( streams.empty() )
-        DDS_THROW( runtime_error, "must provide at least one stream" );
-    using nlohmann::json;
-    auto stream_names = json::array();
-    for( auto & stream : streams )
-    {
-        if( ! stream )
-            DDS_THROW( runtime_error, "null stream passed in" );
-        stream_names += stream->name();
-    }
-    json j = {
-        { "id", "close-streams" },
-        { "stream-names", stream_names },
-    };
-    _impl->write_control_message( j );
+    _impl->close( streams );
 }
 
 

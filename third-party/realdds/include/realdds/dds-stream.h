@@ -6,12 +6,23 @@
 #include "dds-stream-base.h"
 #include "dds-stream-profile.h"
 
+#include <librealsense2/utilities/concurrency/concurrency.h>
+
 #include <memory>
 #include <string>
 #include <vector>
+#include <functional>
 
 namespace realdds {
 
+namespace topics {
+namespace device {
+    class image;
+} // namespace device
+} // namespace topics
+
+class dds_subscriber;
+class dds_topic_reader;
 
 // Represents a stream of information (images, motion data, etc..) from a single source received via the DDS system.
 // A stream can have several profiles, i.e different data frequency, image resolution, etc..
@@ -25,12 +36,25 @@ class dds_stream : public dds_stream_base
 protected:
     dds_stream( std::string const & stream_name, std::string const & sensor_name );
 
-    // dds_stream_base
 public:
-    bool is_open() const override;
-    bool is_streaming() const override;
+    bool is_open() const override { return !! _reader; }
+    virtual void open( std::string const & topic_name, std::shared_ptr< dds_subscriber > const & );
+    virtual void close();
+
+    bool is_streaming() const override { return _is_streaming; }
+    typedef std::function< void( const topics::device::image & f) > on_data_available_callback;
+    void start_streaming( on_data_available_callback cb );
+    void stop_streaming();
 
     std::shared_ptr< dds_topic > const & get_topic() const override;
+
+protected:
+    void handle_frames();
+
+    std::shared_ptr< dds_topic_reader > _reader;
+    on_data_available_callback _on_data_available;
+    dispatcher _image_dispatcher;
+    bool _is_streaming = false;
 };
 
 class dds_video_stream : public dds_stream

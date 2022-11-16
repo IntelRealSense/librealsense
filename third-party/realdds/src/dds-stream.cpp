@@ -4,27 +4,80 @@
 #include <realdds/dds-stream.h>
 #include "dds-stream-impl.h"
 
+#include <realdds/dds-topic.h>
+#include <realdds/dds-topic-reader.h>
+#include <realdds/dds-subscriber.h>
+#include <realdds/topics/image/image-msg.h>
 #include <realdds/dds-exceptions.h>
 
+#include <fastdds/dds/subscriber/SampleInfo.hpp>
 
-namespace realdds {
+using namespace eprosima::fastdds::dds;
+using namespace realdds;
 
 
 dds_stream::dds_stream( std::string const & stream_name, std::string const & sensor_name )
     : super( stream_name, sensor_name )
+    , _image_dispatcher( QUEUE_MAX_SIZE )
 {
 }
 
 
-bool dds_stream::is_open() const
+void dds_stream::open( std::string const & topic_name, std::shared_ptr< dds_subscriber > const & subscriber )
 {
-    return false;
+    if ( is_open() )
+        DDS_THROW( runtime_error, "stream '" + name() + "' is already open" );
+    if ( profiles().empty() )
+        DDS_THROW( runtime_error, "stream '" + name() + "' has no profiles" );
+
+    auto topic = topics::device::image::create_topic( subscriber->get_participant(), topic_name.c_str() );
+
+    _reader = std::make_shared< dds_topic_reader >( topic, subscriber );
+    _reader->run( dds_topic_reader::qos( BEST_EFFORT_RELIABILITY_QOS ) );  // no retries
+}
+
+void dds_stream::close()
+{
+    _reader.reset();
+}
+
+void dds_stream::start_streaming( on_data_available_callback cb )
+{
+    if ( !is_open() )
+        DDS_THROW( runtime_error, "stream '" + name() + "' is not open" );
+
+    _on_data_available = cb;
+    _image_dispatcher.start();
+    _is_streaming = true;
+
+    _reader->on_data_available( [&]() { handle_frames(); } );
+}
+
+void dds_stream::handle_frames()
+{
+    topics::device::image frame;
+    eprosima::fastdds::dds::SampleInfo info;
+    while ( topics::device::image::take_next( *_reader, &frame, &info ) )
+    {
+        if ( !frame.is_valid() )
+            continue;
+
+        _image_dispatcher.invoke( [f = std::move( frame ), this]( dispatcher::cancellable_timer ) { _on_data_available( f ); } );
+    }
 }
 
 
-bool dds_stream::is_streaming() const
+void dds_stream::stop_streaming()
 {
-    return false;
+    if ( !is_streaming() )
+        DDS_THROW( runtime_error, "stream '" + name() + "' is not streaming" );
+
+    if ( !is_open() )
+        DDS_THROW( runtime_error, "stream '" + name() + "' is not open" );
+
+    _reader->on_data_available( [](){} );
+    _image_dispatcher.stop();
+    _is_streaming = false;
 }
 
 
@@ -94,6 +147,3 @@ dds_pose_stream::dds_pose_stream( std::string const & stream_name, std::string c
     : super( stream_name, sensor_name )
 {
 }
-
-
-}  // namespace realdds
