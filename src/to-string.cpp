@@ -45,6 +45,7 @@ const char * get_string( rs2_stream value )
     CASE( GPIO )
     CASE( POSE )
     CASE( CONFIDENCE )
+    CASE( SAFETY )
     default:
         assert( ! is_valid( value ) );
         return UNKNOWN_VALUE;
