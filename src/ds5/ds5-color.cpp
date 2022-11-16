@@ -16,7 +16,8 @@ namespace librealsense
         {rs_fourcc('Y','U','Y','V'), RS2_FORMAT_YUYV},
         {rs_fourcc('U','Y','V','Y'), RS2_FORMAT_UYVY},
         {rs_fourcc('M','J','P','G'), RS2_FORMAT_MJPEG},
-        {rs_fourcc('B','Y','R','2'), RS2_FORMAT_RAW16}
+        {rs_fourcc('B','Y','R','2'), RS2_FORMAT_RAW16},
+        {rs_fourcc('M','4','2','0'), RS2_FORMAT_M420}
     };
     std::map<uint32_t, rs2_stream> ds5_color_fourcc_to_rs2_stream = {
         {rs_fourcc('Y','U','Y','2'), RS2_STREAM_COLOR},
@@ -24,6 +25,7 @@ namespace librealsense
         {rs_fourcc('U','Y','V','Y'), RS2_STREAM_COLOR},
         {rs_fourcc('B','Y','R','2'), RS2_STREAM_COLOR},
         {rs_fourcc('M','J','P','G'), RS2_STREAM_COLOR},
+        {rs_fourcc('M','4','2','0'), RS2_STREAM_COLOR}
     };
 
     ds5_color::ds5_color(std::shared_ptr<context> ctx,
@@ -247,7 +249,6 @@ namespace librealsense
         color_ep.register_metadata(RS2_FRAME_METADATA_LOW_LIGHT_COMPENSATION, make_attribute_parser(&md_rgb_control::low_light_comp, md_rgb_control_attributes::low_light_comp_attribute, md_prop_offset));
 
 
-        color_ep.register_processing_block(processing_block_factory::create_pbf_vector<yuy2_converter>(RS2_FORMAT_YUYV, map_supported_color_formats(RS2_FORMAT_YUYV), RS2_STREAM_COLOR));
         color_ep.register_processing_block(processing_block_factory::create_id_pbf(RS2_FORMAT_RAW16, RS2_STREAM_COLOR));
 
         if (_pid == ds::RS465_PID)
@@ -255,6 +256,11 @@ namespace librealsense
             color_ep.register_processing_block({ {RS2_FORMAT_MJPEG} }, { {RS2_FORMAT_RGB8, RS2_STREAM_COLOR} }, []() { return std::make_shared<mjpeg_converter>(RS2_FORMAT_RGB8); });
             color_ep.register_processing_block(processing_block_factory::create_id_pbf(RS2_FORMAT_MJPEG, RS2_STREAM_COLOR));
         }
+        
+        if (_pid == ds::RS_D585_PID || _pid == ds::RS_S585_PID)
+            color_ep.register_processing_block(processing_block_factory::create_pbf_vector<m420_converter>(RS2_FORMAT_M420, map_supported_color_formats(RS2_FORMAT_M420), RS2_STREAM_COLOR));
+        else
+            color_ep.register_processing_block(processing_block_factory::create_pbf_vector<yuy2_converter>(RS2_FORMAT_YUYV, map_supported_color_formats(RS2_FORMAT_YUYV), RS2_STREAM_COLOR));
     }
 
     rs2_intrinsics ds5_color_sensor::get_intrinsics(const stream_profile& profile) const

@@ -141,6 +141,11 @@ RsSimpleRTPSink ::RsSimpleRTPSink(UsageEnvironment& t_env,
     sprintf(m_fFmtpSDPLine, "a=fmtp:%d;%s\r\n", rtpPayloadType(), sdpStr.c_str());
 }
 
+RsSimpleRTPSink::~RsSimpleRTPSink()
+{
+    delete[] m_fFmtpSDPLine;
+}
+
 char const* RsSimpleRTPSink::auxSDPLine()
 {
     return m_fFmtpSDPLine;

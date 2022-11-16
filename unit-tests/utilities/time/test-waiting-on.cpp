@@ -1,6 +1,7 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2021 Intel Corporation. All Rights Reserved.
 
+#include <librealsense2/utilities/string/chrono.h>  // must be before catch.h!
 #include <unit-tests/catch.h>
 #include <librealsense2/utilities/time/waiting-on.h>
 #include <librealsense2/utilities/time/timer.h>
@@ -161,5 +162,7 @@ TEST_CASE( "Not invoked flush timeout expected" )
     invoked.wait_until( timeout, [&]() { return invoked; } );
     auto wait_time = sw.get_elapsed();
 
+    INFO( wait_time.count() );
+    INFO( timeout.count() );
     REQUIRE( wait_time >= timeout );
 }

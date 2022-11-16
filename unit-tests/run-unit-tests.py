@@ -64,7 +64,7 @@ def usage():
 # get os and directories for future use
 # NOTE: WSL will read as 'Linux' but the build is Windows-based!
 system = platform.system()
-if system == 'Linux' and "microsoft" not in platform.uname()[3].lower():
+if system == 'Linux' and "microsoft" not in platform.release().lower():
     linux = True
 else:
     linux = False
@@ -84,7 +84,7 @@ required_tags = []
 list_tags = False
 list_tests = False
 no_exceptions = False
-context = None
+context = []
 repeat = 1
 forced_configurations = None
 no_reset = False
@@ -109,7 +109,7 @@ for opt, arg in opts:
     elif opt == '--no-exceptions':
         no_exceptions = True
     elif opt == '--context':
-        context = arg
+        context = arg.split()  # list of contexts
     elif opt == '--repeat':
         if not arg.isnumeric()  or  int(arg) < 1:
             log.e( "--repeat must be a number greater than 0" )

@@ -10,7 +10,7 @@
 TEST_CASE( "Mixed file & callback logging", "[log]" ) {
 
     char filename[L_tmpnam];
-    tmpnam( filename );
+    REQUIRE( tmpnam( filename ));
 
     TRACE( "Filename logging to: " << filename );
     REQUIRE_NOTHROW( rs2::log_to_file( RS2_LOG_SEVERITY_ERROR, filename ));

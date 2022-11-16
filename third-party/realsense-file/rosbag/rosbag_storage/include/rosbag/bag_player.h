@@ -70,7 +70,7 @@ private:
     Callback cb_;
 };
 #ifdef _MSC_VER
-#pragma warning( disable : 4290 ) // Suppress warning C4290:C++ exception specification ignored except to indicate a function is not __declspec(nothrow)
+//#pragma warning( disable : 4290 ) // Suppress warning C4290:C++ exception specification ignored except to indicate a function is not __declspec(nothrow)
 #endif
 /* A class for playing back bag files at an API level. It supports
    relatime, as well as accelerated and slowed playback. */
@@ -78,7 +78,7 @@ class BagPlayer
 {
 public:
   /* Constructor expecting the filename of a bag */
-  BagPlayer(const std::string &filename) throw(BagException);
+  BagPlayer(const std::string &filename);
 
   /* Register a callback for a specific topic and type */
   template<class T>
