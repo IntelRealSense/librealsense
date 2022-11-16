@@ -82,7 +82,7 @@ namespace librealsense
 
     void ds5_safety::register_metadata(std::shared_ptr<ds5_safety_sensor> safety_ep)
     {
-        // TODO REMI
+        safety_ep->get_raw_sensor()->register_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP, make_uvc_header_parser(&platform::uvc_header::timestamp));
     }
 
     void ds5_safety::register_processing_blocks(std::shared_ptr<ds5_safety_sensor> safety_ep)
