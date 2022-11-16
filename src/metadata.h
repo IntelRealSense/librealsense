@@ -539,19 +539,18 @@ namespace librealsense
     {
         md_type     md_type_id;
         uint16_t    version;
-        uint32_t    frame_id;
-        uint32_t    depth_frame_id;
-        uint32_t    frame_ts;
+        uint32_t    frame_counter;
+        uint32_t    depth_frame_counter;
+        uint32_t    frame_timestamp;
         uint32_t    crc32;
     };
     
-
     struct md_safety_info
     {
         uint8_t     l1_signal;                  // Designates the “Yellow” zone status: 0x1 – High, 0x0 - Low 
-        uint8_t     l1_frame_id_origin;         // When l1 is low – equals to frame_id in safety_header (frame_id) - For l1=0x1 : hold the Frame id on last transition to “High” state 
+        uint8_t     l1_frame_counter_origin;    // When l1 is low – equals to frame_counter in safety_header - For l1=0x1 : hold the Frame id on last transition to “High” state 
         uint8_t     l2_signal;                  // Designates the “Red” zone status: 0x1 – High, 0x0 - Low 
-        uint8_t     l2_frame_id_origin;         // When l2 is low – equals to frame_id in safety_header (frame_id) - For l1=0x1 : hold the Frame id on last transition to “High” state 
+        uint8_t     l2_frame_counter_origin;    // When l2 is low – equals to frame_counter in safety_header - For l1=0x1 : hold the Frame id on last transition to “High” state 
         uint8_t     l1_verdict;                 // Current verdict for l1 Safety Signal - May differ from l1_signal due to additional logics applied
         uint8_t     l2_verdict;                 // Current verdict for l2 Safety Signal - May differ from l2_signal due to additional logics applied
         uint32_t    human_safety_vote_result;   // Bitmask, enumerated
@@ -676,7 +675,7 @@ namespace librealsense
 
     struct md_safety_mode
     {
-        md_safety_header         intel_safety_frame;
+        md_safety_header        intel_safety_header;
         md_safety_info          intel_safety_info;
     };
     REGISTER_MD_TYPE(md_safety_mode, md_type::META_DATA_INTEL_SAFETY_ID)

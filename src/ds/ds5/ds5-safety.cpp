@@ -66,7 +66,7 @@ namespace librealsense
         register_options(safety_ep);
 
         // register metadata
-        register_metadata(safety_ep);
+        register_metadata(raw_safety_ep);
 
         // register processing blocks
         register_processing_blocks(safety_ep);
@@ -80,9 +80,62 @@ namespace librealsense
         // empty
     }
 
-    void ds5_safety::register_metadata(std::shared_ptr<ds5_safety_sensor> safety_ep)
+    void ds5_safety::register_metadata(std::shared_ptr<uvc_sensor> raw_safety_ep)
     {
-        safety_ep->get_raw_sensor()->register_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP, make_uvc_header_parser(&platform::uvc_header::timestamp));
+        raw_safety_ep->register_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP, make_uvc_header_parser(&platform::uvc_header::timestamp));
+
+        // attributes of md_safety_mode
+        auto md_prop_offset = offsetof(metadata_raw, mode) +
+            offsetof(md_safety_mode, intel_safety_header);
+
+
+        raw_safety_ep->register_metadata(RS2_FRAME_METADATA_FRAME_COUNTER, 
+            make_attribute_parser(&md_safety_header::frame_counter, 1, md_prop_offset));
+
+        raw_safety_ep->register_metadata(RS2_FRAME_METADATA_SAFETY_DEPTH_FRAME_COUNTER,
+            make_attribute_parser(&md_safety_header::depth_frame_counter, 1, md_prop_offset));
+        
+        raw_safety_ep->register_metadata(RS2_FRAME_METADATA_SENSOR_TIMESTAMP,
+            make_attribute_parser(&md_safety_header::frame_timestamp, 1, md_prop_offset));
+
+        md_prop_offset = offsetof(metadata_raw, mode) +
+            offsetof(md_safety_mode, intel_safety_info);
+
+        raw_safety_ep->register_metadata(RS2_FRAME_METADATA_SAFETY_L1,
+            make_attribute_parser(&md_safety_info::l1_signal, 1, md_prop_offset));
+
+        raw_safety_ep->register_metadata(RS2_FRAME_METADATA_SAFETY_L1_ORIGIN,
+            make_attribute_parser(&md_safety_info::l1_frame_counter_origin, 1, md_prop_offset));
+
+        raw_safety_ep->register_metadata(RS2_FRAME_METADATA_SAFETY_L2,
+            make_attribute_parser(&md_safety_info::l2_signal, 1, md_prop_offset));
+
+        raw_safety_ep->register_metadata(RS2_FRAME_METADATA_SAFETY_L2_ORIGIN,
+            make_attribute_parser(&md_safety_info::l2_frame_counter_origin, 1, md_prop_offset));
+
+        raw_safety_ep->register_metadata(RS2_FRAME_METADATA_SAFETY_L1_VERDICT,
+            make_attribute_parser(&md_safety_info::l1_verdict, 1, md_prop_offset));
+
+        raw_safety_ep->register_metadata(RS2_FRAME_METADATA_SAFETY_L2_VERDICT,
+            make_attribute_parser(&md_safety_info::l2_verdict, 1, md_prop_offset));
+
+        raw_safety_ep->register_metadata(RS2_FRAME_METADATA_SAFETY_HUMAN_VOTE_RESULT,
+            make_attribute_parser(&md_safety_info::human_safety_vote_result, 1, md_prop_offset));
+
+        raw_safety_ep->register_metadata(RS2_FRAME_METADATA_SAFETY_HARA_EVENTS,
+            make_attribute_parser(&md_safety_info::hara_events, 1, md_prop_offset));
+
+        raw_safety_ep->register_metadata(RS2_FRAME_METADATA_SAFETY_SOC_FUSA_EVENTS,
+            make_attribute_parser(&md_safety_info::soc_fusa_events, 1, md_prop_offset));
+
+        raw_safety_ep->register_metadata(RS2_FRAME_METADATA_SAFETY_SOC_FUSA_ACTION,
+            make_attribute_parser(&md_safety_info::soc_fusa_action, 1, md_prop_offset));
+
+        raw_safety_ep->register_metadata(RS2_FRAME_METADATA_SAFETY_FUSA_EVENT,
+            make_attribute_parser(&md_safety_info::mb_fusa_event, 1, md_prop_offset));
+
+        raw_safety_ep->register_metadata(RS2_FRAME_METADATA_SAFETY_FUSA_ACTION,
+            make_attribute_parser(&md_safety_info::mb_fusa_action, 1, md_prop_offset));
     }
 
     void ds5_safety::register_processing_blocks(std::shared_ptr<ds5_safety_sensor> safety_ep)
