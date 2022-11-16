@@ -913,7 +913,6 @@ namespace librealsense
     };
 
     class rs_d585_device : public ds5_active,
-        public ds5_nonmonochrome,
         public ds5_color,
         public ds5_motion,
         public ds5_advanced_mode_base,
@@ -928,7 +927,6 @@ namespace librealsense
             ds5_active(ctx, group),
             ds5_color(ctx, group),
             ds5_motion(ctx, group),
-            ds5_nonmonochrome(ctx, group),
             ds5_advanced_mode_base(ds5_device::_hw_monitor, get_depth_sensor()),
             firmware_logger_device(ctx, group, ds5_device::_hw_monitor,
                 get_firmware_logs_command(),
@@ -957,7 +955,6 @@ namespace librealsense
     };
     
     class rs_s585_device : public ds5_active,
-        public ds5_nonmonochrome,
         public ds5_color,
         public ds5_motion,
         public ds5_advanced_mode_base,
@@ -972,7 +969,6 @@ namespace librealsense
             ds5_active(ctx, group),
             ds5_color(ctx, group),
             ds5_motion(ctx, group),
-            ds5_nonmonochrome(ctx, group),
             ds5_advanced_mode_base(ds5_device::_hw_monitor, get_depth_sensor()),
             firmware_logger_device(ctx, group, ds5_device::_hw_monitor,
                 get_firmware_logs_command(),
