@@ -348,6 +348,7 @@ PYBIND11_MODULE(NAME, m) {
 
     using eprosima::fastdds::dds::SampleInfo;
     py::class_< SampleInfo >( m, "sample_info" )  //
+        .def( py::init<>() )
         .def( "source_timestamp", []( SampleInfo const & self ) { return self.source_timestamp.to_ns(); } )
         .def( "reception_timestamp", []( SampleInfo const & self ) { return self.reception_timestamp.to_ns(); } );
 

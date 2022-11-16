@@ -36,8 +36,8 @@ class flexible_topic:
         log.d( "on_publication_matched", d_readers )
         self.n_readers += d_readers
 
-    def wait_for_reader( self, timeout = 3.0 ):
-        while not self.n_readers:
+    def wait_for_reader( self, n_readers = 1, timeout = 3.0 ):
+        while self.n_readers < n_readers:
             timeout -= 0.25
             if timeout > 0:
                 sleep( 0.25 )
@@ -48,6 +48,9 @@ class flexible_topic:
         msg = dds.flexible_msg( json_string )
         log.d( "writing", msg )
         msg.write_to( self.writer )
+
+    def stop( self ):
+        self.writer = self.handle = None
 
 
 
