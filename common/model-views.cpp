@@ -6368,9 +6368,11 @@ namespace rs2
                 if(device_pid == "ABCD")// Specific for D457
                 {
                     ss.str( "" );
-                    ss << "GMSL";
+                    ss << "   " << "GMSL";
                     ImGui::SameLine();
+                    ImGui::PushStyleColor(ImGuiCol_Text, white);
                     ImGui::Text(" %s", ss.str().c_str());
+                    ImGui::PopStyleColor();
                 }
             }
         }
