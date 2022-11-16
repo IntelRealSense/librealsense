@@ -26,6 +26,7 @@ Copyright(c) 2022 Intel Corporation. All Rights Reserved. */
 #include <fastdds/dds/domain/DomainParticipant.hpp>
 #include <fastdds/dds/core/status/SubscriptionMatchedStatus.hpp>
 #include <fastdds/dds/core/status/PublicationMatchedStatus.hpp>
+#include <fastdds/dds/subscriber/SampleInfo.hpp>
 #include <fastrtps/types/DynamicType.h>
 
 #include <third-party/json.hpp>
@@ -254,9 +255,9 @@ PYBIND11_MODULE(NAME, m) {
         .def( FN_FWD( dds_topic_reader, on_data_available, (dds_topic_reader &), (), callback( self ); ) )
         .def( FN_FWD( dds_topic_reader,
                       on_subscription_matched,
-                      (),
-                      (eprosima::fastdds::dds::SubscriptionMatchedStatus const &),
-                      callback(); ) )
+                      (dds_topic_reader &, int),
+                      ( eprosima::fastdds::dds::SubscriptionMatchedStatus const & status ),
+                      callback( self, status.current_count_change ); ) )
         .def( "topic", &dds_topic_reader::topic )
         .def( "run", &dds_topic_reader::run )
         .def( "qos", []() { return reader_qos(); } )
@@ -276,9 +277,9 @@ PYBIND11_MODULE(NAME, m) {
         .def( py::init< std::shared_ptr< dds_topic > const & >() )
         .def( FN_FWD( dds_topic_writer,
                       on_publication_matched,
-                      (int),
+                      (dds_topic_writer &, int),
                       ( eprosima::fastdds::dds::PublicationMatchedStatus const & status ),
-                      callback( status.total_count_change ); ) )
+                      callback( self, status.current_count_change ); ) )
         .def( "topic", &dds_topic_writer::topic )
         .def( "run", &dds_topic_writer::run )
         .def( "qos", []() { return writer_qos(); } )
@@ -345,6 +346,12 @@ PYBIND11_MODULE(NAME, m) {
         .value( "cbor", flexible_msg::data_format::CBOR )
         .value( "custom", flexible_msg::data_format::CUSTOM );
 
+    using eprosima::fastdds::dds::SampleInfo;
+    py::class_< SampleInfo >( m, "sample_info" )  //
+        .def( py::init<>() )
+        .def( "source_timestamp", []( SampleInfo const & self ) { return self.source_timestamp.to_ns(); } )
+        .def( "reception_timestamp", []( SampleInfo const & self ) { return self.reception_timestamp.to_ns(); } );
+
     typedef std::shared_ptr< dds_topic > flexible_msg_create_topic( std::shared_ptr< dds_participant > const &,
                                                                     char const * );
     py::class_< flexible_msg >( m, "flexible_msg" )
@@ -397,17 +404,19 @@ PYBIND11_MODULE(NAME, m) {
                   os << ">";
                   return os.str();
               } )
-        .def( "take_next",
-              []( dds_topic_reader & reader ) {
-                  auto actual_type = reader.topic()->get()->get_type_name();
-                  if( actual_type != flexible_msg::type().getName() )
-                      throw std::runtime_error( "can't initialize raw::flexible from " + actual_type );
-                  flexible_msg data;
-                  if( ! flexible_msg::take_next( reader, &data ) )
-                      assert( ! data.is_valid() );
-                  return data;
-              } )
-        .def( "create_topic", static_cast<flexible_msg_create_topic *>( &flexible_msg::create_topic ))
+        .def_static(
+            "take_next",
+            []( dds_topic_reader & reader, SampleInfo * sample ) {
+                auto actual_type = reader.topic()->get()->get_type_name();
+                if( actual_type != flexible_msg::type().getName() )
+                    throw std::runtime_error( "can't initialize raw::flexible from " + actual_type );
+                flexible_msg data;
+                if( ! flexible_msg::take_next( reader, &data, sample ) )
+                    assert( ! data.is_valid() );
+                return data;
+            },
+            py::arg( "reader" ), py::arg( "sample" ) = nullptr )
+        .def_static( "create_topic", static_cast<flexible_msg_create_topic *>( &flexible_msg::create_topic ))
         .def( "json_data", []( flexible_msg const & self ) {
             return std::string( (char const *)self._data.data(), self._data.size() );
         } )

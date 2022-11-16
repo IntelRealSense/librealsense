@@ -8,8 +8,8 @@ from rspy import log, test
 
 
 import dds
-client.debug( True, 'cli' )
-log.nested = 'cli'
+client.debug( True, 'C  ' )
+log.nested = 'C  '
 
 
 #############################################################################################
@@ -36,7 +36,7 @@ watcher.on_device_added( on_device_added )
 watcher.on_device_removed( on_device_removed )
 watcher.start()
 
-dds.run_server( 'watcher-server.py' )
+dds.run_server( 'watcher-server.py', nested_indent="  S" )
 
 test.check_equal( devices_added, 2 )
 test.check_equal( devices_removed, 2 )

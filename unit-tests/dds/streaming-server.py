@@ -4,19 +4,20 @@
 import pyrealdds as dds
 from rspy import log, test
 import json
+from time import sleep
 
 dds.debug( True, log.nested )
 
 
 participant = dds.participant()
-participant.init( 123, "stream-server" )
+participant.init( 123, "streaming-server" )
 
 
 
-class Topic:
+class flexible_topic:
     """
     Just to enable simple one-line syntax:
-        Topic( "blah" ).write( '{"field" : 1}' )
+        flexible_topic( "blah" ).write( '{"field" : 1}' )
     """
 
     def __init__( self, name, qos = None ):
@@ -26,11 +27,30 @@ class Topic:
             self.handle = name
         else:
             raise RuntimeError( "invalid 'name' argument: " + type(name) )
+        self.n_readers = 0
         self.writer = dds.topic_writer( self.handle )
-        self.writer.run( qos or dds.topic_writer.qos( dds.reliability.reliable, dds.durability.transient_local ) )
+        self.writer.on_publication_matched( self._on_publication_matched )
+        self.writer.run( qos or dds.topic_writer.qos() )
+
+    def _on_publication_matched( self, writer, d_readers ):
+        log.d( "on_publication_matched", d_readers )
+        self.n_readers += d_readers
+
+    def wait_for_reader( self, n_readers = 1, timeout = 3.0 ):
+        while self.n_readers < n_readers:
+            timeout -= 0.25
+            if timeout > 0:
+                sleep( 0.25 )
+            else:
+                raise RuntimeError( "timed out waiting for reader" )
 
     def write( self, json_string ):
-        dds.flexible_msg( json_string ).write_to( self.writer )
+        msg = dds.flexible_msg( json_string )
+        log.d( "writing", msg )
+        msg.write_to( self.writer )
+
+    def stop( self ):
+        self.writer = self.handle = None
 
 
 
