@@ -3,7 +3,10 @@
 
 #include "types.h"
 #include "aus.h"
-
+#include "backend.h"
+#include "context.h"
+#include <mutex>
+#include <unordered_map>
 #include <fstream>
 
 #ifdef BUILD_AUS
@@ -11,6 +14,31 @@
 namespace librealsense
 {
     static aus_data aus_data_obj;
+}
+
+librealsense::aus_devices_manager::aus_devices_manager( std::shared_ptr<context> ctx ) :_context( ctx )
+{
+    auto cb = new devices_changed_callback_internal( [this]( rs2_device_list * removed, rs2_device_list * added )
+        {
+            std::lock_guard<std::mutex> lock( _device_changed_mtx );
+            for ( auto & dev_info : added->list )
+            {
+                auto info_vec = dev_info.info->get_device_data().usb_devices;
+                if ( _mp.find( info_vec.at( 0 ).serial ) == _mp.end() )
+                {
+                    _mp.insert( std::make_pair( info_vec.at( 0 ).serial, info_vec.at( 0 ) ) );
+                }
+            }
+        
+
+            } );
+    _callback_id = _context->register_internal_device_callback( { cb, []( rs2_devices_changed_callback * p ) { p->release(); } } );
+ }
+
+ librealsense::aus_devices_manager::~aus_devices_manager()
+{
+     _context->unregister_internal_device_callback( _callback_id );
+
 }
 
 void librealsense::aus_set(std::string counter, int value)
@@ -21,6 +49,11 @@ void librealsense::aus_set(std::string counter, int value)
 void librealsense::aus_increment(std::string counter)
 {
     aus_data_obj.increment(counter);
+}
+
+void librealsense::aus_decrement( std::string counter )
+{
+    aus_data_obj.decrement( counter );
 }
 
 
@@ -83,6 +116,11 @@ void librealsense::aus_set(std::string counter, int value)
 void librealsense::aus_increment(std::string counter)
 {
     throw std::runtime_error("aus_increment is not supported without BUILD_AUS");
+}
+
+void librealsense::aus_decrement( std::string counter )
+{
+    throw std::runtime_error( "aus_decrement is not supported without BUILD_AUS" );
 }
 
 void librealsense::aus_start(std::string timer)

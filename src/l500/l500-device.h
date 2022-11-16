@@ -32,6 +32,8 @@ namespace librealsense
         l500_device(std::shared_ptr<context> ctx,
             const platform::backend_device_group& group);
 
+        l500_device::~l500_device();
+
         std::shared_ptr<synthetic_sensor> create_depth_device(std::shared_ptr<context> ctx,
             const std::vector<platform::uvc_device_info>& all_device_infos);
 

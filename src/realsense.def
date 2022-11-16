@@ -157,6 +157,7 @@ EXPORTS
 
     rs2_aus_set
     rs2_aus_increment
+    rs2_aus_decrement
     rs2_aus_get
     rs2_aus_start
     rs2_aus_stop

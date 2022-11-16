@@ -209,6 +209,7 @@ namespace librealsense
 
     void aus_set(std::string counter, int value);
     void aus_increment(std::string counter);
+    void aus_decrement(std::string counter);
     long aus_get(std::string counter);
     void aus_start(std::string counter);
     void aus_stop(std::string counter);

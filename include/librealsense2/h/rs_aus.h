@@ -33,6 +33,14 @@ extern "C" {
     void rs2_aus_increment(const char* counter, rs2_error** error);
 
     /**
+    * decrease counter by 1
+    * \param[in]  counter   counter name to be increased
+    * \param[out] error    if non-null, receives any error that occurs during this call, otherwise, errors are ignored
+    * \return
+    */
+    void rs2_aus_decrement( const char * counter, rs2_error ** error );
+
+    /**
     * get counter value
     * \param[in]  counter   counter string name
     * \param[out] error    if non-null, receives any error that occurs during this call, otherwise, errors are ignored

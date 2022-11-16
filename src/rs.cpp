@@ -1362,6 +1362,13 @@ void rs2_aus_increment(const char * counter, rs2_error** error) BEGIN_API_CALL
 }
 NOARGS_HANDLE_EXCEPTIONS_AND_RETURN_VOID()
 
+void rs2_aus_decrement( const char * counter, rs2_error ** error ) BEGIN_API_CALL
+{
+    VALIDATE_STRING( counter );
+    librealsense::aus_decrement( counter );
+}
+NOARGS_HANDLE_EXCEPTIONS_AND_RETURN_VOID()
+
 long rs2_aus_get(const char* counter, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_STRING(counter);

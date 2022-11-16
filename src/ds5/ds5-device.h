@@ -53,6 +53,8 @@ namespace librealsense
         ds5_device(std::shared_ptr<context> ctx,
                    const platform::backend_device_group& group);
 
+        ds5_device::~ds5_device();
+
         std::vector<uint8_t> send_receive_raw_data(const std::vector<uint8_t>& input) override;
 
         std::vector<uint8_t> build_command(uint32_t opcode,

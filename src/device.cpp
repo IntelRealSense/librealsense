@@ -202,6 +202,8 @@ device::~device()
     {
         _context->unregister_internal_device_callback(_callback_id);
     }
+    std::string connected_devices_counter = librealsense::aus_build_system_counter_name( "CONNECTED_DEVICES" );
+    librealsense::aus_decrement(connected_devices_counter);
     _sensors.clear();
 }
 

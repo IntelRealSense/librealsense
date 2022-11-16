@@ -24,6 +24,13 @@ namespace rs2
         error::handle(e);
     }
 
+    inline void aus_decrement( const char * counter )
+    {
+        rs2_error * e = nullptr;
+        rs2_aus_decrement( counter, &e );
+        error::handle( e );
+    }
+
     inline long aus_get(const char* counter)
     {
         rs2_error* e = nullptr;

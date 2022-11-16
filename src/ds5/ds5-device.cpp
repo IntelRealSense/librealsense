@@ -765,6 +765,11 @@ namespace librealsense
         init(ctx, group);
     }
 
+    ds5_device::~ds5_device() {
+        std::string ds5_devices_counter = librealsense::aus_build_system_counter_name( "CONNECTED_DEVICES", "DS5" );
+        librealsense::aus_decrement( ds5_devices_counter );
+    }
+
     void ds5_device::init(std::shared_ptr<context> ctx,
         const platform::backend_device_group& group)
     {
