@@ -22,7 +22,7 @@ namespace librealsense
 
         uint16_t _pid;    // product PID
         void register_options(std::shared_ptr<ds5_safety_sensor> safety_ep);
-        void register_metadata(std::shared_ptr<ds5_safety_sensor> safety_ep);
+        void register_metadata(std::shared_ptr<uvc_sensor> safety_ep);
         void register_processing_blocks(std::shared_ptr<ds5_safety_sensor> safety_ep);
 
     protected:
