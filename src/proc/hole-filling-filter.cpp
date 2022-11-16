@@ -40,14 +40,17 @@ namespace librealsense
         hole_filling_mode->set_description(hf_farest_from_around, "Farest from around");
         hole_filling_mode->set_description(hf_nearest_from_around, "Nearest from around");
 
-        hole_filling_mode->on_set([this, hole_filling_mode](float val)
+        auto weak_hole_filling_mode = std::weak_ptr<ptr_option<uint8_t>>(hole_filling_mode);
+        hole_filling_mode->on_set([this, weak_hole_filling_mode](float val)
         {
-            std::lock_guard<std::mutex> lock(_mutex);
+            auto strong_hole_filling_mode = weak_hole_filling_mode.lock();
+            if(!strong_hole_filling_mode) return;
 
-            if (!hole_filling_mode->is_valid(val))
+            if (!strong_hole_filling_mode->is_valid(val))
                 throw invalid_value_exception(to_string()
                     << "Unsupported mode for hole filling selected: value " << val << " is out of range.");
 
+            std::lock_guard<std::mutex> lock(_mutex);
             _hole_filling_mode = static_cast<uint8_t>(val);
         });
 

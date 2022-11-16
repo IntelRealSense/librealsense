@@ -20,7 +20,10 @@ Package is available at https://pypi.python.org/pypi/pyrealsense2
 To install the package, run:
 > `pip install pyrealsense2`
 
-Windows users can install the RealSense SDK 2.0 from the release tab to get pre-compiled binaries of the wrapper, for both x86 and x64 architectures. (Both Python 2.7 and Python 3 (3.6, 3.7, 3.8, 3.9) are supported).
+Windows users can install the RealSense SDK 2.0 from the release tab to get pre-compiled binaries of the wrapper, for both x86 and x64 architectures. (Python versions 3.6, 3.7, 3.8, 3.9, 3.10 are supported).
+
+> **Note:**
+> Python 2.7 distributables can be found for pyrealsense2 versions <= 2.51.1
 
 
 ## Building From Source
@@ -62,7 +65,7 @@ Windows users can install the RealSense SDK 2.0 from the release tab to get pre-
 
 3. If you have multiple python installations on your machine you can use: `-DPYTHON_EXECUTABLE=<path to python executable>`
   For example: `-DPYTHON_EXECUTABLE=C:/Python27/python.exe`
-> The precompiled binaries shipped with [the installer](https://github.com/IntelRealSense/librealsense/releases) assume **Python 2.7**.
+> The precompiled binaries shipped with [the installer](https://github.com/IntelRealSense/librealsense/releases) assume **Python 3.7**.
 >The error `ImportError: DLL load failed: The specified module could not be found` might indicate versions mismatch or architecture (x86 vs x64) mismatch.
 
 4. Open `librealsense2.sln` that was created in the previous step, and build the `pyrealsense2` project
@@ -91,16 +94,16 @@ try:
 
         # Print a simple text-based representation of the image, by breaking it into 10x20 pixel regions and approximating the coverage of pixels within one meter
         coverage = [0]*64
-        for y in xrange(480):
-            for x in xrange(640):
+        for y in range(480):
+            for x in range(640):
                 dist = depth.get_distance(x, y)
                 if 0 < dist and dist < 1:
-                    coverage[x/10] += 1
+                    coverage[x//10] += 1
 
             if y%20 is 19:
                 line = ""
                 for c in coverage:
-                    line += " .:nhBXWW"[c/25]
+                    line += " .:nhBXWW"[c//25]
                 coverage = [0]*64
                 print(line)
 
