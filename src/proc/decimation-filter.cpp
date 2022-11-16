@@ -221,11 +221,16 @@ namespace librealsense
             decimation_step,
             decimation_default_val,
             &_control_val, "Decimation scale");
-        decimation_control->on_set([this, decimation_control](float val)
+
+        auto weak_decimation_control = std::weak_ptr<ptr_option<uint8_t>>(decimation_control);
+        decimation_control->on_set([this, weak_decimation_control](float val)
         {
+            auto strong_decimation_control = weak_decimation_control.lock();
+            if(!strong_decimation_control) return;
+
             std::lock_guard<std::mutex> lock(_mutex);
 
-            if (!decimation_control->is_valid(val))
+            if (!strong_decimation_control->is_valid(val))
                 throw invalid_value_exception(to_string()
                     << "Unsupported decimation scale " << val << " is out of range.");
 

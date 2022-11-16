@@ -2014,24 +2014,28 @@ namespace rs2
     {
         // checking format
         bool is_cal_format = false;
-        for (auto it = stream_enabled.begin(); it != stream_enabled.end(); ++it)
+        // checking that the SKU is D405 - otherwise, this method should return false
+        if (dev.supports(RS2_CAMERA_INFO_PRODUCT_ID) && !strcmp(dev.get_info(RS2_CAMERA_INFO_PRODUCT_ID), "0B5B"))
         {
-            if (it->second)
+            for (auto it = stream_enabled.begin(); it != stream_enabled.end(); ++it)
             {
-                int selected_format_index = -1;
-                if (ui.selected_format_id.count(it->first) > 0)
-                    selected_format_index = ui.selected_format_id.at(it->first);
-
-                if (format_values.count(it->first) > 0 && selected_format_index > -1)
+                if (it->second)
                 {
-                    auto formats = format_values.at(it->first);
-                    if (formats.size() > selected_format_index)
+                    int selected_format_index = -1;
+                    if (ui.selected_format_id.count(it->first) > 0)
+                        selected_format_index = ui.selected_format_id.at(it->first);
+
+                    if (format_values.count(it->first) > 0 && selected_format_index > -1)
                     {
-                        auto format = formats[selected_format_index];
-                        if (format == RS2_FORMAT_Y16)
+                        auto formats = format_values.at(it->first);
+                        if (formats.size() > selected_format_index)
                         {
-                            is_cal_format = true;
-                            break;
+                            auto format = formats[selected_format_index];
+                            if (format == RS2_FORMAT_Y16)
+                            {
+                                is_cal_format = true;
+                                break;
+                            }
                         }
                     }
                 }
