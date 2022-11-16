@@ -13,6 +13,7 @@ target_sources(${LRS_TARGET}
         "${CMAKE_CURRENT_LIST_DIR}/ds5-fw-update-device.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/ds5-auto-calibration.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/ds5-thermal-monitor.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/ds5-safety.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/ds5-factory.h"
         "${CMAKE_CURRENT_LIST_DIR}/ds5-device.h"
         "${CMAKE_CURRENT_LIST_DIR}/ds5-options.h"
@@ -24,4 +25,5 @@ target_sources(${LRS_TARGET}
         "${CMAKE_CURRENT_LIST_DIR}/ds5-fw-update-device.h"
         "${CMAKE_CURRENT_LIST_DIR}/ds5-auto-calibration.h"
         "${CMAKE_CURRENT_LIST_DIR}/ds5-thermal-monitor.h"
+        "${CMAKE_CURRENT_LIST_DIR}/ds5-safety.h"
 )

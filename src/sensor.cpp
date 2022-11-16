@@ -1705,4 +1705,8 @@ void log_callback_end( uint32_t fps,
     {
         snapshot = std::make_shared<fisheye_sensor_snapshot>();
     }
+    void safety_sensor::create_snapshot(std::shared_ptr<safety_sensor>& snapshot) const
+    {
+        snapshot = std::make_shared<safety_sensor_snapshot>();
+    }
 }
