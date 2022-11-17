@@ -352,6 +352,13 @@ PYBIND11_MODULE(NAME, m) {
         .def( "source_timestamp", []( SampleInfo const & self ) { return self.source_timestamp.to_ns(); } )
         .def( "reception_timestamp", []( SampleInfo const & self ) { return self.reception_timestamp.to_ns(); } );
 
+    // We need a timestamp function that returns timestamps in the same domain as the sample-info timestamps
+    m.def( "now", []() {
+        eprosima::fastrtps::rtps::Time_t t;
+        eprosima::fastrtps::rtps::Time_t::now( t );
+        return t.to_ns();
+    } );
+
     typedef std::shared_ptr< dds_topic > flexible_msg_create_topic( std::shared_ptr< dds_participant > const &,
                                                                     char const * );
     py::class_< flexible_msg >( m, "flexible_msg" )
