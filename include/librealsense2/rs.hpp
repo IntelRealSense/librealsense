@@ -18,7 +18,7 @@ namespace rs2
 {
     inline void log_to_console(rs2_log_severity min_severity)
     {
-        rs2_error* e = nullptr;
+        rs2_error* e = nullptr
         rs2_log_to_console(min_severity, &e);
         error::handle(e);
     }
