@@ -20,10 +20,10 @@ def ns_as_ms( ns ):
     return str(ns / 1000000.) + "ms"
 
 
-class flexible_topic:
+class flexible_reader:
     """
     Just to enable simple one-line syntax:
-        msg = flexible_topic( "blah" ).read()
+        msg = flexible_reader( "blah" ).read()
     """
 
     def __init__( self, name, qos = None ):
@@ -114,13 +114,13 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
     #
     test.start( "Test 1W:1R, 1 message..." )
     try:
-        remote.run( 'topic = flexible_topic( "1w1r" )', timeout=5 )
+        remote.run( 'topic = flexible_writer( "1w1r" )', timeout=5 )
         # NOTE: technically, we could combine everything into a single command:
         #      Topic("blah").write( ... )
         # and it would do everything, including destroy the Topic instance with the writer etc.
         # This doesn't work! If the writer is destroyed before we've had a chance to get the message,
         # the message will get lost...
-        topic = flexible_topic( "1w1r" )
+        topic = flexible_reader( "1w1r" )
         # We may wait for the data before we even see the writer... so wait for the writer first!
         topic.wait_for_writers()
         # Same for the writer:
@@ -140,8 +140,8 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
     #
     test.start( "Test 1W:1R, N messages..." )
     try:
-        remote.run( 'topic = flexible_topic( "1w1rNm" )', timeout=5 )
-        topic = flexible_topic( "1w1rNm" )
+        remote.run( 'topic = flexible_writer( "1w1rNm" )', timeout=5 )
+        topic = flexible_reader( "1w1rNm" )
         topic.wait_for_writers()
         remote.run( 'topic.wait_for_reader()', timeout=5 )
         remote.run( 'topic.write( """' + sample1_json + '""" )', timeout=5 )
@@ -165,9 +165,9 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
     #
     test.start( "Test 1W:2R, one message..." )
     try:
-        remote.run( 'topic = flexible_topic( "1w2r" )', timeout=5 )
-        r1 = flexible_topic( "1w2r" )
-        r2 = flexible_topic( r1.handle )
+        remote.run( 'topic = flexible_writer( "1w2r" )', timeout=5 )
+        r1 = flexible_reader( "1w2r" )
+        r2 = flexible_reader( r1.handle )
         r1.wait_for_writers()
         r2.wait_for_writers()
         remote.run( 'topic.wait_for_reader( 2 )', timeout=5 )

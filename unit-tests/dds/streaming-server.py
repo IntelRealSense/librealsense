@@ -14,10 +14,10 @@ participant.init( 123, "streaming-server" )
 
 
 
-class flexible_topic:
+class flexible_writer:
     """
     Just to enable simple one-line syntax:
-        flexible_topic( "blah" ).write( '{"field" : 1}' )
+        flexible_writer( "blah" ).write( '{"field" : 1}' )
     """
 
     def __init__( self, name, qos = None ):
