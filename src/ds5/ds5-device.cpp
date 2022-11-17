@@ -649,8 +649,19 @@ namespace librealsense
 
     std::vector<uint8_t> ds5_device::get_raw_calibration_table(ds::calibration_table_id table_id) const
     {
-        command cmd(ds::GETINTCAL, table_id);
-        return _hw_monitor->send(cmd);
+        std::vector<byte> res;
+        if (!(_pid == ds::RS_D585_PID || _pid == ds::RS_S585_PID))
+        {
+            command cmd(ds::GETINTCAL, table_id);
+            res = _hw_monitor->send(cmd);
+        }
+        else
+        {
+            command cmd(ds::GETINTCALNEW, table_id, ds::calib_sc_dynamic);
+            res = _hw_monitor->send(cmd);
+        }
+
+        return res;
     }
 
     std::vector<uint8_t> ds5_device::get_new_calibration_table() const

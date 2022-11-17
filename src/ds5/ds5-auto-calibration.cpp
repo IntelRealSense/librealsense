@@ -862,7 +862,7 @@ namespace librealsense
             cmd = SETINTCAL;
             break;
         case rgb_calibration_id:
-            cmd = SETINTCALNEW;
+            cmd = SETINTCALNEW;  // TODO - REMI - CAN BE REMOVED???
             param2 = 1;
             break;
         default:

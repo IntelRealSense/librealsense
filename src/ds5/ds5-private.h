@@ -212,7 +212,7 @@ namespace librealsense
             CALIBRECALC     = 0x51,     // Calibration recalc and update on the fly
             GET_EXTRINSICS  = 0x53,     // get extrinsics
             CAL_RESTORE_DFLT= 0x61,     // Reset Depth/RGB calibration to factory settings
-            SETINTCALNEW    = 0x62,     // Set Internal sub calibration table
+            SETINTCALNEW    = 0x62,     // Set Internal sub calibration table for Safety Camera
             SET_CAM_SYNC    = 0x69,     // set Inter-cam HW sync mode [0-default, 1-master, 2-slave]
             GET_CAM_SYNC    = 0x6A,     // fet Inter-cam HW sync mode
             SETRGBAEROI     = 0x75,     // set RGB auto-exposure region of interest
@@ -224,7 +224,8 @@ namespace librealsense
             GETSUBPRESETID  = 0x7D,     // Retrieve sub-preset's name
             RECPARAMSGET    = 0x7E,     // Retrieve depth calibration table in new format (fw >= 5.11.12.100)
             LASERONCONST    = 0x7F,     // Enable Laser On constantly (GS SKU Only)
-            AUTO_CALIB      = 0x80      // auto calibration commands
+            AUTO_CALIB      = 0x80,     // auto calibration commands
+            GETINTCALNEW    = 0x85,     // Get Internal sub calibration table for Safety Camera
         };
 
         #define TOSTRING(arg) #arg
@@ -256,6 +257,8 @@ namespace librealsense
             ENUM2STR(SETSUBPRESET);
             ENUM2STR(GETSUBPRESET);
             ENUM2STR(GETSUBPRESETID);
+            ENUM2STR(GETINTCALNEW);
+            ENUM2STR(SETINTCALNEW);
             default:
               return (to_string() << "Unrecognized FW command " << state);
           }
@@ -353,16 +356,6 @@ namespace librealsense
             uint32_t                crc32;          // crc of all the actual table data excluding header/CRC
         };
 
-        struct sc_depth_table_header
-        {
-            big_endian<uint16_t>    version;        // major.minor. Big-endian
-            uint16_t                table_type;     // ctCalibration
-            uint32_t                table_size;     // full size including: TOC header + TOC + actual tables
-            uint16_t                counter;
-            uint16_t                test_cal_version;
-            uint32_t                crc32;          // crc of all the actual table data excluding header/CRC
-        };
-
         enum ds5_rect_resolutions : unsigned short
         {
             res_1920_1080,
@@ -415,43 +408,44 @@ namespace librealsense
         {
             uint16_t    image_width;    /**< Width of the image in pixels */
             uint16_t    image_height;   /**< Height of the image in pixels */
-            float4      ppx;            /**< Horizontal coordinate of the principal point of the image, as a pixel offset from the left edge */
-            float4      ppy;            /**< Vertical coordinate of the principal point of the image, as a pixel offset from the top edge */
-            float4      fx;             /**< Focal length of the image plane, as a multiple of pixel width */
-            float4      fy;             /**< Focal length of the image plane, as a multiple of pixel height */
+            float       ppx;            /**< Horizontal coordinate of the principal point of the image, as a pixel offset from the left edge */
+            float       ppy;            /**< Vertical coordinate of the principal point of the image, as a pixel offset from the top edge */
+            float       fx;             /**< Focal length of the image plane, as a multiple of pixel width */
+            float       fy;             /**< Focal length of the image plane, as a multiple of pixel height */
         };
 
         struct single_sensor_coef_table
         {
             mini_intrisics            base_instrinsics;
-            float3x3                  rotation_matrix;
             uint32_t                  distortion_non_parametric;
             rs2_distortion            distortion_model;          /**< Distortion model of the image */
             float                     distortion_coeffs[5];      /**< Distortion coefficients. Order for Brown-Conrady: [k1, k2, p1, p2, k3]. Order for F-Theta Fish-eye: [k1, k2, k3, k4, 0]. Other models are subject to their own interpretations */
-            float                     reserved[14];
-            float4                    radial_distortion_lut_range_degs;
-            float4                    radial_distortion_lut_focal_range;
+            uint8_t                   reserved[36];
+            float                     radial_distortion_max_fov_lut;
+            float                     radial_distortion_focal_length;
             sc_undist_configuration   undist_config;
+            float3x3                  rotation_matrix;
         };
 
         struct sc_coefficients_table
         {
-            sc_depth_table_header     header;
+            table_header           header;
             single_sensor_coef_table  left_coefficients_table;
             single_sensor_coef_table  right_coefficients_table;
-            float4                    baseline;                   //  the baseline between the cameras in mm units
+            float                     baseline;                   //  the baseline between the cameras in mm units
             uint32_t                  translation_dir;
+            uint16_t                  vertical_shift;             // in pixels
             mini_intrisics            rectified_intrinsics;
             uint8_t                   reserved[154];
         };
 
         struct sc_rgb_calibration_table
         {
-            table_header              header;
+            table_header           header;
             single_sensor_coef_table  rgb_coefficients_table;
             float3                    translation_rect;           // Translation vector for rectification
             mini_intrisics            rectified_intrinsics;
-            uint8_t                   reserved[64];
+            uint8_t                   reserved[48];
         };
 
         struct new_calibration_item
@@ -731,6 +725,15 @@ namespace librealsense
             gvd_sc_motion_module_fw_version_offset = 212
         };
 
+        enum calib_sc_type
+        {
+            calib_sc_gold,
+            calib_sc_dynamic,
+            calib_sc_dynamic_and_flash,
+            calib_sc_eeprom,
+            calib_sc_all // to remain???
+        };
+
         const uint8_t I2C_IMU_BMI055_ID_ACC = 0xfa;
         const uint8_t I2C_IMU_BMI085_ID_ACC = 0x1f;
 
@@ -742,14 +745,16 @@ namespace librealsense
 
         enum calibration_table_id
         {
-            coefficients_table_id   = 25,
-            depth_calibration_id    = 31,
-            rgb_calibration_id      = 32,
-            fisheye_calibration_id  = 33,
-            imu_calibration_id      = 34,
-            lens_shading_id         = 35,
-            projector_id            = 36,
-            max_id                  = -1
+            coefficients_table_id    = 25,
+            depth_calibration_id     = 31, // Can be removed?
+            rgb_calibration_id       = 32,
+            fisheye_calibration_id   = 33,
+            imu_calibration_id       = 34,
+            lens_shading_id          = 35,
+            projector_id             = 36,
+            sc_coefficients_table_id = 40,
+            sc_rgb_calibration_id    = 41,
+            max_id                   = -1
         };
 
         struct ds5_calibration
