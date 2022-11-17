@@ -65,15 +65,15 @@ namespace librealsense
         bool check_fw_compatibility(const std::vector<uint8_t>& image) const override;
     protected:
         std::shared_ptr<ds_device_common> _ds_device_common;
+        virtual void register_interleaved_y16_processing_block(synthetic_sensor& depth_sensor) const;
 
-        std::vector<uint8_t> get_raw_calibration_table(ds::calibration_table_id table_id) const;
+        std::vector<uint8_t> get_ds5_raw_calibration_table(ds::ds5_calibration_table_id table_id) const;
+        virtual ds::d400_caps parse_device_capabilities() const;
         std::vector<uint8_t> get_new_calibration_table() const;
 
         bool is_camera_in_advanced_mode() const;
 
         float get_stereo_baseline_mm() const;
-
-        ds::d400_caps parse_device_capabilities() const;
 
         //TODO - add these to device class as pure virtual methods
         command get_firmware_logs_command() const;

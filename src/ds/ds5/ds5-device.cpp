@@ -137,9 +137,9 @@ namespace librealsense
             }
             else 
             {
-                return get_intrinsic_by_resolution(
+                return get_ds5_intrinsic_by_resolution(
                     *_owner->_coefficients_table_raw,
-                    ds::calibration_table_id::coefficients_table_id,
+                    ds::ds5_calibration_table_id::coefficients_table_id,
                     profile.width, profile.height);
             }
         }
@@ -182,9 +182,9 @@ namespace librealsense
 
         rs2_intrinsics get_color_intrinsics(const stream_profile& profile) const
         {
-            return get_intrinsic_by_resolution(
+            return get_ds5_intrinsic_by_resolution(
                 *_owner->_color_calib_table_raw,
-                ds::calibration_table_id::rgb_calibration_id,
+                ds::ds5_calibration_table_id::rgb_calibration_id,
                 profile.width, profile.height);
         }
 
@@ -391,13 +391,13 @@ namespace librealsense
     float ds5_device::get_stereo_baseline_mm() const
     {
         using namespace ds;
-        auto table = check_calib<coefficients_table>(*_coefficients_table_raw);
+        auto table = check_calib<ds5_coefficients_table>(*_coefficients_table_raw);
         return fabs(table->baseline);
     }
 
-    std::vector<uint8_t> ds5_device::get_raw_calibration_table(ds::calibration_table_id table_id) const
+    std::vector<uint8_t> ds5_device::get_ds5_raw_calibration_table(ds::ds5_calibration_table_id table_id) const
     {
-        command cmd(ds::GETINTCAL, table_id);
+        command cmd(ds::GETINTCAL, static_cast<int>(table_id));
         return _hw_monitor->send(cmd);
     }
 
@@ -414,6 +414,7 @@ namespace librealsense
     ds::d400_caps ds5_device::parse_device_capabilities() const
     {
         using namespace ds;
+
         std::array<unsigned char,HW_MONITOR_BUFFER_SIZE> gvd_buf;
         _hw_monitor->get_gvd(gvd_buf.size(), gvd_buf.data(), GVD);
 
@@ -505,6 +506,15 @@ namespace librealsense
         init(ctx, group);
     }
 
+    void ds5_device::register_interleaved_y16_processing_block(synthetic_sensor& depth_sensor) const
+    {
+        depth_sensor.register_processing_block(
+            { RS2_FORMAT_Y12I },
+            { {RS2_FORMAT_Y16, RS2_STREAM_INFRARED, 1}, {RS2_FORMAT_Y16, RS2_STREAM_INFRARED, 2} },
+            []() {return std::make_shared<y12i_to_y16y16>(); }
+        );
+    }
+
     void ds5_device::init(std::shared_ptr<context> ctx,
         const platform::backend_device_group& group)
     {
@@ -518,7 +528,7 @@ namespace librealsense
 
         _color_calib_table_raw = [this]()
         {
-            return get_raw_calibration_table(rgb_calibration_id);
+            return get_ds5_raw_calibration_table(ds5_calibration_table_id::rgb_calibration_id);
         };
 
         if (((hw_mon_over_xu) && (RS400_IMU_PID != _pid)) || (!group.usb_devices.size()))
@@ -544,7 +554,7 @@ namespace librealsense
         _left_right_extrinsics = std::make_shared<lazy<rs2_extrinsics>>([this]()
             {
                 rs2_extrinsics ext = identity_matrix();
-                auto table = check_calib<coefficients_table>(*_coefficients_table_raw);
+                auto table = check_calib<ds5_coefficients_table>(*_coefficients_table_raw);
                 ext.translation[0] = 0.001f * table->baseline; // mm to meters
                 return ext;
             });
@@ -556,12 +566,11 @@ namespace librealsense
         register_stream_to_extrinsic_group(*_left_ir_stream, 0);
         register_stream_to_extrinsic_group(*_right_ir_stream, 0);
 
-        _coefficients_table_raw = [this]() { return get_raw_calibration_table(coefficients_table_id); };
+        _coefficients_table_raw = [this]() { return get_ds5_raw_calibration_table(ds5_calibration_table_id::coefficients_table_id); };
         _new_calib_table_raw = [this]() { return get_new_calibration_table(); };
 
         std::string device_name = (rs400_sku_names.end() != rs400_sku_names.find(_pid)) ? rs400_sku_names.at(_pid) : "RS4xx";
 
-        std::vector<uint8_t> gvd_buff(HW_MONITOR_BUFFER_SIZE);
 
         auto& depth_sensor = get_depth_sensor();
         auto& raw_depth_sensor = get_raw_depth_sensor();
@@ -574,12 +583,9 @@ namespace librealsense
         std::string optic_serial, asic_serial, pid_hex_str, usb_type_str;
         bool advanced_mode, usb_modality;
         group_multiple_fw_calls(depth_sensor, [&]() {
+            std::string fwv;
+            _ds_device_common->get_fw_details(optic_serial, asic_serial, fwv);
 
-            _hw_monitor->get_gvd(gvd_buff.size(), gvd_buff.data(), GVD);
-
-            optic_serial = _hw_monitor->get_module_serial_string(gvd_buff, module_serial_offset);
-            asic_serial = _hw_monitor->get_module_serial_string(gvd_buff, module_asic_serial_offset);
-            auto fwv = _hw_monitor->get_firmware_version_string(gvd_buff, camera_fw_version_offset);
             _fw_version = firmware_version(fwv);
 
             _recommended_fw_version = firmware_version(D4XX_RECOMMENDED_FIRMWARE_VERSION);

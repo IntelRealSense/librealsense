@@ -67,7 +67,7 @@ namespace librealsense
     protected:
         std::shared_ptr<ds_device_common> _ds_device_common;
 
-        std::vector<uint8_t> get_raw_calibration_table(ds::calibration_table_id table_id) const;
+        std::vector<uint8_t> get_ds6_raw_calibration_table(ds::ds6_calibration_table_id table_id) const;
         std::vector<uint8_t> get_new_calibration_table() const;
 
         bool is_camera_in_advanced_mode() const;
