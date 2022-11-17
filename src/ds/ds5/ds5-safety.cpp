@@ -154,8 +154,9 @@ namespace librealsense
                 md_safety_info_attributes::crc32_attribute, md_prop_offset,
                 [](const rs2_metadata_type& param) {
                     // compute crc and check validity
-                    auto computed_crc32 = calc_crc32(nullptr /*buffer to start of md_safety_info struct which is now streamed!!!*/, 
-                        sizeof(md_safety_info) - sizeof(md_safety_info::crc32)/*size of data to check */ );
+                    // TODO - REMI - check next line works well during integration - alignement of struct md_safety_info to 4 is needed
+                    uint8_t* start_of_md_struct = reinterpret_cast<uint8_t*>(&const_cast<rs2_metadata_type&>(param)) - sizeof(md_safety_info) + sizeof(param);
+                    auto computed_crc32 = calc_crc32(start_of_md_struct, sizeof(md_safety_info) - sizeof(md_safety_info::crc32));
                     return (param == computed_crc32);
                 }));
     }
