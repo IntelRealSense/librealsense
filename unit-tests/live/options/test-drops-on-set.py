@@ -89,7 +89,10 @@ for i in range(1,5):
 test.finish()
 
 # reset everything back
-depth_sensor.set_option( rs.option.visual_preset, int(rs.l500_visual_preset.max_range) )
+if product_line == "D400":
+    depth_sensor.set_option(rs.option.visual_preset, int(rs.rs400_visual_preset.default))
+if product_line == "L500":
+    depth_sensor.set_option(rs.option.visual_preset, int(rs.l500_visual_preset.max_range))
 
 
 #############################################################################################
