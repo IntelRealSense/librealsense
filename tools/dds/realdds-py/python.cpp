@@ -15,6 +15,7 @@ Copyright(c) 2022 Intel Corporation. All Rights Reserved. */
 #include <realdds/dds-device.h>
 #include <realdds/dds-stream.h>
 #include <realdds/dds-guid.h>
+#include <realdds/dds-time.h>
 #include <realdds/dds-topic.h>
 #include <realdds/dds-topic-reader.h>
 #include <realdds/dds-topic-writer.h>
@@ -353,11 +354,23 @@ PYBIND11_MODULE(NAME, m) {
         .def( "reception_timestamp", []( SampleInfo const & self ) { return self.reception_timestamp.to_ns(); } );
 
     // We need a timestamp function that returns timestamps in the same domain as the sample-info timestamps
-    m.def( "now", []() {
-        eprosima::fastrtps::rtps::Time_t t;
-        eprosima::fastrtps::rtps::Time_t::now( t );
-        return t.to_ns();
-    } );
+    using realdds::dds_nsec;
+    using realdds::ms_s;
+    m.def( "now", []() { return realdds::now().to_ns(); } );
+
+    py::enum_< ms_s::no_suffix_t >( m, "no_suffix_t" );
+    m.attr( "no_suffix" ) = ms_s::no_suffix;
+    py::enum_< ms_s::rel_t >( m, "rel_t" );
+    m.attr( "rel" ) = ms_s::rel;
+    py::enum_< ms_s::abs_t >( m, "abs_t" );
+    m.attr( "abs" ) = ms_s::abs;
+
+    m.def( "ms_s", []( dds_nsec t ) { return ms_s( t ).to_string(); } );
+    m.def( "ms_s", []( dds_nsec t, ms_s::no_suffix_t ) { return ms_s( t, ms_s::no_suffix ).to_string(); } );
+    m.def( "ms_s", []( dds_nsec dt, ms_s::rel_t ) { return ms_s( dt, ms_s::rel ).to_string(); } );
+    m.def( "ms_s", []( dds_nsec dt, ms_s::rel_t, ms_s::no_suffix_t ) { return ms_s( dt, ms_s::rel, ms_s::no_suffix ).to_string(); } );
+    m.def( "ms_s", []( dds_nsec t1, dds_nsec t2 ) { return ms_s( t1, t2 ).to_string(); } );
+    m.def( "ms_s", []( dds_nsec t1, dds_nsec t2, ms_s::no_suffix_t ) { return ms_s( t1, t2, ms_s::no_suffix ).to_string(); } );
 
     typedef std::shared_ptr< dds_topic > flexible_msg_create_topic( std::shared_ptr< dds_participant > const &,
                                                                     char const * );
@@ -422,12 +435,13 @@ PYBIND11_MODULE(NAME, m) {
                     assert( ! data.is_valid() );
                 return data;
             },
-            py::arg( "reader" ), py::arg( "sample" ) = nullptr )
+            py::arg( "reader" ), py::arg( "sample" ) = nullptr,
+            py::call_guard< py::gil_scoped_release >() )
         .def_static( "create_topic", static_cast<flexible_msg_create_topic *>( &flexible_msg::create_topic ))
         .def( "json_data", []( flexible_msg const & self ) {
             return std::string( (char const *)self._data.data(), self._data.size() );
         } )
-        .def( "write_to", &flexible_msg::write_to );
+        .def( "write_to", &flexible_msg::write_to, py::call_guard< py::gil_scoped_release >() );
 
 
     using realdds::dds_device_broadcaster;

@@ -7,14 +7,18 @@ from time import sleep
 import threading
 
 
-def _ns_as_ms( ns ):
-    return str(ns / 1000000.) + "ms"
+from pyrealdds import ms_s, no_suffix, rel, abs
+#no_suffix = ''
+#rel = '+'
+#since_start = dds.now()
+#def ms_s( ns, suffix="ms", format="" ):
+#    return f'{ns / 1000000.:{format}}{suffix}'
 
 
 class writer:
     """
     Just to enable simple one-line syntax:
-        flexible.writer( "blah" ).write( '{"field" : 1}' )
+        flexible.writer( participant, "blah" ).write( '{"field" : 1}' )
     """
 
     def __init__( self, participant, topic, qos = None ):
@@ -25,13 +29,15 @@ class writer:
         else:
             raise RuntimeError( "invalid 'topic' argument: " + type(topic) )
         self.n_readers = 0
+        self.name = self.handle.name()
         self.writer = dds.topic_writer( self.handle )
         self.writer.on_publication_matched( self._on_publication_matched )
         self.writer.run( qos or dds.topic_writer.qos() )
 
     def _on_publication_matched( self, writer, d_readers ):
-        log.d( "on_publication_matched", d_readers )
-        self.n_readers += d_readers
+        n_readers = self.n_readers + d_readers
+        log.d( f'{self.name}.on_publication_matched {d_readers:+} -> {n_readers}' )
+        self.n_readers = n_readers
 
     def wait_for_readers( self, n_readers = 1, timeout = 3.0 ):
         while self.n_readers < n_readers:
@@ -39,12 +45,14 @@ class writer:
             if timeout > 0:
                 sleep( 0.25 )
             else:
-                raise RuntimeError( "timed out waiting for reader" )
+                raise RuntimeError( f'timed out waiting for {n_readers} readers' )
 
     def write( self, json_string ):
         msg = dds.flexible_msg( json_string )
-        log.d( "writing", msg )
+        now = dds.now()
+        msgs = str(msg)
         msg.write_to( self.writer )
+        log.d( f'{self.name}.write {msgs} @{ms_s(now,no_suffix)}{ms_s(dds.now(),now)}' )
 
     def stop( self ):
         self.writer = self.handle = None
@@ -53,7 +61,7 @@ class writer:
 class reader:
     """
     Just to enable simple one-line syntax:
-        msg = flexible.reader( "blah" ).read()
+        msg = flexible.reader( participant, "blah" ).read()
     """
 
     def __init__( self, participant, topic, qos = None ):
@@ -64,6 +72,7 @@ class reader:
         else:
             raise RuntimeError( "invalid 'topic' argument: " + type(topic) )
         self.n_writers = 0
+        self.name = self.handle.name()
         self.data = []
         self.samples = []
         self._got_something = threading.Event()
@@ -73,8 +82,9 @@ class reader:
         self.reader.run( qos or dds.topic_reader.qos() )
 
     def _on_subscription_matched( self, reader, d_writers ):
-        self.n_writers += d_writers
-        log.d( "on_subscription_matched", reader.topic().name(), d_writers, '=', self.n_writers )
+        n_writers = self.n_writers + d_writers
+        log.d( f'{self.name}.on_subscription_matched {d_writers:+} -> {n_writers}' )
+        self.n_writers = n_writers
 
     def wait_for_writers( self, n_writers = 1, timeout = 3.0 ):
         """
@@ -85,11 +95,11 @@ class reader:
             if timeout > 0:
                 sleep( 0.25 )
             else:
-                raise RuntimeError( f"timed out waiting for {n_writers} writers" )
+                raise RuntimeError( f'{self.name} timed out waiting for {n_writers} writers' )
 
     def _on_data_available( self, reader ):
-        topic_name = reader.topic().name()
-        log.d( "on_data_available", topic_name )
+        now = dds.now()
+        #log.d( f'{topic_name}.on_data_available @{now}' )
         got_something = False
         while True:
             sample = dds.sample_info()
@@ -98,7 +108,8 @@ class reader:
                 if not got_something:
                     raise RuntimeError( "expected message not received!" )
                 break
-            log.d( "received", '@T+' + _ns_as_ms(sample.reception_timestamp()-sample.source_timestamp()), msg )
+            received = sample.reception_timestamp()
+            log.d( f'{self.name}.on_data_available @{ms_s(received,no_suffix)}{ms_s(now,received,no_suffix)}{ms_s(dds.now(),now)} {msg}' )
             self.data += [msg]
             self.samples += [sample]
             got_something = True
@@ -107,19 +118,20 @@ class reader:
     def read_sample( self, timeout=3.0 ):
         """
         :param timeout: if empty, wait for this many seconds then raise an error
-        :return: the next sample read
+        :return: a tuple of the next flexible message, and the sample read
         """
         self.wait_for_data( timeout=timeout )
         msg = self.data.pop(0)
         if self.empty():
             self._got_something.clear()
         sample = self.samples.pop(0)
+        log.d( f'{self.name}.read_sample @{ms_s(dds.now(),sample.reception_timestamp())}' )
         return (msg,sample)
 
     def read( self, timeout=3.0 ):
         """
         :param timeout: if empty, wait for this many seconds then raise an error
-        :return: the next sample read
+        :return: the next flexible message read
         """
         msg, sample = self.read_sample( timeout=timeout )
         return msg
