@@ -61,10 +61,9 @@ private:
     std::mutex _data_mutex;
 
 public:
-    flexible_reader( std::shared_ptr< dds_participant > const & participant,
-                     std::shared_ptr< dds_topic > const & topic );
+    flexible_reader( std::shared_ptr< dds_topic > const & topic );
     flexible_reader( std::shared_ptr< dds_participant > const & participant, std::string const & topic_name )
-        : flexible_reader( participant, flexible_msg::create_topic( participant, topic_name ) )
+        : flexible_reader( flexible_msg::create_topic( participant, topic_name ) )
     {
     }
 

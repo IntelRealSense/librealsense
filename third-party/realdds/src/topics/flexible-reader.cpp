@@ -19,8 +19,7 @@ namespace realdds {
 namespace topics {
 
 
-flexible_reader::flexible_reader( std::shared_ptr< dds_participant > const & participant,
-                                  std::shared_ptr< dds_topic > const & topic )
+flexible_reader::flexible_reader( std::shared_ptr< dds_topic > const & topic )
     : _reader( std::make_shared< dds_topic_reader >( topic ) )
 {
     _reader->on_subscription_matched( [this]( eprosima::fastdds::dds::SubscriptionMatchedStatus const & status ) {

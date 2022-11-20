@@ -19,8 +19,7 @@ namespace realdds {
 namespace topics {
 
 
-flexible_writer::flexible_writer( std::shared_ptr< dds_participant > const & participant,
-                                  std::shared_ptr< dds_topic > const & topic )
+flexible_writer::flexible_writer( std::shared_ptr< dds_topic > const & topic )
     : _writer( std::make_shared< dds_topic_writer >( topic ) )
 {
     _writer->on_publication_matched( [this]( eprosima::fastdds::dds::PublicationMatchedStatus const & status ) {

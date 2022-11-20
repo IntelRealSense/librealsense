@@ -39,10 +39,9 @@ class flexible_writer
     int _n_readers = 0;
 
 public:
-    flexible_writer( std::shared_ptr< dds_participant > const & participant,
-                     std::shared_ptr< dds_topic > const & topic );
+    flexible_writer( std::shared_ptr< dds_topic > const & topic );
     flexible_writer( std::shared_ptr< dds_participant > const & participant, std::string const & topic_name )
-        : flexible_writer( participant, flexible_msg::create_topic( participant, topic_name ) )
+        : flexible_writer( flexible_msg::create_topic( participant, topic_name ) )
     {
     }
 
