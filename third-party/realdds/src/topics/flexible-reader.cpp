@@ -95,7 +95,7 @@ void flexible_reader::on_data_available()
     {
         data_t data;
         if( ! flexible_msg::take_next( *_reader, &data.msg, &data.sample ) )
-            assert( ! msg.is_valid() );
+            assert( ! data.is_valid() );
         if( ! data.msg.is_valid() )
         {
             if( ! got_something )
