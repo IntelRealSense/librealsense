@@ -30,7 +30,7 @@ inline dds_time time_from( dds_nsec nanoseconds )
 
 // Easy way to format DDS time to a legible string, in milliseconds
 //
-class ms_s
+class timestr
 {
     std::string _s;
 
@@ -42,62 +42,62 @@ public:
 
 public:
     // absolute time
-    ms_s( dds_nsec const t, abs_t, no_suffix_t )
+    timestr( dds_nsec const t, abs_t, no_suffix_t )
         : _s( std::to_string( t / 1e6 ) )
     {
         if( _s.find( '.' ) != std::string::npos )
             while( _s.back() == '0' )
                 _s.pop_back();
     }
-    ms_s( dds_nsec const t, abs_t )  // with "ms" suffix by default
-        : ms_s( t, abs, no_suffix )
+    timestr( dds_nsec const t, abs_t )  // with "ms" suffix by default
+        : timestr( t, abs, no_suffix )
     {
         _s += "ms";
     }
 
     // expressed as time-since-start (for readability)
-    ms_s( dds_nsec const t, no_suffix_t )
-        : ms_s( t - since_start(), abs, no_suffix ) {}
-    ms_s( dds_nsec const t )
-        : ms_s( t - since_start(), abs ) {}
+    timestr( dds_nsec const t, no_suffix_t )
+        : timestr( t - since_start(), abs, no_suffix ) {}
+    timestr( dds_nsec const t )
+        : timestr( t - since_start(), abs ) {}
 
     // relative time (so +/- followed by the number)
-    ms_s( dds_nsec const delta, rel_t, no_suffix_t )
-        : ms_s( delta, abs, no_suffix )
+    timestr( dds_nsec const delta, rel_t, no_suffix_t )
+        : timestr( delta, abs, no_suffix )
     {
         ensure_sign( delta );
     }
-    ms_s( dds_nsec const delta, rel_t )  // with "ms" suffix by default
-        : ms_s( delta, abs )
+    timestr( dds_nsec const delta, rel_t )  // with "ms" suffix by default
+        : timestr( delta, abs )
     {
         ensure_sign( delta );
     }
 
     // diff between two absolute times
-    ms_s( dds_nsec const t, dds_nsec const start, no_suffix_t )
-        : ms_s( t - start, rel, no_suffix ) {}
-    ms_s( dds_nsec const t, dds_nsec const start )
-        : ms_s( t - start, rel ) {}
+    timestr( dds_nsec const t, dds_nsec const start, no_suffix_t )
+        : timestr( t - start, rel, no_suffix ) {}
+    timestr( dds_nsec const t, dds_nsec const start )
+        : timestr( t - start, rel ) {}
 
     // Rest are variations of the above
 
-    ms_s( realdds::dds_time const & t, realdds::dds_time const & start, no_suffix_t )
-        : ms_s( t.to_ns(), start.to_ns(), no_suffix ) {}
-    ms_s( realdds::dds_time const & t, realdds::dds_nsec const start, no_suffix_t )
-        : ms_s( t.to_ns(), start, no_suffix ) {}
-    ms_s( realdds::dds_nsec const t, realdds::dds_time const & start, no_suffix_t )
-        : ms_s( t, start.to_ns(), no_suffix ) {}
-    ms_s( realdds::dds_time const & t, no_suffix_t )
-        : ms_s( t.to_ns(), no_suffix ) {}
+    timestr( realdds::dds_time const & t, realdds::dds_time const & start, no_suffix_t )
+        : timestr( t.to_ns(), start.to_ns(), no_suffix ) {}
+    timestr( realdds::dds_time const & t, realdds::dds_nsec const start, no_suffix_t )
+        : timestr( t.to_ns(), start, no_suffix ) {}
+    timestr( realdds::dds_nsec const t, realdds::dds_time const & start, no_suffix_t )
+        : timestr( t, start.to_ns(), no_suffix ) {}
+    timestr( realdds::dds_time const & t, no_suffix_t )
+        : timestr( t.to_ns(), no_suffix ) {}
 
-    ms_s( realdds::dds_time const & t, realdds::dds_time const & start )
-        : ms_s( t.to_ns(), start.to_ns() ) {}
-    ms_s( realdds::dds_time const & t, realdds::dds_nsec const start )
-        : ms_s( t.to_ns(), start ) {}
-    ms_s( realdds::dds_nsec const t, realdds::dds_time const & start )
-        : ms_s( t, start.to_ns() ) {}
-    ms_s( realdds::dds_time const & t )
-        : ms_s( t.to_ns() ) {}
+    timestr( realdds::dds_time const & t, realdds::dds_time const & start )
+        : timestr( t.to_ns(), start.to_ns() ) {}
+    timestr( realdds::dds_time const & t, realdds::dds_nsec const start )
+        : timestr( t.to_ns(), start ) {}
+    timestr( realdds::dds_nsec const t, realdds::dds_time const & start )
+        : timestr( t, start.to_ns() ) {}
+    timestr( realdds::dds_time const & t )
+        : timestr( t.to_ns() ) {}
 
     std::string const & to_string() const { return _s; }
     operator std::string const &() const { return to_string(); }
@@ -116,11 +116,11 @@ private:
 };
 
 
-inline std::ostream & operator<<( std::ostream & os, ms_s const & ms )
+inline std::ostream & operator<<( std::ostream & os, timestr const & ms )
     { return( os << (std::string) ms ); }
-inline std::string operator+( std::string const & s, ms_s const & ms )
+inline std::string operator+( std::string const & s, timestr const & ms )
     { return s + (std::string) ms; }
-inline std::string operator+( ms_s const & ms, std::string const & s )
+inline std::string operator+( timestr const & ms, std::string const & s )
     { return (std::string) ms + s; }
 
 

@@ -54,8 +54,8 @@ void flexible_writer::write( nlohmann::json && json )
     flexible_msg msg( std::move( json ) );
     auto write_time = now();
     msg.write_to( *_writer );
-    LOG_DEBUG( name() << ".write JSON " << json_string << " @" << ms_s( write_time, ms_s::no_suffix )
-                      << ms_s( now(), write_time ) );
+    LOG_DEBUG( name() << ".write JSON " << json_string << " @" << timestr( write_time, timestr::no_suffix )
+                      << timestr( now(), write_time ) );
 }
 
 

@@ -61,7 +61,7 @@ flexible_reader::data_t flexible_reader::read()
         data = std::move( _data.front() );
         _data.pop();
     }
-    LOG_DEBUG( name() << ".read_sample @" << ms_s( now(), data.sample.reception_timestamp ) );
+    LOG_DEBUG( name() << ".read_sample @" << timestr( now(), data.sample.reception_timestamp ) );
     return data;
 }
 
@@ -74,7 +74,7 @@ flexible_reader::data_t flexible_reader::read( std::chrono::seconds timeout )
         data = std::move( _data.front() );
         _data.pop();
     }
-    LOG_DEBUG( name() << ".read_sample @" << ms_s( now(), data.sample.reception_timestamp ) );
+    LOG_DEBUG( name() << ".read_sample @" << timestr( now(), data.sample.reception_timestamp ) );
     return data;
 }
 
@@ -103,8 +103,8 @@ void flexible_reader::on_data_available()
             break;
         }
         auto & received = data.sample.reception_timestamp;
-        LOG_DEBUG( name() << ".on_data_available @" << ms_s( received.to_ns(), ms_s::no_suffix )
-                          << ms_s( notify_time, received, ms_s::no_suffix ) << ms_s( now(), notify_time ) << " "
+        LOG_DEBUG( name() << ".on_data_available @" << timestr( received.to_ns(), timestr::no_suffix )
+                          << timestr( notify_time, received, timestr::no_suffix ) << timestr( now(), notify_time ) << " "
                           << data.msg.json_data().dump() );
         got_something = true;
         {

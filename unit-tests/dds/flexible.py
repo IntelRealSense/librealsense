@@ -5,14 +5,7 @@ import pyrealdds as dds
 from rspy import log
 from time import sleep
 import threading
-
-
-from pyrealdds import ms_s, no_suffix, rel, abs
-#no_suffix = ''
-#rel = '+'
-#since_start = dds.now()
-#def ms_s( ns, suffix="ms", format="" ):
-#    return f'{ns / 1000000.:{format}}{suffix}'
+from pyrealdds import timestr, no_suffix, rel, abs
 
 
 class writer:
@@ -52,7 +45,7 @@ class writer:
         now = dds.now()
         msgs = str(msg)
         msg.write_to( self.writer )
-        log.d( f'{self.name}.write {msgs} @{ms_s(now,no_suffix)}{ms_s(dds.now(),now)}' )
+        log.d( f'{self.name}.write {msgs} @{timestr(now,no_suffix)}{timestr(dds.now(),now)}' )
 
     def stop( self ):
         self.writer = self.handle = None
@@ -109,7 +102,7 @@ class reader:
                     raise RuntimeError( "expected message not received!" )
                 break
             received = sample.reception_timestamp()
-            log.d( f'{self.name}.on_data_available @{ms_s(received,no_suffix)}{ms_s(now,received,no_suffix)}{ms_s(dds.now(),now)} {msg}' )
+            log.d( f'{self.name}.on_data_available @{timestr(received,no_suffix)}{timestr(now,received,no_suffix)}{timestr(dds.now(),now)} {msg}' )
             self.data += [msg]
             self.samples += [sample]
             got_something = True
@@ -125,7 +118,7 @@ class reader:
         if self.empty():
             self._got_something.clear()
         sample = self.samples.pop(0)
-        log.d( f'{self.name}.read_sample @{ms_s(dds.now(),sample.reception_timestamp())}' )
+        log.d( f'{self.name}.read_sample @{timestr(dds.now(),sample.reception_timestamp())}' )
         return (msg,sample)
 
     def read( self, timeout=3.0 ):
