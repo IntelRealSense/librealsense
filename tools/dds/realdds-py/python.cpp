@@ -15,6 +15,7 @@ Copyright(c) 2022 Intel Corporation. All Rights Reserved. */
 #include <realdds/dds-device.h>
 #include <realdds/dds-stream.h>
 #include <realdds/dds-guid.h>
+#include <realdds/dds-time.h>
 #include <realdds/dds-topic.h>
 #include <realdds/dds-topic-reader.h>
 #include <realdds/dds-topic-writer.h>
@@ -352,6 +353,25 @@ PYBIND11_MODULE(NAME, m) {
         .def( "source_timestamp", []( SampleInfo const & self ) { return self.source_timestamp.to_ns(); } )
         .def( "reception_timestamp", []( SampleInfo const & self ) { return self.reception_timestamp.to_ns(); } );
 
+    // We need a timestamp function that returns timestamps in the same domain as the sample-info timestamps
+    using realdds::dds_nsec;
+    using realdds::timestr;
+    m.def( "now", []() { return realdds::now().to_ns(); } );
+
+    py::enum_< timestr::no_suffix_t >( m, "no_suffix_t" );
+    m.attr( "no_suffix" ) = timestr::no_suffix;
+    py::enum_< timestr::rel_t >( m, "rel_t" );
+    m.attr( "rel" ) = timestr::rel;
+    py::enum_< timestr::abs_t >( m, "abs_t" );
+    m.attr( "abs" ) = timestr::abs;
+
+    m.def( "timestr", []( dds_nsec t ) { return timestr( t ).to_string(); } );
+    m.def( "timestr", []( dds_nsec t, timestr::no_suffix_t ) { return timestr( t, timestr::no_suffix ).to_string(); } );
+    m.def( "timestr", []( dds_nsec dt, timestr::rel_t ) { return timestr( dt, timestr::rel ).to_string(); } );
+    m.def( "timestr", []( dds_nsec dt, timestr::rel_t, timestr::no_suffix_t ) { return timestr( dt, timestr::rel, timestr::no_suffix ).to_string(); } );
+    m.def( "timestr", []( dds_nsec t1, dds_nsec t2 ) { return timestr( t1, t2 ).to_string(); } );
+    m.def( "timestr", []( dds_nsec t1, dds_nsec t2, timestr::no_suffix_t ) { return timestr( t1, t2, timestr::no_suffix ).to_string(); } );
+
     typedef std::shared_ptr< dds_topic > flexible_msg_create_topic( std::shared_ptr< dds_participant > const &,
                                                                     char const * );
     py::class_< flexible_msg >( m, "flexible_msg" )
@@ -415,12 +435,13 @@ PYBIND11_MODULE(NAME, m) {
                     assert( ! data.is_valid() );
                 return data;
             },
-            py::arg( "reader" ), py::arg( "sample" ) = nullptr )
+            py::arg( "reader" ), py::arg( "sample" ) = nullptr,
+            py::call_guard< py::gil_scoped_release >() )
         .def_static( "create_topic", static_cast<flexible_msg_create_topic *>( &flexible_msg::create_topic ))
         .def( "json_data", []( flexible_msg const & self ) {
             return std::string( (char const *)self._data.data(), self._data.size() );
         } )
-        .def( "write_to", &flexible_msg::write_to );
+        .def( "write_to", &flexible_msg::write_to, py::call_guard< py::gil_scoped_release >() );
 
 
     using realdds::dds_device_broadcaster;
