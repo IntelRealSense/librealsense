@@ -49,6 +49,7 @@ public:
     image( image && );
 
     image & operator=( image && rhs );
+    image & operator=( const raw::device::image & );
 
     bool is_valid() const { return width != 0 && height != 0; }
     void invalidate() { width = 0; }

@@ -59,6 +59,17 @@ image & image::operator=( image && rhs )
     return *this;
 }
 
+image & image::operator=( const raw::device::image & rhs )
+{
+    raw_data = rhs.raw_data();
+    width    = rhs.width();
+    height   = rhs.height();
+    size     = rhs.size();
+    format   = rhs.format();
+
+    return *this;
+}
+
 /*static*/ std::shared_ptr< dds_topic >
 image::create_topic( std::shared_ptr< dds_participant > const & participant, char const * topic_name )
 {
@@ -87,8 +98,9 @@ image::take_next( dds_topic_reader & reader, image * output, eprosima::fastdds::
             if ( !info->valid_data )
                 output->invalidate();
             else
-                *output = raw_data;
+                *output = raw_data; //TODO - optimize copy, use dds loans
         }
+
         return true;
     }
     if ( status == ReturnCode_t::RETCODE_NO_DATA )
