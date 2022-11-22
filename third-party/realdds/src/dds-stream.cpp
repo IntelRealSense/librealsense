@@ -12,7 +12,6 @@
 
 #include <fastdds/dds/subscriber/SampleInfo.hpp>
 
-using namespace eprosima::fastdds::dds;
 using namespace realdds;
 
 
@@ -36,7 +35,7 @@ void dds_stream::open( std::string const & topic_name, std::shared_ptr< dds_subs
     //here and destroyed on close()
     _reader = std::make_shared< dds_topic_reader >( topic, subscriber );
     _reader->on_data_available( [&]() { handle_frames(); } );
-    _reader->run( dds_topic_reader::qos( BEST_EFFORT_RELIABILITY_QOS ) );  // no retries
+    _reader->run( dds_topic_reader::qos( eprosima::fastdds::dds::BEST_EFFORT_RELIABILITY_QOS ) );  // no retries
 }
 
 
@@ -50,9 +49,10 @@ void dds_stream::start_streaming( on_data_available_callback cb )
 {
     if ( !is_open() )
         DDS_THROW( runtime_error, "stream '" + name() + "' is not open" );
+    if( is_streaming() )
+        DDS_THROW( runtime_error, "stream '" + name() + "' is already streaming" );
 
     _on_data_available = cb;
-    _is_streaming = true;
 
 }
 
@@ -77,8 +77,7 @@ void dds_stream::stop_streaming()
     if ( !is_streaming() )
         DDS_THROW( runtime_error, "stream '" + name() + "' is not streaming" );
 
-    _reader->on_data_available( [](){} ); //Do nothing with received frames
-    _is_streaming = false;
+    _on_data_available = nullptr;
 }
 
 

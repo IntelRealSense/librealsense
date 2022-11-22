@@ -18,48 +18,7 @@ namespace topics {
 namespace device {
 
 
-image::image( const raw::device::image & rhs )
-    : raw_data( rhs.raw_data() )  // TODO: avoid image copy?
-    , width( rhs.width())
-    , height( rhs.height() )
-    , size( rhs.size() )
-    , format( rhs.format() )
-{
-}
-
-image::image( const image & rhs )
-    : raw_data( rhs.raw_data )  // TODO: avoid image copy?
-    , width( rhs.width )
-    , height( rhs.height )
-    , size( rhs.size )
-    , format( rhs.format )
-{
-}
-
-image::image( image && rhs )
-{
-    raw_data = std::move( rhs.raw_data );
-    width    = std::move( rhs.width );
-    height   = std::move( rhs.height );
-    size     = std::move( rhs.size );
-    format   = std::move( rhs.format );
-}
-
-image & image::operator=( image && rhs )
-{
-    if ( &rhs != this )
-    {
-        raw_data = std::move( rhs.raw_data );
-        width    = std::move( rhs.width );
-        height   = std::move( rhs.height );
-        size     = std::move( rhs.size );
-        format   = std::move( rhs.format );
-    }
-
-    return *this;
-}
-
-image & image::operator=( const raw::device::image & rhs )
+image & image::operator=( raw::device::image && rhs )
 {
     raw_data = rhs.raw_data();
     width    = rhs.width();
@@ -69,6 +28,7 @@ image & image::operator=( const raw::device::image & rhs )
 
     return *this;
 }
+
 
 /*static*/ std::shared_ptr< dds_topic >
 image::create_topic( std::shared_ptr< dds_participant > const & participant, char const * topic_name )
@@ -98,7 +58,7 @@ image::take_next( dds_topic_reader & reader, image * output, eprosima::fastdds::
             if ( !info->valid_data )
                 output->invalidate();
             else
-                *output = raw_data; //TODO - optimize copy, use dds loans
+                *output = std::move( raw_data ); //TODO - optimize copy, use dds loans
         }
 
         return true;

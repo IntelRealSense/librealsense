@@ -37,7 +37,7 @@ public:
     virtual void open( std::string const & topic_name, std::shared_ptr< dds_subscriber > const & );
     virtual void close();
 
-    bool is_streaming() const override { return _is_streaming; }
+    bool is_streaming() const override { return _on_data_available == nullptr; }
     typedef std::function< void( topics::device::image && f) > on_data_available_callback;
     void start_streaming( on_data_available_callback cb );
     void stop_streaming();
@@ -49,7 +49,6 @@ protected:
 
     std::shared_ptr< dds_topic_reader > _reader;
     on_data_available_callback _on_data_available;
-    bool _is_streaming = false;
 };
 
 class dds_video_stream : public dds_stream

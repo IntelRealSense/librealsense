@@ -43,13 +43,8 @@ class image
 public:
     using type = raw::device::imagePubSubType;
 
-    image() = default;
-    image( const raw::device::image & );
-    image( const image & );
-    image( image && );
 
-    image & operator=( image && rhs );
-    image & operator=( const raw::device::image & );
+    image & operator=( raw::device::image && );
 
     bool is_valid() const { return width != 0 && height != 0; }
     void invalidate() { width = 0; }
