@@ -43,7 +43,16 @@ class image
 public:
     using type = raw::device::imagePubSubType;
 
+    image() = default;
 
+    //Disable copy
+    image( const image & ) = delete;
+    image & operator=( const image & ) = delete;
+
+    //move is OK
+    image( image && ) = default;
+    image( raw::device::image && );
+    image & operator=( image && ) = default;
     image & operator=( raw::device::image && );
 
     bool is_valid() const { return width != 0 && height != 0; }

@@ -18,13 +18,23 @@ namespace topics {
 namespace device {
 
 
+image::image( raw::device::image && rhs )
+{
+    raw_data = std::move( rhs.raw_data() );
+    width    = std::move( rhs.width() );
+    height   = std::move( rhs.height() );
+    size     = std::move( rhs.size() );
+    format   = std::move( rhs.format() );
+}
+
+
 image & image::operator=( raw::device::image && rhs )
 {
-    raw_data = rhs.raw_data();
-    width    = rhs.width();
-    height   = rhs.height();
-    size     = rhs.size();
-    format   = rhs.format();
+    raw_data = std::move( rhs.raw_data() );
+    width    = std::move( rhs.width() );
+    height   = std::move( rhs.height() );
+    size     = std::move( rhs.size() );
+    format   = std::move( rhs.format() );
 
     return *this;
 }
