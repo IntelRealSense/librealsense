@@ -65,6 +65,8 @@ include(src/CMakeLists.txt)
 include(third-party/CMakeLists.txt)
 include(common/utilities/CMakeLists.txt)
 
+target_link_libraries( ${LRS_TARGET} PRIVATE utilities )
+
 # configure the project according to OS specific requirments
 # macro definition located at "CMake/<OS>_config.cmake"
 os_target_config()

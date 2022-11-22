@@ -3,7 +3,13 @@
 #  minimum required cmake version: 3.1.0
 cmake_minimum_required(VERSION 3.1.0)
 
-project(RealsenseToolsRealSenseViewer)
+project(realsense-viewer)
+
+if(WIN32)
+    add_executable( ${PROJECT_NAME} WIN32 )
+else()
+    add_executable( ${PROJECT_NAME} )
+endif()
 
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
@@ -11,8 +17,7 @@ find_package(Threads REQUIRED)
 include_directories(${CMAKE_BINARY_DIR})
 
 if(${BUILD_EASYLOGGINGPP})
-include(../../include/librealsense2/utilities/easylogging/easyloggingpp.cmake)
-include_directories( ${ELPP_INCLUDES} )
+    include("${REPO_ROOT}/third-party/utilities/include/utilities/easylogging/shared-init.cmake")
 endif()
 
 include(../../common/CMakeLists.txt)
@@ -51,7 +56,7 @@ if(BUILD_GRAPHICAL_EXAMPLES)
     ../../common/os.cpp
 )
 
-SET(DELAYED 
+SET(DELAYED
     realsense2d.dll
     realsense2-gld.dll
     realsense2.dll
@@ -134,7 +139,7 @@ if(DEFINED INTEL_OPENVINO_DIR  AND  IS_DIRECTORY ${INTEL_OPENVINO_DIR})
 
     include(../../wrappers/openvino/dl_vino_model.cmake)
     # Download model files -- these will go into build/tools/realsense-viewer, which is also
-    # where the sample is run from in Visual Studio 
+    # where the sample is run from in Visual Studio
 
     if(OPENVINO2019)
     dl_vino_model( "README.txt"                              "789e144d6cafa379c8437d2a6860829b6d935a8d" )
@@ -167,9 +172,8 @@ endif()
 
 # config-ui
 if(WIN32)
-    add_executable(realsense-viewer WIN32
+    target_sources( ${PROJECT_NAME} PRIVATE
         ${RS_VIEWER_CPP}
-        ${ELPP_SOURCES}
         ${CMAKE_CURRENT_SOURCE_DIR}/res/resource.h
         ${CMAKE_CURRENT_SOURCE_DIR}/res/realsense-viewer.rc
         ../../common/windows-app-bootstrap.cpp
@@ -197,9 +201,8 @@ if(WIN32)
     set_target_properties(realsense-viewer PROPERTIES LINK_FLAGS "${LD_FLAGS_STR}")
 
 else()
-    add_executable(realsense-viewer
+    target_sources( ${PROJECT_NAME} PRIVATE
         ${RS_VIEWER_CPP}
-        ${ELPP_SOURCES}
     )
 endif()
 

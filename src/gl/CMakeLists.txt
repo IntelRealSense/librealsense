@@ -88,9 +88,10 @@ configure_package_config_file(../../CMake/realsense2-glConfig.cmake.in realsense
 
 configure_file(../../config/librealsense-gl.pc.in ../../config/realsense2-gl.pc @ONLY)
 
-target_link_libraries(${PROJECT_NAME}
-    PRIVATE ${DEPENDENCIES}
-)
+target_link_libraries( ${PROJECT_NAME}
+    PRIVATE
+        ${DEPENDENCIES}
+    )
 
 # CMake prior to 3.13 cannot install targets located in sub-directories.
 #https://gitlab.kitware.com/cmake/cmake/merge_requests/2152
