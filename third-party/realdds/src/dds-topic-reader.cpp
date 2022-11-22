@@ -88,8 +88,10 @@ void dds_topic_reader::run( qos const & rqos )
 {
     // The DataReader is the Entity used by the application to subscribe to updated values of the data
     eprosima::fastdds::dds::StatusMask status_mask;
-    status_mask << eprosima::fastdds::dds::StatusMask::subscription_matched();
-    status_mask << eprosima::fastdds::dds::StatusMask::data_available();
+    if( _on_subscription_matched )
+        status_mask << eprosima::fastdds::dds::StatusMask::subscription_matched();
+    if( _on_data_available )
+        status_mask << eprosima::fastdds::dds::StatusMask::data_available();
     _reader = DDS_API_CALL(
         _subscriber->get()->create_datareader( _topic->get(), rqos, status_mask.any() ? this : nullptr, status_mask ) );
 }

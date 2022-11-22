@@ -529,7 +529,7 @@ namespace librealsense
             {
                 //stream is the dds_stream matching the librealsense active stream
                 auto & stream = _streams[sid_index( profile->get_unique_id(), profile->get_stream_index() )];
-                stream->start_streaming( [p = profile, this]( const realdds::topics::device::image & dds_frame ) {
+                stream->start_streaming( [p = profile, this]( realdds::topics::device::image && dds_frame ) {
                     rs2_stream_profile prof = { p.get() };
                     rs2_software_video_frame rs2_frame;
                     

@@ -63,6 +63,8 @@ public:
     // Returns false if no more data is available.
     // Will throw if an unexpected error occurs.
     //
+    //Note - copies the data.
+    //TODO - add an API for a function that loans the data and enables the user to free it later.
     static bool take_next( dds_topic_reader &,
                            image * output,
                            eprosima::fastdds::dds::SampleInfo * optional_info = nullptr );

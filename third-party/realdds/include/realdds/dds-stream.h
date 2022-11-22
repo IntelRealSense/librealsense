@@ -4,11 +4,7 @@
 #pragma once
 
 #include "dds-stream-base.h"
-#include "dds-stream-profile.h"
 
-#include <librealsense2/utilities/concurrency/concurrency.h>
-
-#include <memory>
 #include <string>
 #include <vector>
 #include <functional>
@@ -42,7 +38,7 @@ public:
     virtual void close();
 
     bool is_streaming() const override { return _is_streaming; }
-    typedef std::function< void( const topics::device::image & f) > on_data_available_callback;
+    typedef std::function< void( topics::device::image && f) > on_data_available_callback;
     void start_streaming( on_data_available_callback cb );
     void stop_streaming();
 
@@ -53,7 +49,6 @@ protected:
 
     std::shared_ptr< dds_topic_reader > _reader;
     on_data_available_callback _on_data_available;
-    dispatcher _image_dispatcher;
     bool _is_streaming = false;
 };
 

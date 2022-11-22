@@ -18,7 +18,6 @@ using namespace realdds;
 
 dds_stream::dds_stream( std::string const & stream_name, std::string const & sensor_name )
     : super( stream_name, sensor_name )
-    , _image_dispatcher( QUEUE_MAX_SIZE )
 {
 }
 
@@ -30,16 +29,22 @@ void dds_stream::open( std::string const & topic_name, std::shared_ptr< dds_subs
     if ( profiles().empty() )
         DDS_THROW( runtime_error, "stream '" + name() + "' has no profiles" );
 
+    //Topics with same name and type can be created multiple times (multiple open() calls) without an error.
     auto topic = topics::device::image::create_topic( subscriber->get_participant(), topic_name.c_str() );
 
+    //To support automatic streaming (without the need to handle start/stop-streaming commands) the reader is created
+    //here and destroyed on close()
     _reader = std::make_shared< dds_topic_reader >( topic, subscriber );
+    _reader->on_data_available( [&]() { handle_frames(); } );
     _reader->run( dds_topic_reader::qos( BEST_EFFORT_RELIABILITY_QOS ) );  // no retries
 }
+
 
 void dds_stream::close()
 {
     _reader.reset();
 }
+
 
 void dds_stream::start_streaming( on_data_available_callback cb )
 {
@@ -47,11 +52,10 @@ void dds_stream::start_streaming( on_data_available_callback cb )
         DDS_THROW( runtime_error, "stream '" + name() + "' is not open" );
 
     _on_data_available = cb;
-    _image_dispatcher.start();
     _is_streaming = true;
 
-    _reader->on_data_available( [&]() { handle_frames(); } );
 }
+
 
 void dds_stream::handle_frames()
 {
@@ -62,7 +66,8 @@ void dds_stream::handle_frames()
         if ( !frame.is_valid() )
             continue;
 
-        _image_dispatcher.invoke( [f = std::move( frame ), this]( dispatcher::cancellable_timer ) { _on_data_available( f ); } );
+        if ( _on_data_available )
+            _on_data_available( std::move( frame ) );
     }
 }
 
@@ -72,11 +77,7 @@ void dds_stream::stop_streaming()
     if ( !is_streaming() )
         DDS_THROW( runtime_error, "stream '" + name() + "' is not streaming" );
 
-    if ( !is_open() )
-        DDS_THROW( runtime_error, "stream '" + name() + "' is not open" );
-
-    _reader->on_data_available( [](){} );
-    _image_dispatcher.stop();
+    _reader->on_data_available( [](){} ); //Do nothing with received frames
     _is_streaming = false;
 }
 
