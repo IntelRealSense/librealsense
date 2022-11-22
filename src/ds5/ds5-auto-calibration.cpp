@@ -352,7 +352,7 @@ namespace librealsense
         int white_wall_mode = DEFAULT_WHITE_WALL_MODE;
 
         host_assistance_type host_assistance(host_assistance_type::no_assistance);
-        int scan_only_v3 = 1;
+        int scan_only_v3 = 0;
         int interactive_scan_v3 = 0;
         uint16_t step_count_v3 = 0;
         uint16_t fill_factor[256] = { 0 };
