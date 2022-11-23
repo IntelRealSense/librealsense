@@ -2,7 +2,7 @@
 // Copyright(c) 2019 Intel Corporation. All Rights Reserved.
 
 #include <rs-vino/base-detection.h>
-#include <easylogging++.h>
+#include <utilities/easylogging/easyloggingpp.h>
 
 
 using namespace InferenceEngine;
