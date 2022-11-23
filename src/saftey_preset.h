@@ -1,14 +1,14 @@
 #pragma once
 
 #include "types.h"
-
+#include "core/extension.h"
 
 namespace librealsense
 {
 	// Convenience blocks
-	struct float2 { float x, y; };
-	struct float3 { float x, y, z; };
-	struct float3x3 { float3 x, y, z; };  // column-major
+	//struct float2 { float x, y; };
+	//struct float3 { float x, y, z; };
+	//struct float3x3 { float3 x, y, z; };  // column-major
 
 	struct safety_extrinsics_table
 	{
@@ -105,4 +105,6 @@ namespace librealsense
 		virtual std::shared_ptr<safety_preset> get_safety_preset_at_index(int index) = 0;
 		virtual void set_safety_preset_at_index(int index, std::shared_ptr<safety_preset> sp) = 0;
 	};
+	MAP_EXTENSION(RS2_EXTENSION_SAFETY_PRESET, librealsense::safety_preset_interface);
+
 }

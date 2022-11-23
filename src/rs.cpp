@@ -3959,19 +3959,19 @@ rs2_safety_preset* rs2_get_safety_preset_at_index(const rs2_device* device, int 
     //SC_TODO check 1<=index<=63? CRC ?
     auto safety_preset_interface = VALIDATE_INTERFACE(device->device, librealsense::safety_preset_interface);
     auto ret_data = safety_preset_interface->get_safety_preset_at_index(index);
-
     return new rs2_safety_preset{ std::move(ret_data) };
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, device)
 
 
 void rs2_set_safety_preset_at_index(const rs2_device* device,
+    int index,
     std::shared_ptr<librealsense::safety_preset> sp,
-    int index, rs2_error** error) BEGIN_API_CALL
+    rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(device);
     //SC_TODO check 1<=index<=63? check sp and CRC ?
     auto safety_preset_interface = VALIDATE_INTERFACE(device->device, librealsense::safety_preset_interface);
-    safety_preset_interface->set_safety_preset_at_index(sp,index);
+    safety_preset_interface->set_safety_preset_at_index(index, sp);
 }
-HANDLE_EXCEPTIONS_AND_RETURN(nullptr, device)
+HANDLE_EXCEPTIONS_AND_RETURN( , device, sp)

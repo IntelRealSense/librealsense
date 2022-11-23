@@ -959,16 +959,17 @@ namespace librealsense
             return tags;
         };
 
-        std::shared_ptr<safety_preset> get_safety_preset_at_index(int index)
+        std::shared_ptr<safety_preset> get_safety_preset_at_index(int index) override
         {
             command cmd(ds::SAFETY_PRESET_READ, index);
-            _hw_monitor.send(cmd);
+            ds5_device::_hw_monitor->send(cmd);
         }
 
-        void set_safety_preset_at_index(int index, std::shared_ptr<safety_preset> sp)
+        void set_safety_preset_at_index(int index, std::shared_ptr<safety_preset> sp) override
         {
-            command cmd(ds::SAFETY_PRESET_WRITE);
-            _hw_monitor.send(cmd);
+            command cmd(ds::SAFETY_PRESET_WRITE, index);
+            //SC_TODO
+            ds5_device::_hw_monitor->send(cmd);
         }
 
     };

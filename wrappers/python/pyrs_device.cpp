@@ -23,6 +23,8 @@ void init_device(py::module &m) {
         .def("supports", &rs2::device::supports, "Check if specific camera info is supported.", "info"_a)
         .def("get_info", &rs2::device::get_info, "Retrieve camera specific information, "
              "like versions of various internal components", "info"_a)
+        .def("get_saftey_preset_at_index", &rs2::device::get_saftey_preset_at_index, "index"_a)
+        .def("set_saftey_preset_at_index", &rs2::device::set_saftey_preset_at_index, "index"_a, "data"_a)
         .def("hardware_reset", &rs2::device::hardware_reset, "Send hardware reset request to the device")
         .def(py::init<>())
         .def("__nonzero__", &rs2::device::operator bool) // Called to implement truth value testing in Python 2
