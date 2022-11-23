@@ -373,15 +373,15 @@ void dds_sniffer::dds_reader_listener::on_data_available( DataReader * reader )
     }
 }
 
-void dds_sniffer::dds_reader_listener::on_subscription_matched( DataReader *, const SubscriptionMatchedStatus & info )
+void dds_sniffer::dds_reader_listener::on_subscription_matched( DataReader * reader, const SubscriptionMatchedStatus & info )
 {
     if( info.current_count_change == 1 )
     {
-        LOG_DEBUG( "Subscriber matched" );
+        LOG_DEBUG( "Subscriber matched by reader " << print( reader->guid(), std_prefix ) );
     }
     else if( info.current_count_change == -1 )
     {
-        LOG_DEBUG( "Subscriber unmatched" );
+        LOG_DEBUG( "Subscriber unmatched by reader " << print( reader->guid(), std_prefix ) );
     }
     else
     {

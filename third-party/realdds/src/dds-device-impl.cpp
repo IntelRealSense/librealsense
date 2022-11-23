@@ -6,21 +6,24 @@
 #include <realdds/dds-participant.h>
 #include <realdds/dds-topic-reader.h>
 #include <realdds/dds-topic-writer.h>
-
+#include <realdds/dds-subscriber.h>
 #include <realdds/topics/flexible/flexible-msg.h>
-#include <librealsense2/utilities/time/timer.h>
 
 #include <fastdds/dds/publisher/DataWriter.hpp>
 #include <fastdds/dds/subscriber/DataReader.hpp>
 
+#include <librealsense2/utilities/time/timer.h>
+#include <librealsense2/utilities/json.h>
+
+#include <third-party/json.hpp>
+
 #include <cassert>
 
-#include <librealsense2/utilities/json.h>
+
 using nlohmann::json;
 
 
 namespace realdds {
-
 
 namespace {
 
@@ -64,6 +67,7 @@ dds_device::impl::impl( std::shared_ptr< dds_participant > const & participant,
     : _info( info )
     , _guid( guid )
     , _participant( participant )
+    , _subscriber( std::make_shared< dds_subscriber >( participant ) )
 {
 }
 
@@ -80,6 +84,56 @@ void dds_device::impl::run()
     LOG_DEBUG( "device '" << _info.topic_root << "' (" << _participant->print( _guid )
                           << ") initialized successfully" );
     _running = true;
+}
+
+void dds_device::impl::open( const dds_stream_profiles & profiles )
+{
+    if ( profiles.empty() )
+        DDS_THROW( runtime_error, "must provide at least one profile" );
+    using nlohmann::json;
+    auto stream_profiles = json();
+    for ( auto & profile : profiles )
+    {
+        auto stream = profile->stream();
+        if ( !stream )
+            DDS_THROW( runtime_error, "profile (" + profile->to_string() + ") is not part of any stream" );
+        if ( stream_profiles.find( stream->name() ) != stream_profiles.end() )
+            DDS_THROW( runtime_error, "more than one profile found for stream '" + stream->name() + "'" );
+
+        stream_profiles[stream->name()] = profile->to_json();
+
+        _streams[stream->name()]->open( _info.topic_root + '/' + stream->name(), _subscriber );
+    }
+
+    json j = {
+        { "id", "open-streams" },
+        { "stream-profiles", stream_profiles },
+    };
+
+    write_control_message( j );
+}
+
+void dds_device::impl::close( dds_streams const & streams )
+{
+    if ( streams.empty() )
+        DDS_THROW( runtime_error, "must provide at least one stream" );
+    using nlohmann::json;
+    auto stream_names = json::array();
+    for ( auto & stream : streams )
+    {
+        if ( !stream )
+            DDS_THROW( runtime_error, "null stream passed in" );
+        stream_names += stream->name();
+
+        _streams[stream->name()]->close();
+    }
+
+    json j = {
+        { "id", "close-streams" },
+        { "stream-names", stream_names },
+    };
+
+    write_control_message( j );
 }
 
 void dds_device::impl::write_control_message( topics::flexible_msg && msg )

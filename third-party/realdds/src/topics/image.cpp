@@ -16,6 +16,7 @@ char dummy;
 #endif  // _WIN32
 
 #include <realdds/topics/image/image.h>
+#include "imageTypeObject.h"
 #include <fastcdr/Cdr.h>
 
 #include <fastcdr/exceptions/BadParamException.h>
@@ -25,17 +26,19 @@ using namespace eprosima::fastcdr::exception;
 
 realdds::topics::raw::device::image::image()
 {
-    // m_raw_data com.eprosima.idl.parser.typecode.SequenceTypeCode@184f6be2
+    // m_raw_data com.eprosima.idl.parser.typecode.SequenceTypeCode@617faa95
 
-    // m_size com.eprosima.idl.parser.typecode.PrimitiveTypeCode@56aac163
+    // m_size com.eprosima.idl.parser.typecode.PrimitiveTypeCode@1e127982
     m_size = 0;
-    // m_width com.eprosima.idl.parser.typecode.PrimitiveTypeCode@1f7030a6
+    // m_width com.eprosima.idl.parser.typecode.PrimitiveTypeCode@60c6f5b
     m_width = 0;
-    // m_height com.eprosima.idl.parser.typecode.PrimitiveTypeCode@5a1c0542
+    // m_height com.eprosima.idl.parser.typecode.PrimitiveTypeCode@2038ae61
     m_height = 0;
-    // m_format com.eprosima.idl.parser.typecode.PrimitiveTypeCode@396f6598
+    // m_format com.eprosima.idl.parser.typecode.PrimitiveTypeCode@3c0f93f1
     m_format = 0;
 
+    // Just to register all known types
+    registerimageTypes();
 }
 
 realdds::topics::raw::device::image::~image()

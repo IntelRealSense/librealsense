@@ -29,6 +29,7 @@
 #include "software-device.h"
 #include <librealsense2/h/rs_internal.h>
 #include <realdds/topics/device-info/device-info-msg.h>
+#include <realdds/topics/image/image-msg.h>
 #endif //BUILD_WITH_DDS
 
 #include <librealsense2/utilities/json.h>
@@ -521,11 +522,55 @@ namespace librealsense
             software_sensor::open( profiles );
         }
 
+        void start( frame_callback_ptr callback ) override
+        {
+            //For each stream in sensor_base::get_active_streams() set callback function that will call on_video_frame
+            for ( auto & profile : sensor_base::get_active_streams() )
+            {
+                //stream is the dds_stream matching the librealsense active stream
+                auto & stream = _streams[sid_index( profile->get_unique_id(), profile->get_stream_index() )];
+                stream->start_streaming( [p = profile, this]( realdds::topics::device::image && dds_frame ) {
+                    rs2_stream_profile prof = { p.get() };
+                    rs2_software_video_frame rs2_frame;
+                    
+                    //Copying from dds into LibRS space, same as copy from USB backend.
+                    //TODO - use memory pool or some other frame allocator
+                    rs2_frame.pixels = new uint8_t[dds_frame.size];
+                    if ( !rs2_frame.pixels )
+                        throw std::runtime_error( "Could not allocate memory for new frame" );
+                    memcpy( rs2_frame.pixels, dds_frame.raw_data.data(), dds_frame.size );
+                    
+                    rs2_frame.deleter = []( void * ptr) { delete[] ptr; };
+                    rs2_frame.stride = dds_frame.size / dds_frame.height;
+                    rs2_frame.bpp = rs2_frame.stride / dds_frame.width;
+                    rs2_frame.timestamp = frame_counter * 1000.0 / p->get_framerate(); // TODO - timestamp from dds
+                    rs2_frame.domain = RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK; // TODO - timestamp domain from options?
+                    rs2_frame.frame_number = frame_counter++; // TODO - frame_number from dds
+                    rs2_frame.profile = &prof;
+                    rs2_frame.depth_units = 0.001f; //TODO - depth unit from dds, if needed
+                    on_video_frame( rs2_frame );
+                } );
+            }
+
+            software_sensor::start( callback );
+        }
+
+        void stop()
+        {
+            for ( auto & profile : sensor_base::get_active_streams() )
+            {
+                //stream is the dds_stream matching the librealsense active stream
+                auto & stream = _streams[sid_index( profile->get_unique_id(), profile->get_stream_index() )];
+                stream->stop_streaming();
+            }
+
+            software_sensor::stop();
+        }
+
         void close() override
         {
-            //dds_device::close expects <stream_uid, stream_index> pairs
             realdds::dds_streams streams_to_close;
-            for( auto profile : sensor_base::get_active_streams() )
+            for( auto & profile : sensor_base::get_active_streams() )
             {
                 streams_to_close.push_back(
                     _streams[sid_index( profile->get_unique_id(), profile->get_stream_index() )] );
@@ -543,6 +588,8 @@ namespace librealsense
         std::shared_ptr< realdds::dds_device > const & _dev;
         std::string _name;
         std::map< sid_index, std::shared_ptr< realdds::dds_stream > > _streams;
+
+        int frame_counter = 0;
     };
 
     // This is the rs2 device; it proxies to an actual DDS device that does all the actual

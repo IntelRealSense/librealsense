@@ -2,7 +2,6 @@
 // Copyright(c) 2022 Intel Corporation. All Rights Reserved.
 
 #include <librealsense2/utilities/easylogging/easyloggingpp.h>
-#include <librealsense2/utilities/json.h>
 
 #include <realdds/dds-device-broadcaster.h>
 #include <realdds/dds-device-server.h>
@@ -26,8 +25,6 @@
 #include <iostream>
 #include <map>
 #include <unordered_set>
-
-using nlohmann::json;
 
 using namespace TCLAP;
 using namespace realdds;
