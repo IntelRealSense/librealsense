@@ -78,7 +78,7 @@ image::take_next( dds_topic_reader & reader, image * output, eprosima::fastdds::
         // This is an expected return code and is not an error
         return false;
     }
-    DDS_API_CALL_THROW( "device_info::take_next", status );
+    DDS_API_CALL_THROW( "image::take_next", status );
 }
 
 }  // namespace device
