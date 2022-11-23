@@ -1,11 +1,11 @@
 /* License: Apache 2.0. See LICENSE file in root directory.
 Copyright(c) 2017 Intel Corporation. All Rights Reserved. */
 
-#include "python.hpp"
+#include "pyrealsense2.h"
 #include <librealsense2/hpp/rs_internal.hpp>
 #include <librealsense2/hpp/rs_device.hpp>
 #include <librealsense2/hpp/rs_record_playback.hpp> // for downcasts
-#include <../common/metadata-helper.h>
+#include <common/metadata-helper.h>
 
 void init_device(py::module &m) {
     /** rs_device.hpp **/
