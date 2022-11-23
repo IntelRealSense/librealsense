@@ -3,7 +3,7 @@
 
 project( utilities )
 
-add_library( ${PROJECT_NAME} STATIC )
+add_library( ${PROJECT_NAME} STATIC "" )
 set_target_properties( ${PROJECT_NAME} PROPERTIES FOLDER Library )
 
 target_include_directories( ${PROJECT_NAME}
