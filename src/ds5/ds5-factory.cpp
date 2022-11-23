@@ -25,6 +25,7 @@
 
 #include "../firmware_logger_device.h"
 #include "device-calibration.h"
+#include "saftey_preset.h"
 
 namespace librealsense
 {
@@ -920,7 +921,8 @@ namespace librealsense
         public ds5_color,
         public ds5_motion,
         public ds5_advanced_mode_base,
-        public firmware_logger_device
+        public firmware_logger_device,
+        public safety_preset_interface
     {
     public:
         rs_s585_device(std::shared_ptr<context> ctx,
@@ -956,6 +958,19 @@ namespace librealsense
 
             return tags;
         };
+
+        std::shared_ptr<safety_preset> get_safety_preset_at_index(int index)
+        {
+            command cmd(ds::SAFETY_PRESET_READ, index);
+            _hw_monitor.send(cmd);
+        }
+
+        void set_safety_preset_at_index(int index, std::shared_ptr<safety_preset> sp)
+        {
+            command cmd(ds::SAFETY_PRESET_WRITE);
+            _hw_monitor.send(cmd);
+        }
+
     };
 
     class rs400_imu_device  :      public ds5_motion,

@@ -566,21 +566,21 @@ float rs2_calculate_target_z(rs2_device* device, rs2_frame_queue* queue1, rs2_fr
 /**
 * rs2_get_saftey_preset_at_index
 * \param[in]  device        Device to update
-* \param[in]  index 
+* \param[in]  index         Index to read from
 * \param[out]  safetry_preset 
 * \param[out] error         If non-null, receives any error that occurs during this call, otherwise, errors are ignored
 */
-rs2_safety_preset* rs2_get_saftey_preset_at_index(const rs2_device* device, int index, rs2_error** error);
+rs2_safety_preset* rs2_get_safety_preset_at_index(const rs2_device* device, int index, rs2_error** error);
 
 
 /**
 * rs2_set_saftey_preset_at_index
-* This call is executed on the caller's thread and it supports progress notifications via the optional callback.
 * \param[in]  device        Device to update
-* \param[in]  entry         safety preset to insert
+* \param[in]  index         Index to write to
+* \param[in]  sp            Safety preset struct to insert
 * \param[out] error         If non-null, receives any error that occurs during this call, otherwise, errors are ignored
 */
-void rs2_set_saftey_preset_at_index(const rs2_device* device, rs2_safety_preset* entry, rs2_error** error);
+void rs2_set_safety_preset_at_index(const rs2_device* device, int index, rs2_safety_preset* sp, rs2_error** error);
 
 
 #ifdef __cplusplus

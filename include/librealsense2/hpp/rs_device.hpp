@@ -20,17 +20,6 @@ namespace rs2
     {
     public:
 
-
-        std::shared_ptr<safety_preset> get_saftey_preset_at_index(int index) const
-        {
-            return nullptr;
-        }
-
-        void set_saftey_preset_at_index(std::shared_ptr<safety_preset> sp, int index) const
-        {
-        //    
-        }
-
         /**
         * returns the list of adjacent devices, sharing the same physical parent composite device
         * \return            the list of adjacent devices
@@ -105,6 +94,21 @@ namespace rs2
             rs2_error* e = nullptr;
 
             rs2_hardware_reset(_dev.get(), &e);
+            error::handle(e);
+        }
+
+        std::shared_ptr<safety_preset> get_saftey_preset_at_index(int index) const
+        {
+            rs2_error* e = nullptr;
+            std::shared_ptr<rs2_safety_preset> sp(
+                rs2_get_safety_preset_at_index(_dev.get(), index, &e));
+            error::handle(e);
+        }
+
+        void set_saftey_preset_at_index(int index, rs2_safety_preset* sp) const
+        {
+            rs2_error* e = nullptr;
+            rs2_set_safety_preset_at_index(_dev.get(), index, sp, &e);
             error::handle(e);
         }
 
