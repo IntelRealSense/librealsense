@@ -3,7 +3,7 @@
 
 //#test:donotrun:jetson
 
-#include <easylogging++.h>
+#include <utilities/easylogging/easyloggingpp.h>
 
 #include "../catch.h"
 

@@ -1,9 +1,9 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2021 Intel Corporation. All Rights Reserved.
 
-#include "concurrency.h"
-#include <librealsense2/utilities/easylogging/easyloggingpp.h>
-#include <librealsense2/utilities/time/waiting-on.h>
+#include <utilities/concurrency/concurrency.h>
+#include <utilities/easylogging/easyloggingpp.h>
+#include <utilities/time/waiting-on.h>
 
 dispatcher::dispatcher( unsigned int cap, std::function< void( action ) > on_drop_callback )
     : _queue( cap, on_drop_callback )

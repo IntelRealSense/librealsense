@@ -22,8 +22,8 @@
 #include "proc/syncer-processing-block.h"
 #include "proc/rotation-transform.h"
 #include "../common/fw/firmware-version.h"
-#include <librealsense2/utilities/time/periodic-timer.h>
-#include <librealsense2/utilities/time/work-week.h>
+#include <utilities/time/periodic-timer.h>
+#include <utilities/time/work-week.h>
 #include "../common/utilities/time/l500/get-mfr-ww.h"
 
 

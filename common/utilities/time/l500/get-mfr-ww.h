@@ -4,7 +4,7 @@
 #pragma once
 
 #include <string>
-#include <librealsense2/utilities/time/work-week.h>
+#include <utilities/time/work-week.h>
 
 
 namespace utilities {
