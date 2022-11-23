@@ -45,4 +45,7 @@ target_sources( ${PROJECT_NAME} PRIVATE ${UTILITIES_SOURCE_FILES} )
 
 # Install -----------------------------------------------------------------------------------
 #
-install( TARGETS ${PROJECT_NAME} EXPORT realsense2Targets)
+install( TARGETS ${PROJECT_NAME}
+    EXPORT realsense2Targets
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    )
