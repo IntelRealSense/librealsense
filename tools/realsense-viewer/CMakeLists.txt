@@ -6,9 +6,9 @@ cmake_minimum_required(VERSION 3.1.0)
 project(realsense-viewer)
 
 if(WIN32)
-    add_executable( ${PROJECT_NAME} WIN32 )
+    add_executable( ${PROJECT_NAME} WIN32 "" )
 else()
-    add_executable( ${PROJECT_NAME} )
+    add_executable( ${PROJECT_NAME} "" )
 endif()
 
 set(THREADS_PREFER_PTHREAD_FLAG ON)
