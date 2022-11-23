@@ -47,5 +47,5 @@ target_sources( ${PROJECT_NAME} PRIVATE ${UTILITIES_SOURCE_FILES} )
 #
 install( TARGETS ${PROJECT_NAME}
     EXPORT realsense2Targets
-    LIBRARY DESTINATION lib
+    ARCHIVE DESTINATION lib
     )
