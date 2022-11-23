@@ -385,6 +385,8 @@ namespace librealsense
     RS2_ENUM_HELPERS_CUSTOMIZED(rs2_ambient_light, RS2_AMBIENT_LIGHT_NO_AMBIENT, RS2_AMBIENT_LIGHT_LOW_AMBIENT)
     RS2_ENUM_HELPERS_CUSTOMIZED(rs2_digital_gain, RS2_DIGITAL_GAIN_HIGH, RS2_DIGITAL_GAIN_LOW)
     RS2_ENUM_HELPERS(rs2_host_perf_mode, HOST_PERF)
+    RS2_ENUM_HELPERS(rs2_emitter_frequency_mode, EMITTER_FREQUENCY)
+    RS2_ENUM_HELPERS(rs2_safety_camera_mode, SAFETY_CAMERA_MODE)
 
 
     ////////////////////////////////////////////

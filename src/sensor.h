@@ -224,8 +224,7 @@ namespace librealsense
         void set_safety_preset(int index, const rs2_safety_preset& sp)  const {};
         rs2_safety_preset get_safety_preset(int index) const
         {
-            rs2_safety_preset r;
-            return r;
+            return rs2_safety_preset();
         }
     };
 

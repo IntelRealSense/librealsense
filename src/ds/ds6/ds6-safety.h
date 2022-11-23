@@ -28,7 +28,7 @@ namespace librealsense
 
     protected:
         std::shared_ptr<stream_interface> _safety_stream;
-        optional_value<uint8_t> _safety_device_idx;
+        uint8_t _safety_device_idx;
     };
 
     class ds6_safety_sensor : public synthetic_sensor,

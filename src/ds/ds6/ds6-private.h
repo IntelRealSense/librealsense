@@ -15,7 +15,7 @@ namespace librealsense
         // Safety depth XU identifiers
         namespace xu_id
         {
-            const uint8_t SAFETY_CAMERA_OPER_MODE = 0x1;
+            const uint8_t SAFETY_CAMERA_OPER_MODE    = 0x1;
             const uint8_t SAFETY_PRESET_ACTIVE_INDEX = 0x2;
         }
 

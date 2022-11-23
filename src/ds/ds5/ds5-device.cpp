@@ -849,7 +849,7 @@ namespace librealsense
                     lazy<float>([default_depth_units]()
                         { return default_depth_units; })));
             }
-            
+
             // Metadata registration
             depth_sensor.register_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP, make_uvc_header_parser(&uvc_header::timestamp));
 
@@ -1047,6 +1047,7 @@ namespace librealsense
     {
         return command{ ds::FRB, 0x17a000, 0x3f8 };
     }
+
 
     std::shared_ptr<synthetic_sensor> ds5u_device::create_ds5u_depth_device(std::shared_ptr<context> ctx,
         const std::vector<platform::uvc_device_info>& all_device_infos)
