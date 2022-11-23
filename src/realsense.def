@@ -421,3 +421,6 @@ EXPORTS
     rs2_transform_point_to_point
     rs2_fov
     rs2_project_color_pixel_to_depth_pixel
+
+    rs2_set_safety_preset_at_index
+    rs2_get_safety_preset_at_index

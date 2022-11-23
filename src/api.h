@@ -6,7 +6,7 @@
 #include "context.h"
 #include "core/extension.h"
 #include "device.h"
-
+#include "saftey_preset.h"
 #include <type_traits>
 #include <iostream>
 
@@ -30,6 +30,11 @@ struct rs2_device
     std::shared_ptr<librealsense::context> ctx;
     std::shared_ptr<librealsense::device_info> info;
     std::shared_ptr<librealsense::device_interface> device;
+};
+
+struct rs2_safety_preset
+{
+    std::shared_ptr<librealsense::safety_preset> safety_preset;
 };
 
 rs2_error * rs2_create_error(const char* what, const char* name, const char* args, rs2_exception_type type);

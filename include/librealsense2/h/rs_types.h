@@ -273,6 +273,7 @@ typedef struct rs2_log_callback rs2_log_callback;
 typedef struct rs2_syncer rs2_syncer;
 typedef struct rs2_device_serializer rs2_device_serializer;
 typedef struct rs2_source rs2_source;
+typedef struct rs2_safety_preset rs2_safety_preset;
 typedef struct rs2_processing_block rs2_processing_block;
 typedef struct rs2_frame_processor_callback rs2_frame_processor_callback;
 typedef struct rs2_playback_status_changed_callback rs2_playback_status_changed_callback;

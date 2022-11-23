@@ -3951,3 +3951,27 @@ float rs2_calculate_target_z(rs2_device* device, rs2_frame_queue* queue1, rs2_fr
     }
 }
 HANDLE_EXCEPTIONS_AND_RETURN(-1.f, device, queue1, queue2, queue3, target_width, target_height)
+
+
+rs2_safety_preset* rs2_get_safety_preset_at_index(const rs2_device* device, int index, rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(device);
+    //SC_TODO check 1<=index<=63? CRC ?
+    auto safety_preset_interface = VALIDATE_INTERFACE(device->device, librealsense::safety_preset_interface);
+    auto ret_data = safety_preset_interface->get_safety_preset_at_index(index);
+
+    return new rs2_safety_preset{ std::move(ret_data) };
+}
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, device)
+
+
+void rs2_set_safety_preset_at_index(const rs2_device* device,
+    std::shared_ptr<librealsense::safety_preset> sp,
+    int index, rs2_error** error) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL(device);
+    //SC_TODO check 1<=index<=63? check sp and CRC ?
+    auto safety_preset_interface = VALIDATE_INTERFACE(device->device, librealsense::safety_preset_interface);
+    safety_preset_interface->set_safety_preset_at_index(sp,index);
+}
+HANDLE_EXCEPTIONS_AND_RETURN(nullptr, device)

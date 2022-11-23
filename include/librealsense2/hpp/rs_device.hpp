@@ -14,10 +14,23 @@ namespace rs2
     class device_list;
     class pipeline_profile;
     class device_hub;
+    struct safety_preset;
 
     class device
     {
     public:
+
+
+        std::shared_ptr<safety_preset> get_saftey_preset_at_index(int index) const
+        {
+            return nullptr;
+        }
+
+        void set_saftey_preset_at_index(std::shared_ptr<safety_preset> sp, int index) const
+        {
+        //    
+        }
+
         /**
         * returns the list of adjacent devices, sharing the same physical parent composite device
         * \return            the list of adjacent devices
