@@ -97,18 +97,18 @@ namespace rs2
             error::handle(e);
         }
 
-        std::shared_ptr<safety_preset> get_saftey_preset_at_index(int index) const
+        std::shared_ptr<safety_preset> get_saftey_preset(int index) const
         {
             rs2_error* e = nullptr;
             std::shared_ptr<rs2_safety_preset> sp(
-                rs2_get_safety_preset_at_index(_dev.get(), index, &e));
+                rs2_get_safety_preset(_dev.get(), index, &e));
             error::handle(e);
         }
 
-        void set_saftey_preset_at_index(int index, rs2_safety_preset* sp) const
+        void set_saftey_preset(int index, const rs2_safety_preset* sp) const
         {
             rs2_error* e = nullptr;
-            rs2_set_safety_preset_at_index(_dev.get(), index, sp, &e);
+            rs2_set_safety_preset(_dev.get(), index, sp, &e);
             error::handle(e);
         }
 

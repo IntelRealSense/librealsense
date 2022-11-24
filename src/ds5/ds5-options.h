@@ -478,4 +478,23 @@ namespace librealsense
 
         std::function<void(const option&)> _recording_function = [](const option&) {};
     };
+
+    /*class safety_preset_option : public option
+    {
+        void set(float index) override;
+        float query() const override;
+
+        option_range get_range() const override { return option_range{ 0, 1, 1, 0 }; }
+        bool is_enabled() const override { return true; }
+
+        const char* get_description() const override;
+        const char* get_value_description(float value) const override;
+        void create_snapshot(std::shared_ptr<option>& snapshot) const override;
+
+        void enable_recording(std::function<void(const option&)> record_action) override
+        {
+            _recording_function = record_action;
+        }
+
+    };*/
 }

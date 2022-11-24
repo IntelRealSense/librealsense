@@ -422,5 +422,5 @@ EXPORTS
     rs2_fov
     rs2_project_color_pixel_to_depth_pixel
 
-    rs2_set_safety_preset_at_index
-    rs2_get_safety_preset_at_index
+    rs2_set_safety_preset
+    rs2_get_safety_preset
