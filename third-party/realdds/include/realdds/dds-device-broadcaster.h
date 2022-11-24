@@ -4,7 +4,7 @@
 #pragma once
 
 #include <realdds/topics/device-info/device-info-msg.h>
-#include <librealsense2/utilities/concurrency/concurrency.h>
+#include <utilities/concurrency/concurrency.h>
 
 #include <unordered_map>
 #include <vector>

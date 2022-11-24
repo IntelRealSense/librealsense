@@ -4,7 +4,7 @@
 #pragma once
 
 #include <fastrtps/types/TypesBase.h>
-#include <librealsense2/utilities/easylogging/easyloggingpp.h>
+#include <utilities/easylogging/easyloggingpp.h>
 #include "dds-exceptions.h"
 
 // FastDDS, in most case, is using two error conventions:

@@ -7,7 +7,7 @@
 #include "backend.h"
 #include "mock/recorder.h"
 #include "core/streaming.h"
-#include <librealsense2/utilities/shared-ptr-singleton.h>
+#include <utilities/shared-ptr-singleton.h>
 
 #include <vector>
 #include "media/playback/playback_device.h"

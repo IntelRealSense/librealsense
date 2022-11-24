@@ -1,7 +1,7 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2022 Intel Corporation. All Rights Reserved.
 
-#include <librealsense2/utilities/easylogging/easyloggingpp.h>
+#include <utilities/easylogging/easyloggingpp.h>
 
 #include <realdds/dds-device-broadcaster.h>
 #include <realdds/dds-device-server.h>

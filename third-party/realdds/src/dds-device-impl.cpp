@@ -12,8 +12,8 @@
 #include <fastdds/dds/publisher/DataWriter.hpp>
 #include <fastdds/dds/subscriber/DataReader.hpp>
 
-#include <librealsense2/utilities/time/timer.h>
-#include <librealsense2/utilities/json.h>
+#include <utilities/time/timer.h>
+#include <utilities/json.h>
 
 #include <third-party/json.hpp>
 

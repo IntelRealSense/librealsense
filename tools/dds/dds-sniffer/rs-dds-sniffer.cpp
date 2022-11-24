@@ -18,7 +18,7 @@
 #include <tclap/ValueArg.h>
 #include <tclap/SwitchArg.h>
 
-#include <librealsense2/utilities/easylogging/easyloggingpp.h>
+#include <utilities/easylogging/easyloggingpp.h>
 #include <librealsense2/rs.hpp>  // Include RealSense Cross Platform API
 #include <realdds/dds-utilities.h>
 #include <realdds/dds-guid.h>

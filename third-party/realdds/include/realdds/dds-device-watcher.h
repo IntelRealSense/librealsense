@@ -5,7 +5,7 @@
 
 #include "dds-participant.h"
 
-#include <librealsense2/utilities/concurrency/concurrency.h>
+#include <utilities/concurrency/concurrency.h>
 
 #include <map>
 #include <memory>

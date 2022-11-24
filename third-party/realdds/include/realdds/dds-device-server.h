@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include <librealsense2/utilities/concurrency/concurrency.h>
+#include <utilities/concurrency/concurrency.h>
 #include <third-party/json_fwd.hpp>
 
 #include <unordered_map>

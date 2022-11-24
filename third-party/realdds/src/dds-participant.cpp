@@ -5,7 +5,7 @@
 #include <realdds/dds-utilities.h>
 #include <realdds/dds-guid.h>
 
-#include <librealsense2/utilities/easylogging/easyloggingpp.h>
+#include <utilities/easylogging/easyloggingpp.h>
 #include <fastdds/dds/domain/DomainParticipantFactory.hpp>
 #include <fastdds/dds/domain/DomainParticipantListener.hpp>
 #include <fastdds/dds/domain/DomainParticipant.hpp>

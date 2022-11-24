@@ -4,7 +4,7 @@
 #include <realdds/dds-stream-profile.h>
 #include <realdds/dds-exceptions.h>
 
-#include <librealsense2/utilities/json.h>
+#include <utilities/json.h>
 using nlohmann::json;
 
 #include <map>

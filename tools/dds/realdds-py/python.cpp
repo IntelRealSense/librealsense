@@ -22,7 +22,7 @@ Copyright(c) 2022 Intel Corporation. All Rights Reserved. */
 #include <realdds/dds-utilities.h>
 #include <realdds/dds-log-consumer.h>
 
-#include <librealsense2/utilities/easylogging/easyloggingpp.h>
+#include <utilities/easylogging/easyloggingpp.h>
 #include <fastdds/dds/domain/qos/DomainParticipantQos.hpp>
 #include <fastdds/dds/domain/DomainParticipant.hpp>
 #include <fastdds/dds/core/status/SubscriptionMatchedStatus.hpp>

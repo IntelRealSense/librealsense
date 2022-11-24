@@ -32,7 +32,7 @@
 #include <realdds/topics/image/image-msg.h>
 #endif //BUILD_WITH_DDS
 
-#include <librealsense2/utilities/json.h>
+#include <utilities/json.h>
 using json = nlohmann::json;
 
 #ifdef WITH_TRACKING

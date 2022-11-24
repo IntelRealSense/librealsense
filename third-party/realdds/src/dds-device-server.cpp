@@ -20,7 +20,7 @@
 #include <fastdds/dds/topic/Topic.hpp>
 #include <fastdds/dds/subscriber/SampleInfo.hpp>
 
-#include <librealsense2/utilities/json.h>
+#include <utilities/json.h>
 
 using nlohmann::json;
 using namespace eprosima::fastdds::dds;
