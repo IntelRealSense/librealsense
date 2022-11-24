@@ -920,6 +920,17 @@ namespace librealsense
 
             }
 
+            if (_pid == RS_S585_PID) {
+                // SAFETY PRESET OPTION
+                // need to implement new safety preset option to handle range, and implement our set/query
+                auto active_safety_preset = std::make_shared<uvc_xu_option<uint8_t>>(raw_depth_sensor,
+                    depth_xu,
+                    DS5_ACTIVE_SAFETY_PRESET,
+                    "Active Safety Preset");
+                depth_sensor.register_option(RS2_OPTION_ACTIVE_SAFETY_PRESET_INDEX, active_safety_preset);
+            }
+            
+
             std::shared_ptr<option> exposure_option = nullptr;
             std::shared_ptr<option> gain_option = nullptr;
             std::shared_ptr<hdr_option> hdr_enabled_option = nullptr;

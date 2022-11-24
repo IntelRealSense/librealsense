@@ -372,6 +372,7 @@ const char * get_string( rs2_option value )
     CASE( RECEIVER_SENSITIVITY )
     CASE(AUTO_EXPOSURE_LIMIT_TOGGLE)
     CASE(AUTO_GAIN_LIMIT_TOGGLE)
+    CASE(ACTIVE_SAFETY_PRESET_INDEX)
     default:
         assert( ! is_valid( value ) );
         return UNKNOWN_VALUE;
