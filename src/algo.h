@@ -3,7 +3,6 @@
 
 #pragma once
 #include "sensor.h"
-#include <librealsense2/utilities/concurrency/concurrency.h>
 #include "types.h"
 
 #include <stdint.h>

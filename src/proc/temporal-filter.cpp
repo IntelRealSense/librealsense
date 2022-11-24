@@ -62,9 +62,13 @@ namespace librealsense
         temporal_persistence_control->set_description(7, "Valid in 1/8");
         temporal_persistence_control->set_description(8, "Always on");
 
-        temporal_persistence_control->on_set([this,temporal_persistence_control](float val)
+        auto weak_temporal_persistence_control = std::weak_ptr<ptr_option<uint8_t>>(temporal_persistence_control);
+        temporal_persistence_control->on_set([this, weak_temporal_persistence_control](float val)
         {
-            if (!temporal_persistence_control->is_valid(val))
+            auto strong_temporal_persistence_control = weak_temporal_persistence_control.lock();
+            if(!strong_temporal_persistence_control) return;
+
+            if (!strong_temporal_persistence_control->is_valid(val))
                 throw invalid_value_exception(to_string()
                     << "Unsupported temporal persistence param "
                     << (int)val << " is out of range.");
@@ -91,9 +95,14 @@ namespace librealsense
             temp_delta_step,
             temp_delta_default,
             &_delta_param, "Edge-preserving (gradient) threshold");
-        temporal_filter_delta->on_set([this, temporal_filter_delta](float val)
+
+        auto weak_temporal_filter_delta = std::weak_ptr<ptr_option<uint8_t>>();
+        temporal_filter_delta->on_set([this, weak_temporal_filter_delta](float val)
         {
-            if (!temporal_filter_delta->is_valid(val))
+            auto strong_temporal_filter_delta = weak_temporal_filter_delta.lock();
+            if(!strong_temporal_filter_delta) return;
+
+            if (!strong_temporal_filter_delta->is_valid(val))
                 throw invalid_value_exception(to_string()
                     << "Unsupported temporal delta: " << val << " is out of range.");
 

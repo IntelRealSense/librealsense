@@ -2,7 +2,7 @@
 // Copyright(c) 2020 Intel Corporation. All Rights Reserved.
 
 #include "common.h"
-#include <librealsense2/utilities/string/string-utilities.h>
+#include <utilities/string/string-utilities.h>
 #include <ostream>
 using namespace utilities::string;
 

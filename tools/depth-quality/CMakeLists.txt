@@ -4,6 +4,13 @@
 cmake_minimum_required(VERSION 3.1.0)
 
 project(RealsenseToolsDepthQuality)
+project( rs-depth-quality  )
+
+if(WIN32)
+    add_executable( ${PROJECT_NAME} WIN32 "" )
+else()
+    add_executable( ${PROJECT_NAME} "" )
+endif()
 
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
@@ -11,13 +18,12 @@ find_package(Threads REQUIRED)
 include_directories(${CMAKE_BINARY_DIR})
 
 if(${BUILD_EASYLOGGINGPP})
-include(../../include/librealsense2/utilities/easylogging/easyloggingpp.cmake)
-include_directories( ${ELPP_INCLUDES} )
+    include("${REPO_ROOT}/third-party/utilities/include/utilities/easylogging/shared-init.cmake")
 endif()
 
 include(../../common/CMakeLists.txt)
 
-SET(DELAYED 
+SET(DELAYED
     realsense2d.dll
     realsense2-gld.dll
     realsense2.dll
@@ -43,8 +49,9 @@ if(BUILD_GRAPHICAL_EXAMPLES)
         )
 
     if(WIN32)
-        add_executable(rs-depth-quality WIN32 ${RS_QUALITY_TOOL_CPP}
-                ${ELPP_SOURCES}
+        target_sources( ${PROJECT_NAME}
+            PRIVATE
+                ${RS_QUALITY_TOOL_CPP}
                 ${CMAKE_CURRENT_SOURCE_DIR}/res/resource.h
                 ${CMAKE_CURRENT_SOURCE_DIR}/res/realsense-viewer.rc
                 ../../common/windows-app-bootstrap.cpp)
@@ -83,10 +90,10 @@ if(BUILD_GRAPHICAL_EXAMPLES)
         set_target_properties(rs-depth-quality PROPERTIES LINK_FLAGS "${LD_FLAGS_STR}")
 
     else()
-        add_executable(rs-depth-quality 
-        ${RS_QUALITY_TOOL_CPP}
-        ${ELPP_SOURCES}
-        )
+        target_sources( ${PROJECT_NAME}
+            PRIVATE
+                ${RS_QUALITY_TOOL_CPP}
+            )
 
         include_directories(../../common  ../../third-party
                             ../../third-party/imgui
@@ -102,7 +109,7 @@ if(BUILD_GRAPHICAL_EXAMPLES)
         add_dependencies(rs-depth-quality libcurl)
         target_link_libraries(rs-depth-quality curl)
     endif()
-    
+
     target_link_libraries(rs-depth-quality ${DEPENDENCIES}
                                            ${GTK3_LIBRARIES}
                                            Threads::Threads
@@ -112,8 +119,8 @@ if(BUILD_GRAPHICAL_EXAMPLES)
         add_definitions(-DINTERNAL_FW)
         target_link_libraries(rs-depth-quality fw)
     endif()
-    
-    
+
+
 
 
     set_target_properties (rs-depth-quality PROPERTIES
