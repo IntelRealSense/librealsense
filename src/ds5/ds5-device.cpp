@@ -29,6 +29,7 @@
 #include "proc/temporal-filter.h"
 #include "proc/y8i-to-y8y8.h"
 #include "proc/y12i-to-y16y16.h"
+#include "proc/y16i-to-y10msby10msb.h"
 #include "proc/color-formats-converter.h"
 #include "proc/syncer-processing-block.h"
 #include "proc/hole-filling-filter.h"
