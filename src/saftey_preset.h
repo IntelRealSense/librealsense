@@ -9,6 +9,7 @@ namespace librealsense
 	//struct float2 { float x, y; };
 	//struct float3 { float x, y, z; };
 	//struct float3x3 { float3 x, y, z; };  // column-major
+#pragma pack(push, 1)
 
 	struct safety_extrinsics_table
 	{
@@ -57,7 +58,7 @@ namespace librealsense
 	struct safety_zone
 	{
 		uint16_t            flags;                  // see safety_zone_flags enumeration
-		safety_zone_type           zone_type;              // see zone_type enumeration
+		safety_zone_type    zone_type;              // see zone_type enumeration
 		float2              zone_polygon[4];        // The zone polygon (area) is defined by its four corners, ordered
 													// Internal requirements: 
 													// - Trinagular or simple quadrilateral shape
@@ -93,13 +94,15 @@ namespace librealsense
 	struct safety_preset
 	{
 		safety_preset_header   header;
-		safety_platform        platform_config;        //  left camera intrinsic data, normilized
+		safety_platform        platform_config;        // left camera intrinsic data, normilized
 		safety_zone            safety_zones[4];        // Zones: 0 - Danger; 1- Warning; (2,3) - Mask (optiononal)
 		safety_environment     environment;            // Provides input for Zone planning and safety algo execution
 	};
 
+#pragma pack(pop)
 
-	class safety_preset_interface : public recordable<safety_preset_interface>
+	class safety_preset_interface 
+		//SC_TODO ? : public recordable<safety_preset_interface>
 	{
 	public:
 		virtual std::shared_ptr<safety_preset> get_safety_preset_at_index(int index) = 0;

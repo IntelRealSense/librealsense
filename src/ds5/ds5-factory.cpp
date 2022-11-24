@@ -961,14 +961,37 @@ namespace librealsense
 
         std::shared_ptr<safety_preset> get_safety_preset_at_index(int index) override
         {
-            command cmd(ds::SAFETY_PRESET_READ, index);
-            ds5_device::_hw_monitor->send(cmd);
+            std::shared_ptr<safety_preset> result;
+            
+            // prepare command
+            command cmd(ds::SAFETY_PRESET_READ);
+            cmd.require_response = false;
+            cmd.param1 = index;
+
+            // send command to device and get response
+            std::vector< uint8_t > response = ds5_device::_hw_monitor->send(cmd);
+
+            // convert response to safety_preset struct
+            assert(response.size() == sizeof(result));
+            std::copy(response.begin(), response.end(), reinterpret_cast<char*>(&result));
+            std::memcpy(&result, response.data()  /* & response[0]*/, sizeof(result)); // C++11 allows response.data()
+
+            return result;
         }
 
         void set_safety_preset_at_index(int index, std::shared_ptr<safety_preset> sp) override
         {
-            command cmd(ds::SAFETY_PRESET_WRITE, index);
-            //SC_TODO
+            // convert sp to vector of bytes
+            auto ptr = reinterpret_cast<uint8_t*>(&(*sp));
+            auto data = std::vector<uint8_t>(ptr, ptr + sizeof(*sp));
+
+            // prepare command
+            command cmd(ds::SAFETY_PRESET_READ);
+            cmd.param1 = index;
+            cmd.data = data;
+            //SC_TODO ? cmd.require_response = false;
+
+            // send command 
             ds5_device::_hw_monitor->send(cmd);
         }
 
@@ -1424,4 +1447,5 @@ namespace librealsense
         streams.insert(streams.end(), mm_streams.begin(), mm_streams.end());
         return matcher_factory::create(RS2_MATCHER_DEFAULT, streams);
     }
+
 }
