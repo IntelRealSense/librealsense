@@ -3,5 +3,5 @@
 
 #include "../../catch.h"
 
-#include <easylogging++.h>
+#include <utilities/easylogging/easyloggingpp.h>
 

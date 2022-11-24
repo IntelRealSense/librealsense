@@ -4,7 +4,7 @@
 #pragma once
 
 #include "notifications.h"
-#include <librealsense2/utilities/concurrency/concurrency.h>
+#include <utilities/concurrency/concurrency.h>
 #include "../src/algo.h"
 
 #include <random>

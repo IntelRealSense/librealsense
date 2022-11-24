@@ -7,7 +7,7 @@
 #include <algorithm>
 
 #include <librealsense2/rs.hpp>
-#include <librealsense2/utilities/string/string-utilities.h>
+#include <utilities/string/string-utilities.h>
 #include "tclap/CmdLine.h"
 #include "parser.hpp"
 #include "auto-complete.h"

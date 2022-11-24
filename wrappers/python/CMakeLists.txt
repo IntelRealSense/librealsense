@@ -7,7 +7,6 @@ if (NOT BUILD_PYTHON_BINDINGS)
     message(WARNING "Python Bindings being built despite unset option because they are required for python documentation")
 endif()
 
-set(DEPENDENCIES realsense2)
 # In order for the external project clone to occur during cmake configure step(rather than during compilation, as would normally happen),
 # we copy the external project declaration to the build folder and then execute it
 configure_file(${CMAKE_SOURCE_DIR}/third-party/pybind11/CMakeLists.txt ${CMAKE_BINARY_DIR}/external-projects/pybind11/CMakeLists.txt)
@@ -79,7 +78,6 @@ set(RAW_RS
     ../../src/log.cpp
     ../../src/backend.h
     ../../src/backend.cpp
-    ../../include/librealsense2/utilities/concurrency/dispatcher.cpp
     ../../src/frame.cpp
     ../../src/environment.cpp
     ../../src/to-string.cpp
@@ -168,7 +166,7 @@ pybind11_add_module(pybackend2 SHARED ${RAW_RS})
 if(USE_EXTERNAL_USB)
     add_dependencies(pybackend2 libusb)
 endif()
-target_link_libraries(pybackend2 PRIVATE usb ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(pybackend2 PRIVATE utilities usb ${CMAKE_THREAD_LIBS_INIT})
 set_target_properties(pybackend2 PROPERTIES
                         VERSION     ${REALSENSE_VERSION_STRING}
                         SOVERSION   ${REALSENSE_VERSION_MAJOR})
