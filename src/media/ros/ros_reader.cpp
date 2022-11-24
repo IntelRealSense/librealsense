@@ -3,7 +3,7 @@
 
 #include <cstring>
 #include "ros_reader.h"
-#include "ds5/ds5-device.h"
+#include "ds5/ds-devices-common.h"
 #include "ivcam/sr300.h"
 #include "l500/l500-depth.h"
 #include "proc/disparity-transform.h"
@@ -948,7 +948,7 @@ namespace librealsense
         {
             if (is_depth_sensor(sensor_name))
             {
-                return std::make_shared<recommended_proccesing_blocks_snapshot>(get_ds5_depth_recommended_proccesing_blocks());
+                return std::make_shared<recommended_proccesing_blocks_snapshot>(get_ds_depth_recommended_proccesing_blocks());
             }
             else if (is_color_sensor(sensor_name))
             {

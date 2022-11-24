@@ -15,20 +15,17 @@
 #include "ds5-auto-calibration.h"
 #include "ds5-options.h"
 
-#include "ds-devices-common.h"
-
 namespace librealsense
 {
-    
-
     class hdr_config;
     class ds5_thermal_monitor;
+    class ds_devices_common;
 
-    class ds5_device : public virtual device, public debug_interface, public global_time_interface, public updatable, public auto_calibrated
+    class ds6_device : public virtual device, public debug_interface, public global_time_interface, public updatable, public auto_calibrated
     {
     public:
         std::shared_ptr<synthetic_sensor> create_depth_device(std::shared_ptr<context> ctx,
-                                                        const std::vector<platform::uvc_device_info>& all_device_infos);
+            const std::vector<platform::uvc_device_info>& all_device_infos);
 
         synthetic_sensor& get_depth_sensor()
         {
@@ -41,8 +38,8 @@ namespace librealsense
             return dynamic_cast<uvc_sensor&>(*depth_sensor.get_raw_sensor());
         }
 
-        ds5_device(std::shared_ptr<context> ctx,
-                   const platform::backend_device_group& group);
+        ds6_device(std::shared_ptr<context> ctx,
+            const platform::backend_device_group& group);
 
         std::vector<uint8_t> send_receive_raw_data(const std::vector<uint8_t>& input) override;
 
@@ -51,7 +48,7 @@ namespace librealsense
             uint32_t param2 = 0,
             uint32_t param3 = 0,
             uint32_t param4 = 0,
-            uint8_t const * data = nullptr,
+            uint8_t const* data = nullptr,
             size_t dataLength = 0) const override;
 
         void hardware_reset() override;
@@ -84,7 +81,7 @@ namespace librealsense
         void init(std::shared_ptr<context> ctx,
             const platform::backend_device_group& group);
 
-        friend class ds5_depth_sensor;
+        friend class ds6_depth_sensor;
 
         std::shared_ptr<hw_monitor> _hw_monitor;
         firmware_version            _fw_version;
@@ -97,7 +94,6 @@ namespace librealsense
         std::shared_ptr<stream_interface> _color_stream;
 
         uint8_t _depth_device_idx;
-        uint16_t _pid;
 
         lazy<std::vector<uint8_t>> _coefficients_table_raw;
         lazy<std::vector<uint8_t>> _new_calib_table_raw;
@@ -113,18 +109,5 @@ namespace librealsense
         std::shared_ptr<auto_exposure_limit_option> _ae_limit_value_control;
     };
 
-    class ds5u_device : public ds5_device
-    {
-    public:
-        ds5u_device(std::shared_ptr<context> ctx,
-            const platform::backend_device_group& group);
-
-        std::shared_ptr<synthetic_sensor> create_ds5u_depth_device(std::shared_ptr<context> ctx,
-            const std::vector<platform::uvc_device_info>& all_device_infos);
-
-    protected:
-        friend class ds5u_depth_sensor;
-    };
-
-    
+    processing_blocks get_ds6_depth_recommended_proccesing_blocks();
 }
