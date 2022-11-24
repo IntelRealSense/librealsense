@@ -1,10 +1,12 @@
 //// License: Apache 2.0. See LICENSE file in root directory.
 //// Copyright(c) 2020 Intel Corporation. All Rights Reserved.
 
-#include "work-week.h"
+#include <utilities/time/work-week.h>
 #include <string>
 #include <stdexcept>
 #include <sstream>
+#include <time.h>
+
 
 static int work_weeks_between_years( unsigned year, unsigned other_year )
 {
@@ -51,7 +53,13 @@ work_week::work_week( unsigned year, unsigned ww )
 
 work_week::work_week( const std::time_t & t )
 {
-    auto time = std::localtime( &t );
+    tm buf;
+#ifdef WIN32
+    localtime_s( &buf, &t );
+    auto time = &buf;
+#else
+    auto time = localtime_r( &t, &buf );
+#endif
 
     _year = time->tm_year + 1900;  // The tm_year field contains the number of years
                                    // since 1900, we add 1900 to get current year

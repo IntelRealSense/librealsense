@@ -2,7 +2,7 @@
 // Copyright(c) 2020 Intel Corporation. All Rights Reserved.
 
 #include "common.h"
-#include <librealsense2/utilities/string/trim-newlines.h>
+#include <utilities/string/trim-newlines.h>
 
 using namespace utilities::string;
 

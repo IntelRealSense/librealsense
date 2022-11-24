@@ -4,7 +4,7 @@
 #pragma once
 
 #include "backend.h"
-#include <librealsense2/utilities/concurrency/concurrency.h>
+#include <utilities/concurrency/concurrency.h>
 #include "callback-invocation.h"
 
 

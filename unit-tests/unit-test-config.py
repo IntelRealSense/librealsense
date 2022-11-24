@@ -99,6 +99,8 @@ target_link_libraries( ${PROJECT_NAME} ${DEPENDENCIES} )
 
 set_target_properties( ${PROJECT_NAME} PROPERTIES FOLDER "Unit-Tests/''' + os.path.dirname( testdir ) + '''" )
 
+include( "${REPO_ROOT}/third-party/utilities/include/utilities/easylogging/shared-init.cmake" )
+
 # Add the repo root directory (so includes into src/ will be specific: <src/...>)
 target_include_directories( ${PROJECT_NAME} PRIVATE ''' + root + ''' )
 
@@ -128,6 +130,7 @@ def find_include( include, relative_to ):
 
 standard_include_dirs = [
     os.path.join( root, 'include' ),
+    os.path.join( root, 'third-party', 'utilities', 'include' ),
     root
     ]
 def find_include_in_dirs( include ):
@@ -335,7 +338,7 @@ for sdir in normal_tests:
     n_tests += 1
 if len(shared_tests):
     handle.write( 'if(NOT ${BUILD_SHARED_LIBS})\n' )
-    handle.write( '    message( INFO "' + str(len(shared_tests)) + ' shared lib unit-tests will be skipped. Check BUILD_SHARED_LIBS to run them..." )\n' )
+    handle.write( '    message( INFO " ' + str(len(shared_tests)) + ' shared lib unit-tests will be skipped. Check BUILD_SHARED_LIBS to run them..." )\n' )
     handle.write( 'else()\n' )
     for test in shared_tests:
         handle.write( '    add_subdirectory( ' + test + ' )\n' )
@@ -344,7 +347,7 @@ if len(shared_tests):
     handle.write( 'endif()\n' )
 if len(static_tests):
     handle.write( 'if(${BUILD_SHARED_LIBS})\n' )
-    handle.write( '    message( INFO "' + str(len(static_tests)) + ' static lib unit-tests will be skipped. Uncheck BUILD_SHARED_LIBS to run them..." )\n' )
+    handle.write( '    message( INFO " ' + str(len(static_tests)) + ' static lib unit-tests will be skipped. Uncheck BUILD_SHARED_LIBS to run them..." )\n' )
     handle.write( 'else()\n' )
     for test in static_tests:
         handle.write( '    add_subdirectory( ' + test + ' )\n' )

@@ -2,7 +2,6 @@
 /* Copyright(c) 2019 Intel Corporation. All Rights Reserved. */
 #pragma once
 
-#include <librealsense2/utilities/concurrency/concurrency.h>
 #include "option.h"
 #include "types.h"
 

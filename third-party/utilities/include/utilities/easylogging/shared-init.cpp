@@ -2,7 +2,7 @@
 // Copyright(c) 2022 Intel Corporation. All Rights Reserved.
 
 #ifdef BUILD_EASYLOGGINGPP
-#include "easylogging++.h"
+#include <third-party/easyloggingpp/src/easylogging++.h>
 #ifdef BUILD_SHARED_LIBS
 // With static linkage, ELPP is initialized by librealsense, so doing it here will
 // create errors. When we're using the shared .so/.dll, the two are separate and we have

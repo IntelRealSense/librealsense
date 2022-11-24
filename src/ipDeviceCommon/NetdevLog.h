@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include <easylogging++.h>
+#include <utilities/easylogging/easyloggingpp.h>
 
 #define DBG CLOG(DEBUG, "librealsense")
 #define ERR CLOG(ERROR, "librealsense")

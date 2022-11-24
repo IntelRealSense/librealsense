@@ -7,7 +7,6 @@
 #include "../../core/serialization.h"
 #include "../../core/streaming.h"
 #include "../../archive.h"
-#include <librealsense2/utilities/concurrency/concurrency.h>
 #include "../../sensor.h"
 #include "../../types.h"
 

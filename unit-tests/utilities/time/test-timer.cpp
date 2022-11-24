@@ -4,11 +4,8 @@
 // Unit Test Goals:
 // Test the timer utility classes: stopwatch, timer, periodic_timer.
 
-//#cmake:add-file ../../../include/librealsense2/utilities/time/timer.h
-
-
 #include "common.h"
-#include <librealsense2/utilities/time/timer.h>
+#include <utilities/time/timer.h>
 
 using namespace utilities::time;
 

@@ -7,7 +7,7 @@ project(realsense2-compression VERSION 1.0.0 LANGUAGES CXX C)
 # Save the command line compile commands in the build output
 set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
 
-set(DEPENDENCIES ${DEPENDENCIES} realsense2)
+list( APPEND DEPENDENCIES realsense2 utilities )
 
 file(GLOB COMPRESSION_SOURCES
     "*.h"
