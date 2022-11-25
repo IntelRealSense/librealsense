@@ -60,7 +60,7 @@ if (CMAKE_VERSION VERSION_LESS 3.12)
   set(CMAKECONFIG_PY_INSTALL_DIR "${CMAKE_INSTALL_LIBDIR}/cmake/pyrealsense2")
 else()
   find_package(Python REQUIRED COMPONENTS Interpreter Development)
-  set(PYTHON_INSTALL_DIR "${Python_SITEARCH}/pyrealsense2" CACHE PATH "Installation directory for Python bindings")
+  set(PYTHON_INSTALL_DIR "${CMAKE_INSTALL_LIBDIR}/python${Python_VERSION_MAJOR}.${Python_VERSION_MINOR}/pyrealsense2" CACHE PATH "Installation directory for Python bindings")
   set(CMAKECONFIG_PY_INSTALL_DIR "${CMAKE_INSTALL_LIBDIR}/cmake/pyrealsense2")
 endif()
 
