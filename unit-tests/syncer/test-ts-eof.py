@@ -105,7 +105,8 @@ if rs_convert:
                     check=False )  # don't fail on errors
 else:
     log.w( 'no rs-convert was found!' )
-    log.d( 'sys.path=\n' + '\n    '.join( sys.path ) )
+    import sys
+    log.d( 'sys.path=\n    ' + '\n    '.join( sys.path ) )
 
 test.finish()
 #
