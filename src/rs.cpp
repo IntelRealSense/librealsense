@@ -3972,6 +3972,6 @@ void rs2_set_safety_preset(const rs2_device* device,
     VALIDATE_NOT_NULL(device);
     //SC_TODO check 1<=index<=63? check sp and CRC ?
     auto safety_preset_interface = VALIDATE_INTERFACE(device->device, librealsense::safety_preset_interface);
-    safety_preset_interface->set_safety_preset_at_index(index, sp);
+    safety_preset_interface->set_safety_preset(index, sp);
 }
 HANDLE_EXCEPTIONS_AND_RETURN( , device, sp)

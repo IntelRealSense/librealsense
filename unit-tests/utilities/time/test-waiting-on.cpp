@@ -1,10 +1,10 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2021 Intel Corporation. All Rights Reserved.
 
-#include <librealsense2/utilities/string/chrono.h>  // must be before catch.h!
+#include <utilities/string/chrono.h>  // must be before catch.h!
 #include <unit-tests/catch.h>
-#include <librealsense2/utilities/time/waiting-on.h>
-#include <librealsense2/utilities/time/timer.h>
+#include <utilities/time/waiting-on.h>
+#include <utilities/time/timer.h>
 #include <queue>
 
 using utilities::time::waiting_on;

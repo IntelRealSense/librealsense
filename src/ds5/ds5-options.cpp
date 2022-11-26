@@ -821,4 +821,6 @@ namespace librealsense
     {
         snapshot = std::make_shared<const_value_option>(get_description(), 0.f);
     }
+
+
 }

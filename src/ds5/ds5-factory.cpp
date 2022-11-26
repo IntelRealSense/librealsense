@@ -959,7 +959,7 @@ namespace librealsense
             return tags;
         };
 
-        std::shared_ptr<safety_preset> get_safety_preset_at_index(int index) override
+        std::shared_ptr<safety_preset> get_safety_preset(int index) override
         {
             std::shared_ptr<safety_preset> result;
             
@@ -979,7 +979,7 @@ namespace librealsense
             return result;
         }
 
-        void set_safety_preset_at_index(int index, std::shared_ptr<safety_preset> sp) override
+        void set_safety_preset(int index, std::shared_ptr<safety_preset> sp) override
         {
             // convert sp to vector of bytes
             auto ptr = reinterpret_cast<uint8_t*>(&(*sp));

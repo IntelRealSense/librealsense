@@ -301,13 +301,14 @@ namespace librealsense
 
         // Passing shared_ptr to capture list generates circular dependency and a memleak
         auto occ_inv_weak = std::weak_ptr< ptr_option< uint8_t > >( occlusion_invalidation );
-        occlusion_invalidation->on_set( [this, occ_inv_weak]( float val ) {
-            if( auto occ_inv_shared = occ_inv_weak.lock() )
-            {
-                if( ! occ_inv_shared->is_valid( val ) )
-                    throw invalid_value_exception( to_string() << "Unsupported occlusion filtering mode requiested "
-                                                               << val << " is out of range." );
-            }
+        occlusion_invalidation->on_set( [this, occ_inv_weak]( float val )
+        {
+            auto occ_inv_shared = occ_inv_weak.lock();
+            if(!occ_inv_shared) return;
+
+            if( ! occ_inv_shared->is_valid( val ) )
+                throw invalid_value_exception( to_string() << "Unsupported occlusion filtering mode requiested "
+                                                            << val << " is out of range." );
 
             _occlusion_filter->set_mode(static_cast<uint8_t>(val));
 

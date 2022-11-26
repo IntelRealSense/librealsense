@@ -15,7 +15,6 @@
 #include "metadata.h"
 
 #include <PortableDeviceTypes.h>
-//#include <PortableDeviceClassExtension.h>
 #include <PortableDevice.h>
 #include <Windows.h>
 #include <Sensorsapi.h>
@@ -25,7 +24,6 @@
 #include <propkeydef.h>
 #include <comutil.h>
 #include <string>
-#include <librealsense2/utilities/string/windows.h>
 
 #pragma comment(lib, "Sensorsapi.lib")
 #pragma comment(lib, "PortableDeviceGuids.lib")

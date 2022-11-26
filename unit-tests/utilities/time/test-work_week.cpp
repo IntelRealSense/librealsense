@@ -1,11 +1,8 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2020 Intel Corporation. All Rights Reserved.
 
-//#cmake:add-file ../../../include/librealsense2/utilities/time/work-week.h
-//#cmake:add-file ../../../include/librealsense2/utilities/time/work-week.cpp
-
 #include "common.h"
-#include <librealsense2/utilities/time/work-week.h>
+#include <utilities/time/work-week.h>
 #include <ctime>
 
 using namespace utilities::time;
