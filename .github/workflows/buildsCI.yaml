@@ -273,7 +273,7 @@ jobs:
           cd ./scripts
           ./pr_check.sh
           cd ../build
-          cmake .. -DBUILD_EXAMPLES=true -DBUILD_WITH_TM2=true -DBUILD_SHARED_LIBS=false -DCHECK_FOR_UPDATES=true -DBUILD_PYTHON_BINDINGS=true -DPYTHON_EXECUTABLE=${{env.PYTHON_PATH}}
+          cmake .. -DBUILD_EXAMPLES=true -DBUILD_WITH_TM2=true -DBUILD_SHARED_LIBS=false -DCHECK_FOR_UPDATES=true -DBUILD_PYTHON_BINDINGS=true -DPYTHON_EXECUTABLE=$(which python3)
           cmake --build . --config ${{env.LRS_BUILD_CONFIG}} -- -j4
   
   
@@ -328,7 +328,7 @@ jobs:
         run: | 
           python ./wrappers/nodejs/tools/enums.py -i ./include/librealsense2 -a ./wrappers/nodejs/src -v
           cd build
-          cmake .. -DBUILD_PYTHON_BINDINGS=true -DBUILD_NODEJS_BINDINGS=true -DPYTHON_EXECUTABLE=${{env.PYTHON_PATH}} -DCHECK_FOR_UPDATES=true
+          cmake .. -DBUILD_PYTHON_BINDINGS=true -DBUILD_NODEJS_BINDINGS=true -DPYTHON_EXECUTABLE=$(which python3) -DCHECK_FOR_UPDATES=true
           cmake --build . --config $LRS_BUILD_CONFIG -- -j4
           cd ../wrappers/nodejs/ && npm install && cd -
 
