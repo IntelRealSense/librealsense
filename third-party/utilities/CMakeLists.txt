@@ -47,5 +47,13 @@ target_sources( ${PROJECT_NAME} PRIVATE ${UTILITIES_SOURCE_FILES} )
 #
 install( TARGETS ${PROJECT_NAME}
     EXPORT realsense2Targets
-    ARCHIVE DESTINATION lib
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
     )
+
+
+# Python ------------------------------------------------------------------------------------
+#
+if( BUILD_PYTHON_BINDINGS )
+    add_subdirectory( py )
+endif()
+

@@ -1,10 +1,10 @@
 /* License: Apache 2.0. See LICENSE file in root directory.
 Copyright(c) 2017 Intel Corporation. All Rights Reserved. */
 
-#include "python.hpp"
-#include "../include/librealsense2/rs.h"
+#include "pyrealsense2.h"
+#include <librealsense2/rs.h>
 #include <iomanip>
-#include "types.h"
+#include <src/types.h>
 
 std::string make_pythonic_str(std::string str)
 {

@@ -3,39 +3,8 @@ cmake_minimum_required(VERSION 3.1.0)
 
 project(RealsensePythonWrappers)
 
-if (NOT BUILD_PYTHON_BINDINGS)
-    message(WARNING "Python Bindings being built despite unset option because they are required for python documentation")
-endif()
-
-# In order for the external project clone to occur during cmake configure step(rather than during compilation, as would normally happen),
-# we copy the external project declaration to the build folder and then execute it
-configure_file(${CMAKE_SOURCE_DIR}/third-party/pybind11/CMakeLists.txt ${CMAKE_BINARY_DIR}/external-projects/pybind11/CMakeLists.txt)
-execute_process(COMMAND "${CMAKE_COMMAND}" -G "${CMAKE_GENERATOR}" .
-    WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/external-projects/pybind11" RESULT_VARIABLE configure_ret
-)
-execute_process(COMMAND "${CMAKE_COMMAND}" --build .
-    WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/external-projects/pybind11" RESULT_VARIABLE build_ret
-)
-
- if(configure_ret OR build_ret)
-        message( FATAL_ERROR "Failed to build pybind11")
- endif()
-    
-# Add pybind11 makefile
-add_subdirectory("${CMAKE_BINARY_DIR}/third-party/pybind11"
-                 "${CMAKE_BINARY_DIR}/third-party/pybind11"
-                 EXCLUDE_FROM_ALL
-)
-
-set(PYBIND11_CPP_STANDARD -std=c++11)
-# Force Pybind11 not to share pyrealsense2 resources with other pybind modules.
-# With this definition we force the ABI version to be unique and not risk crashes on different modules.
-# (workaround for RS5-10582; see also https://github.com/pybind/pybind11/issues/2898)
-add_definitions(-DPYBIND11_COMPILER_TYPE="_librs_abi")
-include_directories(${CMAKE_BINARY_DIR}/third-party/pybind11/include)
-
 set(PYRS_CPP
-    python.cpp
+    pyrealsense2.cpp
     c_files.cpp
     pyrs_advanced_mode.cpp
     pyrs_context.cpp
@@ -53,25 +22,17 @@ set(PYRS_CPP
     ../../common/metadata-helper.cpp
 )
 
-pybind11_add_module(pyrealsense2 SHARED python.hpp ${PYRS_CPP})
+pybind11_add_module(pyrealsense2 SHARED pyrealsense2.h ${PYRS_CPP})
 
-# pybind11 version 2.6.1 require find_package to run after pybind11_add_module call,
-# This way the pybind takes the python version set in PYTHON_EXECUTABLE variable.
-if (CMAKE_VERSION VERSION_LESS 3.12)
-  find_package(PythonInterp REQUIRED)
-  find_package(PythonLibs REQUIRED)
-  set(PYTHON_INSTALL_DIR "${CMAKE_INSTALL_LIBDIR}/python${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR}/pyrealsense2" CACHE PATH "Installation directory for Python bindings")
-  set(CMAKECONFIG_PY_INSTALL_DIR "${CMAKE_INSTALL_LIBDIR}/cmake/pyrealsense2")
-else()
-  find_package(Python REQUIRED COMPONENTS Interpreter Development)
-  set(PYTHON_INSTALL_DIR "${Python_SITEARCH}/pyrealsense2" CACHE PATH "Installation directory for Python bindings")
-  set(CMAKECONFIG_PY_INSTALL_DIR "${CMAKE_INSTALL_LIBDIR}/cmake/pyrealsense2")
-endif()
+set(CMAKECONFIG_PY_INSTALL_DIR "${CMAKE_INSTALL_LIBDIR}/cmake/pyrealsense2")
 
 target_link_libraries(pyrealsense2 PRIVATE ${DEPENDENCIES})
 set_target_properties(pyrealsense2 PROPERTIES VERSION
     ${REALSENSE_VERSION_STRING} SOVERSION "${REALSENSE_VERSION_MAJOR}.${REALSENSE_VERSION_MINOR}")
-set_target_properties(pyrealsense2 PROPERTIES FOLDER Wrappers/python)
+set_target_properties( pyrealsense2
+    PROPERTIES
+        FOLDER Library
+    )
 
 set(RAW_RS
     pybackend.cpp
@@ -174,7 +135,10 @@ target_link_libraries(pybackend2 PRIVATE utilities usb ${CMAKE_THREAD_LIBS_INIT}
 set_target_properties(pybackend2 PROPERTIES
                         VERSION     ${REALSENSE_VERSION_STRING}
                         SOVERSION   ${REALSENSE_VERSION_MAJOR})
-set_target_properties(pybackend2 PROPERTIES FOLDER Wrappers/python)
+set_target_properties( pybackend2 
+    PROPERTIES
+        FOLDER Library
+    )
 target_include_directories(pybackend2 PRIVATE ${CMAKE_SOURCE_DIR}/include)
 
 if(${FORCE_RSUSB_BACKEND})

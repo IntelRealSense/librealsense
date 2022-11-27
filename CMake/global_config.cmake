@@ -70,6 +70,7 @@ macro(global_set_flags)
 
     if(BUILD_PYTHON_BINDINGS)
         include(libusb_config)
+        include(CMake/external_pybind11.cmake)
     endif()
 
     if(BUILD_NETWORK_DEVICE)
