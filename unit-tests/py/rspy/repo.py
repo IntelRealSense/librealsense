@@ -68,21 +68,18 @@ def find_built_exe( source, name ):
     :param name: The name of the exe, without any platform-specific extensions like .exe
     :return: The full path, or None, of the exe
     """
-    exe = None
+    if platform.system() != 'Linux':
+        name += '.exe'
+    import sys
+    for p in sys.path:
+        exe = os.path.join( p, name )
+        if os.path.isfile( exe ):
+            return exe
     if platform.system() == 'Linux':
+        # The Linux build leaves all the executables in their source dir
         global build
         exe = os.path.join( build, source, name )
-        if not os.path.isfile( exe ):
-            return None
-    else:
-        # In Windows, the name will be without extension and we need to find it somewhere
-        # in the path
-        import sys
-        for p in sys.path:
-            exe = os.path.join( p, name + '.exe' )
-            if os.path.isfile( exe ):
-                break
-        else:
-            return None
-    return exe
+        if os.path.isfile( exe ):
+            return exe
+    return None
 

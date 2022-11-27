@@ -321,10 +321,6 @@ log.d( 'Creating "' + name + '" project in', cmakefile )
 handle = open( cmakefile, 'w' )
 handle.write( '''
 
-# We make use of ELPP (EasyLogging++):
-#include( ''' + dir +  '''/../include/librealsense2/utilities/easylogging/easyloggingpp.cmake )
-#include_directories( ${ELPP_INCLUDES} )
-#include( "${REPO_ROOT}/third-party/utilities/include/utilities/easylogging/shared-init.cmake" )
 set( CATCH_FILES
     ''' + dir + '''/catch/catch.hpp
 )

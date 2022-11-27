@@ -1,33 +1,15 @@
 /* License: Apache 2.0. See LICENSE file in root directory.
 Copyright(c) 2017 Intel Corporation. All Rights Reserved. */
 
-#ifndef LIBREALSENSE_PYTHON_HPP
-#define LIBREALSENSE_PYTHON_HPP
+#pragma once
 
-#include <pybind11/pybind11.h>
-
-// convenience functions
-#include <pybind11/operators.h>
-
-// STL conversions
-#include <pybind11/stl.h>
-
-// std::chrono::*
-#include <pybind11/chrono.h>
-
-// makes certain STL containers opaque to prevent expensive copies
-#include <pybind11/stl_bind.h>
-
-// makes std::function conversions work
-#include <pybind11/functional.h>
+#include <utilities/py/pybind11.h>
 
 #define NAME pyrealsense2
 #define SNAME "pyrealsense2"
+
 // For rs2_format
 #include "../include/librealsense2/h/rs_sensor.h"
-
-namespace py = pybind11;
-using namespace pybind11::literals;
 
 // Hacky little bit of half-functions to make .def(BIND_DOWNCAST) look nice for binding as/is functions
 #define BIND_DOWNCAST(class, downcast) "is_"#downcast, &rs2::class::is<rs2::downcast>).def("as_"#downcast, &rs2::class::as<rs2::downcast>
@@ -235,5 +217,3 @@ void init_export(py::module &m);
 void init_advanced_mode(py::module &m);
 void init_serializable_device(py::module& m);
 void init_util(py::module &m);
-
-#endif // LIBREALSENSE_PYTHON_HPP
