@@ -7,7 +7,7 @@ function(get_pybind11)
 
     message( STATUS #CHECK_START
         "Fetching pybind11..." )
-    list( APPEND CMAKE_MESSAGE_INDENT "  " )  # Indent outputs
+    #list( APPEND CMAKE_MESSAGE_INDENT "  " )  # Indent outputs
 
     # We want to clone the pybind repo and build it here, during configuration, so we can use it.
     # But ExternalProject_add is limited in that it only does its magic during build.
@@ -56,8 +56,8 @@ function(get_pybind11)
     set_target_properties( pybind11 PROPERTIES FOLDER "ExternalProjectTargets" )
 
     message( STATUS #CHECK_PASS
-        "Done" )
-    list( POP_BACK CMAKE_MESSAGE_INDENT ) # Unindent outputs
+        "Fetching pybind11 - Done" )
+    #list( POP_BACK CMAKE_MESSAGE_INDENT ) # Unindent outputs (requires cmake 3.15)
 
 endfunction()
 
