@@ -55,3 +55,11 @@ source_group( "Source Files/topics" FILES ${REALDDS_TOPICS_SOURCE_FILES} )
 # Install -----------------------------------------------------------------------------------
 #
 install( TARGETS realdds EXPORT realsense2Targets)
+
+
+# Python Wrapper ---------------------------------------------------------------------------
+#
+if (BUILD_PYTHON_BINDINGS)
+    add_subdirectory(py)
+endif()
+

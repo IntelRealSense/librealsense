@@ -18,10 +18,16 @@ function(get_pybind11)
                     ${CMAKE_BINARY_DIR}/external-projects/pybind11-download/CMakeLists.txt )
     execute_process( COMMAND "${CMAKE_COMMAND}" -G "${CMAKE_GENERATOR}" .
                      WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/external-projects/pybind11-download"
-                     OUTPUT_QUIET )
+                     OUTPUT_QUIET
+                     RESULT_VARIABLE configure_ret )
     execute_process( COMMAND "${CMAKE_COMMAND}" --build .
                      WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/external-projects/pybind11-download"
-                     OUTPUT_QUIET )
+                     OUTPUT_QUIET
+                     RESULT_VARIABLE build_ret )
+
+    if( configure_ret OR build_ret )
+        message( FATAL_ERROR "Failed to build pybind11" )
+    endif()
 
     # Now that it's available, we can refer to it with an actual ExternalProject_add (but notice we're not
     # downloading anything)

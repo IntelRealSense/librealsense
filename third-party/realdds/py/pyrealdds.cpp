@@ -1,7 +1,7 @@
-/* License: Apache 2.0. See LICENSE file in root directory.
-Copyright(c) 2022 Intel Corporation. All Rights Reserved. */
+// License: Apache 2.0. See LICENSE file in root directory.
+// Copyright(c) 2022 Intel Corporation. All Rights Reserved.
 
-#include "python.hpp"
+#include <utilities/py/pybind11.h>
 
 #include <realdds/dds-participant.h>
 #include <realdds/topics/dds-topics.h>
@@ -31,6 +31,10 @@ Copyright(c) 2022 Intel Corporation. All Rights Reserved. */
 #include <fastrtps/types/DynamicType.h>
 
 #include <third-party/json.hpp>
+
+
+#define NAME pyrealdds
+#define SNAME "pyrealdds"
 
 
 #ifndef BUILD_SHARED_LIBS  // shared-init takes care of the else
