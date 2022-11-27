@@ -28,7 +28,5 @@ include("../include/utilities/easylogging/shared-init.cmake")
 install(
     TARGETS ${PROJECT_NAME}
     EXPORT pyrealsense2Targets
-    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
     LIBRARY DESTINATION ${PYTHON_INSTALL_DIR}
-    ARCHIVE DESTINATION ${PYTHON_INSTALL_DIR}
     )

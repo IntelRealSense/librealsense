@@ -4,7 +4,7 @@ macro(os_set_flags)
 
     # Put all the collaterals together, so we can find when trying to run examples/tests
     # Note: this puts the outputs under <binary>/<build-type>
-    # Note note: this ruins our CI procedures... otherwise it mirrors Windows, simplifies
+    # NOTE: do not uncomment -- this ruins our CI procedures -- otherwise it mirrors Windows, simplifies
     # scripts, makes things easier to find... c'est la vie!
     #set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${CMAKE_BUILD_TYPE})
     #set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${CMAKE_BUILD_TYPE})
