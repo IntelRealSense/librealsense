@@ -15,7 +15,7 @@
 #include "ds5-nonmonochrome.h"
 #include "ds5-private.h"
 #include "ds5-options.h"
-#include "ds5-timestamp.h"
+#include "ds/ds-timestamp.h"
 #include "proc/color-formats-converter.h"
 #include "proc/depth-formats-converter.h"
 

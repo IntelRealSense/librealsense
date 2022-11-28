@@ -13,9 +13,9 @@
 #include "metadata-parser.h"
 
 #include "ds6-device.h"
-#include "ds/ds5/ds5-private.h"
-#include "ds/ds5/ds5-options.h"
-#include "ds/ds5/ds5-timestamp.h"
+#include "ds/ds6/ds6-private.h"
+#include "ds/ds-options.h"
+#include "ds/ds-timestamp.h"
 #include "stream.h"
 #include "environment.h"
 #include "ds6-color.h"
@@ -28,7 +28,6 @@
 #include "proc/color-formats-converter.h"
 
 #include "hdr-config.h"
-#include "ds/ds5/ds5-thermal-monitor.h"
 #include "../common/fw/firmware-version.h"
 #include "fw-update/fw-update-unsigned.h"
 #include "../third-party/json.hpp"
@@ -172,19 +171,11 @@ namespace librealsense
                 // needed in order to restore the HDR sub-preset when streaming is turned off and on
                 if (_hdr_cfg && _hdr_cfg->is_enabled())
                     get_option(RS2_OPTION_HDR_ENABLED).set(1.f);
-
-                // Activate Thermal Compensation tracking
-                if (supports_option(RS2_OPTION_THERMAL_COMPENSATION))
-                    _owner->_thermal_monitor->update(true);
                 }); //group_multiple_fw_calls
         }
 
         void close() override
         {
-            // Deactivate Thermal Compensation tracking
-            if (supports_option(RS2_OPTION_THERMAL_COMPENSATION))
-                _owner->_thermal_monitor->update(false);
-
             synthetic_sensor::close();
         }
 
@@ -411,8 +402,8 @@ namespace librealsense
         for (auto&& info : filter_by_mi(all_device_infos, 0)) // Filter just mi=0, DEPTH
             depth_devices.push_back(backend.create_uvc_device(info));
 
-        std::unique_ptr<frame_timestamp_reader> timestamp_reader_backup(new ds5_timestamp_reader(backend.create_time_service()));
-        std::unique_ptr<frame_timestamp_reader> timestamp_reader_metadata(new ds5_timestamp_reader_from_metadata(std::move(timestamp_reader_backup)));
+        std::unique_ptr<frame_timestamp_reader> timestamp_reader_backup(new ds_timestamp_reader(backend.create_time_service()));
+        std::unique_ptr<frame_timestamp_reader> timestamp_reader_metadata(new ds_timestamp_reader_from_metadata(std::move(timestamp_reader_backup)));
         auto enable_global_time_option = std::shared_ptr<global_time_option>(new global_time_option());
         auto raw_depth_ep = std::make_shared<uvc_sensor>("Raw Depth Sensor", std::make_shared<platform::multi_pins_uvc_device>(depth_devices),
             std::unique_ptr<frame_timestamp_reader>(new global_timestamp_reader(std::move(timestamp_reader_metadata), _tf_keeper, enable_global_time_option)), this);
@@ -606,20 +597,6 @@ namespace librealsense
                         RS2_OPTION_ASIC_TEMPERATURE));
             }
 
-            if ((val_in_range(_pid, { RS455_PID })) && (_fw_version >= firmware_version("5.12.11.0")))
-            {
-                auto thermal_compensation_toggle = std::make_shared<protected_xu_option<uint8_t>>(raw_depth_sensor, depth_xu,
-                    ds::DS5_THERMAL_COMPENSATION, "Toggle Thermal Compensation Mechanism");
-
-                auto temperature_sensor = depth_sensor.get_option_handler(RS2_OPTION_ASIC_TEMPERATURE);
-
-                _thermal_monitor = std::make_shared<ds5_thermal_monitor>(temperature_sensor, thermal_compensation_toggle);
-
-                depth_sensor.register_option(RS2_OPTION_THERMAL_COMPENSATION,
-                    std::make_shared<thermal_compensation>(_thermal_monitor,thermal_compensation_toggle));
-
-            }
-
             std::shared_ptr<option> exposure_option = nullptr;
             std::shared_ptr<option> gain_option = nullptr;
             std::shared_ptr<hdr_option> hdr_enabled_option = nullptr;
@@ -807,39 +784,6 @@ namespace librealsense
             
             // Metadata registration
             depth_sensor.register_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP, make_uvc_header_parser(&uvc_header::timestamp));
-
-            // Auto exposure and gain limit
-            if (_fw_version >= firmware_version("5.12.10.11"))
-            {
-                auto exposure_range = depth_sensor.get_option(RS2_OPTION_EXPOSURE).get_range();
-                auto gain_range = depth_sensor.get_option(RS2_OPTION_GAIN).get_range();
-
-                option_range enable_range = { 0.f /*min*/, 1.f /*max*/, 1.f /*step*/, 0.f /*default*/ };
-
-                //GAIN Limit
-                auto gain_limit_toggle_control = std::make_shared<limits_option>(RS2_OPTION_AUTO_GAIN_LIMIT_TOGGLE, enable_range, "Toggle Auto-Gain Limit", *_hw_monitor);
-                _gain_limit_value_control = std::make_shared<auto_gain_limit_option>(*_hw_monitor, &depth_sensor, gain_range, gain_limit_toggle_control);
-                depth_sensor.register_option(RS2_OPTION_AUTO_GAIN_LIMIT_TOGGLE, gain_limit_toggle_control);
-
-                depth_sensor.register_option(RS2_OPTION_AUTO_GAIN_LIMIT,
-                    std::make_shared<auto_disabling_control>(
-                        _gain_limit_value_control,
-                        gain_limit_toggle_control
-                    
-                        ));
-
-                // EXPOSURE Limit
-                auto ae_limit_toggle_control = std::make_shared<limits_option>(RS2_OPTION_AUTO_EXPOSURE_LIMIT_TOGGLE, enable_range, "Toggle Auto-Exposure Limit", *_hw_monitor);
-                _ae_limit_value_control = std::make_shared<auto_exposure_limit_option>(*_hw_monitor, &depth_sensor, exposure_range, ae_limit_toggle_control);
-                depth_sensor.register_option(RS2_OPTION_AUTO_EXPOSURE_LIMIT_TOGGLE, ae_limit_toggle_control);
-
-                depth_sensor.register_option(RS2_OPTION_AUTO_EXPOSURE_LIMIT,
-                    std::make_shared<auto_disabling_control>(
-                        _ae_limit_value_control,
-                        ae_limit_toggle_control
-                    
-                        ));
-                }
         }); //group_multiple_fw_calls
 
         // attributes of md_capture_timing

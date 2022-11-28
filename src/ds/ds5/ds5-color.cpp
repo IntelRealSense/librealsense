@@ -4,7 +4,7 @@
 #include <cstddef>
 #include "metadata.h"
 
-#include "ds5-timestamp.h"
+#include "ds/ds-timestamp.h"
 #include "ds5-thermal-monitor.h"
 #include "proc/color-formats-converter.h"
 #include "ds5-color.h"
@@ -65,12 +65,14 @@ namespace librealsense
                 color_devs_info = group.uvc_devices;
             else
                 color_devs_info = color_devs_info_mi3;
-            std::unique_ptr<frame_timestamp_reader> ds5_timestamp_reader_backup(new ds5_timestamp_reader(backend.create_time_service()));
+            std::unique_ptr<frame_timestamp_reader> ds5_timestamp_reader_backup(new ds_timestamp_reader(backend.create_time_service()));
             frame_timestamp_reader* timestamp_reader_from_metadata;
             if (ds::RS457_PID != _pid)
-                timestamp_reader_from_metadata = new ds5_timestamp_reader_from_metadata(std::move(ds5_timestamp_reader_backup));
+                timestamp_reader_from_metadata = new ds_timestamp_reader_from_metadata(std::move(ds5_timestamp_reader_backup));
             else
-                timestamp_reader_from_metadata = new ds5_timestamp_reader_from_metadata_mipi_color(std::move(ds5_timestamp_reader_backup));
+			    timestamp_reader_from_metadata = new ds5_timestamp_reader_from_metadata_mipi_color(std::move(ds5_timestamp_reader_backup));timestamp_reader_from_metadata = new ds5_timestamp_reader_from_metadata_mipi_color(std::move(ds5_timestamp_reader_backup));
+            
+			std::unique_ptr<frame_timestamp_reader> ds5_timestamp_reader_metadata(new ds5_timestamp_reader_from_metadata(std::move(ds5_timestamp_reader_backup)));
 
             std::unique_ptr<frame_timestamp_reader> ds5_timestamp_reader_metadata(timestamp_reader_from_metadata);
 
