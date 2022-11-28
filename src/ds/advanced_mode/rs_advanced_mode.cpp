@@ -42,7 +42,7 @@ const char* rs2_rs400_visual_preset_to_string(rs2_rs400_visual_preset preset){ r
 void rs2_toggle_advanced_mode(rs2_device* dev, int enable, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(dev);
-    auto advanced_mode = VALIDATE_INTERFACE(dev->device, librealsense::ds5_advanced_mode_interface);
+    auto advanced_mode = VALIDATE_INTERFACE(dev->device, librealsense::ds_advanced_mode_interface);
     advanced_mode->toggle_advanced_mode(enable > 0);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, dev, enable)
@@ -51,7 +51,7 @@ void rs2_is_enabled(rs2_device* dev, int* enabled, rs2_error** error) BEGIN_API_
 {
     VALIDATE_NOT_NULL(dev);
     VALIDATE_NOT_NULL(enabled);
-    auto advanced_mode = VALIDATE_INTERFACE(dev->device, librealsense::ds5_advanced_mode_interface);
+    auto advanced_mode = VALIDATE_INTERFACE(dev->device, librealsense::ds_advanced_mode_interface);
     *enabled = advanced_mode->is_enabled();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, dev, enabled)
@@ -60,7 +60,7 @@ void rs2_set_depth_control(rs2_device* dev, const STDepthControlGroup* group, rs
 {
     VALIDATE_NOT_NULL(dev);
     VALIDATE_NOT_NULL(group);
-    auto advanced_mode = VALIDATE_INTERFACE(dev->device, librealsense::ds5_advanced_mode_interface);
+    auto advanced_mode = VALIDATE_INTERFACE(dev->device, librealsense::ds_advanced_mode_interface);
     advanced_mode->set_depth_control_group(*group);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, dev, group)
@@ -69,7 +69,7 @@ void rs2_get_depth_control(rs2_device* dev, STDepthControlGroup* group, int mode
 {
     VALIDATE_NOT_NULL(dev);
     VALIDATE_NOT_NULL(group);
-    auto advanced_mode = VALIDATE_INTERFACE(dev->device, librealsense::ds5_advanced_mode_interface);
+    auto advanced_mode = VALIDATE_INTERFACE(dev->device, librealsense::ds_advanced_mode_interface);
     advanced_mode->get_depth_control_group(group, mode);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, dev, group, mode)
@@ -78,7 +78,7 @@ void rs2_set_rsm(rs2_device* dev, const STRsm* group, rs2_error** error) BEGIN_A
 {
     VALIDATE_NOT_NULL(dev);
     VALIDATE_NOT_NULL(group);
-    auto advanced_mode = VALIDATE_INTERFACE(dev->device, librealsense::ds5_advanced_mode_interface);
+    auto advanced_mode = VALIDATE_INTERFACE(dev->device, librealsense::ds_advanced_mode_interface);
     advanced_mode->set_rsm(*group);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, dev, group)
@@ -87,7 +87,7 @@ void rs2_get_rsm(rs2_device* dev, STRsm* group, int mode, rs2_error** error) BEG
 {
     VALIDATE_NOT_NULL(dev);
     VALIDATE_NOT_NULL(group);
-    auto advanced_mode = VALIDATE_INTERFACE(dev->device, librealsense::ds5_advanced_mode_interface);
+    auto advanced_mode = VALIDATE_INTERFACE(dev->device, librealsense::ds_advanced_mode_interface);
     advanced_mode->get_rsm(group, mode);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, dev, group, mode)
@@ -96,7 +96,7 @@ void rs2_set_rau_support_vector_control(rs2_device* dev, const STRauSupportVecto
 {
     VALIDATE_NOT_NULL(dev);
     VALIDATE_NOT_NULL(group);
-    auto advanced_mode = VALIDATE_INTERFACE(dev->device, librealsense::ds5_advanced_mode_interface);
+    auto advanced_mode = VALIDATE_INTERFACE(dev->device, librealsense::ds_advanced_mode_interface);
     advanced_mode->set_rau_support_vector_control(*group);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, dev, group)
@@ -105,7 +105,7 @@ void rs2_get_rau_support_vector_control(rs2_device* dev, STRauSupportVectorContr
 {
     VALIDATE_NOT_NULL(dev);
     VALIDATE_NOT_NULL(group);
-    auto advanced_mode = VALIDATE_INTERFACE(dev->device, librealsense::ds5_advanced_mode_interface);
+    auto advanced_mode = VALIDATE_INTERFACE(dev->device, librealsense::ds_advanced_mode_interface);
     advanced_mode->get_rau_support_vector_control(group, mode);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, dev, group, mode)
@@ -114,7 +114,7 @@ void rs2_set_color_control(rs2_device* dev, const STColorControl* group, rs2_err
 {
     VALIDATE_NOT_NULL(dev);
     VALIDATE_NOT_NULL(group);
-    auto advanced_mode = VALIDATE_INTERFACE(dev->device, librealsense::ds5_advanced_mode_interface);
+    auto advanced_mode = VALIDATE_INTERFACE(dev->device, librealsense::ds_advanced_mode_interface);
     advanced_mode->set_color_control(*group);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, dev, group)
@@ -123,7 +123,7 @@ void rs2_get_color_control(rs2_device* dev, STColorControl* group, int mode, rs2
 {
     VALIDATE_NOT_NULL(dev);
     VALIDATE_NOT_NULL(group);
-    auto advanced_mode = VALIDATE_INTERFACE(dev->device, librealsense::ds5_advanced_mode_interface);
+    auto advanced_mode = VALIDATE_INTERFACE(dev->device, librealsense::ds_advanced_mode_interface);
     advanced_mode->get_color_control(group, mode);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, dev, group, mode)
@@ -132,7 +132,7 @@ void rs2_set_rau_thresholds_control(rs2_device* dev, const STRauColorThresholdsC
 {
     VALIDATE_NOT_NULL(dev);
     VALIDATE_NOT_NULL(group);
-    auto advanced_mode = VALIDATE_INTERFACE(dev->device, librealsense::ds5_advanced_mode_interface);
+    auto advanced_mode = VALIDATE_INTERFACE(dev->device, librealsense::ds_advanced_mode_interface);
     advanced_mode->set_rau_color_thresholds_control(*group);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, dev, group)
@@ -141,7 +141,7 @@ void rs2_get_rau_thresholds_control(rs2_device* dev, STRauColorThresholdsControl
 {
     VALIDATE_NOT_NULL(dev);
     VALIDATE_NOT_NULL(group);
-    auto advanced_mode = VALIDATE_INTERFACE(dev->device, librealsense::ds5_advanced_mode_interface);
+    auto advanced_mode = VALIDATE_INTERFACE(dev->device, librealsense::ds_advanced_mode_interface);
     advanced_mode->get_rau_color_thresholds_control(group, mode);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, dev, group, mode)
@@ -150,7 +150,7 @@ void rs2_set_slo_color_thresholds_control(rs2_device* dev, const STSloColorThres
 {
     VALIDATE_NOT_NULL(dev);
     VALIDATE_NOT_NULL(group);
-    auto advanced_mode = VALIDATE_INTERFACE(dev->device, librealsense::ds5_advanced_mode_interface);
+    auto advanced_mode = VALIDATE_INTERFACE(dev->device, librealsense::ds_advanced_mode_interface);
     advanced_mode->set_slo_color_thresholds_control(*group);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, dev, group)
@@ -159,7 +159,7 @@ void rs2_get_slo_color_thresholds_control(rs2_device* dev, STSloColorThresholdsC
 {
     VALIDATE_NOT_NULL(dev);
     VALIDATE_NOT_NULL(group);
-    auto advanced_mode = VALIDATE_INTERFACE(dev->device, librealsense::ds5_advanced_mode_interface);
+    auto advanced_mode = VALIDATE_INTERFACE(dev->device, librealsense::ds_advanced_mode_interface);
     advanced_mode->get_slo_color_thresholds_control(group, mode);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, dev, group, mode)
@@ -168,7 +168,7 @@ void rs2_set_slo_penalty_control(rs2_device* dev, const STSloPenaltyControl* gro
 {
     VALIDATE_NOT_NULL(dev);
     VALIDATE_NOT_NULL(group);
-    auto advanced_mode = VALIDATE_INTERFACE(dev->device, librealsense::ds5_advanced_mode_interface);
+    auto advanced_mode = VALIDATE_INTERFACE(dev->device, librealsense::ds_advanced_mode_interface);
     advanced_mode->set_slo_penalty_control(*group);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, dev, group)
@@ -177,7 +177,7 @@ void rs2_get_slo_penalty_control(rs2_device* dev, STSloPenaltyControl* group, in
 {
     VALIDATE_NOT_NULL(dev);
     VALIDATE_NOT_NULL(group);
-    auto advanced_mode = VALIDATE_INTERFACE(dev->device, librealsense::ds5_advanced_mode_interface);
+    auto advanced_mode = VALIDATE_INTERFACE(dev->device, librealsense::ds_advanced_mode_interface);
     advanced_mode->get_slo_penalty_control(group, mode);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, dev, group, mode)
@@ -186,7 +186,7 @@ void rs2_set_hdad(rs2_device* dev, const STHdad* group, rs2_error** error) BEGIN
 {
     VALIDATE_NOT_NULL(dev);
     VALIDATE_NOT_NULL(group);
-    auto advanced_mode = VALIDATE_INTERFACE(dev->device, librealsense::ds5_advanced_mode_interface);
+    auto advanced_mode = VALIDATE_INTERFACE(dev->device, librealsense::ds_advanced_mode_interface);
     advanced_mode->set_hdad(*group);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, dev, group)
@@ -195,7 +195,7 @@ void rs2_get_hdad(rs2_device* dev, STHdad* group, int mode, rs2_error** error) B
 {
     VALIDATE_NOT_NULL(dev);
     VALIDATE_NOT_NULL(group);
-    auto advanced_mode = VALIDATE_INTERFACE(dev->device, librealsense::ds5_advanced_mode_interface);
+    auto advanced_mode = VALIDATE_INTERFACE(dev->device, librealsense::ds_advanced_mode_interface);
     advanced_mode->get_hdad(group, mode);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, dev, group, mode)
@@ -204,7 +204,7 @@ void rs2_set_color_correction(rs2_device* dev, const STColorCorrection* group, r
 {
     VALIDATE_NOT_NULL(dev);
     VALIDATE_NOT_NULL(group);
-    auto advanced_mode = VALIDATE_INTERFACE(dev->device, librealsense::ds5_advanced_mode_interface);
+    auto advanced_mode = VALIDATE_INTERFACE(dev->device, librealsense::ds_advanced_mode_interface);
     advanced_mode->set_color_correction(*group);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, dev, group)
@@ -213,7 +213,7 @@ void rs2_get_color_correction(rs2_device* dev, STColorCorrection* group, int mod
 {
     VALIDATE_NOT_NULL(dev);
     VALIDATE_NOT_NULL(group);
-    auto advanced_mode = VALIDATE_INTERFACE(dev->device, librealsense::ds5_advanced_mode_interface);
+    auto advanced_mode = VALIDATE_INTERFACE(dev->device, librealsense::ds_advanced_mode_interface);
     advanced_mode->get_color_correction(group, mode);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, dev, group, mode)
@@ -222,7 +222,7 @@ void rs2_set_depth_table(rs2_device* dev, const STDepthTableControl* group, rs2_
 {
     VALIDATE_NOT_NULL(dev);
     VALIDATE_NOT_NULL(group);
-    auto advanced_mode = VALIDATE_INTERFACE(dev->device, librealsense::ds5_advanced_mode_interface);
+    auto advanced_mode = VALIDATE_INTERFACE(dev->device, librealsense::ds_advanced_mode_interface);
     advanced_mode->set_depth_table_control(*group);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, dev, group)
@@ -231,7 +231,7 @@ void rs2_get_depth_table(rs2_device* dev, STDepthTableControl* group, int mode, 
 {
     VALIDATE_NOT_NULL(dev);
     VALIDATE_NOT_NULL(group);
-    auto advanced_mode = VALIDATE_INTERFACE(dev->device, librealsense::ds5_advanced_mode_interface);
+    auto advanced_mode = VALIDATE_INTERFACE(dev->device, librealsense::ds_advanced_mode_interface);
     advanced_mode->get_depth_table_control(group, mode);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, dev, group, mode)
@@ -240,7 +240,7 @@ void rs2_set_ae_control(rs2_device* dev, const STAEControl* group, rs2_error** e
 {
     VALIDATE_NOT_NULL(dev);
     VALIDATE_NOT_NULL(group);
-    auto advanced_mode = VALIDATE_INTERFACE(dev->device, librealsense::ds5_advanced_mode_interface);
+    auto advanced_mode = VALIDATE_INTERFACE(dev->device, librealsense::ds_advanced_mode_interface);
     advanced_mode->set_ae_control(*group);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, dev, group)
@@ -249,7 +249,7 @@ void rs2_get_ae_control(rs2_device* dev, STAEControl* group, int mode, rs2_error
 {
     VALIDATE_NOT_NULL(dev);
     VALIDATE_NOT_NULL(group);
-    auto advanced_mode = VALIDATE_INTERFACE(dev->device, librealsense::ds5_advanced_mode_interface);
+    auto advanced_mode = VALIDATE_INTERFACE(dev->device, librealsense::ds_advanced_mode_interface);
     advanced_mode->get_ae_control(group, mode);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, dev, group, mode)
@@ -258,7 +258,7 @@ void rs2_set_census(rs2_device* dev, const STCensusRadius* group, rs2_error** er
 {
     VALIDATE_NOT_NULL(dev);
     VALIDATE_NOT_NULL(group);
-    auto advanced_mode = VALIDATE_INTERFACE(dev->device, librealsense::ds5_advanced_mode_interface);
+    auto advanced_mode = VALIDATE_INTERFACE(dev->device, librealsense::ds_advanced_mode_interface);
     advanced_mode->set_census_radius(*group);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, dev, group)
@@ -267,7 +267,7 @@ void rs2_get_census(rs2_device* dev, STCensusRadius* group, int mode, rs2_error*
 {
     VALIDATE_NOT_NULL(dev);
     VALIDATE_NOT_NULL(group);
-    auto advanced_mode = VALIDATE_INTERFACE(dev->device, librealsense::ds5_advanced_mode_interface);
+    auto advanced_mode = VALIDATE_INTERFACE(dev->device, librealsense::ds_advanced_mode_interface);
     advanced_mode->get_census_radius(group, mode);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, dev, group, mode)
@@ -276,7 +276,7 @@ void rs2_set_amp_factor(rs2_device* dev, const  STAFactor* group, rs2_error** er
 {
     VALIDATE_NOT_NULL(dev);
     VALIDATE_NOT_NULL(group);
-    auto advanced_mode = VALIDATE_INTERFACE(dev->device, librealsense::ds5_advanced_mode_interface);
+    auto advanced_mode = VALIDATE_INTERFACE(dev->device, librealsense::ds_advanced_mode_interface);
     advanced_mode->set_amp_factor(*group);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, dev, group)
@@ -285,7 +285,7 @@ void rs2_get_amp_factor(rs2_device* dev, STAFactor* group, int mode, rs2_error**
 {
     VALIDATE_NOT_NULL(dev);
     VALIDATE_NOT_NULL(group);
-    auto advanced_mode = VALIDATE_INTERFACE(dev->device, librealsense::ds5_advanced_mode_interface);
+    auto advanced_mode = VALIDATE_INTERFACE(dev->device, librealsense::ds_advanced_mode_interface);
     advanced_mode->get_amp_factor(group, mode);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, dev, group, mode)

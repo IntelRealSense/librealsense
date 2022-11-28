@@ -31,7 +31,7 @@ namespace librealsense
         std::vector<uint8_t> get_PyRxFL_calibration_results(float* health = nullptr, float* health_fl = nullptr) const;
         void handle_calibration_error(int status) const;
         std::map<std::string, int> parse_json(std::string json);
-        std::shared_ptr< ds5_advanced_mode_base> change_preset();
+        std::shared_ptr< ds_advanced_mode_base> change_preset();
         void check_params(int speed, int scan_parameter, int data_sampling) const;
         void check_tare_params(int speed, int scan_parameter, int data_sampling, int average_step_count, int step_count, int accuracy);
         void check_focal_length_params(int step_count, int fy_scan_range, int keep_new_value_after_sucessful_scan, int interrrupt_data_samling, int adjust_both_sides, int fl_scan_location, int fy_scan_direction, int white_wall_mode) const;

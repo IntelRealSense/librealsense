@@ -15,7 +15,7 @@
 #include "ds5-active.h"
 #include "ds5-private.h"
 #include "ds5-options.h"
-#include "ds5-timestamp.h"
+#include "ds/ds-timestamp.h"
 
 namespace librealsense
 {

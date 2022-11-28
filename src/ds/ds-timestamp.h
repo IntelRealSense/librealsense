@@ -10,7 +10,7 @@
 
 namespace librealsense
 {
-    class ds5_timestamp_reader_from_metadata : public frame_timestamp_reader
+    class ds_timestamp_reader_from_metadata : public frame_timestamp_reader
     {
        std::unique_ptr<frame_timestamp_reader> _backup_timestamp_reader;
        static const int pins = 2;
@@ -19,7 +19,7 @@ namespace librealsense
        mutable std::recursive_mutex _mtx;
 
     public:
-        ds5_timestamp_reader_from_metadata(std::unique_ptr<frame_timestamp_reader> backup_timestamp_reader);
+        ds_timestamp_reader_from_metadata(std::unique_ptr<frame_timestamp_reader> backup_timestamp_reader);
 
         bool has_metadata(const std::shared_ptr<frame_interface>& frame);
 
@@ -32,14 +32,14 @@ namespace librealsense
         rs2_timestamp_domain get_frame_timestamp_domain(const std::shared_ptr<frame_interface>& frame) const override;
     };
 
-    class ds5_timestamp_reader : public frame_timestamp_reader
+    class ds_timestamp_reader : public frame_timestamp_reader
     {
         static const int pins = 2;
         mutable std::vector<int64_t> counter;
         std::shared_ptr<platform::time_service> _ts;
         mutable std::recursive_mutex _mtx;
     public:
-        ds5_timestamp_reader(std::shared_ptr<platform::time_service> ts);
+        ds_timestamp_reader(std::shared_ptr<platform::time_service> ts);
 
         void reset() override;
 
@@ -50,14 +50,14 @@ namespace librealsense
         rs2_timestamp_domain get_frame_timestamp_domain(const std::shared_ptr<frame_interface>& frame) const override;
     };
 
-    class ds5_custom_hid_timestamp_reader : public frame_timestamp_reader
+    class ds_custom_hid_timestamp_reader : public frame_timestamp_reader
     {
         static const int sensors = 4; // TODO: implement frame-counter for each GPIO or
                                       //       reading counter field report
         mutable std::vector<int64_t> counter;
         mutable std::recursive_mutex _mtx;
     public:
-        ds5_custom_hid_timestamp_reader();
+        ds_custom_hid_timestamp_reader();
 
         void reset() override;
 

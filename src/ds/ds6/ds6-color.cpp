@@ -4,8 +4,7 @@
 #include <cstddef>
 #include "metadata.h"
 
-#include "../ds5/ds5-timestamp.h"
-#include "../ds5/ds5-thermal-monitor.h"
+#include "ds/ds-timestamp.h"
 #include "proc/color-formats-converter.h"
 #include "ds6-color.h"
 
@@ -54,8 +53,8 @@ namespace librealsense
 
         std::vector<platform::uvc_device_info> color_devs_info = filter_by_mi(group.uvc_devices, 3);
 
-        std::unique_ptr<frame_timestamp_reader> ds5_timestamp_reader_backup(new ds5_timestamp_reader(backend.create_time_service()));
-        std::unique_ptr<frame_timestamp_reader> ds5_timestamp_reader_metadata(new ds5_timestamp_reader_from_metadata(std::move(ds5_timestamp_reader_backup)));
+        std::unique_ptr<frame_timestamp_reader> ds5_timestamp_reader_backup(new ds_timestamp_reader(backend.create_time_service()));
+        std::unique_ptr<frame_timestamp_reader> ds5_timestamp_reader_metadata(new ds_timestamp_reader_from_metadata(std::move(ds5_timestamp_reader_backup)));
 
         auto enable_global_time_option = std::shared_ptr<global_time_option>(new global_time_option());
         auto raw_color_ep = std::make_shared<uvc_sensor>("Raw RGB Camera",

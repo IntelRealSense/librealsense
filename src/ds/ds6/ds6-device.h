@@ -13,7 +13,7 @@
 #include "global_timestamp_reader.h"
 #include "fw-update/fw-update-device-interface.h"
 #include "ds/ds5/ds5-auto-calibration.h"
-#include "ds/ds5/ds5-options.h"
+#include "ds/ds-options.h"
 
 #include "ds/ds-devices-common.h"
 
@@ -106,9 +106,6 @@ namespace librealsense
         lazy<std::vector<uint8_t>> _color_calib_table_raw;
         std::shared_ptr<lazy<rs2_extrinsics>> _color_extrinsic;
         bool _is_locked = true;
-
-        std::shared_ptr<auto_gain_limit_option> _gain_limit_value_control;
-        std::shared_ptr<auto_exposure_limit_option> _ae_limit_value_control;
     };
 
     processing_blocks get_ds6_depth_recommended_proccesing_blocks();

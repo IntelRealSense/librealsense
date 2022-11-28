@@ -11,7 +11,7 @@
 #include <iterator>
 #include <cstddef>
 
-#include "ds5-timestamp.h"
+#include "ds/ds-timestamp.h"
 #include "ds5-options.h"
 #include "stream.h"
 #include "proc/motion-transform.h"
@@ -181,7 +181,7 @@ namespace librealsense
         static const char* custom_sensor_fw_ver = "5.6.0.0";
 
         std::unique_ptr<frame_timestamp_reader> iio_hid_ts_reader(new iio_hid_timestamp_reader());
-        std::unique_ptr<frame_timestamp_reader> custom_hid_ts_reader(new ds5_custom_hid_timestamp_reader());
+        std::unique_ptr<frame_timestamp_reader> custom_hid_ts_reader(new ds_custom_hid_timestamp_reader());
         auto enable_global_time_option = std::shared_ptr<global_time_option>(new global_time_option());
 
         // Dynamically populate the supported HID profiles according to the selected IMU module
@@ -375,9 +375,9 @@ namespace librealsense
             return _mm_calib->get_fisheye_calib_raw();
         };
 
-        std::unique_ptr<frame_timestamp_reader> ds5_timestamp_reader_backup(new ds5_timestamp_reader(environment::get_instance().get_time_service()));
+        std::unique_ptr<frame_timestamp_reader> ds5_timestamp_reader_backup(new ds_timestamp_reader(environment::get_instance().get_time_service()));
         auto&& backend = ctx->get_backend();
-        std::unique_ptr<frame_timestamp_reader> ds5_timestamp_reader_metadata(new ds5_timestamp_reader_from_metadata(std::move(ds5_timestamp_reader_backup)));
+        std::unique_ptr<frame_timestamp_reader> ds5_timestamp_reader_metadata(new ds_timestamp_reader_from_metadata(std::move(ds5_timestamp_reader_backup)));
         auto enable_global_time_option = std::shared_ptr<global_time_option>(new global_time_option());
         auto raw_fisheye_ep = std::make_shared<uvc_sensor>("FishEye Sensor", backend.create_uvc_device(fisheye_infos.front()),
                                 std::unique_ptr<frame_timestamp_reader>(new global_timestamp_reader(std::move(ds5_timestamp_reader_metadata), _tf_keeper, enable_global_time_option)), this);

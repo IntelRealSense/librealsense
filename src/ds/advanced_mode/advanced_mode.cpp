@@ -2,14 +2,13 @@
 // Copyright(c) 2017 Intel Corporation. All Rights Reserved.
 
 #include "core/advanced_mode.h"
-#include "ds/ds5/ds5-active.h"
-#include "ds/ds5/ds5-nonmonochrome.h"
 #include "json_loader.hpp"
 #include "ds/ds5/ds5-color.h"
+#include "ds/ds6/ds6-color.h"
 
 namespace librealsense
 {
-    ds5_advanced_mode_base::ds5_advanced_mode_base(std::shared_ptr<hw_monitor> hwm,
+    ds_advanced_mode_base::ds_advanced_mode_base(std::shared_ptr<hw_monitor> hwm,
         synthetic_sensor& depth_sensor)
         : _hw_monitor(hwm),
           _depth_sensor(depth_sensor),
@@ -40,6 +39,20 @@ namespace librealsense
             }
             return (ds5_color_sensor*)nullptr;
         };
+        if (!*_color_sensor)
+        {
+            _color_sensor = [this]() {
+                auto& dev = _depth_sensor.get_device();
+                for (size_t i = 0; i < dev.get_sensors_count(); ++i)
+                {
+                    if (auto s = dynamic_cast<const ds6_color_sensor*>(&(dev.get_sensor(i))))
+                    {
+                        return const_cast<ds6_color_sensor*>(s);
+                    }
+                }
+                return (ds6_color_sensor*)nullptr;
+            };
+        }
         _amplitude_factor_support = [this]() {
             auto fw_ver = firmware_version(_depth_sensor.get_device().get_info(rs2_camera_info::RS2_CAMERA_INFO_FIRMWARE_VERSION));
             return (fw_ver >= firmware_version("5.11.9.0"));
@@ -50,18 +63,18 @@ namespace librealsense
         };
     }
 
-    bool ds5_advanced_mode_base::is_enabled() const
+    bool ds_advanced_mode_base::is_enabled() const
     {
         return *_enabled;
     }
 
-    void ds5_advanced_mode_base::toggle_advanced_mode(bool enable)
+    void ds_advanced_mode_base::toggle_advanced_mode(bool enable)
     {
         send_receive(encode_command(ds::fw_cmd::EN_ADV, enable));
         send_receive(encode_command(ds::fw_cmd::HWRST));
     }
 
-    void ds5_advanced_mode_base::apply_preset(const std::vector<platform::stream_profile>& configuration,
+    void ds_advanced_mode_base::apply_preset(const std::vector<platform::stream_profile>& configuration,
                                               rs2_rs400_visual_preset preset, uint16_t device_pid,
                                               const firmware_version& fw_version)
     {
@@ -169,78 +182,78 @@ namespace librealsense
         set_all(p);
     }
 
-    void ds5_advanced_mode_base::get_depth_control_group(STDepthControlGroup* ptr, int mode) const
+    void ds_advanced_mode_base::get_depth_control_group(STDepthControlGroup* ptr, int mode) const
     {
         *ptr = get<STDepthControlGroup>(advanced_mode_traits<STDepthControlGroup>::group, nullptr, mode);
     }
 
-    void ds5_advanced_mode_base::get_rsm(STRsm* ptr, int mode) const
+    void ds_advanced_mode_base::get_rsm(STRsm* ptr, int mode) const
     {
         *ptr = get<STRsm>(advanced_mode_traits<STRsm>::group, nullptr, mode);
     }
 
-    void ds5_advanced_mode_base::get_rau_support_vector_control(STRauSupportVectorControl* ptr, int mode) const
+    void ds_advanced_mode_base::get_rau_support_vector_control(STRauSupportVectorControl* ptr, int mode) const
     {
         *ptr = get<STRauSupportVectorControl>(advanced_mode_traits<STRauSupportVectorControl>::group, nullptr, mode);
     }
 
-    void ds5_advanced_mode_base::get_color_control(STColorControl* ptr, int mode) const
+    void ds_advanced_mode_base::get_color_control(STColorControl* ptr, int mode) const
     {
         *ptr = get<STColorControl>(advanced_mode_traits<STColorControl>::group, nullptr, mode);
     }
 
-    void ds5_advanced_mode_base::get_rau_color_thresholds_control(STRauColorThresholdsControl* ptr, int mode) const
+    void ds_advanced_mode_base::get_rau_color_thresholds_control(STRauColorThresholdsControl* ptr, int mode) const
     {
         *ptr = get<STRauColorThresholdsControl>(advanced_mode_traits<STRauColorThresholdsControl>::group, nullptr, mode);
     }
 
-    void ds5_advanced_mode_base::get_slo_color_thresholds_control(STSloColorThresholdsControl* ptr, int mode) const
+    void ds_advanced_mode_base::get_slo_color_thresholds_control(STSloColorThresholdsControl* ptr, int mode) const
     {
         *ptr = get<STSloColorThresholdsControl>(advanced_mode_traits<STSloColorThresholdsControl>::group, nullptr, mode);
     }
 
-    void ds5_advanced_mode_base::get_slo_penalty_control(STSloPenaltyControl* ptr, int mode) const
+    void ds_advanced_mode_base::get_slo_penalty_control(STSloPenaltyControl* ptr, int mode) const
     {
         *ptr = get<STSloPenaltyControl>(advanced_mode_traits<STSloPenaltyControl>::group, nullptr, mode);
     }
 
-    void ds5_advanced_mode_base::get_hdad(STHdad* ptr, int mode) const
+    void ds_advanced_mode_base::get_hdad(STHdad* ptr, int mode) const
     {
         *ptr = get<STHdad>(advanced_mode_traits<STHdad>::group, nullptr, mode);
     }
 
-    void ds5_advanced_mode_base::get_color_correction(STColorCorrection* ptr, int mode) const
+    void ds_advanced_mode_base::get_color_correction(STColorCorrection* ptr, int mode) const
     {
         *ptr = get<STColorCorrection>(advanced_mode_traits<STColorCorrection>::group, nullptr, mode);
     }
 
-    void ds5_advanced_mode_base::get_depth_table_control(STDepthTableControl* ptr, int mode) const
+    void ds_advanced_mode_base::get_depth_table_control(STDepthTableControl* ptr, int mode) const
     {
         *ptr = get<STDepthTableControl>(advanced_mode_traits<STDepthTableControl>::group, nullptr, mode);
     }
 
-    void ds5_advanced_mode_base::get_ae_control(STAEControl* ptr, int mode) const
+    void ds_advanced_mode_base::get_ae_control(STAEControl* ptr, int mode) const
     {
         *ptr = get<STAEControl>(advanced_mode_traits<STAEControl>::group, nullptr, mode);
     }
 
-    void ds5_advanced_mode_base::get_census_radius(STCensusRadius* ptr, int mode) const
+    void ds_advanced_mode_base::get_census_radius(STCensusRadius* ptr, int mode) const
     {
         *ptr = get<STCensusRadius>(advanced_mode_traits<STCensusRadius>::group, nullptr, mode);
     }
 
-    void ds5_advanced_mode_base::get_amp_factor(STAFactor* ptr, int mode) const
+    void ds_advanced_mode_base::get_amp_factor(STAFactor* ptr, int mode) const
     {
         *ptr = *_amplitude_factor_support ? get<STAFactor>(advanced_mode_traits<STAFactor>::group, nullptr, mode) :
             []() { STAFactor af; af.amplitude = 0.f; return af; }();
     }
 
-    bool ds5_advanced_mode_base::supports_option(const synthetic_sensor& sensor, rs2_option opt) const
+    bool ds_advanced_mode_base::supports_option(const synthetic_sensor& sensor, rs2_option opt) const
     {
         return sensor.supports_option(opt);
     }
 
-    void ds5_advanced_mode_base::get_laser_power(laser_power_control* ptr) const
+    void ds_advanced_mode_base::get_laser_power(laser_power_control* ptr) const
     {
         if (supports_option(_depth_sensor, RS2_OPTION_LASER_POWER))
         {
@@ -249,7 +262,7 @@ namespace librealsense
         }
     }
 
-    void ds5_advanced_mode_base::get_laser_state(laser_state_control* ptr) const
+    void ds_advanced_mode_base::get_laser_state(laser_state_control* ptr) const
     {
         if (supports_option(_depth_sensor, RS2_OPTION_EMITTER_ENABLED))
         {
@@ -258,7 +271,7 @@ namespace librealsense
         }
     }
 
-    void ds5_advanced_mode_base::get_exposure(synthetic_sensor& sensor, exposure_control* ptr) const
+    void ds_advanced_mode_base::get_exposure(synthetic_sensor& sensor, exposure_control* ptr) const
     {
         if (supports_option(sensor, RS2_OPTION_EXPOSURE))
         {
@@ -267,7 +280,7 @@ namespace librealsense
         }
     }
 
-    void ds5_advanced_mode_base::get_auto_exposure(synthetic_sensor& sensor, auto_exposure_control* ptr) const
+    void ds_advanced_mode_base::get_auto_exposure(synthetic_sensor& sensor, auto_exposure_control* ptr) const
     {
         if (supports_option(sensor, RS2_OPTION_ENABLE_AUTO_EXPOSURE))
         {
@@ -276,17 +289,17 @@ namespace librealsense
         }
     }
 
-    void ds5_advanced_mode_base::get_depth_exposure(exposure_control* ptr) const
+    void ds_advanced_mode_base::get_depth_exposure(exposure_control* ptr) const
     {
         get_exposure(_depth_sensor, ptr);
     }
 
-    void ds5_advanced_mode_base::get_depth_auto_exposure(auto_exposure_control* ptr) const
+    void ds_advanced_mode_base::get_depth_auto_exposure(auto_exposure_control* ptr) const
     {
         get_auto_exposure(_depth_sensor, ptr);
     }
 
-    void ds5_advanced_mode_base::get_depth_gain(gain_control* ptr) const
+    void ds_advanced_mode_base::get_depth_gain(gain_control* ptr) const
     {
         if (supports_option(_depth_sensor, RS2_OPTION_GAIN))
         {
@@ -295,7 +308,7 @@ namespace librealsense
         }
     }
 
-    void ds5_advanced_mode_base::get_depth_auto_white_balance(auto_white_balance_control* ptr) const
+    void ds_advanced_mode_base::get_depth_auto_white_balance(auto_white_balance_control* ptr) const
     {
         if (supports_option(_depth_sensor, RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE))
         {
@@ -304,7 +317,7 @@ namespace librealsense
         }
     }
 
-    void ds5_advanced_mode_base::get_color_exposure(exposure_control* ptr) const
+    void ds_advanced_mode_base::get_color_exposure(exposure_control* ptr) const
     {
         if (*_color_sensor)
         {
@@ -312,7 +325,7 @@ namespace librealsense
         }
     }
 
-    void ds5_advanced_mode_base::get_color_auto_exposure(auto_exposure_control* ptr) const
+    void ds_advanced_mode_base::get_color_auto_exposure(auto_exposure_control* ptr) const
     {
         if (*_color_sensor)
         {
@@ -320,7 +333,7 @@ namespace librealsense
         }
     }
 
-    void ds5_advanced_mode_base::get_color_backlight_compensation(backlight_compensation_control* ptr) const
+    void ds_advanced_mode_base::get_color_backlight_compensation(backlight_compensation_control* ptr) const
     {
         if (*_color_sensor && supports_option(**_color_sensor, RS2_OPTION_BACKLIGHT_COMPENSATION))
         {
@@ -329,7 +342,7 @@ namespace librealsense
         }
     }
 
-    void ds5_advanced_mode_base::get_color_brightness(brightness_control* ptr) const
+    void ds_advanced_mode_base::get_color_brightness(brightness_control* ptr) const
     {
         if (*_color_sensor && supports_option(**_color_sensor, RS2_OPTION_BRIGHTNESS))
         {
@@ -338,7 +351,7 @@ namespace librealsense
         }
     }
 
-    void ds5_advanced_mode_base::get_color_contrast(contrast_control* ptr) const
+    void ds_advanced_mode_base::get_color_contrast(contrast_control* ptr) const
     {
         if (*_color_sensor && supports_option(**_color_sensor, RS2_OPTION_CONTRAST))
         {
@@ -347,7 +360,7 @@ namespace librealsense
         }
     }
 
-    void ds5_advanced_mode_base::get_color_gain(gain_control* ptr) const
+    void ds_advanced_mode_base::get_color_gain(gain_control* ptr) const
     {
         if (*_color_sensor && supports_option(**_color_sensor, RS2_OPTION_GAIN))
         {
@@ -356,7 +369,7 @@ namespace librealsense
         }
     }
 
-    void ds5_advanced_mode_base::get_color_gamma(gamma_control* ptr) const
+    void ds_advanced_mode_base::get_color_gamma(gamma_control* ptr) const
     {
         if (*_color_sensor && supports_option(**_color_sensor, RS2_OPTION_GAMMA))
         {
@@ -365,7 +378,7 @@ namespace librealsense
         }
     }
 
-    void ds5_advanced_mode_base::get_color_hue(hue_control* ptr) const
+    void ds_advanced_mode_base::get_color_hue(hue_control* ptr) const
     {
         if (*_color_sensor && supports_option(**_color_sensor, RS2_OPTION_HUE))
         {
@@ -374,7 +387,7 @@ namespace librealsense
         }
     }
 
-    void ds5_advanced_mode_base::get_color_saturation(saturation_control* ptr) const
+    void ds_advanced_mode_base::get_color_saturation(saturation_control* ptr) const
     {
         if (*_color_sensor && supports_option(**_color_sensor, RS2_OPTION_SATURATION))
         {
@@ -383,7 +396,7 @@ namespace librealsense
         }
     }
 
-    void ds5_advanced_mode_base::get_color_sharpness(sharpness_control* ptr) const
+    void ds_advanced_mode_base::get_color_sharpness(sharpness_control* ptr) const
     {
         if (*_color_sensor && supports_option(**_color_sensor, RS2_OPTION_SHARPNESS))
         {
@@ -392,7 +405,7 @@ namespace librealsense
         }
     }
 
-    void ds5_advanced_mode_base::get_color_white_balance(white_balance_control* ptr) const
+    void ds_advanced_mode_base::get_color_white_balance(white_balance_control* ptr) const
     {
         if (*_color_sensor && supports_option(**_color_sensor, RS2_OPTION_WHITE_BALANCE))
         {
@@ -401,7 +414,7 @@ namespace librealsense
         }
     }
 
-    void ds5_advanced_mode_base::get_color_auto_white_balance(auto_white_balance_control* ptr) const
+    void ds_advanced_mode_base::get_color_auto_white_balance(auto_white_balance_control* ptr) const
     {
         if (*_color_sensor && supports_option(**_color_sensor, RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE))
         {
@@ -410,7 +423,7 @@ namespace librealsense
         }
     }
 
-    void ds5_advanced_mode_base::get_color_power_line_frequency(power_line_frequency_control* ptr) const
+    void ds_advanced_mode_base::get_color_power_line_frequency(power_line_frequency_control* ptr) const
     {
         if (*_color_sensor && supports_option(**_color_sensor, RS2_OPTION_POWER_LINE_FREQUENCY))
         {
@@ -419,79 +432,79 @@ namespace librealsense
         }
     }
 
-    void ds5_advanced_mode_base::set_depth_control_group(const STDepthControlGroup& val)
+    void ds_advanced_mode_base::set_depth_control_group(const STDepthControlGroup& val)
     {
         set(val, advanced_mode_traits<STDepthControlGroup>::group);
         _preset_opt->set(RS2_RS400_VISUAL_PRESET_CUSTOM);
     }
 
-    void ds5_advanced_mode_base::set_rsm(const STRsm& val)
+    void ds_advanced_mode_base::set_rsm(const STRsm& val)
     {
         set(val, advanced_mode_traits<STRsm>::group);
         _preset_opt->set(RS2_RS400_VISUAL_PRESET_CUSTOM);
     }
 
-    void ds5_advanced_mode_base::set_rau_support_vector_control(const STRauSupportVectorControl& val)
+    void ds_advanced_mode_base::set_rau_support_vector_control(const STRauSupportVectorControl& val)
     {
         set(val, advanced_mode_traits<STRauSupportVectorControl>::group);
         _preset_opt->set(RS2_RS400_VISUAL_PRESET_CUSTOM);
     }
 
-    void ds5_advanced_mode_base::set_color_control(const STColorControl& val)
+    void ds_advanced_mode_base::set_color_control(const STColorControl& val)
     {
         set(val, advanced_mode_traits<STColorControl>::group);
         _preset_opt->set(RS2_RS400_VISUAL_PRESET_CUSTOM);
     }
 
-    void ds5_advanced_mode_base::set_rau_color_thresholds_control(const STRauColorThresholdsControl& val)
+    void ds_advanced_mode_base::set_rau_color_thresholds_control(const STRauColorThresholdsControl& val)
     {
         set(val, advanced_mode_traits<STRauColorThresholdsControl>::group);
         _preset_opt->set(RS2_RS400_VISUAL_PRESET_CUSTOM);
     }
 
-    void ds5_advanced_mode_base::set_slo_color_thresholds_control(const STSloColorThresholdsControl& val)
+    void ds_advanced_mode_base::set_slo_color_thresholds_control(const STSloColorThresholdsControl& val)
     {
         set(val, advanced_mode_traits<STSloColorThresholdsControl>::group);
         _preset_opt->set(RS2_RS400_VISUAL_PRESET_CUSTOM);
     }
 
-    void ds5_advanced_mode_base::set_slo_penalty_control(const STSloPenaltyControl& val)
+    void ds_advanced_mode_base::set_slo_penalty_control(const STSloPenaltyControl& val)
     {
         set(val, advanced_mode_traits<STSloPenaltyControl>::group);
         _preset_opt->set(RS2_RS400_VISUAL_PRESET_CUSTOM);
     }
 
-    void ds5_advanced_mode_base::set_hdad(const STHdad& val)
+    void ds_advanced_mode_base::set_hdad(const STHdad& val)
     {
         set(val, advanced_mode_traits<STHdad>::group);
         _preset_opt->set(RS2_RS400_VISUAL_PRESET_CUSTOM);
     }
 
-    void ds5_advanced_mode_base::set_color_correction(const STColorCorrection& val)
+    void ds_advanced_mode_base::set_color_correction(const STColorCorrection& val)
     {
         set(val, advanced_mode_traits<STColorCorrection>::group);
         _preset_opt->set(RS2_RS400_VISUAL_PRESET_CUSTOM);
     }
 
-    void ds5_advanced_mode_base::set_depth_table_control(const STDepthTableControl& val)
+    void ds_advanced_mode_base::set_depth_table_control(const STDepthTableControl& val)
     {
         set(val, advanced_mode_traits<STDepthTableControl>::group);
         _preset_opt->set(RS2_RS400_VISUAL_PRESET_CUSTOM);
     }
 
-    void ds5_advanced_mode_base::set_ae_control(const STAEControl& val)
+    void ds_advanced_mode_base::set_ae_control(const STAEControl& val)
     {
         set(val, advanced_mode_traits<STAEControl>::group);
         _preset_opt->set(RS2_RS400_VISUAL_PRESET_CUSTOM);
     }
 
-    void ds5_advanced_mode_base::set_census_radius(const STCensusRadius& val)
+    void ds_advanced_mode_base::set_census_radius(const STCensusRadius& val)
     {
         set(val, advanced_mode_traits<STCensusRadius>::group);
         _preset_opt->set(RS2_RS400_VISUAL_PRESET_CUSTOM);
     }
 
-    void ds5_advanced_mode_base::set_amp_factor(const STAFactor& val)
+    void ds_advanced_mode_base::set_amp_factor(const STAFactor& val)
     {
         if (*_amplitude_factor_support)
         {
@@ -500,53 +513,53 @@ namespace librealsense
         }
     }
 
-    void ds5_advanced_mode_base::set_laser_power(const laser_power_control& val)
+    void ds_advanced_mode_base::set_laser_power(const laser_power_control& val)
     {
         if (val.was_set)
             _depth_sensor.get_option(RS2_OPTION_LASER_POWER).set(val.laser_power);
     }
 
-    void ds5_advanced_mode_base::set_laser_state(const laser_state_control& val)
+    void ds_advanced_mode_base::set_laser_state(const laser_state_control& val)
     {
         if (val.was_set)
             _depth_sensor.get_option(RS2_OPTION_EMITTER_ENABLED).set((float)val.laser_state);
     }
 
-    void ds5_advanced_mode_base::set_exposure(synthetic_sensor& sensor, const exposure_control& val)
+    void ds_advanced_mode_base::set_exposure(synthetic_sensor& sensor, const exposure_control& val)
     {
         sensor.get_option(RS2_OPTION_EXPOSURE).set(val.exposure);
     }
 
-    void ds5_advanced_mode_base::set_auto_exposure(synthetic_sensor& sensor, const auto_exposure_control& val)
+    void ds_advanced_mode_base::set_auto_exposure(synthetic_sensor& sensor, const auto_exposure_control& val)
     {
         sensor.get_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE).set(float(val.auto_exposure));
     }
 
-    void ds5_advanced_mode_base::set_depth_exposure(const exposure_control& val)
+    void ds_advanced_mode_base::set_depth_exposure(const exposure_control& val)
     {
         if (val.was_set)
             set_exposure(_depth_sensor, val);
     }
 
-    void ds5_advanced_mode_base::set_depth_auto_exposure(const auto_exposure_control& val)
+    void ds_advanced_mode_base::set_depth_auto_exposure(const auto_exposure_control& val)
     {
         if (val.was_set)
             set_auto_exposure(_depth_sensor, val);
     }
 
-    void ds5_advanced_mode_base::set_depth_gain(const gain_control& val)
+    void ds_advanced_mode_base::set_depth_gain(const gain_control& val)
     {
         if (val.was_set)
             _depth_sensor.get_option(RS2_OPTION_GAIN).set(val.gain);
     }
 
-    void ds5_advanced_mode_base::set_depth_auto_white_balance(const auto_white_balance_control& val)
+    void ds_advanced_mode_base::set_depth_auto_white_balance(const auto_white_balance_control& val)
     {
         if (val.was_set)
             _depth_sensor.get_option(RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE).set(float(val.auto_white_balance));
     }
 
-    void ds5_advanced_mode_base::set_color_exposure(const exposure_control& val)
+    void ds_advanced_mode_base::set_color_exposure(const exposure_control& val)
     {
         if (val.was_set && !*_color_sensor)
             throw invalid_value_exception("Can't set color_exposure value! Color sensor not found.");
@@ -555,7 +568,7 @@ namespace librealsense
             set_exposure(**_color_sensor, val);
     }
 
-    void ds5_advanced_mode_base::set_color_auto_exposure(const auto_exposure_control& val)
+    void ds_advanced_mode_base::set_color_auto_exposure(const auto_exposure_control& val)
     {
         if (val.was_set && !*_color_sensor)
             throw invalid_value_exception("Can't set color_auto_exposure value! Color sensor not found.");
@@ -564,7 +577,7 @@ namespace librealsense
             set_auto_exposure(**_color_sensor, val);
     }
 
-    void ds5_advanced_mode_base::set_color_backlight_compensation(const backlight_compensation_control& val)
+    void ds_advanced_mode_base::set_color_backlight_compensation(const backlight_compensation_control& val)
     {
         if (val.was_set && !*_color_sensor)
             throw invalid_value_exception("Can't set color_backlight_compensation value! Color sensor not found.");
@@ -573,7 +586,7 @@ namespace librealsense
             (*_color_sensor)->get_option(RS2_OPTION_BACKLIGHT_COMPENSATION).set((float)val.backlight_compensation);
     }
 
-    void ds5_advanced_mode_base::set_color_brightness(const brightness_control& val)
+    void ds_advanced_mode_base::set_color_brightness(const brightness_control& val)
     {
         if (val.was_set && !*_color_sensor)
             throw invalid_value_exception("Can't set color_brightness value! Color sensor not found.");
@@ -582,7 +595,7 @@ namespace librealsense
             (*_color_sensor)->get_option(RS2_OPTION_BRIGHTNESS).set(val.brightness);
     }
 
-    void ds5_advanced_mode_base::set_color_contrast(const contrast_control& val)
+    void ds_advanced_mode_base::set_color_contrast(const contrast_control& val)
     {
         if (val.was_set && !*_color_sensor)
             throw invalid_value_exception("Can't set color_contrast value! Color sensor not found.");
@@ -591,7 +604,7 @@ namespace librealsense
             (*_color_sensor)->get_option(RS2_OPTION_CONTRAST).set(val.contrast);
     }
 
-    void ds5_advanced_mode_base::set_color_gain(const gain_control& val)
+    void ds_advanced_mode_base::set_color_gain(const gain_control& val)
     {
         if (val.was_set && !*_color_sensor)
             throw invalid_value_exception("Can't set color_gain value! Color sensor not found.");
@@ -600,7 +613,7 @@ namespace librealsense
             (*_color_sensor)->get_option(RS2_OPTION_GAIN).set(val.gain);
     }
 
-    void ds5_advanced_mode_base::set_color_gamma(const gamma_control& val)
+    void ds_advanced_mode_base::set_color_gamma(const gamma_control& val)
     {
         if (val.was_set && !*_color_sensor)
             throw invalid_value_exception("Can't set color_gamma value! Color sensor not found.");
@@ -609,7 +622,7 @@ namespace librealsense
             (*_color_sensor)->get_option(RS2_OPTION_GAMMA).set(val.gamma);
     }
 
-    void ds5_advanced_mode_base::set_color_hue(const hue_control& val)
+    void ds_advanced_mode_base::set_color_hue(const hue_control& val)
     {
         if (val.was_set && !*_color_sensor)
             throw invalid_value_exception("Can't set color_hue value! Color sensor not found.");
@@ -618,7 +631,7 @@ namespace librealsense
             (*_color_sensor)->get_option(RS2_OPTION_HUE).set(val.hue);
     }
 
-    void ds5_advanced_mode_base::set_color_saturation(const saturation_control& val)
+    void ds_advanced_mode_base::set_color_saturation(const saturation_control& val)
     {
         if (val.was_set && !*_color_sensor)
             throw invalid_value_exception("Can't set color_saturation value! Color sensor not found.");
@@ -627,7 +640,7 @@ namespace librealsense
             (*_color_sensor)->get_option(RS2_OPTION_SATURATION).set(val.saturation);
     }
 
-    void ds5_advanced_mode_base::set_color_sharpness(const sharpness_control& val)
+    void ds_advanced_mode_base::set_color_sharpness(const sharpness_control& val)
     {
         if (val.was_set && !*_color_sensor)
             throw invalid_value_exception("Can't set color_sharpness value! Color sensor not found.");
@@ -636,7 +649,7 @@ namespace librealsense
             (*_color_sensor)->get_option(RS2_OPTION_SHARPNESS).set(val.sharpness);
     }
 
-    void ds5_advanced_mode_base::set_color_white_balance(const white_balance_control& val)
+    void ds_advanced_mode_base::set_color_white_balance(const white_balance_control& val)
     {
         if (val.was_set && !*_color_sensor)
             throw invalid_value_exception("Can't set color_white_balance value! Color sensor not found.");
@@ -645,7 +658,7 @@ namespace librealsense
             (*_color_sensor)->get_option(RS2_OPTION_WHITE_BALANCE).set(val.white_balance);
     }
 
-    void ds5_advanced_mode_base::set_color_auto_white_balance(const auto_white_balance_control& val)
+    void ds_advanced_mode_base::set_color_auto_white_balance(const auto_white_balance_control& val)
     {
         if (val.was_set && !*_color_sensor)
             throw invalid_value_exception("Can't set color_auto_white_balance value! Color sensor not found.");
@@ -654,7 +667,7 @@ namespace librealsense
             (*_color_sensor)->get_option(RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE).set((float)val.auto_white_balance);
     }
 
-    void ds5_advanced_mode_base::set_color_power_line_frequency(const power_line_frequency_control& val)
+    void ds_advanced_mode_base::set_color_power_line_frequency(const power_line_frequency_control& val)
     {
         if (val.was_set && !*_color_sensor)
             throw invalid_value_exception("Can't set color_power_line_frequency value! Color sensor not found.");
@@ -663,7 +676,7 @@ namespace librealsense
             (*_color_sensor)->get_option(RS2_OPTION_POWER_LINE_FREQUENCY).set((float)val.power_line_frequency);
     }
 
-    std::vector<uint8_t> ds5_advanced_mode_base::serialize_json() const
+    std::vector<uint8_t> ds_advanced_mode_base::serialize_json() const
     {
         if (!is_enabled())
             throw wrong_api_call_sequence_exception(to_string() << "serialize_json() failed! Device is not in Advanced-Mode.");
@@ -672,7 +685,7 @@ namespace librealsense
         return generate_json(_depth_sensor.get_device(), p);
     }
 
-    void ds5_advanced_mode_base::load_json(const std::string& json_content)
+    void ds_advanced_mode_base::load_json(const std::string& json_content)
     {
         if (!is_enabled())
             throw wrong_api_call_sequence_exception(to_string() << "load_json(...) failed! Device is not in Advanced-Mode.");
@@ -683,7 +696,7 @@ namespace librealsense
         _preset_opt->set(RS2_RS400_VISUAL_PRESET_CUSTOM);
     }
 
-    preset ds5_advanced_mode_base::get_all() const
+    preset ds_advanced_mode_base::get_all() const
     {
         preset p;
         get_depth_control_group(&p.depth_controls);
@@ -721,7 +734,7 @@ namespace librealsense
         return p;
     }
 
-    void ds5_advanced_mode_base::set_all(const preset& p)
+    void ds_advanced_mode_base::set_all(const preset& p)
     {
         set(p.depth_controls, advanced_mode_traits<STDepthControlGroup>::group);
         set(p.rsm           , advanced_mode_traits<STRsm>::group);
@@ -776,7 +789,7 @@ namespace librealsense
         //set_color_power_line_frequency(p.color_power_line_frequency);
     }
 
-    std::vector<uint8_t> ds5_advanced_mode_base::send_receive(const std::vector<uint8_t>& input) const
+    std::vector<uint8_t> ds_advanced_mode_base::send_receive(const std::vector<uint8_t>& input) const
     {
         auto res = _hw_monitor->send(input);
         if (res.empty())
@@ -786,12 +799,12 @@ namespace librealsense
         return res;
     }
 
-    uint32_t ds5_advanced_mode_base::pack(uint8_t c0, uint8_t c1, uint8_t c2, uint8_t c3)
+    uint32_t ds_advanced_mode_base::pack(uint8_t c0, uint8_t c1, uint8_t c2, uint8_t c3)
     {
         return (c0 << 24) | (c1 << 16) | (c2 << 8) | c3;
     }
 
-    std::vector<uint8_t> ds5_advanced_mode_base::assert_no_error(ds::fw_cmd opcode, const std::vector<uint8_t>& results)
+    std::vector<uint8_t> ds_advanced_mode_base::assert_no_error(ds::fw_cmd opcode, const std::vector<uint8_t>& results)
     {
         if (results.size() < sizeof(uint32_t)) throw std::runtime_error("Incomplete operation result!");
         auto opCodeAsUint32 = pack(results[3], results[2], results[1], results[0]);
@@ -808,7 +821,7 @@ namespace librealsense
         return result;
     }
 
-    std::vector<uint8_t> ds5_advanced_mode_base::encode_command(ds::fw_cmd opcode,
+    std::vector<uint8_t> ds_advanced_mode_base::encode_command(ds::fw_cmd opcode,
         uint32_t p1,
         uint32_t p2,
         uint32_t p3,
@@ -848,7 +861,7 @@ namespace librealsense
         return raw_data;
     }
 
-    advanced_mode_preset_option::advanced_mode_preset_option(ds5_advanced_mode_base& advanced,
+    advanced_mode_preset_option::advanced_mode_preset_option(ds_advanced_mode_base& advanced,
         synthetic_sensor& ep, const option_range& opt_range)
         : option_base(opt_range),
         _ep(ep),

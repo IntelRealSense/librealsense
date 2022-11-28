@@ -13,9 +13,9 @@
 #include "metadata-parser.h"
 
 #include "ds6-active.h"
-#include "ds/ds5/ds5-private.h"
-#include "ds/ds5/ds5-options.h"
-#include "ds/ds5/ds5-timestamp.h"
+#include "ds6-private.h"
+#include "ds/ds-options.h"
+#include "ds/ds-timestamp.h"
 
 namespace librealsense
 {

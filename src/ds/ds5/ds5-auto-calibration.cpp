@@ -304,7 +304,7 @@ namespace librealsense
 
             param4 param{ (byte)scan_parameter, 0, (byte)data_sampling };
 
-            std::shared_ptr<ds5_advanced_mode_base> preset_recover;
+            std::shared_ptr<ds_advanced_mode_base> preset_recover;
             if (speed == speed_white_wall && apply_preset)
                 preset_recover = change_preset();
 
@@ -477,7 +477,7 @@ namespace librealsense
             if (white_wall_mode)
                 p4 |= (1 << 7);
 
-            std::shared_ptr<ds5_advanced_mode_base> preset_recover;
+            std::shared_ptr<ds_advanced_mode_base> preset_recover;
             if (speed == speed_white_wall && apply_preset)
                 preset_recover = change_preset();
 
@@ -593,7 +593,7 @@ namespace librealsense
         LOG_INFO("run_tare_calibration with parameters: speed = " << speed << " average_step_count = " << average_step_count << " step_count = " << step_count << " accuracy = " << accuracy << " scan_parameter = " << scan_parameter << " data_sampling = " << data_sampling);
         check_tare_params(speed, scan_parameter, data_sampling, average_step_count, step_count, accuracy);
 
-        std::shared_ptr<ds5_advanced_mode_base> preset_recover;
+        std::shared_ptr<ds_advanced_mode_base> preset_recover;
         if (apply_preset)
             preset_recover = change_preset();
 
@@ -653,12 +653,12 @@ namespace librealsense
         return get_calibration_results();
     }
 
-    std::shared_ptr<ds5_advanced_mode_base> auto_calibrated::change_preset()
+    std::shared_ptr<ds_advanced_mode_base> auto_calibrated::change_preset()
     {
         preset old_preset_values;
         rs2_rs400_visual_preset old_preset;
 
-        auto advanced_mode = dynamic_cast<ds5_advanced_mode_base*>(this);
+        auto advanced_mode = dynamic_cast<ds_advanced_mode_base*>(this);
         if (advanced_mode)
         {
             old_preset = (rs2_rs400_visual_preset)(int)advanced_mode->_preset_opt->query();
@@ -667,7 +667,7 @@ namespace librealsense
             advanced_mode->_preset_opt->set(RS2_RS400_VISUAL_PRESET_HIGH_ACCURACY);
         }
 
-        std::shared_ptr<ds5_advanced_mode_base> recover_preset(advanced_mode, [old_preset, advanced_mode, old_preset_values](ds5_advanced_mode_base* adv)
+        std::shared_ptr<ds_advanced_mode_base> recover_preset(advanced_mode, [old_preset, advanced_mode, old_preset_values](ds_advanced_mode_base* adv)
         {
             if (old_preset == RS2_RS400_VISUAL_PRESET_CUSTOM)
             {

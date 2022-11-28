@@ -63,7 +63,7 @@ namespace librealsense
         const uint8_t DS5_LED_PWR = 0xE;
         const uint8_t DS5_THERMAL_COMPENSATION = 0xF;
 
-        // Devices supported by the current version
+        // ds5 Devices supported by the current version
         static const std::set<std::uint16_t> rs400_sku_pid = {
             ds::RS400_PID,
             ds::RS410_PID,
@@ -86,7 +86,11 @@ namespace librealsense
             ds::RS465_PID,
             ds::RS416_PID,
             ds::RS405_PID,
-            ds::RS455_PID,
+            ds::RS455_PID
+        };
+
+        // ds6 Devices supported by the current version
+        static const std::set<std::uint16_t> ds6_sku_pid = {
             ds::RS_D585_PID,
             ds::RS_S585_PID
         };

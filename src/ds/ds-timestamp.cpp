@@ -1,8 +1,8 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2016 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2022 Intel Corporation. All Rights Reserved.
 
-#include "ds5-private.h"
-#include "ds5-timestamp.h"
+#include "ds-private.h"
+#include "ds-timestamp.h"
 
 #include <mutex>
 #include <chrono>
@@ -15,13 +15,13 @@
 
 namespace librealsense
 {
-    ds5_timestamp_reader_from_metadata::ds5_timestamp_reader_from_metadata(std::unique_ptr<frame_timestamp_reader> backup_timestamp_reader)
+    ds_timestamp_reader_from_metadata::ds_timestamp_reader_from_metadata(std::unique_ptr<frame_timestamp_reader> backup_timestamp_reader)
         :_backup_timestamp_reader(std::move(backup_timestamp_reader)), _has_metadata(pins), one_time_note(false)
     {
         reset();
     }
 
-    bool ds5_timestamp_reader_from_metadata::has_metadata(const std::shared_ptr<frame_interface>& frame)
+    bool ds_timestamp_reader_from_metadata::has_metadata(const std::shared_ptr<frame_interface>& frame)
     {
         std::lock_guard<std::recursive_mutex> lock(_mtx);
 
@@ -40,7 +40,7 @@ namespace librealsense
         return false;
     }
 
-    rs2_time_t ds5_timestamp_reader_from_metadata::get_frame_timestamp(const std::shared_ptr<frame_interface>& frame)
+    rs2_time_t ds_timestamp_reader_from_metadata::get_frame_timestamp(const std::shared_ptr<frame_interface>& frame)
     {
         std::lock_guard<std::recursive_mutex> lock(_mtx);
 
@@ -73,7 +73,7 @@ namespace librealsense
         }
     }
 
-    unsigned long long ds5_timestamp_reader_from_metadata::get_frame_counter(const std::shared_ptr<frame_interface>& frame) const
+    unsigned long long ds_timestamp_reader_from_metadata::get_frame_counter(const std::shared_ptr<frame_interface>& frame) const
     {
         std::lock_guard<std::recursive_mutex> lock(_mtx);
 
@@ -98,7 +98,7 @@ namespace librealsense
         return _backup_timestamp_reader->get_frame_counter(frame);
     }
 
-    void ds5_timestamp_reader_from_metadata::reset()
+    void ds_timestamp_reader_from_metadata::reset()
     {
         std::lock_guard<std::recursive_mutex> lock(_mtx);
         one_time_note = false;
@@ -108,7 +108,7 @@ namespace librealsense
         }
     }
 
-    rs2_timestamp_domain ds5_timestamp_reader_from_metadata::get_frame_timestamp_domain(const std::shared_ptr<frame_interface>& frame) const
+    rs2_timestamp_domain ds_timestamp_reader_from_metadata::get_frame_timestamp_domain(const std::shared_ptr<frame_interface>& frame) const
     {
         std::lock_guard<std::recursive_mutex> lock(_mtx);
         auto pin_index = 0;
@@ -119,13 +119,13 @@ namespace librealsense
                                           _backup_timestamp_reader->get_frame_timestamp_domain(frame);
     }
 
-    ds5_timestamp_reader::ds5_timestamp_reader(std::shared_ptr<platform::time_service> ts)
+    ds_timestamp_reader::ds_timestamp_reader(std::shared_ptr<platform::time_service> ts)
         : counter(pins), _ts(ts)
     {
         reset();
     }
 
-    void ds5_timestamp_reader::reset()
+    void ds_timestamp_reader::reset()
     {
         std::lock_guard<std::recursive_mutex> lock(_mtx);
         for (auto i = 0; i < pins; ++i)
@@ -134,13 +134,13 @@ namespace librealsense
         }
     }
 
-    rs2_time_t ds5_timestamp_reader::get_frame_timestamp(const std::shared_ptr<frame_interface>& frame)
+    rs2_time_t ds_timestamp_reader::get_frame_timestamp(const std::shared_ptr<frame_interface>& frame)
     {
         std::lock_guard<std::recursive_mutex> lock(_mtx);
         return _ts->get_time();
     }
 
-    unsigned long long ds5_timestamp_reader::get_frame_counter(const std::shared_ptr<frame_interface>& frame) const
+    unsigned long long ds_timestamp_reader::get_frame_counter(const std::shared_ptr<frame_interface>& frame) const
     {
         std::lock_guard<std::recursive_mutex> lock(_mtx);
         auto pin_index = 0;
@@ -150,18 +150,18 @@ namespace librealsense
         return ++counter[pin_index];
     }
 
-    rs2_timestamp_domain ds5_timestamp_reader::get_frame_timestamp_domain(const std::shared_ptr<frame_interface>& frame) const
+    rs2_timestamp_domain ds_timestamp_reader::get_frame_timestamp_domain(const std::shared_ptr<frame_interface>& frame) const
     {
         return RS2_TIMESTAMP_DOMAIN_SYSTEM_TIME;
     }
 
-    ds5_custom_hid_timestamp_reader::ds5_custom_hid_timestamp_reader()
+    ds_custom_hid_timestamp_reader::ds_custom_hid_timestamp_reader()
     {
         counter.resize(sensors);
         reset();
     }
 
-    void ds5_custom_hid_timestamp_reader::reset()
+    void ds_custom_hid_timestamp_reader::reset()
     {
         std::lock_guard<std::recursive_mutex> lock(_mtx);
         for (auto i = 0; i < sensors; ++i)
@@ -170,7 +170,7 @@ namespace librealsense
         }
     }
 
-    rs2_time_t ds5_custom_hid_timestamp_reader::get_frame_timestamp(const std::shared_ptr<frame_interface>& frame)
+    rs2_time_t ds_custom_hid_timestamp_reader::get_frame_timestamp(const std::shared_ptr<frame_interface>& frame)
     {
         std::lock_guard<std::recursive_mutex> lock(_mtx);
         static const uint8_t timestamp_offset = 17;
@@ -188,18 +188,18 @@ namespace librealsense
         return static_cast<rs2_time_t>(timestamp) * TIMESTAMP_USEC_TO_MSEC;
     }
 
-    bool ds5_custom_hid_timestamp_reader::has_metadata(const std::shared_ptr<frame_interface>& frame) const
+    bool ds_custom_hid_timestamp_reader::has_metadata(const std::shared_ptr<frame_interface>& frame) const
     {
         return true;
     }
 
-    unsigned long long ds5_custom_hid_timestamp_reader::get_frame_counter(const std::shared_ptr<frame_interface>& frame) const
+    unsigned long long ds_custom_hid_timestamp_reader::get_frame_counter(const std::shared_ptr<frame_interface>& frame) const
     {
         std::lock_guard<std::recursive_mutex> lock(_mtx);
         return ++counter.front();
     }
 
-    rs2_timestamp_domain ds5_custom_hid_timestamp_reader::get_frame_timestamp_domain(const std::shared_ptr<frame_interface>& frame) const
+    rs2_timestamp_domain ds_custom_hid_timestamp_reader::get_frame_timestamp_domain(const std::shared_ptr<frame_interface>& frame) const
     {
         return RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK;
     }
