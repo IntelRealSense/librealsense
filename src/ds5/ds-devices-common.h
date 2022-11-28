@@ -28,9 +28,9 @@ namespace librealsense
         ds6
     };
 
-	class ds_devices_common
-	{
-	public:
+    class ds_devices_common
+    {
+    public:
         ds_devices_common(device* ds_device, ds_device_type dev_type, std::shared_ptr<hw_monitor> hwm) :
             _owner(ds_device),
             _ds_device_type(dev_type), 
@@ -47,7 +47,7 @@ namespace librealsense
         bool is_camera_in_advanced_mode() const;
         bool is_locked(uint8_t gvd_cmd, uint32_t offset);
 
-	private:
+    private:
         void init_fourcc_maps();
 
         uvc_sensor& get_raw_depth_sensor();
@@ -61,7 +61,7 @@ namespace librealsense
         std::map<uint32_t, rs2_format> ds_depth_fourcc_to_rs2_format;
         std::map<uint32_t, rs2_stream> ds_depth_fourcc_to_rs2_stream;
         bool _is_locked;
-	};
+    };
 
     class ds_notification_decoder : public notification_decoder
     {
