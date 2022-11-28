@@ -5,8 +5,8 @@
 
 #include "fw-update/fw-update-device-interface.h"
 
-#include "ds5-device.h"
-#include "ds6-device.h"
+#include "ds5/ds5-device.h"
+#include "ds6/ds6-device.h"
 
 #include "proc/hdr-merge.h"
 #include "proc/sequence-id-filter.h"

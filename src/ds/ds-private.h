@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2015 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2022 Intel Corporation. All Rights Reserved.
 
 #pragma once
 
@@ -24,46 +24,46 @@ namespace librealsense
     namespace ds
     {
         const uint16_t RS457_PID            = 0xabcd; // D457 - Dev . Do not upstream!
-        const uint16_t RS400_PID            = 0x0ad1; // PSR
-        const uint16_t RS410_PID            = 0x0ad2; // ASR
-        const uint16_t RS415_PID            = 0x0ad3; // ASRC
-        const uint16_t RS430_PID            = 0x0ad4; // AWG
-        const uint16_t RS430_MM_PID         = 0x0ad5; // AWGT
-        const uint16_t RS_USB2_PID          = 0x0ad6; // USB2 - fallback for SKU unable to boot properly
-        const uint16_t RS_RECOVERY_PID      = 0x0adb;
+        const uint16_t RS400_PID = 0x0ad1; // PSR
+        const uint16_t RS410_PID = 0x0ad2; // ASR
+        const uint16_t RS415_PID = 0x0ad3; // ASRC
+        const uint16_t RS430_PID = 0x0ad4; // AWG
+        const uint16_t RS430_MM_PID = 0x0ad5; // AWGT
+        const uint16_t RS_USB2_PID          = 0x0ad6; // USB2
+        const uint16_t RS_RECOVERY_PID = 0x0adb;
         const uint16_t RS_USB2_RECOVERY_PID = 0x0adc;
-        const uint16_t RS400_IMU_PID        = 0x0af2; // IMU
-        const uint16_t RS420_PID            = 0x0af6; // PWG
-        const uint16_t RS420_MM_PID         = 0x0afe; // PWGT
-        const uint16_t RS410_MM_PID         = 0x0aff; // ASRT
-        const uint16_t RS400_MM_PID         = 0x0b00; // PSR
-        const uint16_t RS430_MM_RGB_PID     = 0x0b01; // AWGCT
-        const uint16_t RS460_PID            = 0x0b03; // DS5U
-        const uint16_t RS435_RGB_PID        = 0x0b07; // AWGC
-        const uint16_t RS405U_PID           = 0x0b0c; // DS5U - Not used, should be removed with EOL devices clean up
-        const uint16_t RS435I_PID           = 0x0b3a; // D435i
-        const uint16_t RS416_PID            = 0x0b49; // F416
-        const uint16_t RS430I_PID           = 0x0b4b; // D430i
-        const uint16_t RS465_PID            = 0x0b4d; // D465
-        const uint16_t RS416_RGB_PID        = 0x0B52; // F416 RGB
-        const uint16_t RS405_PID            = 0x0B5B; // D405
-        const uint16_t RS455_PID            = 0x0B5C; // D455
-        const uint16_t RS_D585_PID          = 0x0B6A; // D585, D for depth
-        const uint16_t RS_S585_PID          = 0x0B6B; // S585, S for safety
+        const uint16_t RS400_IMU_PID = 0x0af2; // IMU
+        const uint16_t RS420_PID = 0x0af6; // PWG
+        const uint16_t RS420_MM_PID = 0x0afe; // PWGT
+        const uint16_t RS410_MM_PID = 0x0aff; // ASRT
+        const uint16_t RS400_MM_PID = 0x0b00; // PSR
+        const uint16_t RS430_MM_RGB_PID = 0x0b01; // AWGCT
+        const uint16_t RS460_PID = 0x0b03; // DS5U
+        const uint16_t RS435_RGB_PID = 0x0b07; // AWGC
+        const uint16_t RS405U_PID           = 0x0b0c; // DS5U
+        const uint16_t RS435I_PID = 0x0b3a; // D435i
+        const uint16_t RS416_PID = 0x0b49; // F416
+        const uint16_t RS430I_PID = 0x0b4b; // D430i
+        const uint16_t RS465_PID = 0x0b4d; // D465
+        const uint16_t RS416_RGB_PID = 0x0B52; // F416 RGB
+        const uint16_t RS405_PID = 0x0B5B; // D405
+        const uint16_t RS455_PID = 0x0B5C; // D455
+        const uint16_t RS_D585_PID = 0x0B6A; // D585, D for depth
+        const uint16_t RS_S585_PID = 0x0B6B; // S585, S for safety
 
         // DS5 depth XU identifiers
-        const uint8_t DS5_HWMONITOR                       = 1;
-        const uint8_t DS5_DEPTH_EMITTER_ENABLED           = 2;
-        const uint8_t DS5_EXPOSURE                        = 3;
-        const uint8_t DS5_LASER_POWER                     = 4;
-        const uint8_t DS5_HARDWARE_PRESET                 = 6;
-        const uint8_t DS5_ERROR_REPORTING                 = 7;
-        const uint8_t DS5_EXT_TRIGGER                     = 8;
+        const uint8_t DS5_HWMONITOR = 1;
+        const uint8_t DS5_DEPTH_EMITTER_ENABLED = 2;
+        const uint8_t DS5_EXPOSURE = 3;
+        const uint8_t DS5_LASER_POWER = 4;
+        const uint8_t DS5_HARDWARE_PRESET = 6;
+        const uint8_t DS5_ERROR_REPORTING = 7;
+        const uint8_t DS5_EXT_TRIGGER = 8;
         const uint8_t DS5_ASIC_AND_PROJECTOR_TEMPERATURES = 9;
-        const uint8_t DS5_ENABLE_AUTO_WHITE_BALANCE       = 0xA;
-        const uint8_t DS5_ENABLE_AUTO_EXPOSURE            = 0xB;
-        const uint8_t DS5_LED_PWR                         = 0xE;
-        const uint8_t DS5_THERMAL_COMPENSATION            = 0xF;
+        const uint8_t DS5_ENABLE_AUTO_WHITE_BALANCE = 0xA;
+        const uint8_t DS5_ENABLE_AUTO_EXPOSURE = 0xB;
+        const uint8_t DS5_LED_PWR = 0xE;
+        const uint8_t DS5_THERMAL_COMPENSATION = 0xF;
         const uint8_t DS5_EMITTER_FREQUENCY               = 0x10;
 
         // Devices supported by the current version
@@ -174,7 +174,7 @@ namespace librealsense
         // DS5 fisheye XU identifiers
         const uint8_t FISHEYE_EXPOSURE = 1;
 
-                                                // subdevice[h] unit[fw], node[h] guid[fw]
+        // subdevice[h] unit[fw], node[h] guid[fw]
         const platform::extension_unit depth_xu = { 0, 3, 2,
         { 0xC9606CCB, 0x594C, 0x4D25,{ 0xaf, 0x47, 0xcc, 0xc4, 0x96, 0x43, 0x59, 0x95 } } };
 
@@ -193,81 +193,81 @@ namespace librealsense
 
         enum fw_cmd : uint8_t
         {
-            MRD             = 0x01,     // Read Register
-            FRB             = 0x09,     // Read from flash
-            FWB             = 0x0a,     // Write to flash <Parameter1 Name="StartIndex"> <Parameter2 Name="Size">
-            FES             = 0x0b,     // Erase flash sector <Parameter1 Name="Sector Index"> <Parameter2 Name="Number of Sectors">
-            FEF             = 0x0c,     // Erase flash full <Parameter1 Name="0xACE">
-            FSRU            = 0x0d,     // Flash status register unlock
-            FPLOCK          = 0x0e,     // Permanent lock on lower Quarter region of the flash
-            GLD             = 0x0f,     // FW logs
-            GVD             = 0x10,     // camera details
-            GETINTCAL       = 0x15,     // Read calibration table
-            SETINTCAL       = 0x16,     // Set Internal sub calibration table
-            LOADINTCAL      = 0x1D,     // Get Internal sub calibration table
-            DFU             = 0x1E,     // Enter to FW update mode
-            HWRST           = 0x20,     // hardware reset
-            OBW             = 0x29,     // OVT bypass write
+            MRD = 0x01,     // Read Register
+            FRB = 0x09,     // Read from flash
+            FWB = 0x0a,     // Write to flash <Parameter1 Name="StartIndex"> <Parameter2 Name="Size">
+            FES = 0x0b,     // Erase flash sector <Parameter1 Name="Sector Index"> <Parameter2 Name="Number of Sectors">
+            FEF = 0x0c,     // Erase flash full <Parameter1 Name="0xACE">
+            FSRU = 0x0d,     // Flash status register unlock
+            FPLOCK = 0x0e,     // Permanent lock on lower Quarter region of the flash
+            GLD = 0x0f,     // FW logs
+            GVD = 0x10,     // camera details
+            GETINTCAL = 0x15,     // Read calibration table
+            SETINTCAL = 0x16,     // Set Internal sub calibration table
+            LOADINTCAL = 0x1D,     // Get Internal sub calibration table
+            DFU = 0x1E,     // Enter to FW update mode
+            HWRST = 0x20,     // hardware reset
+            OBW = 0x29,     // OVT bypass write
             PROJ_TEMP_MIPI  = 0x2A,     // get ASIC temperature - with mipi device
-            SET_ADV         = 0x2B,     // set advanced mode control
-            GET_ADV         = 0x2C,     // get advanced mode control
-            EN_ADV          = 0x2D,     // enable advanced mode
-            UAMG            = 0X30,     // get advanced mode status
-            PFD             = 0x3b,     // Disable power features <Parameter1 Name="0 - Disable, 1 - Enable" />
-            SETAEROI        = 0x44,     // set auto-exposure region of interest
-            GETAEROI        = 0x45,     // get auto-exposure region of interest
-            MMER            = 0x4F,     // MM EEPROM read ( from DS5 cache )
-            CALIBRECALC     = 0x51,     // Calibration recalc and update on the fly
-            GET_EXTRINSICS  = 0x53,     // get extrinsics
-            CAL_RESTORE_DFLT= 0x61,     // Reset Depth/RGB calibration to factory settings
-            SETINTCALNEW    = 0x62,     // Set Internal sub calibration table
-            SET_CAM_SYNC    = 0x69,     // set Inter-cam HW sync mode [0-default, 1-master, 2-slave]
-            GET_CAM_SYNC    = 0x6A,     // fet Inter-cam HW sync mode
-            SETRGBAEROI     = 0x75,     // set RGB auto-exposure region of interest
-            GETRGBAEROI     = 0x76,     // get RGB auto-exposure region of interest
-            SET_PWM_ON_OFF  = 0x77,     // set emitter on and off mode
-            GET_PWM_ON_OFF  = 0x78,     // get emitter on and off mode
+            SET_ADV = 0x2B,     // set advanced mode control
+            GET_ADV = 0x2C,     // get advanced mode control
+            EN_ADV = 0x2D,     // enable advanced mode
+            UAMG = 0X30,     // get advanced mode status
+            PFD = 0x3b,     // Disable power features <Parameter1 Name="0 - Disable, 1 - Enable" />
+            SETAEROI = 0x44,     // set auto-exposure region of interest
+            GETAEROI = 0x45,     // get auto-exposure region of interest
+            MMER = 0x4F,     // MM EEPROM read ( from DS5 cache )
+            CALIBRECALC = 0x51,     // Calibration recalc and update on the fly
+            GET_EXTRINSICS = 0x53,     // get extrinsics
+            CAL_RESTORE_DFLT = 0x61,     // Reset Depth/RGB calibration to factory settings
+            SETINTCALNEW = 0x62,     // Set Internal sub calibration table
+            SET_CAM_SYNC = 0x69,     // set Inter-cam HW sync mode [0-default, 1-master, 2-slave]
+            GET_CAM_SYNC = 0x6A,     // fet Inter-cam HW sync mode
+            SETRGBAEROI = 0x75,     // set RGB auto-exposure region of interest
+            GETRGBAEROI = 0x76,     // get RGB auto-exposure region of interest
+            SET_PWM_ON_OFF = 0x77,     // set emitter on and off mode
+            GET_PWM_ON_OFF = 0x78,     // get emitter on and off mode
             ASIC_TEMP_MIPI  = 0x7A,     // get ASIC temperature - with mipi device
-            SETSUBPRESET    = 0x7B,     // Download sub-preset
-            GETSUBPRESET    = 0x7C,     // Upload the current sub-preset
-            GETSUBPRESETID  = 0x7D,     // Retrieve sub-preset's name
-            RECPARAMSGET    = 0x7E,     // Retrieve depth calibration table in new format (fw >= 5.11.12.100)
-            LASERONCONST    = 0x7F,     // Enable Laser On constantly (GS SKU Only)
-            AUTO_CALIB      = 0x80      // auto calibration commands
+            SETSUBPRESET = 0x7B,     // Download sub-preset
+            GETSUBPRESET = 0x7C,     // Upload the current sub-preset
+            GETSUBPRESETID = 0x7D,     // Retrieve sub-preset's name
+            RECPARAMSGET = 0x7E,     // Retrieve depth calibration table in new format (fw >= 5.11.12.100)
+            LASERONCONST = 0x7F,     // Enable Laser On constantly (GS SKU Only)
+            AUTO_CALIB = 0x80      // auto calibration commands
         };
 
-        #define TOSTRING(arg) #arg
-        #define VAR_ARG_STR(x) TOSTRING(x)
-        #define ENUM2STR(x) case(x):return VAR_ARG_STR(x);
+#define TOSTRING(arg) #arg
+#define VAR_ARG_STR(x) TOSTRING(x)
+#define ENUM2STR(x) case(x):return VAR_ARG_STR(x);
 
         inline std::string fw_cmd2str(const fw_cmd state)
         {
-          switch(state)
-          {
-            ENUM2STR(GLD);
-            ENUM2STR(GVD);
-            ENUM2STR(GETINTCAL);
-            ENUM2STR(OBW);
-            ENUM2STR(SET_ADV);
-            ENUM2STR(GET_ADV);
-            ENUM2STR(EN_ADV);
-            ENUM2STR(UAMG);
-            ENUM2STR(SETAEROI);
-            ENUM2STR(GETAEROI);
-            ENUM2STR(MMER);
-            ENUM2STR(GET_EXTRINSICS);
-            ENUM2STR(SET_CAM_SYNC);
-            ENUM2STR(GET_CAM_SYNC);
-            ENUM2STR(SETRGBAEROI);
-            ENUM2STR(GETRGBAEROI);
-            ENUM2STR(SET_PWM_ON_OFF);
-            ENUM2STR(GET_PWM_ON_OFF);
-            ENUM2STR(SETSUBPRESET);
-            ENUM2STR(GETSUBPRESET);
-            ENUM2STR(GETSUBPRESETID);
+            switch (state)
+            {
+                ENUM2STR(GLD);
+                ENUM2STR(GVD);
+                ENUM2STR(GETINTCAL);
+                ENUM2STR(OBW);
+                ENUM2STR(SET_ADV);
+                ENUM2STR(GET_ADV);
+                ENUM2STR(EN_ADV);
+                ENUM2STR(UAMG);
+                ENUM2STR(SETAEROI);
+                ENUM2STR(GETAEROI);
+                ENUM2STR(MMER);
+                ENUM2STR(GET_EXTRINSICS);
+                ENUM2STR(SET_CAM_SYNC);
+                ENUM2STR(GET_CAM_SYNC);
+                ENUM2STR(SETRGBAEROI);
+                ENUM2STR(GETRGBAEROI);
+                ENUM2STR(SET_PWM_ON_OFF);
+                ENUM2STR(GET_PWM_ON_OFF);
+                ENUM2STR(SETSUBPRESET);
+                ENUM2STR(GETSUBPRESET);
+                ENUM2STR(GETSUBPRESETID);
             default:
               return ( rsutils::string::from() << "Unrecognized FW command " << state );
-          }
+            }
         }
 
         const int etDepthTableControl = 9; // Identifier of the depth table control
@@ -281,9 +281,9 @@ namespace librealsense
 
         enum inter_cam_sync_mode
         {
-            INTERCAM_SYNC_DEFAULT    = 0,
-            INTERCAM_SYNC_MASTER     = 1,
-            INTERCAM_SYNC_SLAVE      = 2,
+            INTERCAM_SYNC_DEFAULT = 0,
+            INTERCAM_SYNC_MASTER = 1,
+            INTERCAM_SYNC_SLAVE = 2,
             INTERCAM_SYNC_FULL_SLAVE = 3,
             INTERCAM_SYNC_MAX = 260  // 4-258 are for Genlock with burst count of 1-255 frames for each trigger.
                                      // 259 for Sending two frame - First with laser ON, and the other with laser OFF.
@@ -292,16 +292,16 @@ namespace librealsense
 
         enum class d400_caps : uint16_t
         {
-            CAP_UNDEFINED               = 0,
-            CAP_ACTIVE_PROJECTOR        = (1u << 0),    //
-            CAP_RGB_SENSOR              = (1u << 1),    // Dedicated RGB sensor
-            CAP_FISHEYE_SENSOR          = (1u << 2),    // TM1
-            CAP_IMU_SENSOR              = (1u << 3),
-            CAP_GLOBAL_SHUTTER          = (1u << 4),
-            CAP_ROLLING_SHUTTER         = (1u << 5),
-            CAP_BMI_055                 = (1u << 6),
-            CAP_BMI_085                 = (1u << 7),
-            CAP_INTERCAM_HW_SYNC        = (1u << 8),
+            CAP_UNDEFINED = 0,
+            CAP_ACTIVE_PROJECTOR = (1u << 0),    //
+            CAP_RGB_SENSOR = (1u << 1),    // Dedicated RGB sensor
+            CAP_FISHEYE_SENSOR = (1u << 2),    // TM1
+            CAP_IMU_SENSOR = (1u << 3),
+            CAP_GLOBAL_SHUTTER = (1u << 4),
+            CAP_ROLLING_SHUTTER = (1u << 5),
+            CAP_BMI_055 = (1u << 6),
+            CAP_BMI_085 = (1u << 7),
+            CAP_INTERCAM_HW_SYNC = (1u << 8),
             CAP_MAX
         };
 
@@ -344,7 +344,7 @@ namespace librealsense
                             d400_caps::CAP_GLOBAL_SHUTTER,  d400_caps::CAP_ROLLING_SHUTTER,
                             d400_caps::CAP_BMI_055,         d400_caps::CAP_BMI_085 })
             {
-                if (i==(i&cap))
+                if (i == (i & cap))
                     stream << d400_capabilities_names.at(i) << "/";
             }
             return stream;
@@ -416,7 +416,7 @@ namespace librealsense
 
             auto table = reinterpret_cast<const T*>(raw_data.data());
             auto header = reinterpret_cast<const table_header*>(raw_data.data());
-            if(raw_data.size() < sizeof(table_header))
+            if (raw_data.size() < sizeof(table_header))
             {
                 throw invalid_value_exception( rsutils::string::from()
                                                << "Calibration data invalid, buffer too small : expected "
@@ -429,7 +429,7 @@ namespace librealsense
                 throw invalid_value_exception("Calibration data CRC error, parsing aborted!");
             }*/
             LOG_DEBUG("Loaded Valid Table: version [mjr.mnr]: 0x" <<
-                      hex << setfill('0') << setw(4) << header->version << dec
+                hex << setfill('0') << setw(4) << header->version << dec
                 << ", type " << header->table_type << ", size " << header->table_size
                 << ", CRC: " << hex << header->crc32);
             return table;
@@ -591,9 +591,9 @@ namespace librealsense
 
         enum imu_eeprom_id : uint16_t
         {
-            dm_v2_eeprom_id     = 0x0101,   // The pack alignment is Big-endian
-            tm1_eeprom_id       = 0x0002,
-            l500_eeprom_id      = 0x0105
+            dm_v2_eeprom_id = 0x0101,   // The pack alignment is Big-endian
+            tm1_eeprom_id = 0x0002,
+            l500_eeprom_id = 0x0105
         };
 
         struct depth_table_control
@@ -633,7 +633,7 @@ namespace librealsense
             for (int i = 0; i < 3; i++)
             {
                 for (int j = 0; j < 3; j++)
-                    result.data[i][j] = data.sensitivity(i,j);
+                    result.data[i][j] = data.sensitivity(i, j);
 
                 result.data[i][3] = data.bias[i];
                 result.bias_variances[i] = data.bias_variances[i];
@@ -647,17 +647,17 @@ namespace librealsense
         enum gvd_fields
         {
             // Keep sorted
-            camera_fw_version_offset        = 12,
-            is_camera_locked_offset         = 25,
-            module_serial_offset            = 48,
-            module_asic_serial_offset       = 64,
-            fisheye_sensor_lb               = 112,
-            fisheye_sensor_hb               = 113,
-            imu_acc_chip_id                 = 124,
-            depth_sensor_type               = 166,
-            active_projector                = 170,
-            rgb_sensor                      = 174,
-            imu_sensor                      = 178,
+            camera_fw_version_offset = 12,
+            is_camera_locked_offset = 25,
+            module_serial_offset = 48,
+            module_asic_serial_offset = 64,
+            fisheye_sensor_lb = 112,
+            fisheye_sensor_hb = 113,
+            imu_acc_chip_id = 124,
+            depth_sensor_type = 166,
+            active_projector = 170,
+            rgb_sensor = 174,
+            imu_sensor = 178,
             motion_module_fw_version_offset = 212
         };
 
@@ -672,14 +672,14 @@ namespace librealsense
 
         enum calibration_table_id
         {
-            coefficients_table_id   = 25,
-            depth_calibration_id    = 31,
-            rgb_calibration_id      = 32,
-            fisheye_calibration_id  = 33,
-            imu_calibration_id      = 34,
-            lens_shading_id         = 35,
-            projector_id            = 36,
-            max_id                  = -1
+            coefficients_table_id = 25,
+            depth_calibration_id = 31,
+            rgb_calibration_id = 32,
+            fisheye_calibration_id = 33,
+            imu_calibration_id = 34,
+            lens_shading_id = 35,
+            projector_id = 36,
+            max_id = -1
         };
 
         struct ds5_calibration
@@ -758,7 +758,7 @@ namespace librealsense
         ds5_rect_resolutions width_height_to_ds5_rect_resolutions(uint32_t width, uint32_t height);
 
         bool try_get_intrinsic_by_resolution_new(const std::vector<uint8_t>& raw_data,
-                uint32_t width, uint32_t height, rs2_intrinsics* result);
+            uint32_t width, uint32_t height, rs2_intrinsics* result);
 
         rs2_intrinsics get_intrinsic_by_resolution(const std::vector<uint8_t>& raw_data, calibration_table_id table_id, uint32_t width, uint32_t height);
         rs2_intrinsics get_intrinsic_by_resolution_coefficients_table(const std::vector<uint8_t>& raw_data, uint32_t width, uint32_t height);
@@ -767,7 +767,7 @@ namespace librealsense
         pose get_color_stream_extrinsic(const std::vector<uint8_t>& raw_data);
 
         bool try_fetch_usb_device(std::vector<platform::usb_device_info>& devices,
-                                         const platform::uvc_device_info& info, platform::usb_device_info& result);
+            const platform::uvc_device_info& info, platform::usb_device_info& result);
 
 
         enum ds5_notifications_types
@@ -850,7 +850,7 @@ namespace librealsense
         // is the alternating emitter ID
         const uint8_t ALTERNATING_EMITTER_SUBPRESET_ID = 0x0f;
 
-        const std::vector<uint8_t> alternating_emitter_pattern { 0x5, ALTERNATING_EMITTER_SUBPRESET_ID, 0, 0, 0x2,
+        const std::vector<uint8_t> alternating_emitter_pattern{ 0x5, ALTERNATING_EMITTER_SUBPRESET_ID, 0, 0, 0x2,
             0x4, 0x1, 0, 0x1, 0, 0, 0, 0, 0,
             0x4, 0x1, 0, 0x1, 0, 0x1, 0, 0, 0 };
 

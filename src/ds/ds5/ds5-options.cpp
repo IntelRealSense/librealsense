@@ -2,7 +2,7 @@
 // Copyright(c) 2016 Intel Corporation. All Rights Reserved.
 
 
-#include "ds5/ds5-thermal-monitor.h"
+#include "ds/ds5/ds5-thermal-monitor.h"
 #include "ds5-options.h"
 
 #include <rsutils/string/from.h>

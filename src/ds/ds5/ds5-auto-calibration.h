@@ -4,7 +4,7 @@
 #pragma once
 
 #include "auto-calibrated-device.h"
-#include "../core/advanced_mode.h"
+#include "../../core/advanced_mode.h"
 
 
 namespace librealsense

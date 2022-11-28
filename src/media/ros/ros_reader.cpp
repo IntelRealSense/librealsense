@@ -3,7 +3,7 @@
 
 #include <cstring>
 #include "ros_reader.h"
-#include "ds5/ds-devices-common.h"
+#include "ds/ds-devices-common.h"
 #include "ivcam/sr300.h"
 #include "l500/l500-depth.h"
 #include "proc/disparity-transform.h"

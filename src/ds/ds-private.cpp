@@ -1,7 +1,7 @@
 //// License: Apache 2.0. See LICENSE file in root directory.
-//// Copyright(c) 2015 Intel Corporation. All Rights Reserved.
+//// Copyright(c) 2022 Intel Corporation. All Rights Reserved.
 
-#include "ds5-private.h"
+#include "ds-private.h"
 
 using namespace std;
 
@@ -21,7 +21,7 @@ namespace librealsense
             return max_ds5_rect_resolutions;
         }
 
-        rs2_intrinsics get_intrinsic_by_resolution_coefficients_table(const std::vector<uint8_t> & raw_data, uint32_t width, uint32_t height)
+        rs2_intrinsics get_intrinsic_by_resolution_coefficients_table(const std::vector<uint8_t>& raw_data, uint32_t width, uint32_t height)
         {
             auto table = check_calib<ds::coefficients_table>(raw_data);
 
@@ -119,60 +119,60 @@ namespace librealsense
 
         rs2_intrinsics get_intrinsic_fisheye_table(const std::vector<uint8_t>& raw_data, uint32_t width, uint32_t height)
         {
-             auto table = check_calib<ds::fisheye_calibration_table>(raw_data);
+            auto table = check_calib<ds::fisheye_calibration_table>(raw_data);
 
-             rs2_intrinsics intrinsics;
-             auto intrin = table->intrinsic;
-             intrinsics.fx = intrin(0,0);
-             intrinsics.fy = intrin(1,1);
-             intrinsics.ppx = intrin(2,0);
-             intrinsics.ppy = intrin(2,1);
-             intrinsics.model = RS2_DISTORTION_FTHETA;
+            rs2_intrinsics intrinsics;
+            auto intrin = table->intrinsic;
+            intrinsics.fx = intrin(0, 0);
+            intrinsics.fy = intrin(1, 1);
+            intrinsics.ppx = intrin(2, 0);
+            intrinsics.ppy = intrin(2, 1);
+            intrinsics.model = RS2_DISTORTION_FTHETA;
 
-             intrinsics.height = height;
-             intrinsics.width = width;
+            intrinsics.height = height;
+            intrinsics.width = width;
 
-             librealsense::copy(intrinsics.coeffs, table->distortion, sizeof(table->distortion));
+            librealsense::copy(intrinsics.coeffs, table->distortion, sizeof(table->distortion));
 
-             LOG_DEBUG(endl<< array2str((float_4&)(intrinsics.fx, intrinsics.fy, intrinsics.ppx, intrinsics.ppy)) << endl);
+            LOG_DEBUG(endl << array2str((float_4&)(intrinsics.fx, intrinsics.fy, intrinsics.ppx, intrinsics.ppy)) << endl);
 
-             return intrinsics;
+            return intrinsics;
         }
 
         rs2_intrinsics get_color_stream_intrinsic(const std::vector<uint8_t>& raw_data, uint32_t width, uint32_t height)
         {
-             auto table = check_calib<ds::rgb_calibration_table>(raw_data);
+            auto table = check_calib<ds::rgb_calibration_table>(raw_data);
 
-             // Compensate for aspect ratio as the normalized intrinsic is calculated with a single resolution
-             float3x3 intrin = table->intrinsic;
-             float calib_aspect_ratio = 9.f / 16.f; // shall be overwritten with the actual calib resolution
+            // Compensate for aspect ratio as the normalized intrinsic is calculated with a single resolution
+            float3x3 intrin = table->intrinsic;
+            float calib_aspect_ratio = 9.f / 16.f; // shall be overwritten with the actual calib resolution
 
-             if (table->calib_width && table->calib_height)
-                 calib_aspect_ratio = float(table->calib_height) / float(table->calib_width);
-             else
-             {
-                 LOG_WARNING("RGB Calibration resolution is not specified, using default 16/9 Aspect ratio");
-             }
+            if (table->calib_width && table->calib_height)
+                calib_aspect_ratio = float(table->calib_height) / float(table->calib_width);
+            else
+            {
+                LOG_WARNING("RGB Calibration resolution is not specified, using default 16/9 Aspect ratio");
+            }
 
-             // Compensate for aspect ratio
-             float actual_aspect_ratio = height / (float)width;
-             if (actual_aspect_ratio < calib_aspect_ratio)
-             {
-                 intrin(1, 1) *= calib_aspect_ratio / actual_aspect_ratio;
-                 intrin(2, 1) *= calib_aspect_ratio / actual_aspect_ratio;
-             }
-             else
-             {
-                 intrin(0, 0) *= actual_aspect_ratio / calib_aspect_ratio;
-                 intrin(2, 0) *= actual_aspect_ratio / calib_aspect_ratio;
-             }
+            // Compensate for aspect ratio
+            float actual_aspect_ratio = height / (float)width;
+            if (actual_aspect_ratio < calib_aspect_ratio)
+            {
+                intrin(1, 1) *= calib_aspect_ratio / actual_aspect_ratio;
+                intrin(2, 1) *= calib_aspect_ratio / actual_aspect_ratio;
+            }
+            else
+            {
+                intrin(0, 0) *= actual_aspect_ratio / calib_aspect_ratio;
+                intrin(2, 0) *= actual_aspect_ratio / calib_aspect_ratio;
+            }
 
             // Calculate specific intrinsic parameters based on the normalized intrinsic and the sensor's resolution
             rs2_intrinsics calc_intrinsic{
                 static_cast<int>(width),
                 static_cast<int>(height),
-                ((1 + intrin(2, 0))*width) / 2.f,
-                ((1 + intrin(2, 1))*height) / 2.f,
+                ((1 + intrin(2, 0)) * width) / 2.f,
+                ((1 + intrin(2, 1)) * height) / 2.f,
                 intrin(0, 0) * width / 2.f,
                 intrin(1, 1) * height / 2.f,
                 RS2_DISTORTION_INVERSE_BROWN_CONRADY  // The coefficients shall be use for undistort
@@ -194,7 +194,7 @@ namespace librealsense
 
         // Parse intrinsics from newly added RECPARAMSGET command
         bool try_get_intrinsic_by_resolution_new(const vector<uint8_t>& raw_data,
-                uint32_t width, uint32_t height, rs2_intrinsics* result)
+            uint32_t width, uint32_t height, rs2_intrinsics* result)
         {
             using namespace ds;
             auto count = raw_data.size() / sizeof(new_calibration_item);
@@ -219,7 +219,7 @@ namespace librealsense
             return false;
         }
 
-        rs2_intrinsics get_intrinsic_by_resolution(const vector<uint8_t> & raw_data, calibration_table_id table_id, uint32_t width, uint32_t height)
+        rs2_intrinsics get_intrinsic_by_resolution(const vector<uint8_t>& raw_data, calibration_table_id table_id, uint32_t width, uint32_t height)
         {
             switch (table_id)
             {
@@ -241,15 +241,15 @@ namespace librealsense
             }
         }
 
-        pose get_fisheye_extrinsics_data(const vector<uint8_t> & raw_data)
+        pose get_fisheye_extrinsics_data(const vector<uint8_t>& raw_data)
         {
             auto table = check_calib<fisheye_extrinsics_table>(raw_data);
 
             auto rot = table->rotation;
             auto trans = table->translation;
 
-            pose ex = {{rot(0,0), rot(1,0),rot(2,0),rot(1,0), rot(1,1),rot(2,1),rot(0,2), rot(1,2),rot(2,2)},
-                       {trans[0], trans[1], trans[2]}};
+            pose ex = { {rot(0,0), rot(1,0),rot(2,0),rot(1,0), rot(1,1),rot(2,1),rot(0,2), rot(1,2),rot(2,2)},
+                       {trans[0], trans[1], trans[2]} };
             return ex;
         }
 
@@ -268,7 +268,7 @@ namespace librealsense
         }
 
         bool try_fetch_usb_device(std::vector<platform::usb_device_info>& devices,
-                                         const platform::uvc_device_info& info, platform::usb_device_info& result)
+            const platform::uvc_device_info& info, platform::usb_device_info& result)
         {
             for (auto it = devices.begin(); it != devices.end(); ++it)
             {
@@ -332,12 +332,12 @@ namespace librealsense
 
             switch (caps)
             {
-                case d400_caps::CAP_FISHEYE_SENSOR:
-                    std::copy_if(devices.begin(),devices.end(),std::back_inserter(results),
-                        [](const platform::uvc_device_info& info)
-                        { return fisheye_pid.find(info.pid) != fisheye_pid.end();});
-                    break;
-                default:
+            case d400_caps::CAP_FISHEYE_SENSOR:
+                std::copy_if(devices.begin(), devices.end(), std::back_inserter(results),
+                    [](const platform::uvc_device_info& info)
+                    { return fisheye_pid.find(info.pid) != fisheye_pid.end(); });
+                break;
+            default:
                     throw invalid_value_exception( rsutils::string::from()
                                                    << "Capability filters are not implemented for val " << std::hex
                                                    << caps << std::dec );

@@ -4,7 +4,7 @@
 #pragma once
 
 #include "hw-monitor.h"
-#include "ds5-private.h"
+#include "ds5/ds5-private.h"
 
 
 namespace librealsense

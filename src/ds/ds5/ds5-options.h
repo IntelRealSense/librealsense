@@ -7,7 +7,7 @@
 
 #include "algo.h"
 #include "error-handling.h"
-#include "../hdr-config.h"
+#include "../../hdr-config.h"
 
 namespace librealsense
 {
