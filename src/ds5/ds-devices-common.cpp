@@ -56,45 +56,6 @@ namespace librealsense
         return roi;
     }
 
-
-    void ds_devices_common::init_fourcc_maps()
-    {
-        ds_depth_fourcc_to_rs2_format = {
-            {rs_fourcc('Y','U','Y','2'), RS2_FORMAT_YUYV},
-            {rs_fourcc('Y','U','Y','V'), RS2_FORMAT_YUYV},
-            {rs_fourcc('U','Y','V','Y'), RS2_FORMAT_UYVY},
-            {rs_fourcc('G','R','E','Y'), RS2_FORMAT_Y8},
-            {rs_fourcc('Y','8','I',' '), RS2_FORMAT_Y8I},
-            {rs_fourcc('W','1','0',' '), RS2_FORMAT_W10},
-            {rs_fourcc('Y','1','6',' '), RS2_FORMAT_Y16},
-            {rs_fourcc('Y','1','2','I'), RS2_FORMAT_Y12I},
-            {rs_fourcc('Y','1','6','I'), RS2_FORMAT_Y16I},
-            {rs_fourcc('Z','1','6',' '), RS2_FORMAT_Z16},
-            {rs_fourcc('Z','1','6','H'), RS2_FORMAT_Z16H},
-            {rs_fourcc('R','G','B','2'), RS2_FORMAT_BGR8},
-            {rs_fourcc('M','J','P','G'), RS2_FORMAT_MJPEG},
-            {rs_fourcc('B','Y','R','2'), RS2_FORMAT_RAW16}
-
-        };
-        ds_depth_fourcc_to_rs2_stream = {
-            {rs_fourcc('Y','U','Y','2'), RS2_STREAM_COLOR},
-            {rs_fourcc('Y','U','Y','V'), RS2_STREAM_COLOR},
-            {rs_fourcc('U','Y','V','Y'), RS2_STREAM_INFRARED},
-            {rs_fourcc('G','R','E','Y'), RS2_STREAM_INFRARED},
-            {rs_fourcc('Y','8','I',' '), RS2_STREAM_INFRARED},
-            {rs_fourcc('W','1','0',' '), RS2_STREAM_INFRARED},
-            {rs_fourcc('Y','1','6',' '), RS2_STREAM_INFRARED},
-            {rs_fourcc('Y','1','2','I'), RS2_STREAM_INFRARED},
-            {rs_fourcc('Y','1','6','I'), RS2_STREAM_INFRARED},
-            {rs_fourcc('R','G','B','2'), RS2_STREAM_INFRARED},
-            {rs_fourcc('Z','1','6',' '), RS2_STREAM_DEPTH},
-            {rs_fourcc('Z','1','6','H'), RS2_STREAM_DEPTH},
-            {rs_fourcc('B','Y','R','2'), RS2_STREAM_COLOR},
-            {rs_fourcc('M','J','P','G'), RS2_STREAM_COLOR}
-        };
-    }
-
-
     void ds_devices_common::enter_update_state() const
     {
         // Stop all data streaming/exchange pipes with HW

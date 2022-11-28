@@ -35,9 +35,7 @@ namespace librealsense
             _owner(ds_device),
             _ds_device_type(dev_type), 
             _hw_monitor(hwm)
-        {
-            init_fourcc_maps();
-        }
+        {}
 
         void enter_update_state() const;
         std::vector<uint8_t> backup_flash(update_progress_callback_ptr callback);
@@ -48,8 +46,6 @@ namespace librealsense
         bool is_locked(uint8_t gvd_cmd, uint32_t offset);
 
     private:
-        void init_fourcc_maps();
-
         uvc_sensor& get_raw_depth_sensor();
 
         friend class ds5_depth_sensor;
@@ -58,8 +54,6 @@ namespace librealsense
         device* _owner;
         ds_device_type _ds_device_type;
         std::shared_ptr<hw_monitor> _hw_monitor;
-        std::map<uint32_t, rs2_format> ds_depth_fourcc_to_rs2_format;
-        std::map<uint32_t, rs2_stream> ds_depth_fourcc_to_rs2_stream;
         bool _is_locked;
     };
 
