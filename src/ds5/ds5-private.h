@@ -225,7 +225,9 @@ namespace librealsense
             GETSUBPRESETID  = 0x7D,     // Retrieve sub-preset's name
             RECPARAMSGET    = 0x7E,     // Retrieve depth calibration table in new format (fw >= 5.11.12.100)
             LASERONCONST    = 0x7F,     // Enable Laser On constantly (GS SKU Only)
-            AUTO_CALIB      = 0x80      // auto calibration commands
+            AUTO_CALIB      = 0x80,     // auto calibration commands
+            SAFETY_PRESET_READ = 0x94,  // Read safety preset from given index  
+            SAFETY_WRITE_READ  = 0x95   // Write safety preset to given index
         };
 
         #define TOSTRING(arg) #arg

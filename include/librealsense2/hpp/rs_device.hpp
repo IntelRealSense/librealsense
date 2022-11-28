@@ -18,7 +18,6 @@ namespace rs2
     class device
     {
     public:
-
         /**
         * returns the list of adjacent devices, sharing the same physical parent composite device
         * \return            the list of adjacent devices

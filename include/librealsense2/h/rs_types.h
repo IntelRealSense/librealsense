@@ -271,10 +271,10 @@ struct rs2_safety_extrinsics_table
 
 enum class rs2_safety_zone_type : uint8_t
 {
-    e_zone_danger = 0,
-    e_zone_warning = 1,
-    e_zone_mask = 2,
-    e_zone_max = 3
+    danger = 0,
+    warning = 1,
+    mask = 2,
+    max = 3
 };
 
 enum class rs2_safety_mos_type : uint8_t
@@ -293,7 +293,7 @@ enum class rs2_safety_zone_flags : uint16_t
 
 struct rs2_safety_preset_header
 {
-    big_endian<uint16_t> version; // major.minor. Big-endian
+    uint16_t version; // major.minor. Big-endian  SC_TODO need to force big endian here on type big_endian<uint16_t> ??
     uint16_t table_type; // Safety Preset type
     uint32_t table_size; // full size including: header footer
     uint32_t crc32; // crc of all the data in table excluding this header/CRC

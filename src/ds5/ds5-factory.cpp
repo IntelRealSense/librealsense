@@ -1408,5 +1408,4 @@ namespace librealsense
         streams.insert(streams.end(), mm_streams.begin(), mm_streams.end());
         return matcher_factory::create(RS2_MATCHER_DEFAULT, streams);
     }
-
 }
