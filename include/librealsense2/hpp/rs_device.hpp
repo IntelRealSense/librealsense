@@ -14,7 +14,6 @@ namespace rs2
     class device_list;
     class pipeline_profile;
     class device_hub;
-    struct safety_preset;
 
     class device
     {
@@ -94,21 +93,6 @@ namespace rs2
             rs2_error* e = nullptr;
 
             rs2_hardware_reset(_dev.get(), &e);
-            error::handle(e);
-        }
-
-        std::shared_ptr<safety_preset> get_saftey_preset(int index) const
-        {
-            rs2_error* e = nullptr;
-            std::shared_ptr<rs2_safety_preset> sp(
-                rs2_get_safety_preset(_dev.get(), index, &e));
-            error::handle(e);
-        }
-
-        void set_saftey_preset(int index, const rs2_safety_preset* sp) const
-        {
-            rs2_error* e = nullptr;
-            rs2_set_safety_preset(_dev.get(), index, sp, &e);
             error::handle(e);
         }
 

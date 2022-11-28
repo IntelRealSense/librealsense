@@ -32,11 +32,6 @@ struct rs2_device
     std::shared_ptr<librealsense::device_interface> device;
 };
 
-//struct rs2_safety_preset
-//{
-//    std::shared_ptr<librealsense::safety_preset> safety_preset;
-//};
-
 rs2_error * rs2_create_error(const char* what, const char* name, const char* args, rs2_exception_type type);
 
 namespace librealsense

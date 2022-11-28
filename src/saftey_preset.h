@@ -105,12 +105,5 @@ namespace librealsense
 
 #pragma pack(pop)
 
-	class safety_preset
-	{
-	public:
-		virtual std::shared_ptr<safety_preset> get_safety_preset(int index) = 0;
-		virtual void set_safety_preset(int index, std::shared_ptr<safety_preset> sp) = 0;
-	};
-	MAP_EXTENSION(RS2_EXTENSION_SAFETY_PRESET, librealsense::safety_preset);
 
 }

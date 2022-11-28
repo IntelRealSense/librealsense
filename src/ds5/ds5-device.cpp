@@ -922,7 +922,9 @@ namespace librealsense
 
             if (_pid == RS_S585_PID) {
                 // SAFETY PRESET OPTION
-                // need to implement new safety preset option to handle range, and implement our set/query
+                // SC_TODO What about the input values ?
+                // need to implement new safety preset option to handle range, and implement our set/query?
+                // or should we add range check to the UVC_XU_OPTION class?
                 auto active_safety_preset = std::make_shared<uvc_xu_option<uint8_t>>(raw_depth_sensor,
                     depth_xu,
                     DS5_ACTIVE_SAFETY_PRESET,
