@@ -255,8 +255,6 @@ typedef enum rs2_matchers
 } rs2_matchers;
 const char* rs2_matchers_to_string(rs2_matchers stream);
 
-#pragma pack(push, 1)
-
 
 // Convenience blocks
 struct float2 { float x, y; };
@@ -291,6 +289,7 @@ enum class rs2_safety_zone_flags : uint16_t
     is_valid = (1u << 1)
 };
 
+#pragma pack(push, 1)
 struct rs2_safety_preset_header
 {
     uint16_t version; // major.minor. Big-endian  SC_TODO need to force big endian here on type big_endian<uint16_t> ??
@@ -354,9 +353,7 @@ struct rs2_safety_preset
     rs2_safety_zone safety_zones[4]; // Zones: 0 - Danger; 1- Warning; (2,3) - Mask (optiononal)
     rs2_safety_environment environment; // Provides input for Zone planning and safety algo execution
 };
-
 #pragma pack(pop)
-
 
 typedef struct rs2_device_info rs2_device_info;
 typedef struct rs2_device rs2_device;
