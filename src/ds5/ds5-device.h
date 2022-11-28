@@ -19,8 +19,6 @@
 
 namespace librealsense
 {
-    
-
     class hdr_config;
     class ds5_thermal_monitor;
 

@@ -15,20 +15,7 @@
 #include "ds5-color.h"
 #include "ds5-nonmonochrome.h"
 
-#include "proc/decimation-filter.h"      // check if needed
-#include "proc/threshold.h"              // check if needed
-#include "proc/disparity-transform.h"    // check if needed
-#include "proc/spatial-filter.h"         // check if needed
-#include "proc/colorizer.h"              // check if needed
-#include "proc/temporal-filter.h"        // check if needed
-
-#include "proc/syncer-processing-block.h"   // check if needed
-#include "proc/hole-filling-filter.h"       // check if needed
-#include "proc/depth-formats-converter.h"   // check if needed
-#include "proc/depth-decompress.h"          // check if needed
-#include "proc/hdr-merge.h"                 // check if needed
-#include "proc/sequence-id-filter.h"        // check if needed
-
+#include "proc/depth-formats-converter.h"
 #include "proc/y8i-to-y8y8.h"
 #include "proc/y12i-to-y16y16.h"
 #include "proc/y16i-to-y10msby10msb.h"
@@ -39,8 +26,6 @@
 #include "../common/fw/firmware-version.h"
 #include "fw-update/fw-update-unsigned.h"
 #include "../third-party/json.hpp"
-
-#include "ds-devices-common.h"
 
 #ifdef HWM_OVER_XU
 constexpr bool hw_mon_over_xu = true;
