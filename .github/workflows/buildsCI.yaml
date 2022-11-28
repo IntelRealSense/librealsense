@@ -414,7 +414,7 @@ jobs:
           max_ctu_depth: 4
           output_file: cppcheck_run.log
           #exclude all third-party libs but `realdds`
-          other_options: -ithird-party third-party/realdds
+          other_options: -ithird-party
           
       - name: Upload cppcheck log
         uses: actions/upload-artifact@v3
