@@ -1,0 +1,15 @@
+# License: Apache 2.0. See LICENSE file in root directory.
+# Copyright(c) 2022 Intel Corporation. All Rights Reserved.
+
+include(${_rel_path}/ds/ds5/CMakeLists.txt)
+include(${_rel_path}/ds/ds6/CMakeLists.txt)
+
+target_sources(${LRS_TARGET}
+    PRIVATE
+        "${CMAKE_CURRENT_LIST_DIR}/ds-devices-common.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/ds-motion-common.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/ds-private.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/ds-devices-common.h"
+        "${CMAKE_CURRENT_LIST_DIR}/ds-motion-common.h"
+        "${CMAKE_CURRENT_LIST_DIR}/ds-private.h"
+)

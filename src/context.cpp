@@ -9,9 +9,9 @@
 #include <array>
 #include <chrono>
 #include "ivcam/sr300.h"
-#include "ds5/ds5-factory.h"
+#include "ds/ds5/ds5-factory.h"
 #include "l500/l500-factory.h"
-#include "ds5/ds5-timestamp.h"
+#include "ds/ds5/ds5-timestamp.h"
 #include "backend.h"
 #include "mock/recorder.h"
 #include <media/ros/ros_reader.h>

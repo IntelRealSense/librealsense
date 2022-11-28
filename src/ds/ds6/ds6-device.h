@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include "ds5-private.h"
+#include "ds/ds6/ds6-private.h"
 
 #include "algo.h"
 #include "error-handling.h"
@@ -12,10 +12,10 @@
 #include "device.h"
 #include "global_timestamp_reader.h"
 #include "fw-update/fw-update-device-interface.h"
-#include "ds5-auto-calibration.h"
-#include "ds5-options.h"
+#include "ds/ds5/ds5-auto-calibration.h"
+#include "ds/ds5/ds5-options.h"
 
-#include "ds-devices-common.h"
+#include "ds/ds-devices-common.h"
 
 namespace librealsense
 {

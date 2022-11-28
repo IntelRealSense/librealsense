@@ -3,7 +3,7 @@
 #include "os.h"
 #include "ux-window.h"
 
-#include "../src/ds5/ds5-private.h"
+#include "../src/ds/ds5/ds5-private.h"
 
 
 using namespace rs2;

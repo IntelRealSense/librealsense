@@ -2,7 +2,7 @@
 // Copyright(c) 2020 Intel Corporation. All Rights Reserved.
 
 #include "hdr-config.h"
-#include "ds5/ds5-private.h"
+#include "ds/ds5/ds5-private.h"
 
 namespace librealsense
 {

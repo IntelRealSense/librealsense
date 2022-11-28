@@ -8,7 +8,7 @@
 #include "ds5-thermal-monitor.h"
 #include "ds5-auto-calibration.h"
 #include "librealsense2/rsutil.h"
-#include "../algo.h"
+#include "algo.h"
 
 namespace librealsense
 {

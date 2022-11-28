@@ -1,7 +1,8 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2016 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2022 Intel Corporation. All Rights Reserved.
 
-#include "ds5-motion.h"
+#include "ds6-motion.h"
+#include "ds/ds-motion-common.h"
 
 #include <mutex>
 #include <chrono>
@@ -10,13 +11,13 @@
 #include <iterator>
 #include <cstddef>
 
-#include "ds5-timestamp.h"
-#include "ds5-options.h"
+#include "ds/ds5/ds5-timestamp.h"
+#include "ds/ds5/ds5-options.h"
 #include "stream.h"
 #include "proc/motion-transform.h"
 #include "proc/auto-exposure-processor.h"
 
-#include "../l500/l500-private.h"
+#include "l500/l500-private.h"
 
 using namespace librealsense;
 namespace librealsense
@@ -53,14 +54,14 @@ namespace librealsense
         region_of_interest _roi{};
     };
 
-    class ds5_hid_sensor : public synthetic_sensor,
+    class ds6_hid_sensor : public synthetic_sensor,
                            public motion_sensor
     {
     public:
-        explicit ds5_hid_sensor(std::string name,
+        explicit ds6_hid_sensor(std::string name,
             std::shared_ptr<sensor_base> sensor,
             device* device,
-            ds5_motion* owner)
+            ds6_motion* owner)
             : synthetic_sensor(name, sensor, device),
             _owner(owner)
         {}
@@ -97,15 +98,15 @@ namespace librealsense
         }
 
     private:
-        const ds5_motion* _owner;
+        const ds6_motion* _owner;
     };
 
-    class ds5_fisheye_sensor : public synthetic_sensor, public video_sensor_interface, public roi_sensor_base, public fisheye_sensor
+    class ds6_fisheye_sensor : public synthetic_sensor, public video_sensor_interface, public roi_sensor_base, public fisheye_sensor
     {
     public:
-        explicit ds5_fisheye_sensor(std::shared_ptr<sensor_base> sensor,
+        explicit ds6_fisheye_sensor(std::shared_ptr<sensor_base> sensor,
             device* device,
-            ds5_motion* owner)
+            ds6_motion* owner)
             : synthetic_sensor("Wide FOV Camera", sensor, device, fisheye_fourcc_to_rs2_format, fisheye_fourcc_to_rs2_stream),
             _owner(owner)
         {}
@@ -132,8 +133,8 @@ namespace librealsense
                 auto video = dynamic_cast<video_stream_profile_interface*>(p.get());
 
                 auto profile = to_profile(p.get());
-                std::weak_ptr<ds5_fisheye_sensor> wp =
-                    std::dynamic_pointer_cast<ds5_fisheye_sensor>(this->shared_from_this());
+                std::weak_ptr<ds6_fisheye_sensor> wp =
+                    std::dynamic_pointer_cast<ds6_fisheye_sensor>(this->shared_from_this());
                 video->set_intrinsics([profile, wp]()
                 {
                     auto sp = wp.lock();
@@ -153,10 +154,10 @@ namespace librealsense
             return uvc_raw_sensor;
         }
     private:
-        const ds5_motion* _owner;
+        const ds6_motion* _owner;
     };
 
-    rs2_motion_device_intrinsic ds5_motion::get_motion_intrinsics(rs2_stream stream) const
+    rs2_motion_device_intrinsic ds6_motion::get_motion_intrinsics(rs2_stream stream) const
     {
         if (stream == RS2_STREAM_ACCEL)
             return create_motion_intrinsics(**_accel_intrinsic);
@@ -167,7 +168,7 @@ namespace librealsense
         throw std::runtime_error(to_string() << "Motion Intrinsics unknown for stream " << rs2_stream_to_string(stream) << "!");
     }
 
-    std::shared_ptr<synthetic_sensor> ds5_motion::create_hid_device(std::shared_ptr<context> ctx,
+    std::shared_ptr<synthetic_sensor> ds6_motion::create_hid_device(std::shared_ptr<context> ctx,
                                                                 const std::vector<platform::hid_device_info>& all_hid_infos,
                                                                 const firmware_version& camera_fw_version)
     {
@@ -205,7 +206,7 @@ namespace librealsense
             sensor_name_and_hid_profiles,
             this);
 
-        auto hid_ep = std::make_shared<ds5_hid_sensor>("Motion Module", raw_hid_ep, this, this);
+        auto hid_ep = std::make_shared<ds6_hid_sensor>("Motion Module", raw_hid_ep, this, this);
 
         hid_ep->register_option(RS2_OPTION_GLOBAL_TIME_ENABLED, enable_global_time_option);
 
@@ -246,7 +247,7 @@ namespace librealsense
         return hid_ep;
     }
 
-    std::shared_ptr<auto_exposure_mechanism> ds5_motion::register_auto_exposure_options(synthetic_sensor* ep, const platform::extension_unit* fisheye_xu)
+    std::shared_ptr<auto_exposure_mechanism> ds6_motion::register_auto_exposure_options(synthetic_sensor* ep, const platform::extension_unit* fisheye_xu)
     {
         auto uvc_raw_sensor = As<uvc_sensor, sensor_base>(ep->get_raw_sensor());
         auto gain_option =  std::make_shared<uvc_pu_option>(*uvc_raw_sensor, RS2_OPTION_GAIN);
@@ -303,9 +304,9 @@ namespace librealsense
         return auto_exposure;
     }
 
-    ds5_motion::ds5_motion(std::shared_ptr<context> ctx,
+    ds6_motion::ds6_motion(std::shared_ptr<context> ctx,
                            const platform::backend_device_group& group)
-        : device(ctx, group), ds5_device(ctx, group),
+        : device(ctx, group), ds6_device(ctx, group),
           _fisheye_stream(new stream(RS2_STREAM_FISHEYE)),
           _accel_stream(new stream(RS2_STREAM_ACCEL)),
           _gyro_stream(new stream(RS2_STREAM_GYRO))
@@ -348,7 +349,7 @@ namespace librealsense
         }
     }
 
-    void ds5_motion::initialize_fisheye_sensor(std::shared_ptr<context> ctx, const platform::backend_device_group& group)
+    void ds6_motion::initialize_fisheye_sensor(std::shared_ptr<context> ctx, const platform::backend_device_group& group)
     {
         using namespace ds;
 
@@ -380,7 +381,7 @@ namespace librealsense
         auto enable_global_time_option = std::shared_ptr<global_time_option>(new global_time_option());
         auto raw_fisheye_ep = std::make_shared<uvc_sensor>("FishEye Sensor", backend.create_uvc_device(fisheye_infos.front()),
                                 std::unique_ptr<frame_timestamp_reader>(new global_timestamp_reader(std::move(ds5_timestamp_reader_metadata), _tf_keeper, enable_global_time_option)), this);
-        auto fisheye_ep = std::make_shared<ds5_fisheye_sensor>(raw_fisheye_ep, this, this);
+        auto fisheye_ep = std::make_shared<ds6_fisheye_sensor>(raw_fisheye_ep, this, this);
 
         fisheye_ep->register_option(RS2_OPTION_GLOBAL_TIME_ENABLED, enable_global_time_option);
         raw_fisheye_ep->register_xu(fisheye_xu); // make sure the XU is initialized everytime we power the camera
@@ -441,86 +442,5 @@ namespace librealsense
 
         // Add fisheye endpoint
         _fisheye_device_idx = add_sensor(fisheye_ep);
-    }
-
-    mm_calib_handler::mm_calib_handler(std::shared_ptr<hw_monitor> hw_monitor, uint16_t pid) :
-        _hw_monitor(hw_monitor), _pid(pid)
-    {
-        _imu_eeprom_raw = [this]() {
-            if (_pid == L515_PID)
-                return get_imu_eeprom_raw_l515();
-            else
-                return get_imu_eeprom_raw();
-        };
-
-        _calib_parser = [this]() {
-
-            std::vector<uint8_t> raw(ds::tm1_eeprom_size);
-            uint16_t calib_id = ds::dm_v2_eeprom_id; //assume DM V2 IMU as default platform
-            bool valid = false;
-
-            if (_pid == L515_PID) calib_id = ds::l500_eeprom_id;
-
-            try
-            {
-                raw = *_imu_eeprom_raw;
-                calib_id = *reinterpret_cast<uint16_t*>(raw.data());
-                valid = true;
-            }
-            catch(const std::exception&)
-            {
-                // in case calibration table errors (invalid table, empty table, or corrupted table), data is invalid and default intrinsic and extrinsic will be used
-                LOG_WARNING("IMU Calibration is not available, default intrinsic and extrinsic will be used.");
-            }
-
-            std::shared_ptr<mm_calib_parser> prs = nullptr;
-            switch (calib_id)
-            {
-                case ds::dm_v2_eeprom_id: // DM V2 id
-                    prs = std::make_shared<dm_v2_imu_calib_parser>(raw, _pid, valid); break;
-                case ds::tm1_eeprom_id: // TM1 id
-                    prs = std::make_shared<tm1_imu_calib_parser>(raw); break;
-                case ds::l500_eeprom_id: // L515
-                    prs = std::make_shared<l500_imu_calib_parser>(raw, valid); break;
-                default:
-                    throw recoverable_exception(to_string() << "Motion Intrinsics unresolved - "
-                                << ((valid)? "device is not calibrated" : "invalid calib type "),
-                                RS2_EXCEPTION_TYPE_BACKEND);
-            }
-            return prs;
-        };
-    }
-
-    std::vector<uint8_t> mm_calib_handler::get_imu_eeprom_raw() const
-    {
-        const int offset = 0;
-        const int size = ds::eeprom_imu_table_size;
-        command cmd(ds::MMER, offset, size);
-        return _hw_monitor->send(cmd);
-    }
-
-    std::vector<uint8_t> mm_calib_handler::get_imu_eeprom_raw_l515() const
-    {
-       // read imu calibration table on L515
-       // READ_TABLE 0x243 0
-       command cmd(ivcam2::READ_TABLE, ivcam2::L515_IMU_TABLE, 0);
-       return _hw_monitor->send(cmd);
-    }
-
-    ds::imu_intrinsic mm_calib_handler::get_intrinsic(rs2_stream stream)
-    {
-        return (*_calib_parser)->get_intrinsic(stream);
-    }
-
-    rs2_extrinsics mm_calib_handler::get_extrinsic(rs2_stream stream)
-    {
-        return (*_calib_parser)->get_extrinsic_to(stream);
-    }
-
-    const std::vector<uint8_t> mm_calib_handler::get_fisheye_calib_raw()
-    {
-        auto fe_calib_table = (*(ds::check_calib<ds::tm1_eeprom>(*_imu_eeprom_raw))).calibration_table.calib_model.fe_calibration;
-        uint8_t* fe_calib_ptr = reinterpret_cast<uint8_t*>(&fe_calib_table);
-        return std::vector<uint8_t>(fe_calib_ptr, fe_calib_ptr+ ds::fisheye_calibration_table_size);
     }
 }

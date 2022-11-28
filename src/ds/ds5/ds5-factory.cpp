@@ -23,7 +23,7 @@
 #include "ds5-thermal-monitor.h"
 #include "sync.h"
 
-#include "../firmware_logger_device.h"
+#include "firmware_logger_device.h"
 #include "device-calibration.h"
 
 namespace librealsense

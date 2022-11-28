@@ -13,13 +13,13 @@
 #include "metadata-parser.h"
 
 #include "ds6-device.h"
-#include "ds5-private.h"
-#include "ds5-options.h"
-#include "ds5-timestamp.h"
+#include "ds/ds5/ds5-private.h"
+#include "ds/ds5/ds5-options.h"
+#include "ds/ds5/ds5-timestamp.h"
 #include "stream.h"
 #include "environment.h"
-#include "ds5-color.h"
-#include "ds5-nonmonochrome.h"
+#include "ds6-color.h"
+#include "ds/ds5/ds5-nonmonochrome.h"
 
 #include "proc/depth-formats-converter.h"
 #include "proc/y8i-to-y8y8.h"
@@ -28,7 +28,7 @@
 #include "proc/color-formats-converter.h"
 
 #include "hdr-config.h"
-#include "ds5-thermal-monitor.h"
+#include "ds/ds5/ds5-thermal-monitor.h"
 #include "../common/fw/firmware-version.h"
 #include "fw-update/fw-update-unsigned.h"
 #include "../third-party/json.hpp"

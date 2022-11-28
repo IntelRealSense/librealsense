@@ -15,7 +15,7 @@
 #include "ds5-auto-calibration.h"
 #include "ds5-options.h"
 
-#include "ds-devices-common.h"
+#include "ds/ds-devices-common.h"
 
 namespace librealsense
 {
