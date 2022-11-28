@@ -20,8 +20,8 @@ jobs:
       VS15: false
       RS_CPP_TEST: true
     steps:
-    - uses: actions/checkout@v2
-    - uses: actions/setup-python@v2
+    - uses: actions/checkout@v3
+    - uses: actions/setup-python@v3
       with:
        python-version: '3.8.1'
 
@@ -74,7 +74,7 @@ jobs:
        ./live-test.exe -d yes -i [software-device]  
        
     - name: Upload RS log artifact
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v3
       with: 
         name: Log file - Windows_testing_cpp_USB_Win7
         path: build/${{env.LRS_RUN_CONFIG}}/*.log
@@ -95,7 +95,7 @@ jobs:
     env:
       VS15: true
     steps:
-    - uses: actions/checkout@v2    
+    - uses: actions/checkout@v3
 
     - name: Enable Long Paths
       shell: powershell
@@ -141,7 +141,7 @@ jobs:
     env:
       VS15: true  
     steps:
-    - uses: actions/checkout@v2       
+    - uses: actions/checkout@v3
 
     - name: Enable Long Paths
       shell: powershell
@@ -182,7 +182,7 @@ jobs:
     env: 
       RS_CPP_TEST: true
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     
     - name: Check_API
       shell: bash
@@ -225,7 +225,7 @@ jobs:
         ./unit-tests/live-test -d yes -i [software-device]        
 
     - name: Upload RS log artifact
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v3
       with: 
         name: Log file - Linux_testing_cpp
         path: build/*.log
@@ -245,7 +245,7 @@ jobs:
       runs-on: ubuntu-18.04
       timeout-minutes: 60
       steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       - name: Prebuild
         shell: bash
@@ -283,7 +283,7 @@ jobs:
       env: 
         LRS_BUILD_NODEJS: true
       steps:
-      - uses: actions/checkout@v2   
+      - uses: actions/checkout@v3   
           
         
       - name: Check_API
@@ -338,7 +338,7 @@ jobs:
     timeout-minutes: 60
     
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
 
     - name: Check_API
       shell: bash
@@ -370,7 +370,7 @@ jobs:
     runs-on: ubuntu-18.04   
     timeout-minutes: 60
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
 
     - name: Check_API
       shell: bash
