@@ -23,8 +23,6 @@ set_target_properties( ${PROJECT_NAME}
         PROJECT_LABEL utilities-py
     )
 
-include("../include/utilities/easylogging/shared-init.cmake")
-
 install(
     TARGETS ${PROJECT_NAME}
     EXPORT pyrealsense2Targets

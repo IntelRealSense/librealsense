@@ -5,7 +5,7 @@ cmake_minimum_required(VERSION 3.1.0)
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
 
-set(DEPENDENCIES realsense2 utilities)
+set(DEPENDENCIES realsense2)
 
 find_package (Python3 COMPONENTS Interpreter Development)
 if (NOT ${BUILD_EASYLOGGINGPP})

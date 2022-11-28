@@ -141,6 +141,10 @@ set_target_properties( pybackend2
     )
 target_include_directories(pybackend2 PRIVATE ${CMAKE_SOURCE_DIR}/include)
 
+# Since we're not dependent on realsense2 but rather include all its sources, we have to make
+# sure we do not initialize ELPP again:
+target_compile_definitions( pybackend2 PRIVATE NO_ELPP_INIT )
+
 if(${FORCE_RSUSB_BACKEND})
 if(APPLE)
     target_include_directories(pybackend2 PRIVATE ${CMAKE_SOURCE_DIR}/third-party/hidapi/)

@@ -43,21 +43,24 @@ else()
     ../../include/librealsense2
     ../../third-party/tclap/include
     ../../third-party/easyloggingpp/src
-    ${LIVE}/groupsock/include 
-    ${LIVE}/liveMedia/include  
-    ${LIVE}/UsageEnvironment/include 
-    ${LIVE}/BasicUsageEnvironment/include     
+    ${LIVE}/groupsock/include
+    ${LIVE}/liveMedia/include
+    ${LIVE}/UsageEnvironment/include
+    ${LIVE}/BasicUsageEnvironment/include
   )
 
   set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 11)
 
   set(DEPENDENCIES ${DEPENDENCIES} realsense2 Threads::Threads realsense2-compression ${ZLIB_LIBRARIES} ${JPEG_LIBRARIES})
-  
+
   target_link_libraries(${PROJECT_NAME} ${DEPENDENCIES})
-  
+
   set_target_properties(${PROJECT_NAME} PROPERTIES FOLDER "Tools")
 
   target_compile_definitions(${PROJECT_NAME} PUBLIC RESPONSE_BUFFER_SIZE=100000)
+
+  # We initialize ELPP ourselves -- no need to do it elsewhere (see src/ipDeviceCommon/RsUsageEnvironment.cpp)
+  target_compile_definitions( ${PROJECT_NAME} PRIVATE NO_ELPP_INIT )
 
   install(TARGETS ${PROJECT_NAME} RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 endif()

@@ -17,8 +17,6 @@ find_package(Threads REQUIRED)
 
 include_directories(${CMAKE_BINARY_DIR})
 
-include("${REPO_ROOT}/third-party/utilities/include/utilities/easylogging/shared-init.cmake")
-
 include(../../common/CMakeLists.txt)
 
 SET(DELAYED

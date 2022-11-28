@@ -99,8 +99,6 @@ target_link_libraries( ''' + testname + ''' ${DEPENDENCIES} )
 
 set_target_properties( ''' + testname + ''' PROPERTIES FOLDER "Unit-Tests/''' + os.path.dirname( testdir ) + '''" )
 
-include( "${REPO_ROOT}/third-party/utilities/include/utilities/easylogging/shared-init.cmake" )
-
 # Add the repo root directory (so includes into src/ will be specific: <src/...>)
 target_include_directories(''' + testname + ''' PRIVATE ''' + root + ''')
 

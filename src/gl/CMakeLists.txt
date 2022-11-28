@@ -88,6 +88,9 @@ configure_package_config_file(../../CMake/realsense2-glConfig.cmake.in realsense
 
 configure_file(../../config/librealsense-gl.pc.in ../../config/realsense2-gl.pc @ONLY)
 
+# We initialize ELPP ourselves -- no need to do it elsewhere (see rs-gl.cpp)
+target_compile_definitions( ${PROJECT_NAME} PRIVATE NO_ELPP_INIT )
+
 target_link_libraries( ${PROJECT_NAME}
     PRIVATE
         ${DEPENDENCIES}
