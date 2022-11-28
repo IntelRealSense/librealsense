@@ -22,6 +22,9 @@
 #include <third-party/easyloggingpp/src/easylogging++.h>
 
 
+#define LIBREALSENSE_ELPP_ID "librealsense"
+
+
 #ifdef __ANDROID__  
 #include <android/log.h>
 #include <sstream>
@@ -40,11 +43,23 @@
 
 #else //__ANDROID__  
 
-#define LOG_DEBUG(...)   do { CLOG(DEBUG   ,"librealsense") << __VA_ARGS__; } while(false)
-#define LOG_INFO(...)    do { CLOG(INFO    ,"librealsense") << __VA_ARGS__; } while(false)
-#define LOG_WARNING(...) do { CLOG(WARNING ,"librealsense") << __VA_ARGS__; } while(false)
-#define LOG_ERROR(...)   do { CLOG(ERROR   ,"librealsense") << __VA_ARGS__; } while(false)
-#define LOG_FATAL(...)   do { CLOG(FATAL   ,"librealsense") << __VA_ARGS__; } while(false)
+#define LOG_DEBUG(...)   do { CLOG(DEBUG   , LIBREALSENSE_ELPP_ID) << __VA_ARGS__; } while(false)
+#define LOG_INFO(...)    do { CLOG(INFO    , LIBREALSENSE_ELPP_ID) << __VA_ARGS__; } while(false)
+#define LOG_WARNING(...) do { CLOG(WARNING , LIBREALSENSE_ELPP_ID) << __VA_ARGS__; } while(false)
+#define LOG_ERROR(...)   do { CLOG(ERROR   , LIBREALSENSE_ELPP_ID) << __VA_ARGS__; } while(false)
+#define LOG_FATAL(...)   do { CLOG(FATAL   , LIBREALSENSE_ELPP_ID) << __VA_ARGS__; } while(false)
+
+namespace utilities {
+
+
+// Configure the same logger as librealsense (by default), to disable/enable debug output
+void configure_elpp_logger( bool enable_debug = false,
+                            std::string const & nested_indent = "",
+                            std::string const & logger_id = LIBREALSENSE_ELPP_ID );
+
+
+}  // namespace utilities
+
 
 #endif // __ANDROID__  
 

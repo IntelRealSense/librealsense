@@ -63,7 +63,7 @@ constexpr bool metadata_node = false;
 
 #undef DEBUG_V4L
 #ifdef DEBUG_V4L
-#define LOG_DEBUG_V4L(...)   do { CLOG(DEBUG   ,"librealsense") << __VA_ARGS__; } while(false)
+#define LOG_DEBUG_V4L(...)   do { CLOG(DEBUG   ,LIBREALSENSE_ELPP_ID) << __VA_ARGS__; } while(false)
 #else
 #define LOG_DEBUG_V4L(...)
 #endif //DEBUG_V4L
