@@ -98,7 +98,6 @@ namespace librealsense
         std::shared_ptr<stream_interface> _color_stream;
 
         uint8_t _depth_device_idx;
-        uint16_t _pid;
 
         lazy<std::vector<uint8_t>> _coefficients_table_raw;
         lazy<std::vector<uint8_t>> _new_calib_table_raw;
