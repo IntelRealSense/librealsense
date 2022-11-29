@@ -74,7 +74,6 @@ namespace librealsense
         lazy<std::vector<uint8_t>>              _fisheye_calibration_table_raw;
         std::shared_ptr<lazy<rs2_extrinsics>>   _depth_to_imu;                  // Mechanical installation pose
 
-        uint16_t _pid;    // product PID
 
         // Bandwidth parameters required for HID sensors
         // The Acceleration configuration will be resolved according to the IMU sensor type at run-time
