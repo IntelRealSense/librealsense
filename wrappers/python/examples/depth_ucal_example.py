@@ -85,8 +85,8 @@ def main(argv):
         sys.exit(1)
     # Bring device in start phase
     device.hardware_reset()
-    time.sleep(1)
-        
+    time.sleep(3)
+
     params = dict(zip(sys.argv[1::2], sys.argv[2::2]))
     occ_json_file = params.get('--occ', None)
     tare_json_file = params.get('--tare', None)
@@ -105,10 +105,6 @@ def main(argv):
         print("The connected device does not support auto calibration")
         return
 
-    config.enable_stream(rs.stream.depth, 256, 144, rs.format.z16, 90)
-    # config.enable_stream(rs.stream.depth, 848, 480, rs.format.z16, 30)
-    conf = pipeline.start(config)
-    calib_dev = rs.auto_calibrated_device(conf.get_device())
     interactive_mode = False
 
     while True:
@@ -123,6 +119,27 @@ def main(argv):
                             "w - write new calibration\n" + \
                             "e - exit\n"
             operation = input(operation_str)
+
+            config = rs.config()
+            if (( operation == 'C') or ( operation == 'T')):    # Host assistance requires HD resolution
+                config.enable_stream(rs.stream.depth, 1280, 720, rs.format.z16, 30)
+            else:
+                config.enable_stream(rs.stream.depth, 256, 144, rs.format.z16, 90)
+
+            conf = pipeline.start(config)
+            calib_dev = rs.auto_calibrated_device(conf.get_device())
+
+            # prepare device
+            thermal_compensation    = 0
+            emitter                 = 0
+            if (( operation.lower() == 'c') or ( operation.lower() == 't')):
+                depth_sensor = conf.get_device().first_depth_sensor()
+                if depth_sensor.supports(rs.option.emitter_enabled):
+                    emitter = depth_sensor.get_option(rs.option.emitter_enabled)
+                    depth_sensor.set_option(rs.option.emitter_enabled, 1)
+                if depth_sensor.supports(rs.option.thermal_compensation):
+                    thermal_compensation = depth_sensor.get_option(rs.option.thermal_compensation)
+                    depth_sensor.set_option(rs.option.thermal_compensation, 0)
 
             if operation.lower() == 'c':
                 print("Starting on chip calibration")
@@ -144,16 +161,25 @@ def main(argv):
                 print("Starting tare calibration" + (" - host assistance" if operation == 'T' else ""))
                 ground_truth = float(input("Please enter ground truth in mm\n"))
                 tare_json = tare_calibration_json(tare_json_file, operation == 'T')
-                new_calib, health = calib_dev.run_tare_calibration(ground_truth, tare_json, on_chip_calib_cb, 5000)
+                new_calib, health = calib_dev.run_tare_calibration(ground_truth, tare_json, on_chip_calib_cb, 10000)
                 calib_done = len(new_calib) > 0
                 while (not calib_done):
                     frame_set = pipeline.wait_for_frames()
                     depth_frame = frame_set.get_depth_frame()
-                    new_calib, health = calib_dev.process_calibration_frame(depth_frame, on_chip_calib_cb, 5000)
+                    new_calib, health = calib_dev.process_calibration_frame(depth_frame, on_chip_calib_cb, 10000)
                     calib_done = len(new_calib) > 0
                 print("Calibration completed")
                 print("health factor = ", health)
 
+            # revert device in previous state
+            if (( operation.lower() == 'c') or ( operation.lower() == 't')):
+                depth_sensor = conf.get_device().first_depth_sensor()
+                if depth_sensor.supports(rs.option.emitter_enabled):
+                    depth_sensor.set_option(rs.option.emitter_enabled, emitter)
+                if depth_sensor.supports(rs.option.thermal_compensation):
+                    depth_sensor.set_option(rs.option.thermal_compensation, thermal_compensation)
+
+            pipeline.stop()
             if operation == 'g':
                 calib = calib_dev.get_calibration_table()
                 print("Calibration", calib)
@@ -164,11 +190,11 @@ def main(argv):
                 calib_dev.write_calibration()
 
             if operation == 'e':
-                pipeline.stop()
                 return
 
             print("Done\n")
         except Exception as e:
+            pipeline.stop()
             print(e)
         except:
             print("A different Error")
