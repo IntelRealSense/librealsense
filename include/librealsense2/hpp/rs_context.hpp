@@ -96,6 +96,10 @@ namespace rs2
     class context
     {
     public:
+        enum uninitialized_t { uninitialized };
+        context( uninitialized_t )
+        {
+        }
         context( char const * json_settings = nullptr )
         {
             rs2_error* e = nullptr;
@@ -108,6 +112,8 @@ namespace rs2
             : context( json_settings.c_str() )
         {
         }
+
+        operator bool() const { return !! _context; }
 
         /**
         * create a static snapshot of all connected devices at the time of the call
