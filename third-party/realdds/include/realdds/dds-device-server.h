@@ -88,7 +88,7 @@ private:
     dispatcher _control_dispatcher;
     control_callback _open_streams_callback = nullptr;
     control_callback _close_streams_callback = nullptr;
-    std::atomic< size_t > _message_counter = 0;
+    std::atomic< size_t > _message_counter { 0 };
 };  // class dds_device_server
 
 
