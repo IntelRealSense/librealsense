@@ -155,11 +155,9 @@ namespace librealsense
     }
 
 
-    context::context( char const * json_settings )
+    context::context( json const & settings )
         : context()
     {
-        json settings = json_settings ? json::parse( json_settings ) : json();
-
         _backend = platform::create_backend();  // standard type
 
         environment::get_instance().set_time_service( _backend->create_time_service() );
@@ -194,6 +192,12 @@ namespace librealsense
             //_dds_backend = ...; TODO
         }
 #endif //BUILD_WITH_DDS
+    }
+
+
+    context::context( char const * json_settings )
+        : context( json_settings ? json::parse( json_settings ) : json() )
+    {
     }
 
 
