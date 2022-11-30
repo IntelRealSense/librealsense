@@ -23,6 +23,8 @@ set_target_properties( ${PROJECT_NAME}
         PROJECT_LABEL utilities-py
     )
 
+using_easyloggingpp( ${PROJECT_NAME} )
+
 install(
     TARGETS ${PROJECT_NAME}
     EXPORT pyrealsense2Targets

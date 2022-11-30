@@ -79,9 +79,6 @@ endif()
 
 set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 11)
 
-# We initialize ELPP ourselves -- no need to do it elsewhere (see rs-gl.cpp)
-target_compile_definitions( ${PROJECT_NAME} PRIVATE NO_ELPP_INIT )
-
 target_link_libraries(${PROJECT_NAME}
     PRIVATE ${WINLIB} realsense2 realsense2-compression
 )

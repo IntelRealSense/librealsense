@@ -66,13 +66,6 @@ include(third-party/CMakeLists.txt)
 include(common/utilities/CMakeLists.txt)
 
 target_link_libraries( ${LRS_TARGET} PUBLIC utilities )
-# librealsense does its own INITIALIZE_EASYLOGGINGPP and moving it to utilities won't work (static code
-# initialization order gets fubar - see src/log.cpp). So disable any automatic initialization for us:
-target_compile_definitions( ${LRS_TARGET} PRIVATE NO_ELPP_INIT )
-if( NOT BUILD_SHARED_LIBS )
-    # Static linkage will use our ELPP so no need to initialize in any target, either:
-    target_compile_definitions( ${LRS_TARGET} INTERFACE NO_ELPP_INIT )
-endif()
 
 # configure the project according to OS specific requirments
 # macro definition located at "CMake/<OS>_config.cmake"

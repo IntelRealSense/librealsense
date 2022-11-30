@@ -17,6 +17,8 @@ find_package(Threads REQUIRED)
 
 include_directories(${CMAKE_BINARY_DIR})
 
+using_easyloggingpp( ${PROJECT_NAME} SHARED )
+
 include(../../common/CMakeLists.txt)
 
 SET(DELAYED

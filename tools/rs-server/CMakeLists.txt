@@ -59,9 +59,6 @@ else()
 
   target_compile_definitions(${PROJECT_NAME} PUBLIC RESPONSE_BUFFER_SIZE=100000)
 
-  # We initialize ELPP ourselves -- no need to do it elsewhere (see src/ipDeviceCommon/RsUsageEnvironment.cpp)
-  target_compile_definitions( ${PROJECT_NAME} PRIVATE NO_ELPP_INIT )
-
   install(TARGETS ${PROJECT_NAME} RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 endif()
 

@@ -99,6 +99,8 @@ target_link_libraries( ''' + testname + ''' ${DEPENDENCIES} )
 
 set_target_properties( ''' + testname + ''' PROPERTIES FOLDER "Unit-Tests/''' + os.path.dirname( testdir ) + '''" )
 
+using_easyloggingpp( ${PROJECT_NAME} SHARED )
+
 # Add the repo root directory (so includes into src/ will be specific: <src/...>)
 target_include_directories(''' + testname + ''' PRIVATE ''' + root + ''')
 

@@ -41,19 +41,48 @@ file(GLOB_RECURSE UTILITIES_SOURCE_FILES
 if( BUILD_EASYLOGGINGPP )
     target_sources( ${PROJECT_NAME}
         PRIVATE "${REPO_ROOT}/third-party/easyloggingpp/src/easylogging++.cc" )
-    # EasyLogging++ initialization needs to happen in any client of ours, or else
-    # they will not have a working instance. This .cpp file will be automatically
-    # added to any dependent target, but the initialization can be disabled with
-    # NO_ELPP_INIT in the target makefile, e.g.:
-    #     target_compile_definitions( ${PROJECT_NAME} PRIVATE NO_ELPP_INIT )
-    target_sources( ${PROJECT_NAME}
-        PUBLIC $<BUILD_INTERFACE:${UTILITIES_INCLUDE_DIR}/easylogging/elpp-init.cpp> )
 endif()
 target_sources( ${PROJECT_NAME} PRIVATE ${UTILITIES_SOURCE_FILES} )
 source_group(
     TREE ${UTILITIES_SRC_DIR}
     PREFIX "Source Files"
     FILES ${UTILITIES_SOURCE_FILES} )
+
+
+# EasyLogging++ uses global variables that need to be declared somewhere. It therefore
+# introduces a macro, INITIALIZE_EASYLOGGINGPP, that needs to be inserted in the code.
+# If a client of ours wants to use the easylogging macros, they must do this, or they
+# can use this macro in their CMake project file:
+#
+macro( _using_easyloggingpp include_dir )
+    #
+    # using_easyloggingpp( <project-name> [SHARED | STATIC] )
+    #       [SHARED] only initialize when BUILD_SHARED_LIBS is ON
+    #       [STATIC] only initialize when BUILD_SHARED_LIBS is OFF
+    #
+    # Projects that depend on realsense2 (and want to use ELPP themselves) need [SHARED]
+    # because realsense2 always includes the initialization.
+    #
+    function( using_easyloggingpp target_name )
+        set( func_ARGN ARGN )  # otherwise we get the outside macro's ARGN
+        cmake_parse_arguments( ARG "SHARED;STATIC" "" "" ${${func_ARGN}} )
+        if( ARG_STATIC AND ARG_SHARED )
+            message( FATAL_ERROR "Can't be both STATIC and SHARED" )
+        elseif( ARG_SHARED )
+            if( NOT BUILD_SHARED_LIBS )
+                return()
+            endif()
+        elseif( ARG_STATIC )
+            if( BUILD_SHARED_LIBS )
+                return()
+            endif()
+        endif()
+
+        target_sources( ${target_name}
+            PRIVATE "${include_dir}/easylogging/elpp-init.cpp" )
+    endfunction()
+endmacro()
+_using_easyloggingpp( ${UTILITIES_INCLUDE_DIR} )
 
 
 # Install -----------------------------------------------------------------------------------
