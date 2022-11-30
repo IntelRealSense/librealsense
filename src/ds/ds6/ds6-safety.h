@@ -7,6 +7,8 @@
 
 namespace librealsense
 {
+    class ds6_safety_sensor;
+
     class ds6_safety : public virtual ds6_device
     {
     public:
