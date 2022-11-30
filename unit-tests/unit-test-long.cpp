@@ -15,6 +15,7 @@ using namespace std::chrono;
 #include <sys/wait.h>
 #include <semaphore.h>
 #include <fcntl.h>
+#include <unistd.h>  // getpid()
 
 bool stream(std::string serial_number, sem_t* sem2, bool do_query)
 {

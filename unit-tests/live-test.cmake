@@ -1,4 +1,5 @@
 set (unit_tests_sources
+    unit-tests-common.cpp
     unit-tests-live.cpp
     unit-tests-regressions.cpp
     unit-tests-post-processing.cpp
