@@ -16,6 +16,7 @@
 #include <realdds/topics/flexible/flexible-msg.h>
 #include <realdds/dds-topic.h>
 #include <realdds/dds-topic-writer.h>
+#include <realdds/dds-option.h>
 
 #include <fastdds/dds/topic/Topic.hpp>
 #include <fastdds/dds/subscriber/SampleInfo.hpp>
@@ -103,6 +104,9 @@ static void on_discovery_stream_header( std::shared_ptr< dds_stream_server > con
     auto profiles = nlohmann::json::array();
     for( auto & sp : stream->profiles() )
         profiles.push_back( std::move( sp->to_json() ) );
+    auto options = nlohmann::json::array();
+    for( auto & opt : stream->options() )
+        options.push_back( std::move( opt->to_json() ) );
     json msg = {
         { "id", "stream-header" },
         { "type", stream->type_string() },
@@ -110,6 +114,7 @@ static void on_discovery_stream_header( std::shared_ptr< dds_stream_server > con
         { "sensor-name", stream->sensor_name() },
         { "profiles", profiles },
         { "default-profile-index", stream->default_profile_index() },
+        { "options", options },
     };
     LOG_DEBUG( "-----> JSON = " << msg.dump() );
     LOG_DEBUG( "-----> JSON size = " << msg.dump().length() );
@@ -196,4 +201,28 @@ void dds_device_server::handle_control_message( topics::flexible_msg control_mes
         if ( _close_streams_callback )
             _close_streams_callback( j );
     }
+}
+
+void dds_device_server::set_option( const std::string & stream_name, const dds_option & option )
+{
+    topics::flexible_msg notification( json {
+        { "id", "set-option" },
+        { "counter", _message_counter++ },
+        { "stream-name", stream_name },
+        { "option", option.to_json() }
+        } );
+
+    publish_notification( std::move( notification ) );
+}
+
+void dds_device_server::get_option( const std::string & stream_name, dds_option & option )
+{
+    topics::flexible_msg notification( json {
+        { "id", "get-option" },
+        { "counter", _message_counter++ },
+        { "stream-name", stream_name },
+        { "option", option.to_json() }
+        } );
+
+    publish_notification( std::move( notification ) );
 }

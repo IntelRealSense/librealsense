@@ -7,6 +7,7 @@
 #include <realdds/dds-topic-reader.h>
 #include <realdds/dds-topic-writer.h>
 #include <realdds/dds-subscriber.h>
+#include <realdds/dds-option.h>
 #include <realdds/topics/flexible/flexible-msg.h>
 
 #include <fastdds/dds/publisher/DataWriter.hpp>
@@ -240,6 +241,12 @@ bool dds_device::impl::init()
                     stream->init_profiles( profiles, default_profile_index );
                     LOG_DEBUG( "... stream '" << stream_name << "' (" << _streams.size() << "/" << n_streams_expected
                                               << ") received with " << profiles.size() << " profiles" );
+
+                    dds_options options;
+                    for( auto & option : j["options"] )
+                        options.push_back( dds_option::from_json( option ) );
+                    stream->init_options( options );
+
                     if( _streams.size() >= n_streams_expected )
                         state = state_type::DONE;
                 }

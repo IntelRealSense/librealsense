@@ -31,6 +31,7 @@ class dds_subscriber;
 class dds_stream_server;
 class dds_notification_server;
 class dds_topic_reader;
+class dds_option;
 struct image_header;
 
 
@@ -67,6 +68,8 @@ public:
 
     void publish_image( const std::string & stream_name, const uint8_t * data, size_t size );
     void publish_notification( topics::flexible_msg && );
+    void set_option( const std::string & stream_name, const dds_option & option );
+    void get_option( const std::string & stream_name, dds_option & option );
     
     typedef std::function< void( const nlohmann::json & msg ) > control_callback;
     void on_open_streams( control_callback callback ) { _open_streams_callback = std::move( callback ); }
@@ -85,6 +88,7 @@ private:
     dispatcher _control_dispatcher;
     control_callback _open_streams_callback = nullptr;
     control_callback _close_streams_callback = nullptr;
+    std::atomic< size_t > _message_counter = 0;
 };  // class dds_device_server
 
 
