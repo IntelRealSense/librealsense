@@ -262,6 +262,7 @@ device_serializer::snapshot_collection librealsense::record_device::get_extensio
             case RS2_EXTENSION_COMPOSITE_FRAME : break;
             case RS2_EXTENSION_POINTS          : break;
             case RS2_EXTENSION_RECORD          : break;
+            case RS2_EXTENSION_SAFETY_SENSOR   : break; // TODO - add snapshot for safety sensor
             case RS2_EXTENSION_PLAYBACK        : break;
             case RS2_EXTENSION_COUNT           : break;
             case RS2_EXTENSION_UNKNOWN         : break;
