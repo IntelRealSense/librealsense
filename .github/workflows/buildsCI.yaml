@@ -405,17 +405,26 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-          
-      - name: cppcheck_run
-        uses: deep5050/cppcheck-action@main
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN}}
-          std: c++11
-          max_ctu_depth: 4
-          output_file: cppcheck_run.log
-          #exclude all third-party libs but `realdds`
-          other_options: -ithird-party/easyloggingpp -ithird-party/glad -ithird-party/sqlite -ithird-party/imgui -ithird-party/glfw -ithird-party/hidapi
-          
+        
+      - name: Check_API
+        shell: bash
+        run: |
+          cd scripts
+          ./api_check.sh
+          cd ..  
+        
+      - name: Prerun
+        shell: bash
+        run: |
+          sudo add-apt-repository --yes ppa:ubuntu-toolchain-r/test;
+          sudo apt-get update;
+          sudo apt-get install -qq cppcheck;
+      
+      - name: Run
+        shell: bash
+        run: | 
+          cppcheck . --std=c++11 -ithird-party/easyloggingpp -ithird-party/glad -ithird-party/sqlite -ithird-party/imgui -ithird-party/glfw -ithird-party/hidapi > cppcheck_run.log
+
       - name: Upload cppcheck log
         uses: actions/upload-artifact@v3
         with: 
