@@ -423,7 +423,7 @@ jobs:
       - name: Run
         shell: bash
         run: | 
-          cppcheck . --std=c++11 -ithird-party/easyloggingpp -ithird-party/glad -ithird-party/sqlite -ithird-party/imgui -ithird-party/glfw -ithird-party/hidapi --xml &> cppcheck_run.log
+          cppcheck . --std=c++11 -ithird-party/easyloggingpp -ithird-party/glad -ithird-party/sqlite -ithird-party/imgui -ithird-party/glfw -ithird-party/hidapi -ithird-party/json.hpp --xml &> cppcheck_run.log
 
       - name: Upload cppcheck log
         uses: actions/upload-artifact@v3
