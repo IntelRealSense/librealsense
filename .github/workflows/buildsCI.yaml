@@ -434,7 +434,7 @@ jobs:
       - name: Provide correct exit status for job 
         shell: bash
         run: |
-          ERROR_COUNT=$(grep ccpcheck_run.log -e "severity=\"error\"" -c)
+          ERROR_COUNT=$(grep cppcheck_run.log -e "severity=\"error\"" -c)
           if [ $ERROR_COUNT == 21 ];
           then
             echo "cppcheck_run failed, please open it to view the reported issue"
