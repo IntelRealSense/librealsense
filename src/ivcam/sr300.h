@@ -450,7 +450,7 @@ namespace librealsense
 
     private:
         const uint8_t _depth_device_idx;
-        uint16_t _pid;
+
         bool _is_locked = true;
 
         template<class T>

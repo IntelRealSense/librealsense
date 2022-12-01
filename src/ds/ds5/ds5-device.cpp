@@ -99,22 +99,22 @@ namespace librealsense
 
     void ds5_device::enter_update_state() const
     {
-        _ds_devices_common_helper->enter_update_state();
+        _ds_device_common->enter_update_state();
     }
 
     std::vector<uint8_t> ds5_device::backup_flash(update_progress_callback_ptr callback)
     {
-        return _ds_devices_common_helper->backup_flash(callback);
+        return _ds_device_common->backup_flash(callback);
     }
 
     void ds5_device::update_flash(const std::vector<uint8_t>& image, update_progress_callback_ptr callback, int update_mode)
     {
-        _ds_devices_common_helper->update_flash(image, callback, update_mode);
+        _ds_device_common->update_flash(image, callback, update_mode);
     }
 
     bool ds5_device::check_fw_compatibility(const std::vector<uint8_t>& image) const
     {
-        return _ds_devices_common_helper->check_fw_compatibility(image);
+        return _ds_device_common->check_fw_compatibility(image);
     }
 
     class ds5_depth_sensor : public synthetic_sensor, public video_sensor_interface, public depth_stereo_sensor, public roi_sensor_base
@@ -393,7 +393,7 @@ namespace librealsense
 
     bool ds5_device::is_camera_in_advanced_mode() const
     {
-        return _ds_devices_common_helper->is_camera_in_advanced_mode();
+        return _ds_device_common->is_camera_in_advanced_mode();
     }
 
     float ds5_device::get_stereo_baseline_mm() const
@@ -535,8 +535,8 @@ namespace librealsense
                     backend.create_usb_device(group.usb_devices.front()), raw_sensor));
         }
 
-        _ds_devices_common_helper = std::make_shared<ds_devices_common>(
-            this, ds5, _hw_monitor);
+        _ds_device_common = std::make_shared<ds_device_common>(
+            this, ds_device_type::ds5, _hw_monitor);
 
         // Define Left-to-Right extrinsics calculation (lazy)
         // Reference CS - Right-handed; positive [X,Y,Z] point to [Left,Up,Forward] accordingly.
@@ -641,7 +641,7 @@ namespace librealsense
 
             if (_fw_version >= firmware_version("5.6.3.0"))
             {
-                _is_locked = _ds_devices_common_helper->is_locked(GVD, is_camera_locked_offset);
+                _is_locked = _ds_device_common->is_locked(GVD, is_camera_locked_offset);
             }
 
             if (_fw_version >= firmware_version("5.5.8.0"))

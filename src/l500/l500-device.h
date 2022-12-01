@@ -87,7 +87,6 @@ namespace librealsense
 
         std::shared_ptr<hw_monitor> _hw_monitor;
         uint8_t _depth_device_idx;
-        uint16_t _pid;
 
         std::shared_ptr<polling_error_handler> _polling_error_handler;
 

@@ -339,7 +339,10 @@ namespace librealsense
         {
             auto ds5_devices = ds5_info::pick_ds5_devices(ctx, devices);
             std::copy(begin(ds5_devices), end(ds5_devices), std::back_inserter(list));
+        }
 
+        if (mask & RS2_PRODUCT_LINE_D500)
+        {
             auto ds6_devices = ds6_info::pick_ds6_devices(ctx, devices);
             std::copy(begin(ds6_devices), end(ds6_devices), std::back_inserter(list));
         }

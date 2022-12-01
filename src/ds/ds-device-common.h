@@ -22,16 +22,16 @@ namespace librealsense
         const hw_monitor& _hw_monitor;
     };
 
-    enum ds_device_type
+    enum class ds_device_type
     {
         ds5,
         ds6
     };
 
-    class ds_devices_common
+    class ds_device_common
     {
     public:
-        ds_devices_common(device* ds_device, ds_device_type dev_type, std::shared_ptr<hw_monitor> hwm) :
+        ds_device_common(device* ds_device, ds_device_type dev_type, std::shared_ptr<hw_monitor> hwm) :
             _owner(ds_device),
             _ds_device_type(dev_type), 
             _hw_monitor(hwm)

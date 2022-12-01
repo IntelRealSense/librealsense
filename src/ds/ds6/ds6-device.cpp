@@ -98,22 +98,22 @@ namespace librealsense
 
     void ds6_device::enter_update_state() const
     {
-        _ds_devices_common_helper->enter_update_state();
+        _ds_device_common->enter_update_state();
     }
 
     std::vector<uint8_t> ds6_device::backup_flash(update_progress_callback_ptr callback)
     {
-        return _ds_devices_common_helper->backup_flash(callback);
+        return _ds_device_common->backup_flash(callback);
     }
 
     void ds6_device::update_flash(const std::vector<uint8_t>& image, update_progress_callback_ptr callback, int update_mode)
     {
-        _ds_devices_common_helper->update_flash(image, callback, update_mode);
+        _ds_device_common->update_flash(image, callback, update_mode);
     }
 
     bool ds6_device::check_fw_compatibility(const std::vector<uint8_t>& image) const
     {
-        return _ds_devices_common_helper->check_fw_compatibility(image);
+        return _ds_device_common->check_fw_compatibility(image);
     }
 
     class ds6_depth_sensor : public synthetic_sensor, public video_sensor_interface, public depth_stereo_sensor, public roi_sensor_base
@@ -326,7 +326,7 @@ namespace librealsense
 
     bool ds6_device::is_camera_in_advanced_mode() const
     {
-        return _ds_devices_common_helper->is_camera_in_advanced_mode();
+        return _ds_device_common->is_camera_in_advanced_mode();
     }
 
     float ds6_device::get_stereo_baseline_mm() const // to be ds6 adapted
@@ -468,8 +468,8 @@ namespace librealsense
                     backend.create_usb_device(group.usb_devices.front()), raw_sensor));
         }
 
-        _ds_devices_common_helper = std::make_shared<ds_devices_common>(
-            this, ds6, _hw_monitor);
+        _ds_device_common = std::make_shared<ds_device_common>(
+            this, ds_device_type::ds6, _hw_monitor);
 
         // Define Left-to-Right extrinsics calculation (lazy)
         // Reference CS - Right-handed; positive [X,Y,Z] point to [Left,Up,Forward] accordingly.
@@ -574,7 +574,7 @@ namespace librealsense
 
             if (_fw_version >= firmware_version("5.6.3.0"))
             {
-                _is_locked = _ds_devices_common_helper->is_locked(GVD, is_camera_locked_offset);
+                _is_locked = _ds_device_common->is_locked(GVD, is_camera_locked_offset);
             }
 
             if (_fw_version >= firmware_version("5.5.8.0"))
@@ -880,7 +880,7 @@ namespace librealsense
         register_info(RS2_CAMERA_INFO_DEBUG_OP_CODE, std::to_string(static_cast<int>(fw_cmd::GLD)));
         register_info(RS2_CAMERA_INFO_ADVANCED_MODE, ((advanced_mode) ? "YES" : "NO"));
         register_info(RS2_CAMERA_INFO_PRODUCT_ID, pid_hex_str);
-        register_info(RS2_CAMERA_INFO_PRODUCT_LINE, "D400");
+        register_info(RS2_CAMERA_INFO_PRODUCT_LINE, "D500");
         register_info(RS2_CAMERA_INFO_RECOMMENDED_FIRMWARE_VERSION, _recommended_fw_version);
         register_info(RS2_CAMERA_INFO_CAMERA_LOCKED, _is_locked ? "YES" : "NO");
 

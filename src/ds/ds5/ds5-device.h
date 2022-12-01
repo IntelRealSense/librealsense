@@ -15,7 +15,7 @@
 #include "ds5-auto-calibration.h"
 #include "ds5-options.h"
 
-#include "ds/ds-devices-common.h"
+#include "ds/ds-device-common.h"
 
 namespace librealsense
 {
@@ -64,7 +64,7 @@ namespace librealsense
         void update_flash(const std::vector<uint8_t>& image, update_progress_callback_ptr callback, int update_mode) override;
         bool check_fw_compatibility(const std::vector<uint8_t>& image) const override;
     protected:
-        std::shared_ptr<ds_devices_common> _ds_devices_common_helper;
+        std::shared_ptr<ds_device_common> _ds_device_common;
 
         std::vector<uint8_t> get_raw_calibration_table(ds::calibration_table_id table_id) const;
         std::vector<uint8_t> get_new_calibration_table() const;

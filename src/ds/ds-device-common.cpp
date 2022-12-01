@@ -1,7 +1,7 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2022 Intel Corporation. All Rights Reserved.
 
-#include "ds-devices-common.h"
+#include "ds-device-common.h"
 
 #include "fw-update/fw-update-device-interface.h"
 
@@ -56,7 +56,7 @@ namespace librealsense
         return roi;
     }
 
-    void ds_devices_common::enter_update_state() const
+    void ds_device_common::enter_update_state() const
     {
         // Stop all data streaming/exchange pipes with HW
         _owner->stop_activity();
@@ -96,16 +96,16 @@ namespace librealsense
         }
     }
 
-    uvc_sensor& ds_devices_common::get_raw_depth_sensor()
+    uvc_sensor& ds_device_common::get_raw_depth_sensor()
     {
         switch (_ds_device_type)
         {
-        case ds5:
+        case ds_device_type::ds5:
         {
             auto dev = dynamic_cast<ds5_device*>(_owner);
             return dev->get_raw_depth_sensor();
         }
-        case ds6:
+        case ds_device_type::ds6:
         {
             auto dev = dynamic_cast<ds6_device*>(_owner);
             return dev->get_raw_depth_sensor();
@@ -115,13 +115,13 @@ namespace librealsense
         }
     }
 
-    bool ds_devices_common::is_locked(uint8_t gvd_cmd, uint32_t offset)
+    bool ds_device_common::is_locked(uint8_t gvd_cmd, uint32_t offset)
     {
         _is_locked = _hw_monitor->is_camera_locked(gvd_cmd, offset);
         return _is_locked;
     }
 
-    std::vector<uint8_t> ds_devices_common::backup_flash(update_progress_callback_ptr callback)
+    std::vector<uint8_t> ds_device_common::backup_flash(update_progress_callback_ptr callback)
     {
         int flash_size = 1024 * 2048;
         int max_bulk_size = 1016;
@@ -245,7 +245,7 @@ namespace librealsense
         }
     }
 
-    void ds_devices_common::update_flash(const std::vector<uint8_t>& image, update_progress_callback_ptr callback, int update_mode)
+    void ds_device_common::update_flash(const std::vector<uint8_t>& image, update_progress_callback_ptr callback, int update_mode)
     {
         if (_is_locked)
             throw std::runtime_error("this camera is locked and doesn't allow direct flash write, for firmware update use rs2_update_firmware method (DFU)");
@@ -280,7 +280,7 @@ namespace librealsense
             });
     }
 
-    bool ds_devices_common::check_fw_compatibility(const std::vector<uint8_t>& image) const
+    bool ds_device_common::check_fw_compatibility(const std::vector<uint8_t>& image) const
     {
         std::string fw_version = firmware_check_interface::extract_firmware_version_string(image);
 
@@ -294,7 +294,7 @@ namespace librealsense
         return result;
     }
 
-    bool ds_devices_common::is_camera_in_advanced_mode() const
+    bool ds_device_common::is_camera_in_advanced_mode() const
     {
         command cmd(ds::UAMG);
         assert(_hw_monitor);
