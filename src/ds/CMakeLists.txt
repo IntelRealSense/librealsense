@@ -6,7 +6,7 @@ include(${_rel_path}/ds/ds6/CMakeLists.txt)
 
 target_sources(${LRS_TARGET}
     PRIVATE
-        "${CMAKE_CURRENT_LIST_DIR}/ds-devices-common.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/ds-device-common.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/ds-motion-common.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/ds-private.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/ds-timestamp.cpp"
@@ -14,7 +14,7 @@ target_sources(${LRS_TARGET}
         "${CMAKE_CURRENT_LIST_DIR}/advanced_mode/rs_advanced_mode.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/advanced_mode/presets.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/advanced_mode/advanced_mode.cpp"
-        "${CMAKE_CURRENT_LIST_DIR}/ds-devices-common.h"
+        "${CMAKE_CURRENT_LIST_DIR}/ds-device-common.h"
         "${CMAKE_CURRENT_LIST_DIR}/ds-motion-common.h"
         "${CMAKE_CURRENT_LIST_DIR}/ds-private.h"
         "${CMAKE_CURRENT_LIST_DIR}/ds-timestamp.h"
