@@ -41,7 +41,7 @@ namespace realdds
 
                 eProsima_user_DllExport flexiblePubSubType();
 
-                eProsima_user_DllExport virtual ~flexiblePubSubType();
+                eProsima_user_DllExport virtual ~flexiblePubSubType() override;
 
                 eProsima_user_DllExport virtual bool serialize(
                         void* data,
