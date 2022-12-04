@@ -27,7 +27,7 @@ jobs:
       - name: Run
         shell: bash
         run: | 
-          cppcheck . --enable=performance,portability,missingInclude --std=c++11 -ithird-party/easyloggingpp -ithird-party/glad -ithird-party/sqlite -ithird-party/imgui -ithird-party/glfw -ithird-party/hidapi -ithird-party/json.hpp --xml &> cppcheck_run.log
+          cppcheck . --enable=missingInclude --quiet --std=c++11 -I./src -I./include -ithird-party/easyloggingpp -ithird-party/glad -ithird-party/sqlite -ithird-party/imgui -ithird-party/glfw -ithird-party/hidapi --suppress=*:third-party/json.hpp --xml &> cppcheck_run.log
 
       - name: Upload log
         uses: actions/upload-artifact@v3
