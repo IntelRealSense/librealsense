@@ -129,25 +129,4 @@ namespace librealsense
         _color_ep.register_metadata(RS2_FRAME_METADATA_POWER_LINE_FREQUENCY, make_attribute_parser(&md_rgb_control::power_line_frequency, md_rgb_control_attributes::power_line_frequency_attribute, md_prop_offset));
         _color_ep.register_metadata(RS2_FRAME_METADATA_LOW_LIGHT_COMPENSATION, make_attribute_parser(&md_rgb_control::low_light_comp, md_rgb_control_attributes::low_light_comp_attribute, md_prop_offset));
     }
-
-    const std::vector<uint8_t>& ds_color_common::get_color_calibration_table() const
-    {
-        switch (_device_type)
-        {
-        case ds_device_type::ds5:
-        {
-            auto dev = dynamic_cast<ds5_color*>(_owner);
-            dev->register_stream_to_extrinsic_group(*(dev->_color_stream), 0);
-            break;
-        }
-        case ds_device_type::ds6:
-        {
-            auto dev = dynamic_cast<ds6_color*>(_owner);
-            dev->register_stream_to_extrinsic_group(*(dev->_color_stream), 0);
-            break;
-        }
-        default:
-            throw std::runtime_error("device not referenced in the product line");
-        }
-    }
 }

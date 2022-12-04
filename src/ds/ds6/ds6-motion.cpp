@@ -44,7 +44,7 @@ namespace librealsense
 
         std::vector<platform::hid_device_info> hid_infos = group.hid_devices;
 
-        _ds_motion_common = std::make_shared<ds_motion_common>(this, ds_device_type::ds5, _fw_version,
+        _ds_motion_common = std::make_shared<ds_motion_common>(this, ds_device_type::ds6, _fw_version,
             _device_capabilities, _hw_monitor); 
         _ds_motion_common->init_hid(hid_infos);
                 
