@@ -2,12 +2,12 @@
 #include "unit-tests-common.h"
 #include <iostream>
 
-int main(int argc, char* const argv[])
+int main( int argc, char const * const argv[] )
 {
 
-    command_line_params::instance(argc, argv);
+    command_line_params::init(argc, argv);
 
-    std::vector<char*> new_argvs;
+    std::vector< char const * > new_argvs;
 
     std::cout << "Running tests with the following parameters: ";
     for (auto i = 0; i < argc; i++)

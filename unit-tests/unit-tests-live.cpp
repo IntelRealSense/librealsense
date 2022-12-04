@@ -737,9 +737,7 @@ TEST_CASE("Toggle Advanced Mode", "[live][AdvMd][mayfail]") {
 
 TEST_CASE("Advanced Mode presets", "[live][AdvMd][mayfail]")
 {
-    static const std::vector<res_type> resolutions = { low_resolution,
-                                                       medium_resolution,
-                                                       high_resolution };
+    const std::vector< res_type > resolutions = { low_resolution, medium_resolution, high_resolution };
 
     rs2::context ctx = make_context( SECTION_FROM_TEST_NAME );
     if( ctx )
@@ -3702,7 +3700,7 @@ TEST_CASE("Per-frame metadata sanity check", "[live][!mayfail]") {
 
                 std::vector<internal_frame_additional_data> frames_additional_data;
                 auto frames = 0;
-                double start;
+                double start = internal::get_time();;
                 std::condition_variable cv;
                 std::mutex m;
                 auto first = true;
@@ -3722,8 +3720,8 @@ TEST_CASE("Per-frame metadata sanity check", "[live][!mayfail]") {
                         if (first)
                         {
                             start = internal::get_time();
+                            first = false;
                         }
-                        first = false;
 
                         internal_frame_additional_data data{ f.get_timestamp(),
                             f.get_frame_number(),

@@ -195,22 +195,16 @@ dev_type get_PID( rs2::device & dev )
 }
 
 
-rs2::context make_context( const char * id, std::string min_api_version )
+static command_line_params g_command_line_params;
+static std::string g_command_line_base_filename;
+static bool g_command_line_record = false;
+static bool g_command_line_playback = false;
+
+
+void command_line_params::init( int argc, char const * const * const argv )
 {
     rs2::log_to_file( RS2_LOG_SEVERITY_DEBUG );
-
-    static std::map< std::string, int > _counters;
-
-    _counters[id]++;
-
-    auto argc = command_line_params::instance().get_argc();
-    auto argv = command_line_params::instance().get_argv();
-
-
-    std::string base_filename;
-    bool record = false;
-    bool playback = false;
-    for( auto i = 0u; i < argc; i++ )
+    for( auto i = 0; i < argc; i++ )
     {
         std::string param( argv[i] );
         if( param == "into" )
@@ -218,8 +212,8 @@ rs2::context make_context( const char * id, std::string min_api_version )
             i++;
             if( i < argc )
             {
-                base_filename = argv[i];
-                record = true;
+                g_command_line_base_filename = argv[i];
+                g_command_line_record = true;
             }
         }
         else if( param == "from" )
@@ -227,11 +221,27 @@ rs2::context make_context( const char * id, std::string min_api_version )
             i++;
             if( i < argc )
             {
-                base_filename = argv[i];
-                playback = true;
+                g_command_line_base_filename = argv[i];
+                g_command_line_playback = true;
             }
         }
     }
+}
+
+
+static std::map< std::string, int > _counters;
+static bool g_found_any_section = false;
+
+
+bool found_any_section()
+{
+    return g_found_any_section;
+}
+
+
+rs2::context make_context( const char * id, std::string min_api_version )
+{
+    _counters[id]++;
 
     std::stringstream ss;
     ss << id << "." << _counters[id] << ".test";
@@ -241,22 +251,23 @@ rs2::context make_context( const char * id, std::string min_api_version )
     rs2::context ctx( rs2::context::uninitialized );
     try
     {
-        if( record )
+        if( g_command_line_record )
         {
-            ctx = rs2::recording_context( base_filename, section );
+            ctx = rs2::recording_context( g_command_line_base_filename, section );
         }
-        else if( playback )
+        else if( g_command_line_playback )
         {
-            ctx = rs2::mock_context( base_filename, section, min_api_version );
+            ctx = rs2::mock_context( g_command_line_base_filename, section, min_api_version );
         }
         else
         {
             ctx = rs2::context( "{\"dds-discovery\":false}" );
         }
-        command_line_params::instance()._found_any_section = true;
+        g_found_any_section = true;
     }
     catch( ... )
     {
+        std::cerr << "UNKNOWN EXCEPTiON in make_context!" << std::endl;
     }
     return ctx;
 }

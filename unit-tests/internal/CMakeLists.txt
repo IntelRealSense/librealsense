@@ -12,6 +12,7 @@ set (INTERNAL_TESTS_SOURCES
     internal-tests-types.cpp
     internal-tests-uv-map.cpp
     internal-tests-class-logic.cpp
+    ../unit-tests-common.cpp
     ../catch.h
     ../approx.h
 )

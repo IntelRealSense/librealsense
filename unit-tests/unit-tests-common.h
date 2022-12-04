@@ -123,32 +123,13 @@ typedef  std::pair<std::string, bool > dev_type;
 
 dev_type get_PID( rs2::device & dev );
 
-class command_line_params
+struct command_line_params
 {
-public:
-    command_line_params(int argc, char * const argv[])
-    {
-        for (auto i = 0; i < argc; i++)
-        {
-            _params.push_back(argv[i]);
-        }
-    }
-
-    char * const * get_argv() const { return _params.data(); }
-    char * get_argv(int i) const { return _params[i]; }
-    size_t get_argc() const { return _params.size(); }
-
-    static command_line_params& instance(int argc = 0, char * const argv[] = 0)
-    {
-        static command_line_params params(argc, argv);
-        return params;
-    }
-
-    bool _found_any_section = false;
-private:
-
-    std::vector<char*> _params;
+    static void init( int argc, char const * const * argv );
 };
+
+bool found_any_section();
+
 
 inline bool file_exists(const std::string& filename)
 {

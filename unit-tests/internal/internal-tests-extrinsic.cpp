@@ -158,8 +158,8 @@ TEST_CASE("Extrinsic memory leak detection", "[live]")
 {
     // Require at least one device to be plugged in
 
-    rs2::context ctx;
-    if (make_context(SECTION_FROM_TEST_NAME, &ctx))
+    rs2::context ctx = make_context( SECTION_FROM_TEST_NAME );
+    if (ctx)
     {
         rs2::log_to_file(RS2_LOG_SEVERITY_DEBUG, "lrs_log.txt");
 
@@ -442,7 +442,6 @@ TEST_CASE("Extrinsic memory leak detection", "[live]")
 TEST_CASE("Enable disable all streams", "[live]")
 {
     // Require at least one device to be plugged in
-    rs2::context ctx;
     class streams_cfg
     {
     public:
@@ -556,7 +555,8 @@ TEST_CASE("Enable disable all streams", "[live]")
         rs2::pipeline _pipe;
     };
 
-    if (make_context(SECTION_FROM_TEST_NAME, &ctx))
+    rs2::context ctx = make_context( SECTION_FROM_TEST_NAME );
+    if (ctx)
     {
         auto list = ctx.query_devices();
         REQUIRE(list.size());
@@ -639,8 +639,8 @@ TEST_CASE("Enable disable all streams", "[live]")
 }
 TEST_CASE("Controls limits validation", "[live]")
 {
-    rs2::context ctx;
-    if (make_context(SECTION_FROM_TEST_NAME, &ctx))
+    rs2::context ctx = make_context( SECTION_FROM_TEST_NAME );
+    if (ctx)
     {
         auto list = ctx.query_devices();
         REQUIRE(list.size());
