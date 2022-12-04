@@ -212,7 +212,7 @@ namespace librealsense
 
     std::shared_ptr<uvc_sensor> ds_fisheye_sensor::get_raw_sensor()
     {
-        auto uvc_raw_sensor = As<uvc_sensor, sensor_base>(get_raw_sensor());
+        auto uvc_raw_sensor = As<uvc_sensor, sensor_base>(synthetic_sensor::get_raw_sensor());
         return uvc_raw_sensor;
     }
     

@@ -21,8 +21,6 @@ namespace librealsense
         void register_standard_options();
         void register_metadata();
 
-        const std::vector<uint8_t>& get_color_calibration_table() const;
-
     private:
         uvc_sensor& _raw_color_ep;
         synthetic_sensor& _color_ep;
