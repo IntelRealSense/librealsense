@@ -4,6 +4,7 @@
 #pragma once
 
 #include "ds6-device.h"
+#include "ds/ds-color-common.h"
 
 #include <map>
 
@@ -30,18 +31,22 @@ namespace librealsense
 
     protected:
         std::shared_ptr<stream_interface> _color_stream;
+        std::shared_ptr<ds_color_common> _ds_color_common;
 
     private:
-        void create_color_device(std::shared_ptr<context> ctx,
-            const platform::backend_device_group& group);
-        void init();
-
         void register_options();
         void register_metadata();
         void register_processing_blocks();
 
+        void register_stream_to_extrinsic_group(const stream_interface& stream, uint32_t group_index);
+
+        void create_color_device(std::shared_ptr<context> ctx,
+            const platform::backend_device_group& group);
+        void init();
+
         friend class ds6_color_sensor;
         friend class rs435i_device;
+        friend class ds_color_common;
 
         uint8_t _color_device_idx = -1;
         bool _separate_color;

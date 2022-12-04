@@ -20,12 +20,12 @@
 
 namespace librealsense
 {
-    ds5_auto_exposure_roi_method::ds5_auto_exposure_roi_method(
+    ds_auto_exposure_roi_method::ds_auto_exposure_roi_method(
         const hw_monitor& hwm,
         ds::fw_cmd cmd)
         : _hw_monitor(hwm), _cmd(cmd) {}
 
-    void ds5_auto_exposure_roi_method::set(const region_of_interest& roi)
+    void ds_auto_exposure_roi_method::set(const region_of_interest& roi)
     {
         command cmd(_cmd);
         cmd.param1 = roi.min_y;
@@ -35,7 +35,7 @@ namespace librealsense
         _hw_monitor.send(cmd);
     }
 
-    region_of_interest ds5_auto_exposure_roi_method::get() const
+    region_of_interest ds_auto_exposure_roi_method::get() const
     {
         region_of_interest roi;
         command cmd(_cmd + 1);
