@@ -4,6 +4,7 @@
 #pragma once
 
 #include "ds5-device.h"
+#include "ds/ds-active-common.h"
 
 namespace librealsense
 {
@@ -12,5 +13,7 @@ namespace librealsense
     public:
         ds5_active(std::shared_ptr<context> ctx,
                    const platform::backend_device_group& group);
+    private:
+        std::shared_ptr<ds_active_common> _ds_active_common;
     };
 }
