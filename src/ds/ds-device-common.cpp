@@ -20,6 +20,8 @@
 
 namespace librealsense
 {
+    using namespace ds;
+
     ds_auto_exposure_roi_method::ds_auto_exposure_roi_method(
         const hw_monitor& hwm,
         ds::fw_cmd cmd)
@@ -284,8 +286,9 @@ namespace librealsense
     {
         std::string fw_version = firmware_check_interface::extract_firmware_version_string(image);
 
-        auto it = ds::device_to_fw_min_version.find(_owner->_pid);
-        if (it == ds::device_to_fw_min_version.end())
+        // TODO - do the same for ds6 (when min fw will be known)
+        auto it = ds::ds5_device_to_fw_min_version.find(_owner->_pid);
+        if (it == ds::ds5_device_to_fw_min_version.end())
             throw librealsense::invalid_value_exception(to_string() << "Min and Max firmware versions have not been defined for this device: " << std::hex << _owner->_pid);
         bool result = (firmware_version(fw_version) >= firmware_version(it->second));
         if (!result)

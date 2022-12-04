@@ -438,9 +438,9 @@ namespace librealsense
                 val |= d400_caps::CAP_BMI_055;
             else if (gvd_buf[imu_acc_chip_id] == I2C_IMU_BMI085_ID_ACC)
                 val |= d400_caps::CAP_BMI_085;
-            else if (hid_bmi_055_pid.end() != hid_bmi_055_pid.find(_pid))
+            else if (ds5_hid_bmi_055_pid.end() != ds5_hid_bmi_055_pid.find(_pid))
                 val |= d400_caps::CAP_BMI_055;
-            else if (hid_bmi_085_pid.end() != hid_bmi_085_pid.find(_pid))
+            else if (ds5_hid_bmi_085_pid.end() != ds5_hid_bmi_085_pid.find(_pid))
                 val |= d400_caps::CAP_BMI_085;
             else
                 LOG_WARNING("The IMU sensor is undefined for PID " << std::hex << _pid << " and imu_chip_id: " << gvd_buf[imu_acc_chip_id] << std::dec);
@@ -610,22 +610,12 @@ namespace librealsense
                 []() { return std::make_shared<y8i_to_y8y8>(); }
             ); // L+R
 
-            if (_pid == RS_D585_PID || _pid == RS_S585_PID)
-            {
-                depth_sensor.register_processing_block(
-                    { RS2_FORMAT_Y16I },
-                    { {RS2_FORMAT_Y16, RS2_STREAM_INFRARED, 1}, {RS2_FORMAT_Y16, RS2_STREAM_INFRARED, 2} },
-                    []() {return std::make_shared<y16i_to_y10msby10msb>(); }
-                );
-            }
-            else
-            {
-                depth_sensor.register_processing_block(
-                    { RS2_FORMAT_Y12I },
-                    { {RS2_FORMAT_Y16, RS2_STREAM_INFRARED, 1}, {RS2_FORMAT_Y16, RS2_STREAM_INFRARED, 2} },
-                    []() {return std::make_shared<y12i_to_y16y16>(); }
-                );
-            }
+            
+            depth_sensor.register_processing_block(
+                { RS2_FORMAT_Y12I },
+                { {RS2_FORMAT_Y16, RS2_STREAM_INFRARED, 1}, {RS2_FORMAT_Y16, RS2_STREAM_INFRARED, 2} },
+                []() {return std::make_shared<y12i_to_y16y16>(); }
+            );
                 
             pid_hex_str = hexify(_pid);
 

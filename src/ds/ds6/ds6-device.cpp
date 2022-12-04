@@ -371,9 +371,7 @@ namespace librealsense
                 val |= d400_caps::CAP_BMI_055;
             else if (gvd_buf[imu_acc_chip_id] == I2C_IMU_BMI085_ID_ACC)
                 val |= d400_caps::CAP_BMI_085;
-            else if (hid_bmi_055_pid.end() != hid_bmi_055_pid.find(_pid))
-                val |= d400_caps::CAP_BMI_055;
-            else if (hid_bmi_085_pid.end() != hid_bmi_085_pid.find(_pid))
+            else if (ds6_hid_bmi_085_pid.end() != ds6_hid_bmi_085_pid.find(_pid))
                 val |= d400_caps::CAP_BMI_085;
             else
                 LOG_WARNING("The IMU sensor is undefined for PID " << std::hex << _pid << " and imu_chip_id: " << gvd_buf[imu_acc_chip_id] << std::dec);

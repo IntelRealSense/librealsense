@@ -1097,7 +1097,7 @@ namespace librealsense
             bool all_sensors_present = mi_present(devices, 0);
 
             // Device with multi sensors can be enabled only if all sensors (RGB + Depth) are present
-            auto is_pid_of_multisensor_device = [](int pid) { return std::find(std::begin(ds::multi_sensors_pid), std::end(ds::multi_sensors_pid), pid) != std::end(ds::multi_sensors_pid); };
+            auto is_pid_of_multisensor_device = [](int pid) { return std::find(std::begin(ds::ds5_multi_sensors_pid), std::end(ds::ds5_multi_sensors_pid), pid) != std::end(ds::ds5_multi_sensors_pid); };
             bool is_device_multisensor = false;
             for (auto&& uvc : devices)
             {
@@ -1112,7 +1112,8 @@ namespace librealsense
 
 
 #if !defined(__APPLE__) // Not supported by macos
-            auto is_pid_of_hid_sensor_device = [](int pid) { return std::find(std::begin(ds::hid_sensors_pid), std::end(ds::hid_sensors_pid), pid) != std::end(ds::hid_sensors_pid); };
+            auto is_pid_of_hid_sensor_device = [](int pid) { return std::find(std::begin(ds::ds5_hid_sensors_pid),
+                std::end(ds::ds5_hid_sensors_pid), pid) != std::end(ds::ds5_hid_sensors_pid); };
             bool is_device_hid_sensor = false;
             for (auto&& uvc : devices)
             {
@@ -1133,13 +1134,13 @@ namespace librealsense
                 platform::usb_device_info hwm;
 
                 std::vector<platform::usb_device_info> hwm_devices;
-                if (ds::try_fetch_usb_device(group.usb_devices, devices.front(), hwm))
+                if (ds::ds5_try_fetch_usb_device(group.usb_devices, devices.front(), hwm))
                 {
                     hwm_devices.push_back(hwm);
                 }
                 else
                 {
-                    LOG_DEBUG("try_fetch_usb_device(...) failed.");
+                    LOG_DEBUG("ds5_try_fetch_usb_device(...) failed.");
                 }
 
                 auto info = std::make_shared<ds5_info>(ctx, devices, hwm_devices, hids);
