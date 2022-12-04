@@ -35,7 +35,7 @@ jobs:
         #  --suppress   :   Don't issue errors about files matching the expression (when -i for folders is not enough)
         #  --xml        :   Output in XML format
         run: | 
-          cppcheck . --quiet --std=c++11 -I./src -I./include -I./third-party/utilities/include -I./common -ithird-party/easyloggingpp -ithird-party/glad -ithird-party/sqlite -ithird-party/imgui -ithird-party/glfw -ithird-party/hidapi --suppress=*:third-party/json.hpp --xml &> cppcheck_run.log
+          cppcheck ./src ./include ./common ./tools ./third-party/realdds ./third-party/utilities --quiet --std=c++11 -I./src -I./include -I./third-party/utilities/include -I./common --suppress=*:third-party/json.hpp --xml &> cppcheck_run.log
 
       - name: Upload log
         uses: actions/upload-artifact@v3
