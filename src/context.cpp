@@ -58,43 +58,66 @@ constexpr std::array<char const, N1+N2-1> concat(char const (&a1)[N1], char cons
 // The string is used to retrieve the version embedded into .so file on Linux
 constexpr auto rs2_api_version = concat("VERSION: ",RS2_API_VERSION_STR);
 
+namespace {
+
+template< class T >
+bool contains( const T & first, const T & second )
+{
+    return first == second;
+}
+
 template<>
-bool contains(const std::shared_ptr<librealsense::device_info>& first,
-              const std::shared_ptr<librealsense::device_info>& second)
+bool contains( const std::shared_ptr< librealsense::device_info > & first,
+               const std::shared_ptr< librealsense::device_info > & second )
 {
     auto first_data = first->get_device_data();
     auto second_data = second->get_device_data();
 
-    for (auto&& uvc : first_data.uvc_devices)
+    for( auto && uvc : first_data.uvc_devices )
     {
-        if (std::find(second_data.uvc_devices.begin(),
-            second_data.uvc_devices.end(), uvc) ==
-            second_data.uvc_devices.end())
+        if( std::find( second_data.uvc_devices.begin(), second_data.uvc_devices.end(), uvc )
+            == second_data.uvc_devices.end() )
             return false;
     }
-    for (auto&& usb : first_data.usb_devices)
+    for( auto && usb : first_data.usb_devices )
     {
-        if (std::find(second_data.usb_devices.begin(),
-            second_data.usb_devices.end(), usb) ==
-            second_data.usb_devices.end())
+        if( std::find( second_data.usb_devices.begin(), second_data.usb_devices.end(), usb )
+            == second_data.usb_devices.end() )
             return false;
     }
-    for (auto&& hid : first_data.hid_devices)
+    for( auto && hid : first_data.hid_devices )
     {
-        if (std::find(second_data.hid_devices.begin(),
-            second_data.hid_devices.end(), hid) ==
-            second_data.hid_devices.end())
+        if( std::find( second_data.hid_devices.begin(), second_data.hid_devices.end(), hid )
+            == second_data.hid_devices.end() )
             return false;
     }
-    for (auto&& pd : first_data.playback_devices)
+    for( auto && pd : first_data.playback_devices )
     {
-        if (std::find(second_data.playback_devices.begin(),
-            second_data.playback_devices.end(), pd) ==
-            second_data.playback_devices.end())
+        if( std::find( second_data.playback_devices.begin(), second_data.playback_devices.end(), pd )
+            == second_data.playback_devices.end() )
             return false;
     }
     return true;
 }
+
+template< class T >
+std::vector< std::shared_ptr< T > > subtract_sets( const std::vector< std::shared_ptr< T > > & first,
+                                                   const std::vector< std::shared_ptr< T > > & second )
+{
+    std::vector< std::shared_ptr< T > > results;
+    std::for_each( first.begin(), first.end(), [&]( std::shared_ptr< T > data ) {
+        if( std::find_if( second.begin(),
+                          second.end(),
+                          [&]( std::shared_ptr< T > new_dev ) { return contains( data, new_dev ); } )
+            == second.end() )
+        {
+            results.push_back( data );
+        }
+    } );
+    return results;
+}
+
+}  // namespace
 
 namespace librealsense
 {

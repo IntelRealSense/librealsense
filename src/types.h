@@ -1494,28 +1494,6 @@ namespace std {
     };
 }
 
-template<class T>
-bool contains(const T& first, const T& second)
-{
-    return first == second;
-}
-
-template<class T>
-std::vector<std::shared_ptr<T>> subtract_sets(const std::vector<std::shared_ptr<T>>& first, const std::vector<std::shared_ptr<T>>& second)
-{
-    std::vector<std::shared_ptr<T>> results;
-    std::for_each(first.begin(), first.end(), [&](std::shared_ptr<T> data)
-    {
-        if (std::find_if(second.begin(), second.end(), [&](std::shared_ptr<T> new_dev) {
-            return contains(data, new_dev);
-        }) == second.end())
-        {
-            results.push_back(data);
-        }
-    });
-    return results;
-}
-
 enum res_type {
     low_resolution,
     medium_resolution,
