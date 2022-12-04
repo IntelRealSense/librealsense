@@ -9,10 +9,10 @@
 
 namespace librealsense
 {
-    class ds5_auto_exposure_roi_method : public region_of_interest_method
+    class ds_auto_exposure_roi_method : public region_of_interest_method
     {
     public:
-        explicit ds5_auto_exposure_roi_method(const hw_monitor& hwm,
+        explicit ds_auto_exposure_roi_method(const hw_monitor& hwm,
             ds::fw_cmd cmd = ds::fw_cmd::SETAEROI);
 
         void set(const region_of_interest& roi) override;
@@ -34,7 +34,8 @@ namespace librealsense
         ds_device_common(device* ds_device, ds_device_type dev_type, std::shared_ptr<hw_monitor> hwm) :
             _owner(ds_device),
             _ds_device_type(dev_type), 
-            _hw_monitor(hwm)
+            _hw_monitor(hwm),
+            _is_locked(false)
         {}
 
         void enter_update_state() const;

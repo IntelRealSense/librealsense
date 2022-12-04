@@ -834,7 +834,7 @@ namespace librealsense
 
             roi_sensor_interface* roi_sensor = dynamic_cast<roi_sensor_interface*>(&depth_sensor);
             if (roi_sensor)
-                roi_sensor->set_roi_method(std::make_shared<ds5_auto_exposure_roi_method>(*_hw_monitor));
+                roi_sensor->set_roi_method(std::make_shared<ds_auto_exposure_roi_method>(*_hw_monitor));
 
             depth_sensor.register_option(RS2_OPTION_STEREO_BASELINE, std::make_shared<const_value_option>("Distance in mm between the stereo imagers",
                 lazy<float>([this]() { return get_stereo_baseline_mm(); })));

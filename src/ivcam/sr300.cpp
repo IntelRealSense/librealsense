@@ -553,7 +553,7 @@ namespace librealsense
 
         roi_sensor_interface* roi_sensor;
         if ((roi_sensor = dynamic_cast<roi_sensor_interface*>(&get_sensor(_color_device_idx))))
-            roi_sensor->set_roi_method(std::make_shared<ds5_auto_exposure_roi_method>(*_hw_monitor,
+            roi_sensor->set_roi_method(std::make_shared<ds_auto_exposure_roi_method>(*_hw_monitor,
             (ds::fw_cmd)ivcam::fw_cmd::SetRgbAeRoi));
 
     }
