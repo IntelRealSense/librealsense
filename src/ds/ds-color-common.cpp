@@ -8,6 +8,8 @@
 
 namespace librealsense
 {
+    using namespace ds;
+
     ds_color_common::ds_color_common(uvc_sensor& raw_color_ep,
         synthetic_sensor& color_ep,
         firmware_version fw_version,

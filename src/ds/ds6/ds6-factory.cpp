@@ -138,7 +138,7 @@ namespace librealsense
         std::vector<platform::uvc_device_info> chosen;
         std::vector<std::shared_ptr<device_info>> results;
 
-        auto valid_pid = filter_by_product(group.uvc_devices, ds::ds6_sku_pid);
+        auto valid_pid = filter_by_product(group.uvc_devices, ds::rs500_sku_pid);
         auto group_devices = group_devices_and_hids_by_unique_id(group_devices_by_unique_id(valid_pid), group.hid_devices);
 
         for (auto& g : group_devices)
@@ -149,7 +149,8 @@ namespace librealsense
             bool all_sensors_present = mi_present(devices, 0);
 
             // Device with multi sensors can be enabled only if all sensors (RGB + Depth) are present
-            auto is_pid_of_multisensor_device = [](int pid) { return std::find(std::begin(ds::multi_sensors_pid), std::end(ds::multi_sensors_pid), pid) != std::end(ds::multi_sensors_pid); };
+            auto is_pid_of_multisensor_device = [](int pid) { return std::find(std::begin(ds::ds6_multi_sensors_pid), 
+                std::end(ds::ds6_multi_sensors_pid), pid) != std::end(ds::ds6_multi_sensors_pid); };
             bool is_device_multisensor = false;
             for (auto&& uvc : devices)
             {
@@ -164,7 +165,8 @@ namespace librealsense
 
 
 #if !defined(__APPLE__) // Not supported by macos
-            auto is_pid_of_hid_sensor_device = [](int pid) { return std::find(std::begin(ds::hid_sensors_pid), std::end(ds::hid_sensors_pid), pid) != std::end(ds::hid_sensors_pid); };
+            auto is_pid_of_hid_sensor_device = [](int pid) { return std::find(std::begin(ds::ds6_hid_sensors_pid), 
+                std::end(ds::ds6_hid_sensors_pid), pid) != std::end(ds::ds6_hid_sensors_pid); };
             bool is_device_hid_sensor = false;
             for (auto&& uvc : devices)
             {
@@ -185,13 +187,13 @@ namespace librealsense
                 platform::usb_device_info hwm;
 
                 std::vector<platform::usb_device_info> hwm_devices;
-                if (ds::try_fetch_usb_device(group.usb_devices, devices.front(), hwm))
+                if (ds::ds6_try_fetch_usb_device(group.usb_devices, devices.front(), hwm))
                 {
                     hwm_devices.push_back(hwm);
                 }
                 else
                 {
-                    LOG_DEBUG("try_fetch_usb_device(...) failed.");
+                    LOG_DEBUG("ds6_try_fetch_usb_device(...) failed.");
                 }
 
                 auto info = std::make_shared<ds6_info>(ctx, devices, hwm_devices, hids);

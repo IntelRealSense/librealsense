@@ -24,6 +24,8 @@
 
 namespace librealsense
 {
+    using namespace ds;
+
     const std::map<uint32_t, rs2_format> fisheye_fourcc_to_rs2_format = {
         {rs_fourcc('R','A','W','8'), RS2_FORMAT_RAW8},
         {rs_fourcc('G','R','E','Y'), RS2_FORMAT_RAW8},
@@ -45,11 +47,11 @@ namespace librealsense
 
         _calib_parser = [this]() {
 
-            std::vector<uint8_t> raw(ds::tm1_eeprom_size);
-            uint16_t calib_id = ds::dm_v2_eeprom_id; //assume DM V2 IMU as default platform
+            std::vector<uint8_t> raw(tm1_eeprom_size);
+            uint16_t calib_id = dm_v2_eeprom_id; //assume DM V2 IMU as default platform
             bool valid = false;
 
-            if (_pid == L515_PID) calib_id = ds::l500_eeprom_id;
+            if (_pid == L515_PID) calib_id = l500_eeprom_id;
 
             try
             {
@@ -66,11 +68,11 @@ namespace librealsense
             std::shared_ptr<mm_calib_parser> prs = nullptr;
             switch (calib_id)
             {
-            case ds::dm_v2_eeprom_id: // DM V2 id
+            case dm_v2_eeprom_id: // DM V2 id
                 prs = std::make_shared<dm_v2_imu_calib_parser>(raw, _pid, valid); break;
-            case ds::tm1_eeprom_id: // TM1 id
+            case tm1_eeprom_id: // TM1 id
                 prs = std::make_shared<tm1_imu_calib_parser>(raw); break;
-            case ds::l500_eeprom_id: // L515
+            case l500_eeprom_id: // L515
                 prs = std::make_shared<l500_imu_calib_parser>(raw, valid); break;
             default:
                 throw recoverable_exception(to_string() << "Motion Intrinsics unresolved - "
@@ -84,8 +86,8 @@ namespace librealsense
     std::vector<uint8_t> mm_calib_handler::get_imu_eeprom_raw() const
     {
         const int offset = 0;
-        const int size = ds::eeprom_imu_table_size;
-        command cmd(ds::MMER, offset, size);
+        const int size = eeprom_imu_table_size;
+        command cmd(MMER, offset, size);
         return _hw_monitor->send(cmd);
     }
 
@@ -402,6 +404,26 @@ namespace librealsense
             return ds::create_motion_intrinsics(**_gyro_intrinsic);
 
         throw std::runtime_error(to_string() << "Motion Intrinsics unknown for stream " << rs2_stream_to_string(stream) << "!");
+    }
+
+    std::vector<platform::uvc_device_info> ds_motion_common::filter_device_by_capability(const std::vector<platform::uvc_device_info>& devices,
+        d400_caps caps)
+    {
+        switch (_ds_device_type)
+        {
+        case ds_device_type::ds5:
+        {
+            auto dev = dynamic_cast<const ds5_motion*>(_owner);
+            return filter_ds5_device_by_capability(devices, ds::d400_caps::CAP_FISHEYE_SENSOR);
+        }
+        case ds_device_type::ds6:
+        {
+            auto dev = dynamic_cast<const ds6_motion*>(_owner);
+            return filter_ds6_device_by_capability(devices, ds::d400_caps::CAP_FISHEYE_SENSOR);
+        }
+        default:
+            throw std::runtime_error("device not referenced in the product line");
+        }
     }
 
     std::vector<platform::uvc_device_info> ds_motion_common::init_fisheye(const platform::backend_device_group& group, bool& is_fisheye_available)

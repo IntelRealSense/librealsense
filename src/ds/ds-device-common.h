@@ -4,7 +4,7 @@
 #pragma once
 
 #include "hw-monitor.h"
-#include "ds5/ds5-private.h"
+#include "ds-private.h"
 
 
 namespace librealsense
@@ -22,16 +22,10 @@ namespace librealsense
         const hw_monitor& _hw_monitor;
     };
 
-    enum class ds_device_type
-    {
-        ds5,
-        ds6
-    };
-
     class ds_device_common
     {
     public:
-        ds_device_common(device* ds_device, ds_device_type dev_type, std::shared_ptr<hw_monitor> hwm) :
+        ds_device_common(device* ds_device, ds::ds_device_type dev_type, std::shared_ptr<hw_monitor> hwm) :
             _owner(ds_device),
             _ds_device_type(dev_type), 
             _hw_monitor(hwm),
@@ -53,7 +47,7 @@ namespace librealsense
         friend class ds6_depth_sensor;
 
         device* _owner;
-        ds_device_type _ds_device_type;
+        ds::ds_device_type _ds_device_type;
         std::shared_ptr<hw_monitor> _hw_monitor;
         bool _is_locked;
     };
