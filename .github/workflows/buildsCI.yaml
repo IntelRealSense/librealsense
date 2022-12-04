@@ -188,6 +188,7 @@ jobs:
       # The final step will check the return value from the test step and decide if to fail/pass the job
       continue-on-error: true 
       run: | 
+        echo "Job name= ${{ jobs.${{ github.job }}.name }}"
         export LRS_LOG_LEVEL="DEBUG";
         cd build   
         ./unit-tests/live-test -d yes -i [software-device]        
@@ -195,7 +196,7 @@ jobs:
     - name: Upload RS log artifact
       uses: actions/upload-artifact@v2
       with: 
-        name: Log file - U20_SH_Py_LiveTest_DDS
+        name: Log file - ${{ jobs.${{ github.job }}.name }}
         path: build/*.log
         
         
@@ -315,7 +316,7 @@ jobs:
     - name: Upload RS log artifact
       uses: actions/upload-artifact@v2
       with: 
-        name: Log file - U18_SH_LiveTest_NodeJS
+        name: Log file - ${{ jobs.${{ github.job }}.name }}
         path: build/*.log
 
     - name: Provide correct exit status for job 
