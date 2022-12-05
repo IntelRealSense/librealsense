@@ -4,7 +4,7 @@
 //#test:device D400*
 
 #include "../live-common.h"
-#include <librealsense2/utilities/time/timer.h>
+#include <utilities/time/timer.h>
 
 using namespace rs2;
 
