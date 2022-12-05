@@ -30,6 +30,10 @@
 #include <librealsense2/h/rs_internal.h>
 #include <realdds/topics/device-info/device-info-msg.h>
 #include <realdds/topics/image/image-msg.h>
+#include <utilities/shared-ptr-singleton.h>
+
+static utilities::shared_ptr_singleton< realdds::dds_participant > _dds_participant;  // common to all contexts!
+static utilities::shared_ptr_singleton< realdds::dds_device_watcher > _dds_watcher;
 #endif //BUILD_WITH_DDS
 
 #include <utilities/json.h>
