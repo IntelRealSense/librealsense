@@ -8,7 +8,7 @@ on:
 
 env:
   # Expected error count should decrease as we handle the errors. Update accordingly.
-  CPPCHECK_EXPECTED_ERROR_COUNT: 42
+  CPPCHECK_EXPECTED_ERROR_COUNT: 18
 
 jobs:
   cppcheck:
@@ -20,24 +20,24 @@ jobs:
       - name: Install 
         shell: bash
         run: |
-          sudo add-apt-repository --yes ppa:ubuntu-toolchain-r/test;
           sudo apt-get update;
           sudo apt-get install -qq cppcheck;
       
       - name: Run
         shell: bash
         #Selected run options:
-        #  ./xxx        :   Folders to scan
-        #  --quiet      :   Don't show current checked configuration in log
-        #  --std=c++11  :   Use C++11 standard (default but worth mentioning)
-        #  -I           :   Include directories
-        #  -i           :   Ignore direcrories. Ignore third-party libs that we don't want to check
-        #  --suppress   :   Don't issue errors about files matching the expression (when -i for folders is not enough)
-        #  --xml        :   Output in XML format
-        #  -j8          :   Run parallel jobs (faster scan)
-        #  --force      :   Check all configurations
+        #  ./xxx            :   Folders to scan
+        #  --quiet          :   Don't show current checked configuration in log
+        #  --std=c++11      :   Use C++11 standard (default but worth mentioning)
+        #  -I               :   Include directories
+        #  -i               :   Ignore directories. Ignore third-party libs that we don't want to check
+        #  --suppress       :   Don't issue errors about files matching the expression (when -i for folders is not enough)
+        #  --xml            :   Output in XML format
+        #  -j4              :   Run parallel jobs for a faster scan. current HW is 2 core (https://docs.github.com/en/actions/using-github-hosted-runners/about-github-hosted-runners) using 4 to future proof
+        #  --force          :   Check all configurations, takes a very long time (~2 hours) and did not find additional errors. Removed.
+        #  --max-configs=6  :   Using less configuration permutations (default is 12) to reduce run time.
         run: | 
-          cppcheck ./src ./include ./common ./tools ./third-party/realdds ./third-party/utilities --quiet --std=c++11 -I./src -I./include -I./third-party/utilities/include -I./common --suppress=*:third-party/json.hpp --xml -j8 --force &> cppcheck_run.log
+          cppcheck ./src ./include ./common ./tools ./third-party/realdds ./third-party/utilities --quiet --std=c++11 -I./src -I./include -I./third-party/utilities/include -I./common --suppress=*:third-party/json.hpp --xml -j4 --max-configs=6 &> cppcheck_run.log
 
       - name: Upload log
         uses: actions/upload-artifact@v3
