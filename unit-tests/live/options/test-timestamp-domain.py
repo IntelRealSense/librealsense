@@ -41,14 +41,15 @@ def set_and_verify_timestamp_domain(sensor, global_time_enabled: bool):
     test.check_equal(frame.get_frame_timestamp_domain(), expected_ts_domain)
 
 
-frame_queue = rs.frame_queue(capacity=1, keep_frames=False)
 device = test.find_first_device_or_exit()
 
 # Depth sensor test
+depth_frame_queue = rs.frame_queue(capacity=10, keep_frames=False)
+
 depth_sensor = device.first_depth_sensor()
 depth_profile = next(p for p in depth_sensor.profiles if p.stream_type() == rs.stream.depth)
 depth_sensor.open(depth_profile)
-depth_sensor.start(frame_queue)
+depth_sensor.start(depth_frame_queue)
 
 # Test #1
 test.start('Check setting global time domain: depth sensor - timestamp domain is OFF')
@@ -63,10 +64,12 @@ test.finish()
 close_resources(depth_sensor)
 
 # Color sensor test
+color_frame_queue = rs.frame_queue(capacity=10, keep_frames=False)
+
 color_sensor = device.first_color_sensor()
 color_profile = next(p for p in color_sensor.profiles if p.stream_type() == rs.stream.color)
 color_sensor.open(color_profile)
-color_sensor.start(frame_queue)
+color_sensor.start(color_frame_queue)
 
 # Test #3
 test.start('Check setting global time domain: color sensor - timestamp domain is OFF')
