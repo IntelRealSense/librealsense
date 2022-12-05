@@ -254,6 +254,7 @@ EXPORTS
     rs2_toggle_advanced_mode
     rs2_load_json
     rs2_serialize_json
+    rs2_emitter_frequency_mode_to_string
 
     rs2_create_record_device
     rs2_create_record_device_ex
@@ -377,6 +378,7 @@ EXPORTS
     rs2_run_on_chip_calibration_cpp
     rs2_run_tare_calibration
     rs2_run_tare_calibration_cpp
+    rs2_process_calibration_frame
     rs2_run_focal_length_calibration
     rs2_run_focal_length_calibration_cpp
     rs2_run_uv_map_calibration

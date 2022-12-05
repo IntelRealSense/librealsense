@@ -276,12 +276,14 @@ void rs2_enter_update_state(const rs2_device* device, rs2_error** error);
                                       "speed": 3,
                                       "scan parameter": 0,
                                       "adjust both sides": 0,
-                                      "white wall mode": 0
+                                      "white wall mode": 0,
+                                      "host assistance": 0
                                     }
-                                    calib_type - calibraton type: 0 = regular, 1 = focal length, 2 = both regular and focal length in order
+                                    calib_type - calibraton type: 0 = regular, 1 = focal length, 2 = both regular and focal length in order, 
                                     speed - for regular calibration. value can be one of: Very fast = 0, Fast = 1, Medium = 2, Slow = 3, White wall = 4, default is Slow for type 0 and Fast for type 2
                                     scan_parameter - for regular calibration. value can be one of: Py scan (default) = 0, Rx scan = 1
                                     adjust_both_sides - for focal length calibration. value can be one of: 0 = adjust right only, 1 = adjust both sides
+                                    host_assistance: 0 for no assistance, 1 for starting with assistance, 2 for first part feeding host data to firmware, 3 for second part of feeding host data to firmware (calib_type 2 only)
                                     white_wall_mode - white wall mode: 0 for normal mode and 1 for white wall mode
                                     if json is nullptr it will be ignored and calibration will use the default parameters
 * \param[out] health            The absolute value of regular calibration Health-Check captures how far camera calibration is from the optimal one
@@ -311,13 +313,17 @@ const rs2_raw_data_buffer* rs2_run_on_chip_calibration_cpp(rs2_device* device, c
                                       "speed": 3,
                                       "scan parameter": 0,
                                       "adjust both sides": 0,
-                                      "white wall mode": 0
-                                    }
+                                      "white wall mode": 0, 
+                                      "host assistance": 0
+                                   }
                                     calib_type - calibraton type: 0 = regular, 1 = focal length, 2 = both regular and focal length in order
+                                                                 30 = regular for version 3, 31 = focal length for version 3, 32 = both regular and focal length in order for version 3,
+                                                                 33 = regular for second part of version 3
                                     speed - for regular calibration, value can be one of: Very fast = 0, Fast = 1, Medium = 2, Slow = 3, White wall = 4, default is Slow for type 0 and Fast for type 2
                                     scan_parameter - for regular calibration. value can be one of: Py scan (default) = 0, Rx scan = 1
                                     adjust_both_sides - for focal length calibration. value can be one of: 0 = adjust right only, 1 = adjust both sides
                                     white_wall_mode - white wall mode: 0 for normal mode and 1 for white wall mode
+                                    host_assistance: 0 for no assistance, 1 for starting with assistance, 2 for first part feeding host data to firmware, 3 for second part of feeding host data to firmware (calib_type 2 only)
                                     if json is nullptr it will be ignored and calibration will use the default parameters
 * \param[out] health            The absolute value of regular calibration Health-Check captures how far camera calibration is from the optimal one
                                     [0, 0.25) - Good
@@ -348,20 +354,39 @@ const rs2_raw_data_buffer* rs2_run_on_chip_calibration(rs2_device* device, const
                                       "step count": 20,
                                       "accuracy": 2,
                                       "scan parameter": 0,
-                                      "data sampling": 0
+                                      "data sampling": 0,
+                                      "host assistance": 0,
+                                      "depth" : 0
                                     }
                                     average step count - number of frames to average, must be between 1 - 30, default = 20
                                     step count - max iteration steps, must be between 5 - 30, default = 10
                                     accuracy - Subpixel accuracy level, value can be one of: Very high = 0 (0.025%), High = 1 (0.05%), Medium = 2 (0.1%), Low = 3 (0.2%), Default = Very high (0.025%), default is Medium
                                     scan_parameter - value can be one of: Py scan (default) = 0, Rx scan = 1
                                     data_sampling - value can be one of:polling data sampling = 0, interrupt data sampling = 1
+                                    host_assistance: 0 for no assistance, 1 for starting with assistance, 2 for feeding host data to firmware
+                                    depth: 0 for not relating to depth, > 0 for feeding depth from host to firmware, -1 for ending to feed depth from host to firmware
                                     if json is nullptr it will be ignored and calibration will use the default parameters
 * \param[in]  content_size       Json string size if its 0 the json will be ignored and calibration will use the default parameters
+* \param[out] health            The absolute value of regular calibration Health-Check captures how far camera calibration is from the optimal one
+                                    [0, 0.25) - Good
+                                    [0.25, 0.75) - Can be Improved
+                                    [0.75, ) - Requires Calibration
 * \param[in]  callback           Optional callback to get progress notifications
 * \param[in]  timeout_ms         Timeout in ms (use 5000 msec unless instructed otherwise)
+* \param[out] health             The health check numbers before and after calibration
 * \return                        New calibration table
 */
-const rs2_raw_data_buffer* rs2_run_tare_calibration_cpp(rs2_device* dev, float ground_truth_mm, const void* json_content, int content_size, rs2_update_progress_callback* progress_callback, int timeout_ms, rs2_error** error);
+const rs2_raw_data_buffer* rs2_run_tare_calibration_cpp(rs2_device* dev, float ground_truth_mm, const void* json_content, int content_size, float* health, rs2_update_progress_callback* progress_callback, int timeout_ms, rs2_error** error);
+
+
+/**
+* During host assisted calibration (Tare or on-chip), this is used to pump new depth frames until calibration is done.
+* \param[in]  f                  The next frame.
+* \param[in]  timeout_ms         Timeout in ms (use 5000 msec unless instructed otherwise)
+* \param[out] health             The health check numbers before and after calibration
+* \return                        New calibration table
+*/
+const rs2_raw_data_buffer* rs2_process_calibration_frame(rs2_device* dev, const rs2_frame* f, float* const health, rs2_update_progress_callback* progress_callback, int timeout_ms, rs2_error** error);
 
 
 /**
@@ -438,21 +463,26 @@ void rs2_trigger_device_calibration( rs2_device* dev, rs2_calibration_type type,
                                       "step count": 20,
                                       "accuracy": 2,
                                       "scan parameter": 0,
-                                      "data sampling": 0
+                                      "data sampling": 0,
+                                      "host assistance": 0,
+                                      "depth": 0
                                     }
                                     average step count - number of frames to average, must be between 1 - 30, default = 20
                                     step count - max iteration steps, must be between 5 - 30, default = 10
                                     accuracy - Subpixel accuracy level, value can be one of: Very high = 0 (0.025%), High = 1 (0.05%), Medium = 2 (0.1%), Low = 3 (0.2%), Default = Very high (0.025%), default is Medium
                                     scan_parameter - value can be one of: Py scan (default) = 0, Rx scan = 1
                                     data_sampling - value can be one of:polling data sampling = 0, interrupt data sampling = 1
+                                    host_assistance: 0 for no assistance, 1 for starting with assistance, 2 for feeding host data to firmware
+                                    depth: 0 for not relating to depth, > 0 for feeding depth from host to firmware, -1 for ending to feed depth from host to firmware
                                     if json is nullptr it will be ignored and calibration will use the default parameters
 * \param[in]  content_size       Json string size if its 0 the json will be ignored and calibration will use the default parameters
 * \param[in]  callback           Optional callback for update progress notifications, the progress value is normailzed to 1
 * \param[in]  client_data        Optional client data for the callback
 * \param[in] timeout_ms          Timeout in ms (use 5000 msec unless instructed otherwise)
+* \param[out] health             The health check numbers before and after calibration
 * \return                        New calibration table
 */
-const rs2_raw_data_buffer* rs2_run_tare_calibration(rs2_device* dev, float ground_truth_mm, const void* json_content, int content_size, rs2_update_progress_callback_ptr callback, void* client_data, int timeout_ms, rs2_error** error);
+const rs2_raw_data_buffer* rs2_run_tare_calibration(rs2_device* dev, float ground_truth_mm, const void* json_content, int content_size, float* health, rs2_update_progress_callback_ptr callback, void* client_data, int timeout_ms, rs2_error** error);
 
 /**
 *  Read current calibration table from flash.

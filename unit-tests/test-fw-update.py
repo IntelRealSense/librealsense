@@ -3,8 +3,8 @@
 
 # we want this test to run first so that all tests run with updated FW versions, so we give it priority 0
 #test:priority 0
+#test:device each(D400*) !D457
 #test:device each(L500*)
-#test:device each(D400*)
 
 import pyrealsense2 as rs, sys, os, subprocess
 import os
@@ -161,26 +161,7 @@ log.d( 'FW version:', current_fw_version )
 bundled_fw_version = repo.pretty_fw_version( device.get_info( rs.camera_info.recommended_firmware_version ) )
 log.d( 'bundled FW version:', bundled_fw_version )
 
-def compare_fw_versions( v1, v2 ):
-    """
-    :param v1: left FW version
-    :param v2: right FW version
-    :return: 1 if v1 > v2; -1 is v1 < v2; 0 if they're equal
-    """
-    v1_list = v1.split( '.' )
-    v2_list = v2.split( '.' )
-    if len(v1_list) != 4:
-        raise RuntimeError( "FW version (left) '" + v1 + "' is invalid" )
-    if len(v2_list) != 4:
-        raise RuntimeError( "FW version (right) '" + v2 + "' is invalid" )
-    for n1, n2 in zip( v1_list, v2_list ):
-        if int(n1) > int(n2):
-            return 1
-        if int(n1) < int(n2):
-            return -1
-    return 0
-
-if compare_fw_versions( current_fw_version, bundled_fw_version ) == 0:
+if repo.compare_fw_versions( current_fw_version, bundled_fw_version ) == 0:
     # Current is same as bundled
     if recovered or 'nightly' not in test.context:
         # In nightly, we always update; otherwise we try to save time, so do not do anything!

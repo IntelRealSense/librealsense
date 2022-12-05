@@ -21,6 +21,14 @@
 using namespace librealsense;
 namespace librealsense
 {
+    // D457 development
+    const std::map<uint32_t, rs2_format> motion_fourcc_to_rs2_format = {
+        {rs_fourcc('G','R','E','Y'), RS2_FORMAT_MOTION_XYZ32F},
+    };
+    const std::map<uint32_t, rs2_stream> motion_fourcc_to_rs2_stream = {
+        {rs_fourcc('G','R','E','Y'), RS2_STREAM_ACCEL},
+    };
+
     const std::map<uint32_t, rs2_format> fisheye_fourcc_to_rs2_format = {
         {rs_fourcc('R','A','W','8'), RS2_FORMAT_RAW8},
         {rs_fourcc('G','R','E','Y'), RS2_FORMAT_RAW8},
@@ -53,15 +61,15 @@ namespace librealsense
         region_of_interest _roi{};
     };
 
-    class ds5_hid_sensor : public synthetic_sensor,
+    class ds5_motion_sensor : public synthetic_sensor,
                            public motion_sensor
     {
     public:
-        explicit ds5_hid_sensor(std::string name,
+        explicit ds5_motion_sensor(std::string name,
             std::shared_ptr<sensor_base> sensor,
             device* device,
-            ds5_motion* owner)
-            : synthetic_sensor(name, sensor, device),
+            ds5_motion_base* owner)
+            : synthetic_sensor(name, sensor, device, motion_fourcc_to_rs2_format, motion_fourcc_to_rs2_stream),
             _owner(owner)
         {}
 
@@ -97,7 +105,7 @@ namespace librealsense
         }
 
     private:
-        const ds5_motion* _owner;
+        const ds5_motion_base* _owner;
     };
 
     class ds5_fisheye_sensor : public synthetic_sensor, public video_sensor_interface, public roi_sensor_base, public fisheye_sensor
@@ -156,7 +164,7 @@ namespace librealsense
         const ds5_motion* _owner;
     };
 
-    rs2_motion_device_intrinsic ds5_motion::get_motion_intrinsics(rs2_stream stream) const
+    rs2_motion_device_intrinsic ds5_motion_base::get_motion_intrinsics(rs2_stream stream) const
     {
         if (stream == RS2_STREAM_ACCEL)
             return create_motion_intrinsics(**_accel_intrinsic);
@@ -166,6 +174,59 @@ namespace librealsense
 
         throw std::runtime_error(to_string() << "Motion Intrinsics unknown for stream " << rs2_stream_to_string(stream) << "!");
     }
+
+    std::shared_ptr<synthetic_sensor> ds5_motion_uvc::create_uvc_device(std::shared_ptr<context> ctx,
+                                                  const std::vector<platform::uvc_device_info>& all_uvc_infos,
+                                                  const firmware_version& camera_fw_version)
+    {
+        if (all_uvc_infos.empty())
+        {
+            LOG_WARNING("No UVC info provided, IMU is disabled");
+            return nullptr;
+        }
+
+        auto&& backend = ctx->get_backend();
+
+        std::vector<std::shared_ptr<platform::uvc_device>> imu_devices;
+        for (auto&& info : filter_by_mi(all_uvc_infos, 4)) // Filter just mi=4, IMU
+            imu_devices.push_back(backend.create_uvc_device(info));
+
+        std::unique_ptr<frame_timestamp_reader> timestamp_reader_backup(new ds5_timestamp_reader(backend.create_time_service()));
+        std::unique_ptr<frame_timestamp_reader> timestamp_reader_metadata(new ds5_timestamp_reader_from_metadata_mipi_motion(std::move(timestamp_reader_backup)));
+
+        auto enable_global_time_option = std::shared_ptr<global_time_option>(new global_time_option());
+
+        auto raw_motion_ep = std::make_shared<uvc_sensor>("Raw IMU Sensor", std::make_shared<platform::multi_pins_uvc_device>(imu_devices),
+             std::unique_ptr<frame_timestamp_reader>(new global_timestamp_reader(std::move(timestamp_reader_metadata), _tf_keeper, enable_global_time_option)), this);
+
+        auto motion_ep = std::make_shared<ds5_motion_sensor>("Motion Module", raw_motion_ep, this, this);
+
+        motion_ep->register_option(RS2_OPTION_GLOBAL_TIME_ENABLED, enable_global_time_option);
+
+        // register pre-processing
+        std::shared_ptr<enable_motion_correction> mm_correct_opt = nullptr;
+
+        //  Motion intrinsic calibration presents is a prerequisite for motion correction.
+        try
+        {
+            if (_mm_calib)
+            {
+                mm_correct_opt = std::make_shared<enable_motion_correction>(motion_ep.get(),
+                    option_range{ 0, 1, 1, 1 });
+                motion_ep->register_option(RS2_OPTION_ENABLE_MOTION_CORRECTION, mm_correct_opt);
+            }
+        }
+        catch (...) {}
+
+        motion_ep->register_processing_block(
+            { {RS2_FORMAT_MOTION_XYZ32F} },
+            { {RS2_FORMAT_MOTION_XYZ32F, RS2_STREAM_ACCEL}, {RS2_FORMAT_MOTION_XYZ32F, RS2_STREAM_GYRO} },
+            [&, mm_correct_opt]() { return std::make_shared<motion_to_accel_gyro>(_mm_calib, mm_correct_opt);
+        });
+
+        return motion_ep;
+    }
+
 
     std::shared_ptr<synthetic_sensor> ds5_motion::create_hid_device(std::shared_ptr<context> ctx,
                                                                 const std::vector<platform::hid_device_info>& all_hid_infos,
@@ -205,7 +266,7 @@ namespace librealsense
             sensor_name_and_hid_profiles,
             this);
 
-        auto hid_ep = std::make_shared<ds5_hid_sensor>("Motion Module", raw_hid_ep, this, this);
+        auto hid_ep = std::make_shared<ds5_motion_sensor>("Motion Module", raw_hid_ep, this, this);
 
         hid_ep->register_option(RS2_OPTION_GLOBAL_TIME_ENABLED, enable_global_time_option);
 
@@ -246,7 +307,7 @@ namespace librealsense
         return hid_ep;
     }
 
-    std::shared_ptr<auto_exposure_mechanism> ds5_motion::register_auto_exposure_options(synthetic_sensor* ep, const platform::extension_unit* fisheye_xu)
+    std::shared_ptr<auto_exposure_mechanism> ds5_motion_base::register_auto_exposure_options(synthetic_sensor* ep, const platform::extension_unit* fisheye_xu)
     {
         auto uvc_raw_sensor = As<uvc_sensor, sensor_base>(ep->get_raw_sensor());
         auto gain_option =  std::make_shared<uvc_pu_option>(*uvc_raw_sensor, RS2_OPTION_GAIN);
@@ -301,51 +362,6 @@ namespace librealsense
             }
         );
         return auto_exposure;
-    }
-
-    ds5_motion::ds5_motion(std::shared_ptr<context> ctx,
-                           const platform::backend_device_group& group)
-        : device(ctx, group), ds5_device(ctx, group),
-          _fisheye_stream(new stream(RS2_STREAM_FISHEYE)),
-          _accel_stream(new stream(RS2_STREAM_ACCEL)),
-          _gyro_stream(new stream(RS2_STREAM_GYRO))
-    {
-        using namespace ds;
-
-        std::vector<platform::hid_device_info> hid_infos = group.hid_devices;
-
-        if (!hid_infos.empty())
-        {
-            // product id
-            _pid = static_cast<uint16_t>(strtoul(hid_infos.front().pid.data(), nullptr, 16));
-
-            // motion correction
-            _mm_calib = std::make_shared<mm_calib_handler>(_hw_monitor, _pid);
-
-            _accel_intrinsic = std::make_shared<lazy<ds::imu_intrinsic>>([this]() { return _mm_calib->get_intrinsic(RS2_STREAM_ACCEL); });
-            _gyro_intrinsic = std::make_shared<lazy<ds::imu_intrinsic>>([this]() { return _mm_calib->get_intrinsic(RS2_STREAM_GYRO); });
-
-            // use predefined extrinsics
-            _depth_to_imu = std::make_shared<lazy<rs2_extrinsics>>([this]() { return _mm_calib->get_extrinsic(RS2_STREAM_ACCEL); });
-        }
-
-        initialize_fisheye_sensor(ctx,group);
-
-        // Make sure all MM streams are positioned with the same extrinsics
-        environment::get_instance().get_extrinsics_graph().register_extrinsics(*_depth_stream, *_accel_stream, _depth_to_imu);
-        environment::get_instance().get_extrinsics_graph().register_same_extrinsics(*_accel_stream, *_gyro_stream);
-        register_stream_to_extrinsic_group(*_gyro_stream, 0);
-        register_stream_to_extrinsic_group(*_accel_stream, 0);
-
-        // Try to add HID endpoint
-        auto hid_ep = create_hid_device(ctx, group.hid_devices, _fw_version);
-        if (hid_ep)
-        {
-            _motion_module_device_idx = static_cast<uint8_t>(add_sensor(hid_ep));
-
-            // HID metadata attributes
-            hid_ep->get_raw_sensor()->register_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP, make_hid_header_parser(&platform::hid_header::timestamp));
-        }
     }
 
     void ds5_motion::initialize_fisheye_sensor(std::shared_ptr<context> ctx, const platform::backend_device_group& group)
@@ -441,6 +457,90 @@ namespace librealsense
 
         // Add fisheye endpoint
         _fisheye_device_idx = add_sensor(fisheye_ep);
+    }
+
+    ds5_motion_base::ds5_motion_base(std::shared_ptr<context> ctx,
+                                    const platform::backend_device_group& group)
+        : device(ctx, group),
+          ds5_device(ctx, group),
+          _accel_stream(new stream(RS2_STREAM_ACCEL)),
+          _gyro_stream(new stream(RS2_STREAM_GYRO))
+    {
+        _pid = ds5_device::_pid;
+
+        // motion correction
+        _mm_calib = std::make_shared<mm_calib_handler>(_hw_monitor, _pid);
+
+        _accel_intrinsic = std::make_shared<lazy<ds::imu_intrinsic>>([this]() { return _mm_calib->get_intrinsic(RS2_STREAM_ACCEL); });
+        _gyro_intrinsic = std::make_shared<lazy<ds::imu_intrinsic>>([this]() { return _mm_calib->get_intrinsic(RS2_STREAM_GYRO); });
+
+        // use predefined extrinsics
+        _depth_to_imu = std::make_shared<lazy<rs2_extrinsics>>([this]() { return _mm_calib->get_extrinsic(RS2_STREAM_ACCEL); });
+
+        // Make sure all MM streams are positioned with the same extrinsics
+        environment::get_instance().get_extrinsics_graph().register_extrinsics(*_depth_stream, *_accel_stream, _depth_to_imu);
+        environment::get_instance().get_extrinsics_graph().register_same_extrinsics(*_accel_stream, *_gyro_stream);
+        register_stream_to_extrinsic_group(*_gyro_stream, 0);
+        register_stream_to_extrinsic_group(*_accel_stream, 0);
+    }
+
+    ds5_motion::ds5_motion(std::shared_ptr<context> ctx,
+                           const platform::backend_device_group& group)
+        : ds5_motion_base(ctx, group),
+          device(ctx, group),
+          ds5_device(ctx, group),
+        _fisheye_stream(new stream(RS2_STREAM_FISHEYE))
+    {
+        using namespace ds;
+
+        std::vector<platform::hid_device_info> hid_infos = group.hid_devices;
+
+        if (!hid_infos.empty())
+        {
+            // product id
+            _pid = static_cast<uint16_t>(strtoul(hid_infos.front().pid.data(), nullptr, 16));
+        }
+
+        initialize_fisheye_sensor(ctx,group);
+
+        // Try to add HID endpoint
+        std::shared_ptr<synthetic_sensor> hid_ep;
+        hid_ep = create_hid_device(ctx, group.hid_devices, _fw_version);
+        if (hid_ep)
+        {
+            _motion_module_device_idx = static_cast<uint8_t>(add_sensor(hid_ep));
+
+            // HID metadata attributes
+            hid_ep->get_raw_sensor()->register_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP, make_hid_header_parser(&platform::hid_header::timestamp));
+        }
+    }
+
+    ds5_motion_uvc::ds5_motion_uvc(std::shared_ptr<context> ctx,
+                           const platform::backend_device_group& group)
+        : ds5_motion_base(ctx, group),
+          device(ctx, group),
+          ds5_device(ctx, group)
+    {
+        using namespace ds;
+
+        std::vector<platform::uvc_device_info> uvc_infos = group.uvc_devices;
+
+        if (!uvc_infos.empty())
+        {
+            // product id - D457 dev - check - must not be the front of uvc_infos vector
+            _pid = uvc_infos.front().pid;
+        }
+
+        // Try to add HID endpoint
+        std::shared_ptr<synthetic_sensor> sensor_ep;
+        sensor_ep = create_uvc_device(ctx, group.uvc_devices, _fw_version);
+        if (sensor_ep)
+        {
+            _motion_module_device_idx = static_cast<uint8_t>(add_sensor(sensor_ep));
+
+            // HID metadata attributes - D457 dev - check metadata parser
+            sensor_ep->get_raw_sensor()->register_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP, make_hid_header_parser(&platform::hid_header::timestamp));
+        }
     }
 
     mm_calib_handler::mm_calib_handler(std::shared_ptr<hw_monitor> hw_monitor, uint16_t pid) :

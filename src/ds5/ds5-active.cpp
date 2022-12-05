@@ -25,7 +25,7 @@ namespace librealsense
     {
         using namespace ds;
 
-        //Projector's capacity is established based on actual HW capabilities
+        // Projector's capacity is established based on actual HW capabilities
         auto pid = group.uvc_devices.front().pid;
         if ((pid != RS_USB2_PID) && ((_device_capabilities & d400_caps::CAP_ACTIVE_PROJECTOR) == d400_caps::CAP_ACTIVE_PROJECTOR))
         {
@@ -69,9 +69,32 @@ namespace librealsense
             }
             
             //PROJECTOR TEMPERATURE OPTION
-            depth_ep.register_option(RS2_OPTION_PROJECTOR_TEMPERATURE,
-                std::make_shared<asic_and_projector_temperature_options>(raw_depth_ep,
-                    RS2_OPTION_PROJECTOR_TEMPERATURE));
+            if (_pid == ds::RS457_PID)
+            {
+                depth_ep.register_option(RS2_OPTION_PROJECTOR_TEMPERATURE,
+                    std::make_shared<projector_temperature_option_mipi>(_hw_monitor,
+                        RS2_OPTION_PROJECTOR_TEMPERATURE));
+            }
+            else
+            {
+                depth_ep.register_option(RS2_OPTION_PROJECTOR_TEMPERATURE,
+                    std::make_shared<asic_and_projector_temperature_options>(raw_depth_ep,
+                        RS2_OPTION_PROJECTOR_TEMPERATURE));
+            }
+
+            // EMITTER FREQUENCY OPTION
+            if( ( _pid == ds::RS457_PID || _pid == ds::RS455_PID )
+                && _fw_version >= firmware_version( "5.13.1.53" ) )
+            {
+                auto emitter_freq = std::make_shared< emitter_frequency >(
+                    raw_depth_ep,
+                    std::map< float, std::string >{
+                        { (float)RS2_EMITTER_FREQUENCY_57_KHZ, "57 KHZ" },
+                        { (float)RS2_EMITTER_FREQUENCY_91_KHZ, "91 KHZ" } } );
+
+                depth_ep.register_option( RS2_OPTION_EMITTER_FREQUENCY, emitter_freq );
+            }
+
         }
         else
         {

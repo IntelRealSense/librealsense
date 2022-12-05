@@ -259,6 +259,22 @@ void log_callback_end( uint32_t fps,
         return *_owner;
     }
 
+    // TODO - make this method more efficient, using parralel computation, with SSE or CUDA, when available
+    std::vector<byte> sensor_base::align_width_to_64(int width, int height, int bpp, byte* pix) const
+    {
+        int factor = bpp >> 3;
+        int bytes_in_width = width * factor;
+        int actual_input_bytes_in_width = (((bytes_in_width / 64 ) + 1) * 64);
+        std::vector<byte> pixels;
+        for (int j = 0; j < height; ++j)
+        {
+            int start_index = j * actual_input_bytes_in_width;
+            int end_index = (width * factor) + (j * actual_input_bytes_in_width);
+            pixels.insert(pixels.end(), pix + start_index, pix + end_index);
+        }
+        return pixels;
+    }
+
     std::shared_ptr<frame> sensor_base::generate_frame_from_data(const platform::frame_object& fo,
         frame_timestamp_reader* timestamp_reader,
         const rs2_time_t& last_timestamp,
@@ -268,11 +284,15 @@ void log_callback_end( uint32_t fps,
         auto system_time = environment::get_instance().get_time_service()->get_time();
         auto fr = std::make_shared<frame>();
         
-        //REMOVED! - no need to add 2 copies to a frame
-        //byte* pix = (byte*)fo.pixels;
-        //std::vector<byte> pixels(pix, pix + fo.frame_size);
-        //fr->data = pixels;
         fr->set_stream(profile);
+
+        // D457 dev - computing relevant frame size
+        const auto&& vsp = As<video_stream_profile, stream_profile_interface>(profile);
+        int width = vsp ? vsp->get_width() : 0;
+        int height = vsp ? vsp->get_height() : 0;
+        int bpp = get_image_bpp(profile->get_format());
+        auto frame_size = compute_frame_expected_size(width, height, bpp);
+
         frame_additional_data additional_data(0,
             0,
             system_time,
@@ -283,7 +303,7 @@ void log_callback_end( uint32_t fps,
             last_frame_number,
             false,
             0,
-            (uint32_t)fo.frame_size);
+            (uint32_t)frame_size);
 
         if (_metadata_modifier)
             _metadata_modifier(additional_data);
@@ -318,6 +338,40 @@ void log_callback_end( uint32_t fps,
         }
     }
 
+    void uvc_sensor::verify_supported_requests(const stream_profiles& requests) const
+    {
+        // This method's aim is to send a relevant exception message when a user tries to stream
+        // twice the same stream (at least) with different configurations (fps, resolution)
+        std::map<rs2_stream, uint32_t> requests_map;
+        for (auto&& req : requests)
+        {
+            requests_map[req->get_stream_type()] = req->get_framerate();
+        }
+
+        if (requests_map.size() < requests.size())
+                throw(std::runtime_error("Wrong configuration requested"));
+
+        // D457 dev
+        // taking into account that only with D457, streams GYRo and ACCEL will be
+        // mapped as uvc instead of hid
+        uint32_t gyro_fps = -1;
+        uint32_t accel_fps = -1;
+        for (auto it = requests_map.begin(); it != requests_map.end(); ++it)
+        {
+            if (it->first == RS2_STREAM_GYRO)
+                gyro_fps = it->second;
+            else if (it->first == RS2_STREAM_ACCEL)
+                accel_fps = it->second;
+            if (gyro_fps != -1 && accel_fps != -1)
+                break;
+        }
+
+        if (gyro_fps != -1 && accel_fps != -1 && gyro_fps != accel_fps)
+        {
+            throw(std::runtime_error("Wrong configuration requested - GYRO and ACCEL streams' fps to be equal for this device"));
+        }
+    }
+
     void uvc_sensor::open(const stream_profiles& requests)
     {
         std::lock_guard<std::mutex> lock(_configure_lock);
@@ -333,6 +387,8 @@ void log_callback_end( uint32_t fps,
 
         std::vector<platform::stream_profile> commited;
 
+        verify_supported_requests(requests);
+
         for (auto&& req_profile : requests)
         {
             auto&& req_profile_base = std::dynamic_pointer_cast<stream_profile_base>(req_profile);
@@ -344,12 +400,6 @@ void log_callback_end( uint32_t fps,
                     [this, req_profile_base, req_profile, last_frame_number, last_timestamp](platform::stream_profile p, platform::frame_object f, std::function<void()> continuation) mutable
                 {
                     const auto&& system_time = environment::get_instance().get_time_service()->get_time();
-                    const auto&& fr = generate_frame_from_data(f, _timestamp_reader.get(), last_timestamp, last_frame_number, req_profile_base);
-                    const auto&& requires_processing = true; // TODO - Ariel add option
-                    const auto&& timestamp_domain = _timestamp_reader->get_frame_timestamp_domain(fr);
-                    auto bpp = get_image_bpp( req_profile_base->get_format() );
-                    auto&& frame_counter = fr->additional_data.frame_number;
-                    auto&& timestamp = fr->additional_data.timestamp;
 
                     if (!this->is_streaming())
                     {
@@ -359,6 +409,19 @@ void log_callback_end( uint32_t fps,
                             << ", Arrived," << std::fixed << f.backend_time << " " << system_time);
                         return;
                     }
+
+                    const auto&& fr = generate_frame_from_data(f, _timestamp_reader.get(), last_timestamp, last_frame_number, req_profile_base);
+                    const auto&& requires_processing = true; // TODO - Ariel add option
+                    const auto&& timestamp_domain = _timestamp_reader->get_frame_timestamp_domain(fr);
+                    auto bpp = get_image_bpp( req_profile_base->get_format() );
+                    auto&& frame_counter = fr->additional_data.frame_number;
+                    auto&& timestamp = fr->additional_data.timestamp;
+
+                    // D457 development
+                    size_t expected_size;
+                    auto&& msp = As<motion_stream_profile, stream_profile_interface>(req_profile);
+                    if (msp)
+                        expected_size = 64;//32; // D457 - WORKAROUND - SHOULD BE REMOVED AFTER CORRECTION IN DRIVER
 
                     frame_continuation release_and_enqueue(continuation, f.pixels);
 
@@ -384,10 +447,13 @@ void log_callback_end( uint32_t fps,
                     if( req_profile->get_stream_type() == RS2_STREAM_CONFIDENCE )
                         bpp = 4;
 
-                    auto expected_size = (width * height * bpp) >> 3;
+                    if (!msp)
+                        expected_size = compute_frame_expected_size(width, height, bpp);
+
                     // For compressed formats copy the raw data as is
                     if (val_in_range(req_profile_base->get_format(), { RS2_FORMAT_MJPEG, RS2_FORMAT_Z16H }))
                         expected_size = static_cast<int>(f.frame_size);
+
                     frame_holder fh = _source.alloc_frame(
                         stream_to_frame_types( req_profile_base->get_stream_type() ),
                         expected_size,
@@ -399,15 +465,36 @@ void log_callback_end( uint32_t fps,
 
                     if (fh.frame)
                     {
-                        assert( expected_size == sizeof(byte) * /*fr->data.size()*/f.frame_size );
+                        // method should be limited to use of MIPI - not for USB
+                        // the aim is to grab the data from a bigger buffer, which is aligned to 64 bytes,
+                        // when the resolution's width is not aligned to 64
+                        if ((width * bpp >> 3) % 64 != 0 && f.frame_size > expected_size)
+                        {
+                            std::vector<byte> pixels = align_width_to_64(width, height, bpp, (byte*)f.pixels);
+                            assert( expected_size == sizeof(byte) * pixels.size());
+                            memcpy( (void *)fh->get_frame_data(), pixels.data(), expected_size );
+                        }
+                        else
+                        {
+                            // The calibration format Y12BPP is modified to be 32 bits instead of 24 due to an issue with MIPI driver
+                            // and padding that occurs in transmission.
+                            // For D4xx cameras the original 24 bit support is achieved by comparing actual vs expected size:
+                            // when it is exactly 75% of the MIPI-generated size (24/32bpp), then 24bpp-sized image will be processed
+                            if (req_profile_base->get_format() == RS2_FORMAT_Y12I)
+                                if (((expected_size>>2)*3)==sizeof(byte) * f.frame_size)
+                                    expected_size = sizeof(byte) * f.frame_size;
+                            
+                            assert(expected_size == sizeof(byte) * f.frame_size);
+                            memcpy((void*)fh->get_frame_data(), f.pixels, expected_size);
+                        }
 
-                        memcpy( (void *)fh->get_frame_data(),
-                                /*fr->data.data()*/ f.pixels,
-                                expected_size );
+                        auto&& video = dynamic_cast<video_frame*>(fh.frame);
+                        if (video)
+                        {
+                            video->assign(width, height, width * bpp / 8, bpp);
+                        }
 
-                        auto&& video = (video_frame*)fh.frame;
-                        video->assign(width, height, width * bpp / 8, bpp);
-                        video->set_timestamp_domain(timestamp_domain);
+                        fh->set_timestamp_domain(timestamp_domain);
                         fh->set_stream(req_profile_base);
                     }
                     else
@@ -549,6 +636,7 @@ void log_callback_end( uint32_t fps,
 
         _is_streaming = false;
         _device->stop_callbacks();
+        _timestamp_reader->reset();
         raise_on_before_streaming_changes(false);
     }
 
@@ -609,7 +697,9 @@ void log_callback_end( uint32_t fps,
 
     stream_profiles uvc_sensor::init_stream_profiles()
     {
-        std::unordered_set<std::shared_ptr<video_stream_profile>> profiles;
+        std::unordered_set<std::shared_ptr<video_stream_profile>> video_profiles;
+        // D457 development - only via mipi imu frames com from uvc instead of hid
+        std::unordered_set<std::shared_ptr<motion_stream_profile>> motion_profiles;
         power on(std::dynamic_pointer_cast<uvc_sensor>(shared_from_this()));
 
         _uvc_profiles = _device->get_profiles();
@@ -620,16 +710,30 @@ void log_callback_end( uint32_t fps,
             if (rs2_fmt == RS2_FORMAT_ANY)
                 continue;
 
-            auto&& profile = std::make_shared<video_stream_profile>(p);
-            profile->set_dims(p.width, p.height);
-            profile->set_stream_type(fourcc_to_rs2_stream(p.format));
-            profile->set_stream_index(0);
-            profile->set_format(rs2_fmt);
-            profile->set_framerate(p.fps);
-            profiles.insert(profile);
+            // D457 development
+            if (rs2_fmt == RS2_FORMAT_MOTION_XYZ32F)
+            {
+                auto profile = std::make_shared<motion_stream_profile>(p);
+                profile->set_stream_type(fourcc_to_rs2_stream(p.format));
+                profile->set_stream_index(0);
+                profile->set_format(rs2_fmt);
+                profile->set_framerate(p.fps);
+                motion_profiles.insert(profile);
+            }
+            else
+            {
+                auto&& profile = std::make_shared<video_stream_profile>(p);
+                profile->set_dims(p.width, p.height);
+                profile->set_stream_type(fourcc_to_rs2_stream(p.format));
+                profile->set_stream_index(0);
+                profile->set_format(rs2_fmt);
+                profile->set_framerate(p.fps);
+                video_profiles.insert(profile);
+            }
         }
 
-        stream_profiles result{ profiles.begin(), profiles.end() };
+        stream_profiles result{ video_profiles.begin(), video_profiles.end() };
+        result.insert(result.end(), motion_profiles.begin(), motion_profiles.end());
         return result;
     }
 
@@ -639,6 +743,8 @@ void log_callback_end( uint32_t fps,
         switch (stream)
         {
         case RS2_STREAM_DEPTH:  return RS2_EXTENSION_DEPTH_FRAME;
+        case RS2_STREAM_ACCEL:
+        case RS2_STREAM_GYRO:   return RS2_EXTENSION_MOTION_FRAME;
         default:                return RS2_EXTENSION_VIDEO_FRAME;
         }
     }
@@ -903,8 +1009,8 @@ void log_callback_end( uint32_t fps,
             last_timestamp = timestamp;
             frame_holder frame = _source.alloc_frame(RS2_EXTENSION_MOTION_FRAME, data_size, fr->additional_data, true);
             memcpy( (void *)frame->get_frame_data(),
-                    /*fr->data.data()*/ sensor_data.fo.pixels,
-                    /*fr->data.size()*/ sizeof( byte ) * sensor_data.fo.frame_size );
+                    sensor_data.fo.pixels,
+                    sizeof( byte ) * sensor_data.fo.frame_size );
             if (!frame)
             {
                 LOG_INFO("Dropped frame. alloc_frame(...) returned nullptr");
