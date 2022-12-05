@@ -37,8 +37,13 @@ jobs:
         #  --force          :   Check all configurations, takes a very long time (~2 hours) and did not find additional errors. Removed.
         #  --max-configs=6  :   Using less configuration permutations (default is 12) to reduce run time. Detects less errors. Removed.
         #  -Dxxx            :   preprocessor configuration to use. Relevant flags taken from build on Ubuntu.
-        run: | 
-          cppcheck ./src ./include ./common ./tools ./third-party/realdds ./third-party/utilities --quiet --std=c++11 -I./src -I./include -I./third-party/utilities/include -I./common --suppress=*:third-party/json.hpp --suppress=*:src/mf/mf*.cpp --xml -j4 -DBUILD_WITH_DDS -DHWM_OVER_XU -DRS2_USE_V4L2_BACKEND -DUNICODE -DUSING_UDEV -DCHECK_FOR_UPDATES &> cppcheck_run.log
+        run: > 
+          cppcheck ./src ./include ./common ./tools ./examples ./third-party/realdds ./third-party/utilities
+          --enable=all --quiet --std=c++11 --xml -j4
+          -I./src -I./include -I./third-party/utilities/include -I./common
+          -i./src/mf i./src/uvc i./src/win i./src/winusb --suppress=*:third-party/json.hpp
+          -DBUILD_WITH_DDS -DHWM_OVER_XU -DRS2_USE_V4L2_BACKEND -DUNICODE -DUSING_UDEV -DCHECK_FOR_UPDATES -D__linux__
+          &> cppcheck_run.log
 
       - name: Upload log
         uses: actions/upload-artifact@v3
