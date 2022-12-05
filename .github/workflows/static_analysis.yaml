@@ -27,15 +27,17 @@ jobs:
       - name: Run
         shell: bash
         #Selected run options:
-        #  .            :   Run on all files in librealsense folder
+        #  ./xxx        :   Folders to scan
         #  --quiet      :   Don't show current checked configuration in log
         #  --std=c++11  :   Use C++11 standard (default but worth mentioning)
         #  -I           :   Include directories
         #  -i           :   Ignore direcrories. Ignore third-party libs that we don't want to check
         #  --suppress   :   Don't issue errors about files matching the expression (when -i for folders is not enough)
         #  --xml        :   Output in XML format
+        #  -j8          :   Run parallel jobs (faster scan)
+        #  --force      :   Check all configurations
         run: | 
-          cppcheck ./src ./include ./common ./tools ./third-party/realdds ./third-party/utilities --quiet --std=c++11 -I./src -I./include -I./third-party/utilities/include -I./common --suppress=*:third-party/json.hpp --xml -j8 &> cppcheck_run.log
+          cppcheck ./src ./include ./common ./tools ./third-party/realdds ./third-party/utilities --quiet --std=c++11 -I./src -I./include -I./third-party/utilities/include -I./common --suppress=*:third-party/json.hpp --xml -j8 --force &> cppcheck_run.log
 
       - name: Upload log
         uses: actions/upload-artifact@v3
