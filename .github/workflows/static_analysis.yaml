@@ -31,7 +31,7 @@ jobs:
         #  --std=c++11      :   Use C++11 standard (default but worth mentioning)
         #  --xml            :   Output in XML format
         #  -j4              :   Run parallel jobs for a faster scan. current HW is 2 core (https://docs.github.com/en/actions/using-github-hosted-runners/about-github-hosted-runners) using 4 to future proof
-        #  --enable         :   Additional check to run. options are [all, style, performance, protability, information, unusedFunction, missingInclude]
+        #  --enable         :   Additional check to run. options are [all, warning, style, performance, protability, information, unusedFunction, missingInclude]
         #  -I               :   Include directories
         #  -i               :   Ignore directories. Ignore third-party libs that we don't want to check
         #  --suppress       :   Don't issue errors about files matching the expression (when -i for folders is not enough)
@@ -40,7 +40,7 @@ jobs:
         #  -Dxxx            :   preprocessor configuration to use. Relevant flags taken from build on Ubuntu.
         run: > 
           cppcheck ./src ./include ./common ./tools ./examples ./third-party/realdds ./third-party/utilities
-          --quiet --std=c++11 --xml -j4 --enable=information
+          --quiet --std=c++11 --xml -j4 --enable=warning
           -I./src -I./include -I./third-party/utilities/include -I./common
           -i./src/mf -i./src/uvc -i./src/win -i./src/winusb --suppress=*:third-party/json.hpp
           -DBUILD_WITH_DDS -DHWM_OVER_XU -DRS2_USE_V4L2_BACKEND -DUNICODE -DUSING_UDEV -DCHECK_FOR_UPDATES -D__linux__
