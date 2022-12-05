@@ -1,8 +1,6 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2022 Intel Corporation. All Rights Reserved.
 
-#include "ds/ds-color-common.h"
-#include "ds-private.h"
 #include "ds5/ds5-color.h"
 #include "ds6/ds6-color.h"
 
