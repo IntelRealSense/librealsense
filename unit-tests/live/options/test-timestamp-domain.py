@@ -42,7 +42,7 @@ def set_and_verify_timestamp_domain(sensor, frame_queue, global_time_enabled: bo
 device = test.find_first_device_or_exit()
 
 # Depth sensor test
-depth_frame_queue = rs.frame_queue(capacity=10, keep_frames=False)
+depth_frame_queue = rs.frame_queue(capacity=1, keep_frames=False)
 
 depth_sensor = device.first_depth_sensor()
 depth_profile = next(p for p in depth_sensor.profiles if p.stream_type() == rs.stream.depth)
@@ -62,7 +62,7 @@ test.finish()
 close_resources(depth_sensor)
 
 # Color sensor test
-color_frame_queue = rs.frame_queue(capacity=10, keep_frames=False)
+color_frame_queue = rs.frame_queue(capacity=1, keep_frames=False)
 
 color_sensor = device.first_color_sensor()
 color_profile = next(p for p in color_sensor.profiles if p.stream_type() == rs.stream.color)
