@@ -2,7 +2,6 @@
 // Copyright(c) 2016 Intel Corporation. All Rights Reserved.
 
 #include "ds5-motion.h"
-#include "ds/ds-motion-common.h"
 
 #include <mutex>
 #include <chrono>
@@ -16,8 +15,6 @@
 #include "stream.h"
 #include "proc/motion-transform.h"
 #include "proc/auto-exposure-processor.h"
-
-#include "l500/l500-private.h"
 
 using namespace librealsense;
 namespace librealsense
@@ -102,7 +99,7 @@ namespace librealsense
         : device(ctx, group), ds5_device(ctx, group)
         _ds_motion_common = std::make_shared<ds_motion_common>(this, ds_device_type::ds5, _fw_version,
             _device_capabilities, _hw_monitor);
-        _ds_motion_common->init_hid(hid_infos);
+        _ds_motion_common->init_hid(hid_infos, *_depth_stream);
         
         initialize_fisheye_sensor(ctx,group);
 

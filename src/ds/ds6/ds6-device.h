@@ -107,6 +107,4 @@ namespace librealsense
         std::shared_ptr<lazy<rs2_extrinsics>> _color_extrinsic;
         bool _is_locked = true;
     };
-
-    processing_blocks get_ds6_depth_recommended_proccesing_blocks();
 }

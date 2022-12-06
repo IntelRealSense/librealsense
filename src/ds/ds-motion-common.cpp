@@ -419,7 +419,7 @@ namespace librealsense
         case ds_device_type::ds6:
         {
             auto dev = dynamic_cast<const ds6_motion*>(_owner);
-            return filter_ds6_device_by_capability(devices, ds::d400_caps::CAP_FISHEYE_SENSOR);
+            return std::vector<platform::uvc_device_info>();
         }
         default:
             throw std::runtime_error("device not referenced in the product line");
@@ -481,25 +481,6 @@ namespace librealsense
             auto fisheye_sensor = dynamic_cast<ds_fisheye_sensor*>(_fisheye_ep.get());
             fisheye_sensor->set_roi_method(std::make_shared<fisheye_auto_exposure_roi_method>(fisheye_auto_exposure));
             break;
-        }
-        default:
-            throw std::runtime_error("device not referenced in the product line");
-        }
-    }
-
-    const stream_interface& ds_motion_common::get_depth_stream() const
-    {
-        switch (_ds_device_type)
-        {
-        case ds_device_type::ds5:
-        {
-            auto dev = dynamic_cast<ds5_motion*>(_owner);
-            return *(dev->_depth_stream);
-        }
-        case ds_device_type::ds6:
-        {
-            auto dev = dynamic_cast<ds6_motion*>(_owner);
-            return *(dev->_depth_stream);
         }
         default:
             throw std::runtime_error("device not referenced in the product line");
@@ -672,7 +653,7 @@ namespace librealsense
         return hid_ep;
     }
 
-    void ds_motion_common::init_hid(const std::vector<platform::hid_device_info>& hid_infos)
+    void ds_motion_common::init_hid(const std::vector<platform::hid_device_info>& hid_infos, const stream_interface& depth_stream)
     {
         if (!hid_infos.empty())
         {
@@ -687,7 +668,7 @@ namespace librealsense
         }
 
         // Make sure all MM streams are positioned with the same extrinsics
-        environment::get_instance().get_extrinsics_graph().register_extrinsics(get_depth_stream(), *_accel_stream, _depth_to_imu);
+        environment::get_instance().get_extrinsics_graph().register_extrinsics(depth_stream, *_accel_stream, _depth_to_imu);
         environment::get_instance().get_extrinsics_graph().register_same_extrinsics(*_accel_stream, *_gyro_stream);
         register_streams_to_extrinsic_groups();
     }
