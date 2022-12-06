@@ -71,8 +71,8 @@ namespace librealsense
     
     class rs_s585_device : public ds6_active,
         public ds6_color,
-        public ds6_motion,
         public ds6_safety,
+        public ds6_motion,
         public ds_advanced_mode_base,
         public firmware_logger_device
     {
@@ -84,8 +84,8 @@ namespace librealsense
             ds6_device(ctx, group),
             ds6_active(ctx, group),
             ds6_color(ctx, group),
-            ds6_motion(ctx, group),
             ds6_safety(ctx, group),
+            ds6_motion(ctx, group),
             ds_advanced_mode_base(ds6_device::_hw_monitor, get_depth_sensor()),
             firmware_logger_device(ctx, group, ds6_device::_hw_monitor,
                 get_firmware_logs_command(),
