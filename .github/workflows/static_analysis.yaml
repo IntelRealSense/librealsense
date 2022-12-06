@@ -22,6 +22,7 @@ jobs:
         run: |
           sudo apt-get update;
           sudo apt-get install -qq cppcheck;
+          cppcheck --version
 
       - name: pwd
         shell: bash
