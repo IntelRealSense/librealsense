@@ -37,6 +37,5 @@ namespace librealsense
 
         optional_value<uint8_t> _fisheye_device_idx;
         optional_value<uint8_t> _motion_module_device_idx;
-
     };
 }

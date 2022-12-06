@@ -39,17 +39,5 @@ namespace librealsense
             }
             return false;
         }
-
-        std::vector<platform::uvc_device_info> filter_ds6_device_by_capability(const std::vector<platform::uvc_device_info>& devices,
-            d400_caps caps)
-        {
-            std::vector<platform::uvc_device_info> results;
-
-            throw invalid_value_exception(to_string()
-                << "Capability filters are not implemented for val "
-                << std::hex << caps << std::dec);
-
-            return results;
-        }
     } // librealsense::ds
 } // namespace librealsense

@@ -44,8 +44,6 @@ namespace librealsense
         //    {RS_S585_PID, "5.8.15.0"}
         //};
 
-        std::vector<platform::uvc_device_info> filter_ds6_device_by_capability(
-            const std::vector<platform::uvc_device_info>& devices, d400_caps caps);
         bool ds6_try_fetch_usb_device(std::vector<platform::usb_device_info>& devices,
             const platform::uvc_device_info& info, platform::usb_device_info& result);
     } // namespace ds

@@ -480,7 +480,7 @@ namespace librealsense
             const firmware_version& camera_fw_version,
             std::shared_ptr<time_diff_keeper> tf_keeper);
 
-        void init_hid(const std::vector<platform::hid_device_info>& hid_infos);
+        void init_hid(const std::vector<platform::hid_device_info>& hid_infos, const stream_interface& depth_stream);
 
         const std::vector<uint8_t>& get_fisheye_calibration_table() const;
 
@@ -499,7 +499,6 @@ namespace librealsense
         std::shared_ptr<auto_exposure_mechanism> register_auto_exposure_options(synthetic_sensor* ep,
             const platform::extension_unit* fisheye_xu);
         void set_roi_method();
-        const stream_interface& get_depth_stream() const;
         void register_streams_to_extrinsic_groups();
         std::vector<platform::uvc_device_info> filter_device_by_capability(const std::vector<platform::uvc_device_info>& devices,
             ds::d400_caps caps);
