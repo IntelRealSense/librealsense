@@ -25,3 +25,9 @@ set_target_properties( ${PROJECT_NAME}
     )
 
 include( "${REPO_ROOT}/third-party/utilities/include/utilities/easylogging/shared-init.cmake" )
+
+install(
+    TARGETS ${PROJECT_NAME}
+    EXPORT pyrealsense2Targets
+    LIBRARY DESTINATION ${PYTHON_INSTALL_DIR}
+    )

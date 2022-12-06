@@ -54,7 +54,10 @@ source_group( "Source Files/topics" FILES ${REALDDS_TOPICS_SOURCE_FILES} )
 
 # Install -----------------------------------------------------------------------------------
 #
-install( TARGETS realdds EXPORT realsense2Targets)
+install( TARGETS ${PROJECT_NAME}
+    EXPORT realsense2Targets
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    )
 
 
 # Python Wrapper ---------------------------------------------------------------------------
