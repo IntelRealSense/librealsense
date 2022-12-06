@@ -297,7 +297,7 @@ jobs:
       run: | 
         python ./wrappers/nodejs/tools/enums.py -i ./include/librealsense2 -a ./wrappers/nodejs/src -v
         cd build
-          cmake .. -DBUILD_PYTHON_BINDINGS=true -DBUILD_NODEJS_BINDINGS=true -DPYBIND11_PYTHON_VERSION=2.7 -DCHECK_FOR_UPDATES=true
+        cmake .. -DBUILD_SHARED_LIBS=true -DBUILD_EXAMPLES=false -DBUILD_TOOLS=false -DBUILD_WITH_TM2=false -DCHECK_FOR_UPDATES=false -DFORCE_RSUSB_BACKEND=true -DBUILD_LEGACY_LIVE_TEST=true -DBUILD_NODEJS_BINDINGS=true
         cmake --build . --config $LRS_BUILD_CONFIG -- -j4
         cd ../wrappers/nodejs/ && npm install && cd -
 
