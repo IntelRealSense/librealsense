@@ -36,6 +36,7 @@ namespace librealsense
                 << safety_devs_info.size() << " found");
 
         auto safety_ep = create_safety_device(ctx, safety_devs_info);
+        _safety_device_idx = add_sensor(safety_ep);
     }
 
     std::shared_ptr<synthetic_sensor> ds6_safety::create_safety_device(std::shared_ptr<context> ctx,
