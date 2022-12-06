@@ -89,6 +89,7 @@ typedef enum rs2_format
     RS2_FORMAT_Z16H            , /**< Variable-length Huffman-compressed 16-bit depth values. */
     RS2_FORMAT_FG              , /**< 16-bit per-pixel frame grabber format. */
     RS2_FORMAT_Y411            , /**< 12-bit per-pixel. */
+    RS2_FORMAT_Y16I            , /**< 12-bit per pixel interleaved. 12-bit left, 12-bit right. */
     RS2_FORMAT_COUNT             /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
 } rs2_format;
 const char* rs2_format_to_string(rs2_format format);

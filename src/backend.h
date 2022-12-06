@@ -154,6 +154,12 @@ namespace librealsense
             uint8_t         source_clock[6];
         };
 
+        struct uvc_header_mipi
+        {
+            uvc_header      header;
+            uint32_t        frame_counter;
+        };
+
         struct hid_header
         {
             uint8_t         length;             // HID report total size. Limited to 255
@@ -164,6 +170,7 @@ namespace librealsense
 
         constexpr uint8_t uvc_header_size = sizeof(uvc_header);
         constexpr uint8_t hid_header_size = sizeof(hid_header);
+        constexpr uint8_t uvc_header_mipi_size = sizeof(uvc_header_mipi);
 
         struct frame_object
         {
@@ -196,11 +203,12 @@ namespace librealsense
                 s << "id- " << id <<
                     "\nvid- " << std::hex << vid <<
                     "\npid- " << std::hex << pid <<
-                    "\nmi- " << mi <<
+                    "\nmi- " << std::dec << mi <<
                     "\nunique_id- " << unique_id <<
                     "\npath- " << device_path <<
-                    "\nsusb specification- " << std::hex << (uint16_t)conn_spec << std::dec <<
-                    (has_metadata_node ? ( "\nmetadata node-" + metadata_node_id) : "");
+                    "\nUVC capabilities- " << std::hex << uvc_capabilities <<
+                    "\nUVC specification- " << std::hex << (uint16_t)conn_spec << std::dec <<
+                    (has_metadata_node ? ( "\nmetadata node-" + metadata_node_id) : "") << std::endl;
 
                 return s.str();
             }

@@ -14,7 +14,7 @@ set(REALSENSE_FIRMWARE_URL "https://librealsense.intel.com" CACHE STRING
 string(REGEX MATCH "D4XX_RECOMMENDED_FIRMWARE_VERSION \"([0-9]+.[0-9]+.[0-9]+.[0-9]+)\"" _ ${ver})
 set(D4XX_FW_VERSION ${CMAKE_MATCH_1})
 message(STATUS "D4XX_FW_VERSION: ${D4XX_FW_VERSION}")
-set(D4XX_FW_SHA1 d5502ba0c51a9994caca72123ce19735bbbbbf97)
+set(D4XX_FW_SHA1 8dc3b8a0b9fdf03410c15b30e04f57701985064a)
 set(D4XX_FW_URL "${REALSENSE_FIRMWARE_URL}/Releases/RS4xx/FW")
 
 
@@ -43,6 +43,13 @@ set(L53X_FW_SHA1 9bc28aaf079b105d9a20a0bd845ea222b8754571)
 set(L53X_FW_URL "${REALSENSE_FIRMWARE_URL}/Releases/L5xx/FW")
 
 add_library(${PROJECT_NAME} STATIC empty.c)
+
+# disable link time optimization for fw by adding -fno-lto to disable -flto flag
+# jammy debian has build errors without it
+if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+  message(STATUS "disable link time optimization for fw project")
+  target_compile_options(${PROJECT_NAME} PRIVATE -fno-lto)
+endif()
 
 if (MSVC)
   # lib.exe can't handle multiple .res files, so include them in one.

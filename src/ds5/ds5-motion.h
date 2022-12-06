@@ -149,8 +149,9 @@ namespace librealsense
                 _def_extr = { { 1, 0, 0, 0, 1, 0, 0, 0, 1 }, { -0.00552f, 0.0051f, 0.01174f} };
                 _imu_2_depth_rot = { {-1,0,0},{0,1,0},{0,0,-1} };
             }
-            else if (_pid == ds::RS455_PID)
+            else if (_pid == ds::RS455_PID || _pid == ds::RS457_PID)
             {
+                // D457 development
                 // D455 specific - Bosch BMI055
                 _def_extr = { { 1, 0, 0, 0, 1, 0, 0, 0, 1 },{ -0.03022f, 0.0074f, 0.01602f } };
                 _imu_2_depth_rot = { { -1,0,0 },{ 0,1,0 },{ 0,0,-1 } };
@@ -395,38 +396,51 @@ namespace librealsense
         uint16_t _pid;
     };
 
-    class ds5_motion : public virtual ds5_device
+    class ds5_motion_base : public virtual ds5_device
     {
     public:
-        std::shared_ptr<synthetic_sensor> create_hid_device(std::shared_ptr<context> ctx,
-                                                      const std::vector<platform::hid_device_info>& all_hid_infos,
-                                                      const firmware_version& camera_fw_version);
-
-        ds5_motion(std::shared_ptr<context> ctx,
-                   const platform::backend_device_group& group);
-
         rs2_motion_device_intrinsic get_motion_intrinsics(rs2_stream) const;
 
         std::shared_ptr<auto_exposure_mechanism> register_auto_exposure_options(synthetic_sensor* ep,
                                                                                 const platform::extension_unit* fisheye_xu);
 
     private:
+        friend class ds5_motion_sensor;
 
+        std::shared_ptr<lazy<ds::imu_intrinsic>> _accel_intrinsic;
+        std::shared_ptr<lazy<ds::imu_intrinsic>> _gyro_intrinsic;
+        std::shared_ptr<lazy<rs2_extrinsics>>   _depth_to_imu;                  // Mechanical installation pose
+
+    protected:
+        ds5_motion_base(std::shared_ptr<context> ctx,
+                   const platform::backend_device_group& group);
+
+        std::shared_ptr<stream_interface> _accel_stream;
+        std::shared_ptr<stream_interface> _gyro_stream;
+
+        uint16_t _pid;    // product PID
+        std::shared_ptr<mm_calib_handler>        _mm_calib;
+        optional_value<uint8_t> _motion_module_device_idx;
+    };
+
+    class ds5_motion : public ds5_motion_base
+    {
+    public:
+        ds5_motion(std::shared_ptr<context> ctx,
+                   const platform::backend_device_group& group);
+        std::shared_ptr<synthetic_sensor> create_hid_device(std::shared_ptr<context> ctx,
+                                                      const std::vector<platform::hid_device_info>& all_hid_infos,
+                                                      const firmware_version& camera_fw_version);
+
+    private:
         friend class ds5_fisheye_sensor;
-        friend class ds5_hid_sensor;
-
         void initialize_fisheye_sensor(std::shared_ptr<context> ctx, const platform::backend_device_group& group);
 
         optional_value<uint8_t> _fisheye_device_idx;
-        optional_value<uint8_t> _motion_module_device_idx;
-
-        std::shared_ptr<mm_calib_handler>        _mm_calib;
-        std::shared_ptr<lazy<ds::imu_intrinsic>> _accel_intrinsic;
-        std::shared_ptr<lazy<ds::imu_intrinsic>> _gyro_intrinsic;
         lazy<std::vector<uint8_t>>              _fisheye_calibration_table_raw;
-        std::shared_ptr<lazy<rs2_extrinsics>>   _depth_to_imu;                  // Mechanical installation pose
 
-        uint16_t _pid;    // product PID
+    protected:
+        std::shared_ptr<stream_interface> _fisheye_stream;
 
         // Bandwidth parameters required for HID sensors
         // The Acceleration configuration will be resolved according to the IMU sensor type at run-time
@@ -439,9 +453,17 @@ namespace librealsense
         { { RS2_STREAM_GYRO,     {{unsigned(odr::IMU_FPS_200),  hid_fps_translation.at(odr::IMU_FPS_200)},
                                  { unsigned(odr::IMU_FPS_400),  hid_fps_translation.at(odr::IMU_FPS_400)}}} };
 
-    protected:
-        std::shared_ptr<stream_interface> _fisheye_stream;
-        std::shared_ptr<stream_interface> _accel_stream;
-        std::shared_ptr<stream_interface> _gyro_stream;
+
+    };
+
+    class ds5_motion_uvc : public ds5_motion_base
+    {
+    public:
+        ds5_motion_uvc(std::shared_ptr<context> ctx,
+                       const platform::backend_device_group& group);
+
+        std::shared_ptr<synthetic_sensor> create_uvc_device(std::shared_ptr<context> ctx,
+                                                      const std::vector<platform::uvc_device_info>& all_uvc_infos,
+                                                      const firmware_version& camera_fw_version);
     };
 }

@@ -92,6 +92,7 @@ classdef option < int64
         transmitter_frequency           (88)
         vertical_binning                (89)
         receiver_sensitivity            (90)
-        count                           (91)
+        emitter_frequency               (93)
+        count                           (94)
     end
 end

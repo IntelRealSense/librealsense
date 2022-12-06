@@ -98,8 +98,12 @@ options_to_ignore = []
 if product_line == "L500":
     options_to_ignore = [rs.option.host_performance, rs.option.inter_cam_sync_mode]
 
+# ignore reasons:
+# visual_preset       --> frame drops are expected during visual_preset change
+# inter_cam_sync_mode --> frame drops are expected during inter_cam_sync_mode change
+# emitter_frequency   --> Not allowed to be set during streaming
 if product_line == "D400":
-    options_to_ignore = [rs.option.visual_preset, rs.option.inter_cam_sync_mode]
+    options_to_ignore = [rs.option.visual_preset, rs.option.inter_cam_sync_mode, rs.option.emitter_frequency]
 
 def test_option_changes(sensor):
     global options_to_ignore

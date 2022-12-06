@@ -34,6 +34,7 @@ protected:
                     unsigned numChannels = 1,
                     Boolean allowMultipleFramesPerPacket = True,
                     Boolean doNormalMBitRule = True);
+    ~RsSimpleRTPSink();
 
 private:
     char* m_fFmtpSDPLine;

@@ -5016,6 +5016,7 @@ const option = {
   OPTION_ALTERNATE_IR: RS2.RS2_OPTION_ALTERNATE_IR,
   OPTION_NOISE_ESTIMATION: RS2.RS2_OPTION_NOISE_ESTIMATION,
   OPTION_ENABLE_IR_REFLECTIVITY: RS2.RS2_OPTION_ENABLE_IR_REFLECTIVITY,
+  OPTION_EMITTER_FREQUENCY: RS2.RS2_OPTION_EMITTER_FREQUENCY,
   /**
    * Set or get auto exposure limit in microsecond.
    * @type {Integer}
@@ -5683,6 +5684,93 @@ const frame_metadata = {
    * @type {Integer}
    */
   FRAME_METADATA_LOW_LIGHT_COMPENSATION: RS2.RS2_FRAME_METADATA_LOW_LIGHT_COMPENSATION,
+  /**
+   * Emitter mode: 0 - all emitters disabled.
+   * 1- laser enabled.
+   * 2 - auto laser enabled (opt).
+   * 3 - LED enabled (opt).
+   * <br>Equivalent to its lowercase counterpart
+   * @type {Integer}
+   */
+  RS2_FRAME_METADATA_FRAME_EMITTER_MODE: RS2.RS2_FRAME_METADATA_FRAME_EMITTER_MODE,
+  /**
+   * Led power value 0-360.
+   * <br>Equivalent to its lowercase counterpart
+   * @type {Integer}
+   */
+  RS2_FRAME_METADATA_FRAME_LED_POWER: RS2.RS2_FRAME_METADATA_FRAME_LED_POWER,
+  /**
+   * The number of transmitted payload bytes, not including metadata
+   * <br>Equivalent to its lowercase counterpart
+   * @type {Integer}
+   */
+  RS2_FRAME_METADATA_RAW_FRAME_SIZE: RS2.RS2_FRAME_METADATA_RAW_FRAME_SIZE,
+  /**
+   * GPIO input data
+   * <br>Equivalent to its lowercase counterpart
+   * @type {Integer}
+   */
+  RS2_FRAME_METADATA_GPIO_INPUT_DATA: RS2.RS2_FRAME_METADATA_GPIO_INPUT_DATA,
+  /**
+   * Sub-preset name. Used in advanced scenarios, such as HDR
+   * <br>Equivalent to its lowercase counterpart
+   * @type {Integer}
+   */
+  RS2_FRAME_METADATA_SEQUENCE_NAME: RS2.RS2_FRAME_METADATA_SEQUENCE_NAME,
+  /**
+   * Sub-preset sequence id
+   * <br>Equivalent to its lowercase counterpart
+   * @type {Integer}
+   */
+  RS2_FRAME_METADATA_SEQUENCE_ID: RS2.RS2_FRAME_METADATA_SEQUENCE_ID,
+  /**
+   * Sub-preset sequence size in bytes
+   * <br>Equivalent to its lowercase counterpart
+   * @type {Integer}
+   */
+  RS2_FRAME_METADATA_SEQUENCE_SIZE: RS2.RS2_FRAME_METADATA_SEQUENCE_SIZE,
+  /**
+   * Frame trigger type, used in MIPI SKU Metadata
+   * <br>Equivalent to its lowercase counterpart
+   * @type {Integer}
+   */
+  RS2_FRAME_METADATA_TRIGGER: RS2.RS2_FRAME_METADATA_TRIGGER,
+  /**
+   * Preset id, used in MIPI SKU Metadata
+   * <br>Equivalent to its lowercase counterpart
+   * @type {Integer}
+   */
+  RS2_FRAME_METADATA_PRESET: RS2.RS2_FRAME_METADATA_PRESET,
+  /**
+   * Frame input width in pixels, used in MIPI SKU Metadata as safety attribute
+   * <br>Equivalent to its lowercase counterpart
+   * @type {Integer}
+   */
+  RS2_FRAME_METADATA_INPUT_WIDTH: RS2.RS2_FRAME_METADATA_INPUT_WIDTH,
+  /**
+   * Frame input height in pixels, used in MIPI SKU Metadata as safety attribute
+   * <br>Equivalent to its lowercase counterpart
+   * @type {Integer}
+   */
+  RS2_FRAME_METADATA_INPUT_HEIGHT: RS2.RS2_FRAME_METADATA_INPUT_HEIGHT,
+  /**
+   * Sub-preset information, used in MIPI SKU
+   * <br>Equivalent to its lowercase counterpart
+   * @type {Integer}
+   */
+  RS2_FRAME_METADATA_SUB_PRESET_INFO: RS2.RS2_FRAME_METADATA_SUB_PRESET_INFO,
+  /**
+   * FW-controlled frame counter to be using in Calibration scenarios. Used with MIPI SKU only
+   * <br>Equivalent to its lowercase counterpart
+   * @type {Integer}
+   */
+  RS2_FRAME_METADATA_CALIB_INFO: RS2.RS2_FRAME_METADATA_CALIB_INFO,
+  /**
+   * CRC checksum of the Metadata, avalable for MIPI SKU only
+   * <br>Equivalent to its lowercase counterpart
+   * @type {Integer}
+   */
+  RS2_FRAME_METADATA_CRC: RS2.RS2_FRAME_METADATA_CRC,
   /**
    * Number of enumeration values. Not a valid input: intended to be used in for-loops.
    * @type {Integer}

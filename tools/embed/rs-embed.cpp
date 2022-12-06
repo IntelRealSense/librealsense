@@ -14,7 +14,7 @@
 #include <stb_image.h>
 
 
-#define RS_EMBED_VERSION "0.0.0.1"
+#define RS_EMBED_VERSION "0.0.0.2"
 
 struct float3
 {
@@ -54,6 +54,16 @@ std::string get_current_time()
     const tm* time = localtime(&t);
     if (nullptr != time)
         strftime(buffer, sizeof(buffer), "%m/%d/%Y %H:%M:%S", time);
+    return std::string(buffer);
+}
+
+std::string get_current_year()
+{
+    auto t = time(nullptr);
+    char buffer[20] = {};
+    const tm* time = localtime(&t);
+    if (nullptr != time)
+        strftime(buffer, sizeof(buffer), "%Y", time);
     return std::string(buffer);
 }
 
@@ -144,14 +154,14 @@ int main(int argc, char** argv) try
         auto rawDataSize = (int)data.size();
         auto compressBufSize = LZ4_compressBound(rawDataSize);
         char* pchCompressed = new char[compressBufSize];
-        memset(pchCompressed, compressBufSize, 0);
+        memset(pchCompressed, 0, compressBufSize);
         int nCompressedSize = LZ4_compress_default((const char*)data.data(), pchCompressed, rawDataSize, compressBufSize);
 
   
         ofstream myfile;
         myfile.open(output);
         myfile << "// License: Apache 2.0. See LICENSE file in root directory.\n";
-        myfile << "// Copyright(c) 2021 Intel Corporation. All Rights Reserved.\n\n";
+        myfile << "// Copyright(c) " << get_current_year() << " Intel Corporation. All Rights Reserved.\n\n";
         myfile << "// This file is auto-generated from " << name << ".obj using rs-embed tool version: " << RS_EMBED_VERSION <<"\n";
         myfile << "// Generation time: " << get_current_time() << ".\n\n";
         myfile << "#pragma once\n";
@@ -203,7 +213,7 @@ int main(int argc, char** argv) try
         ofstream myfile;
         myfile.open(output);
         myfile << "// License: Apache 2.0. See LICENSE file in root directory.\n";
-        myfile << "// Copyright(c) 2021 Intel Corporation. All Rights Reserved.\n\n";
+        myfile << "// Copyright(c) " << get_current_year() << " Intel Corporation. All Rights Reserved.\n\n";
         myfile << "// This file is auto-generated from " << name << ".png using rs-embed tool version: " << RS_EMBED_VERSION << "\n";
         myfile << "// Generation time: " << get_current_time() << ".\n\n";
 
