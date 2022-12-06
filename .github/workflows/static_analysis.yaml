@@ -65,6 +65,6 @@ jobs:
             echo "cppcheck_run succeeded, found" $ERROR_COUNT "errors, as expected";
             exit 0;
           else
-            echo "cppcheck_run failed, found" $ERROR_COUNT "errors, see log for details";
+            echo "cppcheck_run failed, found" $ERROR_COUNT "errors, expected " ${{env.CPPCHECK_EXPECTED_ERROR_COUNT}} " see log for details";
             exit 1;
           fi
