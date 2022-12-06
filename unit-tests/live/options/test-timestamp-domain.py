@@ -35,14 +35,16 @@ def set_and_verify_timestamp_domain(sensor, frame_queue, global_time_enabled: bo
     expected_ts_domain = rs.timestamp_domain.global_time if global_time_enabled else \
         rs.timestamp_domain.hardware_clock
 
-    test.check_equal(sensor.get_option(rs.option.global_time_enabled), global_time_enabled)
-    test.check_equal(frame.get_frame_timestamp_domain(), expected_ts_domain)
+    if not test.check_equal(sensor.get_option(rs.option.global_time_enabled), global_time_enabled) or \
+            not test.check_equal(frame.get_frame_timestamp_domain(), expected_ts_domain):
+        test.info(str(frame.get_profile().stream_type()), frame)
+        test.print_info()
 
 
 device = test.find_first_device_or_exit()
 
 # Depth sensor test
-depth_frame_queue = rs.frame_queue(capacity=1, keep_frames=False)
+depth_frame_queue = rs.frame_queue(capacity=5, keep_frames=False)
 
 depth_sensor = device.first_depth_sensor()
 depth_profile = next(p for p in depth_sensor.profiles if p.stream_type() == rs.stream.depth)
@@ -62,7 +64,7 @@ test.finish()
 close_resources(depth_sensor)
 
 # Color sensor test
-color_frame_queue = rs.frame_queue(capacity=1, keep_frames=False)
+color_frame_queue = rs.frame_queue(capacity=5, keep_frames=False)
 
 color_sensor = device.first_color_sensor()
 color_profile = next(p for p in color_sensor.profiles if p.stream_type() == rs.stream.color)
