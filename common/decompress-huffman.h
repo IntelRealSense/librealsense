@@ -154,7 +154,7 @@
 
 #define ONE_NIBBLE ONE_NIBBLE_LONG
 
-static int DecompressionStateTable[510 * 16] =
+static uint32_t DecompressionStateTable[510 * 16] =
 {
     // State 0
     (0 << 24) | (4 << 6) | (0 << 3) | 0, // nibble 00
