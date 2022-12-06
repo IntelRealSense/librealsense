@@ -197,8 +197,7 @@ jobs:
       with: 
         name: Log file - U18_ST_Py_EX_CfU_LiveTest
         path: build/*.log
-        
-        
+
     - name: Provide correct exit status for job 
       shell: bash
       run: |
@@ -215,7 +214,7 @@ jobs:
     runs-on: ubuntu-20.04
     timeout-minutes: 60
     steps:
-      - uses: actions/checkout@v3
+    - uses: actions/checkout@v3
 
     - name: Prebuild
       shell: bash
@@ -253,7 +252,7 @@ jobs:
     env: 
       LRS_BUILD_NODEJS: true
     steps:
-      - uses: actions/checkout@v3   
+    - uses: actions/checkout@v3   
           
     - name: Check_API
       shell: bash
