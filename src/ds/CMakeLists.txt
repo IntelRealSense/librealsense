@@ -16,6 +16,7 @@ target_sources(${LRS_TARGET}
         "${CMAKE_CURRENT_LIST_DIR}/advanced_mode/rs_advanced_mode.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/advanced_mode/presets.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/advanced_mode/advanced_mode.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/ds-calib-parsers.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/ds-device-common.h"
         "${CMAKE_CURRENT_LIST_DIR}/ds-motion-common.h"
         "${CMAKE_CURRENT_LIST_DIR}/ds-color-common.h"
@@ -25,4 +26,5 @@ target_sources(${LRS_TARGET}
         "${CMAKE_CURRENT_LIST_DIR}/ds-options.h"
         "${CMAKE_CURRENT_LIST_DIR}/advanced_mode/json_loader.hpp"
         "${CMAKE_CURRENT_LIST_DIR}/advanced_mode/presets.h"
+        "${CMAKE_CURRENT_LIST_DIR}/ds-calib-parsers.h"
 )
