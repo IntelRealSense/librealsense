@@ -5,7 +5,7 @@
 
 #include <utilities/easylogging/easyloggingpp.h>
 
-#define DBG CLOG(DEBUG, "librealsense")
-#define ERR CLOG(ERROR, "librealsense")
-#define WRN CLOG(WARNING, "librealsense")
-#define INF CLOG(INFO, "librealsense")
+#define DBG CLOG(DEBUG, LIBREALSENSE_ELPP_ID)
+#define ERR CLOG(ERROR, LIBREALSENSE_ELPP_ID)
+#define WRN CLOG(WARNING, LIBREALSENSE_ELPP_ID)
+#define INF CLOG(INFO, LIBREALSENSE_ELPP_ID)

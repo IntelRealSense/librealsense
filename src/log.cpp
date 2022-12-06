@@ -10,7 +10,7 @@ INITIALIZE_EASYLOGGINGPP
 
 namespace librealsense
 {
-    char log_name[] = "librealsense";
+    char log_name[] = LIBREALSENSE_ELPP_ID;
     static logger_type<log_name> logger;
 }
 

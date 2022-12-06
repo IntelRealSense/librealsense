@@ -13,7 +13,7 @@
 
 //#define DEBUG_THERMAL_LOOP
 #ifdef DEBUG_THERMAL_LOOP
-#define LOG_DEBUG_THERMAL_LOOP(...)   do { CLOG(WARNING   ,"librealsense") << __VA_ARGS__; } while(false)
+#define LOG_DEBUG_THERMAL_LOOP(...)   do { CLOG(WARNING   ,LIBREALSENSE_ELPP_ID) << __VA_ARGS__; } while(false)
 #else
 #define LOG_DEBUG_THERMAL_LOOP(...)
 #endif //DEBUG_THERMAL_LOOP
