@@ -75,6 +75,19 @@ namespace librealsense
         byte reserved3[2];
     };
 
+    // D457 dev
+    struct hid_mipi_data
+    {
+        uint8_t typeID;
+        uint8_t skip1;
+        uint64_t hwTs;
+        int16_t x;
+        int16_t y;
+        int16_t z;
+        uint64_t hwTs2;
+        uint64_t skip2;
+    };
+
 #pragma pack(pop)
 
     static const double TIMESTAMP_USEC_TO_MSEC = 0.001;
@@ -385,6 +398,7 @@ namespace librealsense
     RS2_ENUM_HELPERS_CUSTOMIZED(rs2_ambient_light, RS2_AMBIENT_LIGHT_NO_AMBIENT, RS2_AMBIENT_LIGHT_LOW_AMBIENT)
     RS2_ENUM_HELPERS_CUSTOMIZED(rs2_digital_gain, RS2_DIGITAL_GAIN_HIGH, RS2_DIGITAL_GAIN_LOW)
     RS2_ENUM_HELPERS(rs2_host_perf_mode, HOST_PERF)
+    RS2_ENUM_HELPERS(rs2_emitter_frequency_mode, EMITTER_FREQUENCY)
 
 
     ////////////////////////////////////////////

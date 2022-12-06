@@ -18,6 +18,14 @@ namespace librealsense
         explicit emitter_option(uvc_sensor& ep);
     };
 
+    class emitter_frequency : public uvc_xu_option<uint16_t>
+    {
+    public:
+        explicit emitter_frequency( uvc_sensor & ep,
+                                    const std::map< float, std::string > & description_per_value );
+        void set( float value ) override;
+    };
+
     class asic_and_projector_temperature_options : public readonly_option
     {
     public:
@@ -34,6 +42,42 @@ namespace librealsense
     private:
         uvc_sensor&                 _ep;
         rs2_option                  _option;
+    };
+
+    class asic_temperature_option_mipi : public readonly_option
+    {
+    public:
+        float query() const override;
+
+        option_range get_range() const override;
+
+        inline bool is_enabled() const override {return true;}
+
+        inline const char* get_description() const override {return "Current Asic Temperature (degree celsius)";}
+
+        explicit asic_temperature_option_mipi(std::shared_ptr<hw_monitor> hwm, rs2_option opt);
+
+    private:
+        rs2_option                  _option;
+        std::shared_ptr<hw_monitor>  _hw_monitor;
+    };
+
+    class projector_temperature_option_mipi : public readonly_option
+    {
+    public:
+        float query() const override;
+
+        option_range get_range() const override;
+
+        inline bool is_enabled() const override {return true;}
+
+        inline const char* get_description() const override {return "Current Projector Temperature (degree celsius)";}
+
+        explicit projector_temperature_option_mipi(std::shared_ptr<hw_monitor> hwm, rs2_option opt);
+
+    private:
+        rs2_option                  _option;
+        std::shared_ptr<hw_monitor>  _hw_monitor;
     };
 
     class motion_module_temperature_option : public readonly_option
