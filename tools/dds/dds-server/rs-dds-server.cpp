@@ -174,7 +174,7 @@ try
     CmdLine cmd( "librealsense rs-dds-server tool, use CTRL + C to stop..", ' ' );
     ValueArg< dds_domain_id > domain_arg( "d",
                                           "domain",
-                                          "Select domain ID to listen on",
+                                          "Select domain ID to publish on",
                                           false,
                                           0,
                                           "0-232" );
@@ -185,14 +185,7 @@ try
     cmd.parse( argc, argv );
 
     // Configure the same logger as librealsense
-    el::Configurations defaultConf;
-    defaultConf.setToDefault();
-    defaultConf.setGlobally( el::ConfigurationType::ToStandardOutput, debug_arg.isSet() ? "true" : "false" );
-    if( ! debug_arg.isSet() )
-        defaultConf.set( el::Level::Error, el::ConfigurationType::ToStandardOutput, "true" );
-    defaultConf.setGlobally( el::ConfigurationType::Format, "-%levshort- %datetime{%H:%m:%s.%g} %msg (%fbase:%line [%thread])" );
-    el::Loggers::reconfigureLogger( "librealsense", defaultConf );
-
+    utilities::configure_elpp_logger( debug_arg.isSet() );
     // Intercept DDS messages and redirect them to our own logging mechanism
     eprosima::fastdds::dds::Log::ClearConsumers();
     eprosima::fastdds::dds::Log::RegisterConsumer( realdds::log_consumer::create() );

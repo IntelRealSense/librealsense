@@ -7,15 +7,16 @@ set(SRC rs-dds-sniffer.cpp)
 set(INC rs-dds-sniffer.h)
 
 add_executable(${PROJECT_NAME} ${INC} ${SRC})
-target_link_libraries(${PROJECT_NAME} PRIVATE realdds ${DEPENDENCIES} )
-target_include_directories( ${PROJECT_NAME} PRIVATE
-    ${REPO_ROOT}/include
-    ${REPO_ROOT}/third-party/tclap/include
-)
+target_link_libraries(${PROJECT_NAME} PRIVATE realdds )
+target_include_directories( ${PROJECT_NAME}
+    PRIVATE ${REPO_ROOT}/third-party/tclap/include
+    )
 set_target_properties (${PROJECT_NAME} PROPERTIES
-                       FOLDER Tools/dds
-                       CXX_STANDARD 11)
+    FOLDER Tools/dds
+    CXX_STANDARD 11
+    )
 
 install(TARGETS ${PROJECT_NAME} RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
-include( "${REPO_ROOT}/third-party/utilities/include/utilities/easylogging/shared-init.cmake" )
+using_easyloggingpp( ${PROJECT_NAME} )
+

@@ -37,11 +37,6 @@
 #define SNAME "pyrealdds"
 
 
-#ifndef BUILD_SHARED_LIBS  // shared-init takes care of the else
-INITIALIZE_EASYLOGGINGPP
-#endif
-
-
 namespace {
 
 std::string to_string( realdds::dds_guid const & guid )
@@ -82,37 +77,17 @@ PYBIND11_MODULE(NAME, m) {
     m.attr( "__version__" ) = "0.1";  // RS2_API_VERSION_STR;
 
     // Configure the same logger as librealsense, and default to only errors by default...
-    el::Configurations defaultConf;
-    defaultConf.setToDefault();
-    defaultConf.setGlobally( el::ConfigurationType::ToStandardOutput, "false" );
-    defaultConf.set( el::Level::Error, el::ConfigurationType::ToStandardOutput, "true" );
-    defaultConf.setGlobally( el::ConfigurationType::Format, "-%levshort- %datetime{%H:%m:%s.%g} %msg (%fbase:%line [%thread])" );
-    el::Loggers::reconfigureLogger( "librealsense", defaultConf );
+    utilities::configure_elpp_logger();
     // And set the DDS logger similarly
     eprosima::fastdds::dds::Log::ClearConsumers();
     eprosima::fastdds::dds::Log::RegisterConsumer( realdds::log_consumer::create() );
     eprosima::fastdds::dds::Log::SetVerbosity( eprosima::fastdds::dds::Log::Error );
 
-    m.def( "debug", []( bool enable, std::string const & nested ) {
-        if( enable )
-        {
-            //eprosima::fastdds::dds::Log::SetVerbosity( eprosima::fastdds::dds::Log::Info );
-        }
-        else
-        {
-            //eprosima::fastdds::dds::Log::SetVerbosity( eprosima::fastdds::dds::Log::Error );
-        }
-        el::Logger * logger = el::Loggers::getLogger( "librealsense" );
-        auto configs = logger->configurations();
-        configs->set( el::Level::Warning, el::ConfigurationType::ToStandardOutput, enable ? "true" : "false" );
-        configs->set( el::Level::Info, el::ConfigurationType::ToStandardOutput, enable ? "true" : "false" );
-        configs->set( el::Level::Debug, el::ConfigurationType::ToStandardOutput, enable ? "true" : "false" );
-        std::string format = "-%levshort- %datetime{%H:%m:%s.%g} %msg (%fbase:%line [%thread])";
-        if( ! nested.empty() )
-            format = '[' + nested + "] " + format;
-        configs->setGlobally( el::ConfigurationType::Format, format );
-        logger->reconfigure();
-    } );
+    m.def( "debug",
+           &utilities::configure_elpp_logger,
+           py::arg( "enable" ),
+           py::arg( "nested-string" ) = "",
+           py::arg( "logger" ) = LIBREALSENSE_ELPP_ID );
 
     using realdds::dds_guid;
     py::class_< dds_guid >( m, "guid" )

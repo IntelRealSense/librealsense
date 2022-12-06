@@ -6,8 +6,6 @@ project( realdds )
 add_library( ${PROJECT_NAME} STATIC "" )
 set_target_properties( ${PROJECT_NAME} PROPERTIES FOLDER Library )
 
-list( APPEND DEPENDENCIES utilities )
-
 target_include_directories( ${PROJECT_NAME}
     PRIVATE
         "${REPO_ROOT}/include"  # we need the utilities
@@ -15,7 +13,9 @@ target_include_directories( ${PROJECT_NAME}
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
 )
 
-target_link_libraries( ${PROJECT_NAME} PUBLIC ${DEPENDENCIES} dds )  # FastDDS
+# We, and all our dependents, need these:
+target_link_libraries( ${PROJECT_NAME}
+    PUBLIC utilities dds )  # dds=FastDDS
 
 
 # Headers -----------------------------------------------------------------------------------
