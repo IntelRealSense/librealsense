@@ -65,7 +65,10 @@ namespace librealsense
         void start();   // must be called AFTER ALL initializations of _hw_monitor.
         void stop();
         ~time_diff_keeper();
+
         double get_system_hw_time(double crnt_hw_time, bool& is_ready);
+        void set_enabling_opt(std::shared_ptr<global_time_option> en_opt){ _option_is_enabled=en_opt; }
+        bool is_enabled() const { return _option_is_enabled? _option_is_enabled->is_true() : false; }
 
     private:
         bool update_diff_time();
@@ -75,6 +78,7 @@ namespace librealsense
         global_time_interface* _device;
         unsigned int _poll_intervals_ms;
         int             _users_count;
+        std::shared_ptr<global_time_option> _option_is_enabled;
         active_object<> _active_object;
         mutable std::recursive_mutex _read_mtx; // Watch only 1 reader at a time.
         mutable std::recursive_mutex _enable_mtx; // Watch only 1 start/stop operation at a time.

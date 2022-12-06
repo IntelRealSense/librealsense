@@ -208,8 +208,7 @@ namespace librealsense
             {
                 if (ptr) _heap.deallocate(ptr);
             });
-            if (!token.get())
-                throw std::runtime_error( "no token in locked_transfer::send_receive" );
+            if( !token.get() ) throw io_exception( "heap allocation failed" );
 
             std::lock_guard<std::recursive_mutex> lock(_local_mtx);
             return _uvc_sensor_base.invoke_powered([&]

@@ -17,7 +17,7 @@ namespace librealsense
         {
             auto version_offset = offsetof(platform::dfu_header, bcdDevice);
             if (fw_image.size() < (version_offset + sizeof(size_t)))
-                throw std::runtime_error("Firmware binary image might be corrupted - size is only: " + fw_image.size());
+                throw std::runtime_error("Firmware binary image might be corrupted - size is only: " + std::to_string( fw_image.size() ));
 
             auto version = fw_image.data() + version_offset;
             uint8_t major = *(version + 3);

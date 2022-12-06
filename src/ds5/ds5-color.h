@@ -36,6 +36,9 @@ namespace librealsense
             const platform::backend_device_group& group);
         void init();
 
+        void register_metadata(const synthetic_sensor& color_ep) const;
+        void register_metadata_mipi(const synthetic_sensor& color_ep) const;
+
         friend class ds5_color_sensor;
         friend class rs435i_device;
 

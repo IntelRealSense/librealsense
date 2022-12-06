@@ -28,9 +28,10 @@ namespace rs2
         const device_model& get_device_model() const { return _model; }
         std::shared_ptr<notifications_model> get_protected_notification_model() { return _not_model.lock(); };
 
-    private:
+    protected:
         void process_flow(std::function<void()> cleanup,
             invoker invoke) override;
+        void process_mipi();
         bool check_for(
             std::function<bool()> action, std::function<void()> cleanup,
             std::chrono::system_clock::duration delta);

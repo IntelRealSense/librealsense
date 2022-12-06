@@ -23,7 +23,7 @@ set_target_properties( ${PROJECT_NAME}
         PROJECT_LABEL utilities-py
     )
 
-include("../include/utilities/easylogging/shared-init.cmake")
+using_easyloggingpp( ${PROJECT_NAME} )
 
 install(
     TARGETS ${PROJECT_NAME}

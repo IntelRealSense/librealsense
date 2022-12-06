@@ -26,7 +26,7 @@ const std::string HID_CUSTOM_PATH("/sys/bus/platform/drivers/hid_sensor_custom")
 
 //#define DEBUG_HID
 #ifdef DEBUG_HID
-#define LOG_DEBUG_HID(...)   do { CLOG(DEBUG   ,"librealsense") << __VA_ARGS__; } while(false)
+#define LOG_DEBUG_HID(...)   do { CLOG(DEBUG   ,LIBREALSENSE_ELPP_ID) << __VA_ARGS__; } while(false)
 #else
 #define LOG_DEBUG_HID(...)
 #endif //DEBUG_HID

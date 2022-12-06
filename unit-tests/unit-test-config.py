@@ -99,8 +99,7 @@ target_link_libraries( ${PROJECT_NAME} ${DEPENDENCIES} )
 
 set_target_properties( ${PROJECT_NAME} PROPERTIES FOLDER "Unit-Tests/''' + os.path.dirname( testdir ) + '''" )
 
-# We make use of ELPP (EasyLogging++):
-include( "${REPO_ROOT}/third-party/utilities/include/utilities/easylogging/shared-init.cmake" )
+using_easyloggingpp( ${PROJECT_NAME} SHARED )
 
 # Add the repo root directory (so includes into src/ will be specific: <src/...>)
 target_include_directories( ${PROJECT_NAME} PRIVATE ''' + root + ''' )

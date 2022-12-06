@@ -651,7 +651,7 @@ namespace librealsense
             {
                 auto strong = gated.first.lock();
                 if (!strong)
-                    return;
+                    continue;  // if gated option is not available, step over it
                 auto val = strong->query();
                 if (val)
                 {

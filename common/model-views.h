@@ -30,6 +30,7 @@
 #include <utilities/time/periodic-timer.h>
 #include <utilities/number/stabilized-value.h>
 #include "reflectivity/reflectivity.h"
+#include "option-model.h"
 
 ImVec4 from_rgba(uint8_t r, uint8_t g, uint8_t b, uint8_t a, bool consistent_color = false);
 ImVec4 operator+(const ImVec4& c, float v);
@@ -93,6 +94,7 @@ namespace rs2
     void open_issue(std::string body);
 
     class device_model;
+    class option_model;
 
     typedef std::vector<std::unique_ptr<device_model>> device_models_list;
 
@@ -306,52 +308,6 @@ namespace rs2
 
     std::vector<std::pair<std::string, std::string>> get_devices_names(const device_list& list);
     std::vector<std::string> get_device_info(const device& dev, bool include_location = true);
-
-    class option_model
-    {
-    public:
-        bool draw(std::string& error_message, notifications_model& model,bool new_line=true, bool use_option_name = true);
-        void update_supported(std::string& error_message);
-        void update_read_only_status(std::string& error_message);
-        void update_all_fields(std::string& error_message, notifications_model& model);
-        bool set_option( rs2_option opt,
-                         float value,
-                         std::string & error_message,
-                         std::chrono::steady_clock::duration ignore_period = std::chrono::seconds( 0 ) );
-        bool draw_option(bool update_read_only_options, bool is_streaming,
-            std::string& error_message, notifications_model& model);
-
-        rs2_option opt;
-        option_range range;
-        std::shared_ptr<options> endpoint;
-        float unset_value = 0;
-        bool have_unset_value = false;
-        utilities::time::stopwatch last_set_stopwatch;
-        bool* invalidate_flag = nullptr;
-        bool supported = false;
-        bool read_only = false;
-        float value = 0.0f;
-        std::string label = "";
-        std::string id = "";
-        subdevice_model* dev;
-        std::function<bool(option_model&, std::string&, notifications_model&)> custom_draw_method = nullptr;
-        bool edit_mode = false;
-        std::string edit_value = "";
-    private:
-        bool is_all_integers() const;
-        bool is_enum() const;
-        bool is_checkbox() const;
-        bool allow_change(float val, std::string& error_message) const;
-        bool slider_selected( rs2_option opt,
-            float value,
-            std::string& error_message,
-            notifications_model& model);
-
-        bool slider_unselected(rs2_option opt,
-            float value,
-            std::string& error_message,
-            notifications_model& model);
-    };
 
     class frame_queues
     {
@@ -661,6 +617,9 @@ namespace rs2
 
         viewer_model& viewer;
         std::function<void()> on_frame = []{};
+        
+        std::ofstream _fout;
+
         std::shared_ptr<sensor> s;
         device dev;
         tm2_model tm2;
