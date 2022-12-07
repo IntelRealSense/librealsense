@@ -4,7 +4,7 @@
 #ifdef BUILD_EASYLOGGINGPP
 #include <rsutils/easylogging/easyloggingpp.h>
 
-namespace utilities {
+namespace rsutils {
 
 
 void configure_elpp_logger( bool enable_debug, std::string const & nested_indent, std::string const & logger_id )
@@ -43,6 +43,6 @@ void configure_elpp_logger( bool enable_debug, std::string const & nested_indent
 }
 
 
-}  // namespace utilities
+}  // namespace rsutils
 
 #endif  // BUILD_EASYLOGGINGPP

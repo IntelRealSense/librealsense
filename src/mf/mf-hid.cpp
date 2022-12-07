@@ -424,8 +424,8 @@ namespace librealsense
                                         {
                                             if (IsEqualPropertyKey(propertyKey, SENSOR_PROPERTY_DEVICE_PATH))
                                             {
-                                                info.device_path = utilities::string::windows::win_to_utf( propertyValue.pwszVal );
-                                                info.id = utilities::string::windows::win_to_utf( fName );
+                                                info.device_path = rsutils::string::windows::win_to_utf( propertyValue.pwszVal );
+                                                info.id = rsutils::string::windows::win_to_utf( fName );
 
                                                 uint16_t vid, pid, mi;
                                                 std::string uid, guid;
@@ -460,7 +460,7 @@ namespace librealsense
                                             }
                                             if (IsEqualPropertyKey(propertyKey, SENSOR_PROPERTY_SERIAL_NUMBER))
                                             {
-                                                auto str = utilities::string::windows::win_to_utf( propertyValue.pwszVal );
+                                                auto str = rsutils::string::windows::win_to_utf( propertyValue.pwszVal );
                                                 std::transform(begin(str), end(str), begin(str), ::tolower);
                                                 info.serial_number = str;
                                             }

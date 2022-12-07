@@ -49,7 +49,7 @@
 #define LOG_ERROR(...)   do { CLOG(ERROR   , LIBREALSENSE_ELPP_ID) << __VA_ARGS__; } while(false)
 #define LOG_FATAL(...)   do { CLOG(FATAL   , LIBREALSENSE_ELPP_ID) << __VA_ARGS__; } while(false)
 
-namespace utilities {
+namespace rsutils {
 
 
 // Configure the same logger as librealsense (by default), to disable/enable debug output
@@ -58,7 +58,7 @@ void configure_elpp_logger( bool enable_debug = false,
                             std::string const & logger_id = LIBREALSENSE_ELPP_ID );
 
 
-}  // namespace utilities
+}  // namespace rsutils
 
 
 #endif // __ANDROID__  

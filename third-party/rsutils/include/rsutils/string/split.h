@@ -7,7 +7,7 @@
 #include <vector>
 #include <sstream>
 
-namespace utilities {
+namespace rsutils {
 namespace string {
 
 
@@ -35,4 +35,4 @@ inline std::vector< std::string > split( const std::string & str , char delimite
 }
 
 }  // namespace string
-}  // namespace utilities
+}  // namespace rsutils

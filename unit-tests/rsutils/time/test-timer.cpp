@@ -7,7 +7,7 @@
 #include "common.h"
 #include <rsutils/time/timer.h>
 
-using namespace utilities::time;
+using namespace rsutils::time;
 
 // Test description:
 // > Test the timer main functions

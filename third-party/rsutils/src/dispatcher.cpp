@@ -109,7 +109,7 @@ bool dispatcher::flush( std::chrono::steady_clock::duration timeout )
     if( _was_stopped )
         return true;  // Nothing to do - so success (no timeout)
 
-    utilities::time::waiting_on< bool > invoked( _was_stopped_cv, _was_stopped_mutex, false );
+    rsutils::time::waiting_on< bool > invoked( _was_stopped_cv, _was_stopped_mutex, false );
     // Blocking call, we don't want the item in the queue to drop if the queue is full.
     // TODO - Add a timeout to blocking invoke, Currently it can wait forever here.
     auto invoked_in_thread = invoked.in_thread();

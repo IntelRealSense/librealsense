@@ -5,7 +5,7 @@
 #include <rsutils/time/work-week.h>
 #include <ctime>
 
-using namespace utilities::time;
+using namespace rsutils::time;
 
 // Test description:
 // > Test the c'tor

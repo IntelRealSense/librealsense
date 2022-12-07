@@ -170,7 +170,7 @@ int CALLBACK WinMain(
     std::vector<std::string> args;
     for (int i = 0; i < argCount; i++)
     {
-        std::string s = utilities::string::windows::win_to_utf( szArgList.get()[i] );
+        std::string s = rsutils::string::windows::win_to_utf( szArgList.get()[i] );
 
         if (s == rs2::metadata_helper::get_command_line_param())
         {

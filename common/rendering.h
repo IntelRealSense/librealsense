@@ -394,7 +394,7 @@ namespace rs2
         std::mutex _m;
         clock::duration _window;
         std::vector<std::pair<clock::time_point, bool>> _measurements;
-        utilities::time::stopwatch _t;
+        rsutils::time::stopwatch _t;
     };
 
     class texture_buffer

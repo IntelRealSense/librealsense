@@ -9,7 +9,7 @@
 #include <vector>
 #include <iostream>
 
-using namespace utilities::time;
+using namespace rsutils::time;
 
 // We use this function as a CPU stress test function
 int fibo( int num )

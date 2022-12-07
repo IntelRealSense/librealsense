@@ -80,7 +80,7 @@ inline void slider_int(std::string& error_message, const char* id, T* val, S T::
             ImGuiInputTextFlags_EnterReturnsTrue))
         {
             int new_value{};
-            if (!utilities::string::string_to_value<int>(buff, new_value))
+            if (!rsutils::string::string_to_value<int>(buff, new_value))
             {
                 error_message = "Invalid integer input!";
             }
@@ -145,7 +145,7 @@ inline void slider_float(std::string& error_message, const char* id, T* val, S T
             ImGuiInputTextFlags_EnterReturnsTrue))
         {
             int new_value;
-            if (!utilities::string::string_to_value<int>(buff, new_value))
+            if (!rsutils::string::string_to_value<int>(buff, new_value))
             {
                 error_message = "Invalid integer input!";
             }

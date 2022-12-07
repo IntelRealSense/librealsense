@@ -36,7 +36,7 @@ TEST_CASE("Y16 streaming", "[live]")
     depth_sensor.start([&y16_streamed](rs2::frame f){
         y16_streamed = true;
     });
-    utilities::time::timer t(std::chrono::seconds(30));
+    rsutils::time::timer t(std::chrono::seconds(30));
     while (!t.has_expired())
     {
         if (y16_streamed)

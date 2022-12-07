@@ -5,7 +5,7 @@
 
 #include <chrono>
 
-namespace utilities
+namespace rsutils
 {
     namespace time
     {

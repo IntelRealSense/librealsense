@@ -7,8 +7,8 @@
 #include <rsutils/time/timer.h>
 #include <queue>
 
-using utilities::time::waiting_on;
-using namespace utilities::time;
+using rsutils::time::waiting_on;
+using namespace rsutils::time;
 
 bool invoke( size_t delay_in_thread, size_t timeout )
 {
@@ -100,7 +100,7 @@ TEST_CASE( "Not invoked but still notified by destructor" )
     // Add something we'll be waiting on
     std::condition_variable cv;
     std::mutex m;
-    utilities::time::waiting_on< bool > invoked( cv, m, false );
+    rsutils::time::waiting_on< bool > invoked( cv, m, false );
     dispatcher->push(
         [invoked_in_thread = invoked.in_thread()]() { invoked_in_thread.signal( true ); } );
 
@@ -125,7 +125,7 @@ TEST_CASE( "Not invoked but still notified by predicate (stopped)" )
     // Add something we'll be waiting on
     std::condition_variable cv;
     std::mutex m;
-    utilities::time::waiting_on< bool > invoked( cv, m, false );
+    rsutils::time::waiting_on< bool > invoked( cv, m, false );
 
     // Destroy the dispatcher while we're waiting on the invocation!
     std::atomic_bool stopped( false );
@@ -155,7 +155,7 @@ TEST_CASE( "Not invoked flush timeout expected" )
     // Add something we'll be waiting on
     std::condition_variable cv;
     std::mutex m;
-    utilities::time::waiting_on< bool > invoked( cv, m, false );
+    rsutils::time::waiting_on< bool > invoked( cv, m, false );
 
     stopwatch sw;
     auto timeout = std::chrono::seconds( 2 );

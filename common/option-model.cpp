@@ -373,7 +373,7 @@ bool option_model::draw_slider( notifications_model & model,
                     strcpy( buff, buff_str.c_str() );
                 }
                 float new_value;
-                if( ! utilities::string::string_to_value< float >( buff, new_value ) )
+                if( ! rsutils::string::string_to_value< float >( buff, new_value ) )
                 {
                     error_message = "Invalid float input!";
                 }

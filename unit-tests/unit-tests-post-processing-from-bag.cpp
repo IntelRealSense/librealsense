@@ -270,7 +270,7 @@ std::vector<rs2::frame> get_frames(std::vector<rs2::sensor> sensors)
         });
     }
 
-    utilities::time::timer t(std::chrono::seconds(30));
+    rsutils::time::timer t(std::chrono::seconds(30));
     while (!t.has_expired())
     {
         {

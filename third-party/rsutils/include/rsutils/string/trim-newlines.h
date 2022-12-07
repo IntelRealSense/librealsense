@@ -5,7 +5,7 @@
 
 #include <string>
 
-namespace utilities {
+namespace rsutils {
 namespace string {
 
 
@@ -66,4 +66,4 @@ inline std::string trim_newlines( std::string text )
 
 
 }  // namespace string
-}  // namespace utilities
+}  // namespace rsutils

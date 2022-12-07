@@ -53,7 +53,7 @@ void xml_mode(const string& line, const commands_xml& cmd_xml, rs2::device& dev,
     if (tokens.empty())
         throw runtime_error("Invalid input! - no arguments provided");
 
-    auto command_str = utilities::string::to_lower(tokens.front());
+    auto command_str = rsutils::string::to_lower(tokens.front());
     auto it = cmd_xml.commands.find(command_str);
     if (it == cmd_xml.commands.end())
         throw runtime_error("Command " + command_str + " was not found!");
@@ -331,7 +331,7 @@ int main(int argc, char** argv)
             read_script_file(script_file, script_lines);
             cout << "Executing the following command from script file " << script_file << endl;
             for (auto& ln : script_lines)
-                cout << utilities::string::to_upper(ln) << endl;
+                cout << rsutils::string::to_upper(ln) << endl;
             cout << endl;
         }
 

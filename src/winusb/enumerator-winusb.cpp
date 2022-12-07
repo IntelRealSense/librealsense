@@ -82,7 +82,7 @@ namespace librealsense
         {
             usb_device_info rv{};
             std::smatch matches;
-            std::string device_str = utilities::string::windows::win_to_utf( device_wstr );
+            std::string device_str = rsutils::string::windows::win_to_utf( device_wstr );
 
             std::regex regex_camera_interface("\\b(.*VID_)(.*)(&PID_)(.*)(&MI_)(.*)(#.*&)(.*)(&.*)(&.*)(.*#)(.*)", std::regex_constants::icase);
             std::regex regex_usb_interface("\\b(.*VID_)(.*)(&PID_)(.*)(#.*&)(.*)(&.*)(&.*)", std::regex_constants::icase);

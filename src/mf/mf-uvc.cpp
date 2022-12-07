@@ -628,7 +628,7 @@ namespace librealsense
                         {
                             if( hr == SEMAPHORE_TIMEOUT_ERROR )
                                 LOG_DEBUG( "set_pu returned error code: "
-                                           << utilities::hresult::hr_to_string( hr ) );
+                                           << rsutils::hresult::hr_to_string( hr ) );
                             return false;
                         }
 
@@ -742,7 +742,7 @@ namespace librealsense
 
                     WCHAR * wchar_name = nullptr; UINT32 length;
                     CHECK_HR(pDevice->GetAllocatedString(MF_DEVSOURCE_ATTRIBUTE_SOURCE_TYPE_VIDCAP_SYMBOLIC_LINK, &wchar_name, &length));
-                    auto name = utilities::string::windows::win_to_utf(wchar_name);
+                    auto name = rsutils::string::windows::win_to_utf(wchar_name);
                     CoTaskMemFree(wchar_name);
 
                     uint16_t vid, pid, mi; std::string unique_id, guid;

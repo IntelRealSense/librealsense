@@ -15,13 +15,13 @@ PYBIND11_MODULE(NAME, m) {
     )pbdoc";
     m.attr( "__version__" ) = "0.1";  // RS2_API_VERSION_STR;
 
-    utilities::configure_elpp_logger();
+    rsutils::configure_elpp_logger();
 
     m.def( "debug",
-           &utilities::configure_elpp_logger,
+           &rsutils::configure_elpp_logger,
            py::arg( "enable" ),
            py::arg( "nested-string" ) = "",
            py::arg( "logger" ) = LIBREALSENSE_ELPP_ID );
 
-    m.def( "split", &utilities::string::split );
+    m.def( "split", &rsutils::string::split );
 }

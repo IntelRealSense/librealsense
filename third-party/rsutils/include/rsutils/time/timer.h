@@ -6,7 +6,7 @@
 
 #include "stopwatch.h"
 
-namespace utilities
+namespace rsutils
 {
     namespace time
     {

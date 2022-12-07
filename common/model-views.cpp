@@ -4976,7 +4976,7 @@ namespace rs2
                         default_path.c_str(), default_filename.c_str()))
                     {
                         path = ret;
-                        if (!ends_with(utilities::string::to_lower(path), ".bag")) path += ".bag";
+                        if (!ends_with(rsutils::string::to_lower(path), ".bag")) path += ".bag";
                     }
                 }
 
@@ -5619,7 +5619,7 @@ namespace rs2
                 rs2_stream stream_type = p.stream_type();
                 std::string stream_format_key
                     = rsutils::string::from()
-                   << "stream-" << utilities::string::to_lower( rs2_stream_to_string( stream_type ) ) << "-format";
+                   << "stream-" << rsutils::string::to_lower( rs2_stream_to_string( stream_type ) ) << "-format";
                 std::string stream_format_value = rs2_format_to_string(p.format());
 
                 if (stream_type == RS2_STREAM_DEPTH)
@@ -6006,7 +6006,7 @@ namespace rs2
 
         const auto save_to_json = [&, serializable](std::string full_filename)
         {
-            if (!ends_with(utilities::string::to_lower(full_filename), ".json")) full_filename += ".json";
+            if (!ends_with(rsutils::string::to_lower(full_filename), ".json")) full_filename += ".json";
             std::ofstream outfile(full_filename);
 
             json j;

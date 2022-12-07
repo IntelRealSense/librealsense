@@ -9,7 +9,7 @@
 #include <atomic>
 
 
-namespace utilities {
+namespace rsutils {
 namespace time {
 
 // Helper class -- encapsulate a variable of type T that we want to wait on: another thread will set
@@ -170,4 +170,4 @@ public:
 
 
 }  // namespace time
-}  // namespace utilities
+}  // namespace rsutils

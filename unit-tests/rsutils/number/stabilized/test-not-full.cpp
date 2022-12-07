@@ -4,7 +4,7 @@
 #include "../../../test.h"
 #include <rsutils/number/stabilized-value.h>
 
-using namespace utilities::number;
+using namespace rsutils::number;
 
 // Test group description:
 //       * This tests group verifies stabilized_value class.

@@ -7,7 +7,7 @@
 #include "common.h"
 #include <rsutils/time/periodic-timer.h>
 
-using namespace utilities::time;
+using namespace rsutils::time;
 
 // Test description:
 // Verify the timer expired and restart itself

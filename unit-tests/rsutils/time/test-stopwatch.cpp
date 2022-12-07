@@ -7,7 +7,7 @@
 #include "common.h"
 #include <rsutils/time/stopwatch.h>
 
-using namespace utilities::time;
+using namespace rsutils::time;
 
 // Test description:
 // Test the stopwatch main functions

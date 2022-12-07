@@ -135,7 +135,7 @@ namespace rs2
                             std::wstring suffix = achKey;
                             device_id rdid;
 
-                            std::string a = utilities::string::windows::win_to_utf( suffix.c_str() );
+                            std::string a = rsutils::string::windows::win_to_utf( suffix.c_str() );
 
                             if (parse_device_id(a, &rdid))
                             {

@@ -15,7 +15,7 @@ actualy in work week 1 of 2022
 #include <ctime>
 
 
-namespace utilities {
+namespace rsutils {
 namespace time {
 
 class work_week
@@ -41,4 +41,4 @@ unsigned get_work_weeks_since( const work_week & start );
 //read more in https://en.wikipedia.org/wiki/Julian_day
 unsigned jdn( unsigned year, unsigned month, unsigned day );
 }  // namespace time
-}  // namespace utilities
+}  // namespace rsutils

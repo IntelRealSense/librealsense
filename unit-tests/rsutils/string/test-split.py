@@ -7,7 +7,7 @@ from pyrsutils import split
 
 #############################################################################################
 #
-test.start( "utilities::string::split" )
+test.start( "rsutils::string::split" )
 
 test.check_equal( len( split( "" , '\n' )), 0 )
 test.check_equal( len( split( "abc" , '\n' )), 1 )

@@ -8,7 +8,7 @@
 #include <sstream>
 #include <cmath> // std::isfinite
 
-namespace utilities {
+namespace rsutils {
 namespace string {
     inline std::string hexify(unsigned char n)
     {
@@ -191,4 +191,4 @@ namespace string {
     }
 
 }  // namespace string
-}  // namespace utilities
+}  // namespace rsutils

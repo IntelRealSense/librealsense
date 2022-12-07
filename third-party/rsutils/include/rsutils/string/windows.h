@@ -8,7 +8,7 @@
 #ifdef WIN32
 #include <Windows.h>
 
-namespace utilities {
+namespace rsutils {
 namespace string {
 namespace windows {
 
@@ -45,5 +45,5 @@ inline std::string win_to_utf( std::wstring const & s )
 
 }  // namespace windows
 }  // namespace string
-}  // namespace utilities
+}  // namespace rsutils
 #endif

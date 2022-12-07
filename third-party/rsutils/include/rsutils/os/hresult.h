@@ -9,7 +9,7 @@
 #include <sstream>
 #include <rsutils/string/windows.h>
 
-namespace utilities {
+namespace rsutils {
 namespace hresult {
 
     inline std::string hr_to_string(HRESULT hr)
@@ -25,8 +25,8 @@ namespace hresult {
 #define CHECK_HR_STR( call, hr )                                                                   \
     if( FAILED( hr ) )                                                                             \
     {                                                                                              \
-        std::ostringstream ss;                                                                      \
-        ss << call << " returned: " << utilities::hresult::hr_to_string( hr );                     \
+        std::ostringstream ss;                                                                     \
+        ss << call << " returned: " << rsutils::hresult::hr_to_string( hr );                       \
         std::string descr = ss.str();                                                              \
         throw std::runtime_error( descr );                                                         \
     }
@@ -35,8 +35,8 @@ namespace hresult {
 #define LOG_HR_STR( call, hr )                                                                     \
     if( FAILED( hr ) )                                                                             \
     {                                                                                              \
-        std::ostringstream ss;                                                                      \
-        ss << call << " returned: " << utilities::hresult::hr_to_string( hr );                     \
+        std::ostringstream ss;                                                                     \
+        ss << call << " returned: " << rsutils::hresult::hr_to_string( hr );                       \
         std::string descr = ss.str();                                                              \
         LOG_DEBUG(descr);                                                                          \
     }

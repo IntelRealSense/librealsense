@@ -10,8 +10,8 @@
 
 static int work_weeks_between_years( unsigned year, unsigned other_year )
 {
-    unsigned Jan_1_JDN = utilities::time::jdn( year, 1, 1 );
-    unsigned other_Jan_1_JDN = utilities::time::jdn( other_year, 1, 1 );
+    unsigned Jan_1_JDN = rsutils::time::jdn( year, 1, 1 );
+    unsigned other_Jan_1_JDN = rsutils::time::jdn( other_year, 1, 1 );
     // We need to compare between weeks, so we get the JDN of the Sunday of the wanted weeks
     // (JDN + 1) % 7 gives us the day of the week for the JDN. 0 -> Sun, 1 -> Mon ...
     int start_of_year_first_work_week = Jan_1_JDN - ( ( Jan_1_JDN + 1 ) % 7 );
@@ -36,7 +36,7 @@ static unsigned days_in_month( unsigned year, unsigned month )
         return 31;
 }
 
-namespace utilities {
+namespace rsutils {
 namespace time {
 
 work_week::work_week( unsigned year, unsigned ww )
@@ -119,4 +119,4 @@ unsigned jdn( unsigned year, unsigned month, unsigned day )
          - ( ( 3 * ( ( year + 4900 + ( ( (int)month - 14 ) / 12 ) ) / 100 ) ) / 4 ) + day - 32075;
 }
 }  // namespace time
-}  // namespace utilities
+}  // namespace rsutils

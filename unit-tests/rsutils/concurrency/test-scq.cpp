@@ -8,7 +8,7 @@
 #include <algorithm>
 #include <vector>
 
-using namespace utilities::time;
+using namespace rsutils::time;
 
 TEST_CASE( "dequeue doesn't wait after stop" )
 {

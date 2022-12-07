@@ -5,7 +5,7 @@
 
 #include "common.h"
 
-namespace utilities
+namespace rsutils
 {
     namespace time
     {

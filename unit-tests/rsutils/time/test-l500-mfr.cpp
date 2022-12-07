@@ -14,7 +14,8 @@
 
 #define INVALID_MESSAGE( serial, invalid ) "Invalid serial number \"" + serial + "\" " + invalid
 
-using namespace utilities::time;
+using namespace rsutils::time;    // from rsutils/
+using namespace utilities::time;  // from common/
 
 // Test description:
 // > Test error throws fron the get_manufacture_work_week function

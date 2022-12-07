@@ -127,7 +127,7 @@ namespace librealsense
                 auto manufacture
                     = utilities::time::l500::get_manufacture_work_week( optic_serial );
                 auto age
-                    = utilities::time::get_work_weeks_since( manufacture );
+                    = rsutils::time::get_work_weeks_since( manufacture );
                 command cmd( fw_cmd::UNIT_AGE_SET, (uint8_t)age );
                 _hw_monitor->send( cmd );
             }
@@ -645,7 +645,7 @@ namespace librealsense
                 auto expected_size = fw_version_support_nest ? sizeof( extended_temperatures )
                                                              : sizeof( temperatures );
 
-                utilities::time::periodic_timer second_has_passed(std::chrono::seconds(1));
+                rsutils::time::periodic_timer second_has_passed(std::chrono::seconds(1));
                 second_has_passed.set_expired(); // Force condition true on start
 
 

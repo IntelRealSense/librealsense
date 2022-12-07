@@ -11,7 +11,7 @@ namespace utilities {
 namespace time {
 namespace l500 {
 
-utilities::time::work_week get_manufacture_work_week( const std::string & serial );
+rsutils::time::work_week get_manufacture_work_week( const std::string & serial );
 
 }  // namespace l500
 }  // namespace time

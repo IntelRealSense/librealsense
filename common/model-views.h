@@ -760,7 +760,7 @@ namespace rs2
 
     private:
         std::unique_ptr< reflectivity > _reflectivity;
-        utilities::number::stabilized_value<float> _stabilized_reflectivity;
+        rsutils::number::stabilized_value<float> _stabilized_reflectivity;
 
     };
 
@@ -873,7 +873,7 @@ namespace rs2
 
         std::shared_ptr<recorder> _recorder;
         std::vector<std::shared_ptr<subdevice_model>> live_subdevices;
-        utilities::time::periodic_timer      _update_readonly_options_timer;
+        rsutils::time::periodic_timer      _update_readonly_options_timer;
         bool pause_required = false;
         std::shared_ptr< atomic_objects_in_frame > _detected_objects;
         std::shared_ptr<updates_model> _updates;

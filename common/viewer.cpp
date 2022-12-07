@@ -264,7 +264,7 @@ namespace rs2
                         }
 
                         std::string fname(ret);
-                        if (!ends_with(utilities::string::to_lower(fname), curr_exporter->second.extension)) fname += curr_exporter->second.extension;
+                        if (!ends_with(rsutils::string::to_lower(fname), curr_exporter->second.extension)) fname += curr_exporter->second.extension;
 
                         std::unique_ptr<rs2::filter> exporter;
                         if (tab == export_type::ply)
@@ -1097,7 +1097,7 @@ namespace rs2
             std::string wrapped_msg;
             try
             {
-                auto trimmed_msg = utilities::string::trim_newlines(msg);
+                auto trimmed_msg = rsutils::string::trim_newlines(msg);
                 wrapped_msg = utilities::imgui::wrap(trimmed_msg, 500);
             }
             catch (...)
@@ -1216,7 +1216,7 @@ namespace rs2
 
     void viewer_model::show_rendering_not_supported(ImFont* font_18, int min_x, int min_y, int max_x, int max_y, rs2_format format)
     {
-        static utilities::time::periodic_timer update_string(std::chrono::milliseconds(200));
+        static rsutils::time::periodic_timer update_string(std::chrono::milliseconds(200));
         static int counter = 0;
         static std::string to_print;
         auto pos = ImGui::GetCursorScreenPos();
@@ -1696,7 +1696,7 @@ namespace rs2
         ImFont *font1, ImFont *font2, size_t dev_model_num,
         const mouse_info &mouse, std::string& error_message)
     {
-        static utilities::time::periodic_timer every_sec(std::chrono::seconds(1));
+        static rsutils::time::periodic_timer every_sec(std::chrono::seconds(1));
         static bool icon_visible = false;
         if (every_sec) icon_visible = !icon_visible;
         float alpha = icon_visible ? 1.f : 0.2f;
@@ -2850,7 +2850,7 @@ namespace rs2
                             try
                             {
                                 std::string filename = ret;
-                                filename = utilities::string::to_lower(filename);
+                                filename = rsutils::string::to_lower(filename);
                                 if (!ends_with(filename, ".json")) filename += ".json";
                                 temp_cfg.save(filename.c_str());
                             }

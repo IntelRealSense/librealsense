@@ -126,7 +126,7 @@ def find_include( include, relative_to ):
 
 standard_include_dirs = [
     os.path.join( root, 'include' ),
-    os.path.join( root, 'third-party', 'utilities', 'include' ),
+    os.path.join( root, 'third-party', 'rsutils', 'include' ),
     root
     ]
 def find_include_in_dirs( include ):

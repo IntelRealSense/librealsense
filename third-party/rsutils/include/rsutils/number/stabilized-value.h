@@ -9,7 +9,7 @@
 #include <deque>
 #include <unordered_map>
 
-namespace utilities {
+namespace rsutils {
 namespace number {
 
 // Given a rapidly changing history of a value, we do not always want to show every minor
@@ -127,4 +127,4 @@ private:
 };
 
 }  // namespace number
-}  // namespace utilities
+}  // namespace rsutils
