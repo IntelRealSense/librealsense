@@ -8,7 +8,7 @@ on:
 
 env:
   # Expected error count should decrease as we handle the errors. Update accordingly.
-  CPPCHECK_EXPECTED_ERROR_COUNT: 3903
+  CPPCHECK_EXPECTED_ERROR_COUNT: 63
 
 jobs:
   cppcheck:
