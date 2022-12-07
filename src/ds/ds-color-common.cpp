@@ -2,6 +2,7 @@
 // Copyright(c) 2022 Intel Corporation. All Rights Reserved.
 
 #include "ds-color-common.h"
+#include "metadata.h"
 
 namespace librealsense
 {
