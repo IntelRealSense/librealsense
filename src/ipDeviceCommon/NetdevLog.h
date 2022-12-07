@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include <utilities/easylogging/easyloggingpp.h>
+#include <rsutils/easylogging/easyloggingpp.h>
 
 #define DBG CLOG(DEBUG, LIBREALSENSE_ELPP_ID)
 #define ERR CLOG(ERROR, LIBREALSENSE_ELPP_ID)

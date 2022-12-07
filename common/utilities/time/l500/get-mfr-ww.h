@@ -4,7 +4,7 @@
 #pragma once
 
 #include <string>
-#include <utilities/time/work-week.h>
+#include <rsutils/time/work-week.h>
 
 
 namespace utilities {

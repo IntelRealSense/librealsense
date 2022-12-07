@@ -13,7 +13,7 @@
 #include "ds5/ds5-device.h"
 #include "../../include/librealsense2/h/rs_sensor.h"
 #include "../common/fw/firmware-version.h"
-#include <utilities/string/from.h>
+#include <rsutils/string/from.h>
 
 namespace librealsense
 {

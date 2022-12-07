@@ -28,7 +28,7 @@ The library will be compiled without the metadata support!\n")
 #include "../types.h"
 #include "uvc/uvc-types.h"
 
-#include <utilities/string/from.h>
+#include <rsutils/string/from.h>
 
 #include "Shlwapi.h"
 #include <Windows.h>

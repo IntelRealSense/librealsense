@@ -6,7 +6,7 @@
 #include "context.h"
 #include "core/extension.h"
 #include "device.h"
-#include <utilities/string/from.h>
+#include <rsutils/string/from.h>
 
 #include <type_traits>
 #include <iostream>

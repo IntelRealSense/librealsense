@@ -6,7 +6,7 @@
 #include "backend.h"
 #include "types.h"
 
-#include <utilities/string/from.h>
+#include <rsutils/string/from.h>
 
 #include <thread>
 #include <chrono>

@@ -30,7 +30,7 @@
 #include "types.h"
 #include <vector>
 
-#include <utilities/string/from.h>
+#include <rsutils/string/from.h>
 
 
 enum ros_file_versions

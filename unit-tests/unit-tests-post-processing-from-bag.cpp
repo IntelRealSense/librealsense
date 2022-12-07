@@ -14,7 +14,7 @@
 #include <algorithm>
 #include <deque>
 #include <librealsense2/rsutil.h>
-#include <utilities/time/timer.h>
+#include <rsutils/time/timer.h>
 
 # define SECTION_FROM_TEST_NAME space_to_underscore(Catch::getCurrentContext().getResultCapture()->getCurrentTestName()).c_str()
 

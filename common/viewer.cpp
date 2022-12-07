@@ -20,7 +20,7 @@
 
 #define ARCBALL_CAMERA_IMPLEMENTATION
 #include <arcball_camera.h>
-#include <utilities/string/trim-newlines.h>
+#include <rsutils/string/trim-newlines.h>
 #include "../common/utilities/imgui/wrap.h"
 
 namespace rs2

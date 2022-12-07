@@ -15,7 +15,7 @@
 #include "l500/l500-motion.h"
 #include "l500/l500-depth.h"
 
-#include <utilities/string/from.h>
+#include <rsutils/string/from.h>
 
 namespace librealsense
 {

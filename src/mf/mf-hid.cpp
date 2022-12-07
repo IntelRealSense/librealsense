@@ -23,7 +23,7 @@
 #include <initguid.h>
 #include <propkeydef.h>
 #include <comutil.h>
-#include <utilities/string/from.h>
+#include <rsutils/string/from.h>
 
 #pragma comment(lib, "Sensorsapi.lib")
 #pragma comment(lib, "PortableDeviceGuids.lib")

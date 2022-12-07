@@ -10,7 +10,7 @@
 #include "context.h"
 #include "../device.h"
 #include "../stream.h"
-#include <utilities/string/from.h>
+#include <rsutils/string/from.h>
 #include "device-calibration.h"
 
 #ifdef RS2_USE_CUDA

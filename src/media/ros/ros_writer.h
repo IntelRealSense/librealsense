@@ -5,7 +5,7 @@
 #include "rosbag/bag.h"
 #include "ros_file_format.h"
 
-#include <utilities/string/from.h>
+#include <rsutils/string/from.h>
 
 
 namespace librealsense

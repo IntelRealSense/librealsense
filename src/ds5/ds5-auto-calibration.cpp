@@ -10,7 +10,7 @@
 #include "librealsense2/rsutil.h"
 #include "../algo.h"
 
-#include <utilities/string/from.h>
+#include <rsutils/string/from.h>
 
 
 #undef UCAL_PROFILE

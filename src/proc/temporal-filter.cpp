@@ -10,7 +10,7 @@
 #include "proc/synthetic-stream.h"
 #include "proc/temporal-filter.h"
 
-#include <utilities/string/from.h>
+#include <rsutils/string/from.h>
 
 
 namespace librealsense

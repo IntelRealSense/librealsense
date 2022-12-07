@@ -9,7 +9,7 @@
 #include "environment.h"
 #include "sync.h"
 
-#include <utilities/string/from.h>
+#include <rsutils/string/from.h>
 
 
 using namespace librealsense;

@@ -11,7 +11,7 @@
 #include "proc/hole-filling-filter.h"
 #include "proc/spatial-filter.h"
 
-#include <utilities/string/from.h>
+#include <rsutils/string/from.h>
 
 
 namespace librealsense

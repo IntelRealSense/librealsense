@@ -5,7 +5,7 @@
 #include "ds5/ds5-thermal-monitor.h"
 #include "ds5-options.h"
 
-#include <utilities/string/from.h>
+#include <rsutils/string/from.h>
 
 
 namespace librealsense

@@ -4,7 +4,7 @@
 #include "l500-fw-update-device.h"
 #include "l500-private.h"
 
-#include <utilities/string/from.h>
+#include <rsutils/string/from.h>
 
 
 namespace librealsense

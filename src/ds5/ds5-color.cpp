@@ -8,7 +8,7 @@
 #include "ds5-thermal-monitor.h"
 #include "proc/color-formats-converter.h"
 #include "ds5-color.h"
-#include <utilities/string/from.h>
+#include <rsutils/string/from.h>
 
 namespace librealsense
 {

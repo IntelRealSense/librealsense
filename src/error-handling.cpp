@@ -2,7 +2,7 @@
 // Copyright(c) 2019 Intel Corporation. All Rights Reserved.
 #include "error-handling.h"
 
-#include <utilities/string/from.h>
+#include <rsutils/string/from.h>
 
 #include <memory>
 

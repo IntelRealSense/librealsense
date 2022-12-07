@@ -3,7 +3,7 @@
 
 #include "uvc-device.h"
 
-#include <utilities/string/from.h>
+#include <rsutils/string/from.h>
 
 #define UVC_AE_MODE_D0_MANUAL   ( 1 << 0 )
 #define UVC_AE_MODE_D1_AUTO     ( 1 << 1 )

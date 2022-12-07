@@ -5,7 +5,7 @@
 #include "proc/synthetic-stream.h"
 #include "proc/occlusion-filter.h"
 
-#include <utilities/string/from.h>
+#include <rsutils/string/from.h>
 
 #include <vector>
 #include <cmath>

@@ -5,7 +5,7 @@
 #include <iomanip>
 #include "l500/l500-depth.h"
 
-#include <utilities/string/from.h>
+#include <rsutils/string/from.h>
 
 
 const double METER_TO_MM = 1000;

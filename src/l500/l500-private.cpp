@@ -11,7 +11,7 @@
 #include "log.h"
 #include <chrono>
 
-#include <utilities/string/from.h>
+#include <rsutils/string/from.h>
 
 
 using namespace std;

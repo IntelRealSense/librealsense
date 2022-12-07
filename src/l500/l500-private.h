@@ -9,7 +9,7 @@
 #include "../core/extension.h"
 #include "../fw-update/fw-update-unsigned.h"
 
-#include <utilities/string/from.h>
+#include <rsutils/string/from.h>
 
 
 static const int MAX_NUM_OF_RGB_RESOLUTIONS = 5;

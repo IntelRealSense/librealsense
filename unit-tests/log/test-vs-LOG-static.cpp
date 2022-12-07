@@ -3,7 +3,7 @@
 
 //#cmake: static!
 
-#include <utilities/easylogging/easyloggingpp.h>
+#include <rsutils/easylogging/easyloggingpp.h>
 // Catch also defines CHECK(), and so we have to undefine it or we get compilation errors!
 #undef CHECK
 #include "../catch.h"

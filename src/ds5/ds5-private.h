@@ -6,7 +6,7 @@
 #include "backend.h"
 #include "types.h"
 #include "fw-update/fw-update-unsigned.h"
-#include <utilities/string/from.h>
+#include <rsutils/string/from.h>
 
 #include <map>
 #include <iomanip>

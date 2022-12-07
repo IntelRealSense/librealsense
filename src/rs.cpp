@@ -49,7 +49,7 @@
 #include "device-calibration.h"
 #include "calibrated-sensor.h"
 
-#include <utilities/string/from.h>
+#include <rsutils/string/from.h>
 
 ////////////////////////
 // API implementation //

@@ -10,7 +10,7 @@
 
 #include "libusb.h"
 
-#include <utilities/string/from.h>
+#include <rsutils/string/from.h>
 
 namespace librealsense
 {

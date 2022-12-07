@@ -6,7 +6,7 @@
 #include "sql.h"
 #include <algorithm>
 #include "types.h"
-#include <utilities/string/from.h>
+#include <rsutils/string/from.h>
 
 using namespace std;
 using namespace sql;

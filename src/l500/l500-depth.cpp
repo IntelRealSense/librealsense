@@ -19,7 +19,7 @@
 #include "l500-options.h"
 #include "algo/max-usable-range/l500/max-usable-range.h" 
 
-#include <utilities/string/from.h>
+#include <rsutils/string/from.h>
 
 
 #define MM_TO_METER 1/1000

@@ -11,7 +11,7 @@
 #include "command_transfer.h"
 #include "error-handling.h"
 
-#include <utilities/string/from.h>
+#include <rsutils/string/from.h>
 
 #include <chrono>
 #include <memory>

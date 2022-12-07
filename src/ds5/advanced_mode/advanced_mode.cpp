@@ -7,7 +7,7 @@
 #include "json_loader.hpp"
 #include "ds5/ds5-color.h"
 
-#include <utilities/string/from.h>
+#include <rsutils/string/from.h>
 
 
 namespace librealsense

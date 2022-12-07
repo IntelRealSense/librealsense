@@ -5,7 +5,7 @@
 #include "l500-private.h"
 #include "l500-depth.h"
 
-#include <utilities/string/from.h>
+#include <rsutils/string/from.h>
 
 using librealsense::ivcam2::l535::preset_option;
 

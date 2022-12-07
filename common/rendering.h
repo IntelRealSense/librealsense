@@ -9,8 +9,8 @@
 
 #include <librealsense2/rs.hpp>
 #include <librealsense2-gl/rs_processing_gl.hpp>
-#include <utilities/time/stopwatch.h>
-#include <utilities/string/from.h>
+#include <rsutils/time/stopwatch.h>
+#include <rsutils/string/from.h>
 
 #include "matrix4.h"
 #include "float3.h"

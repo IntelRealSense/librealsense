@@ -8,7 +8,7 @@
 #include "librealsense2/h/rs_option.h"
 #include <map>
 
-#include <utilities/string/from.h>
+#include <rsutils/string/from.h>
 
 
 using namespace librealsense::platform;

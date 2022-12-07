@@ -3,7 +3,7 @@
 
 #include "l500-thermal-loop.h"
 #include "../../l500/l500-private.h"
-#include <utilities/string/from.h>
+#include <rsutils/string/from.h>
 
 namespace librealsense {
 namespace algo {

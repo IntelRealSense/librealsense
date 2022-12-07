@@ -7,7 +7,7 @@
 #include "media/record/record_device.h"
 #include "media/ros/ros_writer.h"
 
-#include <utilities/string/from.h>
+#include <rsutils/string/from.h>
 
 
 namespace librealsense

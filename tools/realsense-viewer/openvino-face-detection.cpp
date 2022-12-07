@@ -11,7 +11,7 @@
 #include <rs-vino/detected-object.h>
 #include <cv-helpers.hpp>
 
-#include <utilities/string/from.h>
+#include <rsutils/string/from.h>
 
 namespace openvino = InferenceEngine;
 

@@ -9,7 +9,7 @@
 #include "ds5/ds5-options.h"
 #include "media/ros/ros_reader.h"
 
-#include <utilities/string/from.h>
+#include <rsutils/string/from.h>
 
 
 using namespace librealsense;

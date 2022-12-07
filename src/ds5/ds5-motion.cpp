@@ -10,7 +10,7 @@
 
 #include "../l500/l500-private.h"
 
-#include <utilities/string/from.h>
+#include <rsutils/string/from.h>
 
 #include <mutex>
 #include <chrono>

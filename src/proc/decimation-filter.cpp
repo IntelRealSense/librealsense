@@ -13,7 +13,7 @@
 #include "proc/synthetic-stream.h"
 #include "proc/decimation-filter.h"
 
-#include <utilities/string/from.h>
+#include <rsutils/string/from.h>
 
 
 #define PIX_SORT(a,b) { if ((a)>(b)) PIX_SWAP((a),(b)); }

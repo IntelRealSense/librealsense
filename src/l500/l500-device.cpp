@@ -20,10 +20,10 @@
 #include "proc/syncer-processing-block.h"
 #include "proc/rotation-transform.h"
 #include "../common/fw/firmware-version.h"
-#include <utilities/time/periodic-timer.h>
-#include <utilities/time/work-week.h>
+#include <rsutils/time/periodic-timer.h>
+#include <rsutils/time/work-week.h>
 #include "../common/utilities/time/l500/get-mfr-ww.h"
-#include <utilities/string/from.h>
+#include <rsutils/string/from.h>
 
 #include <vector>
 

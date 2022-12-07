@@ -6,7 +6,7 @@
 #include <librealsense2/h/rs_option.h>
 #include "extension.h"
 #include "../types.h"
-#include <utilities/string/from.h>
+#include <rsutils/string/from.h>
 
 namespace librealsense
 {

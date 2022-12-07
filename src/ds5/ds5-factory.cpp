@@ -26,7 +26,7 @@
 #include "../firmware_logger_device.h"
 #include "device-calibration.h"
 
-#include <utilities/string/from.h>
+#include <rsutils/string/from.h>
 
 
 namespace librealsense

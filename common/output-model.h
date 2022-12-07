@@ -17,7 +17,7 @@
 #include <GLFW/glfw3.h>
 #include <imgui.h>
 
-#include <utilities/concurrency/concurrency.h>
+#include <rsutils/concurrency/concurrency.h>
 
 namespace rs2
 {

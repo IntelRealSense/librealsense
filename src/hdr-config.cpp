@@ -4,7 +4,7 @@
 #include "hdr-config.h"
 #include "ds5/ds5-private.h"
 
-#include <utilities/string/from.h>
+#include <rsutils/string/from.h>
 
 
 namespace librealsense

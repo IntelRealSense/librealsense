@@ -4,7 +4,7 @@
 #include "option.h"
 #include "sensor.h"
 
-#include <utilities/string/from.h>
+#include <rsutils/string/from.h>
 
 
 bool librealsense::option_base::is_valid(float value) const

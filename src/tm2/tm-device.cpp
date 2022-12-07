@@ -14,7 +14,7 @@
 #include "media/ros/ros_reader.h"
 #include "usb/usb-enumerator.h"
 
-#include <utilities/string/from.h>
+#include <rsutils/string/from.h>
 
 
 // uncomment to get debug messages at info severity

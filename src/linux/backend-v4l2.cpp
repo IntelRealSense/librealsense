@@ -14,7 +14,7 @@
 #include "usb/usb-enumerator.h"
 #include "usb/usb-device.h"
 
-#include <utilities/string/from.h>
+#include <rsutils/string/from.h>
 
 #include <cassert>
 #include <cstdlib>

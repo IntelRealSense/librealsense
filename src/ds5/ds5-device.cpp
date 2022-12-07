@@ -38,7 +38,7 @@
 #include "fw-update/fw-update-unsigned.h"
 #include <third-party/json.hpp>
 
-#include <utilities/string/from.h>
+#include <rsutils/string/from.h>
 
 #include <mutex>
 #include <chrono>

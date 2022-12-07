@@ -16,7 +16,7 @@
 #include <memory>
 
 #include <librealsense2/rs.hpp>
-#include <utilities/string/windows.h>
+#include <rsutils/string/windows.h>
 
 #define MAX_KEY_LENGTH 255
 #define MAX_VALUE_NAME 16383

@@ -6,7 +6,7 @@
 #include "stream.h"
 #include "l500/l500-depth.h"
 
-#include <utilities/string/from.h>
+#include <rsutils/string/from.h>
 
 using namespace librealsense;
 

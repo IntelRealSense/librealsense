@@ -13,7 +13,7 @@
 #include "global_timestamp_reader.h"
 #include "device-calibration.h"
 
-#include <utilities/string/from.h>
+#include <rsutils/string/from.h>
 
 #include <array>
 #include <set>

@@ -27,8 +27,8 @@
 #include "fw-update-helper.h"
 #include "updates-model.h"
 #include "calibration-model.h"
-#include <utilities/time/periodic-timer.h>
-#include <utilities/number/stabilized-value.h>
+#include <rsutils/time/periodic-timer.h>
+#include <rsutils/number/stabilized-value.h>
 #include "reflectivity/reflectivity.h"
 #include "option-model.h"
 

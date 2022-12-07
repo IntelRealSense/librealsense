@@ -20,7 +20,7 @@
 #include "max-usable-range-sensor.h"
 #include "debug-stream-sensor.h"
 
-#include <utilities/string/from.h>
+#include <rsutils/string/from.h>
 
 
 namespace librealsense

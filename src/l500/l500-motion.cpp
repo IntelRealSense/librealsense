@@ -7,7 +7,7 @@
 #include "../backend.h"
 #include "proc/motion-transform.h"
 
-#include <utilities/string/from.h>
+#include <rsutils/string/from.h>
 
 
 namespace librealsense

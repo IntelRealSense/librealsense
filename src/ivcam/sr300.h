@@ -23,7 +23,7 @@
 #include "proc/color-formats-converter.h"
 #include "firmware_logger_device.h"
 
-#include <utilities/string/from.h>
+#include <rsutils/string/from.h>
 
 
 namespace librealsense

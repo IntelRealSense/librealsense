@@ -11,7 +11,7 @@
 #include "l500/l500-private.h"
 #include "l500/l500-fw-update-device.h"
 
-#include <utilities/string/from.h>
+#include <rsutils/string/from.h>
 
 
 #define FW_UPDATE_INTERFACE_NUMBER 0

@@ -6,7 +6,7 @@
 #include "l500-depth.h"
 #include "../common/fw/firmware-version.h"
 
-#include <utilities/string/from.h>
+#include <rsutils/string/from.h>
 
 
 const std::string MIN_CONTROLS_FW_VERSION("1.3.9.0");

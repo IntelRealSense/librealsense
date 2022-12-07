@@ -7,7 +7,7 @@
 #include "proc/color-formats-converter.h"
 #include "algo/thermal-loop/l500-thermal-loop.h"
 
-#include <utilities/string/from.h>
+#include <rsutils/string/from.h>
 
 #include <cstddef>
 #include <mutex>
