@@ -136,10 +136,9 @@ void dds_participant::init( dds_domain_id domain_id, std::string const & partici
     // not SubscriberListener::on_data_on_readers for any reader
     // ( See note on https://fast-dds.docs.eprosima.com/en/v2.7.0/fastdds/dds_layer/core/entity/entity.html )
     StatusMask par_mask = StatusMask::all() >> StatusMask::data_on_readers();
-    _participant = DDS_API_CALL( DomainParticipantFactory::get_instance()->create_participant( domain_id,
-                                                                                               pqos,
-                                                                                               _domain_listener.get(),
-                                                                                               par_mask ) );
+    _participant_factory = DomainParticipantFactory::get_shared_instance();
+    _participant
+        = DDS_API_CALL( _participant_factory->create_participant( domain_id, pqos, _domain_listener.get(), par_mask ) );
 
     if( ! _participant )
     {
@@ -162,7 +161,7 @@ dds_participant::~dds_participant()
             DDS_API_CALL_NO_THROW( _participant->delete_contained_entities() );
         }
 
-        DDS_API_CALL_NO_THROW( DomainParticipantFactory::get_instance()->delete_participant( _participant ) );
+        DDS_API_CALL_NO_THROW( _participant_factory->delete_participant( _participant ) );
     }
 }
 

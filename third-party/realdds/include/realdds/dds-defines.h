@@ -7,11 +7,6 @@
 
 
 namespace eprosima {
-namespace fastdds {
-namespace dds {
-    class DomainParticipant;
-}  // namespace dds
-}  // namespace fastdds
 namespace fastrtps {
 namespace rtps {
     struct GUID_t;

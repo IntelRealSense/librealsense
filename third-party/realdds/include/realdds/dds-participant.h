@@ -12,6 +12,16 @@
 #include <atomic>
 
 
+namespace eprosima {
+namespace fastdds {
+namespace dds {
+class DomainParticipant;
+class DomainParticipantFactory;
+}  // namespace dds
+}  // namespace fastdds
+}  // namespace eprosima
+
+
 namespace realdds {
 
 
@@ -21,6 +31,7 @@ namespace realdds {
 class dds_participant
 {
     eprosima::fastdds::dds::DomainParticipant * _participant = nullptr;
+    std::shared_ptr< eprosima::fastdds::dds::DomainParticipantFactory > _participant_factory;
 
     struct listener_impl;
 
