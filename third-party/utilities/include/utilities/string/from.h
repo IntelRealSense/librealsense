@@ -35,6 +35,7 @@ struct from
         return *this;
     }
 
+    std::string str() const { return _ss.str(); }
     operator std::string() const { return _ss.str(); }
 
     // Returns an empty string if 'time' is null or the format requires too many characters.

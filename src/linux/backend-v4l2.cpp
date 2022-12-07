@@ -14,6 +14,8 @@
 #include "usb/usb-enumerator.h"
 #include "usb/usb-device.h"
 
+#include <utilities/string/from.h>
+
 #include <cassert>
 #include <cstdlib>
 #include <cstdio>
@@ -219,7 +221,7 @@ namespace librealsense
                     if(0 > _fildes)
                     {
                         release();
-                        throw linux_backend_exception(to_string() << __FUNCTION__ << ": Cannot open '" << _device_path);
+                        throw linux_backend_exception(rsutils::string::from() << __FUNCTION__ << ": Cannot open '" << _device_path);
                     }
                 }
 
@@ -227,7 +229,7 @@ namespace librealsense
                 if (0 != ret)
                 {
                     release();
-                    throw linux_backend_exception(to_string() <<  __FUNCTION__ << ": Acquire failed");
+                    throw linux_backend_exception(rsutils::string::from() <<  __FUNCTION__ << ": Acquire failed");
                 }
             }
         }
@@ -245,19 +247,19 @@ namespace librealsense
             if (_dev_mutex_cnt[_device_path] < 0)
             {
                 _dev_mutex_cnt[_device_path] = 0;
-                throw linux_backend_exception(to_string() << "Error: _dev_mutex_cnt[" << _device_path << "] < 0");
+                throw linux_backend_exception(rsutils::string::from() << "Error: _dev_mutex_cnt[" << _device_path << "] < 0");
             }
 
             if ((_dev_mutex_cnt[_device_path] == 0) && (-1 != _fildes))
             {
                 auto ret = lockf(_fildes, F_ULOCK, 0);
                 if (0 != ret)
-                    err_msg = to_string() << "lockf(...) failed";
+                    err_msg = "lockf(...) failed";
                 else
                 {
                     ret = close(_fildes);
                     if (0 != ret)
-                        err_msg = to_string() << "close(...) failed";
+                        err_msg = "close(...) failed";
                     else
                         _fildes = -1;
                 }
@@ -503,15 +505,15 @@ namespace librealsense
                         [](int* d){ if (d && (*d)) {::close(*d); } delete d; });
 
             if(*fd < 0)
-                throw linux_backend_exception(to_string() << __FUNCTION__ << ": Cannot open '" << dev_name);
+                throw linux_backend_exception(rsutils::string::from() << __FUNCTION__ << ": Cannot open '" << dev_name);
 
             v4l2_capability cap = {};
             if(xioctl(*fd, VIDIOC_QUERYCAP, &cap) < 0)
             {
                 if(errno == EINVAL)
-                    throw linux_backend_exception(to_string() << __FUNCTION__ << " " << dev_name << " is no V4L2 device");
+                    throw linux_backend_exception(rsutils::string::from() << __FUNCTION__ << " " << dev_name << " is no V4L2 device");
                 else
-                    throw linux_backend_exception(to_string() <<__FUNCTION__ << " xioctl(VIDIOC_QUERYCAP) failed");
+                    throw linux_backend_exception(rsutils::string::from() <<__FUNCTION__ << " xioctl(VIDIOC_QUERYCAP) failed");
             }
 
             return cap.device_caps;
@@ -520,13 +522,13 @@ namespace librealsense
         void stream_ctl_on(int fd, v4l2_buf_type type=V4L2_BUF_TYPE_VIDEO_CAPTURE)
         {
             if(xioctl(fd, VIDIOC_STREAMON, &type) < 0)
-                throw linux_backend_exception(to_string() << "xioctl(VIDIOC_STREAMON) failed for buf_type=" << type);
+                throw linux_backend_exception(rsutils::string::from() << "xioctl(VIDIOC_STREAMON) failed for buf_type=" << type);
         }
 
         void stream_off(int fd, v4l2_buf_type type=V4L2_BUF_TYPE_VIDEO_CAPTURE)
         {
             if(xioctl(fd, VIDIOC_STREAMOFF, &type) < 0)
-                throw linux_backend_exception(to_string() << "xioctl(VIDIOC_STREAMOFF) failed for buf_type=" << type);
+                throw linux_backend_exception(rsutils::string::from() << "xioctl(VIDIOC_STREAMOFF) failed for buf_type=" << type);
         }
 
         void req_io_buff(int fd, uint32_t count, std::string dev_name,
@@ -608,7 +610,7 @@ namespace librealsense
             struct stat st = {};
             if(stat(dev_name.c_str(), &st) < 0)
             {
-                throw linux_backend_exception(to_string() << "Cannot identify '" << dev_name);
+                throw linux_backend_exception(rsutils::string::from() << "Cannot identify '" << dev_name);
             }
             if(!S_ISCHR(st.st_mode))
                 throw linux_backend_exception(dev_name + " is no device");
@@ -1009,7 +1011,7 @@ namespace librealsense
                                       (const char*)pixel_format.description) ==
                             pending_formats.end())
                         {
-                            const std::string s(to_string() << "!" << pixel_format.description);
+                            const std::string s(rsutils::string::from() << "!" << pixel_format.description);
                             std::regex rgx("!([0-9a-f]+)-.*");
                             std::smatch match;
 
@@ -1023,7 +1025,7 @@ namespace librealsense
 
                                 if (fourcc == profile.format)
                                 {
-                                    throw linux_backend_exception(to_string() << "The requested pixel format '"  << fourcc_to_string(id)
+                                    throw linux_backend_exception(rsutils::string::from() << "The requested pixel format '"  << fourcc_to_string(id)
                                                                   << "' is not natively supported by the running Linux kernel and likely requires a patch");
                                 }
                             }
@@ -1764,7 +1766,7 @@ namespace librealsense
                                   (const char*)pixel_format.description) ==
                         known_problematic_formats.end())
                     {
-                        const std::string s(to_string() << "!" << pixel_format.description);
+                        const std::string s(rsutils::string::from() << "!" << pixel_format.description);
                         std::regex rgx("!([0-9a-f]+)-.*");
                         std::smatch match;
 
@@ -1849,7 +1851,7 @@ namespace librealsense
             case RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE: return V4L2_CID_AUTO_WHITE_BALANCE;
             case RS2_OPTION_POWER_LINE_FREQUENCY : return V4L2_CID_POWER_LINE_FREQUENCY;
             case RS2_OPTION_AUTO_EXPOSURE_PRIORITY: return V4L2_CID_EXPOSURE_AUTO_PRIORITY;
-            default: throw linux_backend_exception(to_string() << "no v4l2 cid for option " << option);
+            default: throw linux_backend_exception(rsutils::string::from() << "no v4l2 cid for option " << option);
             }
         }
 
@@ -1917,13 +1919,13 @@ namespace librealsense
         {
             _fd = open(_name.c_str(), O_RDWR | O_NONBLOCK, 0);
             if(_fd < 0)
-                throw linux_backend_exception(to_string() <<__FUNCTION__ << " Cannot open '" << _name);
+                throw linux_backend_exception(rsutils::string::from() <<__FUNCTION__ << " Cannot open '" << _name);
 
             if (pipe(_stop_pipe_fd) < 0)
-                throw linux_backend_exception(to_string() <<__FUNCTION__ << " Cannot create pipe!");
+                throw linux_backend_exception(rsutils::string::from() <<__FUNCTION__ << " Cannot create pipe!");
 
             if (_fds.size())
-                throw linux_backend_exception(to_string() <<__FUNCTION__ << " Device descriptor is already allocated");
+                throw linux_backend_exception(rsutils::string::from() <<__FUNCTION__ << " Device descriptor is already allocated");
 
             _fds.insert(_fds.end(),{_fd,_stop_pipe_fd[0],_stop_pipe_fd[1]});
             _max_fd = *std::max_element(_fds.begin(),_fds.end());
@@ -1986,7 +1988,7 @@ namespace librealsense
             fmt.fmt.pix.field       = V4L2_FIELD_NONE;
             if(xioctl(_fd, VIDIOC_S_FMT, &fmt) < 0)
             {
-                throw linux_backend_exception(to_string() << "xioctl(VIDIOC_S_FMT) failed, errno=" << errno);
+                throw linux_backend_exception(rsutils::string::from() << "xioctl(VIDIOC_S_FMT) failed, errno=" << errno);
             }
             else
                 LOG_INFO("Video node was successfully configured to " << fourcc_to_string(fmt.fmt.pix.pixelformat) << " format" <<", fd " << std::dec << _fd);
@@ -2003,7 +2005,7 @@ namespace librealsense
             memset(event_subscription.reserved,0, sizeof(event_subscription.reserved));
             if  (xioctl(_fd, VIDIOC_SUBSCRIBE_EVENT, &event_subscription) < 0)
             {
-                throw linux_backend_exception(to_string() << "xioctl(VIDIOC_SUBSCRIBE_EVENT) with control_id = " << control_id << " failed");
+                throw linux_backend_exception(rsutils::string::from() << "xioctl(VIDIOC_SUBSCRIBE_EVENT) with control_id = " << control_id << " failed");
             }
         }
 
@@ -2016,7 +2018,7 @@ namespace librealsense
             memset(event_subscription.reserved,0, sizeof(event_subscription.reserved));
             if  (xioctl(_fd, VIDIOC_UNSUBSCRIBE_EVENT, &event_subscription) < 0)
             {
-                throw linux_backend_exception(to_string() << "xioctl(VIDIOC_UNSUBSCRIBE_EVENT) with control_id = " << control_id << " failed");
+                throw linux_backend_exception(rsutils::string::from() << "xioctl(VIDIOC_UNSUBSCRIBE_EVENT) with control_id = " << control_id << " failed");
             }
         }
 
@@ -2117,14 +2119,14 @@ namespace librealsense
             v4l_uvc_device::map_device_descriptor();
 
             if (_md_fd>0)
-                throw linux_backend_exception(to_string() << _md_name << " descriptor is already opened");
+                throw linux_backend_exception(rsutils::string::from() << _md_name << " descriptor is already opened");
 
             _md_fd = open(_md_name.c_str(), O_RDWR | O_NONBLOCK, 0);
             if(_md_fd < 0)
             {
                 // D457 development - added for mipi device, for IR because no metadata there
                 return;
-                throw linux_backend_exception(to_string() << "Cannot open '" << _md_name);
+                throw linux_backend_exception(rsutils::string::from() << "Cannot open '" << _md_name);
             }
 
             //The minimal video/metadata nodes syncer will be implemented by using two blocking calls:
@@ -2403,13 +2405,13 @@ namespace librealsense
             xctrl_query.id = xu_to_cid(xu,control);
 
             if(0 > ioctl(_fd,VIDIOC_QUERY_EXT_CTRL,&xctrl_query)){
-                throw linux_backend_exception(to_string() << "xioctl(VIDIOC_QUERY_EXT_CTRL) failed, errno=" << errno);
+                throw linux_backend_exception(rsutils::string::from() << "xioctl(VIDIOC_QUERY_EXT_CTRL) failed, errno=" << errno);
             }
 
             if ((xctrl_query.elems !=1 ) ||
                 (xctrl_query.minimum < std::numeric_limits<int32_t>::min()) ||
                 (xctrl_query.maximum > std::numeric_limits<int32_t>::max()))
-                throw linux_backend_exception(to_string() << "Mipi Control range for " << xctrl_query.name
+                throw linux_backend_exception(rsutils::string::from() << "Mipi Control range for " << xctrl_query.name
                     << " is not compliant with backend interface: [min,max,default,step]:\n"
                     << xctrl_query.minimum << ", " << xctrl_query.maximum << ", "
                     << xctrl_query.default_value << ", " << xctrl_query.step
@@ -2446,7 +2448,7 @@ namespace librealsense
 //            case RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE: return V4L2_CID_AUTO_WHITE_BALANCE;
 //            case RS2_OPTION_POWER_LINE_FREQUENCY : return V4L2_CID_POWER_LINE_FREQUENCY;
 //            case RS2_OPTION_AUTO_EXPOSURE_PRIORITY: return V4L2_CID_EXPOSURE_AUTO_PRIORITY;
-                default: throw linux_backend_exception(to_string() << "no v4l2 mipi mapping cid for option " << option);
+                default: throw linux_backend_exception(rsutils::string::from() << "no v4l2 mipi mapping cid for option " << option);
             }
         }
 
@@ -2471,11 +2473,11 @@ namespace librealsense
                     //case RS_ASIC_AND_PROJECTOR_TEMPERATURES: TBD;
                     //case RS_LED_PWR: TBD;
 
-                    default: throw linux_backend_exception(to_string() << "no v4l2 mipi cid for XU depth control " << std::dec << int(control));
+                    default: throw linux_backend_exception(rsutils::string::from() << "no v4l2 mipi cid for XU depth control " << std::dec << int(control));
                 }
             }
             else
-                throw linux_backend_exception(to_string() << "MIPI Controls mapping is for Depth XU only, requested for subdevice " << xu.subdevice);
+                throw linux_backend_exception(rsutils::string::from() << "MIPI Controls mapping is for Depth XU only, requested for subdevice " << xu.subdevice);
         }
 
         std::shared_ptr<uvc_device> v4l_backend::create_uvc_device(uvc_device_info info) const

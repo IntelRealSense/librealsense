@@ -75,9 +75,12 @@ std::string exception_code_to_string(int code, struct _EXCEPTION_POINTERS *ep)
         auto details = (DelayLoadInfo*)ep->ExceptionRecord->ExceptionInformation[0];
         std::string dll_name = details->szDll;
         std::string fname = details->dlp.szProcName;
-        return rs2::to_string() << "Could not find " << dll_name << " library required for " << fname << ".\nMake sure all program dependencies are reachable or download standalone version of the App from our GitHub";
+        return rsutils::string::from() << "Could not find " << dll_name << " library required for " << fname
+                                       << ".\nMake sure all program dependencies are reachable or download standalone "
+                                          "version of the App from our GitHub";
     }
-    else return rs2::to_string() << "Unknown error (" << code << ")!";
+    else
+        return rsutils::string::from() << "Unknown error (" << code << ")!";
 }
 
 // Show custom error message box with OK and Report options

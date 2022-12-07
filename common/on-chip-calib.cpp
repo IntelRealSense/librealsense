@@ -120,7 +120,7 @@ namespace rs2
                 {
                     auto now = std::chrono::high_resolution_clock::now();
                     if (now - start_time > std::chrono::milliseconds(timeout_ms))
-                        throw std::runtime_error(to_string() << "Failed to fetch depth frame within " << timeout_ms << " ms");
+                        throw std::runtime_error( rsutils::string::from() << "Failed to fetch depth frame within " << timeout_ms << " ms");
 
                     if (now - stream.second.last_frame < std::chrono::milliseconds(100))
                     {
@@ -724,8 +724,8 @@ namespace rs2
         if (!started)
         {
             stop_viewer(invoke);
-            log(to_string() << "Failed to start streaming");
-            throw std::runtime_error(to_string() << "Failed to start streaming (" << w << ", " << h << ", " << fps << ")!");
+            log( "Failed to start streaming" );
+            throw std::runtime_error( rsutils::string::from() << "Failed to start streaming (" << w << ", " << h << ", " << fps << ")!");
         }
     }
 
@@ -849,9 +849,12 @@ namespace rs2
 
         auto res = dp.send_and_receive_raw_data(cmd);
 
-        if (res.size() < sizeof(int32_t)) throw std::runtime_error(to_string() << "Not enough data from " << name << "!");
+        if( res.size() < sizeof( int32_t ) )
+            throw std::runtime_error( rsutils::string::from() << "Not enough data from " << name << "!" );
         auto return_code = *((int32_t*)res.data());
-        if (return_code < 0)  throw std::runtime_error(to_string() << "Firmware error (" << return_code << ") from " << name << "!");
+        if( return_code < 0 )
+            throw std::runtime_error( rsutils::string::from()
+                                      << "Firmware error (" << return_code << ") from " << name << "!" );
 
         return res;
     }
@@ -860,7 +863,8 @@ namespace rs2
     {
         time_t rawtime;
         time(&rawtime);
-        std::string id = to_string() << configurations::viewer::last_calib_notice << "." << _sub->s->get_info(RS2_CAMERA_INFO_SERIAL_NUMBER);
+        std::string id = rsutils::string::from() << configurations::viewer::last_calib_notice << "."
+                                                 << _sub->s->get_info( RS2_CAMERA_INFO_SERIAL_NUMBER );
         config_file::instance().set(id.c_str(), (long long)rawtime);
     }
 
@@ -1104,7 +1108,7 @@ namespace rs2
                 if (!_new_calib.size())
                     fail("UV-Mapping calibration failed!\nPlease adjust the camera position\nand make sure the specific target is\ninside the ROI of the camera images!");
                 else
-                    log(to_string() << "UV-Mapping recalibration - a new work point is generated");
+                    log( "UV-Mapping recalibration - a new work point is generated" );
             }
             else
                 fail("Failed to capture sufficient amount of frames to run UV-Map calibration!");
@@ -1157,7 +1161,7 @@ namespace rs2
                 // Update the stored value with algo-calculated
                 if (target_z_mm > 0.f)
                 {
-                    log(to_string() << "Target Z distance calculated - " << target_z_mm << " mm");
+                    log( rsutils::string::from() << "Target Z distance calculated - " << target_z_mm << " mm");
                     config_file::instance().set(configurations::viewer::ground_truth_r, target_z_mm);
                 }
                 else
@@ -1349,13 +1353,13 @@ namespace rs2
         update_last_used();
 
         if (action == RS2_CALIB_ACTION_ON_CHIP_FL_CALIB || action == RS2_CALIB_ACTION_FL_CALIB)
-            log(to_string() << "Starting focal length calibration");
+            log( rsutils::string::from() << "Starting focal length calibration");
         else if (action == RS2_CALIB_ACTION_ON_CHIP_OB_CALIB)
-            log(to_string() << "Starting OCC Extended");
+            log( rsutils::string::from() << "Starting OCC Extended");
         else if (action == RS2_CALIB_ACTION_UVMAPPING_CALIB)
-            log(to_string() << "Starting UV-Mapping calibration");
+            log( rsutils::string::from() << "Starting UV-Mapping calibration");
         else
-            log(to_string() << "Starting OCC calibration at speed " << speed);
+            log( rsutils::string::from() << "Starting OCC calibration at speed " << speed);
 
         _in_3d_view = _viewer.is_3d_view;
         _viewer.is_3d_view = (action == RS2_CALIB_ACTION_TARE_GROUND_TRUTH ? false : true);
@@ -1466,7 +1470,7 @@ namespace rs2
             }
             catch (...)
             {
-                log(to_string() << "Calibration failed with exception");
+                log( "Calibration failed with exception" );
                 stop_viewer(invoke);
                 if (_ui.get())
                 {
@@ -1502,13 +1506,13 @@ namespace rs2
         }
 
         if (action == RS2_CALIB_ACTION_TARE_GROUND_TRUTH)
-            log(to_string() << "Tare ground truth is got: " << ground_truth);
+            log( rsutils::string::from() << "Tare ground truth is got: " << ground_truth);
         else if (action == RS2_CALIB_ACTION_FL_CALIB)
-            log(to_string() << "Focal length ratio is got: " << corrected_ratio);
+            log( rsutils::string::from() << "Focal length ratio is got: " << corrected_ratio);
         else if (action == RS2_CALIB_ACTION_UVMAPPING_CALIB)
-            log(to_string() << "UV-Mapping calibration completed.");
+            log( "UV-Mapping calibration completed." );
         else
-            log(to_string() << "Calibration completed, health factor = " << _health);
+            log( rsutils::string::from() << "Calibration completed, health factor = " << _health);
 
         if (action != RS2_CALIB_ACTION_UVMAPPING_CALIB)
         {
@@ -1631,7 +1635,7 @@ namespace rs2
 
         ImGui::SetCursorScreenPos({ float(x + 9), float(y + 35 + ImGui::GetTextLineHeightWithSpacing()) });
 
-        std::string id = to_string() << "##Intrinsic_" << index;
+        std::string id = rsutils::string::from() << "##Intrinsic_" << index;
         if (ImGui::Checkbox("Intrinsic", &intrinsic))
         {
             extrinsic = !intrinsic;
@@ -1642,7 +1646,7 @@ namespace rs2
         }
         ImGui::SetCursorScreenPos({ float(x + 135), float(y + 35 + ImGui::GetTextLineHeightWithSpacing()) });
 
-        id = to_string() << "##Intrinsic_" << index;
+        id = rsutils::string::from() << "##Intrinsic_" << index;
 
         if (ImGui::Checkbox("Extrinsic", &extrinsic))
         {
@@ -1761,7 +1765,7 @@ namespace rs2
                 }
 
                 ImGui::SetCursorScreenPos({ float(x + 9), float(y + height - 25) });
-                std::string button_name = to_string() << "Calibrate" << "##uvmapping" << index;
+                std::string button_name = rsutils::string::from() << "Calibrate" << "##uvmapping" << index;
                 if (ImGui::Button(button_name.c_str(), { float(bar_width - 60), 20.f }))
                 {
                     get_manager().restore_workspace([this](std::function<void()> a) { a(); });
@@ -1781,7 +1785,7 @@ namespace rs2
                     ImGui::SetTooltip("%s", "Begin UV-Mapping calibration after adjusting camera position");
                 ImGui::PopStyleColor(2);
 
-                string id = to_string() << "Py Px Calibration only##py_px_only" << index;
+                string id = rsutils::string::from() << "Py Px Calibration only##py_px_only" << index;
                 ImGui::SetCursorScreenPos({ float(x + 15), float(y + height - ImGui::GetTextLineHeightWithSpacing() - 32) });
                 ImGui::Checkbox(id.c_str(), &get_manager().py_px_only);
             }
@@ -1801,10 +1805,10 @@ namespace rs2
                 char buff[MAX_SIZE];
 
                 ImGui::SetCursorScreenPos({ float(x + 135), float(y + 35 + ImGui::GetTextLineHeightWithSpacing()) });
-                std::string id = to_string() << "##target_width_" << index;
+                std::string id = rsutils::string::from() << "##target_width_" << index;
                 ImGui::PushItemWidth(width - 145.0f);
                 float target_width = config_file::instance().get_or_default(configurations::viewer::target_width_r, 175.0f);
-                std::string tw = to_string() << target_width;
+                std::string tw = rsutils::string::from() << target_width;
                 memcpy(buff, tw.c_str(), tw.size() + 1);
                 if (ImGui::InputText(id.c_str(), buff, std::max((int)tw.size() + 1, 10)))
                 {
@@ -1823,10 +1827,10 @@ namespace rs2
                 }
 
                 ImGui::SetCursorScreenPos({ float(x + 135), float(y + 40 + 2 * ImGui::GetTextLineHeightWithSpacing()) });
-                id = to_string() << "##target_height_" << index;
+                id = rsutils::string::from() << "##target_height_" << index;
                 ImGui::PushItemWidth(width - 145.0f);
                 float target_height = config_file::instance().get_or_default(configurations::viewer::target_height_r, 100.0f);
-                std::string th = to_string() << target_height;
+                std::string th = rsutils::string::from() << target_height;
                 memcpy(buff, th.c_str(), th.size() + 1);
                 if (ImGui::InputText(id.c_str(), buff, std::max((int)th.size() + 1, 10)))
                 {
@@ -1842,7 +1846,7 @@ namespace rs2
                 ImGui::PushStyleColor(ImGuiCol_Button, saturate(sensor_header_light_blue, sat));
                 ImGui::PushStyleColor(ImGuiCol_ButtonHovered, saturate(sensor_header_light_blue, 1.5f));
 
-                std::string back_button_name = to_string() << "Back" << "##tare" << index;
+                std::string back_button_name = rsutils::string::from() << "Back" << "##tare" << index;
                 if (ImGui::Button(back_button_name.c_str(), { float(60), 20.f }))
                 {
                     get_manager().action = on_chip_calib_manager::RS2_CALIB_ACTION_TARE_CALIB;
@@ -1855,7 +1859,7 @@ namespace rs2
                 }
 
                 ImGui::SetCursorScreenPos({ float(x + 85), float(y + height - 25) });
-                std::string button_name = to_string() << "Calculate" << "##tare" << index;
+                std::string button_name = rsutils::string::from() << "Calculate" << "##tare" << index;
                 if (ImGui::Button(button_name.c_str(), { float(bar_width - 70), 20.f }))
                 {
                     get_manager().restore_workspace([this](std::function<void()> a) { a(); });
@@ -1901,7 +1905,7 @@ namespace rs2
                 ImGui::PushStyleColor(ImGuiCol_Button, saturate(redish, sat));
                 ImGui::PushStyleColor(ImGuiCol_ButtonHovered, saturate(redish, 1.5f));
 
-                std::string button_name = to_string() << "Retry" << "##retry" << index;
+                std::string button_name = rsutils::string::from() << "Retry" << "##retry" << index;
 
                 ImGui::SetCursorScreenPos({ float(x + 5), float(y + height - 25) });
                 if (ImGui::Button(button_name.c_str(), { float(bar_width), 20.f }))
@@ -1956,7 +1960,7 @@ namespace rs2
                     }
                     ImGui::SetCursorScreenPos({ float(x + 135), float(y + 30) });
 
-                    std::string id = to_string() << "##avg_step_count_" << index;
+                    std::string id = rsutils::string::from() << "##avg_step_count_" << index;
                     ImGui::PushItemWidth(width - 145.f);
                     ImGui::SliderInt(id.c_str(), &get_manager().average_step_count, 1, 30);
                     ImGui::PopItemWidth();
@@ -1971,7 +1975,7 @@ namespace rs2
                     }
                     ImGui::SetCursorScreenPos({ float(x + 135), float(y + 35 + ImGui::GetTextLineHeightWithSpacing()) });
 
-                    id = to_string() << "##step_count_" << index;
+                    id = rsutils::string::from() << "##step_count_" << index;
 
                     ImGui::PushItemWidth(width - 145.f);
                     ImGui::SliderInt(id.c_str(), &get_manager().step_count, 1, 30);
@@ -1988,7 +1992,7 @@ namespace rs2
 
                     ImGui::SetCursorScreenPos({ float(x + 135), float(y + 40 + 2 * ImGui::GetTextLineHeightWithSpacing()) });
 
-                    id = to_string() << "##accuracy_" << index;
+                    id = rsutils::string::from() << "##accuracy_" << index;
 
                     std::vector<std::string> vals{ "Very High", "High", "Medium", "Low" };
                     std::vector<const char*> vals_cstr;
@@ -2005,7 +2009,7 @@ namespace rs2
                     //draw_intrinsic_extrinsic(x, y + 3 * int(ImGui::GetTextLineHeightWithSpacing()) - 10);
 
                     ImGui::SetCursorScreenPos({ float(x + 9), float(y + 52 + 4 * ImGui::GetTextLineHeightWithSpacing()) });
-                    id = to_string() << "Apply High-Accuracy Preset##apply_preset_" << index;
+                    id = rsutils::string::from() << "Apply High-Accuracy Preset##apply_preset_" << index;
                     ImGui::Checkbox(id.c_str(), &get_manager().apply_preset);
                 }
 
@@ -2025,10 +2029,10 @@ namespace rs2
                 if (ImGui::IsItemHovered())
                     ImGui::SetTooltip("%s", "Distance in millimeter to the flat wall, between 60 and 10000.");
 
-                std::string id = to_string() << "##ground_truth_for_tare" << index;
+                std::string id = rsutils::string::from() << "##ground_truth_for_tare" << index;
                 get_manager().ground_truth = config_file::instance().get_or_default(configurations::viewer::ground_truth_r, 1200.0f);
 
-                std::string gt = to_string() << get_manager().ground_truth;
+                std::string gt = rsutils::string::from() << get_manager().ground_truth;
                 const int MAX_SIZE = 256;
                 char buff[MAX_SIZE];
                 memcpy(buff, gt.c_str(), gt.size() + 1);
@@ -2049,7 +2053,7 @@ namespace rs2
                 ImGui::PushStyleColor(ImGuiCol_Button, saturate(sensor_header_light_blue, sat));
                 ImGui::PushStyleColor(ImGuiCol_ButtonHovered, saturate(sensor_header_light_blue, 1.5f));
 
-                std::string get_button_name = to_string() << "Get" << "##tare" << index;
+                std::string get_button_name = rsutils::string::from() << "Get" << "##tare" << index;
                 if (update_state == RS2_CALIB_STATE_TARE_INPUT_ADVANCED)
                     ImGui::SetCursorScreenPos({ float(x + width - 52), float(y + 58 + 5 * ImGui::GetTextLineHeightWithSpacing()) });
                 else
@@ -2077,7 +2081,7 @@ namespace rs2
                 if (ImGui::IsItemHovered())
                     ImGui::SetTooltip("%s", "check = host assitance for statistics data, uncheck = no host assistance");
 
-                std::string button_name = to_string() << "Calibrate" << "##tare" << index;
+                std::string button_name = rsutils::string::from() << "Calibrate" << "##tare" << index;
 
                 ImGui::SetCursorScreenPos({ float(x + 5), float(y + height - 28) });
                 if (ImGui::Button(button_name.c_str(), { float(bar_width), 20.f }))
@@ -2176,7 +2180,7 @@ namespace rs2
                 ImGui::PushStyleColor(ImGuiCol_Button, saturate(sensor_header_light_blue, sat));
                 ImGui::PushStyleColor(ImGuiCol_ButtonHovered, saturate(sensor_header_light_blue, 1.5f));
 
-                std::string button_name = to_string() << "Calibrate" << "##self" << index;
+                std::string button_name = rsutils::string::from() << "Calibrate" << "##self" << index;
 
                 ImGui::SetCursorScreenPos({ float(x + 5), float(y + height - 28) });
                 if (ImGui::Button(button_name.c_str(), { float(bar_width), 20.f }))
@@ -2212,10 +2216,10 @@ namespace rs2
                 char buff[MAX_SIZE];
 
                 ImGui::SetCursorScreenPos({ float(x + 145), float(y + 70 + ImGui::GetTextLineHeightWithSpacing()) });
-                std::string id = to_string() << "##target_width_" << index;
+                std::string id = rsutils::string::from() << "##target_width_" << index;
                 ImGui::PushItemWidth(80);
                 float target_width = config_file::instance().get_or_default(configurations::viewer::target_width_r, 175.0f);
-                std::string tw = to_string() << target_width;
+                std::string tw = rsutils::string::from() << target_width;
                 memcpy(buff, tw.c_str(), tw.size() + 1);
                 if (ImGui::InputText(id.c_str(), buff, std::max((int)tw.size() + 1, 10)))
                 {
@@ -2234,10 +2238,10 @@ namespace rs2
                 }
 
                 ImGui::SetCursorScreenPos({ float(x + 145), float(y + 77 + 2 * ImGui::GetTextLineHeightWithSpacing()) });
-                id = to_string() << "##target_height_" << index;
+                id = rsutils::string::from() << "##target_height_" << index;
                 ImGui::PushItemWidth(80);
                 float target_height = config_file::instance().get_or_default(configurations::viewer::target_height_r, 100.0f);
-                std::string th = to_string() << target_height;
+                std::string th = rsutils::string::from() << target_height;
                 memcpy(buff, th.c_str(), th.size() + 1);
                 if (ImGui::InputText(id.c_str(), buff, std::max((int)th.size() + 1, 10)))
                 {
@@ -2260,7 +2264,7 @@ namespace rs2
                 ImGui::PushStyleColor(ImGuiCol_Button, saturate(sensor_header_light_blue, sat));
                 ImGui::PushStyleColor(ImGuiCol_ButtonHovered, saturate(sensor_header_light_blue, 1.5f));
 
-                std::string button_name = to_string() << "Calibrate" << "##fl" << index;
+                std::string button_name = rsutils::string::from() << "Calibrate" << "##fl" << index;
 
                 ImGui::SetCursorScreenPos({ float(x + 5), float(y + height - 25) });
                 if (ImGui::Button(button_name.c_str(), { float(bar_width), 20.f }))
@@ -2318,7 +2322,7 @@ namespace rs2
                     ImGui::PushStyleColor(ImGuiCol_Button, saturate(redish, sat));
                     ImGui::PushStyleColor(ImGuiCol_ButtonHovered, saturate(redish, 1.5f));
 
-                    std::string button_name = to_string() << "Retry" << "##retry" << index;
+                    std::string button_name = rsutils::string::from() << "Retry" << "##retry" << index;
                     ImGui::SetCursorScreenPos({ float(x + 5), float(y + height - 25) });
                     if (ImGui::Button(button_name.c_str(), { float(bar_width), 20.f }))
                     {
@@ -2389,7 +2393,7 @@ namespace rs2
                     std::stringstream ss_1;
                     ss_1 << std::fixed << std::setprecision(4) << get_manager().get_health_nums(0);
                     auto health_str = ss_1.str();
-                    std::string text_name_1 = to_string() << "##notification_text_1_" << index;
+                    std::string text_name_1 = rsutils::string::from() << "##notification_text_1_" << index;
                     ImGui::InputTextMultiline(text_name_1.c_str(), const_cast<char*>(health_str.c_str()), strlen(health_str.c_str()) + 1, { 86, ImGui::GetTextLineHeight() + 6 }, ImGuiInputTextFlags_ReadOnly);
                     if (ImGui::IsItemHovered())
                         ImGui::SetTooltip("%s", "Health check for PX");
@@ -2398,7 +2402,7 @@ namespace rs2
                     std::stringstream ss_2;
                     ss_2 << std::fixed << std::setprecision(4) << get_manager().get_health_nums(1);
                     health_str = ss_2.str();
-                    std::string text_name_2 = to_string() << "##notification_text_2_" << index;
+                    std::string text_name_2 = rsutils::string::from() << "##notification_text_2_" << index;
                     ImGui::InputTextMultiline(text_name_2.c_str(), const_cast<char*>(health_str.c_str()), strlen(health_str.c_str()) + 1, { 86, ImGui::GetTextLineHeight() + 6 }, ImGuiInputTextFlags_ReadOnly);
                     if (ImGui::IsItemHovered())
                         ImGui::SetTooltip("%s", "Health check for PY");
@@ -2407,7 +2411,7 @@ namespace rs2
                     std::stringstream ss_3;
                     ss_3 << std::fixed << std::setprecision(4) << get_manager().get_health_nums(2);
                     health_str = ss_3.str();
-                    std::string text_name_3 = to_string() << "##notification_text_3_" << index;
+                    std::string text_name_3 = rsutils::string::from() << "##notification_text_3_" << index;
                     ImGui::InputTextMultiline(text_name_3.c_str(), const_cast<char*>(health_str.c_str()), strlen(health_str.c_str()) + 1, { 86, ImGui::GetTextLineHeight() + 6 }, ImGuiInputTextFlags_ReadOnly);
                     if (ImGui::IsItemHovered())
                         ImGui::SetTooltip("%s", "Health check for FX");
@@ -2416,7 +2420,7 @@ namespace rs2
                     std::stringstream ss_4;
                     ss_4 << std::fixed << std::setprecision(4) << get_manager().get_health_nums(3);
                     health_str = ss_4.str();
-                    std::string text_name_4 = to_string() << "##notification_text_4_" << index;
+                    std::string text_name_4 = rsutils::string::from() << "##notification_text_4_" << index;
                     ImGui::InputTextMultiline(text_name_4.c_str(), const_cast<char*>(health_str.c_str()), strlen(health_str.c_str()) + 1, { 86, ImGui::GetTextLineHeight() + 6 }, ImGuiInputTextFlags_ReadOnly);
                     if (ImGui::IsItemHovered())
                         ImGui::SetTooltip("%s", "Health check for FY");
@@ -2427,7 +2431,7 @@ namespace rs2
                     ImGui::PushStyleColor(ImGuiCol_Button, saturate(sensor_header_light_blue, sat));
                     ImGui::PushStyleColor(ImGuiCol_ButtonHovered, saturate(sensor_header_light_blue, 1.5f));
                     ImGui::SetCursorScreenPos({ float(x + 9), float(y + height - 25) });
-                    std::string button_name = to_string() << "Apply" << "##apply" << index;
+                    std::string button_name = rsutils::string::from() << "Apply" << "##apply" << index;
                     if (ImGui::Button(button_name.c_str(), { float(bar_width - 60), 20.f }))
                     {
                         get_manager().apply_calib(true);     // Store the new calibration internally
@@ -2491,7 +2495,7 @@ namespace rs2
                             ss_1 << std::fixed << std::setprecision(4) << health_1 << "%";
                             auto health_str = ss_1.str();
 
-                            std::string text_name = to_string() << "##notification_text_1_" << index;
+                            std::string text_name = rsutils::string::from() << "##notification_text_1_" << index;
 
                             ImGui::SetCursorScreenPos({ float(x + 225), float(y + 30) });
                             ImGui::PushStyleColor(ImGuiCol_Text, white);
@@ -2514,7 +2518,7 @@ namespace rs2
                             ss_2 << std::fixed << std::setprecision(4) << health_2 << "%";
                             health_str = ss_2.str();
 
-                            text_name = to_string() << "##notification_text_2_" << index;
+                            text_name = rsutils::string::from() << "##notification_text_2_" << index;
 
                             ImGui::SetCursorScreenPos({ float(x + 225), float(y + 35) + ImGui::GetTextLineHeightWithSpacing() });
                             ImGui::PushStyleColor(ImGuiCol_Text, white);
@@ -2539,7 +2543,7 @@ namespace rs2
                         ss_1 << std::fixed << std::setprecision(2) << health_1;
                         auto health_str = ss_1.str();
 
-                        std::string text_name = to_string() << "##notification_text_1_" << index;
+                        std::string text_name = rsutils::string::from() << "##notification_text_1_" << index;
 
                         ImGui::SetCursorScreenPos({ float(x + 125), float(y + 30) });
                         ImGui::PushStyleColor(ImGuiCol_Text, white);
@@ -2586,7 +2590,7 @@ namespace rs2
                         ss_2 << std::fixed << std::setprecision(2) << health_2;
                         health_str = ss_2.str();
 
-                        text_name = to_string() << "##notification_text_2_" << index;
+                        text_name = rsutils::string::from() << "##notification_text_2_" << index;
 
                         ImGui::SetCursorScreenPos({ float(x + 125), float(y + 35) + ImGui::GetTextLineHeightWithSpacing() });
                         ImGui::PushStyleColor(ImGuiCol_Text, white);
@@ -2635,7 +2639,7 @@ namespace rs2
                         auto ratio_str = ss_1.str();
                         ratio_str += " %";
 
-                        std::string text_name = to_string() << "##notification_text_1_" << index;
+                        std::string text_name = rsutils::string::from() << "##notification_text_1_" << index;
 
                         ImGui::SetCursorScreenPos({ float(x + 175), float(y + 30) });
                         ImGui::PushStyleColor(ImGuiCol_Text, white);
@@ -2656,7 +2660,7 @@ namespace rs2
                         auto align_str = ss_2.str();
                         align_str += " deg";
 
-                        text_name = to_string() << "##notification_text_2_" << index;
+                        text_name = rsutils::string::from() << "##notification_text_2_" << index;
 
                         ImGui::SetCursorScreenPos({ float(x + 175), float(y + 35) + ImGui::GetTextLineHeightWithSpacing() });
                         ImGui::PushStyleColor(ImGuiCol_Text, white);
@@ -2676,7 +2680,7 @@ namespace rs2
                         std::stringstream ss; ss << std::fixed << std::setprecision(2) << health;
                         auto health_str = ss.str();
 
-                        std::string text_name = to_string() << "##notification_text_" << index;
+                        std::string text_name = rsutils::string::from() << "##notification_text_" << index;
 
                         ImGui::SetCursorScreenPos({ float(x + 125), float(y + 30) });
                         ImGui::PushStyleColor(ImGuiCol_Text, white);
@@ -2754,9 +2758,9 @@ namespace rs2
                     // TODO: Re-enable in future release
                     if (/* fr_improvement > 1.f || rms_improvement > 1.f */ false)
                     {
-                        std::string txt = to_string() << "  Fill-Rate: " << std::setprecision(1) << std::fixed << new_fr << "%%";
+                        std::string txt = rsutils::string::from() << "  Fill-Rate: " << std::setprecision(1) << std::fixed << new_fr << "%%";
                         if (!use_new_calib)
-                            txt = to_string() << "  Fill-Rate: " << std::setprecision(1) << std::fixed << old_fr << "%%\n";
+                            txt = rsutils::string::from() << "  Fill-Rate: " << std::setprecision(1) << std::fixed << old_fr << "%%\n";
 
                         ImGui::SetCursorScreenPos({ float(x + 12), float(y + 90) });
                         ImGui::PushFont(win.get_large_font());
@@ -2771,7 +2775,7 @@ namespace rs2
                             ImGui::SameLine();
 
                             ImGui::PushStyleColor(ImGuiCol_Text, white);
-                            txt = to_string() << " ( +" << std::fixed << std::setprecision(0) << fr_improvement << "%% )";
+                            txt = rsutils::string::from() << " ( +" << std::fixed << std::setprecision(0) << fr_improvement << "%% )";
                             ImGui::Text("%s", txt.c_str());
                             ImGui::PopStyleColor();
                         }
@@ -2780,11 +2784,11 @@ namespace rs2
                         {
                             if (use_new_calib)
                             {
-                                txt = to_string() << "  Noise Estimate: " << std::setprecision(2) << std::fixed << new_rms << new_units;
+                                txt = rsutils::string::from() << "  Noise Estimate: " << std::setprecision(2) << std::fixed << new_rms << new_units;
                             }
                             else
                             {
-                                txt = to_string() << "  Noise Estimate: " << std::setprecision(2) << std::fixed << old_rms << old_units;
+                                txt = rsutils::string::from() << "  Noise Estimate: " << std::setprecision(2) << std::fixed << old_rms << old_units;
                             }
 
                             ImGui::SetCursorScreenPos({ float(x + 12), float(y + 90 + ImGui::GetTextLineHeight() + 6) });
@@ -2800,7 +2804,7 @@ namespace rs2
                                 ImGui::SameLine();
 
                                 ImGui::PushStyleColor(ImGuiCol_Text, white);
-                                txt = to_string() << " ( -" << std::setprecision(0) << std::fixed << rms_improvement << "%% )";
+                                txt = rsutils::string::from() << " ( -" << std::setprecision(0) << std::fixed << rms_improvement << "%% )";
                                 ImGui::Text("%s", txt.c_str());
                                 ImGui::PopStyleColor();
                             }
@@ -2842,7 +2846,7 @@ namespace rs2
                     {
                         scale = float(bar_width) / 7;
 
-                        button_name = to_string() << "Recalibrate" << "##refl" << index;
+                        button_name = rsutils::string::from() << "Recalibrate" << "##refl" << index;
 
                         ImGui::SetCursorScreenPos({ float(x + 5), float(y + height - 25) });
                         if (ImGui::Button(button_name.c_str(), { scale * 3, 20.f }))
@@ -2870,8 +2874,8 @@ namespace rs2
                     else
                         ImGui::SetCursorScreenPos({ float(x + 5), float(y + height - 25) });
 
-                    button_name = to_string() << "Apply New" << "##apply" << index;
-                    if (!use_new_calib) button_name = to_string() << "Keep Original" << "##original" << index;
+                    button_name = rsutils::string::from() << "Apply New" << "##apply" << index;
+                    if (!use_new_calib) button_name = rsutils::string::from() << "Keep Original" << "##original" << index;
 
                     if (ImGui::Button(button_name.c_str(), { scale * 3, 20.f }))
                     {
@@ -2907,7 +2911,7 @@ namespace rs2
 
             ImGui::SetCursorScreenPos({ float(x + 10), float(y + 35) });
             ImGui::PushFont(win.get_large_font());
-            std::string txt = to_string() << textual_icons::throphy;
+            std::string txt = rsutils::string::from() << textual_icons::throphy;
             ImGui::Text("%s", txt.c_str());
             ImGui::PopFont();
 
@@ -2925,7 +2929,7 @@ namespace rs2
                 auto sat = 1.f + sin(duration_cast<milliseconds>(system_clock::now() - created_time).count() / 700.f) * 0.1f;
                 ImGui::PushStyleColor(ImGuiCol_Button, saturate(sensor_header_light_blue, sat));
                 ImGui::PushStyleColor(ImGuiCol_ButtonHovered, saturate(sensor_header_light_blue, 1.5f));
-                std::string button_name = to_string() << "Health-Check" << "##health_check" << index;
+                std::string button_name = rsutils::string::from() << "Health-Check" << "##health_check" << index;
 
                 if (ImGui::Button(button_name.c_str(), { float(bar_width), 20.f }) || update_manager->started())
                 {
@@ -2988,7 +2992,7 @@ namespace rs2
 
                     draw_progress_bar(win, bar_width);
 
-                    string id = to_string() << "Expand" << "##" << index;
+                    string id = rsutils::string::from() << "Expand" << "##" << index;
                     ImGui::SetCursorScreenPos({ float(x + width - 105), float(y + height - 25) });
                     ImGui::PushStyleColor(ImGuiCol_Text, light_grey);
                     if (ImGui::Button(id.c_str(), { 100, 20 }))
@@ -3054,7 +3058,7 @@ namespace rs2
         if (ImGui::BeginPopupModal(title.c_str(), nullptr, flags))
         {
             ImGui::SetCursorPosX(200);
-            std::string progress_str = to_string() << "Progress: " << update_manager->get_progress() << "%";
+            std::string progress_str = rsutils::string::from() << "Progress: " << update_manager->get_progress() << "%";
             ImGui::Text("%s", progress_str.c_str());
 
             ImGui::SetCursorPosX(5);

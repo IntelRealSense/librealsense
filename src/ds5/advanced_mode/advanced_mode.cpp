@@ -7,6 +7,9 @@
 #include "json_loader.hpp"
 #include "ds5/ds5-color.h"
 
+#include <utilities/string/from.h>
+
+
 namespace librealsense
 {
     ds5_advanced_mode_base::ds5_advanced_mode_base(std::shared_ptr<hw_monitor> hwm,
@@ -102,7 +105,7 @@ namespace librealsense
                     default_450_high_res(p);
                     break;
                 default:
-                    throw invalid_value_exception(to_string() << "apply_preset(...) failed! Given device doesn't support Default Preset (pid=0x" <<
+                    throw invalid_value_exception( rsutils::string::from() << "apply_preset(...) failed! Given device doesn't support Default Preset (pid=0x" <<
                         std::hex << device_pid << ")");
                     break;
                 }
@@ -119,8 +122,10 @@ namespace librealsense
                 default_420(p);
                 break;
             default:
-                throw invalid_value_exception(to_string() << "apply_preset(...) failed! Given device doesn't support Default Preset (pid=0x" <<
-                                              std::hex << device_pid << ")");
+                throw invalid_value_exception(
+                    rsutils::string::from()
+                    << "apply_preset(...) failed! Given device doesn't support Default Preset (pid=0x" << std::hex
+                    << device_pid << ")" );
                 break;
             }
             break;
@@ -143,8 +148,10 @@ namespace librealsense
         {
             static const firmware_version remove_ir_pattern_fw_ver{ "5.9.10.0" };
             if (fw_version < remove_ir_pattern_fw_ver)
-                throw invalid_value_exception(to_string() << "apply_preset(...) failed! FW version doesn't support Remove IR Pattern Preset (curr_fw_ver=" <<
-                    fw_version << " ; required_fw_ver=" << remove_ir_pattern_fw_ver << ")");
+                throw invalid_value_exception(
+                    rsutils::string::from()
+                    << "apply_preset(...) failed! FW version doesn't support Remove IR Pattern Preset (curr_fw_ver="
+                    << fw_version << " ; required_fw_ver=" << remove_ir_pattern_fw_ver << ")" );
 
             switch (device_pid)
             {
@@ -158,14 +165,17 @@ namespace librealsense
                 d460_remove_ir(p);
                 break;
             default:
-                throw invalid_value_exception(to_string() << "apply_preset(...) failed! Given device doesn't support Remove IR Pattern Preset (pid=0x" <<
-                    std::hex << device_pid << ")");
+                throw invalid_value_exception(
+                    rsutils::string::from()
+                    << "apply_preset(...) failed! Given device doesn't support Remove IR Pattern Preset (pid=0x"
+                    << std::hex << device_pid << ")" );
                 break;
             }
         }
             break;
         default:
-            throw invalid_value_exception(to_string() << "apply_preset(...) failed! Invalid preset! (" << preset << ")");
+            throw invalid_value_exception( rsutils::string::from()
+                                            << "apply_preset(...) failed! Invalid preset! (" << preset << ")" );
         }
         set_all(p);
     }
@@ -667,7 +677,8 @@ namespace librealsense
     std::vector<uint8_t> ds5_advanced_mode_base::serialize_json() const
     {
         if (!is_enabled())
-            throw wrong_api_call_sequence_exception(to_string() << "serialize_json() failed! Device is not in Advanced-Mode.");
+            throw wrong_api_call_sequence_exception( rsutils::string::from()
+                                                     << "serialize_json() failed! Device is not in Advanced-Mode." );
 
         auto p = get_all();
         return generate_json(_depth_sensor.get_device(), p);
@@ -676,7 +687,8 @@ namespace librealsense
     void ds5_advanced_mode_base::load_json(const std::string& json_content)
     {
         if (!is_enabled())
-            throw wrong_api_call_sequence_exception(to_string() << "load_json(...) failed! Device is not in Advanced-Mode.");
+            throw wrong_api_call_sequence_exception( rsutils::string::from()
+                                                     << "load_json(...) failed! Device is not in Advanced-Mode." );
 
         auto p = get_all();
         update_structs(_depth_sensor.get_device(),  json_content, p);
@@ -873,10 +885,14 @@ namespace librealsense
     {
         std::lock_guard<std::mutex> lock(_mtx);
         if (!is_valid(value))
-            throw invalid_value_exception(to_string() << "set(advanced_mode_preset_option) failed! Given value " << value << " is out of range.");
+            throw invalid_value_exception( rsutils::string::from()
+                                           << "set(advanced_mode_preset_option) failed! Given value " << value
+                                           << " is out of range." );
 
         if (!_advanced.is_enabled())
-            throw wrong_api_call_sequence_exception(to_string() << "set(advanced_mode_preset_option) failed! Device is not in Advanced-Mode.");
+            throw wrong_api_call_sequence_exception(
+                rsutils::string::from()
+                << "set(advanced_mode_preset_option) failed! Device is not in Advanced-Mode." );
 
         auto preset = to_preset(value);
         if (preset == RS2_RS400_VISUAL_PRESET_CUSTOM)
@@ -914,7 +930,10 @@ namespace librealsense
         }
         catch (std::out_of_range)
         {
-            throw invalid_value_exception(to_string() << "advanced_mode_preset: get_value_description(...) failed! Description of value " << val << " is not found.");
+            throw invalid_value_exception(
+                rsutils::string::from()
+                << "advanced_mode_preset: get_value_description(...) failed! Description of value " << val
+                << " is not found." );
         }
     }
 

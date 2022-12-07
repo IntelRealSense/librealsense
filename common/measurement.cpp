@@ -116,7 +116,7 @@ void measurement::add_point(interest_point p)
                 for (auto&& idx : path) poly.push_back(state.points[idx].pos);
 
                 auto area = calculate_area(poly);
-                log_function(to_string() << "Measured area of " << area_to_string(area));
+                log_function( rsutils::string::from() << "Measured area of " << area_to_string(area));
             }
         }
 
@@ -124,7 +124,7 @@ void measurement::add_point(interest_point p)
         {
             auto dist = state.points[last].pos - state.points[prev].pos;
             state.edges.push_back(std::make_pair(last, prev));
-            log_function(to_string() << "Measured distance of " << length_to_string(dist.length()));
+            log_function( rsutils::string::from() << "Measured distance of " << length_to_string(dist.length()));
         }
 
         last_hovered_point = int(state.points.size() - 1);
@@ -135,7 +135,7 @@ void measurement::add_point(interest_point p)
 
 std::string measurement::area_to_string(float area)
 {
-    return to_string() << std::setprecision(2) << area << " m";
+    return rsutils::string::from() << std::setprecision(2) << area << " m";
 }
 
 std::string measurement::length_to_string(float distance)
@@ -145,23 +145,23 @@ std::string measurement::length_to_string(float distance)
     {
         if (distance < 0.01f)
         {
-            label = to_string() << std::setprecision(3) << distance * 1000.f << " mm";
+            label = rsutils::string::from() << std::setprecision(3) << distance * 1000.f << " mm";
         } else if (distance < 1.f) {
-            label = to_string() << std::setprecision(3) << distance * 100.f << " cm";
+            label = rsutils::string::from() << std::setprecision(3) << distance * 100.f << " cm";
         } else {
-            label = to_string() << std::setprecision(3) << distance << " m";
+            label = rsutils::string::from() << std::setprecision(3) << distance << " m";
         }
     } else
     {
         if (distance < 0.0254f)
         {
-            label = to_string() << std::setprecision(3) << distance * 1000.f << " mm";
+            label = rsutils::string::from() << std::setprecision(3) << distance * 1000.f << " mm";
         } else if (distance < 0.3048f) {
-            label = to_string() << std::setprecision(3) << distance / 0.0254 << " in";
+            label = rsutils::string::from() << std::setprecision(3) << distance / 0.0254 << " in";
         } else if (distance < 0.9144) {
-            label = to_string() << std::setprecision(3) << distance / 0.3048f << " ft";
+            label = rsutils::string::from() << std::setprecision(3) << distance / 0.3048f << " ft";
         } else {
-            label = to_string() << std::setprecision(3) << distance / 0.9144 << " yd";
+            label = rsutils::string::from() << std::setprecision(3) << distance / 0.9144 << " yd";
         }
     }
     return label;
@@ -240,7 +240,7 @@ void measurement::draw_label(ux_window& win, float3 pos, float distance, int hei
     auto size = ImGui::CalcTextSize(label.c_str());
     if (is_area) ImGui::PopFont();
 
-    std::string win_id = to_string() << "measurement_" << id;
+    std::string win_id = rsutils::string::from() << "measurement_" << id;
     id++;
 
     auto flags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar;
@@ -633,7 +633,7 @@ void measurement::draw(ux_window& win)
                 if (e.first == dragging_point_index || e.second == dragging_point_index)
                 {
                     auto dist = state.points[e.first].pos - state.points[e.second].pos;
-                    log_function(to_string() << "Adjusted measurement to " << length_to_string(dist.length()));
+                    log_function( rsutils::string::from() << "Adjusted measurement to " << length_to_string(dist.length()));
                 }
             }
 
@@ -645,7 +645,7 @@ void measurement::draw(ux_window& win)
                     for (auto&& idx : path) poly.push_back(state.points[idx].pos);
 
                     auto area = calculate_area(poly);
-                    log_function(to_string() << "Adjusted area of " << area_to_string(area));
+                    log_function( rsutils::string::from() << "Adjusted area of " << area_to_string(area));
                 }
             }
 
@@ -668,7 +668,7 @@ void measurement::show_tooltip(ux_window& win)
     {
         if (display_mouse_picked_tooltip() && hovered_edge_id  < 0)
         {
-            std::string tt = to_string() << std::fixed << std::setprecision(3)
+            std::string tt = rsutils::string::from() << std::fixed << std::setprecision(3)
                 << _picked.x << ", " << _picked.y << ", " << _picked.z << " meters";
             ImGui::SetTooltip("%s", tt.c_str());
         }

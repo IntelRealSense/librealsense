@@ -23,7 +23,7 @@
 #include <initguid.h>
 #include <propkeydef.h>
 #include <comutil.h>
-#include <string>
+#include <utilities/string/from.h>
 
 #pragma comment(lib, "Sensorsapi.lib")
 #pragma comment(lib, "PortableDeviceGuids.lib")
@@ -454,8 +454,8 @@ namespace librealsense
                                                         // Leave it empty: it won't be matched against anything
                                                     }
 
-                                                    info.pid = to_string() << std::hex << pid;
-                                                    info.vid = to_string() << std::hex << vid;
+                                                    info.pid = rsutils::string::from() << std::hex << pid;
+                                                    info.vid = rsutils::string::from() << std::hex << vid;
                                                 }
                                             }
                                             if (IsEqualPropertyKey(propertyKey, SENSOR_PROPERTY_SERIAL_NUMBER))

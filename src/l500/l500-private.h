@@ -9,6 +9,9 @@
 #include "../core/extension.h"
 #include "../fw-update/fw-update-unsigned.h"
 
+#include <utilities/string/from.h>
+
+
 static const int MAX_NUM_OF_RGB_RESOLUTIONS = 5;
 static const int MAX_NUM_OF_DEPTH_RESOLUTIONS = 5; 
 
@@ -118,7 +121,7 @@ namespace librealsense
             {
             case hwm_Success:
                 if( data.size() != expected_size )
-                    throw std::runtime_error( to_string()
+                    throw std::runtime_error( rsutils::string::from()
                                               << "READ_TABLE (0x" << std::hex << table_id
                                               << std::dec << ") data size received= " << data.size()
                                               << " (expected " << expected_size << ")" );
@@ -170,7 +173,7 @@ namespace librealsense
 
             default:
                 LOG_DEBUG( "Failed to write FW table 0x" << std::hex << table_id << " " << sizeof( table ) << " bytes: " );
-                throw invalid_value_exception( to_string() << "Failed to write FW table 0x" << std::hex << table_id << ": " << hwmon_error_string( cmd, response ));
+                throw invalid_value_exception( rsutils::string::from() << "Failed to write FW table 0x" << std::hex << table_id << ": " << hwmon_error_string( cmd, response ));
             }
         }
 
@@ -180,7 +183,7 @@ namespace librealsense
             command cmd( ivcam2::fw_cmd::MRD, baseline_address, baseline_address + sizeof( T ) );
             auto res = hwm.send( cmd );
             if( res.size() != sizeof( T ) )
-                throw std::runtime_error( to_string()
+                throw std::runtime_error( rsutils::string::from()
                                           << "MRD data size received= " << res.size()
                                           << " (expected " << sizeof( T ) << ")" );
             if( preg )

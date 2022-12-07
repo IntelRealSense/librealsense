@@ -19,8 +19,7 @@ set_target_properties( ${PROJECT_NAME}
     )
 set_target_properties( ${PROJECT_NAME}
     PROPERTIES
-        FOLDER Library
-        PROJECT_LABEL utilities-py
+        FOLDER Library/Python
     )
 
 using_easyloggingpp( ${PROJECT_NAME} )

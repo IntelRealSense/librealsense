@@ -36,7 +36,7 @@
 #include "proc/sequence-id-filter.h"
 #include "media/playback/playback_device.h"
 #include "stream.h"
-#include "../include/librealsense2/h/rs_types.h"
+#include <librealsense2/h/rs_types.h>
 #include "pipeline/pipeline.h"
 #include "environment.h"
 #include "proc/temporal-filter.h"
@@ -48,6 +48,8 @@
 #include "firmware_logger_device.h"
 #include "device-calibration.h"
 #include "calibrated-sensor.h"
+
+#include <utilities/string/from.h>
 
 ////////////////////////
 // API implementation //
@@ -727,7 +729,8 @@ const char* rs2_get_device_info(const rs2_device* dev, rs2_camera_info info, rs2
     {
         return dev->device->get_info(info).c_str();
     }
-    throw librealsense::invalid_value_exception(librealsense::to_string() << "info " << rs2_camera_info_to_string(info) << " not supported by the device!");
+    throw librealsense::invalid_value_exception( rsutils::string::from() << "info " << rs2_camera_info_to_string( info )
+                                                                         << " not supported by the device!" );
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, dev, info)
 
@@ -748,7 +751,8 @@ const char* rs2_get_sensor_info(const rs2_sensor* sensor, rs2_camera_info info, 
     {
         return sensor->sensor->get_info(info).c_str();
     }
-    throw librealsense::invalid_value_exception(librealsense::to_string() << "info " << rs2_camera_info_to_string(info) << " not supported by the sensor!");
+    throw librealsense::invalid_value_exception( rsutils::string::from() << "info " << rs2_camera_info_to_string( info )
+                                                                         << " not supported by the sensor!" );
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, sensor, info)
 
@@ -2506,7 +2510,8 @@ void rs2_extract_target_dimensions(const rs2_frame* frame_ref, rs2_calib_target_
             throw std::runtime_error("Failed to find the four rectangle side sizes on the frame");
     }
     else
-        throw std::runtime_error(librealsense::to_string() << "Unsupported video frame format " << rs2_format_to_string(fmt));
+        throw std::runtime_error( rsutils::string::from()
+                                  << "Unsupported video frame format " << rs2_format_to_string( fmt ) );
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, frame_ref, calib_type, target_dims, target_dims_size)
 
@@ -2547,7 +2552,10 @@ void rs2_software_device_update_info(rs2_device* dev, rs2_camera_info info, cons
     {
         df->update_info(info, val);
     }
-    else throw librealsense::invalid_value_exception(librealsense::to_string() << "info " << rs2_camera_info_to_string(info) << " not supported by the device!");
+    else
+        throw librealsense::invalid_value_exception( rsutils::string::from()
+                                                     << "info " << rs2_camera_info_to_string( info )
+                                                     << " not supported by the device!" );
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, dev, info, val)
 
@@ -2891,7 +2899,8 @@ const char* rs2_get_processing_block_info(const rs2_processing_block* block, rs2
     {
         return block->block->get_info(info).c_str();
     }
-    throw librealsense::invalid_value_exception(librealsense::to_string() << "Info " << rs2_camera_info_to_string(info) << " not supported by processing block!");
+    throw librealsense::invalid_value_exception( rsutils::string::from() << "Info " << rs2_camera_info_to_string( info )
+                                                                         << " not supported by processing block!" );
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, block, info)
 
@@ -2990,7 +2999,8 @@ int rs2_load_wheel_odometry_config(const rs2_sensor* sensor, const unsigned char
     std::vector<uint8_t> buffer_to_send(odometry_blob, odometry_blob + blob_size);
     int ret = wo_snr->load_wheel_odometery_config(buffer_to_send);
     if (!ret)
-        throw librealsense::wrong_api_call_sequence_exception(librealsense::to_string() << "Load wheel odometry config failed, file size " << blob_size);
+        throw librealsense::wrong_api_call_sequence_exception(
+            rsutils::string::from() << "Load wheel odometry config failed, file size " << blob_size );
     return ret;
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, sensor, odometry_blob, blob_size)
@@ -3017,7 +3027,8 @@ void rs2_update_firmware_cpp(const rs2_device* device, const void* fw_image, int
     VALIDATE_NOT_NULL(fw_image);
     // check if the given FW size matches the expected FW size
     if (!val_in_range(fw_image_size, { signed_fw_size, signed_sr300_size }))
-        throw librealsense::invalid_value_exception(to_string() << "Unsupported firmware binary image provided - " << fw_image_size << " bytes");
+        throw librealsense::invalid_value_exception(
+            rsutils::string::from() << "Unsupported firmware binary image provided - " << fw_image_size << " bytes" );
 
     auto fwu = VALIDATE_INTERFACE(device->device, librealsense::update_device_interface);
     fwu->update( fw_image, fw_image_size, callback_ptr );
@@ -3030,7 +3041,8 @@ void rs2_update_firmware(const rs2_device* device, const void* fw_image, int fw_
     VALIDATE_NOT_NULL(fw_image);
     // check if the given FW size matches the expected FW size
     if (!val_in_range(fw_image_size, { signed_fw_size, signed_sr300_size }))
-        throw librealsense::invalid_value_exception(to_string() << "Unsupported firmware binary image provided - " << fw_image_size << " bytes");
+        throw librealsense::invalid_value_exception(
+            rsutils::string::from() << "Unsupported firmware binary image provided - " << fw_image_size << " bytes" );
 
     auto fwu = VALIDATE_INTERFACE(device->device, librealsense::update_device_interface);
 
@@ -3105,7 +3117,9 @@ void rs2_update_firmware_unsigned_cpp( const rs2_device * device,
     VALIDATE_NOT_NULL(image);
     // check if the given FW size matches the expected FW size
     if (!val_in_range(image_size, { unsigned_fw_size, unsigned_sr300_size }))
-        throw librealsense::invalid_value_exception(to_string() << "Unsupported firmware binary image (unsigned) provided - " << image_size << " bytes");
+        throw librealsense::invalid_value_exception( rsutils::string::from()
+                                                     << "Unsupported firmware binary image (unsigned) provided - "
+                                                     << image_size << " bytes" );
 
     auto fwud = std::dynamic_pointer_cast<updatable>(device->device);
     if (!fwud)
@@ -3123,7 +3137,9 @@ void rs2_update_firmware_unsigned(const rs2_device* device, const void* image, i
     VALIDATE_NOT_NULL(image);
     // check if the given FW size matches the expected FW size
     if (!val_in_range(image_size, { unsigned_fw_size, unsigned_sr300_size }))
-        throw librealsense::invalid_value_exception(to_string() << "Unsupported firmware binary image (unsigned) provided - " << image_size << " bytes");
+        throw librealsense::invalid_value_exception( rsutils::string::from()
+                                                     << "Unsupported firmware binary image (unsigned) provided - "
+                                                     << image_size << " bytes" );
 
     auto fwud = std::dynamic_pointer_cast<updatable>(device->device);
     if (!fwud)
@@ -3148,7 +3164,8 @@ int rs2_check_firmware_compatibility(const rs2_device* device, const void* fw_im
     VALIDATE_NOT_NULL(fw_image);
     // check if the given FW size matches the expected FW size
     if (!val_in_range(fw_image_size, { signed_fw_size, signed_sr300_size }))
-        throw librealsense::invalid_value_exception(to_string() << "Unsupported firmware binary image provided - " << fw_image_size << " bytes");
+        throw librealsense::invalid_value_exception(
+            rsutils::string::from() << "Unsupported firmware binary image provided - " << fw_image_size << " bytes" );
 
     auto fwud = std::dynamic_pointer_cast<updatable>(device->device);
     if (!fwud)

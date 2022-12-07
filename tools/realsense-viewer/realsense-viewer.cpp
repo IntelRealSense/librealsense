@@ -119,12 +119,12 @@ void add_playback_device(context& ctx, device_models_list& device_models,
     }
     catch (const error& e)
     {
-        error_message = to_string() << "Failed to load file " << file << ". Reason: " << error_to_string(e);
+        error_message = rsutils::string::from() << "Failed to load file " << file << ". Reason: " << error_to_string(e);
         failed = true;
     }
     catch (const std::exception& e)
     {
-        error_message = to_string() << "Failed to load file " << file << ". Reason: " << e.what();
+        error_message = rsutils::string::from() << "Failed to load file " << file << ". Reason: " << e.what();
         failed = true;
     }
     if (failed && was_loaded)
@@ -206,7 +206,9 @@ bool refresh_devices(std::mutex& m,
                     dev.supports(RS2_CAMERA_INFO_NAME) && std::string(dev.get_info(RS2_CAMERA_INFO_NAME)) != "Platform Camera" && std::string(dev.get_info(RS2_CAMERA_INFO_NAME)).find("IP Device") == std::string::npos)
                 {
                     device_models.emplace_back(new device_model(dev, error_message, viewer_model));
-                    viewer_model.not_model->add_log(to_string() << (*device_models.rbegin())->dev.get_info(RS2_CAMERA_INFO_NAME) << " was selected as a default device");
+                    viewer_model.not_model->add_log(
+                        rsutils::string::from() << ( *device_models.rbegin() )->dev.get_info( RS2_CAMERA_INFO_NAME )
+                                                << " was selected as a default device" );
                     added = true;
                 }
 
@@ -401,7 +403,8 @@ int main(int argc, const char** argv) try
         ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(5, 5));
         ImGui::SetNextWindowPos({ 0, viewer_model.panel_y });
 
-        std::string add_source_button_text = to_string() << " " << textual_icons::plus_circle << "  Add Source\t\t\t\t\t\t\t\t\t\t\t";
+        std::string add_source_button_text = rsutils::string::from()
+                                          << " " << textual_icons::plus_circle << "  Add Source\t\t\t\t\t\t\t\t\t\t\t";
         if (ImGui::Button(add_source_button_text.c_str(), { viewer_model.panel_width - 1, viewer_model.panel_y }))
             ImGui::OpenPopup("select");
 

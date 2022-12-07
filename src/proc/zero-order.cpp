@@ -5,6 +5,9 @@
 #include <iomanip>
 #include "l500/l500-depth.h"
 
+#include <utilities/string/from.h>
+
+
 const double METER_TO_MM = 1000;
 
 namespace librealsense
@@ -168,8 +171,9 @@ namespace librealsense
             if(!strong_p_option) return;
 
             if (!strong_p_option->is_valid(val))
-                throw invalid_value_exception(to_string()
-                    << "Unsupported value for " << strong_p_option->get_description() << ": " << val << " is out of range.");
+                throw invalid_value_exception( rsutils::string::from()
+                                               << "Unsupported value for " << strong_p_option->get_description() << ": "
+                                               << val << " is out of range." );
         });
     }
 

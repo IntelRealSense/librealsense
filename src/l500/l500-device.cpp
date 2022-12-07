@@ -3,8 +3,6 @@
 
 #include "l500-device.h"
 
-#include <vector>
-
 #include "context.h"
 #include "stream.h"
 #include "image.h"
@@ -25,7 +23,9 @@
 #include <utilities/time/periodic-timer.h>
 #include <utilities/time/work-week.h>
 #include "../common/utilities/time/l500/get-mfr-ww.h"
+#include <utilities/string/from.h>
 
+#include <vector>
 
 
 namespace librealsense
@@ -546,9 +546,9 @@ namespace librealsense
         auto res = hwm.send(cmd);
         if (res.size() < expected_size)
         {
-            throw invalid_value_exception(to_string()
-                << command_name + " FW command failed: size expected: "
-                << expected_size << " , size received: " << res.size());
+            throw invalid_value_exception( rsutils::string::from()
+                                           << command_name + " FW command failed: size expected: " << expected_size
+                                           << " , size received: " << res.size() );
         }
 
         LOG_INFO(command_name << ": " << static_cast<int>(res[0]));
@@ -580,8 +580,8 @@ namespace librealsense
             }
             else
                 throw librealsense::invalid_value_exception(
-                    to_string() << "get-nest command requires FW version >= " << minimal_fw_ver
-                                << ", current version is: " << _fw_version );
+                    rsutils::string::from() << "get-nest command requires FW version >= " << minimal_fw_ver
+                                            << ", current version is: " << _fw_version );
         }
 
         return _hw_monitor->send(input);
@@ -618,10 +618,11 @@ namespace librealsense
             // Verify read
             if (res.size() < expected_size)
             {
-                throw std::runtime_error(
-                    to_string() << "TEMPERATURES_GET - Invalid result size! expected: "
-                    << expected_size << " bytes, "
-                    "got: " << res.size() << " bytes");
+                throw std::runtime_error( rsutils::string::from()
+                                          << "TEMPERATURES_GET - Invalid result size! expected: " << expected_size
+                                          << " bytes, "
+                                             "got: "
+                                          << res.size() << " bytes" );
             }
 
             if (fw_version_support_nest)
@@ -656,10 +657,12 @@ namespace librealsense
                         // Verify read
                         if (res.size() < expected_size)
                         {
-                            throw std::runtime_error(
-                                to_string() << "TEMPERATURES_GET - Invalid result size!, expected: "
-                                << expected_size << " bytes, "
-                                "got: " << res.size() << " bytes");
+                            throw std::runtime_error( rsutils::string::from()
+                                                      << "TEMPERATURES_GET - Invalid result size!, expected: "
+                                                      << expected_size
+                                                      << " bytes, "
+                                                         "got: "
+                                                      << res.size() << " bytes" );
                         }
                
                         std::lock_guard<std::mutex> lock(_temperature_mutex);
@@ -706,7 +709,9 @@ namespace librealsense
 
         auto min_max_fw_it = ivcam2::device_to_fw_min_max_version.find(_pid);
         if (min_max_fw_it == ivcam2::device_to_fw_min_max_version.end())
-            throw librealsense::invalid_value_exception(to_string() << "Min and Max firmware versions have not been defined for this device: " << std::hex << _pid);
+            throw librealsense::invalid_value_exception(
+                rsutils::string::from() << "Min and Max firmware versions have not been defined for this device: "
+                                        << std::hex << _pid );
 
         // Limit L515 to FW versions within the 1.5.1.3-1.99.99.99 range to differenciate from the other products
         bool result = (firmware_version(fw_version) >= firmware_version(min_max_fw_it->second.first)) &&
@@ -724,6 +729,9 @@ namespace librealsense
         if (l500_fw_error_report.find(static_cast<uint8_t>(value)) != l500_fw_error_report.end())
             return{ RS2_NOTIFICATION_CATEGORY_HARDWARE_ERROR, value, RS2_LOG_SEVERITY_ERROR, l500_fw_error_report.at(static_cast<uint8_t>(value)) };
 
-        return{ RS2_NOTIFICATION_CATEGORY_HARDWARE_ERROR, value, RS2_LOG_SEVERITY_WARN, (to_string() << "L500 HW report - unresolved type " << value) };
+        return { RS2_NOTIFICATION_CATEGORY_HARDWARE_ERROR,
+                 value,
+                 RS2_LOG_SEVERITY_WARN,
+                 ( rsutils::string::from() << "L500 HW report - unresolved type " << value ) };
     }
 }

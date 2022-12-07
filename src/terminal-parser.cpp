@@ -2,7 +2,8 @@
 // Copyright(c) 2020 Intel Corporation. All Rights Reserved.
 
 #include "terminal-parser.h"
-#include <iostream>
+#include <utilities/string/from.h>
+
 
 namespace librealsense
 {
@@ -111,7 +112,7 @@ namespace librealsense
         auto command_str = utilities::string::to_lower(tokens.front());
         auto it = _cmd_xml.commands.find(command_str);
         if (it == _cmd_xml.commands.end())
-            throw runtime_error(to_string() << "Command " << command_str << " was not found!");
+            throw runtime_error( rsutils::string::from() << "Command " << command_str << " was not found!" );
 
         command = it->second;
         for (auto i = 1; i < tokens.size(); ++i)

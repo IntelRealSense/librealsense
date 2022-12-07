@@ -10,6 +10,9 @@
 #include "librealsense2/rsutil.h"
 #include "../algo.h"
 
+#include <utilities/string/from.h>
+
+
 #undef UCAL_PROFILE
 #ifdef UCAL_PROFILE
 #define LOG_OCC_WARN(...)   do { CLOG(WARNING   ,"librealsense") << __VA_ARGS__; } while(false)
@@ -292,7 +295,7 @@ namespace librealsense
             {
                 // Check calibration status
                 auto res = _hw_monitor->send(command{ ds::AUTO_CALIB, py_rx_calib_check_status });
-                LOG_OCC_WARN(std::string(to_string() << __LINE__  << " check occ status, res size = " << res.size()));
+                LOG_OCC_WARN(std::string(rsutils::string::from() << __LINE__  << " check occ status, res size = " << res.size()));
                 if (res.size() < sizeof(DirectSearchCalibrationResult))
                 {
                     if (!((retries++) % 5)) // Add log debug once in a sec
@@ -373,7 +376,9 @@ namespace librealsense
             {
                 try_fetch(jsn, "speed", &tmp_speed);
                 if (tmp_speed < speed_very_fast || tmp_speed >  speed_white_wall)
-                    throw invalid_value_exception(to_string() << "Auto calibration failed! Given value of 'speed' " << speed << " is out of range (0 - 4).");
+                    throw invalid_value_exception( rsutils::string::from()
+                                                   << "Auto calibration failed! Given value of 'speed' " << speed
+                                                   << " is out of range (0 - 4)." );
                 speed = auto_calib_speed(tmp_speed);
             }
             else
@@ -381,7 +386,10 @@ namespace librealsense
 
             try_fetch(jsn, "host assistance", &tmp_host_assistance);
             if (tmp_host_assistance < (int)host_assistance_type::no_assistance || tmp_host_assistance >  (int)host_assistance_type::assistance_second_feed)
-                throw invalid_value_exception(to_string() << "Auto calibration failed! Given value of 'host assistance' " << tmp_host_assistance << " is out of range (0 - " << (int)host_assistance_type::assistance_second_feed << ").");
+                throw invalid_value_exception( rsutils::string::from()
+                                               << "Auto calibration failed! Given value of 'host assistance' "
+                                               << tmp_host_assistance << " is out of range (0 - "
+                                               << (int)host_assistance_type::assistance_second_feed << ")." );
             host_assistance = host_assistance_type(tmp_host_assistance);
 
             try_fetch(jsn, "scan parameter", &scan_parameter);
@@ -496,7 +504,7 @@ namespace librealsense
             if (host_assistance == host_assistance_type::no_assistance || host_assistance == host_assistance_type::assistance_start)
             {
                 auto res = _hw_monitor->send(command{ ds::AUTO_CALIB, py_rx_calib_begin, speed, 0, p4 });
-                LOG_OCC_WARN(std::string(to_string() << __LINE__
+                LOG_OCC_WARN(std::string(rsutils::string::from() << __LINE__
                     << " send occ py_rx_calib_begin, speed = " << speed << ", p4 = " << p4 << " res size = " << res.size()));
             }
 
@@ -557,7 +565,7 @@ namespace librealsense
                 if (progress_callback)
                     progress_callback->on_update_progress(static_cast<float>(100));
                 res = get_calibration_results(health);
-                LOG_OCC_WARN(std::string(to_string() << "Py: " << result.rightPy));
+                LOG_OCC_WARN(std::string(rsutils::string::from() << "Py: " << result.rightPy));
             }
         }
         else if (calib_type == 1)
@@ -601,7 +609,7 @@ namespace librealsense
                 if (host_assistance == host_assistance_type::assistance_first_feed)
                 {
                     command cmd(ds::AUTO_CALIB, interactive_scan_control, 0, 0);
-                    LOG_OCC_WARN(std::string(to_string() << __LINE__ << "occ interactive_scan_control 0,0 " << " res size = " << res.size()));
+                    LOG_OCC_WARN(std::string(rsutils::string::from() << __LINE__ << "occ interactive_scan_control 0,0 " << " res size = " << res.size()));
                     uint8_t* p = reinterpret_cast<uint8_t*>(&step_count_v3);
                     cmd.data.push_back(p[0]);
                     cmd.data.push_back(p[1]);
@@ -710,7 +718,7 @@ namespace librealsense
             if (host_assistance == host_assistance_type::no_assistance || host_assistance == host_assistance_type::assistance_start)
             {
                 _hw_monitor->send(command{ ds::AUTO_CALIB, py_rx_plus_fl_calib_begin, speed_fl, 0, p4 });
-                LOG_OCC_WARN(std::string(to_string() << __LINE__ << "occ py_rx_plus_fl_calib_begin speed_fl = " << speed_fl <<  " res size = " << res.size()));
+                LOG_OCC_WARN(std::string(rsutils::string::from() << __LINE__ << "occ py_rx_plus_fl_calib_begin speed_fl = " << speed_fl <<  " res size = " << res.size()));
             }
 
             if (host_assistance != host_assistance_type::assistance_start)
@@ -718,7 +726,7 @@ namespace librealsense
                 if ((host_assistance == host_assistance_type::assistance_first_feed) || (host_assistance == host_assistance_type::assistance_second_feed))
                 {
                     command cmd(ds::AUTO_CALIB, interactive_scan_control, 0, 0);
-                    LOG_OCC_WARN(std::string(to_string() << __LINE__ << "occ interactive_scan_control 0,0"));
+                    LOG_OCC_WARN(std::string(rsutils::string::from() << __LINE__ << "occ interactive_scan_control 0,0"));
                     uint8_t* p = reinterpret_cast<uint8_t*>(&step_count_v3);
                     cmd.data.push_back(p[0]);
                     cmd.data.push_back(p[1]);
@@ -752,7 +760,7 @@ namespace librealsense
                         try
                         {
                             auto res = _hw_monitor->send(command{ ds::AUTO_CALIB, get_py_rx_plus_fl_calib_result });
-                            LOG_OCC_WARN(std::string(to_string() << __LINE__ << "occ get_py_rx_plus_fl_calib_result res size = " << res.size() ));
+                            LOG_OCC_WARN(std::string(rsutils::string::from() << __LINE__ << "occ get_py_rx_plus_fl_calib_result res size = " << res.size() ));
 
                             if (res.size() < sizeof(DscPyRxFLCalibrationTableResult))
                                 throw std::runtime_error("Not enough data from CALIB_STATUS!");
@@ -846,7 +854,10 @@ namespace librealsense
             int tmp_host_assistance(0);
             try_fetch(jsn, "host assistance", &tmp_host_assistance);
             if (tmp_host_assistance < (int)host_assistance_type::no_assistance || tmp_host_assistance >(int)host_assistance_type::assistance_second_feed)
-                throw invalid_value_exception(to_string() << "Auto calibration failed! Given value of 'host assistance' " << tmp_host_assistance << " is out of range (0 - " << (int)host_assistance_type::assistance_second_feed << ").");
+                throw invalid_value_exception( rsutils::string::from()
+                                               << "Auto calibration failed! Given value of 'host assistance' "
+                                               << tmp_host_assistance << " is out of range (0 - "
+                                               << (int)host_assistance_type::assistance_second_feed << ")." );
             host_assistance = host_assistance_type(tmp_host_assistance);
             try_fetch(jsn, "depth", &depth);
             try_fetch(jsn, "resize factor", &_resize_factor);
@@ -1081,7 +1092,7 @@ namespace librealsense
             ++counter;
 
         if (start + 2 > size)
-            throw std::runtime_error(to_string() << "There is no enought valid data in the array!");
+            throw std::runtime_error( rsutils::string::from() << "There is no enought valid data in the array!" );
 
         for (int i = 0; i < counter; ++i)
             data[i] = data[counter];
@@ -1156,7 +1167,7 @@ namespace librealsense
                 if ((delta > 500) && (delta > (std::abs(diff) * 3)) && (val2 > _outlier_percentile))
                 {
                     data[i+1] = data[i] + diff/2;
-                    LOG_OCC_WARN(std::string(to_string() << "Outlier with value " << val2 << " was changed to be " << data[i+1] ));
+                    LOG_OCC_WARN(std::string(rsutils::string::from() << "Outlier with value " << val2 << " was changed to be " << data[i+1] ));
                 }
             }
         }
@@ -1273,7 +1284,7 @@ namespace librealsense
                 _prev_frame_counter = frame_counter;
                 if ((!tare_fc_workaround) && mipi_sku) _prev_frame_counter +=10; //  Compensate for MIPI OCC calib. invoke delay
                 _interactive_state = interactive_calibration_state::RS2_OCC_STATE_WAIT_TO_CALIB_START;
-                LOG_OCC_WARN(std::string(to_string() << "switch INITIAL_FW_CALL=>WAIT_TO_CALIB_START, prev_fc is reset to " << _prev_frame_counter));
+                LOG_OCC_WARN(std::string(rsutils::string::from() << "switch INITIAL_FW_CALL=>WAIT_TO_CALIB_START, prev_fc is reset to " << _prev_frame_counter));
                 return res;
             }
             if (_interactive_state == interactive_calibration_state::RS2_OCC_STATE_WAIT_TO_CALIB_START)
@@ -1298,7 +1309,7 @@ namespace librealsense
                 _skipped_frames = 0;
                 _prev_frame_counter = -1;
                 _interactive_state = interactive_calibration_state::RS2_OCC_STATE_DATA_COLLECT;
-                LOG_OCC_WARN(std::string(to_string() << __LINE__ << " switch to RS2_OCC_STATE_DATA_COLLECT"));
+                LOG_OCC_WARN(std::string(rsutils::string::from() << __LINE__ << " switch to RS2_OCC_STATE_DATA_COLLECT"));
             }
             if (_interactive_state == interactive_calibration_state::RS2_OCC_STATE_DATA_COLLECT)
             {
@@ -1364,13 +1375,13 @@ namespace librealsense
                             if (frame_counter + fw_host_offset < 256)
                             {
                                 _fill_factor[frame_counter + fw_host_offset] = fill_rate;
-                                LOG_OCC_WARN(std::string(to_string() << __LINE__ << " fc = " << frame_counter <<  ", _fill_factor[" << frame_counter + fw_host_offset << "] = " << fill_rate));
+                                LOG_OCC_WARN(std::string(rsutils::string::from() << __LINE__ << " fc = " << frame_counter <<  ", _fill_factor[" << frame_counter + fw_host_offset << "] = " << fill_rate));
                             }
 
                             if (_interactive_scan)
                             {
                                 auto res = _hw_monitor->send(command{ ds::AUTO_CALIB, interactive_scan_control, 1});
-                                LOG_OCC_WARN(std::string(to_string() << __LINE__ << " occ interactive_scan_control 1,"));
+                                LOG_OCC_WARN(std::string(rsutils::string::from() << __LINE__ << " occ interactive_scan_control 1,"));
                             }
                             _skipped_frames = 0;
                             _prev_frame_counter = frame_counter;
@@ -1379,7 +1390,7 @@ namespace librealsense
                     else
                     {
                         _interactive_state = interactive_calibration_state::RS2_OCC_STATE_WAIT_FOR_FINAL_FW_CALL;
-                        LOG_OCC_WARN(std::string(to_string() << __LINE__ << " go to final FW call"));
+                        LOG_OCC_WARN(std::string(rsutils::string::from() << __LINE__ << " go to final FW call"));
                     }
                 }
                 else if (_action == auto_calib_action::RS2_OCC_ACTION_TARE_CALIB)
@@ -1397,7 +1408,7 @@ namespace librealsense
                             progress_callback->on_update_progress(static_cast<float>(20 + static_cast<int>(progress_rate * 60.0)));
                         }
                     }
-                    LOG_OCC_WARN(std::string(to_string() << __LINE__ << " fr_c = " << frame_counter
+                    LOG_OCC_WARN(std::string(rsutils::string::from() << __LINE__ << " fr_c = " << frame_counter
                         << " fr_ts = " << frame_ts << " _c_f_num = " << _collected_frame_num));
 
                     if (frame_counter < _total_frames)
@@ -1435,7 +1446,7 @@ namespace librealsense
             }
             if (_interactive_state == interactive_calibration_state::RS2_OCC_STATE_WAIT_FOR_FINAL_FW_CALL)
             {
-                LOG_OCC_WARN(std::string(to_string() << __LINE__ << " :RS2_OCC_STATE_WAIT_FOR_FINAL_FW_CALL"));
+                LOG_OCC_WARN(std::string(rsutils::string::from() << __LINE__ << " :RS2_OCC_STATE_WAIT_FOR_FINAL_FW_CALL"));
                 if (frame_counter > _total_frames)
                 {
                     _interactive_state = interactive_calibration_state::RS2_OCC_STATE_FINAL_FW_CALL;
@@ -1443,12 +1454,12 @@ namespace librealsense
                 else if (_interactive_scan)
                 {
                     _hw_monitor->send(command{ ds::AUTO_CALIB, interactive_scan_control, 1 });
-                    LOG_OCC_WARN(std::string(to_string() << __LINE__ << "Call for interactive_scan_control, 1"));
+                    LOG_OCC_WARN(std::string(rsutils::string::from() << __LINE__ << "Call for interactive_scan_control, 1"));
                 }
             }
             if (_interactive_state == interactive_calibration_state::RS2_OCC_STATE_FINAL_FW_CALL)
             {
-                LOG_OCC_WARN(std::string(to_string() << __LINE__ << " :RS2_OCC_STATE_FINAL_FW_CALL"));
+                LOG_OCC_WARN(std::string(rsutils::string::from() << __LINE__ << " :RS2_OCC_STATE_FINAL_FW_CALL"));
                 if (progress_callback)
                 {
                     progress_callback->on_update_progress(static_cast<float>(80));
@@ -1580,11 +1591,17 @@ namespace librealsense
     void auto_calibrated::check_params(int speed, int scan_parameter, int data_sampling) const
     {
         if (speed < speed_very_fast || speed >  speed_white_wall)
-            throw invalid_value_exception(to_string() << "Auto calibration failed! Given value of 'speed' " << speed << " is out of range (0 - 4).");
+            throw invalid_value_exception( rsutils::string::from()
+                                           << "Auto calibration failed! Given value of 'speed' " << speed
+                                           << " is out of range (0 - 4)." );
        if (scan_parameter != py_scan && scan_parameter != rx_scan)
-            throw invalid_value_exception(to_string() << "Auto calibration failed! Given value of 'scan parameter' " << scan_parameter << " is out of range (0 - 1).");
+            throw invalid_value_exception( rsutils::string::from()
+                                           << "Auto calibration failed! Given value of 'scan parameter' "
+                                           << scan_parameter << " is out of range (0 - 1)." );
         if (data_sampling != polling && data_sampling != interrupt)
-            throw invalid_value_exception(to_string() << "Auto calibration failed! Given value of 'data sampling' " << data_sampling << " is out of range (0 - 1).");
+           throw invalid_value_exception( rsutils::string::from()
+                                          << "Auto calibration failed! Given value of 'data sampling' " << data_sampling
+                                          << " is out of range (0 - 1)." );
     }
 
     void auto_calibrated::check_tare_params(int speed, int scan_parameter, int data_sampling, int average_step_count, int step_count, int accuracy)
@@ -1592,49 +1609,55 @@ namespace librealsense
         check_params(speed, scan_parameter, data_sampling);
 
         if (average_step_count < 1 || average_step_count > 30)
-            throw invalid_value_exception(to_string() << "Auto calibration failed! Given value of 'number of frames to average' " << average_step_count << " is out of range (1 - 30).");
+            throw invalid_value_exception( rsutils::string::from()
+                                           << "Auto calibration failed! Given value of 'number of frames to average' "
+                                           << average_step_count << " is out of range (1 - 30)." );
         if (step_count < 5 || step_count > 30)
-            throw invalid_value_exception(to_string() << "Auto calibration failed! Given value of 'max iteration steps' " << step_count << " is out of range (5 - 30).");
+            throw invalid_value_exception( rsutils::string::from()
+                                           << "Auto calibration failed! Given value of 'max iteration steps' "
+                                           << step_count << " is out of range (5 - 30)." );
         if (accuracy < very_high || accuracy > low)
-            throw invalid_value_exception(to_string() << "Auto calibration failed! Given value of 'subpixel accuracy' " << accuracy << " is out of range (0 - 3).");
+            throw invalid_value_exception( rsutils::string::from()
+                                           << "Auto calibration failed! Given value of 'subpixel accuracy' " << accuracy
+                                           << " is out of range (0 - 3)." );
     }
 
     void auto_calibrated::check_focal_length_params(int step_count, int fy_scan_range, int keep_new_value_after_sucessful_scan, int interrrupt_data_samling, int adjust_both_sides, int fl_scan_location, int fy_scan_direction, int white_wall_mode) const
     {
         if (step_count < 8 || step_count >  256)
-            throw invalid_value_exception(to_string() << "Auto calibration failed! Given value of 'step_count' " << step_count << " is out of range (8 - 256).");
+            throw invalid_value_exception( rsutils::string::from() << "Auto calibration failed! Given value of 'step_count' " << step_count << " is out of range (8 - 256).");
         if (fy_scan_range < 1 || fy_scan_range >  60000)
-            throw invalid_value_exception(to_string() << "Auto calibration failed! Given value of 'fy_scan_range' " << fy_scan_range << " is out of range (1 - 60000).");
+            throw invalid_value_exception( rsutils::string::from() << "Auto calibration failed! Given value of 'fy_scan_range' " << fy_scan_range << " is out of range (1 - 60000).");
         if (keep_new_value_after_sucessful_scan < 0 || keep_new_value_after_sucessful_scan >  1)
-            throw invalid_value_exception(to_string() << "Auto calibration failed! Given value of 'keep_new_value_after_sucessful_scan' " << keep_new_value_after_sucessful_scan << " is out of range (0 - 1).");
+            throw invalid_value_exception( rsutils::string::from() << "Auto calibration failed! Given value of 'keep_new_value_after_sucessful_scan' " << keep_new_value_after_sucessful_scan << " is out of range (0 - 1).");
         if (interrrupt_data_samling < 0 || interrrupt_data_samling >  1)
-            throw invalid_value_exception(to_string() << "Auto calibration failed! Given value of 'interrrupt_data_samling' " << interrrupt_data_samling << " is out of range (0 - 1).");
+            throw invalid_value_exception( rsutils::string::from() << "Auto calibration failed! Given value of 'interrrupt_data_samling' " << interrrupt_data_samling << " is out of range (0 - 1).");
         if (adjust_both_sides < 0 || adjust_both_sides >  1)
-            throw invalid_value_exception(to_string() << "Auto calibration failed! Given value of 'adjust_both_sides' " << adjust_both_sides << " is out of range (0 - 1).");
+            throw invalid_value_exception( rsutils::string::from() << "Auto calibration failed! Given value of 'adjust_both_sides' " << adjust_both_sides << " is out of range (0 - 1).");
         if (fl_scan_location < 0 || fl_scan_location >  1)
-            throw invalid_value_exception(to_string() << "Auto calibration failed! Given value of 'fl_scan_location' " << fl_scan_location << " is out of range (0 - 1).");
+            throw invalid_value_exception( rsutils::string::from() << "Auto calibration failed! Given value of 'fl_scan_location' " << fl_scan_location << " is out of range (0 - 1).");
         if (fy_scan_direction < 0 || fy_scan_direction >  1)
-            throw invalid_value_exception(to_string() << "Auto calibration failed! Given value of 'fy_scan_direction' " << fy_scan_direction << " is out of range (0 - 1).");
+            throw invalid_value_exception( rsutils::string::from() << "Auto calibration failed! Given value of 'fy_scan_direction' " << fy_scan_direction << " is out of range (0 - 1).");
         if (white_wall_mode < 0 || white_wall_mode >  1)
-            throw invalid_value_exception(to_string() << "Auto calibration failed! Given value of 'white_wall_mode' " << white_wall_mode << " is out of range (0 - 1).");
+            throw invalid_value_exception( rsutils::string::from() << "Auto calibration failed! Given value of 'white_wall_mode' " << white_wall_mode << " is out of range (0 - 1).");
     }
 
     void auto_calibrated::check_one_button_params(int speed, int keep_new_value_after_sucessful_scan, int data_sampling, int adjust_both_sides, int fl_scan_location, int fy_scan_direction, int white_wall_mode) const
     {
         if (speed < speed_very_fast || speed >  speed_white_wall)
-            throw invalid_value_exception(to_string() << "Auto calibration failed! Given value of 'speed' " << speed << " is out of range (0 - 4).");
+            throw invalid_value_exception( rsutils::string::from() << "Auto calibration failed! Given value of 'speed' " << speed << " is out of range (0 - 4).");
         if (keep_new_value_after_sucessful_scan < 0 || keep_new_value_after_sucessful_scan >  1)
-            throw invalid_value_exception(to_string() << "Auto calibration failed! Given value of 'keep_new_value_after_sucessful_scan' " << keep_new_value_after_sucessful_scan << " is out of range (0 - 1).");
+            throw invalid_value_exception( rsutils::string::from() << "Auto calibration failed! Given value of 'keep_new_value_after_sucessful_scan' " << keep_new_value_after_sucessful_scan << " is out of range (0 - 1).");
         if (data_sampling != polling && data_sampling != interrupt)
-            throw invalid_value_exception(to_string() << "Auto calibration failed! Given value of 'data sampling' " << data_sampling << " is out of range (0 - 1).");
+            throw invalid_value_exception( rsutils::string::from() << "Auto calibration failed! Given value of 'data sampling' " << data_sampling << " is out of range (0 - 1).");
         if (adjust_both_sides < 0 || adjust_both_sides >  1)
-            throw invalid_value_exception(to_string() << "Auto calibration failed! Given value of 'adjust_both_sides' " << adjust_both_sides << " is out of range (0 - 1).");
+            throw invalid_value_exception( rsutils::string::from() << "Auto calibration failed! Given value of 'adjust_both_sides' " << adjust_both_sides << " is out of range (0 - 1).");
         if (fl_scan_location < 0 || fl_scan_location >  1)
-            throw invalid_value_exception(to_string() << "Auto calibration failed! Given value of 'fl_scan_location' " << fl_scan_location << " is out of range (0 - 1).");
+            throw invalid_value_exception( rsutils::string::from() << "Auto calibration failed! Given value of 'fl_scan_location' " << fl_scan_location << " is out of range (0 - 1).");
         if (fy_scan_direction < 0 || fy_scan_direction >  1)
-            throw invalid_value_exception(to_string() << "Auto calibration failed! Given value of 'fy_scan_direction' " << fy_scan_direction << " is out of range (0 - 1).");
+            throw invalid_value_exception( rsutils::string::from() << "Auto calibration failed! Given value of 'fy_scan_direction' " << fy_scan_direction << " is out of range (0 - 1).");
         if (white_wall_mode < 0 || white_wall_mode >  1)
-            throw invalid_value_exception(to_string() << "Auto calibration failed! Given value of 'white_wall_mode' " << white_wall_mode << " is out of range (0 - 1).");
+            throw invalid_value_exception( rsutils::string::from() << "Auto calibration failed! Given value of 'white_wall_mode' " << white_wall_mode << " is out of range (0 - 1).");
     }
 
     void auto_calibrated::handle_calibration_error(int status) const
@@ -1659,7 +1682,9 @@ namespace librealsense
             throw std::runtime_error("Calibration didn't converge! - no depth average\n"
                 "Please retry in different lighting conditions");
         }
-        else throw std::runtime_error(to_string() << "Calibration didn't converge! (RESULT=" << int(status) << ")");
+        else
+            throw std::runtime_error( rsutils::string::from()
+                                      << "Calibration didn't converge! (RESULT=" << int( status ) << ")" );
     }
 
     std::vector<uint8_t> auto_calibrated::get_calibration_results(float* const health) const
@@ -1762,7 +1787,8 @@ namespace librealsense
             param2 = 1;
             break;
         default:
-            throw std::runtime_error(to_string() << "Flashing calibration table type 0x" << std::hex << tbl_id << " is not supported");
+            throw std::runtime_error( rsutils::string::from() << "Flashing calibration table type 0x" << std::hex
+                                                              << tbl_id << " is not supported" );
         }
 
         command write_calib(cmd, tbl_id, param2);
@@ -1800,7 +1826,8 @@ namespace librealsense
                 _curr_calibration = calibration;
                 break;
             default:
-                throw std::runtime_error(to_string() << "the operation is not defined for calibration table type " << tbl_id);
+                throw std::runtime_error( rsutils::string::from()
+                                          << "the operation is not defined for calibration table type " << tbl_id );
         }
     }
 
@@ -2465,7 +2492,8 @@ namespace librealsense
         {
             // Verify that at least TBD  valid extractions were made
             if ((frm_idx < min_frames_required))
-                throw std::runtime_error(to_string() << "Target distance calculation requires at least " << min_frames_required << " frames, aborting");
+                throw std::runtime_error( rsutils::string::from() << "Target distance calculation requires at least "
+                                                                  << min_frames_required << " frames, aborting" );
             if (float(rec_sides_data.size() / frm_idx) < 0.5f)
                 throw std::runtime_error("Please re-adjust the camera position \nand make sure the specific target is \nin the middle of the camera image!");
 

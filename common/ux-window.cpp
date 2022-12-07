@@ -262,7 +262,7 @@ namespace rs2
         _fullscreen = config_file::instance().get(configurations::window::is_fullscreen);
 
         rs2_error* e = nullptr;
-        _title_str = to_string() << _title << " v" << api_version_to_string(rs2_get_api_version(&e));
+        _title_str = rsutils::string::from() << _title << " v" << api_version_to_string(rs2_get_api_version(&e));
         auto debug = is_debug();
         if (debug)
         {
@@ -697,7 +697,7 @@ namespace rs2
 
         if (fw != _fb_width || fh != _fb_height)
         {
-            std::string msg = to_string() << "Framebuffer size changed to " << _fb_width << " x " << _fb_height;
+            std::string msg = rsutils::string::from() << "Framebuffer size changed to " << _fb_width << " x " << _fb_height;
             rs2::log(RS2_LOG_SEVERITY_INFO, msg.c_str());
         }
 
@@ -711,13 +711,13 @@ namespace rs2
 
         if (w != _width || h != _height)
         {
-            std::string msg = to_string() << "Window size changed to " << _width << " x " << _height;
+            std::string msg = rsutils::string::from() << "Window size changed to " << _width << " x " << _height;
             rs2::log(RS2_LOG_SEVERITY_INFO, msg.c_str());
         }
 
         if (_scale_factor != sf)
         {
-            std::string msg = to_string() << "Scale Factor is now " << _scale_factor;
+            std::string msg = rsutils::string::from() << "Scale Factor is now " << _scale_factor;
             rs2::log(RS2_LOG_SEVERITY_INFO, msg.c_str());
         }
 

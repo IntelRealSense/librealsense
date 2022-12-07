@@ -8,6 +8,7 @@
 #include "ds5-thermal-monitor.h"
 #include "proc/color-formats-converter.h"
 #include "ds5-color.h"
+#include <utilities/string/from.h>
 
 namespace librealsense
 {
@@ -108,8 +109,8 @@ namespace librealsense
                 _separate_color = false;
             }
             else
-                throw invalid_value_exception(to_string() << "RS4XX: RGB modules inconsistency - "
-                    << color_devs_info.size() << " found");
+                throw invalid_value_exception( rsutils::string::from() << "RS4XX: RGB modules inconsistency - "
+                                                                         << color_devs_info.size() << " found" );
         }
     }
 

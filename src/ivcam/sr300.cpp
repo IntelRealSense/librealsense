@@ -13,6 +13,7 @@
 #include "ds5/ds5-device.h"
 #include "../../include/librealsense2/h/rs_sensor.h"
 #include "../common/fw/firmware-version.h"
+#include <utilities/string/from.h>
 
 namespace librealsense
 {
@@ -60,8 +61,8 @@ namespace librealsense
                 this->get_device_data(),
                 register_device_notifications);
         default:
-            throw std::runtime_error(to_string() << "Unsupported SR300 model! 0x"
-                << std::hex << std::setw(4) << std::setfill('0') << (int)pid);
+            throw std::runtime_error( rsutils::string::from() << "Unsupported SR300 model! 0x" << std::hex
+                                                              << std::setw( 4 ) << std::setfill( '0' ) << (int)pid );
         }
 
     }
@@ -588,7 +589,9 @@ namespace librealsense
 
         auto min_max_fw_it = device_to_fw_min_max_version.find(_pid);
         if (min_max_fw_it == device_to_fw_min_max_version.end())
-            throw librealsense::invalid_value_exception(to_string() << "Min and Max firmware versions have not been defined for this device: " << std::hex << _pid);
+            throw librealsense::invalid_value_exception(
+                rsutils::string::from() << "Min and Max firmware versions have not been defined for this device: "
+                                        << std::hex << _pid );
 
         // advanced SR3XX devices do not fit the "old" fw versions and 
         // legacy SR3XX devices do not fit the "new" fw versions

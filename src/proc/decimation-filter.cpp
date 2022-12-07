@@ -1,8 +1,8 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2017 Intel Corporation. All Rights Reserved.
 
-#include "../include/librealsense2/hpp/rs_sensor.hpp"
-#include "../include/librealsense2/hpp/rs_processing.hpp"
+#include <librealsense2/hpp/rs_sensor.hpp>
+#include <librealsense2/hpp/rs_processing.hpp>
 
 #include <numeric>
 #include <cmath>
@@ -12,6 +12,8 @@
 #include "core/video.h"
 #include "proc/synthetic-stream.h"
 #include "proc/decimation-filter.h"
+
+#include <utilities/string/from.h>
 
 
 #define PIX_SORT(a,b) { if ((a)>(b)) PIX_SWAP((a),(b)); }
@@ -231,8 +233,8 @@ namespace librealsense
             std::lock_guard<std::mutex> lock(_mutex);
 
             if (!strong_decimation_control->is_valid(val))
-                throw invalid_value_exception(to_string()
-                    << "Unsupported decimation scale " << val << " is out of range.");
+                throw invalid_value_exception( rsutils::string::from()
+                                               << "Unsupported decimation scale " << val << " is out of range." );
 
             // Linear decimation factor
             if (_control_val != _decimation_factor)

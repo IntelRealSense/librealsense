@@ -81,7 +81,7 @@ bool option_model::draw( std::string & error_message,
             ImGui::PushStyleColor( ImGuiCol_TextSelectedBg, { 1.f, 1.f, 1.f, 1.f } );
             if( ! dev->roi_checked )
             {
-                std::string caption = to_string() << "Set ROI##" << button_label;
+                std::string caption = rsutils::string::from() << "Set ROI##" << button_label;
                 if( ImGui::Button( caption.c_str(), { 55, 0 } ) )
                 {
                     dev->roi_checked = true;
@@ -89,7 +89,7 @@ bool option_model::draw( std::string & error_message,
             }
             else
             {
-                std::string caption = to_string() << "Cancel##" << button_label;
+                std::string caption = rsutils::string::from() << "Cancel##" << button_label;
                 if( ImGui::Button( caption.c_str(), { 55, 0 } ) )
                 {
                     dev->roi_checked = false;
@@ -145,7 +145,7 @@ void option_model::update_all_fields( std::string & error_message, notifications
     {
         if( read_only )
         {
-            model.add_notification( { to_string()
+            model.add_notification( { rsutils::string::from()
                                           << "Could not refresh read-only option "
                                           << endpoint->get_option_name( opt ) << ": " << e.what(),
                                       RS2_LOG_SEVERITY_WARN,
@@ -184,9 +184,8 @@ bool option_model::draw_combobox( notifications_model & model,
                                   bool use_option_name )
 {
     bool item_clicked = false;
-    std::string txt
-        = to_string() << ( use_option_name ? endpoint->get_option_name( opt ) : description )
-                      << ":";
+    std::string txt = rsutils::string::from()
+                   << ( use_option_name ? endpoint->get_option_name( opt ) : description ) << ":";
 
     auto pos_x = ImGui::GetCursorPosX();
 
@@ -223,8 +222,8 @@ bool option_model::draw_combobox( notifications_model & model,
                           static_cast< int >( labels.size() ) ) )
         {
             tmp_value = range.min + range.step * tmp_selected;
-            model.add_log( to_string() << "Setting " << opt << " to " << tmp_value << " ("
-                                       << labels[tmp_selected] << ")" );
+            model.add_log( rsutils::string::from()
+                           << "Setting " << opt << " to " << tmp_value << " (" << labels[tmp_selected] << ")" );
             set_option( opt, tmp_value, error_message );
             selected = tmp_selected;
             if( invalidate_flag )
@@ -247,7 +246,7 @@ bool option_model::draw_slider( notifications_model & model,
                                 bool use_cm_units )
 {
     bool slider_clicked = false;
-    std::string txt = to_string() << endpoint->get_option_name( opt ) << ":";
+    std::string txt = rsutils::string::from() << endpoint->get_option_name( opt ) << ":";
     ImGui::Text( "%s", txt.c_str() );
 
     ImGui::SameLine();
@@ -270,7 +269,7 @@ bool option_model::draw_slider( notifications_model & model,
         ImGui::SetCursorPosX( 268 );
         if( ! edit_mode )
         {
-            std::string edit_id = to_string() << textual_icons::edit << "##" << id;
+            std::string edit_id = rsutils::string::from() << textual_icons::edit << "##" << id;
             ImGui::PushStyleColor( ImGuiCol_Text, light_grey );
             ImGui::PushStyleColor( ImGuiCol_TextSelectedBg, light_grey );
             ImGui::PushStyleColor( ImGuiCol_ButtonHovered, { 1.f, 1.f, 1.f, 0.f } );
@@ -278,9 +277,9 @@ bool option_model::draw_slider( notifications_model & model,
             if( ImGui::Button( edit_id.c_str(), { 20, 20 } ) )
             {
                 if( is_all_integers() )
-                    edit_value = to_string() << (int)value;
+                    edit_value = rsutils::string::from() << (int)value;
                 else
-                    edit_value = to_string() << value;
+                    edit_value = rsutils::string::from() << value;
                 edit_mode = true;
             }
             if( ImGui::IsItemHovered() )
@@ -291,7 +290,7 @@ bool option_model::draw_slider( notifications_model & model,
         }
         else
         {
-            std::string edit_id = to_string() << textual_icons::edit << "##" << id;
+            std::string edit_id = rsutils::string::from() << textual_icons::edit << "##" << id;
             ImGui::PushStyleColor( ImGuiCol_Text, light_blue );
             ImGui::PushStyleColor( ImGuiCol_TextSelectedBg, light_blue );
             ImGui::PushStyleColor( ImGuiCol_ButtonHovered, { 1.f, 1.f, 1.f, 0.f } );
@@ -384,7 +383,7 @@ bool option_model::draw_slider( notifications_model & model,
                     float min = use_cm_units ? range.min * 100.f : range.min;
                     float max = use_cm_units ? range.max * 100.f : range.max;
 
-                    error_message = to_string()
+                    error_message = rsutils::string::from()
                                  << val << " is out of bounds [" << min << ", " << max << "]";
                 }
                 else
@@ -507,8 +506,8 @@ bool option_model::draw_checkbox( notifications_model & model,
     if( ImGui::Checkbox( label.c_str(), &bool_value ) )
     {
         checkbox_was_clicked = true;
-        model.add_log( to_string() << "Setting " << opt << " to " << ( bool_value ? "1.0" : "0.0" )
-                                   << " (" << ( bool_value ? "ON" : "OFF" ) << ")" );
+        model.add_log( rsutils::string::from() << "Setting " << opt << " to " << ( bool_value ? "1.0" : "0.0" ) << " ("
+                                               << ( bool_value ? "ON" : "OFF" ) << ")" );
 
         set_option( opt, bool_value ? 1.f : 0.f, error_message );
     }
@@ -530,7 +529,7 @@ bool option_model::slider_selected( rs2_option opt,
     {
         have_unset_value = false;
         *invalidate_flag = true;
-        model.add_log( to_string() << "Setting " << opt << " to " << value );
+        model.add_log( rsutils::string::from() << "Setting " << opt << " to " << value );
         res = true;
     }
     else
@@ -556,7 +555,7 @@ bool option_model::slider_unselected( rs2_option opt,
                 = set_option( opt, unset_value, error_message, std::chrono::milliseconds( 100 ) );
             if( set_ok )
             {
-                model.add_log( to_string() << "Setting " << opt << " to " << unset_value );
+                model.add_log( rsutils::string::from() << "Setting " << opt << " to " << unset_value );
                 *invalidate_flag = true;
                 have_unset_value = false;
                 res = true;
