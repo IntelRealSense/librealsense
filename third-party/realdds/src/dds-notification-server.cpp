@@ -88,7 +88,7 @@ dds_notification_server::dds_notification_server( std::shared_ptr< dds_publisher
     // finished the handshake and can receivethe messages.
     // If history is too small writer will not be able to re-transmit needed samples.
     // Setting history to cover known use-cases plus some spare
-    wqos.history().depth = 16;
+    wqos.history().depth = 24;
 
     _writer->run( wqos );
 }

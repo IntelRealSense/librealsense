@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <realdds/dds-option.h>
 #include <librealsense2/utilities/concurrency/concurrency.h>
 #include <third-party/json_fwd.hpp>
 
@@ -31,7 +32,6 @@ class dds_subscriber;
 class dds_stream_server;
 class dds_notification_server;
 class dds_topic_reader;
-class dds_option;
 struct image_header;
 
 
@@ -58,7 +58,8 @@ public:
     // A server is not valid until init() is called with a list of streams that we want to publish.
     // On successful return from init(), each of the streams will be alive so clients will be able
     // to subscribe.
-    void init( const std::vector< std::shared_ptr< dds_stream_server > > & streams );
+    void init( const std::vector< std::shared_ptr< dds_stream_server > > & streams,
+               const dds_options & options );
 
     bool is_valid() const { return( nullptr != _notification_server.get() ); }
     bool operator!() const { return ! is_valid(); }
@@ -68,8 +69,8 @@ public:
 
     void publish_image( const std::string & stream_name, const uint8_t * data, size_t size );
     void publish_notification( topics::flexible_msg && );
-    void set_option( const std::string & stream_name, const dds_option & option );
-    void get_option( const std::string & stream_name, dds_option & option );
+    void set_option( const dds_option & option );
+    void get_option( dds_option & option );
     
     typedef std::function< void( const nlohmann::json & msg ) > control_callback;
     void on_open_streams( control_callback callback ) { _open_streams_callback = std::move( callback ); }

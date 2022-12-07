@@ -31,7 +31,8 @@ namespace {
 enum class state_type
 {
     WAIT_FOR_DEVICE_HEADER,
-    WAIT_FOR_PROFILES,
+    WAIT_FOR_DEVICE_OPTIONS,
+    WAIT_FOR_STREAMS_INFO,
     DONE
     // TODO - Assuming all profiles of a stream will be sent in a single video_stream_profiles_msg
     // Otherwise need a stream header message with expected number of profiles for each stream
@@ -44,8 +45,10 @@ char const * to_string( state_type st )
     {
     case state_type::WAIT_FOR_DEVICE_HEADER:
         return "WAIT_FOR_DEVICE_HEADER";
-    case state_type::WAIT_FOR_PROFILES:
-        return "WAIT_FOR_PROFILES";
+    case state_type::WAIT_FOR_DEVICE_OPTIONS:
+        return "WAIT_FOR_DEVICE_OPTIONS";
+    case state_type::WAIT_FOR_STREAMS_INFO:
+        return "WAIT_FOR_STREAMS_INFO";
     case state_type::DONE:
         return "DONE";
     default:
@@ -151,7 +154,12 @@ void dds_device::impl::create_notifications_reader()
     auto topic = topics::flexible_msg::create_topic( _participant, _info.topic_root + "/notification" );
 
     _notifications_reader = std::make_shared< dds_topic_reader >( topic );
-    _notifications_reader->run( dds_topic_reader::qos( eprosima::fastdds::dds::RELIABLE_RELIABILITY_QOS ) );
+
+    dds_topic_reader::qos rqos( eprosima::fastdds::dds::RELIABLE_RELIABILITY_QOS );
+    //On discovery writer sends a burst of messages, if history is too small we might loose some of them
+    //(even if reliable). Setting depth to cover known use-cases plus some spare
+    rqos.history().depth = 24;
+    _notifications_reader->run( rqos );
 }
 
 void dds_device::impl::create_control_writer()
@@ -173,6 +181,7 @@ bool dds_device::impl::init()
     state_type state = state_type::WAIT_FOR_DEVICE_HEADER;
     std::map< std::string, int > sensor_name_to_index;
     size_t n_streams_expected = 0;
+    size_t n_stream_options_received = 0;
     while( ! t.has_expired() && state_type::DONE != state )
     {
         LOG_DEBUG( state << "..." );
@@ -191,12 +200,24 @@ bool dds_device::impl::init()
                 {
                     n_streams_expected = utilities::json::get< size_t >( j, "n-streams" );
                     LOG_DEBUG( "... device-header: " << n_streams_expected << " streams expected" );
+
+                    state = state_type::WAIT_FOR_DEVICE_OPTIONS;
+                }
+                else if( state_type::WAIT_FOR_DEVICE_OPTIONS == state && id == "device-options" )
+                {
+                    LOG_DEBUG( "... device-options: " << j["n-options"] << " options received" );
+
+                    for( auto & option : j["options"] )
+                    {
+                        _options.push_back( dds_option::from_json( option, _info.name ) );
+                    }
+
                     if( n_streams_expected )
-                        state = state_type::WAIT_FOR_PROFILES;
+                        state = state_type::WAIT_FOR_STREAMS_INFO;
                     else
                         state = state_type::DONE;
                 }
-                else if( state_type::WAIT_FOR_PROFILES == state && id == "stream-header" )
+                else if( state_type::WAIT_FOR_STREAMS_INFO == state && id == "stream-header" )
                 {
                     if( _streams.size() >= n_streams_expected )
                         DDS_THROW( runtime_error,
@@ -204,9 +225,11 @@ bool dds_device::impl::init()
                                        + ") received" );
                     auto stream_type = utilities::json::get< std::string >( j, "type" );
                     auto stream_name = utilities::json::get< std::string >( j, "name" );
+
                     auto & stream = _streams[stream_name];
                     if( stream )
                         DDS_THROW( runtime_error, "stream '" + stream_name + "' already exists" );
+
                     auto sensor_name = utilities::json::get< std::string >( j, "sensor-name" );
                     auto default_profile_index = utilities::json::get< int >( j, "default-profile-index" );
                     dds_stream_profiles profiles;
@@ -233,21 +256,37 @@ bool dds_device::impl::init()
                     if( default_profile_index < 0 || default_profile_index >= profiles.size() )
                         DDS_THROW( runtime_error,
                                    "stream '" + stream_name + "' default profile index "
-                                       + std::to_string( default_profile_index ) + " is out of bounds" );
+                                   + std::to_string( default_profile_index ) + " is out of bounds" );
                     if( strcmp( stream->type_string(), stream_type.c_str() ) != 0 )
                         DDS_THROW( runtime_error,
                                    "failed to instantiate stream type '" + stream_type + "' (instead, got '"
                                        + stream->type_string() + "')" );
-                    stream->init_profiles( profiles, default_profile_index );
+
                     LOG_DEBUG( "... stream '" << stream_name << "' (" << _streams.size() << "/" << n_streams_expected
                                               << ") received with " << profiles.size() << " profiles" );
 
+                    stream->init_profiles( std::move( profiles ), default_profile_index );
+                }
+                else if( state_type::WAIT_FOR_STREAMS_INFO == state && id == "stream-options" )
+                {
+                    auto stream_it = _streams.find( j["stream-name"] );
+                    if( stream_it == _streams.end() )
+                        DDS_THROW( runtime_error, std::string ( "Received stream options for stream '" ) +
+                                   utilities::json::get< std::string >( j, "stream-name" ) +
+                                   "' whos header was not received yet" );
+
+                    n_stream_options_received++;
+
                     dds_options options;
                     for( auto & option : j["options"] )
-                        options.push_back( dds_option::from_json( option ) );
-                    stream->init_options( options );
+                    {
+                        options.push_back( dds_option::from_json( option, stream_it->second->name() ) );
+                    }
 
-                    if( _streams.size() >= n_streams_expected )
+                    stream_it->second->init_options( std::move( options ) );
+
+                    if( _streams.size() >= n_streams_expected &&
+                        n_stream_options_received == n_streams_expected )
                         state = state_type::DONE;
                 }
                 else

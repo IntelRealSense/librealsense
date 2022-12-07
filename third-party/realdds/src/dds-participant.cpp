@@ -12,6 +12,7 @@
 #include <fastrtps/types/DynamicDataFactory.h>
 #include <fastdds/dds/core/status/SubscriptionMatchedStatus.hpp>
 #include <fastdds/rtps/transport/UDPv4TransportDescriptor.h>
+#include <fastdds/rtps/transport/shared_mem/SharedMemTransportDescriptor.h>
 
 #include <map>
 #include <mutex>
@@ -138,6 +139,9 @@ void dds_participant::init( dds_domain_id domain_id, std::string const & partici
     auto udp_transport = std::make_shared<eprosima::fastdds::rtps::UDPv4TransportDescriptor>();
     pqos.transport().use_builtin_transports = false;
     pqos.transport().user_transports.push_back( udp_transport );
+    //auto shm_transport = std::make_shared<eprosima::fastdds::rtps::SharedMemTransportDescriptor>();
+    //pqos.transport().use_builtin_transports = false;
+    //pqos.transport().user_transports.push_back( shm_transport );
 
     // Listener will call DataReaderListener::on_data_available for a specific reader,
     // not SubscriberListener::on_data_on_readers for any reader

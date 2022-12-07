@@ -11,32 +11,44 @@ using nlohmann::json;
 namespace realdds {
 
 
-dds_option::dds_option( nlohmann::json const & j )
+dds_option::dds_option( const std::string & name, const std::string & owner_name )
+    : _name( name )
+    , _owner_name( owner_name )
 {
-    int index = 0;
-    _name = utilities::json::get< std::string >( j, index++ );
-    _value = utilities::json::get< float >( j, index++ );
-    _range.min = utilities::json::get< float >( j, index++ );
-    _range.max = utilities::json::get< float >( j, index++ );
-    _range.step = utilities::json::get< float >( j, index++ );
-    _range.default_value = utilities::json::get< float >( j, index++ );
-    _description = utilities::json::get< std::string >( j, index++ );
-
-    if( index != j.size() )
-        DDS_THROW( runtime_error, "expected end of json at index " + std::to_string( index ) );
 }
 
 
-/* static  */ std::shared_ptr< dds_option > dds_option::from_json(nlohmann::json const & j)
+dds_option::dds_option( nlohmann::json const & j, const std::string & owner_name )
 {
-    return std::shared_ptr< dds_option >( new dds_option( j ) );
+    _name                = j["name"];
+    _value               = j["value"];
+    _range.min           = j["range-min"];
+    _range.max           = j["range-max"];
+    _range.step          = j["range-step"];
+    _range.default_value = j["range-default"];
+    _description         = j["description"];
+
+    _owner_name = owner_name;
+}
+
+
+/* static  */ std::shared_ptr< dds_option > dds_option::from_json(nlohmann::json const & j, const std::string & owner_name )
+{
+    return std::shared_ptr< dds_option >( new dds_option( j, owner_name ) );
 }
 
 
 nlohmann::json dds_option::to_json() const
 {
-    // Note - same order as construction!
-    return json::array( { _name, _value, _range.min, _range.max, _range.step, _range.default_value, _description } );
+    return json( {
+        { "name", _name },
+        { "value", _value },
+        { "range-min", _range.min },
+        { "range-max", _range.max },
+        { "range-step", _range.step },
+        { "range-default", _range.default_value },
+        { "description", _description }
+        } );
 }
 
 }  // namespace realdds

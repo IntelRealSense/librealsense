@@ -404,6 +404,25 @@ namespace librealsense
         }
     };
 
+    //A facade for a realdds::dds_option exposing librealsense interface
+    class rs2_dds_option : public option_base
+    {
+        std::shared_ptr< realdds::dds_option > _dds_opt;
+        std::string _stream_name;
+
+    public:
+        rs2_dds_option( const std::shared_ptr< realdds::dds_option > & dds_opt )
+            : option_base( { dds_opt->get_range().min, dds_opt->get_range().max,
+                             dds_opt->get_range().step, dds_opt->get_range().default_value } )
+            , _dds_opt( dds_opt )
+        {
+        }
+
+        void set( float value ) override {}; //TODO - implement
+        float query() const override { return 0.0f; }; //TODO - implement
+        bool is_enabled() const override { return true; };
+        const char * get_description() const override { return _dds_opt->get_description().c_str(); };
+    };
 
     class dds_sensor_proxy : public software_sensor
     {
@@ -580,30 +599,23 @@ namespace librealsense
             software_sensor::close();
         }
 
-        void add_option( const realdds::dds_option & option )
+        void add_option( std::shared_ptr< realdds::dds_option > option )
         {
             //Convert name to rs2_option type
-            rs2_option opt_type = RS2_OPTION_BACKLIGHT_COMPENSATION;
-            for( size_t i = 0; i < RS2_OPTION_COUNT; i++ )
+            rs2_option opt_type = RS2_OPTION_COUNT;
+            for( size_t i = 0; i < static_cast< size_t >( RS2_OPTION_COUNT ); i++ )
             {
-                if( option.get_name().compare( get_string( static_cast< rs2_option >( i ) ) ) == 0 )
+                if( option->get_name().compare( get_string( static_cast< rs2_option >( i ) ) ) == 0 )
                 {
                     opt_type = static_cast< rs2_option >( i );
                     break;
                 }
             }
-            option_range range = { option.get_range().min, option.get_range().max,
-                                   option.get_range().step, option.get_range().default_value };
-            auto opt = std::make_shared< float_option_with_description< rs2_option > >( range, option.get_description() );
-            try
-            {
-                opt->set( option.get_value() );
-            }
-            catch( invalid_value_exception e )
-            {
-                //Some options are received with bad values unless certain conditions exist when they're queried
-                LOG_ERROR( "Cannot set value for option " << option.get_name() << ". " << e.what() );
-            }
+
+            if( opt_type == RS2_OPTION_COUNT )
+                throw librealsense::invalid_value_exception( to_string() << "Option " << option->get_name() << " type not found" );
+
+            auto opt = std::make_shared< rs2_dds_option >( option );
             register_option( opt_type, opt );
         }
 
@@ -763,7 +775,7 @@ namespace librealsense
                 auto & options = stream->options();
                 for( auto & option : options )
                 {
-                    sensor_info.proxy->add_option( *option );
+                    sensor_info.proxy->add_option( option );
                 }
             } );  // End foreach_stream lambda
         } //End dds_device_proxy constructor

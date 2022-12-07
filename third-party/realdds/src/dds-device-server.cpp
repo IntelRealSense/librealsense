@@ -88,13 +88,24 @@ void dds_device_server::publish_image( const std::string & stream_name, const ui
 }
 
 
-static void on_discovery_device_header( size_t const n_streams, dds_notification_server & notifications )
+static void on_discovery_device_header( size_t const n_streams, const dds_options & options,
+                                        dds_notification_server & notifications )
 {
-    topics::flexible_msg notification( json{
+    topics::flexible_msg device_header( json{
         { "id", "device-header" },
         { "n-streams", n_streams },
     } );
-    notifications.add_discovery_notification( std::move( notification ) );
+    notifications.add_discovery_notification( std::move( device_header ) );
+
+    auto opt_json = nlohmann::json();
+    for( auto & opt : options )
+        opt_json.push_back( std::move( opt->to_json() ) );
+    topics::flexible_msg device_options( json {
+        { "id", "device-options" },
+        { "n-options", options.size() },
+        { "options" , opt_json }
+        } );
+    notifications.add_discovery_notification( std::move( device_options ) );
 }
 
 
@@ -104,9 +115,6 @@ static void on_discovery_stream_header( std::shared_ptr< dds_stream_server > con
     auto profiles = nlohmann::json::array();
     for( auto & sp : stream->profiles() )
         profiles.push_back( std::move( sp->to_json() ) );
-    auto options = nlohmann::json::array();
-    for( auto & opt : stream->options() )
-        options.push_back( std::move( opt->to_json() ) );
     json msg = {
         { "id", "stream-header" },
         { "type", stream->type_string() },
@@ -114,7 +122,6 @@ static void on_discovery_stream_header( std::shared_ptr< dds_stream_server > con
         { "sensor-name", stream->sensor_name() },
         { "profiles", profiles },
         { "default-profile-index", stream->default_profile_index() },
-        { "options", options },
     };
     LOG_DEBUG( "-----> JSON = " << msg.dump() );
     LOG_DEBUG( "-----> JSON size = " << msg.dump().length() );
@@ -122,10 +129,22 @@ static void on_discovery_stream_header( std::shared_ptr< dds_stream_server > con
 
     topics::flexible_msg notification( msg );
     notifications.add_discovery_notification( std::move( notification ) );
+
+    auto opt_json = nlohmann::json();
+    for( auto & opt : stream->options() )
+        opt_json.push_back( std::move( opt->to_json() ) );
+    topics::flexible_msg stream_options( json {
+        { "id", "stream-options" },
+        { "stream-name", stream->name() },
+        { "n-options", stream->options().size() },
+        { "options" , opt_json }
+        } );
+    notifications.add_discovery_notification( std::move( stream_options ) );
 }
 
 
-void dds_device_server::init( std::vector< std::shared_ptr< dds_stream_server > > const & streams )
+void dds_device_server::init( std::vector< std::shared_ptr< dds_stream_server > > const & streams,
+                              const dds_options & options)
 {
     if( is_valid() )
         DDS_THROW( runtime_error, "device server '" + _topic_root + "' is already initialized" );
@@ -138,7 +157,7 @@ void dds_device_server::init( std::vector< std::shared_ptr< dds_stream_server > 
         // If a previous init failed (e.g., one of the streams has no profiles):
         _stream_name_to_server.clear();
 
-        on_discovery_device_header( streams.size(), *_notification_server );
+        on_discovery_device_header( streams.size(), options, *_notification_server );
         for( auto& stream : streams )
         {
             std::string topic_name = _topic_root + '/' + stream->name();
@@ -203,24 +222,24 @@ void dds_device_server::handle_control_message( topics::flexible_msg control_mes
     }
 }
 
-void dds_device_server::set_option( const std::string & stream_name, const dds_option & option )
+void dds_device_server::set_option( const dds_option & option )
 {
     topics::flexible_msg notification( json {
         { "id", "set-option" },
         { "counter", _message_counter++ },
-        { "stream-name", stream_name },
+        { "owner-name", option.owner_name() },
         { "option", option.to_json() }
         } );
 
     publish_notification( std::move( notification ) );
 }
 
-void dds_device_server::get_option( const std::string & stream_name, dds_option & option )
+void dds_device_server::get_option( dds_option & option )
 {
     topics::flexible_msg notification( json {
         { "id", "get-option" },
         { "counter", _message_counter++ },
-        { "stream-name", stream_name },
+        { "owner-name", option.owner_name() },
         { "option", option.to_json() }
         } );
 
