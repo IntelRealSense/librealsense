@@ -499,6 +499,7 @@ PYBIND11_MODULE(NAME, m) {
         .def( "type_string", &dds_stream_base::type_string )
         .def( "profiles", &dds_stream_base::profiles )
         .def( "init_profiles", &dds_stream_base::init_profiles )
+        .def( "init_options", &dds_stream_base::init_options )
         .def( "default_profile_index", &dds_stream_base::default_profile_index )
         .def( "is_open", &dds_stream_base::is_open )
         .def( "is_streaming", &dds_stream_base::is_streaming )

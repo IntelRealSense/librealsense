@@ -68,7 +68,7 @@ void tools::lrs_device_watcher::notify_connected_devices_on_wake_up(
     std::function< void( rs2::device ) > add_device_cb )
 {
     auto connected_dev_list = _ctx.query_devices();
-    for( auto & connected_dev : connected_dev_list )
+    for( auto connected_dev : connected_dev_list )
     {
         std::cout << "Device '" << connected_dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER) << "' - detected" << std::endl;
         add_device_cb( connected_dev );

@@ -265,7 +265,7 @@ bool dds_device::impl::init()
                     LOG_DEBUG( "... stream '" << stream_name << "' (" << _streams.size() << "/" << n_streams_expected
                                               << ") received with " << profiles.size() << " profiles" );
 
-                    stream->init_profiles( std::move( profiles ), default_profile_index );
+                    stream->init_profiles( profiles, default_profile_index );
                 }
                 else if( state_type::WAIT_FOR_STREAMS_INFO == state && id == "stream-options" )
                 {
@@ -283,7 +283,7 @@ bool dds_device::impl::init()
                         options.push_back( dds_option::from_json( option, stream_it->second->name() ) );
                     }
 
-                    stream_it->second->init_options( std::move( options ) );
+                    stream_it->second->init_options( options );
 
                     if( _streams.size() >= n_streams_expected &&
                         n_stream_options_received == n_streams_expected )

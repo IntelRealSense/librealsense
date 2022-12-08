@@ -180,7 +180,7 @@ std::vector< std::shared_ptr< realdds::dds_stream_server > > get_supported_strea
                 sensor.close();
             }
         }
-        server->init_options( std::move( options ) );
+        server->init_options( options );
         servers.push_back( server );
     }
     return servers;

@@ -16,7 +16,7 @@ dds_stream_base::dds_stream_base( std::string const & name,
 }
 
 
-void dds_stream_base::init_profiles_common( dds_stream_profiles const & profiles, int default_profile_index )
+void dds_stream_base::init_profiles( dds_stream_profiles const & profiles, int default_profile_index )
 {
     if( !_profiles.empty() )
         DDS_THROW( runtime_error, "stream '" + _name + "' profiles are already initialized" );
@@ -35,20 +35,8 @@ void dds_stream_base::init_profiles_common( dds_stream_profiles const & profiles
         check_profile( profile );
         profile->init_stream( self );
     }
-}
 
-
-void dds_stream_base::init_profiles( dds_stream_profiles const & profiles, int default_profile_index )
-{
-    init_profiles_common( profiles, default_profile_index );
     _profiles = profiles;
-}
-
-
-void dds_stream_base::init_profiles( dds_stream_profiles && profiles, int default_profile_index )
-{
-    init_profiles_common( profiles, default_profile_index );
-    _profiles = std::move( profiles );
 }
 
 
@@ -58,15 +46,6 @@ void dds_stream_base::init_options( dds_options const & options )
         DDS_THROW( runtime_error, "stream '" + _name + "' options are already initialized" );
 
     _options = options;
-}
-
-
-void dds_stream_base::init_options( dds_options && options )
-{
-    if( !_options.empty() )
-        DDS_THROW( runtime_error, "stream '" + _name + "' options are already initialized" );
-
-    _options = std::move( options );
 }
 
 

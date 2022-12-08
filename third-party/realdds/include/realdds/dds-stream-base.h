@@ -36,9 +36,7 @@ public:
 
     // Init functions can only be called once!
     void init_profiles( dds_stream_profiles const & profiles, int default_profile_index = 0 );
-    void init_profiles( dds_stream_profiles && profiles, int default_profile_index = 0 );
     void init_options( dds_options const & options );
-    void init_options( dds_options && options );
 
     std::string const & name() const { return _name; }
     std::string const & sensor_name() const { return _sensor_name; }
@@ -58,8 +56,6 @@ public:
 protected:
     // Allows custom checking of each profile from init_profiles() - if there's a problem, throws
     virtual void check_profile( std::shared_ptr< dds_stream_profile > const & ) const;
-
-    void init_profiles_common( dds_stream_profiles const & profiles, int default_profile_index );
 };
 
 
