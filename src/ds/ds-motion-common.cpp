@@ -21,6 +21,8 @@
 #include "ds-private.h"
 #include <src/stream.h>
 
+#include <cstddef>
+
 namespace librealsense
 {
     using namespace ds;
