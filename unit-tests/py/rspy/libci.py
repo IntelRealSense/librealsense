@@ -205,7 +205,7 @@ class TestConfigFromText( TestConfig ):
                                 log.e(source + '+' + str(line['index']) + ': invalid syntax:', params,
                                       '. All device names after \'' + params[0] +
                                       '\' must start with \'!\' in order to skip them')
-                            break
+                                break
                         else:
                             self._configurations.append( params )
                 else:
