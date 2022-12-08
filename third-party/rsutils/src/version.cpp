@@ -3,7 +3,6 @@
 
 #include <rsutils/version.h>
 #include <rsutils/string/from.h>
-#include <regex>
 
 
 namespace rsutils {
