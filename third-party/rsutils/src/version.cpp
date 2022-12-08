@@ -14,13 +14,13 @@ version::version( sub_type m, sub_type n, sub_type p, sub_type b )
              + ( ( p & 0xFFULL ) << ( 8 * 4 ) ) +   ( b & 0xFFFFFFFFULL ) )
 {
     // Invalidate if any overflow
-    if( m != major() )
+    if( m != get_major() )
         number = 0;
-    else if( n != minor() )
+    else if( n != get_minor() )
         number = 0;
-    else if( p != patch() )
+    else if( p != get_patch() )
         number = 0;
-    else if( b != build() )
+    else if( b != get_build() )
         number = 0;
 }
 
@@ -107,9 +107,9 @@ std::ostream & operator<<( std::ostream & os, version const & v )
 {
     // NOTE: FW versions were padded to 2 characters with leading 0s:
     //      os << std::setfill('0') << std::setw(2) << v.major() << '.' ...
-    os << v.major() << '.' << v.minor() << '.' << v.patch();
-    if( v.build() )
-        os << '.' << v.build();
+    os << v.get_major() << '.' << v.get_minor() << '.' << v.get_patch();
+    if( v.get_build() )
+        os << '.' << v.get_build();
     return os;
 }
 

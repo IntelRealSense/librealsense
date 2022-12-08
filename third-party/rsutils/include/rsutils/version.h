@@ -47,10 +47,10 @@ struct version
 
     void clear() { number = 0; }
 
-    sub_type major() const { return ( number >> ( 8 * 7 ) ) & 0xFF; }
-    sub_type minor() const { return ( number >> ( 8 * 5 ) ) & 0xFFFF; }
-    sub_type patch() const { return ( number >> ( 8 * 4 ) ) & 0xFF; }
-    sub_type build() const { return number & 0xFFFFFFFF; }
+    sub_type get_major() const { return ( number >> ( 8 * 7 ) ) & 0xFF; }
+    sub_type get_minor() const { return ( number >> ( 8 * 5 ) ) & 0xFFFF; }
+    sub_type get_patch() const { return ( number >> ( 8 * 4 ) ) & 0xFF; }
+    sub_type get_build() const { return number & 0xFFFFFFFF; }
 
     bool operator<=( version const & other ) const { return number <= other.number; }
     bool operator==( version const & other ) const { return number == other.number; }

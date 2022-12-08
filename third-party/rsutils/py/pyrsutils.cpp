@@ -39,10 +39,10 @@ PYBIND11_MODULE(NAME, m) {
         .def( "is_valid", &version::is_valid )
         .def( "__nonzero__", &version::is_valid )  // Called to implement truth value testing in Python 2
         .def( "__bool__", &version::is_valid )     // Called to implement truth value testing in Python 3
-        .def( "major", &version::major )
-        .def( "minor", &version::minor )
-        .def( "patch", &version::patch )
-        .def( "build", &version::build )
+        .def( "major", &version::get_major )
+        .def( "minor", &version::get_minor )
+        .def( "patch", &version::get_patch )
+        .def( "build", &version::get_build )
         .def( "to_string", &version::to_string )
         .def( "__str__", &version::to_string )
         .def( "__repr__",
