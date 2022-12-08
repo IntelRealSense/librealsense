@@ -5,14 +5,15 @@
 #test:device:!jetson D455
 
 import pyrealsense2 as rs
+import pyrsutils as rsutils
 from rspy import test, log, repo
 
 ctx = rs.context()
 device = test.find_first_device_or_exit();
 depth_sensor = device.first_depth_sensor()
 
-fw_version = repo.pretty_fw_version( device.get_info( rs.camera_info.firmware_version ))
-if repo.compare_fw_versions( fw_version, "5.13.1.53" ) <= 0:
+fw_version = rsutils.version( device.get_info( rs.camera_info.firmware_version ))
+if fw_version <= rsutils.version(5,13,1,53):
     log.i(f"FW version {fw_version} does not support EMITTER_FREQUENCY option, skipping test...")
     test.print_results_and_exit()
 
