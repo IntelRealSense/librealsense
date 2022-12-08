@@ -9,9 +9,10 @@
 #include <array>
 #include <chrono>
 #include "ivcam/sr300.h"
-#include "ds5/ds5-factory.h"
+#include "ds/ds5/ds5-factory.h"
+#include "ds/ds6/ds6-factory.h"
 #include "l500/l500-factory.h"
-#include "ds5/ds5-timestamp.h"
+#include "ds/ds-timestamp.h"
 #include "backend.h"
 #include "mock/recorder.h"
 #include <media/ros/ros_reader.h>
@@ -249,10 +250,10 @@ namespace librealsense
             for (auto&& info : uvc_infos)
                 devs.push_back(ctx->get_backend().create_uvc_device(info));
 
-            std::unique_ptr<frame_timestamp_reader> host_timestamp_reader_backup(new ds5_timestamp_reader(environment::get_instance().get_time_service()));
+            std::unique_ptr<frame_timestamp_reader> host_timestamp_reader_backup(new ds_timestamp_reader(environment::get_instance().get_time_service()));
             auto raw_color_ep = std::make_shared<uvc_sensor>("Raw RGB Camera",
                 std::make_shared<platform::multi_pins_uvc_device>(devs),
-                std::unique_ptr<frame_timestamp_reader>(new ds5_timestamp_reader_from_metadata(std::move(host_timestamp_reader_backup))),
+                std::unique_ptr<frame_timestamp_reader>(new ds_timestamp_reader_from_metadata(std::move(host_timestamp_reader_backup))),
                 this);
             auto color_ep = std::make_shared<platform_camera_sensor>(this, raw_color_ep);
             add_sensor(color_ep);
@@ -338,6 +339,12 @@ namespace librealsense
         {
             auto ds5_devices = ds5_info::pick_ds5_devices(ctx, devices);
             std::copy(begin(ds5_devices), end(ds5_devices), std::back_inserter(list));
+        }
+
+        if (mask & RS2_PRODUCT_LINE_D500)
+        {
+            auto ds6_devices = ds6_info::pick_ds6_devices(ctx, devices);
+            std::copy(begin(ds6_devices), end(ds6_devices), std::back_inserter(list));
         }
 
         if( mask & RS2_PRODUCT_LINE_L500 )

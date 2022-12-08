@@ -3,7 +3,9 @@
 
 #include <cstring>
 #include "ros_reader.h"
-#include "ds5/ds5-device.h"
+#include "ds/ds-device-common.h"
+#include "ds/ds5/ds5-private.h"
+#include "ds/ds6/ds6-private.h"
 #include "ivcam/sr300.h"
 #include "l500/l500-depth.h"
 #include "proc/disparity-transform.h"
@@ -902,16 +904,24 @@ namespace librealsense
         return false;
     }
 
-    bool ros_reader::is_ds5_PID(int pid)
+    bool ros_reader::is_ds_PID(int pid)
     {
         using namespace ds;
 
-        auto it = std::find_if(rs400_sku_pid.begin(), rs400_sku_pid.end(), [&](int ds5_pid)
+        auto it5 = std::find_if(rs400_sku_pid.begin(), rs400_sku_pid.end(), [&](int ds5_pid)
         {
             return pid == ds5_pid;
         });
 
-        return it != rs400_sku_pid.end();
+        if (it5 != rs400_sku_pid.end())
+            return true;
+
+        auto it6 = std::find_if(rs500_sku_pid.begin(), rs500_sku_pid.end(), [&](int ds6_pid)
+            {
+                return pid == ds6_pid;
+            });
+
+        return it6 != rs500_sku_pid.end();
     }
 
     bool ros_reader::is_sr300_PID(int pid)
@@ -944,11 +954,11 @@ namespace librealsense
         int int_pid;
         ss >> std::hex >> int_pid;
 
-        if (is_ds5_PID(int_pid))
+        if (is_ds_PID(int_pid))
         {
             if (is_depth_sensor(sensor_name))
             {
-                return std::make_shared<recommended_proccesing_blocks_snapshot>(get_ds5_depth_recommended_proccesing_blocks());
+                return std::make_shared<recommended_proccesing_blocks_snapshot>(get_ds_depth_recommended_proccesing_blocks());
             }
             else if (is_color_sensor(sensor_name))
             {
