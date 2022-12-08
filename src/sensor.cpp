@@ -3,11 +3,6 @@
 
 #include "sensor.h"
 
-#include <array>
-#include <set>
-#include <unordered_set>
-#include <iomanip>
-
 #include "source.h"
 #include "device.h"
 #include "stream.h"
@@ -17,6 +12,14 @@
 #include "proc/depth-decompress.h"
 #include "global_timestamp_reader.h"
 #include "device-calibration.h"
+
+#include <rsutils/string/from.h>
+
+#include <array>
+#include <set>
+#include <unordered_set>
+#include <iomanip>
+
 
 namespace librealsense {
 
@@ -1087,7 +1090,8 @@ void log_callback_end( uint32_t fps,
         }
         catch (std::out_of_range)
         {
-            throw invalid_value_exception(to_string() << "fourcc of stream " << rs2_stream_to_string(stream) << " not found!");
+            throw invalid_value_exception( rsutils::string::from()
+                                           << "fourcc of stream " << rs2_stream_to_string( stream ) << " not found!" );
         }
 
         return fourcc;

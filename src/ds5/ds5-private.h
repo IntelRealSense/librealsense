@@ -6,6 +6,7 @@
 #include "backend.h"
 #include "types.h"
 #include "fw-update/fw-update-unsigned.h"
+#include <rsutils/string/from.h>
 
 #include <map>
 #include <iomanip>
@@ -254,7 +255,7 @@ namespace librealsense
             ENUM2STR(GETSUBPRESET);
             ENUM2STR(GETSUBPRESETID);
             default:
-              return (to_string() << "Unrecognized FW command " << state);
+              return ( rsutils::string::from() << "Unrecognized FW command " << state );
           }
         }
 
@@ -406,7 +407,9 @@ namespace librealsense
             auto header = reinterpret_cast<const table_header*>(raw_data.data());
             if(raw_data.size() < sizeof(table_header))
             {
-                throw invalid_value_exception(to_string() << "Calibration data invalid, buffer too small : expected " << sizeof(table_header) << " , actual: " << raw_data.size());
+                throw invalid_value_exception( rsutils::string::from()
+                                               << "Calibration data invalid, buffer too small : expected "
+                                               << sizeof( table_header ) << " , actual: " << raw_data.size() );
             }
             // verify the parsed table
             // D457 development

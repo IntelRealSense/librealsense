@@ -3,7 +3,7 @@
 
 #pragma once
 #include <librealsense2/rs.hpp>
-#include <utilities/time/stopwatch.h>
+#include <rsutils/time/stopwatch.h>
 namespace rs2
 {
     struct notifications_model;
@@ -28,7 +28,7 @@ namespace rs2
         std::shared_ptr<options> endpoint;
         float unset_value = 0;
         bool have_unset_value = false;
-        utilities::time::stopwatch last_set_stopwatch;
+        rsutils::time::stopwatch last_set_stopwatch;
         bool* invalidate_flag = nullptr;
         bool supported = false;
         bool read_only = false;

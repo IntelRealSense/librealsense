@@ -5,6 +5,9 @@
 #include "ds5/ds5-thermal-monitor.h"
 #include "ds5-options.h"
 
+#include <rsutils/string/from.h>
+
+
 namespace librealsense
 {
     const char* emitter_option::get_value_description(float val) const
@@ -80,9 +83,11 @@ namespace librealsense
                                 ds::DS5_ASIC_AND_PROJECTOR_TEMPERATURES,
                                 reinterpret_cast<uint8_t*>(&temp),
                                 sizeof(temperature)))
-                 {
-                        throw invalid_value_exception(to_string() << "get_xu(ctrl=DS5_ASIC_AND_PROJECTOR_TEMPERATURES) failed!" << " Last Error: " << strerror(errno));
-                 }
+                {
+                    throw invalid_value_exception( rsutils::string::from()
+                                                   << "get_xu(ctrl=DS5_ASIC_AND_PROJECTOR_TEMPERATURES) failed!"
+                                                   << " Last Error: " << strerror( errno ) );
+                }
 
                 return temp;
             }));
@@ -101,7 +106,8 @@ namespace librealsense
             is_valid_field = &temperature::is_projector_valid;
             break;
         default:
-            throw invalid_value_exception(to_string() << _ep.get_option_name(_option) << " is not temperature option!");
+            throw invalid_value_exception( rsutils::string::from()
+                                           << _ep.get_option_name( _option ) << " is not temperature option!" );
         }
 
         if (0 == temperature_data.*is_valid_field)
@@ -129,7 +135,8 @@ namespace librealsense
         case RS2_OPTION_PROJECTOR_TEMPERATURE:
             return "Current Projector Temperature (degree celsius)";
         default:
-            throw invalid_value_exception(to_string() << _ep.get_option_name(_option) << " is not temperature option!");
+            throw invalid_value_exception( rsutils::string::from()
+                                           << _ep.get_option_name( _option ) << " is not temperature option!" );
         }
     }
 
@@ -244,7 +251,9 @@ namespace librealsense
     void enable_motion_correction::set(float value)
     {
         if (!is_valid(value))
-            throw invalid_value_exception(to_string() << "set(enable_motion_correction) failed! Given value " << value << " is out of range.");
+            throw invalid_value_exception( rsutils::string::from()
+                                           << "set(enable_motion_correction) failed! Given value " << value
+                                           << " is out of range." );
 
         _is_active = value > _opt_range.min;
         _recording_function(*this);
@@ -314,7 +323,9 @@ namespace librealsense
     void auto_exposure_mode_option::set(float value)
     {
         if (!is_valid(value))
-            throw invalid_value_exception(to_string() << "set(auto_exposure_mode_option) failed! Given value " << value << " is out of range.");
+            throw invalid_value_exception( rsutils::string::from()
+                                           << "set(auto_exposure_mode_option) failed! Given value " << value
+                                           << " is out of range." );
 
         _auto_exposure_state->set_auto_exposure_mode(static_cast<auto_exposure_modes>((int)value));
         _auto_exposure->update_auto_exposure_state(*_auto_exposure_state);
@@ -333,7 +344,10 @@ namespace librealsense
         }
         catch(std::out_of_range)
         {
-            throw invalid_value_exception(to_string() << "auto_exposure_mode: get_value_description(...) failed! Description of value " << val << " is not found.");
+            throw invalid_value_exception(
+                rsutils::string::from()
+                << "auto_exposure_mode: get_value_description(...) failed! Description of value " << val
+                << " is not found." );
         }
     }
 
@@ -348,7 +362,9 @@ namespace librealsense
     void auto_exposure_step_option::set(float value)
     {
         if (!std::isnormal(_opt_range.step) || ((value < _opt_range.min) || (value > _opt_range.max)))
-            throw invalid_value_exception(to_string() << "set(auto_exposure_step_option) failed! Given value " << value << " is out of range.");
+            throw invalid_value_exception( rsutils::string::from()
+                                           << "set(auto_exposure_step_option) failed! Given value " << value
+                                           << " is out of range." );
 
         _auto_exposure_state->set_auto_exposure_step(value);
         _auto_exposure->update_auto_exposure_state(*_auto_exposure_state);
@@ -373,7 +389,9 @@ namespace librealsense
     void auto_exposure_antiflicker_rate_option::set(float value)
     {
         if (!is_valid(value))
-            throw invalid_value_exception(to_string() << "set(auto_exposure_antiflicker_rate_option) failed! Given value " << value << " is out of range.");
+            throw invalid_value_exception( rsutils::string::from()
+                                           << "set(auto_exposure_antiflicker_rate_option) failed! Given value " << value
+                                           << " is out of range." );
 
         _auto_exposure_state->set_auto_exposure_antiflicker_rate(static_cast<uint32_t>(value));
         _auto_exposure->update_auto_exposure_state(*_auto_exposure_state);
@@ -392,7 +410,9 @@ namespace librealsense
         }
         catch(std::out_of_range)
         {
-            throw invalid_value_exception(to_string() << "antiflicker_rate: get_value_description(...) failed! Description of value " << val << " is not found.");
+            throw invalid_value_exception(
+                rsutils::string::from() << "antiflicker_rate: get_value_description(...) failed! Description of value "
+                                        << val << " is not found." );
         }
     }
 

@@ -19,6 +19,8 @@
 #include "l500-options.h"
 #include "algo/max-usable-range/l500/max-usable-range.h" 
 
+#include <rsutils/string/from.h>
+
 
 #define MM_TO_METER 1/1000
 #define MIN_ALGO_VERSION 115
@@ -50,9 +52,10 @@ namespace librealsense
         if (expected_size > response_vec.size() || 
             num_of_resolutions > MAX_NUM_OF_DEPTH_RESOLUTIONS)
         {
-            throw invalid_value_exception(
-                to_string() << "Calibration data invalid, number of resolutions is: " << num_of_resolutions <<
-                ", expected size: " << expected_size << " , actual size: " << response_vec.size() );
+            throw invalid_value_exception( rsutils::string::from()
+                                           << "Calibration data invalid, number of resolutions is: "
+                                           << num_of_resolutions << ", expected size: " << expected_size
+                                           << " , actual size: " << response_vec.size() );
         }
 
         // Set a new memory allocated intrinsics struct (Full size 5 resolutions)
@@ -299,9 +302,9 @@ namespace librealsense
 
         if (res.size() < sizeof(uint8_t))
         {
-            throw invalid_value_exception(
-                to_string() << "Gain trim FW command failed: size expected: " << sizeof(uint8_t)
-                << " , size received: " << res.size());
+            throw invalid_value_exception( rsutils::string::from()
+                                           << "Gain trim FW command failed: size expected: " << sizeof( uint8_t )
+                                           << " , size received: " << res.size() );
         }
 
         int gtr = static_cast<int>(res[0]);
@@ -535,7 +538,7 @@ namespace librealsense
                 {return sp->get_stream_type() != RS2_STREAM_INFRARED;});
 
                 if (user_request == requests.end())
-                    throw std::runtime_error(to_string() << "input stream_profiles is invalid");
+                    throw std::runtime_error( rsutils::string::from() << "input stream_profiles is invalid" );
 
                 auto user_request_profile = dynamic_cast<video_stream_profile*>(user_request->get());
 
@@ -548,7 +551,8 @@ namespace librealsense
                 });
 
                 if (corresponding_ir == sp.end())
-                    throw std::runtime_error(to_string() << "can't find ir stream corresponding to user request");
+                    throw std::runtime_error( rsutils::string::from()
+                                              << "can't find ir stream corresponding to user request" );
 
                 _validator_requests.push_back(*corresponding_ir);
             }

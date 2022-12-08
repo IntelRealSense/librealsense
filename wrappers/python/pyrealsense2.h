@@ -3,7 +3,7 @@ Copyright(c) 2017 Intel Corporation. All Rights Reserved. */
 
 #pragma once
 
-#include <utilities/py/pybind11.h>
+#include <rsutils/py/pybind11.h>
 
 #define NAME pyrealsense2
 #define SNAME "pyrealsense2"

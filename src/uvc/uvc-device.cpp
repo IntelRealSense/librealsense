@@ -3,6 +3,8 @@
 
 #include "uvc-device.h"
 
+#include <rsutils/string/from.h>
+
 #define UVC_AE_MODE_D0_MANUAL   ( 1 << 0 )
 #define UVC_AE_MODE_D1_AUTO     ( 1 << 1 )
 #define UVC_AE_MODE_D2_SP       ( 1 << 2 )
@@ -566,7 +568,7 @@ namespace librealsense
                     unit = _parser->get_input_terminal().bTerminalID;
                     return UVC_CT_AE_PRIORITY_CONTROL;
                 default:
-                    throw linux_backend_exception(to_string() << "invalid option : " << option);
+                    throw linux_backend_exception(rsutils::string::from() << "invalid option : " << option);
             }
         }
 

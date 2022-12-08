@@ -12,9 +12,9 @@
 #include <librealsense2/hpp/rs_types.hpp>
 
 #include "backend.h"
-#include <utilities/concurrency/concurrency.h>
+#include <rsutils/concurrency/concurrency.h>
 #include "librealsense-exception.h"
-#include <utilities/easylogging/easyloggingpp.h>
+#include <rsutils/easylogging/easyloggingpp.h>
 
 #ifndef _USE_MATH_DEFINES
 #define _USE_MATH_DEFINES
@@ -95,12 +95,6 @@ namespace librealsense
     ///////////////////////////////////
     // Utility types for general use //
     ///////////////////////////////////
-    struct to_string
-    {
-        std::ostringstream ss;
-        template<class T> to_string & operator << (const T & val) { ss << val; return *this; }
-        operator std::string() const { return ss.str(); }
-    };
 
     template<typename T>
     constexpr size_t arr_size(T const&) { return 1; }
@@ -1188,15 +1182,6 @@ namespace librealsense
         return std::find_if(data.begin(), data.end(), [](byte b){ return b!=0; }) != data.end();
     }
 
-    inline std::string datetime_string()
-    {
-        auto t = time(nullptr);
-        char buffer[20] = {};
-        const tm* time = localtime(&t);
-        if (nullptr != time)
-            strftime(buffer, sizeof(buffer), "%Y-%m-%d-%H_%M_%S", time);
-        return to_string() << buffer;
-    }
 
     bool file_exists(const char* filename);
 

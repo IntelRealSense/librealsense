@@ -370,7 +370,7 @@ namespace rs2
                                 not_model_protected->output.add_log(RS2_LOG_SEVERITY_WARN,
                                     __FILE__,
                                     __LINE__,
-                                    to_string() << "Exception caught in FW Update process-flow: " << e.what() << "; Retrying...");
+                                    rsutils::string::from() << "Exception caught in FW Update process-flow: " << e.what() << "; Retrying...");
                             }
                         }
                         catch (...) {}
@@ -488,7 +488,7 @@ namespace rs2
 
             ImGui::SetCursorScreenPos({ float(x + 10), float(y + 35) });
             ImGui::PushFont(win.get_large_font());
-            std::string txt = to_string() << textual_icons::throphy;
+            std::string txt = rsutils::string::from() << textual_icons::throphy;
             ImGui::Text("%s", txt.c_str());
             ImGui::PopFont();
 
@@ -507,7 +507,7 @@ namespace rs2
                 auto sat = 1.f + sin(duration_cast<milliseconds>(system_clock::now() - created_time).count() / 700.f) * 0.1f;
                 ImGui::PushStyleColor(ImGuiCol_Button, saturate(sensor_header_light_blue, sat));
                 ImGui::PushStyleColor(ImGuiCol_ButtonHovered, saturate(sensor_header_light_blue, 1.5f));
-                std::string button_name = to_string() << "Install" << "##fwupdate" << index;
+                std::string button_name = rsutils::string::from() << "Install" << "##fwupdate" << index;
 
                 if (ImGui::Button(button_name.c_str(), { float(bar_width), 20.f }) || update_manager->started())
                 {
@@ -573,7 +573,7 @@ namespace rs2
 
                     ImGui::SetCursorScreenPos({ float(x + width - 105), float(y + height - 25) });
 
-                    string id = to_string() << "Expand" << "##" << index;
+                    string id = rsutils::string::from() << "Expand" << "##" << index;
                     ImGui::PushStyleColor(ImGuiCol_Text, light_grey);
                     if (ImGui::Button(id.c_str(), { 100, 20 }))
                     {
@@ -586,7 +586,7 @@ namespace rs2
         }
         else
         {
-            std::string button_name = to_string() << "Learn More..." << "##" << index;
+            std::string button_name = rsutils::string::from() << "Learn More..." << "##" << index;
 
             if (ImGui::Button(button_name.c_str(), { float(bar_width), 20 }))
             {
@@ -625,7 +625,7 @@ namespace rs2
         if (ImGui::BeginPopupModal(title.c_str(), nullptr, flags))
         {
             ImGui::SetCursorPosX(200);
-            std::string progress_str = to_string() << "Progress: " << update_manager->get_progress() << "%";
+            std::string progress_str = rsutils::string::from() << "Progress: " << update_manager->get_progress() << "%";
             ImGui::Text("%s", progress_str.c_str());
 
             ImGui::SetCursorPosX(5);

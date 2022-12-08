@@ -2,6 +2,15 @@
 // Copyright(c) 2016 Intel Corporation. All Rights Reserved.
 
 #include "ds5-motion.h"
+#include "ds5-timestamp.h"
+#include "ds5-options.h"
+#include "stream.h"
+#include "proc/motion-transform.h"
+#include "proc/auto-exposure-processor.h"
+
+#include "../l500/l500-private.h"
+
+#include <rsutils/string/from.h>
 
 #include <mutex>
 #include <chrono>
@@ -10,13 +19,6 @@
 #include <iterator>
 #include <cstddef>
 
-#include "ds5-timestamp.h"
-#include "ds5-options.h"
-#include "stream.h"
-#include "proc/motion-transform.h"
-#include "proc/auto-exposure-processor.h"
-
-#include "../l500/l500-private.h"
 
 using namespace librealsense;
 namespace librealsense
@@ -172,7 +174,8 @@ namespace librealsense
         if (stream == RS2_STREAM_GYRO)
             return create_motion_intrinsics(**_gyro_intrinsic);
 
-        throw std::runtime_error(to_string() << "Motion Intrinsics unknown for stream " << rs2_stream_to_string(stream) << "!");
+        throw std::runtime_error( rsutils::string::from()
+                                  << "Motion Intrinsics unknown for stream " << rs2_stream_to_string( stream ) << "!" );
     }
 
     std::shared_ptr<synthetic_sensor> ds5_motion_uvc::create_uvc_device(std::shared_ptr<context> ctx,
@@ -380,10 +383,10 @@ namespace librealsense
 
         // Inconsistent FW
         if (fe_dev_present ^ fe_capability)
-            throw invalid_value_exception(to_string()
-            << "Inconsistent HW/FW setup, FW FishEye capability = " << fe_capability
-            << ", FishEye devices " <<  std::dec << fisheye_infos.size()
-            << " while expecting " << fe_capability);
+            throw invalid_value_exception( rsutils::string::from()
+                                           << "Inconsistent HW/FW setup, FW FishEye capability = " << fe_capability
+                                           << ", FishEye devices " << std::dec << fisheye_infos.size()
+                                           << " while expecting " << fe_capability );
 
         _fisheye_calibration_table_raw = [this]()
         {
@@ -583,9 +586,10 @@ namespace librealsense
                 case ds::l500_eeprom_id: // L515
                     prs = std::make_shared<l500_imu_calib_parser>(raw, valid); break;
                 default:
-                    throw recoverable_exception(to_string() << "Motion Intrinsics unresolved - "
-                                << ((valid)? "device is not calibrated" : "invalid calib type "),
-                                RS2_EXCEPTION_TYPE_BACKEND);
+                    throw recoverable_exception( rsutils::string::from()
+                                                     << "Motion Intrinsics unresolved - "
+                                                     << ( valid ? "device is not calibrated" : "invalid calib type " ),
+                                                 RS2_EXCEPTION_TYPE_BACKEND );
             }
             return prs;
         };

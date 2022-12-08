@@ -4,6 +4,7 @@
 #pragma once
 
 #include "ds5-device.h"
+#include <rsutils/string/from.h>
 
 namespace librealsense
 {
@@ -65,7 +66,9 @@ namespace librealsense
         rs2_extrinsics get_extrinsic_to(rs2_stream stream)
         {
             if (!(RS2_STREAM_ACCEL == stream) && !(RS2_STREAM_GYRO == stream) && !(RS2_STREAM_FISHEYE == stream))
-                throw std::runtime_error(to_string() << "TM1 Calibration does not provide extrinsic for : " << rs2_stream_to_string(stream) << " !");
+                throw std::runtime_error( rsutils::string::from()
+                                          << "TM1 Calibration does not provide extrinsic for : "
+                                          << rs2_stream_to_string( stream ) << " !" );
 
             auto fe_calib = calib_table.calibration_table.calib_model.fe_calibration;
 
@@ -93,7 +96,9 @@ namespace librealsense
             case RS2_STREAM_GYRO:
                 in_intr = calib_table.calibration_table.imu_calib_table.gyro_intrinsics; break;
             default:
-                throw std::runtime_error(to_string() << "TM1 IMU Calibration does not support intrinsic for : " << rs2_stream_to_string(stream) << " !");
+                throw std::runtime_error( rsutils::string::from()
+                                          << "TM1 IMU Calibration does not support intrinsic for : "
+                                          << rs2_stream_to_string( stream ) << " !" );
             }
             ds::imu_intrinsic out_intr{};
             for (auto i = 0; i < 3; i++)
@@ -199,7 +204,9 @@ namespace librealsense
         rs2_extrinsics get_extrinsic_to(rs2_stream stream)
         {
             if (!(RS2_STREAM_ACCEL == stream) && !(RS2_STREAM_GYRO == stream))
-                throw std::runtime_error(to_string() << "Depth Module V2 does not support extrinsic for : " << rs2_stream_to_string(stream) << " !");
+                throw std::runtime_error( rsutils::string::from()
+                                          << "Depth Module V2 does not support extrinsic for : "
+                                          << rs2_stream_to_string( stream ) << " !" );
 
             return _extr;
         }
@@ -233,7 +240,9 @@ namespace librealsense
                     }
                     break;
                 default:
-                    throw std::runtime_error(to_string() << "Depth Module V2 does not provide intrinsic for stream type : " << rs2_stream_to_string(stream) << " !");
+                    throw std::runtime_error( rsutils::string::from()
+                                              << "Depth Module V2 does not provide intrinsic for stream type : "
+                                              << rs2_stream_to_string( stream ) << " !" );
             }
 
             return { in_intr.sensitivity, in_intr.bias, {0,0,0}, {0,0,0} };
@@ -353,7 +362,9 @@ namespace librealsense
                 }
                 break;
             default:
-                throw std::runtime_error(to_string() << "L515 does not provide intrinsic for stream type : " << rs2_stream_to_string(stream) << " !");
+                throw std::runtime_error( rsutils::string::from()
+                                          << "L515 does not provide intrinsic for stream type : "
+                                                      << rs2_stream_to_string( stream ) << " !" );
             }
 
             return{ in_intr.sensitivity, in_intr.bias,{ 0,0,0 },{ 0,0,0 } };
@@ -362,7 +373,8 @@ namespace librealsense
         rs2_extrinsics get_extrinsic_to(rs2_stream stream)
         {
             if (!(RS2_STREAM_ACCEL == stream) && !(RS2_STREAM_GYRO == stream))
-                throw std::runtime_error(to_string() << "L515 does not support extrinsic for : " << rs2_stream_to_string(stream) << " !");
+                throw std::runtime_error( rsutils::string::from() << "L515 does not support extrinsic for : "
+                                                                    << rs2_stream_to_string( stream ) << " !" );
 
             return _extr;
         }

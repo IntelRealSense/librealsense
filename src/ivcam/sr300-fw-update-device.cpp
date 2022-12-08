@@ -4,6 +4,9 @@
 #include "sr300-fw-update-device.h"
 #include "sr300.h"
 #include "ivcam-private.h"
+
+#include <rsutils/string/from.h>
+
 #include <chrono>
 #include <thread>
 
@@ -29,11 +32,15 @@ namespace librealsense
         std::string fw_version = extract_firmware_version_string(image);
         auto min_max_fw_it = device_to_fw_min_max_version.find(_usb_device->get_info().pid);
         if (min_max_fw_it == device_to_fw_min_max_version.end())
-            throw librealsense::invalid_value_exception(to_string() << "Min and Max firmware versions have not been defined for this device: " << std::hex << _pid);
+            throw librealsense::invalid_value_exception(
+                rsutils::string::from() << "Min and Max firmware versions have not been defined for this device: "
+                                        << std::hex << _pid );
 
         // check FW size as well, because on SR3xx it is not enough to use heuristic based on FW version
         if (image.size() != signed_sr300_size)
-            throw librealsense::invalid_value_exception(to_string() << "Unsupported firmware binary image provided - " << image.size() << " bytes");
+            throw librealsense::invalid_value_exception( rsutils::string::from()
+                                                         << "Unsupported firmware binary image provided - "
+                                                         << image.size() << " bytes" );
 
         // advanced SR3XX devices do not fit the "old" fw versions and 
         // legacy SR3XX devices do not fit the "new" fw versions

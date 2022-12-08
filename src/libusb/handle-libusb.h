@@ -10,6 +10,8 @@
 
 #include "libusb.h"
 
+#include <rsutils/string/from.h>
+
 namespace librealsense
 {
     namespace platform
@@ -88,7 +90,7 @@ namespace librealsense
             {
                 auto rs_sts = claim_interface(interface);
                 if(rs_sts != RS2_USB_STATUS_SUCCESS)
-                    throw std::runtime_error(to_string() << "Unable to claim interface " << (int)interface << ", error: " << usb_status_to_string.at(rs_sts));
+                    throw std::runtime_error(rsutils::string::from() << "Unable to claim interface " << (int)interface << ", error: " << usb_status_to_string.at(rs_sts));
             }
 
             usb_status claim_interface(uint8_t interface)

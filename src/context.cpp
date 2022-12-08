@@ -258,7 +258,8 @@ namespace librealsense
             add_sensor(color_ep);
 
             register_info(RS2_CAMERA_INFO_NAME, "Platform Camera");
-            std::string pid_str(to_string() << std::setfill('0') << std::setw(4) << std::hex << uvc_infos.front().pid);
+            std::string pid_str( rsutils::string::from()
+                                 << std::setfill( '0' ) << std::setw( 4 ) << std::hex << uvc_infos.front().pid );
             std::transform(pid_str.begin(), pid_str.end(), pid_str.begin(), ::toupper);
 
             using namespace platform;
@@ -555,7 +556,8 @@ namespace librealsense
         if (it != _playback_devices.end() && it->second.lock())
         {
             //Already exists
-            throw librealsense::invalid_value_exception(to_string() << "File \"" << file << "\" already loaded to context");
+            throw librealsense::invalid_value_exception( rsutils::string::from()
+                                                         << "File \"" << file << "\" already loaded to context" );
         }
         auto playback_dev = std::make_shared<playback_device>(shared_from_this(), std::make_shared<ros_reader>(file, shared_from_this()));
         auto dinfo = std::make_shared<playback_device_info>(playback_dev);
@@ -573,7 +575,7 @@ namespace librealsense
         if (it != _playback_devices.end() && it->second.lock())
         {
             //Already exists
-            throw librealsense::invalid_value_exception(to_string() << "File \"" << file << "\" already loaded to context");
+            throw librealsense::invalid_value_exception( rsutils::string::from() << "File \"" << file << "\" already loaded to context");
         }
         auto prev_playback_devices = _playback_devices;
         _playback_devices[file] = dev;

@@ -4,7 +4,7 @@
 #pragma once
 
 #include "notifications.h"
-#include <utilities/concurrency/concurrency.h>
+#include <rsutils/concurrency/concurrency.h>
 #include "../src/algo.h"
 
 #include <random>

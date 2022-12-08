@@ -1,7 +1,7 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2017 Intel Corporation. All Rights Reserved.
 
-#include "../include/librealsense2/rs.hpp"
+#include <librealsense2/rs.hpp>
 #include "environment.h"
 #include "proc/occlusion-filter.h"
 #include "proc/pointcloud.h"
@@ -10,7 +10,7 @@
 #include "context.h"
 #include "../device.h"
 #include "../stream.h"
-#include <iostream>
+#include <rsutils/string/from.h>
 #include "device-calibration.h"
 
 #ifdef RS2_USE_CUDA
@@ -307,8 +307,9 @@ namespace librealsense
             if(!occ_inv_shared) return;
 
             if( ! occ_inv_shared->is_valid( val ) )
-                throw invalid_value_exception( to_string() << "Unsupported occlusion filtering mode requiested "
-                                                            << val << " is out of range." );
+                throw invalid_value_exception( rsutils::string::from()
+                                               << "Unsupported occlusion filtering mode requiested " << val
+                                               << " is out of range." );
 
             _occlusion_filter->set_mode(static_cast<uint8_t>(val));
 

@@ -14,6 +14,9 @@
 #include "media/ros/ros_reader.h"
 #include "usb/usb-enumerator.h"
 
+#include <rsutils/string/from.h>
+
+
 // uncomment to get debug messages at info severity
 //#undef LOG_DEBUG
 //#define LOG_DEBUG LOG_INFO
@@ -665,7 +668,7 @@ namespace librealsense
             else if(response.header.wStatus == INVALID_PARAMETER)
                 throw io_exception("open(...) failed. Invalid stream specification");
             else if(response.header.wStatus != SUCCESS)
-                throw io_exception(to_string() << "open(...) unknown error " << status_name(response.header));
+                throw io_exception(rsutils::string::from() << "open(...) unknown error " << status_name(response.header));
             else
                 break;
         }
@@ -680,7 +683,7 @@ namespace librealsense
         if(control_response.header.wStatus == DEVICE_BUSY)
             throw wrong_api_call_sequence_exception("open(...) failed. T265 is running!");
         else if(control_response.header.wStatus != SUCCESS)
-            throw io_exception(to_string() << "open(...) unknown error opening " << status_name(response.header));
+            throw io_exception(rsutils::string::from() << "open(...) unknown error opening " << status_name(response.header));
 
         _is_opened = true;
         set_active_streams(requests);
@@ -825,7 +828,7 @@ namespace librealsense
         if(response.header.wStatus == DEVICE_BUSY)
             throw wrong_api_call_sequence_exception("open(...) failed. T265 is already started!");
         else if(response.header.wStatus != SUCCESS)
-            throw io_exception(to_string() << "open(...) unknown error starting " << status_name(response.header));
+            throw io_exception(rsutils::string::from() << "open(...) unknown error starting " << status_name(response.header));
 
         LOG_DEBUG("T265 started");
 
@@ -862,7 +865,7 @@ namespace librealsense
         if(response.header.wStatus == TIMEOUT)
             LOG_WARNING("Got a timeout while trying to stop");
         else if(response.header.wStatus != SUCCESS)
-            throw io_exception(to_string() << "Unknown error stopping " << status_name(response.header));
+            throw io_exception(rsutils::string::from() << "Unknown error stopping " << status_name(response.header));
 
         LOG_DEBUG("T265 stopped");
 
@@ -1310,7 +1313,7 @@ namespace librealsense
             else if(header->wMessageID == SLAM_RELOCALIZATION_EVENT) {
                 auto event = (const interrupt_message_slam_relocalization_event *)header;
                 auto ts = get_coordinated_timestamp(event->llNanoseconds);
-                std::string msg = to_string() << "T2xx: Relocalization occurred. id: " << event->wSessionId <<  ", timestamp: " << ts.global_ts.count() << " ms";
+                std::string msg = rsutils::string::from() << "T2xx: Relocalization occurred. id: " << event->wSessionId <<  ", timestamp: " << ts.global_ts.count() << " ms";
                 LOG_INFO(msg);
                 raise_relocalization_event(msg, ts.global_ts.count());
             }
@@ -1606,7 +1609,7 @@ namespace librealsense
             case tm2_sensor::_async_progress:   return "In Progress";
             case tm2_sensor::_async_success:    return "Success";
             case tm2_sensor::_async_fail:       return "Fail";
-            default: return (to_string() << " Unsupported type: " << val);
+            default: return (rsutils::string::from() << " Unsupported type: " << val);
         }
     }
 
@@ -1965,14 +1968,14 @@ namespace librealsense
         if(info_response.message.bStatus == 0x1 || info_response.message.dwStatusCode == FW_STATUS_CODE_NO_CALIBRATION_DATA)
             throw io_exception("T265 device is uncalibrated");
 
-        std::string serial = to_string() << std::uppercase << std::hex << (bytesSwap(info_response.message.llSerialNumber) >> 16);
+        std::string serial = rsutils::string::from() << std::uppercase << std::hex << (bytesSwap(info_response.message.llSerialNumber) >> 16);
         LOG_INFO("Serial: " << serial);
 
         LOG_INFO("Connection type: " << platform::usb_spec_names.at(usb_info.conn_spec));
 
         register_info(RS2_CAMERA_INFO_NAME, tm2_device_name());
         register_info(RS2_CAMERA_INFO_SERIAL_NUMBER, serial);
-        std::string firmware = to_string() << std::to_string(info_response.message.bFWVersionMajor) << "." << std::to_string(info_response.message.bFWVersionMinor) << "." << std::to_string(info_response.message.bFWVersionPatch) << "." << std::to_string(info_response.message.dwFWVersionBuild);
+        std::string firmware = rsutils::string::from() << std::to_string(info_response.message.bFWVersionMajor) << "." << std::to_string(info_response.message.bFWVersionMinor) << "." << std::to_string(info_response.message.bFWVersionPatch) << "." << std::to_string(info_response.message.dwFWVersionBuild);
         register_info(RS2_CAMERA_INFO_FIRMWARE_VERSION, firmware);
         LOG_INFO("Firmware version: " << firmware);
         register_info(RS2_CAMERA_INFO_PRODUCT_ID, hexify(usb_info.pid));
@@ -2135,7 +2138,7 @@ namespace librealsense
             throw librealsense::invalid_value_exception("Failed to enable loopback");
         }
         _sensor->enable_loopback(raw_streams);
-        update_info(RS2_CAMERA_INFO_NAME, to_string() << tm2_device_name() << " (Loopback - " << source_file << ")");
+        update_info(RS2_CAMERA_INFO_NAME, rsutils::string::from() << tm2_device_name() << " (Loopback - " << source_file << ")");
     }
 
     void tm2_device::disable_loopback()

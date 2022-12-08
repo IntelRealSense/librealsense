@@ -1,12 +1,6 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2016 Intel Corporation. All Rights Reserved.
 
-#include <mutex>
-#include <chrono>
-#include <vector>
-#include <iterator>
-#include <string>
-
 #include "device.h"
 #include "context.h"
 #include "image.h"
@@ -42,7 +36,16 @@
 #include "ds5-thermal-monitor.h"
 #include "../common/fw/firmware-version.h"
 #include "fw-update/fw-update-unsigned.h"
-#include "../third-party/json.hpp"
+#include <third-party/json.hpp>
+
+#include <rsutils/string/from.h>
+
+#include <mutex>
+#include <chrono>
+#include <vector>
+#include <iterator>
+#include <string>
+
 
 #ifdef HWM_OVER_XU
 constexpr bool hw_mon_over_xu = true;
@@ -349,7 +352,9 @@ namespace librealsense
 
         auto it = ds::device_to_fw_min_version.find(_pid);
         if (it == ds::device_to_fw_min_version.end())
-            throw librealsense::invalid_value_exception(to_string() << "Min and Max firmware versions have not been defined for this device: " << std::hex << _pid);
+            throw librealsense::invalid_value_exception(
+                rsutils::string::from() << "Min and Max firmware versions have not been defined for this device: "
+                                        << std::hex << _pid );
         bool result = (firmware_version(fw_version) >= firmware_version(it->second));
         if (!result)
             LOG_ERROR("Firmware version isn't compatible" << fw_version);
@@ -1333,7 +1338,10 @@ namespace librealsense
         if (ds::ds5_fw_error_report.find(static_cast<uint8_t>(value)) != ds::ds5_fw_error_report.end())
             return{ RS2_NOTIFICATION_CATEGORY_HARDWARE_ERROR, value, RS2_LOG_SEVERITY_ERROR, ds::ds5_fw_error_report.at(static_cast<uint8_t>(value)) };
 
-        return{ RS2_NOTIFICATION_CATEGORY_HARDWARE_ERROR, value, RS2_LOG_SEVERITY_WARN, (to_string() << "D400 HW report - unresolved type " << value) };
+        return { RS2_NOTIFICATION_CATEGORY_HARDWARE_ERROR,
+                 value,
+                 RS2_LOG_SEVERITY_WARN,
+                 ( rsutils::string::from() << "D400 HW report - unresolved type " << value ) };
     }
 
     void ds5_device::create_snapshot(std::shared_ptr<debug_interface>& snapshot) const

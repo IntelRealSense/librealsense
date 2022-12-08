@@ -161,7 +161,7 @@ void librealsense::record_device::write_data(size_t sensor_index, librealsense::
             catch (const std::exception& e)
             {
                 LOG_ERROR("Failed to write header. " << e.what());
-                on_error(to_string() << "Failed to write header. " << e.what());
+                on_error( std::string( "Failed to write header. " ) + e.what() );
             }
         });
 
@@ -175,7 +175,7 @@ void librealsense::record_device::write_data(size_t sensor_index, librealsense::
         }
         catch(std::exception& e)
         {
-            on_error(to_string() << "Failed to write frame. " << e.what());
+            on_error( std::string( "Failed to write frame. " ) + e.what() );
         }
     });
 }
@@ -458,14 +458,6 @@ void record_device::initialize_recording()
     m_cached_data_size = 0;
     LOG_DEBUG( "Recording capture time base set to: " << m_capture_time_base.time_since_epoch().count() );
 
-}
-void record_device::stop_gracefully(to_string error_msg)
-{
-    for (auto&& sensor : m_sensors)
-    {
-        sensor->stop();
-        sensor->close();
-    }
 }
 
 std::pair<uint32_t, rs2_extrinsics> record_device::get_extrinsics(const stream_interface& stream) const

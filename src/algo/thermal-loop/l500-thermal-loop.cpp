@@ -3,6 +3,7 @@
 
 #include "l500-thermal-loop.h"
 #include "../../l500/l500-private.h"
+#include <rsutils/string/from.h>
 
 namespace librealsense {
 namespace algo {
@@ -30,7 +31,7 @@ thermal_calibration_table::thermal_calibration_table( const std::vector< byte > 
     _header.valid = 0;
 
     if( data.size() != expected_size )
-        throw std::runtime_error( librealsense::to_string()
+        throw std::runtime_error( rsutils::string::from()
                                   << "data size (" << data.size()
                                   << ") does not meet expected size " << expected_size );
 
