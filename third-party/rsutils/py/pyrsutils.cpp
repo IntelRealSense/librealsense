@@ -4,6 +4,7 @@
 #include <rsutils/py/pybind11.h>
 #include <rsutils/easylogging/easyloggingpp.h>
 #include <rsutils/string/split.h>
+#include <rsutils/version.h>
 
 #define NAME pyrsutils
 #define SNAME "pyrsutils"
@@ -24,4 +25,41 @@ PYBIND11_MODULE(NAME, m) {
            py::arg( "logger" ) = LIBREALSENSE_ELPP_ID );
 
     m.def( "split", &rsutils::string::split );
+
+    using rsutils::version;
+    py::class_< version >( m, "version" )
+        .def( py::init<>() )
+        .def( py::init< std::string const & >() )
+        .def( py::init< version::sub_type, version::sub_type, version::sub_type, version::sub_type >(),
+              py::arg( "major" ),
+              py::arg( "minor" ),
+              py::arg( "patch" ),
+              py::arg( "build" ) = 0 )
+        .def_static( "from_number", []( version::number_type n ) { return version( n ); } )
+        .def( "is_valid", &version::is_valid )
+        .def( "__nonzero__", &version::is_valid )  // Called to implement truth value testing in Python 2
+        .def( "__bool__", &version::is_valid )     // Called to implement truth value testing in Python 3
+        .def( "major", &version::major )
+        .def( "minor", &version::minor )
+        .def( "patch", &version::patch )
+        .def( "build", &version::build )
+        .def( "to_string", &version::to_string )
+        .def( "__str__", &version::to_string )
+        .def( "__repr__",
+              []( version const & self ) {
+                  std::ostringstream os;
+                  os << "<" SNAME ".version";
+                  if( self.is_valid() )
+                      os << " " << self.to_string();
+                  os << ">";
+                  return os.str();
+              } )
+        .def_readwrite( "number", &version::number )
+        .def( py::self < py::self )
+        .def( py::self <= py::self )
+        .def( py::self == py::self )
+        .def( py::self != py::self )
+        .def( py::self >= py::self )
+        .def( py::self > py::self )
+        .def( "is_between", &version::is_between );
 }

@@ -1,0 +1,74 @@
+// License: Apache 2.0. See LICENSE file in root directory.
+// Copyright(c) 2022 Intel Corporation. All Rights Reserved.
+
+#pragma once
+
+#include <string>
+#include <iosfwd>
+
+
+struct tm;
+
+
+namespace rsutils {
+
+
+// Software versions have four numeric components making up a "version string":
+//     "MAJOR.MINOR.PATCH[.BUILD]"
+// Note that the BUILD is optional...
+//
+struct version
+{
+    typedef unsigned sub_type;
+    typedef uint64_t number_type;
+
+    number_type number;
+
+    constexpr version()
+        : number( 0 )
+    {
+    }
+
+    explicit version( number_type n )
+        : number( n )
+    {
+    }
+
+    version( sub_type major, sub_type minor, sub_type patch, sub_type build );
+
+    explicit version( const char * );
+    explicit version( const std::string & str )
+        : version( str.c_str() )
+    {
+    }
+
+    bool is_valid() const { return number; }
+    operator bool() const { return is_valid(); }
+
+    void clear() { number = 0; }
+
+    sub_type major() const { return ( number >> ( 8 * 7 ) ) & 0xFF; }
+    sub_type minor() const { return ( number >> ( 8 * 5 ) ) & 0xFFFF; }
+    sub_type patch() const { return ( number >> ( 8 * 4 ) ) & 0xFF; }
+    sub_type build() const { return number & 0xFFFFFFFF; }
+
+    bool operator<=( version const & other ) const { return number <= other.number; }
+    bool operator==( version const & other ) const { return number == other.number; }
+    bool operator>( version const & other ) const { return number > other.number; }
+    bool operator!=( version const & other ) const { return number != other.number; }
+    bool operator>=( version const & other ) const { return number >= other.number; }
+    bool operator<( version const & other ) const { return number < other.number; }
+    bool is_between( version const & from, version const & until ) const
+    {
+        return ( from <= *this ) && ( *this <= until );
+    }
+
+    std::string to_string() const;
+    operator std::string() const { return to_string(); }
+};
+
+
+std::ostream & operator<<( std::ostream &, version const & );
+
+
+}  // namespace rsutils
