@@ -1075,12 +1075,6 @@ namespace librealsense
                 }
 
             }
-            else if (_fw_version >= firmware_version("5.10.9.0") && 
-                (_device_capabilities & d400_caps::CAP_ACTIVE_PROJECTOR) == d400_caps::CAP_ACTIVE_PROJECTOR &&
-                _fw_version.experimental()) // Not yet available in production firmware
-            {
-                depth_sensor.register_option(RS2_OPTION_EMITTER_ON_OFF, std::make_shared<emitter_on_and_off_option>(*_hw_monitor, &raw_depth_sensor));
-            }
 
             if ((_device_capabilities & d400_caps::CAP_INTERCAM_HW_SYNC) == d400_caps::CAP_INTERCAM_HW_SYNC)
             {
