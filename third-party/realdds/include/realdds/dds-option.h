@@ -40,8 +40,8 @@ public:
     float get_value() const { return _value; }
     void set_value(float val) { _value = val; }
 
-    dds_option_range get_range() const { return _range; }
-    void set_range( dds_option_range range ) { _range = range; }
+    const dds_option_range & get_range() const { return _range; }
+    void set_range( const dds_option_range & range ) { _range = range; }
 
     const std::string & get_description() const { return _description; }
     void set_description( std::string description ) { _description = description; }

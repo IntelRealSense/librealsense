@@ -452,7 +452,12 @@ PYBIND11_MODULE(NAME, m) {
         .def( "remove_device", &dds_device_broadcaster::remove_device );
 
     using realdds::dds_option_range;
-    py::class_< dds_option_range >( m, "dds_option_range" );
+    py::class_< dds_option_range >( m, "dds_option_range" )
+        .def( py::init<>() )
+        .def_readwrite( "min", &dds_option_range::min )
+        .def_readwrite( "max", &dds_option_range::max )
+        .def_readwrite( "step", &dds_option_range::step )
+        .def_readwrite( "default_value", &dds_option_range::default_value );
 
     using realdds::dds_option;
     py::class_< dds_option, std::shared_ptr< dds_option > >( m, "dds_option" )
@@ -652,6 +657,12 @@ PYBIND11_MODULE(NAME, m) {
                   self.foreach_stream(
                       [&]( std::shared_ptr< dds_stream > const & stream ) { streams.push_back( stream ); } );
                   return streams;
+              } )
+        .def( "options",
+              []( dds_device const & self ) {
+                  std::vector< std::shared_ptr< dds_option > > options;
+                  self.foreach_option( [&]( std::shared_ptr< dds_option > const & option ) { options.push_back( option ); } );
+                  return options;
               } )
         .def( "__repr__", []( dds_device const & self ) {
             std::ostringstream os;
