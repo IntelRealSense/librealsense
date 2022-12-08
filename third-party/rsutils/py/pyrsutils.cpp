@@ -43,6 +43,7 @@ PYBIND11_MODULE(NAME, m) {
         .def( "minor", &version::get_minor )
         .def( "patch", &version::get_patch )
         .def( "build", &version::get_build )
+        .def( "without_build", &version::without_build )
         .def( "to_string", &version::to_string )
         .def( "__str__", &version::to_string )
         .def( "__repr__",

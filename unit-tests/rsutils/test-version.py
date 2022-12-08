@@ -203,6 +203,26 @@ except:
 test.finish()
 #
 #############################################################################################
+#
+test.start( "Without build" )
+try:
+    test.check_equal( version(1,2,3,1234).without_build(), version(1,2,3))
+except:
+    test.unexpected_exception()
+test.finish()
+#
+#############################################################################################
+#
+test.start( "String conversion" )
+try:
+    test.check_equal( str(version(1,2,3,4)), "1.2.3.4" );
+    test.check_equal( str(version(1,2,3,0)), "1.2.3" );
+    test.check_equal( str(version(1,2,0,0)), "1.2.0" );
+except:
+    test.unexpected_exception()
+test.finish()
+#
+#############################################################################################
 test.print_results_and_exit()
 
 

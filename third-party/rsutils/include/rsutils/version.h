@@ -52,6 +52,8 @@ struct version
     sub_type get_patch() const { return ( number >> ( 8 * 4 ) ) & 0xFF; }
     sub_type get_build() const { return number & 0xFFFFFFFF; }
 
+    version without_build() const { return version( number & ~0xFFFFFFFFULL ); }
+
     bool operator<=( version const & other ) const { return number <= other.number; }
     bool operator==( version const & other ) const { return number == other.number; }
     bool operator>( version const & other ) const { return number > other.number; }
