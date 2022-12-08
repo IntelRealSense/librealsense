@@ -35,6 +35,7 @@ public:
     dds_option( const std::string & name, const std::string & owner_name );
 
     const std::string & get_name() const { return _name; }
+    const std::string & owner_name() const { return _owner_name; }
 
     float get_value() const { return _value; }
     void set_value(float val) { _value = val; }
@@ -45,7 +46,6 @@ public:
     const std::string & get_description() const { return _description; }
     void set_description( std::string description ) { _description = description; }
 
-    const std::string & owner_name() const { return _owner_name; }
 
     nlohmann::json to_json() const;
     static std::shared_ptr< dds_option > from_json( nlohmann::json const & j, const std::string & stream_name );
