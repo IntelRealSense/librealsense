@@ -4105,7 +4105,7 @@ namespace rs2
                     fps = s.second.profile.fps();
             }
             auto curr_frame = p.get_position();
-            uint64_t step = uint64_t(1000.0 / (float)fps * 1e6);
+            uint64_t step = fps ? uint64_t(1000.0 / (float)fps * 1e6) : 1e6;
             if (curr_frame >= step)
             {
                 p.seek(std::chrono::nanoseconds(curr_frame - step));
@@ -4208,7 +4208,7 @@ namespace rs2
                     fps = s.second.profile.fps();
             }
             auto curr_frame = p.get_position();
-            uint64_t step = uint64_t(1000.0 / (float)fps * 1e6);
+            uint64_t step = fps ? uint64_t(1000.0 / (float)fps * 1e6) : 1e6;
             p.seek(std::chrono::nanoseconds(curr_frame + step));
         }
         if (ImGui::IsItemHovered())
