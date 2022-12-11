@@ -54,6 +54,8 @@ namespace librealsense
             std::unique_ptr<frame_timestamp_reader>(new global_timestamp_reader(std::move(ds5_timestamp_reader_metadata), _tf_keeper, enable_global_time_option)),
             this);
 
+        raw_safety_ep->register_xu(safety_xu); // making sure the XU is initialized every time we power the camera
+
         auto safety_ep = std::make_shared<ds6_safety_sensor>(this,
             raw_safety_ep,
             safety_fourcc_to_rs2_format,
