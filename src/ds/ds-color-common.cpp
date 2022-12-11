@@ -4,6 +4,8 @@
 #include "ds-color-common.h"
 #include "metadata.h"
 
+#include <cstddef>
+
 namespace librealsense
 {
     using namespace ds;

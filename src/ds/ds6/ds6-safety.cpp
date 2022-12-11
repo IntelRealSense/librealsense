@@ -72,6 +72,8 @@ namespace librealsense
         // register processing blocks
         register_processing_blocks(safety_ep);
         
+		raw_safety_ep->register_xu(safety_xu); // making sure the XU is initialized every time we power the camera
+		
         return safety_ep;
     }
 
