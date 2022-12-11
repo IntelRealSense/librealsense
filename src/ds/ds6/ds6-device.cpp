@@ -595,6 +595,18 @@ namespace librealsense
                         RS2_OPTION_ASIC_TEMPERATURE));
             }
 
+            if (_pid == RS_S585_PID) {
+                // SAFETY PRESET OPTION
+                // SC_TODO What about the input values ?
+                // need to implement new safety preset option to handle range, and implement our set/query?
+                // or should we add range check to the UVC_XU_OPTION class?
+                auto active_safety_preset = std::make_shared<uvc_xu_option<uint8_t>>(raw_depth_sensor,
+                    depth_xu,
+                    DS6_ACTIVE_SAFETY_PRESET,
+                    "Active Safety Preset");
+                depth_sensor.register_option(RS2_OPTION_ACTIVE_SAFETY_PRESET_INDEX, active_safety_preset);
+            }
+
             std::shared_ptr<option> exposure_option = nullptr;
             std::shared_ptr<option> gain_option = nullptr;
             std::shared_ptr<hdr_option> hdr_enabled_option = nullptr;

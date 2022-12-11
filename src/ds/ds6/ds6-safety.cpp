@@ -29,7 +29,7 @@ namespace librealsense
         _safety_stream(new stream(RS2_STREAM_SAFETY))
     {
         using namespace ds;
-        const uint32_t safety_stream_end_point = 9;
+        const uint32_t safety_stream_end_point = 0x0b;
         auto safety_devs_info = filter_by_mi(group.uvc_devices, safety_stream_end_point);
         if (safety_devs_info.size() != 1)
             throw invalid_value_exception(to_string() << "RS4XX with Safety models are expected to include a single safety device! - "
@@ -181,5 +181,58 @@ namespace librealsense
         }
 
         return results;
+    }
+
+    void ds6_safety_sensor::set_safety_preset(int index, const rs2_safety_preset& sp) const
+    {
+        //// convert sp to vector of bytes
+        auto data_ptr = const_cast<uint8_t*>(reinterpret_cast<const uint8_t*>(&sp));
+
+        //check CRC
+        auto computed_crc32 = calc_crc32(data_ptr, sizeof(rs2_safety_preset));
+
+        // prepare vector of data
+        auto data_bytes = std::vector<uint8_t>(data_ptr, data_ptr + sizeof(sp));
+
+        // prepare header
+        rs2_safety_preset_header header = {1, 0xc0db, 405, computed_crc32 };
+        auto header_ptr = const_cast<uint8_t*>(reinterpret_cast<const uint8_t*>(&header));
+        auto header_bytes = std::vector<uint8_t>(header_ptr, header_ptr + sizeof(header));
+
+        //concat vector of data bytes to vector of header bytes
+        header_bytes.insert(header_bytes.end(), data_bytes.begin(), data_bytes.end());
+
+        //// prepare command
+        command cmd(ds::SAFETY_PRESET_WRITE);
+        cmd.param1 = index;
+        cmd.data = header_bytes;
+        cmd.require_response = false;
+
+        // send command 
+        _owner->_hw_monitor->send(cmd);
+    }
+
+    rs2_safety_preset ds6_safety_sensor::get_safety_preset(int index) const
+    {
+        rs2_safety_preset_with_header result;
+
+        // prepare command
+        command cmd(ds::SAFETY_PRESET_READ);
+        cmd.require_response = true;
+        cmd.param1 = index;
+
+        // send command to device and get response (safety_preset entry + header)
+        std::vector< uint8_t > response = _owner->_hw_monitor->send(cmd);
+
+        // convert response to rs2_safety_preset_with_header struct
+        std::copy(response.begin(), response.end(), reinterpret_cast<uint8_t*>(&result));
+
+        // check CRC before returning result       
+        auto computed_crc32 = calc_crc32(response.data() + sizeof(rs2_safety_preset_header), sizeof(rs2_safety_preset));
+        if (computed_crc32 != result.header.crc32)
+        {
+            throw invalid_value_exception(to_string() << "invalid CRC value for index=" << index);
+        }
+        return result.safety_preset;
     }
 }

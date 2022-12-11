@@ -35,6 +35,7 @@ namespace librealsense
         const uint8_t DS5_ENABLE_AUTO_EXPOSURE = 0xB;
         const uint8_t DS5_LED_PWR = 0xE;
         const uint8_t DS5_THERMAL_COMPENSATION = 0xF;
+        const uint8_t DS6_ACTIVE_SAFETY_PRESET = 0x01;  // SC_TODO
 
         enum class ds_device_type
         {
@@ -102,7 +103,9 @@ namespace librealsense
             GETSUBPRESETID = 0x7D,     // Retrieve sub-preset's name
             RECPARAMSGET = 0x7E,     // Retrieve depth calibration table in new format (fw >= 5.11.12.100)
             LASERONCONST = 0x7F,     // Enable Laser On constantly (GS SKU Only)
-            AUTO_CALIB = 0x80      // auto calibration commands
+            AUTO_CALIB = 0x80,      // auto calibration commands
+            SAFETY_PRESET_READ = 0x94,  // Read safety preset from given index  
+            SAFETY_PRESET_WRITE = 0x95   // Write safety preset to given index
         };
 
 #define TOSTRING(arg) #arg

@@ -74,6 +74,7 @@ void init_sensor(py::module &m) {
         .def(BIND_DOWNCAST(sensor, color_sensor))
         .def(BIND_DOWNCAST(sensor, motion_sensor))
         .def(BIND_DOWNCAST(sensor, fisheye_sensor))
+        .def(BIND_DOWNCAST(sensor, safety_sensor))
         .def(BIND_DOWNCAST(sensor, pose_sensor))
         .def(BIND_DOWNCAST(sensor, calibrated_sensor))
         .def(BIND_DOWNCAST(sensor, wheel_odometer))
@@ -115,6 +116,11 @@ void init_sensor(py::module &m) {
 
     py::class_<rs2::fisheye_sensor, rs2::sensor> fisheye_sensor(m, "fisheye_sensor"); // No docstring in C++
     fisheye_sensor.def(py::init<rs2::sensor>(), "sensor"_a);
+
+    py::class_<rs2::safety_sensor, rs2::sensor> safety_sensor(m, "safety_sensor"); // No docstring in C++
+    safety_sensor.def(py::init<rs2::sensor>(), "sensor"_a)
+        .def("get_safety_preset", &rs2::safety_sensor::get_saftey_preset, "get safety preset at index", "index"_a)
+        .def("set_safety_preset", &rs2::safety_sensor::set_saftey_preset, "set safety preset at index", "index"_a, "safety_preset"_a);
 
     py::class_<rs2::calibrated_sensor, rs2::sensor> cal_sensor( m, "calibrated_sensor" );
     cal_sensor.def(py::init<rs2::sensor>(), "sensor"_a)

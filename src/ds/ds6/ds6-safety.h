@@ -47,6 +47,8 @@ namespace librealsense
         // rs2_intrinsics get_intrinsics(const stream_profile& profile) const override;
         stream_profiles init_stream_profiles() override;
 
+        void set_safety_preset(int index, const rs2_safety_preset& sp) const override;
+        rs2_safety_preset get_safety_preset(int index) const override;
     protected:
         const ds6_safety* _owner;
     };
