@@ -4,9 +4,11 @@
 #include <rsutils/py/pybind11.h>
 #include <rsutils/easylogging/easyloggingpp.h>
 #include <rsutils/string/split.h>
-#include <rsutils/version.h>
-#include <rsutils/number/stabilized-value.h>
 #include <rsutils/string/from.h>
+#include <rsutils/version.h>
+#include <rsutils/number/running-average.h>
+#include <rsutils/number/stabilized-value.h>
+
 
 #define NAME pyrsutils
 #define SNAME "pyrsutils"
@@ -64,6 +66,44 @@ PYBIND11_MODULE(NAME, m) {
         .def( py::self >= py::self )
         .def( py::self > py::self )
         .def( "is_between", &version::is_between );
+
+    using int_avg = rsutils::number::running_average< int64_t >;
+    py::class_< int_avg >( m, "running_average_i" )
+        .def( py::init<>() )
+        .def( "__nonzero__", &int_avg::size )  // Called to implement truth value testing in Python 2
+        .def( "__bool__", &int_avg::size )     // Called to implement truth value testing in Python 3
+        .def( "size", &int_avg::size )
+        .def( "get", &int_avg::get )
+        .def( "leftover", &int_avg::leftover )
+        .def( "fraction", &int_avg::fraction )
+        .def( "get_double", &int_avg::get_double )
+        .def( "__int__", &int_avg::get )
+        .def( "__float__", &int_avg::get_double )
+        .def( "__str__", []( int_avg const & self ) -> std::string { return rsutils::string::from( self.get_double() ); } )
+        .def( "__repr__",
+              []( int_avg const & self ) -> std::string {
+                  return rsutils::string::from() << "<" SNAME ".running_average<int64_t>"
+                                                 << " " << self.get() << " "
+                                                 << ( self.leftover() < 0 ? "" : "+" ) << self.leftover()
+                                                 << "/" << self.size() << ">";
+              } )
+        .def( "add", &int_avg::add );
+
+    using double_avg = rsutils::number::running_average< double >;
+    py::class_< double_avg >( m, "running_average" )
+        .def( py::init<>() )
+        .def( "__nonzero__", &double_avg::size )  // Called to implement truth value testing in Python 2
+        .def( "__bool__", &double_avg::size )     // Called to implement truth value testing in Python 3
+        .def( "size", &double_avg::size )
+        .def( "get", &double_avg::get )
+        .def( "__float__", &double_avg::get )
+        .def( "__str__", []( double_avg const & self ) -> std::string { return rsutils::string::from( self.get() ); } )
+        .def( "__repr__",
+              []( double_avg const & self ) -> std::string {
+                  return rsutils::string::from() << "<" SNAME ".running_average<double>"
+                                                 << " " << self.get() << " /" << self.size() << ">";
+              } )
+        .def( "add", &double_avg::add );
 
     using stabilized_value = rsutils::number::stabilized_value< double >;
     auto not_empty = []( stabilized_value const & self ) {
