@@ -27,6 +27,8 @@ version::version( sub_type m, sub_type n, sub_type p, sub_type b )
 version::version( char const * base )
     : version()
 {
+    if( ! base )
+        return;
     unsigned major = 0;
     char const * ptr = base;
     while( *ptr != '.' )
