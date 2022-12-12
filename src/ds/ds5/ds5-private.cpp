@@ -126,12 +126,12 @@ namespace librealsense
                 << intrinsics_string(res_1280_800)
                 << intrinsics_string(res_960_540));
 
-            auto resolution = width_height_to_ds5_rect_resolutions(width, height);
+            auto resolution = width_height_to_ds_rect_resolutions(width, height);
 
             if (width == 848 && height == 100) // Special 848x100 resolution is available in some firmware versions
                 // for this resolution we use the same base-intrinsics as for 848x480 and adjust them later
             {
-                resolution = width_height_to_ds5_rect_resolutions(width, 480);
+                resolution = width_height_to_ds_rect_resolutions(width, 480);
             }
 
             if (resolution < max_ds_rect_resolutions)

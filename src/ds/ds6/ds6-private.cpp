@@ -57,40 +57,42 @@ namespace librealsense
             }
         }
 
+        // Algorithm prepared by Oscar Pelc in matlab:
+        // calib_new.image_size = new_size_xy;
+        // scale_ratio = max(new_size_xy . / calib_org.image_size);
+        // crop_xy = (calib_org.image_size * scale_ratio - new_size_xy) / 2;
+        // calib_new.principal_point = (calib_org.principal_point + 0.5).*scale_ratio - crop_xy - 0.5;
+        // calib_new.focal_length = calib_org.focal_length.*scale_ratio;
+        float4 compute_rect_params_from_resolution(const ds::ds6_coefficients_table* table, uint32_t width, uint32_t height)
+        {
+            auto scale_ratio_x = static_cast<float>(width) / table->left_coefficients_table.base_instrinsics.image_width;
+            auto scale_ratio_y = static_cast<float>(height) / table->left_coefficients_table.base_instrinsics.image_height;
+            auto scale_ratio = std::max<float>(scale_ratio_x, scale_ratio_y);
+
+            auto crop_x = (table->left_coefficients_table.base_instrinsics.image_width * scale_ratio - width) * 0.5f;
+            auto crop_y = (table->left_coefficients_table.base_instrinsics.image_height * scale_ratio - height) * 0.5f;
+
+            auto new_ppx = (table->left_coefficients_table.base_instrinsics.ppx + 0.5f) * scale_ratio - crop_x - 0.5f;
+            auto new_ppy = (table->left_coefficients_table.base_instrinsics.ppy + 0.5f) * scale_ratio - crop_y - 0.5f;
+
+            auto new_fx = table->left_coefficients_table.base_instrinsics.fx * scale_ratio;
+            auto new_fy = table->left_coefficients_table.base_instrinsics.fy * scale_ratio;
+
+            return { new_fx, new_fy, new_ppx, new_ppy };
+        }
+
         rs2_intrinsics get_ds6_intrinsic_by_resolution_coefficients_table(const std::vector<uint8_t>& raw_data, uint32_t width, uint32_t height)
         {
             auto table = check_calib<ds::ds6_coefficients_table>(raw_data);
 
-            // TODO - RMEI  - intrinsics_string
-            /*LOG_DEBUG(endl
-                << "baseline = " << table->baseline << " mm" << endl
-                << "Rect params:  \t fX\t\t fY\t\t ppX\t\t ppY \n"
-                << intrinsics_string(res_1920_1080)
-                << intrinsics_string(res_1280_720)
-                << intrinsics_string(res_640_480)
-                << intrinsics_string(res_848_480)
-                << intrinsics_string(res_424_240)
-                << intrinsics_string(res_640_360)
-                << intrinsics_string(res_320_240)
-                << intrinsics_string(res_480_270)
-                << intrinsics_string(res_1280_800)
-                << intrinsics_string(res_960_540));*/
-
-            auto resolution = width_height_to_ds5_rect_resolutions(width, height);
-
-            if (width == 848 && height == 100) // Special 848x100 resolution is available in some firmware versions
-                // for this resolution we use the same base-intrinsics as for 848x480 and adjust them later
-            {
-                resolution = width_height_to_ds5_rect_resolutions(width, 480);
-            }
-
-            if (resolution < max_ds_rect_resolutions)
+            if (width > 0 && height > 0)
             {
                 rs2_intrinsics intrinsics;
-                intrinsics.width = resolutions_list[resolution].x;
-                intrinsics.height = resolutions_list[resolution].y;
+                intrinsics.width = width;
+                intrinsics.height = height;
 
-                auto rect_params = float4(); // TODO - REMI  static_cast<const float4>(table->rect_params[resolution]);
+                auto rect_params = compute_rect_params_from_resolution(table, width, height);
+
                 // DS5U - assume ideal intrinsic params
                 if ((rect_params.x == rect_params.y) && (rect_params.z == rect_params.w))
                 {
@@ -158,8 +160,8 @@ namespace librealsense
         {
             auto table = check_calib<ds6_rgb_calibration_table>(raw_data);
             float3 trans_vector = table->translation_rect;
-            // REMI - TODO
-            float3x3 rect_rot_mat;// = table->rotation_matrix_rect;
+            
+            float3x3 rect_rot_mat = table->rgb_coefficients_table.rotation_matrix;
             float trans_scale = -0.001f; // Convert units from mm to meter. Extrinsic of color is referenced to the Depth Sensor CS
 
             trans_vector.x *= trans_scale;

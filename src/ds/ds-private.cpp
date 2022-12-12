@@ -11,7 +11,7 @@ namespace librealsense
 {
     namespace ds
     {
-        ds_rect_resolutions width_height_to_ds5_rect_resolutions(uint32_t width, uint32_t height)
+        ds_rect_resolutions width_height_to_ds_rect_resolutions(uint32_t width, uint32_t height)
         {
             for (auto& elem : resolutions_list)
             {

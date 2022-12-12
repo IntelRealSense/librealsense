@@ -13,7 +13,7 @@
 #include "metadata-parser.h"
 
 #include "ds6-device.h"
-#include "ds/ds6/ds6-private.h"
+#include "ds6-private.h"
 #include "ds/ds-options.h"
 #include "ds/ds-timestamp.h"
 #include "stream.h"
@@ -338,7 +338,11 @@ namespace librealsense
 
     std::vector<uint8_t> ds6_device::get_ds6_raw_calibration_table(ds::ds6_calibration_table_id table_id) const // to be ds6 adapted
     {
-        command cmd(ds::GETINTCAL, static_cast<int>(table_id));
+        using namespace ds;
+        command cmd(GET_HKR_CONFIG_TABLE, 
+            static_cast<int>(ds6_calib_location::ds6_calib_eeprom), 
+            static_cast<int>(table_id),
+            static_cast<int>(ds6_calib_type::ds6_calib_dynamic));
         return _hw_monitor->send(cmd);
     }
 

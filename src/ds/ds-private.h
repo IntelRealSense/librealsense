@@ -536,15 +536,6 @@ namespace librealsense
             gvd_sc_motion_module_fw_version_offset = 212
         };
 
-        enum calib_sc_type
-        {
-            calib_sc_gold,
-            calib_sc_dynamic,
-            calib_sc_dynamic_and_flash,
-            calib_sc_eeprom,
-            calib_sc_all // to remain???
-        };
-
         const uint8_t I2C_IMU_BMI055_ID_ACC = 0xfa;
         const uint8_t I2C_IMU_BMI085_ID_ACC = 0x1f;
 
@@ -573,7 +564,7 @@ namespace librealsense
             { res_1152_1152,{ 1152, 1152 } },
         };
 
-        ds_rect_resolutions width_height_to_ds5_rect_resolutions(uint32_t width, uint32_t height);
+        ds_rect_resolutions width_height_to_ds_rect_resolutions(uint32_t width, uint32_t height);
 
         rs2_intrinsics get_color_stream_intrinsic(const std::vector<uint8_t>& raw_data, uint32_t width, uint32_t height);
         bool try_get_intrinsic_by_resolution_new(const std::vector<uint8_t>& raw_data,

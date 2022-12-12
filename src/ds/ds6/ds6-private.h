@@ -116,27 +116,27 @@ namespace librealsense
             rs2_distortion            distortion_model;          /**< Distortion model of the image */
             float                     distortion_coeffs[5];      /**< Distortion coefficients. Order for Brown-Conrady: [k1, k2, p1, p2, k3]. Order for F-Theta Fish-eye: [k1, k2, k3, k4, 0]. Other models are subject to their own interpretations */
             uint8_t                   reserved[36];
-            float                     radial_distortion_max_fov_lut;
-            float                     radial_distortion_focal_length;
-            ds6_undist_configuration   undist_config;
+            float                     radial_distortion_lut_range_degs;
+            float                     radial_distortion_lut_focal_length;
+            ds6_undist_configuration  undist_config;
             float3x3                  rotation_matrix;
         };
 
         struct ds6_coefficients_table
         {
-            table_header           header;
+            table_header              header;
             single_sensor_coef_table  left_coefficients_table;
             single_sensor_coef_table  right_coefficients_table;
             float                     baseline;                   //  the baseline between the cameras in mm units
-            uint32_t                  translation_dir;
-            uint16_t                  vertical_shift;             // in pixels
+            uint16_t                  translation_dir;
+            int16_t                   vertical_shift;             // in pixels
             mini_intrisics            rectified_intrinsics;
-            uint8_t                   reserved[154];
+            uint8_t                   reserved[148];
         };
 
         struct ds6_rgb_calibration_table
         {
-            table_header           header;
+            table_header              header;
             single_sensor_coef_table  rgb_coefficients_table;
             float3                    translation_rect;           // Translation vector for rectification
             mini_intrisics            rectified_intrinsics;
@@ -146,6 +146,20 @@ namespace librealsense
         rs2_intrinsics get_ds6_intrinsic_by_resolution(const std::vector<uint8_t>& raw_data, ds6_calibration_table_id table_id, uint32_t width, uint32_t height);
         rs2_intrinsics get_ds6_intrinsic_by_resolution_coefficients_table(const std::vector<uint8_t>& raw_data, uint32_t width, uint32_t height);
         pose get_ds5_color_stream_extrinsic(const std::vector<uint8_t>& raw_data);
+
+        enum class ds6_calib_location
+        {
+            ds6_calib_eeprom          = 0,
+            ds6_calib_flash_memory    = 1,
+            ds6_calib_ram_memory      = 2
+        };
+
+        enum class ds6_calib_type
+        {
+            ds6_calib_dynamic = 0,
+            ds6_calib_gold    = 1
+        };
+
 
     } // namespace ds
 } // namespace librealsense
