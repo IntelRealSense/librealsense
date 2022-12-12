@@ -47,7 +47,7 @@ namespace librealsense
         META_DATA_CAMERA_DEBUG_ID               = 0x800000FF,
         META_DATA_HID_IMU_REPORT_ID             = 0x80001001,
         META_DATA_HID_CUSTOM_TEMP_REPORT_ID     = 0x80001002,
-        META_DATA_INTEL_SAFETY_ID               = 0x88888888,
+        META_DATA_INTEL_SAFETY_ID               = 0x80000014,
     };
 
     static const std::map<md_type, std::string> md_type_desc =
