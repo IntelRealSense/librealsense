@@ -139,6 +139,73 @@ void init_c_files(py::module &m) {
         .def_readwrite("angular_acceleration", &rs2_pose::angular_acceleration, "X, Y, Z values of angular acceleration, in radians/sec^2")
         .def_readwrite("tracker_confidence", &rs2_pose::tracker_confidence, "Pose confidence 0x0 - Failed, 0x1 - Low, 0x2 - Medium, 0x3 - High")
         .def_readwrite("mapper_confidence", &rs2_pose::mapper_confidence, "Pose map confidence 0x0 - Failed, 0x1 - Low, 0x2 - Medium, 0x3 - High");
+
+    py::class_<sc_float2> float2(m, "float2"); // No docstring in C++
+    float2.def(py::init<>())
+        .def_readwrite("x", &sc_float2::x, "x")
+        .def_readwrite("y", &sc_float2::y, "y");
+
+    py::class_<sc_float3> float3(m, "float3"); // No docstring in C++
+    float3.def(py::init<>())
+        .def_readwrite("x", &sc_float3::x, "x")
+        .def_readwrite("y", &sc_float3::y, "y")
+        .def_readwrite("z", &sc_float3::z, "z");
+
+    py::class_<sc_float3x3> float3x3(m, "float3x3"); // No docstring in C++
+    float3x3.def(py::init<>())
+        .def_readwrite("x", &sc_float3x3::x, "x")
+        .def_readwrite("y", &sc_float3x3::y, "y")
+        .def_readwrite("z", &sc_float3x3::z, "z");
+
+    py::class_<rs2_safety_extrinsics_table> safety_extrinsics_table(m, "safety_extrinsics_table"); // No docstring in C++
+    safety_extrinsics_table.def(py::init<>())
+        .def_readwrite("rotation", &rs2_safety_extrinsics_table::rotation, "Rotation Value")
+        .def_readwrite("translation", &rs2_safety_extrinsics_table::translation, "Translation Value");
+
+    py::class_<rs2_safety_preset_header> safety_preset_header(m, "safety_preset_header"); // No docstring in C++
+    safety_preset_header.def(py::init<>())
+        .def_readwrite("version", &rs2_safety_preset_header::version, "Version")
+        .def_readwrite("table_type", &rs2_safety_preset_header::table_type, "Table Type")
+        .def_readwrite("table_size", &rs2_safety_preset_header::table_size, "Table Size")
+        .def_readwrite("crc32", &rs2_safety_preset_header::crc32, "CRC32");
+
+    py::class_<rs2_safety_platform> safety_platform(m, "safety_platform"); // No docstring in C++
+    safety_platform.def(py::init<>())
+        .def_readwrite("transformation_link", &rs2_safety_platform::transformation_link, "Transformation Link")
+        .def_readwrite("robot_height", &rs2_safety_platform::robot_height, "Robot Height")
+        .def_readwrite("robot_mass", &rs2_safety_platform::robot_mass, "Robot Mass")
+        .def_property(BIND_RAW_ARRAY_PROPERTY(rs2_safety_platform, reserved, uint8_t, sizeof(rs2_safety_zone::reserved)), "Reserved");
+
+
+    py::class_<rs2_safety_zone> safety_zone(m, "safety_zone"); // No docstring in C++
+    safety_zone.def(py::init<>())
+        .def_readwrite("flags", &rs2_safety_zone::flags, "Flags")
+        .def_readwrite("zone_type", &rs2_safety_zone::zone_type, "Zone Type")
+        .def_property_readonly("zone_polygon", [](const rs2_safety_zone& self) { return reinterpret_cast<const std::array<sc_float2, sizeof(rs2_safety_zone::zone_polygon)>&> (self.zone_polygon);}, "zone polygon")
+        .def_readwrite("masking_zone_v_boundary", &rs2_safety_zone::masking_zone_v_boundary, "Masking Zone v Boundary")
+        .def_readwrite("safety_trigger_confidence", &rs2_safety_zone::safety_trigger_confidence, "Safety Trigger Confidence")
+        .def_readwrite("miminum_object_size", &rs2_safety_zone::miminum_object_size, "Miminum Object Size")
+        .def_readwrite("mos_target_type", &rs2_safety_zone::mos_target_type, "MOS Target Type")
+        .def_property(BIND_RAW_ARRAY_PROPERTY(rs2_safety_zone, reserved, uint8_t, sizeof(rs2_safety_zone::reserved)), "Reserved");
+
+    py::class_<rs2_safety_environment> safety_environment(m, "safety_environment"); // No docstring in C++
+    safety_environment.def(py::init<>())
+        .def_readwrite("grid_cell_size", &rs2_safety_environment::grid_cell_size, "Grid Cell Size")
+        .def_readwrite("safety_trigger_duration", &rs2_safety_environment::safety_trigger_duration, "Safety Trigger Duration")
+        .def_readwrite("max_linear_velocity", &rs2_safety_environment::max_linear_velocity, "Max Linear Velocity")
+        .def_readwrite("max_angular_velocity", &rs2_safety_environment::max_angular_velocity, "Max Angular Velocity")
+        .def_readwrite("payload_weight", &rs2_safety_environment::payload_weight, "Payload Weight")
+        .def_readwrite("surface_inclination", &rs2_safety_environment::surface_inclination, "Surface Inclination")
+        .def_readwrite("surface_height", &rs2_safety_environment::surface_height, "Surface Height")
+        .def_readwrite("surface_confidence", &rs2_safety_environment::surface_confidence, "Surface Confidence")
+        .def_property(BIND_RAW_ARRAY_PROPERTY(rs2_safety_zone, reserved, uint8_t, sizeof(rs2_safety_zone::reserved)), "Reserved");
+
+    py::class_<rs2_safety_preset> safety_preset(m, "safety_preset"); // No docstring in C++
+    safety_preset.def(py::init<>())
+        .def_readwrite("platform_config", &rs2_safety_preset::platform_config, "Platform Config")
+        .def_property_readonly("safety_zones", [](const rs2_safety_preset& self) { return reinterpret_cast<const std::array<rs2_safety_zone, sizeof(rs2_safety_preset::safety_zones)>&> (self.safety_zones);}, "Safety Zones")
+        .def_readwrite("environment", &rs2_safety_preset::environment, "Environment");
+
     /** end rs_types.h **/
 
     /** rs_sensor.h **/
@@ -153,4 +220,5 @@ void init_c_files(py::module &m) {
             return ss.str();
         });
     /** end rs_sensor.h **/
+
 }

@@ -35,7 +35,9 @@ namespace librealsense
         const uint8_t DS5_ENABLE_AUTO_EXPOSURE = 0xB;
         const uint8_t DS5_LED_PWR = 0xE;
         const uint8_t DS5_THERMAL_COMPENSATION = 0xF;
-        const uint8_t DS6_ACTIVE_SAFETY_PRESET = 0x01;  // SC_TODO
+        
+        //DS6 safety XU identifiers
+        const uint16_t DS6_ACTIVE_SAFETY_PRESET = 0x02;
 
         enum class ds_device_type
         {

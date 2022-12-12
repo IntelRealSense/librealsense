@@ -49,10 +49,19 @@ namespace librealsense
         std::unique_ptr<frame_timestamp_reader> ds5_timestamp_reader_metadata(new ds_timestamp_reader_from_metadata(std::move(ds5_timestamp_reader_backup)));
 
         auto enable_global_time_option = std::shared_ptr<global_time_option>(new global_time_option());
+
+        synthetic_sensor& safety_sensor = dynamic_cast<synthetic_sensor&>(get_sensor(_safety_device_idx));
+        auto active_safety_preset = std::make_shared<uvc_xu_option<uint16_t>>(dynamic_cast<uvc_sensor&>(*safety_sensor.get_raw_sensor()),
+                    safety_xu,
+                    DS6_ACTIVE_SAFETY_PRESET,
+                    "Active Safety Preset");
+
         auto raw_safety_ep = std::make_shared<uvc_sensor>("Raw Safety Device",
             backend.create_uvc_device(safety_devices_info.front()),
             std::unique_ptr<frame_timestamp_reader>(new global_timestamp_reader(std::move(ds5_timestamp_reader_metadata), _tf_keeper, enable_global_time_option)),
             this);
+
+        raw_safety_ep->register_xu(safety_xu); // making sure the XU is initialized every time we power the camera
 
         auto safety_ep = std::make_shared<ds6_safety_sensor>(this,
             raw_safety_ep,
@@ -60,6 +69,8 @@ namespace librealsense
             safety_fourcc_to_rs2_stream);
 
         safety_ep->register_option(RS2_OPTION_GLOBAL_TIME_ENABLED, enable_global_time_option);
+
+        safety_ep->register_option(RS2_OPTION_ACTIVE_SAFETY_PRESET_INDEX, active_safety_preset);
 
         safety_ep->register_info(RS2_CAMERA_INFO_PHYSICAL_PORT, safety_devices_info.front().device_path);
 
@@ -71,8 +82,6 @@ namespace librealsense
 
         // register processing blocks
         register_processing_blocks(safety_ep);
-        
-		raw_safety_ep->register_xu(safety_xu); // making sure the XU is initialized every time we power the camera
 		
         return safety_ep;
     }
