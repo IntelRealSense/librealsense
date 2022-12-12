@@ -29,10 +29,12 @@ namespace librealsense
         _safety_stream(new stream(RS2_STREAM_SAFETY))
     {
         using namespace ds;
-        const uint32_t safety_stream_end_point = 0x0b;
-        auto safety_devs_info = filter_by_mi(group.uvc_devices, safety_stream_end_point);
+
+        const uint32_t safety_stream_mi = 11;
+        auto safety_devs_info = filter_by_mi(group.uvc_devices, safety_stream_mi);
+        
         if (safety_devs_info.size() != 1)
-            throw invalid_value_exception(to_string() << "RS4XX with Safety models are expected to include a single safety device! - "
+            throw invalid_value_exception(to_string() << "RS5XX with Safety models are expected to include a single safety device! - "
                 << safety_devs_info.size() << " found");
 
         auto safety_ep = create_safety_device(ctx, safety_devs_info);
@@ -45,8 +47,8 @@ namespace librealsense
         using namespace ds;
         auto&& backend = ctx->get_backend();
 
-        std::unique_ptr<frame_timestamp_reader> ds5_timestamp_reader_backup(new ds_timestamp_reader(backend.create_time_service()));
-        std::unique_ptr<frame_timestamp_reader> ds5_timestamp_reader_metadata(new ds_timestamp_reader_from_metadata(std::move(ds5_timestamp_reader_backup)));
+        std::unique_ptr<frame_timestamp_reader> ds_timestamp_reader_backup(new ds_timestamp_reader(backend.create_time_service()));
+        std::unique_ptr<frame_timestamp_reader> ds_timestamp_reader_metadata(new ds_timestamp_reader_from_metadata(std::move(ds_timestamp_reader_backup)));
 
         auto enable_global_time_option = std::shared_ptr<global_time_option>(new global_time_option());
 
@@ -58,7 +60,7 @@ namespace librealsense
 
         auto raw_safety_ep = std::make_shared<uvc_sensor>("Raw Safety Device",
             backend.create_uvc_device(safety_devices_info.front()),
-            std::unique_ptr<frame_timestamp_reader>(new global_timestamp_reader(std::move(ds5_timestamp_reader_metadata), _tf_keeper, enable_global_time_option)),
+            std::unique_ptr<frame_timestamp_reader>(new global_timestamp_reader(std::move(ds_timestamp_reader_metadata), _tf_keeper, enable_global_time_option)),
             this);
 
         raw_safety_ep->register_xu(safety_xu); // making sure the XU is initialized every time we power the camera
