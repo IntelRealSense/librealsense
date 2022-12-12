@@ -137,14 +137,18 @@ is used by sending abort=True to check functions
 """
 
 
-def check_failed():
+def check_failed( abort = False ):
     """
     Function for when a check fails
+    :return: always False (so you can 'return check_failed()'
     """
     global n_failed_assertions, test_failed
     n_failed_assertions += 1
     test_failed = True
     print_info()
+    if abort:
+        abort()
+    return False
 
 
 def abort():
@@ -167,10 +171,7 @@ def check( exp, description = None, abort_if_failed = False):
             log.out( f"    {description}" )
         else:
             log.out( f"    check failed; received {exp}" )
-        check_failed()
-        if abort_if_failed:
-            abort()
-        return False
+        return check_failed( abort_if_failed )
     reset_info()
     return True
 
@@ -201,12 +202,41 @@ def check_equal(result, expected, abort_if_failed = False):
         print_stack()
         log.out( "    left  :", result )
         log.out( "    right :", expected )
-        check_failed()
-        if abort_if_failed:
-            abort()
-        return False
+        return check_failed( abort_if_failed )
     reset_info()
     return True
+
+
+def check_between( result, min, max, abort_if_failed = False ):
+    """
+    Used for asserting a variable is between two values
+    :param result: The actual value of a variable
+    :param min: The minimum expected value of the result
+    :param max: The maximum expected value of the result
+    :param abort_if_failed:  If True and assertion failed the test will be aborted
+    :return: True if assertion passed, False otherwise
+    """
+    global n_assertions
+    n_assertions += 1
+    if result < min  or  result > max:
+        print_stack()
+        log.out( "   result :", result )
+        log.out( "  between :", min, '-', max )
+        return check_failed( abort_if_failed )
+    reset_info()
+    return True
+
+
+def check_approx_abs( result, expected, abs_err, abort_if_failed = False ):
+    """
+    Used for asserting a variable has the expected value, plus/minus 'abs_err'
+    :param result: The actual value of a variable
+    :param expected: The expected value of the result
+    :param abs_err: How far away from expected we're allowed to get
+    :param abort_if_failed:  If True and assertion failed the test will be aborted
+    :return: True if assertion passed, False otherwise
+    """
+    return check_between( result, expected - abs_err, expected + abs_err, abort_if_failed )
 
 
 def unreachable( abort_if_failed = False ):
@@ -217,9 +247,7 @@ def unreachable( abort_if_failed = False ):
     global n_assertions
     n_assertions += 1
     print_stack()
-    check_failed()
-    if abort_if_failed:
-        abort()
+    check_failed( abort_if_failed )
 
 
 def unexpected_exception():
@@ -260,10 +288,7 @@ def check_equal_lists(result, expected, abort_if_failed = False):
         print_stack()
         log.out( "    result list  :", result )
         log.out( "    expected list:", expected )
-        check_failed()
-        if abort_if_failed:
-            abort()
-        return False
+        return check_failed( abort_if_failed )
     reset_info()
     return True
 
@@ -288,10 +313,7 @@ def check_exception(exception, expected_type, expected_msg = None, abort_if_fail
     if failed:
         print_stack()
         log.out( *failed )
-        check_failed()
-        if abort_if_failed:
-            abort()
-        return False
+        return check_failed( abort_if_failed )
     reset_info()
     return True
 
