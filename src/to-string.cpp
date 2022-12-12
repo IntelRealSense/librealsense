@@ -45,6 +45,7 @@ const char * get_string( rs2_stream value )
     CASE( GPIO )
     CASE( POSE )
     CASE( CONFIDENCE )
+    CASE( SAFETY )
     default:
         assert( ! is_valid( value ) );
         return UNKNOWN_VALUE;
@@ -232,6 +233,7 @@ const char * get_string( rs2_extension value )
     CASE( MAX_USABLE_RANGE_SENSOR )
     CASE( DEBUG_STREAM_SENSOR )
     CASE( CALIBRATION_CHANGE_DEVICE )
+    CASE( SAFETY_SENSOR )
     default:
         assert( ! is_valid( value ) );
         return UNKNOWN_VALUE;
@@ -511,6 +513,20 @@ const char * get_string( rs2_frame_metadata_value value )
     CASE( SEQUENCE_NAME )
     CASE( SEQUENCE_ID )
     CASE( SEQUENCE_SIZE )
+    CASE( SAFETY_DEPTH_FRAME_COUNTER )
+    CASE( SAFETY_LEVEL1 )
+    CASE( SAFETY_LEVEL1_ORIGIN )
+    CASE( SAFETY_LEVEL2 )
+    CASE( SAFETY_LEVEL2_ORIGIN )
+    CASE( SAFETY_LEVEL1_VERDICT )
+    CASE( SAFETY_LEVEL2_VERDICT )
+    CASE( SAFETY_HUMAN_VOTE_RESULT )
+    CASE( SAFETY_HARA_EVENTS )
+    CASE( SAFETY_SOC_FUSA_EVENTS )
+    CASE( SAFETY_SOC_FUSA_ACTION )
+    CASE( SAFETY_FUSA_EVENT )
+    CASE( SAFETY_FUSA_ACTION )
+    CASE( SAFETY_CRC32 )
     default:
         assert( ! is_valid( value ) );
         return UNKNOWN_VALUE;

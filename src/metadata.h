@@ -47,6 +47,7 @@ namespace librealsense
         META_DATA_CAMERA_DEBUG_ID               = 0x800000FF,
         META_DATA_HID_IMU_REPORT_ID             = 0x80001001,
         META_DATA_HID_CUSTOM_TEMP_REPORT_ID     = 0x80001002,
+        META_DATA_INTEL_SAFETY_ID               = 0x80000014,
     };
 
     static const std::map<md_type, std::string> md_type_desc =
@@ -66,6 +67,7 @@ namespace librealsense
         { md_type::META_DATA_INTEL_L500_DEPTH_CONTROL_ID,   "Intel Depth Control"},
         { md_type::META_DATA_HID_IMU_REPORT_ID,             "HID IMU Report"},
         { md_type::META_DATA_HID_CUSTOM_TEMP_REPORT_ID,     "HID Custom Temperature Report"},
+        { md_type::META_DATA_INTEL_SAFETY_ID,               "Intel Safety Info"},
     };
 
     /**\brief md_capture_timing_attributes - enumerate the bit offset to check
@@ -186,6 +188,28 @@ namespace librealsense
         right_greeen1_attribute         = (1u << 12),
         right_greeen2_attribute         = (1u << 13),
         right_blue_sum_attribute        = (1u << 14),
+    };
+
+    /**\brief md_safety_info_attributes - bit mask to find active attributes,
+     *   md_safety_info struct */
+    enum class md_safety_info_attributes : uint32_t
+    {
+        frame_counter_attribute                 = (1u << 0),
+        depth_frame_counter_attribute           = (1u << 1),
+        frame_timestamp_attribute               = (1u << 2),
+        level1_signal_attribute                 = (1u << 3),
+        level1_frame_counter_origin_attribute   = (1u << 4),
+        level2_signal_attribute                 = (1u << 5),
+        level2_frame_counter_origin_attribute   = (1u << 6),
+        level1_verdict_attribute                = (1u << 7),
+        level2_verdict_attribute                = (1u << 8),
+        human_safety_vote_result_attribute      = (1u << 9),
+        hara_events_attribute                   = (1u << 10),
+        soc_fusa_events_attribute               = (1u << 11),
+        soc_fusa_action_attribute               = (1u << 12),
+        mb_fusa_event_attribute                 = (1u << 13),
+        mb_fusa_action_attribute                = (1u << 14),
+        crc32_attribute                         = (1u << 15)
     };
 
     /**\brief md_hid_imu_attributes - bit mask to designate the enabled attributed,
@@ -531,6 +555,32 @@ namespace librealsense
 
     REGISTER_MD_TYPE(md_intel_stat, md_type::META_DATA_INTEL_STAT_ID)
 
+    /**\brief md_safety_info - Safety Frame info */
+    struct md_safety_info
+    {
+        md_header   header;
+        uint32_t    version;
+        uint32_t    flags;
+        uint32_t    frame_counter;
+        uint32_t    depth_frame_counter;
+        uint32_t    frame_timestamp;
+        uint8_t     level1_signal;                  // Designates the “Yellow” zone status: 0x1 – High, 0x0 - Low 
+        uint8_t     level1_frame_counter_origin;    // When l1 is low – equals to frame_counter in safety_header - For l1=0x1 : hold the Frame id on last transition to “High” state 
+        uint8_t     level2_signal;                  // Designates the “Red” zone status: 0x1 – High, 0x0 - Low 
+        uint8_t     level2_frame_counter_origin;    // When l2 is low – equals to frame_counter in safety_header - For l1=0x1 : hold the Frame id on last transition to “High” state 
+        uint8_t     level1_verdict;                 // Current verdict for l1 Safety Signal - May differ from l1_signal due to additional logics applied
+        uint8_t     level2_verdict;                 // Current verdict for l2 Safety Signal - May differ from l2_signal due to additional logics applied
+        uint32_t    human_safety_vote_result;       // Bitmask, enumerated
+        uint16_t    hara_events;                    // Bitmask, enumerated
+        uint32_t    soc_fusa_events;                // Bitmask, enumerated 
+        uint8_t     soc_fusa_action;                // Bitmask, enumerated
+        uint32_t    mb_fusa_event;
+        uint8_t     mb_fusa_action;
+        uint8_t     reserved[2];                    // for alignement to 4 bytes
+        uint32_t    crc32;
+    };
+    REGISTER_MD_TYPE(md_safety_info, md_type::META_DATA_INTEL_SAFETY_ID)
+
     struct md_intrinsic_pinhole_cam_model
     {
         float2      focal_length;
@@ -643,6 +693,11 @@ namespace librealsense
         md_configuration        intel_configuration;
     };
 
+    struct md_safety_mode
+    {
+        md_safety_info          intel_safety_info;
+    };
+
     union md_depth_mode
     {
         md_depth_y_normal_mode  depth_y_mode;
@@ -669,6 +724,7 @@ namespace librealsense
         md_depth_mode           depth_mode;
         md_fisheye_mode         fisheye_mode;
         md_rgb_mode             rgb_mode;
+        md_safety_mode          safety_mode;
         md_sr300_depth          sr300_depth_mode;
         md_sr300_rgb            sr300_rgb_mode;
     };
