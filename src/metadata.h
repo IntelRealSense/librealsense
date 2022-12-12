@@ -67,7 +67,7 @@ namespace librealsense
         { md_type::META_DATA_INTEL_L500_DEPTH_CONTROL_ID,   "Intel Depth Control"},
         { md_type::META_DATA_HID_IMU_REPORT_ID,             "HID IMU Report"},
         { md_type::META_DATA_HID_CUSTOM_TEMP_REPORT_ID,     "HID Custom Temperature Report"},
-        { md_type::META_DATA_INTEL_SAFETY_ID,               "Intel Safety"},
+        { md_type::META_DATA_INTEL_SAFETY_ID,               "Intel Safety Info"},
     };
 
     /**\brief md_capture_timing_attributes - enumerate the bit offset to check
