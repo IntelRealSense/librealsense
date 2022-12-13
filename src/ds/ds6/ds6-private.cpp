@@ -53,7 +53,7 @@ namespace librealsense
                 return get_color_stream_intrinsic(raw_data, width, height);
             }
             default:
-                throw invalid_value_exception(to_string() << "Parsing Calibration table type " << static_cast<int>(table_id) << " is not supported");
+                throw invalid_value_exception(rsutils::string::from() << "Parsing Calibration table type " << static_cast<int>(table_id) << " is not supported");
             }
         }
 

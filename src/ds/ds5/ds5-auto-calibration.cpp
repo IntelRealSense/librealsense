@@ -1784,7 +1784,7 @@ namespace librealsense
             break;
         default:
             throw std::runtime_error( rsutils::string::from() << "Flashing calibration table type 0x" << std::hex
-                                                              << tbl_id << " is not supported" );
+                                                              << static_cast<int>(tbl_id) << " is not supported" );
         }
 
         command write_calib(cmd, static_cast<int>(tbl_id), param2);
@@ -1823,7 +1823,7 @@ namespace librealsense
                 break;
             default:
                 throw std::runtime_error( rsutils::string::from()
-                                          << "the operation is not defined for calibration table type " << tbl_id );
+                                          << "the operation is not defined for calibration table type " << static_cast<int>(tbl_id));
         }
     }
 

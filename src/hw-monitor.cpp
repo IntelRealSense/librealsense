@@ -6,6 +6,8 @@
 #include <limits>
 #include <sstream>
 
+#include "ds/ds6/ds6-private.h"
+
 namespace librealsense
 {
     std::string hw_monitor::get_firmware_version_string(const std::vector<uint8_t>& buff, size_t index, size_t length)
@@ -120,61 +122,130 @@ namespace librealsense
         return _locked_transfer->send_receive(data);
     }
 
+    int get_recv_msg_length(command cmd)
+    {
+        int msg_length = HW_MONITOR_BUFFER_SIZE;
+        if (cmd.cmd == ds::fw_cmd::GET_HKR_CONFIG_TABLE)
+        {
+            switch (cmd.param2)
+            {
+            case static_cast<int>(ds::ds6_calibration_table_id::coefficients_table_id):
+            {
+                msg_length = sizeof(ds::ds6_coefficients_table);
+                break;
+            }
+            case static_cast<int>(ds::ds6_calibration_table_id::rgb_calibration_id):
+            {
+                msg_length = sizeof(ds::ds6_rgb_calibration_table);
+                break;
+            }
+            default:
+                throw std::runtime_error(rsutils::string::from() << "command GET_HKR_CONFIG_TABLE with wromg param2");
+            }
+        }
+        return msg_length;
+    }
+
+    int get_send_msg_length(command cmd)
+    {
+        int msg_length = HW_MONITOR_BUFFER_SIZE;
+        if (cmd.cmd == ds::fw_cmd::SET_HKR_CONFIG_TABLE)
+        {
+            switch (cmd.param2)
+            {
+            case static_cast<int>(ds::ds6_calibration_table_id::coefficients_table_id):
+            {
+                msg_length = sizeof(ds::ds6_coefficients_table);
+                break;
+            }
+            case static_cast<int>(ds::ds6_calibration_table_id::rgb_calibration_id):
+            {
+                msg_length = sizeof(ds::ds6_rgb_calibration_table);
+                break;
+            }
+            default:
+                throw std::runtime_error(rsutils::string::from() << "command GET_HKR_CONFIG_TABLE with wromg param2");
+            }
+        }
+        return msg_length;
+    }
+
     std::vector< uint8_t >
     hw_monitor::send( command cmd, hwmon_response * p_response, bool locked_transfer ) const
     {
-        hwmon_cmd newCommand(cmd);
-        auto opCodeXmit = static_cast<uint32_t>(newCommand.cmd);
+        //int send_msg_length = get_send_msg_length(cmd);
+        //int send_chunks = send_msg_length / 1024;
 
-        hwmon_cmd_details details;
-        details.oneDirection = newCommand.oneDirection;
-        details.timeOut = newCommand.timeOut;
+        int recv_msg_length = get_recv_msg_length(cmd);
+        float ratio = static_cast<float>(recv_msg_length) / 1024;
+        int ratio_int = static_cast<int>(ratio);
+        float res = ratio - ratio_int;
+        int recv_chunks = ratio_int + ((res > 0.0f) ? 1 : 0);
 
-        fill_usb_buffer(opCodeXmit,
-            newCommand.param1,
-            newCommand.param2,
-            newCommand.param3,
-            newCommand.param4,
-            newCommand.data,
-            newCommand.sizeOfSendCommandData,
-            details.sendCommandData.data(),
-            details.sizeOfSendCommandData);
+        std::vector<byte> recv_msg;
 
-        if (locked_transfer)
+        for (int i = 0; i < recv_chunks; ++i)
         {
-            return _locked_transfer->send_receive({ details.sendCommandData.begin(),details.sendCommandData.end()});
-        }
+            // updating the chunk number in case several chunks are expected
+            if (recv_chunks > 1)
+                cmd.param4 = i;
 
-        send_hw_monitor_command(details);
+            hwmon_cmd newCommand(cmd);
+            auto opCodeXmit = static_cast<uint32_t>(newCommand.cmd);
 
-        // Error/exit conditions
-        if( p_response )
-            *p_response = hwm_Success;
-        if( newCommand.oneDirection )
-            return std::vector<uint8_t>();
+            hwmon_cmd_details details;
+            details.oneDirection = newCommand.oneDirection;
+            details.timeOut = newCommand.timeOut;
 
-        librealsense::copy(newCommand.receivedOpcode, details.receivedOpcode.data(), 4);
-        librealsense::copy(newCommand.receivedCommandData, details.receivedCommandData.data(), details.receivedCommandDataLength);
-        newCommand.receivedCommandDataLength = details.receivedCommandDataLength;
+            fill_usb_buffer(opCodeXmit,
+                newCommand.param1,
+                newCommand.param2,
+                newCommand.param3,
+                newCommand.param4,
+                newCommand.data,
+                newCommand.sizeOfSendCommandData,
+                details.sendCommandData.data(),
+                details.sizeOfSendCommandData);
 
-        // endian?
-        auto opCodeAsUint32 = pack(details.receivedOpcode[3], details.receivedOpcode[2],
-                                    details.receivedOpcode[1], details.receivedOpcode[0]);
-        if (opCodeAsUint32 != opCodeXmit)
-        {
-            auto err_type = static_cast<hwmon_response>(opCodeAsUint32);
-            std::string err = hwmon_error_string( cmd, err_type );
-            LOG_DEBUG( err );
-            if( p_response )
+            if (locked_transfer)
             {
-                *p_response = err_type;
-                return std::vector<uint8_t>();
+                return _locked_transfer->send_receive({ details.sendCommandData.begin(),details.sendCommandData.end() });
             }
-            throw invalid_value_exception( err );
+
+            send_hw_monitor_command(details);
+
+            // Error/exit conditions
+            if (p_response)
+                *p_response = hwm_Success;
+            if (newCommand.oneDirection)
+                return std::vector<uint8_t>();
+
+            librealsense::copy(newCommand.receivedOpcode, details.receivedOpcode.data(), 4);
+            librealsense::copy(newCommand.receivedCommandData, details.receivedCommandData.data(), details.receivedCommandDataLength);
+            newCommand.receivedCommandDataLength = details.receivedCommandDataLength;
+
+            // endian?
+            auto opCodeAsUint32 = pack(details.receivedOpcode[3], details.receivedOpcode[2],
+                details.receivedOpcode[1], details.receivedOpcode[0]);
+            if (opCodeAsUint32 != opCodeXmit)
+            {
+                auto err_type = static_cast<hwmon_response>(opCodeAsUint32);
+                std::string err = hwmon_error_string(cmd, err_type);
+                LOG_DEBUG(err);
+                if (p_response)
+                {
+                    *p_response = err_type;
+                    return std::vector<uint8_t>();
+                }
+                throw invalid_value_exception(err);
+            }
+            auto ans = std::vector<uint8_t>(newCommand.receivedCommandData,
+            newCommand.receivedCommandData + newCommand.receivedCommandDataLength);
+
+            recv_msg.insert(recv_msg.end(), ans.begin(), ans.end());
         }
 
-        return std::vector<uint8_t>(newCommand.receivedCommandData,
-            newCommand.receivedCommandData + newCommand.receivedCommandDataLength);
+        return recv_msg;
     }
 
     std::vector<uint8_t> hw_monitor::build_command(uint32_t opcode,
