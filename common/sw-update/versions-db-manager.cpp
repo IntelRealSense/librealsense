@@ -43,7 +43,7 @@ namespace rs2
             // Load server versions info on first access
             if (!init())
             {
-                out_version = 0;
+                out_version.clear();
                 return DB_LOAD_FAILURE;
             }
 
@@ -68,7 +68,7 @@ namespace rs2
                 return VERSION_FOUND;
             }
 
-            out_version = 0;
+            out_version.clear();
             return NO_VERSION_FOUND; // Nothing found
         }
 

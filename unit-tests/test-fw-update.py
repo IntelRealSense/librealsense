@@ -6,14 +6,14 @@
 #test:device each(D400*) !D457
 #test:device each(L500*)
 
-import pyrealsense2 as rs, sys, os, subprocess
+import sys
 import os
 import subprocess
 import re
 import platform
 import pyrealsense2 as rs
+import pyrsutils as rsutils
 from rspy import devices, log, test, file, repo
-import re, platform
 
 
 if not devices.acroname:
@@ -156,12 +156,12 @@ if device.is_update_device():
         devices.query( monitor_changes = False )
         device = devices.get_first( devices.all() ).handle
 
-current_fw_version = repo.pretty_fw_version( device.get_info( rs.camera_info.firmware_version ))
+current_fw_version = rsutils.version( device.get_info( rs.camera_info.firmware_version ))
 log.d( 'FW version:', current_fw_version )
-bundled_fw_version = repo.pretty_fw_version( device.get_info( rs.camera_info.recommended_firmware_version ) )
+bundled_fw_version = rsutils.version( device.get_info( rs.camera_info.recommended_firmware_version ) )
 log.d( 'bundled FW version:', bundled_fw_version )
 
-if repo.compare_fw_versions( current_fw_version, bundled_fw_version ) == 0:
+if current_fw_version == bundled_fw_version:
     # Current is same as bundled
     if recovered or 'nightly' not in test.context:
         # In nightly, we always update; otherwise we try to save time, so do not do anything!
@@ -191,7 +191,7 @@ subprocess.run( cmd )   # may throw
 devices.query( monitor_changes = False )
 sn_list = devices.all()
 device = devices.get_first( sn_list ).handle
-current_fw_version = repo.pretty_fw_version( device.get_info( rs.camera_info.firmware_version ))
+current_fw_version = rsutils.version( device.get_info( rs.camera_info.firmware_version ))
 test.check_equal( current_fw_version, bundled_fw_version )
 new_update_counter = get_update_counter( device )
 # According to FW: "update counter zeros if you load newer FW than (ever) before"

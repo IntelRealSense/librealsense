@@ -165,11 +165,17 @@ for pyd in file.find( pyrs_search_dir, linux and r'.*python.*\.so$' or r'(^|/)py
         pyrs = pyd
     # The path is relative; make it absolute so it can be found by tests
     pyd_dirs.add( os.path.dirname( os.path.join( pyrs_search_dir, pyd )))
+pyrs_path = None
 if pyrs:
     # The path is relative; make it absolute and add to PYTHONPATH so it can be found by tests
     pyrs_path = os.path.join( pyrs_search_dir, pyrs )
     # We need to add the directory not the file itself
     pyrs_path = os.path.dirname( pyrs_path )
+elif len(pyd_dirs) == 1:
+    # Maybe we found other libraries, like pyrsutils?
+    log.d( 'did not find pyrealsense2' )
+    pyrs_path = next(iter(pyd_dirs))
+if pyrs_path:
     log.d( 'found python libraries in:', pyd_dirs )
     if not exe_dir:
         build_dir = find_build_dir( pyrs_path )
@@ -209,9 +215,8 @@ n_tests = 0
 #
 os.environ["PYTHONPATH"] = os.path.join( current_dir, 'py' )
 #
-if pyrs:
-    for dir in pyd_dirs:
-        os.environ["PYTHONPATH"] += os.pathsep + dir
+for dir in pyd_dirs:
+    os.environ["PYTHONPATH"] += os.pathsep + dir
 
 
 def configuration_str( configuration, repetition = 1, prefix = '', suffix = '' ):

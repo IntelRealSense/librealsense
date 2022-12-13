@@ -175,6 +175,13 @@ def check( exp, description = None, abort_if_failed = False):
     return True
 
 
+def check_false( exp, description = None, abort_if_failed = False):
+    """
+    Opposite of check()
+    """
+    return check( not exp, description, abort_if_failed )
+
+
 def check_equal(result, expected, abort_if_failed = False):
     """
     Used for asserting a variable has the expected value
@@ -272,9 +279,12 @@ def check_exception(exception, expected_type, expected_msg = None, abort_if_fail
     """
     failed = False
     if type(exception) != expected_type:
-        failed = [ "    raised exception was of type", type(exception), "\n    but expected type", expected_type ]
+        failed = [ "    raised exception was", type(exception),
+                 "\n    but expected", expected_type,
+                 "\n  With message:", str(exception) ]
     elif expected_msg and str(exception) != expected_msg:
-        failed = [ "    exception message:", str(exception), "\n    but we expected:", expected_msg ]
+        failed = [ "    exception message:", str(exception),
+                 "\n    but we expected:", expected_msg ]
     if failed:
         print_stack()
         log.out( *failed )
@@ -284,6 +294,18 @@ def check_exception(exception, expected_type, expected_msg = None, abort_if_fail
         return False
     reset_info()
     return True
+
+
+def check_throws( _lambda, expected_type, expected_msg = None, abort_if_failed = False ):
+    """
+    We expect the lambda, when called, to raise an exception!
+    """
+    try:
+        _lambda()
+    except Exception as e:
+        check_exception( e, expected_type, expected_msg, abort_if_failed )
+    else:
+        unexpected_exception()
 
 
 def check_frame_drops(frame, previous_frame_number, allowed_drops = 1, allow_frame_counter_reset = False):
