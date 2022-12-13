@@ -179,7 +179,7 @@ if update_counter >= 19:
     reset_update_counter( device )
     update_counter = 0
 
-image_file = find_image_or_exit(product_name, re.escape( bundled_fw_version ))
+image_file = find_image_or_exit(product_name, re.escape( str(bundled_fw_version) ))
 # finding file containing image for FW update
 
 cmd = [fw_updater_exe, '-f', image_file]
