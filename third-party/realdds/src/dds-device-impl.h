@@ -12,10 +12,14 @@
 
 #include <fastdds/rtps/common/Guid.h>
 
+#include <third-party/json.hpp>
+
 #include <map>
 #include <memory>
 #include <atomic>
-
+#include <mutex>
+#include <condition_variable>
+#include <queue>
 
 namespace realdds {
 
@@ -40,7 +44,11 @@ public:
     bool _running = false;
 
     std::map< std::string, std::shared_ptr< dds_stream > > _streams;
+
     std::atomic<uint32_t> _control_message_counter = { 0 };
+    std::mutex _option_mutex;
+    std::condition_variable _option_cv;
+    std::queue< nlohmann::json > _option_response_queue;
 
     std::shared_ptr< dds_topic_reader > _notifications_reader;
     std::shared_ptr< dds_topic_writer > _control_writer;
@@ -56,6 +64,9 @@ public:
     void close( const dds_streams & streams );
 
     void write_control_message( topics::flexible_msg && );
+
+    void set_option_value( const std::shared_ptr< dds_option > & option, float new_value );
+    float query_option_value( const std::shared_ptr< dds_option > & option );
 
 private:
     void create_notifications_reader();

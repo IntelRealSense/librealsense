@@ -56,8 +56,8 @@ public:
     void open( const dds_stream_profiles & profiles );
     void close( const dds_streams & streams );
 
-    void set_option_value( std::shared_ptr< dds_option > option, float value );
-    float query_option_value( std::shared_ptr< dds_option > option );
+    void set_option_value( const std::shared_ptr< dds_option > & option, float new_value );
+    float query_option_value( const std::shared_ptr< dds_option > & option );
 
 private:
     class impl;

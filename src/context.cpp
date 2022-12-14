@@ -407,22 +407,45 @@ namespace librealsense
     //A facade for a realdds::dds_option exposing librealsense interface
     class rs2_dds_option : public option_base
     {
-        std::shared_ptr< realdds::dds_option > _dds_opt;
-        std::string _stream_name;
-
     public:
-        rs2_dds_option( const std::shared_ptr< realdds::dds_option > & dds_opt )
+        typedef std::function< void( const std::string & name, float value ) > set_option_callback;
+        typedef std::function< float( const std::string & name ) > query_option_callback;
+
+        rs2_dds_option( const std::shared_ptr< realdds::dds_option > & dds_opt,
+                        set_option_callback set_opt_cb,
+                        query_option_callback query_opt_cb )
             : option_base( { dds_opt->get_range().min, dds_opt->get_range().max,
                              dds_opt->get_range().step, dds_opt->get_range().default_value } )
             , _dds_opt( dds_opt )
+            , _set_opt_cb( set_opt_cb )
+            , _query_opt_cb( query_opt_cb )
         {
         }
 
-        void set( float value ) override {} //TODO - implement
-        float query() const override { return 0.0f; } //TODO - implement
+        void set( float value ) override
+        {
+            if( ! _set_opt_cb )
+                throw std::runtime_error( "Set option callback is not set for option " + _dds_opt->get_name() );
 
-        bool is_enabled() const override { return true; }
-        const char * get_description() const override { return _dds_opt->get_description().c_str(); }
+            _set_opt_cb( _dds_opt->get_name(), value );
+        }
+
+        float query() const override
+        {
+            if( !_query_opt_cb )
+                throw std::runtime_error( "Query option callback is not set for option " + _dds_opt->get_name() );
+
+            return _query_opt_cb( _dds_opt->get_name() );
+        }
+
+        bool is_enabled() const override { return true; };
+        const char * get_description() const override { return _dds_opt->get_description().c_str(); };
+
+    protected:
+        std::shared_ptr< realdds::dds_option > _dds_opt;
+
+        set_option_callback _set_opt_cb;
+        query_option_callback _query_opt_cb;
     };
 
     class dds_sensor_proxy : public software_sensor
@@ -616,12 +639,45 @@ namespace librealsense
             if( option_id == RS2_OPTION_COUNT )
                 throw librealsense::invalid_value_exception( to_string() << "Option " << option->get_name() << " type not found" );
 
-            auto opt = std::make_shared< rs2_dds_option >( option );
+            auto opt = std::make_shared< rs2_dds_option >( option,
+                [&]( const std::string & name, float value ) { set_option( name, value ); },
+                [&]( const std::string & name ) -> float { return query_option( name ); } );
             register_option( option_id, opt );
         }
 
-        //float get_option( rs2_option option ) const override;
-        //void set_option( rs2_option option, float value ) const override;
+        void set_option( const std::string & name, float value ) const
+        {
+            for( auto & stream : _streams )
+            {
+                //Set the value, if option exist for stream (supported)
+                for( auto & dds_opt : stream.second->options() )
+                {
+                    if( dds_opt->get_name().compare( name ) == 0 )
+                    {
+                        _dev->set_option_value( dds_opt, value );
+                        break;
+                    }
+                }
+            }
+        }
+
+        float query_option( const std::string & name ) const
+        {
+            for( auto & stream : _streams )
+            {
+                //Set the value, if option exist for stream (supported)
+                for( auto & dds_opt : stream.second->options() )
+                {
+                    if( dds_opt->get_name().compare( name ) == 0 )
+                    {
+                        //Assumes value is same for all relevant streams in the sensor, values are always set together
+                        return _dev->query_option_value( dds_opt );
+                    }
+                }
+            }
+
+            throw std::runtime_error( "Could not find a stream tath supports option " + name );
+        }
 
         const std::string & get_name() const { return _name; }
 

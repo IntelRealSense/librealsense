@@ -138,7 +138,6 @@ std::vector< std::shared_ptr< realdds::dds_stream_server > > get_supported_strea
             LOG_ERROR( "ignoring stream '" << stream_name << "' with no profiles" );
             continue;
         }
-        std::string const & sensor_name = stream_name_to_sensor_name[stream_name];
         auto server = stream_name_to_server[stream_name];
         if( ! server )
         {
@@ -213,7 +212,7 @@ topics::device_info rs2_device_to_info( rs2::device const & dev )
     dev_info.name = dev.get_info( RS2_CAMERA_INFO_NAME );
     dev_info.serial = dev.get_info( RS2_CAMERA_INFO_SERIAL_NUMBER );
     dev_info.product_line = dev.get_info( RS2_CAMERA_INFO_PRODUCT_LINE );
-    dev_info.locked = ( dev.get_info( RS2_CAMERA_INFO_CAMERA_LOCKED ) == "YES" );
+    dev_info.locked = ( strcmp( dev.get_info( RS2_CAMERA_INFO_CAMERA_LOCKED ), "YES" ) == 0 );
 
     // Build device topic root path
     dev_info.topic_root = get_topic_root( dev_info );

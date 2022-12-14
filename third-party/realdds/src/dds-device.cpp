@@ -133,5 +133,14 @@ void dds_device::close( dds_streams const & streams )
     _impl->close( streams );
 }
 
+void dds_device::set_option_value( const std::shared_ptr< dds_option > & option, float new_value )
+{
+    _impl->set_option_value( option, new_value );
+}
+
+float dds_device::query_option_value( const std::shared_ptr< dds_option > & option )
+{
+    return _impl->query_option_value( option );
+}
 
 }  // namespace realdds
