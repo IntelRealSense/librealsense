@@ -5,6 +5,9 @@
 #include "rosbag/bag.h"
 #include "ros_file_format.h"
 
+#include <rsutils/string/from.h>
+
+
 namespace librealsense
 {
     using namespace device_serializer;
@@ -44,7 +47,9 @@ namespace librealsense
             auto as_type = As<typename ExtensionToType<E>::type>(snapshot);
             if (as_type == nullptr)
             {
-                throw invalid_value_exception(to_string() << "Failed to cast snapshot to \"" << E << "\" (as \"" << ExtensionToType<E>::to_string() << "\")");
+                throw invalid_value_exception( rsutils::string::from()
+                                               << "Failed to cast snapshot to \"" << E << "\" (as \""
+                                               << ExtensionToType< E >::to_string() << "\")" );
             }
             return as_type;
         }
@@ -68,7 +73,8 @@ namespace librealsense
             }
             catch (rosbag::BagIOException& e)
             {
-                throw io_exception(to_string() << "Ros Writer failed to write topic: \"" << topic << "\" to file. (Exception message: " << e.what() << ")");
+                throw io_exception( rsutils::string::from() << "Ros Writer failed to write topic: \"" << topic
+                                                            << "\" to file. (Exception message: " << e.what() << ")" );
             }
         }
 

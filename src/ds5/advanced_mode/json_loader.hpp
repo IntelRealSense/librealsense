@@ -18,6 +18,9 @@
 #include "presets.h"
 #include "serialized-utilities.h"
 
+#include <rsutils/string/from.h>
+
+
 namespace librealsense
 {
     using json = nlohmann::json;
@@ -189,7 +192,7 @@ namespace librealsense
             });
 
             if (res == std::end(_values))
-                throw invalid_value_exception(to_string() << "Value not found in map! value=" << val);
+                throw invalid_value_exception( rsutils::string::from() << "Value not found in map! value=" << val );
 
             ss << res->first;
             return ss.str();
@@ -510,12 +513,13 @@ namespace librealsense
                 }
                 catch (...)
                 {
-                    throw invalid_value_exception(to_string() << "Couldn't set \"" << key << "\"");
+                    throw invalid_value_exception( rsutils::string::from() << "Couldn't set \"" << key << "\"" );
                 }
             }
             else
             {
-                throw invalid_value_exception(to_string() << key << " key is not supported by the connected device!");
+                throw invalid_value_exception( rsutils::string::from()
+                                               << key << " key is not supported by the connected device!" );
             }
         }
 

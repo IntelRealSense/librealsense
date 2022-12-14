@@ -6,6 +6,7 @@
 #include <librealsense2/h/rs_option.h>
 #include "extension.h"
 #include "../types.h"
+#include <rsutils/string/from.h>
 
 namespace librealsense
 {
@@ -65,9 +66,8 @@ namespace librealsense
             auto it = _options.find(id);
             if (it == _options.end())
             {
-                throw invalid_value_exception(to_string()
-                    << "Device does not support option "
-                    << get_option_name(id) << "!");
+                throw invalid_value_exception( rsutils::string::from()
+                                               << "Device does not support option " << get_option_name( id ) << "!" );
             }
             return *it->second;
         }

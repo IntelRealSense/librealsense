@@ -263,7 +263,7 @@ namespace rs2
         void tool_model::draw_guides(ux_window& win, const rect& viewer_rect, bool distance_guide, bool orientation_guide)
         {
             static const float fade_factor = 0.6f;
-            static utilities::time::stopwatch animation_clock;
+            static rsutils::time::stopwatch animation_clock;
 
             auto flags = ImGuiWindowFlags_NoResize |
                 ImGuiWindowFlags_NoScrollbar |
@@ -1222,7 +1222,7 @@ namespace rs2
                 ImGui::PushStyleColor(ImGuiCol_FrameBg, device_info_color);
                 ImGui::PushStyleColor(ImGuiCol_Text, light_grey);
                 ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, regular_blue);
-                std::string did = to_string() << _id << "-desc";
+                std::string did = rsutils::string::from() << _id << "-desc";
                 ImVec2 desc_size = { 270, 50 };
                 auto lines = std::count(_description.begin(), _description.end(), '\n') + 1;
                 desc_size.y = lines * 20.f;
@@ -1327,15 +1327,19 @@ namespace rs2
                     //Capture raw frame
                     auto filename = filename_base + "_" + stream_desc + "_" + fn.str() + ".raw";
                     if (!save_frame_raw_data(filename, original_frame))
-                        _viewer_model.not_model->add_notification(notification_data{ to_string() << "Failed to save frame raw data  " << filename,
-                            RS2_LOG_SEVERITY_INFO, RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR });
+                        _viewer_model.not_model->add_notification(
+                            notification_data{ "Failed to save frame raw data  " + filename,
+                                               RS2_LOG_SEVERITY_INFO,
+                                               RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR } );
 
 
                     // And the frame's attributes
                     filename = filename_base + "_" + stream_desc + "_" + fn.str() + "_metadata.csv";
                     if (!frame_metadata_to_csv(filename, original_frame))
-                        _viewer_model.not_model->add_notification(notification_data{ to_string() << "Failed to save frame metadata file " << filename,
-                            RS2_LOG_SEVERITY_INFO, RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR });
+                        _viewer_model.not_model->add_notification(
+                            notification_data{ "Failed to save frame metadata file " + filename,
+                                               RS2_LOG_SEVERITY_INFO,
+                                               RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR } );
 
                 }
             }

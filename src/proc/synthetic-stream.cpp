@@ -9,6 +9,9 @@
 #include "stream.h"
 #include "types.h"
 
+#include <rsutils/string/from.h>
+
+
 namespace librealsense
 {
     void processing_block::set_processing_callback(frame_processor_callback_ptr callback)
@@ -177,8 +180,8 @@ namespace librealsense
             if(!stream_selector_strong_ref) return;
 
             if (!stream_selector_strong_ref->is_valid(val))
-                throw invalid_value_exception(to_string()
-                    << "Unsupported stream filter, " << val << " is out of range.");
+                throw invalid_value_exception( rsutils::string::from()
+                                               << "Unsupported stream filter, " << val << " is out of range." );
 
             std::lock_guard<std::mutex> lock(_mutex);
             _stream_filter.stream = static_cast<rs2_stream>((int)val);
@@ -196,8 +199,8 @@ namespace librealsense
             if(!format_selector_strong_ref) return;
 
             if (!format_selector_strong_ref->is_valid(val))
-                throw invalid_value_exception(to_string()
-                    << "Unsupported stream format filter, " << val << " is out of range.");
+                throw invalid_value_exception( rsutils::string::from()
+                                               << "Unsupported stream format filter, " << val << " is out of range." );
 
             std::lock_guard<std::mutex> lock(_mutex);
             _stream_filter.format = static_cast<rs2_format>((int)val);
@@ -211,8 +214,8 @@ namespace librealsense
             if(!index_selector_strong_ref) return;
 
             if (!index_selector_strong_ref->is_valid(val))
-                throw invalid_value_exception(to_string()
-                    << "Unsupported stream index filter, " << val << " is out of range.");
+                throw invalid_value_exception( rsutils::string::from()
+                                               << "Unsupported stream index filter, " << val << " is out of range." );
 
             std::lock_guard<std::mutex> lock(_mutex);
             _stream_filter.index = (int)val;

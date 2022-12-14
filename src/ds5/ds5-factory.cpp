@@ -26,6 +26,9 @@
 #include "../firmware_logger_device.h"
 #include "device-calibration.h"
 
+#include <rsutils/string/from.h>
+
+
 namespace librealsense
 {
     // PSR
@@ -798,9 +801,10 @@ namespace librealsense
         std::vector<byte> read_sector(const uint32_t address, const uint16_t size) const
         {
             if (size > ds5_advanced_mode_base::HW_MONITOR_COMMAND_SIZE)
-                throw std::runtime_error(to_string() << "Device memory read failed. max size: "
-                    << int(ds5_advanced_mode_base::HW_MONITOR_COMMAND_SIZE)
-                    << ", requested: " << int(size));
+                throw std::runtime_error( rsutils::string::from()
+                                          << "Device memory read failed. max size: "
+                                          << int( ds5_advanced_mode_base::HW_MONITOR_COMMAND_SIZE )
+                                          << ", requested: " << int( size ) );
             command cmd(ds::fw_cmd::FRB, address, size);
             return ds5_device::_hw_monitor->send(cmd);
         }
@@ -1110,8 +1114,8 @@ namespace librealsense
         case RS457_PID:
             return std::make_shared<rs457_device>(ctx, group, register_device_notifications);
         default:
-            throw std::runtime_error(to_string() << "Unsupported RS400 model! 0x"
-                << std::hex << std::setw(4) << std::setfill('0') <<(int)pid);
+            throw std::runtime_error( rsutils::string::from() << "Unsupported RS400 model! 0x" << std::hex
+                                                              << std::setw( 4 ) << std::setfill( '0' ) << (int)pid );
         }
     }
 

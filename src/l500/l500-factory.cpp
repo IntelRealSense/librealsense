@@ -141,8 +141,8 @@ namespace librealsense
         case L535_PID:
             return std::make_shared<l535_device>(ctx, group, register_device_notifications);
        default:
-            throw std::runtime_error(to_string() << "Unsupported L500 model! 0x"
-                << std::hex << std::setw(4) << std::setfill('0') << (int)pid);
+            throw std::runtime_error( rsutils::string::from() << "Unsupported L500 model! 0x" << std::hex
+                                                              << std::setw( 4 ) << std::setfill( '0' ) << (int)pid );
         }
     }
 

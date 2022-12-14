@@ -80,7 +80,7 @@ endif()
 set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 11)
 
 target_link_libraries(${PROJECT_NAME}
-    PRIVATE ${WINLIB} realsense2 realsense2-compression
+    PUBLIC ${WINLIB} realsense2 realsense2-compression
 )
 
 set_target_properties(${PROJECT_NAME} PROPERTIES FOLDER Library)

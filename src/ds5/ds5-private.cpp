@@ -236,7 +236,8 @@ namespace librealsense
                 return get_color_stream_intrinsic(raw_data, width, height);
             }
             default:
-                throw invalid_value_exception(to_string() << "Parsing Calibration table type " << table_id << " is not supported");
+                throw invalid_value_exception( rsutils::string::from() << "Parsing Calibration table type " << table_id
+                                                                       << " is not supported" );
             }
         }
 
@@ -305,8 +306,9 @@ namespace librealsense
                         found = (result.mi == 5);
                         break;
                     default:
-                        throw not_implemented_exception(to_string() << "USB device "
-                            << std::hex << info.pid << ":" << info.vid << std::dec << " is not supported.");
+                        throw not_implemented_exception( rsutils::string::from()
+                                                         << "USB device " << std::hex << info.pid << ":" << info.vid
+                                                         << std::dec << " is not supported." );
                         break;
                     }
 
@@ -334,9 +336,9 @@ namespace librealsense
                         { return fisheye_pid.find(info.pid) != fisheye_pid.end();});
                     break;
                 default:
-                    throw invalid_value_exception(to_string()
-                    << "Capability filters are not implemented for val "
-                    << std::hex << caps << std::dec);
+                    throw invalid_value_exception( rsutils::string::from()
+                                                   << "Capability filters are not implemented for val " << std::hex
+                                                   << caps << std::dec );
             }
             return results;
         }

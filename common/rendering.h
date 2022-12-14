@@ -9,7 +9,8 @@
 
 #include <librealsense2/rs.hpp>
 #include <librealsense2-gl/rs_processing_gl.hpp>
-#include <utilities/time/stopwatch.h>
+#include <rsutils/time/stopwatch.h>
+#include <rsutils/string/from.h>
 
 #include "matrix4.h"
 #include "float3.h"
@@ -393,7 +394,7 @@ namespace rs2
         std::mutex _m;
         clock::duration _window;
         std::vector<std::pair<clock::time_point, bool>> _measurements;
-        utilities::time::stopwatch _t;
+        rsutils::time::stopwatch _t;
     };
 
     class texture_buffer
@@ -1098,24 +1099,19 @@ namespace rs2
         return (fabs(fmod(f, 1)) < std::numeric_limits<float>::min());
     }
 
-    struct to_string
-    {
-        std::ostringstream ss;
-        template<class T> to_string & operator << (const T & val) { ss << val; return *this; }
-        operator std::string() const { return ss.str(); }
-    };
-
     inline std::string error_to_string(const error& e)
     {
-        return to_string() << rs2_exception_type_to_string(e.get_type())
+        return rsutils::string::from() << rs2_exception_type_to_string(e.get_type())
             << " in " << e.get_failed_function() << "("
             << e.get_failed_args() << "):\n" << e.what();
     }
 
     inline std::string api_version_to_string(int version)
     {
-        if (version / 10000 == 0) return to_string() << version;
-        return to_string() << (version / 10000) << "." << (version % 10000) / 100 << "." << (version % 100);
+        if( version / 10000 == 0 )
+            return rsutils::string::from() << version;
+        return rsutils::string::from() << ( version / 10000 ) << "." << ( version % 10000 ) / 100 << "."
+                                       << ( version % 100 );
     }
 
     // Comparing parameter against a range of values of the same type

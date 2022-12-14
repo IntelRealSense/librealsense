@@ -38,6 +38,8 @@
 #include <src/fw-update/fw-update-unsigned.h>
 #include <third-party/json.hpp>
 
+#include <rsutils/string/from.h>
+
 #include <mutex>
 #include <chrono>
 #include <vector>
@@ -350,7 +352,9 @@ namespace librealsense
 
         auto it = ds::device_to_fw_min_version.find(_pid);
         if (it == ds::device_to_fw_min_version.end())
-            throw librealsense::invalid_value_exception(to_string() << "Min and Max firmware versions have not been defined for this device: " << std::hex << _pid);
+            throw librealsense::invalid_value_exception(
+                rsutils::string::from() << "Min and Max firmware versions have not been defined for this device: "
+                                        << std::hex << _pid );
         bool result = (firmware_version(fw_version) >= firmware_version(it->second));
         if (!result)
             LOG_ERROR("Firmware version isn't compatible" << fw_version);
@@ -1071,12 +1075,6 @@ namespace librealsense
                 }
 
             }
-            else if (_fw_version >= firmware_version("5.10.9.0") && 
-                (_device_capabilities & d400_caps::CAP_ACTIVE_PROJECTOR) == d400_caps::CAP_ACTIVE_PROJECTOR &&
-                _fw_version.experimental()) // Not yet available in production firmware
-            {
-                depth_sensor.register_option(RS2_OPTION_EMITTER_ON_OFF, std::make_shared<emitter_on_and_off_option>(*_hw_monitor, &raw_depth_sensor));
-            }
 
             if ((_device_capabilities & d400_caps::CAP_INTERCAM_HW_SYNC) == d400_caps::CAP_INTERCAM_HW_SYNC)
             {
@@ -1334,7 +1332,10 @@ namespace librealsense
         if (ds::ds5_fw_error_report.find(static_cast<uint8_t>(value)) != ds::ds5_fw_error_report.end())
             return{ RS2_NOTIFICATION_CATEGORY_HARDWARE_ERROR, value, RS2_LOG_SEVERITY_ERROR, ds::ds5_fw_error_report.at(static_cast<uint8_t>(value)) };
 
-        return{ RS2_NOTIFICATION_CATEGORY_HARDWARE_ERROR, value, RS2_LOG_SEVERITY_WARN, (to_string() << "D400 HW report - unresolved type " << value) };
+        return { RS2_NOTIFICATION_CATEGORY_HARDWARE_ERROR,
+                 value,
+                 RS2_LOG_SEVERITY_WARN,
+                 ( rsutils::string::from() << "D400 HW report - unresolved type " << value ) };
     }
 
     void ds5_device::create_snapshot(std::shared_ptr<debug_interface>& snapshot) const

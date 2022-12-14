@@ -11,6 +11,9 @@
 #include "l500/l500-private.h"
 #include "l500/l500-fw-update-device.h"
 
+#include <rsutils/string/from.h>
+
+
 #define FW_UPDATE_INTERFACE_NUMBER 0
 #define DEFAULT_TIMEOUT 100
 
@@ -145,6 +148,7 @@ namespace librealsense
                 }
             }
         }
-        throw std::runtime_error(to_string() << "Failed to create FW update device, device id: " << _dfu.id);
+        throw std::runtime_error( rsutils::string::from()
+                                  << "Failed to create FW update device, device id: " << _dfu.id );
     }
 }
