@@ -37,6 +37,12 @@ After plugging the camera into a USB3 port, you should be able to see the newly 
 
 ![Step 4](./img/win_step4.PNG)
 
+* Note: When building with Visual Studio 2022, open the intel.realsense.prop file under Intel RealSense SDK 2.0 folder with elevated permission and change librealsenseSDK macro: </br>
+
+    * `<librealsenseSDK>$(ProgramFiles)\Intel RealSense SDK 2.0</librealsenseSDK>` </br>
+    to </br>
+    * `<librealsenseSDK>$(MSBuildProgramFiles32)\Intel RealSense SDK 2.0</librealsenseSDK>`  </br>
+    
 5. Open the `Intel® RealSense™ Samples`solution:
 
 ![Step 5](./img/win_shortcuts.PNG)
