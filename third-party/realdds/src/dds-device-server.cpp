@@ -16,6 +16,7 @@
 #include <realdds/topics/flexible/flexible-msg.h>
 #include <realdds/dds-topic.h>
 #include <realdds/dds-topic-writer.h>
+#include <realdds/dds-option.h>
 
 #include <fastdds/dds/topic/Topic.hpp>
 #include <fastdds/dds/subscriber/SampleInfo.hpp>
@@ -87,13 +88,24 @@ void dds_device_server::publish_image( const std::string & stream_name, const ui
 }
 
 
-static void on_discovery_device_header( size_t const n_streams, dds_notification_server & notifications )
+static void on_discovery_device_header( size_t const n_streams, const dds_options & options,
+                                        dds_notification_server & notifications )
 {
-    topics::flexible_msg notification( json{
+    topics::flexible_msg device_header( json{
         { "id", "device-header" },
         { "n-streams", n_streams },
     } );
-    notifications.add_discovery_notification( std::move( notification ) );
+    notifications.add_discovery_notification( std::move( device_header ) );
+
+    auto device_options = nlohmann::json::array();
+    for( auto & opt : options )
+        device_options.push_back( std::move( opt->to_json() ) );
+    topics::flexible_msg device_options_message( json {
+        { "id", "device-options" },
+        { "n-options", options.size() },
+        { "options" , device_options }
+        } );
+    notifications.add_discovery_notification( std::move( device_options_message ) );
 }
 
 
@@ -117,10 +129,22 @@ static void on_discovery_stream_header( std::shared_ptr< dds_stream_server > con
 
     topics::flexible_msg notification( msg );
     notifications.add_discovery_notification( std::move( notification ) );
+
+    auto stream_options = nlohmann::json::array();
+    for( auto & opt : stream->options() )
+        stream_options.push_back( std::move( opt->to_json() ) );
+    topics::flexible_msg stream_options_message( json {
+        { "id", "stream-options" },
+        { "stream-name", stream->name() },
+        { "n-options", stream->options().size() },
+        { "options" , stream_options }
+        } );
+    notifications.add_discovery_notification( std::move( stream_options_message ) );
 }
 
 
-void dds_device_server::init( std::vector< std::shared_ptr< dds_stream_server > > const & streams )
+void dds_device_server::init( std::vector< std::shared_ptr< dds_stream_server > > const & streams,
+                              const dds_options & options)
 {
     if( is_valid() )
         DDS_THROW( runtime_error, "device server '" + _topic_root + "' is already initialized" );
@@ -133,7 +157,7 @@ void dds_device_server::init( std::vector< std::shared_ptr< dds_stream_server > 
         // If a previous init failed (e.g., one of the streams has no profiles):
         _stream_name_to_server.clear();
 
-        on_discovery_device_header( streams.size(), *_notification_server );
+        on_discovery_device_header( streams.size(), options, *_notification_server );
         for( auto& stream : streams )
         {
             std::string topic_name = _topic_root + '/' + stream->name();

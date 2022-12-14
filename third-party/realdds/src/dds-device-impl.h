@@ -6,6 +6,7 @@
 #include <realdds/dds-device.h>
 #include <realdds/dds-stream-profile.h>
 #include <realdds/dds-utilities.h>
+#include <realdds/dds-option.h>
 #include <realdds/topics/device-info/device-info-msg.h>
 #include <realdds/topics/flexible/flexible-msg.h>
 
@@ -43,6 +44,8 @@ public:
 
     std::shared_ptr< dds_topic_reader > _notifications_reader;
     std::shared_ptr< dds_topic_writer > _control_writer;
+
+    dds_options _options;
 
     impl( std::shared_ptr< dds_participant > const & participant,
           dds_guid const & guid,

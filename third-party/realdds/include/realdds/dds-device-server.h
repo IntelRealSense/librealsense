@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <realdds/dds-option.h>
 #include <librealsense2/utilities/concurrency/concurrency.h>
 #include <third-party/json_fwd.hpp>
 
@@ -57,7 +58,8 @@ public:
     // A server is not valid until init() is called with a list of streams that we want to publish.
     // On successful return from init(), each of the streams will be alive so clients will be able
     // to subscribe.
-    void init( const std::vector< std::shared_ptr< dds_stream_server > > & streams );
+    void init( const std::vector< std::shared_ptr< dds_stream_server > > & streams,
+               const dds_options & options );
 
     bool is_valid() const { return( nullptr != _notification_server.get() ); }
     bool operator!() const { return ! is_valid(); }
@@ -85,6 +87,7 @@ private:
     dispatcher _control_dispatcher;
     control_callback _open_streams_callback = nullptr;
     control_callback _close_streams_callback = nullptr;
+    std::atomic< size_t > _message_counter { 0 };
 };  // class dds_device_server
 
 

@@ -33,6 +33,7 @@
 #endif //BUILD_WITH_DDS
 
 #include <librealsense2/utilities/json.h>
+
 using json = nlohmann::json;
 
 #ifdef WITH_TRACKING
@@ -403,6 +404,26 @@ namespace librealsense
         }
     };
 
+    //A facade for a realdds::dds_option exposing librealsense interface
+    class rs2_dds_option : public option_base
+    {
+        std::shared_ptr< realdds::dds_option > _dds_opt;
+        std::string _stream_name;
+
+    public:
+        rs2_dds_option( const std::shared_ptr< realdds::dds_option > & dds_opt )
+            : option_base( { dds_opt->get_range().min, dds_opt->get_range().max,
+                             dds_opt->get_range().step, dds_opt->get_range().default_value } )
+            , _dds_opt( dds_opt )
+        {
+        }
+
+        void set( float value ) override {} //TODO - implement
+        float query() const override { return 0.0f; } //TODO - implement
+
+        bool is_enabled() const override { return true; }
+        const char * get_description() const override { return _dds_opt->get_description().c_str(); }
+    };
 
     class dds_sensor_proxy : public software_sensor
     {
@@ -579,6 +600,26 @@ namespace librealsense
             software_sensor::close();
         }
 
+        void add_option( std::shared_ptr< realdds::dds_option > option )
+        {
+            //Convert name to rs2_option type
+            rs2_option option_id = RS2_OPTION_COUNT;
+            for( size_t i = 0; i < static_cast< size_t >( RS2_OPTION_COUNT ); i++ )
+            {
+                if( option->get_name().compare( get_string( static_cast< rs2_option >( i ) ) ) == 0 )
+                {
+                    option_id = static_cast< rs2_option >( i );
+                    break;
+                }
+            }
+
+            if( option_id == RS2_OPTION_COUNT )
+                throw librealsense::invalid_value_exception( to_string() << "Option " << option->get_name() << " type not found" );
+
+            auto opt = std::make_shared< rs2_dds_option >( option );
+            register_option( option_id, opt );
+        }
+
         //float get_option( rs2_option option ) const override;
         //void set_option( rs2_option option, float value ) const override;
 
@@ -664,12 +705,12 @@ namespace librealsense
             , _dds_dev( dev )
         {
             LOG_DEBUG( "=====> dds-device-proxy " << this << " created on top of dds-device " << _dds_dev.get() );
-            auto & info = dev->device_info();
-            register_info( RS2_CAMERA_INFO_NAME, info.name );
-            register_info( RS2_CAMERA_INFO_PRODUCT_LINE, info.product_line );
-            register_info( RS2_CAMERA_INFO_SERIAL_NUMBER, info.serial );
-            register_info( RS2_CAMERA_INFO_CAMERA_LOCKED, info.locked ? "YES" : "NO" );
-            register_info( RS2_CAMERA_INFO_PHYSICAL_PORT, info.topic_root );
+            auto & dev_info = dev->device_info();
+            register_info( RS2_CAMERA_INFO_NAME, dev_info.name );
+            register_info( RS2_CAMERA_INFO_PRODUCT_LINE, dev_info.product_line );
+            register_info( RS2_CAMERA_INFO_SERIAL_NUMBER, dev_info.serial );
+            register_info( RS2_CAMERA_INFO_CAMERA_LOCKED, dev_info.locked ? "YES" : "NO" );
+            register_info( RS2_CAMERA_INFO_PHYSICAL_PORT, dev_info.topic_root );
 
             //Assumes dds_device initialization finished
             struct sensor_info
@@ -691,21 +732,21 @@ namespace librealsense
                 count = ( count > 1 ) ? 1 : 0;
             // Now we can finally assign (sid,index):
             _dds_dev->foreach_stream( [&]( std::shared_ptr< realdds::dds_stream > const & stream ) {
-                auto & info = sensor_name_to_info[stream->sensor_name()];
-                if( ! info.proxy )
+                auto & sensor_info = sensor_name_to_info[stream->sensor_name()];
+                if( ! sensor_info.proxy )
                 {
                     // This is a new sensor we haven't seen yet
-                    info.proxy = std::make_shared< dds_sensor_proxy >( stream->sensor_name(), this, _dds_dev );
-                    info.sensor_index = add_sensor( info.proxy );
-                    assert( info.sensor_index == _software_sensors.size() );
-                    _software_sensors.push_back( info.proxy );
+                    sensor_info.proxy = std::make_shared< dds_sensor_proxy >( stream->sensor_name(), this, _dds_dev );
+                    sensor_info.sensor_index = add_sensor( sensor_info.proxy );
+                    assert( sensor_info.sensor_index == _software_sensors.size() );
+                    _software_sensors.push_back( sensor_info.proxy );
                 }
                 auto stream_type = to_rs2_stream_type( stream->type_string() );
                 sid_index sidx( stream_type, counts[stream_type]++ );
-                info.proxy->add_dds_stream( sidx, stream );
+                sensor_info.proxy->add_dds_stream( sidx, stream );
                 LOG_DEBUG( sidx.to_string() << " " << stream->sensor_name() << " : " << stream->name() );
 
-                software_sensor & sensor = get_software_sensor( info.sensor_index );
+                software_sensor & sensor = get_software_sensor( sensor_info.sensor_index );
                 auto video_stream = std::dynamic_pointer_cast< realdds::dds_video_stream >( stream );
                 auto motion_stream = std::dynamic_pointer_cast< realdds::dds_motion_stream >( stream );
                 auto & profiles = stream->profiles();
@@ -730,6 +771,12 @@ namespace librealsense
                                 std::static_pointer_cast< realdds::dds_motion_stream_profile >( profile ) ),
                             profile == default_profile );
                     }
+                }
+
+                auto & options = stream->options();
+                for( auto & option : options )
+                {
+                    sensor_info.proxy->add_option( option );
                 }
             } );  // End foreach_stream lambda
         } //End dds_device_proxy constructor

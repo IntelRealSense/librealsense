@@ -113,6 +113,16 @@ size_t dds_device::foreach_stream( std::function< void( std::shared_ptr< dds_str
     return _impl->_streams.size();
 }
 
+size_t dds_device::foreach_option( std::function< void( std::shared_ptr< dds_option > option ) > fn ) const
+{
+    for( auto const & option : _impl->_options)
+    {
+        fn( option );
+    }
+
+    return _impl->_options.size();
+}
+
 void dds_device::open( const dds_stream_profiles & profiles )
 {
     _impl->open( profiles );

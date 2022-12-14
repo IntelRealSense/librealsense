@@ -20,7 +20,7 @@ def test_one_stream():
     log.d( s1.profiles() )
     global server
     server = dds.device_server( participant, "realdds/device/topic-root" )
-    server.init( [s1] )
+    server.init( [s1], [] )
 
 def test_one_motion_stream():
     s1p1 = dds.motion_stream_profile( 30, dds.stream_format("RGB8") )
@@ -30,7 +30,7 @@ def test_one_motion_stream():
     log.d( s1.profiles() )
     global server
     server = dds.device_server( participant, "realdds/device/topic-root" )
-    server.init( [s1] )
+    server.init( [s1], [] )
 
 def test_no_profiles():
     s1profiles = []
@@ -38,12 +38,12 @@ def test_no_profiles():
     s1.init_profiles( s1profiles, 0 )
     global server
     server = dds.device_server( participant, "realdds/device/topic-root" )
-    server.init( [s1] )
+    server.init( [s1], [] )
 
 def test_no_streams():
     global server
     server = dds.device_server( participant, "realdds/device/topic-root" )
-    server.init( [] )
+    server.init( [], [] )
 
 def test_n_profiles( n_profiles ):
     assert n_profiles > 0
@@ -60,7 +60,7 @@ def test_n_profiles( n_profiles ):
     log.d( s1.profiles() )
     global server
     server = dds.device_server( participant, "realdds/device/topic-root" )
-    server.init( [s1] )
+    server.init( [s1], [] )
 
 
 def test_d435i():

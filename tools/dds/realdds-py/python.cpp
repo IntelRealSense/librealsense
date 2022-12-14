@@ -451,6 +451,27 @@ PYBIND11_MODULE(NAME, m) {
         .def( "add_device", &dds_device_broadcaster::add_device )
         .def( "remove_device", &dds_device_broadcaster::remove_device );
 
+    using realdds::dds_option_range;
+    py::class_< dds_option_range >( m, "dds_option_range" )
+        .def( py::init<>() )
+        .def_readwrite( "min", &dds_option_range::min )
+        .def_readwrite( "max", &dds_option_range::max )
+        .def_readwrite( "step", &dds_option_range::step )
+        .def_readwrite( "default_value", &dds_option_range::default_value );
+
+    using realdds::dds_option;
+    py::class_< dds_option, std::shared_ptr< dds_option > >( m, "dds_option" )
+        .def( py::init< std::string const &, std::string const & >() )
+        .def( "get_name", &dds_option::get_name )
+        .def( "owner_name", &dds_option::owner_name )
+        .def( "get_value", &dds_option::get_value )
+        .def( "set_value", &dds_option::set_value )
+        .def( "get_range", &dds_option::get_range )
+        .def( "set_range", &dds_option::set_range )
+        .def( "get_description", &dds_option::get_description )
+        .def( "set_description", &dds_option::set_description )
+        .def( "to_json", []( dds_option const & self ) { return self.to_json().dump(); } );
+
     using realdds::dds_stream_format;
     py::class_< dds_stream_format >( m, "stream_format" )
         .def( py::init<>() )
@@ -499,7 +520,9 @@ PYBIND11_MODULE(NAME, m) {
         .def( "type_string", &dds_stream_base::type_string )
         .def( "profiles", &dds_stream_base::profiles )
         .def( "init_profiles", &dds_stream_base::init_profiles )
+        .def( "init_options", &dds_stream_base::init_options )
         .def( "default_profile_index", &dds_stream_base::default_profile_index )
+        .def( "options", &dds_stream_base::options )
         .def( "is_open", &dds_stream_base::is_open )
         .def( "is_streaming", &dds_stream_base::is_streaming )
         .def( "get_topic", &dds_stream_base::get_topic );
@@ -634,6 +657,12 @@ PYBIND11_MODULE(NAME, m) {
                   self.foreach_stream(
                       [&]( std::shared_ptr< dds_stream > const & stream ) { streams.push_back( stream ); } );
                   return streams;
+              } )
+        .def( "options",
+              []( dds_device const & self ) {
+                  std::vector< std::shared_ptr< dds_option > > options;
+                  self.foreach_option( [&]( std::shared_ptr< dds_option > const & option ) { options.push_back( option ); } );
+                  return options;
               } )
         .def( "__repr__", []( dds_device const & self ) {
             std::ostringstream os;

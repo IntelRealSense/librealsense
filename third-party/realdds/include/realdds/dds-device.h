@@ -51,9 +51,13 @@ public:
     size_t number_of_streams() const;
 
     size_t foreach_stream( std::function< void( std::shared_ptr< dds_stream > stream ) > fn ) const;
+    size_t foreach_option( std::function< void( std::shared_ptr< dds_option > option ) > fn ) const;
 
     void open( const dds_stream_profiles & profiles );
     void close( const dds_streams & streams );
+
+    void set_option_value( std::shared_ptr< dds_option > option, float value );
+    float query_option_value( std::shared_ptr< dds_option > option );
 
 private:
     class impl;
