@@ -5,7 +5,7 @@ from rspy import log, test
 from pyrsutils import running_average_i as running_average
 import random
 
-random.seed()
+random.seed()  # seed random number generator
 
 
 def signed( n ):
@@ -43,7 +43,15 @@ def test_set( median, plus_minus, reps = 50 ):
 
 
 def test_around( median, plus_minus, reps = 50, sets = 10 ):
-    test.start( f"double, {median} +/- {plus_minus}" )
+    """
+    Generate random numbers around the median, keeping within 'plus_minus' of it.
+    Test that, at the end, the running-average is the same as the average we calculate manually (sum(numbers)/count).
+    :param median: the middle number around which we pick numbers
+    :param plus_minus: how far away from the median we want to get
+    :param reps: how many numbers per set of numbers
+    :param sets: how many times to repeat this
+    """
+    test.start( f"int, {median} +/- {plus_minus}" )
 
     for s in range(sets):
         # in case we want to reproduce, you can take the output, a tuple:
@@ -60,13 +68,13 @@ def test_around( median, plus_minus, reps = 50, sets = 10 ):
 # These use random numbers, so the output will be different each time...
 # See the above debug output if something needs to be reproduced.
 #
-test_around( 5000, 100 )
-test_around( 100, 99 )
-test_around( 0, 100 )
-test_around( -100, 150 )
-test_around( -10, 5 )
-test_around( 100000000, 50000000 )
-test_around( 0, 50000000 )
+test_around( 5000, 100 )  # positive, small range
+test_around( 100, 99 )    # positive, range large (in comparison)
+test_around( 0, 100 )     # positive & negative
+test_around( -100, 150 )  # more negative
+test_around( -10, 5 )     # negative, small range
+test_around( 100000000, 50000000 )  # large numbers
+test_around( 0, 50000000 )  # with negatives
 #
 #############################################################################################
 test.print_results_and_exit()
