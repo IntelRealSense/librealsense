@@ -39,7 +39,7 @@ def test_set( median, plus_minus, reps = 50 ):
     test.check_approx_abs( avg.get(), golden, 1. )
     # We have higher expectations! We should get a pretty nice match:
     test.check_approx_abs( float( avg ), golden, .001 )
-    print()
+    log.d()
 
 
 def test_around( median, plus_minus, reps = 50, sets = 10 ):

@@ -27,7 +27,7 @@ def test_around( median, plus_minus, reps = 50, sets = 10 ):
         test.check_equal( avg.size(), reps )
         golden = tot / avg.size()
         test.check_approx_abs( avg.get(), golden, .00001 )
-        print()
+        log.d()
 
     test.finish()
 
