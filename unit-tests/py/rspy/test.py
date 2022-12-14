@@ -137,11 +137,27 @@ is used by sending abort=True to check functions
 """
 
 
+def _count_check():
+    global n_assertions
+    n_assertions += 1
+
+
+def check_passed():
+    """
+    Function for when a check fails
+    :return: always False (so you can 'return check_failed()'
+    """
+    _count_check()
+    reset_info()
+    return True
+
+
 def check_failed( abort = False ):
     """
     Function for when a check fails
     :return: always False (so you can 'return check_failed()'
     """
+    _count_check()
     global n_failed_assertions, test_failed
     n_failed_assertions += 1
     test_failed = True
@@ -163,8 +179,6 @@ def check( exp, description = None, abort_if_failed = False):
     :param abort_if_failed: If True and assertion failed the test will be aborted
     :return: True if assertion passed, False otherwise
     """
-    global n_assertions
-    n_assertions += 1
     if not exp:
         print_stack()
         if description:
@@ -173,7 +187,7 @@ def check( exp, description = None, abort_if_failed = False):
             log.out( f"    check failed; received {exp}" )
         return check_failed( abort_if_failed )
     reset_info()
-    return True
+    return check_passed()
 
 
 def check_false( exp, description = None, abort_if_failed = False):
@@ -193,18 +207,13 @@ def check_equal(result, expected, abort_if_failed = False):
     """
     if type(expected) == list:
         log.out("check_equal should not be used for lists. Use check_equal_lists instead")
-        if abort_if_failed:
-            abort()
-        return False
-    global n_assertions
-    n_assertions += 1
+        return check_failed( abort_if_failed )
     if result != expected:
         print_stack()
         log.out( "    left  :", result )
         log.out( "    right :", expected )
         return check_failed( abort_if_failed )
-    reset_info()
-    return True
+    return check_passed()
 
 
 def check_between( result, min, max, abort_if_failed = False ):
@@ -216,15 +225,12 @@ def check_between( result, min, max, abort_if_failed = False ):
     :param abort_if_failed:  If True and assertion failed the test will be aborted
     :return: True if assertion passed, False otherwise
     """
-    global n_assertions
-    n_assertions += 1
     if result < min  or  result > max:
         print_stack()
         log.out( "   result :", result )
         log.out( "  between :", min, '-', max )
         return check_failed( abort_if_failed )
-    reset_info()
-    return True
+    return check_passed()
 
 
 def check_approx_abs( result, expected, abs_err, abort_if_failed = False ):
@@ -244,8 +250,6 @@ def unreachable( abort_if_failed = False ):
     Used to assert that a certain section of code (exp: an if block) is not reached
     :param abort_if_failed: If True and this function is reached the test will be aborted
     """
-    global n_assertions
-    n_assertions += 1
     print_stack()
     check_failed( abort_if_failed )
 
@@ -255,8 +259,6 @@ def unexpected_exception():
     Used to assert that an except block is not reached. It's different from unreachable because it expects
     to be in an except block and prints the stack of the error and not the call-stack for this function
     """
-    global n_assertions
-    n_assertions += 1
     traceback.print_exc( file = sys.stdout )
     check_failed()
 
@@ -270,8 +272,6 @@ def check_equal_lists(result, expected, abort_if_failed = False):
     :param abort_if_failed:  If True and assertion failed the test will be aborted
     :return: True if assertion passed, False otherwise
     """
-    global n_assertions
-    n_assertions += 1
     failed = False
     if len(result) != len(expected):
         failed = True
@@ -289,8 +289,7 @@ def check_equal_lists(result, expected, abort_if_failed = False):
         log.out( "    result list  :", result )
         log.out( "    expected list:", expected )
         return check_failed( abort_if_failed )
-    reset_info()
-    return True
+    return check_passed()
 
 
 def check_exception(exception, expected_type, expected_msg = None, abort_if_failed = False):
@@ -314,8 +313,7 @@ def check_exception(exception, expected_type, expected_msg = None, abort_if_fail
         print_stack()
         log.out( *failed )
         return check_failed( abort_if_failed )
-    reset_info()
-    return True
+    return check_passed()
 
 
 def check_throws( _lambda, expected_type, expected_msg = None, abort_if_failed = False ):
@@ -328,8 +326,8 @@ def check_throws( _lambda, expected_type, expected_msg = None, abort_if_failed =
         _lambda()
     except Exception as e:
         check_exception( e, expected_type, expected_msg, abort_if_failed )
-    else:
-        unexpected_exception()
+        return check_passed()
+    return check_failed( abort_if_failed )
 
 
 def check_frame_drops(frame, previous_frame_number, allowed_drops = 1, allow_frame_counter_reset = False):
