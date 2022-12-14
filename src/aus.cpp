@@ -3,10 +3,6 @@
 
 #include "types.h"
 #include "aus.h"
-#include "backend.h"
-#include "context.h"
-#include <mutex>
-#include <unordered_map>
 #include <fstream>
 
 #ifdef BUILD_AUS
@@ -14,31 +10,6 @@
 namespace librealsense
 {
     static aus_data aus_data_obj;
-}
-
-librealsense::aus_devices_manager::aus_devices_manager( std::shared_ptr<context> ctx ) :_context( ctx )
-{
-    auto cb = new devices_changed_callback_internal( [this]( rs2_device_list * removed, rs2_device_list * added )
-        {
-            std::lock_guard<std::mutex> lock( _device_changed_mtx );
-            for ( auto & dev_info : added->list )
-            {
-                auto info_vec = dev_info.info->get_device_data().usb_devices;
-                if ( _mp.find( info_vec.at( 0 ).serial ) == _mp.end() )
-                {
-                    _mp.insert( std::make_pair( info_vec.at( 0 ).serial, info_vec.at( 0 ) ) );
-                }
-            }
-        
-
-            } );
-    _callback_id = _context->register_internal_device_callback( { cb, []( rs2_devices_changed_callback * p ) { p->release(); } } );
- }
-
- librealsense::aus_devices_manager::~aus_devices_manager()
-{
-     _context->unregister_internal_device_callback( _callback_id );
-
 }
 
 void librealsense::aus_set(std::string counter, int value)
@@ -102,6 +73,11 @@ long librealsense::aus_get(std::string counter)
 std::vector<std::string> librealsense::aus_get_counters_list()
 {
    return aus_data_obj.get_counters_list();
+}
+
+void librealsense::aus_on_device_changed( std::string serial, std::string name )
+{
+    aus_data_obj.on_device_changed( serial,name);
 }
 
 

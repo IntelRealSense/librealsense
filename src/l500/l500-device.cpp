@@ -56,9 +56,6 @@ namespace librealsense
         _confidence_stream(new stream(RS2_STREAM_CONFIDENCE)),
         _temperatures()
     {
-        std::string l500_devices_counter = librealsense::aus_build_system_counter_name("CONNECTED_DEVICES", "L500");
-        librealsense::aus_increment(l500_devices_counter);
-
         _depth_device_idx = add_sensor(create_depth_device(ctx, group.uvc_devices));
         _pid = group.uvc_devices.front().pid;
         std::string device_name = (rs500_sku_names.end() != rs500_sku_names.find(_pid)) ? rs500_sku_names.at(_pid) : "RS5xx";
@@ -141,11 +138,6 @@ namespace librealsense
         }
 
         configure_depth_options();
-    }
-
-    l500_device::~l500_device() {
-        std::string l500_devices_counter = librealsense::aus_build_system_counter_name( "CONNECTED_DEVICES", "L500" );
-        librealsense::aus_decrement( l500_devices_counter );
     }
 
     l500_depth_sensor & l500_device::get_depth_sensor()

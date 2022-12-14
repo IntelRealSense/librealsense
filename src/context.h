@@ -45,7 +45,17 @@ namespace librealsense
     public:
         virtual std::shared_ptr<device_interface> create_device() const
         {
-            return create(_ctx, true);
+            auto device = create( _ctx, true );
+
+#ifdef BUILD_AUS
+            if ( device->supports_info( RS2_CAMERA_INFO_ASIC_SERIAL_NUMBER ) && device->supports_info( RS2_CAMERA_INFO_NAME ) )
+            {
+                std::string serial = device->get_info( RS2_CAMERA_INFO_ASIC_SERIAL_NUMBER );
+                std::string name = device->get_info( RS2_CAMERA_INFO_NAME );
+                librealsense::aus_on_device_changed(serial, name);
+            }    
+#endif
+            return device;
         }
 
         virtual ~device_info() = default;

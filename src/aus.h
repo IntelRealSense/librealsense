@@ -4,9 +4,6 @@
 #pragma once
 
 #include "types.h"
-#include "backend.h"
-#include "context.h"
-#include <mutex>
 #include <unordered_map>
 
 namespace librealsense
@@ -122,20 +119,6 @@ namespace librealsense
         long _total; 
     };
 
-    class aus_devices_manager{
-    public:
-        aus_devices_manager( std::shared_ptr<context> ctx );
-        ~aus_devices_manager();
-    private:
-        std::unordered_map<std::string,struct librealsense::platform::usb_device_info > _mp;
-        mutable std::mutex _device_changed_mtx;
-        uint64_t _callback_id;
-        std::shared_ptr<context> _context;
-
-    };
-
-  
-
 #ifdef BUILD_AUS
 
     class aus_data
@@ -237,9 +220,33 @@ namespace librealsense
             return result;
         }
 
+        bool device_exist( std::string serial )
+        {
+            if ( _mp_devices_manager.find( serial ) == _mp_devices_manager.end())
+            {
+                return false;
+            }
+            return true;
+        }
+
+        void insert_device_to_device_manager( std::string serial, std::string name )
+        {
+            increment( librealsense::aus_build_system_counter_name( "CONNECTED_DEVICES" ));
+            increment( librealsense::aus_build_system_counter_name( "CONNECTED_DEVICES", name ) );
+            _mp_devices_manager[serial]=name;
+        }
+
+        void on_device_changed(std::string serial, std::string name )
+        {
+            if ( !device_exist( serial ) )
+            {
+                insert_device_to_device_manager( serial, name );
+            }
+        } 
 
     private:
         std::unordered_map<std::string, aus_value*> _mp;
+        std::unordered_map<std::string, std::string > _mp_devices_manager;
 
         long _start_time;
 
