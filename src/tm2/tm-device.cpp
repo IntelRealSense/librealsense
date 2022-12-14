@@ -2000,8 +2000,21 @@ namespace librealsense
         _sensor->register_option(rs2_option::RS2_OPTION_ENABLE_DYNAMIC_CALIBRATION, std::make_shared<tracking_mode_option<SIXDOF_MODE_DISABLE_DYNAMIC_CALIBRATION, SIXDOF_MODE_NORMAL,          true>>(*_sensor, "Enable dynamic calibration (recommended)"));
         _sensor->register_option(rs2_option::RS2_OPTION_ENABLE_MAP_PRESERVATION,    std::make_shared<tracking_mode_option<SIXDOF_MODE_ENABLE_MAP_PRESERVATION,     SIXDOF_MODE_ENABLE_MAPPING, false>>(*_sensor, "Preserve the map from the previous run as if it was loaded"));
 
+        stream_profiles tm2_profiles;
+        try
+        {
+            tm2_profiles = _sensor->get_stream_profiles();
+        }
+        catch (const io_exception& lcr_error)
+        {
+            LOG_ERROR("ERROR for sensor->get_stream_profiles: " << lcr_error.what());
+            LOG_DEBUG("Stopping sensor");
+            _sensor->dispose();
+            LOG_DEBUG("Destroying T265 device");
+            throw;
+        }
+
         // Adding the extrinsic nodes to the default group
-        auto tm2_profiles = _sensor->get_stream_profiles();
         for (auto && pf : tm2_profiles)
             register_stream_to_extrinsic_group(*pf, 0);
 
