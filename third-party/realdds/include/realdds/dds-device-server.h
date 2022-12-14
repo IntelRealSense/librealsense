@@ -69,8 +69,6 @@ public:
 
     void publish_image( const std::string & stream_name, const uint8_t * data, size_t size );
     void publish_notification( topics::flexible_msg && );
-    void set_option( const dds_option & option );
-    void get_option( dds_option & option );
     
     typedef std::function< void( const nlohmann::json & msg ) > control_callback;
     void on_open_streams( control_callback callback ) { _open_streams_callback = std::move( callback ); }

@@ -418,10 +418,11 @@ namespace librealsense
         {
         }
 
-        void set( float value ) override {}; //TODO - implement
-        float query() const override { return 0.0f; }; //TODO - implement
-        bool is_enabled() const override { return true; };
-        const char * get_description() const override { return _dds_opt->get_description().c_str(); };
+        void set( float value ) override {} //TODO - implement
+        float query() const override { return 0.0f; } //TODO - implement
+
+        bool is_enabled() const override { return true; }
+        const char * get_description() const override { return _dds_opt->get_description().c_str(); }
     };
 
     class dds_sensor_proxy : public software_sensor
@@ -602,21 +603,21 @@ namespace librealsense
         void add_option( std::shared_ptr< realdds::dds_option > option )
         {
             //Convert name to rs2_option type
-            rs2_option opt_type = RS2_OPTION_COUNT;
+            rs2_option option_id = RS2_OPTION_COUNT;
             for( size_t i = 0; i < static_cast< size_t >( RS2_OPTION_COUNT ); i++ )
             {
                 if( option->get_name().compare( get_string( static_cast< rs2_option >( i ) ) ) == 0 )
                 {
-                    opt_type = static_cast< rs2_option >( i );
+                    option_id = static_cast< rs2_option >( i );
                     break;
                 }
             }
 
-            if( opt_type == RS2_OPTION_COUNT )
+            if( option_id == RS2_OPTION_COUNT )
                 throw librealsense::invalid_value_exception( to_string() << "Option " << option->get_name() << " type not found" );
 
             auto opt = std::make_shared< rs2_dds_option >( option );
-            register_option( opt_type, opt );
+            register_option( option_id, opt );
         }
 
         //float get_option( rs2_option option ) const override;

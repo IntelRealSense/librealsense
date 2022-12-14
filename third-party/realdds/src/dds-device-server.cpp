@@ -97,15 +97,15 @@ static void on_discovery_device_header( size_t const n_streams, const dds_option
     } );
     notifications.add_discovery_notification( std::move( device_header ) );
 
-    auto opt_json = nlohmann::json();
+    auto device_options = nlohmann::json::array();
     for( auto & opt : options )
-        opt_json.push_back( std::move( opt->to_json() ) );
-    topics::flexible_msg device_options( json {
+        device_options.push_back( std::move( opt->to_json() ) );
+    topics::flexible_msg device_options_message( json {
         { "id", "device-options" },
         { "n-options", options.size() },
-        { "options" , opt_json }
+        { "options" , device_options }
         } );
-    notifications.add_discovery_notification( std::move( device_options ) );
+    notifications.add_discovery_notification( std::move( device_options_message ) );
 }
 
 
@@ -130,16 +130,16 @@ static void on_discovery_stream_header( std::shared_ptr< dds_stream_server > con
     topics::flexible_msg notification( msg );
     notifications.add_discovery_notification( std::move( notification ) );
 
-    auto opt_json = nlohmann::json();
+    auto stream_options = nlohmann::json::array();
     for( auto & opt : stream->options() )
-        opt_json.push_back( std::move( opt->to_json() ) );
-    topics::flexible_msg stream_options( json {
+        stream_options.push_back( std::move( opt->to_json() ) );
+    topics::flexible_msg stream_options_message( json {
         { "id", "stream-options" },
         { "stream-name", stream->name() },
         { "n-options", stream->options().size() },
-        { "options" , opt_json }
+        { "options" , stream_options }
         } );
-    notifications.add_discovery_notification( std::move( stream_options ) );
+    notifications.add_discovery_notification( std::move( stream_options_message ) );
 }
 
 
@@ -220,28 +220,4 @@ void dds_device_server::handle_control_message( topics::flexible_msg control_mes
         if ( _close_streams_callback )
             _close_streams_callback( j );
     }
-}
-
-void dds_device_server::set_option( const dds_option & option )
-{
-    topics::flexible_msg notification( json {
-        { "id", "set-option" },
-        { "counter", _message_counter++ },
-        { "owner-name", option.owner_name() },
-        { "option", option.to_json() }
-        } );
-
-    publish_notification( std::move( notification ) );
-}
-
-void dds_device_server::get_option( dds_option & option )
-{
-    topics::flexible_msg notification( json {
-        { "id", "get-option" },
-        { "counter", _message_counter++ },
-        { "owner-name", option.owner_name() },
-        { "option", option.to_json() }
-        } );
-
-    publish_notification( std::move( notification ) );
 }

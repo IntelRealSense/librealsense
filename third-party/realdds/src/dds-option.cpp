@@ -20,13 +20,13 @@ dds_option::dds_option( const std::string & name, const std::string & owner_name
 
 dds_option::dds_option( nlohmann::json const & j, const std::string & owner_name )
 {
-    _name                = j["name"];
-    _value               = j["value"];
-    _range.min           = j["range-min"];
-    _range.max           = j["range-max"];
-    _range.step          = j["range-step"];
-    _range.default_value = j["range-default"];
-    _description         = j["description"];
+    _name                = utilities::json::get< std::string >( j, "name" );
+    _value               = utilities::json::get< float >( j, "value" );
+    _range.min           = utilities::json::get< float >( j, "range-min" );
+    _range.max           = utilities::json::get< float >( j, "range-max" );
+    _range.step          = utilities::json::get< float >( j, "range-step" );
+    _range.default_value = utilities::json::get< float >( j, "range-default" );
+    _description         = utilities::json::get< std::string >( j, "description" );
 
     _owner_name = owner_name;
 }

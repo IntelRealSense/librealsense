@@ -44,7 +44,7 @@ public:
     void set_range( const dds_option_range & range ) { _range = range; }
 
     const std::string & get_description() const { return _description; }
-    void set_description( std::string description ) { _description = description; }
+    void set_description( const std::string & description ) { _description = description; }
 
 
     nlohmann::json to_json() const;

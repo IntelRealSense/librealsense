@@ -23,44 +23,69 @@ def test_no_options():
     server = dds.device_server( participant, "realdds/device/topic-root" )
     server.init( [s1], dev_opts )
 
-def test_device_options_discovery():
+def test_device_options_discovery( values ):
     # Create one stream with one profile so device init won't fail, no stream options
     s1p1 = dds.video_stream_profile( 9, dds.stream_format("RGB8"), 10, 10 )
     s1profiles = [s1p1]
     s1 = dds.depth_stream_server( "s1", "sensor" )
     s1.init_profiles( s1profiles, 0 )
-    do1 = dds.dds_option( "opt1", "device" )
-    do1.set_value( 1 )
-    do2 = dds.dds_option( "opt2", "device" )
-    do2.set_value( 2 )
-    do3 = dds.dds_option( "opt3", "device" )
-    do3.set_value( 3 )
-    dev_opts = [do1, do2, do3]
+    dev_opts = []
+    for index, value in enumerate( values ):
+        option = dds.dds_option( "opt" + str( index ), "device" )
+        option.set_value( value )
+        dev_opts.append( option )
     global server
     server = dds.device_server( participant, "realdds/device/topic-root" )
     server.init( [s1], dev_opts )
 
-def test_stream_options_discovery():
+def test_stream_options_discovery( value, min, max, step, default, description ):
     s1p1 = dds.video_stream_profile( 9, dds.stream_format("RGB8"), 10, 10 )
     s1profiles = [s1p1]
     s1 = dds.depth_stream_server( "s1", "sensor" )
     s1.init_profiles( s1profiles, 0 )
     so1 = dds.dds_option( "opt1", "s1" )
-    so1.set_value( 1 )
+    so1.set_value( value )
     so2 = dds.dds_option( "opt2", "s1" )
     range = dds.dds_option_range()
-    range.min = 0 # Using int values because can't test.check_equal floats
-    range.max = 123456
-    range.step = 123
-    range.default_value = 12
+    range.min = min
+    range.max = max
+    range.step = step
+    range.default_value = default
     so2.set_range( range )
     so3 = dds.dds_option( "opt3", "s1" )
-    so3.set_description( "opt3 of s1")
+    so3.set_description( description)
     s1.init_options( [so1, so2, so3] )
     global server
     server = dds.device_server( participant, "realdds/device/topic-root" )
     server.init( [s1], [] )
 
+def test_device_and_multiple_stream_options_discovery( dev_values, stream_values ):
+    dev_options = []
+    for index, value in enumerate( dev_values ):
+        option = dds.dds_option( "opt" + str( index ), "device" )
+        option.set_value( value )
+        dev_options.append( option )
+    stream_options = []
+    for index, value in enumerate( stream_values ):
+        option = dds.dds_option( "opt" + str( index ), "sensor" )
+        option.set_value( value )
+        stream_options.append( option )
+    
+    s1p1 = dds.video_stream_profile( 9, dds.stream_format("RGB8"), 10, 10 )
+    s1profiles = [s1p1]
+    s1 = dds.depth_stream_server( "s1", "sensor" )
+    s1.init_profiles( s1profiles, 0 )
+    s1.init_options( stream_options )
+    
+    s2p1 = dds.video_stream_profile( 9, dds.stream_format("RGB8"), 10, 10 )
+    s2profiles = [s2p1]
+    s2 = dds.depth_stream_server( "s2", "sensor" )
+    s2.init_profiles( s2profiles, 0 )
+    s2.init_options( stream_options )
+    
+    global server
+    server = dds.device_server( participant, "realdds/device/topic-root" )
+    server.init( [s1, s2], dev_options )
 
 def close_server():
     global server

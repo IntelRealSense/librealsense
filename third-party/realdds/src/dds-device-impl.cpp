@@ -32,9 +32,10 @@ enum class state_type
 {
     WAIT_FOR_DEVICE_HEADER,
     WAIT_FOR_DEVICE_OPTIONS,
-    WAIT_FOR_STREAMS_INFO,
+    WAIT_FOR_STREAM_HEADER,
+    WAIT_FOR_STREAM_OPTIONS,
     DONE
-    // TODO - Assuming all profiles of a stream will be sent in a single video_stream_profiles_msg
+    // Note - Assuming all profiles of a stream will be sent in a single video_stream_profiles_msg
     // Otherwise need a stream header message with expected number of profiles for each stream
     // But then need all stream header messages to be sent before any profile message for a simple state machine
 };
@@ -47,8 +48,10 @@ char const * to_string( state_type st )
         return "WAIT_FOR_DEVICE_HEADER";
     case state_type::WAIT_FOR_DEVICE_OPTIONS:
         return "WAIT_FOR_DEVICE_OPTIONS";
-    case state_type::WAIT_FOR_STREAMS_INFO:
-        return "WAIT_FOR_STREAMS_INFO";
+    case state_type::WAIT_FOR_STREAM_HEADER:
+        return "WAIT_FOR_STREAM_HEADER";
+    case state_type::WAIT_FOR_STREAM_OPTIONS:
+        return "WAIT_FOR_STREAM_OPTIONS";
     case state_type::DONE:
         return "DONE";
     default:
@@ -213,11 +216,11 @@ bool dds_device::impl::init()
                     }
 
                     if( n_streams_expected )
-                        state = state_type::WAIT_FOR_STREAMS_INFO;
+                        state = state_type::WAIT_FOR_STREAM_HEADER;
                     else
                         state = state_type::DONE;
                 }
-                else if( state_type::WAIT_FOR_STREAMS_INFO == state && id == "stream-header" )
+                else if( state_type::WAIT_FOR_STREAM_HEADER == state && id == "stream-header" )
                 {
                     if( _streams.size() >= n_streams_expected )
                         DDS_THROW( runtime_error,
@@ -266,14 +269,16 @@ bool dds_device::impl::init()
                                               << ") received with " << profiles.size() << " profiles" );
 
                     stream->init_profiles( profiles, default_profile_index );
+
+                    state = state_type::WAIT_FOR_STREAM_OPTIONS;
                 }
-                else if( state_type::WAIT_FOR_STREAMS_INFO == state && id == "stream-options" )
+                else if( state_type::WAIT_FOR_STREAM_OPTIONS == state && id == "stream-options" )
                 {
-                    auto stream_it = _streams.find( j["stream-name"] );
+                    auto stream_it = _streams.find( utilities::json::get< std::string >( j, "stream-name" ) );
                     if( stream_it == _streams.end() )
                         DDS_THROW( runtime_error, std::string ( "Received stream options for stream '" ) +
                                    utilities::json::get< std::string >( j, "stream-name" ) +
-                                   "' whos header was not received yet" );
+                                   "' whose header was not received yet" );
 
                     n_stream_options_received++;
 
@@ -285,9 +290,10 @@ bool dds_device::impl::init()
 
                     stream_it->second->init_options( options );
 
-                    if( _streams.size() >= n_streams_expected &&
-                        n_stream_options_received == n_streams_expected )
+                    if( _streams.size() >= n_streams_expected )
                         state = state_type::DONE;
+                    else
+                        state = state_type::WAIT_FOR_STREAM_HEADER;
                 }
                 else
                 {
