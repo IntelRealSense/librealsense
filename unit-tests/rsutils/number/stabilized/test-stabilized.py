@@ -184,10 +184,10 @@ test.finish()
 #
 #############################################################################################
 #
-test.start( "update stable value - nominal" )
-#
 # Verify if history is filled with a stable value and then filled with required percentage
 # of new val, new val is returned as stable value.
+#
+test.start( "update stable value - nominal" )
 #
 try:
     sv = stabilized_value( 10 )
@@ -212,6 +212,40 @@ try:
 
     sv.add( 35. )
     test.check_equal( sv.get( 0.6 ), 35. )
+except:
+    test.unexpected_exception()
+test.finish()
+#
+test.start( "update stable value - last stable not in history" )
+try:
+    sv = stabilized_value( 10 )
+    sv.add( 55. )
+    test.check_equal( sv.get( 1. ), 55. );
+
+    sv.add( 60. )
+    sv.add( 60. )
+    sv.add( 60. )
+    sv.add( 60. )
+    sv.add( 60. )
+    sv.add( 60. )
+    sv.add( 60. )
+    sv.add( 60. )
+    sv.add( 60. )
+    test.check_equal( sv.get( 1.  ), 55. )
+    test.check_equal( sv.get( 0.9 ), 60. )
+    sv.add( 70. )
+    test.check_equal( sv.get( 1.  ), 60. )
+except:
+    test.unexpected_exception()
+test.finish()
+#
+test.start( "update stable value - last stable is in history" )
+try:
+    sv = stabilized_value( 10 )
+    sv.add( 55. )
+    sv.add( 60. )
+    sv.add( 60. )
+    test.check_equal( sv.get( 0.8 ), 55. )
 except:
     test.unexpected_exception()
 test.finish()
