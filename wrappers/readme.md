@@ -18,5 +18,6 @@ If you are interested in official support for a language / framework, please let
 
 ## Community Projects:
 
-* [Java](https://github.com/edwinRNDR/librealsense/tree/master/wrappers/java) - community effort to add Java support ([word of causion by the author](https://github.com/IntelRealSense/librealsense/issues/1594#issuecomment-429216051))
+* Community contributions to add Java wrappers: [Java by edwinRNDR](https://github.com/edwinRNDR/librealsense/tree/master/wrappers/java) and [Java by cansik](https://github.com/cansik/librealsense-java). 
+Check the authors' notes: ([edwinRNDR](https://github.com/IntelRealSense/librealsense/issues/1594#issuecomment-429216051)) and [cansik](https://github.com/cansik/librealsense-java#-important)
 > A warm **thank you** to [@edwinRNDR](https://github.com/edwinRNDR) and [@cansik](https://github.com/cansik) for further expanding RealSense eco-system!

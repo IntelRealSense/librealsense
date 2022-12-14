@@ -18,7 +18,7 @@
 #include <tmmintrin.h> // For SSSE3 intrinsics
 #endif
 
-#if defined (ANDROID) || (defined (__linux__) && !defined (__x86_64__))
+#if defined (ANDROID) || (defined (__linux__) && !defined (__x86_64__)) || (defined (__APPLE__) && !defined (__x86_64__))
 
 bool has_avx() { return false; }
 
@@ -701,5 +701,4 @@ namespace librealsense
     {
         unpack_rgb_from_bgr(dest, source, width, height, actual_size);
     }
-
 }

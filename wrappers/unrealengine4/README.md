@@ -42,7 +42,7 @@ Check out prefab BP_RealSenseAPI, it shows functionality exposed to Blueprints a
 * ExStreamConfiguration - enable/disable streams, set video mode
 * ExRecordPlayback - record and playback demo
 
-Check out prefab BP_RealSenseInspector, it simplifies stream configuration and management, also binds live data to scene objects.
+Check out prefab BP_RealSenseInspector, it simplifies stream configuration and management, also binds live data to scene objects. BP_RealSenseAPI should be placed to scene as well if new one is being created.
 
 ## Hardware inspector
 

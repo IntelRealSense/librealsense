@@ -3,8 +3,8 @@
 
 //#cmake:add-file ../../../src/algo/thermal-loop/*.cpp
 #include "../algo-common.h"
-#include "./create-synthetic-l500-thermal-table.h"
-#include "algo/thermal-loop/l500-thermal-loop.h"
+#include "create-synthetic-l500-thermal-table.h"
+#include <src/algo/thermal-loop/l500-thermal-loop.h>
 
 using namespace librealsense::algo::thermal_loop::l500;
 

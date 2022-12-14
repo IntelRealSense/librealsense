@@ -3,11 +3,14 @@
 
 #pragma once
 
-#include "backend.h"
-#include "types.h"
-#include "option.h"
-#include "core/extension.h"
-#include "fw-update/fw-update-unsigned.h"
+#include "../backend.h"
+#include "../types.h"
+#include "../option.h"
+#include "../core/extension.h"
+#include "../fw-update/fw-update-unsigned.h"
+
+#include <rsutils/string/from.h>
+
 
 static const int MAX_NUM_OF_RGB_RESOLUTIONS = 5;
 static const int MAX_NUM_OF_DEPTH_RESOLUTIONS = 5; 
@@ -15,10 +18,12 @@ static const int MAX_NUM_OF_DEPTH_RESOLUTIONS = 5;
 namespace librealsense
 {
     const uint16_t L500_RECOVERY_PID            = 0x0b55;
+    const uint16_t L535_RECOVERY_PID            = 0x0B72;
     const uint16_t L500_USB2_RECOVERY_PID_OLD   = 0x0adc; // Units with old DFU_PAYLAOD on USB2 report ds5 PID (RS_USB2_RECOVERY_PID)
     const uint16_t L500_PID                     = 0x0b0d;
     const uint16_t L515_PID_PRE_PRQ             = 0x0b3d;
     const uint16_t L515_PID                     = 0x0b64;
+    const uint16_t L535_PID                     = 0x0b68;
 
     class l500_device;
 
@@ -26,7 +31,7 @@ namespace librealsense
     {
         // L500 depth XU identifiers
         const uint8_t L500_HWMONITOR = 1;
-        const uint8_t L500_AMBIENT = 2;
+        const uint8_t L500_DIGITAL_GAIN = 2; // Renamed from L500_AMBIENT
         const uint8_t L500_ERROR_REPORTING = 3;
 
         const uint32_t FLASH_SIZE = 0x00200000;
@@ -72,7 +77,8 @@ namespace librealsense
             RGB_INTRINSIC_GET           = 0x81,
             RGB_EXTRINSIC_GET           = 0x82,
             FALL_DETECT_ENABLE          = 0x9D, // Enable (by default) free-fall sensor shutoff (0=disable; 1=enable)
-            GET_SPECIAL_FRAME           = 0xA0  // Request auto-calibration (0) special frames (#)
+            GET_SPECIAL_FRAME           = 0xA0, // Request auto-calibration (0) special frames (#)
+            UNIT_AGE_SET                = 0x5B  // Sets the age of the unit in weeks
         };
 
 #pragma pack(push, 1)
@@ -115,7 +121,7 @@ namespace librealsense
             {
             case hwm_Success:
                 if( data.size() != expected_size )
-                    throw std::runtime_error( to_string()
+                    throw std::runtime_error( rsutils::string::from()
                                               << "READ_TABLE (0x" << std::hex << table_id
                                               << std::dec << ") data size received= " << data.size()
                                               << " (expected " << expected_size << ")" );
@@ -143,14 +149,14 @@ namespace librealsense
 
         // Write a table to firmware
         template< typename T >
-        void write_fw_table( hw_monitor& hwm, uint16_t const table_id, T const & table )
+        void write_fw_table( hw_monitor& hwm, uint16_t const table_id, T const & table, uint16_t const version = 0x0100 )
         {
             command cmd( fw_cmd::WRITE_TABLE, 0 );
             cmd.data.resize( sizeof( table_header ) + sizeof( table ) );
 
             table_header * h = (table_header *)cmd.data.data();
-            h->major = 1;
-            h->minor = 0;
+            h->major = version >> 8;
+            h->minor = version & 0xFF;
             h->table_id = table_id;
             h->table_size = sizeof( T );
             h->reserved = 0xFFFFFFFF;
@@ -167,7 +173,7 @@ namespace librealsense
 
             default:
                 LOG_DEBUG( "Failed to write FW table 0x" << std::hex << table_id << " " << sizeof( table ) << " bytes: " );
-                throw invalid_value_exception( to_string() << "Failed to write FW table 0x" << std::hex << table_id << ": " << hwmon_error_string( cmd, response ));
+                throw invalid_value_exception( rsutils::string::from() << "Failed to write FW table 0x" << std::hex << table_id << ": " << hwmon_error_string( cmd, response ));
             }
         }
 
@@ -177,7 +183,7 @@ namespace librealsense
             command cmd( ivcam2::fw_cmd::MRD, baseline_address, baseline_address + sizeof( T ) );
             auto res = hwm.send( cmd );
             if( res.size() != sizeof( T ) )
-                throw std::runtime_error( to_string()
+                throw std::runtime_error( rsutils::string::from()
                                           << "MRD data size received= " << res.size()
                                           << " (expected " << sizeof( T ) << ")" );
             if( preg )
@@ -245,13 +251,27 @@ namespace librealsense
         };
 
         static const std::map<std::uint16_t, std::string> rs500_sku_names = {
-            { L500_RECOVERY_PID,            "Intel RealSense L5xx Recovery"},
-            { L500_USB2_RECOVERY_PID_OLD,   "Intel RealSense L5xx Recovery"},
+            { L500_RECOVERY_PID,            "Intel RealSense L51X Recovery"},
+            { L535_RECOVERY_PID,            "Intel RealSense L53X Recovery"},
+            { L500_USB2_RECOVERY_PID_OLD,   "Intel RealSense L51X Recovery"},
             { L500_PID,                     "Intel RealSense L500"},
             { L515_PID_PRE_PRQ,             "Intel RealSense L515 (pre-PRQ)"},
             { L515_PID,                     "Intel RealSense L515"},
+            { L535_PID,                     "Intel RealSense L535"},
+
         };
 
+        static std::map<uint16_t, std::pair<std::string, std::string>> device_to_fw_min_max_version = {
+            { L500_RECOVERY_PID,            { "1.5.1.3", "1.99.99.99"}},
+            { L535_RECOVERY_PID,            { "3.5.5.1", "3.99.99.99"}},
+            { L500_USB2_RECOVERY_PID_OLD,   { "1.5.1.3", "1.99.99.99"}},
+            { L500_PID,                     { "1.5.1.3", "1.99.99.99"}},
+            { L515_PID_PRE_PRQ,             { "1.5.1.3", "1.99.99.99"}},
+            { L515_PID,                     { "1.5.1.3", "1.99.99.99"}},
+            { L535_PID,                     { "3.5.5.1", "3.99.99.99"}}
+        };
+
+        // Known FW error codes, if we poll for errors (RS2_OPTION_ERROR_POLLING_ENABLED)
         enum l500_notifications_types
         {
             success = 0,
@@ -268,11 +288,20 @@ namespace librealsense
             ld_alarm = 14,
             hard_error = 15,
             ld_alarm_hard_error = 16,
-            pzr_vbias_exceed_limit = 17
+            pzr_vbias_exceed_limit = 17,
+            eye_safety_general_critical_error = 18,
+            eye_safety_stuck_at_ld_error = 19,
+            eye_safety_stuck_at_mode_sign_error = 20,
+            eye_safety_stuck_at_vbst_error = 21,
+            eye_safety_stuck_at_msafe_error = 22,
+            eye_safety_stuck_at_ldd_snubber_error = 23,
+            eye_safety_stuck_at_flash_otp_error = 24
         };
 
-        // Elaborate FW XU report.
-        const std::map< uint8_t, std::string> l500_fw_error_report = {
+        // Each of the above is mapped to a string -- but only for those we identify as errors: warnings are
+        // listed below as comments and are treated as unknown warnings...
+        // NOTE: a unit-test in func/hw-errors/ directly uses this map and tests it
+        const std::map< uint8_t, std::string > l500_fw_error_report = {
             { success,                      "Success" },
             { depth_not_available,          "Fatal error occur and device is unable \nto run depth stream" },
             { overflow_infrared,            "Overflow occur on infrared stream" },
@@ -283,11 +312,21 @@ namespace librealsense
             { temp_warning,                 "Warning, temperature close to critical" },
             { temp_critical,                "Critical temperature reached" },
             { DFU_error,                    "DFU error" },
+            //{10 ,                         "L500 HW report - unresolved type 10"},
+            //{11 ,                         "L500 HW report - unresolved type 11"},
             { fall_detected,                "Fall detected stream stopped"  },
+            //{13 ,                         "L500 HW report - unresolved type 13"},
             { ld_alarm,                     "Fatal error occurred (14)" },
             { hard_error,                   "Fatal error occurred (15)" },
             { ld_alarm_hard_error,          "Fatal error occurred (16)" },
             { pzr_vbias_exceed_limit,       "Fatal error occurred (17)" },
+            { eye_safety_general_critical_error,        "Fatal error occurred (18)" },
+            { eye_safety_stuck_at_ld_error,             "Fatal error occurred (19)" },
+            { eye_safety_stuck_at_mode_sign_error,      "Fatal error occurred (20)" },
+            { eye_safety_stuck_at_vbst_error,           "Fatal error occurred (21)" },
+            { eye_safety_stuck_at_msafe_error,          "Fatal error occurred (22)" },
+            { eye_safety_stuck_at_ldd_snubber_error,    "Fatal error occurred (23)" },
+            { eye_safety_stuck_at_flash_otp_error,      "Fatal error occurred (24)" }
         };
 
 #pragma pack(push, 1)
@@ -377,19 +416,29 @@ namespace librealsense
             double APD_temperature;
             double HUM_temperature;
             double AlgoTermalLddAvg_temperature;
+
+            temperatures()
+                : LDD_temperature(0.)
+                , MC_temperature(0.)
+                , MA_temperature(0.)
+                , APD_temperature(0.)
+                , HUM_temperature(0.)
+                , AlgoTermalLddAvg_temperature(0.) { }
         };
 
         //FW versions >= 1.5.0.0 added to the response vector the nest AVG value
-        struct extended_temperatures {
-            temperatures base_temperatures;
-            double nest_avg;
+        struct extended_temperatures : public temperatures 
+        {
+            double nest_avg; // NEST = Noise Estimation
+
+            extended_temperatures() : temperatures(), nest_avg(.0) {}
         };
 #pragma pack( pop )
 
         rs2_extrinsics get_color_stream_extrinsic(const std::vector<uint8_t>& raw_data);
-
+        
         bool try_fetch_usb_device(std::vector<platform::usb_device_info>& devices,
-                                         const platform::uvc_device_info& info, platform::usb_device_info& result);
+        const platform::uvc_device_info& info, platform::usb_device_info& result);
 
         class l500_temperature_options : public readonly_option
         {
@@ -400,13 +449,37 @@ namespace librealsense
 
             bool is_enabled() const override { return true; }
 
-            const char* get_description() const override { return ""; }
+            const char * get_description() const override { return _description.c_str(); }
 
-            explicit l500_temperature_options(hw_monitor* hw_monitor, rs2_option opt);
+            explicit l500_temperature_options(l500_device *l500_depth_dev,
+                                               rs2_option opt,
+                                               const std::string& description );
 
         private:
             rs2_option _option;
-            hw_monitor* _hw_monitor;
+            l500_device *_l500_depth_dev;
+            std::string _description;
+        };
+
+        // Noise estimation option
+        class nest_option : public readonly_option
+        {
+        public:
+            float query() const override;
+
+            option_range get_range() const override { return option_range{ 0, 4100, 0, 0 }; }
+
+            bool is_enabled() const override { return true; }
+
+            const char * get_description() const override { return _description.c_str(); }
+
+            explicit nest_option(l500_device * l500_depth_dev, const std::string & description)
+                : _l500_depth_dev(l500_depth_dev)
+                , _description(description) {};
+
+        private:
+            l500_device *_l500_depth_dev;
+            std::string _description;
         };
 
         class l500_timestamp_reader : public frame_timestamp_reader
@@ -545,6 +618,8 @@ namespace librealsense
             hw_monitor& _hwm;
             std::shared_ptr< freefall_option > _freefall_opt;
         };
+
+        rs2_sensor_mode get_resolution_from_width_height(int width, int height);
 
         class ac_trigger;
     } // librealsense::ivcam2

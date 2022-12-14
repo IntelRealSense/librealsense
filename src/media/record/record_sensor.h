@@ -7,7 +7,6 @@
 #include "core/serialization.h"
 #include "core/streaming.h"
 #include "archive.h"
-#include "concurrency.h"
 #include "sensor.h"
 
 namespace librealsense

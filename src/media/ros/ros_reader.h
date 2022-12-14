@@ -2,9 +2,13 @@
 // Copyright(c) 2017 Intel Corporation. All Rights Reserved.
 
 #pragma once
+
 #include <core/serialization.h>
 #include "rosbag/view.h"
 #include "ros_file_format.h"
+
+#include <rsutils/string/from.h>
+
 
 namespace librealsense
 {
@@ -32,11 +36,10 @@ namespace librealsense
             typename ROS_TYPE::ConstPtr msg_instnance_ptr = msg.instantiate<ROS_TYPE>();
             if (msg_instnance_ptr == nullptr)
             {
-                throw io_exception(to_string()
-                    << "Invalid file format, expected "
-                    << rs2rosinternal::message_traits::DataType<ROS_TYPE>::value()
-                    << " message but got: " << msg.getDataType()
-                    << "(Topic: " << msg.getTopic() << ")");
+                throw io_exception(
+                    rsutils::string::from()
+                    << "Invalid file format, expected " << rs2rosinternal::message_traits::DataType< ROS_TYPE >::value()
+                    << " message but got: " << msg.getDataType() << "(Topic: " << msg.getTopic() << ")" );
             }
             return msg_instnance_ptr;
         }
@@ -143,5 +146,6 @@ namespace librealsense
         std::vector<std::string>                m_enabled_streams_topics;
         std::shared_ptr<context>                m_context;
         uint32_t                                m_version;
+        float                                   m_legacy_depth_units;
     };
 }

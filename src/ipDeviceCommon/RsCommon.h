@@ -53,4 +53,6 @@ const int MAX_MESSAGE_SIZE = MAX_FRAME_SIZE + sizeof(RsFrameHeader);
 const unsigned int SDP_MAX_LINE_LENGHT = 4000;
 const unsigned int RTP_TIMESTAMP_FREQ = 90000;
 
+int getStreamProfileBpp(rs2_format t_format);
+
 #pragma pack(pop)

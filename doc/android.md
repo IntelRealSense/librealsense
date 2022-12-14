@@ -27,3 +27,15 @@ Below is an [example](https://play.google.com/store/apps/details?id=com.intel.re
 
 ![](img/realsense-android.png)
 
+## Releases
+The Releases of the Android Wrapper can be found in the following repository:
+https://egiintel.jfrog.io/ui/repos/tree/General/librealsense
+
+The artifacts that are available in this repository are (to be used as written in the a.m. instructions):
+ |File  |Description   |
+|---|---|
+|`camera-<version-number>.apk`|The camera application||
+|`librealsense-<version-number>.aar`|Handles camera permissions and  JNI based RealSense Java API.||
+|`librealsense-<version-number>.pom`|Representation of the Maven project||
+|`librealsense-<version-number>.zip`|Headers of the librealsense2 SDK||
+

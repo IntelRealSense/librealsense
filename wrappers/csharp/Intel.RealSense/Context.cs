@@ -5,12 +5,37 @@ namespace Intel.RealSense
 {
     using System;
     using System.Runtime.InteropServices;
+    using Microsoft.Win32.SafeHandles;
+    using System.Runtime.ConstrainedExecution;
+    using System.Security.Permissions;
+
+
+    [SecurityPermission(SecurityAction.LinkDemand, UnmanagedCode = true)]
+    public sealed class ContextHandle : SafeHandleZeroOrMinusOneIsInvalid
+    {
+        public ContextHandle()
+            : base(true)
+        {
+        }
+
+        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
+        override protected bool ReleaseHandle()
+        {
+            if (!IsClosed)
+            {
+                NativeMethods.rs2_delete_context(this);
+            }
+            return true;
+        }
+    }
 
     /// <summary>
     /// default librealsense context class
     /// </summary>
-    public class Context : Base.Object
+    public class Context : IDisposable
     {
+        private ContextHandle handle;
+
         static Context()
         {
             object error;
@@ -21,9 +46,27 @@ namespace Intel.RealSense
         /// Initializes a new instance of the <see cref="Context"/> class.
         /// </summary>
         public Context()
-            : base(Create(), NativeMethods.rs2_delete_context)
         {
+            object error;
+            handle = NativeMethods.rs2_create_context(ApiVersion, out error);
             onDevicesChangedCallback = new rs2_devices_changed_callback(OnDevicesChangedInternal);
+        }
+
+        /// <summary>
+        /// Gets the safe handle
+        /// </summary>
+        /// <exception cref="ObjectDisposedException">Thrown when <see cref="SafeHandle.IsInvalid"/></exception>
+        public ContextHandle Handle
+        {
+            get
+            {
+                if (handle.IsInvalid)
+                {
+                    throw new ObjectDisposedException(GetType().Name);
+                }
+
+                return handle;
+            }
         }
 
         /// <summary>
@@ -45,12 +88,6 @@ namespace Intel.RealSense
 
                 return $"{ApiVersion / 10000}.{(ApiVersion % 10000) / 100}.{ApiVersion % 100}";
             }
-        }
-
-        internal static IntPtr Create()
-        {
-            object error;
-            return NativeMethods.rs2_create_context(ApiVersion, out error);
         }
 
         // Keeps the delegate alive, if we were to assign onDevicesChanged directly, there'll be
@@ -80,7 +117,7 @@ namespace Intel.RealSense
                     if (OnDevicesChangedEvent == null)
                     {
                         object error;
-                        NativeMethods.rs2_set_devices_changed_callback(Handle, onDevicesChangedCallback, IntPtr.Zero, out error);
+                        NativeMethods.rs2_set_devices_changed_callback(handle, onDevicesChangedCallback, IntPtr.Zero, out error);
                     }
 
                     OnDevicesChangedEvent += value;
@@ -105,7 +142,7 @@ namespace Intel.RealSense
         public DeviceList QueryDevices(bool include_platform_camera = false)
         {
             object error;
-            var ptr = NativeMethods.rs2_query_devices_ex(Handle, include_platform_camera ? 0xff : 0xfe, out error);
+            var ptr = NativeMethods.rs2_query_devices_ex(handle, include_platform_camera ? 0xff : 0xfe, out error);
             return new DeviceList(ptr);
         }
 
@@ -127,7 +164,7 @@ namespace Intel.RealSense
         public PlaybackDevice AddDevice(string file)
         {
             object error;
-            var ptr = NativeMethods.rs2_context_add_device(Handle, file, out error);
+            var ptr = NativeMethods.rs2_context_add_device(handle, file, out error);
             return Device.Create<PlaybackDevice>(ptr);
         }
 
@@ -136,7 +173,7 @@ namespace Intel.RealSense
         public void RemoveDevice(string file)
         {
             object error;
-            NativeMethods.rs2_context_remove_device(Handle, file, out error);
+            NativeMethods.rs2_context_remove_device(handle, file, out error);
         }
 
         private void OnDevicesChangedInternal(IntPtr removedList, IntPtr addedList, IntPtr userData)
@@ -150,6 +187,11 @@ namespace Intel.RealSense
                     e(removed, added);
                 }
             }
+        }
+
+        public void Dispose()
+        {
+            handle.Dispose();
         }
     }
 }

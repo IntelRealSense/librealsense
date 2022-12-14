@@ -7,6 +7,9 @@
 #include "../backend.h"
 #include "proc/motion-transform.h"
 
+#include <rsutils/string/from.h>
+
+
 namespace librealsense
 {
 
@@ -143,7 +146,6 @@ namespace librealsense
             { {RS2_FORMAT_MOTION_XYZ32F, RS2_STREAM_GYRO} },
             [&, mm_correct_opt]() { return std::make_shared<gyroscope_transform>(_mm_calib, mm_correct_opt); }
         );
-
         return hid_ep;
     }
 
@@ -200,7 +202,8 @@ namespace librealsense
         if (stream == RS2_STREAM_GYRO)
             return create_motion_intrinsics(**_gyro_intrinsic);
 
-        throw std::runtime_error(to_string() << "Motion Intrinsics unknown for stream " << rs2_stream_to_string(stream) << "!");
+        throw std::runtime_error( rsutils::string::from()
+                                  << "Motion Intrinsics unknown for stream " << rs2_stream_to_string( stream ) << "!" );
 
     }
 }

@@ -5,6 +5,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using UnityEngine;
+using UnityEngine.SceneManagement;
+using UnityEngine.UI;
 
 [System.AttributeUsage(System.AttributeTargets.Class, AllowMultiple = false)]
 public sealed class ProcessingBlockDataAttribute : System.Attribute
@@ -43,6 +45,31 @@ public class RsProcessingPipe : RsFrameProvider
     {
         Source.OnNewSample += _block.Process;
         ActiveProfile = activeProfile;
+
+        // For the L5** device, disable processing blocks in the PointCloudProcessingBlocks scene, except for Temporaral Filter
+        if (ActiveProfile != null)
+        {
+            string devName = ActiveProfile.Device.Info.GetInfo(CameraInfo.Name);
+            if (!string.IsNullOrEmpty(devName) && devName.StartsWith("Intel RealSense L5", StringComparison.OrdinalIgnoreCase))
+            {
+                GameObject pbPanel = GameObject.Find("ProcessingBlocks/ScrollRect/Viewport/Content");
+                if (pbPanel != null)
+                {
+                    foreach (Transform child in pbPanel.transform)
+                    {
+                        if (!child.name.Equals("TemporaFilter"))
+                        {
+                            child.gameObject.SetActive(false);
+                            Toggle toggle = child.transform.Find("Toggle").gameObject.GetComponent<Toggle>();
+                            if (toggle != null && toggle.isOn)
+                                toggle.isOn = false;
+                        }
+                    }
+                }
+            }
+
+        }
+
         Streaming = true;
         var h = OnStart;
         if (h != null)

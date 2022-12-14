@@ -13,7 +13,7 @@ This page is certainly **not** a comprehensive guide to getting started with PCL
 
 ### Windows
 1. Download and install `CMake` from [cmake.org/download](https://cmake.org/download/)
-2. Download prebuilt binaries for PCL ([official link](http://pointclouds.org/downloads/windows.html)). For Visual Studio 2015 / 2017, use the [following link](http://unanancyowen.com/en/pcl181).
+2. Download prebuilt binaries for PCL ([official link](http://pointclouds.org/downloads/windows.html), [github releases page](https://github.com/PointCloudLibrary/pcl/releases)). For Visual Studio 2015 / 2017, use the [following link](http://unanancyowen.com/en/pcl181).
 3. Follow the installation procedure:
 
 <p align="center"><img src="res/1.PNG" /></p>

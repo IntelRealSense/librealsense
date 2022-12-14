@@ -1,4 +1,3 @@
-
 # Sample Code for Intel® RealSense™ Python Wrapper
 
 These Examples demonstrate how to use the python wrapper of the SDK.
@@ -16,6 +15,8 @@ These Examples demonstrate how to use the python wrapper of the SDK.
 9. [T265 Coordinates](./t265_rpy.py) - This example shows how to change coordinate systems of a T265 pose
 10. [T265 Stereo](./t265_stereo.py) - This example shows how to use T265 intrinsics and extrinsics in OpenCV to asynchronously compute depth maps from T265 fisheye images on the host.
 11. [Realsense over Ethernet](./ethernet_client_server/README.md) - This example shows how to stream depth data from RealSense depth cameras over ethernet.
+12. [Realsense Network Device Viewer](./net_viewer.py) - Shows how to connect to rs-server over network.
+13. [D400 self-calibration demo](./depth_auto_calibration_example.py) - Provides a reference implementation for D400 Self-Calibration Routines flow. The scripts performs On-Chip Calibration, followed by Focal-Length calibration and finally, the Tare Calibration sub-routines. Follow the [White Paper Link](https://dev.intelrealsense.com/docs/self-calibration-for-depth-cameras) for in-depth description of the provided calibration methods.
 
 ## Pointcloud Visualization
 

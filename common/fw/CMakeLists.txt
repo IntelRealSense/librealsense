@@ -8,13 +8,13 @@ file(READ "firmware-version.h" ver)
 
 message(STATUS "Fetching recommended firmwares:")
 
-set(REALSENSE_FIRMWARE_URL "http://realsense-hw-public.s3.amazonaws.com" CACHE STRING
+set(REALSENSE_FIRMWARE_URL "https://librealsense.intel.com" CACHE STRING
     "URL to download firmware binaries from")
 
 string(REGEX MATCH "D4XX_RECOMMENDED_FIRMWARE_VERSION \"([0-9]+.[0-9]+.[0-9]+.[0-9]+)\"" _ ${ver})
 set(D4XX_FW_VERSION ${CMAKE_MATCH_1})
 message(STATUS "D4XX_FW_VERSION: ${D4XX_FW_VERSION}")
-set(D4XX_FW_SHA1 8c8804e7ee3b25f1dcb9561ab485bd26bf0d3502)
+set(D4XX_FW_SHA1 8dc3b8a0b9fdf03410c15b30e04f57701985064a)
 set(D4XX_FW_URL "${REALSENSE_FIRMWARE_URL}/Releases/RS4xx/FW")
 
 
@@ -30,13 +30,26 @@ message(STATUS "T26X_FW_VERSION: ${T26X_FW_VERSION}")
 set(T26X_FW_SHA1 c3940ccbb0e3045603e4aceaa2d73427f96e24bc)
 set(T26X_FW_URL "${REALSENSE_FIRMWARE_URL}/Releases/TM2/FW/target/${T26X_FW_VERSION}")
 
-string(REGEX MATCH "L5XX_RECOMMENDED_FIRMWARE_VERSION \"([0-9]+.[0-9]+.[0-9]+.[0-9]+)\"" _ ${ver})
-set(L5XX_FW_VERSION ${CMAKE_MATCH_1})
-message(STATUS "L5XX_FW_VERSION: ${L5XX_FW_VERSION}")
-set(L5XX_FW_SHA1 3eddea1c725009b18d03d20ca320e114de4b2afb)
-set(L5XX_FW_URL "${REALSENSE_FIRMWARE_URL}/Releases/L5xx/FW")
+string(REGEX MATCH "L51X_RECOMMENDED_FIRMWARE_VERSION \"([0-9]+\.[0-9]+\.[0-9]+\.[0-9]+)\"" _ ${ver})
+set(L51X_FW_VERSION ${CMAKE_MATCH_1})
+message(STATUS "L51X_FW_VERSION: ${L51X_FW_VERSION}")
+set(L51X_FW_SHA1 ab73e5bfc520c0aa0340cada4b3e317b8fd31a4d)
+set(L51X_FW_URL "${REALSENSE_FIRMWARE_URL}/Releases/L5xx/FW")
+
+string(REGEX MATCH "L53X_RECOMMENDED_FIRMWARE_VERSION \"([0-9]+\.[0-9]+\.[0-9]+\.[0-9]+)\"" _ ${ver})
+set(L53X_FW_VERSION ${CMAKE_MATCH_1})
+message(STATUS "L53X_FW_VERSION: ${L53X_FW_VERSION}")
+set(L53X_FW_SHA1 9bc28aaf079b105d9a20a0bd845ea222b8754571)
+set(L53X_FW_URL "${REALSENSE_FIRMWARE_URL}/Releases/L5xx/FW")
 
 add_library(${PROJECT_NAME} STATIC empty.c)
+
+# disable link time optimization for fw by adding -fno-lto to disable -flto flag
+# jammy debian has build errors without it
+if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+  message(STATUS "disable link time optimization for fw project")
+  target_compile_options(${PROJECT_NAME} PRIVATE -fno-lto)
+endif()
 
 if (MSVC)
   # lib.exe can't handle multiple .res files, so include them in one.
@@ -80,7 +93,9 @@ endfunction()
 target_binary( "${D4XX_FW_URL}"  "${D4XX_FW_VERSION}"  "${D4XX_FW_SHA1}" D4XX_FW_Image .bin)
 target_binary( "${SR3XX_FW_URL}"  "${SR3XX_FW_VERSION}"  "${SR3XX_FW_SHA1}" SR3XX_FW_Image .bin)
 target_binary( "${T26X_FW_URL}"  "${T26X_FW_VERSION}"  "${T26X_FW_SHA1}" target .mvcmd)
-target_binary( "${L5XX_FW_URL}"  "${L5XX_FW_VERSION}"  "${L5XX_FW_SHA1}" L5XX_FW_Image .bin)
+target_binary( "${L51X_FW_URL}"  "${L51X_FW_VERSION}"  "${L51X_FW_SHA1}" L51X_FW_Image .bin)
+target_binary( "${L53X_FW_URL}"  "${L53X_FW_VERSION}"  "${L53X_FW_SHA1}" L53X_FW_Image .bin)
+
 
 
 install(TARGETS ${PROJECT_NAME} EXPORT realsense2Targets

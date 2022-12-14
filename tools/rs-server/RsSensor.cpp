@@ -1,6 +1,7 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2020 Intel Corporation. All Rights Reserved.
 
+#include "RsCommon.h"
 #include "RsDevice.hh"
 #include "RsUsageEnvironment.h"
 #include "compression/CompressionFactory.h"
@@ -38,7 +39,7 @@ int RsSensor::open(std::unordered_map<long long int, rs2::frame_queue>& t_stream
         if(CompressionFactory::isCompressionSupported(m_streamProfiles.at(streamProfileKey).format(), m_streamProfiles.at(streamProfileKey).stream_type()))
         {
             rs2::video_stream_profile vsp = m_streamProfiles.at(streamProfileKey);
-            std::shared_ptr<ICompression> compressPtr = CompressionFactory::getObject(vsp.width(), vsp.height(), vsp.format(), vsp.stream_type(), RsSensor::getStreamProfileBpp(vsp.format()));
+            std::shared_ptr<ICompression> compressPtr = CompressionFactory::getObject(vsp.width(), vsp.height(), vsp.format(), vsp.stream_type(), getStreamProfileBpp(vsp.format()));
             if(compressPtr != nullptr)
             {
                 m_iCompress.insert(std::pair<long long int, std::shared_ptr<ICompression>>(streamProfileKey, compressPtr));
@@ -123,48 +124,6 @@ std::string RsSensor::getSensorName()
     {
         return "Unknown Sensor";
     }
-}
-
-int RsSensor::getStreamProfileBpp(rs2_format t_format)
-{
-    int bpp = 0;
-    switch(t_format)
-    {
-    case RS2_FORMAT_RGB8:
-    {
-        bpp = 3;
-        break;
-    }
-    case RS2_FORMAT_BGR8:
-    {
-        bpp = 3;
-        break;
-    }
-    case RS2_FORMAT_RGBA8:
-    {
-        bpp = 3; //TODO: need to be 4 bpp, change it after add support for 4 bpp formats
-        break;
-    }
-    case RS2_FORMAT_BGRA8:
-    {
-        bpp = 3; //TODO: need to be 4 bpp, change it after add support for 4 bpp formats
-        break;
-    }
-    case RS2_FORMAT_Z16:
-    case RS2_FORMAT_Y16:
-    case RS2_FORMAT_Y8:
-    case RS2_FORMAT_RAW16:
-    case RS2_FORMAT_YUYV:
-    case RS2_FORMAT_UYVY:
-    {
-        bpp = 2;
-        break;
-    }
-    default:
-        bpp = 0;
-        break;
-    }
-    return bpp;
 }
 
 std::vector<RsOption> RsSensor::getSupportedOptions()

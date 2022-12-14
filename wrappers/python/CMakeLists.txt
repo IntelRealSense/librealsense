@@ -3,27 +3,8 @@ cmake_minimum_required(VERSION 3.1.0)
 
 project(RealsensePythonWrappers)
 
-if (NOT BUILD_PYTHON_BINDINGS)
-    message(WARNING "Python Bindings being built despite unset option because they are required for python documentation")
-endif()
-
-if (CMAKE_VERSION VERSION_LESS 3.12)
-  find_package(PythonInterp REQUIRED)
-  find_package(PythonLibs REQUIRED)
-  set(PYTHON_INSTALL_DIR "${CMAKE_INSTALL_LIBDIR}/python${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR}/pyrealsense2" CACHE PATH "Installation directory for Python bindings")
-  set(CMAKECONFIG_PY_INSTALL_DIR "${CMAKE_INSTALL_LIBDIR}/cmake/pyrealsense2")
-else()
-  find_package(Python REQUIRED COMPONENTS Interpreter Development)
-  set(PYTHON_INSTALL_DIR "${Python_SITEARCH}/pyrealsense2" CACHE PATH "Installation directory for Python bindings")
-  set(CMAKECONFIG_PY_INSTALL_DIR "${CMAKE_INSTALL_LIBDIR}/cmake/pyrealsense2")
-endif()
-
-set(DEPENDENCIES realsense2)
-
-add_subdirectory(third_party/pybind11)
-
 set(PYRS_CPP
-    python.cpp
+    pyrealsense2.cpp
     c_files.cpp
     pyrs_advanced_mode.cpp
     pyrs_context.cpp
@@ -38,13 +19,20 @@ set(PYRS_CPP
     pyrs_sensor.cpp
     pyrs_types.cpp
     pyrsutil.cpp
+    ../../common/metadata-helper.cpp
 )
 
-pybind11_add_module(pyrealsense2 SHARED python.hpp ${PYRS_CPP})
+pybind11_add_module(pyrealsense2 SHARED pyrealsense2.h ${PYRS_CPP})
+
+set(CMAKECONFIG_PY_INSTALL_DIR "${CMAKE_INSTALL_LIBDIR}/cmake/pyrealsense2")
+
 target_link_libraries(pyrealsense2 PRIVATE ${DEPENDENCIES})
 set_target_properties(pyrealsense2 PROPERTIES VERSION
     ${REALSENSE_VERSION_STRING} SOVERSION "${REALSENSE_VERSION_MAJOR}.${REALSENSE_VERSION_MINOR}")
-set_target_properties(pyrealsense2 PROPERTIES FOLDER Wrappers/python)
+set_target_properties( pyrealsense2
+    PROPERTIES
+        FOLDER Library/Python
+    )
 
 set(RAW_RS
     pybackend.cpp
@@ -55,6 +43,10 @@ set(RAW_RS
     ../../src/log.cpp
     ../../src/backend.h
     ../../src/backend.cpp
+    ../../src/frame.cpp
+    ../../src/environment.cpp
+    ../../src/to-string.cpp
+    ../../src/core/streaming.cpp
 )
 
 if(UNIX)
@@ -103,7 +95,14 @@ if(${FORCE_RSUSB_BACKEND})
         ../../src/uvc/uvc-parser.cpp
         ../../src/uvc/uvc-streamer.cpp
         ../../src/hid/hid-device.cpp
+        ../../src/hid/hid-device.h
     )
+if(APPLE)
+    list(APPEND RAW_RS
+        ../../third-party/hidapi/hidapi.cpp
+        ../../third-party/hidapi/hidapi.h
+    )
+endif()
 endif()
 
 if(${BUILD_EASYLOGGINGPP})
@@ -132,12 +131,21 @@ pybind11_add_module(pybackend2 SHARED ${RAW_RS})
 if(USE_EXTERNAL_USB)
     add_dependencies(pybackend2 libusb)
 endif()
-target_link_libraries(pybackend2 PRIVATE usb ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(pybackend2 PRIVATE rsutils usb ${CMAKE_THREAD_LIBS_INIT})
 set_target_properties(pybackend2 PROPERTIES
                         VERSION     ${REALSENSE_VERSION_STRING}
                         SOVERSION   ${REALSENSE_VERSION_MAJOR})
-set_target_properties(pybackend2 PROPERTIES FOLDER Wrappers/python)
-include_directories(pybackend2 ../../include)
+set_target_properties( pybackend2
+    PROPERTIES
+        FOLDER Library/Python
+    )
+target_include_directories(pybackend2 PRIVATE ${CMAKE_SOURCE_DIR}/include)
+
+if(${FORCE_RSUSB_BACKEND})
+if(APPLE)
+    target_include_directories(pybackend2 PRIVATE ${CMAKE_SOURCE_DIR}/third-party/hidapi/)
+endif()
+endif()
 
 write_basic_package_version_file("${CMAKE_CURRENT_BINARY_DIR}/pyrealsense2ConfigVersion.cmake"
     VERSION ${REALSENSE_VERSION_STRING} COMPATIBILITY AnyNewerVersion)
@@ -168,11 +176,13 @@ install(FILES "${CMAKE_BINARY_DIR}/wrappers/python/pyrealsense2ConfigVersion.cma
     DESTINATION ${CMAKECONFIG_PY_INSTALL_DIR}
 )
 
+target_include_directories(pybackend2 PRIVATE ../../src)
+target_include_directories(pyrealsense2 PRIVATE ../../src)
 
 if(BUILD_NETWORK_DEVICE)
     pybind11_add_module(pyrealsense2-net SHARED pyrs_net.cpp)
     target_link_libraries(pyrealsense2-net PRIVATE realsense2-net)
-    set_target_properties(pyrealsense2-net PROPERTIES FOLDER Wrappers/python)
+    set_target_properties(pyrealsense2-net PROPERTIES FOLDER Library/Python)
     set_target_properties(pyrealsense2-net PROPERTIES
         VERSION     ${REALSENSE_VERSION_STRING}
         SOVERSION   "${REALSENSE_VERSION_MAJOR}.${REALSENSE_VERSION_MINOR}"

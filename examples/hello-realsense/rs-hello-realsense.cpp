@@ -23,8 +23,8 @@ int main(int argc, char * argv[]) try
         rs2::depth_frame depth = frames.get_depth_frame();
 
         // Get the depth frame's dimensions
-        float width = depth.get_width();
-        float height = depth.get_height();
+        auto width = depth.get_width();
+        auto height = depth.get_height();
 
         // Query the distance from the camera to the object in the center of the image
         float dist_to_center = depth.get_distance(width / 2, height / 2);

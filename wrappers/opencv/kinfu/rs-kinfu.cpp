@@ -259,8 +259,8 @@ int main(int argc, char **argv)
                 d = temporal.process(d);
 
                 // Set depth values higher than clipping_dist to 0, to avoid unnecessary noise in the pointcloud
-#pragma omp parallel for schedule(dynamic) //Using OpenMP to try to parallelise the loop
                 uint16_t* p_depth_frame = reinterpret_cast<uint16_t*>(const_cast<void*>(d.get_data()));
+#pragma omp parallel for schedule(dynamic) //Using OpenMP to try to parallelise the loop
                 for (int y = 0; y < h; y++)
                 {
                     auto depth_pixel_index = y * w;

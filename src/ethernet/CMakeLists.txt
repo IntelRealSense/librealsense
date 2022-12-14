@@ -49,6 +49,8 @@ include_directories(${PROJECT_NAME}
     ${LIVE}/BasicUsageEnvironment/include
 )
 
+target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/src)
+
 if(WIN32)
     #
     # Windows doesn't support POSIX ssize_t type
@@ -71,14 +73,14 @@ if(WIN32)
     endif("${CMAKE_SIZEOF_VOID_P}" EQUAL "8")
 
     add_definitions(-DELPP_WINSOCK2)
-        
+
     set(WINLIB Ws2_32.lib)
 endif()
 
 set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 11)
 
-target_link_libraries(${PROJECT_NAME} 
-    PRIVATE ${WINLIB} realsense2 realsense2-compression
+target_link_libraries(${PROJECT_NAME}
+    PUBLIC ${WINLIB} realsense2 realsense2-compression
 )
 
 set_target_properties(${PROJECT_NAME} PROPERTIES FOLDER Library)
@@ -87,7 +89,7 @@ set_target_properties(${PROJECT_NAME} PROPERTIES VERSION ${REALSENSE_VERSION_STR
 # set_target_properties(${PROJECT_NAME} PROPERTIES LINKER_LANGUAGE C)
 
 WRITE_BASIC_CONFIG_VERSION_FILE("${CMAKE_CURRENT_BINARY_DIR}/realsense2-netConfigVersion.cmake"
-    VERSION ${REALSENSE_VERSION_STRING} 
+    VERSION ${REALSENSE_VERSION_STRING}
     COMPATIBILITY AnyNewerVersion
 )
 

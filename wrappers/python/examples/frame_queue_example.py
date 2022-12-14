@@ -30,7 +30,7 @@ try:
     # Create a config and configure the pipeline to stream
     #  different resolutions of color and depth streams
     config = rs.config()
-    config.enable_stream(rs.stream.depth, 640, 360, rs.format.z16, 30)
+    config.enable_stream(rs.stream.depth, 640, 480, rs.format.z16, 30)
 
     # Start streaming to the slow processing function.
     # This stream will lag, causing the occasional frame drop.

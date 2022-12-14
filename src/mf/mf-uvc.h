@@ -58,15 +58,6 @@ namespace librealsense
             stream_profile profile;
         } mf_profile;
 
-        template <class T>
-        static void safe_release(T &ppT)
-        {
-            if (ppT)
-            {
-                ppT.Release();
-                ppT = NULL;
-            }
-        }
 
         class wmf_uvc_device : public std::enable_shared_from_this<wmf_uvc_device>,
             public uvc_device
@@ -111,6 +102,7 @@ namespace librealsense
             void stop_stream_cleanup(const stream_profile& profile, std::vector<profile_and_callback>::iterator& elem);
             void flush(int sIndex);
             void check_connection() const;
+            void close_all();
             IKsControl* get_ks_control(const extension_unit& xu) const;
             CComPtr<IMFAttributes> create_device_attrs();
             CComPtr<IMFAttributes> create_reader_attrs();

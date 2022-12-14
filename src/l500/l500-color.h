@@ -10,11 +10,12 @@
 #include "l500-device.h"
 #include "stream.h"
 #include "l500-depth.h"
-#include "calibrated-sensor.h"
 #include "algo/thermal-loop/l500-thermal-loop.h"
 
 namespace librealsense
 {
+
+    const rs2_distortion l500_distortion = RS2_DISTORTION_BROWN_CONRADY;
 
     class l500_color
         : public virtual l500_device
@@ -46,11 +47,9 @@ namespace librealsense
         ivcam2::intrinsic_rgb read_intrinsics_table() const;
         std::vector<uint8_t> get_raw_extrinsics_table() const;
     };
-
     class l500_color_sensor
         : public synthetic_sensor
         , public video_sensor_interface
-        , public calibrated_sensor
         , public color_sensor
     {
     public:
@@ -65,18 +64,11 @@ namespace librealsense
         {
         }
         rs2_intrinsics get_raw_intrinsics( uint32_t width, uint32_t height ) const;
-        double read_temperature() const;
 
         rs2_intrinsics get_intrinsics( const stream_profile& profile ) const override;
 
 
 
-        // calibrated_sensor
-        void override_intrinsics( rs2_intrinsics const& intr ) override;
-        void override_extrinsics( rs2_extrinsics const& extr ) override;
-        rs2_dsm_params get_dsm_params() const override;
-        void override_dsm_params( rs2_dsm_params const & dsm_params ) override;
-        void reset_calibration() override;
         void set_k_thermal_intrinsics( rs2_intrinsics const & intr );
         void reset_k_thermal_intrinsics(); 
         algo::thermal_loop::l500::thermal_calibration_table get_thermal_table() const;
@@ -131,18 +123,6 @@ namespace librealsense
         
         // Stops the color sensor streaming
         void stop() override;
-
-        // This function serves the auto calibration process,
-        // It is used to open and start the color sensor with a single call if it is closed.
-        // Note: if the sensor is opened by the user, the function assumes that the user will start the stream.
-        // Returns whether the stream was started.
-        bool start_stream_for_calibration( const stream_profiles & requests );
-       
-        // Stops the color sensor if was opened by the calibration process, otherwise does nothing
-        void stop_stream_for_calibration();
-
-        // Sets the calibration controls needed to be controlled calibration
-        void register_calibration_controls();
         
     private:
         l500_color* const _owner;
@@ -153,29 +133,12 @@ namespace librealsense
         // We save it normalized such that it can be applied to each resolution
         std::shared_ptr< rs2_intrinsics > _k_thermal_intrinsics;
 
-        enum class sensor_state 
+        enum class sensor_state
         {
             CLOSED,
-            OWNED_BY_USER,
-            OWNED_BY_AUTO_CAL
+            OWNED_BY_USER
         };
 
-
-        struct calibration_control
-        {
-            const rs2_option option;
-            const float default_value;
-            float previous_value;  
-            bool need_to_restore;
-
-            calibration_control(rs2_option opt, float def)
-                : option(opt)
-                , default_value(def)
-                , previous_value(0.0f)
-                , need_to_restore(false) {}
-        };
-
-        std::vector<calibration_control> _calib_controls;
         std::atomic< sensor_state > _state;
 
         void delayed_start(frame_callback_ptr callback)
@@ -196,19 +159,13 @@ namespace librealsense
 
         std::string state_to_string(sensor_state state);
 
-        
         void set_sensor_state(sensor_state state)
         {
-                LOG_DEBUG("Sensor state changed from: " << state_to_string(_state) <<
-                    " to: " << state_to_string(state));
-                _state = state;
+            LOG_DEBUG( "Sensor state changed from: " << state_to_string( _state )
+                                          << " to: " << state_to_string( state ) );
+            _state = state;
         }
 
-
-        // For better results the CAH process require default values to some of the RGB sensor controls
-        // This functions handle the setting / restoring process of this controls
-        void set_calibration_controls_to_defaults();
-        void restore_pre_calibration_controls();
     };
 
 }

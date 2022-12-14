@@ -52,7 +52,7 @@
             android:id="@+id/glSurfaceViewProcessed"/>
     </RelativeLayout>
 
-    <android.support.v7.widget.LinearLayoutCompat
+    <androidx.appcompat.widget.LinearLayoutCompat
         android:id="@+id/buttonPanel"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -68,7 +68,7 @@
             android:textSize="20dp"
             android:text="Connect a RealSense camera"
             android:textColor="#ffffff"/>
-    </android.support.v7.widget.LinearLayoutCompat>
+    </androidx.appcompat.widget.LinearLayoutCompat>
 
 
 </LinearLayout>

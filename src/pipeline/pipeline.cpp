@@ -7,6 +7,9 @@
 #include "media/record/record_device.h"
 #include "media/ros/ros_writer.h"
 
+#include <rsutils/string/from.h>
+
+
 namespace librealsense
 {
     namespace pipeline
@@ -82,7 +85,8 @@ namespace librealsense
             }
 
             assert(profile);
-            assert(profile->_multistream.get_profiles().size() > 0);
+            if (!profile->_multistream.get_profiles().size())
+                throw librealsense::wrong_api_call_sequence_exception("No streams are selected!");
 
             auto synced_streams_ids = on_start(profile);
 
@@ -132,6 +136,7 @@ namespace librealsense
             {
                 try
                 {
+                    _syncer->stop();
                     _aggregator->stop();
                     auto dev = _active_profile->get_device();
                     if (auto playback = As<librealsense::playback_device>(dev))
@@ -258,10 +263,11 @@ namespace librealsense
                 }
                 catch (const std::exception& e)
                 {
-                    throw std::runtime_error(to_string() << "Device disconnected. Failed to recconect: " << e.what() << timeout_ms);
+                    throw std::runtime_error( rsutils::string::from() << "Device disconnected. Failed to recconect: "
+                                                                      << e.what() << timeout_ms );
                 }
             }
-            throw std::runtime_error(to_string() << "Frame didn't arrive within " << timeout_ms);
+            throw std::runtime_error( rsutils::string::from() << "Frame didn't arrive within " << timeout_ms );
         }
 
         bool pipeline::poll_for_frames(frame_holder* frame)

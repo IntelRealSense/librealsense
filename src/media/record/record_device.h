@@ -7,7 +7,7 @@
 #include <core/serialization.h>
 #include "core/streaming.h"
 #include "archive.h"
-#include "concurrency.h"
+#include <rsutils/concurrency/concurrency.h>
 #include "sensor.h"
 #include "record_sensor.h"
 
@@ -67,7 +67,7 @@ namespace librealsense
         std::shared_ptr<device_serializer::writer> m_ros_writer;
 
         std::chrono::high_resolution_clock::time_point m_capture_time_base;
-        std::chrono::high_resolution_clock::duration m_record_pause_time;
+        std::chrono::high_resolution_clock::duration m_record_total_pause_duration;
         std::chrono::high_resolution_clock::time_point m_time_of_pause;
 
         std::mutex m_mutex;
@@ -79,7 +79,6 @@ namespace librealsense
         uint64_t m_cached_data_size;
         std::once_flag m_first_call_flag;
         void initialize_recording();
-        void stop_gracefully(to_string error_msg);
     };
 
     MAP_EXTENSION(RS2_EXTENSION_RECORD, record_device);

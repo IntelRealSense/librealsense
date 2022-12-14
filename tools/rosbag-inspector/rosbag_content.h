@@ -4,9 +4,10 @@
 #pragma once
 
 #include <string>
+#include <regex>
 
-#include "../../third-party/realsense-file/rosbag/rosbag_storage/include/rosbag/bag.h"
-#include "../../third-party/realsense-file/rosbag/rosbag_storage/include/rosbag/view.h"
+#include <realsense-file/rosbag/rosbag_storage/include/rosbag/bag.h>
+#include <realsense-file/rosbag/rosbag_storage/include/rosbag/view.h>
 
 #include "print_helpers.h"
 

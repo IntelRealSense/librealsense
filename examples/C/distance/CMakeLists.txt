@@ -9,6 +9,7 @@ project(RealsenseExamples-Distance)
 set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
 
 add_executable(rs-distance rs-distance.c ../example.h)
+include_directories(../../C)
 target_link_libraries(rs-distance ${DEPENDENCIES})
 set_target_properties (rs-distance PROPERTIES
 FOLDER "Examples/C"

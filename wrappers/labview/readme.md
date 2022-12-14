@@ -1,16 +1,16 @@
 # Getting Started with RealSense™ SDK2.0 for LabVIEW®
 
 > **Download Links**:
-> * [**(Latest)** RealSense SDK2 for LabVIEW 1.0, 2.33.0, Feb 2020](https://realsense-hw-public.s3-eu-west-1.amazonaws.com/Releases/RS4xx/Windows/labview_2_33_0.zip)
-> * [RealSense SDK2 for LabVIEW 1.0, 2.11.0, May 2018](http://realsense-hw-public.s3.amazonaws.com/Releases/RS4xx/Windows/labview_2.11_0.zip)
-> * [RealSense SDK2 for LabVIEW 1.0, 2.10.4, Apr 2018](http://realsense-hw-public.s3.amazonaws.com/Releases/RS4xx/Windows/labview_2_10_4.zip)
-> * [RealSense SDK2 for LabVIEW 1.0, 2.8.1, Nov 2017](http://realsense-hw-public.s3.amazonaws.com/Releases/RS4xx/Windows/labview_2_8_1.zip)
+> * [**(Latest)** RealSense SDK2 for LabVIEW 1.0, 2.33.0, Feb 2020](https://librealsense.intel.com/Releases/RS4xx/Windows/labview_2_33_0.zip)
+> * [RealSense SDK2 for LabVIEW 1.0, 2.11.0, May 2018](https://librealsense.intel.com/Releases/RS4xx/Windows/labview_2.11_0.zip)
+> * [RealSense SDK2 for LabVIEW 1.0, 2.10.4, Apr 2018](https://librealsense.intel.com/Releases/RS4xx/Windows/labview_2_10_4.zip)
+> * [RealSense SDK2 for LabVIEW 1.0, 2.8.1, Nov 2017](https://librealsense.intel.com/Releases/RS4xx/Windows/labview_2_8_1.zip)
 
 ## Introduction:
 The latest generation of RealSense Depth Cameras can be controlled via the RealSense SDK2.0, also referred to as libRealSense 2.x.x, or LibRS for short. This includes stereo depth cameras D415 and D435 as well as their corresponding modules, such as D410 and D430.
 
 
-To get started controlling the RealSense Cameras with LabVIEW® in Windows 10, we have created a [VI-library](http://realsense-hw-public.s3.amazonaws.com/Releases/RS4xx/Windows/labview_2_8_1.zip) that wraps most of the core functions of the realsense2.dll, and we have also created some simple “Hello World” VI’s to get started capturing Color, Depth Maps, and displaying Point-Clouds.  This uses LabVIEW 2016 and requires a Windows 10 laptop with a USB3 port.   
+To get started controlling the RealSense Cameras with LabVIEW® in Windows 10, we have created a [VI-library](https://librealsense.intel.com/Releases/RS4xx/Windows/labview_2_8_1.zip) that wraps most of the core functions of the realsense2.dll, and we have also created some simple “Hello World” VI’s to get started capturing Color, Depth Maps, and displaying Point-Clouds.  This uses LabVIEW 2016 and requires a Windows 10 laptop with a USB3 port.   
 
 
 The realsense2.dll that is included in this package is 64bit for Windows 10. Other versions (ex: 32bit) could be compiled by following the [instructions on GitHub](https://github.com/IntelRealSense/librealsense/blob/master/doc/installation_windows.md).  Just rename them realsense2.dll and replace the file in the location used by the LabVIEW demos.

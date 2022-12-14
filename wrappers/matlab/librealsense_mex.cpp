@@ -225,7 +225,8 @@ void make_factory(){
                 outv[0] = MatlabParamParser::wrap_array(reinterpret_cast<const uint8_t*>(thiz.get_data()), n_bytes);
                 break;
             case RS2_FORMAT_Z16: case RS2_FORMAT_DISPARITY16:
-            case RS2_FORMAT_Y16: case RS2_FORMAT_RAW16:
+            case RS2_FORMAT_Y16: case RS2_FORMAT_RAW16: 
+            case RS2_FORMAT_FG:
                 if (n_bytes == 0) {
                     n_bytes = 2;
                     mexWarnMsgTxt("Can't detect frame dims, sending only first pixel");

@@ -57,7 +57,7 @@ struct server
 
         if (arg_address.isSet()) 
         {
-            ReceivingInterfaceAddr = our_inet_addr(arg_address.getValue().c_str());
+            ReceivingInterfaceAddr = inet_addr(arg_address.getValue().c_str());
         }
 
         if (arg_port.isSet())

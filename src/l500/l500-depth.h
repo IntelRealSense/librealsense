@@ -17,11 +17,14 @@
 #include "l500-private.h"
 #include "error-handling.h"
 #include "l500-options.h"
-#include "calibrated-sensor.h"
+#include "max-usable-range-sensor.h"
+#include "debug-stream-sensor.h"
+
+#include <rsutils/string/from.h>
+
 
 namespace librealsense
 {
-
     class l500_depth : public virtual l500_device
     {
     public:
@@ -30,6 +33,8 @@ namespace librealsense
 
         l500_depth(std::shared_ptr<context> ctx,
             const platform::backend_device_group& group);
+
+        ~l500_depth() { stop_temperatures_reader(); }
 
         std::vector<tagged_profile> get_profiles_tags() const override;
 
@@ -89,7 +94,8 @@ namespace librealsense
         , public video_sensor_interface
         , public virtual depth_sensor
         , public virtual l500_depth_sensor_interface
-        , public calibrated_sensor
+        , public max_usable_range_sensor
+        , public debug_stream_sensor
     {
     public:
         explicit l500_depth_sensor(
@@ -98,6 +104,8 @@ namespace librealsense
             std::map< uint32_t, rs2_format > l500_depth_sourcc_to_rs2_format_map,
             std::map< uint32_t, rs2_stream > l500_depth_sourcc_to_rs2_stream_map
         );
+        
+        ~l500_depth_sensor();
 
         std::vector<rs2_option> get_supported_options() const override
         {
@@ -130,7 +138,8 @@ namespace librealsense
                 else if (model_raw.pinhole_cam_model.height == height && model_raw.pinhole_cam_model.width == width)
                     return  model_raw;
             }
-            throw std::runtime_error(to_string() << "intrinsics for resolution " << width << "," << height << " doesn't exist");
+            throw std::runtime_error( rsutils::string::from()
+                                      << "intrinsics for resolution " << width << "," << height << " doesn't exist" );
         }
 
         rs2_intrinsics get_intrinsics(const stream_profile& profile) const override
@@ -156,13 +165,6 @@ namespace librealsense
             intrinsics.model = RS2_DISTORTION_NONE;
             return intrinsics;
         }
-
-        // calibrated_sensor
-        void override_intrinsics( rs2_intrinsics const & intr ) override;
-        void override_extrinsics( rs2_extrinsics const & extr ) override;
-        rs2_dsm_params get_dsm_params() const override;
-        void override_dsm_params( rs2_dsm_params const & dsm_params ) override;
-        void reset_calibration() override;
 
         stream_profiles init_stream_profiles() override
         {
@@ -214,6 +216,10 @@ namespace librealsense
             return *_owner->_calib_table;
         }
 
+        float get_max_usable_depth_range() const override;
+
+        stream_profiles get_debug_stream_profiles() const override;
+
         void create_snapshot(std::shared_ptr<depth_sensor>& snapshot) const override
         {
             snapshot = std::make_shared<depth_sensor_snapshot>(get_depth_scale());
@@ -240,9 +246,15 @@ namespace librealsense
             return get_l500_recommended_proccesing_blocks();
         };
 
-        std::shared_ptr< stream_profile_interface > is_color_sensor_needed() const;
+        void set_frame_metadata_modifier(on_frame_md callback) override
+        {
+            _metadata_modifier = callback;
+            auto s = get_raw_sensor().get();
+            auto uvc = As< librealsense::uvc_sensor >(s);
+            if (uvc)
+                uvc->set_frame_metadata_modifier(callback);
+        }
 
-        int read_algo_version();
         float read_baseline() const override;
         float read_znorm();
 
@@ -250,6 +262,8 @@ namespace librealsense
         void open(const stream_profiles& requests) override;
         void stop() override;
         float get_depth_offset() const;
+        bool is_max_range_preset() const;
+
     private:
         action_delayer _action_delayer;
         l500_device * const _owner;

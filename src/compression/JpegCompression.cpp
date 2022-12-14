@@ -50,7 +50,7 @@ JpegCompression::~JpegCompression()
 
 void JpegCompression::convertYUYVtoYUV(unsigned char** t_buffer)
 {
-    for(int i = 0; i < m_cinfo.image_width; i += 2)
+    for(unsigned i = 0; i < m_cinfo.image_width; i += 2)
     {
         m_rowBuffer[i * 3] = (*t_buffer)[i * 2 + 0]; // Y
         m_rowBuffer[i * 3 + 1] = (*t_buffer)[i * 2 + 1]; // U
@@ -65,7 +65,7 @@ void JpegCompression::convertYUYVtoYUV(unsigned char** t_buffer)
 
 void JpegCompression::convertUYVYtoYUV(unsigned char** t_buffer)
 {
-    for(int i = 0; i < m_cinfo.image_width; i += 2)
+    for(unsigned i = 0; i < m_cinfo.image_width; i += 2)
     {
         m_rowBuffer[i * 3] = (*t_buffer)[i * 2 + 1]; // Y
         m_rowBuffer[i * 3 + 1] = (*t_buffer)[i * 2 + 0]; // U
@@ -80,7 +80,7 @@ void JpegCompression::convertUYVYtoYUV(unsigned char** t_buffer)
 
 void JpegCompression::convertYUVtoYUYV(unsigned char** t_uncompressBuff)
 {
-    for(int i = 0; i < m_dinfo.output_width; i += 2)
+    for(unsigned i = 0; i < m_dinfo.output_width; i += 2)
     {
         (*t_uncompressBuff)[i * 2] = m_destBuffer[0][i * 3]; // Y
         (*t_uncompressBuff)[i * 2 + 1] = m_destBuffer[0][i * 3 + 1]; // U
@@ -92,7 +92,7 @@ void JpegCompression::convertYUVtoYUYV(unsigned char** t_uncompressBuff)
 
 void JpegCompression::convertYUVtoUYVY(unsigned char** t_uncompressBuff)
 {
-    for(int i = 0; i < m_dinfo.output_width; i += 2)
+    for(unsigned i = 0; i < m_dinfo.output_width; i += 2)
     {
         (*t_uncompressBuff)[i * 2] = m_destBuffer[0][i * 3 + 1]; // U
         (*t_uncompressBuff)[i * 2 + 1] = m_destBuffer[0][i * 3 + 0]; // Y
@@ -104,7 +104,7 @@ void JpegCompression::convertYUVtoUYVY(unsigned char** t_uncompressBuff)
 
 void JpegCompression::convertBGRtoRGB(unsigned char** t_buffer)
 {
-    for(int i = 0; i < m_cinfo.image_width * m_bpp; i += 3)
+    for(unsigned i = 0; i < m_cinfo.image_width * m_bpp; i += 3)
     {
         m_rowBuffer[i] = (*t_buffer)[i + 2]; // R
         m_rowBuffer[i + 1] = (*t_buffer)[i + 1]; // G
@@ -116,7 +116,7 @@ void JpegCompression::convertBGRtoRGB(unsigned char** t_buffer)
 
 void JpegCompression::convertRGBtoBGR(unsigned char** t_uncompressBuff)
 {
-    for(int i = 0; i < m_dinfo.output_width * m_bpp; i += 3)
+    for(unsigned i = 0; i < m_dinfo.output_width * m_bpp; i += 3)
     {
         (*t_uncompressBuff)[i] = m_destBuffer[0][i + 2]; // B
         (*t_uncompressBuff)[i + 1] = m_destBuffer[0][i + 1]; // G

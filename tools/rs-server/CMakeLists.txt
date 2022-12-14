@@ -16,7 +16,7 @@ set(DEPENDENCIES ${DEPENDENCIES} realsense2 Threads::Threads)
 
 set(CMAKE_CXX_FLAGS "-DNEWLOCALE_NOT_USED=1 -DBSD=1 -DSOCKLEN_T=socklen_t -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE=1 -DALLOW_RTSP_SERVER_PORT_REUSE=1 -DNO_OPENSSL=1 -latomic")
 
-SET(CMAKE_EXE_LINKER_FLAGS ${CMAKE_EXE_LINKER_FLAGS} "-pthread")
+SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -pthread")
 
 set(LIVE ${CMAKE_BINARY_DIR}/third-party/live)
 
@@ -36,24 +36,25 @@ else()
   add_executable(${PROJECT_NAME} ${RS_SERVER_SOURCES})
   add_definitions(-DELPP_NO_DEFAULT_LOG_FILE)
 
-  include_directories(${PROJECT_NAME}
+  include_directories(
     ../../common
+    ../../src
     ../../src/ipDeviceCommon
     ../../include/librealsense2
     ../../third-party/tclap/include
     ../../third-party/easyloggingpp/src
-    ${LIVE}/groupsock/include 
-    ${LIVE}/liveMedia/include  
-    ${LIVE}/UsageEnvironment/include 
-    ${LIVE}/BasicUsageEnvironment/include     
+    ${LIVE}/groupsock/include
+    ${LIVE}/liveMedia/include
+    ${LIVE}/UsageEnvironment/include
+    ${LIVE}/BasicUsageEnvironment/include
   )
 
   set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 11)
 
   set(DEPENDENCIES ${DEPENDENCIES} realsense2 Threads::Threads realsense2-compression ${ZLIB_LIBRARIES} ${JPEG_LIBRARIES})
-  
+
   target_link_libraries(${PROJECT_NAME} ${DEPENDENCIES})
-  
+
   set_target_properties(${PROJECT_NAME} PROPERTIES FOLDER "Tools")
 
   target_compile_definitions(${PROJECT_NAME} PUBLIC RESPONSE_BUFFER_SIZE=100000)

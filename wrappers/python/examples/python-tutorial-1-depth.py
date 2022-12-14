@@ -11,7 +11,13 @@ import pyrealsense2 as rs
 try:
     # Create a context object. This object owns the handles to all connected realsense devices
     pipeline = rs.pipeline()
-    pipeline.start()
+
+    # Configure streams
+    config = rs.config()
+    config.enable_stream(rs.stream.depth, 640, 480, rs.format.z16, 30)
+
+    # Start streaming
+    pipeline.start(config)
 
     while True:
         # This call waits until a new coherent set of frames is available on a device

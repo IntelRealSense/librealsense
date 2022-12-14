@@ -38,7 +38,7 @@ namespace librealsense
             throw backend_exception("Permission Denied!\n"
                 "This is often an indication of outdated or missing udev-rules.\n"
                 "If using Debian package, run sudo apt-get install librealsense2-dkms\n"
-                "If building from source, run ./scripts/setup_udev_rules.sh", 
+                "If building from source, run ./scripts/setup_udev_rules.sh",
                 RS2_EXCEPTION_TYPE_BACKEND);
         return res == platform::RS2_USB_STATUS_SUCCESS ? (rs2_dfu_state)state : RS2_DFU_STATE_DFU_ERROR;
     }
@@ -67,7 +67,7 @@ namespace librealsense
 
         _serial_number_buffer = std::vector<uint8_t>(sizeof(payload.serial_number));
         _serial_number_buffer.assign((uint8_t*)&payload.serial_number, (uint8_t*)&payload.serial_number + sizeof(payload.serial_number));
-        _is_dfu_locked = payload.dfu_is_locked;
+        _is_dfu_locked = payload.dfu_is_locked != 0;
         _highest_fw_version = get_formatted_fw_version(payload.fw_highest_version);
         _last_fw_version = get_formatted_fw_version(payload.fw_last_version);
 
@@ -78,7 +78,7 @@ namespace librealsense
         LOG_INFO("DFU status: " << lock_status << " , DFU version is: " << payload.dfu_version);
     }
 
-    bool update_device::wait_for_state(std::shared_ptr<platform::usb_messenger> messenger, const rs2_dfu_state state, size_t timeout) const 
+    bool update_device::wait_for_state(std::shared_ptr<platform::usb_messenger> messenger, const rs2_dfu_state state, size_t timeout) const
     {
         std::chrono::milliseconds elapsed_milliseconds;
         auto start = std::chrono::system_clock::now();
@@ -110,7 +110,7 @@ namespace librealsense
     }
 
     update_device::update_device(const std::shared_ptr<context>& ctx, bool register_device_notifications, std::shared_ptr<platform::usb_device> usb_device)
-        : _context(ctx), _usb_device(usb_device)
+        : _context(ctx), _usb_device(usb_device), _physical_port( usb_device->get_info().id), _pid(hexify(usb_device->get_info().pid))
     {
         if (auto messenger = _usb_device->open(FW_UPDATE_INTERFACE_NUMBER))
         {
@@ -138,24 +138,29 @@ namespace librealsense
 
     void update_device::update(const void* fw_image, int fw_image_size, update_progress_callback_ptr update_progress_callback) const
     {
+        // checking fw compatibility (covering the case of recovery device with wrong product line fw )
+        std::vector<uint8_t> buffer((uint8_t*)fw_image, (uint8_t*)fw_image + fw_image_size);
+        if (!check_fw_compatibility(buffer))
+            throw librealsense::invalid_value_exception("Device: " + get_serial_number() + " failed to update firmware\nImage is unsupported for this device or corrupted");
+
         auto messenger = _usb_device->open(FW_UPDATE_INTERFACE_NUMBER);
 
         const size_t transfer_size = 1024;
 
         size_t remaining_bytes = fw_image_size;
-        uint16_t blocks_count = fw_image_size / transfer_size;
+        uint16_t blocks_count = uint16_t( fw_image_size / transfer_size );
         uint16_t block_number = 0;
 
         size_t offset = 0;
         uint32_t transferred = 0;
         int retries = 10;
 
-        while (remaining_bytes > 0) 
+        while (remaining_bytes > 0)
         {
             size_t chunk_size = std::min(transfer_size, remaining_bytes);
 
             auto curr_block = ((uint8_t*)fw_image + offset);
-            auto sts = messenger->control_transfer(0x21 /*DFU_DOWNLOAD_PACKET*/, RS2_DFU_DOWNLOAD, block_number, 0, curr_block, chunk_size, transferred, 5000);
+            auto sts = messenger->control_transfer(0x21 /*DFU_DOWNLOAD_PACKET*/, RS2_DFU_DOWNLOAD, block_number, 0, curr_block, uint32_t(chunk_size), transferred, 5000);
             if (sts != platform::RS2_USB_STATUS_SUCCESS || !wait_for_state(messenger, RS2_DFU_STATE_DFU_DOWNLOAD_IDLE, 1000))
             {
                 auto state = get_dfu_state(messenger);
@@ -168,6 +173,8 @@ namespace librealsense
                 auto sn = get_serial_number();
                 if(_is_dfu_locked)
                     throw std::runtime_error("Device: " + sn  + " is locked for update.\nUse firmware version higher than: " + _highest_fw_version);
+                else if (state == RS2_DFU_STATE_DFU_ERROR)
+                    throw std::runtime_error("Device: " + sn + " failed to update firmware\nImage is unsupported for this device or corrupted");
                 else
                     throw std::runtime_error("Device: " + sn + " failed to download firmware\nPlease verify that no other librealsense application is running");
             }
@@ -208,7 +215,7 @@ namespace librealsense
     }
 
     sensor_interface& update_device::get_sensor(size_t i)
-    { 
+    {
         throw std::runtime_error("try to get sensor from fw loader device");
     }
 
@@ -259,7 +266,7 @@ namespace librealsense
 
     void update_device::tag_profiles(stream_profiles profiles) const
     {
-    
+
     }
 
     bool update_device::compress_while_record() const
@@ -271,9 +278,11 @@ namespace librealsense
     {
         switch (info)
         {
-        case RS2_CAMERA_INFO_FIRMWARE_UPDATE_ID: return get_serial_number();
-        case RS2_CAMERA_INFO_NAME: return get_name();
-        case RS2_CAMERA_INFO_PRODUCT_LINE: return get_product_line();
+        case RS2_CAMERA_INFO_FIRMWARE_UPDATE_ID:    return get_serial_number();
+        case RS2_CAMERA_INFO_NAME:                  return get_name();
+        case RS2_CAMERA_INFO_PRODUCT_LINE:          return get_product_line();
+        case RS2_CAMERA_INFO_PHYSICAL_PORT:         return _physical_port;
+        case RS2_CAMERA_INFO_PRODUCT_ID:            return _pid;
         default:
             throw std::runtime_error("update_device does not support " + std::string(rs2_camera_info_to_string(info)));
         }
@@ -285,17 +294,22 @@ namespace librealsense
         {
         case RS2_CAMERA_INFO_FIRMWARE_UPDATE_ID:
         case RS2_CAMERA_INFO_NAME:
-        case RS2_CAMERA_INFO_PRODUCT_LINE:return true;
-        default: return false;
+        case RS2_CAMERA_INFO_PRODUCT_LINE:
+        case RS2_CAMERA_INFO_PHYSICAL_PORT:
+        case RS2_CAMERA_INFO_PRODUCT_ID:
+            return true;
+
+        default:
+            return false;
         }
     }
 
     void update_device::create_snapshot(std::shared_ptr<info_interface>& snapshot) const
     {
-        
+
     }
     void update_device::enable_recording(std::function<void(const info_interface&)> record_action)
     {
-        
+
     }
 }

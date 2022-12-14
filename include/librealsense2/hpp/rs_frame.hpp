@@ -201,6 +201,8 @@ namespace rs2
     class video_stream_profile : public stream_profile
     {
     public:
+        video_stream_profile() : stream_profile() {}
+
         /**
         * Stream profile instance which contains additional video attributes
         * \param[in] stream_profile sp - assign exisiting stream_profile to this instance.
@@ -242,6 +244,13 @@ namespace rs2
             rs2_get_video_stream_intrinsics(_profile, &intr, &e);
             error::handle(e);
             return intr;
+        }
+
+        bool operator==(const video_stream_profile& other) const
+        {
+            return (((stream_profile&)*this)==other && 
+                    width() == other.width() &&
+                    height() == other.height());
         }
 
         using stream_profile::clone;
@@ -698,6 +707,24 @@ namespace rs2
         * \return            number of bytes per one pixel
         */
         int get_bytes_per_pixel() const { return get_bits_per_pixel() / 8; }
+
+        /**
+        * Extract the dimensions on the specific target
+        * \param[in] frame            Left or right camera frame of specified size based on the target type
+        * \param[in] calib_type       Calibration target type
+        * \param[in] target_dims_size Target dimension array size. 4 for RS2_CALIB_TARGET_RECT_GAUSSIAN_DOT_VERTICES and 8 for RS2_CALIB_TARGET_POS_GAUSSIAN_DOT_VERTICES
+        * \param[out] target_dims     The array to hold the result target dimensions calculated.
+                                      For type RS2_CALIB_TARGET_RECT_GAUSSIAN_DOT_VERTICES and RS2_CALIB_TARGET_ROI_RECT_GAUSSIAN_DOT_VERTICES, the four rectangle side sizes in pixels with the order of top, bottom, left, and right
+                                      For type RS2_CALIB_TARGET_POS_GAUSSIAN_DOT_VERTICES, the four vertices coordinates in pixels with the order of top, bottom, left, and right
+        * \param[out] error           If non-null, receives any error that occurs during this call, otherwise, errors are ignored
+        */
+        bool extract_target_dimensions(rs2_calib_target_type calib_type, float* target_dims, unsigned int target_dims_size) const
+        {
+            rs2_error* e = nullptr;
+            rs2_extract_target_dimensions(get(), calib_type, target_dims, target_dims_size, &e);
+            error::handle(e);
+            return (e == nullptr);
+        }
     };
 
     struct vertex {
@@ -1111,9 +1138,17 @@ namespace rs2
             throw error("Requested index is out of range!");
         }
 
-        class iterator : public std::iterator<std::forward_iterator_tag, frame>
+        class iterator
         {
         public:
+            // inheriting from std::iterator template is deprecated in C++17, this is the new way to define an iterator
+            // go to https://www.fluentcpp.com/2018/05/08/std-iterator-deprecated/ for more info
+            using iterator_category = std::forward_iterator_tag;
+            using value_type = frame;
+            using difference_type = std::ptrdiff_t;
+            using pointer = frame*;
+            using reference = frame&;
+
             iterator(const frameset* owner, size_t index = 0) : _index(index), _owner(owner) {}
             iterator& operator++() { ++_index; return *this; }
             bool operator==(const iterator& other) const { return _index == other._index; }

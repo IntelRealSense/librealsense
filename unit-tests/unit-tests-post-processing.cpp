@@ -248,10 +248,11 @@ TEST_CASE("Post-Processing Filters sequence validation", "[software-device][post
                     [](void*) {},                   // Custom deleter (if required)
                     (int)test_cfg.input_res_x *depth_bpp,    // Stride
                     depth_bpp,                          // Bytes-per-pixels
-                    (rs2_time_t)frame_number + i,      // Timestamp
+                    (rs2_time_t)frame_number + i,       // Timestamp
                     RS2_TIMESTAMP_DOMAIN_SYSTEM_TIME,   // Clock Domain
                     frame_number,                       // Frame# for potential sync services
-                    depth_stream_profile });            // Depth stream profile
+                    depth_stream_profile,               // Depth stream profile
+                    test_cfg.depth_units });            // Depth units
 
                 rs2::frameset fset = sync.wait_for_frames();
                 REQUIRE(fset);
@@ -264,6 +265,9 @@ TEST_CASE("Post-Processing Filters sequence validation", "[software-device][post
                 // Compare the resulted frame versus input
                 validate_ppf_results(depth, filtered_depth, test_cfg, i);
             }
+
+            depth_sensor.stop();
+            depth_sensor.close();
         }
     }
 }
@@ -340,6 +344,9 @@ TEST_CASE("Post-Processing Filters metadata validation", "[software-device][post
                 // Compare the resulted frame metadata versus input
                 compare_frame_md(depth, filtered_depth);
             }
+
+            depth_sensor.stop();
+            depth_sensor.close();
         }
     }
 }

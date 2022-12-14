@@ -14,7 +14,8 @@ Java_com_intel_realsense_librealsense_Frame_nAddRef(JNIEnv *env, jclass type, jl
 
 extern "C" JNIEXPORT void JNICALL
 Java_com_intel_realsense_librealsense_Frame_nRelease(JNIEnv *env, jclass type, jlong handle) {
-    rs2_release_frame((rs2_frame *) handle);
+    if (handle)
+        rs2_release_frame((rs2_frame *) handle);
 }
 
 extern "C" JNIEXPORT jlong JNICALL

@@ -4,10 +4,11 @@
 #pragma once
 
 #include "usb/usb-types.h"
-#include "../concurrency.h"
 
 #include <memory>
-#include <libusb.h>
+#include <thread>
+#include <mutex>
+#include "libusb.h"
 
 namespace librealsense
 {

@@ -3,8 +3,8 @@
 
 //#cmake:add-file ../../../src/algo/thermal-loop/*.cpp
 #include "../algo-common.h"
-#include "./create-synthetic-l500-thermal-table.h"
-#include "algo/thermal-loop/l500-thermal-loop.h"
+#include "create-synthetic-l500-thermal-table.h"
+#include <src/algo/thermal-loop/l500-thermal-loop.h>
 
 
 using namespace librealsense::algo::thermal_loop::l500;
@@ -16,6 +16,15 @@ TEST_CASE("parse_thermal_table", "[thermal-loop]")
     auto raw_data = original_table.build_raw_data();
     thermal_calibration_table table_from_raw( raw_data );
     REQUIRE( original_table == table_from_raw );
+}
+
+TEST_CASE( "invalid thermal table", "[thermal-loop]" )
+{
+    auto table = create_synthetic_table();
+    table._header.valid = 0.f;
+
+    auto raw_data = table.build_raw_data();
+    REQUIRE_THROWS( thermal_calibration_table( raw_data ));
 }
 
 TEST_CASE( "data_size_too_small", "[thermal-loop]" )
@@ -40,7 +49,6 @@ TEST_CASE( "build_raw_data", "[thermal-loop]" )
     auto raw_data = syntetic_table.build_raw_data();
    
     std::vector< byte > raw;
-    raw.resize( sizeof( thermal_calibration_table::thermal_table_header ), 0 );
     
     raw.insert( raw.end(),
                 (byte *)&( syntetic_table._header.min_temp ),

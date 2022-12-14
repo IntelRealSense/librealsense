@@ -6,10 +6,10 @@ cmake_minimum_required(VERSION 3.1.0)
 project(RealsenseExamplesHdr)
 
 if(BUILD_GRAPHICAL_EXAMPLES)
-    add_executable(rs-hdr rs-hdr.cpp ../example.hpp)
+    add_executable(rs-hdr rs-hdr.cpp ../example.hpp ../../third-party/imgui/imgui.cpp ../../third-party/imgui/imgui_draw.cpp ../../third-party/imgui/imgui_impl_glfw.cpp)
     set_property(TARGET rs-hdr PROPERTY CXX_STANDARD 11)
     target_link_libraries(rs-hdr ${DEPENDENCIES})
-    include_directories(rs-hdr ../ ../../third-party/tclap/include)
+    include_directories(../ ../../third-party/tclap/include ../../third-party/imgui ../../third-party/glfw/include)
     set_target_properties (rs-hdr PROPERTIES FOLDER "Examples")
 
     install(TARGETS rs-hdr RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})

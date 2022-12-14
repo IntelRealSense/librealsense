@@ -102,6 +102,7 @@ namespace librealsense
             const std::string& get_thread_name() const;
             uint32_t get_line() const;
             uint32_t get_timestamp() const;
+            uint32_t get_sequence_id() const;
         };
     }
 }

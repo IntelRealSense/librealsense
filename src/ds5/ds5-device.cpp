@@ -1,13 +1,6 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2016 Intel Corporation. All Rights Reserved.
 
-#include <mutex>
-#include <chrono>
-#include <vector>
-#include <iterator>
-#include <cstddef>
-#include <string>
-
 #include "device.h"
 #include "context.h"
 #include "image.h"
@@ -30,17 +23,35 @@
 #include "proc/temporal-filter.h"
 #include "proc/y8i-to-y8y8.h"
 #include "proc/y12i-to-y16y16.h"
+#include "proc/y12i-to-y16y16-mipi.h"
+#include "proc/y16i-to-y10msby10msb.h"
 #include "proc/color-formats-converter.h"
 #include "proc/syncer-processing-block.h"
 #include "proc/hole-filling-filter.h"
 #include "proc/depth-formats-converter.h"
 #include "proc/depth-decompress.h"
 #include "proc/hdr-merge.h"
-#include "proc/sequence_id_filter.h"
+#include "proc/sequence-id-filter.h"
 #include "hdr-config.h"
+#include "ds5-thermal-monitor.h"
 #include "../common/fw/firmware-version.h"
 #include "fw-update/fw-update-unsigned.h"
-#include "../third-party/json.hpp"
+#include <third-party/json.hpp>
+
+#include <rsutils/string/from.h>
+
+#include <mutex>
+#include <chrono>
+#include <vector>
+#include <iterator>
+#include <string>
+
+
+#ifdef HWM_OVER_XU
+constexpr bool hw_mon_over_xu = true;
+#else
+constexpr bool hw_mon_over_xu = false;
+#endif
 
 namespace librealsense
 {
@@ -53,23 +64,29 @@ namespace librealsense
         {rs_fourcc('W','1','0',' '), RS2_FORMAT_W10},
         {rs_fourcc('Y','1','6',' '), RS2_FORMAT_Y16},
         {rs_fourcc('Y','1','2','I'), RS2_FORMAT_Y12I},
+        {rs_fourcc('Y','1','6','I'), RS2_FORMAT_Y16I},
         {rs_fourcc('Z','1','6',' '), RS2_FORMAT_Z16},
         {rs_fourcc('Z','1','6','H'), RS2_FORMAT_Z16H},
-        {rs_fourcc('R','G','B','2'), RS2_FORMAT_BGR8}
+        {rs_fourcc('R','G','B','2'), RS2_FORMAT_BGR8},
+        {rs_fourcc('M','J','P','G'), RS2_FORMAT_MJPEG},
+        {rs_fourcc('B','Y','R','2'), RS2_FORMAT_RAW16}
 
     };
     std::map<uint32_t, rs2_stream> ds5_depth_fourcc_to_rs2_stream = {
-        {rs_fourcc('Y','U','Y','2'), RS2_STREAM_INFRARED},
-        {rs_fourcc('Y','U','Y','V'), RS2_STREAM_INFRARED},
+        {rs_fourcc('Y','U','Y','2'), RS2_STREAM_COLOR},
+        {rs_fourcc('Y','U','Y','V'), RS2_STREAM_COLOR},
         {rs_fourcc('U','Y','V','Y'), RS2_STREAM_INFRARED},
         {rs_fourcc('G','R','E','Y'), RS2_STREAM_INFRARED},
         {rs_fourcc('Y','8','I',' '), RS2_STREAM_INFRARED},
         {rs_fourcc('W','1','0',' '), RS2_STREAM_INFRARED},
         {rs_fourcc('Y','1','6',' '), RS2_STREAM_INFRARED},
         {rs_fourcc('Y','1','2','I'), RS2_STREAM_INFRARED},
+        {rs_fourcc('Y','1','6','I'), RS2_STREAM_INFRARED},
         {rs_fourcc('R','G','B','2'), RS2_STREAM_INFRARED},
         {rs_fourcc('Z','1','6',' '), RS2_STREAM_DEPTH},
-        {rs_fourcc('Z','1','6','H'), RS2_STREAM_DEPTH}
+        {rs_fourcc('Z','1','6','H'), RS2_STREAM_DEPTH},
+        {rs_fourcc('B','Y','R','2'), RS2_STREAM_COLOR},
+        {rs_fourcc('M','J','P','G'), RS2_STREAM_COLOR}
     };
 
     ds5_auto_exposure_roi_method::ds5_auto_exposure_roi_method(
@@ -112,6 +129,17 @@ namespace librealsense
     {
         return _hw_monitor->send(input);
     }
+    
+    std::vector<uint8_t> ds5_device::build_command(uint32_t opcode,
+        uint32_t param1,
+        uint32_t param2,
+        uint32_t param3,
+        uint32_t param4,
+        uint8_t const * data,
+        size_t dataLength) const
+    {
+        return _hw_monitor->build_command(opcode, param1, param2, param3, param4, data, dataLength);
+    }
 
     void ds5_device::hardware_reset()
     {
@@ -123,15 +151,39 @@ namespace librealsense
     {
         // Stop all data streaming/exchange pipes with HW
         stop_activity();
+        using namespace std;
+        using namespace std::chrono;
 
-        try {
-            LOG_INFO("entering to update state, device disconnect is expected");
-            command cmd(ds::DFU);
+        try
+        {
+            LOG_INFO( "entering to update state, device disconnect is expected" );
+            command cmd( ds::DFU );
             cmd.param1 = 1;
-            _hw_monitor->send(cmd);
+            _hw_monitor->send( cmd );
+
+            // We allow 6 seconds because on Linux the removal status is updated at a 5 seconds rate.
+            const int MAX_ITERATIONS_FOR_DEVICE_DISCONNECTED_LOOP = DISCONNECT_PERIOD_MS / DELAY_FOR_RETRIES;
+            for( auto i = 0; i < MAX_ITERATIONS_FOR_DEVICE_DISCONNECTED_LOOP; i++ )
+            {
+                // If the device was detected as removed we assume the device is entering update mode
+                // Note: if no device status callback is registered we will wait the whole time and it is OK
+                if( ! is_valid() )
+                    return;
+
+                this_thread::sleep_for( milliseconds( DELAY_FOR_RETRIES ) );
+            }
+
+
+            if (device_changed_notifications_on())
+                LOG_WARNING( "Timeout waiting for device disconnect after DFU command!" );
         }
-        catch (...) {
-            // The set command returns a failure because switching to DFU resets the device while the command is running.
+        catch( std::exception & e )
+        {
+            LOG_WARNING( e.what() );
+        }
+        catch( ... )
+        {
+            LOG_ERROR( "Unknown error during entering DFU state" );
         }
     }
 
@@ -198,11 +250,11 @@ namespace librealsense
 
         sector_count += first_sector;
 
-        for (int sector_index = first_sector; sector_index < sector_count; sector_index++)
+        for (auto sector_index = first_sector; sector_index < sector_count; sector_index++)
         {
             command cmdFES(ds::FES);
             cmdFES.require_response = false;
-            cmdFES.param1 = sector_index;
+            cmdFES.param1 = (int)sector_index;
             cmdFES.param2 = 1;
             auto res = hwm->send(cmdFES);
 
@@ -214,7 +266,7 @@ namespace librealsense
                 int packet_size = std::min((int)(HW_MONITOR_COMMAND_SIZE - (i % HW_MONITOR_COMMAND_SIZE)), (int)(ds::FLASH_SECTOR_SIZE - i));
                 command cmdFWB(ds::FWB);
                 cmdFWB.require_response = false;
-                cmdFWB.param1 = index;
+                cmdFWB.param1 = (int)index;
                 cmdFWB.param2 = packet_size;
                 cmdFWB.data.assign(image.data() + index, image.data() + index + packet_size);
                 res = hwm->send(cmdFWB);
@@ -294,6 +346,22 @@ namespace librealsense
         });
     }
 
+    bool ds5_device::check_fw_compatibility(const std::vector<uint8_t>& image) const
+    {
+        std::string fw_version = extract_firmware_version_string(image);
+
+        auto it = ds::device_to_fw_min_version.find(_pid);
+        if (it == ds::device_to_fw_min_version.end())
+            throw librealsense::invalid_value_exception(
+                rsutils::string::from() << "Min and Max firmware versions have not been defined for this device: "
+                                        << std::hex << _pid );
+        bool result = (firmware_version(fw_version) >= firmware_version(it->second));
+        if (!result)
+            LOG_ERROR("Firmware version isn't compatible" << fw_version);
+
+        return result;
+    }
+
     class ds5_depth_sensor : public synthetic_sensor, public video_sensor_interface, public depth_stereo_sensor, public roi_sensor_base
     {
     public:
@@ -328,14 +396,48 @@ namespace librealsense
             }
         }
 
+        void set_frame_metadata_modifier(on_frame_md callback) override
+        {
+            _metadata_modifier = callback;
+            auto s = get_raw_sensor().get();
+            auto uvc = As< librealsense::uvc_sensor >(s);
+            if(uvc)
+                uvc->set_frame_metadata_modifier(callback);
+        }
+
         void open(const stream_profiles& requests) override
         {
-            _depth_units = get_option(RS2_OPTION_DEPTH_UNITS).query();
-            synthetic_sensor::open(requests);
+            group_multiple_fw_calls(*this, [&]() {
+                _depth_units = get_option(RS2_OPTION_DEPTH_UNITS).query();
+                set_frame_metadata_modifier([&](frame_additional_data& data) {data.depth_units = _depth_units.load(); });
 
-            // needed in order to restore the HDR sub-preset when streaming is turned off and on
-            if (_hdr_cfg && _hdr_cfg->is_enabled())
-                get_option(RS2_OPTION_HDR_ENABLED).set(1.f);
+                synthetic_sensor::open(requests);
+
+                // needed in order to restore the HDR sub-preset when streaming is turned off and on
+                if (_hdr_cfg && _hdr_cfg->is_enabled())
+                    get_option(RS2_OPTION_HDR_ENABLED).set(1.f);
+
+                // Activate Thermal Compensation tracking
+                if (supports_option(RS2_OPTION_THERMAL_COMPENSATION))
+                    _owner->_thermal_monitor->update(true);
+                }); //group_multiple_fw_calls
+        }
+
+        void close() override
+        {
+            // Deactivate Thermal Compensation tracking
+            if (supports_option(RS2_OPTION_THERMAL_COMPENSATION))
+                _owner->_thermal_monitor->update(false);
+
+            synthetic_sensor::close();
+        }
+
+        rs2_intrinsics get_color_intrinsics(const stream_profile& profile) const
+        {
+            return get_intrinsic_by_resolution(
+                *_owner->_color_calib_table_raw,
+                ds::calibration_table_id::rgb_calibration_id,
+                profile.width, profile.height);
         }
 
         /*
@@ -366,10 +468,29 @@ namespace librealsense
                 {
                     assign_stream(_owner->_right_ir_stream, p);
                 }
+                else if (p->get_stream_type() == RS2_STREAM_COLOR)
+                {
+                    assign_stream(_owner->_color_stream, p);
+                }
                 auto&& vid_profile = dynamic_cast<video_stream_profile_interface*>(p.get());
 
+                // used when color stream comes from depth sensor (as in D405)
+                if (p->get_stream_type() == RS2_STREAM_COLOR)
+                {
+                    const auto&& profile = to_profile(p.get());
+                    std::weak_ptr<ds5_depth_sensor> wp =
+                        std::dynamic_pointer_cast<ds5_depth_sensor>(this->shared_from_this());
+                    vid_profile->set_intrinsics([profile, wp]()
+                        {
+                            auto sp = wp.lock();
+                            if (sp)
+                                return sp->get_color_intrinsics(profile);
+                            else
+                                return rs2_intrinsics{};
+                        });
+                }
                 // Register intrinsics
-                if (p->get_format() != RS2_FORMAT_Y16) // Y16 format indicate unrectified images, no intrinsics are available for these
+                else if (p->get_format() != RS2_FORMAT_Y16) // Y16 format indicate unrectified images, no intrinsics are available for these
                 {
                     const auto&& profile = to_profile(p.get());
                     std::weak_ptr<ds5_depth_sensor> wp =
@@ -395,7 +516,11 @@ namespace librealsense
             return _depth_units;
         }
 
-        void set_depth_scale(float val){ _depth_units = val; }
+        void set_depth_scale(float val)
+        {
+            _depth_units = val;
+            set_frame_metadata_modifier([&](frame_additional_data& data) {data.depth_units = _depth_units.load(); });
+        }
 
         void init_hdr_config(const option_range& exposure_range, const option_range& gain_range)
         {
@@ -426,6 +551,25 @@ namespace librealsense
         {
             //does not change over time
         }
+
+        float get_preset_max_value() const override
+        {
+            float preset_max_value = RS2_RS400_VISUAL_PRESET_COUNT - 1;
+            switch (_owner->_pid)
+            {
+            case ds::RS400_PID:
+            case ds::RS410_PID:
+            case ds::RS415_PID:
+            case ds::RS465_PID:
+            case ds::RS460_PID:
+                preset_max_value = static_cast<float>(RS2_RS400_VISUAL_PRESET_REMOVE_IR_PATTERN);
+                break;
+            default:
+                preset_max_value = static_cast<float>(RS2_RS400_VISUAL_PRESET_MEDIUM_DENSITY);
+            }
+            return preset_max_value;
+        }
+
     protected:
         const ds5_device* _owner;
         mutable std::atomic<float> _depth_units;
@@ -461,6 +605,10 @@ namespace librealsense
                 else if (p->get_stream_type() == RS2_STREAM_INFRARED  && p->get_stream_index() == 2)
                 {
                     assign_stream(_owner->_right_ir_stream, p);
+                }
+                else if (p->get_stream_type() == RS2_STREAM_COLOR)
+                {
+                    assign_stream(_owner->_color_stream, p);
                 }
                 auto&& video = dynamic_cast<video_stream_profile_interface*>(p.get());
 
@@ -521,7 +669,7 @@ namespace librealsense
         return {};
     }
 
-    ds::d400_caps ds5_device::parse_device_capabilities(const uint16_t pid) const
+    ds::d400_caps ds5_device::parse_device_capabilities() const
     {
         using namespace ds;
         std::array<unsigned char,HW_MONITOR_BUFFER_SIZE> gvd_buf;
@@ -536,15 +684,16 @@ namespace librealsense
         if (gvd_buf[imu_sensor])
         {
             val |= d400_caps::CAP_IMU_SENSOR;
-            if (hid_bmi_055_pid.end() != hid_bmi_055_pid.find(pid))
+            if (gvd_buf[imu_acc_chip_id] == I2C_IMU_BMI055_ID_ACC)
                 val |= d400_caps::CAP_BMI_055;
+            else if (gvd_buf[imu_acc_chip_id] == I2C_IMU_BMI085_ID_ACC)
+                val |= d400_caps::CAP_BMI_085;
+            else if (hid_bmi_055_pid.end() != hid_bmi_055_pid.find(_pid))
+                val |= d400_caps::CAP_BMI_055;
+            else if (hid_bmi_085_pid.end() != hid_bmi_085_pid.find(_pid))
+                val |= d400_caps::CAP_BMI_085;
             else
-            {
-                if (hid_bmi_085_pid.end() != hid_bmi_085_pid.find(pid))
-                    val |= d400_caps::CAP_BMI_085;
-                else
-                    LOG_WARNING("The IMU sensor is undefined for PID " << std::hex << pid << std::dec);
-            }
+                LOG_WARNING("The IMU sensor is undefined for PID " << std::hex << _pid << " and imu_chip_id: " << gvd_buf[imu_acc_chip_id] << std::dec);
         }
         if (0xFF != (gvd_buf[fisheye_sensor_lb] & gvd_buf[fisheye_sensor_hb]))
             val |= d400_caps::CAP_FISHEYE_SENSOR;
@@ -552,6 +701,9 @@ namespace librealsense
             val |= d400_caps::CAP_ROLLING_SHUTTER;  // e.g. ASRC
         if (0x2 == gvd_buf[depth_sensor_type])
             val |= d400_caps::CAP_GLOBAL_SHUTTER;   // e.g. AWGC
+        // Option INTER_CAM_SYNC_MODE is not enabled in D405
+        if (_pid != ds::RS405_PID)
+            val |= d400_caps::CAP_INTERCAM_HW_SYNC;
 
         return val;
     }
@@ -568,8 +720,14 @@ namespace librealsense
             depth_devices.push_back(backend.create_uvc_device(info));
 
         std::unique_ptr<frame_timestamp_reader> timestamp_reader_backup(new ds5_timestamp_reader(backend.create_time_service()));
-        std::unique_ptr<frame_timestamp_reader> timestamp_reader_metadata(new ds5_timestamp_reader_from_metadata(std::move(timestamp_reader_backup)));
+        frame_timestamp_reader* timestamp_reader_from_metadata;
+        if (all_device_infos.front().pid != RS457_PID)
+            timestamp_reader_from_metadata = new ds5_timestamp_reader_from_metadata(std::move(timestamp_reader_backup));
+        else
+            timestamp_reader_from_metadata = new ds5_timestamp_reader_from_metadata_mipi(std::move(timestamp_reader_backup));
+        std::unique_ptr<frame_timestamp_reader> timestamp_reader_metadata(timestamp_reader_from_metadata);
         auto enable_global_time_option = std::shared_ptr<global_time_option>(new global_time_option());
+
         auto raw_depth_ep = std::make_shared<uvc_sensor>("Raw Depth Sensor", std::make_shared<platform::multi_pins_uvc_device>(depth_devices),
             std::unique_ptr<frame_timestamp_reader>(new global_timestamp_reader(std::move(timestamp_reader_metadata), _tf_keeper, enable_global_time_option)), this);
 
@@ -597,7 +755,8 @@ namespace librealsense
           _device_capabilities(ds::d400_caps::CAP_UNDEFINED),
           _depth_stream(new stream(RS2_STREAM_DEPTH)),
           _left_ir_stream(new stream(RS2_STREAM_INFRARED, 1)),
-          _right_ir_stream(new stream(RS2_STREAM_INFRARED, 2))
+          _right_ir_stream(new stream(RS2_STREAM_INFRARED, 2)),
+          _color_stream(nullptr)
     {
         _depth_device_idx = add_sensor(create_depth_device(ctx, group.uvc_devices));
         init(ctx, group);
@@ -610,14 +769,16 @@ namespace librealsense
 
         auto&& backend = ctx->get_backend();
         auto& raw_sensor = get_raw_depth_sensor();
+        auto pid = group.uvc_devices.front().pid;
+        // to be changed for D457
+        bool mipi_sensor= (RS457_PID == pid);
 
-        if (group.usb_devices.size() > 0)
+        _color_calib_table_raw = [this]()
         {
-            _hw_monitor = std::make_shared<hw_monitor>(
-                std::make_shared<locked_transfer>(
-                    backend.create_usb_device(group.usb_devices.front()), raw_sensor));
-        }
-        else
+            return get_raw_calibration_table(rgb_calibration_id);
+        };
+
+        if (((hw_mon_over_xu) && (RS400_IMU_PID != pid)) || (!group.usb_devices.size()))
         {
             _hw_monitor = std::make_shared<hw_monitor>(
                 std::make_shared<locked_transfer>(
@@ -625,16 +786,23 @@ namespace librealsense
                         raw_sensor, depth_xu, DS5_HWMONITOR),
                     raw_sensor));
         }
+        else
+        {
+            if (!mipi_sensor)
+                _hw_monitor = std::make_shared<hw_monitor>(
+                std::make_shared<locked_transfer>(
+                    backend.create_usb_device(group.usb_devices.front()), raw_sensor));
+        }
 
         // Define Left-to-Right extrinsics calculation (lazy)
         // Reference CS - Right-handed; positive [X,Y,Z] point to [Left,Up,Forward] accordingly.
         _left_right_extrinsics = std::make_shared<lazy<rs2_extrinsics>>([this]()
-        {
-            rs2_extrinsics ext = identity_matrix();
-            auto table = check_calib<coefficients_table>(*_coefficients_table_raw);
-            ext.translation[0] = 0.001f * table->baseline; // mm to meters
-            return ext;
-        });
+            {
+                rs2_extrinsics ext = identity_matrix();
+                auto table = check_calib<coefficients_table>(*_coefficients_table_raw);
+                ext.translation[0] = 0.001f * table->baseline; // mm to meters
+                return ext;
+            });
 
         environment::get_instance().get_extrinsics_graph().register_same_extrinsics(*_depth_stream, *_left_ir_stream);
         environment::get_instance().get_extrinsics_graph().register_extrinsics(*_depth_stream, *_right_ir_stream, _left_right_extrinsics);
@@ -646,271 +814,357 @@ namespace librealsense
         _coefficients_table_raw = [this]() { return get_raw_calibration_table(coefficients_table_id); };
         _new_calib_table_raw = [this]() { return get_new_calibration_table(); };
 
-        auto pid = group.uvc_devices.front().pid;
-        std::string device_name = (rs400_sku_names.end() != rs400_sku_names.find(pid)) ? rs400_sku_names.at(pid) : "RS4xx";
+        _pid = group.uvc_devices.front().pid;
+        std::string device_name = (rs400_sku_names.end() != rs400_sku_names.find(_pid)) ? rs400_sku_names.at(_pid) : "RS4xx";
 
         std::vector<uint8_t> gvd_buff(HW_MONITOR_BUFFER_SIZE);
-        _hw_monitor->get_gvd(gvd_buff.size(), gvd_buff.data(), GVD);
-        // fooling tests recordings - don't remove
-        _hw_monitor->get_gvd(gvd_buff.size(), gvd_buff.data(), GVD);
-
-        auto optic_serial = _hw_monitor->get_module_serial_string(gvd_buff, module_serial_offset);
-        auto asic_serial = _hw_monitor->get_module_serial_string(gvd_buff, module_asic_serial_offset);
-        auto fwv = _hw_monitor->get_firmware_version_string(gvd_buff, camera_fw_version_offset);
-        _fw_version = firmware_version(fwv);
-
-        _recommended_fw_version = firmware_version(D4XX_RECOMMENDED_FIRMWARE_VERSION);
-        if (_fw_version >= firmware_version("5.10.4.0"))
-            _device_capabilities = parse_device_capabilities(pid);
 
         auto& depth_sensor = get_depth_sensor();
         auto& raw_depth_sensor = get_raw_depth_sensor();
 
-        auto advanced_mode = is_camera_in_advanced_mode();
-
         using namespace platform;
-        auto _usb_mode = usb3_type;
-        std::string usb_type_str(usb_spec_names.at(_usb_mode));
-        bool usb_modality = (_fw_version >= firmware_version("5.9.8.0"));
-        if (usb_modality)
-        {
-            _usb_mode = raw_depth_sensor.get_usb_specification();
-            if (usb_spec_names.count(_usb_mode) && (usb_undefined != _usb_mode))
-                usb_type_str = usb_spec_names.at(_usb_mode);
-            else  // Backend fails to provide USB descriptor  - occurs with RS3 build. Requires further work
-                usb_modality = false;
-        }
-
-        if (_fw_version >= firmware_version("5.12.1.1"))
-        {
-            depth_sensor.register_processing_block(processing_block_factory::create_id_pbf(RS2_FORMAT_Z16H, RS2_STREAM_DEPTH));
-        }
-
-
-        depth_sensor.register_processing_block(
-            { {RS2_FORMAT_Y8I} },
-            { {RS2_FORMAT_Y8, RS2_STREAM_INFRARED, 1} , {RS2_FORMAT_Y8, RS2_STREAM_INFRARED, 2} },
-            []() { return std::make_shared<y8i_to_y8y8>(); }
-        ); // L+R
-
-        depth_sensor.register_processing_block(
-            {RS2_FORMAT_Y12I},
-            {{RS2_FORMAT_Y16, RS2_STREAM_INFRARED, 1}, {RS2_FORMAT_Y16, RS2_STREAM_INFRARED, 2}},
-            []() {return std::make_shared<y12i_to_y16y16>(); }
-        );
-
-        auto pid_hex_str = hexify(pid);
-
-        if ((pid == RS416_PID || pid == RS416_RGB_PID) && _fw_version >= firmware_version("5.12.0.1"))
-        {
-            depth_sensor.register_option(RS2_OPTION_HARDWARE_PRESET,
-                std::make_shared<uvc_xu_option<uint8_t>>(raw_depth_sensor, depth_xu, DS5_HARDWARE_PRESET,
-                    "Hardware pipe configuration"));
-            depth_sensor.register_option(RS2_OPTION_LED_POWER,
-                std::make_shared<uvc_xu_option<uint16_t>>(raw_depth_sensor, depth_xu, DS5_LED_PWR,
-                    "Set the power level of the LED, with 0 meaning LED off"));
-        }
-
-        //if ((pid == RS405_PID || pid == RS455_PID) && _fw_version >= firmware_version("5.12.4.0"))
-        //{
-        //    depth_sensor.register_option(RS2_OPTION_THERMAL_COMPENSATION,
-        //        std::make_shared<uvc_xu_option<uint8_t>>(raw_depth_sensor, depth_xu, DS5_THERMAL_COMPENSATION,
-        //            "Toggle Depth Sensor Thermal Compensation"));
-        //}
-
-        if (_fw_version >= firmware_version("5.6.3.0"))
-        {
-            _is_locked = _hw_monitor->is_camera_locked(GVD, is_camera_locked_offset);
-
-#ifdef HWM_OVER_XU
-            //if hw_monitor was created by usb replace it with xu
-            // D400_IMU will remain using USB interface due to HW limitations
-            if ((group.usb_devices.size() > 0) && (RS400_IMU_PID != pid))
-            {
-                _hw_monitor = std::make_shared<hw_monitor>(
-                    std::make_shared<locked_transfer>(
-                        std::make_shared<command_transfer_over_xu>(
-                            raw_depth_sensor, depth_xu, DS5_HWMONITOR),
-                        raw_depth_sensor));
-            }
-#endif
-        }
-
-        if (_fw_version >= firmware_version("5.5.8.0"))
-        {
-            depth_sensor.register_option(RS2_OPTION_OUTPUT_TRIGGER_ENABLED,
-                std::make_shared<uvc_xu_option<uint8_t>>(raw_depth_sensor, depth_xu, DS5_EXT_TRIGGER,
-                    "Generate trigger from the camera to external device once per frame"));
-
-            auto error_control = std::make_shared<uvc_xu_option<uint8_t>>(raw_depth_sensor, depth_xu, DS5_ERROR_REPORTING, "Error reporting");
-
-            _polling_error_handler = std::make_shared<polling_error_handler>(1000,
-                error_control,
-                raw_depth_sensor.get_notifications_processor(),
-                std::make_shared<ds5_notification_decoder>());
-
-            depth_sensor.register_option(RS2_OPTION_ERROR_POLLING_ENABLED, std::make_shared<polling_errors_disable>(_polling_error_handler));
-
-            depth_sensor.register_option(RS2_OPTION_ASIC_TEMPERATURE,
-                std::make_shared<asic_and_projector_temperature_options>(raw_depth_sensor,
-                    RS2_OPTION_ASIC_TEMPERATURE));
-        }
 
         // minimal firmware version in which hdr feature is supported
         firmware_version hdr_firmware_version("5.12.8.100");
 
-        std::shared_ptr<option> exposure_option = nullptr;
-        std::shared_ptr<option> gain_option = nullptr;
-        std::shared_ptr<hdr_option> hdr_enabled_option = nullptr;
+        std::string optic_serial, asic_serial, pid_hex_str, usb_type_str;
+        bool advanced_mode, usb_modality;
+        group_multiple_fw_calls(depth_sensor, [&]() {
 
-        //EXPOSURE AND GAIN - preparing uvc options
-        auto uvc_xu_exposure_option = std::make_shared<uvc_xu_option<uint32_t>>(raw_depth_sensor,
-            depth_xu,
-            DS5_EXPOSURE,
-            "Depth Exposure (usec)");
-        option_range exposure_range = uvc_xu_exposure_option->get_range();
-        auto uvc_pu_gain_option = std::make_shared<uvc_pu_option>(raw_depth_sensor, RS2_OPTION_GAIN);
-        option_range gain_range = uvc_pu_gain_option->get_range();
+            _hw_monitor->get_gvd(gvd_buff.size(), gvd_buff.data(), GVD);
 
-        //AUTO EXPOSURE
-        auto enable_auto_exposure = std::make_shared<uvc_xu_option<uint8_t>>(raw_depth_sensor,
-            depth_xu,
-            DS5_ENABLE_AUTO_EXPOSURE,
-            "Enable Auto Exposure");
-        depth_sensor.register_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE, enable_auto_exposure);
+            optic_serial = _hw_monitor->get_module_serial_string(gvd_buff, module_serial_offset);
+            asic_serial = _hw_monitor->get_module_serial_string(gvd_buff, module_asic_serial_offset);
+            auto fwv = _hw_monitor->get_firmware_version_string(gvd_buff, camera_fw_version_offset);
+            _fw_version = firmware_version(fwv);
 
-        // register HDR options
-        //auto global_shutter_mask = d400_caps::CAP_GLOBAL_SHUTTER;
-        if ((_fw_version >= hdr_firmware_version))// && ((_device_capabilities & global_shutter_mask) == global_shutter_mask) )
-        {
-            auto ds5_depth = As<ds5_depth_sensor, synthetic_sensor>(&get_depth_sensor());
-            ds5_depth->init_hdr_config(exposure_range, gain_range);
-            auto&& hdr_cfg = ds5_depth->get_hdr_config();
-
-            // values from 4 to 14 - for internal use
-            // value 15 - saved for emiter on off subpreset
-            option_range hdr_id_range = { 0.f /*min*/, 3.f /*max*/, 1.f /*step*/, 1.f /*default*/ };
-            auto hdr_id_option = std::make_shared<hdr_option>(hdr_cfg, RS2_OPTION_SEQUENCE_NAME, hdr_id_range,
-                std::map<float, std::string>{ {0.f, "0"}, { 1.f, "1" }, { 2.f, "2" }, { 3.f, "3" } });
-            depth_sensor.register_option(RS2_OPTION_SEQUENCE_NAME, hdr_id_option);
-
-            option_range hdr_sequence_size_range = { 2.f /*min*/, 2.f /*max*/, 1.f /*step*/, 2.f /*default*/ };
-            auto hdr_sequence_size_option = std::make_shared<hdr_option>(hdr_cfg, RS2_OPTION_SEQUENCE_SIZE, hdr_sequence_size_range,
-                std::map<float, std::string>{ { 2.f, "2" } });
-            depth_sensor.register_option(RS2_OPTION_SEQUENCE_SIZE, hdr_sequence_size_option);
-
-            option_range hdr_sequ_id_range = { 0.f /*min*/, 2.f /*max*/, 1.f /*step*/, 0.f /*default*/ };
-            auto hdr_sequ_id_option = std::make_shared<hdr_option>(hdr_cfg, RS2_OPTION_SEQUENCE_ID, hdr_sequ_id_range,
-                std::map<float, std::string>{ {0.f, "UVC"}, { 1.f, "1" }, { 2.f, "2" } });
-            depth_sensor.register_option(RS2_OPTION_SEQUENCE_ID, hdr_sequ_id_option);
-
-            option_range hdr_enable_range = { 0.f /*min*/, 1.f /*max*/, 1.f /*step*/, 0.f /*default*/ };
-            hdr_enabled_option = std::make_shared<hdr_option>(hdr_cfg, RS2_OPTION_HDR_ENABLED, hdr_enable_range);
-            depth_sensor.register_option(RS2_OPTION_HDR_ENABLED, hdr_enabled_option);
-
-            //EXPOSURE AND GAIN - preparing hdr options
-            auto hdr_exposure_option = std::make_shared<hdr_option>(hdr_cfg, RS2_OPTION_EXPOSURE, exposure_range);
-            auto hdr_gain_option = std::make_shared<hdr_option>(hdr_cfg, RS2_OPTION_GAIN, gain_range);
-
-            //EXPOSURE AND GAIN - preparing hybrid options
-            auto hdr_conditional_exposure_option = std::make_shared<hdr_conditional_option>(hdr_cfg, uvc_xu_exposure_option, hdr_exposure_option);
-            auto hdr_conditional_gain_option = std::make_shared<hdr_conditional_option>(hdr_cfg, uvc_pu_gain_option, hdr_gain_option);
-
-            exposure_option = hdr_conditional_exposure_option;
-            gain_option = hdr_conditional_gain_option;
-
-            depth_sensor.register_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE,
-                std::make_shared<gated_option>(
-                    enable_auto_exposure,
-                    hdr_enabled_option,
-                    "Auto Exposure cannot be set while HDR is enabled"));
-        }
-        else
-        {
-            exposure_option = uvc_xu_exposure_option;
-            gain_option = uvc_pu_gain_option;
-        }
-
-        //EXPOSURE
-        depth_sensor.register_option(RS2_OPTION_EXPOSURE,
-            std::make_shared<auto_disabling_control>(
-                exposure_option,
-                enable_auto_exposure));
-
-        //GAIN
-        depth_sensor.register_option(RS2_OPTION_GAIN,
-            std::make_shared<auto_disabling_control>(
-                gain_option,
-                enable_auto_exposure));
-
-        // Alternating laser pattern is applicable for global shutter/active SKUs
-        auto mask = d400_caps::CAP_GLOBAL_SHUTTER | d400_caps::CAP_ACTIVE_PROJECTOR;
-        // Alternating laser pattern should be set and query in a different way according to the firmware version
-        bool is_fw_version_using_id = (_fw_version >= firmware_version("5.12.8.100")); 
-        if ((_fw_version >= firmware_version("5.11.3.0")) && ((_device_capabilities & mask) == mask))
-        {
-            auto alternating_emitter_opt = std::make_shared<alternating_emitter_option>(*_hw_monitor, &raw_depth_sensor, is_fw_version_using_id);
-            if (_fw_version >= hdr_firmware_version)
+            _recommended_fw_version = firmware_version(D4XX_RECOMMENDED_FIRMWARE_VERSION);
+            if (_fw_version >= firmware_version("5.10.4.0"))
+                _device_capabilities = parse_device_capabilities();
+        
+            //D457 Development
+            advanced_mode = is_camera_in_advanced_mode();
+            auto _usb_mode = usb3_type;
+            usb_type_str = usb_spec_names.at(_usb_mode);
+            usb_modality = (_fw_version >= firmware_version("5.9.8.0"));
+            if (usb_modality)
             {
-                depth_sensor.register_option(RS2_OPTION_EMITTER_ON_OFF,
-                    std::make_shared<gated_option>(
-                        alternating_emitter_opt,
-                        hdr_enabled_option,
-                        "Emitter ON/OFF cannot be set while HDR is enabled"));
+                _usb_mode = raw_depth_sensor.get_usb_specification();
+                if (usb_spec_names.count(_usb_mode) && (usb_undefined != _usb_mode))
+                    usb_type_str = usb_spec_names.at(_usb_mode);
+                else  // Backend fails to provide USB descriptor  - occurs with RS3 build. Requires further work
+                    usb_modality = false;
+            }
+
+            if (_fw_version >= firmware_version("5.12.1.1"))
+            {
+                depth_sensor.register_processing_block(processing_block_factory::create_id_pbf(RS2_FORMAT_Z16H, RS2_STREAM_DEPTH));
+            }
+
+            depth_sensor.register_processing_block(
+                { {RS2_FORMAT_Y8I} },
+                { {RS2_FORMAT_Y8, RS2_STREAM_INFRARED, 1} , {RS2_FORMAT_Y8, RS2_STREAM_INFRARED, 2} },
+                []() { return std::make_shared<y8i_to_y8y8>(); }
+            ); // L+R
+
+            if (!mipi_sensor)
+            {
+                depth_sensor.register_processing_block(
+                    { RS2_FORMAT_Y12I },
+                    { {RS2_FORMAT_Y16, RS2_STREAM_INFRARED, 1}, {RS2_FORMAT_Y16, RS2_STREAM_INFRARED, 2} },
+                    []() {return std::make_shared<y12i_to_y16y16>(); }
+                );
             }
             else
             {
-                depth_sensor.register_option(RS2_OPTION_EMITTER_ON_OFF, alternating_emitter_opt);
+                depth_sensor.register_processing_block(
+                    { RS2_FORMAT_Y12I },
+                    { {RS2_FORMAT_Y16, RS2_STREAM_INFRARED, 1}, {RS2_FORMAT_Y16, RS2_STREAM_INFRARED, 2} },
+                    []() {return std::make_shared<y12i_to_y16y16_mipi>(); }
+                );
             }
-        }
-        else if (_fw_version >= firmware_version("5.10.9.0") &&
-            _fw_version.experimental()) // Not yet available in production firmware
-        {
-            depth_sensor.register_option(RS2_OPTION_EMITTER_ON_OFF, std::make_shared<emitter_on_and_off_option>(*_hw_monitor, &raw_depth_sensor));
-        }
+            
 
-        if ((_fw_version >= firmware_version("5.12.1.0")) && ((_device_capabilities & d400_caps::CAP_GLOBAL_SHUTTER) == d400_caps::CAP_GLOBAL_SHUTTER))
-        {
-            depth_sensor.register_option(RS2_OPTION_EMITTER_ALWAYS_ON, std::make_shared<emitter_always_on_option>(*_hw_monitor, &depth_sensor));
-        }
+            pid_hex_str = hexify(_pid);
 
-        if (_fw_version >= firmware_version("5.12.4.0") && (_device_capabilities & d400_caps::CAP_GLOBAL_SHUTTER) == d400_caps::CAP_GLOBAL_SHUTTER)
-        {
-            depth_sensor.register_option(RS2_OPTION_INTER_CAM_SYNC_MODE,
-                std::make_shared<external_sync_mode2>(*_hw_monitor, &raw_depth_sensor));
-        }
-        else if (_fw_version >= firmware_version("5.9.15.1"))
-        {
-            depth_sensor.register_option(RS2_OPTION_INTER_CAM_SYNC_MODE,
-                std::make_shared<external_sync_mode>(*_hw_monitor));
-        }
+            if ((_pid == RS416_PID || _pid == RS416_RGB_PID) && _fw_version >= firmware_version("5.12.0.1"))
+            {
+                depth_sensor.register_option(RS2_OPTION_HARDWARE_PRESET,
+                    std::make_shared<uvc_xu_option<uint8_t>>(raw_depth_sensor, depth_xu, DS5_HARDWARE_PRESET,
+                        "Hardware pipe configuration"));
+                depth_sensor.register_option(RS2_OPTION_LED_POWER,
+                    std::make_shared<uvc_xu_option<uint16_t>>(raw_depth_sensor, depth_xu, DS5_LED_PWR,
+                        "Set the power level of the LED, with 0 meaning LED off"));
+            }
+
+            if (_fw_version >= firmware_version("5.6.3.0"))
+            {
+                _is_locked = _hw_monitor->is_camera_locked(GVD, is_camera_locked_offset);
+            }
+
+            if (_fw_version >= firmware_version("5.5.8.0"))
+            //if hw_monitor was created by usb replace it with xu
+            // D400_IMU will remain using USB interface due to HW limitations
+            {
+                if (_pid == ds::RS457_PID)
+                {
+                    depth_sensor.register_option(RS2_OPTION_ASIC_TEMPERATURE,
+                        std::make_shared<asic_temperature_option_mipi>(_hw_monitor,
+                            RS2_OPTION_ASIC_TEMPERATURE));
+                }
+                else
+                {
+                    depth_sensor.register_option(RS2_OPTION_OUTPUT_TRIGGER_ENABLED,
+                        std::make_shared<uvc_xu_option<uint8_t>>(raw_depth_sensor, depth_xu, DS5_EXT_TRIGGER,
+                            "Generate trigger from the camera to external device once per frame"));
+
+                    depth_sensor.register_option(RS2_OPTION_ASIC_TEMPERATURE,
+                        std::make_shared<asic_and_projector_temperature_options>(raw_depth_sensor,
+                            RS2_OPTION_ASIC_TEMPERATURE));
+
+                    // D457 dev - get_xu fails for D457 - error polling id not defined
+                    auto error_control = std::make_shared<uvc_xu_option<uint8_t>>(raw_depth_sensor, depth_xu, DS5_ERROR_REPORTING, "Error reporting");
+
+                    _polling_error_handler = std::make_shared<polling_error_handler>(1000,
+                        error_control,
+                        raw_depth_sensor.get_notifications_processor(),
+                        std::make_shared<ds5_notification_decoder>());
+
+                    depth_sensor.register_option(RS2_OPTION_ERROR_POLLING_ENABLED, std::make_shared<polling_errors_disable>(_polling_error_handler));
+                }
+            }
+
+            if ((val_in_range(pid, { RS455_PID })) && (_fw_version >= firmware_version("5.12.11.0")))
+            {
+                auto thermal_compensation_toggle = std::make_shared<protected_xu_option<uint8_t>>(raw_depth_sensor, depth_xu,
+                    ds::DS5_THERMAL_COMPENSATION, "Toggle Thermal Compensation Mechanism");
+
+                auto temperature_sensor = depth_sensor.get_option_handler(RS2_OPTION_ASIC_TEMPERATURE);
+
+                _thermal_monitor = std::make_shared<ds5_thermal_monitor>(temperature_sensor, thermal_compensation_toggle);
+
+                depth_sensor.register_option(RS2_OPTION_THERMAL_COMPENSATION,
+                std::make_shared<thermal_compensation>(_thermal_monitor,thermal_compensation_toggle));
+            }
+
+            std::shared_ptr<option> exposure_option = nullptr;
+            std::shared_ptr<option> gain_option = nullptr;
+            std::shared_ptr<hdr_option> hdr_enabled_option = nullptr;
+
+            //EXPOSURE AND GAIN - preparing uvc options
+            auto uvc_xu_exposure_option = std::make_shared<uvc_xu_option<uint32_t>>(raw_depth_sensor,
+                depth_xu,
+                DS5_EXPOSURE,
+                "Depth Exposure (usec)");
+            option_range exposure_range = uvc_xu_exposure_option->get_range();
+            auto uvc_pu_gain_option = std::make_shared<uvc_pu_option>(raw_depth_sensor, RS2_OPTION_GAIN);
+            option_range gain_range = uvc_pu_gain_option->get_range();
+
+            //AUTO EXPOSURE
+            auto enable_auto_exposure = std::make_shared<uvc_xu_option<uint8_t>>(raw_depth_sensor,
+                depth_xu,
+                DS5_ENABLE_AUTO_EXPOSURE,
+                "Enable Auto Exposure");
+            depth_sensor.register_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE, enable_auto_exposure);
+
+            // register HDR options
+            if (!mipi_sensor && (_fw_version >= hdr_firmware_version))
+            {
+                auto ds5_depth = As<ds5_depth_sensor, synthetic_sensor>(&get_depth_sensor());
+                ds5_depth->init_hdr_config(exposure_range, gain_range);
+                auto&& hdr_cfg = ds5_depth->get_hdr_config();
+
+                // values from 4 to 14 - for internal use
+                // value 15 - saved for emiter on off subpreset
+                option_range hdr_id_range = { 0.f /*min*/, 3.f /*max*/, 1.f /*step*/, 1.f /*default*/ };
+                auto hdr_id_option = std::make_shared<hdr_option>(hdr_cfg, RS2_OPTION_SEQUENCE_NAME, hdr_id_range,
+                    std::map<float, std::string>{ {0.f, "0"}, { 1.f, "1" }, { 2.f, "2" }, { 3.f, "3" } });
+                depth_sensor.register_option(RS2_OPTION_SEQUENCE_NAME, hdr_id_option);
+
+                option_range hdr_sequence_size_range = { 2.f /*min*/, 2.f /*max*/, 1.f /*step*/, 2.f /*default*/ };
+                auto hdr_sequence_size_option = std::make_shared<hdr_option>(hdr_cfg, RS2_OPTION_SEQUENCE_SIZE, hdr_sequence_size_range,
+                    std::map<float, std::string>{ { 2.f, "2" } });
+                depth_sensor.register_option(RS2_OPTION_SEQUENCE_SIZE, hdr_sequence_size_option);
+
+                option_range hdr_sequ_id_range = { 0.f /*min*/, 2.f /*max*/, 1.f /*step*/, 0.f /*default*/ };
+                auto hdr_sequ_id_option = std::make_shared<hdr_option>(hdr_cfg, RS2_OPTION_SEQUENCE_ID, hdr_sequ_id_range,
+                    std::map<float, std::string>{ {0.f, "UVC"}, { 1.f, "1" }, { 2.f, "2" } });
+                depth_sensor.register_option(RS2_OPTION_SEQUENCE_ID, hdr_sequ_id_option);
+
+                option_range hdr_enable_range = { 0.f /*min*/, 1.f /*max*/, 1.f /*step*/, 0.f /*default*/ };
+                hdr_enabled_option = std::make_shared<hdr_option>(hdr_cfg, RS2_OPTION_HDR_ENABLED, hdr_enable_range);
+                depth_sensor.register_option(RS2_OPTION_HDR_ENABLED, hdr_enabled_option);
+
+                //EXPOSURE AND GAIN - preparing hdr options
+                auto hdr_exposure_option = std::make_shared<hdr_option>(hdr_cfg, RS2_OPTION_EXPOSURE, exposure_range);
+                auto hdr_gain_option = std::make_shared<hdr_option>(hdr_cfg, RS2_OPTION_GAIN, gain_range);
+
+                //EXPOSURE AND GAIN - preparing hybrid options
+                auto hdr_conditional_exposure_option = std::make_shared<hdr_conditional_option>(hdr_cfg, uvc_xu_exposure_option, hdr_exposure_option);
+                auto hdr_conditional_gain_option = std::make_shared<hdr_conditional_option>(hdr_cfg, uvc_pu_gain_option, hdr_gain_option);
+
+                exposure_option = hdr_conditional_exposure_option;
+                gain_option = hdr_conditional_gain_option;
+
+                std::vector<std::pair<std::shared_ptr<option>, std::string>> options_and_reasons = { std::make_pair(hdr_enabled_option,
+                        "Auto Exposure cannot be set while HDR is enabled") };
+                depth_sensor.register_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE,
+                    std::make_shared<gated_option>(
+                        enable_auto_exposure,
+                        options_and_reasons));
+            }
+            else
+            {
+                exposure_option = uvc_xu_exposure_option;
+                gain_option = uvc_pu_gain_option;
+            }
+
+            //EXPOSURE
+            depth_sensor.register_option(RS2_OPTION_EXPOSURE,
+                std::make_shared<auto_disabling_control>(
+                    exposure_option,
+                    enable_auto_exposure));
+
+            //GAIN
+            depth_sensor.register_option(RS2_OPTION_GAIN,
+                std::make_shared<auto_disabling_control>(
+                    gain_option,
+                    enable_auto_exposure));
+
+            // Alternating laser pattern is applicable for global shutter/active SKUs
+            auto mask = d400_caps::CAP_GLOBAL_SHUTTER | d400_caps::CAP_ACTIVE_PROJECTOR;
+            // Alternating laser pattern should be set and query in a different way according to the firmware version
+            if ((_fw_version >= firmware_version("5.11.3.0")) && ((_device_capabilities & mask) == mask))
+            {
+                bool is_fw_version_using_id = (_fw_version >= firmware_version("5.12.8.100"));
+                auto alternating_emitter_opt = std::make_shared<alternating_emitter_option>(*_hw_monitor, &raw_depth_sensor, is_fw_version_using_id);
+                auto emitter_always_on_opt = std::make_shared<emitter_always_on_option>(*_hw_monitor, &depth_sensor);
+
+                if ((_fw_version >= firmware_version("5.12.1.0")) && ((_device_capabilities & d400_caps::CAP_GLOBAL_SHUTTER) == d400_caps::CAP_GLOBAL_SHUTTER))
+                {
+                    std::vector<std::pair<std::shared_ptr<option>, std::string>> options_and_reasons = { std::make_pair(alternating_emitter_opt,
+                        "Emitter always ON cannot be set while Emitter ON/OFF is enabled") };
+                    depth_sensor.register_option(RS2_OPTION_EMITTER_ALWAYS_ON,
+                        std::make_shared<gated_option>(
+                            emitter_always_on_opt,
+                            options_and_reasons));
+                }
+
+                if (_fw_version >= hdr_firmware_version)
+                {
+                    std::vector<std::pair<std::shared_ptr<option>, std::string>> options_and_reasons = { std::make_pair(hdr_enabled_option, "Emitter ON/OFF cannot be set while HDR is enabled"),
+                            std::make_pair(emitter_always_on_opt, "Emitter ON/OFF cannot be set while Emitter always ON is enabled") };
+                    depth_sensor.register_option(RS2_OPTION_EMITTER_ON_OFF,
+                        std::make_shared<gated_option>(
+                            alternating_emitter_opt,
+                            options_and_reasons
+                            ));
+                }
+                else if ((_fw_version >= firmware_version("5.12.1.0")) && ((_device_capabilities & d400_caps::CAP_GLOBAL_SHUTTER) == d400_caps::CAP_GLOBAL_SHUTTER))
+                {
+                    std::vector<std::pair<std::shared_ptr<option>, std::string>> options_and_reasons = { std::make_pair(emitter_always_on_opt,
+                        "Emitter ON/OFF cannot be set while Emitter always ON is enabled") };
+                    depth_sensor.register_option(RS2_OPTION_EMITTER_ON_OFF,
+                        std::make_shared<gated_option>(
+                            alternating_emitter_opt,
+                            options_and_reasons));
+                }
+                else
+                {
+                    depth_sensor.register_option(RS2_OPTION_EMITTER_ON_OFF, alternating_emitter_opt);
+                }
+
+            }
+
+            if ((_device_capabilities & d400_caps::CAP_INTERCAM_HW_SYNC) == d400_caps::CAP_INTERCAM_HW_SYNC)
+            {
+                if (_fw_version >= firmware_version("5.12.12.100") && (_device_capabilities & d400_caps::CAP_GLOBAL_SHUTTER) == d400_caps::CAP_GLOBAL_SHUTTER)
+                {
+                    depth_sensor.register_option(RS2_OPTION_INTER_CAM_SYNC_MODE,
+                        std::make_shared<external_sync_mode>(*_hw_monitor, &raw_depth_sensor, 3));
+                }
+                else if (_fw_version >= firmware_version("5.12.4.0") && (_device_capabilities & d400_caps::CAP_GLOBAL_SHUTTER) == d400_caps::CAP_GLOBAL_SHUTTER)
+                {
+                    depth_sensor.register_option(RS2_OPTION_INTER_CAM_SYNC_MODE,
+                        std::make_shared<external_sync_mode>(*_hw_monitor, &raw_depth_sensor, 2));
+                }
+                else if (_fw_version >= firmware_version("5.9.15.1"))
+                {
+                    depth_sensor.register_option(RS2_OPTION_INTER_CAM_SYNC_MODE,
+                        std::make_shared<external_sync_mode>(*_hw_monitor, &raw_depth_sensor, 1));
+                }
+            }
+
+            roi_sensor_interface* roi_sensor = dynamic_cast<roi_sensor_interface*>(&depth_sensor);
+            if (roi_sensor)
+                roi_sensor->set_roi_method(std::make_shared<ds5_auto_exposure_roi_method>(*_hw_monitor));
+
+            if (!val_in_range(_pid, { ds::RS457_PID }))
+            {
+                depth_sensor.register_option(RS2_OPTION_STEREO_BASELINE, std::make_shared<const_value_option>("Distance in mm between the stereo imagers",
+                    lazy<float>([this]() { return get_stereo_baseline_mm(); })));
+            }
+
+            if (advanced_mode && _fw_version >= firmware_version("5.6.3.0"))
+            {
+                auto depth_scale = std::make_shared<depth_scale_option>(*_hw_monitor);
+                auto depth_sensor = As<ds5_depth_sensor, synthetic_sensor>(&get_depth_sensor());
+                assert(depth_sensor);
+
+                depth_scale->add_observer([depth_sensor](float val)
+                {
+                    depth_sensor->set_depth_scale(val);
+                });
+
+                depth_sensor->register_option(RS2_OPTION_DEPTH_UNITS, depth_scale);
+            }
+            else
+            {
+                float default_depth_units = 0.001f; //meters
+                // default depth units is different for D405
+                if (_pid == RS405_PID)
+                    default_depth_units = 0.0001f;  //meters
+                depth_sensor.register_option(RS2_OPTION_DEPTH_UNITS, std::make_shared<const_value_option>("Number of meters represented by a single depth unit",
+                    lazy<float>([default_depth_units]()
+                        { return default_depth_units; })));
+            }
+        }); //group_multiple_fw_calls
 
         
-        roi_sensor_interface* roi_sensor = dynamic_cast<roi_sensor_interface*>(&depth_sensor);
-        if (roi_sensor)
-            roi_sensor->set_roi_method(std::make_shared<ds5_auto_exposure_roi_method>(*_hw_monitor));
-
-        depth_sensor.register_option(RS2_OPTION_STEREO_BASELINE, std::make_shared<const_value_option>("Distance in mm between the stereo imagers",
-            lazy<float>([this]() { return get_stereo_baseline_mm(); })));
-
-        if (advanced_mode && _fw_version >= firmware_version("5.6.3.0"))
+        // REGISTER METADATA
+        if (!mipi_sensor)
         {
-            auto depth_scale = std::make_shared<depth_scale_option>(*_hw_monitor);
-            auto depth_sensor = As<ds5_depth_sensor, synthetic_sensor>(&get_depth_sensor());
-            assert(depth_sensor);
-
-            depth_scale->add_observer([depth_sensor](float val)
-            {
-                depth_sensor->set_depth_scale(val);
-            });
-
-            depth_sensor->register_option(RS2_OPTION_DEPTH_UNITS, depth_scale);
+            register_metadata(depth_sensor, hdr_firmware_version);
         }
         else
-            depth_sensor.register_option(RS2_OPTION_DEPTH_UNITS, std::make_shared<const_value_option>("Number of meters represented by a single depth unit",
-                lazy<float>([]() { return 0.001f; })));
-        // Metadata registration
-        depth_sensor.register_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP, make_uvc_header_parser(&uvc_header::timestamp));
+        {
+            // used for mipi device
+            register_metadata_mipi(depth_sensor);
+        }
+        //mipi
+
+        register_info(RS2_CAMERA_INFO_NAME, device_name);
+        register_info(RS2_CAMERA_INFO_SERIAL_NUMBER, optic_serial);
+        register_info(RS2_CAMERA_INFO_ASIC_SERIAL_NUMBER, asic_serial);
+        register_info(RS2_CAMERA_INFO_FIRMWARE_UPDATE_ID, asic_serial);
+        register_info(RS2_CAMERA_INFO_FIRMWARE_VERSION, _fw_version);
+        register_info(RS2_CAMERA_INFO_PHYSICAL_PORT, group.uvc_devices.front().device_path);
+        register_info(RS2_CAMERA_INFO_DEBUG_OP_CODE, std::to_string(static_cast<int>(fw_cmd::GLD)));
+        register_info(RS2_CAMERA_INFO_ADVANCED_MODE, ((advanced_mode) ? "YES" : "NO"));
+        register_info(RS2_CAMERA_INFO_PRODUCT_ID, pid_hex_str);
+        register_info(RS2_CAMERA_INFO_PRODUCT_LINE, "D400");
+        register_info(RS2_CAMERA_INFO_RECOMMENDED_FIRMWARE_VERSION, _recommended_fw_version);
+        register_info(RS2_CAMERA_INFO_CAMERA_LOCKED, _is_locked ? "YES" : "NO");
+
+        if (usb_modality)
+            register_info(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR, usb_type_str);
+
+        std::string curr_version= _fw_version;
+    }
+
+    void ds5_device::register_metadata(const synthetic_sensor &depth_sensor, const firmware_version& hdr_firmware_version) const
+    {
+        depth_sensor.register_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP, make_uvc_header_parser(&platform::uvc_header::timestamp));
 
         // attributes of md_capture_timing
         auto md_prop_offset = offsetof(metadata_raw, mode) +
@@ -918,7 +1172,7 @@ namespace librealsense
             offsetof(md_depth_y_normal_mode, intel_capture_timing);
 
         depth_sensor.register_metadata(RS2_FRAME_METADATA_FRAME_COUNTER, make_attribute_parser(&md_capture_timing::frame_counter, md_capture_timing_attributes::frame_counter_attribute, md_prop_offset));
-        depth_sensor.register_metadata(RS2_FRAME_METADATA_SENSOR_TIMESTAMP, make_rs400_sensor_ts_parser(make_uvc_header_parser(&uvc_header::timestamp),
+        depth_sensor.register_metadata(RS2_FRAME_METADATA_SENSOR_TIMESTAMP, make_rs400_sensor_ts_parser(make_uvc_header_parser(&platform::uvc_header::timestamp),
             make_attribute_parser(&md_capture_timing::sensor_timestamp, md_capture_timing_attributes::sensor_timestamp_attribute, md_prop_offset)));
 
         // attributes of md_capture_stats
@@ -932,6 +1186,7 @@ namespace librealsense
         md_prop_offset = offsetof(metadata_raw, mode) +
             offsetof(md_depth_mode, depth_y_mode) +
             offsetof(md_depth_y_normal_mode, intel_depth_control);
+
 
         depth_sensor.register_metadata(RS2_FRAME_METADATA_GAIN_LEVEL, make_attribute_parser(&md_depth_control::manual_gain, md_depth_control_attributes::gain_attribute, md_prop_offset));
         depth_sensor.register_metadata(RS2_FRAME_METADATA_ACTUAL_EXPOSURE, make_attribute_parser(&md_depth_control::manual_exposure, md_depth_control_attributes::exposure_attribute, md_prop_offset));
@@ -956,7 +1211,7 @@ namespace librealsense
         depth_sensor.register_metadata((rs2_frame_metadata_value)RS2_FRAME_METADATA_FORMAT, make_attribute_parser(&md_configuration::format, md_configuration_attributes::format_attribute, md_prop_offset));
         depth_sensor.register_metadata((rs2_frame_metadata_value)RS2_FRAME_METADATA_WIDTH, make_attribute_parser(&md_configuration::width, md_configuration_attributes::width_attribute, md_prop_offset));
         depth_sensor.register_metadata((rs2_frame_metadata_value)RS2_FRAME_METADATA_HEIGHT, make_attribute_parser(&md_configuration::height, md_configuration_attributes::height_attribute, md_prop_offset));
-        depth_sensor.register_metadata((rs2_frame_metadata_value)RS2_FRAME_METADATA_ACTUAL_FPS,  std::make_shared<ds5_md_attribute_actual_fps> ());
+        depth_sensor.register_metadata((rs2_frame_metadata_value)RS2_FRAME_METADATA_ACTUAL_FPS, std::make_shared<ds5_md_attribute_actual_fps>());
 
         if (_fw_version >= firmware_version("5.12.7.0"))
         {
@@ -970,8 +1225,8 @@ namespace librealsense
 
             depth_sensor.register_metadata(RS2_FRAME_METADATA_SEQUENCE_SIZE,
                 make_attribute_parser(&md_configuration::sub_preset_info,
-                    md_configuration_attributes::sub_preset_info_attribute, md_prop_offset ,
-                [](const rs2_metadata_type& param) {
+                    md_configuration_attributes::sub_preset_info_attribute, md_prop_offset,
+                    [](const rs2_metadata_type& param) {
                         // bit mask and offset used to get data from bitfield
                         return (param & md_configuration::SUB_PRESET_BIT_MASK_SEQUENCE_SIZE)
                             >> md_configuration::SUB_PRESET_BIT_OFFSET_SEQUENCE_SIZE;
@@ -979,8 +1234,8 @@ namespace librealsense
 
             depth_sensor.register_metadata(RS2_FRAME_METADATA_SEQUENCE_ID,
                 make_attribute_parser(&md_configuration::sub_preset_info,
-                    md_configuration_attributes::sub_preset_info_attribute, md_prop_offset ,
-                [](const rs2_metadata_type& param) {
+                    md_configuration_attributes::sub_preset_info_attribute, md_prop_offset,
+                    [](const rs2_metadata_type& param) {
                         // bit mask and offset used to get data from bitfield
                         return (param & md_configuration::SUB_PRESET_BIT_MASK_SEQUENCE_ID)
                             >> md_configuration::SUB_PRESET_BIT_OFFSET_SEQUENCE_ID;
@@ -995,26 +1250,81 @@ namespace librealsense
                             >> md_configuration::SUB_PRESET_BIT_OFFSET_ID;
                     }));
         }
+    }
 
+    void ds5_device::register_metadata_mipi(const synthetic_sensor &depth_sensor) const
+    {
+        depth_sensor.register_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP, make_uvc_header_parser(&platform::uvc_header::timestamp));
 
-        register_info(RS2_CAMERA_INFO_NAME, device_name);
-        register_info(RS2_CAMERA_INFO_SERIAL_NUMBER, optic_serial);
-        register_info(RS2_CAMERA_INFO_ASIC_SERIAL_NUMBER, asic_serial);
-        register_info(RS2_CAMERA_INFO_FIRMWARE_UPDATE_ID, asic_serial);
-        register_info(RS2_CAMERA_INFO_FIRMWARE_VERSION, _fw_version);
-        register_info(RS2_CAMERA_INFO_PHYSICAL_PORT, group.uvc_devices.front().device_path);
-        register_info(RS2_CAMERA_INFO_DEBUG_OP_CODE, std::to_string(static_cast<int>(fw_cmd::GLD)));
-        register_info(RS2_CAMERA_INFO_ADVANCED_MODE, ((advanced_mode) ? "YES" : "NO"));
-        register_info(RS2_CAMERA_INFO_PRODUCT_ID, pid_hex_str);
-        register_info(RS2_CAMERA_INFO_PRODUCT_LINE, "D400");
-        register_info(RS2_CAMERA_INFO_RECOMMENDED_FIRMWARE_VERSION, _recommended_fw_version);
-        register_info(RS2_CAMERA_INFO_CAMERA_LOCKED, _is_locked ? "YES" : "NO");
+        // frame counter
+        depth_sensor.register_metadata(RS2_FRAME_METADATA_FRAME_COUNTER, make_uvc_header_parser(&platform::uvc_header_mipi::frame_counter));
 
-        if (usb_modality)
-            register_info(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR, usb_type_str);
+        // attributes of md_mipi_depth_control structure
+        auto md_prop_offset = offsetof(metadata_mipi_depth_raw, depth_mode);
 
-        std::string curr_version= _fw_version;
+        depth_sensor.register_metadata(RS2_FRAME_METADATA_SENSOR_TIMESTAMP,
+                                       make_attribute_parser(&md_mipi_depth_mode::hw_timestamp,
+                                                             md_mipi_depth_control_attributes::hw_timestamp_attribute,
+                                                             md_prop_offset));
 
+        depth_sensor.register_metadata(RS2_FRAME_METADATA_SENSOR_TIMESTAMP,
+                                       make_attribute_parser(&md_mipi_depth_mode::optical_timestamp,
+                                                             md_mipi_depth_control_attributes::optical_timestamp_attribute,
+                                                             md_prop_offset));
+
+        depth_sensor.register_metadata(RS2_FRAME_METADATA_ACTUAL_EXPOSURE,
+                                       make_attribute_parser(&md_mipi_depth_mode::exposure_time,
+                                                             md_mipi_depth_control_attributes::exposure_time_attribute,
+                                                             md_prop_offset));
+        depth_sensor.register_metadata(RS2_FRAME_METADATA_EXPOSURE_PRIORITY,  // instead of MANUAL_EXPOSURE - not in enum yet
+                                       make_attribute_parser(&md_mipi_depth_mode::manual_exposure,
+                                                             md_mipi_depth_control_attributes::manual_exposure_attribute,
+                                                             md_prop_offset));
+        depth_sensor.register_metadata(RS2_FRAME_METADATA_FRAME_LASER_POWER,
+                                       make_attribute_parser(&md_mipi_depth_mode::laser_power,
+                                                             md_mipi_depth_control_attributes::laser_power_attribute,
+                                                             md_prop_offset));
+        depth_sensor.register_metadata(RS2_FRAME_METADATA_TRIGGER,
+                                       make_attribute_parser(&md_mipi_depth_mode::trigger,
+                                                             md_mipi_depth_control_attributes::trigger_attribute,
+                                                             md_prop_offset));
+        depth_sensor.register_metadata(RS2_FRAME_METADATA_FRAME_EMITTER_MODE,
+                                       make_attribute_parser(&md_mipi_depth_mode::projector_mode,
+                                                             md_mipi_depth_control_attributes::projector_mode_attribute,
+                                                             md_prop_offset));
+        depth_sensor.register_metadata(RS2_FRAME_METADATA_PRESET,
+                                       make_attribute_parser(&md_mipi_depth_mode::preset,
+                                                             md_mipi_depth_control_attributes::preset_attribute,
+                                                             md_prop_offset));
+
+        depth_sensor.register_metadata(RS2_FRAME_METADATA_GAIN_LEVEL,
+                                       make_attribute_parser(&md_mipi_depth_mode::manual_gain,
+                                                             md_mipi_depth_control_attributes::manual_gain_attribute,
+                                                             md_prop_offset));
+        depth_sensor.register_metadata(RS2_FRAME_METADATA_AUTO_EXPOSURE,
+                                       make_attribute_parser(&md_mipi_depth_mode::auto_exposure_mode,
+                                                             md_mipi_depth_control_attributes::auto_exposure_mode_attribute,
+                                                             md_prop_offset));
+        depth_sensor.register_metadata(RS2_FRAME_METADATA_INPUT_WIDTH,
+                                       make_attribute_parser(&md_mipi_depth_mode::input_width,
+                                                             md_mipi_depth_control_attributes::input_width_attribute,
+                                                             md_prop_offset));
+        depth_sensor.register_metadata(RS2_FRAME_METADATA_INPUT_HEIGHT,
+                                       make_attribute_parser(&md_mipi_depth_mode::input_height,
+                                                             md_mipi_depth_control_attributes::input_height_attribute,
+                                                             md_prop_offset));
+        depth_sensor.register_metadata(RS2_FRAME_METADATA_SUB_PRESET_INFO,
+                                       make_attribute_parser(&md_mipi_depth_mode::sub_preset_info,
+                                                             md_mipi_depth_control_attributes::sub_preset_info_attribute,
+                                                             md_prop_offset));
+        depth_sensor.register_metadata(RS2_FRAME_METADATA_CALIB_INFO,
+                                       make_attribute_parser(&md_mipi_depth_mode::calib_info,
+                                                             md_mipi_depth_control_attributes::calibration_info_attribute,
+                                                             md_prop_offset));
+        depth_sensor.register_metadata(RS2_FRAME_METADATA_CRC,
+                                       make_attribute_parser(&md_mipi_depth_mode::crc,
+                                                             md_mipi_depth_control_attributes::crc_attribute,
+                                                             md_prop_offset));
     }
 
     notification ds5_notification_decoder::decode(int value)
@@ -1022,7 +1332,10 @@ namespace librealsense
         if (ds::ds5_fw_error_report.find(static_cast<uint8_t>(value)) != ds::ds5_fw_error_report.end())
             return{ RS2_NOTIFICATION_CATEGORY_HARDWARE_ERROR, value, RS2_LOG_SEVERITY_ERROR, ds::ds5_fw_error_report.at(static_cast<uint8_t>(value)) };
 
-        return{ RS2_NOTIFICATION_CATEGORY_HARDWARE_ERROR, value, RS2_LOG_SEVERITY_WARN, (to_string() << "D400 HW report - unresolved type " << value) };
+        return { RS2_NOTIFICATION_CATEGORY_HARDWARE_ERROR,
+                 value,
+                 RS2_LOG_SEVERITY_WARN,
+                 ( rsutils::string::from() << "D400 HW report - unresolved type " << value ) };
     }
 
     void ds5_device::create_snapshot(std::shared_ptr<debug_interface>& snapshot) const
@@ -1056,11 +1369,6 @@ namespace librealsense
         //    throw not_implemented_exception("device time not supported for backend.");
         //}
 
-#ifdef RASPBERRY_PI
-        // TODO: This is temporary work-around since global timestamp seems to compromise RPi stability
-        using namespace std::chrono;
-        return duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
-#else
         if (!_hw_monitor)
             throw wrong_api_call_sequence_exception("_hw_monitor is not initialized yet");
 
@@ -1075,7 +1383,6 @@ namespace librealsense
         uint32_t dt = *(uint32_t*)res.data();
         double ts = dt * TIMESTAMP_USEC_TO_MSEC;
         return ts;
-#endif
     }
 
     command ds5_device::get_firmware_logs_command() const

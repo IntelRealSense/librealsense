@@ -4,6 +4,9 @@
 #include "l500-fw-update-device.h"
 #include "l500-private.h"
 
+#include <rsutils/string/from.h>
+
+
 namespace librealsense
 {
     l500_update_device::l500_update_device(std::shared_ptr<context> ctx, bool register_device_notifications, std::shared_ptr<platform::usb_device> usb_device)
@@ -17,6 +20,24 @@ namespace librealsense
     void l500_update_device::update(const void* fw_image, int fw_image_size, update_progress_callback_ptr callback) const
     {
         update_device::update(fw_image, fw_image_size, callback);
+    }
+
+    bool l500_update_device::check_fw_compatibility(const std::vector<uint8_t>& image) const
+    {
+        std::string fw_version = extract_firmware_version_string(image);
+        auto min_max_fw_it = ivcam2::device_to_fw_min_max_version.find(_usb_device->get_info().pid);
+        if (min_max_fw_it == ivcam2::device_to_fw_min_max_version.end())
+            throw librealsense::invalid_value_exception(
+                rsutils::string::from() << "Min and Max firmware versions have not been defined for this device: "
+                                        << std::hex << _pid );
+
+        // Limit L515 to FW versions within the 1.5.1.3-1.99.99.99 range to differenciate from the other products
+        bool result = (firmware_version(fw_version) >= firmware_version(min_max_fw_it->second.first)) &&
+            (firmware_version(fw_version) <= firmware_version(min_max_fw_it->second.second));
+        if (!result)
+            LOG_ERROR("Firmware version isn't compatible" << fw_version);
+
+        return result;
     }
 
     std::string l500_update_device::parse_serial_number(const std::vector<uint8_t>& buffer) const
@@ -33,4 +54,5 @@ namespace librealsense
 
         return rv.str();
     }
+
 }

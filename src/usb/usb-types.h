@@ -114,6 +114,7 @@ namespace librealsense
             usb1_type = 0x0100,
             usb1_1_type = 0x0110,
             usb2_type = 0x0200,
+            usb2_01_type = 0x0201,
             usb2_1_type = 0x0210,
             usb3_type = 0x0300,
             usb3_1_type = 0x0310,
@@ -125,6 +126,7 @@ namespace librealsense
                 { usb1_type,    "1.0" },
                 { usb1_1_type,  "1.1" },
                 { usb2_type,    "2.0" },
+                { usb2_01_type,  "2.01" },
                 { usb2_1_type,  "2.1" },
                 { usb3_type,    "3.0" },
                 { usb3_1_type,  "3.1" },
@@ -204,5 +206,20 @@ namespace librealsense
             uint8_t type;
             std::vector<uint8_t> data;
         };
+
+#pragma pack(push, 1)
+        struct dfu_header {
+            uint32_t dwCRC;
+            uint8_t  headerSignature[256];
+            uint8_t  cssHeader[128];
+            uint32_t magicNumber;
+            uint32_t prefixLength;
+            uint16_t bcdDFU;
+            uint32_t bcdDevice;
+            uint8_t  reserve[4];
+            uint32_t imageSize;
+            uint16_t nofBlocks;
+        };
+#pragma pack(pop)
     }
 }

@@ -13,7 +13,7 @@
 #include <limits.h>
 #include <atomic>
 #include <functional>
-#include <core/debug.h>
+#include "core/debug.h"
 
 #include "archive.h"
 #include "core/streaming.h"
@@ -30,6 +30,7 @@ namespace librealsense
     class option;
 
     typedef std::function<void(std::vector<platform::stream_profile>)> on_open;
+    typedef std::function<void(frame_additional_data &data)> on_frame_md;
 
     struct frame_timestamp_reader
     {
@@ -68,6 +69,7 @@ namespace librealsense
         {
             _on_open = callback;
         }
+        virtual void set_frame_metadata_modifier(on_frame_md callback) { _metadata_modifier = callback; }
         device_interface& get_device() override;
 
         // Make sensor inherit its owning device info by default
@@ -89,6 +91,8 @@ namespace librealsense
         void raise_on_before_streaming_changes(bool streaming);
         void set_active_streams(const stream_profiles& requests);
 
+        void register_profile(std::shared_ptr<stream_profile_interface> target) const;
+
         void assign_stream(const std::shared_ptr<stream_interface>& stream,
                            std::shared_ptr<stream_profile_interface> target) const;
 
@@ -98,12 +102,20 @@ namespace librealsense
             const unsigned long long& last_frame_number,
             std::shared_ptr<stream_profile_interface> profile);
 
+        inline int compute_frame_expected_size(int width, int height, int bpp) const
+        {
+            return width * height * bpp >> 3;
+        }
+
+        std::vector<byte> align_width_to_64(int width, int height, int bpp, byte* pix) const;
+
         std::vector<platform::stream_profile> _internal_config;
 
         std::atomic<bool> _is_streaming;
         std::atomic<bool> _is_opened;
         std::shared_ptr<notifications_processor> _notifications_processor;
         on_open _on_open;
+        on_frame_md _metadata_modifier;
         std::shared_ptr<metadata_parser_map> _metadata_parsers = nullptr;
 
         sensor_base* _source_owner = nullptr;
@@ -197,8 +209,10 @@ namespace librealsense
         ~synthetic_sensor() override;
 
         virtual void register_option(rs2_option id, std::shared_ptr<option> option);
+        virtual bool try_register_option(rs2_option id, std::shared_ptr<option> option);
         void unregister_option(rs2_option id);
         void register_pu(rs2_option id);
+        bool try_register_pu(rs2_option id);
 
         virtual stream_profiles init_stream_profiles() override;
 
@@ -206,6 +220,8 @@ namespace librealsense
         void close() override;
         void start(frame_callback_ptr callback) override;
         void stop() override;
+
+        virtual float get_preset_max_value() const;
 
         void register_processing_block(const std::vector<stream_profile>& from,
             const std::vector<stream_profile>& to,
@@ -331,7 +347,6 @@ namespace librealsense
         void stop() override;
         void register_xu(platform::extension_unit xu);
         void register_pu(rs2_option id);
-        void try_register_pu(rs2_option id);
 
         std::vector<platform::stream_profile> get_configuration() const { return _internal_config; }
         std::shared_ptr<platform::uvc_device> get_uvc_device() { return _device; }
@@ -345,10 +360,10 @@ namespace librealsense
             power on(std::dynamic_pointer_cast<uvc_sensor>(shared_from_this()));
             return action(*_device);
         }
-
     protected:
         stream_profiles init_stream_profiles() override;
         rs2_extension stream_to_frame_types(rs2_stream stream) const;
+        void verify_supported_requests(const stream_profiles& requests) const;
 
     private:
         void acquire_power();

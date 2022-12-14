@@ -6,21 +6,30 @@
 #include "backend.h"
 #include "types.h"
 #include "fw-update/fw-update-unsigned.h"
+#include <rsutils/string/from.h>
 
 #include <map>
 #include <iomanip>
 #include <string>
 
+//#define DEBUG_THERMAL_LOOP
+#ifdef DEBUG_THERMAL_LOOP
+#define LOG_DEBUG_THERMAL_LOOP(...)   do { CLOG(WARNING   ,LIBREALSENSE_ELPP_ID) << __VA_ARGS__; } while(false)
+#else
+#define LOG_DEBUG_THERMAL_LOOP(...)
+#endif //DEBUG_THERMAL_LOOP
+
 namespace librealsense
 {
     namespace ds
     {
+        const uint16_t RS457_PID            = 0xabcd; // D457 - Dev . Do not upstream!
         const uint16_t RS400_PID            = 0x0ad1; // PSR
         const uint16_t RS410_PID            = 0x0ad2; // ASR
         const uint16_t RS415_PID            = 0x0ad3; // ASRC
         const uint16_t RS430_PID            = 0x0ad4; // AWG
         const uint16_t RS430_MM_PID         = 0x0ad5; // AWGT
-        const uint16_t RS_USB2_PID          = 0x0ad6; // USB2
+        const uint16_t RS_USB2_PID          = 0x0ad6; // USB2 - fallback for SKU unable to boot properly
         const uint16_t RS_RECOVERY_PID      = 0x0adb;
         const uint16_t RS_USB2_RECOVERY_PID = 0x0adc;
         const uint16_t RS400_IMU_PID        = 0x0af2; // IMU
@@ -31,7 +40,7 @@ namespace librealsense
         const uint16_t RS430_MM_RGB_PID     = 0x0b01; // AWGCT
         const uint16_t RS460_PID            = 0x0b03; // DS5U
         const uint16_t RS435_RGB_PID        = 0x0b07; // AWGC
-        const uint16_t RS405U_PID           = 0x0b0c; // DS5U
+        const uint16_t RS405U_PID           = 0x0b0c; // DS5U - Not used, should be removed with EOL devices clean up
         const uint16_t RS435I_PID           = 0x0b3a; // D435i
         const uint16_t RS416_PID            = 0x0b49; // F416
         const uint16_t RS430I_PID           = 0x0b4b; // D430i
@@ -53,6 +62,7 @@ namespace librealsense
         const uint8_t DS5_ENABLE_AUTO_EXPOSURE            = 0xB;
         const uint8_t DS5_LED_PWR                         = 0xE;
         const uint8_t DS5_THERMAL_COMPENSATION            = 0xF;
+        const uint8_t DS5_EMITTER_FREQUENCY               = 0x10;
 
         // Devices supported by the current version
         static const std::set<std::uint16_t> rs400_sku_pid = {
@@ -78,6 +88,7 @@ namespace librealsense
             ds::RS416_PID,
             ds::RS405_PID,
             ds::RS455_PID,
+            ds::RS457_PID,
         };
 
         static const std::set<std::uint16_t> multi_sensors_pid = {
@@ -90,22 +101,20 @@ namespace librealsense
             ds::RS435_RGB_PID,
             ds::RS435I_PID,
             ds::RS465_PID,
-            ds::RS405_PID,
             ds::RS455_PID,
+            ds::RS457_PID,
         };
 
         static const std::set<std::uint16_t> hid_sensors_pid = {
             ds::RS435I_PID,
             ds::RS430I_PID,
             ds::RS465_PID,
-            ds::RS405_PID,
             ds::RS455_PID,
         };
 
         static const std::set<std::uint16_t> hid_bmi_055_pid = {
             ds::RS435I_PID,
             ds::RS430I_PID,
-            ds::RS405_PID,
             ds::RS455_PID
         };
 
@@ -128,13 +137,15 @@ namespace librealsense
             { RS430_PID,            "Intel RealSense D430"},
             { RS430_MM_PID,         "Intel RealSense D430 with Tracking Module"},
             { RS_USB2_PID,          "Intel RealSense USB2" },
-            { RS_RECOVERY_PID,      "Intel RealSense D4xx Recovery"},
-            { RS_USB2_RECOVERY_PID, "Intel RealSense USB2 D4xx Recovery"},
+            { RS_RECOVERY_PID,      "Intel RealSense D4XX Recovery"},
+            { RS_USB2_RECOVERY_PID, "Intel RealSense D4XX USB2 Recovery"},
             { RS400_IMU_PID,        "Intel RealSense IMU" },
             { RS420_PID,            "Intel RealSense D420"},
             { RS420_MM_PID,         "Intel RealSense D420 with Tracking Module"},
             { RS410_MM_PID,         "Intel RealSense D410 with Tracking Module"},
             { RS400_MM_PID,         "Intel RealSense D400 with Tracking Module"},
+            { RS430_PID,            "Intel RealSense D430"},
+            { RS430I_PID,           "Intel RealSense D430I"},
             { RS430_MM_RGB_PID,     "Intel RealSense D430 with Tracking and RGB Modules"},
             { RS460_PID,            "Intel RealSense D460" },
             { RS435_RGB_PID,        "Intel RealSense D435"},
@@ -146,6 +157,7 @@ namespace librealsense
             { RS416_RGB_PID,        "Intel RealSense F416 with RGB Module"},
             { RS405_PID,            "Intel RealSense D405" },
             { RS455_PID,            "Intel RealSense D455" },
+            { RS457_PID,            "Intel RealSense D457" }
         };
 
         // DS5 fisheye XU identifiers
@@ -185,6 +197,7 @@ namespace librealsense
             DFU             = 0x1E,     // Enter to FW update mode
             HWRST           = 0x20,     // hardware reset
             OBW             = 0x29,     // OVT bypass write
+            PROJ_TEMP_MIPI  = 0x2A,     // get ASIC temperature - with mipi device
             SET_ADV         = 0x2B,     // set advanced mode control
             GET_ADV         = 0x2C,     // get advanced mode control
             EN_ADV          = 0x2D,     // enable advanced mode
@@ -203,6 +216,7 @@ namespace librealsense
             GETRGBAEROI     = 0x76,     // get RGB auto-exposure region of interest
             SET_PWM_ON_OFF  = 0x77,     // set emitter on and off mode
             GET_PWM_ON_OFF  = 0x78,     // get emitter on and off mode
+            ASIC_TEMP_MIPI  = 0x7A,     // get ASIC temperature - with mipi device
             SETSUBPRESET    = 0x7B,     // Download sub-preset
             GETSUBPRESET    = 0x7C,     // Upload the current sub-preset
             GETSUBPRESETID  = 0x7D,     // Retrieve sub-preset's name
@@ -241,7 +255,7 @@ namespace librealsense
             ENUM2STR(GETSUBPRESET);
             ENUM2STR(GETSUBPRESETID);
             default:
-              return (to_string() << "Unrecognized FW command " << state);
+              return ( rsutils::string::from() << "Unrecognized FW command " << state );
           }
         }
 
@@ -260,7 +274,9 @@ namespace librealsense
             INTERCAM_SYNC_MASTER     = 1,
             INTERCAM_SYNC_SLAVE      = 2,
             INTERCAM_SYNC_FULL_SLAVE = 3,
-            INTERCAM_SYNC_MAX        = 258 // 4-258 are for Genlock with burst count of 1-255 frames for each trigger
+            INTERCAM_SYNC_MAX = 260  // 4-258 are for Genlock with burst count of 1-255 frames for each trigger.
+                                     // 259 for Sending two frame - First with laser ON, and the other with laser OFF.
+                                     // 260 for Sending two frame - First with laser OFF, and the other with laser ON.
         };
 
         enum class d400_caps : uint16_t
@@ -274,6 +290,7 @@ namespace librealsense
             CAP_ROLLING_SHUTTER         = (1u << 5),
             CAP_BMI_055                 = (1u << 6),
             CAP_BMI_085                 = (1u << 7),
+            CAP_INTERCAM_HW_SYNC        = (1u << 8),
             CAP_MAX
         };
 
@@ -390,13 +407,16 @@ namespace librealsense
             auto header = reinterpret_cast<const table_header*>(raw_data.data());
             if(raw_data.size() < sizeof(table_header))
             {
-                throw invalid_value_exception(to_string() << "Calibration data invald, buffer too small : expected " << sizeof(table_header) << " , actual: " << raw_data.size());
+                throw invalid_value_exception( rsutils::string::from()
+                                               << "Calibration data invalid, buffer too small : expected "
+                                               << sizeof( table_header ) << " , actual: " << raw_data.size() );
             }
             // verify the parsed table
-            if (table->header.crc32 != calc_crc32(raw_data.data() + sizeof(table_header), raw_data.size() - sizeof(table_header)))
+            // D457 development
+            /*if (table->header.crc32 != calc_crc32(raw_data.data() + sizeof(table_header), raw_data.size() - sizeof(table_header)))
             {
                 throw invalid_value_exception("Calibration data CRC error, parsing aborted!");
-            }
+            }*/
             LOG_DEBUG("Loaded Valid Table: version [mjr.mnr]: 0x" <<
                       hex << setfill('0') << setw(4) << header->version << dec
                 << ", type " << header->table_type << ", size " << header->table_size
@@ -622,12 +642,16 @@ namespace librealsense
             module_asic_serial_offset       = 64,
             fisheye_sensor_lb               = 112,
             fisheye_sensor_hb               = 113,
+            imu_acc_chip_id                 = 124,
             depth_sensor_type               = 166,
             active_projector                = 170,
             rgb_sensor                      = 174,
             imu_sensor                      = 178,
             motion_module_fw_version_offset = 212
         };
+
+        const uint8_t I2C_IMU_BMI055_ID_ACC = 0xfa;
+        const uint8_t I2C_IMU_BMI085_ID_ACC = 0x1f;
 
         enum gvd_fields_size
         {
@@ -691,6 +715,34 @@ namespace librealsense
             { res_1152_1152,{ 1152, 1152 } },
         };
 
+        static std::map<uint16_t, std::string> device_to_fw_min_version = {
+            {RS400_PID, "5.8.15.0"},
+            {RS410_PID, "5.8.15.0"},
+            {RS415_PID, "5.8.15.0"},
+            {RS430_PID, "5.8.15.0"},
+            {RS430_MM_PID, "5.8.15.0"},
+            {RS_USB2_PID, "5.8.15.0"},
+            {RS_RECOVERY_PID, "5.8.15.0"},
+            {RS_USB2_RECOVERY_PID, "5.8.15.0"},
+            {RS400_IMU_PID, "5.8.15.0"},
+            {RS420_PID, "5.8.15.0"},
+            {RS420_MM_PID, "5.8.15.0"},
+            {RS410_MM_PID, "5.8.15.0"},
+            {RS400_MM_PID, "5.8.15.0" },
+            {RS430_MM_RGB_PID, "5.8.15.0" },
+            {RS460_PID, "5.8.15.0" },
+            {RS435_RGB_PID, "5.8.15.0" },
+            {RS405U_PID, "5.8.15.0" },
+            {RS435I_PID, "5.12.7.100" },
+            {RS416_PID, "5.8.15.0" },
+            {RS430I_PID, "5.8.15.0" },
+            {RS465_PID, "5.12.7.100" },
+            {RS416_RGB_PID, "5.8.15.0" },
+            {RS405_PID, "5.12.11.8" },
+            {RS455_PID, "5.12.7.100" },
+            {RS457_PID, "5.13.1.1" }
+        };
+
 
         ds5_rect_resolutions width_height_to_ds5_rect_resolutions(uint32_t width, uint32_t height);
 
@@ -735,6 +787,10 @@ namespace librealsense
             stream_not_start_y,
             stream_not_start_cam,
             rec_error,
+            usb2_limit,
+            cold_laser_disable,
+            no_temperature_disable_laser,
+            isp_boot_data_upload_failed,
         };
 
         // Elaborate FW XU report. The reports may be consequently extended for PU/CTL/ISP
@@ -765,6 +821,10 @@ namespace librealsense
             { stream_not_start_y,           "IR stream start failure" },
             { stream_not_start_cam,         "Camera stream start failure" },
             { rec_error,                    "REC error" },
+            { usb2_limit,                   "USB2 Limit" },
+            { cold_laser_disable,           "Laser cold - disabled" },
+            { no_temperature_disable_laser, "Temperature read failure - laser disabled" },
+            { isp_boot_data_upload_failed,  "ISP boot data upload failure" },
         };
 
         std::vector<platform::uvc_device_info> filter_device_by_capability(const std::vector<platform::uvc_device_info>& devices, d400_caps caps);

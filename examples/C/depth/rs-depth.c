@@ -6,7 +6,7 @@
 #include <librealsense2/h/rs_pipeline.h>
 #include <librealsense2/h/rs_option.h>
 #include <librealsense2/h/rs_frame.h>
-#include "../example.h"
+#include "example.h"
 
 #include <stdlib.h>
 #include <stdint.h>
@@ -114,7 +114,7 @@ int main()
     check_error(e);
 
     // Start the pipeline streaming
-    // The retunred object should be released with rs2_delete_pipeline_profile(...)
+    // The returned object should be released with rs2_delete_pipeline_profile(...)
     rs2_pipeline_profile* pipeline_profile = rs2_pipeline_start_with_config(pipeline, config, &e);
     if (e)
     {

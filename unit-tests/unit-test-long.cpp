@@ -60,6 +60,7 @@ bool stream(std::string serial_number, sem_t* sem2, bool do_query)
         is_running = (sem_value == 0);
     }
     pipe.stop();
+    return true; // TBD
 }
 
 void multiple_stream(std::string serial_number, sem_t* sem, bool do_query)

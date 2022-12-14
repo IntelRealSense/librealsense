@@ -1,11 +1,18 @@
-#include <glad/glad.h>
 #include "calibration-model.h"
 #include "model-views.h"
 #include "os.h"
+#include "ux-window.h"
 
 #include "../src/ds5/ds5-private.h"
 
+
 using namespace rs2;
+
+calibration_model::calibration_model(rs2::device dev, std::shared_ptr<notifications_model> not_model)
+    : dev(dev), _not_model(not_model)
+{
+    _accept = config_file::instance().get_or_default(configurations::calibration::enable_writing, false);
+}
 
 bool calibration_model::supports()
 {
@@ -15,23 +22,18 @@ bool calibration_model::supports()
     return dev.is<rs2::auto_calibrated_device>() && is_d400;
 }
 
-calibration_model::calibration_model(rs2::device dev) : dev(dev) 
-{
-    _accept = config_file::instance().get_or_default(configurations::calibration::enable_writing, false);
-}
-
 void calibration_model::draw_float(std::string name, float& x, const float& orig, bool& changed)
 {
     if (abs(x - orig) > 0.00001) ImGui::PushStyleColor(ImGuiCol_FrameBg, regular_blue);
     else ImGui::PushStyleColor(ImGuiCol_FrameBg, black);
-    if (ImGui::DragFloat(std::string(to_string() << "##" << name).c_str(), &x, 0.001f))
+    if (ImGui::DragFloat(std::string( rsutils::string::from() << "##" << name).c_str(), &x, 0.001f))
     {
         changed = true;
     }
     ImGui::PopStyleColor();
 }
 
-void calibration_model::draw_float4x4(std::string name, librealsense::float3x3& feild, 
+void calibration_model::draw_float4x4(std::string name, librealsense::float3x3& feild,
                                       const librealsense::float3x3& original, bool& changed)
 {
     ImGui::SetCursorPosX(10);
@@ -45,7 +47,7 @@ void calibration_model::draw_float4x4(std::string name, librealsense::float3x3& 
     draw_float(name + "_XY", feild.x.y, original.x.y, changed);
     ImGui::SameLine();
     draw_float(name + "_XZ", feild.x.z, original.x.z, changed);
-    
+
     ImGui::SetCursorPosX(200);
     draw_float(name + "_YX", feild.y.x, original.y.x, changed);
     ImGui::SameLine();
@@ -123,7 +125,7 @@ namespace helpers
             oldcrc32 = UPDC32(*buf, oldcrc32);
         return ~oldcrc32;
     }
-};
+}
 
 void calibration_model::update(ux_window& window, std::string& error_message)
 {
@@ -147,7 +149,7 @@ void calibration_model::update(ux_window& window, std::string& error_message)
     auto table = (librealsense::ds::coefficients_table*)_calibration.data();
     auto orig_table = (librealsense::ds::coefficients_table*)_original.data();
     bool changed = false;
-    
+
     const float w = 620;
     const float h = 500;
     const float x0 = std::max(window.width() - w, 0.f) / 2;
@@ -190,17 +192,17 @@ void calibration_model::update(ux_window& window, std::string& error_message)
                     table->baseline = cf.get("baseline");
 
                     auto load_float3x4 = [&](std::string name, librealsense::float3x3& m){
-                        m.x.x = cf.get(std::string(to_string() << name << ".x.x").c_str());
-                        m.x.y = cf.get(std::string(to_string() << name << ".x.y").c_str());
-                        m.x.z = cf.get(std::string(to_string() << name << ".x.z").c_str());
+                        m.x.x = cf.get(std::string( rsutils::string::from() << name << ".x.x").c_str());
+                        m.x.y = cf.get(std::string( rsutils::string::from() << name << ".x.y").c_str());
+                        m.x.z = cf.get(std::string( rsutils::string::from() << name << ".x.z").c_str());
 
-                        m.y.x = cf.get(std::string(to_string() << name << ".y.x").c_str());
-                        m.y.y = cf.get(std::string(to_string() << name << ".y.y").c_str());
-                        m.y.z = cf.get(std::string(to_string() << name << ".y.z").c_str());
+                        m.y.x = cf.get(std::string( rsutils::string::from() << name << ".y.x").c_str());
+                        m.y.y = cf.get(std::string( rsutils::string::from() << name << ".y.y").c_str());
+                        m.y.z = cf.get(std::string( rsutils::string::from() << name << ".y.z").c_str());
 
-                        m.z.x = cf.get(std::string(to_string() << name << ".z.x").c_str());
-                        m.z.y = cf.get(std::string(to_string() << name << ".z.y").c_str());
-                        m.z.z = cf.get(std::string(to_string() << name << ".z.z").c_str());
+                        m.z.x = cf.get(std::string( rsutils::string::from() << name << ".z.x").c_str());
+                        m.z.y = cf.get(std::string( rsutils::string::from() << name << ".z.y").c_str());
+                        m.z.z = cf.get(std::string( rsutils::string::from() << name << ".z.z").c_str());
                     };
 
                     load_float3x4("intrinsic_left", table->intrinsic_left);
@@ -210,11 +212,11 @@ void calibration_model::update(ux_window& window, std::string& error_message)
 
                     for (int i = 0; i < librealsense::ds::max_ds5_rect_resolutions; i++)
                     {
-                        table->rect_params[i].x = cf.get(std::string(to_string() << "rectified." << i << ".fx").c_str());
-                        table->rect_params[i].y = cf.get(std::string(to_string() << "rectified." << i << ".fy").c_str());
+                        table->rect_params[i].x = cf.get(std::string( rsutils::string::from() << "rectified." << i << ".fx").c_str());
+                        table->rect_params[i].y = cf.get(std::string( rsutils::string::from() << "rectified." << i << ".fy").c_str());
 
-                        table->rect_params[i].z = cf.get(std::string(to_string() << "rectified." << i << ".ppx").c_str());
-                        table->rect_params[i].w = cf.get(std::string(to_string() << "rectified." << i << ".ppy").c_str());
+                        table->rect_params[i].z = cf.get(std::string( rsutils::string::from() << "rectified." << i << ".ppx").c_str());
+                        table->rect_params[i].w = cf.get(std::string( rsutils::string::from() << "rectified." << i << ".ppy").c_str());
                     }
                 }
 
@@ -234,7 +236,7 @@ void calibration_model::update(ux_window& window, std::string& error_message)
         ImGui::SameLine();
         if (ImGui::Button(u8"\uF0C7 Save As...", ImVec2(100, 30)))
         {
-            try 
+            try
             {
                 if (auto fn = file_dialog_open(file_dialog_mode::save_file, "Calibration JSON\0*.json\0", nullptr, nullptr))
                 {
@@ -242,37 +244,37 @@ void calibration_model::update(ux_window& window, std::string& error_message)
                     cf.set("baseline", table->baseline);
 
                     auto save_float3x4 = [&](std::string name, librealsense::float3x3& m){
-                        cf.set(std::string(to_string() << name << ".x.x").c_str(), m.x.x);
-                        cf.set(std::string(to_string() << name << ".x.y").c_str(), m.x.y);
-                        cf.set(std::string(to_string() << name << ".x.z").c_str(), m.x.z);
+                        cf.set(std::string( rsutils::string::from() << name << ".x.x").c_str(), m.x.x);
+                        cf.set(std::string( rsutils::string::from() << name << ".x.y").c_str(), m.x.y);
+                        cf.set(std::string( rsutils::string::from() << name << ".x.z").c_str(), m.x.z);
 
-                        cf.set(std::string(to_string() << name << ".y.x").c_str(), m.y.x);
-                        cf.set(std::string(to_string() << name << ".y.y").c_str(), m.y.y);
-                        cf.set(std::string(to_string() << name << ".y.z").c_str(), m.y.z);
+                        cf.set(std::string( rsutils::string::from() << name << ".y.x").c_str(), m.y.x);
+                        cf.set(std::string( rsutils::string::from() << name << ".y.y").c_str(), m.y.y);
+                        cf.set(std::string( rsutils::string::from() << name << ".y.z").c_str(), m.y.z);
 
-                        cf.set(std::string(to_string() << name << ".z.x").c_str(), m.z.x);
-                        cf.set(std::string(to_string() << name << ".z.y").c_str(), m.z.y);
-                        cf.set(std::string(to_string() << name << ".z.z").c_str(), m.z.z);
+                        cf.set(std::string( rsutils::string::from() << name << ".z.x").c_str(), m.z.x);
+                        cf.set(std::string( rsutils::string::from() << name << ".z.y").c_str(), m.z.y);
+                        cf.set(std::string( rsutils::string::from() << name << ".z.z").c_str(), m.z.z);
                     };
 
                     save_float3x4("intrinsic_left", table->intrinsic_left);
                     save_float3x4("intrinsic_right", table->intrinsic_right);
                     save_float3x4("world2left_rot", table->world2left_rot);
                     save_float3x4("world2right_rot", table->world2right_rot);
-                    
+
                     for (int i = 0; i < librealsense::ds::max_ds5_rect_resolutions; i++)
                     {
                         auto xy = librealsense::ds::resolutions_list[(librealsense::ds::ds5_rect_resolutions)i];
                         int w = xy.x; int h = xy.y;
 
-                        cf.set(std::string(to_string() << "rectified." << i << ".width").c_str(), w);
-                        cf.set(std::string(to_string() << "rectified." << i << ".height").c_str(), h);
+                        cf.set(std::string( rsutils::string::from() << "rectified." << i << ".width").c_str(), w);
+                        cf.set(std::string( rsutils::string::from() << "rectified." << i << ".height").c_str(), h);
 
-                        cf.set(std::string(to_string() << "rectified." << i << ".fx").c_str(), table->rect_params[i].x);
-                        cf.set(std::string(to_string() << "rectified." << i << ".fy").c_str(), table->rect_params[i].y);
+                        cf.set(std::string( rsutils::string::from() << "rectified." << i << ".fx").c_str(), table->rect_params[i].x);
+                        cf.set(std::string( rsutils::string::from() << "rectified." << i << ".fy").c_str(), table->rect_params[i].y);
 
-                        cf.set(std::string(to_string() << "rectified." << i << ".ppx").c_str(), table->rect_params[i].z);
-                        cf.set(std::string(to_string() << "rectified." << i << ".ppy").c_str(), table->rect_params[i].w);
+                        cf.set(std::string( rsutils::string::from() << "rectified." << i << ".ppx").c_str(), table->rect_params[i].z);
+                        cf.set(std::string( rsutils::string::from() << "rectified." << i << ".ppy").c_str(), table->rect_params[i].w);
                     }
                 }
             }
@@ -298,6 +300,12 @@ void calibration_model::update(ux_window& window, std::string& error_message)
                     _calibration = dev.as<rs2::auto_calibrated_device>().get_calibration_table();
                     _original = _calibration;
                     changed = true;
+
+                    if (auto nm = _not_model.lock())
+                    {
+                        nm->add_notification({ rsutils::string::from() << "Depth Calibration is reset to Factory Settings",
+                            RS2_LOG_SEVERITY_INFO, RS2_NOTIFICATION_CATEGORY_HARDWARE_EVENT });
+                    }
                 }
                 catch(const std::exception& ex)
                 {
@@ -331,7 +339,7 @@ void calibration_model::update(ux_window& window, std::string& error_message)
 
         ImGui::SetCursorPosX(10);
         ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5);
-        
+
         ImGui::Text("Stereo Baseline(mm):"); ImGui::SameLine();
         ImGui::SetCursorPosX(200);
 
@@ -347,7 +355,7 @@ void calibration_model::update(ux_window& window, std::string& error_message)
 
         ImGui::SetCursorPosX(10);
         ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5);
-        
+
         ImGui::Text("Rectified Resolution:"); ImGui::SameLine();
         ImGui::SetCursorPosX(200);
 
@@ -360,21 +368,21 @@ void calibration_model::update(ux_window& window, std::string& error_message)
             int w = xy.x; int h = xy.y;
             if (w != 0) {
                 resolution_offset.push_back(i);
-                std::string name = to_string() << w <<" x "<<h;
+                std::string name = rsutils::string::from() << w << " x " << h;
                 resolution_names.push_back(name);
             }
         }
-        for (int i = 0; i < resolution_offset.size(); i++)
+        for (size_t i = 0; i < resolution_offset.size(); i++)
         {
             resolution_names_char.push_back(resolution_names[i].c_str());
         }
 
         ImGui::PushItemWidth(120);
-        ImGui::Combo("##RectifiedResolutions", &selected_resolution, resolution_names_char.data(), resolution_names_char.size());
+        ImGui::Combo("##RectifiedResolutions", &selected_resolution, resolution_names_char.data(), int(resolution_names_char.size()));
 
         ImGui::SetCursorPosX(10);
         ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5);
-        
+
         ImGui::Text("Focal Length:"); ImGui::SameLine();
         ImGui::SetCursorPosX(200);
 
@@ -470,7 +478,7 @@ void calibration_model::update(ux_window& window, std::string& error_message)
             {
                 dev.as<rs2::auto_calibrated_device>().set_calibration_table(_calibration);
             }
-            catch (const std::exception& ex)
+            catch (const std::exception&)
             {
                 try
                 {

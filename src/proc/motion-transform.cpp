@@ -5,36 +5,47 @@
 #include "ds5/ds5-motion.h"
 #include "synthetic-stream.h"
 #include "motion-transform.h"
+#include "stream.h"
 
 namespace librealsense
 {
-    template<rs2_format FORMAT> void copy_hid_axes(byte * const dest[], const byte * source, double factor)
+    template<rs2_format FORMAT> void copy_hid_axes(byte * const dest[], const byte * source, double factor, bool is_mipi)
     {
         using namespace librealsense;
-        auto hid = (hid_data*)(source);
 
-        auto res = float3{ float(hid->x), float(hid->y), float(hid->z) } *float(factor);
+        auto res = float3();
+        // D457 dev
+        if (is_mipi)
+        {
+            auto hid = (hid_mipi_data*)(source);
+            res = float3{ float(hid->x), float(hid->y), float(hid->z) } *float(factor);
+        }
+        else
+        {
+            auto hid = (hid_data*)(source);
+            res = float3{ float(hid->x), float(hid->y), float(hid->z) } *float(factor);
+        }
 
         librealsense::copy(dest[0], &res, sizeof(float3));
     }
 
     // The Accelerometer input format: signed int 16bit. data units 1LSB=0.001g;
     // Librealsense output format: floating point 32bit. units m/s^2,
-    template<rs2_format FORMAT> void unpack_accel_axes(byte * const dest[], const byte * source, int width, int height, int output_size)
+    template<rs2_format FORMAT> void unpack_accel_axes(byte * const dest[], const byte * source, int width, int height, int output_size, bool is_mipi = false)
     {
         static constexpr float gravity = 9.80665f;          // Standard Gravitation Acceleration
         static constexpr double accelerator_transform_factor = 0.001*gravity;
 
-        copy_hid_axes<FORMAT>(dest, source, accelerator_transform_factor);
+        copy_hid_axes<FORMAT>(dest, source, accelerator_transform_factor, is_mipi);
     }
 
     // The Gyro input format: signed int 16bit. data units 1LSB=0.1deg/sec;
     // Librealsense output format: floating point 32bit. units rad/sec,
-    template<rs2_format FORMAT> void unpack_gyro_axes(byte * const dest[], const byte * source, int width, int height, int output_size)
+    template<rs2_format FORMAT> void unpack_gyro_axes(byte * const dest[], const byte * source, int width, int height, int output_size, bool is_mipi = false)
     {
         static const double gyro_transform_factor = deg2rad(0.1);
 
-        copy_hid_axes<FORMAT>(dest, source, gyro_transform_factor);
+        copy_hid_axes<FORMAT>(dest, source, gyro_transform_factor, is_mipi);
     }
 
     motion_transform::motion_transform(rs2_format target_format, rs2_stream target_stream,
@@ -74,10 +85,8 @@ namespace librealsense
         return ret;
     }
 
-    void motion_transform::correct_motion(rs2::frame* f)
+    void motion_transform::correct_motion_helper(float3* xyz, rs2_stream stream_type) const
     {
-        auto xyz = (float3*)(f->get_data());
-
         // The IMU sensor orientation shall be aligned with depth sensor's coordinate system
         *xyz = _imu2depth_cs_alignment_matrix * (*xyz);
 
@@ -87,13 +96,104 @@ namespace librealsense
         {
             if ((_mm_correct_opt->query() > 0.f)) // TBD resolve duality of is_enabled/is_active
             {
-                auto&& s = f->get_profile().stream_type();
-                if (s == RS2_STREAM_ACCEL)
+                if (stream_type == RS2_STREAM_ACCEL)
                     *xyz = (_accel_sensitivity * (*xyz)) - _accel_bias;
 
-                if (s == RS2_STREAM_GYRO)
+                if (stream_type == RS2_STREAM_GYRO)
                     *xyz = _gyro_sensitivity * (*xyz) - _gyro_bias;
             }
+        }
+    }
+    void motion_transform::correct_motion(rs2::frame* f) const
+    {
+        auto xyz = (float3*)(f->get_data());
+
+        correct_motion_helper(xyz, f->get_profile().stream_type());
+    }
+
+    void motion_to_accel_gyro::correct_motion(float3* xyz) const
+    {
+        correct_motion_helper(xyz, _accel_gyro_target_profile->get_stream_type());
+    }
+
+    motion_to_accel_gyro::motion_to_accel_gyro(std::shared_ptr<mm_calib_handler> mm_calib, std::shared_ptr<enable_motion_correction> mm_correct_opt)
+        : motion_to_accel_gyro("Accel_Gyro Transform", mm_calib, mm_correct_opt)
+    {}
+
+    motion_to_accel_gyro::motion_to_accel_gyro(const char * name, std::shared_ptr<mm_calib_handler> mm_calib, std::shared_ptr<enable_motion_correction> mm_correct_opt)
+        : motion_transform(name, RS2_FORMAT_MOTION_XYZ32F, RS2_STREAM_ANY, mm_calib, mm_correct_opt)
+    {
+        configure_processing_callback();
+    }
+
+    void motion_to_accel_gyro::configure_processing_callback()
+    {
+        // define and set the frame processing callback
+        auto process_callback = [&](frame_holder frame, synthetic_source_interface* source)
+        {
+            auto profile = As<motion_stream_profile, stream_profile_interface>(frame.frame->get_stream());
+            if (!profile)
+            {
+                LOG_ERROR("Failed configuring accel_gyro processing block: ", get_info(RS2_CAMERA_INFO_NAME));
+                return;
+            }
+
+            if (profile.get() != _source_stream_profile.get())
+            {
+                _source_stream_profile = profile;
+                // creating profile that fits the frame real stream type
+                _accel_gyro_target_profile = profile->clone();
+                _accel_gyro_target_profile->set_format(_target_format);
+                _accel_gyro_target_profile->set_stream_index(0);
+                //_accel_gyro_target_profile->set_unique_id(_target_profile_idx);
+            }
+
+            if (frame->get_frame_data()[0] == 1)
+            {
+                _accel_gyro_target_profile->set_stream_type(RS2_STREAM_ACCEL);
+            }
+            else if (frame->get_frame_data()[0] == 2)
+            {
+                _accel_gyro_target_profile->set_stream_type(RS2_STREAM_GYRO);
+            }
+            else
+            {
+                throw("motion_to_accel_gyro::configure_processing_callback - stream type not discovered");
+            }
+
+            frame_holder agf;
+            agf = source->allocate_motion_frame(_accel_gyro_target_profile, frame);
+
+            // process the frame
+            byte* frame_data[1];
+            frame_data[0] = (byte*)agf.frame->get_frame_data();
+            process_function(frame_data, (const byte*)frame->get_frame_data(), 0, 0, 0, 0);
+
+            // correct the axes values according to the device's data
+            correct_motion((float3*)(frame_data[0]));
+
+            source->frame_ready(std::move(agf));
+        };
+
+        set_processing_callback(std::shared_ptr<rs2_frame_processor_callback>(
+            new internal_frame_processor_callback<decltype(process_callback)>(process_callback)));
+    }
+
+    void motion_to_accel_gyro::process_function(byte * const dest[], const byte * source, int width, int height, int output_size, int actual_size)
+    {
+        if (source[0] == 1)
+        {
+            _target_stream = RS2_STREAM_ACCEL;
+            unpack_accel_axes<RS2_FORMAT_MOTION_XYZ32F>(dest, source, width, height, actual_size, true);
+        }
+        else if (source[0] == 2)
+        {
+            _target_stream = RS2_STREAM_GYRO;
+            unpack_gyro_axes<RS2_FORMAT_MOTION_XYZ32F>(dest, source, width, height, actual_size, true);
+        }
+        else
+        {
+            throw("motion_to_accel_gyro::process_function - stream type not discovered");
         }
     }
 

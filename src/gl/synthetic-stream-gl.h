@@ -3,22 +3,22 @@
 
 #pragma once
 
-#include "core/processing.h"
-#include "image.h"
-#include "source.h"
-#include "../include/librealsense2/hpp/rs_frame.hpp"
-#include "../include/librealsense2/hpp/rs_processing.hpp"
-#include "../include/librealsense2-gl/rs_processing_gl.hpp"
-#include "opengl3.h"
-#include "tiny-profiler.h"
+#include "../core/processing.h"
+#include "../image.h"
+#include "../source.h"
+#include <librealsense2/hpp/rs_frame.hpp>
+#include <librealsense2/hpp/rs_processing.hpp>
+#include <librealsense2-gl/rs_processing_gl.hpp>
+#include "opengl3.h"        // common/
+#include "tiny-profiler.h"  // common/
+#include <glad/glad.h>
 
-#include "concurrency.h"
 #include <functional>
 #include <thread>
 #include <deque>
 #include <unordered_set>
 
-#include "proc/synthetic-stream.h"
+#include "../proc/synthetic-stream.h"
 
 #define RS2_EXTENSION_VIDEO_FRAME_GL (rs2_extension)(RS2_EXTENSION_COUNT)
 #define RS2_EXTENSION_DEPTH_FRAME_GL (rs2_extension)(RS2_EXTENSION_COUNT + 1)
@@ -442,7 +442,7 @@ namespace librealsense
                     // will only read from the currently selected
                     // block, setting an option will propogate
                     // to all blocks in the group
-                    for(int i = 0; i < _parent->_blocks.size(); i++)
+                    for(size_t i = 0; i < _parent->_blocks.size(); i++)
                     {
                         if (_parent->_blocks[i]->supports_option(_opt))
                         {
@@ -469,9 +469,9 @@ namespace librealsense
 
             processing_block& get() 
             { 
-                for(int i = 0; i < _blocks.size(); i++)
+                for(auto i = 0; i < _blocks.size(); i++)
                 {
-                    index = i;
+                    index = (int)i;
                     if (_blocks[i]->supports_option(RS2_OPTION_COUNT))
                     {
                         auto val = _blocks[i]->get_option(RS2_OPTION_COUNT).query();

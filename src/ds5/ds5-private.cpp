@@ -180,6 +180,15 @@ namespace librealsense
             librealsense::copy(calc_intrinsic.coeffs, table->distortion, sizeof(table->distortion));
             LOG_DEBUG(endl << array2str((float_4&)(calc_intrinsic.fx, calc_intrinsic.fy, calc_intrinsic.ppx, calc_intrinsic.ppy)) << endl);
 
+            static rs2_intrinsics ref{};
+            if (memcmp(&calc_intrinsic, &ref, sizeof(rs2_intrinsics)))
+            {
+                LOG_DEBUG_THERMAL_LOOP("RGB Intrinsic: ScaleX, ScaleY = "
+                    << std::setprecision(3) << intrin(0, 0) << ", " << intrin(1, 1)
+                    << ". Fx,Fy = " << calc_intrinsic.fx << "," << calc_intrinsic.fy);
+                ref = calc_intrinsic;
+            }
+
             return calc_intrinsic;
         }
 
@@ -227,7 +236,8 @@ namespace librealsense
                 return get_color_stream_intrinsic(raw_data, width, height);
             }
             default:
-                throw invalid_value_exception(to_string() << "Parsing Calibration table type " << table_id << " is not supported");
+                throw invalid_value_exception( rsutils::string::from() << "Parsing Calibration table type " << table_id
+                                                                       << " is not supported" );
             }
         }
 
@@ -279,13 +289,13 @@ namespace librealsense
                     case RS400_IMU_PID:
                         found = (result.mi == 3);
                         break;
+                    case RS405_PID:
                     case RS430I_PID:
                         found = (result.mi == 4);
                         break;
                     case RS430_MM_PID:
                     case RS420_MM_PID:
                     case RS435I_PID:
-                    case RS405_PID:
                     case RS455_PID:
                         found = (result.mi == 6);
                         break;
@@ -296,8 +306,9 @@ namespace librealsense
                         found = (result.mi == 5);
                         break;
                     default:
-                        throw not_implemented_exception(to_string() << "USB device "
-                            << std::hex << info.pid << ":" << info.vid << std::dec << " is not supported.");
+                        throw not_implemented_exception( rsutils::string::from()
+                                                         << "USB device " << std::hex << info.pid << ":" << info.vid
+                                                         << std::dec << " is not supported." );
                         break;
                     }
 
@@ -325,9 +336,9 @@ namespace librealsense
                         { return fisheye_pid.find(info.pid) != fisheye_pid.end();});
                     break;
                 default:
-                    throw invalid_value_exception(to_string()
-                    << "Capability filters are not implemented for val "
-                    << std::hex << caps << std::dec);
+                    throw invalid_value_exception( rsutils::string::from()
+                                                   << "Capability filters are not implemented for val " << std::hex
+                                                   << caps << std::dec );
             }
             return results;
         }
@@ -342,9 +353,9 @@ namespace librealsense
             case 102: return { 3, { 9, 10, 16, 40, 29, 18, 19, 30, 20, 21, 54 } };
             case 103: return { 4, { 9, 10, 16, 40, 29, 18, 19, 30, 20, 21, 54 } };
             case 104: return { 4, { 9, 10, 40, 29, 18, 19, 30, 20, 21, 54 } };
-            case 105: // fall through
-            case 106:
-                return { 5, { 9, 10, 40, 29, 18, 19, 30, 20, 21, 54 } };
+            case 105: return { 5, { 9, 10, 40, 29, 18, 19, 30, 20, 21, 54 } };
+            case 106: return { 5, { 15, 9, 10, 16, 40, 29, 18, 19, 30, 20, 21, 54 } };
+            case 107: return { 6, { 15, 9, 10, 16, 40, 29, 18, 19, 30, 20, 21, 54 } };
             default:
                 throw std::runtime_error("Unsupported flash version: " + std::to_string(flash_version));
             }

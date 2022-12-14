@@ -2,6 +2,8 @@
 // Copyright(c) 2020 Intel Corporation. All Rights Reserved.
 
 #include "terminal-parser.h"
+#include <rsutils/string/from.h>
+
 
 namespace librealsense
 {
@@ -24,6 +26,9 @@ namespace librealsense
         vector<string> params;
 
         get_command_and_params_from_input(line, command, params);
+
+        // In case of receiving input from file, the data will be retrieved and converted into raw format
+        file_argument_to_blob(params);
 
         auto raw_data = build_raw_command_data(command, params);
 
@@ -102,16 +107,15 @@ namespace librealsense
         }
 
         if (tokens.empty())
-            throw runtime_error("Wrong input!");
+            throw runtime_error("Invalid input! - no arguments provided");
 
-        auto command_str = tokens.front();
+        auto command_str = rsutils::string::to_lower(tokens.front());
         auto it = _cmd_xml.commands.find(command_str);
         if (it == _cmd_xml.commands.end())
-            throw runtime_error("Command not found!");
+            throw runtime_error( rsutils::string::from() << "Command " << command_str << " was not found!" );
 
         command = it->second;
         for (auto i = 1; i < tokens.size(); ++i)
             params.push_back(tokens[i]);
     }
-
 }

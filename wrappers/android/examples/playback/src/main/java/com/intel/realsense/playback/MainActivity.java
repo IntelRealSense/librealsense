@@ -6,9 +6,9 @@ import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
-import android.support.v4.app.ActivityCompat;
-import android.support.v4.content.ContextCompat;
-import android.support.v7.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
+import androidx.appcompat.app.AppCompatActivity;
 import android.util.Log;
 
 import com.intel.realsense.librealsense.Colorizer;
@@ -96,7 +96,7 @@ public class MainActivity extends AppCompatActivity {
     Thread mStreaming = new Thread() {
         @Override
         public void run() {
-            String filePath = Environment.getExternalStorageDirectory().getAbsolutePath() + "/" + mUri.getPath().split(":")[1];
+            String filePath = getExternalFilesDir(null).getAbsolutePath() + "/" + mUri.getPath().split(":")[1];
             try(Colorizer colorizer = new Colorizer()) {
                 try (Config config = new Config()) {
                     config.enableDeviceFromFile(filePath);

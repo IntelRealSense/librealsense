@@ -9,6 +9,7 @@
 
 #include <math.h>
 #include <float.h>
+#include "example-utils.hpp"
 
 inline rs2_quaternion quaternion_exp(rs2_vector v)
 {
@@ -46,10 +47,16 @@ rs2_pose predict_pose(rs2_pose & pose, float dt_s)
 
 int main(int argc, char * argv[]) try
 {
+    std::string serial;
+    if (!device_with_streams({ RS2_STREAM_POSE }, serial))
+        return EXIT_SUCCESS;
+
     // Declare RealSense pipeline, encapsulating the actual device and sensors
     rs2::pipeline pipe;
     // Create a configuration for configuring the pipeline with a non default profile
     rs2::config cfg;
+    if (!serial.empty())
+        cfg.enable_device(serial);
     // Add pose stream
     cfg.enable_stream(RS2_STREAM_POSE, RS2_FORMAT_6DOF);
 
@@ -63,7 +70,7 @@ int main(int argc, char * argv[]) try
         if (rs2::pose_frame fp = frame.as<rs2::pose_frame>()) {
             rs2_pose pose_data = fp.get_pose_data();
             auto now = std::chrono::system_clock::now().time_since_epoch();
-            double now_ms = std::chrono::duration_cast<std::chrono::milliseconds>(now).count();
+            double now_ms = static_cast<double>(std::chrono::duration_cast<std::chrono::milliseconds>(now).count());
             double pose_time_ms = fp.get_timestamp();
             float dt_s = static_cast<float>(std::max(0., (now_ms - pose_time_ms)/1000.));
             rs2_pose predicted_pose = predict_pose(pose_data, dt_s);

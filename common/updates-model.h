@@ -4,7 +4,6 @@
 #pragma once
 
 #include "sw-update/dev-updates-profile.h"
-#include "ux-window.h"
 #include "notifications.h"
 #include "fw-update-helper.h"
 
@@ -16,6 +15,8 @@
 
 namespace rs2
 {
+    class ux_window;
+
     class updates_model
     {
     public:
@@ -31,7 +32,7 @@ namespace rs2
         {
             std::lock_guard<std::mutex> lock(_lock);
             auto it = std::find_if(_updates.begin(), _updates.end(), [&](update_profile_model& p) {
-                return (p.profile.device_name == update.profile.device_name && p.profile.serial_number == update.profile.serial_number);
+                return (p.profile.fw_update_id == update.profile.fw_update_id);
             });
             if (it == _updates.end())
                 _updates.push_back(update);
@@ -45,7 +46,7 @@ namespace rs2
         {
             std::lock_guard<std::mutex> lock(_lock);
             auto it = std::find_if(_updates.begin(), _updates.end(), [&](update_profile_model& p) {
-                return (p.profile.device_name == update.profile.device_name && p.profile.serial_number == update.profile.serial_number);
+                return (p.profile.fw_update_id == update.profile.fw_update_id);
             });
             if (it != _updates.end())
             {
@@ -56,7 +57,7 @@ namespace rs2
         {
             std::lock_guard<std::mutex> lock(_lock);
             auto it = std::find_if(_updates.begin(), _updates.end(), [&](update_profile_model& p) {
-                return (p.profile.device_name == update.device_name && p.profile.serial_number == update.serial_number);
+                return (p.profile.fw_update_id == update.fw_update_id);
             });
             if (it != _updates.end())
                 _updates.erase(it);
@@ -69,13 +70,19 @@ namespace rs2
         {
             std::lock_guard<std::mutex> lock(_lock);
             auto it = std::find_if(_updates.begin(), _updates.end(), [&](update_profile_model& p) {
-                return (p.profile.device_name == update.device_name && p.profile.serial_number == update.serial_number);
+                return (p.profile.fw_update_id == update.fw_update_id);
             });
             if (it != _updates.end())
                 it->profile.dev_active = active;
         }
 
-        void draw(viewer_model& viewer, ux_window& window, std::string& error_message);
+        bool has_updates() const
+        {
+            std::lock_guard<std::mutex> lock(_lock);
+            return !_updates.empty();
+        }
+
+        void draw(std::shared_ptr<notifications_model> not_model, ux_window& window, std::string& error_message);
     private:
         struct position_params
         {
@@ -89,7 +96,7 @@ namespace rs2
         };
 
         bool draw_software_section(const char * window_name, update_profile_model& selected_profile, position_params& pos_params , ux_window& window, std::string& error_message);
-        bool draw_firmware_section(viewer_model& viewer, const char * window_name, update_profile_model& selected_profile, position_params& pos_params, ux_window& window, std::string& error_message);
+        bool draw_firmware_section(std::shared_ptr<notifications_model> not_model, const char * window_name, update_profile_model& selected_profile, position_params& pos_params, ux_window& window, std::string& error_message);
 
 
         int selected_index = 0;
@@ -97,8 +104,7 @@ namespace rs2
         int selected_firmware_update_index = 0;
         bool ignore = false;
         std::vector<update_profile_model> _updates;
-        std::shared_ptr<texture_buffer> _icon = nullptr;
-        std::mutex _lock;
+        mutable std::mutex _lock;
         bool emphasize_dismiss_text = false;
 
         std::shared_ptr<firmware_update_manager> _fw_update = nullptr;

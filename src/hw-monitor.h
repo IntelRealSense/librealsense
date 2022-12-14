@@ -208,7 +208,7 @@ namespace librealsense
             {
                 if (ptr) _heap.deallocate(ptr);
             });
-            if (!token.get()) throw;
+            if( !token.get() ) throw io_exception( "heap allocation failed" );
 
             std::lock_guard<std::recursive_mutex> lock(_local_mtx);
             return _uvc_sensor_base.invoke_powered([&]
@@ -310,7 +310,6 @@ namespace librealsense
             size_t                                       receivedCommandDataLength;
         };
 
-        static void fill_usb_buffer(int opCodeNumber, int p1, int p2, int p3, int p4, uint8_t* data, int dataLength, uint8_t* bufferToSend, int& length);
         void execute_usb_command(uint8_t *out, size_t outSize, uint32_t& op, uint8_t* in, size_t& inSize) const;
         static void update_cmd_details(hwmon_cmd_details& details, size_t receivedCmdLen, unsigned char* outputBuffer);
         void send_hw_monitor_command(hwmon_cmd_details& details) const;
@@ -321,8 +320,26 @@ namespace librealsense
             : _locked_transfer(std::move(locked_transfer))
         {}
 
-        std::vector<uint8_t> send(std::vector<uint8_t> data) const;
+         static void fill_usb_buffer( int opCodeNumber,
+                                      int p1,
+                                      int p2,
+                                      int p3,
+                                      int p4,
+                                      uint8_t const * data,
+                                      int dataLength,
+                                      uint8_t * bufferToSend,
+                                      int & length );
+
+        std::vector< uint8_t > send( std::vector< uint8_t > const & data ) const;
         std::vector<uint8_t> send( command cmd, hwmon_response * = nullptr, bool locked_transfer = false ) const;
+        std::vector<uint8_t> build_command(uint32_t opcode,
+            uint32_t param1 = 0,
+            uint32_t param2 = 0,
+            uint32_t param3 = 0,
+            uint32_t param4 = 0,
+            uint8_t const * data = nullptr,
+            size_t dataLength = 0) const;
+
         void get_gvd(size_t sz, unsigned char* gvd, uint8_t gvd_cmd) const;
         static std::string get_firmware_version_string(const std::vector<uint8_t>& buff, size_t index, size_t length = 4);
         static std::string get_module_serial_string(const std::vector<uint8_t>& buff, size_t index, size_t length = 6);

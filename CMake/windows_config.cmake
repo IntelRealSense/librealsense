@@ -5,7 +5,8 @@ config_crt()
 macro(os_set_flags)
     set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
-    # Makes VS15 find the DLL when trying to run examples/tests
+    # Put all the collaterals together, so we can find when trying to run examples/tests
+    # Note: this puts the outputs under <binary>/<build-type>
     set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
     set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 
@@ -45,9 +46,9 @@ macro(os_set_flags)
     set(DOTNET_VERSION_LIBRARY "3.5" CACHE STRING ".Net Version, defaulting to '3.5', the Unity wrapper currently supports only .NET 3.5")
     set(DOTNET_VERSION_EXAMPLES "4.0" CACHE STRING ".Net Version, defaulting to '4.0'")
 
-    if(BUILD_EASYLOGGINGPP)
-        add_definitions(-DNOMINMAX)
-    endif()
+    # Windows.h will define the min/max macros which will 
+    # collide with std's min/max templates, which we want to use.
+    add_definitions(-DNOMINMAX)
 endmacro()
 
 macro(os_target_config)

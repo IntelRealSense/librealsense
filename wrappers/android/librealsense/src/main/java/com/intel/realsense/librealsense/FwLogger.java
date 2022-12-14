@@ -44,6 +44,10 @@ public class FwLogger extends Device {
         return new FwLogMsg(nGetFlashLog(mHandle));
     }
 
+    public long getNumberOfUnreadFWLogs() {
+        return nGetNumberOfFwLogs(mHandle);
+    }
+
     public boolean getFwLogPullingStatus() { return mFwLogPullingStatus; }
 
     public FwLogParsedMsg parseFwLog(FwLogMsg msg) {
@@ -53,6 +57,7 @@ public class FwLogger extends Device {
 
     private native long nGetFwLog(long handle);
     private native long nGetFlashLog(long handle);
+    private native long nGetNumberOfFwLogs(long handle);
     private static native boolean nInitParser(long handle, String xml_content);
     private static native long nParseFwLog(long handle, long fw_log_msg_handle);
 }

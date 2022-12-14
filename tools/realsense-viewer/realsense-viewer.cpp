@@ -28,27 +28,23 @@
 #ifdef INTERNAL_FW
 #include "common/fw/D4XX_FW_Image.h"
 #include "common/fw/SR3XX_FW_Image.h"
-#include "common/fw/L5XX_FW_Image.h"
+#include "common/fw/L51X_FW_Image.h"
 #else
 #define FW_D4XX_FW_IMAGE_VERSION ""
 #define FW_SR3XX_FW_IMAGE_VERSION ""
-#define FW_L5XX_FW_IMAGE_VERSION ""
+#define FW_L51X_FW_IMAGE_VERSION ""
 #endif // INTERNAL_FW
-
-#ifdef BUILD_EASYLOGGINGPP
-#include <easylogging++.h>
-#ifdef BUILD_SHARED_LIBS
-// With static linkage, ELPP is initialized by librealsense, so doing it here will
-// create errors. When we're using the shared .so/.dll, the two are separate and we have
-// to initialize ours if we want to use the APIs!
-INITIALIZE_EASYLOGGINGPP
-#endif
-#endif
 
 using namespace rs2;
 using namespace rs400;
 
 #define MIN_IP_SIZE 7 //TODO: Ester - update size when host name is supported
+
+void update_viewer_configuration(viewer_model& viewer_model)
+{
+    // Hide options from the Viewer application
+    viewer_model._hidden_options.emplace(RS2_OPTION_ENABLE_IR_REFLECTIVITY);
+}
 
 bool add_remote_device(context& ctx, std::string address)
 {
@@ -112,7 +108,7 @@ void add_playback_device(context& ctx, device_models_list& device_models,
                             {
                                 if (sub->streaming)
                                 {
-                                    sub->stop(viewer_model);
+                                    sub->stop(viewer_model.not_model);
                                 }
                             }
                         }
@@ -123,12 +119,12 @@ void add_playback_device(context& ctx, device_models_list& device_models,
     }
     catch (const error& e)
     {
-        error_message = to_string() << "Failed to load file " << file << ". Reason: " << error_to_string(e);
+        error_message = rsutils::string::from() << "Failed to load file " << file << ". Reason: " << error_to_string(e);
         failed = true;
     }
     catch (const std::exception& e)
     {
-        error_message = to_string() << "Failed to load file " << file << ". Reason: " << e.what();
+        error_message = rsutils::string::from() << "Failed to load file " << file << ". Reason: " << e.what();
         failed = true;
     }
     if (failed && was_loaded)
@@ -198,63 +194,73 @@ bool refresh_devices(std::mutex& m,
 
         //Add connected
         static bool initial_refresh = true;
-        for (auto dev : info.get_new_devices())
+        try
         {
-            auto dev_descriptor = get_device_name(dev);
-            device_names.push_back(dev_descriptor);
-
-            bool added = false;
-            if (device_models.size() == 0 &&
-                dev.supports(RS2_CAMERA_INFO_NAME) && std::string(dev.get_info(RS2_CAMERA_INFO_NAME)) != "Platform Camera" && std::string(dev.get_info(RS2_CAMERA_INFO_NAME)).find("IP Device") == std::string::npos)
+            for (auto dev : info.get_new_devices())
             {
-                device_models.emplace_back(new device_model(dev, error_message, viewer_model));
-                viewer_model.not_model->add_log(to_string() << (*device_models.rbegin())->dev.get_info(RS2_CAMERA_INFO_NAME) << " was selected as a default device");
-                added = true;
-            }
+                auto dev_descriptor = get_device_name(dev);
+                device_names.push_back(dev_descriptor);
 
-            if (!initial_refresh)
-            {
-                if (added || dev.is<playback>())
-                    viewer_model.not_model->add_notification({ dev_descriptor.first + " Connected\n",
-                        RS2_LOG_SEVERITY_INFO, RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR });
-                else if (added || dev.supports(RS2_CAMERA_INFO_IP_ADDRESS))
-                    viewer_model.not_model->add_notification({ dev_descriptor.first + " Connected\n",
-                        RS2_LOG_SEVERITY_INFO, RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR });
-                else
-                    viewer_model.not_model->add_notification({ dev_descriptor.first + " Connected\n",
-                        RS2_LOG_SEVERITY_INFO, RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR },
-                        [&device_models, &viewer_model, &error_message, dev] {
-                    auto device = dev;
-                    device_models.emplace_back(
-                        new device_model(device, error_message, viewer_model));
-                });
-            }
-
-            current_connected_devices.push_back(dev);
-            for (auto&& s : dev.query_sensors())
-            {
-                s.set_notifications_callback([&, dev_descriptor](const notification& n)
+                bool added = false;
+                if (device_models.size() == 0 &&
+                    dev.supports(RS2_CAMERA_INFO_NAME) && std::string(dev.get_info(RS2_CAMERA_INFO_NAME)) != "Platform Camera" && std::string(dev.get_info(RS2_CAMERA_INFO_NAME)).find("IP Device") == std::string::npos)
                 {
-                    if (n.get_category() == RS2_NOTIFICATION_CATEGORY_HARDWARE_EVENT)
-                    {
-                        auto data = n.get_serialized_data();
-                        if (!data.empty())
+                    device_models.emplace_back(new device_model(dev, error_message, viewer_model));
+                    viewer_model.not_model->add_log(
+                        rsutils::string::from() << ( *device_models.rbegin() )->dev.get_info( RS2_CAMERA_INFO_NAME )
+                                                << " was selected as a default device" );
+                    added = true;
+                }
+
+                if (!initial_refresh)
+                {
+                    if (added || dev.is<playback>())
+                        viewer_model.not_model->add_notification({ dev_descriptor.first + " Connected\n",
+                            RS2_LOG_SEVERITY_INFO, RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR });
+                    else if (added || dev.supports(RS2_CAMERA_INFO_IP_ADDRESS))
+                        viewer_model.not_model->add_notification({ dev_descriptor.first + " Connected\n",
+                            RS2_LOG_SEVERITY_INFO, RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR });
+                    else
+                        viewer_model.not_model->add_notification({ dev_descriptor.first + " Connected\n",
+                            RS2_LOG_SEVERITY_INFO, RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR },
+                            [&device_models, &viewer_model, &error_message, dev] {
+                                auto device = dev;
+                                device_models.emplace_back(
+                                    new device_model(device, error_message, viewer_model));
+                            });
+                }
+
+                current_connected_devices.push_back(dev);
+                for (auto&& s : dev.query_sensors())
+                {
+                    s.set_notifications_callback([&, dev_descriptor](const notification& n)
                         {
-                            auto dev_model_itr = std::find_if(begin(device_models), end(device_models),
-                                [&](const std::unique_ptr<device_model>& other)
-                            { return get_device_name(other->dev) == dev_descriptor; });
+                            if (n.get_category() == RS2_NOTIFICATION_CATEGORY_HARDWARE_EVENT)
+                            {
+                                auto data = n.get_serialized_data();
+                                if (!data.empty())
+                                {
+                                    auto dev_model_itr = std::find_if(begin(device_models), end(device_models),
+                                        [&](const std::unique_ptr<device_model>& other)
+                                        { return get_device_name(other->dev) == dev_descriptor; });
 
-                            if (dev_model_itr == end(device_models))
-                                return;
+                                    if (dev_model_itr == end(device_models))
+                                        return;
 
-                            (*dev_model_itr)->handle_hardware_events(data);
-                        }
-                    }
-                    viewer_model.not_model->add_notification({ n.get_description(), n.get_severity(), n.get_category() });
-                });
+                                    (*dev_model_itr)->handle_hardware_events(data);
+                                }
+                            }
+                            viewer_model.not_model->add_notification({ n.get_description(), n.get_severity(), n.get_category() });
+                        });
+                }
+
+
             }
-
-
+        }
+        catch (std::exception& e) {
+            std::stringstream s;
+            s << "Couldn't refresh devices - "  << e.what();
+            log(RS2_LOG_SEVERITY_WARN, s.str().c_str());
         }
         initial_refresh = false;
     }
@@ -276,7 +282,12 @@ bool refresh_devices(std::mutex& m,
 
 int main(int argc, const char** argv) try
 {
-    rs2::log_to_console(RS2_LOG_SEVERITY_WARN);
+
+#ifdef BUILD_EASYLOGGINGPP
+    rs2::log_to_console(RS2_LOG_SEVERITY_INFO);
+#endif
+
+    std::shared_ptr<device_models_list> device_models = std::make_shared<device_models_list>();
 
     context ctx;
     ux_window window("Intel RealSense Viewer", ctx);
@@ -288,12 +299,13 @@ int main(int argc, const char** argv) try
     std::string error_message{ "" };
     std::string label{ "" };
 
-    std::shared_ptr<device_models_list> device_models = std::make_shared<device_models_list>();
     device_model* device_to_remove = nullptr;
     bool is_ip_device_connected = false;
     std::string ip_address;
 
     viewer_model viewer_model(ctx);
+
+    update_viewer_configuration(viewer_model);
 
     std::vector<device> connected_devs;
     std::mutex m;
@@ -305,7 +317,7 @@ int main(int argc, const char** argv) try
         {
             if (auto not_model = notifications.lock())
             {
-                not_model->output.add_log(severity, msg.filename(), msg.line_number(), msg.raw());
+                not_model->output.add_log(severity, msg.filename(), (int)(msg.line_number()), msg.raw());
             }
         });
 #endif 
@@ -391,7 +403,8 @@ int main(int argc, const char** argv) try
         ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(5, 5));
         ImGui::SetNextWindowPos({ 0, viewer_model.panel_y });
 
-        std::string add_source_button_text = to_string() << " " << textual_icons::plus_circle << "  Add Source\t\t\t\t\t\t\t\t\t\t\t";
+        std::string add_source_button_text = rsutils::string::from()
+                                          << " " << textual_icons::plus_circle << "  Add Source\t\t\t\t\t\t\t\t\t\t\t";
         if (ImGui::Button(add_source_button_text.c_str(), { viewer_model.panel_width - 1, viewer_model.panel_y }))
             ImGui::OpenPopup("select");
 
@@ -609,7 +622,7 @@ int main(int argc, const char** argv) try
 
         auto output_rect = rect{ viewer_model.panel_width,
             window.height() - viewer_model.get_output_height(),
-            window.width() - viewer_model.panel_width, viewer_model.get_output_height() };
+            window.width() - viewer_model.panel_width, float(viewer_model.get_output_height()) };
 
         viewer_model.not_model->output.draw(window, output_rect, *device_models);
 
@@ -719,7 +732,7 @@ int main(int argc, const char** argv) try
         for (auto&& sub : device_model->subdevices)
         {
             if (sub->streaming)
-                sub->stop(viewer_model);
+                sub->stop(viewer_model.not_model);
         }
 
     return EXIT_SUCCESS;

@@ -18,6 +18,7 @@ namespace librealsense
         auto out_ir = reinterpret_cast<uint8_t *>(dest[1]);
 #ifdef RS2_USE_CUDA
         rscuda::unpack_z16_y8_from_sr300_inzi_cuda(out_ir, in, count);
+        in += count;
 #else
         for (int i = 0; i < count; ++i) *out_ir++ = *in++ >> 2;
 #endif
@@ -31,6 +32,7 @@ namespace librealsense
         auto out_ir = reinterpret_cast<uint16_t*>(dest[1]);
 #ifdef RS2_USE_CUDA
         rscuda::unpack_z16_y16_from_sr300_inzi_cuda(out_ir, in, count);
+        in += count;
 #else
         for (int i = 0; i < count; ++i) *out_ir++ = *in++ << 6;
 #endif

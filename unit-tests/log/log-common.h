@@ -3,19 +3,9 @@
 
 #pragma once
 
-#include <librealsense2/rs.hpp>   // Include RealSense Cross Platform API
+#include <unit-tests/test.h>
+#include <rsutils/easylogging/easyloggingpp.h>
 
-// Let Catch define its own main() function
-#define CATCH_CONFIG_MAIN
-#include "../catch.h"
-
-#include <easylogging++.h>
-#ifdef BUILD_SHARED_LIBS
-// With static linkage, ELPP is initialized by librealsense, so doing it here will
-// create errors. When we're using the shared .so/.dll, the two are separate and we have
-// to initialize ours if we want to use the APIs!
-INITIALIZE_EASYLOGGINGPP
-#endif
 
 // Define our own logging macro for debugging to stdout
 // Can possibly turn it on automatically based on the Catch options supplied

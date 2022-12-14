@@ -361,6 +361,10 @@ void ip_device::inject_frames_loop(std::shared_ptr<rs_rtp_stream> rtp_stream)
         rtp_stream.get()->is_enabled = true;
 
         rtp_stream.get()->frame_data_buff.frame_number = 0;
+
+        rtp_stream->frame_data_buff.bpp = getStreamProfileBpp(rtp_stream.get()->get_stream_profile().format());
+        rtp_stream->frame_data_buff.stride = rtp_stream->frame_data_buff.bpp * rtp_stream->m_rs_stream.width;        
+        
         int uid = rtp_stream.get()->m_rs_stream.uid;
         rs2_stream type = rtp_stream.get()->m_rs_stream.type;
         int sensor_id = stream_type_to_sensor_id(type);

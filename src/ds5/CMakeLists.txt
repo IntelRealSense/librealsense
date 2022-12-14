@@ -16,6 +16,7 @@ target_sources(${LRS_TARGET}
         "${CMAKE_CURRENT_LIST_DIR}/advanced_mode/presets.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/advanced_mode/advanced_mode.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/ds5-auto-calibration.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/ds5-thermal-monitor.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/ds5-factory.h"
         "${CMAKE_CURRENT_LIST_DIR}/ds5-device.h"
         "${CMAKE_CURRENT_LIST_DIR}/ds5-options.h"
@@ -29,4 +30,5 @@ target_sources(${LRS_TARGET}
         "${CMAKE_CURRENT_LIST_DIR}/advanced_mode/json_loader.hpp"
         "${CMAKE_CURRENT_LIST_DIR}/advanced_mode/presets.h"
         "${CMAKE_CURRENT_LIST_DIR}/ds5-auto-calibration.h"
+        "${CMAKE_CURRENT_LIST_DIR}/ds5-thermal-monitor.h"
 )

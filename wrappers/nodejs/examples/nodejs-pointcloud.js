@@ -32,7 +32,7 @@ const win = new GLFWWindow(1280, 720, 'Node.js PointCloud Example');
 const pc = new rs2.PointCloud();
 const pipeline = new rs2.Pipeline();
 
-pipeline.start();
+pipeline.start(pipeline.autoConfig);
 
 console.log('Drag to change perspective, scroll mouse wheel to zoom in/out.');
 

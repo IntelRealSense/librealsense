@@ -3,9 +3,10 @@
 #pragma once
 
 #include <map>
-#include "../include/librealsense2/h/rs_option.h"
+#include <librealsense2/h/rs_option.h>
 #include "extension.h"
-#include "types.h"
+#include "../types.h"
+#include <rsutils/string/from.h>
 
 namespace librealsense
 {
@@ -65,9 +66,8 @@ namespace librealsense
             auto it = _options.find(id);
             if (it == _options.end())
             {
-                throw invalid_value_exception(to_string()
-                    << "Device does not support option "
-                    << get_option_name(id) << "!");
+                throw invalid_value_exception( rsutils::string::from()
+                                               << "Device does not support option " << get_option_name( id ) << "!" );
             }
             return *it->second;
         }
@@ -80,13 +80,7 @@ namespace librealsense
         std::shared_ptr<option> get_option_handler(rs2_option id) const
         {
             auto it = _options.find(id);
-            if (it == _options.end())
-            {
-                throw invalid_value_exception(to_string()
-                    << "Device does not support option "
-                    << get_option_name(id) << "!");
-            }
-            return it->second;
+            return (it == _options.end() ? std::shared_ptr<option>(nullptr) : it->second);
         }
 
         void register_option(rs2_option id, std::shared_ptr<option> option)

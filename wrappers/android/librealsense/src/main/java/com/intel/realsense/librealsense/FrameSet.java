@@ -1,10 +1,10 @@
 package com.intel.realsense.librealsense;
 
-public class FrameSet extends LrsClass {
+public class FrameSet extends Frame {
     private int mSize = 0;
 
     public FrameSet(long handle) {
-        mHandle = handle;
+        super(handle);
         mSize = nFrameCount(mHandle);
     }
 

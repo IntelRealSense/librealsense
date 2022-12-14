@@ -32,7 +32,7 @@ $ sudo /etc/init.d/dphys-swapfile restart swapon -s
 
 ### Install packages
 ```
-$ sudo apt-get install -y libdrm-amdgpu1 libdrm-amdgpu1-dbg libdrm-dev libdrm-exynos1 libdrm-exynos1-dbg libdrm-freedreno1 libdrm-freedreno1-dbg libdrm-nouveau2 libdrm-nouveau2-dbg libdrm-omap1 libdrm-omap1-dbg libdrm-radeon1 libdrm-radeon1-dbg libdrm-tegra0 libdrm-tegra0-dbg libdrm2 libdrm2-dbg
+$ sudo apt-get install -y libdrm-amdgpu1 libdrm-amdgpu1-dbgsym libdrm-dev libdrm-exynos1 libdrm-exynos1-dbgsym libdrm-freedreno1 libdrm-freedreno1-dbgsym libdrm-nouveau2 libdrm-nouveau2-dbgsym libdrm-omap1 libdrm-omap1-dbgsym libdrm-radeon1 libdrm-radeon1-dbgsym libdrm-tegra0 libdrm-tegra0-dbgsym libdrm2 libdrm2-dbgsym
 
 $ sudo apt-get install -y libglu1-mesa libglu1-mesa-dev glusterfs-common libglu1-mesa libglu1-mesa-dev libglui-dev libglui2c2
 

@@ -9,6 +9,9 @@
 #include "stream.h"
 #include "types.h"
 
+#include <rsutils/string/from.h>
+
+
 namespace librealsense
 {
     void processing_block::set_processing_callback(frame_processor_callback_ptr callback)
@@ -45,11 +48,11 @@ namespace librealsense
         }
         catch (std::exception const & e)
         {
-            LOG_ERROR("Exception was thrown during user processing callback: " + std::string(e.what()));
+            LOG_ERROR( "Exception was thrown during callback: " << e.what() );
         }
         catch (...)
         {
-            LOG_ERROR("Exception was thrown during user processing callback!");
+            LOG_ERROR( "Exception was thrown during callback!" );
         }
     }
 
@@ -170,14 +173,17 @@ namespace librealsense
         {
             stream_selector->set_description(float(s), "Process - " + std::string (rs2_stream_to_string((rs2_stream)s)));
         }
-        stream_selector->on_set([this, stream_selector](float val)
+        std::weak_ptr<ptr_option<int>> stream_selector_ref = stream_selector;
+        stream_selector->on_set([this, stream_selector_ref](float val)
         {
+            auto stream_selector_strong_ref = stream_selector_ref.lock();
+            if(!stream_selector_strong_ref) return;
+
+            if (!stream_selector_strong_ref->is_valid(val))
+                throw invalid_value_exception( rsutils::string::from()
+                                               << "Unsupported stream filter, " << val << " is out of range." );
+
             std::lock_guard<std::mutex> lock(_mutex);
-
-            if (!stream_selector->is_valid(val))
-                throw invalid_value_exception(to_string()
-                    << "Unsupported stream filter, " << val << " is out of range.");
-
             _stream_filter.stream = static_cast<rs2_stream>((int)val);
         });
 
@@ -186,26 +192,32 @@ namespace librealsense
         {
             format_selector->set_description(float(f), "Process - " + std::string(rs2_format_to_string((rs2_format)f)));
         }
-        format_selector->on_set([this, format_selector](float val)
+        std::weak_ptr<ptr_option<int>> format_selector_ref = format_selector;
+        format_selector->on_set([this, format_selector_ref](float val)
         {
+            auto format_selector_strong_ref = format_selector_ref.lock();
+            if(!format_selector_strong_ref) return;
+
+            if (!format_selector_strong_ref->is_valid(val))
+                throw invalid_value_exception( rsutils::string::from()
+                                               << "Unsupported stream format filter, " << val << " is out of range." );
+
             std::lock_guard<std::mutex> lock(_mutex);
-
-            if (!format_selector->is_valid(val))
-                throw invalid_value_exception(to_string()
-                    << "Unsupported stream format filter, " << val << " is out of range.");
-
             _stream_filter.format = static_cast<rs2_format>((int)val);
         });
 
         auto index_selector = std::make_shared<ptr_option<int>>(-1, std::numeric_limits<int>::max(), 1, -1, &_stream_filter.index, "Stream index");
-        index_selector->on_set([this, index_selector](float val)
+        std::weak_ptr<ptr_option<int>> index_selector_ref = index_selector;
+        index_selector->on_set([this, index_selector_ref](float val)
         {
+            auto index_selector_strong_ref = index_selector_ref.lock();
+            if(!index_selector_strong_ref) return;
+
+            if (!index_selector_strong_ref->is_valid(val))
+                throw invalid_value_exception( rsutils::string::from()
+                                               << "Unsupported stream index filter, " << val << " is out of range." );
+
             std::lock_guard<std::mutex> lock(_mutex);
-
-            if (!index_selector->is_valid(val))
-                throw invalid_value_exception(to_string()
-                    << "Unsupported stream index filter, " << val << " is out of range.");
-
             _stream_filter.index = (int)val;
         });
 
@@ -466,7 +478,7 @@ namespace librealsense
 
         for (auto&& f : holders)
         {
-            if (f.is_blocking())
+            if (f->is_blocking())
                 res->set_blocking(true);
         }
 

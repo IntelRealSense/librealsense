@@ -5,6 +5,9 @@
 #include "option.h"
 #include "environment.h"
 
+#include <rsutils/string/from.h>
+
+
 namespace librealsense
 {
     class frame_queue_size : public option_base
@@ -18,7 +21,8 @@ namespace librealsense
         void set(float value) override
         {
             if (!is_valid(value))
-                throw invalid_value_exception(to_string() << "set(frame_queue_size) failed! Given value " << value << " is out of range.");
+                throw invalid_value_exception( rsutils::string::from() << "set(frame_queue_size) failed! Given value "
+                                                                       << value << " is out of range." );
 
             *_ptr = static_cast<uint32_t>(value);
             _recording_function(*this);
@@ -112,12 +116,10 @@ namespace librealsense
     }
     void frame_source::invoke_callback(frame_holder frame) const
     {
-        if (frame)
+        if (frame && frame.frame && frame.frame->get_owner())
         {
-            auto callback = frame.frame->get_owner()->begin_callback();
             try
             {
-                frame->log_callback_start(_ts ? _ts->get_time() : 0);
                 if (_callback)
                 {
                     frame_interface* ref = nullptr;

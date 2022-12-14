@@ -61,7 +61,7 @@ classdef pipeline < handle
         end
         function profile = get_active_profile(this)
             out = realsense.librealsense_mex('rs2::pipeline', 'get_active_profile', this.objectHandle);
-            realsense.pipeline_profile(out);
+            profile = realsense.pipeline_profile(out);
         end
     end
 end

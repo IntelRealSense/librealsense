@@ -53,7 +53,6 @@ namespace Intel.RealSense
         public static T Create<T>(Sensor other)
             where T : Sensor
         {
-            object error;
             return ObjectPool.Get<T>(other.Handle);
         }
 

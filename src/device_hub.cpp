@@ -40,11 +40,9 @@ namespace librealsense
         return result;
     }
 
-    device_hub::device_hub(std::shared_ptr<librealsense::context> ctx, int mask, int vid,
-                           bool register_device_notifications)
+    device_hub::device_hub(std::shared_ptr<librealsense::context> ctx, int mask, int vid)
         : _ctx(ctx), _vid(vid),
-          _device_changes_callback_id(0),
-          _register_device_notifications(register_device_notifications)
+          _device_changes_callback_id(0)
     {
         _device_list = filter_by_vid(_ctx->query_devices(mask), _vid);
 
@@ -76,13 +74,13 @@ namespace librealsense
     std::shared_ptr<device_interface> device_hub::create_device(const std::string& serial, bool cycle_devices)
     {
         std::shared_ptr<device_interface> res = nullptr;
-        for(auto i = 0; ((i< _device_list.size()) && (nullptr == res)); i++)
+        for(size_t i = 0; ((i< _device_list.size()) && (nullptr == res)); i++)
         {
             // _camera_index is the curr device that the hub will expose
             auto d = _device_list[ (_camera_index + i) % _device_list.size()];
             try
             {
-                auto dev = d->create_device(_register_device_notifications);
+                auto dev = d->create_device();
 
                 if(serial.size() > 0 )
                 {

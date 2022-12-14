@@ -18,7 +18,7 @@ classdef depth_frame < realsense.video_frame
 
         function unit = get_units(this)
             narginchk(1, 1)
-            distance = realsense.librealsense_mex('rs2::depth_frame', 'get_units', this.objectHandle);
+            unit = realsense.librealsense_mex('rs2::depth_frame', 'get_units', this.objectHandle);
         end
     end
 end

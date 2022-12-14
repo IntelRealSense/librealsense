@@ -1,12 +1,12 @@
 # Linux Distribution
 
 #### Using pre-build packages
-**Intel® RealSense™ SDK 2.0** provides installation packages for Intel X86/AMD64-based Debian distributions in [`dpkg`](https://en.wikipedia.org/wiki/Dpkg) format for Ubuntu 16/18 [LTS](https://wiki.ubuntu.com/LTS).    
-The Realsense [DKMS](https://en.wikipedia.org/wiki/Dynamic_Kernel_Module_Support) kernel drivers package (`librealsense2-dkms`) supports Ubuntu LTS kernels 4.4, 4.8, 4.10, 4.13, 4.15, 4.18* 5.0* and 5.3*. Please refer to [Ubuntu Kernel Release Schedule](https://wiki.ubuntu.com/Kernel/Support) for further details.
+**Intel® RealSense™ SDK 2.0** provides installation packages for Intel X86/AMD64-based Debian distributions in [`dpkg`](https://en.wikipedia.org/wiki/Dpkg) format for Ubuntu 16/18/20/22 [LTS](https://wiki.ubuntu.com/LTS).    
+The Realsense [DKMS](https://en.wikipedia.org/wiki/Dynamic_Kernel_Module_Support) kernel drivers package (`librealsense2-dkms`) supports Ubuntu LTS kernels 4.4, 4.8, 4.10, 4.13, 4.15, 4.18*, 5.0*, 5.3*, 5.4, 5.13 and 5.15. Please refer to [Ubuntu Kernel Release Schedule](https://wiki.ubuntu.com/Kernel/Support) for further details.
 
 #### Configuring and building from the source code
 While we strongly recommend to use DKMS package whenever possible, there are certain cases where installing and patching the system manually is necessary:
- - Using SDK with non-LTS Ubuntu kernel versions: **4.16 and 5.0**
+ - Using SDK with non-LTS Ubuntu kernel versions: **4.16 **
  - Integration of user-specific patches/modules with `librealsense` SDK.
  - Adjusting the patches for alternative kernels/distributions.
 
@@ -15,15 +15,12 @@ The steps are described in [Linux manual installation guide](./installation.md)
 
 ## Installing the packages:
 - Register the server's public key:  
-`sudo apt-key adv --keyserver keys.gnupg.net --recv-key F6E65AC044F831AC80A06380C8B3A55A6F3EFCDE || sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-key F6E65AC044F831AC80A06380C8B3A55A6F3EFCDE`
+`sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-key F6E65AC044F831AC80A06380C8B3A55A6F3EFCDE || sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-key F6E65AC044F831AC80A06380C8B3A55A6F3EFCDE`
 In case the public key still cannot be retrieved, check and specify proxy settings: `export http_proxy="http://<proxy>:<port>"`  
 , and rerun the command. See additional methods in the following [link](https://unix.stackexchange.com/questions/361213/unable-to-add-gpg-key-with-apt-key-behind-a-proxy).  
 
 - Add the server to the list of repositories:  
-  Ubuntu 16 LTS:  
-`sudo add-apt-repository "deb http://realsense-hw-public.s3.amazonaws.com/Debian/apt-repo xenial main" -u`  
-  Ubuntu 18 LTS:  
-`sudo add-apt-repository "deb http://realsense-hw-public.s3.amazonaws.com/Debian/apt-repo bionic main" -u`
+`sudo add-apt-repository "deb https://librealsense.intel.com/Debian/apt-repo $(lsb_release -cs) main" -u`  
 
 - Install the libraries (see section below if upgrading packages):  
   `sudo apt-get install librealsense2-dkms`  
@@ -72,6 +69,12 @@ librealsense2 | RealSense™ SDK runtime (.so) and configuration files | libreal
 librealsense2-utils | Demos and tools available as a part of RealSense™ SDK | librealsense2
 librealsense2-dev | Header files and symbolic link for developers | librealsense2
 librealsense2-dbg | Debug symbols for developers  | librealsense2
+librealsense2-gl | GLSL extension module runtime and configuration file | librealsense2
+librealsense2-gl-dev | GLSL development header files and symbolic link | librealsense2
+librealsense2-gl-dbg | GLSL debug symbols required for debugging purposes | librealsense2
+librealsense2-net | Data over Ethernet extension module, runtime and configuration file | librealsense2 
+librealsense2-net-dev | Network module developer's files | librealsense2 
+librealsense2-net-dbg | Network module debug symbols | librealsense2
 
 **Note** The packages include binaries and configuration files only.
 Use the github repository to obtain the source code.

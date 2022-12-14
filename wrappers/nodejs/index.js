@@ -52,17 +52,13 @@ class Device {
     sensors.forEach((s) => {
       if (s.is(RS2.RS2_EXTENSION_DEPTH_SENSOR)) {
         array.push(new DepthSensor(s));
-      }
-      else if (s.is(RS2.RS2_EXTENSION_COLOR_SENSOR)) {
+      } else if (s.is(RS2.RS2_EXTENSION_COLOR_SENSOR)) {
         array.push(new ColorSensor(s));
-      }
-      else if (s.is(RS2.RS2_EXTENSION_MOTION_SENSOR)) {
+      } else if (s.is(RS2.RS2_EXTENSION_MOTION_SENSOR)) {
         array.push(new MotionSensor(s));
-      }
-      else if (s.is(RS2.RS2_EXTENSION_FISHEYE_SENSOR)) {
+      } else if (s.is(RS2.RS2_EXTENSION_FISHEYE_SENSOR)) {
         array.push(new FisheyeSensor(s));
-      }
-      else {
+      } else {
         array.push(new Sensor(s));
       }
     });
@@ -2059,6 +2055,8 @@ class Frame {
       case constants.format.FORMAT_MOTION_RAW:
       case constants.format.FORMAT_GPIO_RAW:
       case constants.format.FORMAT_RAW10:
+      case constants.format.FORMAT_FG:
+      case constants.format.FORMAT_Y411:
       case constants.format.FORMAT_ANY:
         this.typedArray = new Uint8Array(this.arrayBuffer);
         return this.typedArray;
@@ -2616,6 +2614,51 @@ class Pipeline {
 
     if (ownCtx === true) {
       this.ctx = new Context();
+      // get existing sensors params
+      let sensores = this.ctx.querySensors();
+      if (sensores.length>=2) {
+        let depthSensor = sensores[0];
+        let colorSensor = sensores[1];
+        let cfg = new Config();
+        let depthProfiles = depthSensor
+          .getStreamProfiles()
+          .filter( (s) => s.streamType == stream.STREAM_DEPTH);
+        let depthProfile = depthProfiles
+          .find( (x) => x.width == 640 && x.height==480) ||
+          depthProfiles[depthProfiles.length-1];
+        let colorProfiles = colorSensor
+          .getStreamProfiles()
+          .filter( (s) => s.streamType == stream.STREAM_COLOR);
+        let colorProfile = colorProfiles
+          .find( (x) => x.width == 640 && x.height==480) ||
+          colorProfiles[colorProfiles.length-1];
+        console.log('depth: w: ' + depthProfile.width +
+            ', h: ' + depthProfile.height +
+            ', format: ' + depthProfile.format +
+            ', fps: ' + depthProfile.fps
+        );
+        console.log('color: w: ' + colorProfile.width +
+            ', h: ' + colorProfile.height +
+            ', format: ' + colorProfile.format +
+            ', fps: ' + colorProfile.fps
+        );
+        cfg.enableStream(
+          stream.STREAM_DEPTH,
+          -1,
+          depthProfile.width,
+          depthProfile.height,
+          depthProfile.format,
+          depthProfile.fps);
+        cfg.enableStream(
+          stream.STREAM_COLOR,
+          -1,
+          colorProfile.width,
+          colorProfile.height,
+          format.FORMAT_RGB8,
+          colorProfile.fps
+        );
+        this.autoConfig = cfg;
+      }
     }
 
     this.cxxPipeline = new RS2.RSPipeline();
@@ -2674,6 +2717,7 @@ class Pipeline {
     } else {
       checkArgumentType(arguments, Config, 0, funcName);
       this.started = true;
+      console.log('Pipeline started with config');
       return new PipelineProfile(this.cxxPipeline.startWithConfig(arguments[0].cxxConfig));
     }
   }
@@ -3950,7 +3994,8 @@ const format = {
   format_y8i: 'y8i',
    /**
    * String literal of <code>'y12i'</code>.
-   * <br>12-bit per pixel interleaved. 12-bit left, 12-bit right. Each pixel is stored in a 24-bit word in little-endian order.
+   * <br>12-bit per pixel interleaved. 12-bit left, 12-bit right.
+   * Each pixel is stored in a 24-bit word in little-endian order.
    */
   format_y12i: 'y12i',
    /**
@@ -3966,6 +4011,16 @@ const format = {
    * <br>Grey-scale image as a bit-packed array. 4 pixel data stream taking 5 bytes
    */
   format_w10: 'w10',
+  /**
+  * String literal of <code>'FG'</code>.
+  * <br>16-bit per-pixel frame grabber format.
+  */
+  format_FG: 'FG',
+  /**
+  * String literal of <code>'Y411'</code>.
+  * <br>12-bit per-pixel. 6 pixel data stream taking 4 bytes.
+  */
+  format_Y411: 'Y411',
   /**
    * When passed to enable stream, librealsense will try to provide best suited
    * format. <br>Equivalent to its lowercase counterpart.
@@ -4092,7 +4147,8 @@ const format = {
    */
   FORMAT_Y8I: RS2.RS2_FORMAT_Y8I,
    /**
-   * 12-bit per pixel interleaved. 12-bit left, 12-bit right. Each pixel is stored in a 24-bit word in little-endian order.
+   * 12-bit per pixel interleaved. 12-bit left, 12-bit right.
+   * Each pixel is stored in a 24-bit word in little-endian order.
    * @type {Integer}
    */
   FORMAT_Y12I: RS2.RS2_FORMAT_Y12I,
@@ -4111,11 +4167,21 @@ const format = {
    * @type {Integer}
    */
   FORMAT_W10: RS2.RS2_FORMAT_W10,
+   /**
+  * 16-bit per-pixel frame grabber format.
+  * @type {Integer}
+  */
+  FORMAT_FG: RS2.RS2_FORMAT_FG,
   /**
-   * Number of enumeration values. Not a valid input: intended to be used in for-loops.
-   * <br>Equivalent to its lowercase counterpart.
-   * @type {Integer}
-   */
+  * 12-bit per-pixel. 4 pixel data stream taking 6 bytes.
+  * @type {Integer}
+  */
+  FORMAT_Y411: RS2.RS2_FORMAT_Y411,
+  /**
+  * Number of enumeration values. Not a valid input: intended to be used in for-loops.
+  * <br>Equivalent to its lowercase counterpart.
+  * @type {Integer}
+  */
   FORMAT_COUNT: RS2.RS2_FORMAT_COUNT,
 
   /**
@@ -4167,19 +4233,23 @@ const format = {
       case this.FORMAT_6DOF:
         return this.format_6dof;
       case this.FORMAT_DISPARITY32:
-		return this.format_disparity32;
-	  case this.RS2_FORMAT_MJPEG:
-		return this.format_mjpeg;
-	  case this.RS2_FORMAT_Y8I:
-		return this.format_y8i;
-	  case this.RS2_FORMAT_Y12I:
-		return this.format_y12i;
-	  case this.RS2_FORMAT_INZI:
-		return this.format_inzi;
-	  case this.RS2_FORMAT_INVI:
-		return this.format_invi;
-	  case this.RS2_FORMAT_W10:
-		return this.format_w10;
+        return this.format_disparity32;
+      case this.RS2_FORMAT_MJPEG:
+        return this.format_mjpeg;
+      case this.RS2_FORMAT_Y8I:
+        return this.format_y8i;
+      case this.RS2_FORMAT_Y12I:
+        return this.format_y12i;
+      case this.RS2_FORMAT_INZI:
+        return this.format_inzi;
+      case this.RS2_FORMAT_INVI:
+        return this.format_invi;
+      case this.RS2_FORMAT_W10:
+        return this.format_w10;
+      case this.RS2_FORMAT_FG:
+        return this.format_FG;
+      case this.RS2_FORMAT_Y411:
+        return this.format_Y411;
     }
   },
 };
@@ -4643,8 +4713,8 @@ const option = {
   option_stream_format_filter: 'stream-format-filter',
   option_stream_index_filter: 'stream-index-filter',
   option_emitter_on_off: 'emitter-on-off',
-  option_zero_order_point_x: 'zero-order-point-x',
-  option_zero_order_point_y: 'zero-order-point-y',
+  option_zero_order_point_x: 'zero-order-point-x', /* Deprecated */
+  option_zero_order_point_y: 'zero-order-point-y', /* Deprecated */
   option_lld_temperature: 'lld-temperature',
   option_mc_temperature: 'mc-temperature',
   option_ma_temperature: 'ma-temperature',
@@ -4657,7 +4727,7 @@ const option = {
   option_enable_dynamic_calibration: 'enable-dynamic-calibration',
   option_depth_offset: 'depth-offset',
   option_led_power: 'led-power',
-  option_zero_order_enabled: 'zero-order-enabled',
+  option_zero_order_enabled: 'zero-order-enabled', /* Deprecated */
   option_enable_map_preservation: 'enable-map-preservation',
   /**
    * Enable / disable color backlight compensatio.<br>Equivalent to its lowercase counterpart.
@@ -4926,6 +4996,7 @@ const option = {
   OPTION_ZERO_ORDER_ENABLED: RS2.RS2_OPTION_ZERO_ORDER_ENABLED,
   OPTION_ENABLE_MAP_PRESERVATION: RS2.RS2_OPTION_ENABLE_MAP_PRESERVATION,
   OPTION_FREEFALL_DETECTION_ENABLED: RS2.RS2_OPTION_FREEFALL_DETECTION_ENABLED,
+  OPTION_DIGITAL_GAIN: RS2.RS2_OPTION_DIGITAL_GAIN,
   /**
    * Enable Laser On constantly (GS SKU Only)
    * <br>Equivalent to its lowercase counterpart
@@ -4941,6 +5012,26 @@ const option = {
   OPTION_SEQUENCE_SIZE: RS2.RS2_OPTION_SEQUENCE_SIZE,
   OPTION_SEQUENCE_ID: RS2.RS2_OPTION_SEQUENCE_ID,
   OPTION_HUMIDITY_TEMPERATURE: RS2.RS2_OPTION_HUMIDITY_TEMPERATURE,
+  OPTION_ENABLE_MAX_USABLE_RANGE: RS2.RS2_OPTION_ENABLE_MAX_USABLE_RANGE,
+  OPTION_ALTERNATE_IR: RS2.RS2_OPTION_ALTERNATE_IR,
+  OPTION_NOISE_ESTIMATION: RS2.RS2_OPTION_NOISE_ESTIMATION,
+  OPTION_ENABLE_IR_REFLECTIVITY: RS2.RS2_OPTION_ENABLE_IR_REFLECTIVITY,
+  OPTION_EMITTER_FREQUENCY: RS2.RS2_OPTION_EMITTER_FREQUENCY,
+  /**
+   * Set or get auto exposure limit in microsecond.
+   * @type {Integer}
+   */
+  OPTION_AUTO_EXPOSURE_LIMIT: RS2.RS2_OPTION_AUTO_EXPOSURE_LIMIT,
+  /**
+   * Set or get auto gain limit.
+   * @type {Integer}
+   */
+  OPTION_AUTO_GAIN_LIMIT: RS2.RS2_OPTION_AUTO_GAIN_LIMIT,
+  /**
+   * Set or get auto rx sensitivity.
+   * @type {Integer}
+   */
+  OPTION_AUTO_RX_SENSITIVITY: RS2.RS2_OPTION_AUTO_RX_SENSITIVITY,
   /**
    * Number of enumeration values. Not a valid input: intended to be used in for-loops.
    * @type {Integer}
@@ -5085,12 +5176,22 @@ const option = {
         return this.option_enable_map_preservation;
       case this.OPTION_FREEFALL_DETECTION_ENABLED:
         return this.option_freefall_detection_enabled;
+      case this.OPTION_DIGITAL_GAIN:
+        return this.option_digital_gain;
       case this.OPTION_EMITTER_ALWAYS_ON:
         return this.option_emitter_always_on;
       case this.OPTION_THERMAL_COMPENSATION:
         return this.option_thermal_compensation;
       case this.OPTION_HUMIDITY_TEMPERATURE:
         return this.option_humidity_temperature;
+      case this.OPTION_ENABLE_MAX_USABLE_RANGE:
+        return this.option_enable_max_usable_range;
+      case this.OPTION_ALTERNATE_IR:
+        return this.option_alternate_ir;
+      case this.OPTION_NOISE_ESTIMATION:
+        return this.option_noise_estimation;
+      case this.ENABLE_IR_REFLECTIVITY:
+        return this.option_enable_ir_reflectivity;
       default:
         throw new TypeError(
             'option.optionToString(option) expects a valid value as the 1st argument');
@@ -5584,6 +5685,93 @@ const frame_metadata = {
    */
   FRAME_METADATA_LOW_LIGHT_COMPENSATION: RS2.RS2_FRAME_METADATA_LOW_LIGHT_COMPENSATION,
   /**
+   * Emitter mode: 0 - all emitters disabled.
+   * 1- laser enabled.
+   * 2 - auto laser enabled (opt).
+   * 3 - LED enabled (opt).
+   * <br>Equivalent to its lowercase counterpart
+   * @type {Integer}
+   */
+  RS2_FRAME_METADATA_FRAME_EMITTER_MODE: RS2.RS2_FRAME_METADATA_FRAME_EMITTER_MODE,
+  /**
+   * Led power value 0-360.
+   * <br>Equivalent to its lowercase counterpart
+   * @type {Integer}
+   */
+  RS2_FRAME_METADATA_FRAME_LED_POWER: RS2.RS2_FRAME_METADATA_FRAME_LED_POWER,
+  /**
+   * The number of transmitted payload bytes, not including metadata
+   * <br>Equivalent to its lowercase counterpart
+   * @type {Integer}
+   */
+  RS2_FRAME_METADATA_RAW_FRAME_SIZE: RS2.RS2_FRAME_METADATA_RAW_FRAME_SIZE,
+  /**
+   * GPIO input data
+   * <br>Equivalent to its lowercase counterpart
+   * @type {Integer}
+   */
+  RS2_FRAME_METADATA_GPIO_INPUT_DATA: RS2.RS2_FRAME_METADATA_GPIO_INPUT_DATA,
+  /**
+   * Sub-preset name. Used in advanced scenarios, such as HDR
+   * <br>Equivalent to its lowercase counterpart
+   * @type {Integer}
+   */
+  RS2_FRAME_METADATA_SEQUENCE_NAME: RS2.RS2_FRAME_METADATA_SEQUENCE_NAME,
+  /**
+   * Sub-preset sequence id
+   * <br>Equivalent to its lowercase counterpart
+   * @type {Integer}
+   */
+  RS2_FRAME_METADATA_SEQUENCE_ID: RS2.RS2_FRAME_METADATA_SEQUENCE_ID,
+  /**
+   * Sub-preset sequence size in bytes
+   * <br>Equivalent to its lowercase counterpart
+   * @type {Integer}
+   */
+  RS2_FRAME_METADATA_SEQUENCE_SIZE: RS2.RS2_FRAME_METADATA_SEQUENCE_SIZE,
+  /**
+   * Frame trigger type, used in MIPI SKU Metadata
+   * <br>Equivalent to its lowercase counterpart
+   * @type {Integer}
+   */
+  RS2_FRAME_METADATA_TRIGGER: RS2.RS2_FRAME_METADATA_TRIGGER,
+  /**
+   * Preset id, used in MIPI SKU Metadata
+   * <br>Equivalent to its lowercase counterpart
+   * @type {Integer}
+   */
+  RS2_FRAME_METADATA_PRESET: RS2.RS2_FRAME_METADATA_PRESET,
+  /**
+   * Frame input width in pixels, used in MIPI SKU Metadata as safety attribute
+   * <br>Equivalent to its lowercase counterpart
+   * @type {Integer}
+   */
+  RS2_FRAME_METADATA_INPUT_WIDTH: RS2.RS2_FRAME_METADATA_INPUT_WIDTH,
+  /**
+   * Frame input height in pixels, used in MIPI SKU Metadata as safety attribute
+   * <br>Equivalent to its lowercase counterpart
+   * @type {Integer}
+   */
+  RS2_FRAME_METADATA_INPUT_HEIGHT: RS2.RS2_FRAME_METADATA_INPUT_HEIGHT,
+  /**
+   * Sub-preset information, used in MIPI SKU
+   * <br>Equivalent to its lowercase counterpart
+   * @type {Integer}
+   */
+  RS2_FRAME_METADATA_SUB_PRESET_INFO: RS2.RS2_FRAME_METADATA_SUB_PRESET_INFO,
+  /**
+   * FW-controlled frame counter to be using in Calibration scenarios. Used with MIPI SKU only
+   * <br>Equivalent to its lowercase counterpart
+   * @type {Integer}
+   */
+  RS2_FRAME_METADATA_CALIB_INFO: RS2.RS2_FRAME_METADATA_CALIB_INFO,
+  /**
+   * CRC checksum of the Metadata, avalable for MIPI SKU only
+   * <br>Equivalent to its lowercase counterpart
+   * @type {Integer}
+   */
+  RS2_FRAME_METADATA_CRC: RS2.RS2_FRAME_METADATA_CRC,
+  /**
    * Number of enumeration values. Not a valid input: intended to be used in for-loops.
    * @type {Integer}
    */
@@ -5998,6 +6186,55 @@ const timestamp_domain = {
         throw new TypeError('timestamp_domain.timestampDomainToString() expects a valid value as the 1st argument'); // eslint-disable-line
     }
   },
+};
+
+/**
+ * Enum for calibration target type.
+ * @readonly
+ * @enum {String}
+ */
+const calib_target_type = {
+    /**
+     * String literal of <code>'rect-gaussian-dot-vertices'</code>.
+     * <br>Target with rectangle vertices as 
+     * the centers of gaussuian dots <br>Equivalent to its uppercase counterpart.
+     */
+    calib_target_rect_gaussian_dot_vertices: 'rect-gaussian-dot-vertices',
+    calib_target_roi_rect_gaussian_dot_vertices: 'roi-rect-gaussian-dot-vertices',
+    calib_target_pos_gaussian_dot_vertices: 'pos-gaussian-dot-vertices',
+
+    /**
+     * Frame timestamp was measured in relation to the camera clock <br>Equivalent to its lowercase
+     * counterpart.
+     * @type {Integer}
+     */
+    CALIB_TARGET_RECT_GAUSSIAN_DOT_VERTICES: // linesplit due to ESLint 80-char max-len
+      RS2.RS2_CALIB_TARGET_RECT_GAUSSIAN_DOT_VERTICES,
+    CALIB_TARGET_ROI_RECT_GAUSSIAN_DOT_VERTICES:
+      RS2.RS2_CALIB_TARGET_ROI_RECT_GAUSSIAN_DOT_VERTICES,
+    CALIB_TARGET_POS_GAUSSIAN_DOT_VERTICES:
+      RS2.RS2_CALIB_TARGET_POS_GAUSSIAN_DOT_VERTICES,
+    /**
+     * Number of enumeration values. Not a valid input: intended to be used in for-loops.
+     * @type {Integer}
+     */
+    CALIB_TARGET_COUNT: RS2.RS2_CALIB_TARGET_COUNT,
+
+    calibTargetTypeToString: function(domainVal) {
+        const funcName = 'calib_target_type.calibTargetTypeToString()';
+        checkArgumentLength(1, 1, arguments.length, funcName);
+        const i = checkArgumentType(arguments, constants.calib_target_type, 0, funcName);
+        switch (i) {
+            case this.CALIB_TARGET_RECT_GAUSSIAN_DOT_VERTICES:
+                return this.calib_target_rect_gaussian_dot_vertices;
+            case this.CALIB_TARGET_ROI_RECT_GAUSSIAN_DOT_VERTICES:
+                return this.calib_target_roi_rect_gaussian_dot_vertices;
+            case this.CALIB_TARGET_POS_GAUSSIAN_DOT_VERTICES:
+                return this.calib_target_pos_gaussian_dot_vertices;
+            default:
+                throw new TypeError('calib_target_type.calibTargetTypeToString() expects a valid value as the 1st argument'); // eslint-disable-line
+        }
+    },
 };
 
 /**

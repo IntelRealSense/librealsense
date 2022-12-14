@@ -3,6 +3,7 @@
 
 #include "l500-thermal-loop.h"
 #include "../../l500/l500-private.h"
+#include <rsutils/string/from.h>
 
 namespace librealsense {
 namespace algo {
@@ -12,25 +13,35 @@ namespace l500 {
 
 const int thermal_calibration_table::id = 0x317;
 
+thermal_calibration_table::thermal_calibration_table() : _resolution(0)
+{
+    _header.max_temp = 0;
+    _header.min_temp = 0;
+    _header.reference_temp = 0;
+    _header.valid = 0;
+}
 
 thermal_calibration_table::thermal_calibration_table( const std::vector< byte > & data,
                                                       int resolution )
     : _resolution( resolution )
 {
-    float const * header_ptr = (float *)( data.data() + sizeof( ivcam2::table_header ) );
-
-    auto expected_size = sizeof( ivcam2::table_header ) + sizeof( thermal_table_header )
+    auto expected_size = sizeof( thermal_table_header )
                        + sizeof( thermal_bin ) * resolution;
 
+    _header.valid = 0;
+
     if( data.size() != expected_size )
-        throw std::runtime_error( librealsense::to_string()
+        throw std::runtime_error( rsutils::string::from()
                                   << "data size (" << data.size()
                                   << ") does not meet expected size " << expected_size );
 
-    _header = *(thermal_table_header *)( header_ptr );
+    _header = *(thermal_table_header *)data.data();
+    
+    // The table may be invalid if the unit has not gone thru calibration
+    if( ! _header.valid )
+        throw std::runtime_error( "thermal calibration table is not valid" );
 
-    auto data_ptr = (thermal_bin *)( data.data() + sizeof( ivcam2::table_header )
-                                   + sizeof( thermal_table_header ) );
+    auto data_ptr = (thermal_bin *)( data.data() + sizeof( thermal_table_header ));
     bins.assign( data_ptr, data_ptr + resolution );
 }
 
@@ -86,7 +97,7 @@ double thermal_calibration_table::get_thermal_scale( double hum_temp ) const
 std::vector< byte > thermal_calibration_table::build_raw_data() const
 {
     std::vector< float > data;
-    data.resize( sizeof( ivcam2::table_header ) / sizeof( float ), 0 );
+
     data.push_back( _header.min_temp );
     data.push_back( _header.max_temp );
     data.push_back( _header.reference_temp );

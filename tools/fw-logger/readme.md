@@ -6,10 +6,12 @@ If you are suspecting that you have an issue that is related to the camera’s f
 In order to run this, ensure that your camera is streaming. This can be done using the [realsense-viewer](https://github.com/IntelRealSense/librealsense/tree/development/tools/realsense-viewer) or [rs-capture Sample](https://github.com/IntelRealSense/librealsense/tree/development/examples/capture)
 
 ## Command Line Parameters
-|Flag   |Description   |Default|
-|---|---|---|
+|Flag   |Description   |Default| Range|
+|---|---|---|---|
 |`-l <xml-path>`|xml file ful path, used to parse the logs||
+|`-p <polling-interval-in-ms>`|logs polling interval (in milliseconds)| 100 | 25-300|
 |`-f`|collect flash logs instead of firmware logs||
+|`-o <file-path>`|output file path||
 
 ## Usage
 After installing `librealsense` run `rs-fw-logger` to launch the tool. 

@@ -3,8 +3,11 @@
 
 #include "opengl3.h"
 
-#include <glad/glad.h>
+#include <stdexcept>  // runtime_error
+#include <sstream>
 #include <assert.h>
+
+#include <glad/glad.h>
 
 using namespace rs2;
 
@@ -115,9 +118,9 @@ std::unique_ptr<vao> vao::create(const obj_mesh& mesh)
         mesh.uvs.data(),
         mesh.normals.data(),
         mesh.tangents.data(),
-        mesh.positions.size(),
+        int(mesh.positions.size()),
         mesh.indexes.data(),
-        mesh.indexes.size()));
+        int(mesh.indexes.size())));
 }
 
 vao::vao(vao&& other)
@@ -467,7 +470,7 @@ shader::shader(const std::string& shader_code, shader_type type)
     GLuint shader_id = glCreateShader(gl_type);
 
     char const * source_ptr = shader_code.c_str();
-    int length = shader_code.size();
+    int length = int(shader_code.size());
     glShaderSource(shader_id, 1, &source_ptr, &length);
 
     glCompileShader(shader_id);
@@ -689,7 +692,6 @@ std::string fbo::get_status()
 
 void _check_gl_error(const char *file, int line) 
 {
-#ifdef _DEBUG
     GLenum err (glGetError());
     std::stringstream ss;
 
@@ -718,7 +720,6 @@ void _check_gl_error(const char *file, int line)
         auto error = ss.str();
         throw std::runtime_error(error);
     }
-#endif
 }
 
 void clear_gl_errors()

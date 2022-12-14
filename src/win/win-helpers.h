@@ -12,6 +12,7 @@
 
 #include <windows.h>
 #include <cfgmgr32.h>
+#include <rsutils/os/hresult.h>
 
 #define WAIT_FOR_MUTEX_TIME_OUT  (5000)
 
@@ -19,11 +20,15 @@ namespace librealsense
 {
     namespace platform
     {
-        bool check(const char * call, HRESULT hr, bool to_throw = true);
-#define CHECK_HR(x) check(#x, x);
-#define LOG_HR(x) check(#x, x, false);
-
-        std::string win_to_utf(const WCHAR * s);
+        template <class T>
+        static void safe_release(T& ppT)
+        {
+            if (ppT)
+            {
+                ppT.Release();
+                ppT = NULL;
+            }
+        }
 
         bool is_win10_redstone2();
 

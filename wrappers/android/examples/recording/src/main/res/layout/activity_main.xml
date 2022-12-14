@@ -12,7 +12,7 @@
         android:layout_height="match_parent"
         android:id="@+id/glSurfaceView"/>
 
-    <android.support.v7.widget.LinearLayoutCompat
+    <androidx.appcompat.widget.LinearLayoutCompat
         android:id="@+id/buttonPanel"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -28,9 +28,9 @@
             android:textSize="20dp"
             android:text="Connect a RealSense camera"
             android:textColor="#ffffff"/>
-    </android.support.v7.widget.LinearLayoutCompat>
+    </androidx.appcompat.widget.LinearLayoutCompat>
 
-    <android.support.design.widget.FloatingActionButton
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/startRecordFab"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -42,7 +42,7 @@
         android:visibility="gone"
         app:srcCompat="@android:drawable/ic_notification_overlay" />
 
-    <android.support.design.widget.FloatingActionButton
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/stopRecordFab"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"

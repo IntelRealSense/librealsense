@@ -21,7 +21,7 @@ def find_device_that_supports_advanced_mode() :
             if dev.supports(rs.camera_info.name):
                 print("Found device that supports advanced mode:", dev.get_info(rs.camera_info.name))
             return dev
-    raise Exception("No device that supports advanced mode was found")
+    raise Exception("No D400 product line device that supports advanced mode was found")
 
 try:
     dev = find_device_that_supports_advanced_mode()

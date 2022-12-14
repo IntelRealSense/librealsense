@@ -63,7 +63,7 @@ build:
 #
 test_script:
 - ps: >-
-    $url_records_path = "http://realsense-hw-public.s3.amazonaws.com/rs-tests/lrs_2.8.3/"
+    $url_records_path = "https://librealsense.intel.com/rs-tests/lrs_2.8.3/"
 
     $url_records_list = $url_records_path + "records.txt"
 

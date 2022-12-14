@@ -18,8 +18,8 @@ def calculate_cumulative_pointcloud(frames_devices, calibration_info_devices, ro
 	-----------
 	frames_devices : dict
 		The frames from the different devices
-		keys: str
-			Serial number of the device
+		keys: Tuple of (serial, product-line)
+			Serial number and product line of the device
 		values: [frame]
 			frame: rs.frame()
 				The frameset obtained over the active pipeline from the realsense device
@@ -47,7 +47,8 @@ def calculate_cumulative_pointcloud(frames_devices, calibration_info_devices, ro
 	"""
 	# Use a threshold of 5 centimeters from the chessboard as the area where useful points are found
 	point_cloud_cumulative = np.array([-1, -1, -1]).transpose()
-	for (device, frame) in frames_devices.items() :
+	for (device_info, frame) in frames_devices.items() :
+		device = device_info[0]
 		# Filter the depth_frame using the Temporal filter and get the corresponding pointcloud for each frame
 		filtered_depth_frame = post_process_depth_frame(frame[rs.stream.depth], temporal_smooth_alpha=0.1, temporal_smooth_delta=80)	
 		point_cloud = convert_depth_frame_to_pointcloud( np.asarray( filtered_depth_frame.get_data()), calibration_info_devices[device][1][rs.stream.depth])
@@ -152,8 +153,8 @@ def visualise_measurements(frames_devices, bounding_box_points_devices, length, 
 	-----------
 	frames_devices : dict
 		The frames from the different devices
-		keys: str
-			Serial number of the device
+		keys: Tuple of (serial, product-line)
+			Serial number and product line of the device
 		values: [frame]
 			frame: rs.frame()
 				The frameset obtained over the active pipeline from the realsense device
@@ -175,7 +176,8 @@ def visualise_measurements(frames_devices, bounding_box_points_devices, length, 
 	height : double
 		The height of the bounding box calculated in the world coordinates of the pointcloud
 	"""
-	for (device, frame) in frames_devices.items():
+	for (device_info, frame) in frames_devices.items():
+		device = device_info[0] #serial number
 		color_image = np.asarray(frame[rs.stream.color].get_data())
 		if (length != 0 and width !=0 and height != 0):
 			bounding_box_points_device_upper = bounding_box_points_devices[device][0:4,:]

@@ -66,8 +66,8 @@ TEST_CASE("named_mutex_threads", "[code]")
             {
                 bool test_ok(false);
 
-                std::thread t0 = std::thread([this](){func_0();});                
-                std::thread t1 = std::thread([this](){func_1();}); 
+                std::thread t0 = std::thread([this](){func_0();});
+                std::thread t1 = std::thread([this](){func_1();});
                 // Tell Thread 1 to lock named_mutex.
                 {
                     std::lock_guard<std::mutex> lk_gm(_m1);
@@ -188,3 +188,4 @@ TEST_CASE("named_mutex_processes", "[code]")
         REQUIRE(child_alive == actual_test);
     }
 }
+

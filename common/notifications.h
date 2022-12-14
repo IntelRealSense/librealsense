@@ -8,12 +8,12 @@
 #include <vector>
 #include <chrono>
 
-#include "ux-window.h"
-
 #include "output-model.h"
 
 namespace rs2
 {
+    class ux_window;
+
     class notification_data
     {
     public:
@@ -36,6 +36,13 @@ namespace rs2
     {
         notification_model();
         notification_model(const notification_data& n);
+
+        template <class dst_type>
+        bool is()
+        {
+            return dynamic_cast<const dst_type*>(this) != nullptr;
+        }
+
         double get_age_in_ms(bool total = false) const;
         bool interacted() const;
         std::function<void()> draw(ux_window& win, int w, int y, 
@@ -87,6 +94,7 @@ namespace rs2
 
         bool is_delayed() const;
         void delay(int days);
+        void reset_delay();
 
         float last_x, last_y;
         bool animating = false;
@@ -110,7 +118,7 @@ namespace rs2
         virtual ~process_manager() = default;
 
         void start(invoker invoke);
-        int get_progress() const { return _progress; }
+        int get_progress() const { return int(_progress); }
         bool done() const { return _done; }
         bool started() const { return _started; }
         bool failed() const { return _failed; }
@@ -131,7 +139,7 @@ namespace rs2
         bool _started = false;
         bool _done = false;
         bool _failed = false;
-        int _progress = 0;
+        float _progress = 0;
 
         std::mutex _log_lock;
         std::string _last_error;
@@ -160,6 +168,7 @@ namespace rs2
 
         std::shared_ptr<process_manager> update_manager = nullptr;
         int update_state = 0;
+        int update_state_prev = 0;
         progress_bar _progress_bar;
     };
 
@@ -191,20 +200,28 @@ namespace rs2
     {
         std::shared_ptr<notification_model> add_notification(const notification_data& n);
         std::shared_ptr<notification_model> add_notification(const notification_data& n,
-                              std::function<void()> custom_action, 
-                              bool use_custom_action = true);
+            std::function<void()> custom_action,
+            bool use_custom_action = true);
         void add_notification(std::shared_ptr<notification_model> model);
+        
+        // Check of a notification of type T is currently on the display queue.
+        template <typename T>
+        bool notification_type_is_displayed()
+        {
+           std::lock_guard<std::recursive_mutex> lock(m);
+           return std::any_of(pending_notifications.cbegin(), pending_notifications.cend(), [](const std::shared_ptr<notification_model>& nm) {return nm->is<T>(); });
+        }
         bool draw(ux_window& win, int w, int h, std::string& error_message);
 
         notifications_model() {}
 
-        void add_log(std::string message) 
-        {            
-            output.add_log(RS2_LOG_SEVERITY_INFO, "", 0, message); 
+        void add_log(std::string message, rs2_log_severity severity = RS2_LOG_SEVERITY_INFO )
+        {
+            output.add_log(severity, "", 0, message);
         }
 
         output_model output;
-        
+
     private:
         std::vector<std::shared_ptr<notification_model>> pending_notifications;
         int index = 1;
@@ -212,6 +229,19 @@ namespace rs2
         std::recursive_mutex m;
 
         std::shared_ptr<notification_model> selected;
+    };
+
+    struct sw_recommended_update_alert_model : public notification_model
+    {
+        sw_recommended_update_alert_model(const std::string & current_version, const std::string & recommended_version, const std::string &recommended_version_link);
+
+        void set_color_scheme( float t ) const override;
+        void draw_content(
+            ux_window & win, int x, int y, float t, std::string & error_message ) override;
+        int calc_height() override { return 150; }
+        const std::string _current_version;
+        const std::string _recommended_version;
+        const std::string _recommended_version_link;
     };
 
     inline ImVec4 saturate(const ImVec4& a, float f)
@@ -223,6 +253,34 @@ namespace rs2
     {
         return{ v.x, v.y, v.z, a };
     }
+
+    struct sw_update_up_to_date_model : public notification_model
+    {
+        sw_update_up_to_date_model();
+
+        void set_color_scheme(float t) const override;
+        void draw_content(
+            ux_window& win, int x, int y, float t, std::string& error_message) override;
+        int calc_height() override { return 65; }
+    };    
+
+    struct ucal_disclaimer_model : public notification_model
+    {
+        ucal_disclaimer_model();
+
+        void draw_content(ux_window& win, int x, int y, float t, std::string& error_message) override;
+        int calc_height() override { return 110; }
+        int get_max_lifetime_ms() const override { return 15000; }
+    };
+
+    struct fl_cal_limitation_model : public notification_model
+    {
+        fl_cal_limitation_model();
+
+        void draw_content(ux_window& win, int x, int y, float t, std::string& error_message) override;
+        int calc_height() override { return 100; }
+        int get_max_lifetime_ms() const override { return 10000; }
+    };
 
     class export_manager : public process_manager
     {

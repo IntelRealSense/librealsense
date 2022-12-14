@@ -63,7 +63,7 @@ void RsRTSPServer::setSupportedOptions(std::string t_key, std::vector<RsOption> 
 
 // RTSPServer::RTSPClientConnection implementation
 
-RsRTSPServer::RsRTSPClientConnection ::RsRTSPClientConnection(RsRTSPServer& t_ourServer, int t_clientSocket, struct sockaddr_in t_clientAddr)
+RsRTSPServer::RsRTSPClientConnection ::RsRTSPClientConnection(RsRTSPServer& t_ourServer, int t_clientSocket, struct sockaddr_storage const& t_clientAddr)
     : RTSPClientConnection(t_ourServer, t_clientSocket, t_clientAddr)
     , m_fOurRsRTSPServer(t_ourServer)
 {}
@@ -321,7 +321,7 @@ void RsRTSPServer::RsRTSPClientSession::emptyStreamProfileQueue(long long int pr
     }
 }
 
-GenericMediaServer::ClientConnection* RsRTSPServer::createNewClientConnection(int clientSocket, struct sockaddr_in clientAddr)
+GenericMediaServer::ClientConnection* RsRTSPServer::createNewClientConnection(int clientSocket, struct sockaddr_storage const& clientAddr)
 {
     return new RsRTSPClientConnection(*this, clientSocket, clientAddr);
 }

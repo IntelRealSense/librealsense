@@ -6,7 +6,7 @@
 #include <librealsense2/h/rs_pipeline.h>
 #include <librealsense2/h/rs_option.h>
 #include <librealsense2/h/rs_frame.h>
-#include "../example.h"
+#include "example.h"
 
 #include <stdlib.h>
 #include <stdint.h>

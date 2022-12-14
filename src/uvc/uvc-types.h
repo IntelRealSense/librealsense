@@ -4,6 +4,7 @@
 #pragma once
 
 #include "types.h"
+#include "../small-heap.h"
 
 #include <vector>
 #include <unordered_map>

@@ -3,21 +3,20 @@
 #  minimum required cmake version: 3.1.0
 cmake_minimum_required(VERSION 3.1.0)
 
-project(RealsenseToolsRealSenseViewer)
+project(realsense-viewer)
+
+if(WIN32)
+    add_executable( ${PROJECT_NAME} WIN32 "" )
+else()
+    add_executable( ${PROJECT_NAME} "" )
+endif()
 
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
 
 include_directories(${CMAKE_BINARY_DIR})
 
-if(${BUILD_EASYLOGGINGPP})
-set( ELPP_DIR ../../third-party/easyloggingpp/src )
-    include_directories( ${ELPP_DIR} )
-    set( ELPP_FILES
-        ${ELPP_DIR}/easylogging++.cc
-        ${ELPP_DIR}/easylogging++.h
-    )
-endif()
+using_easyloggingpp( ${PROJECT_NAME} SHARED )
 
 include(../../common/CMakeLists.txt)
 
@@ -55,7 +54,7 @@ if(BUILD_GRAPHICAL_EXAMPLES)
     ../../common/os.cpp
 )
 
-SET(DELAYED 
+SET(DELAYED
     realsense2d.dll
     realsense2-gld.dll
     realsense2.dll
@@ -82,6 +81,9 @@ if(DEFINED OpenCV_DIR  AND  IS_DIRECTORY ${OpenCV_DIR})
     )
 
 endif()
+
+include(../../wrappers/openvino/check_vino_version.cmake)
+
 if(DEFINED INTEL_OPENVINO_DIR  AND  IS_DIRECTORY ${INTEL_OPENVINO_DIR})
 
     message( STATUS "Enabling OpenVINO face-detection for realsense-viewer ..." )
@@ -89,12 +91,27 @@ if(DEFINED INTEL_OPENVINO_DIR  AND  IS_DIRECTORY ${INTEL_OPENVINO_DIR})
     include(${INTEL_OPENVINO_DIR}/inference_engine/share/InferenceEngineConfig.cmake)
 
     get_property(deps VARIABLE PROPERTY DEPENDENCIES)
-    set(DEPENDENCIES ${deps} ${InferenceEngine_LIBRARIES} ie_cpu_extension)
+
+    check_vino_version()
+    if(OPENVINO2019)
+        set(DEPENDENCIES ${deps} ${InferenceEngine_LIBRARIES} ie_cpu_extension)
+    elseif(OPENVINO_NGRAPH)
+        include(${INTEL_OPENVINO_DIR}/deployment_tools/ngraph/cmake/ngraphConfig.cmake)
+        set(DEPENDENCIES ${deps} ${InferenceEngine_LIBRARIES} ${NGRAPH_LIBRARIES})
+    else()
+        set(DEPENDENCIES ${deps} ${InferenceEngine_LIBRARIES})
+    endif()
+
     include_directories( ../../wrappers/openvino )
     include_directories( ../../wrappers/opencv )
     include_directories( ${InferenceEngine_INCLUDE_DIRS} )
+
+    if(OPENVINO2019)
     # We need additional access to ext_list.hpp, for CPU extension support:
-    include_directories( ${IE_ROOT_DIR}/src/extension )
+    include_directories( "${IE_ROOT_DIR}/src/extension" )
+    elseif(OPENVINO_NGRAPH)
+    include_directories( "${INTEL_OPENVINO_DIR}/deployment_tools/ngraph/include" )
+    endif()
 
     set(OPENVINO_FILES
         ../../wrappers/openvino/rs-vino/base-detection.cpp
@@ -106,8 +123,11 @@ if(DEFINED INTEL_OPENVINO_DIR  AND  IS_DIRECTORY ${INTEL_OPENVINO_DIR})
         ../../wrappers/openvino/rs-vino/detected-object.cpp
         ../../wrappers/openvino/rs-vino/detected-object.h
         ../../wrappers/openvino/rs-vino/openvino-helpers.h
-        ${IE_ROOT_DIR}/src/extension/ext_list.hpp
         )
+
+    if(OPENVINO2019)
+        set(OPENVINO_FILES ${OPENVINO_FILES} "${IE_ROOT_DIR}/src/extension/ext_list.hpp")
+    endif()
 
     set(RS_VIEWER_CPP
         ${RS_VIEWER_CPP}
@@ -118,11 +138,21 @@ if(DEFINED INTEL_OPENVINO_DIR  AND  IS_DIRECTORY ${INTEL_OPENVINO_DIR})
     include(../../wrappers/openvino/dl_vino_model.cmake)
     # Download model files -- these will go into build/tools/realsense-viewer, which is also
     # where the sample is run from in Visual Studio
+
+    if(OPENVINO2019)
     dl_vino_model( "README.txt"                              "789e144d6cafa379c8437d2a6860829b6d935a8d" )
     dl_vino_model( "face-detection-adas-0001.bin"            "1625f05ada1d8e78e36856def7124f78cd0a6c2a" )
     dl_vino_model( "face-detection-adas-0001.xml"            "11c36f6e4488b2f5437ccff9f330d02545087ab3" )
     dl_vino_model( "age-gender-recognition-retail-0013.bin"  "206f6e97e53cd600fcac7d31e1c56accbbe461b9" )
     dl_vino_model( "age-gender-recognition-retail-0013.xml"  "2654d7f1638d575b8d1886f8128deae2ea79ee55" )
+    else()
+    # Newer model files with IRv10, 2020.1 and later
+    dl_vino_model( "README.txt"                              "789e144d6cafa379c8437d2a6860829b6d935a8d" )
+    dl_vino_model( "face-detection-adas-0001.bin"  "065e9015297c7adbc650ebfc17176477cd0a4279" )
+    dl_vino_model( "face-detection-adas-0001.xml"  "331be642a248213f586ec1d1b71c223435a437e3" )
+    dl_vino_model( "age-gender-recognition-retail-0013.bin"  "206f6e97e53cd600fcac7d31e1c56accbbe461b9" )
+    dl_vino_model( "age-gender-recognition-retail-0013.xml"  "36bde5d4d42d29515abe871f69097ffcf4ff6414" )
+    endif()
 
     list(APPEND DELAYED
         cpu_extension.dll
@@ -140,9 +170,8 @@ endif()
 
 # config-ui
 if(WIN32)
-    add_executable(realsense-viewer WIN32
+    target_sources( ${PROJECT_NAME} PRIVATE
         ${RS_VIEWER_CPP}
-        ${ELPP_FILES}
         ${CMAKE_CURRENT_SOURCE_DIR}/res/resource.h
         ${CMAKE_CURRENT_SOURCE_DIR}/res/realsense-viewer.rc
         ../../common/windows-app-bootstrap.cpp
@@ -170,13 +199,19 @@ if(WIN32)
     set_target_properties(realsense-viewer PROPERTIES LINK_FLAGS "${LD_FLAGS_STR}")
 
 else()
-    add_executable(realsense-viewer
+    target_sources( ${PROJECT_NAME} PRIVATE
         ${RS_VIEWER_CPP}
-        ${ELPP_FILES}
     )
 endif()
 
-source_group("EasyLogging++" FILES ${ELPP_FILES})
+if(OPENVINO2019)
+    target_compile_definitions(realsense-viewer PRIVATE OPENVINO2019)
+endif()
+
+if(OPENVINO_NGRAPH)
+    target_compile_definitions(realsense-viewer PRIVATE OPENVINO_NGRAPH)
+endif()
+
 source_group("SW-Update" FILES ${SW_UPDATE_FILES})
 
 include_directories(
@@ -215,13 +250,15 @@ set_target_properties (realsense-viewer PROPERTIES
     FOLDER Tools
 )
 
+target_include_directories(realsense-viewer PRIVATE ../../src)
 
 install(
-    TARGETS
-
-    realsense-viewer
-
-    RUNTIME DESTINATION
-    ${CMAKE_INSTALL_BINDIR}
+    TARGETS realsense-viewer
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+)
+#https://cmake.org/cmake/help/latest/command/install.html
+install(DIRECTORY presets/
+    DESTINATION $ENV{HOME}/Documents/librealsense2/presets
+    FILES_MATCHING PATTERN "*.preset"
 )
 endif()

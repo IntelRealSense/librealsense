@@ -1,12 +1,11 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2017 Intel Corporation. All Rights Reserved.
 
-#include "../include/librealsense2/rs.hpp"
-#include "../include/librealsense2/rsutil.h"
+#include <librealsense2/rs.hpp>
 
 #include "synthetic-stream-gl.h"
 #include "environment.h"
-#include "proc/occlusion-filter.h"
+#include "../proc/occlusion-filter.h"
 #include "pointcloud-gl.h"
 #include "option.h"
 #include "environment.h"
@@ -16,6 +15,7 @@
 #include <chrono>
 
 #include "opengl3.h"
+#include <glad/glad.h>
 
 using namespace rs2;
 using namespace librealsense;
@@ -53,14 +53,33 @@ static const char* project_fragment_text =
 "    float py = (1.0 - textCoords.y) * height1;\n"
 "    float x = (px - principal1.x) / focal1.x;\n"
 "    float y = (py - principal1.y) / focal1.y;\n"
-"    if(is_bc1 > 0.0)\n"
+"    float xo = x;\n"
+"    float yo = y;\n"
+"    if(is_bc1 == 2.0)\n"
 "    {\n"
-"        float r2  = x*x + y*y;\n"
-"        float f = 1.0 + coeffs1[0]*r2 + coeffs1[1]*r2*r2 + coeffs1[4]*r2*r2*r2;\n"
-"        float ux = x*f + 2.0*coeffs1[2]*x*y + coeffs1[3]*(r2 + 2.0*x*x);\n"
-"        float uy = y*f + 2.0*coeffs1[3]*x*y + coeffs1[2]*(r2 + 2.0*y*y);\n"
-"        x = ux;\n"
-"        y = uy;\n"
+"       for (int i = 0; i < 10; i++)\n"
+"       {\n"
+"           float r2 = x * x + y * y;\n"
+"           float icdist = 1.0 / (1.0 + ((coeffs1[4] * r2 + coeffs1[1])*r2 + coeffs1[0])*r2);\n"
+"           float xq = x / icdist;\n"
+"           float yq = y / icdist;\n"
+"           float delta_x = 2 * coeffs1[2] * xq*yq + coeffs1[3] * (r2 + 2 * xq*xq);\n"
+"           float delta_y = 2 * coeffs1[3] * xq*yq + coeffs1[2] * (r2 + 2 * yq*yq);\n"
+"           x = (xo - delta_x)*icdist;\n"
+"           y = (yo - delta_y)*icdist;\n"
+"       }\n"
+"    }\n"
+"    if (is_bc1 == 4.0)\n"
+"    {\n"
+"        for (int i = 0; i < 10; i++)\n"
+"        {\n"
+"            float r2 = x * x + y * y;\n"
+"            float icdist = 1.0 / (1.0 + ((coeffs1[4] * r2 + coeffs1[1])*r2 + coeffs1[0])*r2);\n"
+"            float delta_x = 2 * coeffs1[2] * x*y + coeffs1[3] * (r2 + 2 * x*x);\n"
+"            float delta_y = 2 * coeffs1[3] * x*y + coeffs1[2] * (r2 + 2 * y*y);\n"
+"            x = (xo - delta_x)*icdist;\n"
+"            y = (yo - delta_y)*icdist;\n"
+"        }\n"
 "    }\n"
 "    vec2 tex = vec2(textCoords.x, 1.0 - textCoords.y);\n"
 "    vec4 dp = texture(textureSampler, tex);\n"
@@ -74,7 +93,7 @@ static const char* project_fragment_text =
 "    x = trans.x / trans.z;\n"
 "    y = trans.y / trans.z;\n"
 "\n"
-"    if(is_bc2 > 0.0)\n"
+"    if(is_bc2 == 2.0)\n"
 "    {\n"
 "        float r2  = x*x + y*y;\n"
 "        float f = 1.0 + coeffs2[0]*r2 + coeffs2[1]*r2*r2 + coeffs2[4]*r2*r2*r2;\n"
@@ -82,6 +101,17 @@ static const char* project_fragment_text =
 "        y *= f;\n"
 "        float dx = x + 2.0*coeffs2[2]*x*y + coeffs2[3]*(r2 + 2.0*x*x);\n"
 "        float dy = y + 2.0*coeffs2[3]*x*y + coeffs2[2]*(r2 + 2.0*y*y);\n"
+"        x = dx;\n"
+"        y = dy;\n"
+"    }\n"
+"    if (is_bc2 == 4.0)\n"
+"    {\n"
+"        float r2 = x * x + y * y;\n"
+"        float f = 1 + coeffs2[0] * r2 + coeffs2[1] * r2*r2 + coeffs2[4] * r2*r2*r2;\n"
+"        float xf = x * f;\n"
+"        float yf = y * f;\n"
+"        float dx = xf + 2 * coeffs2[2] * x*y + coeffs2[3] * (r2 + 2 * x*x);\n"
+"        float dy = yf + 2 * coeffs2[3] * x*y + coeffs2[2] * (r2 + 2 * y*y);\n"
 "        x = dx;\n"
 "        y = dy;\n"
 "    }\n"
@@ -248,10 +278,9 @@ public:
     {
         rs2::float2 focal{ intr.fx, intr.fy };
         rs2::float2 principal{ intr.ppx, intr.ppy };
-        float is_bc = (intr.model == RS2_DISTORTION_INVERSE_BROWN_CONRADY ? 1.f : 0.f);
         _shader->load_uniform(_focal_location[idx], focal);
         _shader->load_uniform(_principal_location[idx], principal);
-        _shader->load_uniform(_is_bc_location[idx], is_bc);
+        _shader->load_uniform(_is_bc_location[idx], (float)(int)intr.model);
         glUniform1fv(_coeffs_location[idx], 5, intr.coeffs);
     }
 
@@ -380,12 +409,11 @@ pointcloud_gl::pointcloud_gl()
 const librealsense::float3* pointcloud_gl::depth_to_points(
         rs2::points output,
         const rs2_intrinsics &depth_intrinsics, 
-        const rs2::depth_frame& depth_frame,
-        float depth_scale)
+        const rs2::depth_frame& depth_frame)
 {
     perform_gl_action([&]{
         _depth_data = depth_frame;
-        _depth_scale = depth_scale;
+        _depth_scale = depth_frame.get_units();
         _depth_intr = depth_intrinsics;
     }, [&]{
         _enabled = false;

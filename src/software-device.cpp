@@ -4,10 +4,13 @@
 #include "software-device.h"
 #include "stream.h"
 
+#include <rsutils/string/from.h>
+
+
 namespace librealsense
 {
     software_device::software_device()
-        : device(std::make_shared<context>(backend_type::standard), {}),
+        : device(std::make_shared<context>(backend_type::standard), {}, false),
         _user_destruction_callback()
     {
         register_info(RS2_CAMERA_INFO_NAME, "Software-Device");
@@ -264,6 +267,7 @@ namespace librealsense
         data.timestamp = software_frame.timestamp;
         data.timestamp_domain = software_frame.domain;
         data.frame_number = software_frame.frame_number;
+        data.depth_units = software_frame.depth_units;
 
         data.metadata_size = 0;
         for (auto i : _metadata_map)
@@ -388,7 +392,8 @@ namespace librealsense
         if (auto opt = dynamic_cast<readonly_float_option*>(&get_option(option)))
             opt->update(val);
         else
-            throw invalid_value_exception(to_string() << "option " << get_string(option) << " is not read-only or is deprecated type");
+            throw invalid_value_exception( rsutils::string::from() << "option " << get_string( option )
+                                                                   << " is not read-only or is deprecated type" );
     }
 
     void software_sensor::add_option(rs2_option option, option_range range, bool is_writable)

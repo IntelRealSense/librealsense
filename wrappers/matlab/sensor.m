@@ -68,7 +68,7 @@ classdef sensor < realsense.options
                 case 'depth_sensor'
                     sensor = realsense.depth_sensor(out);
                 case 'depth_stereo_sensor'
-                    sensor = realsense.depth_stereo_sensor(out);;
+                    sensor = realsense.depth_stereo_sensor(out);
             end
         end
 

@@ -152,10 +152,10 @@ namespace Intel.RealSense
         /// <summary>When supported, this option make the camera to switch the emitter state every frame. 0 for disabled, 1 for enabled</summary>
         EmitterOnOff = 46,
 
-        /// <summary>Zero order point x</summary>
+        /// <summary>Deprecated!!! - Zero order point x</summary>
         ZeroOrderPointX = 47,
 
-        /// <summary>Zero order point y</summary>
+        /// <summary>Deprecated!!! - Zero order point y</summary>
         ZeroOrderPointY = 48,
 
         /// <summary>LLD temperature</summary>
@@ -194,7 +194,7 @@ namespace Intel.RealSense
         /// <summary>Power of the LED (light emitting diode), with 0 meaning LED off</summary>
         LedPower = 60,
 
-        /// <summary>Toggle Zero-Order mode</summary>
+        /// <summary>Deprecated!!! - Toggle Zero-Order mode</summary>
         ZeroOrderEnabled = 61,
 
         /// <summary>Preserve previous map when starting</summary>
@@ -218,8 +218,11 @@ namespace Intel.RealSense
         /// <summary>Enable\disable pixel invalidation</summary>
         InvalidationBypass = 68,
 
-        /// <summary>Change the depth ambient light see rs2_ambient_light for values</summary>
+        /// <summary>Deprecated - Use digital gain option, Change the depth ambient light see rs2_ambient_light for values</summary>
         AmbientLightEnvLevel = 69,
+
+        /// <summary>Change the depth digital gain see rs2_digital_gain for values</summary>
+        DigitalGain = 69,
 
         /// <summary>The resolution mode: see rs2_sensor_mode for values</summary>
         SensorMode = 70,
@@ -249,6 +252,39 @@ namespace Intel.RealSense
         SequenceSize = 78,
 
         /// <summary>Subpreset sequence id - for D400 SKUs</summary>
-        SequenceId = 79
+        SequenceId = 79,
+
+        /// <summary>Humidity temperature [Deg Celsius]</summary>
+        HumidityTemperature = 80,
+
+        /// <summary>Turn on/off the maximum usable range who calculates the maximum range of the camera given the amount of ambient light in the scene </summary>
+        EnableMaxUsableRange = 81,
+
+        /// <summary>Turn on/off the alternate IR, When enabling alternate IR, the IR image is holding the amplitude of the depth correlation. </summary>
+        AlternateIR = 82,
+
+        /// <summary>Noise estimation on the IR image</summary>
+        NoiseEstimation = 83,
+
+        /// <summary>Enables data collection for calculating IR pixel reflectivity</summary>
+        EnableIrReflectivity = 84,
+
+        /// <summary>Auto exposure limit - for D400 SKUs</summary>
+        auto_exposure_limit = 85,
+
+        /// <summary>auto gain limit - for D400 SKUs</summary>
+        auto_gain_limit = 86,
+
+        /// <summary>Enable automatic receiver sensitivity</summary>
+        auto_rx_sensitivity = 87,
+
+        /// <summary>Change transmitter frequency, increasing effective range over sharpness</summary>
+        transmitter_frequency = 88,
+
+        /// <summary>Enables vertical binning which increases the maximal sensed distance</summary>
+        vertical_binning = 89,
+
+        /// <summary>Control the receiver sensitivity to incoming light, both projected and ambient</summary>
+        receiver_sensitivity = 90
     }
 }

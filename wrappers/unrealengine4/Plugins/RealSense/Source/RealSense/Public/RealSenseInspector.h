@@ -141,6 +141,7 @@ protected:
 
 private:
 
+	void GetDeviceDefaultProfileConfig();
 	void ThreadProc();
 	void PollFrames();
 	void WaitFrames();

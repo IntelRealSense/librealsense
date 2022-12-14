@@ -4,24 +4,24 @@
 cmake_minimum_required(VERSION 3.1.0)
 
 project(RealsenseToolsDepthQuality)
+project( rs-depth-quality  )
+
+if(WIN32)
+    add_executable( ${PROJECT_NAME} WIN32 "" )
+else()
+    add_executable( ${PROJECT_NAME} "" )
+endif()
 
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
 
 include_directories(${CMAKE_BINARY_DIR})
 
-if(${BUILD_EASYLOGGINGPP})
-set( ELPP_DIR ../../third-party/easyloggingpp/src )
-
-include_directories( ${ELPP_DIR} )
-set( ELPP_FILES
-    ${ELPP_DIR}/easylogging++.cc
-    ${ELPP_DIR}/easylogging++.h)
-endif()
+using_easyloggingpp( ${PROJECT_NAME} SHARED )
 
 include(../../common/CMakeLists.txt)
 
-SET(DELAYED 
+SET(DELAYED
     realsense2d.dll
     realsense2-gld.dll
     realsense2.dll
@@ -47,8 +47,9 @@ if(BUILD_GRAPHICAL_EXAMPLES)
         )
 
     if(WIN32)
-        add_executable(rs-depth-quality WIN32 ${RS_QUALITY_TOOL_CPP}
-                ${ELPP_FILES}
+        target_sources( ${PROJECT_NAME}
+            PRIVATE
+                ${RS_QUALITY_TOOL_CPP}
                 ${CMAKE_CURRENT_SOURCE_DIR}/res/resource.h
                 ${CMAKE_CURRENT_SOURCE_DIR}/res/realsense-viewer.rc
                 ../../common/windows-app-bootstrap.cpp)
@@ -73,12 +74,12 @@ if(BUILD_GRAPHICAL_EXAMPLES)
             depth-metrics.h
             ${COMMON_SRC})
 
-        include_directories(rs-depth-quality ../../common  ../../third-party
-                                             ../../third-party/imgui
-                                             ../../third-party/glad
-                                             ../../third-party/tclap/include
-                                             ../../third-party/tinyfiledialogs
-                                             ${CMAKE_CURRENT_SOURCE_DIR}/res/)
+        include_directories(../../common  ../../third-party
+                            ../../third-party/imgui
+                            ../../third-party/glad
+                            ../../third-party/tclap/include
+                            ../../third-party/tinyfiledialogs
+                            ${CMAKE_CURRENT_SOURCE_DIR}/res/)
 
         #list(TRANSFORM DELAYED PREPEND " /DELAYLOAD:")
         PREPEND(DELAYED " /DELAYLOAD:" ${DELAYED})
@@ -87,19 +88,18 @@ if(BUILD_GRAPHICAL_EXAMPLES)
         set_target_properties(rs-depth-quality PROPERTIES LINK_FLAGS "${LD_FLAGS_STR}")
 
     else()
-        add_executable(rs-depth-quality 
-        ${RS_QUALITY_TOOL_CPP}
-        ${ELPP_FILES}
-        )
+        target_sources( ${PROJECT_NAME}
+            PRIVATE
+                ${RS_QUALITY_TOOL_CPP}
+            )
 
-        include_directories(rs-depth-quality ../../common  ../../third-party
-                                             ../../third-party/imgui
-                                             ../../third-party/glad
-                                             ../../third-party/tinyfiledialogs
-                                             ../../third-party/tclap/include)
+        include_directories(../../common  ../../third-party
+                            ../../third-party/imgui
+                            ../../third-party/glad
+                            ../../third-party/tinyfiledialogs
+                            ../../third-party/tclap/include)
     endif()
 
-    source_group("EasyLogging++" FILES ${ELPP_FILES})
     source_group("SW-Update" FILES ${SW_UPDATE_FILES})
 
     if (CHECK_FOR_UPDATES)
@@ -107,7 +107,7 @@ if(BUILD_GRAPHICAL_EXAMPLES)
         add_dependencies(rs-depth-quality libcurl)
         target_link_libraries(rs-depth-quality curl)
     endif()
-    
+
     target_link_libraries(rs-depth-quality ${DEPENDENCIES}
                                            ${GTK3_LIBRARIES}
                                            Threads::Threads
@@ -117,13 +117,15 @@ if(BUILD_GRAPHICAL_EXAMPLES)
         add_definitions(-DINTERNAL_FW)
         target_link_libraries(rs-depth-quality fw)
     endif()
-    
-    
+
+
 
 
     set_target_properties (rs-depth-quality PROPERTIES
         FOLDER Tools
     )
+
+    target_include_directories(rs-depth-quality PRIVATE ../../src)
 
     install(
         TARGETS

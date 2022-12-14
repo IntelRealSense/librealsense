@@ -2,14 +2,13 @@
 // Copyright(c) 2017 Intel Corporation. All Rights Reserved.
 
 #pragma once
-#include <core/roi.h>
-#include <core/extension.h>
-#include <core/serialization.h>
-#include "core/streaming.h"
-#include "archive.h"
-#include "concurrency.h"
-#include "sensor.h"
-#include "types.h"
+#include "../../core/roi.h"
+#include "../../core/extension.h"
+#include "../../core/serialization.h"
+#include "../../core/streaming.h"
+#include "../../archive.h"
+#include "../../sensor.h"
+#include "../../types.h"
 
 namespace librealsense
 {
@@ -115,20 +114,39 @@ namespace librealsense
                 auto pf = std::make_shared<frame_holder>(std::move(frame));
 
                 auto callback = [this, is_real_time, stream_id, pf, calc_sleep, is_paused, update_last_pushed_frame](dispatcher::cancellable_timer t)
-                {
+                {                  
                     device_serializer::nanoseconds sleep_for = calc_sleep();
                     if (sleep_for.count() > 0)
-                        t.try_sleep(sleep_for.count() * 1e-6);
-                    if(is_paused())
-                        return;
+                        t.try_sleep( sleep_for );
+
+                    LOG_DEBUG("callback--> "<< frame_holder_to_string(*pf));
 
                     frame_interface* pframe = nullptr;
-                    std::swap((*pf).frame, pframe);
 
-                    m_user_callback->on_frame((rs2_frame*)pframe);
+                    if (!is_streaming())
+                        return;
+
+                    if (is_paused())
+                        return;
+
+                    std::swap((*pf).frame, pframe);
+                    
+                    // We want to make sure that we have a valid reference to this shared_ptr so if
+                    // "reset()" it will not destroy the object
+                    auto user_callback = m_user_callback;
+                    if (user_callback)
+                        user_callback->on_frame((rs2_frame*)pframe);
+                    
                     update_last_pushed_frame();
+                    
                 };
                 m_dispatchers.at(stream_id)->invoke(callback, !is_real_time);
+
+                // On non-real-time, we want the playback to run in synchronous mode:
+                // The playback will dispatch each frame and wait for it callback to finish before
+                // moving on to the next one.
+                if( ! is_real_time )
+                    m_dispatchers.at( stream_id )->flush();
             }
         }
     };

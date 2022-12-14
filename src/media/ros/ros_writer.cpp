@@ -9,9 +9,13 @@
 #include "proc/hole-filling-filter.h"
 #include "proc/zero-order.h"
 #include "proc/depth-decompress.h"
+#include "proc/hdr-merge.h"
+#include "proc/sequence-id-filter.h"
 #include "ros_writer.h"
 #include "l500/l500-motion.h"
 #include "l500/l500-depth.h"
+
+#include <rsutils/string/from.h>
 
 namespace librealsense
 {
@@ -186,8 +190,10 @@ namespace librealsense
         image.header.seq = static_cast<uint32_t>(vid_frame->get_frame_number());
         std::chrono::duration<double, std::milli> timestamp_ms(vid_frame->get_frame_timestamp());
         image.header.stamp = rs2rosinternal::Time(std::chrono::duration<double>(timestamp_ms).count());
-        std::string TODO_CORRECT_ME = "0";
-        image.header.frame_id = TODO_CORRECT_ME;
+        image.header.version = "1"; // the field is unused and therefore assigned for ROSbag versions control
+        auto df = dynamic_cast<librealsense::depth_frame*>(frame.frame);
+        if(df)
+            image.depth_units = df->get_units();
         auto image_topic = ros_topic::frame_data_topic(stream_id);
         write_message(image_topic, timestamp, image);
         write_additional_frame_messages(stream_id, timestamp, frame);
@@ -204,8 +210,7 @@ namespace librealsense
         imu_msg.header.seq = static_cast<uint32_t>(frame.frame->get_frame_number());
         std::chrono::duration<double, std::milli> timestamp_ms(frame.frame->get_frame_timestamp());
         imu_msg.header.stamp = rs2rosinternal::Time(std::chrono::duration<double>(timestamp_ms).count());
-        std::string TODO_CORRECT_ME = "0";
-        imu_msg.header.frame_id = TODO_CORRECT_ME;
+        imu_msg.header.version = "1"; // the field is unused and therefore assigned for ROSbag versions control
         auto data_ptr = reinterpret_cast<const float*>(frame.frame->get_frame_data());
         if (stream_id.stream_type == RS2_STREAM_ACCEL)
         {
@@ -294,13 +299,13 @@ namespace librealsense
         //Write frame's timestamp as metadata
         diagnostic_msgs::KeyValue frame_timestamp_msg;
         frame_timestamp_msg.key = FRAME_TIMESTAMP_MD_STR;
-        frame_timestamp_msg.value = to_string() << std::hexfloat << std::fixed << pose->get_frame_timestamp();
+        frame_timestamp_msg.value = rsutils::string::from() << std::hexfloat << std::fixed << pose->get_frame_timestamp();
         write_message(md_topic, timestamp, frame_timestamp_msg);
 
         //Write frame's number as external param
         diagnostic_msgs::KeyValue frame_num_msg;
         frame_num_msg.key = FRAME_NUMBER_MD_STR;
-        frame_num_msg.value = to_string() << pose->get_frame_number();
+        frame_num_msg.value = rsutils::string::from( pose->get_frame_number() );
         write_message(md_topic, timestamp, frame_num_msg);
 
         // Write the rest of the frame metadata and stream extrinsics
@@ -449,7 +454,7 @@ namespace librealsense
             break;
         }
         default:
-            throw invalid_value_exception(to_string() << "Failed to Write Extension Snapshot: Unsupported extension \"" << librealsense::get_string(type) << "\"");
+            throw invalid_value_exception( rsutils::string::from() << "Failed to Write Extension Snapshot: Unsupported extension \"" << librealsense::get_string(type) << "\"");
         }
     }
 
@@ -472,7 +477,7 @@ namespace librealsense
     {
         float value = option.query();
         const char* str = option.get_description();
-        std::string description = str ? std::string(str) : (to_string() << "Read only option of " << librealsense::get_string(type));
+        std::string description = str ? std::string(str) : (rsutils::string::from() << "Read only option of " << librealsense::get_string(type));
 
         //One message for value
         std_msgs::Float32 option_msg;
@@ -540,7 +545,6 @@ namespace librealsense
     return T;\
  
         RETURN_IF_EXTENSION(block, RS2_EXTENSION_DECIMATION_FILTER);
-        RETURN_IF_EXTENSION(block, RS2_EXTENSION_DECIMATION_FILTER);
         RETURN_IF_EXTENSION(block, RS2_EXTENSION_THRESHOLD_FILTER);
         RETURN_IF_EXTENSION(block, RS2_EXTENSION_DISPARITY_FILTER);
         RETURN_IF_EXTENSION(block, RS2_EXTENSION_SPATIAL_FILTER);
@@ -548,10 +552,14 @@ namespace librealsense
         RETURN_IF_EXTENSION(block, RS2_EXTENSION_HOLE_FILLING_FILTER);
         RETURN_IF_EXTENSION(block, RS2_EXTENSION_ZERO_ORDER_FILTER);
         RETURN_IF_EXTENSION(block, RS2_EXTENSION_DEPTH_HUFFMAN_DECODER);
+        RETURN_IF_EXTENSION(block, RS2_EXTENSION_HDR_MERGE);
+        RETURN_IF_EXTENSION(block, RS2_EXTENSION_SEQUENCE_ID_FILTER);
 
 #undef RETURN_IF_EXTENSION
 
-        throw invalid_value_exception(to_string() << "processing block "<< block->get_info(RS2_CAMERA_INFO_NAME) <<"has no map to extension");
+        throw invalid_value_exception( rsutils::string::from()
+                                       << "processing block " << block->get_info( RS2_CAMERA_INFO_NAME )
+                                       << "has no map to extension" );
     }
 
     void ros_writer::write_sensor_processing_blocks(device_serializer::sensor_identifier sensor_id, const nanoseconds& timestamp, std::shared_ptr<recommended_proccesing_blocks_interface> proccesing_blocks)

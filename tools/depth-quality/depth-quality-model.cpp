@@ -33,6 +33,10 @@ namespace rs2
             _viewer_model.draw_plane = true;
             _viewer_model.synchronization_enable = false;
             _viewer_model.support_non_syncronized_mode = false; //pipeline outputs only syncronized frameset
+            _viewer_model._support_ir_reflectivity = true;
+            // Hide options from the DQT application
+            _viewer_model._hidden_options.emplace(RS2_OPTION_ENABLE_MAX_USABLE_RANGE);
+            _viewer_model._hidden_options.emplace(RS2_OPTION_ENABLE_IR_REFLECTIVITY);
         }
 
         bool tool_model::start(ux_window& window)
@@ -259,7 +263,7 @@ namespace rs2
         void tool_model::draw_guides(ux_window& win, const rect& viewer_rect, bool distance_guide, bool orientation_guide)
         {
             static const float fade_factor = 0.6f;
-            static timer animation_clock;
+            static rsutils::time::stopwatch animation_clock;
 
             auto flags = ImGuiWindowFlags_NoResize |
                 ImGuiWindowFlags_NoScrollbar |
@@ -322,7 +326,7 @@ namespace rs2
 
             for (int i = 2; i < 7; i += 1)
             {
-                auto t = (animation_clock.elapsed_ms() / 500) * M_PI - i * (M_PI / 5);
+                auto t = (animation_clock.get_elapsed_ms() / 500) * M_PI - i * (M_PI / 5);
                 float alpha = (1.f + float(sin(t))) / 2.f;
 
                 auto c = blend(grey, (1.f - float(i)/7.f)*fade_factor);
@@ -405,7 +409,7 @@ namespace rs2
                             {
                                 for (int j = 1; j < 5; j++)
                                 {
-                                    auto t = (animation_clock.elapsed_ms() / 500) * M_PI - j * (M_PI / 5);
+                                    auto t = (animation_clock.get_elapsed_ms() / 500) * M_PI - j * (M_PI / 5);
                                     auto alpha = (1 + float(sin(t))) / 2.f;
 
                                     ImGui::SetCursorPos({ pos.x + 57, pos.y + bar_spacing * (i - j) + 14 });
@@ -420,7 +424,7 @@ namespace rs2
                             {
                                 for (int j = 1; j < 5; j++)
                                 {
-                                    auto t = (animation_clock.elapsed_ms() / 500) * M_PI - j * (M_PI / 5);
+                                    auto t = (animation_clock.get_elapsed_ms() / 500) * M_PI - j * (M_PI / 5);
                                     auto alpha = (1.f + float(sin(t))) / 2.f;
 
                                     ImGui::SetCursorPos({ pos.x + 57, pos.y + bar_spacing * (i + j) + 14 });
@@ -551,7 +555,7 @@ namespace rs2
                         ImGui::PopStyleVar();
                         ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, { 2, 2 });
 
-                        if (_depth_sensor_model->draw_stream_selection())
+                        if (_depth_sensor_model->draw_stream_selection(_error_message))
                         {
                             if (_depth_sensor_model->is_selected_combination_supported())
                             {
@@ -583,6 +587,17 @@ namespace rs2
                                 {
                                     try // Retries are needed to cope with HW stability issues
                                     {
+
+                                        auto dev = cfg.resolve(_pipe);
+                                        auto depth_sensor = dev.get_device().first< rs2::depth_sensor >();
+                                        if (depth_sensor.supports(RS2_OPTION_SENSOR_MODE))
+                                        {
+                                            auto depth_profile = dev.get_stream(RS2_STREAM_DEPTH);
+                                            auto w = depth_profile.as<video_stream_profile>().width();
+                                            auto h = depth_profile.as<video_stream_profile>().height();
+                                            depth_sensor.set_option(RS2_OPTION_SENSOR_MODE, (float)(resolution_from_width_height(w, h)));
+                                        }
+
                                         auto profile = _pipe.start(cfg);
                                         success = profile;
                                     }
@@ -611,17 +626,80 @@ namespace rs2
                         ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, { 1,1,1,1 });
 
                         static std::vector<std::string> items{ "80%", "60%", "40%", "20%" };
-                        if (draw_combo_box("##ROI Percent", items, _roi_combo_index))
+                        int tmp_roi_combo_box = _roi_combo_index;
+                        if (draw_combo_box("##ROI Percent", items, tmp_roi_combo_box))
                         {
-                            if (_roi_combo_index == 0) _roi_percent = 0.8f;
-                            else if (_roi_combo_index == 1) _roi_percent = 0.6f;
-                            else if (_roi_combo_index == 2) _roi_percent = 0.4f;
-                            else if (_roi_combo_index == 3) _roi_percent = 0.2f;
-                            update_configuration();
+                            bool allow_changing_roi = true;
+                            try
+                            {
+                                if (_depth_sensor_model)
+                                {
+                                    auto && ds = _depth_sensor_model->dev.first<depth_sensor>();
+                                    if( ds.supports( RS2_OPTION_ENABLE_IR_REFLECTIVITY )
+                                        && ( ds.get_option( RS2_OPTION_ENABLE_IR_REFLECTIVITY ) == 1.0f ) )
+                                    {
+                                        allow_changing_roi = false;
+                                        _error_message = "ROI cannot be changed while IR Reflectivity is enabled";
+                                    }
+                                }
+                            }
+                            catch (...) {}
+
+                            if (allow_changing_roi)
+                            {
+                                _roi_combo_index = tmp_roi_combo_box;
+                                if (_roi_combo_index == 0) _roi_percent = 0.8f;
+                                else if (_roi_combo_index == 1) _roi_percent = 0.6f;
+                                else if (_roi_combo_index == 2) _roi_percent = 0.4f;
+                                else if (_roi_combo_index == 3) _roi_percent = 0.2f;
+                                update_configuration();
+                            }
                         }
 
                         ImGui::PopStyleColor();
                         ImGui::PopItemWidth();
+
+                        try
+                        {
+                            if (_depth_sensor_model)
+                            {
+                                auto && ds = _depth_sensor_model->dev.first< depth_sensor >();
+                                if (ds.supports(RS2_OPTION_ENABLE_IR_REFLECTIVITY))
+                                {
+                                    ImGui::SetCursorPosX(col0);
+                                    ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5);
+
+                                    bool current_ir_reflectivity_opt
+                                        = ds.get_option(RS2_OPTION_ENABLE_IR_REFLECTIVITY);
+
+                                    if (ImGui::Checkbox("IR Reflectivity",
+                                        &current_ir_reflectivity_opt))
+                                    {
+                                        // Deny enabling IR Reflectivity on ROI != 20% [RS5-8358]
+                                        if (0.2f == _roi_percent)
+                                            ds.set_option(RS2_OPTION_ENABLE_IR_REFLECTIVITY,
+                                                current_ir_reflectivity_opt);
+                                        else
+                                            _error_message
+                                            = "Please set 'VGA' resolution, 'Max Range' preset and "
+                                            "20% ROI before enabling IR Reflectivity";
+                                    }
+
+                                    if (ImGui::IsItemHovered())
+                                    {
+                                        ImGui::SetTooltip(
+                                            "%s",
+                                            ds.get_option_description(
+                                                RS2_OPTION_ENABLE_IR_REFLECTIVITY ) );
+                                    }
+                                }
+                            }
+                        }
+                        catch (const std::exception& e)
+                        {
+                            _error_message = e.what();
+                        }
+
                         ImGui::SetCursorPosX(col0);
                         ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5);
 
@@ -764,7 +842,28 @@ namespace rs2
                 if (dpt)
                     _metrics_model.begin_process_frame(dpt);
             }
-            catch (...){} // on device disconnect
+            catch( const error & e )
+            {
+                // Can occur on device disconnect
+                _viewer_model.not_model->output.add_log( RS2_LOG_SEVERITY_DEBUG,
+                                                         __FILE__,
+                                                         __LINE__,
+                                                         error_to_string( e ) );
+            }
+            catch( const std::exception & e )
+            {
+                _viewer_model.not_model->output.add_log( RS2_LOG_SEVERITY_ERROR,
+                                                         __FILE__,
+                                                         __LINE__,
+                                                         e.what() );
+            }
+            catch( ... )
+            {
+                _viewer_model.not_model->output.add_log( RS2_LOG_SEVERITY_ERROR,
+                                                         __FILE__,
+                                                         __LINE__,
+                                                         "Unknown error occurred" );
+            }
 
         }
 
@@ -774,10 +873,15 @@ namespace rs2
             bool save = false;
             subdevice_ui_selection prev_ui;
 
-            if (_depth_sensor_model)
+            auto dev = _pipe.get_active_profile().get_device();
+
+            if (_device_model && _depth_sensor_model)
             {
-                prev_ui = _depth_sensor_model->last_valid_ui;
-                save = true;
+                if( ! _first_frame )
+                {
+                    prev_ui = _depth_sensor_model->last_valid_ui;
+                    save = true;
+                }
 
                 // Clean-up the models for new configuration
                 for (auto&& s : _device_model->subdevices)
@@ -787,28 +891,37 @@ namespace rs2
                 _viewer_model.selected_depth_source_uid = -1;
                 _viewer_model.selected_tex_source_uid = -1;
             }
-
-            auto dev = _pipe.get_active_profile().get_device();
-            auto dpt_sensor = std::make_shared<sensor>(dev.first<depth_sensor>());
-            _device_model = std::shared_ptr<rs2::device_model>(new device_model(dev, _error_message, _viewer_model,false));
+            // Create a new device model - reset all UI the new device
+            _device_model = std::shared_ptr<rs2::device_model>(new device_model(dev, _error_message, _viewer_model, _first_frame, false));
+            
+            // Get device depth sensor model
+            for (auto&& sub : _device_model->subdevices)
+            {
+                if (sub->s->is<depth_sensor>())
+                {
+                    _depth_sensor_model = sub;
+                    break;
+                }
+            }
+        
             _device_model->show_depth_only = true;
             _device_model->show_stream_selection = false;
-            std::shared_ptr< atomic_objects_in_frame > no_detected_objects;
-            _depth_sensor_model = std::make_shared<rs2::subdevice_model>(dev, dpt_sensor, no_detected_objects, _error_message, _viewer_model);
 
             _depth_sensor_model->draw_streams_selector = false;
             _depth_sensor_model->draw_fps_selector = true;
+            _depth_sensor_model->allow_change_resolution_while_streaming = true;
+            _depth_sensor_model->allow_change_fps_while_streaming = true;
 
             // Retrieve stereo baseline for supported devices
             auto baseline_mm = -1.f;
-            auto profiles = dpt_sensor->get_stream_profiles();
+            auto profiles = _depth_sensor_model->s->get_stream_profiles();
             auto right_sensor = std::find_if(profiles.begin(), profiles.end(), [](rs2::stream_profile& p)
             { return (p.stream_index() == 2) && (p.stream_type() == RS2_STREAM_INFRARED); });
 
             if (right_sensor != profiles.end())
             {
                 auto left_sensor = std::find_if(profiles.begin(), profiles.end(), [](rs2::stream_profile& p)
-                { return (p.stream_index() == 0) && (p.stream_type() == RS2_STREAM_DEPTH); });
+                { return (p.stream_index() == 1) && (p.stream_type() == RS2_STREAM_INFRARED); });
                 try
                 {
                     auto extrin = (*left_sensor).get_extrinsics_to(*right_sensor);
@@ -834,6 +947,7 @@ namespace rs2
                 if (!sub->s->is<depth_sensor>()) continue;
 
                 sub->show_algo_roi = true;
+                sub->roi_percentage = _roi_percent;
                 auto profiles = _pipe.get_active_profile().get_streams();
                 sub->streaming = true;      // The streaming activated externally to the device_model
                 sub->depth_colorizer->set_option(RS2_OPTION_HISTOGRAM_EQUALIZATION_ENABLED, 0.f);
@@ -846,6 +960,7 @@ namespace rs2
                     _viewer_model.begin_stream(sub, profile);
                     _viewer_model.streams[profile.unique_id()].texture->colorize = sub->depth_colorizer;
                     _viewer_model.streams[profile.unique_id()].texture->yuy2rgb = sub->yuy2rgb;
+                    _viewer_model.streams[profile.unique_id()].texture->y411 = sub->y411;
 
                     if (profile.stream_type() == RS2_STREAM_DEPTH)
                     {
@@ -1055,7 +1170,7 @@ namespace rs2
 
             const auto left_x = 295.f;
             const auto indicator_flicker_rate = 200;
-            auto alpha_value = static_cast<float>(fabs(sin(_model_timer.elapsed_ms() / indicator_flicker_rate)));
+            auto alpha_value = static_cast<float>(fabs(sin(_model_timer.get_elapsed_ms() / indicator_flicker_rate)));
 
             _trending_up.add_value(has_trend(true));
             _trending_down.add_value(has_trend(false));
@@ -1107,7 +1222,7 @@ namespace rs2
                 ImGui::PushStyleColor(ImGuiCol_FrameBg, device_info_color);
                 ImGui::PushStyleColor(ImGuiCol_Text, light_grey);
                 ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, regular_blue);
-                std::string did = to_string() << _id << "-desc";
+                std::string did = rsutils::string::from() << _id << "-desc";
                 ImVec2 desc_size = { 270, 50 };
                 auto lines = std::count(_description.begin(), _description.end(), '\n') + 1;
                 desc_size.y = lines * 20.f;
@@ -1212,15 +1327,19 @@ namespace rs2
                     //Capture raw frame
                     auto filename = filename_base + "_" + stream_desc + "_" + fn.str() + ".raw";
                     if (!save_frame_raw_data(filename, original_frame))
-                        _viewer_model.not_model->add_notification(notification_data{ to_string() << "Failed to save frame raw data  " << filename,
-                            RS2_LOG_SEVERITY_INFO, RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR });
+                        _viewer_model.not_model->add_notification(
+                            notification_data{ "Failed to save frame raw data  " + filename,
+                                               RS2_LOG_SEVERITY_INFO,
+                                               RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR } );
 
 
                     // And the frame's attributes
                     filename = filename_base + "_" + stream_desc + "_" + fn.str() + "_metadata.csv";
                     if (!frame_metadata_to_csv(filename, original_frame))
-                        _viewer_model.not_model->add_notification(notification_data{ to_string() << "Failed to save frame metadata file " << filename,
-                            RS2_LOG_SEVERITY_INFO, RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR });
+                        _viewer_model.not_model->add_notification(
+                            notification_data{ "Failed to save frame metadata file " + filename,
+                                               RS2_LOG_SEVERITY_INFO,
+                                               RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR } );
 
                 }
             }

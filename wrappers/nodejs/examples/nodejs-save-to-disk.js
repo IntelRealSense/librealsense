@@ -11,7 +11,7 @@ const rs2 = require('../index.js');
 let colorizer = new rs2.Colorizer();
 let pipeline = new rs2.Pipeline();
 
-pipeline.start();
+pipeline.start(pipeline.autoConfig);
 
 for (let i = 0; i < 30; i++) {
   pipeline.waitForFrames();

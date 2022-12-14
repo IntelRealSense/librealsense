@@ -18,10 +18,19 @@ diff --git a/drivers/media/usb/uvc/uvc_driver.c b/drivers/media/usb/uvc/uvc_driv
 index f50a2b148..534f49135 100644
 --- a/drivers/media/usb/uvc/uvc_driver.c
 +++ b/drivers/media/usb/uvc/uvc_driver.c
-@@ -2771,6 +2771,258 @@ static const struct usb_device_id uvc_ids[] = {
+@@ -2838,6 +2838,276 @@ static const struct usb_device_id uvc_ids[] = {
  	  .bInterfaceSubClass	= 1,
  	  .bInterfaceProtocol	= 0,
  	  .driver_info		= UVC_QUIRK_FORCE_Y8 },
++	  /* Intel SR306 depth camera */
++	{ .match_flags		= USB_DEVICE_ID_MATCH_DEVICE
++				| USB_DEVICE_ID_MATCH_INT_INFO,
++	  .idVendor			= 0x8086,
++	  .idProduct		= 0x0aa3,
++	  .bInterfaceClass	= USB_CLASS_VIDEO,
++	  .bInterfaceSubClass	= 1,
++	  .bInterfaceProtocol	= 0,
++	  .driver_info		= UVC_QUIRK_APPEND_UVC_HEADER },
 +	  /* Intel SR300 depth camera */
 +	{ .match_flags		= USB_DEVICE_ID_MATCH_DEVICE
 +				| USB_DEVICE_ID_MATCH_INT_INFO,
@@ -274,6 +283,15 @@ index f50a2b148..534f49135 100644
 +	  .bInterfaceSubClass	= 1,
 +	  .bInterfaceProtocol	= 0,
 +	  .driver_info		= UVC_QUIRK_APPEND_UVC_HEADER },
++	  /* Intel L535 */
++	{ .match_flags		= USB_DEVICE_ID_MATCH_DEVICE
++				| USB_DEVICE_ID_MATCH_INT_INFO,
++	  .idVendor			= 0x8086,
++	  .idProduct		= 0x0b68,
++	  .bInterfaceClass	= USB_CLASS_VIDEO,
++	  .bInterfaceSubClass	= 1,
++	  .bInterfaceProtocol	= 0,
++	  .driver_info		= UVC_QUIRK_APPEND_UVC_HEADER },
  	/* Generic USB Video Class */
  	{ USB_INTERFACE_INFO(USB_CLASS_VIDEO, 1, UVC_PC_PROTOCOL_UNDEFINED) },
  	{ USB_INTERFACE_INFO(USB_CLASS_VIDEO, 1, UVC_PC_PROTOCOL_15) },
@@ -281,7 +299,7 @@ diff --git a/drivers/media/usb/uvc/uvc_video.c b/drivers/media/usb/uvc/uvc_video
 index fb86d6af3..462dffb00 100644
 --- a/drivers/media/usb/uvc/uvc_video.c
 +++ b/drivers/media/usb/uvc/uvc_video.c
-@@ -1222,8 +1222,13 @@ static void uvc_video_decode_bulk(struct urb *urb, struct uvc_streaming *stream,
+@@ -1235,8 +1235,13 @@ static void uvc_video_decode_bulk(struct urb *urb, struct uvc_streaming *stream,
  		do {
  			ret = uvc_video_decode_start(stream, buf, mem, len);
  			if (ret == -EAGAIN)
@@ -297,7 +315,7 @@ index fb86d6af3..462dffb00 100644
  		} while (ret == -EAGAIN);
  
  		/* If an error occurred skip the rest of the payload. */
-@@ -1255,8 +1260,13 @@ static void uvc_video_decode_bulk(struct urb *urb, struct uvc_streaming *stream,
+@@ -1268,8 +1273,13 @@ static void uvc_video_decode_bulk(struct urb *urb, struct uvc_streaming *stream,
  		if (!stream->bulk.skip_payload && buf != NULL) {
  			uvc_video_decode_end(stream, buf, stream->bulk.header,
  				stream->bulk.payload_size);
@@ -317,7 +335,7 @@ diff --git a/drivers/media/usb/uvc/uvcvideo.h b/drivers/media/usb/uvc/uvcvideo.h
 index 8c99aabef..15dd0cf8a 100644
 --- a/drivers/media/usb/uvc/uvcvideo.h
 +++ b/drivers/media/usb/uvc/uvcvideo.h
-@@ -187,7 +187,7 @@
+@@ -202,7 +202,7 @@
  /* Maximum number of packets per URB. */
  #define UVC_MAX_PACKETS		32
  /* Maximum status buffer size in bytes of interrupt URB. */
@@ -326,7 +344,7 @@ index 8c99aabef..15dd0cf8a 100644
  
  #define UVC_CTRL_CONTROL_TIMEOUT	500
  #define UVC_CTRL_STREAMING_TIMEOUT	5000
-@@ -208,6 +208,7 @@
+@@ -223,6 +223,7 @@
  #define UVC_QUIRK_RESTRICT_FRAME_RATE	0x00000200
  #define UVC_QUIRK_RESTORE_CTRLS_ON_INIT	0x00000400
  #define UVC_QUIRK_FORCE_Y8		0x00000800

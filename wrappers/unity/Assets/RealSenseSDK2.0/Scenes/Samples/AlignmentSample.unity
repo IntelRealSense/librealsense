@@ -409,7 +409,6 @@ GameObject:
   m_Component:
   - component: {fileID: 413936642}
   - component: {fileID: 413936641}
-  - component: {fileID: 413936640}
   - component: {fileID: 413936639}
   - component: {fileID: 413936638}
   m_Layer: 0
@@ -427,13 +426,6 @@ AudioListener:
   m_GameObject: {fileID: 413936637}
   m_Enabled: 1
 --- !u!124 &413936639
-Behaviour:
-  m_ObjectHideFlags: 0
-  m_PrefabParentObject: {fileID: 0}
-  m_PrefabInternal: {fileID: 0}
-  m_GameObject: {fileID: 413936637}
-  m_Enabled: 1
---- !u!92 &413936640
 Behaviour:
   m_ObjectHideFlags: 0
   m_PrefabParentObject: {fileID: 0}

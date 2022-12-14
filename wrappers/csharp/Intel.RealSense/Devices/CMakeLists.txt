@@ -1,6 +1,9 @@
 target_sources(${LRS_DOTNET_TARGET}
     PRIVATE
         "${CMAKE_CURRENT_LIST_DIR}/AdvancedDevice.cs"
+        "${CMAKE_CURRENT_LIST_DIR}/SerializableDevice.cs"
+        "${CMAKE_CURRENT_LIST_DIR}/AutoCalibratedDevice.cs"
+        "${CMAKE_CURRENT_LIST_DIR}/CalibratedDevice.cs"
         "${CMAKE_CURRENT_LIST_DIR}/DebugDevice.cs"
         "${CMAKE_CURRENT_LIST_DIR}/Device.cs"
         "${CMAKE_CURRENT_LIST_DIR}/DeviceList.cs"
@@ -10,4 +13,5 @@ target_sources(${LRS_DOTNET_TARGET}
         "${CMAKE_CURRENT_LIST_DIR}/UpdatableDevice.cs"
         "${CMAKE_CURRENT_LIST_DIR}/UpdateDevice.cs"
         "${CMAKE_CURRENT_LIST_DIR}/FirmwareLogsDevice.cs"
+        "${CMAKE_CURRENT_LIST_DIR}/ProxyDevice.cs"
 )

@@ -27,7 +27,10 @@
 #include "fw-update-helper.h"
 #include "updates-model.h"
 #include "calibration-model.h"
-#include "cah-model.h"
+#include <rsutils/time/periodic-timer.h>
+#include <rsutils/number/stabilized-value.h>
+#include "reflectivity/reflectivity.h"
+#include "option-model.h"
 
 ImVec4 from_rgba(uint8_t r, uint8_t g, uint8_t b, uint8_t a, bool consistent_color = false);
 ImVec4 operator+(const ImVec4& c, float v);
@@ -78,8 +81,8 @@ inline ImVec4 blend(const ImVec4& c, float a)
 
 namespace rs2
 {
-    constexpr const char* server_versions_db_url = "http://realsense-hw-public.s3-eu-west-1.amazonaws.com/Releases/rs_versions_db.json";
-    
+    constexpr const char* server_versions_db_url = "https://librealsense.intel.com/Releases/rs_versions_db.json";
+
     void prepare_config_file();
 
     bool frame_metadata_to_csv( const std::string & filename, rs2::frame frame );
@@ -91,11 +94,12 @@ namespace rs2
     void open_issue(std::string body);
 
     class device_model;
+    class option_model;
 
     typedef std::vector<std::unique_ptr<device_model>> device_models_list;
 
     void open_issue(const device_models_list& devices);
-    
+
     void hyperlink(ux_window& window, const char* title, const char* link);
 
     struct textual_icon
@@ -143,6 +147,8 @@ namespace rs2
         {
             static const char* is_3d_view          { "viewer_model.is_3d_view" };
             static const char* ground_truth_r      { "viewer_model.ground_truth_r" };
+            static const char* target_width_r      { "viewer_model.target_width_r" };
+            static const char* target_height_r     { "viewer_model.target_height_r" };
             static const char* continue_with_ui_not_aligned { "viewer_model.continue_with_ui_not_aligned" };
             static const char* continue_with_current_fw{ "viewer_model.continue_with_current_fw" };
             static const char* settings_tab        { "viewer_model.settings_tab" };
@@ -256,6 +262,7 @@ namespace rs2
         static const textual_icon mail                     { u8"\uF01C" };
         static const textual_icon cube                     { u8"\uf1b2" };
         static const textual_icon measure                  { u8"\uf545" };
+        static const textual_icon wifi                     { u8"\uf1eb" };
     }
 
     class subdevice_model;
@@ -263,19 +270,7 @@ namespace rs2
 
     void imgui_easy_theming(ImFont*& font_14, ImFont*& font_18, ImFont*& monofont);
 
-    // avoid display the following options
-    bool static skip_option(rs2_option opt)
-    {
-        if (opt == RS2_OPTION_STREAM_FILTER ||
-            opt == RS2_OPTION_STREAM_FORMAT_FILTER ||
-            opt == RS2_OPTION_STREAM_INDEX_FILTER ||
-            opt == RS2_OPTION_FRAMES_QUEUE_SIZE ||
-            opt == RS2_OPTION_SENSOR_MODE || 
-            opt == RS2_OPTION_TRIGGER_CAMERA_ACCURACY_HEALTH ||
-            opt == RS2_OPTION_RESET_CAMERA_ACCURACY_HEALTH)
-            return true;
-        return false;
-    }
+    rs2_sensor_mode resolution_from_width_height(int width, int height);
 
     template<class T>
     void sort_together(std::vector<T>& vec, std::vector<std::string>& names)
@@ -314,36 +309,6 @@ namespace rs2
     std::vector<std::pair<std::string, std::string>> get_devices_names(const device_list& list);
     std::vector<std::string> get_device_info(const device& dev, bool include_location = true);
 
-    class option_model
-    {
-    public:
-        bool draw(std::string& error_message, notifications_model& model,bool new_line=true, bool use_option_name = true);
-        void update_supported(std::string& error_message);
-        void update_read_only_status(std::string& error_message);
-        void update_all_fields(std::string& error_message, notifications_model& model);
-
-        bool draw_option(bool update_read_only_options, bool is_streaming,
-            std::string& error_message, notifications_model& model);
-
-        rs2_option opt;
-        option_range range;
-        std::shared_ptr<options> endpoint;
-        bool* invalidate_flag = nullptr;
-        bool supported = false;
-        bool read_only = false;
-        float value = 0.0f;
-        std::string label = "";
-        std::string id = "";
-        subdevice_model* dev;
-        std::function<bool(option_model&, std::string&, notifications_model&)> custom_draw_method = nullptr;
-        bool edit_mode = false;
-        std::string edit_value = "";
-    private:
-        bool is_all_integers() const;
-        bool is_enum() const;
-        bool is_checkbox() const;
-    };
-
     class frame_queues
     {
     public:
@@ -378,7 +343,7 @@ namespace rs2
     class viewer_model;
     class subdevice_model;
 
-    void save_processing_block_to_config_file(const char* name, 
+    void save_processing_block_to_config_file(const char* name,
         std::shared_ptr<rs2::processing_block> pb, bool enable = true);
 
     class syncer_model
@@ -392,16 +357,45 @@ namespace rs2
             stop();
             std::lock_guard<std::mutex> lock(_mutex);
             auto shared_syncer = std::make_shared<rs2::asynchronous_syncer>();
-            rs2::frame_queue q;
 
-           _syncers.push_back({shared_syncer,q});
-           shared_syncer->start([this, q](rs2::frame f)
-           {
-               q.enqueue(f);
-               on_frame();
-           });
-           start();
-           return shared_syncer;
+            // This queue stores the output from the syncer, and has to be large enough to deal with
+            // slowdowns on the processing/rendering threads of the Viewer to avoid frame drops. Frame
+            // drops can be pretty noticeable to the user!
+            //
+            // The syncer may also give out frames in bursts. This commonly happens, for example, when
+            // streams have different FPS, and is a known issue. Even with same-FPS streams, the actual
+            // FPS may change depending on a number of variables (e.g., exposure). When FPS is not the
+            // same between the streams, a latency is introduced and bursts from the syncer are the
+            // result.
+            //
+            // Bursts are so fast the other threads will never have a chance to pull them in time. For
+            // example, the syncer output can be the following, all one after the other:
+            //
+            //     [Color: timestamp 100 (arrived @ 105), Infrared: timestamp 100 (arrived at 150)]
+            //     [Color: timestamp 116 (arrived @ 120)]
+            //     [Color: timestamp 132 (arrived @ 145)]
+            //
+            // They are received one at a time & pushed into the syncer, which will wait and keep all of
+            // them inside until a match with Infrared is possible. Once that happens, it will output
+            // everything it has as a burst.
+            //
+            // The queue size must therefore be big enough to deal with expected latency: the more
+            // latency, the bigger the burst.
+            //
+            // Another option is to use an aggregator, similar to the behavior inside the pipeline.
+            // But this still doesn't solve the issue of the bursts: we'll get frame drops in the fast
+            // stream instead of the slow.
+            //
+            rs2::frame_queue q(10);
+
+            _syncers.push_back({shared_syncer,q});
+            shared_syncer->start([this, q](rs2::frame f)
+            {
+                q.enqueue(f);
+                on_frame();
+            });
+            start();
+            return shared_syncer;
         }
 
         void remove_syncer(std::shared_ptr<rs2::asynchronous_syncer> s)
@@ -495,7 +489,7 @@ namespace rs2
     {
     public:
         tm2_model() : _trajectory_tracking(true)
-        {   
+        {
         }
         void draw_trajectory(bool is_trajectory_button_pressed);
         void update_model_trajectory(const pose_frame& pose, bool track);
@@ -558,16 +552,16 @@ namespace rs2
             bool* options_invalidated,
             std::string& error_message);
 
-        subdevice_model(device& dev, std::shared_ptr<sensor> s, std::shared_ptr< atomic_objects_in_frame > objects, std::string& error_message, viewer_model& viewer);
+        subdevice_model(device& dev, std::shared_ptr<sensor> s, std::shared_ptr< atomic_objects_in_frame > objects, std::string& error_message, viewer_model& viewer, bool new_device_connected = true);
         ~subdevice_model();
 
         bool is_there_common_fps() ;
         bool supports_on_chip_calib();
-        bool draw_stream_selection();
+        bool draw_stream_selection(std::string& error_message);
         bool is_selected_combination_supported();
-        std::vector<stream_profile> get_selected_profiles();
+        std::vector<stream_profile> get_selected_profiles(bool enforce_inter_stream_policies = true);
         std::vector<stream_profile> get_supported_profiles();
-        void stop(viewer_model& viewer);
+        void stop(std::shared_ptr<notifications_model> not_model);
         void play(const std::vector<stream_profile>& profiles, viewer_model& viewer, std::shared_ptr<rs2::asynchronous_syncer>);
         bool is_synchronized_frame(viewer_model& viewer, const frame& f);
         void update(std::string& error_message, notifications_model& model);
@@ -623,6 +617,9 @@ namespace rs2
 
         viewer_model& viewer;
         std::function<void()> on_frame = []{};
+        
+        std::ofstream _fout;
+
         std::shared_ptr<sensor> s;
         device dev;
         tm2_model tm2;
@@ -654,7 +651,8 @@ namespace rs2
         int next_option = 0;
         std::vector<rs2_option> supported_options;
         bool streaming = false;
-
+        bool allow_change_resolution_while_streaming = false;
+        bool allow_change_fps_while_streaming = false;
         rect normalized_zoom{0, 0, 1, 1};
         rect roi_rect;
         bool auto_exposure_enabled = false;
@@ -668,18 +666,34 @@ namespace rs2
 
         bool draw_streams_selector = true;
         bool draw_fps_selector = true;
+        bool draw_advanced_mode_prompt = false;
 
         region_of_interest algo_roi;
         bool show_algo_roi = false;
+        float roi_percentage;
 
         std::shared_ptr<rs2::colorizer> depth_colorizer;
         std::shared_ptr<rs2::yuy_decoder> yuy2rgb;
+        std::shared_ptr<rs2::y411_decoder> y411;
         std::shared_ptr<processing_block_model> zero_order_artifact_fix;
         std::shared_ptr<rs2::depth_huffman_decoder> depth_decoder;
 
         std::vector<std::shared_ptr<processing_block_model>> post_processing;
         bool post_processing_enabled = true;
         std::vector<std::shared_ptr<processing_block_model>> const_effects;
+
+        bool uvmapping_calib_full = false;
+
+    private:
+        std::pair<int, int> get_max_resolution(rs2_stream stream) const;
+        void sort_resolutions(std::vector<std::pair<int, int>>& resolutions) const;
+        bool is_ir_calibration_profile() const;
+        
+        // used in method get_max_resolution per stream
+        std::map<rs2_stream, std::vector<std::pair<int, int>>> resolutions_per_stream;
+
+        const float SHORT_RANGE_MIN_DISTANCE = 0.05f; // 5 cm
+        const float SHORT_RANGE_MAX_DISTANCE = 4.0f;  // 4 meters
     };
 
     class viewer_model;
@@ -687,28 +701,27 @@ namespace rs2
     void outline_rect(const rect& r);
     void draw_rect(const rect& r, int line_width = 1);
 
-
     class stream_model
     {
     public:
         stream_model();
         std::shared_ptr<texture_buffer> upload_frame(frame&& f);
-        bool is_stream_visible();
+        bool is_stream_visible() const;
         void update_ae_roi_rect(const rect& stream_rect, const mouse_info& mouse, std::string& error_message);
         void show_frame(const rect& stream_rect, const mouse_info& g, std::string& error_message);
         rect get_normalized_zoom(const rect& stream_rect, const mouse_info& g, bool is_middle_clicked, float zoom_val);
 
         bool is_stream_alive();
-
-        void show_stream_footer(ImFont* font, const rect& stream_rect,const mouse_info& mouse, viewer_model& viewer);
+        void show_stream_footer(ImFont* font, const rect &stream_rect, const mouse_info& mouse, const std::map<int, stream_model> &streams, viewer_model& viewer);
         void show_stream_header(ImFont* font, const rect& stream_rect, viewer_model& viewer);
         void show_stream_imu(ImFont* font, const rect& stream_rect, const rs2_vector& axis, const mouse_info& mouse);
-        void show_stream_pose(ImFont* font, const rect& stream_rect, const rs2_pose& pose_data, 
+        void show_stream_pose(ImFont* font, const rect& stream_rect, const rs2_pose& pose_data,
             rs2_stream stream_type, bool fullScreen, float y_offset, viewer_model& viewer);
 
         void snapshot_frame(const char* filename,viewer_model& viewer) const;
 
-        void begin_stream(std::shared_ptr<subdevice_model> d, rs2::stream_profile p);
+        void begin_stream(std::shared_ptr<subdevice_model> d, rs2::stream_profile p, const viewer_model& viewer);
+        bool draw_reflectivity(int x, int y, rs2::depth_sensor ds, const std::map<int, stream_model> &streams, std::stringstream &ss, bool same_line = false);
         rect layout;
         std::shared_ptr<texture_buffer> texture;
         float2 size;
@@ -724,6 +737,7 @@ namespace rs2
         fps_calc            fps, view_fps;
         int                 count = 0;
         rect                roi_display_rect{};
+        float               roi_percentage = 0.4f;
         frame_metadata      frame_md;
         bool                capturing_roi       = false;    // active modification of roi
         std::shared_ptr<subdevice_model> dev;
@@ -741,6 +755,13 @@ namespace rs2
         bool show_metadata = false;
 
         animated<float> _info_height{ 0.f };
+        int _prev_mouse_pos_x = 0;
+        int _prev_mouse_pos_y = 0;
+
+    private:
+        std::unique_ptr< reflectivity > _reflectivity;
+        rsutils::number::stabilized_value<float> _stabilized_reflectivity;
+
     };
 
     std::pair<std::string, std::string> get_device_name(const device& dev);
@@ -753,7 +774,7 @@ namespace rs2
         typedef std::function<void(std::function<void()> load)> json_loading_func;
 
         void reset();
-        explicit device_model(device& dev, std::string& error_message, viewer_model& viewer, bool allow_remove=true);
+        explicit device_model(device& dev, std::string& error_message, viewer_model& viewer, bool new_device_connected = true, bool allow_remove=true);
         ~device_model();
         void start_recording(const std::string& path, std::string& error_message);
         void stop_recording(viewer_model& viewer);
@@ -761,6 +782,9 @@ namespace rs2
         void resume_record();
 
         void refresh_notifications(viewer_model& viewer);
+        bool check_for_bundled_fw_update( const rs2::context & ctx,
+                                          std::shared_ptr< notifications_model > not_model,
+                                          bool reset_delay = false );
 
         int draw_playback_panel(ux_window& window, ImFont* font, viewer_model& view);
         bool draw_advanced_controls(viewer_model& view, ux_window& window, std::string& error_message);
@@ -777,11 +801,10 @@ namespace rs2
         void begin_update(std::vector<uint8_t> data,
             viewer_model& viewer, std::string& error_message);
         void begin_update_unsigned(viewer_model& viewer, std::string& error_message);
-        void check_for_device_updates(rs2::context& ctx, std::shared_ptr<updates_model> updates);
+        void check_for_device_updates(viewer_model& viewer, bool activated_by_user = false);
 
 
         std::shared_ptr< atomic_objects_in_frame > get_detected_objects() const { return _detected_objects; }
-        bool is_cah_model_enabled() const { return _accuracy_health_model ? true : false; }
 
         std::vector<std::shared_ptr<subdevice_model>> subdevices;
         std::shared_ptr<syncer_model> syncer;
@@ -807,16 +830,10 @@ namespace rs2
 
         std::vector<std::shared_ptr<notification_model>> related_notifications;
 
-        bool show_trigger_camera_accuracy_health_popup = false;
-        bool show_reset_camera_accuracy_health_popup = false;
-
     private:
         // This class is in charge of camera accuracy health window parameters,
         // Needed as a member for reseting the window memory on device disconnection.
-       
 
-        std::unique_ptr< cah_model > _accuracy_health_model;  // If this device does not support CAH feature,
-                                                              // the pointer will point to nullptr
 
         void draw_info_icon(ux_window& window, ImFont* font, const ImVec2& size);
         int draw_seek_bar();
@@ -843,11 +860,20 @@ namespace rs2
 
         void load_viewer_configurations(const std::string& json_str);
         void save_viewer_configurations(std::ofstream& outfile, nlohmann::json& j);
+        void handle_online_sw_update(
+            std::shared_ptr< notifications_model > nm,
+            std::shared_ptr< sw_update::dev_updates_profile::update_profile > update_profile,
+            bool reset_delay = false );
 
+        bool handle_online_fw_update(
+            const context & ctx,
+            std::shared_ptr< notifications_model > nm,
+            std::shared_ptr< sw_update::dev_updates_profile::update_profile > update_profile,
+            bool reset_delay = false );
 
         std::shared_ptr<recorder> _recorder;
         std::vector<std::shared_ptr<subdevice_model>> live_subdevices;
-        periodic_timer      _update_readonly_options_timer;
+        rsutils::time::periodic_timer      _update_readonly_options_timer;
         bool pause_required = false;
         std::shared_ptr< atomic_objects_in_frame > _detected_objects;
         std::shared_ptr<updates_model> _updates;

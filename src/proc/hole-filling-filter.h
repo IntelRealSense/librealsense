@@ -43,8 +43,8 @@ namespace librealsense
                 holes_fill_nearest(data, _width, _height, _stride);
                 break;
             default:
-                throw invalid_value_exception(to_string()
-                    << "Unsupported hole filling mode: " << _hole_filling_mode << " is out of range.");
+                throw invalid_value_exception( rsutils::string::from() << "Unsupported hole filling mode: "
+                                                                       << _hole_filling_mode << " is out of range." );
             }
         }
 
@@ -58,10 +58,10 @@ namespace librealsense
 
             T* p = image_data;
 
-            for (int j = 0; j < height; ++j)
+            for (size_t j = 0; j < height; ++j)
             {
                 ++p;
-                for (int i = 1; i < width; ++i)
+                for (size_t i = 1; i < width; ++i)
                 {
                     if (empty(p))
                         *p = *(p - 1);
@@ -83,7 +83,7 @@ namespace librealsense
             for (int j = 1; j < height - 1; ++j)
             {
                 ++p;
-                for (int i = 1; i < width; ++i)
+                for (size_t i = 1; i < width; ++i)
                 {
                     if (empty(p))
                     {
@@ -126,7 +126,7 @@ namespace librealsense
             for (int j = 1; j < height - 1; ++j)
             {
                 ++p;
-                for (int i = 1; i < width; ++i)
+                for (size_t i = 1; i < width; ++i)
                 {
                     if (empty(p))
                     {

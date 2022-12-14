@@ -95,7 +95,7 @@ std::string getSdpLineForVideoStream(rs2::video_stream_profile& t_videoStream, s
     str.append(getSdpLineForField("fps", t_videoStream.fps()));
     str.append(getSdpLineForField("stream_index", t_videoStream.stream_index()));
     str.append(getSdpLineForField("stream_type", t_videoStream.stream_type()));
-    str.append(getSdpLineForField("bpp", RsSensor::getStreamProfileBpp(t_videoStream.format())));
+    str.append(getSdpLineForField("bpp", getStreamProfileBpp(t_videoStream.format())));
     str.append(getSdpLineForField("cam_serial_num", device.get()->getDevice().get_info(RS2_CAMERA_INFO_SERIAL_NUMBER)));
     str.append(getSdpLineForField("usb_type", device.get()->getDevice().get_info(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR)));
     str.append(getSdpLineForField("compression", CompressionFactory::getIsEnabled()));
@@ -139,6 +139,11 @@ RsSimpleRTPSink ::RsSimpleRTPSink(UsageEnvironment& t_env,
     m_fFmtpSDPLine = new char[fmtpSDPLineMaxSize];
     std::string sdpStr = getSdpLineForVideoStream(t_videoStream, device);
     sprintf(m_fFmtpSDPLine, "a=fmtp:%d;%s\r\n", rtpPayloadType(), sdpStr.c_str());
+}
+
+RsSimpleRTPSink::~RsSimpleRTPSink()
+{
+    delete[] m_fFmtpSDPLine;
 }
 
 char const* RsSimpleRTPSink::auxSDPLine()

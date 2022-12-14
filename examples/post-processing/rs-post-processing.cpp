@@ -184,12 +184,12 @@ int main(int argc, char * argv[]) try
         if (colored_depth && original_points)
         {
             glViewport(0, int(h) / 2, int(w) / 2, int(h) / 2);
-            draw_pointcloud(int(w) / 2, int(h) / 2, original_view_orientation, original_points);
+            draw_pointcloud(int(w) / 2.f, int(h) / 2.f, original_view_orientation, original_points);
         }
         if (colored_filtered && filtered_points)
         {
             glViewport(int(w) / 2, int(h) / 2, int(w) / 2, int(h) / 2);
-            draw_pointcloud(int(w) / 2, int(h) / 2, filtered_view_orientation, filtered_points);
+            draw_pointcloud(int(w) / 2.f, int(h) / 2.f, filtered_view_orientation, filtered_points);
         }
         // Update time of current frame's arrival
         auto curr = std::chrono::high_resolution_clock::now();

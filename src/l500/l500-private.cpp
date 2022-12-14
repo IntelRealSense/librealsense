@@ -8,10 +8,11 @@
 #include "fw-update/fw-update-unsigned.h"
 #include "context.h"
 #include "core/video.h"
-#include "depth-to-rgb-calibration.h"
 #include "log.h"
 #include <chrono>
-#include "algo/depth-to-rgb-calibration/debug.h"
+
+#include <rsutils/string/from.h>
+
 
 using namespace std;
 
@@ -33,7 +34,6 @@ namespace librealsense
             
             assert( sizeof( pose ) == sizeof( rs2_extrinsics ) );
             auto res = *(rs2_extrinsics*)raw_data.data();
-            AC_LOG( DEBUG, "raw extrinsics data from camera:\n" << std::setprecision(15) << res );
             
             return from_raw_extrinsics(res);
         }
@@ -74,16 +74,9 @@ namespace librealsense
         float l500_temperature_options::query() const
         {
             if (!is_enabled())
-                throw wrong_api_call_sequence_exception("query option is allow only in streaming!");
-
-            auto res = _hw_monitor->send(command{ TEMPERATURES_GET });
-
-            if (res.size() < sizeof(temperatures))
-            {
-                throw std::runtime_error("Invalid result size!");
-            }
-
-            auto temperature_data = *(reinterpret_cast<temperatures*>((void*)res.data()));
+                throw wrong_api_call_sequence_exception("query is available during streaming only");
+            
+            auto temperature_data = _l500_depth_dev->get_temperatures();
 
             switch (_option)
             {
@@ -98,12 +91,16 @@ namespace librealsense
             case RS2_OPTION_HUMIDITY_TEMPERATURE:
                 return float(temperature_data.HUM_temperature);
             default:
-                throw invalid_value_exception(to_string() << _option << " is not temperature option!");
+                throw invalid_value_exception( rsutils::string::from() << _option << " is not temperature option!" );
             }
         }
 
-        l500_temperature_options::l500_temperature_options(hw_monitor* hw_monitor, rs2_option opt)
-            :_hw_monitor(hw_monitor), _option(opt)
+        l500_temperature_options::l500_temperature_options(l500_device *l500_depth_dev,
+                                                            rs2_option opt,
+                                                            const std::string& description )
+            :_l500_depth_dev(l500_depth_dev)
+            , _option( opt )
+            , _description( description )
         {
         }
 
@@ -201,5 +198,23 @@ namespace librealsense
         }
 
 
-    } // librealsense::ivcam2
+        float nest_option::query() const
+        {
+            auto temperature_data = _l500_depth_dev->get_temperatures();
+            return (float)(temperature_data.nest_avg);
+        }
+
+        rs2_sensor_mode get_resolution_from_width_height(int width, int height)
+        {
+            if ((width == 240 && height == 320) || (width == 320 && height == 240))
+                return RS2_SENSOR_MODE_QVGA;
+            else if ((width == 640 && height == 480) || (width == 480 && height == 640))
+                return RS2_SENSOR_MODE_VGA;
+            else if ((width == 1024 && height == 768) || (width == 768 && height == 1024))
+                return RS2_SENSOR_MODE_XGA;
+            else
+                throw std::runtime_error( rsutils::string::from() << "Invalid resolution " << width << "x" << height );
+        }
+
+} // librealsense::ivcam2
 } // namespace librealsense

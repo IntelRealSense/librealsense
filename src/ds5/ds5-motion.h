@@ -4,6 +4,7 @@
 #pragma once
 
 #include "ds5-device.h"
+#include <rsutils/string/from.h>
 
 namespace librealsense
 {
@@ -65,7 +66,9 @@ namespace librealsense
         rs2_extrinsics get_extrinsic_to(rs2_stream stream)
         {
             if (!(RS2_STREAM_ACCEL == stream) && !(RS2_STREAM_GYRO == stream) && !(RS2_STREAM_FISHEYE == stream))
-                throw std::runtime_error(to_string() << "TM1 Calibration does not provide extrinsic for : " << rs2_stream_to_string(stream) << " !");
+                throw std::runtime_error( rsutils::string::from()
+                                          << "TM1 Calibration does not provide extrinsic for : "
+                                          << rs2_stream_to_string( stream ) << " !" );
 
             auto fe_calib = calib_table.calibration_table.calib_model.fe_calibration;
 
@@ -93,7 +96,9 @@ namespace librealsense
             case RS2_STREAM_GYRO:
                 in_intr = calib_table.calibration_table.imu_calib_table.gyro_intrinsics; break;
             default:
-                throw std::runtime_error(to_string() << "TM1 IMU Calibration does not support intrinsic for : " << rs2_stream_to_string(stream) << " !");
+                throw std::runtime_error( rsutils::string::from()
+                                          << "TM1 IMU Calibration does not support intrinsic for : "
+                                          << rs2_stream_to_string( stream ) << " !" );
             }
             ds::imu_intrinsic out_intr{};
             for (auto i = 0; i < 3; i++)
@@ -149,17 +154,11 @@ namespace librealsense
                 _def_extr = { { 1, 0, 0, 0, 1, 0, 0, 0, 1 }, { -0.00552f, 0.0051f, 0.01174f} };
                 _imu_2_depth_rot = { {-1,0,0},{0,1,0},{0,0,-1} };
             }
-            else if (_pid == ds::RS455_PID)
+            else if (_pid == ds::RS455_PID || _pid == ds::RS457_PID)
             {
+                // D457 development
                 // D455 specific - Bosch BMI055
                 _def_extr = { { 1, 0, 0, 0, 1, 0, 0, 0, 1 },{ -0.03022f, 0.0074f, 0.01602f } };
-                _imu_2_depth_rot = { { -1,0,0 },{ 0,1,0 },{ 0,0,-1 } };
-            }
-            else if (_pid == ds::RS405_PID)
-            {
-                // D405 specific - Bosch BMI055
-                // TODO - verify with mechanical drawing
-                _def_extr = { { 1, 0, 0, 0, 1, 0, 0, 0, 1 },{ -0.00552f, 0.0051f, 0.01174f } };
                 _imu_2_depth_rot = { { -1,0,0 },{ 0,1,0 },{ 0,0,-1 } };
             }
             else if (_pid == ds::RS465_PID)
@@ -205,7 +204,9 @@ namespace librealsense
         rs2_extrinsics get_extrinsic_to(rs2_stream stream)
         {
             if (!(RS2_STREAM_ACCEL == stream) && !(RS2_STREAM_GYRO == stream))
-                throw std::runtime_error(to_string() << "Depth Module V2 does not support extrinsic for : " << rs2_stream_to_string(stream) << " !");
+                throw std::runtime_error( rsutils::string::from()
+                                          << "Depth Module V2 does not support extrinsic for : "
+                                          << rs2_stream_to_string( stream ) << " !" );
 
             return _extr;
         }
@@ -239,7 +240,9 @@ namespace librealsense
                     }
                     break;
                 default:
-                    throw std::runtime_error(to_string() << "Depth Module V2 does not provide intrinsic for stream type : " << rs2_stream_to_string(stream) << " !");
+                    throw std::runtime_error( rsutils::string::from()
+                                              << "Depth Module V2 does not provide intrinsic for stream type : "
+                                              << rs2_stream_to_string( stream ) << " !" );
             }
 
             return { in_intr.sensitivity, in_intr.bias, {0,0,0}, {0,0,0} };
@@ -359,7 +362,9 @@ namespace librealsense
                 }
                 break;
             default:
-                throw std::runtime_error(to_string() << "L515 does not provide intrinsic for stream type : " << rs2_stream_to_string(stream) << " !");
+                throw std::runtime_error( rsutils::string::from()
+                                          << "L515 does not provide intrinsic for stream type : "
+                                                      << rs2_stream_to_string( stream ) << " !" );
             }
 
             return{ in_intr.sensitivity, in_intr.bias,{ 0,0,0 },{ 0,0,0 } };
@@ -368,7 +373,8 @@ namespace librealsense
         rs2_extrinsics get_extrinsic_to(rs2_stream stream)
         {
             if (!(RS2_STREAM_ACCEL == stream) && !(RS2_STREAM_GYRO == stream))
-                throw std::runtime_error(to_string() << "L515 does not support extrinsic for : " << rs2_stream_to_string(stream) << " !");
+                throw std::runtime_error( rsutils::string::from() << "L515 does not support extrinsic for : "
+                                                                    << rs2_stream_to_string( stream ) << " !" );
 
             return _extr;
         }
@@ -402,38 +408,51 @@ namespace librealsense
         uint16_t _pid;
     };
 
-    class ds5_motion : public virtual ds5_device
+    class ds5_motion_base : public virtual ds5_device
     {
     public:
-        std::shared_ptr<synthetic_sensor> create_hid_device(std::shared_ptr<context> ctx,
-                                                      const std::vector<platform::hid_device_info>& all_hid_infos,
-                                                      const firmware_version& camera_fw_version);
-
-        ds5_motion(std::shared_ptr<context> ctx,
-                   const platform::backend_device_group& group);
-
         rs2_motion_device_intrinsic get_motion_intrinsics(rs2_stream) const;
 
         std::shared_ptr<auto_exposure_mechanism> register_auto_exposure_options(synthetic_sensor* ep,
                                                                                 const platform::extension_unit* fisheye_xu);
 
     private:
+        friend class ds5_motion_sensor;
 
+        std::shared_ptr<lazy<ds::imu_intrinsic>> _accel_intrinsic;
+        std::shared_ptr<lazy<ds::imu_intrinsic>> _gyro_intrinsic;
+        std::shared_ptr<lazy<rs2_extrinsics>>   _depth_to_imu;                  // Mechanical installation pose
+
+    protected:
+        ds5_motion_base(std::shared_ptr<context> ctx,
+                   const platform::backend_device_group& group);
+
+        std::shared_ptr<stream_interface> _accel_stream;
+        std::shared_ptr<stream_interface> _gyro_stream;
+
+        uint16_t _pid;    // product PID
+        std::shared_ptr<mm_calib_handler>        _mm_calib;
+        optional_value<uint8_t> _motion_module_device_idx;
+    };
+
+    class ds5_motion : public ds5_motion_base
+    {
+    public:
+        ds5_motion(std::shared_ptr<context> ctx,
+                   const platform::backend_device_group& group);
+        std::shared_ptr<synthetic_sensor> create_hid_device(std::shared_ptr<context> ctx,
+                                                      const std::vector<platform::hid_device_info>& all_hid_infos,
+                                                      const firmware_version& camera_fw_version);
+
+    private:
         friend class ds5_fisheye_sensor;
-        friend class ds5_hid_sensor;
-
         void initialize_fisheye_sensor(std::shared_ptr<context> ctx, const platform::backend_device_group& group);
 
         optional_value<uint8_t> _fisheye_device_idx;
-        optional_value<uint8_t> _motion_module_device_idx;
-
-        std::shared_ptr<mm_calib_handler>        _mm_calib;
-        std::shared_ptr<lazy<ds::imu_intrinsic>> _accel_intrinsic;
-        std::shared_ptr<lazy<ds::imu_intrinsic>> _gyro_intrinsic;
         lazy<std::vector<uint8_t>>              _fisheye_calibration_table_raw;
-        std::shared_ptr<lazy<rs2_extrinsics>>   _depth_to_imu;                  // Mechanical installation pose
 
-        uint16_t _pid;    // product PID
+    protected:
+        std::shared_ptr<stream_interface> _fisheye_stream;
 
         // Bandwidth parameters required for HID sensors
         // The Acceleration configuration will be resolved according to the IMU sensor type at run-time
@@ -446,9 +465,17 @@ namespace librealsense
         { { RS2_STREAM_GYRO,     {{unsigned(odr::IMU_FPS_200),  hid_fps_translation.at(odr::IMU_FPS_200)},
                                  { unsigned(odr::IMU_FPS_400),  hid_fps_translation.at(odr::IMU_FPS_400)}}} };
 
-    protected:
-        std::shared_ptr<stream_interface> _fisheye_stream;
-        std::shared_ptr<stream_interface> _accel_stream;
-        std::shared_ptr<stream_interface> _gyro_stream;
+
+    };
+
+    class ds5_motion_uvc : public ds5_motion_base
+    {
+    public:
+        ds5_motion_uvc(std::shared_ptr<context> ctx,
+                       const platform::backend_device_group& group);
+
+        std::shared_ptr<synthetic_sensor> create_uvc_device(std::shared_ptr<context> ctx,
+                                                      const std::vector<platform::uvc_device_info>& all_uvc_infos,
+                                                      const firmware_version& camera_fw_version);
     };
 }

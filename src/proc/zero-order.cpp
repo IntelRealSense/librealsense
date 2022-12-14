@@ -5,6 +5,9 @@
 #include <iomanip>
 #include "l500/l500-depth.h"
 
+#include <rsutils/string/from.h>
+
+
 const double METER_TO_MM = 1000;
 
 namespace librealsense
@@ -158,6 +161,22 @@ namespace librealsense
         return false;
     }
 
+    template<typename T>
+    void register_on_set_callback_on(const std::shared_ptr<T>& p_option)
+    {
+        auto weak_p_option = std::weak_ptr<T>(p_option);
+        p_option->on_set([weak_p_option](float val)
+        {
+            auto strong_p_option = weak_p_option.lock();
+            if(!strong_p_option) return;
+
+            if (!strong_p_option->is_valid(val))
+                throw invalid_value_exception( rsutils::string::from()
+                                               << "Unsupported value for " << strong_p_option->get_description() << ": "
+                                               << val << " is out of range." );
+        });
+    }
+
     zero_order::zero_order(std::shared_ptr<bool_option> is_enabled_opt)
        : generic_processing_block("Zero Order Fix"), _first_frame(true), _is_enabled_opt(is_enabled_opt),
         _resolutions_depth { 0 }
@@ -169,13 +188,7 @@ namespace librealsense
             115,
             &_options.ir_threshold,
             "IR threshold");
-        ir_threshold->on_set([ir_threshold](float val)
-        {
-            if (!ir_threshold->is_valid(val))
-                throw invalid_value_exception(to_string()
-                    << "Unsupported ir threshold " << val << " is out of range.");
-        });
-
+        register_on_set_callback_on(ir_threshold);
         register_option(static_cast<rs2_option>(RS2_OPTION_FILTER_ZO_IR_THRESHOLD), ir_threshold);
 
         auto rtd_high_threshold = std::make_shared<ptr_option<uint16_t>>(
@@ -185,13 +198,7 @@ namespace librealsense
             200,
             &_options.rtd_high_threshold,
             "RTD high threshold");
-        rtd_high_threshold->on_set([rtd_high_threshold](float val)
-        {
-            if (!rtd_high_threshold->is_valid(val))
-                throw invalid_value_exception(to_string()
-                    << "Unsupported rtd high threshold " << val << " is out of range.");
-        });
-
+        register_on_set_callback_on(rtd_high_threshold);
         register_option(static_cast<rs2_option>(RS2_OPTION_FILTER_ZO_RTD_HIGH_THRESHOLD), rtd_high_threshold);
 
         auto rtd_low_threshold = std::make_shared<ptr_option<uint16_t>>(
@@ -201,28 +208,17 @@ namespace librealsense
             200,
             &_options.rtd_low_threshold,
             "RTD high threshold");
-        rtd_low_threshold->on_set([rtd_low_threshold](float val)
-        {
-            if (!rtd_low_threshold->is_valid(val))
-                throw invalid_value_exception(to_string()
-                    << "Unsupported rtd low threshold " << val << " is out of range.");
-        });
-
+        register_on_set_callback_on(rtd_low_threshold);
         register_option(static_cast<rs2_option>(RS2_OPTION_FILTER_ZO_RTD_LOW_THRESHOLD), rtd_low_threshold);
 
         auto baseline = std::make_shared<ptr_option<float>>(
-            -50,
-            50,
-            1,
-            -10,
+            -50.f,
+            50.f,
+            1.f,
+            -10.f,
             &_options.baseline,
             "Baseline");
-        baseline->on_set([baseline](float val)
-        {
-            if (!baseline->is_valid(val))
-                throw invalid_value_exception(to_string()
-                    << "Unsupported patch size value " << val << " is out of range.");
-        });
+        register_on_set_callback_on(baseline);
         register_option(static_cast<rs2_option>(RS2_OPTION_FILTER_ZO_BASELINE), baseline);
     
         auto patch_size = std::make_shared<ptr_option<int>>(
@@ -232,12 +228,7 @@ namespace librealsense
             5,
             &_options.patch_size,
             "Patch size");
-        patch_size->on_set([patch_size](float val)
-        {
-            if (!patch_size->is_valid(val))
-                throw invalid_value_exception(to_string()
-                    << "Unsupported patch size value " << val << " is out of range.");
-        });
+        register_on_set_callback_on(patch_size);
         register_option(static_cast<rs2_option>(RS2_OPTION_FILTER_ZO_PATCH_SIZE), patch_size);
 
         auto zo_max = std::make_shared<ptr_option<int>>(
@@ -247,12 +238,7 @@ namespace librealsense
             1200,
             &_options.z_max,
             "ZO max value");
-        zo_max->on_set([zo_max](float val)
-        {
-            if (!zo_max->is_valid(val))
-                throw invalid_value_exception(to_string()
-                    << "Unsupported patch size value " << val << " is out of range.");
-        });
+        register_on_set_callback_on(zo_max);
         register_option(static_cast<rs2_option>(RS2_OPTION_FILTER_ZO_MAX_VALUE), zo_max);
 
         auto ir_min = std::make_shared<ptr_option<int>>(
@@ -262,12 +248,7 @@ namespace librealsense
             75,
             &_options.ir_min,
             "Minimum IR value (saturation)");
-        ir_min->on_set([ir_min](float val)
-        {
-            if (!ir_min->is_valid(val))
-                throw invalid_value_exception(to_string()
-                    << "Unsupported patch size value " << val << " is out of range.");
-        });
+        register_on_set_callback_on(ir_min);
         register_option(static_cast<rs2_option>(RS2_OPTION_FILTER_ZO_IR_MIN_VALUE), ir_min);
        
         auto offset = std::make_shared<ptr_option<int>>(
@@ -277,12 +258,7 @@ namespace librealsense
             10,
             &_options.threshold_offset,
             "Threshold offset");
-        offset->on_set([offset](float val)
-        {
-            if (!offset->is_valid(val))
-                throw invalid_value_exception(to_string()
-                    << "Unsupported patch size value " << val << " is out of range.");
-        });
+        register_on_set_callback_on(offset);
         register_option(static_cast<rs2_option>(RS2_OPTION_FILTER_ZO_THRESHOLD_OFFSET), offset);
         
         auto scale = std::make_shared<ptr_option<int>>(
@@ -292,12 +268,7 @@ namespace librealsense
             20,
             &_options.threshold_scale,
             "Threshold scale");
-        scale->on_set([scale](float val)
-        {
-            if (!scale->is_valid(val))
-                throw invalid_value_exception(to_string()
-                    << "Unsupported patch size value " << val << " is out of range.");
-        });
+        register_on_set_callback_on(scale);
         register_option(static_cast<rs2_option>(RS2_OPTION_FILTER_ZO_THRESHOLD_SCALE), scale);
     }
 
@@ -343,7 +314,7 @@ namespace librealsense
                 auto extendable = As<librealsense::extendable_interface>(sensor);
                 if (extendable && extendable->extend_to(TypeToExtension<librealsense::l500_depth_sensor_interface>::value, (void**)(&l5)))
                 {
-                    return l5->read_baseline();
+                    return l5->read_baseline() != 0;
                 }
             }
         }
@@ -376,7 +347,7 @@ namespace librealsense
     std::pair<int, int> zero_order::get_zo_point(const rs2::frame& frame)
     {
         auto intrinsics = try_read_intrinsics(frame);
-        return { intrinsics.zo.x, intrinsics.zo.y };
+        return { (int)(intrinsics.zo.x), (int)(intrinsics.zo.y) };
     }
 
     rs2::frame zero_order::process_frame(const rs2::frame_source& source, const rs2::frame& f)
@@ -436,7 +407,7 @@ namespace librealsense
         auto depth_intrinsics = depth_frame.get_profile().as<rs2::video_stream_profile>().get_intrinsics();
 
         auto depth_output = (uint16_t*)depth_out.get_data();
-        uint8_t* confidence_output;
+        uint8_t* confidence_output = nullptr;
 
         if (confidence_frame)
         {

@@ -6,7 +6,7 @@
 #include "context-libusb.h"
 #include "types.h"
 
-#include <libusb.h>
+#include "libusb.h"
 
 namespace librealsense
 {
