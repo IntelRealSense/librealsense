@@ -300,6 +300,8 @@ def check_throws( _lambda, expected_type, expected_msg = None, abort_if_failed =
     """
     We expect the lambda, when called, to raise an exception!
     """
+    if not callable( _lambda ):
+        raise RuntimeError( "expecting a function, not " + _lambda )
     try:
         _lambda()
     except Exception as e:
