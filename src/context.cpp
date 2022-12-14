@@ -30,13 +30,13 @@
 #include <librealsense2/h/rs_internal.h>
 #include <realdds/topics/device-info/device-info-msg.h>
 #include <realdds/topics/image/image-msg.h>
-#include <utilities/shared-ptr-singleton.h>
+#include <rsutils/shared-ptr-singleton.h>
 
-static utilities::shared_ptr_singleton< realdds::dds_participant > _dds_participant;  // common to all contexts!
-static utilities::shared_ptr_singleton< realdds::dds_device_watcher > _dds_watcher;
+static rsutils::shared_ptr_singleton< realdds::dds_participant > _dds_participant;  // common to all contexts!
+static rsutils::shared_ptr_singleton< realdds::dds_device_watcher > _dds_watcher;
 #endif //BUILD_WITH_DDS
 
-#include <utilities/json.h>
+#include <rsutils/json.h>
 using json = nlohmann::json;
 
 #ifdef WITH_TRACKING
@@ -193,16 +193,16 @@ namespace librealsense
         assert( _device_watcher->is_stopped() );
 
 #ifdef BUILD_WITH_DDS
-        if( utilities::json::get< bool >( settings, "dds-discovery", true ) )
+        if( rsutils::json::get< bool >( settings, "dds-discovery", true ) )
         {
             if( ! _dds_participant.instance()->is_valid() )
             {
                 _dds_participant->init(
-                    utilities::json::get< int >( settings, "dds-domain", 0 ),
-                    utilities::json::get< std::string >( settings, "dds-participant-name", "librealsense" ) );
+                    rsutils::json::get< int >( settings, "dds-domain", 0 ),
+                    rsutils::json::get< std::string >( settings, "dds-participant-name", "librealsense" ) );
             }
-            else if( utilities::json::has_value( settings, "dds-domain" )
-                     || utilities::json::has_value( settings, "dds-participant-name" ) )
+            else if( rsutils::json::has_value( settings, "dds-domain" )
+                     || rsutils::json::has_value( settings, "dds-participant-name" ) )
             {
                 LOG_WARNING( "DDS participant has already been created; ignoring DDS settings" );
             }

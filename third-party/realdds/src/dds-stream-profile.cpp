@@ -4,7 +4,7 @@
 #include <realdds/dds-stream-profile.h>
 #include <realdds/dds-exceptions.h>
 
-#include <utilities/json.h>
+#include <rsutils/json.h>
 using nlohmann::json;
 
 #include <map>
@@ -139,8 +139,8 @@ dds_stream_format dds_stream_format::from_rs2( int rs2_format )
 
 
 dds_stream_profile::dds_stream_profile( json const & j, int & it )
-    : _frequency( utilities::json::get< int16_t >( j, it++ ) )
-    , _format( utilities::json::get< std::string >( j, it++ ) )
+    : _frequency( rsutils::json::get< int16_t >( j, it++ ) )
+    , _format( rsutils::json::get< std::string >( j, it++ ) )
 {
     // NOTE: the order of construction is the order of declaration -- therefore the to_json() function
     // should use the same ordering!
@@ -198,8 +198,8 @@ json dds_stream_profile::to_json() const
 dds_video_stream_profile::dds_video_stream_profile( nlohmann::json const & j, int & index )
     : super( j, index )
 {
-    _width = utilities::json::get< int16_t >( j, index++ );
-    _height = utilities::json::get< int16_t >( j, index++ );
+    _width = rsutils::json::get< int16_t >( j, index++ );
+    _height = rsutils::json::get< int16_t >( j, index++ );
 }
 
 

@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include <utilities/concurrency/concurrency.h>
+#include <rsutils/concurrency/concurrency.h>
 #include <third-party/json_fwd.hpp>
 
 #include <unordered_map>

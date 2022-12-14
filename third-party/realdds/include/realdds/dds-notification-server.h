@@ -5,7 +5,7 @@
 
 
 #include <realdds/topics/flexible/flexible-msg.h>
-#include <utilities/concurrency/concurrency.h>
+#include <rsutils/concurrency/concurrency.h>
 
 #include <memory>
 #include <string>

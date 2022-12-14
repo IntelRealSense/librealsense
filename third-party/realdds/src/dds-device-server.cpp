@@ -20,7 +20,7 @@
 #include <fastdds/dds/topic/Topic.hpp>
 #include <fastdds/dds/subscriber/SampleInfo.hpp>
 
-#include <utilities/json.h>
+#include <rsutils/json.h>
 
 using nlohmann::json;
 using namespace eprosima::fastdds::dds;
@@ -185,7 +185,7 @@ void dds_device_server::on_control_message_received()
 void dds_device_server::handle_control_message( topics::flexible_msg control_message )
 {
     auto j = control_message.json_data();
-    auto id = utilities::json::get< std::string >( j, "id" );
+    auto id = rsutils::json::get< std::string >( j, "id" );
     if ( id.compare("open-streams") == 0 )
     {
         if ( _open_streams_callback )

@@ -10,8 +10,6 @@
 
 #include <fastdds/dds/topic/Topic.hpp>
 
-#include <utilities/easylogging/easyloggingpp.h>
-#include <utilities/time/timer.h>
 #include <third-party/json.hpp>
 
 

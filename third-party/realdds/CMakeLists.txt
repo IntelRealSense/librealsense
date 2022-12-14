@@ -7,15 +7,13 @@ add_library( ${PROJECT_NAME} STATIC "" )
 set_target_properties( ${PROJECT_NAME} PROPERTIES FOLDER Library )
 
 target_include_directories( ${PROJECT_NAME}
-    PRIVATE
-        "${REPO_ROOT}/include"  # we need the utilities
     PUBLIC
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
 )
 
 # We, and all our dependents, need these:
 target_link_libraries( ${PROJECT_NAME}
-    PUBLIC utilities dds )  # dds=FastDDS
+    PUBLIC rsutils dds )  # dds=FastDDS
 
 
 # Headers -----------------------------------------------------------------------------------

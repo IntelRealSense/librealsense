@@ -1,7 +1,7 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2022 Intel Corporation. All Rights Reserved.
 
-#include <utilities/py/pybind11.h>
+#include <rsutils/py/pybind11.h>
 
 #include <realdds/dds-participant.h>
 #include <realdds/topics/dds-topics.h>
@@ -22,7 +22,7 @@
 #include <realdds/dds-utilities.h>
 #include <realdds/dds-log-consumer.h>
 
-#include <utilities/easylogging/easyloggingpp.h>
+#include <rsutils/easylogging/easyloggingpp.h>
 #include <fastdds/dds/domain/qos/DomainParticipantQos.hpp>
 #include <fastdds/dds/domain/DomainParticipant.hpp>
 #include <fastdds/dds/core/status/SubscriptionMatchedStatus.hpp>
@@ -77,14 +77,14 @@ PYBIND11_MODULE(NAME, m) {
     m.attr( "__version__" ) = "0.1";  // RS2_API_VERSION_STR;
 
     // Configure the same logger as librealsense, and default to only errors by default...
-    utilities::configure_elpp_logger();
+    rsutils::configure_elpp_logger();
     // And set the DDS logger similarly
     eprosima::fastdds::dds::Log::ClearConsumers();
     eprosima::fastdds::dds::Log::RegisterConsumer( realdds::log_consumer::create() );
     eprosima::fastdds::dds::Log::SetVerbosity( eprosima::fastdds::dds::Log::Error );
 
     m.def( "debug",
-           &utilities::configure_elpp_logger,
+           &rsutils::configure_elpp_logger,
            py::arg( "enable" ),
            py::arg( "nested-string" ) = "",
            py::arg( "logger" ) = LIBREALSENSE_ELPP_ID );

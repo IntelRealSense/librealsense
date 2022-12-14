@@ -5,7 +5,7 @@
 
 #include "dds-participant.h"
 
-#include <utilities/concurrency/concurrency.h>
+#include <rsutils/concurrency/concurrency.h>
 
 #include <map>
 #include <memory>

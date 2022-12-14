@@ -7,7 +7,7 @@
 #include <string>
 
 
-namespace utilities {
+namespace rsutils {
 namespace json {
 
 
@@ -123,4 +123,4 @@ T get( nlohmann::json const & j, nlohmann::json::const_iterator const & it )
 
 
 }  // namespace json
-}  // namespace utilities
+}  // namespace rsutils

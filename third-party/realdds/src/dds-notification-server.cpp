@@ -18,7 +18,6 @@
 #include <fastdds/dds/publisher/DataWriter.hpp>
 #include <fastdds/dds/publisher/DataWriterListener.hpp>
 #include <fastdds/dds/publisher/qos/PublisherQos.hpp>
-#include <utilities/concurrency/concurrency.h>
 
 
 using namespace eprosima::fastdds::dds;

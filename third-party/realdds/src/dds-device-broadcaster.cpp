@@ -9,7 +9,6 @@
 #include <realdds/topics/device-info/device-info-msg.h>
 #include <realdds/topics/device-info/deviceInfoPubSubTypes.h>
 
-#include <utilities/easylogging/easyloggingpp.h>
 #include <fastdds/dds/domain/DomainParticipantFactory.hpp>
 #include <fastdds/dds/domain/DomainParticipant.hpp>
 #include <fastdds/dds/domain/DomainParticipantListener.hpp>

@@ -12,8 +12,8 @@
 #include <fastdds/dds/publisher/DataWriter.hpp>
 #include <fastdds/dds/subscriber/DataReader.hpp>
 
-#include <utilities/time/timer.h>
-#include <utilities/json.h>
+#include <rsutils/time/timer.h>
+#include <rsutils/json.h>
 
 #include <third-party/json.hpp>
 
@@ -168,7 +168,7 @@ void dds_device::impl::create_control_writer()
 bool dds_device::impl::init()
 {
     // We expect to receive all of the sensors data under a timeout
-    utilities::time::timer t( std::chrono::seconds( 30 ) );  // TODO: refine time out
+    rsutils::time::timer t( std::chrono::seconds( 30 ) );  // TODO: refine time out
     state_type state = state_type::WAIT_FOR_DEVICE_HEADER;
     std::map< std::string, int > sensor_name_to_index;
     size_t n_streams_expected = 0;
@@ -185,10 +185,10 @@ bool dds_device::impl::init()
                 if( ! notification.is_valid() )
                     continue;
                 auto j = notification.json_data();
-                auto id = utilities::json::get< std::string >( j, "id" );
+                auto id = rsutils::json::get< std::string >( j, "id" );
                 if( state_type::WAIT_FOR_DEVICE_HEADER == state && id == "device-header" )
                 {
-                    n_streams_expected = utilities::json::get< size_t >( j, "n-streams" );
+                    n_streams_expected = rsutils::json::get< size_t >( j, "n-streams" );
                     LOG_DEBUG( "... device-header: " << n_streams_expected << " streams expected" );
                     if( n_streams_expected )
                         state = state_type::WAIT_FOR_PROFILES;
@@ -201,13 +201,13 @@ bool dds_device::impl::init()
                         DDS_THROW( runtime_error,
                                    "more streams than expected (" + std::to_string( n_streams_expected )
                                        + ") received" );
-                    auto stream_type = utilities::json::get< std::string >( j, "type" );
-                    auto stream_name = utilities::json::get< std::string >( j, "name" );
+                    auto stream_type = rsutils::json::get< std::string >( j, "type" );
+                    auto stream_name = rsutils::json::get< std::string >( j, "name" );
                     auto & stream = _streams[stream_name];
                     if( stream )
                         DDS_THROW( runtime_error, "stream '" + stream_name + "' already exists" );
-                    auto sensor_name = utilities::json::get< std::string >( j, "sensor-name" );
-                    auto default_profile_index = utilities::json::get< int >( j, "default-profile-index" );
+                    auto sensor_name = rsutils::json::get< std::string >( j, "sensor-name" );
+                    auto default_profile_index = rsutils::json::get< int >( j, "default-profile-index" );
                     dds_stream_profiles profiles;
 
 #define TYPE2STREAM( S, P )                                                                                            \

@@ -8,7 +8,7 @@
 #include <utility>
 
 
-namespace utilities {
+namespace rsutils {
 
 
 // Implements a global singleton of type T, managed and accessed by a shared_ptr.
@@ -68,4 +68,4 @@ template< class T > std::weak_ptr< T > shared_ptr_singleton< T >::_singleton;
 //template< class T > std::mutex< T > shared_ptr_singleton< T >::_mutex;
 
 
-}  // namespace utilities
+}  // namespace rsutils
