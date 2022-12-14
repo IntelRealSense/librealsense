@@ -17,10 +17,10 @@
 namespace librealsense
 {
     const std::map<uint32_t, rs2_format> safety_fourcc_to_rs2_format = {
-        {rs_fourcc('R','A','W','8'), RS2_FORMAT_RAW8}
+        {rs_fourcc('G','R','E','Y'), RS2_FORMAT_RAW8}
     };
     const std::map<uint32_t, rs2_stream> safety_fourcc_to_rs2_stream = {
-        {rs_fourcc('R','A','W','8'), RS2_STREAM_SAFETY}
+        {rs_fourcc('G','R','E','Y'), RS2_STREAM_SAFETY}
     };
 
     ds6_safety::ds6_safety(std::shared_ptr<context> ctx,
@@ -166,7 +166,7 @@ namespace librealsense
 
     void ds6_safety::register_processing_blocks(std::shared_ptr<ds6_safety_sensor> safety_ep)
     {
-        safety_ep->register_processing_block(processing_block_factory::create_id_pbf(RS2_FORMAT_RAW16, RS2_STREAM_SAFETY));
+        safety_ep->register_processing_block(processing_block_factory::create_id_pbf(RS2_FORMAT_RAW8, RS2_STREAM_SAFETY));
     }
 
 
