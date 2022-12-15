@@ -432,8 +432,6 @@ const char * get_string( rs2_format value )
     CASE( Z16H )
     CASE( FG )
     CASE( Y411 )
-    CASE( Y16I )
-    CASE( M420 )
     default:
         assert( ! is_valid( value ) );
         return UNKNOWN_VALUE;

@@ -29,7 +29,4 @@ namespace librealsense
         device* _owner;
         ds::ds_device_type _device_type;
     };
-
-    
-
 }

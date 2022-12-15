@@ -2258,12 +2258,6 @@ rs2_processing_block* rs2_create_yuy_decoder(rs2_error** error) BEGIN_API_CALL
 }
 NOARGS_HANDLE_EXCEPTIONS_AND_RETURN(nullptr)
 
-rs2_processing_block* rs2_create_m420_decoder(rs2_error** error) BEGIN_API_CALL
-{
-    return new rs2_processing_block{ std::make_shared<m420_converter>(RS2_FORMAT_RGB8) };
-}
-NOARGS_HANDLE_EXCEPTIONS_AND_RETURN(nullptr)
-
 rs2_processing_block* rs2_create_y411_decoder(rs2_error** error) BEGIN_API_CALL
 {
     return new rs2_processing_block{ std::make_shared<y411_converter>(RS2_FORMAT_RGB8) };
