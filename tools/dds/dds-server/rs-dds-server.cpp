@@ -156,8 +156,8 @@ std::vector< std::shared_ptr< realdds::dds_stream_server > > get_supported_strea
                 //Get all sensor supported options
                 auto supported_options = sensor.get_supported_options();
                 //Hack - some options can be queried only if streaming so start sensor and close after query
-                sensor.open( sensor.get_stream_profiles()[0] );
-                sensor.start( []( rs2::frame f ) {} );
+                //sensor.open( sensor.get_stream_profiles()[0] );
+                //sensor.start( []( rs2::frame f ) {} );
                 for( auto option : supported_options )
                 {
                     auto dds_opt = std::make_shared< realdds::dds_option >( sensor.get_option_name( option ),
@@ -175,8 +175,8 @@ std::vector< std::shared_ptr< realdds::dds_stream_server > > get_supported_strea
                     }
                     options.push_back( dds_opt ); //TODO - filter options relevant for stream type
                 }
-                sensor.stop();
-                sensor.close();
+                //sensor.stop();
+                //sensor.close();
             }
         }
         server->init_options( options );

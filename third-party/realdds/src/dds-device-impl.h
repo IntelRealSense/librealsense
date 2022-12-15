@@ -59,7 +59,7 @@ public:
           dds_guid const & guid,
           topics::device_info const & info );
 
-    void run();
+    void run( size_t message_timeout_ms );
     void open( const dds_stream_profiles & profiles );
     void close( const dds_streams & streams );
 
@@ -72,6 +72,8 @@ private:
     void create_notifications_reader();
     void create_control_writer();
     bool init();
+
+    size_t _message_timeout_ms = 5000;
 };
 
 

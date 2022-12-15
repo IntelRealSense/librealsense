@@ -44,7 +44,7 @@ public:
     bool is_running() const;
 
     // Make the device ready for use. This may take time! Better to do it in the background...
-    void run();
+    void run( size_t message_timeout_ms );
 
     //----------- below this line, a device must be running!
 

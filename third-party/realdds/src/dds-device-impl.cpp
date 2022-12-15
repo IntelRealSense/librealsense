@@ -78,10 +78,12 @@ dds_device::impl::impl( std::shared_ptr< dds_participant > const & participant,
 {
 }
 
-void dds_device::impl::run()
+void dds_device::impl::run( size_t message_timeout_ms )
 {
     if( _running )
         DDS_THROW( runtime_error, "device '" + _info.name + "' is already running" );
+
+    _message_timeout_ms = message_timeout_ms;
 
     create_notifications_reader();
     create_control_writer();
@@ -92,6 +94,7 @@ void dds_device::impl::run()
                           << ") initialized successfully" );
     _running = true;
 
+    // Start handling options only after init() is done
     _notifications_reader->on_data_available( [&]() {
         topics::flexible_msg notification;
         eprosima::fastdds::dds::SampleInfo info;
@@ -178,9 +181,10 @@ void dds_device::impl::set_option_value( const std::shared_ptr< dds_option > & o
     write_control_message( j );
 
     std::unique_lock< std::mutex > lock( _option_mutex );
-    _option_cv.wait( lock, [&](){
+    if( ! _option_cv.wait_for( lock, std::chrono::milliseconds( _message_timeout_ms ), [&](){
         return !_option_response_queue.empty() && _option_response_queue.front()["counter"] == this_message_counter;
-    } ); //TODO - wait_for timeout
+    } ) )
+        throw std::runtime_error( "Did not receive reply while setting option " + option->get_name() );
 
     auto response = _option_response_queue.front();
     _option_response_queue.pop();
@@ -207,9 +211,10 @@ float dds_device::impl::query_option_value( const std::shared_ptr< dds_option > 
     write_control_message( j );
 
     std::unique_lock< std::mutex > lock( _option_mutex );
-    _option_cv.wait( lock, [&]() {
+    if( ! _option_cv.wait_for( lock, std::chrono::milliseconds( _message_timeout_ms ), [&]() {
         return !_option_response_queue.empty() && _option_response_queue.front()["counter"] == this_message_counter;
-    }); //TODO - wait_for timeout
+    } ) )
+        throw std::runtime_error( "Did not receive reply while querying option " + option->get_name() );
 
     auto response = _option_response_queue.front();
     _option_response_queue.pop();

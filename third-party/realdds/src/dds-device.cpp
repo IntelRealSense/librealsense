@@ -78,9 +78,9 @@ bool dds_device::is_running() const
     return _impl->_running;
 }
 
-void dds_device::run()
+void dds_device::run( size_t message_timeout_ms )
 {
-    _impl->run();
+    _impl->run( message_timeout_ms );
 }
 
 std::shared_ptr< dds_participant > const& dds_device::participant() const

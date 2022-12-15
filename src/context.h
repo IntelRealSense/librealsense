@@ -162,7 +162,7 @@ namespace librealsense
 #ifdef BUILD_WITH_DDS
         shared_ptr_singleton< realdds::dds_participant > _dds_participant;  // common to all contexts!
         shared_ptr_singleton< realdds::dds_device_watcher > _dds_watcher;
-        void start_dds_device_watcher();
+        void start_dds_device_watcher( size_t message_timeout_ms );
 #endif
 
         devices_changed_callback_ptr _devices_changed_callback;

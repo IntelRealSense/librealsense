@@ -190,7 +190,7 @@ namespace librealsense
             
             if( _dds_watcher && _dds_watcher->is_stopped() )
             {
-                start_dds_device_watcher();
+                start_dds_device_watcher( utilities::json::get< size_t >( settings, "dds-message-timeout-ms", 5000 ) );
             }
             //_dds_backend = ...; TODO
         }
@@ -647,9 +647,9 @@ namespace librealsense
 
         void set_option( const std::string & name, float value ) const
         {
+            // Sensor is setting the option for all supporting streams (with same value)
             for( auto & stream : _streams )
             {
-                //Set the value, if option exist for stream (supported)
                 for( auto & dds_opt : stream.second->options() )
                 {
                     if( dds_opt->get_name().compare( name ) == 0 )
@@ -665,7 +665,6 @@ namespace librealsense
         {
             for( auto & stream : _streams )
             {
-                //Set the value, if option exist for stream (supported)
                 for( auto & dds_opt : stream.second->options() )
                 {
                     if( dds_opt->get_name().compare( name ) == 0 )
@@ -676,7 +675,7 @@ namespace librealsense
                 }
             }
 
-            throw std::runtime_error( "Could not find a stream tath supports option " + name );
+            throw std::runtime_error( "Could not find a stream that supports option " + name );
         }
 
         const std::string & get_name() const { return _name; }
@@ -1036,11 +1035,13 @@ namespace librealsense
     }
 
 #ifdef BUILD_WITH_DDS
-    void context::start_dds_device_watcher()
+    void context::start_dds_device_watcher( size_t message_timeout_ms )
     {
         // TODO Here we should add DDS devices to the `on_device_changed`parameters
         // on_device_changed(old, curr, _playback_devices, _playback_devices);
-        _dds_watcher->on_device_added( [this]( std::shared_ptr< realdds::dds_device > const & dev ) { dev->run(); } );
+        _dds_watcher->on_device_added( [this, message_timeout_ms]( std::shared_ptr< realdds::dds_device > const & dev ) {
+            dev->run( message_timeout_ms );
+        } );
         _dds_watcher->on_device_removed( [this]( std::shared_ptr< realdds::dds_device > const & dev ) {} );
         _dds_watcher->start();
     }
