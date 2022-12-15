@@ -282,22 +282,33 @@ namespace librealsense
             : _type(type), _use_memory_map(use_memory_map), _index(index)
         {
             v4l2_buffer buf = {};
+            struct v4l2_plane planes[VIDEO_MAX_PLANES] = {};
+            _num_planes = 1;
             buf.type = _type;
             buf.memory = use_memory_map ? V4L2_MEMORY_MMAP : V4L2_MEMORY_USERPTR;
             buf.index = index;
+            buf.m.offset = 0;
+            if (type == V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE) {
+                buf.m.planes = planes;
+                buf.length = VIDEO_MAX_PLANES;
+            }
             if(xioctl(fd, VIDIOC_QUERYBUF, &buf) < 0)
                 throw linux_backend_exception("xioctl(VIDIOC_QUERYBUF) failed");
 
             // Prior to kernel 4.16 metadata payload was attached to the end of the video payload
             uint8_t md_extra = (V4L2_BUF_TYPE_VIDEO_CAPTURE==type) ? MAX_META_DATA_SIZE : 0;
             _original_length = buf.length;
+            if (type == V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE) {
+                _original_length = buf.m.planes[0].length;
+                _offset = buf.m.planes[0].m.mem_offset;
+            }
             _length = _original_length + md_extra;
 
             if (use_memory_map)
             {
                 _start = static_cast<uint8_t*>(mmap(nullptr, _original_length,
                                                     PROT_READ | PROT_WRITE, MAP_SHARED,
-                                                    fd, buf.m.offset));
+                                                    fd, _offset));
                 if(_start == MAP_FAILED)
                     throw linux_backend_exception("mmap failed");
             }
@@ -313,11 +324,15 @@ namespace librealsense
         void buffer::prepare_for_streaming(int fd)
         {
             v4l2_buffer buf = {};
+            struct v4l2_plane planes[VIDEO_MAX_PLANES] = {};
             buf.type = _type;
             buf.memory = _use_memory_map ? V4L2_MEMORY_MMAP : V4L2_MEMORY_USERPTR;
             buf.index = _index;
             buf.length = _length;
-
+            if (_type == V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE) {
+                buf.m.planes = planes;
+                buf.length = VIDEO_MAX_PLANES;
+            }
             if ( !_use_memory_map )
             {
                 buf.m.userptr = reinterpret_cast<unsigned long>(_start);
@@ -985,7 +1000,7 @@ namespace librealsense
             if(!_is_capturing && !_callback)
             {
                 v4l2_fmtdesc pixel_format = {};
-                pixel_format.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+                pixel_format.type = _dev.type;
 
                 while (ioctl(_fd, VIDIOC_ENUM_FMT, &pixel_format) == 0)
                 {
@@ -1035,7 +1050,7 @@ namespace librealsense
                 set_format(profile);
 
                 v4l2_streamparm parm = {};
-                parm.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+                parm.type = _dev.type;
                 if(xioctl(_fd, VIDIOC_G_PARM, &parm) < 0)
                     throw linux_backend_exception("xioctl(VIDIOC_G_PARM) failed");
 
@@ -1266,7 +1281,7 @@ namespace librealsense
                         {
                             FD_CLR(_fd,&fds);
                             v4l2_buffer buf = {};
-                            buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+                            buf.type = _dev.type;
                             buf.memory = _use_memory_map ? V4L2_MEMORY_MMAP : V4L2_MEMORY_USERPTR;
                             if(xioctl(_fd, VIDIOC_DQBUF, &buf) < 0)
                             {
@@ -1741,7 +1756,7 @@ namespace librealsense
             // Retrieve the caps one by one, first get pixel format, then sizes, then
             // frame rates. See http://linuxtv.org/downloads/v4l-dvb-apis for reference.
             v4l2_fmtdesc pixel_format = {};
-            pixel_format.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+            pixel_format.type = _dev.type;
             while (ioctl(_fd, VIDIOC_ENUM_FMT, &pixel_format) == 0)
             {
                 v4l2_frmsizeenum frame_size = {};
@@ -1879,19 +1894,19 @@ namespace librealsense
 
         void v4l_uvc_device::streamon() const
         {
-            stream_ctl_on(_fd);
+            stream_ctl_on(_fd, _dev.type);
         }
 
         void v4l_uvc_device::streamoff() const
         {
-            stream_off(_fd);
+            stream_off(_fd, _dev.type);
         }
 
         void v4l_uvc_device::negotiate_kernel_buffers(size_t num) const
         {
             req_io_buff(_fd, num, _name,
                         _use_memory_map ? V4L2_MEMORY_MMAP : V4L2_MEMORY_USERPTR,
-                        V4L2_BUF_TYPE_VIDEO_CAPTURE);
+                        _dev.type);
         }
 
         void v4l_uvc_device::allocate_io_buffers(size_t buffers)
@@ -1900,7 +1915,7 @@ namespace librealsense
             {
                 for(size_t i = 0; i < buffers; ++i)
                 {
-                    _buffers.push_back(std::make_shared<buffer>(_fd, V4L2_BUF_TYPE_VIDEO_CAPTURE, _use_memory_map, i));
+                    _buffers.push_back(std::make_shared<buffer>(_fd, _dev.type, _use_memory_map, i));
                 }
             }
             else
@@ -1911,6 +1926,12 @@ namespace librealsense
                 }
                 _buffers.resize(0);
             }
+        }
+
+        bool v4l_uvc_device::video_is_mplane()
+        {
+            return _dev.type == V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE ||
+                _dev.type == V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE;
         }
 
         void v4l_uvc_device::map_device_descriptor()
@@ -1936,19 +1957,28 @@ namespace librealsense
                 else
                     throw linux_backend_exception("xioctl(VIDIOC_QUERYCAP) failed");
             }
-            if(!(cap.capabilities & V4L2_CAP_VIDEO_CAPTURE))
+            if(!(cap.capabilities & (V4L2_CAP_VIDEO_CAPTURE_MPLANE | V4L2_CAP_VIDEO_CAPTURE)))
                 throw linux_backend_exception(_name + " is no video capture device");
 
             if(!(cap.capabilities & V4L2_CAP_STREAMING))
                 throw linux_backend_exception(_name + " does not support streaming I/O");
-
+            _info.uvc_capabilities = cap.capabilities;
+            _dev.cap = cap;
+            _dev.num_planes = 1;
+            if (cap.capabilities & V4L2_CAP_VIDEO_CAPTURE) {
+                _dev.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+            } else if (cap.capabilities & V4L2_CAP_VIDEO_CAPTURE_MPLANE) {
+                _dev.type = V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE;
+            } else {
+                throw linux_backend_exception(_name + " Buffer type is unknown!");
+            }
             // Select video input, video standard and tune here.
             v4l2_cropcap cropcap = {};
-            cropcap.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+            cropcap.type = _dev.type;
             if(xioctl(_fd, VIDIOC_CROPCAP, &cropcap) == 0)
             {
                 v4l2_crop crop = {};
-                crop.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+                crop.type = _dev.type;
                 crop.c = cropcap.defrect; // reset to default
                 if(xioctl(_fd, VIDIOC_S_CROP, &crop) < 0)
                 {
@@ -1958,6 +1988,7 @@ namespace librealsense
                     default: break; // Errors ignored
                     }
                 }
+                _dev.cropcap = cropcap;
             } else {} // Errors ignored
         }
 
@@ -1979,11 +2010,25 @@ namespace librealsense
         void v4l_uvc_device::set_format(stream_profile profile)
         {
             v4l2_format fmt = {};
-            fmt.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-            fmt.fmt.pix.width       = profile.width;
-            fmt.fmt.pix.height      = profile.height;
-            fmt.fmt.pix.pixelformat = (const big_endian<int> &)profile.format;
-            fmt.fmt.pix.field       = V4L2_FIELD_NONE;
+            fmt.type = _dev.type;
+            if (video_is_mplane()) {
+                fmt.fmt.pix_mp.width       = profile.width;
+                fmt.fmt.pix_mp.height      = profile.height;
+                fmt.fmt.pix_mp.pixelformat = (const big_endian<int> &)profile.format;
+                fmt.fmt.pix_mp.field       = V4L2_FIELD_NONE;
+                fmt.fmt.pix_mp.num_planes = 1;
+                fmt.fmt.pix_mp.flags = 0;
+
+                for (int i = 0; i < fmt.fmt.pix_mp.num_planes; i++) {
+                    fmt.fmt.pix_mp.plane_fmt[i].bytesperline = 0;
+                    fmt.fmt.pix_mp.plane_fmt[i].sizeimage = 0;
+                }
+            } else {
+                fmt.fmt.pix.width       = profile.width;
+                fmt.fmt.pix.height      = profile.height;
+                fmt.fmt.pix.pixelformat = (const big_endian<int> &)profile.format;
+                fmt.fmt.pix.field       = V4L2_FIELD_NONE;
+            }
             if(xioctl(_fd, VIDIOC_S_FMT, &fmt) < 0)
             {
                 throw linux_backend_exception(to_string() << "xioctl(VIDIOC_S_FMT) failed, errno=" << errno);

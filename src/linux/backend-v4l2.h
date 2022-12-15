@@ -144,8 +144,10 @@ namespace librealsense
             uint8_t* _start;
             uint32_t _length;
             uint32_t _original_length;
+            uint32_t _offset;
             bool _use_memory_map;
             uint32_t _index;
+            uint8_t _num_planes;
             v4l2_buffer _buf;
             std::mutex _mutex;
             bool _must_enqueue = false;
@@ -398,6 +400,7 @@ namespace librealsense
             virtual inline bool is_metadata_streamed() const { return false;}
             virtual inline std::shared_ptr<buffer> get_video_buffer(__u32 index) const {return _buffers[index];}
             virtual inline std::shared_ptr<buffer> get_md_buffer(__u32 index) const {return nullptr;}
+            bool video_is_mplane();
 
             power_state _state = D3;
             std::string _name = "";
@@ -413,6 +416,20 @@ namespace librealsense
             std::atomic<bool> _is_started;
             std::unique_ptr<std::thread> _thread;
             std::unique_ptr<named_mutex> _named_mtx;
+            struct device {
+                int fd;
+                int opened;
+                enum v4l2_buf_type type;
+                enum v4l2_memory memtype;
+                unsigned int nbufs;
+                uint32_t buffer_qbuf_flags;
+                uint32_t buffer_dqbuf_flags;
+                std::string _name;
+                unsigned char num_planes;
+                struct v4l2_plane_pix_format plane_fmt[VIDEO_MAX_PLANES];
+                struct v4l2_capability cap;
+                struct v4l2_cropcap cropcap;
+            } _dev;
             bool _use_memory_map;
             int _max_fd = 0;                    // specifies the maximal pipe number the polling process will monitor
             std::vector<int>  _fds;             // list the file descriptors to be monitored during frames polling
