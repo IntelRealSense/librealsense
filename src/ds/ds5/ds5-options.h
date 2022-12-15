@@ -54,7 +54,7 @@ namespace librealsense
     private:
         rs2_option                  _option;
         std::shared_ptr<hw_monitor>  _hw_monitor;
-	};
+    };
     class limits_option;
     class auto_exposure_limit_option : public option_base
     {

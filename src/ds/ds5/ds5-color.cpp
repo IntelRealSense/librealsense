@@ -158,7 +158,7 @@ namespace librealsense
                 {
                     color_ep.register_pu(RS2_OPTION_AUTO_EXPOSURE_PRIORITY);
                 }
-		    }
+            }
 
             _ds_color_common->register_standard_options();
 
@@ -211,7 +211,7 @@ namespace librealsense
         // attributes of md_rgb_control
         auto& raw_color_ep = get_raw_color_sensor();
 
-		if (_pid != ds::RS457_PID)
+        if (_pid != ds::RS457_PID)
         {
             color_ep.register_processing_block(processing_block_factory::create_pbf_vector<yuy2_converter>(RS2_FORMAT_YUYV, map_supported_color_formats(RS2_FORMAT_YUYV), RS2_STREAM_COLOR));
             color_ep.register_processing_block(processing_block_factory::create_id_pbf(RS2_FORMAT_RAW16, RS2_STREAM_COLOR));
@@ -320,11 +320,11 @@ namespace librealsense
                                                              md_mipi_rgb_control_attributes::crc_attribute,
                                                              md_prop_offset));
     }
-	
-	void ds5_color::register_stream_to_extrinsic_group(const stream_interface& stream, uint32_t group_index)
+    
+    void ds5_color::register_stream_to_extrinsic_group(const stream_interface& stream, uint32_t group_index)
     {
-	    device::register_stream_to_extrinsic_group(stream, group_index);
-	}
+        device::register_stream_to_extrinsic_group(stream, group_index);
+    }
 
     rs2_intrinsics ds5_color_sensor::get_intrinsics(const stream_profile& profile) const
     {

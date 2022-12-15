@@ -1111,7 +1111,7 @@ namespace librealsense
             return std::make_shared<rs405_device>(ctx, group, register_device_notifications);
         case RS455_PID:
             return std::make_shared<rs455_device>(ctx, group, register_device_notifications);
-		case RS457_PID:
+        case RS457_PID:
             return std::make_shared<rs457_device>(ctx, group, register_device_notifications);
         default:
             throw std::runtime_error( rsutils::string::from() << "Unsupported RS400 model! 0x" << std::hex

@@ -466,7 +466,7 @@ namespace librealsense
         if (all_device_infos.front().pid != RS457_PID)
             timestamp_reader_from_metadata = new ds_timestamp_reader_from_metadata(std::move(timestamp_reader_backup));
         else
-		    timestamp_reader_from_metadata = new ds_timestamp_reader_from_metadata_mipi(std::move(timestamp_reader_backup));
+            timestamp_reader_from_metadata = new ds_timestamp_reader_from_metadata_mipi(std::move(timestamp_reader_backup));
         
         std::unique_ptr<frame_timestamp_reader> timestamp_reader_metadata(timestamp_reader_from_metadata);
         auto enable_global_time_option = std::shared_ptr<global_time_option>(new global_time_option());
