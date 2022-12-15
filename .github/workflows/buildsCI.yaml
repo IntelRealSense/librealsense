@@ -246,7 +246,7 @@ jobs:
   
 
   #--------------------------------------------------------------------------------
-  U18_SH_RSUSB_LiveTest_NodeJS:  # Ubuntu 2018, Shared, Legacy live-tests, NodeJS wrapper
+  U18_SH_RSUSB_LiveTest:  # Ubuntu 2018, Shared, Legacy live-tests
     runs-on: ubuntu-18.04     
     timeout-minutes: 60
     env: 
@@ -265,22 +265,7 @@ jobs:
       shell: bash
       run: |
         set -x
-        # Workaround for nvm failure: https://github.com/appleboy/ssh-action/issues/70
-        export NVM_DIR="$HOME/.nvm"
-        [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-        nvm install 10.15.3;
-        nvm use 10.15.3;
-        npm install -g node-gyp;
-        npm install -g mocha;
-        git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git;
-        export OLDPATH=$PATH  
-        echo OLDPATH=$OLDPATH
-        export PATH=$PATH:$(pwd)/depot_tools;
-        echo PATH=$PATH
-        cd wrappers/nodejs/tools && npm install && cd ..;
-        node ./tools/linter.js;
-        python ./tools/enums.py -i ../../include/librealsense2 -a ./src -v
-        export PATH=$OLDPATH && unset OLDPATH && cd ../../;
+        
         mkdir build
         sudo add-apt-repository --yes ppa:ubuntu-toolchain-r/test;
         sudo apt-get update;
@@ -294,11 +279,9 @@ jobs:
     - name: Build
       shell: bash
       run: | 
-        python ./wrappers/nodejs/tools/enums.py -i ./include/librealsense2 -a ./wrappers/nodejs/src -v
         cd build
-        cmake .. -DBUILD_SHARED_LIBS=true -DBUILD_EXAMPLES=false -DBUILD_TOOLS=false -DBUILD_WITH_TM2=false -DCHECK_FOR_UPDATES=false -DFORCE_RSUSB_BACKEND=true -DBUILD_LEGACY_LIVE_TEST=true -DBUILD_NODEJS_BINDINGS=true
+        cmake .. -DBUILD_SHARED_LIBS=true -DBUILD_EXAMPLES=false -DBUILD_TOOLS=false -DBUILD_WITH_TM2=false -DCHECK_FOR_UPDATES=false -DFORCE_RSUSB_BACKEND=true -DBUILD_LEGACY_LIVE_TEST=true
         cmake --build . --config $LRS_BUILD_CONFIG -- -j4
-        cd ../wrappers/nodejs/ && npm install && cd -
 
     - name: Test
       shell: bash
