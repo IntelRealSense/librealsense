@@ -8,6 +8,8 @@
 #include "rs_frame.hpp"
 #include "rs_processing.hpp"
 #include "rs_options.hpp"
+#include "rs_safety_types.hpp"
+
 namespace rs2
 {
 
@@ -811,7 +813,7 @@ namespace rs2
             error::handle(e);
         }
         operator bool() const { return _sensor.get() != nullptr; }
-        rs2_safety_preset get_saftey_preset(int index) const
+        rs2_safety_preset get_safety_preset(int index) const
         {
             rs2_error* e = nullptr;
             rs2_safety_preset sp;
@@ -819,7 +821,7 @@ namespace rs2
             error::handle(e);
             return sp;
         }
-        void set_saftey_preset(int index, rs2_safety_preset const& sp) const
+        void set_safety_preset(int index, rs2_safety_preset const& sp) const
         {
             rs2_error* e = nullptr;
             rs2_set_safety_preset(_sensor.get(), index, &sp, &e);

@@ -853,6 +853,10 @@ namespace librealsense
         {
             sensor_extensions[RS2_EXTENSION_FISHEYE_SENSOR] = std::make_shared<fisheye_sensor_snapshot>();
         }
+        if (is_safety_module_sensor(sensor_name))
+        {
+            sensor_extensions[RS2_EXTENSION_SAFETY_SENSOR] = std::make_shared<safety_sensor_snapshot>();
+        }
     }
 
     void ros_reader::update_l500_depth_sensor(const rosbag::Bag & file, uint32_t sensor_index, const nanoseconds & time, uint32_t file_version, snapshot_collection & sensor_extensions, uint32_t version, std::string pid, std::string sensor_name)
@@ -900,6 +904,13 @@ namespace librealsense
     bool ros_reader::is_fisheye_module_sensor(std::string sensor_name)
     {
         if (sensor_name.compare("Wide FOV Camera") == 0)
+            return true;
+        return false;
+    }
+
+    bool ros_reader::is_safety_module_sensor(std::string sensor_name)
+    {
+        if (sensor_name.compare("Safety Camera") == 0)
             return true;
         return false;
     }

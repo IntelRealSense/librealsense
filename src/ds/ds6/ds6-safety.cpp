@@ -52,12 +52,6 @@ namespace librealsense
 
         auto enable_global_time_option = std::shared_ptr<global_time_option>(new global_time_option());
 
-        synthetic_sensor& safety_sensor = dynamic_cast<synthetic_sensor&>(get_sensor(_safety_device_idx));
-        auto active_safety_preset = std::make_shared<uvc_xu_option<uint16_t>>(dynamic_cast<uvc_sensor&>(*safety_sensor.get_raw_sensor()),
-                    safety_xu,
-                    DS6_ACTIVE_SAFETY_PRESET,
-                    "Active Safety Preset");
-
         auto raw_safety_ep = std::make_shared<uvc_sensor>("Raw Safety Device",
             backend.create_uvc_device(safety_devices_info.front()),
             std::unique_ptr<frame_timestamp_reader>(new global_timestamp_reader(std::move(ds_timestamp_reader_metadata), _tf_keeper, enable_global_time_option)),
@@ -72,12 +66,10 @@ namespace librealsense
 
         safety_ep->register_option(RS2_OPTION_GLOBAL_TIME_ENABLED, enable_global_time_option);
 
-        safety_ep->register_option(RS2_OPTION_ACTIVE_SAFETY_PRESET_INDEX, active_safety_preset);
-
         safety_ep->register_info(RS2_CAMERA_INFO_PHYSICAL_PORT, safety_devices_info.front().device_path);
 
         // register options
-        register_options(safety_ep);
+        register_options(safety_ep, raw_safety_ep);
 
         // register metadata
         register_metadata(raw_safety_ep);
@@ -88,10 +80,15 @@ namespace librealsense
         return safety_ep;
     }
 
-
-    void ds6_safety::register_options(std::shared_ptr<ds6_safety_sensor> safety_ep)
+    void ds6_safety::register_options(std::shared_ptr<ds6_safety_sensor> safety_ep, std::shared_ptr<uvc_sensor> raw_safety_sensor)
     {
-        // empty
+        auto active_safety_preset = std::make_shared<uvc_xu_option<uint16_t>>(
+            *raw_safety_sensor,
+            safety_xu,
+            ds::xu_id::SAFETY_PRESET_ACTIVE_INDEX,
+            "Safety Preset Active Index");
+
+        safety_ep->register_option(RS2_OPTION_SAFETY_PRESET_ACTIVE_INDEX, active_safety_preset);
     }
 
     void ds6_safety::register_metadata(std::shared_ptr<uvc_sensor> raw_safety_ep)
@@ -198,27 +195,20 @@ namespace librealsense
 
     void ds6_safety_sensor::set_safety_preset(int index, const rs2_safety_preset& sp) const
     {
-        //// convert sp to vector of bytes
-        auto data_ptr = const_cast<uint8_t*>(reinterpret_cast<const uint8_t*>(&sp));
+        //calculate CRC
+        auto computed_crc32 = calc_crc32(reinterpret_cast<const uint8_t*>(&sp), sizeof(rs2_safety_preset));
 
-        //check CRC
-        auto computed_crc32 = calc_crc32(data_ptr, sizeof(rs2_safety_preset));
+        // prepare vecotr of data to be sent (header + sp)
+        rs2_safety_preset_with_header data;
+        data.header = { 1, 0xc0db, 405, computed_crc32 };
+        data.safety_preset = sp;
+        auto data_as_ptr = reinterpret_cast<const uint8_t*>(&data);
+        auto data_vector = std::vector<uint8_t>(data_as_ptr, data_as_ptr + sizeof(data));
 
-        // prepare vector of data
-        auto data_bytes = std::vector<uint8_t>(data_ptr, data_ptr + sizeof(sp));
-
-        // prepare header
-        rs2_safety_preset_header header = {1, 0xc0db, 405, computed_crc32 };
-        auto header_ptr = const_cast<uint8_t*>(reinterpret_cast<const uint8_t*>(&header));
-        auto header_bytes = std::vector<uint8_t>(header_ptr, header_ptr + sizeof(header));
-
-        //concat vector of data bytes to vector of header bytes
-        header_bytes.insert(header_bytes.end(), data_bytes.begin(), data_bytes.end());
-
-        //// prepare command
+        // prepare command
         command cmd(ds::SAFETY_PRESET_WRITE);
         cmd.param1 = index;
-        cmd.data = header_bytes;
+        cmd.data = data_vector;
         cmd.require_response = false;
 
         // send command 
@@ -237,8 +227,8 @@ namespace librealsense
         // send command to device and get response (safety_preset entry + header)
         std::vector< uint8_t > response = _owner->_hw_monitor->send(cmd);
 
-        // convert response to rs2_safety_preset_with_header struct
-        std::copy(response.begin(), response.end(), reinterpret_cast<uint8_t*>(&result));
+        // cast response to safety_preset_with_header struct
+        result = *(reinterpret_cast<rs2_safety_preset_with_header*>(response.data()));
 
         // check CRC before returning result       
         auto computed_crc32 = calc_crc32(response.data() + sizeof(rs2_safety_preset_header), sizeof(rs2_safety_preset));
@@ -246,6 +236,7 @@ namespace librealsense
         {
             throw invalid_value_exception(to_string() << "invalid CRC value for index=" << index);
         }
+
         return result.safety_preset;
     }
 }

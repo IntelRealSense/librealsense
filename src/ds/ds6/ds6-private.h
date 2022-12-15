@@ -12,6 +12,13 @@ namespace librealsense
         const uint16_t RS_D585_PID = 0x0B6A; // D585, D for depth
         const uint16_t RS_S585_PID = 0x0B6B; // S585, S for safety
 
+        // Safety depth XU identifiers
+        namespace xu_id
+        {
+            const uint16_t SAFETY_CAMERA_OPER_MODE = 0x1;
+            const uint16_t SAFETY_PRESET_ACTIVE_INDEX = 0x2;
+        }
+
         // ds6 Devices supported by the current version
         static const std::set<std::uint16_t> rs500_sku_pid = {
             ds::RS_D585_PID,

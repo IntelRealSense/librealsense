@@ -22,7 +22,7 @@ namespace librealsense
 
         friend class ds6_safety_sensor;
 
-        void register_options(std::shared_ptr<ds6_safety_sensor> safety_ep);
+        void register_options(std::shared_ptr<ds6_safety_sensor> safety_ep, std::shared_ptr<uvc_sensor> raw_safety_sensor);
         void register_metadata(std::shared_ptr<uvc_sensor> safety_ep);
         void register_processing_blocks(std::shared_ptr<ds6_safety_sensor> safety_ep);
 
