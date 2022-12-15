@@ -33,6 +33,7 @@ namespace librealsense
         const uint16_t RS416_RGB_PID = 0x0B52; // F416 RGB
         const uint16_t RS405_PID = 0x0B5B; // D405
         const uint16_t RS455_PID = 0x0B5C; // D455
+        const uint16_t RS457_PID = 0xabcd; // D457
 
         // ds5 Devices supported by the current version
         static const std::set<std::uint16_t> rs400_sku_pid = {
@@ -70,7 +71,8 @@ namespace librealsense
             ds::RS435_RGB_PID,
             ds::RS435I_PID,
             ds::RS465_PID,
-            ds::RS455_PID
+            ds::RS455_PID,
+            ds::RS457_PID
         };
 
         static const std::set<std::uint16_t> ds5_hid_sensors_pid = {
@@ -122,7 +124,8 @@ namespace librealsense
             { RS465_PID,            "Intel RealSense D465" },
             { RS416_RGB_PID,        "Intel RealSense F416 with RGB Module"},
             { RS405_PID,            "Intel RealSense D405" },
-            { RS455_PID,            "Intel RealSense D455" }
+            { RS455_PID,            "Intel RealSense D455" },
+            { RS457_PID,            "Intel RealSense D457" },
         };
 
         static std::map<uint16_t, std::string> ds5_device_to_fw_min_version = {
@@ -149,7 +152,8 @@ namespace librealsense
             {RS465_PID, "5.12.7.100" },
             {RS416_RGB_PID, "5.8.15.0" },
             {RS405_PID, "5.12.11.8" },
-            {RS455_PID, "5.12.7.100" }
+            {RS455_PID, "5.12.7.100" },
+            {RS457_PID, "5.13.1.1" }
         };
 
         std::vector<platform::uvc_device_info> filter_ds5_device_by_capability(

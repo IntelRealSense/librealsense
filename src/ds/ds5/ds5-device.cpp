@@ -18,6 +18,7 @@
 #include "proc/depth-formats-converter.h"
 #include "proc/y8i-to-y8y8.h"
 #include "proc/y12i-to-y16y16.h"
+#include "proc/y12i-to-y16y16-mipi.h"
 #include "proc/y16i-to-y10msby10msb.h"
 #include "proc/color-formats-converter.h"
 
@@ -466,9 +467,9 @@ namespace librealsense
         std::unique_ptr<frame_timestamp_reader> timestamp_reader_backup(new ds_timestamp_reader(backend.create_time_service()));
         frame_timestamp_reader* timestamp_reader_from_metadata;
         if (all_device_infos.front().pid != RS457_PID)
-            timestamp_reader_from_metadata = new ds5_timestamp_reader_from_metadata(std::move(timestamp_reader_backup));
+            timestamp_reader_from_metadata = new ds_timestamp_reader_from_metadata(std::move(timestamp_reader_backup));
         else
-		    timestamp_reader_from_metadata = new ds5_timestamp_reader_from_metadata_mipi(std::move(timestamp_reader_backup));
+		    timestamp_reader_from_metadata = new ds_timestamp_reader_from_metadata_mipi(std::move(timestamp_reader_backup));
         
         std::unique_ptr<frame_timestamp_reader> timestamp_reader_metadata(timestamp_reader_from_metadata);
         auto enable_global_time_option = std::shared_ptr<global_time_option>(new global_time_option());
@@ -516,7 +517,7 @@ namespace librealsense
         auto& raw_sensor = get_raw_depth_sensor();
         _pid = group.uvc_devices.front().pid;
         // to be changed for D457
-        bool mipi_sensor= (RS457_PID == pid);
+        bool mipi_sensor = (RS457_PID == _pid);
 
         _color_calib_table_raw = [this]()
         {
@@ -616,22 +617,11 @@ namespace librealsense
 
             if (!mipi_sensor)
             {
-			    if (_pid == RS_D585_PID || _pid == RS_S585_PID)
-                {
-                    depth_sensor.register_processing_block(
-                        { RS2_FORMAT_Y16I },
-                        { {RS2_FORMAT_Y16, RS2_STREAM_INFRARED, 1}, {RS2_FORMAT_Y16, RS2_STREAM_INFRARED, 2} },
-                        []() {return std::make_shared<y16i_to_y10msby10msb>(); }
-                    );
-                }
-				else
-				{
-				    depth_sensor.register_processing_block(
-                        { RS2_FORMAT_Y12I },
-                        { {RS2_FORMAT_Y16, RS2_STREAM_INFRARED, 1}, {RS2_FORMAT_Y16, RS2_STREAM_INFRARED, 2} },
-                        []() {return std::make_shared<y12i_to_y16y16>(); }
-                    );
-				}
+                depth_sensor.register_processing_block(
+                    { RS2_FORMAT_Y12I },
+                    { {RS2_FORMAT_Y16, RS2_STREAM_INFRARED, 1}, {RS2_FORMAT_Y16, RS2_STREAM_INFRARED, 2} },
+                    []() {return std::make_shared<y12i_to_y16y16>(); }
+                );
             }
             else
             {

@@ -4,7 +4,6 @@
 #include "core/advanced_mode.h"
 #include "json_loader.hpp"
 #include "ds/ds5/ds5-color.h"
-#include "ds/ds6/ds6-color.h"
 
 #include <rsutils/string/from.h>
 
@@ -42,20 +41,7 @@ namespace librealsense
             }
             return (ds5_color_sensor*)nullptr;
         };
-        if (!*_color_sensor)
-        {
-            _color_sensor = [this]() {
-                auto& dev = _depth_sensor.get_device();
-                for (size_t i = 0; i < dev.get_sensors_count(); ++i)
-                {
-                    if (auto s = dynamic_cast<const ds6_color_sensor*>(&(dev.get_sensor(i))))
-                    {
-                        return const_cast<ds6_color_sensor*>(s);
-                    }
-                }
-                return (ds6_color_sensor*)nullptr;
-            };
-        }
+        
         _amplitude_factor_support = [this]() {
             auto fw_ver = firmware_version(_depth_sensor.get_device().get_info(rs2_camera_info::RS2_CAMERA_INFO_FIRMWARE_VERSION));
             return (fw_ver >= firmware_version("5.11.9.0"));

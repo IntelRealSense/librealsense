@@ -2,7 +2,6 @@
 //// Copyright(c) 2022 Intel Corporation. All Rights Reserved.
 
 #include "ds5/ds5-private.h"
-#include "ds6/ds6-private.h"
 
 using namespace std;
 

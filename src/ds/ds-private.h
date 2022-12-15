@@ -40,9 +40,7 @@ namespace librealsense
 
         enum class ds_device_type
         {
-            ds5,
-            ds6
-		};
+            ds5
         };
 
         // DS5 fisheye XU identifiers

@@ -120,10 +120,10 @@ namespace librealsense
                                           _backup_timestamp_reader->get_frame_timestamp_domain(frame);
     }
 
-    ds5_timestamp_reader_from_metadata_mipi::ds5_timestamp_reader_from_metadata_mipi(std::unique_ptr<frame_timestamp_reader> backup_timestamp_reader)
-    : ds5_timestamp_reader_from_metadata(std::move(backup_timestamp_reader)) {}
+    ds_timestamp_reader_from_metadata_mipi::ds_timestamp_reader_from_metadata_mipi(std::unique_ptr<frame_timestamp_reader> backup_timestamp_reader)
+    : ds_timestamp_reader_from_metadata(std::move(backup_timestamp_reader)) {}
 
-    rs2_time_t ds5_timestamp_reader_from_metadata_mipi::get_frame_timestamp(const std::shared_ptr<frame_interface>& frame)
+    rs2_time_t ds_timestamp_reader_from_metadata_mipi::get_frame_timestamp(const std::shared_ptr<frame_interface>& frame)
     {
         std::lock_guard<std::recursive_mutex> lock(_mtx);
 
@@ -156,7 +156,7 @@ namespace librealsense
         }
     }
 
-    unsigned long long ds5_timestamp_reader_from_metadata_mipi::get_frame_counter(const std::shared_ptr<frame_interface>& frame) const
+    unsigned long long ds_timestamp_reader_from_metadata_mipi::get_frame_counter(const std::shared_ptr<frame_interface>& frame) const
     {
         std::lock_guard<std::recursive_mutex> lock(_mtx);
 
@@ -181,10 +181,10 @@ namespace librealsense
         return _backup_timestamp_reader->get_frame_counter(frame);
     }
 
-    ds5_timestamp_reader_from_metadata_mipi_color::ds5_timestamp_reader_from_metadata_mipi_color(std::unique_ptr<frame_timestamp_reader> backup_timestamp_reader)
-    : ds5_timestamp_reader_from_metadata(std::move(backup_timestamp_reader)) {}
+    ds_timestamp_reader_from_metadata_mipi_color::ds_timestamp_reader_from_metadata_mipi_color(std::unique_ptr<frame_timestamp_reader> backup_timestamp_reader)
+    : ds_timestamp_reader_from_metadata(std::move(backup_timestamp_reader)) {}
 
-    rs2_time_t ds5_timestamp_reader_from_metadata_mipi_color::get_frame_timestamp(const std::shared_ptr<frame_interface>& frame)
+    rs2_time_t ds_timestamp_reader_from_metadata_mipi_color::get_frame_timestamp(const std::shared_ptr<frame_interface>& frame)
     {
         std::lock_guard<std::recursive_mutex> lock(_mtx);
 
@@ -217,7 +217,7 @@ namespace librealsense
         }
     }
 
-    unsigned long long ds5_timestamp_reader_from_metadata_mipi_color::get_frame_counter(const std::shared_ptr<frame_interface>& frame) const
+    unsigned long long ds_timestamp_reader_from_metadata_mipi_color::get_frame_counter(const std::shared_ptr<frame_interface>& frame) const
     {
         std::lock_guard<std::recursive_mutex> lock(_mtx);
 
@@ -242,10 +242,10 @@ namespace librealsense
         return _backup_timestamp_reader->get_frame_counter(frame);
     }
 
-    ds5_timestamp_reader_from_metadata_mipi_motion::ds5_timestamp_reader_from_metadata_mipi_motion(std::unique_ptr<frame_timestamp_reader> backup_timestamp_reader)
-    : ds5_timestamp_reader_from_metadata(std::move(backup_timestamp_reader)) {}
+    ds_timestamp_reader_from_metadata_mipi_motion::ds_timestamp_reader_from_metadata_mipi_motion(std::unique_ptr<frame_timestamp_reader> backup_timestamp_reader)
+    : ds_timestamp_reader_from_metadata(std::move(backup_timestamp_reader)) {}
 
-    rs2_time_t ds5_timestamp_reader_from_metadata_mipi_motion::get_frame_timestamp(const std::shared_ptr<frame_interface>& frame)
+    rs2_time_t ds_timestamp_reader_from_metadata_mipi_motion::get_frame_timestamp(const std::shared_ptr<frame_interface>& frame)
     {
         std::lock_guard<std::recursive_mutex> lock(_mtx);
 
@@ -275,7 +275,7 @@ namespace librealsense
         }
     }
 
-    unsigned long long ds5_timestamp_reader_from_metadata_mipi_motion::get_frame_counter(const std::shared_ptr<frame_interface>& frame) const
+    unsigned long long ds_timestamp_reader_from_metadata_mipi_motion::get_frame_counter(const std::shared_ptr<frame_interface>& frame) const
     {
         // no counter is provided in the synthetic metadata structure - librealsense::metadata_hid_raw
         std::lock_guard<std::recursive_mutex> lock(_mtx);
@@ -283,7 +283,7 @@ namespace librealsense
         return _backup_timestamp_reader->get_frame_counter(frame);
     }
 
-    void ds5_timestamp_reader_from_metadata_mipi_motion::reset()
+    void ds_timestamp_reader_from_metadata_mipi_motion::reset()
     {
         // no counter is provided in the synthetic metadata structure - librealsense::metadata_hid_raw
         _backup_timestamp_reader->reset();

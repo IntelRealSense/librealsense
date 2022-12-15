@@ -6,7 +6,6 @@
 #include "fw-update/fw-update-device-interface.h"
 
 #include "ds5/ds5-device.h"
-#include "ds6/ds6-device.h"
 
 #include "proc/hdr-merge.h"
 #include "proc/sequence-id-filter.h"
@@ -105,11 +104,6 @@ namespace librealsense
         case ds_device_type::ds5:
         {
             auto dev = dynamic_cast<ds5_device*>(_owner);
-            return dev->get_raw_depth_sensor();
-        }
-        case ds_device_type::ds6:
-        {
-            auto dev = dynamic_cast<ds6_device*>(_owner);
             return dev->get_raw_depth_sensor();
         }
         default:
@@ -286,10 +280,9 @@ namespace librealsense
     {
         std::string fw_version = firmware_check_interface::extract_firmware_version_string(image);
 
-        // TODO - do the same for ds6 (when min fw will be known)
         auto it = ds::ds5_device_to_fw_min_version.find(_owner->_pid);
         if (it == ds::ds5_device_to_fw_min_version.end())
-            throw librealsense::invalid_value_exception(to_string() << "Min and Max firmware versions have not been defined for this device: " << std::hex << _owner->_pid);
+            throw librealsense::invalid_value_exception(rsutils::string::from() << "Min and Max firmware versions have not been defined for this device: " << std::hex << _owner->_pid);
         bool result = (firmware_version(fw_version) >= firmware_version(it->second));
         if (!result)
             LOG_ERROR("Firmware version isn't compatible" << fw_version);
@@ -313,7 +306,7 @@ namespace librealsense
         if (ds::ds5_fw_error_report.find(static_cast<uint8_t>(value)) != ds::ds5_fw_error_report.end())
             return{ RS2_NOTIFICATION_CATEGORY_HARDWARE_ERROR, value, RS2_LOG_SEVERITY_ERROR, ds::ds5_fw_error_report.at(static_cast<uint8_t>(value)) };
 
-        return{ RS2_NOTIFICATION_CATEGORY_HARDWARE_ERROR, value, RS2_LOG_SEVERITY_WARN, (to_string() << "D400 HW report - unresolved type " << value) };
+        return{ RS2_NOTIFICATION_CATEGORY_HARDWARE_ERROR, value, RS2_LOG_SEVERITY_WARN, (rsutils::string::from() << "D400 HW report - unresolved type " << value) };
     }
 
     processing_blocks get_ds_depth_recommended_proccesing_blocks()

@@ -476,7 +476,7 @@ namespace librealsense
             return res;
         }
 
-        std::shared_ptr<ds5_advanced_mode_base> preset_recover;
+        std::shared_ptr<ds_advanced_mode_base> preset_recover;
         if (calib_type == 0)
         {
             LOG_DEBUG("run_on_chip_calibration with parameters: speed = " << speed << " scan_parameter = " << scan_parameter << " data_sampling = " << data_sampling);
@@ -902,7 +902,7 @@ namespace librealsense
         }
         else
         {
-            std::shared_ptr<ds5_advanced_mode_base> preset_recover;
+            std::shared_ptr<ds_advanced_mode_base> preset_recover;
             if (depth == 0)
             {
                 if (apply_preset)
@@ -926,7 +926,7 @@ namespace librealsense
                     param.param_4 |= (1 << 8);
 
                 // Log the current preset
-                auto advanced_mode = dynamic_cast<ds5_advanced_mode_base*>(this);
+                auto advanced_mode = dynamic_cast<ds_advanced_mode_base*>(this);
                 if (advanced_mode)
                 {
                     auto cur_preset = (rs2_rs400_visual_preset)(int)advanced_mode->_preset_opt->query();
@@ -1531,7 +1531,7 @@ namespace librealsense
     }
 
 
-    std::shared_ptr<ds5_advanced_mode_base> auto_calibrated::change_preset()
+    std::shared_ptr<ds_advanced_mode_base> auto_calibrated::change_preset()
     {
         preset old_preset_values;
         rs2_rs400_visual_preset old_preset;
@@ -1561,7 +1561,7 @@ namespace librealsense
 
     void auto_calibrated::change_preset_and_stay()
     {
-        auto advanced_mode = dynamic_cast<ds5_advanced_mode_base*>(this);
+        auto advanced_mode = dynamic_cast<ds_advanced_mode_base*>(this);
         if (advanced_mode)
         {
             _old_preset = (rs2_rs400_visual_preset)(int)advanced_mode->_preset_opt->query();
@@ -1576,7 +1576,7 @@ namespace librealsense
     {
         if (_preset_change)
         {
-            auto advanced_mode = dynamic_cast<ds5_advanced_mode_base*>(this);
+            auto advanced_mode = dynamic_cast<ds_advanced_mode_base*>(this);
             if (_old_preset == RS2_RS400_VISUAL_PRESET_CUSTOM)
             {
                 advanced_mode->_preset_opt->set(RS2_RS400_VISUAL_PRESET_CUSTOM);

@@ -16,7 +16,9 @@ namespace librealsense
         ds_active_common(uvc_sensor& raw_color_ep,
             synthetic_sensor& color_ep,
             device* owner, 
-            ds::d400_caps device_capabilities);
+            ds::d400_caps device_capabilities,
+            std::shared_ptr<hw_monitor> hw_monitor,
+            firmware_version firmware_version);
         void register_options();
 
     private:
@@ -24,6 +26,8 @@ namespace librealsense
         synthetic_sensor& _depth_ep;
         device* _owner;
         ds::d400_caps _device_capabilities;
+        std::shared_ptr<hw_monitor> _hw_monitor;
+        firmware_version _fw_version;
     };
 
     

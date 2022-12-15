@@ -77,11 +77,11 @@ namespace librealsense
         ds::ds_device_type _device_type;
     };
 
-    class ds_hid_sensor : public synthetic_sensor,
+    class ds_motion_sensor : public synthetic_sensor,
                           public motion_sensor
     {
     public:
-        explicit ds_hid_sensor(std::string name,
+        explicit ds_motion_sensor(std::string name,
             std::shared_ptr<sensor_base> sensor,
             device* owner, ds::ds_device_type device_type);
 
@@ -149,7 +149,7 @@ namespace librealsense
         std::vector<platform::uvc_device_info> filter_device_by_capability(const std::vector<platform::uvc_device_info>& devices,
             ds::d400_caps caps);
 
-        friend class ds_hid_sensor;
+        friend class ds_motion_sensor;
         friend class ds_fisheye_sensor;
 
         device* _owner;

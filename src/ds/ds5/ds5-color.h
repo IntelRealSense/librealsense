@@ -35,17 +35,16 @@ namespace librealsense
 
     private:
         void register_options();
-        void register_metadata();
         void register_processing_blocks();
+
+        void register_metadata(const synthetic_sensor& color_ep) const;
+        void register_metadata_mipi(const synthetic_sensor& color_ep) const;
 
         void register_stream_to_extrinsic_group(const stream_interface& stream, uint32_t group_index);
 
         void create_color_device(std::shared_ptr<context> ctx,
             const platform::backend_device_group& group);
         void init();
-
-        void register_metadata(const synthetic_sensor& color_ep) const;
-        void register_metadata_mipi(const synthetic_sensor& color_ep) const;
 
         friend class ds5_color_sensor;
         friend class rs435i_device;

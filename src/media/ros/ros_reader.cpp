@@ -5,7 +5,6 @@
 #include "ros_reader.h"
 #include "ds/ds-device-common.h"
 #include "ds/ds5/ds5-private.h"
-#include "ds/ds6/ds6-private.h"
 #include "ivcam/sr300.h"
 #include "l500/l500-depth.h"
 #include "proc/disparity-transform.h"
@@ -925,15 +924,7 @@ namespace librealsense
             return pid == ds5_pid;
         });
 
-        if (it5 != rs400_sku_pid.end())
-            return true;
-
-        auto it6 = std::find_if(rs500_sku_pid.begin(), rs500_sku_pid.end(), [&](int ds6_pid)
-            {
-                return pid == ds6_pid;
-            });
-
-        return it6 != rs500_sku_pid.end();
+        return it5 != rs400_sku_pid.end();
     }
 
     bool ros_reader::is_sr300_PID(int pid)

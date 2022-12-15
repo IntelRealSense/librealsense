@@ -575,7 +575,7 @@ namespace librealsense
     class rs457_device : public ds5_active,
                          public ds5_color,
                          public ds5_motion_uvc,
-                         public ds5_advanced_mode_base,
+                         public ds_advanced_mode_base,
                          public firmware_logger_device
     {
     public:
@@ -587,7 +587,7 @@ namespace librealsense
               ds5_active(ctx, group),
               ds5_color(ctx,  group),
               ds5_motion_uvc(ctx, group),
-              ds5_advanced_mode_base(ds5_device::_hw_monitor, get_depth_sensor()),
+              ds_advanced_mode_base(ds5_device::_hw_monitor, get_depth_sensor()),
               firmware_logger_device(ctx, group, ds5_device::_hw_monitor,
                 get_firmware_logs_command(),
                 get_flash_logs_command()){}
