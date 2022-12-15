@@ -11,13 +11,10 @@ from rspy import test
 # Tests
 #############################################################################################
 
-test.start("Init")
-try:
-    ctx = rs.context()
-    dev = ctx.query_devices()[0]
-    safety_sensor = dev.first_safety_sensor()
-except:
-    test.unexpected_exception()
+test.start("Verify Safety Sensor Extension")
+ctx = rs.context()
+dev = ctx.query_devices()[0]
+safety_sensor = dev.first_safety_sensor()
 test.finish()
 
 #############################################################################################

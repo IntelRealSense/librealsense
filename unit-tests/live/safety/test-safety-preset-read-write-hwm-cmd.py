@@ -1,7 +1,7 @@
 # License: Apache 2.0. See LICENSE file in root directory.
 # Copyright(c) 2022 Intel Corporation. All Rights Reserved.
 
-#test:donotrun
+#test:donotrun:!nightly
 #test:device S585
 
 import pyrealsense2 as rs
@@ -11,7 +11,7 @@ from rspy import test
 # Tests
 #############################################################################################
 
-test.start("Init")
+test.start("Verify Safety Sensor Extension")
 ctx = rs.context()
 dev = ctx.query_devices()[0]
 safety_sensor = dev.first_safety_sensor()

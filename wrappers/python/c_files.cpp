@@ -3,6 +3,7 @@ Copyright(c) 2017 Intel Corporation. All Rights Reserved. */
 
 #include "python.hpp"
 #include "../include/librealsense2/rs.h"
+#include "../include/librealsense2/hpp/rs_safety_types.hpp"
 #include <iomanip>
 #include "types.h"
 
@@ -139,7 +140,9 @@ void init_c_files(py::module &m) {
         .def_readwrite("angular_acceleration", &rs2_pose::angular_acceleration, "X, Y, Z values of angular acceleration, in radians/sec^2")
         .def_readwrite("tracker_confidence", &rs2_pose::tracker_confidence, "Pose confidence 0x0 - Failed, 0x1 - Low, 0x2 - Medium, 0x3 - High")
         .def_readwrite("mapper_confidence", &rs2_pose::mapper_confidence, "Pose map confidence 0x0 - Failed, 0x1 - Low, 0x2 - Medium, 0x3 - High");
+    /** end rs_types.h **/
 
+    /** rs_safety_types.h **/
     py::class_<sc_float2> float2(m, "float2"); // No docstring in C++
     float2.def(py::init<>())
         .def_readwrite("x", &sc_float2::x, "x")
@@ -181,7 +184,10 @@ void init_c_files(py::module &m) {
     safety_zone.def(py::init<>())
         .def_readwrite("flags", &rs2_safety_zone::flags, "Flags")
         .def_readwrite("zone_type", &rs2_safety_zone::zone_type, "Zone Type")
-        .def_property_readonly("zone_polygon", [](const rs2_safety_zone& self) { return reinterpret_cast<const std::array<sc_float2, sizeof(rs2_safety_zone::zone_polygon)>&> (self.zone_polygon);}, "zone polygon")
+        .def_property("zone_polygon",
+            [](const rs2_safety_zone& self) { return reinterpret_cast<const std::array<sc_float2, sizeof(rs2_safety_zone::zone_polygon)>&> (self.zone_polygon);},
+            [](const rs2_safety_zone& self) {},
+            "Zone Polygon")
         .def_readwrite("masking_zone_v_boundary", &rs2_safety_zone::masking_zone_v_boundary, "Masking Zone v Boundary")
         .def_readwrite("safety_trigger_confidence", &rs2_safety_zone::safety_trigger_confidence, "Safety Trigger Confidence")
         .def_readwrite("miminum_object_size", &rs2_safety_zone::miminum_object_size, "Miminum Object Size")
@@ -203,10 +209,19 @@ void init_c_files(py::module &m) {
     py::class_<rs2_safety_preset> safety_preset(m, "safety_preset"); // No docstring in C++
     safety_preset.def(py::init<>())
         .def_readwrite("platform_config", &rs2_safety_preset::platform_config, "Platform Config")
-        .def_property_readonly("safety_zones", [](const rs2_safety_preset& self) { return reinterpret_cast<const std::array<rs2_safety_zone, sizeof(rs2_safety_preset::safety_zones)>&> (self.safety_zones);}, "Safety Zones")
-        .def_readwrite("environment", &rs2_safety_preset::environment, "Environment");
+        .def_property("safety_zones",
+            [](const rs2_safety_preset& self) { return reinterpret_cast<const std::array<rs2_safety_zone, sizeof(rs2_safety_preset::safety_zones)>&> (self.safety_zones);},
+            [](const rs2_safety_preset& self) {},
+            "Safety Zones")
+        .def_readwrite("environment", &rs2_safety_preset::environment, "Environment")
+        .def("__repr__", [](const rs2_safety_preset& self) {
+            std::stringstream ss;
+            ss << self;
+            return ss.str();
+            });
 
-    /** end rs_types.h **/
+
+    /** end rs_safety_types.h **/
 
     /** rs_sensor.h **/
     py::class_<rs2_extrinsics> extrinsics(m, "extrinsics", "Cross-stream extrinsics: encodes the topology describing how the different devices are oriented.");
