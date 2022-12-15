@@ -277,11 +277,10 @@ jobs:
           cmake --build . --config ${{env.LRS_BUILD_CONFIG}} -- -j4
   
   
-  Linux_python_nodejs:
+  Linux_python:
       runs-on: ubuntu-18.04     
       timeout-minutes: 60
-      env: 
-        LRS_BUILD_NODEJS: true
+
       steps:
       - uses: actions/checkout@v2   
           
@@ -296,42 +295,23 @@ jobs:
       - name: Prebuild
         shell: bash
         run: |
-          set -x
-          # Workaround for nvm failure: https://github.com/appleboy/ssh-action/issues/70
-          export NVM_DIR="$HOME/.nvm"
-          [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-          nvm install 10.15.3;
-          nvm use 10.15.3;
-          npm install -g node-gyp;
-          npm install -g mocha;
-          git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git;
-          export OLDPATH=$PATH  
-          echo OLDPATH=$OLDPATH
-          export PATH=$PATH:$(pwd)/depot_tools;
-          echo PATH=$PATH
-          cd wrappers/nodejs/tools && npm install && cd ..;
-          node ./tools/linter.js;
-          python ./tools/enums.py -i ../../include/librealsense2 -a ./src -v
-          export PATH=$OLDPATH && unset OLDPATH && cd ../../;
-          mkdir build
-          sudo add-apt-repository --yes ppa:ubuntu-toolchain-r/test;
-          sudo apt-get update;
-          sudo apt-get install -qq build-essential xorg-dev libgl1-mesa-dev libglu1-mesa-dev libglew-dev libglm-dev;
-          sudo apt-get install -qq libusb-1.0-0-dev;
-          sudo apt-get install -qq libgtk-3-dev;
-          sudo apt-get install gcc-5 g++-5;
-          sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-5 60 --slave /usr/bin/g++ g++ /usr/bin/g++-5;
-          sudo apt-get install libglfw3-dev libglfw3;
+            set -x
+            mkdir build
+            sudo add-apt-repository --yes ppa:ubuntu-toolchain-r/test;
+            sudo apt-get update;
+            sudo apt-get install -qq build-essential xorg-dev libgl1-mesa-dev libglu1-mesa-dev libglew-dev libglm-dev;
+            sudo apt-get install -qq libusb-1.0-0-dev;
+            sudo apt-get install -qq libgtk-3-dev;
+            sudo apt-get install gcc-5 g++-5;
+            sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-5 60 --slave /usr/bin/g++ g++ /usr/bin/g++-5;
+            sudo apt-get install libglfw3-dev libglfw3;
       
       - name: Build
         shell: bash
         run: | 
-          python ./wrappers/nodejs/tools/enums.py -i ./include/librealsense2 -a ./wrappers/nodejs/src -v
           cd build
-          cmake .. -DBUILD_PYTHON_BINDINGS=true -DBUILD_NODEJS_BINDINGS=true -DPYBIND11_PYTHON_VERSION=2.7 -DCHECK_FOR_UPDATES=true
+          cmake .. -DBUILD_PYTHON_BINDINGS=true -DPYBIND11_PYTHON_VERSION=2.7 -DCHECK_FOR_UPDATES=true
           cmake --build . --config $LRS_BUILD_CONFIG -- -j4
-          cd ../wrappers/nodejs/ && npm install && cd -
-
 
   Mac_cpp:
     runs-on: macos-10.15

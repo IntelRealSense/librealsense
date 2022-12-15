@@ -13,9 +13,6 @@ if (BUILD_PYTHON_BINDINGS OR BUILD_PYTHON_DOCS)
    
 endif()
 
-if (BUILD_NODEJS_BINDINGS)
-  add_subdirectory(nodejs)
-endif()
 
 if (BUILD_CV_EXAMPLES)
   add_subdirectory(opencv)
