@@ -97,6 +97,7 @@ namespace librealsense
 
         friend class ds5_depth_sensor;
 
+        std::shared_ptr<alternating_emitter_option> _alternating_emitter_opt;
         std::shared_ptr<hw_monitor> _hw_monitor;
         firmware_version            _fw_version;
         firmware_version            _recommended_fw_version;

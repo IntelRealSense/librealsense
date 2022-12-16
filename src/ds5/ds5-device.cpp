@@ -1037,12 +1037,12 @@ namespace librealsense
             if ((_fw_version >= firmware_version("5.11.3.0")) && ((_device_capabilities & mask) == mask))
             {
                 bool is_fw_version_using_id = (_fw_version >= firmware_version("5.12.8.100"));
-                auto alternating_emitter_opt = std::make_shared<alternating_emitter_option>(*_hw_monitor, &raw_depth_sensor, is_fw_version_using_id);
+                _alternating_emitter_opt = std::make_shared<alternating_emitter_option>(*_hw_monitor, &raw_depth_sensor, is_fw_version_using_id);
                 auto emitter_always_on_opt = std::make_shared<emitter_always_on_option>(*_hw_monitor, &depth_sensor);
 
                 if ((_fw_version >= firmware_version("5.12.1.0")) && ((_device_capabilities & d400_caps::CAP_GLOBAL_SHUTTER) == d400_caps::CAP_GLOBAL_SHUTTER))
                 {
-                    std::vector<std::pair<std::shared_ptr<option>, std::string>> options_and_reasons = { std::make_pair(alternating_emitter_opt,
+                    std::vector<std::pair<std::shared_ptr<option>, std::string>> options_and_reasons = { std::make_pair(_alternating_emitter_opt,
                         "Emitter always ON cannot be set while Emitter ON/OFF is enabled") };
                     depth_sensor.register_option(RS2_OPTION_EMITTER_ALWAYS_ON,
                         std::make_shared<gated_option>(
@@ -1056,7 +1056,7 @@ namespace librealsense
                             std::make_pair(emitter_always_on_opt, "Emitter ON/OFF cannot be set while Emitter always ON is enabled") };
                     depth_sensor.register_option(RS2_OPTION_EMITTER_ON_OFF,
                         std::make_shared<gated_option>(
-                            alternating_emitter_opt,
+                            _alternating_emitter_opt,
                             options_and_reasons
                             ));
                 }
@@ -1066,12 +1066,12 @@ namespace librealsense
                         "Emitter ON/OFF cannot be set while Emitter always ON is enabled") };
                     depth_sensor.register_option(RS2_OPTION_EMITTER_ON_OFF,
                         std::make_shared<gated_option>(
-                            alternating_emitter_opt,
+                            _alternating_emitter_opt,
                             options_and_reasons));
                 }
                 else
                 {
-                    depth_sensor.register_option(RS2_OPTION_EMITTER_ON_OFF, alternating_emitter_opt);
+                    depth_sensor.register_option(RS2_OPTION_EMITTER_ON_OFF, _alternating_emitter_opt);
                 }
 
             }
