@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include <realdds/topics/device-info/device-info-msg.h>
+#include <realdds/topics/device-info-msg.h>
 #include <librealsense2/utilities/concurrency/concurrency.h>
 
 #include <unordered_map>
@@ -30,7 +30,9 @@ namespace realdds {
 
 
 class dds_participant;
-
+class dds_publisher;
+class dds_topic_writer;
+class dds_topic;
 
 // We're responsible for broadcasting each device on realsense/device-info
 //
@@ -58,8 +60,7 @@ private:
     struct dds_device_handle
     {
         device_info info;
-        eprosima::fastdds::dds::DataWriter * data_writer;
-        std::shared_ptr< dds_client_listener > listener;
+        std::shared_ptr< dds_client_listener > client_listener;
     };
 
     // handles the DDS writers pool of connected/disconnected RS devices.
@@ -71,23 +72,19 @@ private:
     //   * Create a new data writer for it
     //   * Publish the device name
 
-    void handle_device_changes(
-        const std::vector< std::string > & devices_to_remove,
-        const std::vector< device_info > & devices_to_add );
+    void handle_device_changes(const std::vector< std::string > & devices_to_remove,
+                               const std::vector< device_info > & devices_to_add );
 
 
     void remove_dds_device( const std::string & serial_number );
     bool add_dds_device( const device_info & dev_info );
     bool create_device_writer( device_info const & dev_info );
-    void create_broadcast_topic();
     bool send_device_info_msg( const dds_device_handle & handle );
-    void fill_device_msg( const device_info & dev_info,
-                          topics::raw::device_info & msg ) const;
 
     std::atomic_bool _trigger_msg_send;
     std::shared_ptr< dds_participant > _participant;
-    eprosima::fastdds::dds::Publisher * _publisher;
-    eprosima::fastdds::dds::Topic * _topic;
+    std::shared_ptr< dds_publisher > _publisher;
+    std::shared_ptr< dds_topic > _topic;
     std::unordered_map< std::string, dds_device_handle > _device_handle_by_sn;
     dispatcher _dds_device_dispatcher;
     active_object<> _new_client_handler;

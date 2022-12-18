@@ -7,14 +7,8 @@
 #include <realdds/dds-device-server.h>
 #include <realdds/dds-stream-server.h>
 #include <realdds/dds-participant.h>
-#include <realdds/dds-utilities.h>
 #include <realdds/dds-option.h>
 #include <realdds/dds-log-consumer.h>
-#include <realdds/topics/device-info/device-info-msg.h>
-#include <realdds/topics/flexible/flexible-msg.h>
-
-#include <fastrtps/types/TypesBase.h>
-#include <fastdds/dds/log/Log.hpp>
 
 #include "lrs-device-watcher.h"
 #include "lrs-device-controller.h"
@@ -25,7 +19,6 @@
 #include <string>
 #include <iostream>
 #include <map>
-#include <unordered_set>
 
 using namespace TCLAP;
 using namespace realdds;
@@ -212,6 +205,7 @@ topics::device_info rs2_device_to_info( rs2::device const & dev )
     dev_info.name = dev.get_info( RS2_CAMERA_INFO_NAME );
     dev_info.serial = dev.get_info( RS2_CAMERA_INFO_SERIAL_NUMBER );
     dev_info.product_line = dev.get_info( RS2_CAMERA_INFO_PRODUCT_LINE );
+    dev_info.product_id = dev.get_info( RS2_CAMERA_INFO_PRODUCT_ID );
     dev_info.locked = ( strcmp( dev.get_info( RS2_CAMERA_INFO_CAMERA_LOCKED ), "YES" ) == 0 );
 
     // Build device topic root path

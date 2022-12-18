@@ -7,7 +7,7 @@
 #include <realdds/dds-stream-profile.h>
 #include <realdds/dds-utilities.h>
 #include <realdds/dds-option.h>
-#include <realdds/topics/device-info/device-info-msg.h>
+#include <realdds/topics/device-info-msg.h>
 #include <realdds/topics/flexible/flexible-msg.h>
 
 #include <fastdds/rtps/common/Guid.h>

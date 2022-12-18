@@ -28,7 +28,7 @@
 #include <realdds/dds-stream-profile.h>
 #include "software-device.h"
 #include <librealsense2/h/rs_internal.h>
-#include <realdds/topics/device-info/device-info-msg.h>
+#include <realdds/topics/device-info-msg.h>
 #include <realdds/topics/image/image-msg.h>
 #endif //BUILD_WITH_DDS
 
@@ -762,10 +762,11 @@ namespace librealsense
             LOG_DEBUG( "=====> dds-device-proxy " << this << " created on top of dds-device " << _dds_dev.get() );
             auto & dev_info = dev->device_info();
             register_info( RS2_CAMERA_INFO_NAME, dev_info.name );
-            register_info( RS2_CAMERA_INFO_PRODUCT_LINE, dev_info.product_line );
             register_info( RS2_CAMERA_INFO_SERIAL_NUMBER, dev_info.serial );
-            register_info( RS2_CAMERA_INFO_CAMERA_LOCKED, dev_info.locked ? "YES" : "NO" );
+            register_info( RS2_CAMERA_INFO_PRODUCT_LINE, dev_info.product_line );
+            register_info( RS2_CAMERA_INFO_PRODUCT_ID, dev_info.product_id );
             register_info( RS2_CAMERA_INFO_PHYSICAL_PORT, dev_info.topic_root );
+            register_info( RS2_CAMERA_INFO_CAMERA_LOCKED, dev_info.locked ? "YES" : "NO" );
 
             //Assumes dds_device initialization finished
             struct sensor_info
