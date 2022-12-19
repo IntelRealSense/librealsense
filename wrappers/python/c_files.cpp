@@ -184,7 +184,7 @@ void init_c_files(py::module &m) {
         .def_readwrite("flags", &rs2_safety_zone::flags, "Flags")
         .def_readwrite("zone_type", &rs2_safety_zone::zone_type, "Zone Type")
         .def_property("zone_polygon",
-            [](const rs2_safety_zone& self) { return reinterpret_cast<const std::array<sc_float2, sizeof(rs2_safety_zone::zone_polygon)>&> (self.zone_polygon);},
+            [](const rs2_safety_zone& self) { return reinterpret_cast<const std::array<sc_float2, 4>&> (self.zone_polygon);},
             [](const rs2_safety_zone& self) {},
             "Zone Polygon")
         .def_readwrite("masking_zone_v_boundary", &rs2_safety_zone::masking_zone_v_boundary, "Masking Zone v Boundary")
@@ -209,10 +209,16 @@ void init_c_files(py::module &m) {
     safety_preset.def(py::init<>())
         .def_readwrite("platform_config", &rs2_safety_preset::platform_config, "Platform Config")
         .def_property("safety_zones",
-            [](const rs2_safety_preset& self) { return reinterpret_cast<const std::array<rs2_safety_zone, sizeof(rs2_safety_preset::safety_zones)>&> (self.safety_zones);},
+            [](const rs2_safety_preset& self) { return reinterpret_cast<const std::array<rs2_safety_zone, 4>&> (self.safety_zones);},
             [](const rs2_safety_preset& self) {},
             "Safety Zones")
-        .def_readwrite("environment", &rs2_safety_preset::environment, "Environment");
+        .def_readwrite("environment", &rs2_safety_preset::environment, "Environment")
+        .def("__repr__", [](const rs2_safety_preset& self) {
+            std::stringstream ss;
+            ss << self;
+            return ss.str();
+        });
+
 
     /** end rs_safety_types.h **/
 
