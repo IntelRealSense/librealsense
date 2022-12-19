@@ -79,7 +79,7 @@ namespace librealsense
 
             // EMITTER FREQUENCY OPTION
             if ((pid == ds::RS457_PID || pid == ds::RS455_PID)
-                && _fw_version >= firmware_version("5.13.1.53"))
+                && _fw_version >= firmware_version("5.14.0"))
             {
                 auto emitter_freq = std::make_shared<emitter_frequency>(
                     _raw_depth_ep,
