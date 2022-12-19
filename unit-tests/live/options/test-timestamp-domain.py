@@ -26,7 +26,7 @@ def set_and_verify_timestamp_domain(sensor, frame_queue, global_time_enabled: bo
     :global_time_enabled bool: True - timestamp is enabled otherwise false
     """
     sensor.set_option(rs.option.global_time_enabled, global_time_enabled)
-    time.sleep(0.3)  # Waiting for new frame from device. Need in case low FPS.
+    time.sleep(0.5)  # Waiting for new frame from device. Need in case low FPS.
     frame = frame_queue.wait_for_frame()
 
     if not frame:
