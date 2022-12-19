@@ -2223,7 +2223,7 @@ namespace rs2
             // Non-linear correspondence customized for non-flat surface exploration
 
             if (vf_profile.width() <= 0)
-                throw std::runtime_error("Profile width found equals 0 but must be greater than 0");
+                throw std::runtime_error("Profile width must be greater than 0.");
 
             glPointSize(std::sqrt(viewer_rect.w / vf_profile.width()));
 
