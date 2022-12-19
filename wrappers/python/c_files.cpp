@@ -5,6 +5,7 @@ Copyright(c) 2017 Intel Corporation. All Rights Reserved. */
 #include "../include/librealsense2/rs.h"
 #include <iomanip>
 #include "types.h"
+#include "../include/librealsense2/hpp/rs_safety_types.hpp"
 
 std::string make_pythonic_str(std::string str)
 {
@@ -178,18 +179,25 @@ void init_c_files(py::module &m) {
         .def_readwrite("robot_mass", &rs2_safety_platform::robot_mass, "Robot Mass")
         .def_property(BIND_RAW_ARRAY_PROPERTY(rs2_safety_platform, reserved, uint8_t, sizeof(rs2_safety_zone::reserved)), "Reserved");
 
-
     py::class_<rs2_safety_zone> safety_zone(m, "safety_zone"); // No docstring in C++
     safety_zone.def(py::init<>())
         .def_readwrite("flags", &rs2_safety_zone::flags, "Flags")
         .def_readwrite("zone_type", &rs2_safety_zone::zone_type, "Zone Type")
         .def_property("zone_polygon",
-            [](const rs2_safety_zone& self) { return reinterpret_cast<const std::array<sc_float2, 4>&> (self.zone_polygon);},
-            [](const rs2_safety_zone& self) {},
+            [](const rs2_safety_zone& self)
+            {
+                return reinterpret_cast<const std::array<sc_float2, 4>&> (self.zone_polygon);
+            },
+            [](rs2_safety_zone& self, std::array< sc_float2, 4> arr) {
+                self.zone_polygon[0] = arr[0];
+                self.zone_polygon[1] = arr[1];
+                self.zone_polygon[2] = arr[2];
+                self.zone_polygon[3] = arr[3];
+            },
             "Zone Polygon")
         .def_readwrite("masking_zone_v_boundary", &rs2_safety_zone::masking_zone_v_boundary, "Masking Zone v Boundary")
         .def_readwrite("safety_trigger_confidence", &rs2_safety_zone::safety_trigger_confidence, "Safety Trigger Confidence")
-        .def_readwrite("miminum_object_size", &rs2_safety_zone::miminum_object_size, "Miminum Object Size")
+        .def_readwrite("minimum_object_size", &rs2_safety_zone::minimum_object_size, "Minimum Object Size")
         .def_readwrite("mos_target_type", &rs2_safety_zone::mos_target_type, "MOS Target Type")
         .def_property(BIND_RAW_ARRAY_PROPERTY(rs2_safety_zone, reserved, uint8_t, sizeof(rs2_safety_zone::reserved)), "Reserved");
 
@@ -203,14 +211,23 @@ void init_c_files(py::module &m) {
         .def_readwrite("surface_inclination", &rs2_safety_environment::surface_inclination, "Surface Inclination")
         .def_readwrite("surface_height", &rs2_safety_environment::surface_height, "Surface Height")
         .def_readwrite("surface_confidence", &rs2_safety_environment::surface_confidence, "Surface Confidence")
-        .def_property(BIND_RAW_ARRAY_PROPERTY(rs2_safety_zone, reserved, uint8_t, sizeof(rs2_safety_zone::reserved)), "Reserved");
+        .def_property(BIND_RAW_ARRAY_PROPERTY(rs2_safety_environment, reserved, uint8_t, sizeof(rs2_safety_environment::reserved)), "Reserved");
 
     py::class_<rs2_safety_preset> safety_preset(m, "safety_preset"); // No docstring in C++
     safety_preset.def(py::init<>())
         .def_readwrite("platform_config", &rs2_safety_preset::platform_config, "Platform Config")
         .def_property("safety_zones",
-            [](const rs2_safety_preset& self) { return reinterpret_cast<const std::array<rs2_safety_zone, 4>&> (self.safety_zones);},
-            [](const rs2_safety_preset& self) {},
+            [](const rs2_safety_preset& self)
+            {
+                return reinterpret_cast<const std::array<rs2_safety_zone, 4>&> (self.safety_zones);
+            },
+            [](rs2_safety_preset& self, std::array< rs2_safety_zone, 4> arr)
+            {
+                self.safety_zones[0] = arr[0];
+                self.safety_zones[1] = arr[1];
+                self.safety_zones[2] = arr[2];
+                self.safety_zones[3] = arr[3];
+            },
             "Safety Zones")
         .def_readwrite("environment", &rs2_safety_preset::environment, "Environment")
         .def("__repr__", [](const rs2_safety_preset& self) {

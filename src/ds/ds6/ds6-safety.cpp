@@ -203,12 +203,11 @@ namespace librealsense
         data.header = { 1, 0xc0db, 405, computed_crc32 };
         data.safety_preset = sp;
         auto data_as_ptr = reinterpret_cast<const uint8_t*>(&data);
-        auto data_vector = std::vector<uint8_t>(data_as_ptr, data_as_ptr + sizeof(data));
 
         // prepare command
         command cmd(ds::SAFETY_PRESET_WRITE);
         cmd.param1 = index;
-        cmd.data = data_vector;
+        cmd.data.insert(cmd.data.end(), data_as_ptr, data_as_ptr + sizeof(data));
         cmd.require_response = false;
 
         // send command 
@@ -217,7 +216,7 @@ namespace librealsense
 
     rs2_safety_preset ds6_safety_sensor::get_safety_preset(int index) const
     {
-        rs2_safety_preset_with_header result;
+        rs2_safety_preset_with_header* result;
 
         // prepare command
         command cmd(ds::SAFETY_PRESET_READ);
@@ -226,17 +225,21 @@ namespace librealsense
 
         // send command to device and get response (safety_preset entry + header)
         std::vector< uint8_t > response = _owner->_hw_monitor->send(cmd);
+        if (response.size() < sizeof(rs2_safety_preset_with_header))
+        {
+            throw io_exception(to_string() << "Safety preset read at index=" << index << " failed");
+        }
 
         // cast response to safety_preset_with_header struct
-        result = *(reinterpret_cast<rs2_safety_preset_with_header*>(response.data()));
+        result = reinterpret_cast<rs2_safety_preset_with_header*>(response.data());
 
         // check CRC before returning result       
         auto computed_crc32 = calc_crc32(response.data() + sizeof(rs2_safety_preset_header), sizeof(rs2_safety_preset));
-        if (computed_crc32 != result.header.crc32)
+        if (computed_crc32 != result->header.crc32)
         {
             throw invalid_value_exception(to_string() << "invalid CRC value for index=" << index);
         }
 
-        return result.safety_preset;
+        return result->safety_preset;
     }
 }

@@ -86,7 +86,7 @@ typedef struct rs2_safety_zone
     // Safety Zone Actuator properties
     uint8_t safety_trigger_confidence; // number of consecutive frames to raise safety signal
 
-    sc_float2 miminum_object_size; // MOS is two-dimentional: {diameter (mm), length (mm) }
+    sc_float2 minimum_object_size; // MOS is two-dimentional: {diameter (mm), length (mm) }
     rs2_safety_mos_type mos_target_type; // based on guidance from  IEC 62998-2
     uint8_t reserved[16];
 } rs2_safety_zone;
