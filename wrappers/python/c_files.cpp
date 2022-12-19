@@ -3,7 +3,6 @@ Copyright(c) 2017 Intel Corporation. All Rights Reserved. */
 
 #include "python.hpp"
 #include "../include/librealsense2/rs.h"
-#include "../include/librealsense2/hpp/rs_safety_types.hpp"
 #include <iomanip>
 #include "types.h"
 
@@ -213,13 +212,7 @@ void init_c_files(py::module &m) {
             [](const rs2_safety_preset& self) { return reinterpret_cast<const std::array<rs2_safety_zone, sizeof(rs2_safety_preset::safety_zones)>&> (self.safety_zones);},
             [](const rs2_safety_preset& self) {},
             "Safety Zones")
-        .def_readwrite("environment", &rs2_safety_preset::environment, "Environment")
-        .def("__repr__", [](const rs2_safety_preset& self) {
-            std::stringstream ss;
-            ss << self;
-            return ss.str();
-            });
-
+        .def_readwrite("environment", &rs2_safety_preset::environment, "Environment");
 
     /** end rs_safety_types.h **/
 
