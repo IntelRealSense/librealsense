@@ -29,10 +29,10 @@ typedef struct rs2_safety_extrinsics_table
 
 enum rs2_safety_zone_type_values
 {
-    danger = 0,
-    warning = 1,
-    mask = 2,
-    max = 3
+    zone_danger = 0,
+    zone_warning = 1,
+    zone_mask = 2,
+    zone_max = 3
 };
 typedef uint8_t rs2_safety_zone_type;
 
