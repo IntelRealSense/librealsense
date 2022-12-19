@@ -231,7 +231,7 @@ namespace librealsense
 
     std::shared_ptr<matcher> rs_s585_device::create_matcher(const frame_holder& frame) const
     {
-        std::vector<stream_interface*> streams = { _depth_stream.get() , _left_ir_stream.get() , _right_ir_stream.get(), _color_stream.get() };
+        std::vector<stream_interface*> streams = { _depth_stream.get() , _left_ir_stream.get() , _right_ir_stream.get(), _color_stream.get(), _safety_stream.get()};
         std::vector<stream_interface*> mm_streams = { _ds_motion_common->get_accel_stream().get(),
                                                       _ds_motion_common->get_gyro_stream().get() };
         streams.insert(streams.end(), mm_streams.begin(), mm_streams.end());
