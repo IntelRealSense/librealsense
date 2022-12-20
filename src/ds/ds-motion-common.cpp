@@ -333,8 +333,6 @@ namespace librealsense
         auto fisheye_auto_exposure = register_auto_exposure_options(_fisheye_ep.get(), &ds::fisheye_xu);
         if (auto fisheye_sensor = dynamic_cast<ds_fisheye_sensor*>(_fisheye_ep.get()))
             fisheye_sensor->set_roi_method(std::make_shared<fisheye_auto_exposure_roi_method>(fisheye_auto_exposure));
-        else if (auto fisheye_sensor = dynamic_cast<ds_fisheye_sensor*>(_fisheye_ep.get()))
-                 fisheye_sensor->set_roi_method(std::make_shared<fisheye_auto_exposure_roi_method>(fisheye_auto_exposure));
         else
             throw std::runtime_error("device not referenced in the product line");
     }
