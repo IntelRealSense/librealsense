@@ -2,7 +2,7 @@
 # Copyright(c) 2022 Intel Corporation. All Rights Reserved.
 
 #test:donotrun:!nightly
-#test:device S585
+#test:device D585S
 
 import pyrealsense2 as rs
 from rspy import test

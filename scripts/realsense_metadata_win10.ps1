@@ -79,7 +79,7 @@ $MultiPinDevices =
     "USB\VID_8086&PID_0B64&MI_00",# L515
     "USB\VID_8086&PID_0B68&MI_00" # L535
     "USB\VID_8086&PID_0B6A&MI_00" # D585
-    "USB\VID_8086&PID_0B6B&MI_00" # S585
+    "USB\VID_8086&PID_0B6B&MI_00" # D585S
 
 #Inhibit system warnings and erros, such as permissions or missing values
 $ErrorActionPreference = "silentlycontinue"
