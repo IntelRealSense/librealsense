@@ -29,8 +29,10 @@ namespace librealsense
         _safety_stream(new stream(RS2_STREAM_SAFETY))
     {
         using namespace ds;
+
         const uint32_t safety_stream_mi = 11;
         auto safety_devs_info = filter_by_mi(group.uvc_devices, safety_stream_mi);
+        
         if (safety_devs_info.size() != 1)
             throw invalid_value_exception(to_string() << "RS5XX with Safety models are expected to include a single safety device! - "
                 << safety_devs_info.size() << " found");
@@ -49,6 +51,7 @@ namespace librealsense
         std::unique_ptr<frame_timestamp_reader> ds_timestamp_reader_metadata(new ds_timestamp_reader_from_metadata(std::move(ds_timestamp_reader_backup)));
 
         auto enable_global_time_option = std::shared_ptr<global_time_option>(new global_time_option());
+
         auto raw_safety_ep = std::make_shared<uvc_sensor>("Raw Safety Device",
             backend.create_uvc_device(safety_devices_info.front()),
             std::unique_ptr<frame_timestamp_reader>(new global_timestamp_reader(std::move(ds_timestamp_reader_metadata), _tf_keeper, enable_global_time_option)),
@@ -66,7 +69,7 @@ namespace librealsense
         safety_ep->register_info(RS2_CAMERA_INFO_PHYSICAL_PORT, safety_devices_info.front().device_path);
 
         // register options
-        register_options(safety_ep);
+        register_options(safety_ep, raw_safety_ep);
 
         // register metadata
         register_metadata(raw_safety_ep);
@@ -77,10 +80,15 @@ namespace librealsense
         return safety_ep;
     }
 
-
-    void ds6_safety::register_options(std::shared_ptr<ds6_safety_sensor> safety_ep)
+    void ds6_safety::register_options(std::shared_ptr<ds6_safety_sensor> safety_ep, std::shared_ptr<uvc_sensor> raw_safety_sensor)
     {
-        // empty
+        auto active_safety_preset = std::make_shared<uvc_xu_option<uint16_t>>(
+            *raw_safety_sensor,
+            safety_xu,
+            ds::xu_id::SAFETY_PRESET_ACTIVE_INDEX,
+            "Safety Preset Active Index");
+
+        safety_ep->register_option(RS2_OPTION_SAFETY_PRESET_ACTIVE_INDEX, active_safety_preset);
     }
 
     void ds6_safety::register_metadata(std::shared_ptr<uvc_sensor> raw_safety_ep)
@@ -183,5 +191,55 @@ namespace librealsense
         }
 
         return results;
+    }
+
+    void ds6_safety_sensor::set_safety_preset(int index, const rs2_safety_preset& sp) const
+    {
+        //calculate CRC
+        auto computed_crc32 = calc_crc32(reinterpret_cast<const uint8_t*>(&sp), sizeof(rs2_safety_preset));
+
+        // prepare vecotr of data to be sent (header + sp)
+        rs2_safety_preset_with_header data;
+        data.header = { 1, 0xc0db, 405, computed_crc32 };
+        data.safety_preset = sp;
+        auto data_as_ptr = reinterpret_cast<const uint8_t*>(&data);
+
+        // prepare command
+        command cmd(ds::SAFETY_PRESET_WRITE);
+        cmd.param1 = index;
+        cmd.data.insert(cmd.data.end(), data_as_ptr, data_as_ptr + sizeof(data));
+        cmd.require_response = false;
+
+        // send command 
+        _owner->_hw_monitor->send(cmd);
+    }
+
+    rs2_safety_preset ds6_safety_sensor::get_safety_preset(int index) const
+    {
+        rs2_safety_preset_with_header* result;
+
+        // prepare command
+        command cmd(ds::SAFETY_PRESET_READ);
+        cmd.require_response = true;
+        cmd.param1 = index;
+
+        // send command to device and get response (safety_preset entry + header)
+        std::vector< uint8_t > response = _owner->_hw_monitor->send(cmd);
+        if (response.size() < sizeof(rs2_safety_preset_with_header))
+        {
+            throw io_exception(to_string() << "Safety preset read at index=" << index << " failed");
+        }
+
+        // cast response to safety_preset_with_header struct
+        result = reinterpret_cast<rs2_safety_preset_with_header*>(response.data());
+
+        // check CRC before returning result       
+        auto computed_crc32 = calc_crc32(response.data() + sizeof(rs2_safety_preset_header), sizeof(rs2_safety_preset));
+        if (computed_crc32 != result->header.crc32)
+        {
+            throw invalid_value_exception(to_string() << "invalid CRC value for index=" << index);
+        }
+
+        return result->safety_preset;
     }
 }

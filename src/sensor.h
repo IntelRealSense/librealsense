@@ -197,6 +197,8 @@ namespace librealsense
 
         void create_snapshot(std::shared_ptr<safety_sensor>& snapshot) const override;
         void enable_recording(std::function<void(const safety_sensor&)> recording_function) override {};
+        virtual void set_safety_preset(int index, const rs2_safety_preset& sp) const = 0;
+        virtual rs2_safety_preset get_safety_preset(int index) const = 0;
     };
     MAP_EXTENSION(RS2_EXTENSION_SAFETY_SENSOR, librealsense::safety_sensor);
 
@@ -217,6 +219,13 @@ namespace librealsense
         void enable_recording(std::function<void(const safety_sensor&)> recording_function) override
         {
             //empty
+        }
+
+        void set_safety_preset(int index, const rs2_safety_preset& sp)  const {};
+        rs2_safety_preset get_safety_preset(int index) const
+        {
+            rs2_safety_preset r;
+            return r;
         }
     };
 

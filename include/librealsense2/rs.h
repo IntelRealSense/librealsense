@@ -15,6 +15,7 @@ extern "C" {
 
 #include "rsutil.h"
 #include "h/rs_types.h"
+#include "h/rs_safety_types.h"
 #include "h/rs_context.h"
 #include "h/rs_device.h"
 #include "h/rs_frame.h"

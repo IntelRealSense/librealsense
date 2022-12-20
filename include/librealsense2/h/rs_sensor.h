@@ -15,6 +15,7 @@ extern "C" {
 #endif
 
 #include "rs_types.h"
+#include "rs_safety_types.h"
 
 /** \brief Read-only strings that can be queried from the device.
    Not all information attributes are available on all camera types.
@@ -666,6 +667,24 @@ void rs2_set_motion_device_intrinsics(const rs2_sensor* sensor, const rs2_stream
 * \return                the max usable range in meters
 */
 float rs2_get_max_usable_depth_range(rs2_sensor const * sensor, rs2_error** error);
+
+/**
+* rs2_get_safety_preset
+* \param[in]   sensor        Safety sensor
+* \param[in]   index         Index to read from
+* \param[out]  sp            Safety preset struct result
+* \param[out]  error         If non-null, receives any error that occurs during this call, otherwise, errors are ignored
+*/
+void rs2_get_safety_preset(rs2_sensor const* sensor, int index, rs2_safety_preset* sp, rs2_error** error);
+
+/**
+* rs2_set_safety_preset
+* \param[in]  sensor        Safety sensor
+* \param[in]  index         Index to write to
+* \param[in]  sp            Safety preset struct to set
+* \param[out] error         If non-null, receives any error that occurs during this call, otherwise, errors are ignored
+*/
+void rs2_set_safety_preset(rs2_sensor const* sensor, int index, rs2_safety_preset const* sp, rs2_error** error);
 
 #ifdef __cplusplus
 }

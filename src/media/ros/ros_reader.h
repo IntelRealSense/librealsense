@@ -85,6 +85,7 @@ namespace librealsense
         bool is_color_sensor(std::string sensor_name);
         bool is_motion_module_sensor(std::string sensor_name);
         bool is_fisheye_module_sensor(std::string sensor_name);
+        bool is_safety_module_sensor(std::string sensor_name);
         bool is_ds_PID(int pid);
         bool is_sr300_PID(int pid);
         bool is_l500_PID(int pid);

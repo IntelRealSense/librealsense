@@ -255,6 +255,7 @@ device_serializer::snapshot_collection librealsense::record_device::get_extensio
             case RS2_EXTENSION_COLOR_SENSOR:        try_add_snapshot<T, ExtensionToType<RS2_EXTENSION_COLOR_SENSOR   >::type>(extendable, snapshots); break;
             case RS2_EXTENSION_MOTION_SENSOR:        try_add_snapshot<T, ExtensionToType<RS2_EXTENSION_MOTION_SENSOR   >::type>(extendable, snapshots); break;
             case RS2_EXTENSION_FISHEYE_SENSOR:        try_add_snapshot<T, ExtensionToType<RS2_EXTENSION_FISHEYE_SENSOR   >::type>(extendable, snapshots); break;
+            case RS2_EXTENSION_SAFETY_SENSOR:        try_add_snapshot<T, ExtensionToType<RS2_EXTENSION_SAFETY_SENSOR   >::type>(extendable, snapshots); break;
                 //case RS2_EXTENSION_ADVANCED_MODE   : try_add_snapshot<T, ExtensionToType<RS2_EXTENSION_ADVANCED_MODE  >::type>(extendable, snapshots); break;
             case RS2_EXTENSION_RECOMMENDED_FILTERS: try_add_snapshot<T, ExtensionToType<RS2_EXTENSION_RECOMMENDED_FILTERS   >::type>(extendable, snapshots); break;
             case RS2_EXTENSION_VIDEO_FRAME     : break;
@@ -262,7 +263,6 @@ device_serializer::snapshot_collection librealsense::record_device::get_extensio
             case RS2_EXTENSION_COMPOSITE_FRAME : break;
             case RS2_EXTENSION_POINTS          : break;
             case RS2_EXTENSION_RECORD          : break;
-            case RS2_EXTENSION_SAFETY_SENSOR   : break;
             case RS2_EXTENSION_PLAYBACK        : break;
             case RS2_EXTENSION_COUNT           : break;
             case RS2_EXTENSION_UNKNOWN         : break;

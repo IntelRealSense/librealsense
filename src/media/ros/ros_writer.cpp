@@ -425,6 +425,7 @@ namespace librealsense
         case RS2_EXTENSION_COLOR_SENSOR:
         case RS2_EXTENSION_MOTION_SENSOR:
         case RS2_EXTENSION_FISHEYE_SENSOR:
+        case RS2_EXTENSION_SAFETY_SENSOR:
         case RS2_EXTENSION_DEPTH_STEREO_SENSOR:
             break;
         case RS2_EXTENSION_VIDEO_PROFILE:
