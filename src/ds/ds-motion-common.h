@@ -62,8 +62,7 @@ namespace librealsense
     class ds_fisheye_sensor : public synthetic_sensor, public video_sensor_interface, public roi_sensor_base, public fisheye_sensor
     {
     public:
-        explicit ds_fisheye_sensor(std::shared_ptr<sensor_base> sensor,
-            device* owner, ds::ds_device_type device_type);
+        explicit ds_fisheye_sensor(std::shared_ptr<sensor_base> sensor, device* owner);
 
         rs2_intrinsics get_intrinsics(const stream_profile& profile) const override;
         stream_profiles init_stream_profiles() override;
@@ -74,7 +73,6 @@ namespace librealsense
         std::shared_ptr<stream_interface> get_fisheye_stream() const;
 
         device* _owner;
-        ds::ds_device_type _device_type;
     };
 
     class ds_motion_sensor : public synthetic_sensor,
@@ -82,8 +80,12 @@ namespace librealsense
     {
     public:
         explicit ds_motion_sensor(std::string name,
-            std::shared_ptr<sensor_base> sensor,
-            device* owner, ds::ds_device_type device_type);
+            std::shared_ptr<sensor_base> sensor, device* owner);
+
+        explicit ds_motion_sensor(std::string name,
+            std::shared_ptr<sensor_base> sensor, device* owner,
+            const std::map<uint32_t, rs2_format>& motion_fourcc_to_rs2_format,
+            const std::map<uint32_t, rs2_stream>& motion_fourcc_to_rs2_stream);
 
         rs2_motion_device_intrinsic get_motion_intrinsics(rs2_stream stream) const;
 
@@ -94,7 +96,6 @@ namespace librealsense
         std::shared_ptr<stream_interface> get_gyro_stream() const;
 
         const device* _owner;
-        ds::ds_device_type _device_type;
     };
 
     class global_time_option;
@@ -104,7 +105,6 @@ namespace librealsense
     {
     public:
         ds_motion_common(device* owner,
-            ds::ds_device_type device_type,
             firmware_version fw_version,
             const ds::d400_caps& device_capabilities,
             std::shared_ptr<hw_monitor> hwm);
@@ -153,7 +153,6 @@ namespace librealsense
         friend class ds_fisheye_sensor;
 
         device* _owner;
-        ds::ds_device_type _ds_device_type;
         firmware_version _fw_version;
         ds::d400_caps _device_capabilities;
         std::shared_ptr<hw_monitor> _hw_monitor;

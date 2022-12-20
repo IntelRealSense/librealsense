@@ -18,6 +18,8 @@ namespace librealsense
 
     private:
         friend class ds_motion_sensor;
+        friend class ds_fisheye_sensor;
+        friend class ds_motion_common;
 
         std::shared_ptr<lazy<ds::imu_intrinsic>> _accel_intrinsic;
         std::shared_ptr<lazy<ds::imu_intrinsic>> _gyro_intrinsic;

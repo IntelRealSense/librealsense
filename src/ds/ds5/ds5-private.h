@@ -58,7 +58,8 @@ namespace librealsense
             ds::RS465_PID,
             ds::RS416_PID,
             ds::RS405_PID,
-            ds::RS455_PID
+            ds::RS455_PID,
+            ds::RS457_PID
         };
 
         static const std::set<std::uint16_t> ds5_multi_sensors_pid = {
