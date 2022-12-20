@@ -466,8 +466,7 @@ namespace librealsense
                     backend.create_usb_device(group.usb_devices.front()), raw_sensor));
         }
 
-        _ds_device_common = std::make_shared<ds_device_common>(
-            this, ds_device_type::ds6, _hw_monitor);
+        _ds_device_common = std::make_shared<ds_device_common>(this, _hw_monitor);
 
         // Define Left-to-Right extrinsics calculation (lazy)
         // Reference CS - Right-handed; positive [X,Y,Z] point to [Left,Up,Forward] accordingly.

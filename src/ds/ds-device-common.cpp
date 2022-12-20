@@ -100,21 +100,11 @@ namespace librealsense
 
     uvc_sensor& ds_device_common::get_raw_depth_sensor()
     {
-        switch (_ds_device_type)
-        {
-        case ds_device_type::ds5:
-        {
-            auto dev = dynamic_cast<ds5_device*>(_owner);
+        if (auto dev = dynamic_cast<ds5_device*>(_owner))
             return dev->get_raw_depth_sensor();
-        }
-        case ds_device_type::ds6:
-        {
-            auto dev = dynamic_cast<ds6_device*>(_owner);
+        if (auto dev = dynamic_cast<ds6_device*>(_owner))
             return dev->get_raw_depth_sensor();
-        }
-        default:
-            throw std::runtime_error("device not referenced in the product line");
-        }
+        throw std::runtime_error("device not referenced in the product line");
     }
 
     bool ds_device_common::is_locked(uint8_t gvd_cmd, uint32_t offset)

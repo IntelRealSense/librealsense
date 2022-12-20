@@ -41,7 +41,7 @@ namespace librealsense
 
         std::vector<platform::hid_device_info> hid_infos = group.hid_devices;
 
-        _ds_motion_common = std::make_shared<ds_motion_common>(this, ds_device_type::ds5, _fw_version,
+        _ds_motion_common = std::make_shared<ds_motion_common>(this, _fw_version,
             _device_capabilities, _hw_monitor);
         _ds_motion_common->init_hid(hid_infos, *_depth_stream);
         
@@ -74,7 +74,7 @@ namespace librealsense
         auto enable_global_time_option = std::shared_ptr<global_time_option>(new global_time_option());
         auto raw_fisheye_ep = std::make_shared<uvc_sensor>("FishEye Sensor", backend.create_uvc_device(fisheye_infos.front()),
                                 std::unique_ptr<frame_timestamp_reader>(new global_timestamp_reader(std::move(ds_timestamp_reader_metadata), _tf_keeper, enable_global_time_option)), this);
-        auto fisheye_ep = std::make_shared<ds_fisheye_sensor>(raw_fisheye_ep, this, ds_device_type::ds5);
+        auto fisheye_ep = std::make_shared<ds_fisheye_sensor>(raw_fisheye_ep, this);
         
         _ds_motion_common->assign_fisheye_ep(raw_fisheye_ep, fisheye_ep, enable_global_time_option);
         
