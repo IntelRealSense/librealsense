@@ -119,8 +119,8 @@ void init_sensor(py::module &m) {
 
     py::class_<rs2::safety_sensor, rs2::sensor> safety_sensor(m, "safety_sensor"); // No docstring in C++
     safety_sensor.def(py::init<rs2::sensor>(), "sensor"_a)
-        .def("get_safety_preset", &rs2::safety_sensor::get_safety_preset, "get safety preset at index", "index"_a)
-        .def("set_safety_preset", &rs2::safety_sensor::set_safety_preset, "set safety preset at index", "index"_a, "safety_preset"_a);
+        .def("get_safety_preset", &rs2::safety_sensor::get_safety_preset, "get safety preset at index", "index"_a, py::call_guard<py::gil_scoped_release>())
+        .def("set_safety_preset", &rs2::safety_sensor::set_safety_preset, "set safety preset at index", "index"_a, "safety_preset"_a, py::call_guard<py::gil_scoped_release>());
 
     py::class_<rs2::calibrated_sensor, rs2::sensor> cal_sensor( m, "calibrated_sensor" );
     cal_sensor.def(py::init<rs2::sensor>(), "sensor"_a)
