@@ -541,7 +541,7 @@ namespace librealsense
                 []() { return std::make_shared<y8i_to_y8y8>(); }
             ); // L+R
 
-            if (_pid == RS_D585_PID || _pid == RS_S585_PID)
+            if (_pid == RS_D585_PID || _pid == RS_D585S_PID)
             {
                 depth_sensor.register_processing_block(
                     { RS2_FORMAT_Y16I },

@@ -69,7 +69,7 @@ namespace librealsense
         };
     };
     
-    class rs_s585_device : public ds6_active,
+    class rs_d585s_device : public ds6_active,
         public ds6_color,
         public ds6_safety,
         public ds6_motion,
@@ -77,7 +77,7 @@ namespace librealsense
         public firmware_logger_device
     {
     public:
-        rs_s585_device(std::shared_ptr<context> ctx,
+        rs_d585s_device(std::shared_ptr<context> ctx,
             const platform::backend_device_group& group,
             bool register_device_notifications)
             : device(ctx, group, register_device_notifications),
@@ -126,8 +126,8 @@ namespace librealsense
         {
         case ds::RS_D585_PID:
             return std::make_shared<rs_d585_device>(ctx, group, register_device_notifications);
-        case ds::RS_S585_PID:
-            return std::make_shared<rs_s585_device>(ctx, group, register_device_notifications);
+        case ds::RS_D585S_PID:
+            return std::make_shared<rs_d585s_device>(ctx, group, register_device_notifications);
         default:
             throw std::runtime_error(to_string() << "Unsupported RS400 model! 0x"
                 << std::hex << std::setw(4) << std::setfill('0') <<(int)pid);
@@ -229,7 +229,7 @@ namespace librealsense
         return matcher_factory::create(RS2_MATCHER_DEFAULT, streams);
     }
 
-    std::shared_ptr<matcher> rs_s585_device::create_matcher(const frame_holder& frame) const
+    std::shared_ptr<matcher> rs_d585s_device::create_matcher(const frame_holder& frame) const
     {
         std::vector<stream_interface*> streams = { _depth_stream.get() , _left_ir_stream.get() , _right_ir_stream.get(), _color_stream.get(), _safety_stream.get()};
         std::vector<stream_interface*> mm_streams = { _ds_motion_common->get_accel_stream().get(),
