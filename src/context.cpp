@@ -575,24 +575,48 @@ namespace librealsense
                 auto & stream = _streams[sid_index( profile->get_unique_id(), profile->get_stream_index() )];
                 stream->start_streaming( [p = profile, this]( realdds::topics::device::image && dds_frame ) {
                     rs2_stream_profile prof = { p.get() };
-                    rs2_software_video_frame rs2_frame;
-                    
-                    //Copying from dds into LibRS space, same as copy from USB backend.
-                    //TODO - use memory pool or some other frame allocator
-                    rs2_frame.pixels = new uint8_t[dds_frame.size];
-                    if ( !rs2_frame.pixels )
-                        throw std::runtime_error( "Could not allocate memory for new frame" );
-                    memcpy( rs2_frame.pixels, dds_frame.raw_data.data(), dds_frame.size );
-                    
-                    rs2_frame.deleter = []( void * ptr) { delete[] ptr; };
-                    rs2_frame.stride = dds_frame.size / dds_frame.height;
-                    rs2_frame.bpp = rs2_frame.stride / dds_frame.width;
-                    rs2_frame.timestamp = frame_counter * 1000.0 / p->get_framerate(); // TODO - timestamp from dds
-                    rs2_frame.domain = RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK; // TODO - timestamp domain from options?
-                    rs2_frame.frame_number = frame_counter++; // TODO - frame_number from dds
-                    rs2_frame.profile = &prof;
-                    rs2_frame.depth_units = 0.001f; //TODO - depth unit from dds, if needed
-                    on_video_frame( rs2_frame );
+
+                    if( p->get_stream_type() != RS2_STREAM_GYRO  &&
+                        p->get_stream_type() != RS2_STREAM_ACCEL &&
+                        p->get_stream_type() != RS2_STREAM_POSE )
+                    {
+                        rs2_software_video_frame rs2_frame;
+
+                        //Copying from dds into LibRS space, same as copy from USB backend.
+                        //TODO - use memory pool or some other frame allocator
+                        rs2_frame.pixels = new uint8_t[dds_frame.size];
+                        if( !rs2_frame.pixels )
+                            throw std::runtime_error( "Could not allocate memory for new frame" );
+                        memcpy( rs2_frame.pixels, dds_frame.raw_data.data(), dds_frame.size );
+
+                        rs2_frame.deleter = []( void * ptr ) { delete[] ptr; };
+                        rs2_frame.stride = dds_frame.height > 0 ? dds_frame.size / dds_frame.height : dds_frame.size;
+                        rs2_frame.bpp = dds_frame.width > 0 ? rs2_frame.stride / dds_frame.width : rs2_frame.stride;
+                        rs2_frame.timestamp = frame_counter * 1000.0 / p->get_framerate(); // TODO - timestamp from dds
+                        rs2_frame.domain = RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK; // TODO - timestamp domain from options?
+                        rs2_frame.frame_number = frame_counter++; // TODO - frame_number from dds
+                        rs2_frame.profile = &prof;
+                        rs2_frame.depth_units = 0.001f; //TODO - depth unit from dds, if needed
+                        on_video_frame( rs2_frame );
+                    }
+                    else
+                    {
+                        rs2_software_motion_frame rs2_frame;
+
+                        //Copying from dds into LibRS space, same as copy from USB backend.
+                        //TODO - use memory pool or some other frame allocator
+                        rs2_frame.data = new uint8_t[dds_frame.size];
+                        if( !rs2_frame.data )
+                            throw std::runtime_error( "Could not allocate memory for new frame" );
+                        memcpy( rs2_frame.data, dds_frame.raw_data.data(), dds_frame.size );
+
+                        rs2_frame.deleter = []( void * ptr ) { delete[] ptr; };
+                        rs2_frame.timestamp = frame_counter * 1000.0 / p->get_framerate(); // TODO - timestamp from dds
+                        rs2_frame.domain = RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK; // TODO - timestamp domain from options?
+                        rs2_frame.frame_number = frame_counter++; // TODO - frame_number from dds
+                        rs2_frame.profile = &prof;
+                        on_motion_frame( rs2_frame );
+                    }
                 } );
             }
 

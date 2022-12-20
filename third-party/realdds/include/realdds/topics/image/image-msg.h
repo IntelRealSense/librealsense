@@ -55,8 +55,8 @@ public:
     image & operator=( image && ) = default;
     image & operator=( raw::device::image && );
 
-    bool is_valid() const { return width != 0 && height != 0; }
-    void invalidate() { width = 0; }
+    bool is_valid() const { return width != -1 && height != -1; }
+    void invalidate() { width = -1; }
 
     static std::shared_ptr< dds_topic > create_topic( std::shared_ptr< dds_participant > const & participant,
                                                       char const * topic_name );
@@ -74,8 +74,8 @@ public:
                            eprosima::fastdds::dds::SampleInfo * optional_info = nullptr );
 
     std::vector<uint8_t> raw_data;
-    int width = 0;
-    int height = 0;
+    int width = -1;
+    int height = -1;
     int size;
     int format;
 };
