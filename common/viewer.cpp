@@ -2223,6 +2223,10 @@ namespace rs2
         {
             auto vf_profile = last_points.get_profile().as<video_stream_profile>();
             // Non-linear correspondence customized for non-flat surface exploration
+
+            if (vf_profile.width() <= 0)
+                throw std::runtime_error("Profile width must be greater than 0.");
+
             glPointSize(std::sqrt(viewer_rect.w / vf_profile.width()));
 
             auto tex = last_texture->get_gl_handle();
