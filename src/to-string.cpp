@@ -172,6 +172,35 @@ const char * get_string( rs2_host_perf_mode value )
 #undef CASE
 }
 
+const char * get_string( rs2_emitter_frequency_mode mode )
+{
+#define CASE( X ) STRCASE( EMITTER_FREQUENCY, X )
+    switch( mode )
+    {
+    CASE( 57_KHZ )
+    CASE( 91_KHZ )
+    default:
+        assert( ! is_valid( mode ) );
+        return UNKNOWN_VALUE;
+    }
+#undef CASE
+}
+
+const char * get_string( rs2_safety_mode mode )
+{
+#define CASE( X ) STRCASE( SAFETY_MODE, X )
+    switch( mode )
+    {
+    CASE( RUN )
+    CASE( STANDBY )
+    CASE( SERVICE )
+    default:
+        assert( ! is_valid( mode ) );
+        return UNKNOWN_VALUE;
+    }
+#undef CASE
+}
+
 const char * get_string( rs2_extension value )
 {
 #define CASE( X ) STRCASE( EXTENSION, X )
@@ -372,9 +401,11 @@ const char * get_string( rs2_option value )
     CASE( TRANSMITTER_FREQUENCY )
     CASE( VERTICAL_BINNING )
     CASE( RECEIVER_SENSITIVITY )
-    CASE(AUTO_EXPOSURE_LIMIT_TOGGLE)
-    CASE(AUTO_GAIN_LIMIT_TOGGLE)
-    CASE(SAFETY_PRESET_ACTIVE_INDEX)
+    CASE( AUTO_EXPOSURE_LIMIT_TOGGLE )
+    CASE( AUTO_GAIN_LIMIT_TOGGLE )
+    CASE( EMITTER_FREQUENCY )
+    CASE( SAFETY_PRESET_ACTIVE_INDEX )
+    CASE( SAFETY_MODE )
     default:
         assert( ! is_valid( value ) );
         return UNKNOWN_VALUE;
@@ -652,3 +683,6 @@ const char * rs2_cah_trigger_to_string( int mode ) { return "DEPRECATED as of 2.
 const char * rs2_calibration_type_to_string( rs2_calibration_type type ) { return librealsense::get_string( type ); }
 const char * rs2_calibration_status_to_string( rs2_calibration_status status ) { return librealsense::get_string( status ); }
 const char * rs2_host_perf_mode_to_string( rs2_host_perf_mode mode ) { return librealsense::get_string( mode ); }
+const char * rs2_emitter_frequency_mode_to_string( rs2_emitter_frequency_mode mode ) { return librealsense::get_string( mode ); }
+const char * rs2_safety_mode_to_string( rs2_safety_mode mode ) { return librealsense::get_string( mode ); }
+

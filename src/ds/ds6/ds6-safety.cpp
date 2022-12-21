@@ -82,6 +82,7 @@ namespace librealsense
 
     void ds6_safety::register_options(std::shared_ptr<ds6_safety_sensor> safety_ep, std::shared_ptr<uvc_sensor> raw_safety_sensor)
     {
+        // Register safety preset active index option
         auto active_safety_preset = std::make_shared<uvc_xu_option<uint16_t>>(
             *raw_safety_sensor,
             safety_xu,
@@ -89,6 +90,18 @@ namespace librealsense
             "Safety Preset Active Index");
 
         safety_ep->register_option(RS2_OPTION_SAFETY_PRESET_ACTIVE_INDEX, active_safety_preset);
+        
+        // Register operational mode option
+        auto safety_camera_oper_mode = std::make_shared< uvc_xu_option< uint16_t > >(
+        *raw_safety_sensor,
+        safety_xu,
+        ds::xu_id::SAFETY_CAMERA_OPER_MODE,
+        "Safety camera operational mode",
+        std::map< float, std::string >{ { float( RS2_SAFETY_MODE_RUN ),     "Run" },
+                                        { float( RS2_SAFETY_MODE_STANDBY ), "Standby" },
+                                        { float( RS2_SAFETY_MODE_SERVICE ), "Service" } } );
+
+        safety_ep->register_option( RS2_OPTION_SAFETY_MODE, safety_camera_oper_mode );
     }
 
     void ds6_safety::register_metadata(std::shared_ptr<uvc_sensor> raw_safety_ep)

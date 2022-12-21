@@ -189,9 +189,11 @@ PYBIND11_MODULE(NAME, m) {
         .value("transmitter_frequency", RS2_OPTION_TRANSMITTER_FREQUENCY)
         .value("vertical_binning", RS2_OPTION_VERTICAL_BINNING)
         .value("receiver_sensitivity", RS2_OPTION_RECEIVER_SENSITIVITY)
-        .value("exposure_limit_toggle", RS2_OPTION_AUTO_EXPOSURE_LIMIT_TOGGLE)
+        .value("exposure limit toggle", RS2_OPTION_AUTO_EXPOSURE_LIMIT_TOGGLE)
         .value("gain_limit_toggle", RS2_OPTION_AUTO_GAIN_LIMIT_TOGGLE)
+        .value("emitter frequency", RS2_OPTION_EMITTER_FREQUENCY)
         .value("safety_preset_active_index", RS2_OPTION_SAFETY_PRESET_ACTIVE_INDEX)
+        .value("safety_mode", RS2_OPTION_SAFETY_MODE)
         .value("count", RS2_OPTION_COUNT);
 
     py::enum_<platform::power_state> power_state(m, "power_state");

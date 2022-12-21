@@ -47,11 +47,11 @@ extern "C" {
         RS2_OPTION_ASIC_TEMPERATURE, /**< Current Asic Temperature */
         RS2_OPTION_ERROR_POLLING_ENABLED, /**< disable error handling */
         RS2_OPTION_PROJECTOR_TEMPERATURE, /**< Current Projector Temperature */
-        RS2_OPTION_OUTPUT_TRIGGER_ENABLED, /**< Enable / disable trigger to be outputed from the camera to any external device on every depth frame */
+        RS2_OPTION_OUTPUT_TRIGGER_ENABLED, /**< Enable / disable trigger to be outputted from the camera to any external device on every depth frame */
         RS2_OPTION_MOTION_MODULE_TEMPERATURE, /**< Current Motion-Module Temperature */
         RS2_OPTION_DEPTH_UNITS, /**< Number of meters represented by a single depth unit */
         RS2_OPTION_ENABLE_MOTION_CORRECTION, /**< Enable/Disable automatic correction of the motion data */
-        RS2_OPTION_AUTO_EXPOSURE_PRIORITY, /**< Allows sensor to dynamically ajust the frame rate depending on lighting conditions */
+        RS2_OPTION_AUTO_EXPOSURE_PRIORITY, /**< Allows sensor to dynamically adjust the frame rate depending on lighting conditions */
         RS2_OPTION_COLOR_SCHEME, /**< Color scheme for data visualization */
         RS2_OPTION_HISTOGRAM_EQUALIZATION_ENABLED, /**< Perform histogram equalization post-processing on the depth data */
         RS2_OPTION_MIN_DISTANCE, /**< Minimal distance to the target */
@@ -62,7 +62,7 @@ extern "C" {
         RS2_OPTION_FILTER_SMOOTH_DELTA, /**< 2D-filter range/validity threshold*/
         RS2_OPTION_HOLES_FILL, /**< Enhance depth data post-processing with holes filling where appropriate*/
         RS2_OPTION_STEREO_BASELINE, /**< The distance in mm between the first and the second imagers in stereo-based depth cameras*/
-        RS2_OPTION_AUTO_EXPOSURE_CONVERGE_STEP, /**< Allows dynamically ajust the converge step value of the target exposure in Auto-Exposure algorithm*/
+        RS2_OPTION_AUTO_EXPOSURE_CONVERGE_STEP, /**< Allows dynamically adjust the converge step value of the target exposure in Auto-Exposure algorithm*/
         RS2_OPTION_INTER_CAM_SYNC_MODE, /**< Impose Inter-camera HW synchronization mode. Applicable for D400/L500/Rolling Shutter SKUs */
         RS2_OPTION_STREAM_FILTER, /**< Select a stream to process */
         RS2_OPTION_STREAM_FORMAT_FILTER, /**< Select a stream format to process */
@@ -115,7 +115,9 @@ extern "C" {
         RS2_OPTION_RECEIVER_SENSITIVITY, /**< Control receiver sensitivity to incoming light, both projected and ambient (same as APD on L515). */
         RS2_OPTION_AUTO_EXPOSURE_LIMIT_TOGGLE, /**< Enable / disable color image auto-exposure*/
         RS2_OPTION_AUTO_GAIN_LIMIT_TOGGLE, /**< Enable / disable color image auto-gain*/
+        RS2_OPTION_EMITTER_FREQUENCY, /**< Select emitter (laser projector) frequency, see rs2_emitter_frequency for values */
         RS2_OPTION_SAFETY_PRESET_ACTIVE_INDEX, /**< Set / Get current active safety preset index**/
+        RS2_OPTION_SAFETY_MODE , /**< Safety camera operation mode see rs2_safety_camera_mode for values*/
         RS2_OPTION_COUNT /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
     } rs2_option;
 
@@ -204,6 +206,25 @@ extern "C" {
         RS2_HOST_PERF_COUNT         /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
     } rs2_host_perf_mode;
     const char* rs2_host_perf_mode_to_string( rs2_host_perf_mode perf );
+
+    /** \brief values for RS2_EMITTER_FREQUENCY option. */
+    typedef enum rs2_emitter_frequency_mode
+    {
+        RS2_EMITTER_FREQUENCY_57_KHZ = 0,  /**< Emitter frequency shall be 57 [KHZ] */
+        RS2_EMITTER_FREQUENCY_91_KHZ = 1,  /**< Emitter frequency shall be 91 [KHZ] */
+        RS2_EMITTER_FREQUENCY_COUNT        /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
+    } rs2_emitter_frequency_mode;
+    const char* rs2_emitter_frequency_mode_to_string( rs2_emitter_frequency_mode mode );
+    
+    /** \brief values for RS2_OPTION_SAFETY_MODE option. */
+    typedef enum rs2_safety_mode
+    {
+        RS2_SAFETY_MODE_RUN,
+        RS2_SAFETY_MODE_STANDBY,
+        RS2_SAFETY_MODE_SERVICE,
+        RS2_SAFETY_MODE_COUNT        
+    } rs2_safety_mode;
+    const char* rs2_safety_mode_to_string( rs2_safety_mode mode );
 
     /**
     * check if an option is read-only
