@@ -41,6 +41,9 @@ file(GLOB_RECURSE UTILITIES_SOURCE_FILES
 if( BUILD_EASYLOGGINGPP )
     target_sources( ${PROJECT_NAME}
         PRIVATE "${REPO_ROOT}/third-party/easyloggingpp/src/easylogging++.cc" )
+    # We want to disable any default ELPP log-file!
+    target_compile_definitions( ${PROJECT_NAME}
+        PUBLIC ELPP_NO_DEFAULT_LOG_FILE )
 endif()
 target_sources( ${PROJECT_NAME} PRIVATE ${UTILITIES_SOURCE_FILES} )
 source_group(
