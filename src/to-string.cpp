@@ -186,9 +186,9 @@ const char * get_string( rs2_emitter_frequency_mode mode )
 #undef CASE
 }
 
-const char * get_string( rs2_safety_camera_mode mode )
+const char * get_string( rs2_safety_mode mode )
 {
-#define CASE( X ) STRCASE( SAFETY_CAMERA_MODE, X )
+#define CASE( X ) STRCASE( SAFETY_MODE, X )
     switch( mode )
     {
     CASE( RUN )
@@ -405,7 +405,7 @@ const char * get_string( rs2_option value )
     CASE( AUTO_GAIN_LIMIT_TOGGLE )
     CASE( EMITTER_FREQUENCY )
     CASE( SAFETY_PRESET_ACTIVE_INDEX )
-    CASE( SAFETY_CAMERA_MODE )
+    CASE( SAFETY_MODE )
     default:
         assert( ! is_valid( value ) );
         return UNKNOWN_VALUE;
@@ -684,5 +684,5 @@ const char * rs2_calibration_type_to_string( rs2_calibration_type type ) { retur
 const char * rs2_calibration_status_to_string( rs2_calibration_status status ) { return librealsense::get_string( status ); }
 const char * rs2_host_perf_mode_to_string( rs2_host_perf_mode mode ) { return librealsense::get_string( mode ); }
 const char * rs2_emitter_frequency_mode_to_string( rs2_emitter_frequency_mode mode ) { return librealsense::get_string( mode ); }
-const char * rs2_safety_camera_mode_to_string( rs2_safety_camera_mode mode ) { return librealsense::get_string( mode ); }
+const char * rs2_safety_mode_to_string( rs2_safety_mode mode ) { return librealsense::get_string( mode ); }
 

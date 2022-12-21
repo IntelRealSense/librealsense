@@ -146,7 +146,7 @@ enum class ERealSenseOptionType : uint8
     VERTICAL_BINNING                           , /**< Enables vertical binning which increases the maximal sensed distance. */
     RECEIVER_SENSITIVITY                       , /**< Control the receiver sensitivity to incoming light, both projected and ambient. */
     EMITTER_FREQUENCY                          , /**< Select emitter (laser) frequency:  0 --> 57[KHZ], 1 --> 97[KHZ] */
-    SAFETY_CAMERA_MODE                         , /**< Safety camera operation mode see rs2_safety_camera_mode for values. */
+    SAFETY_MODE                                , /**< Safety camera operation mode see rs2_safety_mode for values. */
 };
 
 UENUM(Blueprintable)

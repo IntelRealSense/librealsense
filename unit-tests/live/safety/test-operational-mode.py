@@ -8,9 +8,9 @@ import pyrealsense2 as rs
 from rspy import test
 
 # Constants
-RUN_MODE     = 0 # RS2_SAFETY_CAMERA_MODE_RUN (RESUME)
-STANDBY_MODE = 1 # RS2_SAFETY_CAMERA_MODE_STANDBY (PAUSE)
-SERVICE_MODE = 2 # RS2_SAFETY_CAMERA_MODE_SERVICE (MAINTENANCE)
+RUN_MODE     = 0 # RS2_SAFETY_MODE_RUN (RESUME)
+STANDBY_MODE = 1 # RS2_SAFETY_MODE_STANDBY (PAUSE)
+SERVICE_MODE = 2 # RS2_SAFETY_MODE_SERVICE (MAINTENANCE)
 
 device = test.find_first_device_or_exit();
 
@@ -35,18 +35,18 @@ f = pipe.wait_for_frames()
 
 pipeline_device = profiles.get_device()
 safety_sensor = pipeline_device.first_safety_sensor()
-safety_sensor.get_option(rs.option.safety_camera_mode, RUN_MODE) # verify default
+safety_sensor.get_option(rs.option.safety_mode, RUN_MODE) # verify default
 
-safety_sensor.set_option(rs.option.safety_camera_mode, STANDBY_MODE) 
-test.check_equal(safety_sensor.get_option(rs.option.safety_camera_mode), STANDBY_MODE)
+safety_sensor.set_option(rs.option.safety_mode, STANDBY_MODE) 
+test.check_equal(safety_sensor.get_option(rs.option.safety_mode), STANDBY_MODE)
 verify_frames_received(pipe, profiles, count = 10)
 
 pipe.stop()
 pipe.start(config)
 verify_frames_received(pipe, profiles, count = 10)
 
-safety_sensor.set_option(rs.option.safety_camera_mode, RUN_MODE) 
-test.check_equal(safety_sensor.get_option(rs.option.safety_camera_mode), RUN_MODE)
+safety_sensor.set_option(rs.option.safety_mode, RUN_MODE) 
+test.check_equal(safety_sensor.get_option(rs.option.safety_mode), RUN_MODE)
 verify_frames_received(pipe, profiles, count = 10)
 
 pipe.stop()
@@ -69,18 +69,18 @@ f = pipe.wait_for_frames()
 pipeline_device = profiles.get_device()
 safety_sensor = pipeline_device.first_safety_sensor()
 
-safety_sensor.set_option(rs.option.safety_camera_mode, RUN_MODE) 
-test.check_equal(safety_sensor.get_option(rs.option.safety_camera_mode), RUN_MODE)
+safety_sensor.set_option(rs.option.safety_mode, RUN_MODE) 
+test.check_equal(safety_sensor.get_option(rs.option.safety_mode), RUN_MODE)
 # Verify that on RUN mode we get frames
 verify_frames_received(pipe, profiles, count = 10)
 
-safety_sensor.set_option(rs.option.safety_camera_mode, SERVICE_MODE) 
-test.check_equal(safety_sensor.get_option(rs.option.safety_camera_mode), SERVICE_MODE)
+safety_sensor.set_option(rs.option.safety_mode, SERVICE_MODE) 
+test.check_equal(safety_sensor.get_option(rs.option.safety_mode), SERVICE_MODE)
 # Verify that on SERVICE mode we get no frames
 test.check_throws( lambda: verify_frames_received(pipe, profiles, count = 1) , RuntimeError )
 
-safety_sensor.set_option(rs.option.safety_camera_mode, RUN_MODE) 
-test.check_equal(safety_sensor.get_option(rs.option.safety_camera_mode), RUN_MODE)
+safety_sensor.set_option(rs.option.safety_mode, RUN_MODE) 
+test.check_equal(safety_sensor.get_option(rs.option.safety_mode), RUN_MODE)
 # Verify that on RUN mode we get frames
 verify_frames_received(pipe, profiles, count = 10)
 

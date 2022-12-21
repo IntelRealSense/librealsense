@@ -117,7 +117,7 @@ extern "C" {
         RS2_OPTION_AUTO_GAIN_LIMIT_TOGGLE, /**< Enable / disable color image auto-gain*/
         RS2_OPTION_EMITTER_FREQUENCY, /**< Select emitter (laser projector) frequency, see rs2_emitter_frequency for values */
         RS2_OPTION_SAFETY_PRESET_ACTIVE_INDEX, /**< Set / Get current active safety preset index**/
-        RS2_OPTION_SAFETY_CAMERA_MODE , /**< Safety camera operation mode see rs2_safety_camera_mode for values*/
+        RS2_OPTION_SAFETY_MODE , /**< Safety camera operation mode see rs2_safety_camera_mode for values*/
         RS2_OPTION_COUNT /**< Number of enumeration values. Not a valid input: intended to be used in for-loops. */
     } rs2_option;
 
@@ -216,15 +216,15 @@ extern "C" {
     } rs2_emitter_frequency_mode;
     const char* rs2_emitter_frequency_mode_to_string( rs2_emitter_frequency_mode mode );
     
-    /** \brief values for RS2_OPTION_SAFETY_CAMERA_MODE option. */
-    typedef enum rs2_safety_camera_mode
+    /** \brief values for RS2_OPTION_SAFETY_MODE option. */
+    typedef enum rs2_safety_mode
     {
-        RS2_SAFETY_CAMERA_MODE_RUN,
-        RS2_SAFETY_CAMERA_MODE_STANDBY,
-        RS2_SAFETY_CAMERA_MODE_SERVICE,
-        RS2_SAFETY_CAMERA_MODE_COUNT        
-    } rs2_safety_camera_mode;
-    const char* rs2_safety_camera_mode_to_string( rs2_safety_camera_mode mode );
+        RS2_SAFETY_MODE_RUN,
+        RS2_SAFETY_MODE_STANDBY,
+        RS2_SAFETY_MODE_SERVICE,
+        RS2_SAFETY_MODE_COUNT        
+    } rs2_safety_mode;
+    const char* rs2_safety_mode_to_string( rs2_safety_mode mode );
 
     /**
     * check if an option is read-only

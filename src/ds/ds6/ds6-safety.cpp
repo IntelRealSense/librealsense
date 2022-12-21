@@ -97,11 +97,11 @@ namespace librealsense
         safety_xu,
         ds::xu_id::SAFETY_CAMERA_OPER_MODE,
         "Safety camera operational mode",
-        std::map< float, std::string >{ { float( RS2_SAFETY_CAMERA_MODE_RUN ),     "Run" },
-                                        { float( RS2_SAFETY_CAMERA_MODE_STANDBY ), "Standby" },
-                                        { float( RS2_SAFETY_CAMERA_MODE_SERVICE ), "Service" } } );
+        std::map< float, std::string >{ { float( RS2_SAFETY_MODE_RUN ),     "Run" },
+                                        { float( RS2_SAFETY_MODE_STANDBY ), "Standby" },
+                                        { float( RS2_SAFETY_MODE_SERVICE ), "Service" } } );
 
-        safety_ep->register_option( RS2_OPTION_SAFETY_CAMERA_MODE, safety_camera_oper_mode );
+        safety_ep->register_option( RS2_OPTION_SAFETY_MODE, safety_camera_oper_mode );
     }
 
     void ds6_safety::register_metadata(std::shared_ptr<uvc_sensor> raw_safety_ep)
