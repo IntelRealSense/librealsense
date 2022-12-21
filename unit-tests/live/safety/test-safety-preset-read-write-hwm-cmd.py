@@ -1,6 +1,7 @@
 # License: Apache 2.0. See LICENSE file in root directory.
 # Copyright(c) 2022 Intel Corporation. All Rights Reserved.
 
+#test:donotrun  ## line to be removed when we connect D585S to our LibCI
 #test:donotrun:!nightly
 #test:device D585S
 
