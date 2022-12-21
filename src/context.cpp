@@ -1013,28 +1013,35 @@ namespace librealsense
                 LOG_DEBUG("\nDevice connected:\n\n" << std::string(devices_info_added[i]->get_device_data()));
             }
 
-            std::map<uint64_t, devices_changed_callback_ptr> devices_changed_callbacks;
-            {
-                std::lock_guard<std::mutex> lock(_devices_changed_callbacks_mtx);
-                devices_changed_callbacks = _devices_changed_callbacks;
-            }
-
-            for (auto& kvp : devices_changed_callbacks)
-            {
-                try
-                {
-                    kvp.second->on_devices_changed(new rs2_device_list({ shared_from_this(), rs2_devices_info_removed }),
-                                                   new rs2_device_list({ shared_from_this(), rs2_devices_info_added }));
-                }
-                catch (...)
-                {
-                    LOG_ERROR("Exception thrown from user callback handler");
-                }
-            }
-
-            raise_devices_changed(rs2_devices_info_removed, rs2_devices_info_added);
+            invoke_devices_changed_callbacks( rs2_devices_info_removed, rs2_devices_info_added );
         }
     }
+
+    void context::invoke_devices_changed_callbacks( std::vector<rs2_device_info> & rs2_devices_info_removed,
+                                                    std::vector<rs2_device_info> & rs2_devices_info_added )
+    {
+        std::map<uint64_t, devices_changed_callback_ptr> devices_changed_callbacks;
+        {
+            std::lock_guard<std::mutex> lock( _devices_changed_callbacks_mtx );
+            devices_changed_callbacks = _devices_changed_callbacks;
+        }
+
+        for( auto & kvp : devices_changed_callbacks )
+        {
+            try
+            {
+                kvp.second->on_devices_changed( new rs2_device_list( { shared_from_this(), rs2_devices_info_removed } ),
+                                                new rs2_device_list( { shared_from_this(), rs2_devices_info_added } ) );
+            }
+            catch( ... )
+            {
+                LOG_ERROR( "Exception thrown from user callback handler" );
+            }
+        }
+
+        raise_devices_changed( rs2_devices_info_removed, rs2_devices_info_added );
+    }
+
     void context::raise_devices_changed(const std::vector<rs2_device_info>& removed, const std::vector<rs2_device_info>& added)
     {
         if (_devices_changed_callback)
@@ -1062,12 +1069,22 @@ namespace librealsense
 #ifdef BUILD_WITH_DDS
     void context::start_dds_device_watcher( size_t message_timeout_ms )
     {
-        // TODO Here we should add DDS devices to the `on_device_changed`parameters
-        // on_device_changed(old, curr, _playback_devices, _playback_devices);
         _dds_watcher->on_device_added( [this, message_timeout_ms]( std::shared_ptr< realdds::dds_device > const & dev ) {
             dev->run( message_timeout_ms );
+
+            std::vector<rs2_device_info> rs2_device_info_added;
+            std::vector<rs2_device_info> rs2_device_info_removed;
+            std::shared_ptr< device_info > info = std::make_shared< dds_device_info >( shared_from_this(), dev );
+            rs2_device_info_added.push_back( { shared_from_this(), info } );
+            invoke_devices_changed_callbacks( rs2_device_info_removed, rs2_device_info_added );
         } );
-        _dds_watcher->on_device_removed( [this]( std::shared_ptr< realdds::dds_device > const & dev ) {} );
+        _dds_watcher->on_device_removed( [this]( std::shared_ptr< realdds::dds_device > const & dev ) {
+            std::vector<rs2_device_info> rs2_device_info_added;
+            std::vector<rs2_device_info> rs2_device_info_removed;
+            std::shared_ptr< device_info > info = std::make_shared< dds_device_info >( shared_from_this(), dev );
+            rs2_device_info_removed.push_back( { shared_from_this(), info } );
+            invoke_devices_changed_callbacks( rs2_device_info_removed, rs2_device_info_added );
+        } );
         _dds_watcher->start();
     }
 #endif //BUILD_WITH_DDS
