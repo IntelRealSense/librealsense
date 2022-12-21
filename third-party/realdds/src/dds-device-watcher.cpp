@@ -7,6 +7,7 @@
 #include <realdds/dds-device.h>
 #include <realdds/dds-utilities.h>
 #include <realdds/dds-guid.h>
+#include <realdds/topics/dds-topic-names.h>
 #include <realdds/topics/flexible/flexible-msg.h>
 #include <realdds/topics/device-info-msg.h>
 
@@ -21,7 +22,7 @@ using namespace realdds;
 
 dds_device_watcher::dds_device_watcher( std::shared_ptr< dds_participant > const & participant )
     : _device_info_topic(
-        new dds_topic_reader( topics::flexible_msg::create_topic( participant, "realsense/device-info" ) ) )
+        new dds_topic_reader( topics::flexible_msg::create_topic( participant, topics::DEVICE_INFO_TOPIC_NAME ) ) )
     , _participant( participant )
     , _active_object( [this]( dispatcher::cancellable_timer timer ) {
 

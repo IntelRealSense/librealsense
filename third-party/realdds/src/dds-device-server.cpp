@@ -11,6 +11,7 @@
 #include <realdds/dds-notification-server.h>
 #include <realdds/dds-topic-reader.h>
 #include <realdds/dds-utilities.h>
+#include <realdds/topics/dds-topic-names.h>
 #include <realdds/topics/image/image-msg.h>
 #include <realdds/topics/flexible/flexible-msg.h>
 #include <realdds/dds-topic.h>
@@ -150,7 +151,7 @@ void dds_device_server::init( std::vector< std::shared_ptr< dds_stream_server > 
     try
     {
         // Create a notifications server and set discovery notifications
-        _notification_server = std::make_shared< dds_notification_server >( _publisher, _topic_root + "/notification" );
+        _notification_server = std::make_shared< dds_notification_server >( _publisher, _topic_root + topics::NOTIFICATION_TOPIC_NAME );
 
         // If a previous init failed (e.g., one of the streams has no profiles):
         _stream_name_to_server.clear();
@@ -167,7 +168,7 @@ void dds_device_server::init( std::vector< std::shared_ptr< dds_stream_server > 
         _notification_server->run();
 
         // Create a control reader and set callback
-        auto topic = topics::flexible_msg::create_topic( _subscriber->get_participant(), _topic_root + "/control" );
+        auto topic = topics::flexible_msg::create_topic( _subscriber->get_participant(), _topic_root + topics::CONTROL_TOPIC_NAME );
         _control_reader = std::make_shared< dds_topic_reader >( topic, _subscriber );
 
         _control_reader->on_data_available( [&]() { on_control_message_received(); } );

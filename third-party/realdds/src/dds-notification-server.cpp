@@ -7,7 +7,6 @@
 #include <realdds/dds-publisher.h>
 #include <realdds/dds-stream-server.h>
 #include <realdds/dds-utilities.h>
-#include <realdds/topics/dds-topics.h>
 #include <realdds/dds-topic.h>
 #include <realdds/dds-topic-writer.h>
 

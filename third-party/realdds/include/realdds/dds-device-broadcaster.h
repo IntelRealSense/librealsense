@@ -34,7 +34,7 @@ class dds_publisher;
 class dds_topic_writer;
 class dds_topic;
 
-// We're responsible for broadcasting each device on realsense/device-info
+// We're responsible for broadcasting each device to listeners on the DDS network
 //
 class dds_device_broadcaster
 {

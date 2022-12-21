@@ -8,6 +8,7 @@
 #include <realdds/dds-topic-writer.h>
 #include <realdds/dds-subscriber.h>
 #include <realdds/dds-option.h>
+#include <realdds/topics/dds-topic-names.h>
 #include <realdds/topics/flexible/flexible-msg.h>
 
 #include <fastdds/dds/publisher/DataWriter.hpp>
@@ -235,7 +236,7 @@ void dds_device::impl::create_notifications_reader()
     if( _notifications_reader )
         return;
 
-    auto topic = topics::flexible_msg::create_topic( _participant, _info.topic_root + "/notification" );
+    auto topic = topics::flexible_msg::create_topic( _participant, _info.topic_root + topics::NOTIFICATION_TOPIC_NAME );
 
     _notifications_reader = std::make_shared< dds_topic_reader >( topic );
 
@@ -251,7 +252,7 @@ void dds_device::impl::create_control_writer()
     if( _control_writer )
         return;
 
-    auto topic = topics::flexible_msg::create_topic( _participant, _info.topic_root + "/control" );
+    auto topic = topics::flexible_msg::create_topic( _participant, _info.topic_root + topics::CONTROL_TOPIC_NAME );
     _control_writer = std::make_shared< dds_topic_writer >( topic );
     dds_topic_writer::qos wqos( eprosima::fastdds::dds::RELIABLE_RELIABILITY_QOS );
     wqos.history().depth = 10;  // default is 1

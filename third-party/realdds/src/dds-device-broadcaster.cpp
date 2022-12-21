@@ -8,6 +8,7 @@
 #include <realdds/dds-topic-writer.h>
 #include <realdds/dds-utilities.h>
 #include <realdds/dds-guid.h>
+#include <realdds/topics/dds-topic-names.h>
 #include <realdds/topics/flexible/flexible-msg.h>
 #include <realdds/topics/flexible/flexiblePubSubTypes.h>
 
@@ -183,7 +184,7 @@ bool dds_device_broadcaster::add_dds_device( const device_info & dev_info )
 bool dds_device_broadcaster::create_device_writer( const device_info & dev_info )
 {
     if( ! _topic )
-        _topic = topics::flexible_msg::create_topic( _publisher->get_participant(), "realsense/device-info" );
+        _topic = topics::flexible_msg::create_topic( _publisher->get_participant(), topics::DEVICE_INFO_TOPIC_NAME );
 
     // Create a data writer for the topic
     auto writer = std::make_shared< dds_client_listener >( _topic, _publisher, this );
