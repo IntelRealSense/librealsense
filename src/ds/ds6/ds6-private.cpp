@@ -21,7 +21,7 @@ namespace librealsense
                     switch (info.pid)
                     {
                     case RS_D585_PID:
-                    case RS_S585_PID:
+                    case RS_D585S_PID:
                         found = (result.mi == 6);
                         break;
                     default:
