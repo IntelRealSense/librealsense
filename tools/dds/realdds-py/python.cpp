@@ -5,7 +5,6 @@ Copyright(c) 2022 Intel Corporation. All Rights Reserved. */
 
 #include <realdds/dds-participant.h>
 #include <realdds/topics/dds-topics.h>
-#include <realdds/topics/device-info/deviceInfoPubSubTypes.h>
 #include <realdds/topics/flexible/flexiblePubSubTypes.h>
 #include <realdds/dds-device-broadcaster.h>
 #include <realdds/dds-device-server.h>
@@ -19,14 +18,12 @@ Copyright(c) 2022 Intel Corporation. All Rights Reserved. */
 #include <realdds/dds-topic.h>
 #include <realdds/dds-topic-reader.h>
 #include <realdds/dds-topic-writer.h>
-#include <realdds/dds-utilities.h>
 #include <realdds/dds-log-consumer.h>
 
 #include <librealsense2/utilities/easylogging/easyloggingpp.h>
+
 #include <fastdds/dds/domain/qos/DomainParticipantQos.hpp>
 #include <fastdds/dds/domain/DomainParticipant.hpp>
-#include <fastdds/dds/core/status/SubscriptionMatchedStatus.hpp>
-#include <fastdds/dds/core/status/PublicationMatchedStatus.hpp>
 #include <fastdds/dds/subscriber/SampleInfo.hpp>
 #include <fastrtps/types/DynamicType.h>
 
@@ -290,53 +287,35 @@ PYBIND11_MODULE(NAME, m) {
     // The actual types are declared as functions and not classes: the py::init<> inheritance rules are pretty strict
     // and, coupled with shared_ptr usage, are very hard to get around. This is much simpler...
     using realdds::topics::device_info;
-    using raw_device_info = realdds::topics::raw::device_info;
-    types.def( "device_info", []() { return TypeSupport( new device_info::type ); } );
+    using realdds::topics::flexible_msg;
+    types.def( "device_info", []() { return TypeSupport( new flexible_msg::type ); } );
 
     py::class_< device_info >( m, "device_info" )
         .def( py::init<>() )
         .def_readwrite( "name", &device_info::name )
         .def_readwrite( "serial", &device_info::serial )
         .def_readwrite( "product_line", &device_info::product_line )
+        .def_readwrite( "product_id", &device_info::product_id )
         .def_readwrite( "locked", &device_info::locked )
         .def_readwrite( "topic_root", &device_info::topic_root )
-        .def( "invalidate", &device_info::invalidate )
-        .def( "is_valid", &device_info::is_valid )
-        .def( "__nonzero__", &device_info::is_valid )  // Called to implement truth value testing in Python 2
-        .def( "__bool__", &device_info::is_valid )     // Called to implement truth value testing in Python 3
         .def( "__repr__",
               []( device_info const & self ) {
                   std::ostringstream os;
                   os << "<" SNAME ".device_info ";
-                  if( ! self.is_valid() )
-                      os << "INVALID";
-                  else
-                  {
-                      if( ! self.name.empty() )
-                          os << "\"" << self.name << "\" ";
-                      if( ! self.serial.empty() )
-                          os << "s/n \"" << self.serial << "\" ";
-                      if( ! self.topic_root.empty() )
-                          os << "@ \"" << self.topic_root << "\" ";
-                      if( ! self.product_line.empty() )
-                          os << "product-line \"" << self.product_line << "\" ";
-                      os << ( self.locked ? "locked" : "unlocked" );
-                  }
+                    if( ! self.name.empty() )
+                        os << "\"" << self.name << "\" ";
+                    if( ! self.serial.empty() )
+                        os << "s/n \"" << self.serial << "\" ";
+                    if( ! self.topic_root.empty() )
+                        os << "@ \"" << self.topic_root << "\" ";
+                    if( ! self.product_line.empty() )
+                        os << "product-line \"" << self.product_line << "\" ";
+                    if( !self.product_id.empty() )
+                        os << "product-id \"" << self.product_id << "\" ";
+                    os << ( self.locked ? "locked" : "unlocked" );
                   os << ">";
                   return os.str();
-              } )
-        .def( "take_next",
-              []( dds_topic_reader & reader ) {
-                  auto actual_type = reader.topic()->get()->get_type_name();
-                  if( actual_type != device_info::type().getName() )
-                      throw std::runtime_error( "can't initialize raw::device_info from " + actual_type );
-                  device_info data;
-                  if( ! device_info::take_next( reader, &data ) )
-                      assert( ! data.is_valid() );
-                  return data;
-              } )
-        .def( "create_topic", &device_info::create_topic )
-        .attr( "TOPIC_NAME" ) = device_info::TOPIC_NAME;
+              } );
 
     using realdds::topics::flexible_msg;
     using raw_flexible = realdds::topics::raw::flexible;

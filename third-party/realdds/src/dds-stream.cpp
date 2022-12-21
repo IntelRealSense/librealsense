@@ -41,6 +41,7 @@ void dds_stream::open( std::string const & topic_name, std::shared_ptr< dds_subs
 
 void dds_stream::close()
 {
+    _reader->on_data_available( [](){} );
     _reader.reset();
 }
 
@@ -61,7 +62,7 @@ void dds_stream::handle_frames()
 {
     topics::device::image frame;
     eprosima::fastdds::dds::SampleInfo info;
-    while ( topics::device::image::take_next( *_reader, &frame, &info ) )
+    while ( _reader && topics::device::image::take_next( *_reader, &frame, &info ) )
     {
         if ( !frame.is_valid() )
             continue;

@@ -7,14 +7,8 @@
 #include <realdds/dds-device-server.h>
 #include <realdds/dds-stream-server.h>
 #include <realdds/dds-participant.h>
-#include <realdds/dds-utilities.h>
 #include <realdds/dds-option.h>
 #include <realdds/dds-log-consumer.h>
-#include <realdds/topics/device-info/device-info-msg.h>
-#include <realdds/topics/flexible/flexible-msg.h>
-
-#include <fastrtps/types/TypesBase.h>
-#include <fastdds/dds/log/Log.hpp>
 
 #include "lrs-device-watcher.h"
 #include "lrs-device-controller.h"
@@ -25,7 +19,6 @@
 #include <string>
 #include <iostream>
 #include <map>
-#include <unordered_set>
 
 using namespace TCLAP;
 using namespace realdds;
@@ -138,7 +131,6 @@ std::vector< std::shared_ptr< realdds::dds_stream_server > > get_supported_strea
             LOG_ERROR( "ignoring stream '" << stream_name << "' with no profiles" );
             continue;
         }
-        std::string const & sensor_name = stream_name_to_sensor_name[stream_name];
         auto server = stream_name_to_server[stream_name];
         if( ! server )
         {
@@ -157,8 +149,8 @@ std::vector< std::shared_ptr< realdds::dds_stream_server > > get_supported_strea
                 //Get all sensor supported options
                 auto supported_options = sensor.get_supported_options();
                 //Hack - some options can be queried only if streaming so start sensor and close after query
-                sensor.open( sensor.get_stream_profiles()[0] );
-                sensor.start( []( rs2::frame f ) {} );
+                //sensor.open( sensor.get_stream_profiles()[0] );
+                //sensor.start( []( rs2::frame f ) {} );
                 for( auto option : supported_options )
                 {
                     auto dds_opt = std::make_shared< realdds::dds_option >( sensor.get_option_name( option ),
@@ -176,8 +168,8 @@ std::vector< std::shared_ptr< realdds::dds_stream_server > > get_supported_strea
                     }
                     options.push_back( dds_opt ); //TODO - filter options relevant for stream type
                 }
-                sensor.stop();
-                sensor.close();
+                //sensor.stop();
+                //sensor.close();
             }
         }
         server->init_options( options );
@@ -213,7 +205,8 @@ topics::device_info rs2_device_to_info( rs2::device const & dev )
     dev_info.name = dev.get_info( RS2_CAMERA_INFO_NAME );
     dev_info.serial = dev.get_info( RS2_CAMERA_INFO_SERIAL_NUMBER );
     dev_info.product_line = dev.get_info( RS2_CAMERA_INFO_PRODUCT_LINE );
-    dev_info.locked = ( dev.get_info( RS2_CAMERA_INFO_CAMERA_LOCKED ) == "YES" );
+    dev_info.product_id = dev.get_info( RS2_CAMERA_INFO_PRODUCT_ID );
+    dev_info.locked = ( strcmp( dev.get_info( RS2_CAMERA_INFO_CAMERA_LOCKED ), "YES" ) == 0 );
 
     // Build device topic root path
     dev_info.topic_root = get_topic_root( dev_info );

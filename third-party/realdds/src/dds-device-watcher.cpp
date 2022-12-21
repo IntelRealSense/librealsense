@@ -7,11 +7,12 @@
 #include <realdds/dds-device.h>
 #include <realdds/dds-utilities.h>
 #include <realdds/dds-guid.h>
-#include <realdds/topics/device-info/device-info-msg.h>
+#include <realdds/topics/flexible/flexible-msg.h>
+#include <realdds/topics/device-info-msg.h>
 
-#include <fastdds/dds/domain/DomainParticipant.hpp>
+#include <librealsense2/utilities/json.h>
+
 #include <fastdds/dds/subscriber/DataReader.hpp>
-#include <fastdds/dds/subscriber/Subscriber.hpp>
 
 
 using namespace eprosima::fastdds::dds;
@@ -20,29 +21,32 @@ using namespace realdds;
 
 dds_device_watcher::dds_device_watcher( std::shared_ptr< dds_participant > const & participant )
     : _device_info_topic(
-        new dds_topic_reader( topics::device_info::create_topic( participant, topics::device_info::TOPIC_NAME ) ) )
+        new dds_topic_reader( topics::flexible_msg::create_topic( participant, "realsense/device-info" ) ) )
     , _participant( participant )
     , _active_object( [this]( dispatcher::cancellable_timer timer ) {
 
         eprosima::fastrtps::Duration_t const one_second = { 1, 0 };
         if( _device_info_topic->get()->wait_for_unread_message( one_second ) )
         {
-            topics::device_info device_info;
+            topics::flexible_msg msg;
             eprosima::fastdds::dds::SampleInfo info;
-            while( topics::device_info::take_next( *_device_info_topic, &device_info, &info ) )
+            while( topics::flexible_msg::take_next( *_device_info_topic, &msg, &info ) )
             {
-                if( ! device_info.is_valid() )
+                if( !msg.is_valid() )
                     continue;
+
+                topics::device_info device_info = topics::device_info::from_json( msg.json_data() );
 
                 eprosima::fastrtps::rtps::GUID_t guid;
                 eprosima::fastrtps::rtps::iHandle2GUID( guid, info.publication_handle );
 
                 LOG_DEBUG( "DDS device (" << _participant->print(guid) << ") detected:"
-                    << "\n\tName: " << device_info.name
-                    << "\n\tSerial: " << device_info.serial
-                    << "\n\tProduct line: " << device_info.product_line
-                    << "\n\tTopic root: " << device_info.topic_root
-                    << "\n\tLocked: " << ( device_info.locked ? "yes" : "no" ) );
+                                          << "\n\tName: " << device_info.name
+                                          << "\n\tSerial: " << device_info.serial
+                                          << "\n\tProduct line: " << device_info.product_line
+                                          << "\n\tProduct ID: " << device_info.product_id
+                                          << "\n\tTopic root: " << device_info.topic_root
+                                          << "\n\tLocked: " << ( device_info.locked ? "yes" : "no" ) );
 
                 // Add a new device record into our dds devices map
                 auto device = dds_device::create( _participant, guid, device_info );

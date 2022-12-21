@@ -51,8 +51,7 @@ dds_notification_server::dds_notification_server( std::shared_ptr< dds_publisher
             {
                 // Send all instant notifications
                 topics::raw::flexible notification;
-                constexpr unsigned timeout_in_ms = 1000;
-                while( _instant_notifications.dequeue( &notification, timeout_in_ms ) )
+                while( _instant_notifications.try_dequeue( &notification ) )
                 {
                     DDS_API_CALL( _writer->get()->write( &notification ) );
                 }
@@ -127,6 +126,8 @@ void dds_notification_server::send_notification( topics::flexible_msg && notific
     std::unique_lock< std::mutex > lock( _notification_send_mutex );
     if( ! _instant_notifications.enqueue( std::move( raw_notification ) ) )
         LOG_ERROR( "error while trying to enqueue a notification" );
+    _new_instant_notification = true;
+    _send_notification_cv.notify_all();
 };
 
 

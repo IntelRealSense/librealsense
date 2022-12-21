@@ -74,20 +74,34 @@ public:
     void on_open_streams( control_callback callback ) { _open_streams_callback = std::move( callback ); }
     void on_close_streams( control_callback callback ) { _close_streams_callback = std::move( callback ); }
 
+    typedef std::function< void( const std::shared_ptr< realdds::dds_option > & option, float value ) > set_option_callback;
+    typedef std::function< float( const std::shared_ptr< realdds::dds_option > & option ) > query_option_callback;
+    void on_set_option( set_option_callback callback ) { _set_option_callback = std::move( callback ); }
+    void on_query_option( query_option_callback callback ) { _query_option_callback = std::move( callback ); }
+
 private:
     void on_control_message_received();
     void handle_control_message( topics::flexible_msg control_message );
 
+    void handle_set_option( const nlohmann::json & msg );
+    void handle_query_option( const nlohmann::json & msg );
+    std::shared_ptr< dds_option > find_option( const std::string & option_name, const std::string & owner_name );
+    void send_set_option_success( uint32_t counter );
+    void send_set_option_failure( uint32_t counter, const std::string & fail_reason );
+    void send_query_option_success( uint32_t counter, float value );
+    void send_query_option_failure( uint32_t counter, const std::string & fail_reason );
+
     std::shared_ptr< dds_publisher > _publisher;
     std::shared_ptr< dds_subscriber > _subscriber;
     std::string _topic_root;
-    std::unordered_map<std::string, std::shared_ptr<dds_stream_server>> _stream_name_to_server;
+    std::unordered_map< std::string, std::shared_ptr<dds_stream_server > > _stream_name_to_server;
     std::shared_ptr< dds_notification_server > _notification_server;
     std::shared_ptr< dds_topic_reader > _control_reader;
     dispatcher _control_dispatcher;
     control_callback _open_streams_callback = nullptr;
     control_callback _close_streams_callback = nullptr;
-    std::atomic< size_t > _message_counter { 0 };
+    set_option_callback _set_option_callback = nullptr;
+    query_option_callback _query_option_callback = nullptr;
 };  // class dds_device_server
 
 

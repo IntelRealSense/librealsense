@@ -9,6 +9,7 @@
 
 namespace realdds {
     class dds_device_server;
+    class dds_option;
 }
 
 namespace tools {
@@ -21,6 +22,8 @@ public:
     ~lrs_device_controller();
     void start_streaming( const nlohmann::json & msg );
     void stop_streaming( const nlohmann::json & msg );
+    void set_option( const std::shared_ptr< realdds::dds_option > & option, float new_value );
+    float query_option( const std::shared_ptr< realdds::dds_option > & option );
 
 private:
     bool find_sensor( const std::string & requested_stream_name, size_t & sensor_index );

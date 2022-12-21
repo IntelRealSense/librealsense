@@ -78,10 +78,12 @@ dds_device::impl::impl( std::shared_ptr< dds_participant > const & participant,
 {
 }
 
-void dds_device::impl::run()
+void dds_device::impl::run( size_t message_timeout_ms )
 {
     if( _running )
         DDS_THROW( runtime_error, "device '" + _info.name + "' is already running" );
+
+    _message_timeout_ms = message_timeout_ms;
 
     create_notifications_reader();
     create_control_writer();
@@ -91,14 +93,32 @@ void dds_device::impl::run()
     LOG_DEBUG( "device '" << _info.topic_root << "' (" << _participant->print( _guid )
                           << ") initialized successfully" );
     _running = true;
+
+    // Start handling options only after init() is done
+    _notifications_reader->on_data_available( [&]() {
+        topics::flexible_msg notification;
+        eprosima::fastdds::dds::SampleInfo info;
+        while( topics::flexible_msg::take_next( *_notifications_reader, &notification, &info ) )
+        {
+            if( !notification.is_valid() )
+                continue;
+            auto j = notification.json_data();
+            auto id = utilities::json::get< std::string >( j, "id" );
+            if( id == "set-option" || id == "query-option" )
+            {
+                _option_response_queue.push( j );
+                _option_cv.notify_all();
+            }
+        }
+    } );
 }
 
 void dds_device::impl::open( const dds_stream_profiles & profiles )
 {
     if ( profiles.empty() )
         DDS_THROW( runtime_error, "must provide at least one profile" );
-    using nlohmann::json;
-    auto stream_profiles = json();
+
+    auto stream_profiles = nlohmann::json();
     for ( auto & profile : profiles )
     {
         auto stream = profile->stream();
@@ -112,7 +132,7 @@ void dds_device::impl::open( const dds_stream_profiles & profiles )
         _streams[stream->name()]->open( _info.topic_root + '/' + stream->name(), _subscriber );
     }
 
-    json j = {
+    nlohmann::json j = {
         { "id", "open-streams" },
         { "stream-profiles", stream_profiles },
     };
@@ -124,8 +144,8 @@ void dds_device::impl::close( dds_streams const & streams )
 {
     if ( streams.empty() )
         DDS_THROW( runtime_error, "must provide at least one stream" );
-    using nlohmann::json;
-    auto stream_names = json::array();
+
+    auto stream_names = nlohmann::json::array();
     for ( auto & stream : streams )
     {
         if ( !stream )
@@ -135,12 +155,73 @@ void dds_device::impl::close( dds_streams const & streams )
         _streams[stream->name()]->close();
     }
 
-    json j = {
+    nlohmann::json j = {
         { "id", "close-streams" },
         { "stream-names", stream_names },
     };
 
     write_control_message( j );
+}
+
+void dds_device::impl::set_option_value( const std::shared_ptr< dds_option > & option, float new_value )
+{
+    if( ! option )
+        DDS_THROW( runtime_error, "must provide an option to set" );
+
+    uint32_t this_message_counter = _control_message_counter++;
+
+    nlohmann::json j = {
+        { "id", "set-option" },
+        { "counter", this_message_counter },
+        { "option-name", option->get_name() },
+        { "owner-name", option->owner_name() },
+        { "value", new_value },
+    };
+
+    write_control_message( j );
+
+    std::unique_lock< std::mutex > lock( _option_mutex );
+    if( ! _option_cv.wait_for( lock, std::chrono::milliseconds( _message_timeout_ms ), [&](){
+        return !_option_response_queue.empty() && _option_response_queue.front()["counter"] == this_message_counter;
+    } ) )
+        throw std::runtime_error( "Did not receive reply while setting option " + option->get_name() );
+
+    auto response = _option_response_queue.front();
+    _option_response_queue.pop();
+    if( utilities::json::get< bool >( response, "successful" ) )
+        option->set_value( new_value );
+    else
+        throw std::runtime_error( utilities::json::get< std::string >( response, "failure-reason" ) );
+}
+
+float dds_device::impl::query_option_value( const std::shared_ptr< dds_option > & option )
+{
+    if( !option )
+        DDS_THROW( runtime_error, "must provide an option to query" );
+
+    uint32_t this_message_counter = _control_message_counter++;
+
+    nlohmann::json j = {
+        { "id", "query-option" },
+        { "counter", this_message_counter },
+        { "option-name", option->get_name() },
+        { "owner-name", option->owner_name() },
+    };
+
+    write_control_message( j );
+
+    std::unique_lock< std::mutex > lock( _option_mutex );
+    if( ! _option_cv.wait_for( lock, std::chrono::milliseconds( _message_timeout_ms ), [&]() {
+        return !_option_response_queue.empty() && _option_response_queue.front()["counter"] == this_message_counter;
+    } ) )
+        throw std::runtime_error( "Did not receive reply while querying option " + option->get_name() );
+
+    auto response = _option_response_queue.front();
+    _option_response_queue.pop();
+    if( utilities::json::get< bool >( response, "successful" ) )
+        return utilities::json::get< float >( response, "value" );
+    else
+        throw std::runtime_error( utilities::json::get< std::string >( response, "failure-reason" ) );
 }
 
 void dds_device::impl::write_control_message( topics::flexible_msg && msg )

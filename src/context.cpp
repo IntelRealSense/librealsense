@@ -28,7 +28,7 @@
 #include <realdds/dds-stream-profile.h>
 #include "software-device.h"
 #include <librealsense2/h/rs_internal.h>
-#include <realdds/topics/device-info/device-info-msg.h>
+#include <realdds/topics/device-info-msg.h>
 #include <realdds/topics/image/image-msg.h>
 #endif //BUILD_WITH_DDS
 
@@ -190,7 +190,7 @@ namespace librealsense
             
             if( _dds_watcher && _dds_watcher->is_stopped() )
             {
-                start_dds_device_watcher();
+                start_dds_device_watcher( utilities::json::get< size_t >( settings, "dds-message-timeout-ms", 5000 ) );
             }
             //_dds_backend = ...; TODO
         }
@@ -407,22 +407,45 @@ namespace librealsense
     //A facade for a realdds::dds_option exposing librealsense interface
     class rs2_dds_option : public option_base
     {
-        std::shared_ptr< realdds::dds_option > _dds_opt;
-        std::string _stream_name;
-
     public:
-        rs2_dds_option( const std::shared_ptr< realdds::dds_option > & dds_opt )
+        typedef std::function< void( const std::string & name, float value ) > set_option_callback;
+        typedef std::function< float( const std::string & name ) > query_option_callback;
+
+        rs2_dds_option( const std::shared_ptr< realdds::dds_option > & dds_opt,
+                        set_option_callback set_opt_cb,
+                        query_option_callback query_opt_cb )
             : option_base( { dds_opt->get_range().min, dds_opt->get_range().max,
                              dds_opt->get_range().step, dds_opt->get_range().default_value } )
             , _dds_opt( dds_opt )
+            , _set_opt_cb( set_opt_cb )
+            , _query_opt_cb( query_opt_cb )
         {
         }
 
-        void set( float value ) override {} //TODO - implement
-        float query() const override { return 0.0f; } //TODO - implement
+        void set( float value ) override
+        {
+            if( ! _set_opt_cb )
+                throw std::runtime_error( "Set option callback is not set for option " + _dds_opt->get_name() );
 
-        bool is_enabled() const override { return true; }
-        const char * get_description() const override { return _dds_opt->get_description().c_str(); }
+            _set_opt_cb( _dds_opt->get_name(), value );
+        }
+
+        float query() const override
+        {
+            if( !_query_opt_cb )
+                throw std::runtime_error( "Query option callback is not set for option " + _dds_opt->get_name() );
+
+            return _query_opt_cb( _dds_opt->get_name() );
+        }
+
+        bool is_enabled() const override { return true; };
+        const char * get_description() const override { return _dds_opt->get_description().c_str(); };
+
+    protected:
+        std::shared_ptr< realdds::dds_option > _dds_opt;
+
+        set_option_callback _set_opt_cb;
+        query_option_callback _query_opt_cb;
     };
 
     class dds_sensor_proxy : public software_sensor
@@ -616,12 +639,44 @@ namespace librealsense
             if( option_id == RS2_OPTION_COUNT )
                 throw librealsense::invalid_value_exception( to_string() << "Option " << option->get_name() << " type not found" );
 
-            auto opt = std::make_shared< rs2_dds_option >( option );
+            auto opt = std::make_shared< rs2_dds_option >( option,
+                [&]( const std::string & name, float value ) { set_option( name, value ); },
+                [&]( const std::string & name ) -> float { return query_option( name ); } );
             register_option( option_id, opt );
         }
 
-        //float get_option( rs2_option option ) const override;
-        //void set_option( rs2_option option, float value ) const override;
+        void set_option( const std::string & name, float value ) const
+        {
+            // Sensor is setting the option for all supporting streams (with same value)
+            for( auto & stream : _streams )
+            {
+                for( auto & dds_opt : stream.second->options() )
+                {
+                    if( dds_opt->get_name().compare( name ) == 0 )
+                    {
+                        _dev->set_option_value( dds_opt, value );
+                        break;
+                    }
+                }
+            }
+        }
+
+        float query_option( const std::string & name ) const
+        {
+            for( auto & stream : _streams )
+            {
+                for( auto & dds_opt : stream.second->options() )
+                {
+                    if( dds_opt->get_name().compare( name ) == 0 )
+                    {
+                        //Assumes value is same for all relevant streams in the sensor, values are always set together
+                        return _dev->query_option_value( dds_opt );
+                    }
+                }
+            }
+
+            throw std::runtime_error( "Could not find a stream that supports option " + name );
+        }
 
         const std::string & get_name() const { return _name; }
 
@@ -707,10 +762,11 @@ namespace librealsense
             LOG_DEBUG( "=====> dds-device-proxy " << this << " created on top of dds-device " << _dds_dev.get() );
             auto & dev_info = dev->device_info();
             register_info( RS2_CAMERA_INFO_NAME, dev_info.name );
-            register_info( RS2_CAMERA_INFO_PRODUCT_LINE, dev_info.product_line );
             register_info( RS2_CAMERA_INFO_SERIAL_NUMBER, dev_info.serial );
-            register_info( RS2_CAMERA_INFO_CAMERA_LOCKED, dev_info.locked ? "YES" : "NO" );
+            register_info( RS2_CAMERA_INFO_PRODUCT_LINE, dev_info.product_line );
+            register_info( RS2_CAMERA_INFO_PRODUCT_ID, dev_info.product_id );
             register_info( RS2_CAMERA_INFO_PHYSICAL_PORT, dev_info.topic_root );
+            register_info( RS2_CAMERA_INFO_CAMERA_LOCKED, dev_info.locked ? "YES" : "NO" );
 
             //Assumes dds_device initialization finished
             struct sensor_info
@@ -980,11 +1036,13 @@ namespace librealsense
     }
 
 #ifdef BUILD_WITH_DDS
-    void context::start_dds_device_watcher()
+    void context::start_dds_device_watcher( size_t message_timeout_ms )
     {
         // TODO Here we should add DDS devices to the `on_device_changed`parameters
         // on_device_changed(old, curr, _playback_devices, _playback_devices);
-        _dds_watcher->on_device_added( [this]( std::shared_ptr< realdds::dds_device > const & dev ) { dev->run(); } );
+        _dds_watcher->on_device_added( [this, message_timeout_ms]( std::shared_ptr< realdds::dds_device > const & dev ) {
+            dev->run( message_timeout_ms );
+        } );
         _dds_watcher->on_device_removed( [this]( std::shared_ptr< realdds::dds_device > const & dev ) {} );
         _dds_watcher->start();
     }

@@ -11,14 +11,12 @@
 #include <realdds/dds-notification-server.h>
 #include <realdds/dds-topic-reader.h>
 #include <realdds/dds-utilities.h>
-#include <realdds/topics/device-info/device-info-msg.h>
 #include <realdds/topics/image/image-msg.h>
 #include <realdds/topics/flexible/flexible-msg.h>
 #include <realdds/dds-topic.h>
 #include <realdds/dds-topic-writer.h>
 #include <realdds/dds-option.h>
 
-#include <fastdds/dds/topic/Topic.hpp>
 #include <fastdds/dds/subscriber/SampleInfo.hpp>
 
 #include <librealsense2/utilities/json.h>
@@ -30,8 +28,8 @@ using namespace realdds;
 
 dds_device_server::dds_device_server( std::shared_ptr< dds_participant > const & participant,
                                       const std::string & topic_root )
-    : _publisher( std::make_shared< dds_publisher >( participant ))
-    , _subscriber( std::make_shared< dds_subscriber >( participant ))
+    : _publisher( std::make_shared< dds_publisher >( participant ) )
+    , _subscriber( std::make_shared< dds_subscriber >( participant ) )
     , _topic_root( topic_root )
     , _control_dispatcher( QUEUE_MAX_SIZE )
 {
@@ -220,4 +218,142 @@ void dds_device_server::handle_control_message( topics::flexible_msg control_mes
         if ( _close_streams_callback )
             _close_streams_callback( j );
     }
+    else if( id.compare( "set-option" ) == 0 )
+    {
+        handle_set_option( j );
+    }
+    else if( id.compare( "query-option" ) == 0 )
+    {
+        handle_query_option( j );
+    }
+}
+
+void dds_device_server::handle_set_option( const nlohmann::json & j )
+{
+    const std::string & option_name = utilities::json::get< std::string >( j, "option-name" );
+    const std::string & owner_name = utilities::json::get< std::string >( j, "owner-name" );
+    uint32_t counter = utilities::json::get< uint32_t >( j, "counter" );
+
+    std::shared_ptr< dds_option > opt = find_option( option_name, owner_name );
+
+    if( opt )
+    {
+        try
+        {
+            float value = utilities::json::get< float >( j, "value" );
+            _set_option_callback( opt, value ); //Handle setting option outside realdds
+            opt->set_value( value ); //Update option object. Do second to check if _set_option_callback did not throw
+            send_set_option_success( counter );
+        }
+        catch( std::exception e )
+        {
+            send_set_option_failure( counter, e.what() );
+        }
+    }
+    else
+    {
+        send_set_option_failure( counter, owner_name + " does not support option " + option_name );
+    }
+}
+
+void dds_device_server::handle_query_option( const nlohmann::json & j )
+{
+    const std::string & option_name = utilities::json::get< std::string >( j, "option-name" );
+    const std::string & owner_name = utilities::json::get< std::string >( j, "owner-name" );
+    uint32_t counter = utilities::json::get< uint32_t >( j, "counter" );
+
+    std::shared_ptr< dds_option > opt = find_option( option_name, owner_name );
+
+    if( opt )
+    {
+        try
+        {
+            float value = _query_option_callback( opt ); //Handle query outside realdds
+            opt->set_value( value ); //Ensure realdds option is up to date with actual value (might change, e.g temperature)
+            send_query_option_success( counter, value );
+        }
+        catch( std::exception e )
+        {
+            send_query_option_failure( counter, e.what() );
+        }
+    }
+    else
+    {
+        send_query_option_failure( counter, owner_name + " does not support option " + option_name );
+    }
+}
+
+std::shared_ptr< dds_option > realdds::dds_device_server::find_option( const std::string & option_name,
+                                                                       const std::string & owner_name )
+{
+    if( _topic_root == owner_name )
+    {
+        //TODO - handle device option
+    }
+    else
+    {
+        //Find option in owner stream
+        for( auto & stream_it : _stream_name_to_server )
+        {
+            if( stream_it.first == owner_name )
+            {
+                for( auto & option : stream_it.second->options() )
+                {
+                    if( option->get_name() == option_name )
+                    {
+                        return option;
+                    }
+                }
+            }
+        }
+    }
+
+    return nullptr;
+}
+
+void realdds::dds_device_server::send_set_option_success( uint32_t counter )
+{
+    topics::flexible_msg notification( json {
+        { "id", "set-option" },
+        { "counter", counter },
+        { "successful", true },
+        { "failure-reason", "" },
+    } );
+    publish_notification( std::move( notification ) );
+}
+
+void realdds::dds_device_server::send_set_option_failure( uint32_t counter, const std::string & fail_reason )
+{
+    topics::flexible_msg notification( json {
+        { "id", "set-option" },
+        { "counter", counter },
+        { "successful", false },
+        { "failure-reason", fail_reason },
+    } );
+    publish_notification( std::move( notification ) );
+}
+
+void dds_device_server::send_query_option_success( uint32_t counter, float value )
+{
+    topics::flexible_msg notification( json {
+        { "id", "query-option" },
+        { "counter", counter },
+        { "value", value },
+        { "successful", true },
+        { "failure-reason", "" },
+    } );
+
+    publish_notification( std::move( notification ) );
+}
+
+void realdds::dds_device_server::send_query_option_failure( uint32_t counter, const std::string & fail_reason )
+{
+    topics::flexible_msg notification( json {
+        { "id", "query-option" },
+        { "counter", counter },
+        { "value", 0.0f },
+        { "successful", false },
+        { "failure-reason", fail_reason },
+    } );
+    publish_notification( std::move( notification ) );
 }
