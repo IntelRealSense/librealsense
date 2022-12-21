@@ -48,48 +48,27 @@ namespace librealsense
     }
 
     ds_fisheye_sensor::ds_fisheye_sensor(std::shared_ptr<sensor_base> sensor,
-        device* owner, ds_device_type device_type)
+        device* owner)
         : synthetic_sensor("Wide FOV Camera", sensor, owner, fisheye_fourcc_to_rs2_format, fisheye_fourcc_to_rs2_stream),
-        _owner(owner),
-        _device_type(device_type)
+        _owner(owner)
     {}
 
     const std::vector<uint8_t>& ds_fisheye_sensor::get_fisheye_calibration_table() const
     {
-        switch (_device_type)
-        {
-        case ds_device_type::ds5:
-        {
-            auto dev = dynamic_cast<const ds5_motion*>(_owner);
+        if (auto dev = dynamic_cast<const ds5_motion*>(_owner))
             return dev->_ds_motion_common->get_fisheye_calibration_table();
-        }
-        case ds_device_type::ds6:
-        {
-            auto dev = dynamic_cast<const ds6_motion*>(_owner);
+        if (auto dev = dynamic_cast<const ds6_motion*>(_owner))
             return dev->_ds_motion_common->get_fisheye_calibration_table();
-        }
-        default:
-            throw std::runtime_error("device not referenced in the product line");
-        }
+        throw std::runtime_error("device not referenced in the product line");
     }
 
     std::shared_ptr<stream_interface> ds_fisheye_sensor::get_fisheye_stream() const
     {
-        switch (_device_type)
-        {
-        case ds_device_type::ds5:
-        {
-            auto dev = dynamic_cast<const ds5_motion*>(_owner);
+        if (auto dev = dynamic_cast<const ds5_motion*>(_owner))
             return dev->_ds_motion_common->get_fisheye_stream();
-        }
-        case ds_device_type::ds6:
-        {
-            auto dev = dynamic_cast<const ds6_motion*>(_owner);
+        if (auto dev = dynamic_cast<const ds6_motion*>(_owner))
             return dev->_ds_motion_common->get_fisheye_stream();
-        }
-        default:
-            throw std::runtime_error("device not referenced in the product line");
-        }
+        throw std::runtime_error("device not referenced in the product line");
     }
 
     rs2_intrinsics ds_fisheye_sensor::get_intrinsics(const stream_profile& profile) const
@@ -139,30 +118,18 @@ namespace librealsense
     }
     
     ds_hid_sensor::ds_hid_sensor(std::string name,
-        std::shared_ptr<sensor_base> sensor,
-        device* owner, ds_device_type device_type)
+        std::shared_ptr<sensor_base> sensor, device* owner)
         : synthetic_sensor(name, sensor, owner),
-        _owner(owner),
-        _device_type(device_type)
+        _owner(owner)
     {}
 
     rs2_motion_device_intrinsic ds_hid_sensor::get_motion_intrinsics(rs2_stream stream) const
     {
-        switch (_device_type)
-        {
-        case ds_device_type::ds5:
-        {
-            auto dev = dynamic_cast<const ds5_motion*>(_owner);
+        if (auto dev = dynamic_cast<const ds5_motion*>(_owner))
             return dev->get_motion_intrinsics(stream);
-        }
-        case ds_device_type::ds6:
-        {
-            auto dev = dynamic_cast<const ds6_motion*>(_owner);
+        if (auto dev = dynamic_cast<const ds6_motion*>(_owner))
             return dev->get_motion_intrinsics(stream);
-        }
-        default:
-            throw std::runtime_error("device not referenced in the product line");
-        }
+        throw std::runtime_error("device not referenced in the product line");
     }
 
     stream_profiles ds_hid_sensor::init_stream_profiles()
@@ -196,40 +163,20 @@ namespace librealsense
 
     std::shared_ptr<stream_interface> ds_hid_sensor::get_accel_stream() const
     {
-        switch (_device_type)
-        {
-        case ds_device_type::ds5:
-        {
-            auto dev = dynamic_cast<const ds5_motion*>(_owner);
+        if (auto dev = dynamic_cast<const ds5_motion*>(_owner))
             return dev->_ds_motion_common->get_accel_stream();
-        }
-        case ds_device_type::ds6:
-        {
-            auto dev = dynamic_cast<const ds6_motion*>(_owner);
+        if (auto dev = dynamic_cast<const ds6_motion*>(_owner))
             return dev->_ds_motion_common->get_accel_stream();
-        }
-        default:
-            throw std::runtime_error("device not referenced in the product line");
-        }
+        throw std::runtime_error("device not referenced in the product line");
     }
 
     std::shared_ptr<stream_interface> ds_hid_sensor::get_gyro_stream() const
     {
-        switch (_device_type)
-        {
-        case ds_device_type::ds5:
-        {
-            auto dev = dynamic_cast<const ds5_motion*>(_owner);
+        if (auto dev = dynamic_cast<const ds5_motion*>(_owner))
             return dev->_ds_motion_common->get_gyro_stream();
-        }
-        case ds_device_type::ds6:
-        {
-            auto dev = dynamic_cast<const ds6_motion*>(_owner);
+        if (auto dev = dynamic_cast<const ds6_motion*>(_owner))
             return dev->_ds_motion_common->get_gyro_stream();
-        }
-        default:
-            throw std::runtime_error("device not referenced in the product line");
-        }
+        throw std::runtime_error("device not referenced in the product line");
     }
 
     std::shared_ptr<auto_exposure_mechanism> ds_motion_common::register_auto_exposure_options(synthetic_sensor* ep, const platform::extension_unit* fisheye_xu)
@@ -290,12 +237,10 @@ namespace librealsense
     }
 
     ds_motion_common::ds_motion_common(device* owner,
-        ds_device_type device_type,
         firmware_version fw_version,
         const ds::d400_caps& device_capabilities,
         std::shared_ptr<hw_monitor> hwm) :
         _owner(owner),
-        _ds_device_type(device_type),
         _fw_version(fw_version),
         _device_capabilities(device_capabilities),
         _hw_monitor(hwm),
@@ -329,21 +274,11 @@ namespace librealsense
     std::vector<platform::uvc_device_info> ds_motion_common::filter_device_by_capability(const std::vector<platform::uvc_device_info>& devices,
         d400_caps caps)
     {
-        switch (_ds_device_type)
-        {
-        case ds_device_type::ds5:
-        {
-            auto dev = dynamic_cast<const ds5_motion*>(_owner);
+        if (auto dev = dynamic_cast<const ds5_motion*>(_owner))
             return filter_ds5_device_by_capability(devices, ds::d400_caps::CAP_FISHEYE_SENSOR);
-        }
-        case ds_device_type::ds6:
-        {
-            auto dev = dynamic_cast<const ds6_motion*>(_owner);
+        if (auto dev = dynamic_cast<const ds6_motion*>(_owner))
             return std::vector<platform::uvc_device_info>();
-        }
-        default:
-            throw std::runtime_error("device not referenced in the product line");
-        }
+        throw std::runtime_error("device not referenced in the product line");
     }
 
     std::vector<platform::uvc_device_info> ds_motion_common::init_fisheye(const platform::backend_device_group& group, bool& is_fisheye_available)
@@ -388,46 +323,26 @@ namespace librealsense
     void ds_motion_common::set_roi_method()
     {
         auto fisheye_auto_exposure = register_auto_exposure_options(_fisheye_ep.get(), &ds::fisheye_xu);
-        switch (_ds_device_type)
-        {
-        case ds_device_type::ds5:
-        {
-            auto fisheye_sensor = dynamic_cast<ds_fisheye_sensor*>(_fisheye_ep.get());
+        if (auto fisheye_sensor = dynamic_cast<ds_fisheye_sensor*>(_fisheye_ep.get()))
             fisheye_sensor->set_roi_method(std::make_shared<fisheye_auto_exposure_roi_method>(fisheye_auto_exposure));
-            break;
-        }
-        case ds_device_type::ds6:
-        {
-            auto fisheye_sensor = dynamic_cast<ds_fisheye_sensor*>(_fisheye_ep.get());
-            fisheye_sensor->set_roi_method(std::make_shared<fisheye_auto_exposure_roi_method>(fisheye_auto_exposure));
-            break;
-        }
-        default:
+        else
             throw std::runtime_error("device not referenced in the product line");
-        }
     }
 
     void ds_motion_common::register_streams_to_extrinsic_groups()
     {
-        switch (_ds_device_type)
+        if (auto dev = dynamic_cast<ds5_motion*>(_owner))
         {
-        case ds_device_type::ds5:
-        {
-            auto dev = dynamic_cast<ds5_motion*>(_owner);
             dev->register_stream_to_extrinsic_group(*_gyro_stream, 0);
             dev->register_stream_to_extrinsic_group(*_accel_stream, 0);
-            break;
         }
-        case ds_device_type::ds6:
+        else if (auto dev = dynamic_cast<ds6_motion*>(_owner))
         {
-            auto dev = dynamic_cast<ds6_motion*>(_owner);
             dev->register_stream_to_extrinsic_group(*_gyro_stream, 0);
             dev->register_stream_to_extrinsic_group(*_accel_stream, 0);
-            break;
         }
-        default:
+        else
             throw std::runtime_error("device not referenced in the product line");
-        }
     }
 
     void ds_motion_common::register_fisheye_options()
@@ -532,7 +447,7 @@ namespace librealsense
             _sensor_name_and_hid_profiles,
             _owner);
 
-        auto hid_ep = std::make_shared<ds_hid_sensor>("Motion Module", raw_hid_ep, _owner, _ds_device_type);
+        auto hid_ep = std::make_shared<ds_hid_sensor>("Motion Module", raw_hid_ep, _owner);
 
         hid_ep->register_option(RS2_OPTION_GLOBAL_TIME_ENABLED, enable_global_time_option);
 

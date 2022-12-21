@@ -35,12 +35,6 @@ namespace librealsense
         const uint8_t DS5_ENABLE_AUTO_EXPOSURE = 0xB;
         const uint8_t DS5_LED_PWR = 0xE;
         const uint8_t DS5_THERMAL_COMPENSATION = 0xF;
-        
-        enum class ds_device_type
-        {
-            ds5,
-            ds6
-        };
 
         // DS5 fisheye XU identifiers
         const uint8_t FISHEYE_EXPOSURE = 1;
