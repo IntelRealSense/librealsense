@@ -180,8 +180,6 @@ namespace librealsense
 
     void ds5_color::register_metadata(const synthetic_sensor& color_ep) const
     {
-        _ds_color_common->register_standard_options();
-
         if (_separate_color)
         {
             auto md_prop_offset = offsetof(metadata_raw, mode) +
