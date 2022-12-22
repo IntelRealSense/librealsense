@@ -881,7 +881,7 @@ namespace librealsense
 
         platform::backend_device_group get_device_data() const override
         {
-            return platform::backend_device_group{};
+            return platform::backend_device_group{ { platform::playback_device_info{ _dev->device_info().topic_root } } };
         }
     };
 #endif //BUILD_WITH_DDS
