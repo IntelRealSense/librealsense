@@ -19,14 +19,14 @@ def close_resources(sensor):
         sensor.close()
 
 
-def set_and_verify_timestamp_domain(sensor, frame_queue, global_time_enabled: bool):
+def set_and_verify_timestamp_domain(sensor, frame_queue, global_time_enabled: bool, sleep_time: float = 0.5):
     """
     Perform sensor (depth or color) test according given global time
     :sensor: depth or color sensor in device
     :global_time_enabled bool: True - timestamp is enabled otherwise false
     """
     sensor.set_option(rs.option.global_time_enabled, global_time_enabled)
-    time.sleep(0.5)  # Waiting for new frame from device. Need in case low FPS.
+    time.sleep(sleep_time)  # Waiting for new frame from device. Need in case low FPS.
     frame = frame_queue.wait_for_frame()
 
     if not frame:
@@ -41,10 +41,12 @@ def set_and_verify_timestamp_domain(sensor, frame_queue, global_time_enabled: bo
     test.check_equal(frame.get_frame_timestamp_domain(), expected_ts_domain)
 
 
+queue_capacity = 1
+
 device = test.find_first_device_or_exit()
 
 # Depth sensor test
-depth_frame_queue = rs.frame_queue(capacity=1, keep_frames=False)
+depth_frame_queue = rs.frame_queue(queue_capacity, keep_frames=False)
 
 depth_sensor = device.first_depth_sensor()
 depth_profile = next(p for p in depth_sensor.profiles if p.stream_type() == rs.stream.depth)
@@ -64,7 +66,7 @@ test.finish()
 close_resources(depth_sensor)
 
 # Color sensor test
-color_frame_queue = rs.frame_queue(capacity=1, keep_frames=False)
+color_frame_queue = rs.frame_queue(queue_capacity, keep_frames=False)
 
 color_sensor = device.first_color_sensor()
 color_profile = next(p for p in color_sensor.profiles if p.stream_type() == rs.stream.color)
@@ -82,5 +84,4 @@ set_and_verify_timestamp_domain(color_sensor, color_frame_queue, True)
 test.finish()
 
 close_resources(color_sensor)
-
 test.print_results_and_exit()
