@@ -457,7 +457,7 @@ namespace librealsense
 
         if (((hw_mon_over_xu) && (RS400_IMU_PID != _pid)) || (!group.usb_devices.size()))
         {
-            _hw_monitor = std::make_shared<hw_monitor>(
+            _hw_monitor = std::make_shared<hw_monitor_extended_buffers>(
                 std::make_shared<locked_transfer>(
                     std::make_shared<command_transfer_over_xu>(
                         raw_sensor, depth_xu, DS5_HWMONITOR),
@@ -465,7 +465,7 @@ namespace librealsense
         }
         else
         {
-            _hw_monitor = std::make_shared<hw_monitor>(
+            _hw_monitor = std::make_shared<hw_monitor_extended_buffers>(
                 std::make_shared<locked_transfer>(
                     backend.create_usb_device(group.usb_devices.front()), raw_sensor));
         }

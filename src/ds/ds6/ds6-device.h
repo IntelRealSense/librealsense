@@ -85,10 +85,10 @@ namespace librealsense
 
         friend class ds6_depth_sensor;
 
-        std::shared_ptr<hw_monitor> _hw_monitor;
-        firmware_version            _fw_version;
-        firmware_version            _recommended_fw_version;
-        ds::d400_caps               _device_capabilities;
+        std::shared_ptr<hw_monitor_extended_buffers> _hw_monitor;
+        firmware_version _fw_version;
+        firmware_version _recommended_fw_version;
+        ds::d400_caps _device_capabilities;
 
         std::shared_ptr<stream_interface> _depth_stream;
         std::shared_ptr<stream_interface> _left_ir_stream;

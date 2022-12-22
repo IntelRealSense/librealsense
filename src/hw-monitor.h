@@ -256,6 +256,7 @@ namespace librealsense
 
     class hw_monitor
     {
+    protected:
         struct hwmon_cmd
         {
             uint8_t     cmd;
@@ -330,8 +331,8 @@ namespace librealsense
                                       uint8_t * bufferToSend,
                                       int & length );
 
-        std::vector< uint8_t > send( std::vector< uint8_t > const & data ) const;
-        std::vector<uint8_t> send( command cmd, hwmon_response * = nullptr, bool locked_transfer = false ) const;
+        virtual std::vector<uint8_t> send( std::vector<uint8_t> const & data ) const;
+        virtual std::vector<uint8_t> send( command cmd, hwmon_response * = nullptr, bool locked_transfer = false ) const;
         std::vector<uint8_t> build_command(uint32_t opcode,
             uint32_t param1 = 0,
             uint32_t param2 = 0,
@@ -356,5 +357,20 @@ namespace librealsense
                 rv += data[index + i] << (i * 8);
             return rv;
         }
+    };
+
+    class hw_monitor_extended_buffers : public hw_monitor
+    {
+    public:
+        explicit hw_monitor_extended_buffers(std::shared_ptr<locked_transfer> locked_transfer)
+            : hw_monitor(locked_transfer)
+        {}
+
+        virtual std::vector<uint8_t> send(std::vector<uint8_t> const& data) const override;
+        virtual std::vector<uint8_t> send(command cmd, hwmon_response* = nullptr, bool locked_transfer = false) const override;
+
+    private:
+        int get_msg_length(command cmd) const;
+        int get_number_of_chunks(int msg_length) const;
     };
 }

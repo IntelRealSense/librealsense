@@ -101,8 +101,8 @@ namespace librealsense
             RECPARAMSGET = 0x7E,     // Retrieve depth calibration table in new format (fw >= 5.11.12.100)
             LASERONCONST = 0x7F,     // Enable Laser On constantly (GS SKU Only)
             AUTO_CALIB = 0x80,      // auto calibration commands
-			SAFETY_PRESET_READ = 0x94,  // Read safety preset from given index
-			SAFETY_PRESET_WRITE = 0x95,   // Write safety preset to given index
+            SAFETY_PRESET_READ = 0x94,  // Read safety preset from given index
+            SAFETY_PRESET_WRITE = 0x95,   // Write safety preset to given index
             SET_HKR_CONFIG_TABLE = 0xA6, // HKR Set Internal sub calibration table
             GET_HKR_CONFIG_TABLE = 0xA7, // HKR Get Internal sub calibration table
             CALIBRESTOREEPROM = 0xA8 // HKR Store EEPROM Calibration
