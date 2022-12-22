@@ -235,7 +235,10 @@ namespace librealsense
     public:
         external_sync_mode(hw_monitor& hwm, sensor_base* depth_ep = nullptr, int ver = 1); // ver = 1, for firmware 5.9.15.1 and later, INTERCAM_SYNC_MAX is 2 with master and slave mode only.
                                                                                            // ver = 2, for firmware 5.12.4.0 and later, INTERCAM_SYNC_MAX is 258 by adding FULL SLAVE mode and genlock with trigger frequency 1 - 255.
-                                                                                           // ver = 3  for firmware 5.12.12.100 and later, INTERCAM_SYNC_MAX is 260 by adding genlock with laser on-off and Off-On two frames.
+                                                                                           // ver = 3  for firmware 5.12.12.100 and later, INTERCAM_SYNC_MAX is 514 by adding genlock: 
+                                                                                           //            259 for two frames laser on and off
+                                                                                           //            260 for two frames with laser off and on.
+                                                                                           //            261-514 for 2-255 frames with laser on after dropping the first frame.
 
         virtual ~external_sync_mode() = default;
         virtual void set(float value) override;

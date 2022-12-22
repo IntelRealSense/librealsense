@@ -493,15 +493,20 @@ namespace librealsense
             if (_sensor->is_streaming())
                 throw std::runtime_error("Cannot change Inter-camera HW synchronization mode while streaming!");
 
-            if (value < 4)
+            int val = static_cast<int>(value);
+            if (val < 4)
                 cmd.param1 = static_cast<int>(value);
-            else if (value == 259) // For Sending two frame - First with laser ON, and the other with laser OFF.
+            else if (val == 259) // For sending two frame - First with laser ON, and the other with laser OFF.
             {
                 cmd.param1 = 0x00010204; // genlock, two frames, on-off
             }
-            else if (value == 260) // For Sending two frame - First with laser OFF, and the other with laser ON.
+            else if (val == 260) // For sending two frame - First with laser OFF, and the other with laser ON.
             {
                 cmd.param1 = 0x00030204; // genlock, two frames, off-on
+            }
+            else if (val >= 261 && val <= 514) // For dropping the firsrt frmame and sending 2-255 frames with laser ON.
+            {
+                cmd.param1 = 0x00040004 | ((val - 259) << 8); // genlock, (val - 259) frames, laser on, and drop the first frame
             }
             else
             {
@@ -530,6 +535,10 @@ namespace librealsense
         else if (res[2] == 0x03)
         {
             return 260.0f;
+        }
+        else if (res[2] == 0x04)
+        {
+            return res[1] + 259.0f;
         }
         else
             return (static_cast<float>(res[1]) + 3.0f);
@@ -579,9 +588,9 @@ namespace librealsense
     const char* external_sync_mode::get_description() const
     {
         if (_ver == 3)
-            return "Inter-camera synchronization mode: 0:Default, 1:Master, 2:Slave, 3:Full Salve, 4-258:Genlock with burst count of 1-255 frames for each trigger, 259 and 260 for two frames per trigger with laser ON-OFF and OFF-ON.";
+            return "Inter-camera synchronization mode:\n\t0:Default, 1:Master, 2:Slave, 3:Full Salve,\n\t4-258:Genlock with burst count of 1-255 frames for each trigger,\n\t259 and 260 for two frames per trigger with laser ON-OFF and OFF-ON,\n\t261-514: dropping first frame and 2-255 frames with laser ON per trigger.";
         else if (_ver == 2)
-            return "Inter-camera synchronization mode: 0:Default, 1:Master, 2:Slave, 3:Full Salve, 4-258:Genlock with burst count of 1-255 frames for each trigger";
+            return "Inter-camera synchronization mode:\n\t0:Default, 1:Master, 2:Slave, 3:Full Salve,\n\t4-258:Genlock with burst count of 1-255 frames for each trigger";
         else
             return "Inter-camera synchronization mode: 0:Default, 1:Master, 2:Slave";
     }
