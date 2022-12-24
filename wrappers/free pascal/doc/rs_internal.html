@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title>rs_internal</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="generator" content="PasDoc 0.16.0">
+<meta http-equiv="content-type" content="text/html; charset=utf-8">
+<link rel="stylesheet" type="text/css" href="tipuesearch/tipuesearch.css">
+
+<link rel="StyleSheet" type="text/css" href="pasdoc.css">
+</head>
+<body>
+<div class="container"><div class="navigation">
+<ul><li><a href="AllUnits.html">Units</a></li><li><a href="ClassHierarchy.html">Class Hierarchy</a></li><li><a href="AllClasses.html">Classes, Interfaces, Objects and Records</a></li><li><a href="AllTypes.html">Types</a></li><li><a href="AllVariables.html">Variables</a></li><li><a href="AllConstants.html">Constants</a></li><li><a href="AllFunctions.html">Functions and Procedures</a></li><li><a href="AllIdentifiers.html">Identifiers</a></li><li><form class="search-form" action="tipue_results.html"><div class="search-input"><input type="text" name="q" id="tipue_search_input" pattern=".{3,}" title="At least 3 characters" required><div class="search-button"><input type="button" id="tipue_search_button" onclick="this.form.submit();"></div></div></form>
+<div style="clear: both"></div>
+</li></ul></div><div class="content">
+<h1 class="unit">Unit rs_internal</h1>
+<div class="sections">
+<div class="one_section"><a class="section" href="#PasDoc-Description">Description</a></div><div class="one_section">Uses</div><div class="one_section"><a class="section" href="#PasDoc-Classes">Classes, Interfaces, Objects and Records</a></div><div class="one_section"><a class="section" href="#PasDoc-FuncsProcs">Functions and Procedures</a></div><div class="one_section"><a class="section" href="#PasDoc-Types">Types</a></div><div class="one_section"><a class="section" href="#PasDoc-Constants">Constants</a></div><div class="one_section">Variables</div></div>
+<span id="PasDoc-Description"></span><h2 class="description">Description</h2>
+<p>
+Exposes RealSense internal functionality</p>
+<span id="PasDoc-Uses"></span><h2 class="overview">Overview</h2>
+<span id="PasDoc-Classes"></span><h3 class="cio">Classes, Interfaces, Objects and Records</h3>
+<table class="classestable wide_list">
+<tr class="listheader">
+<th class="itemname">Name</th>
+<th class="itemdesc">Description</th>
+</tr>
+<tr class="list">
+<td class="itemname">Record&nbsp;<a class="bold" href="rs_internal.Trs2_video_stream.html"><code>Trs2_video_stream</code></a></td>
+<td class="itemdesc">&nbsp;</td>
+</tr>
+<tr class="list2">
+<td class="itemname">Record&nbsp;<a class="bold" href="rs_internal.Trs2_motion_stream.html"><code>Trs2_motion_stream</code></a></td>
+<td class="itemdesc">&nbsp;</td>
+</tr>
+<tr class="list">
+<td class="itemname">Record&nbsp;<a class="bold" href="rs_internal.Trs2_pose_stream.html"><code>Trs2_pose_stream</code></a></td>
+<td class="itemdesc">&nbsp;</td>
+</tr>
+<tr class="list2">
+<td class="itemname">Record&nbsp;<a class="bold" href="rs_internal.Trs2_software_video_frame.html"><code>Trs2_software_video_frame</code></a></td>
+<td class="itemdesc">&nbsp;</td>
+</tr>
+<tr class="list">
+<td class="itemname">Record&nbsp;<a class="bold" href="rs_internal.Trs2_software_motion_frame.html"><code>Trs2_software_motion_frame</code></a></td>
+<td class="itemdesc">&nbsp;</td>
+</tr>
+<tr class="list2">
+<td class="itemname">Record&nbsp;<a class="bold" href="rs_internal.Tpose_frame_info.html"><code>Tpose_frame_info</code></a></td>
+<td class="itemdesc">&nbsp;</td>
+</tr>
+<tr class="list">
+<td class="itemname">Record&nbsp;<a class="bold" href="rs_internal.Trs2_software_pose_frame.html"><code>Trs2_software_pose_frame</code></a></td>
+<td class="itemdesc">&nbsp;</td>
+</tr>
+<tr class="list2">
+<td class="itemname">Record&nbsp;<a class="bold" href="rs_internal.Trs2_software_notification.html"><code>Trs2_software_notification</code></a></td>
+<td class="itemdesc">&nbsp;</td>
+</tr>
+<tr class="list">
+<td class="itemname">Record&nbsp;<a class="bold" href="rs_internal.Trs2_software_device_destruction_callback.html"><code>Trs2_software_device_destruction_callback</code></a></td>
+<td class="itemdesc">&nbsp;</td>
+</tr>
+</table>
+<span id="PasDoc-FuncsProcs"></span><h3 class="summary">Functions and Procedures</h3>
+<table class="summary wide_list">
+<tr class="list">
+<td class="itemcode"><code>function <strong><a href="rs_internal.html#rs2_create_recording_context">rs2_create_recording_context</a></strong>(api_version: integer; const filename: PChar; const seccion: PChar; mode: <a href="rs_internal.html#Trs2_recording_mode">Trs2_recording_mode</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): <a href="rs_types.html#pRS2_context">pRS2_context</a>; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code>function <strong><a href="rs_internal.html#rs2_create_mock_context">rs2_create_mock_context</a></strong>(api_version: integer; filename: PChar; section: PChar; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): <a href="rs_types.html#pRS2_context">pRS2_context</a>; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code>function <strong><a href="rs_internal.html#rs2_create_mock_context_versioned">rs2_create_mock_context_versioned</a></strong>(api_version: integer; filename: PChar; secction: PChar; min_api_version: PChar; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): <a href="rs_types.html#pRS2_context">pRS2_context</a>; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code>function <strong><a href="rs_internal.html#rs2_create_software_device">rs2_create_software_device</a></strong>(error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): <a href="rs_types.html#pRS2_device">pRS2_device</a>; cdecl; external;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code>function <strong><a href="rs_internal.html#rs2_software_device_add_sensor">rs2_software_device_add_sensor</a></strong>(dev: <a href="rs_types.html#pRS2_device">pRS2_device</a>; sensor_name: PChar; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): <a href="rs_types.html#pRS2_sensor">pRS2_sensor</a>; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code>procedure <strong><a href="rs_internal.html#rs2_software_sensor_on_video_frame">rs2_software_sensor_on_video_frame</a></strong>(sensor: <a href="rs_types.html#pRS2_sensor">pRS2_sensor</a>; frame: <a href="rs_internal.Trs2_software_video_frame.html">Trs2_software_video_frame</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code>procedure <strong><a href="rs_internal.html#rs2_software_sensor_on_motion_frame">rs2_software_sensor_on_motion_frame</a></strong>(sensor: <a href="rs_types.html#pRS2_sensor">pRS2_sensor</a>; frame: <a href="rs_internal.Trs2_software_motion_frame.html">Trs2_software_motion_frame</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code>procedure <strong><a href="rs_internal.html#rs2_software_sensor_on_pose_frame">rs2_software_sensor_on_pose_frame</a></strong>(sensor: <a href="rs_types.html#pRS2_sensor">pRS2_sensor</a>; frame: <a href="rs_internal.Trs2_software_motion_frame.html">Trs2_software_motion_frame</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code>procedure <strong><a href="rs_internal.html#rs2_software_sensor_on_notification">rs2_software_sensor_on_notification</a></strong>(sensor: <a href="rs_types.html#pRS2_sensor">pRS2_sensor</a>; notif: <a href="rs_internal.Trs2_software_notification.html">Trs2_software_notification</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code>procedure <strong><a href="rs_internal.html#rs2_software_sensor_set_metadata">rs2_software_sensor_set_metadata</a></strong>(sensor: <a href="rs_types.html#pRS2_sensor">pRS2_sensor</a>; Value: <a href="rs_frame.html#Trs2_frame_metadata_value">Trs2_frame_metadata_value</a>; aType: <a href="rs_types.html#Trs2_metadata_type">Trs2_metadata_type</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code>procedure <strong><a href="rs_internal.html#rs2_software_device_set_destruction_callback">rs2_software_device_set_destruction_callback</a></strong>(dev: <a href="rs_types.html#pRS2_device">pRS2_device</a>; on_notification: <a href="rs_internal.Trs2_software_device_destruction_callback.html">Trs2_software_device_destruction_callback</a>; user: <a href="rs_types.html#pvoid">pvoid</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code>procedure <strong><a href="rs_internal.html#rs2_software_device_create_matcher">rs2_software_device_create_matcher</a></strong>(dev: <a href="rs_types.html#pRS2_device">pRS2_device</a>; matcher: <a href="rs_types.html#Trs2_matchers">Trs2_matchers</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code>procedure <strong><a href="rs_internal.html#rs2_software_device_register_info">rs2_software_device_register_info</a></strong>(dev: <a href="rs_types.html#pRS2_device">pRS2_device</a>; info: <a href="rs_sensor.html#Trs2_camera_info">Trs2_camera_info</a>; val: PChar; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code>procedure <strong><a href="rs_internal.html#rs2_software_device_update_info">rs2_software_device_update_info</a></strong>(dev: <a href="rs_types.html#pRS2_device">pRS2_device</a>; info: <a href="rs_sensor.html#Trs2_camera_info">Trs2_camera_info</a>; val: PChar; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code>function <strong><a href="rs_internal.html#rs2_software_sensor_add_video_stream">rs2_software_sensor_add_video_stream</a></strong>(sendor: <a href="rs_types.html#pRS2_sensor">pRS2_sensor</a>; video_stream: <a href="rs_internal.Trs2_video_stream.html">Trs2_video_stream</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): <a href="rs_types.html#pRS2_stream_profile">pRS2_stream_profile</a>; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code>function <strong><a href="rs_internal.html#rs2_software_sensor_add_video_stream_ex">rs2_software_sensor_add_video_stream_ex</a></strong>(sensor: <a href="rs_types.html#pRS2_sensor">pRS2_sensor</a>; video_stream: <a href="rs_internal.Trs2_video_stream.html">Trs2_video_stream</a>; is_default: integer; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): <a href="rs_types.html#pRS2_stream_profile">pRS2_stream_profile</a>; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code>function <strong><a href="rs_internal.html#rs2_software_sensor_add_motion_stream">rs2_software_sensor_add_motion_stream</a></strong>(sensor: <a href="rs_types.html#pRS2_sensor">pRS2_sensor</a>; motion_stream: <a href="rs_internal.Trs2_motion_stream.html">Trs2_motion_stream</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): <a href="rs_types.html#pRS2_stream_profile">pRS2_stream_profile</a>; cdecl; external;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code>function <strong><a href="rs_internal.html#rs2_software_sensor_add_motion_stream">rs2_software_sensor_add_motion_stream</a></strong>(sensor: <a href="rs_types.html#pRS2_sensor">pRS2_sensor</a>; motion_stream: <a href="rs_internal.Trs2_motion_stream.html">Trs2_motion_stream</a>; is_default: integer; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): <a href="rs_types.html#pRS2_stream_profile">pRS2_stream_profile</a>; cdecl; external;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code>function <strong><a href="rs_internal.html#rs2_software_sensor_add_pose_stream">rs2_software_sensor_add_pose_stream</a></strong>(sensor: <a href="rs_types.html#pRS2_sensor">pRS2_sensor</a>; pose_stream: <a href="rs_internal.Trs2_pose_stream.html">Trs2_pose_stream</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): <a href="rs_types.html#pRS2_stream_profile">pRS2_stream_profile</a>; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code>function <strong><a href="rs_internal.html#rs2_software_sensor_add_pose_stream">rs2_software_sensor_add_pose_stream</a></strong>(sensor: <a href="rs_types.html#pRS2_sensor">pRS2_sensor</a>; pose_stream: <a href="rs_internal.Trs2_pose_stream.html">Trs2_pose_stream</a>; is_defautl: integer; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): <a href="rs_types.html#pRS2_stream_profile">pRS2_stream_profile</a>; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code>procedure <strong><a href="rs_internal.html#rs2_software_sensor_add_read_only_option">rs2_software_sensor_add_read_only_option</a></strong>(sensor: <a href="rs_types.html#pRS2_sensor">pRS2_sensor</a>; option: <a href="rs_option.html#Trs2_option">Trs2_option</a>; val: single; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code>procedure <strong><a href="rs_internal.html#rs2_software_sensor_update_read_only_option">rs2_software_sensor_update_read_only_option</a></strong>(sensor: <a href="rs_types.html#pRS2_sensor">pRS2_sensor</a>; option: <a href="rs_option.html#Trs2_option">Trs2_option</a>; val: single; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code>procedure <strong><a href="rs_internal.html#rs2_software_sensor_add_option">rs2_software_sensor_add_option</a></strong>(sensor: <a href="rs_types.html#pRS2_sensor">pRS2_sensor</a>; option: <a href="rs_option.html#Trs2_option">Trs2_option</a>; min: single; max: single; step: single; def: single; is_writable: integer; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code>procedure <strong><a href="rs_internal.html#rs2_software_sensor_detach">rs2_software_sensor_detach</a></strong>(sensor: <a href="rs_types.html#pRS2_sensor">pRS2_sensor</a>; error: <a href="rs_types.html#pRS2_sensor">pRS2_sensor</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code>function <strong><a href="rs_internal.html#rs2_create_fw_log_message">rs2_create_fw_log_message</a></strong>(dev: <a href="rs_types.html#pRS2_device">pRS2_device</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): <a href="rs_types.html#pRS2_firmware_log_message">pRS2_firmware_log_message</a>; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code>function <strong><a href="rs_internal.html#rs2_get_fw_log">rs2_get_fw_log</a></strong>(dev: <a href="rs_types.html#pRS2_device">pRS2_device</a>; fw_log_msg: <a href="rs_types.html#pRS2_firmware_log_message">pRS2_firmware_log_message</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): integer; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code>function <strong><a href="rs_internal.html#rs2_get_flash_log">rs2_get_flash_log</a></strong>(dev: <a href="rs_types.html#pRS2_sensor">pRS2_sensor</a>; fw_log_msg: <a href="rs_types.html#pRS2_firmware_log_message">pRS2_firmware_log_message</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): integer; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code>procedure <strong><a href="rs_internal.html#rs2_delete_fw_log_message">rs2_delete_fw_log_message</a></strong>(msg: <a href="rs_types.html#pRS2_firmware_log_message">pRS2_firmware_log_message</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code>function <strong><a href="rs_internal.html#rs2_fw_log_message_data">rs2_fw_log_message_data</a></strong>(msg: <a href="rs_types.html#pRS2_firmware_log_message">pRS2_firmware_log_message</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): pbyte; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code>function <strong><a href="rs_internal.html#rs2_fw_log_message_size">rs2_fw_log_message_size</a></strong>(msg: <a href="rs_types.html#pRS2_firmware_log_message">pRS2_firmware_log_message</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): integer; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code>function <strong><a href="rs_internal.html#rs2_fw_log_message_timestamp">rs2_fw_log_message_timestamp</a></strong>(msg: <a href="rs_types.html#pRS2_firmware_log_message">pRS2_firmware_log_message</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): cardinal; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code>function <strong><a href="rs_internal.html#rs2_fw_log_message_severity">rs2_fw_log_message_severity</a></strong>(msg: <a href="rs_types.html#pRS2_firmware_log_message">pRS2_firmware_log_message</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): <a href="rs_types.html#Trs2_log_severity">Trs2_log_severity</a>; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code>function <strong><a href="rs_internal.html#rs2_init_fw_log_parser">rs2_init_fw_log_parser</a></strong>(dev: <a href="rs_types.html#pRS2_device">pRS2_device</a>; xml_content: PChar; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): integer; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code>function <strong><a href="rs_internal.html#rs2_create_fw_log_parsed_message">rs2_create_fw_log_parsed_message</a></strong>(dev: <a href="rs_types.html#pRS2_device">pRS2_device</a>; error: <a href="rs_types.html#pRS2_device">pRS2_device</a>): <a href="rs_types.html#pRS2_firmware_log_parsed_message">pRS2_firmware_log_parsed_message</a>; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code>function <strong><a href="rs_internal.html#rs2_parse_firmware_log">rs2_parse_firmware_log</a></strong>(dev: <a href="rs_types.html#pRS2_device">pRS2_device</a>; fw_log_msg: <a href="rs_types.html#pRS2_firmware_log_message">pRS2_firmware_log_message</a>; parsed_msg: <a href="rs_types.html#pRS2_firmware_log_parsed_message">pRS2_firmware_log_parsed_message</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): integer; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code>function <strong><a href="rs_internal.html#rs2_get_number_of_fw_logs">rs2_get_number_of_fw_logs</a></strong>(dev: <a href="rs_types.html#pRS2_device">pRS2_device</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): cardinal; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code>function <strong><a href="rs_internal.html#rs2_get_fw_log_parsed_message">rs2_get_fw_log_parsed_message</a></strong>( fw_log_parsed_msg: <a href="rs_types.html#pRS2_firmware_log_parsed_message">pRS2_firmware_log_parsed_message</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): PChar; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code>function <strong><a href="rs_internal.html#rs2_get_fw_log_parsed_file_name">rs2_get_fw_log_parsed_file_name</a></strong>(fw_log_parsed_msg: <a href="rs_types.html#pRS2_firmware_log_parsed_message">pRS2_firmware_log_parsed_message</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): PChar; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code>function <strong><a href="rs_internal.html#rs2_get_fw_log_parsed_thread_name">rs2_get_fw_log_parsed_thread_name</a></strong>(fw_log_parsed_msg: <a href="rs_types.html#pRS2_firmware_log_parsed_message">pRS2_firmware_log_parsed_message</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): PChar; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code>function <strong><a href="rs_internal.html#rs2_get_fw_log_parsed_severity">rs2_get_fw_log_parsed_severity</a></strong>(fw_log_parsed_msg: <a href="rs_types.html#pRS2_firmware_log_parsed_message">pRS2_firmware_log_parsed_message</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): <a href="rs_types.html#Trs2_log_severity">Trs2_log_severity</a>; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code>function <strong><a href="rs_internal.html#rs2_get_fw_log_parsed_line">rs2_get_fw_log_parsed_line</a></strong>(fw_log_parsed_msg: <a href="rs_types.html#pRS2_firmware_log_parsed_message">pRS2_firmware_log_parsed_message</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): integer; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code>function <strong><a href="rs_internal.html#rs2_get_fw_log_parsed_timestamp">rs2_get_fw_log_parsed_timestamp</a></strong>(fw_log_parsed_msg: <a href="rs_types.html#pRS2_firmware_log_parsed_message">pRS2_firmware_log_parsed_message</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): cardinal; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code>function <strong><a href="rs_internal.html#rs2_get_fw_log_parsed_sequence_id">rs2_get_fw_log_parsed_sequence_id</a></strong>( fw_log_parsed_msg: <a href="rs_types.html#pRS2_firmware_log_parsed_message">pRS2_firmware_log_parsed_message</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): cardinal; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code>function <strong><a href="rs_internal.html#rs2_create_terminal_parser">rs2_create_terminal_parser</a></strong>(xml_content: PChar; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): <a href="rs_internal.html#pRS2_terminal_parser">pRS2_terminal_parser</a>; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code>procedure <strong><a href="rs_internal.html#rs2_delete_terminal_parser">rs2_delete_terminal_parser</a></strong>(terminal_parser: <a href="rs_internal.html#pRS2_terminal_parser">pRS2_terminal_parser</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code>function <strong><a href="rs_internal.html#rs2_terminal_parse_command">rs2_terminal_parse_command</a></strong>(terminal_parse: <a href="rs_internal.html#pRS2_terminal_parser">pRS2_terminal_parser</a>; command: PChar; size_of_command: cardinal; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): <a href="rs_types.html#pRS2_raw_data_buffer">pRS2_raw_data_buffer</a>; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code>function <strong><a href="rs_internal.html#pRS2_terminal_parser">pRS2_terminal_parser</a></strong>(terminal_parse: <a href="rs_internal.html#pRS2_terminal_parser">pRS2_terminal_parser</a>; command: PChar; size_of_commando: cardinal; response: <a href="rs_types.html#pvoid">pvoid</a>; size_of_response: cardinal; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): <a href="rs_types.html#pRS2_raw_data_buffer">pRS2_raw_data_buffer</a>; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+</table>
+<span id="PasDoc-Types"></span><h3 class="summary">Types</h3>
+<table class="summary wide_list">
+<tr class="list">
+<td class="itemcode"><code><strong><a href="rs_internal.html#Trs2_recording_mode">Trs2_recording_mode</a></strong> = (...);</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code><strong><a href="rs_internal.html#TDeleterProc">TDeleterProc</a></strong> = procedure(arg: Pointer); cdecl;</code></td>
+</tr>
+</table>
+<span id="PasDoc-Constants"></span><h3 class="summary">Constants</h3>
+<table class="summary wide_list">
+<tr class="list">
+<td class="itemcode"><code><strong><a href="rs_internal.html#signed_fw_size">signed_fw_size</a></strong>: integer = $18031C;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code><strong><a href="rs_internal.html#signed_sr300_size">signed_sr300_size</a></strong>: integer = $0C025C;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code><strong><a href="rs_internal.html#unsigned_fw_size">unsigned_fw_size</a></strong>: integer = $200000;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code><strong><a href="rs_internal.html#unsigned_sr300_size">unsigned_sr300_size</a></strong>: integer = $100000;</code></td>
+</tr>
+</table>
+<h2 class="description">Description</h2>
+<h3 class="detail">Functions and Procedures</h3>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_create_recording_context"></span><code>function <strong>rs2_create_recording_context</strong>(api_version: integer; const filename: PChar; const seccion: PChar; mode: <a href="rs_internal.html#Trs2_recording_mode">Trs2_recording_mode</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): <a href="rs_types.html#pRS2_context">pRS2_context</a>; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Create librealsense context that will try to record all operations over librealsense into a file param[in] api_version realsense API version as provided by RS2_API_VERSION macro param[in] filename string representing the name of the file to record param[in] section string representing the name of the section within existing recording param[out] error if non-null, receives any error that occurs during this call, otherwise, errors are ignored return context object, should be released by rs2_delete_context</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_create_mock_context"></span><code>function <strong>rs2_create_mock_context</strong>(api_version: integer; filename: PChar; section: PChar; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): <a href="rs_types.html#pRS2_context">pRS2_context</a>; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Create librealsense context that given a file will respond to calls exactly as the recording did if the user calls a method that was either not called during recording or violates causality of the recording error will be thrown param[in] api_version realsense API version as provided by RS2_API_VERSION macro param[in] filename string representing the name of the file to play back from param[in] section string representing the name of the section within existing recording param[out] error if non-null, receives any error that occurs during this call, otherwise, errors are ignored return context object, should be released by rs2_delete_context</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_create_mock_context_versioned"></span><code>function <strong>rs2_create_mock_context_versioned</strong>(api_version: integer; filename: PChar; secction: PChar; min_api_version: PChar; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): <a href="rs_types.html#pRS2_context">pRS2_context</a>; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Create librealsense context that given a file will respond to calls exactly as the recording did if the user calls a method that was either not called during recording or violates causality of the recording error will be thrown param[in] api_version realsense API version as provided by RS2_API_VERSION macro param[in] filename string representing the name of the file to play back from param[in] section string representing the name of the section within existing recording param[in] min_api_version reject any file that was recorded before this version param[out] error if non-null, receives any error that occurs during this call, otherwise, errors are ignored return context object, should be released by rs2_delete_context</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_create_software_device"></span><code>function <strong>rs2_create_software_device</strong>(error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): <a href="rs_types.html#pRS2_device">pRS2_device</a>; cdecl; external;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Create software device to enable use librealsense logic without getting data from backend but inject the data from outside param[out] error if non-null, receives any error that occurs during this call, otherwise, errors are ignored return software device object, should be released by rs2_delete_device</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_software_device_add_sensor"></span><code>function <strong>rs2_software_device_add_sensor</strong>(dev: <a href="rs_types.html#pRS2_device">pRS2_device</a>; sensor_name: PChar; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): <a href="rs_types.html#pRS2_sensor">pRS2_sensor</a>; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Add sensor to the software device param[in] dev the software device param[in] sensor_name the name of the sensor param[out] error if non-null, receives any error that occurs during this call, otherwise, errors are ignored return software sensor object, should be released by rs2_delete_sensor</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_software_sensor_on_video_frame"></span><code>procedure <strong>rs2_software_sensor_on_video_frame</strong>(sensor: <a href="rs_types.html#pRS2_sensor">pRS2_sensor</a>; frame: <a href="rs_internal.Trs2_software_video_frame.html">Trs2_software_video_frame</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Inject video frame to software sonsor param[in] sensor the software sensor param[in] frame all the frame components param[out] error if non-null, receives any error that occurs during this call, otherwise, errors are ignored</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_software_sensor_on_motion_frame"></span><code>procedure <strong>rs2_software_sensor_on_motion_frame</strong>(sensor: <a href="rs_types.html#pRS2_sensor">pRS2_sensor</a>; frame: <a href="rs_internal.Trs2_software_motion_frame.html">Trs2_software_motion_frame</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Inject motion frame to software sonsor param[in] sensor the software sensor param[in] frame all the frame components param[out] error if non-null, receives any error that occurs during this call, otherwise, errors are ignored</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_software_sensor_on_pose_frame"></span><code>procedure <strong>rs2_software_sensor_on_pose_frame</strong>(sensor: <a href="rs_types.html#pRS2_sensor">pRS2_sensor</a>; frame: <a href="rs_internal.Trs2_software_motion_frame.html">Trs2_software_motion_frame</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Inject pose frame to software sonsor param[in] sensor the software sensor param[in] frame all the frame components param[out] error if non-null, receives any error that occurs during this call, otherwise, errors are ignored</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_software_sensor_on_notification"></span><code>procedure <strong>rs2_software_sensor_on_notification</strong>(sensor: <a href="rs_types.html#pRS2_sensor">pRS2_sensor</a>; notif: <a href="rs_internal.Trs2_software_notification.html">Trs2_software_notification</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Inject notification to software sonsor param[in] sensor the software sensor param[in] notif all the notification components param[out] error if non-null, receives any error that occurs during this call, otherwise, errors are ignored</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_software_sensor_set_metadata"></span><code>procedure <strong>rs2_software_sensor_set_metadata</strong>(sensor: <a href="rs_types.html#pRS2_sensor">pRS2_sensor</a>; Value: <a href="rs_frame.html#Trs2_frame_metadata_value">Trs2_frame_metadata_value</a>; aType: <a href="rs_types.html#Trs2_metadata_type">Trs2_metadata_type</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Set frame metadata for the upcoming frames param[in] sensor the software sensor param[in] value metadata key to set param[in] type metadata value param[out] error if non-null, receives any error that occurs during this call, otherwise, errors are ignored</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_software_device_set_destruction_callback"></span><code>procedure <strong>rs2_software_device_set_destruction_callback</strong>(dev: <a href="rs_types.html#pRS2_device">pRS2_device</a>; on_notification: <a href="rs_internal.Trs2_software_device_destruction_callback.html">Trs2_software_device_destruction_callback</a>; user: <a href="rs_types.html#pvoid">pvoid</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+set callback to be notified when a specific software device is destroyed param[in] dev software device param[in] on_notification function pointer to register as callback param[out] error if non-null, receives any error that occurs during this call, otherwise, errors are ignored</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_software_device_create_matcher"></span><code>procedure <strong>rs2_software_device_create_matcher</strong>(dev: <a href="rs_types.html#pRS2_device">pRS2_device</a>; matcher: <a href="rs_types.html#Trs2_matchers">Trs2_matchers</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Set the wanted matcher type that will be used by the syncer param[in] dev the software device param[in] matcher matcher type param[out] error if non-null, receives any error that occurs during this call, otherwise, errors are ignored</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_software_device_register_info"></span><code>procedure <strong>rs2_software_device_register_info</strong>(dev: <a href="rs_types.html#pRS2_device">pRS2_device</a>; info: <a href="rs_sensor.html#Trs2_camera_info">Trs2_camera_info</a>; val: PChar; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Register a camera info value for the software device param[in] dev the software device param[in] info identifier for the camera info to add. param[in] val string value for this new camera info. param[out] error if non-null, receives any error that occurs during this call, otherwise, errors are ignored</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_software_device_update_info"></span><code>procedure <strong>rs2_software_device_update_info</strong>(dev: <a href="rs_types.html#pRS2_device">pRS2_device</a>; info: <a href="rs_sensor.html#Trs2_camera_info">Trs2_camera_info</a>; val: PChar; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Update an existing camera info value for the software device param[in] dev the software device param[in] info identifier for the camera info to add. param[in] val string value for this new camera info. param[out] error if non-null, receives any error that occurs during this call, otherwise, errors are ignored</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_software_sensor_add_video_stream"></span><code>function <strong>rs2_software_sensor_add_video_stream</strong>(sendor: <a href="rs_types.html#pRS2_sensor">pRS2_sensor</a>; video_stream: <a href="rs_internal.Trs2_video_stream.html">Trs2_video_stream</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): <a href="rs_types.html#pRS2_stream_profile">pRS2_stream_profile</a>; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Add video stream to sensor param[in] sensor the software sensor param[in] video_stream all the stream components param[out] error if non-null, receives any error that occurs during this call, otherwise, errors are ignored</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_software_sensor_add_video_stream_ex"></span><code>function <strong>rs2_software_sensor_add_video_stream_ex</strong>(sensor: <a href="rs_types.html#pRS2_sensor">pRS2_sensor</a>; video_stream: <a href="rs_internal.Trs2_video_stream.html">Trs2_video_stream</a>; is_default: integer; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): <a href="rs_types.html#pRS2_stream_profile">pRS2_stream_profile</a>; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Add video stream to sensor param[in] sensor the software sensor param[in] video_stream all the stream components param[in] is_default whether or not the stream should be a default stream for the device param[out] error if non-null, receives any error that occurs during this call, otherwise, errors are ignored</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_software_sensor_add_motion_stream"></span><code>function <strong>rs2_software_sensor_add_motion_stream</strong>(sensor: <a href="rs_types.html#pRS2_sensor">pRS2_sensor</a>; motion_stream: <a href="rs_internal.Trs2_motion_stream.html">Trs2_motion_stream</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): <a href="rs_types.html#pRS2_stream_profile">pRS2_stream_profile</a>; cdecl; external;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Add motion stream to sensor param[in] sensor the software sensor param[in] motion_stream all the stream components param[out] error if non-null, receives any error that occurs during this call, otherwise, errors are ignored</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_software_sensor_add_motion_stream"></span><code>function <strong>rs2_software_sensor_add_motion_stream</strong>(sensor: <a href="rs_types.html#pRS2_sensor">pRS2_sensor</a>; motion_stream: <a href="rs_internal.Trs2_motion_stream.html">Trs2_motion_stream</a>; is_default: integer; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): <a href="rs_types.html#pRS2_stream_profile">pRS2_stream_profile</a>; cdecl; external;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Add motion stream to sensor param[in] sensor the software sensor param[in] motion_stream all the stream components param[in] is_default whether or not the stream should be a default stream for the device param[out] error if non-null, receives any error that occurs during this call, otherwise, errors are ignored</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_software_sensor_add_pose_stream"></span><code>function <strong>rs2_software_sensor_add_pose_stream</strong>(sensor: <a href="rs_types.html#pRS2_sensor">pRS2_sensor</a>; pose_stream: <a href="rs_internal.Trs2_pose_stream.html">Trs2_pose_stream</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): <a href="rs_types.html#pRS2_stream_profile">pRS2_stream_profile</a>; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Add pose stream to sensor param[in] sensor the software sensor param[in] pose_stream all the stream components param[out] error if non-null, receives any error that occurs during this call, otherwise, errors are ignored</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_software_sensor_add_pose_stream"></span><code>function <strong>rs2_software_sensor_add_pose_stream</strong>(sensor: <a href="rs_types.html#pRS2_sensor">pRS2_sensor</a>; pose_stream: <a href="rs_internal.Trs2_pose_stream.html">Trs2_pose_stream</a>; is_defautl: integer; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): <a href="rs_types.html#pRS2_stream_profile">pRS2_stream_profile</a>; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Add pose stream to sensor param[in] sensor the software sensor param[in] pose_stream all the stream components param[in] is_default whether or not the stream should be a default stream for the device param[out] error if non-null, receives any error that occurs during this call, otherwise, errors are ignored</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_software_sensor_add_read_only_option"></span><code>procedure <strong>rs2_software_sensor_add_read_only_option</strong>(sensor: <a href="rs_types.html#pRS2_sensor">pRS2_sensor</a>; option: <a href="rs_option.html#Trs2_option">Trs2_option</a>; val: single; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Add read only option to sensor param[in] sensor the software sensor param[in] option the wanted option param[in] val the initial value param[out] error if non-null, receives any error that occurs during this call, otherwise, errors are ignored</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_software_sensor_update_read_only_option"></span><code>procedure <strong>rs2_software_sensor_update_read_only_option</strong>(sensor: <a href="rs_types.html#pRS2_sensor">pRS2_sensor</a>; option: <a href="rs_option.html#Trs2_option">Trs2_option</a>; val: single; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Update the read only option added to sensor param[in] sensor the software sensor param[in] option the wanted option param[in] val the wanted value param[out] error if non-null, receives any error that occurs during this call, otherwise, errors are ignored</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_software_sensor_add_option"></span><code>procedure <strong>rs2_software_sensor_add_option</strong>(sensor: <a href="rs_types.html#pRS2_sensor">pRS2_sensor</a>; option: <a href="rs_option.html#Trs2_option">Trs2_option</a>; min: single; max: single; step: single; def: single; is_writable: integer; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Add an option to sensor param[in] sensor the software sensor param[in] option the wanted option param[in] min the minimum value which will be accepted for this option param[in] max the maximum value which will be accepted for this option param[in] step the granularity of options which accept discrete values, or zero if the option accepts continuous values param[in] def the initial value of the option param[in] is_writable should the option be read-only or not param[out] error if non-null, receives any error that occurs during this call, otherwise, errors are ignored</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_software_sensor_detach"></span><code>procedure <strong>rs2_software_sensor_detach</strong>(sensor: <a href="rs_types.html#pRS2_sensor">pRS2_sensor</a>; error: <a href="rs_types.html#pRS2_sensor">pRS2_sensor</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Sensors hold the parent device in scope via a shared_ptr. This function detaches that so that the software sensor doesn't keep the software device alive. Note that this is dangerous as it opens the door to accessing freed memory if care isn't taken. param[in] sensor the software sensor param[out] error if non-null, recieves any error that occurs during this call, otherwise, errors are ignored</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_create_fw_log_message"></span><code>function <strong>rs2_create_fw_log_message</strong>(dev: <a href="rs_types.html#pRS2_device">pRS2_device</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): <a href="rs_types.html#pRS2_firmware_log_message">pRS2_firmware_log_message</a>; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Creates RealSense firmware log message. param[in] dev Device from which the FW log will be taken using the created message param[out] error If non-null, receives any error that occurs during this call, otherwise, errors are ignored. return pointer to created empty firmware log message</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_get_fw_log"></span><code>function <strong>rs2_get_fw_log</strong>(dev: <a href="rs_types.html#pRS2_device">pRS2_device</a>; fw_log_msg: <a href="rs_types.html#pRS2_firmware_log_message">pRS2_firmware_log_message</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): integer; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Gets RealSense firmware log. param[in] dev Device from which the FW log should be taken param[in] fw_log_msg Firmware log message object to be filled param[out] error If non-null, receives any error that occurs during this call, otherwise, errors are ignored. return true for success, false for failure - failure happens if no firmware log was sent by the hardware monitor</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_get_flash_log"></span><code>function <strong>rs2_get_flash_log</strong>(dev: <a href="rs_types.html#pRS2_sensor">pRS2_sensor</a>; fw_log_msg: <a href="rs_types.html#pRS2_firmware_log_message">pRS2_firmware_log_message</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): integer; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Gets RealSense flash log - this is a fw log that has been written in the device during the previous shutdown of the device param[in] dev Device from which the FW log should be taken param[in] fw_log_msg Firmware log message object to be filled param[out] error If non-null, receives any error that occurs during this call, otherwise, errors are ignored. return true for success, false for failure - failure happens if no firmware log was sent by the hardware monitor</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_delete_fw_log_message"></span><code>procedure <strong>rs2_delete_fw_log_message</strong>(msg: <a href="rs_types.html#pRS2_firmware_log_message">pRS2_firmware_log_message</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Delete RealSense firmware log message param[in] device Realsense firmware log message to delete</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_fw_log_message_data"></span><code>function <strong>rs2_fw_log_message_data</strong>(msg: <a href="rs_types.html#pRS2_firmware_log_message">pRS2_firmware_log_message</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): pbyte; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Gets RealSense firmware log message data. param[in] msg firmware log message object param[out] error If non-null, receives any error that occurs during this call, otherwise, errors are ignored. return pointer to start of the firmware log message data</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_fw_log_message_size"></span><code>function <strong>rs2_fw_log_message_size</strong>(msg: <a href="rs_types.html#pRS2_firmware_log_message">pRS2_firmware_log_message</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): integer; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Gets RealSense firmware log message size. param[in] msg firmware log message object param[out] error If non-null, receives any error that occurs during this call, otherwise, errors are ignored. return size of the firmware log message data</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_fw_log_message_timestamp"></span><code>function <strong>rs2_fw_log_message_timestamp</strong>(msg: <a href="rs_types.html#pRS2_firmware_log_message">pRS2_firmware_log_message</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): cardinal; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Gets RealSense firmware log message timestamp. param[in] msg firmware log message object param[out] error If non-null, receives any error that occurs during this call, otherwise, errors are ignored. return timestamp of the firmware log message</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_fw_log_message_severity"></span><code>function <strong>rs2_fw_log_message_severity</strong>(msg: <a href="rs_types.html#pRS2_firmware_log_message">pRS2_firmware_log_message</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): <a href="rs_types.html#Trs2_log_severity">Trs2_log_severity</a>; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Gets RealSense firmware log message severity. param[in] msg firmware log message object param[out] error If non-null, receives any error that occurs during this call, otherwise, errors are ignored. return severity of the firmware log message data</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_init_fw_log_parser"></span><code>function <strong>rs2_init_fw_log_parser</strong>(dev: <a href="rs_types.html#pRS2_device">pRS2_device</a>; xml_content: PChar; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): integer; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Initializes RealSense firmware logs parser in device. param[in] dev Device from which the FW log will be taken param[in] xml_content content of the xml file needed for parsing param[out] error If non-null, receives any error that occurs during this call, otherwise, errors are ignored. return true for success, false for failure - failure happens if opening the xml from the xml_path input fails</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_create_fw_log_parsed_message"></span><code>function <strong>rs2_create_fw_log_parsed_message</strong>(dev: <a href="rs_types.html#pRS2_device">pRS2_device</a>; error: <a href="rs_types.html#pRS2_device">pRS2_device</a>): <a href="rs_types.html#pRS2_firmware_log_parsed_message">pRS2_firmware_log_parsed_message</a>; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Creates RealSense firmware log parsed message. param[in] dev Device from which the FW log will be taken using the created message param[out] error If non-null, receives any error that occurs during this call, otherwise, errors are ignored. return pointer to created empty firmware log message</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_parse_firmware_log"></span><code>function <strong>rs2_parse_firmware_log</strong>(dev: <a href="rs_types.html#pRS2_device">pRS2_device</a>; fw_log_msg: <a href="rs_types.html#pRS2_firmware_log_message">pRS2_firmware_log_message</a>; parsed_msg: <a href="rs_types.html#pRS2_firmware_log_parsed_message">pRS2_firmware_log_parsed_message</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): integer; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Gets RealSense firmware log parser param[in] dev Device from which the FW log will be taken param[in] fw_log_msg firmware log message to be parsed param[in] parsed_msg firmware log parsed message - place holder for the resulting parsed message param[out] error If non-null, receives any error that occurs during this call, otherwise, errors are ignored. return true for success, false for failure - failure happens if message could not be parsed</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_get_number_of_fw_logs"></span><code>function <strong>rs2_get_number_of_fw_logs</strong>(dev: <a href="rs_types.html#pRS2_device">pRS2_device</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): cardinal; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+brief Returns number of fw logs already polled from device but not by user yet param[in] dev Device from which the FW log will be taken param[out] error If non-null, receives any error that occurs during this call, otherwise, errors are ignored. return number of fw logs already polled from device but not by user yet</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_get_fw_log_parsed_message"></span><code>function <strong>rs2_get_fw_log_parsed_message</strong>( fw_log_parsed_msg: <a href="rs_types.html#pRS2_firmware_log_parsed_message">pRS2_firmware_log_parsed_message</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): PChar; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Gets RealSense firmware log parsed message. param[in] fw_log_parsed_msg firmware log parsed message object param[out] error If non-null, receives any error that occurs during this call, otherwise, errors are ignored. return message of the firmware log parsed message</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_get_fw_log_parsed_file_name"></span><code>function <strong>rs2_get_fw_log_parsed_file_name</strong>(fw_log_parsed_msg: <a href="rs_types.html#pRS2_firmware_log_parsed_message">pRS2_firmware_log_parsed_message</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): PChar; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Gets RealSense firmware log parsed message file name. param[in] fw_log_parsed_msg firmware log parsed message object param[out] error If non-null, receives any error that occurs during this call, otherwise, errors are ignored. return file name of the firmware log parsed message</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_get_fw_log_parsed_thread_name"></span><code>function <strong>rs2_get_fw_log_parsed_thread_name</strong>(fw_log_parsed_msg: <a href="rs_types.html#pRS2_firmware_log_parsed_message">pRS2_firmware_log_parsed_message</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): PChar; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Gets RealSense firmware log parsed message thread name. param[in] fw_log_parsed_msg firmware log parsed message object param[out] error If non-null, receives any error that occurs during this call, otherwise, errors are ignored. return thread name of the firmware log parsed message</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_get_fw_log_parsed_severity"></span><code>function <strong>rs2_get_fw_log_parsed_severity</strong>(fw_log_parsed_msg: <a href="rs_types.html#pRS2_firmware_log_parsed_message">pRS2_firmware_log_parsed_message</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): <a href="rs_types.html#Trs2_log_severity">Trs2_log_severity</a>; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Gets RealSense firmware log parsed message severity. param[in] fw_log_parsed_msg firmware log parsed message object param[out] error If non-null, receives any error that occurs during this call, otherwise, errors are ignored. return severity of the firmware log parsed message</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_get_fw_log_parsed_line"></span><code>function <strong>rs2_get_fw_log_parsed_line</strong>(fw_log_parsed_msg: <a href="rs_types.html#pRS2_firmware_log_parsed_message">pRS2_firmware_log_parsed_message</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): integer; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Gets RealSense firmware log parsed message relevant line (in the file that is returned by rs2_get_fw_log_parsed_file_name). param[in] fw_log_parsed_msg firmware log parsed message object param[out] error If non-null, receives any error that occurs during this call, otherwise, errors are ignored. return line number of the firmware log parsed message</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_get_fw_log_parsed_timestamp"></span><code>function <strong>rs2_get_fw_log_parsed_timestamp</strong>(fw_log_parsed_msg: <a href="rs_types.html#pRS2_firmware_log_parsed_message">pRS2_firmware_log_parsed_message</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): cardinal; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Gets RealSense firmware log parsed message timestamp param[in] fw_log_parsed_msg firmware log parsed message object param[out] error If non-null, receives any error that occurs during this call, otherwise, errors are ignored. return timestamp of the firmware log parsed message</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_get_fw_log_parsed_sequence_id"></span><code>function <strong>rs2_get_fw_log_parsed_sequence_id</strong>( fw_log_parsed_msg: <a href="rs_types.html#pRS2_firmware_log_parsed_message">pRS2_firmware_log_parsed_message</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): cardinal; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Gets RealSense firmware log parsed message sequence id - cyclic number of FW log with [0..15] range param[in] fw_log_parsed_msg firmware log parsed message object param[out] error If non-null, receives any error that occurs during this call, otherwise, errors are ignored. return sequence of the firmware log parsed message</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_create_terminal_parser"></span><code>function <strong>rs2_create_terminal_parser</strong>(xml_content: PChar; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): <a href="rs_internal.html#pRS2_terminal_parser">pRS2_terminal_parser</a>; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Creates RealSense terminal parser. param[in] xml_content content of the xml file needed for parsing param[out] error If non-null, receives any error that occurs during this call, otherwise, errors are ignored. return pointer to created terminal parser object</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_delete_terminal_parser"></span><code>procedure <strong>rs2_delete_terminal_parser</strong>(terminal_parser: <a href="rs_internal.html#pRS2_terminal_parser">pRS2_terminal_parser</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Deletes RealSense terminal parser. param[in] terminal_parser terminal parser to be deleted</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_terminal_parse_command"></span><code>function <strong>rs2_terminal_parse_command</strong>(terminal_parse: <a href="rs_internal.html#pRS2_terminal_parser">pRS2_terminal_parser</a>; command: PChar; size_of_command: cardinal; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): <a href="rs_types.html#pRS2_raw_data_buffer">pRS2_raw_data_buffer</a>; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Parses terminal command via RealSense terminal parser param[in] terminal_parser Terminal parser object param[in] command command to be sent to the hw monitor of the device param[in] size_of_command size of command to be sent to the hw monitor of the device param[out] error If non-null, receives any error that occurs during this call, otherwise, errors are ignored. return command to hw monitor, in hex</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="pRS2_terminal_parser"></span><code>function <strong>pRS2_terminal_parser</strong>(terminal_parse: <a href="rs_internal.html#pRS2_terminal_parser">pRS2_terminal_parser</a>; command: PChar; size_of_commando: cardinal; response: <a href="rs_types.html#pvoid">pvoid</a>; size_of_response: cardinal; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): <a href="rs_types.html#pRS2_raw_data_buffer">pRS2_raw_data_buffer</a>; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Parses terminal response via RealSense terminal parser param[in] terminal_parser Terminal parser object param[in] command command sent to the hw monitor of the device param[in] size_of_command size of the command to sent to the hw monitor of the device param[in] response response received by the hw monitor of the device param[in] size_of_response size of the response received by the hw monitor of the device param[out] error If non-null, receives any error that occurs during this call, otherwise, errors are ignored. return answer parsed</p>
+</td></tr>
+</table>
+<h3 class="detail">Types</h3>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="Trs2_recording_mode"></span><code><strong>Trs2_recording_mode</strong> = (...);</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+librealsense Recorder is intended for effective unit-testing Currently supports three modes of operation:</p>
+<h6 class="description_section">Values</h6>
+<ul>
+<li>
+<span id="RS2_RECORDING_MODE_BLANK_FRAMES">RS2_RECORDING_MODE_BLANK_FRAMES</span>: frame metadata will be recorded, but pixel data will be replaced with zeros to save space</li>
+<li>
+<span id="RS2_RECORDING_MODE_COMPRESSED">RS2_RECORDING_MODE_COMPRESSED</span>: frames will be encoded using a proprietary lossy encoding, aiming at x5 compression at some CPU expense</li>
+<li>
+<span id="RS2_RECORDING_MODE_BEST_QUALITY">RS2_RECORDING_MODE_BEST_QUALITY</span>: frames will not be compressed, but rather stored as-is. This gives best quality and low CPU overhead, but you might run out of memory</li>
+<li>
+<span id="RS2_RECORDING_MODE_COUNT">RS2_RECORDING_MODE_COUNT</span></li>
+</ul>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="TDeleterProc"></span><code><strong>TDeleterProc</strong> = procedure(arg: Pointer); cdecl;</code></td>
+</tr>
+<tr><td colspan="1">
+&nbsp;</td></tr>
+</table>
+<h3 class="detail">Constants</h3>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="signed_fw_size"></span><code><strong>signed_fw_size</strong>: integer = $18031C;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Firmware size constants</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="signed_sr300_size"></span><code><strong>signed_sr300_size</strong>: integer = $0C025C;</code></td>
+</tr>
+<tr><td colspan="1">
+&nbsp;</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="unsigned_fw_size"></span><code><strong>unsigned_fw_size</strong>: integer = $200000;</code></td>
+</tr>
+<tr><td colspan="1">
+&nbsp;</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="unsigned_sr300_size"></span><code><strong>unsigned_sr300_size</strong>: integer = $100000;</code></td>
+</tr>
+<tr><td colspan="1">
+&nbsp;</td></tr>
+</table>
+<hr><span class="appinfo"><em>Generated by <a href="https://pasdoc.github.io/">PasDoc 0.16.0</a>. </em>
+</span>
+</div></div></body></html>

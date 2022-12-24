@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title>rs_frame</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="generator" content="PasDoc 0.16.0">
+<meta http-equiv="content-type" content="text/html; charset=utf-8">
+<link rel="stylesheet" type="text/css" href="tipuesearch/tipuesearch.css">
+
+<link rel="StyleSheet" type="text/css" href="pasdoc.css">
+</head>
+<body>
+<div class="container"><div class="navigation">
+<ul><li><a href="AllUnits.html">Units</a></li><li><a href="ClassHierarchy.html">Class Hierarchy</a></li><li><a href="AllClasses.html">Classes, Interfaces, Objects and Records</a></li><li><a href="AllTypes.html">Types</a></li><li><a href="AllVariables.html">Variables</a></li><li><a href="AllConstants.html">Constants</a></li><li><a href="AllFunctions.html">Functions and Procedures</a></li><li><a href="AllIdentifiers.html">Identifiers</a></li><li><form class="search-form" action="tipue_results.html"><div class="search-input"><input type="text" name="q" id="tipue_search_input" pattern=".{3,}" title="At least 3 characters" required><div class="search-button"><input type="button" id="tipue_search_button" onclick="this.form.submit();"></div></div></form>
+<div style="clear: both"></div>
+</li></ul></div><div class="content">
+<h1 class="unit">Unit rs_frame</h1>
+<div class="sections">
+<div class="one_section"><a class="section" href="#PasDoc-Description">Description</a></div><div class="one_section">Uses</div><div class="one_section">Classes, Interfaces, Objects and Records</div><div class="one_section"><a class="section" href="#PasDoc-FuncsProcs">Functions and Procedures</a></div><div class="one_section"><a class="section" href="#PasDoc-Types">Types</a></div><div class="one_section">Constants</div><div class="one_section">Variables</div></div>
+<span id="PasDoc-Description"></span><h2 class="description">Description</h2>
+<p>
+Exposes RealSense frame functionality</p>
+<span id="PasDoc-Uses"></span><h2 class="overview">Overview</h2>
+<span id="PasDoc-FuncsProcs"></span><h3 class="summary">Functions and Procedures</h3>
+<table class="summary wide_list">
+<tr class="list">
+<td class="itemcode"><code>function <strong><a href="rs_frame.html#rs2_timestamp_domain_to_string">rs2_timestamp_domain_to_string</a></strong>(info: <a href="rs_frame.html#Trs2_timestamp_domain">Trs2_timestamp_domain</a>): PChar; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code>function <strong><a href="rs_frame.html#rs2_calib_target_type_to_string">rs2_calib_target_type_to_string</a></strong>(atype: <a href="rs_frame.html#Trs2_calib_target_type">Trs2_calib_target_type</a>): PChar; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code>function <strong><a href="rs_frame.html#rs2_frame_metadata_to_string">rs2_frame_metadata_to_string</a></strong>(metadata: <a href="rs_frame.html#Trs2_frame_metadata_value">Trs2_frame_metadata_value</a>): PChar; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code>function <strong><a href="rs_frame.html#rs2_frame_metadata_value_to_string">rs2_frame_metadata_value_to_string</a></strong>(metadata: <a href="rs_frame.html#Trs2_frame_metadata_value">Trs2_frame_metadata_value</a>): PChar; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code>function <strong><a href="rs_frame.html#rs2_extract_frame">rs2_extract_frame</a></strong>(composite: <a href="rs_types.html#pRS2_frame">pRS2_frame</a>; index: integer; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): <a href="rs_types.html#pRS2_frame">pRS2_frame</a>; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code>function <strong><a href="rs_frame.html#rs2_embedded_frames_count">rs2_embedded_frames_count</a></strong>(frame: <a href="rs_types.html#pRS2_frame">pRS2_frame</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): integer; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code>procedure <strong><a href="rs_frame.html#rs2_release_frame">rs2_release_frame</a></strong>(frame: <a href="rs_types.html#pRS2_frame">pRS2_frame</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code>function <strong><a href="rs_frame.html#rs2_get_frame_data_size">rs2_get_frame_data_size</a></strong>(const frame: <a href="rs_types.html#pRS2_frame">pRS2_frame</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): integer; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code>function <strong><a href="rs_frame.html#rs2_get_frame_data">rs2_get_frame_data</a></strong>(const frame: <a href="rs_types.html#pRS2_frame">pRS2_frame</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): <a href="rs_types.html#pvoid">pVoid</a>; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code>function <strong><a href="rs_frame.html#rs2_get_frame_number">rs2_get_frame_number</a></strong>(const frame: <a href="rs_types.html#pRS2_frame">pRS2_frame</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): uint64; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code>function <strong><a href="rs_frame.html#rs2_get_frame_timestamp_domain">rs2_get_frame_timestamp_domain</a></strong>(const frame: <a href="rs_types.html#pRS2_frame">pRS2_frame</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): <a href="rs_frame.html#Trs2_timestamp_domain">Trs2_timestamp_domain</a>; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code>function <strong><a href="rs_frame.html#rs2_get_frame_timestamp">rs2_get_frame_timestamp</a></strong>(const frame: <a href="rs_types.html#pRS2_frame">pRS2_frame</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): <a href="rs_types.html#Trs2_time_t">Trs2_time_t</a>; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code>function <strong><a href="rs_frame.html#rs2_get_frame_metadata">rs2_get_frame_metadata</a></strong>(const frame: <a href="rs_types.html#pRS2_frame">pRS2_frame</a>; frame_metadata: <a href="rs_frame.html#Trs2_frame_metadata_value">Trs2_frame_metadata_value</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): <a href="rs_types.html#Trs2_metadata_type">Trs2_metadata_type</a>; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code>function <strong><a href="rs_frame.html#rs2_supports_frame_metadata">rs2_supports_frame_metadata</a></strong>(const frame: <a href="rs_types.html#pRS2_frame">pRS2_frame</a>; frame_metadata: <a href="rs_frame.html#Trs2_frame_metadata_value">Trs2_frame_metadata_value</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): integer; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code>function <strong><a href="rs_frame.html#rs2_get_frame_sensor">rs2_get_frame_sensor</a></strong>(const frame: <a href="rs_types.html#pRS2_frame">pRS2_frame</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): <a href="rs_types.html#pRS2_sensor">prs2_sensor</a>; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code>function <strong><a href="rs_frame.html#rs2_get_frame_width">rs2_get_frame_width</a></strong>(const frame: <a href="rs_types.html#pRS2_frame">pRS2_frame</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): integer; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code>function <strong><a href="rs_frame.html#rs2_get_frame_height">rs2_get_frame_height</a></strong>(frame: <a href="rs_types.html#pRS2_frame">pRS2_frame</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): integer; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code>function <strong><a href="rs_frame.html#rs2_depth_frame_get_units">rs2_depth_frame_get_units</a></strong>(frame: <a href="rs_types.html#pRS2_frame">pRS2_frame</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): single; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code>function <strong><a href="rs_frame.html#rs2_get_frame_stride_in_bytes">rs2_get_frame_stride_in_bytes</a></strong>(frame: <a href="rs_types.html#pRS2_frame">pRS2_frame</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): integer; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code>function <strong><a href="rs_frame.html#rs2_get_frame_bits_per_pixel">rs2_get_frame_bits_per_pixel</a></strong>(frame: <a href="rs_types.html#pRS2_frame">pRS2_frame</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): integer; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code>procedure <strong><a href="rs_frame.html#rs2_frame_add_ref">rs2_frame_add_ref</a></strong>(frame: <a href="rs_types.html#pRS2_frame">pRS2_frame</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code>procedure <strong><a href="rs_frame.html#rs2_keep_frame">rs2_keep_frame</a></strong>(frame: <a href="rs_types.html#pRS2_frame">pRS2_frame</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code>function <strong><a href="rs_frame.html#rs2_get_frame_vertices">rs2_get_frame_vertices</a></strong>(frame: <a href="rs_types.html#pRS2_frame">pRS2_frame</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): <a href="rs_types.html#pRS2_vertex">pRS2_vertex</a>; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code>procedure <strong><a href="rs_frame.html#rs2_export_to_ply">rs2_export_to_ply</a></strong>(frame: <a href="rs_types.html#pRS2_frame">pRS2_frame</a>; fname: PChar; texture: <a href="rs_types.html#pRS2_frame">pRS2_frame</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code>function <strong><a href="rs_frame.html#rs2_get_frame_texture_coordinates">rs2_get_frame_texture_coordinates</a></strong>(frame: <a href="rs_types.html#pRS2_frame">pRS2_frame</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): <a href="rs_types.html#pRS2_pixel">pRS2_pixel</a>; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code>function <strong><a href="rs_frame.html#rs2_get_frame_points_count">rs2_get_frame_points_count</a></strong>(frame: <a href="rs_types.html#pRS2_frame">pRS2_frame</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): integer; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code>function <strong><a href="rs_frame.html#rs2_get_frame_stream_profile">rs2_get_frame_stream_profile</a></strong>(frame: <a href="rs_types.html#pRS2_frame">pRS2_frame</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): <a href="rs_types.html#pRS2_stream_profile">pRS2_stream_profile</a>; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code>function <strong><a href="rs_frame.html#rs2_is_frame_extendable_to">rs2_is_frame_extendable_to</a></strong>(frame: <a href="rs_types.html#pRS2_frame">pRS2_frame</a>; extension_type: <a href="rs_types.html#Trs2_extension">Trs2_extension</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): integer; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code>function <strong><a href="rs_frame.html#rs2_allocate_synthetic_video_frame">rs2_allocate_synthetic_video_frame</a></strong>(Source: <a href="rs_types.html#pRS2_source">pRS2_source</a>; new_stream: <a href="rs_types.html#pRS2_stream_profile">pRS2_stream_profile</a>; original: <a href="rs_types.html#pRS2_frame">pRS2_frame</a>; new_bpp: integer; new_width: integer; new_height: integer; new_stride: integer; frame_type: <a href="rs_types.html#Trs2_extension">Trs2_extension</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): <a href="rs_types.html#pRS2_frame">pRS2_frame</a>; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code>function <strong><a href="rs_frame.html#rs2_allocate_synthetic_motion_frame">rs2_allocate_synthetic_motion_frame</a></strong>(Source: <a href="rs_types.html#pRS2_source">pRS2_source</a>; new_stream: <a href="rs_types.html#pRS2_stream_profile">pRS2_stream_profile</a>; original: <a href="rs_types.html#pRS2_frame">pRS2_frame</a>; frame_type: <a href="rs_types.html#Trs2_extension">Trs2_extension</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): <a href="rs_types.html#pRS2_frame">pRS2_frame</a>; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code>function <strong><a href="rs_frame.html#rs2_allocate_points">rs2_allocate_points</a></strong>(Source: <a href="rs_types.html#pRS2_source">pRS2_source</a>; const new_stream: <a href="rs_types.html#pRS2_stream_profile">pRS2_stream_profile</a>; original: <a href="rs_types.html#pRS2_frame">pRS2_frame</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): <a href="rs_types.html#pRS2_frame">pRS2_frame</a>; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code>function <strong><a href="rs_frame.html#rs2_allocate_composite_frame">rs2_allocate_composite_frame</a></strong>(Source: <a href="rs_types.html#pRS2_source">pRS2_source</a>; frames: <a href="rs_types.html#pRS2_frame">pRS2_frame</a>; Count: integer; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): <a href="rs_types.html#pRS2_frame">pRS2_frame</a>; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code>procedure <strong><a href="rs_frame.html#rs2_synthetic_frame_ready">rs2_synthetic_frame_ready</a></strong>(Source: <a href="rs_types.html#pRS2_source">pRS2_source</a>; frame: <a href="rs_types.html#pRS2_frame">pRS2_frame</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code>procedure <strong><a href="rs_frame.html#rs2_pose_frame_get_pose_data">rs2_pose_frame_get_pose_data</a></strong>(frame: <a href="rs_types.html#pRS2_frame">pRS2_frame</a>; pose: <a href="rs_types.html#pRS2_pose">pRS2_pose</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code>procedure <strong><a href="rs_frame.html#rs2_extract_target_dimensions">rs2_extract_target_dimensions</a></strong>(frame: <a href="rs_types.html#pRS2_frame">pRS2_frame</a>; calib_type: <a href="rs_frame.html#Trs2_calib_target_type">Trs2_calib_target_type</a>; target_dims: single; dims_size: nativeuint; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+</table>
+<span id="PasDoc-Types"></span><h3 class="summary">Types</h3>
+<table class="summary wide_list">
+<tr class="list">
+<td class="itemcode"><code><strong><a href="rs_frame.html#Trs2_timestamp_domain">Trs2_timestamp_domain</a></strong> = (...);</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code><strong><a href="rs_frame.html#Trs2_frame_metadata_value">Trs2_frame_metadata_value</a></strong> = (...);</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code><strong><a href="rs_frame.html#Trs2_calib_target_type">Trs2_calib_target_type</a></strong> = (...);</code></td>
+</tr>
+</table>
+<h2 class="description">Description</h2>
+<h3 class="detail">Functions and Procedures</h3>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_timestamp_domain_to_string"></span><code>function <strong>rs2_timestamp_domain_to_string</strong>(info: <a href="rs_frame.html#Trs2_timestamp_domain">Trs2_timestamp_domain</a>): PChar; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+&nbsp;</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_calib_target_type_to_string"></span><code>function <strong>rs2_calib_target_type_to_string</strong>(atype: <a href="rs_frame.html#Trs2_calib_target_type">Trs2_calib_target_type</a>): PChar; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+&nbsp;</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_frame_metadata_to_string"></span><code>function <strong>rs2_frame_metadata_to_string</strong>(metadata: <a href="rs_frame.html#Trs2_frame_metadata_value">Trs2_frame_metadata_value</a>): PChar; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+&nbsp;</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_frame_metadata_value_to_string"></span><code>function <strong>rs2_frame_metadata_value_to_string</strong>(metadata: <a href="rs_frame.html#Trs2_frame_metadata_value">Trs2_frame_metadata_value</a>): PChar; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+&nbsp;</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_extract_frame"></span><code>function <strong>rs2_extract_frame</strong>(composite: <a href="rs_types.html#pRS2_frame">pRS2_frame</a>; index: integer; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): <a href="rs_types.html#pRS2_frame">pRS2_frame</a>; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Extract frame from within a composite frame param[in] composite Composite frame param[in] index Index of the frame to extract within the composite frame param[out] error If non-null, receives any error that occurs during this call, otherwise, errors are ignored return returns reference to a frame existing within the composite frame If you wish to keep this frame after the composite is released, you need to call acquire_ref Otherwise the resulting frame lifetime is bound by owning composite frame</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_embedded_frames_count"></span><code>function <strong>rs2_embedded_frames_count</strong>(frame: <a href="rs_types.html#pRS2_frame">pRS2_frame</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): integer; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Get number of frames embedded within a composite frame param[in] composite Composite input frame param[out] error If non-null, receives any error that occurs during this call, otherwise, errors are ignored return Number of embedded frames</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_release_frame"></span><code>procedure <strong>rs2_release_frame</strong>(frame: <a href="rs_types.html#pRS2_frame">pRS2_frame</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+relases the frame handle param[in] frame handle returned from a callback</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_get_frame_data_size"></span><code>function <strong>rs2_get_frame_data_size</strong>(const frame: <a href="rs_types.html#pRS2_frame">pRS2_frame</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): integer; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+retrieve data size from frame handle param[in] frame handle returned from a callback param[out] error if non-null, receives any error that occurs during this call, otherwise, errors are ignored return the size of the frame data</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_get_frame_data"></span><code>function <strong>rs2_get_frame_data</strong>(const frame: <a href="rs_types.html#pRS2_frame">pRS2_frame</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): <a href="rs_types.html#pvoid">pVoid</a>; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+retrieve data from frame handle param[in] frame handle returned from a callback param[out] error if non-null, receives any error that occurs during this call, otherwise, errors are ignored return the pointer to the start of the frame data</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_get_frame_number"></span><code>function <strong>rs2_get_frame_number</strong>(const frame: <a href="rs_types.html#pRS2_frame">pRS2_frame</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): uint64; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+retrieve frame number from frame handle param[in] frame handle returned from a callback param[out] error if non-null, receives any error that occurs during this call, otherwise, errors are ignored return the frame nubmer of the frame, in milliseconds since the device was started</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_get_frame_timestamp_domain"></span><code>function <strong>rs2_get_frame_timestamp_domain</strong>(const frame: <a href="rs_types.html#pRS2_frame">pRS2_frame</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): <a href="rs_frame.html#Trs2_timestamp_domain">Trs2_timestamp_domain</a>; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+retrieve timestamp domain from frame handle. timestamps can only be comparable if they are in common domain (for example, depth timestamp might come from system time while color timestamp might come from the device) this method is used to check if two timestamp values are comparable (generated from the same clock) param[in] frameset handle returned from a callback param[out] error if non-null, receives any error that occurs during this call, otherwise, errors are ignored return the timestamp domain of the frame (camera / microcontroller / system time)</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_get_frame_timestamp"></span><code>function <strong>rs2_get_frame_timestamp</strong>(const frame: <a href="rs_types.html#pRS2_frame">pRS2_frame</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): <a href="rs_types.html#Trs2_time_t">Trs2_time_t</a>; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+retrieve timestamp from frame handle in milliseconds param[in] frame handle returned from a callback param[out] error if non-null, receives any error that occurs during this call, otherwise, errors are ignored return the timestamp of the frame in milliseconds</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_get_frame_metadata"></span><code>function <strong>rs2_get_frame_metadata</strong>(const frame: <a href="rs_types.html#pRS2_frame">pRS2_frame</a>; frame_metadata: <a href="rs_frame.html#Trs2_frame_metadata_value">Trs2_frame_metadata_value</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): <a href="rs_types.html#Trs2_metadata_type">Trs2_metadata_type</a>; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+retrieve metadata from frame handle param[in] frame handle returned from a callback param[in] frame_metadata the rs2_frame_metadata whose latest frame we are interested in param[out] error if non-null, receives any error that occurs during this call, otherwise, errors are ignored return the metadata value
+
+<p>rs2_metadata_type rs2_get_frame_metadata(const rs2_frame* frame, rs2_frame_metadata_value frame_metadata, rs2_error** error);</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_supports_frame_metadata"></span><code>function <strong>rs2_supports_frame_metadata</strong>(const frame: <a href="rs_types.html#pRS2_frame">pRS2_frame</a>; frame_metadata: <a href="rs_frame.html#Trs2_frame_metadata_value">Trs2_frame_metadata_value</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): integer; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+determine device metadata param[in] frame handle returned from a callback param[in] frame_metadata the metadata to check for support param[out] error if non-null, receives any error that occurs during this call, otherwise, errors are ignored return true if device has this metadata</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_get_frame_sensor"></span><code>function <strong>rs2_get_frame_sensor</strong>(const frame: <a href="rs_types.html#pRS2_frame">pRS2_frame</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): <a href="rs_types.html#pRS2_sensor">prs2_sensor</a>; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+retrieve frame parent sensor from frame handle param[in] frame handle returned from a callback param[out] error if non-null, receives any error that occurs during this call, otherwise, errors are ignored return the parent sensor of the frame</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_get_frame_width"></span><code>function <strong>rs2_get_frame_width</strong>(const frame: <a href="rs_types.html#pRS2_frame">pRS2_frame</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): integer; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+retrieve frame width in pixels param[in] frame handle returned from a callback param[out] error if non-null, receives any error that occurs during this call, otherwise, errors are ignored return frame width in pixels</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_get_frame_height"></span><code>function <strong>rs2_get_frame_height</strong>(frame: <a href="rs_types.html#pRS2_frame">pRS2_frame</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): integer; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+retrieve frame height in pixels param[in] frame handle returned from a callback param[out] error if non-null, receives any error that occurs during this call, otherwise, errors are ignored return frame height in pixels</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_depth_frame_get_units"></span><code>function <strong>rs2_depth_frame_get_units</strong>(frame: <a href="rs_types.html#pRS2_frame">pRS2_frame</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): single; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+retrieve the scaling factor to use when converting a depth frame's get_data() units to meters return single - depth, in meters, per 1 unit stored in the frame data</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_get_frame_stride_in_bytes"></span><code>function <strong>rs2_get_frame_stride_in_bytes</strong>(frame: <a href="rs_types.html#pRS2_frame">pRS2_frame</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): integer; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+retrieve frame stride in bytes (number of bytes from start of line N to start of line N+1) param[in] frame handle returned from a callback param[out] error if non-null, receives any error that occurs during this call, otherwise, errors are ignored return stride in bytes</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_get_frame_bits_per_pixel"></span><code>function <strong>rs2_get_frame_bits_per_pixel</strong>(frame: <a href="rs_types.html#pRS2_frame">pRS2_frame</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): integer; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+retrieve bits per pixels in the frame image (note that bits per pixel is not necessarily divided by 8, as in 12bpp) param[in] frame handle returned from a callback param[out] error if non-null, receives any error that occurs during this call, otherwise, errors are ignored return bits per pixel</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_frame_add_ref"></span><code>procedure <strong>rs2_frame_add_ref</strong>(frame: <a href="rs_types.html#pRS2_frame">pRS2_frame</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+/** * create additional reference to a frame without duplicating frame data * \param[in] frame handle returned from a callback * \param[out] error if non-null, receives any error that occurs during this call, otherwise, errors are ignored * \return new frame reference, has to be released by rs2_release_frame */ void rs2_frame_add_ref(rs2_frame* frame, rs2_error ** error);</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_keep_frame"></span><code>procedure <strong>rs2_keep_frame</strong>(frame: <a href="rs_types.html#pRS2_frame">pRS2_frame</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+communicate to the library you intend to keep the frame alive for a while this will remove the frame from the regular count of the frame pool once this function is called, the SDK can no longer guarantee 0-allocations during frame cycling \param[in] frame handle returned from a callback</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_get_frame_vertices"></span><code>function <strong>rs2_get_frame_vertices</strong>(frame: <a href="rs_types.html#pRS2_frame">pRS2_frame</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): <a href="rs_types.html#pRS2_vertex">pRS2_vertex</a>; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+When called on Points frame type, this method returns a pointer to an array of 3D vertices of the model The coordinate system is: X right, Y up, Z away from the camera. Units: Meters param[in] frame Points frame param[out] error If non-null, receives any error that occurs during this call, otherwise, errors are ignored return Pointer to an array of vertices, lifetime is managed by the frame</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_export_to_ply"></span><code>procedure <strong>rs2_export_to_ply</strong>(frame: <a href="rs_types.html#pRS2_frame">pRS2_frame</a>; fname: PChar; texture: <a href="rs_types.html#pRS2_frame">pRS2_frame</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+When called on Points frame type, this method creates a ply file of the model with the given file name. param[in] frame Points frame param[in] fname The name for the ply file param[in] texture Texture frame param[out] error If non-null, receives any error that occurs during this call, otherwise, errors are ignored</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_get_frame_texture_coordinates"></span><code>function <strong>rs2_get_frame_texture_coordinates</strong>(frame: <a href="rs_types.html#pRS2_frame">pRS2_frame</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): <a href="rs_types.html#pRS2_pixel">pRS2_pixel</a>; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+When called on Points frame type, this method returns a pointer to an array of texture coordinates per vertex Each coordinate represent a (u,v) pair within [0,1] range, to be mapped to texture image param[in] frame Points frame param[out] error If non-null, receives any error that occurs during this call, otherwise, errors are ignored return Pointer to an array of texture coordinates, lifetime is managed by the frame</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_get_frame_points_count"></span><code>function <strong>rs2_get_frame_points_count</strong>(frame: <a href="rs_types.html#pRS2_frame">pRS2_frame</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): integer; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+When called on Points frame type, this method returns the number of vertices in the frame param[in] frame Points frame param[out] error If non-null, receives any error that occurs during this call, otherwise, errors are ignored return Number of vertices</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_get_frame_stream_profile"></span><code>function <strong>rs2_get_frame_stream_profile</strong>(frame: <a href="rs_types.html#pRS2_frame">pRS2_frame</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): <a href="rs_types.html#pRS2_stream_profile">pRS2_stream_profile</a>; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Returns the stream profile that was used to start the stream of this frame param[in] frame frame reference, owned by the user param[out] error If non-null, receives any error that occurs during this call, otherwise, errors are ignored return Pointer to the stream profile object, lifetime is managed elsewhere</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_is_frame_extendable_to"></span><code>function <strong>rs2_is_frame_extendable_to</strong>(frame: <a href="rs_types.html#pRS2_frame">pRS2_frame</a>; extension_type: <a href="rs_types.html#Trs2_extension">Trs2_extension</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): integer; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Test if the given frame can be extended to the requested extension param[in] frame Realsense frame param[in] extension_type The extension to which the frame should be tested if it is extendable param[out] error If non-null, receives any error that occurs during this call, otherwise, errors are ignored return non-zero value iff the frame can be extended to the given extension</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_allocate_synthetic_video_frame"></span><code>function <strong>rs2_allocate_synthetic_video_frame</strong>(Source: <a href="rs_types.html#pRS2_source">pRS2_source</a>; new_stream: <a href="rs_types.html#pRS2_stream_profile">pRS2_stream_profile</a>; original: <a href="rs_types.html#pRS2_frame">pRS2_frame</a>; new_bpp: integer; new_width: integer; new_height: integer; new_stride: integer; frame_type: <a href="rs_types.html#Trs2_extension">Trs2_extension</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): <a href="rs_types.html#pRS2_frame">pRS2_frame</a>; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Allocate new video frame using a frame-source provided form a processing block param[in] source Frame pool to allocate the frame from param[in] new_stream New stream profile to assign to newly created frame param[in] original A reference frame that can be used to fill in auxilary information like format, width, height, bpp, stride (if applicable) param[in] new_bpp New value for bits per pixel for the allocated frame param[in] new_width New value for width for the allocated frame param[in] new_height New value for height for the allocated frame param[in] new_stride New value for stride in bytes for the allocated frame param[in] frame_type New value for frame type for the allocated frame param[out] error If non-null, receives any error that occurs during this call, otherwise, errors are ignored return reference to a newly allocated frame, must be released with release_frame memory for the frame is likely to be re-used from previous frame, but in lack of available frames in the pool will be allocated from the free store</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_allocate_synthetic_motion_frame"></span><code>function <strong>rs2_allocate_synthetic_motion_frame</strong>(Source: <a href="rs_types.html#pRS2_source">pRS2_source</a>; new_stream: <a href="rs_types.html#pRS2_stream_profile">pRS2_stream_profile</a>; original: <a href="rs_types.html#pRS2_frame">pRS2_frame</a>; frame_type: <a href="rs_types.html#Trs2_extension">Trs2_extension</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): <a href="rs_types.html#pRS2_frame">pRS2_frame</a>; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Allocate new motion frame using a frame-source provided form a processing block param[in] source Frame pool to allocate the frame from param[in] new_stream New stream profile to assign to newly created frame param[in] original A reference frame that can be used to fill in auxilary information like format, width, height, bpp, stride (if applicable) param[in] frame_type New value for frame type for the allocated frame param[out] error If non-null, receives any error that occurs during this call, otherwise, errors are ignored return reference to a newly allocated frame, must be released with release_frame memory for the frame is likely to be re-used from previous frame, but in lack of available frames in the pool will be allocated from the free store</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_allocate_points"></span><code>function <strong>rs2_allocate_points</strong>(Source: <a href="rs_types.html#pRS2_source">pRS2_source</a>; const new_stream: <a href="rs_types.html#pRS2_stream_profile">pRS2_stream_profile</a>; original: <a href="rs_types.html#pRS2_frame">pRS2_frame</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): <a href="rs_types.html#pRS2_frame">pRS2_frame</a>; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Allocate new points frame using a frame-source provided from a processing block param[in] source Frame pool to allocate the frame from param[in] new_stream New stream profile to assign to newly created frame param[in] original A reference frame that can be used to fill in auxilary information like format, width, height, bpp, stride (if applicable) param[out] error If non-null, receives any error that occurs during this call, otherwise, errors are ignored return reference to a newly allocated frame, must be released with release_frame memory for the frame is likely to be re-used from previous frame, but in lack of available frames in the pool will be allocated from the free store</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_allocate_composite_frame"></span><code>function <strong>rs2_allocate_composite_frame</strong>(Source: <a href="rs_types.html#pRS2_source">pRS2_source</a>; frames: <a href="rs_types.html#pRS2_frame">pRS2_frame</a>; Count: integer; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): <a href="rs_types.html#pRS2_frame">pRS2_frame</a>; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Allocate new composite frame, aggregating a set of existing frames param[in] source Frame pool to allocate the frame from param[in] frames Array of existing frames param[in] count Number of input frames param[out] error If non-null, receives any error that occurs during this call, otherwise, errors are ignored return reference to a newly allocated frame, must be released with release_frame when composite frame gets released it will automatically release all of the input frames
+
+<p>Note: This is a pointer to a Array of Frames Todo: Test it. Original declaration: rs2_frame* rs2_allocate_composite_frame(rs2_source* source, rs2_frame** frames, int count, rs2_error** error);</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_synthetic_frame_ready"></span><code>procedure <strong>rs2_synthetic_frame_ready</strong>(Source: <a href="rs_types.html#pRS2_source">pRS2_source</a>; frame: <a href="rs_types.html#pRS2_frame">pRS2_frame</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+This method will dispatch frame callback on a frame param[in] source Frame pool provided by the processing block param[in] frame Frame to dispatch, frame ownership is passed to this function, so you don't have to call release_frame after it param[out] error If non-null, receives any error that occurs during this call, otherwise, errors are ignored</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_pose_frame_get_pose_data"></span><code>procedure <strong>rs2_pose_frame_get_pose_data</strong>(frame: <a href="rs_types.html#pRS2_frame">pRS2_frame</a>; pose: <a href="rs_types.html#pRS2_pose">pRS2_pose</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+When called on Pose frame type, this method returns the transformation represented by the pose data param[in] frame Pose frame param[out] pose Pointer to a user allocated struct, which contains the pose info after a successful return param[out] error If non-null, receives any error that occurs during this call, otherwise, errors are ignored</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_extract_target_dimensions"></span><code>procedure <strong>rs2_extract_target_dimensions</strong>(frame: <a href="rs_types.html#pRS2_frame">pRS2_frame</a>; calib_type: <a href="rs_frame.html#Trs2_calib_target_type">Trs2_calib_target_type</a>; target_dims: single; dims_size: nativeuint; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Extract the target dimensions on the specific target param[in] frame Left or right camera frame of specified size based on the target type param[in] calib_type Calibration target type param[out] target_dims The array to hold the result target dimensions calculated. For type RS2_CALIB_TARGET_RECT_GAUSSIAN_DOT_VERTICES and RS2_CALIB_TARGET_ROI_RECT_GAUSSIAN_DOT_VERTICES, the four rectangle side sizes in pixels with the order of top, bottom, left, and right For type RS2_CALIB_TARGET_POS_GAUSSIAN_DOT_VERTICES, the four vertices coordinates in pixels with the order of top, bottom, left, and right param[in] target_dims_size Target dimension array size. 4 for RS2_CALIB_TARGET_RECT_GAUSSIAN_DOT_VERTICES and 8 for RS2_CALIB_TARGET_POS_GAUSSIAN_DOT_VERTICES. param[out] error If non-null, receives any error that occurs during this call, otherwise, errors are ignored</p>
+</td></tr>
+</table>
+<h3 class="detail">Types</h3>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="Trs2_timestamp_domain"></span><code><strong>Trs2_timestamp_domain</strong> = (...);</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Specifies the clock in relation to which the frame timestamp was measured. */
+
+<p>RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK, /**&lt; Frame timestamp was measured in relation to the camera clock */ RS2_TIMESTAMP_DOMAIN_SYSTEM_TIME, /**&lt; Frame timestamp was measured in relation to the OS system clock */ RS2_TIMESTAMP_DOMAIN_GLOBAL_TIME, /**&lt; Frame timestamp was measured in relation to the camera clock and converted to OS system clock by constantly measure the difference*/ RS2_TIMESTAMP_DOMAIN_COUNT /**&lt; Number of enumeration values. Not a valid input: intended to be used in for-loops. */</p>
+<h6 class="description_section">Values</h6>
+<ul>
+<li>
+<span id="RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK">RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK</span>: Frame timestamp was measured in relation to the camera clock</li>
+<li>
+<span id="RS2_TIMESTAMP_DOMAIN_SYSTEM_TIME">RS2_TIMESTAMP_DOMAIN_SYSTEM_TIME</span>: Frame timestamp was measured in relation to the OS system clock</li>
+<li>
+<span id="RS2_TIMESTAMP_DOMAIN_GLOBAL_TIME">RS2_TIMESTAMP_DOMAIN_GLOBAL_TIME</span>: Frame timestamp was measured in relation to the camera clock and converted to OS system clock by constantly measure the difference</li>
+<li>
+<span id="RS2_TIMESTAMP_DOMAIN_COUNT">RS2_TIMESTAMP_DOMAIN_COUNT</span>: Number of enumeration values. Not a valid input: intended to be used in for-loops.</li>
+</ul>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="Trs2_frame_metadata_value"></span><code><strong>Trs2_frame_metadata_value</strong> = (...);</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Per-Frame-Metadata is the set of read-only properties that might be exposed for each individual frame. */</p>
+<h6 class="description_section">Values</h6>
+<ul>
+<li>
+<span id="RS2_FRAME_METADATA_FRAME_COUNTER">RS2_FRAME_METADATA_FRAME_COUNTER</span>: A sequential index managed per-stream. Integer value</li>
+<li>
+<span id="RS2_FRAME_METADATA_FRAME_TIMESTAMP">RS2_FRAME_METADATA_FRAME_TIMESTAMP</span>: Timestamp set by device clock when data readout and transmit commence. usec</li>
+<li>
+<span id="RS2_FRAME_METADATA_SENSOR_TIMESTAMP">RS2_FRAME_METADATA_SENSOR_TIMESTAMP</span>: Timestamp of the middle of sensor's exposure calculated by device. usec</li>
+<li>
+<span id="RS2_FRAME_METADATA_ACTUAL_EXPOSURE">RS2_FRAME_METADATA_ACTUAL_EXPOSURE</span>: Sensor's exposure width. When Auto Exposure (AE) is on the value is controlled by firmware. usec</li>
+<li>
+<span id="RS2_FRAME_METADATA_GAIN_LEVEL">RS2_FRAME_METADATA_GAIN_LEVEL</span>: A relative value increasing which will increase the Sensor's gain fctor. When AE is set On, the value is controlled by firmware. Integer value</li>
+<li>
+<span id="RS2_FRAME_METADATA_AUTO_EXPOSURE">RS2_FRAME_METADATA_AUTO_EXPOSURE</span>: Auto Exposure Mode indicator. Zero corresponds to AE switched off.</li>
+<li>
+<span id="RS2_FRAME_METADATA_WHITE_BALANCE">RS2_FRAME_METADATA_WHITE_BALANCE</span>: White Balance setting as a color temperature. Kelvin degrees</li>
+<li>
+<span id="RS2_FRAME_METADATA_TIME_OF_ARRIVAL">RS2_FRAME_METADATA_TIME_OF_ARRIVAL</span>: Time of arrival in system clock</li>
+<li>
+<span id="RS2_FRAME_METADATA_TEMPERATURE">RS2_FRAME_METADATA_TEMPERATURE</span>: Temperature of the device, measured at the time of the frame capture. Celsius degrees</li>
+<li>
+<span id="RS2_FRAME_METADATA_BACKEND_TIMESTAMP">RS2_FRAME_METADATA_BACKEND_TIMESTAMP</span>: Timestamp get from uvc driver. usec</li>
+<li>
+<span id="RS2_FRAME_METADATA_ACTUAL_FPS">RS2_FRAME_METADATA_ACTUAL_FPS</span>: Actual fps</li>
+<li>
+<span id="RS2_FRAME_METADATA_FRAME_LASER_POWER">RS2_FRAME_METADATA_FRAME_LASER_POWER</span>: Laser power value 0-360.</li>
+<li>
+<span id="RS2_FRAME_METADATA_FRAME_LASER_POWER_MODE">RS2_FRAME_METADATA_FRAME_LASER_POWER_MODE</span>: Laser power mode. Zero corresponds to Laser power switched off and one for switched on. deprecated, replaced by RS2_FRAME_METADATA_FRAME_EMITTER_MODE</li>
+<li>
+<span id="RS2_FRAME_METADATA_EXPOSURE_PRIORITY">RS2_FRAME_METADATA_EXPOSURE_PRIORITY</span>: Exposure priority.</li>
+<li>
+<span id="RS2_FRAME_METADATA_EXPOSURE_ROI_LEFT">RS2_FRAME_METADATA_EXPOSURE_ROI_LEFT</span>: Left region of interest for the auto exposure Algorithm.</li>
+<li>
+<span id="RS2_FRAME_METADATA_EXPOSURE_ROI_RIGHT">RS2_FRAME_METADATA_EXPOSURE_ROI_RIGHT</span>: Right region of interest for the auto exposure Algorithm.</li>
+<li>
+<span id="RS2_FRAME_METADATA_EXPOSURE_ROI_TOP">RS2_FRAME_METADATA_EXPOSURE_ROI_TOP</span>: Top region of interest for the auto exposure Algorithm.</li>
+<li>
+<span id="RS2_FRAME_METADATA_EXPOSURE_ROI_BOTTOM">RS2_FRAME_METADATA_EXPOSURE_ROI_BOTTOM</span>: Bottom region of interest for the auto exposure Algorithm.</li>
+<li>
+<span id="RS2_FRAME_METADATA_BRIGHTNESS">RS2_FRAME_METADATA_BRIGHTNESS</span>: Color image brightness.</li>
+<li>
+<span id="RS2_FRAME_METADATA_CONTRAST">RS2_FRAME_METADATA_CONTRAST</span>: Color image contrast.</li>
+<li>
+<span id="RS2_FRAME_METADATA_SATURATION">RS2_FRAME_METADATA_SATURATION</span>: Color image saturation.</li>
+<li>
+<span id="RS2_FRAME_METADATA_SHARPNESS">RS2_FRAME_METADATA_SHARPNESS</span>: Color image sharpness.</li>
+<li>
+<span id="RS2_FRAME_METADATA_AUTO_WHITE_BALANCE_TEMPERATURE">RS2_FRAME_METADATA_AUTO_WHITE_BALANCE_TEMPERATURE</span>: Auto white balance temperature Mode indicator. Zero corresponds to automatic mode switched off.</li>
+<li>
+<span id="RS2_FRAME_METADATA_BACKLIGHT_COMPENSATION">RS2_FRAME_METADATA_BACKLIGHT_COMPENSATION</span>: Color backlight compensation. Zero corresponds to switched off.</li>
+<li>
+<span id="RS2_FRAME_METADATA_HUE">RS2_FRAME_METADATA_HUE</span>: Color image hue.</li>
+<li>
+<span id="RS2_FRAME_METADATA_GAMMA">RS2_FRAME_METADATA_GAMMA</span>: Color image gamma.</li>
+<li>
+<span id="RS2_FRAME_METADATA_MANUAL_WHITE_BALANCE">RS2_FRAME_METADATA_MANUAL_WHITE_BALANCE</span>: Color image white balance.</li>
+<li>
+<span id="RS2_FRAME_METADATA_POWER_LINE_FREQUENCY">RS2_FRAME_METADATA_POWER_LINE_FREQUENCY</span>: Power Line Frequency for anti-flickering Off/50Hz/60Hz/Auto.</li>
+<li>
+<span id="RS2_FRAME_METADATA_LOW_LIGHT_COMPENSATION">RS2_FRAME_METADATA_LOW_LIGHT_COMPENSATION</span>: Color lowlight compensation. Zero corresponds to switched off.</li>
+<li>
+<span id="RS2_FRAME_METADATA_FRAME_EMITTER_MODE">RS2_FRAME_METADATA_FRAME_EMITTER_MODE</span>: Emitter mode: 0 - all emitters disabled. 1 - laser enabled. 2 - auto laser enabled (opt). 3 - LED enabled (opt).</li>
+<li>
+<span id="RS2_FRAME_METADATA_FRAME_LED_POWER">RS2_FRAME_METADATA_FRAME_LED_POWER</span>: Led power value 0-360.</li>
+<li>
+<span id="RS2_FRAME_METADATA_RAW_FRAME_SIZE">RS2_FRAME_METADATA_RAW_FRAME_SIZE</span>: The number of transmitted payload bytes, not including metadata */</li>
+<li>
+<span id="RS2_FRAME_METADATA_GPIO_INPUT_DATA">RS2_FRAME_METADATA_GPIO_INPUT_DATA</span>: GPIO input data</li>
+<li>
+<span id="RS2_FRAME_METADATA_SEQUENCE_NAME">RS2_FRAME_METADATA_SEQUENCE_NAME</span>: sub-preset id</li>
+<li>
+<span id="RS2_FRAME_METADATA_SEQUENCE_ID">RS2_FRAME_METADATA_SEQUENCE_ID</span>: sub-preset sequence id</li>
+<li>
+<span id="RS2_FRAME_METADATA_SEQUENCE_SIZE">RS2_FRAME_METADATA_SEQUENCE_SIZE</span>: sub-preset sequence size</li>
+<li>
+<span id="RS2_FRAME_METADATA_COUNT">RS2_FRAME_METADATA_COUNT</span></li>
+</ul>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="Trs2_calib_target_type"></span><code><strong>Trs2_calib_target_type</strong> = (...);</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Calibration target type.</p>
+<h6 class="description_section">Values</h6>
+<ul>
+<li>
+<span id="RS2_CALIB_TARGET_RECT_GAUSSIAN_DOT_VERTICES">RS2_CALIB_TARGET_RECT_GAUSSIAN_DOT_VERTICES</span>: Flat rectangle with vertices as the centers of Gaussian dots</li>
+<li>
+<span id="RS2_CALIB_TARGET_ROI_RECT_GAUSSIAN_DOT_VERTICES">RS2_CALIB_TARGET_ROI_RECT_GAUSSIAN_DOT_VERTICES</span>: Flat rectangle with vertices as the centers of Gaussian dots with target inside the ROI</li>
+<li>
+<span id="RS2_CALIB_TARGET_POS_GAUSSIAN_DOT_VERTICES">RS2_CALIB_TARGET_POS_GAUSSIAN_DOT_VERTICES</span>: Positions of vertices as the centers of Gaussian dots with target inside the ROI</li>
+<li>
+<span id="RS2_CALIB_TARGET_COUNT">RS2_CALIB_TARGET_COUNT</span>: Number of enumeration values. Not a valid input: intended to be used in for-loops.</li>
+</ul>
+</td></tr>
+</table>
+<hr><span class="appinfo"><em>Generated by <a href="https://pasdoc.github.io/">PasDoc 0.16.0</a>. </em>
+</span>
+</div></div></body></html>

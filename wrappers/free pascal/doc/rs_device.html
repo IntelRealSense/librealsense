@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title>rs_device</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="generator" content="PasDoc 0.16.0">
+<meta http-equiv="content-type" content="text/html; charset=utf-8">
+<link rel="stylesheet" type="text/css" href="tipuesearch/tipuesearch.css">
+
+<link rel="StyleSheet" type="text/css" href="pasdoc.css">
+</head>
+<body>
+<div class="container"><div class="navigation">
+<ul><li><a href="AllUnits.html">Units</a></li><li><a href="ClassHierarchy.html">Class Hierarchy</a></li><li><a href="AllClasses.html">Classes, Interfaces, Objects and Records</a></li><li><a href="AllTypes.html">Types</a></li><li><a href="AllVariables.html">Variables</a></li><li><a href="AllConstants.html">Constants</a></li><li><a href="AllFunctions.html">Functions and Procedures</a></li><li><a href="AllIdentifiers.html">Identifiers</a></li><li><form class="search-form" action="tipue_results.html"><div class="search-input"><input type="text" name="q" id="tipue_search_input" pattern=".{3,}" title="At least 3 characters" required><div class="search-button"><input type="button" id="tipue_search_button" onclick="this.form.submit();"></div></div></form>
+<div style="clear: both"></div>
+</li></ul></div><div class="content">
+<h1 class="unit">Unit rs_device</h1>
+<div class="sections">
+<div class="one_section"><a class="section" href="#PasDoc-Description">Description</a></div><div class="one_section">Uses</div><div class="one_section">Classes, Interfaces, Objects and Records</div><div class="one_section"><a class="section" href="#PasDoc-FuncsProcs">Functions and Procedures</a></div><div class="one_section"><a class="section" href="#PasDoc-Types">Types</a></div><div class="one_section"><a class="section" href="#PasDoc-Constants">Constants</a></div><div class="one_section">Variables</div></div>
+<span id="PasDoc-Description"></span><h2 class="description">Description</h2>
+<p>
+Exposes RealSense device functionality</p>
+<span id="PasDoc-Uses"></span><h2 class="overview">Overview</h2>
+<span id="PasDoc-FuncsProcs"></span><h3 class="summary">Functions and Procedures</h3>
+<table class="summary wide_list">
+<tr class="list">
+<td class="itemcode"><code>function <strong><a href="rs_device.html#rs2_get_device_count">rs2_get_device_count</a></strong>(Info_List: <a href="rs_types.html#pRS2_device_list">Prs2_device_list</a>; var Error: <a href="rs_types.html#pRS2_error">prs2_error</a>): integer; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code>procedure <strong><a href="rs_device.html#rs2_delete_device_list">rs2_delete_device_list</a></strong>(info_list: <a href="rs_types.html#pRS2_device_list">prs2_device_list</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code>function <strong><a href="rs_device.html#rs2_device_list_contains">rs2_device_list_contains</a></strong>(const info_list: <a href="rs_types.html#pRS2_device_list">pRS2_device_list</a>; const device: <a href="rs_types.html#pRS2_device">pRS2_device</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): integer; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code>function <strong><a href="rs_device.html#rs2_create_device">rs2_create_device</a></strong>(Info_List: <a href="rs_types.html#pRS2_device_list">Prs2_device_list</a>; Index: integer; var Error: <a href="rs_types.html#pRS2_error">prs2_error</a>): <a href="rs_types.html#pRS2_device">prs2_device</a>; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code>procedure <strong><a href="rs_device.html#rs2_delete_device">rs2_delete_device</a></strong>(Device: <a href="rs_types.html#pRS2_device">prs2_device</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code>function <strong><a href="rs_device.html#rs2_get_device_info">rs2_get_device_info</a></strong>(Device: <a href="rs_types.html#pRS2_device">prs2_device</a>; Info: <a href="rs_sensor.html#Trs2_camera_info">Trs2_camera_info</a>; var Error: <a href="rs_types.html#pRS2_error">prs2_error</a>): PChar; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code>function <strong><a href="rs_device.html#rs2_supports_device_info">rs2_supports_device_info</a></strong>(const device: <a href="rs_types.html#pRS2_device">pRS2_device</a>; info: <a href="rs_sensor.html#Trs2_camera_info">Trs2_camera_info</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): integer; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code>procedure <strong><a href="rs_device.html#rs2_hardware_reset">rs2_hardware_reset</a></strong>(const device: <a href="rs_types.html#pRS2_device">pRS2_device</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code>function <strong><a href="rs_device.html#rs2_build_debug_protocol_command">rs2_build_debug_protocol_command</a></strong>(device: <a href="rs_types.html#pRS2_device">pRS2_device</a>; opcode: nativeuint; param1: nativeuint; param2: nativeuint; param3: nativeuint; param4: nativeuint; Data: <a href="rs_types.html#pvoid">pvoid</a>; size_of_data: nativeuint; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): <a href="rs_types.html#pRS2_raw_data_buffer">prs2_raw_data_buffer</a>; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code>function <strong><a href="rs_device.html#rs2_send_and_receive_raw_data">rs2_send_and_receive_raw_data</a></strong>(device: <a href="rs_types.html#pRS2_device">pRS2_device</a>; raw_data_to_send: <a href="rs_types.html#pvoid">pvoid</a>; size_of_raw_data_to_send: nativeuint; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): <a href="rs_types.html#pRS2_raw_data_buffer">prs2_raw_data_buffer</a>; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code>function <strong><a href="rs_device.html#rs2_is_device_extendable_to">rs2_is_device_extendable_to</a></strong>(const device: <a href="rs_types.html#pRS2_device">pRS2_device</a>; extension: <a href="rs_types.html#Trs2_extension">Trs2_extension</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): integer; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code>function <strong><a href="rs_device.html#rs2_query_sensors">rs2_query_sensors</a></strong>(const device: <a href="rs_types.html#pRS2_device">pRS2_device</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): <a href="rs_types.html#pRS2_sensor_list">prs2_sensor_list</a>; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code>procedure <strong><a href="rs_device.html#rs2_loopback_enable">rs2_loopback_enable</a></strong>(const device: <a href="rs_types.html#pRS2_device">pRS2_device</a>; from_file: PChar; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code>procedure <strong><a href="rs_device.html#rs2_loopback_disable">rs2_loopback_disable</a></strong>(const device: <a href="rs_types.html#pRS2_device">pRS2_device</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code>function <strong><a href="rs_device.html#rs2_loopback_is_enabled">rs2_loopback_is_enabled</a></strong>(const device: <a href="rs_types.html#pRS2_device">pRS2_device</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): integer; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code>procedure <strong><a href="rs_device.html#rs2_connect_tm2_controller">rs2_connect_tm2_controller</a></strong>(const device: <a href="rs_types.html#pRS2_device">pRS2_device</a>; const mac_addr: PChar; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code>procedure <strong><a href="rs_device.html#rs2_disconnect_tm2_controller">rs2_disconnect_tm2_controller</a></strong>(const device: <a href="rs_types.html#pRS2_device">pRS2_device</a>; id: integer; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code>procedure <strong><a href="rs_device.html#rs2_reset_to_factory_calibration">rs2_reset_to_factory_calibration</a></strong>(const device: <a href="rs_types.html#pRS2_device">pRS2_device</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code>procedure <strong><a href="rs_device.html#rs2_write_calibration">rs2_write_calibration</a></strong>(const device: <a href="rs_types.html#pRS2_device">pRS2_device</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code>procedure <strong><a href="rs_device.html#rs2_update_firmware">rs2_update_firmware</a></strong>(const device: <a href="rs_types.html#pRS2_device">pRS2_device</a>; fw_image: <a href="rs_types.html#pvoid">pvoid</a>; fw_image_size: integer; callback: <a href="rs_types.html#prs2_update_progress_callback_ptr">prs2_update_progress_callback_ptr</a>; client_data: <a href="rs_types.html#pvoid">pvoid</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code>function <strong><a href="rs_device.html#rs2_create_flash_backup">rs2_create_flash_backup</a></strong>(device: <a href="rs_types.html#pRS2_device">pRS2_device</a>; callback: <a href="rs_types.html#prs2_update_progress_callback_ptr">prs2_update_progress_callback_ptr</a>; client_data: <a href="rs_types.html#pvoid">pvoid</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): <a href="rs_types.html#pRS2_raw_data_buffer">prs2_raw_data_buffer</a>; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code>function <strong><a href="rs_device.html#rs2_check_firmware_compatibility">rs2_check_firmware_compatibility</a></strong>(device: <a href="rs_types.html#pRS2_device">pRS2_device</a>; fw_image: <a href="rs_types.html#pvoid">pvoid</a>; fw_image_size: integer; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): integer; cdecl; external;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code>procedure <strong><a href="rs_device.html#rs2_update_firmware_unsigned">rs2_update_firmware_unsigned</a></strong>(const device: <a href="rs_types.html#pRS2_device">prs2_device</a>; const fw_image: <a href="rs_types.html#pvoid">pvoid</a>; fw_image_size: integer; callback: <a href="rs_types.html#rs2_update_progress_callback_ptr">rs2_update_progress_callback_ptr</a>; client_data: <a href="rs_types.html#pvoid">pvoid</a>; update_mode: integer; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code>procedure <strong><a href="rs_device.html#rs2_enter_update_state">rs2_enter_update_state</a></strong>(const device: <a href="rs_types.html#pRS2_device">pRS2_device</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code>function <strong><a href="rs_device.html#rs2_run_on_chip_calibration">rs2_run_on_chip_calibration</a></strong>(device: <a href="rs_types.html#pRS2_device">pRS2_device</a>; json_content: <a href="rs_types.html#pvoid">pvoid</a>; content_size: integer; healt: PSingle; callback: <a href="rs_types.html#prs2_update_progress_callback_ptr">prs2_update_progress_callback_ptr</a>; client_data: <a href="rs_types.html#pvoid">pvoid</a>; timeout_ms: integer; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): <a href="rs_types.html#pRS2_raw_data_buffer">prs2_raw_data_buffer</a>; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code>function <strong><a href="rs_device.html#rs2_calibration_type_to_string">rs2_calibration_type_to_string</a></strong>(aType: <a href="rs_device.html#rs2_calibration_type">rs2_calibration_type</a>): PChar; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code>function <strong><a href="rs_device.html#rs2_calibration_status_to_string">rs2_calibration_status_to_string</a></strong>(ars2_calibration_status: <a href="rs_device.html#rs2_calibration_status">rs2_calibration_status</a>): PChar; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code>procedure <strong><a href="rs_device.html#rs2_register_calibration_change_callback">rs2_register_calibration_change_callback</a></strong>(device: <a href="rs_types.html#pRS2_device">pRS2_device</a>; callback: <a href="rs_device.html#prs2_calibration_change_callback">prs2_calibration_change_callback</a>; user: <a href="rs_types.html#pvoid">pvoid</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code>procedure <strong><a href="rs_device.html#rs2_trigger_device_calibration">rs2_trigger_device_calibration</a></strong>(device: <a href="rs_types.html#pRS2_device">pRS2_device</a>; atype: <a href="rs_device.html#rs2_calibration_type">rs2_calibration_type</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code>function <strong><a href="rs_device.html#rs2_run_tare_calibration">rs2_run_tare_calibration</a></strong>(device: <a href="rs_types.html#pRS2_device">pRS2_device</a>; ground_truth_mm: single; json_content: <a href="rs_types.html#pvoid">pvoid</a>; content_size: integer; callback: <a href="rs_types.html#prs2_update_progress_callback_ptr">prs2_update_progress_callback_ptr</a>; client_data: <a href="rs_types.html#pvoid">pvoid</a>; timeout_ms: integer; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): <a href="rs_types.html#pRS2_raw_data_buffer">prs2_raw_data_buffer</a>; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code>function <strong><a href="rs_device.html#rs2_get_calibration_table">rs2_get_calibration_table</a></strong>(dev: <a href="rs_types.html#pRS2_device">pRS2_device</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): <a href="rs_types.html#pRS2_raw_data_buffer">prs2_raw_data_buffer</a>; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code>procedure <strong><a href="rs_device.html#rs2_set_calibration_table">rs2_set_calibration_table</a></strong>(device: <a href="rs_types.html#pRS2_device">pRS2_device</a>; calibration: <a href="rs_types.html#pvoid">pvoid</a>; calibration_size: integer; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code>function <strong><a href="rs_device.html#rs2_serialize_json">rs2_serialize_json</a></strong>(dev: <a href="rs_types.html#pRS2_device">pRS2_device</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): <a href="rs_types.html#pRS2_raw_data_buffer">prs2_raw_data_buffer</a>; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code>procedure <strong><a href="rs_device.html#rs2_load_json">rs2_load_json</a></strong>(dev: <a href="rs_types.html#pRS2_device">pRS2_device</a>; json_content: <a href="rs_types.html#pvoid">pvoid</a>; content_size: nativeuint; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code>function <strong><a href="rs_device.html#rs2_run_focal_length_calibration">rs2_run_focal_length_calibration</a></strong>(device: <a href="rs_types.html#pRS2_device">pRS2_device</a>; left_queue: <a href="rs_types.html#pRS2_frame_queue">prs2_frame_queue</a>; right_queue: <a href="rs_types.html#pRS2_frame_queue">prs2_frame_queue</a>; target_width: single; target_height: single; adjust_both_sides: integer; ration: single; angle: Psingle; callback: <a href="rs_types.html#rs2_update_progress_callback_ptr">rs2_update_progress_callback_ptr</a>; client_data: <a href="rs_types.html#pvoid">pvoid</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): <a href="rs_types.html#pRS2_raw_data_buffer">prs2_raw_data_buffer</a>; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code>function <strong><a href="rs_device.html#rs2_run_uv_map_calibration">rs2_run_uv_map_calibration</a></strong>(device: <a href="rs_types.html#pRS2_device">pRS2_device</a>; left_queue: <a href="rs_types.html#pRS2_frame_queue">prs2_frame_queue</a>; color_queue: <a href="rs_types.html#pRS2_frame_queue">prs2_frame_queue</a>; depth_queue: <a href="rs_types.html#pRS2_frame_queue">prs2_frame_queue</a>; py_py_only: integer; health: Psingle; health_size: integer; callback: <a href="rs_types.html#prs2_update_progress_callback_ptr">prs2_update_progress_callback_ptr</a>; cliente_data: <a href="rs_types.html#pvoid">pvoid</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): <a href="rs_types.html#pRS2_raw_data_buffer">prs2_raw_data_buffer</a>; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code>function <strong><a href="rs_device.html#rs2_calculate_target_z">rs2_calculate_target_z</a></strong>(device: <a href="rs_types.html#pRS2_device">pRS2_device</a>; queue1: <a href="rs_types.html#pRS2_frame_queue">prs2_frame_queue</a>; queue2: <a href="rs_types.html#pRS2_frame_queue">prs2_frame_queue</a>; queue3: <a href="rs_types.html#pRS2_frame_queue">prs2_frame_queue</a>; target_width: integer; target_height: integer; callback: <a href="rs_types.html#prs2_update_progress_callback_ptr">prs2_update_progress_callback_ptr</a>; client_data: <a href="rs_types.html#pvoid">pvoid</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): single; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+</table>
+<span id="PasDoc-Types"></span><h3 class="summary">Types</h3>
+<table class="summary wide_list">
+<tr class="list">
+<td class="itemcode"><code><strong><a href="rs_device.html#rs2_calibration_type">rs2_calibration_type</a></strong> = (...);</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code><strong><a href="rs_device.html#rs2_calibration_status">rs2_calibration_status</a></strong> = (...);</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code><strong><a href="rs_device.html#prs2_calibration_change_callback">prs2_calibration_change_callback</a></strong> = POpaqueData;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code><strong><a href="rs_device.html#Prs2_calibration_change_callback_ptr">Prs2_calibration_change_callback_ptr</a></strong> = &circ;<a href="rs_device.html#rs2_calibration_change_callback_ptr">rs2_calibration_change_callback_ptr</a>;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code><strong><a href="rs_device.html#rs2_calibration_change_callback_ptr">rs2_calibration_change_callback_ptr</a></strong> = procedure(ars2_calibration_status: <a href="rs_device.html#rs2_calibration_status">rs2_calibration_status</a>; arg: <a href="rs_types.html#pvoid">pvoid</a>); cdecl;</code></td>
+</tr>
+</table>
+<span id="PasDoc-Constants"></span><h3 class="summary">Constants</h3>
+<table class="summary wide_list">
+<tr class="list">
+<td class="itemcode"><code><strong><a href="rs_device.html#RS2_UNSIGNED_UPDATE_MODE_UPDATE">RS2_UNSIGNED_UPDATE_MODE_UPDATE</a></strong> = 0;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code><strong><a href="rs_device.html#RS2_UNSIGNED_UPDATE_MODE_READ_ONLY">RS2_UNSIGNED_UPDATE_MODE_READ_ONLY</a></strong> = 1;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code><strong><a href="rs_device.html#RS2_UNSIGNED_UPDATE_MODE_FULL">RS2_UNSIGNED_UPDATE_MODE_FULL</a></strong> = 2;</code></td>
+</tr>
+</table>
+<h2 class="description">Description</h2>
+<h3 class="detail">Functions and Procedures</h3>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_get_device_count"></span><code>function <strong>rs2_get_device_count</strong>(Info_List: <a href="rs_types.html#pRS2_device_list">Prs2_device_list</a>; var Error: <a href="rs_types.html#pRS2_error">prs2_error</a>): integer; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Determines number of devices in a list. param[in] info_list The list of connected devices captured using rs2_query_devices param[out] error If non-null, receives any error that occurs during this call, otherwise, errors are ignored return Device count</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_delete_device_list"></span><code>procedure <strong>rs2_delete_device_list</strong>(info_list: <a href="rs_types.html#pRS2_device_list">prs2_device_list</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Deletes device list, any devices created using this list will remain unaffected. param[in] info_list List to delete</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_device_list_contains"></span><code>function <strong>rs2_device_list_contains</strong>(const info_list: <a href="rs_types.html#pRS2_device_list">pRS2_device_list</a>; const device: <a href="rs_types.html#pRS2_device">pRS2_device</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): integer; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Checks if a specific device is contained inside a device list. param[in] info_list The list of devices to check in param[in] device RealSense device to check for param[out] error If non-null, receives any error that occurs during this call, otherwise, errors are ignored return True if the device is in the list and false otherwise</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_create_device"></span><code>function <strong>rs2_create_device</strong>(Info_List: <a href="rs_types.html#pRS2_device_list">Prs2_device_list</a>; Index: integer; var Error: <a href="rs_types.html#pRS2_error">prs2_error</a>): <a href="rs_types.html#pRS2_device">prs2_device</a>; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Creates a device by index. The device object represents a physical camera and provides the means to manipulate it. param[in] info_list the list containing the device to retrieve param[in] index The zero based index of device to retrieve param[out] error If non-null, receives any error that occurs during this call, otherwise, errors are ignored return The requested device, should be released by rs2_delete_device</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_delete_device"></span><code>procedure <strong>rs2_delete_device</strong>(Device: <a href="rs_types.html#pRS2_device">prs2_device</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Delete RealSense device param[in] device Realsense device to delete</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_get_device_info"></span><code>function <strong>rs2_get_device_info</strong>(Device: <a href="rs_types.html#pRS2_device">prs2_device</a>; Info: <a href="rs_sensor.html#Trs2_camera_info">Trs2_camera_info</a>; var Error: <a href="rs_types.html#pRS2_error">prs2_error</a>): PChar; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Retrieve camera specific information, like versions of various internal components. param[in] device The RealSense device param[in] info Camera info type to retrieve param[out] error If non-null, receives any error that occurs during this call, otherwise, errors are ignored return The requested camera info string, in a format specific to the device model</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_supports_device_info"></span><code>function <strong>rs2_supports_device_info</strong>(const device: <a href="rs_types.html#pRS2_device">pRS2_device</a>; info: <a href="rs_sensor.html#Trs2_camera_info">Trs2_camera_info</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): integer; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Check if a camera supports a specific camera info type. param[in] device The RealSense device to check param[in] info The parameter to check for support param[out] error If non-null, receives any error that occurs during this call, otherwise, errors are ignored return True if the parameter both exist and well-defined for the specific device</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_hardware_reset"></span><code>procedure <strong>rs2_hardware_reset</strong>(const device: <a href="rs_types.html#pRS2_device">pRS2_device</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Send hardware reset request to the device. The actual reset is asynchronous. Note: Invalidates all handles to this device. param[in] device The RealSense device to reset param[out] error If non-null, receives any error that occurs during this call, otherwise, errors are ignored</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_build_debug_protocol_command"></span><code>function <strong>rs2_build_debug_protocol_command</strong>(device: <a href="rs_types.html#pRS2_device">pRS2_device</a>; opcode: nativeuint; param1: nativeuint; param2: nativeuint; param3: nativeuint; param4: nativeuint; Data: <a href="rs_types.html#pvoid">pvoid</a>; size_of_data: nativeuint; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): <a href="rs_types.html#pRS2_raw_data_buffer">prs2_raw_data_buffer</a>; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Build debug_protocol raw data command from opcode, parameters and data. The result can be used as raw_data_to_send parameter in send_and_receive_raw_data param[in] device RealSense device to send data to param[in] opcode Commad opcode param[in] param1 First input parameter param[in] param2 Second parameter param[in] param3 Third parameter param[in] param4 Fourth parameter param[in] data Input Data (up to 1024 bytes) param[in] size_of_data Size of input data in bytes param[out] error If non-null, receives any error that occurs during this call, otherwise, errors are ignored return rs2_raw_data_buffer which includes raw command Note: This the original declaration. const rs2_raw_data_buffer* rs2_build_debug_protocol_command(rs2_device* device, unsigned opcode, unsigned param1, unsigned param2, unsigned param3, unsigned param4, void* data, unsigned size_of_data, rs2_error** error); You can see that use unsigned. I'm not sure which is the equivalent in Pascal, so I used NavtiveUint;</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_send_and_receive_raw_data"></span><code>function <strong>rs2_send_and_receive_raw_data</strong>(device: <a href="rs_types.html#pRS2_device">pRS2_device</a>; raw_data_to_send: <a href="rs_types.html#pvoid">pvoid</a>; size_of_raw_data_to_send: nativeuint; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): <a href="rs_types.html#pRS2_raw_data_buffer">prs2_raw_data_buffer</a>; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Send raw data to device param[in] device RealSense device to send data to param[in] raw_data_to_send Raw data to be sent to device param[in] size_of_raw_data_to_send Size of raw_data_to_send in bytes param[out] error If non-null, receives any error that occurs during this call, otherwise, errors are ignored return Device's response in a rs2_raw_data_buffer, which should be released by rs2_delete_raw_data
+
+<p>Note: This the original declaration. const rs2_raw_data_buffer* rs2_send_and_receive_raw_data(rs2_device* device, void* raw_data_to_send, unsigned size_of_raw_data_to_send, rs2_error** error); You can see that use unsigned. I'm not sure which is the equivalent in Pascal, so I used NavtiveUint;</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_is_device_extendable_to"></span><code>function <strong>rs2_is_device_extendable_to</strong>(const device: <a href="rs_types.html#pRS2_device">pRS2_device</a>; extension: <a href="rs_types.html#Trs2_extension">Trs2_extension</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): integer; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Test if the given device can be extended to the requested extension. param[in] device Realsense device param[in] extension The extension to which the device should be tested if it is extendable param[out] error If non-null, receives any error that occurs during this call, otherwise, errors are ignored return Non-zero value iff the device can be extended to the given extension</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_query_sensors"></span><code>function <strong>rs2_query_sensors</strong>(const device: <a href="rs_types.html#pRS2_device">pRS2_device</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): <a href="rs_types.html#pRS2_sensor_list">prs2_sensor_list</a>; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Create a static snapshot of all connected sensors within a specific device. param[in] device Specific RealSense device param[out] error If non-null, receives any error that occurs during this call, otherwise, errors are ignored return The list of sensors, should be released by rs2_delete_sensor_list</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_loopback_enable"></span><code>procedure <strong>rs2_loopback_enable</strong>(const device: <a href="rs_types.html#pRS2_device">pRS2_device</a>; from_file: PChar; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Enter the given device into loopback operation mode that uses the given file as input for raw data param[in] device Device to enter into loopback operation mode param[in] from_file Path to bag file with raw data for loopback param[out] error If non-null, receives any error that occurs during this call, otherwise, errors are ignored</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_loopback_disable"></span><code>procedure <strong>rs2_loopback_disable</strong>(const device: <a href="rs_types.html#pRS2_device">pRS2_device</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Restores the given device into normal operation mode param[in] device Device to restore to normal operation mode param[out] error If non-null, receives any error that occurs during this call, otherwise, errors are ignored</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_loopback_is_enabled"></span><code>function <strong>rs2_loopback_is_enabled</strong>(const device: <a href="rs_types.html#pRS2_device">pRS2_device</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): integer; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Checks if the device is in loopback mode or not param[in] device Device to check for operation mode param[out] error If non-null, receives any error that occurs during this call, otherwise, errors are ignored return true if the device is in loopback operation mode</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_connect_tm2_controller"></span><code>procedure <strong>rs2_connect_tm2_controller</strong>(const device: <a href="rs_types.html#pRS2_device">pRS2_device</a>; const mac_addr: PChar; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Connects to a given tm2 controller param[in] device Device to connect to the controller param[in] mac_addr The MAC address of the desired controller param[out] error If non-null, receives any error that occurs during this call, otherwise, errors are ignored</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_disconnect_tm2_controller"></span><code>procedure <strong>rs2_disconnect_tm2_controller</strong>(const device: <a href="rs_types.html#pRS2_device">pRS2_device</a>; id: integer; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Disconnects a given tm2 controller param[in] device Device to disconnect the controller from param[in] id The ID of the desired controller param[out] error If non-null, receives any error that occurs during this call, otherwise, errors are ignored</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_reset_to_factory_calibration"></span><code>procedure <strong>rs2_reset_to_factory_calibration</strong>(const device: <a href="rs_types.html#pRS2_device">pRS2_device</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Reset device to factory calibration param[in] device The RealSense device param[out] error If non-null, receives any error that occurs during this call, otherwise, errors are ignored</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_write_calibration"></span><code>procedure <strong>rs2_write_calibration</strong>(const device: <a href="rs_types.html#pRS2_device">pRS2_device</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Write calibration to device's EEPROM param[in] device The RealSense device param[out] error If non-null, receives any error that occurs during this call, otherwise, errors are ignored</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_update_firmware"></span><code>procedure <strong>rs2_update_firmware</strong>(const device: <a href="rs_types.html#pRS2_device">pRS2_device</a>; fw_image: <a href="rs_types.html#pvoid">pvoid</a>; fw_image_size: integer; callback: <a href="rs_types.html#prs2_update_progress_callback_ptr">prs2_update_progress_callback_ptr</a>; client_data: <a href="rs_types.html#pvoid">pvoid</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Update device to the provided firmware, the device must be extendable to RS2_EXTENSION_UPDATABLE. This call is executed on the caller's thread and it supports progress notifications via the optional callback. param[in] device Device to update param[in] fw_image Firmware image buffer param[in] fw_image_size Firmware image buffer size param[in] callback Optional callback for update progress notifications, the progress value is normailzed to 1 param[in] client_data Optional client data for the callback</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_create_flash_backup"></span><code>function <strong>rs2_create_flash_backup</strong>(device: <a href="rs_types.html#pRS2_device">pRS2_device</a>; callback: <a href="rs_types.html#prs2_update_progress_callback_ptr">prs2_update_progress_callback_ptr</a>; client_data: <a href="rs_types.html#pvoid">pvoid</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): <a href="rs_types.html#pRS2_raw_data_buffer">prs2_raw_data_buffer</a>; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Create backup of camera flash memory. Such backup does not constitute valid firmware image, and cannot be loaded back to the device, but it does contain all calibration and device information. param[in] device Device to update param[in] callback Optional callback for update progress notifications, the progress value is normailzed to 1 param[in] client_data Optional client data for the callback param[out] error If non-null, receives any error that occurs during this call, otherwise, errors are ignored
+
+<p>const rs2_raw_data_buffer* rs2_create_flash_backup(const rs2_device* device, rs2_update_progress_callback_ptr callback, void* client_data, rs2_error** error);</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_check_firmware_compatibility"></span><code>function <strong>rs2_check_firmware_compatibility</strong>(device: <a href="rs_types.html#pRS2_device">pRS2_device</a>; fw_image: <a href="rs_types.html#pvoid">pvoid</a>; fw_image_size: integer; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): integer; cdecl; external;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Checks if the device and the provided firmware image are compatible param[in] device Device to update param[in] fw_image Firmware image buffer param[in] fw_image_size Firmware image buffer size in bytes param[out] error If non-null, receives any error that occurs during this call, otherwise, errors are ignored return Non-zero if the firmware is compatible with the device and 0 otherwise int rs2_check_firmware_compatibility(const rs2_device* device, const void* fw_image, int fw_image_size, rs2_error** error);</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_update_firmware_unsigned"></span><code>procedure <strong>rs2_update_firmware_unsigned</strong>(const device: <a href="rs_types.html#pRS2_device">prs2_device</a>; const fw_image: <a href="rs_types.html#pvoid">pvoid</a>; fw_image_size: integer; callback: <a href="rs_types.html#rs2_update_progress_callback_ptr">rs2_update_progress_callback_ptr</a>; client_data: <a href="rs_types.html#pvoid">pvoid</a>; update_mode: integer; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Update device to the provided firmware by writing raw data directly to the flash, this command can be executed only on unlocked camera. The device must be extendable to RS2_EXTENSION_UPDATABLE. This call is executed on the caller's thread and it supports progress notifications via the optional callback. param[in] device Device to update param[in] fw_image Firmware image buffer param[in] fw_image_size Firmware image buffer size param[in] callback Optional callback for update progress notifications, the progress value is normailzed to 1 param[in] client_data Optional client data for the callback param[in] update_mode Select one of RS2_UNSIGNED_UPDATE_MODE, WARNING!!! setting to any option other than RS2_UNSIGNED_UPDATE_MODE_UPDATE will make this call unsafe and might damage the camera param[out] error If non-null, receives any error that occurs during this call, otherwise, errors are ignored
+
+<p>void rs2_update_firmware_unsigned(const rs2_device* device, const void* fw_image, int fw_image_size, rs2_update_progress_callback_ptr callback, void* client_data, int update_mode, rs2_error** error);</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_enter_update_state"></span><code>procedure <strong>rs2_enter_update_state</strong>(const device: <a href="rs_types.html#pRS2_device">pRS2_device</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Enter the device to update state, this will cause the updatable device to disconnect and reconnect as update device. param[in] device Device to update param[out] error If non-null, receives any error that occurs during this call, otherwise, errors are ignored</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_run_on_chip_calibration"></span><code>function <strong>rs2_run_on_chip_calibration</strong>(device: <a href="rs_types.html#pRS2_device">pRS2_device</a>; json_content: <a href="rs_types.html#pvoid">pvoid</a>; content_size: integer; healt: PSingle; callback: <a href="rs_types.html#prs2_update_progress_callback_ptr">prs2_update_progress_callback_ptr</a>; client_data: <a href="rs_types.html#pvoid">pvoid</a>; timeout_ms: integer; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): <a href="rs_types.html#pRS2_raw_data_buffer">prs2_raw_data_buffer</a>; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+This will improve the depth noise. param[in] json_content Json string to configure regular speed on chip calibration parameters: (
+
+<p>&quot;calib type&quot; : 0, &quot;speed&quot;: 3, &quot;scan parameter&quot;: 0, &quot;adjust both sides&quot;: 0, &quot;white wall mode&quot;: 0
+
+<p>) calib_type - calibraton type: 0 = regular, 1 = focal length, 2 = both regular and focal length in order speed - for regular calibration, value can be one of: Very fast = 0, Fast = 1, Medium = 2, Slow = 3, White wall = 4, default is Slow for type 0 and Fast for type 2 scan_parameter - for regular calibration. value can be one of: Py scan (default) = 0, Rx scan = 1 adjust_both_sides - for focal length calibration. value can be one of: 0 = adjust right only, 1 = adjust both sides white_wall_mode - white wall mode: 0 for normal mode and 1 for white wall mode if json is nullptr it will be ignored and calibration will use the default parameters param[out] health The absolute value of regular calibration Health-Check captures how far camera calibration is from the optimal one [0, 0.25) - Good [0.25, 0.75) - Can be Improved [0.75, ) - Requires Calibration The absolute value of focal length calibration Health-Check captures how far camera calibration is from the optimal one [0, 0.15) - Good [0.15, 0.75) - Can be Improved [0.75, ) - Requires Calibration The two health numbers are encoded in one integer as follows for calib_type 2: Regular health number times 1000 are bits 0 to 11 Regular health number is negative if bit 24 is 1 Focal length health number times 1000 are bits 12 to 23 Focal length health number is negative if bit 25 is 1 param[in] callback Optional callback for update progress notifications, the progress value is normailzed to 1 param[in] client_data Optional client data for the callback param[in] timeout_ms Timeout in ms (use 5000 msec unless instructed otherwise) return New calibration table</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_calibration_type_to_string"></span><code>function <strong>rs2_calibration_type_to_string</strong>(aType: <a href="rs_device.html#rs2_calibration_type">rs2_calibration_type</a>): PChar; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+&nbsp;</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_calibration_status_to_string"></span><code>function <strong>rs2_calibration_status_to_string</strong>(ars2_calibration_status: <a href="rs_device.html#rs2_calibration_status">rs2_calibration_status</a>): PChar; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+&nbsp;</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_register_calibration_change_callback"></span><code>procedure <strong>rs2_register_calibration_change_callback</strong>(device: <a href="rs_types.html#pRS2_device">pRS2_device</a>; callback: <a href="rs_device.html#prs2_calibration_change_callback">prs2_calibration_change_callback</a>; user: <a href="rs_types.html#pvoid">pvoid</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Adds a callback for a sensor that gets called when calibration (intrinsics) changes, e.g. due to auto-calibration param[in] sensor the sensor param[in] callback the C callback function that gets called param[in] user user argument that gets passed to the callback function param[out] error if non-null, receives any error that occurs during this call, otherwise, errors are ignored</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_trigger_device_calibration"></span><code>procedure <strong>rs2_trigger_device_calibration</strong>(device: <a href="rs_types.html#pRS2_device">pRS2_device</a>; atype: <a href="rs_device.html#rs2_calibration_type">rs2_calibration_type</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Triggers calibration of the given type param[in] dev the device param[in] type the type of calibration requested param[out] error if non-null, receives any error that occurs during this call, otherwise, errors are ignored</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_run_tare_calibration"></span><code>function <strong>rs2_run_tare_calibration</strong>(device: <a href="rs_types.html#pRS2_device">pRS2_device</a>; ground_truth_mm: single; json_content: <a href="rs_types.html#pvoid">pvoid</a>; content_size: integer; callback: <a href="rs_types.html#prs2_update_progress_callback_ptr">prs2_update_progress_callback_ptr</a>; client_data: <a href="rs_types.html#pvoid">pvoid</a>; timeout_ms: integer; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): <a href="rs_types.html#pRS2_raw_data_buffer">prs2_raw_data_buffer</a>; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+This will adjust camera absolute distance to flat target. User needs to enter the known ground truth. param[in] ground_truth_mm Ground truth in mm must be between 60 and 10000 param[in] json_content Json string to configure tare calibration parameters: ( &quot;average_step_count&quot;: 20, &quot;step count&quot;: 20, &quot;accuracy&quot;: 2, &quot;scan parameter&quot;: 0, &quot;data sampling&quot;: 0 ) average step count - number of frames to average, must be between 1 - 30, default = 20 step count - max iteration steps, must be between 5 - 30, default = 10 accuracy - Subpixel accuracy level, value can be one of: Very high = 0 (0.025%), High = 1 (0.05%), Medium = 2 (0.1%), Low = 3 (0.2%), Default = Very high (0.025%), default is Medium scan_parameter - value can be one of: Py scan (default) = 0, Rx scan = 1 data_sampling - value can be one of:polling data sampling = 0, interrupt data sampling = 1 if json is nullptr it will be ignored and calibration will use the default parameters param[in] content_size Json string size if its 0 the json will be ignored and calibration will use the default parameters param[in] callback Optional callback for update progress notifications, the progress value is normailzed to 1 param[in] client_data Optional client data for the callback param[in] timeout_ms Timeout in ms (use 5000 msec unless instructed otherwise) return New calibration table</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_get_calibration_table"></span><code>function <strong>rs2_get_calibration_table</strong>(dev: <a href="rs_types.html#pRS2_device">pRS2_device</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): <a href="rs_types.html#pRS2_raw_data_buffer">prs2_raw_data_buffer</a>; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Read current calibration table from flash. return Calibration table</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_set_calibration_table"></span><code>procedure <strong>rs2_set_calibration_table</strong>(device: <a href="rs_types.html#pRS2_device">pRS2_device</a>; calibration: <a href="rs_types.html#pvoid">pvoid</a>; calibration_size: integer; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Set current table to dynamic area. param[in] Calibration table</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_serialize_json"></span><code>function <strong>rs2_serialize_json</strong>(dev: <a href="rs_types.html#pRS2_device">pRS2_device</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): <a href="rs_types.html#pRS2_raw_data_buffer">prs2_raw_data_buffer</a>; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Serialize JSON content, returns ASCII-serialized JSON string on success. otherwise nullptr */ rs2_raw_data_buffer* rs2_serialize_json(rs2_device* dev, rs2_error** error);</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_load_json"></span><code>procedure <strong>rs2_load_json</strong>(dev: <a href="rs_types.html#pRS2_device">pRS2_device</a>; json_content: <a href="rs_types.html#pvoid">pvoid</a>; content_size: nativeuint; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+/* Load JSON and apply advanced-mode controls */ void rs2_load_json(rs2_device* dev, const void* json_content, unsigned content_size, rs2_error** error);</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_run_focal_length_calibration"></span><code>function <strong>rs2_run_focal_length_calibration</strong>(device: <a href="rs_types.html#pRS2_device">pRS2_device</a>; left_queue: <a href="rs_types.html#pRS2_frame_queue">prs2_frame_queue</a>; right_queue: <a href="rs_types.html#pRS2_frame_queue">prs2_frame_queue</a>; target_width: single; target_height: single; adjust_both_sides: integer; ration: single; angle: Psingle; callback: <a href="rs_types.html#rs2_update_progress_callback_ptr">rs2_update_progress_callback_ptr</a>; client_data: <a href="rs_types.html#pvoid">pvoid</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): <a href="rs_types.html#pRS2_raw_data_buffer">prs2_raw_data_buffer</a>; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Run target-based focal length calibration param[in] device: device to calibrate param[in] left_queue: container for left IR frames with resoluton of 1280x720 and the target in the center of 320x240 pixels ROI. param[in] right_queue: container for right IR frames with resoluton of 1280x720 and the target in the center of 320x240 pixels ROI param[in] target_width: the rectangle width in mm on the target param[in] target_height: the rectangle height in mm on the target param[in] adjust_both_sides: 1 for adjusting both left and right camera calibration tables, and 0 for adjusting right camera calibraion table only param[out] ratio: the corrected ratio from the calibration param[out] angle: the target's tilt angle param[in] callback: Optional callback for update progress notifications, the progress value is normailzed to 1 param[in] client_data: Optional client data for the callback return New calibration table</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_run_uv_map_calibration"></span><code>function <strong>rs2_run_uv_map_calibration</strong>(device: <a href="rs_types.html#pRS2_device">pRS2_device</a>; left_queue: <a href="rs_types.html#pRS2_frame_queue">prs2_frame_queue</a>; color_queue: <a href="rs_types.html#pRS2_frame_queue">prs2_frame_queue</a>; depth_queue: <a href="rs_types.html#pRS2_frame_queue">prs2_frame_queue</a>; py_py_only: integer; health: Psingle; health_size: integer; callback: <a href="rs_types.html#prs2_update_progress_callback_ptr">prs2_update_progress_callback_ptr</a>; cliente_data: <a href="rs_types.html#pvoid">pvoid</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): <a href="rs_types.html#pRS2_raw_data_buffer">prs2_raw_data_buffer</a>; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Depth-RGB UV-Map calibration. Applicable for D400 cameras param[in] device: device to calibrate param[in] left_queue: the frame queue for left IR frames with resoluton of 1280x720 and the target captured in the center of 320x240 pixels ROI. param[in] color_queue: the frame queue for RGB frames with resoluton of 1280x720 and the target in the center of 320x240 pixels ROI param[in] depth_queue: the frame queue for Depth frames with resoluton of 1280x720 param[in] py_px_only: 1 for calibrating color camera py and px only, 1 for calibrating color camera py, px, fy, and fx. param[out] health: The four health check numbers in order of px, py, fx, fy for the calibration param[in] health_size: number of health check numbers, which is 4 by default param[in] callback: Optional callback for update progress notifications, the progress value is normailzed to 1 param[in] client_data: Optional client data for the callback return New calibration table</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_calculate_target_z"></span><code>function <strong>rs2_calculate_target_z</strong>(device: <a href="rs_types.html#pRS2_device">pRS2_device</a>; queue1: <a href="rs_types.html#pRS2_frame_queue">prs2_frame_queue</a>; queue2: <a href="rs_types.html#pRS2_frame_queue">prs2_frame_queue</a>; queue3: <a href="rs_types.html#pRS2_frame_queue">prs2_frame_queue</a>; target_width: integer; target_height: integer; callback: <a href="rs_types.html#prs2_update_progress_callback_ptr">prs2_update_progress_callback_ptr</a>; client_data: <a href="rs_types.html#pvoid">pvoid</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): single; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+/** * Calculate Z for calibration target - distance to the target's plane * \param[in] queue1-3: A frame queue of raw images used to calculate and extract the distance to a predefined target pattern. * For D400 the indexes 1-3 correspond to Left IR, Right IR and Depth with only the Left IR being used * \param[in] target_width: Expected target's horizontal dimension in mm * \param[in] target_height: Expected target's vertical dimension in mm * \param[in] callback: Optional callback for reporting progress status * \param[in] client_data: Optional client data for the callback * \return Calculated distance (Z) to target in millimeter, or negative number if failed */ float rs2_calculate_target_z(rs2_device* device, rs2_frame_queue* queue1, rs2_frame_queue* queue2, rs2_frame_queue* queue3, float target_width, float target_height, rs2_update_progress_callback_ptr progress_callback, void* client_data, rs2_error** error);</p>
+</td></tr>
+</table>
+<h3 class="detail">Types</h3>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_calibration_type"></span><code><strong>rs2_calibration_type</strong> = (...);</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Used in device_calibration; enumerates the different calibration types available for that extension.</p>
+<h6 class="description_section">Values</h6>
+<ul>
+<li>
+<span id="RS2_CALIBRATION_AUTO_DEPTH_TO_RGB">RS2_CALIBRATION_AUTO_DEPTH_TO_RGB</span></li>
+<li>
+<span id="RS2_CALIBRATION_MANUAL_DEPTH_TO_RGB">RS2_CALIBRATION_MANUAL_DEPTH_TO_RGB</span></li>
+<li>
+<span id="RS2_CALIBRATION_THERMAL">RS2_CALIBRATION_THERMAL</span></li>
+<li>
+<span id="RS2_CALIBRATION_TYPE_COUNT">RS2_CALIBRATION_TYPE_COUNT</span></li>
+</ul>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_calibration_status"></span><code><strong>rs2_calibration_status</strong> = (...);</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Anything &gt;= 0 is not an issue</p>
+<h6 class="description_section">Values</h6>
+<ul>
+<li>
+<span id="RS2_CALIBRATION_STATUS_FIRST">RS2_CALIBRATION_STATUS_FIRST = -5</span></li>
+<li>
+<span id="RS2_CALIBRATION_BAD_CONDITIONS">RS2_CALIBRATION_BAD_CONDITIONS = -5</span>: Trigger was attempted but conditions (temp/APD) were invalid (still inactive)</li>
+<li>
+<span id="RS2_CALIBRATION_BAD_RESULT">RS2_CALIBRATION_BAD_RESULT = -4</span>: Calibration finished, but results aren't good; will retry</li>
+<li>
+<span id="RS2_CALIBRATION_SCENE_INVALID">RS2_CALIBRATION_SCENE_INVALID = -3</span>: Scene was not good enough for calibration; will retry</li>
+<li>
+<span id="RS2_CALIBRATION_FAILED">RS2_CALIBRATION_FAILED = -2</span>: Unexpected: exception, device removed, stream stopped, etc.</li>
+<li>
+<span id="RS2_CALIBRATION_RETRY">RS2_CALIBRATION_RETRY = -1</span>: Initiating retry (asked for a new special frame)</li>
+<li>
+<span id="RS2_CALIBRATION_TRIGGERED">RS2_CALIBRATION_TRIGGERED = 0</span>: AC triggered and is active; conditions are valid</li>
+<li>
+<span id="RS2_CALIBRATION_SPECIAL_FRAME">RS2_CALIBRATION_SPECIAL_FRAME = 1</span>: Special frame received; expect a frame-drop!</li>
+<li>
+<span id="RS2_CALIBRATION_STARTED">RS2_CALIBRATION_STARTED = 2</span>: Have all frames in hand; starting processing</li>
+<li>
+<span id="RS2_CALIBRATION_NOT_NEEDED">RS2_CALIBRATION_NOT_NEEDED = 3</span>: Finished; existing calibration within tolerances; nothing done!</li>
+<li>
+<span id="RS2_CALIBRATION_SUCCESSFUL">RS2_CALIBRATION_SUCCESSFUL = 4</span>: Finished; have new calibration in-hand</li>
+<li>
+<span id="RS2_CALIBRATION_STATUS_LAST">RS2_CALIBRATION_STATUS_LAST = 4</span></li>
+<li>
+<span id="RS2_CALIBRATION_STATUS_COUNT">RS2_CALIBRATION_STATUS_COUNT = 10</span>: RS2_CALIBRATION_STATUS_LAST - RS2_CALIBRATION_STATUS_FIRST + 1);</li>
+</ul>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="prs2_calibration_change_callback"></span><code><strong>prs2_calibration_change_callback</strong> = POpaqueData;</code></td>
+</tr>
+<tr><td colspan="1">
+&nbsp;</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="Prs2_calibration_change_callback_ptr"></span><code><strong>Prs2_calibration_change_callback_ptr</strong> = &circ;<a href="rs_device.html#rs2_calibration_change_callback_ptr">rs2_calibration_change_callback_ptr</a>;</code></td>
+</tr>
+<tr><td colspan="1">
+&nbsp;</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_calibration_change_callback_ptr"></span><code><strong>rs2_calibration_change_callback_ptr</strong> = procedure(ars2_calibration_status: <a href="rs_device.html#rs2_calibration_status">rs2_calibration_status</a>; arg: <a href="rs_types.html#pvoid">pvoid</a>); cdecl;</code></td>
+</tr>
+<tr><td colspan="1">
+&nbsp;</td></tr>
+</table>
+<h3 class="detail">Constants</h3>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="RS2_UNSIGNED_UPDATE_MODE_UPDATE"></span><code><strong>RS2_UNSIGNED_UPDATE_MODE_UPDATE</strong> = 0;</code></td>
+</tr>
+<tr><td colspan="1">
+&nbsp;</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="RS2_UNSIGNED_UPDATE_MODE_READ_ONLY"></span><code><strong>RS2_UNSIGNED_UPDATE_MODE_READ_ONLY</strong> = 1;</code></td>
+</tr>
+<tr><td colspan="1">
+&nbsp;</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="RS2_UNSIGNED_UPDATE_MODE_FULL"></span><code><strong>RS2_UNSIGNED_UPDATE_MODE_FULL</strong> = 2;</code></td>
+</tr>
+<tr><td colspan="1">
+&nbsp;</td></tr>
+</table>
+<hr><span class="appinfo"><em>Generated by <a href="https://pasdoc.github.io/">PasDoc 0.16.0</a>. </em>
+</span>
+</div></div></body></html>

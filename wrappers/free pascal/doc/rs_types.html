@@ -1,0 +1,1128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title>rs_types</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="generator" content="PasDoc 0.16.0">
+<meta http-equiv="content-type" content="text/html; charset=utf-8">
+<link rel="stylesheet" type="text/css" href="tipuesearch/tipuesearch.css">
+
+<link rel="StyleSheet" type="text/css" href="pasdoc.css">
+</head>
+<body>
+<div class="container"><div class="navigation">
+<ul><li><a href="AllUnits.html">Units</a></li><li><a href="ClassHierarchy.html">Class Hierarchy</a></li><li><a href="AllClasses.html">Classes, Interfaces, Objects and Records</a></li><li><a href="AllTypes.html">Types</a></li><li><a href="AllVariables.html">Variables</a></li><li><a href="AllConstants.html">Constants</a></li><li><a href="AllFunctions.html">Functions and Procedures</a></li><li><a href="AllIdentifiers.html">Identifiers</a></li><li><form class="search-form" action="tipue_results.html"><div class="search-input"><input type="text" name="q" id="tipue_search_input" pattern=".{3,}" title="At least 3 characters" required><div class="search-button"><input type="button" id="tipue_search_button" onclick="this.form.submit();"></div></div></form>
+<div style="clear: both"></div>
+</li></ul></div><div class="content">
+<h1 class="unit">Unit rs_types</h1>
+<div class="sections">
+<div class="one_section"><a class="section" href="#PasDoc-Description">Description</a></div><div class="one_section">Uses</div><div class="one_section"><a class="section" href="#PasDoc-Classes">Classes, Interfaces, Objects and Records</a></div><div class="one_section"><a class="section" href="#PasDoc-FuncsProcs">Functions and Procedures</a></div><div class="one_section"><a class="section" href="#PasDoc-Types">Types</a></div><div class="one_section">Constants</div><div class="one_section">Variables</div></div>
+<span id="PasDoc-Description"></span><h2 class="description">Description</h2>
+<p>
+Exposes RealSense structs</p>
+<span id="PasDoc-Uses"></span><h2 class="overview">Overview</h2>
+<span id="PasDoc-Classes"></span><h3 class="cio">Classes, Interfaces, Objects and Records</h3>
+<table class="classestable wide_list">
+<tr class="listheader">
+<th class="itemname">Name</th>
+<th class="itemdesc">Description</th>
+</tr>
+<tr class="list">
+<td class="itemname">Record&nbsp;<a class="bold" href="rs_types.Trs2_intrinsics.html"><code>Trs2_intrinsics</code></a></td>
+<td class="itemdesc">&nbsp;</td>
+</tr>
+<tr class="list2">
+<td class="itemname">Record&nbsp;<a class="bold" href="rs_types.Trs2_motion_device_intrinsic.html"><code>Trs2_motion_device_intrinsic</code></a></td>
+<td class="itemdesc">&nbsp;</td>
+</tr>
+<tr class="list">
+<td class="itemname">Packed Record&nbsp;<a class="bold" href="rs_types.Trs2_dsm_params.html"><code>Trs2_dsm_params</code></a></td>
+<td class="itemdesc">&nbsp;</td>
+</tr>
+<tr class="list2">
+<td class="itemname">Record&nbsp;<a class="bold" href="rs_types.Trs2_vector.html"><code>Trs2_vector</code></a></td>
+<td class="itemdesc">&nbsp;</td>
+</tr>
+<tr class="list">
+<td class="itemname">Record&nbsp;<a class="bold" href="rs_types.Trs2_quaternion.html"><code>Trs2_quaternion</code></a></td>
+<td class="itemdesc">&nbsp;</td>
+</tr>
+<tr class="list2">
+<td class="itemname">Record&nbsp;<a class="bold" href="rs_types.Trs2_pose_stream.html"><code>Trs2_pose_stream</code></a></td>
+<td class="itemdesc">&nbsp;</td>
+</tr>
+<tr class="list">
+<td class="itemname">Record&nbsp;<a class="bold" href="rs_types.Trs2_pose.html"><code>Trs2_pose</code></a></td>
+<td class="itemdesc">&nbsp;</td>
+</tr>
+<tr class="list2">
+<td class="itemname">Record&nbsp;<a class="bold" href="rs_types.Trs2_vertex.html"><code>Trs2_vertex</code></a></td>
+<td class="itemdesc">&nbsp;</td>
+</tr>
+<tr class="list">
+<td class="itemname">Record&nbsp;<a class="bold" href="rs_types.Trs2_pixel.html"><code>Trs2_pixel</code></a></td>
+<td class="itemdesc">&nbsp;</td>
+</tr>
+</table>
+<span id="PasDoc-FuncsProcs"></span><h3 class="summary">Functions and Procedures</h3>
+<table class="summary wide_list">
+<tr class="list">
+<td class="itemcode"><code>function <strong><a href="rs_types.html#rs2_notification_category_to_string">rs2_notification_category_to_string</a></strong>(category: <a href="rs_types.html#Trs2_notification_category">Trs2_notification_category</a>): PChar; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code>function <strong><a href="rs_types.html#rs2_extension_type_to_string">rs2_extension_type_to_string</a></strong>(atype: <a href="rs_types.html#Trs2_extension">Trs2_extension</a>): PChar; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code>function <strong><a href="rs_types.html#rs2_extension_to_string">rs2_extension_to_string</a></strong>(aType: <a href="rs_types.html#Trs2_extension">Trs2_extension</a>): PChar; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code>function <strong><a href="rs_types.html#rs2_format_to_string">rs2_format_to_string</a></strong>(format: <a href="rs_types.html#Trs2_format">Trs2_format</a>): PChar; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code>function <strong><a href="rs_types.html#rs2_distortion_to_string">rs2_distortion_to_string</a></strong>(distortion: <a href="rs_types.html#Trs2_distortion">Trs2_distortion</a>): PChar; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code>function <strong><a href="rs_types.html#rs2_stream_to_string">rs2_stream_to_string</a></strong>(stream: <a href="rs_types.html#Trs2_stream">Trs2_stream</a>): PChar; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code>function <strong><a href="rs_types.html#rs2_matchers_to_string">rs2_matchers_to_string</a></strong>(stram: <a href="rs_types.html#Trs2_matchers">Trs2_matchers</a>): PChar; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code>function <strong><a href="rs_types.html#rs2_log_severity_to_string">rs2_log_severity_to_string</a></strong>(info: <a href="rs_types.html#Trs2_log_severity">Trs2_log_severity</a>): PChar; cdecl; external;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code>function <strong><a href="rs_types.html#rs2_get_error_message">rs2_get_error_message</a></strong>(error: <a href="rs_types.html#pRS2_error">prs2_error</a>): PChar; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code>function <strong><a href="rs_types.html#rs2_get_failed_function">rs2_get_failed_function</a></strong>(Error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): PChar; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code>function <strong><a href="rs_types.html#rs2_get_failed_args">rs2_get_failed_args</a></strong>(Error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): PChar; cdecl  external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code>procedure <strong><a href="rs_types.html#rs2_free_error">rs2_free_error</a></strong>(error: <a href="rs_types.html#pRS2_error">prs2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code>function <strong><a href="rs_types.html#rs2_exception_type_to_string">rs2_exception_type_to_string</a></strong>(TypeException: <a href="rs_types.html#pRS2_exception_type">prs2_exception_type</a>): PChar; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+</table>
+<span id="PasDoc-Types"></span><h3 class="summary">Types</h3>
+<table class="summary wide_list">
+<tr class="list">
+<td class="itemcode"><code><strong><a href="rs_types.html#pRS2_error">pRS2_error</a></strong> = POpaqueData;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code><strong><a href="rs_types.html#pRS2_context">pRS2_context</a></strong> = POpaqueData;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code><strong><a href="rs_types.html#pRS2_device_list">pRS2_device_list</a></strong> = POpaqueData;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code><strong><a href="rs_types.html#pRS2_device_info">pRS2_device_info</a></strong> = POpaqueData;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code><strong><a href="rs_types.html#pRS2_device">pRS2_device</a></strong> = POpaqueData;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code><strong><a href="rs_types.html#pvoid">pvoid</a></strong> = POpaqueData;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code><strong><a href="rs_types.html#pRS2_device_hub">pRS2_device_hub</a></strong> = POpaqueData;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code><strong><a href="rs_types.html#pRS2_pipeline">pRS2_pipeline</a></strong> = POpaqueData;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code><strong><a href="rs_types.html#pRS2_exception_type">pRS2_exception_type</a></strong> = POpaqueData;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code><strong><a href="rs_types.html#pRS2_config">pRS2_config</a></strong> = POpaqueData;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code><strong><a href="rs_types.html#pRS2_pipeline_profile">pRS2_pipeline_profile</a></strong> = POpaqueData;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code><strong><a href="rs_types.html#pRS2_frame">pRS2_frame</a></strong> = POpaqueData;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code><strong><a href="rs_types.html#pRS2_raw_data_buffer">pRS2_raw_data_buffer</a></strong> = POpaqueData;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code><strong><a href="rs_types.html#pRS2_sensor_list">pRS2_sensor_list</a></strong> = POpaqueData;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code><strong><a href="rs_types.html#pRS2_frame_queue">pRS2_frame_queue</a></strong> = POpaqueData;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code><strong><a href="rs_types.html#pRS2_sensor">pRS2_sensor</a></strong> = POpaqueData;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code><strong><a href="rs_types.html#pRS2_stream_profile">pRS2_stream_profile</a></strong> = POpaqueData;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code><strong><a href="rs_types.html#prs2_stream_profile_list">prs2_stream_profile_list</a></strong> = POpaqueData;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code><strong><a href="rs_types.html#pRS2_source">pRS2_source</a></strong> = POpaqueData;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code><strong><a href="rs_types.html#pRS2_notification">pRS2_notification</a></strong> = POpaqueData;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code><strong><a href="rs_types.html#pRS2_processing_block_list">pRS2_processing_block_list</a></strong> = POpaqueData;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code><strong><a href="rs_types.html#pRS2_processing_block">pRS2_processing_block</a></strong> = POpaqueData;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code><strong><a href="rs_types.html#pRS2_frame_processor_callback">pRS2_frame_processor_callback</a></strong> = POpaqueData;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code><strong><a href="rs_types.html#pRS2_frame_processor_callback_ptr">pRS2_frame_processor_callback_ptr</a></strong> = POpaqueData;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code><strong><a href="rs_types.html#pRS2_options_list">pRS2_options_list</a></strong> = POpaqueData;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code><strong><a href="rs_types.html#pRS2_options">pRS2_options</a></strong> = POpaqueData;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code><strong><a href="rs_types.html#pRS2_log_message">pRS2_log_message</a></strong> = POpaqueData;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code><strong><a href="rs_types.html#pRS2_firmware_log_message">pRS2_firmware_log_message</a></strong> = POpaqueData;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code><strong><a href="rs_types.html#pRS2_firmware_log_parsed_message">pRS2_firmware_log_parsed_message</a></strong> = POpaqueData;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code><strong><a href="rs_types.html#pRS2_terminal_parser">pRS2_terminal_parser</a></strong> = POpaqueData;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code><strong><a href="rs_types.html#Trs2_time_t">Trs2_time_t</a></strong> = double;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code><strong><a href="rs_types.html#Trs2_metadata_type">Trs2_metadata_type</a></strong> = Int64;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code><strong><a href="rs_types.html#Trs2_notification_category">Trs2_notification_category</a></strong> = (...);</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code><strong><a href="rs_types.html#Trs2_extension">Trs2_extension</a></strong> = (...);</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code><strong><a href="rs_types.html#Trs2_format">Trs2_format</a></strong> = (...);</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code><strong><a href="rs_types.html#pRS2_format">pRS2_format</a></strong> = <a href="rs_types.html#Trs2_format">Trs2_format</a>;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code><strong><a href="rs_types.html#Trs2_distortion">Trs2_distortion</a></strong> = (...);</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code><strong><a href="rs_types.html#PRS2_distortion">PRS2_distortion</a></strong> = &circ;<a href="rs_types.html#Trs2_distortion">Trs2_distortion</a>;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code><strong><a href="rs_types.html#pRS2_intrinsics">pRS2_intrinsics</a></strong> = &circ;<a href="rs_types.Trs2_intrinsics.html">Trs2_intrinsics</a>;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code><strong><a href="rs_types.html#pRS2_frame_callback_ptr">pRS2_frame_callback_ptr</a></strong> = &circ;<a href="rs_types.html#Trs2_frame_callback_ptr">Trs2_frame_callback_ptr</a>;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code><strong><a href="rs_types.html#Trs2_frame_callback_ptr">Trs2_frame_callback_ptr</a></strong> = procedure(frame: <a href="rs_types.html#pRS2_frame">pRS2_frame</a>; void: <a href="rs_types.html#pvoid">pvoid</a>); cdecl;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code><strong><a href="rs_types.html#pRS2_devices_changed_callback">pRS2_devices_changed_callback</a></strong> = &circ;<a href="rs_types.html#RS2_devices_changed_callback">RS2_devices_changed_callback</a>;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code><strong><a href="rs_types.html#RS2_devices_changed_callback">RS2_devices_changed_callback</a></strong> = procedure(DeviceList1: <a href="rs_types.html#pRS2_device_list">pRS2_Device_List</a>; DeviceList2: <a href="rs_types.html#pRS2_device_list">pRS2_Device_List</a>); cdecl;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code><strong><a href="rs_types.html#prs2_update_progress_callback_ptr">prs2_update_progress_callback_ptr</a></strong> = &circ;<a href="rs_types.html#rs2_update_progress_callback_ptr">rs2_update_progress_callback_ptr</a>;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code><strong><a href="rs_types.html#rs2_update_progress_callback_ptr">rs2_update_progress_callback_ptr</a></strong> = procedure(const Value: single; aPointer: <a href="rs_types.html#pvoid">pVoid</a>); cdecl;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code><strong><a href="rs_types.html#pRS2_notification_callback_ptr">pRS2_notification_callback_ptr</a></strong> = &circ;<a href="rs_types.html#rs2_notification_callback_ptr">rs2_notification_callback_ptr</a>;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code><strong><a href="rs_types.html#rs2_notification_callback_ptr">rs2_notification_callback_ptr</a></strong> = procedure(rs2_notification: <a href="rs_types.html#pRS2_notification">pRS2_notification</a>; Data: <a href="rs_types.html#pvoid">pvoid</a>);</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code><strong><a href="rs_types.html#Trs2_exception_type">Trs2_exception_type</a></strong> = (...);</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code><strong><a href="rs_types.html#pRS2_motion_device_intrinsic">pRS2_motion_device_intrinsic</a></strong> = &circ;<a href="rs_types.Trs2_motion_device_intrinsic.html">Trs2_motion_device_intrinsic</a>;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code><strong><a href="rs_types.html#pRS2_dsm_params">pRS2_dsm_params</a></strong> = &circ;<a href="rs_types.Trs2_dsm_params.html">Trs2_dsm_params</a>;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code><strong><a href="rs_types.html#Trs2_stream">Trs2_stream</a></strong> = (...);</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code><strong><a href="rs_types.html#prs2_stream">prs2_stream</a></strong> = &circ;<a href="rs_types.html#Trs2_stream">Trs2_stream</a>;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code><strong><a href="rs_types.html#Trs2_matchers">Trs2_matchers</a></strong> = (...);</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code><strong><a href="rs_types.html#pRS2_pose">pRS2_pose</a></strong> = &circ;<a href="rs_types.Trs2_pose.html">Trs2_pose</a>;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code><strong><a href="rs_types.html#Trs2_log_severity">Trs2_log_severity</a></strong> = (...);</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code><strong><a href="rs_types.html#pRS2_vertex">pRS2_vertex</a></strong> = &circ;<a href="rs_types.Trs2_vertex.html">Trs2_vertex</a>;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code><strong><a href="rs_types.html#pRS2_pixel">pRS2_pixel</a></strong> = &circ;<a href="rs_types.Trs2_pixel.html">Trs2_pixel</a>;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code><strong><a href="rs_types.html#pRS2_log_callback_ptr">pRS2_log_callback_ptr</a></strong> = &circ;<a href="rs_types.html#rs2_log_callback_ptr">rs2_log_callback_ptr</a>;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code><strong><a href="rs_types.html#rs2_log_callback_ptr">rs2_log_callback_ptr</a></strong> = procedure(log_severity: <a href="rs_types.html#Trs2_log_severity">Trs2_log_severity</a>; const log_message: PChar; arg: <a href="rs_types.html#pvoid">pvoid</a>);</code></td>
+</tr>
+</table>
+<h2 class="description">Description</h2>
+<h3 class="detail">Functions and Procedures</h3>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_notification_category_to_string"></span><code>function <strong>rs2_notification_category_to_string</strong>(category: <a href="rs_types.html#Trs2_notification_category">Trs2_notification_category</a>): PChar; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+&nbsp;</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_extension_type_to_string"></span><code>function <strong>rs2_extension_type_to_string</strong>(atype: <a href="rs_types.html#Trs2_extension">Trs2_extension</a>): PChar; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+&nbsp;</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_extension_to_string"></span><code>function <strong>rs2_extension_to_string</strong>(aType: <a href="rs_types.html#Trs2_extension">Trs2_extension</a>): PChar; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+&nbsp;</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_format_to_string"></span><code>function <strong>rs2_format_to_string</strong>(format: <a href="rs_types.html#Trs2_format">Trs2_format</a>): PChar; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+&nbsp;</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_distortion_to_string"></span><code>function <strong>rs2_distortion_to_string</strong>(distortion: <a href="rs_types.html#Trs2_distortion">Trs2_distortion</a>): PChar; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+&nbsp;</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_stream_to_string"></span><code>function <strong>rs2_stream_to_string</strong>(stream: <a href="rs_types.html#Trs2_stream">Trs2_stream</a>): PChar; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+&nbsp;</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_matchers_to_string"></span><code>function <strong>rs2_matchers_to_string</strong>(stram: <a href="rs_types.html#Trs2_matchers">Trs2_matchers</a>): PChar; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+&nbsp;</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_log_severity_to_string"></span><code>function <strong>rs2_log_severity_to_string</strong>(info: <a href="rs_types.html#Trs2_log_severity">Trs2_log_severity</a>): PChar; cdecl; external;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+**&lt; Include any/all log messages</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_get_error_message"></span><code>function <strong>rs2_get_error_message</strong>(error: <a href="rs_types.html#pRS2_error">prs2_error</a>): PChar; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+&nbsp;</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_get_failed_function"></span><code>function <strong>rs2_get_failed_function</strong>(Error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): PChar; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+&nbsp;</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_get_failed_args"></span><code>function <strong>rs2_get_failed_args</strong>(Error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): PChar; cdecl  external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+&nbsp;</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_free_error"></span><code>procedure <strong>rs2_free_error</strong>(error: <a href="rs_types.html#pRS2_error">prs2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+&nbsp;</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_exception_type_to_string"></span><code>function <strong>rs2_exception_type_to_string</strong>(TypeException: <a href="rs_types.html#pRS2_exception_type">prs2_exception_type</a>): PChar; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+&nbsp;</td></tr>
+</table>
+<h3 class="detail">Types</h3>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="pRS2_error"></span><code><strong>pRS2_error</strong> = POpaqueData;</code></td>
+</tr>
+<tr><td colspan="1">
+&nbsp;</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="pRS2_context"></span><code><strong>pRS2_context</strong> = POpaqueData;</code></td>
+</tr>
+<tr><td colspan="1">
+&nbsp;</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="pRS2_device_list"></span><code><strong>pRS2_device_list</strong> = POpaqueData;</code></td>
+</tr>
+<tr><td colspan="1">
+&nbsp;</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="pRS2_device_info"></span><code><strong>pRS2_device_info</strong> = POpaqueData;</code></td>
+</tr>
+<tr><td colspan="1">
+&nbsp;</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="pRS2_device"></span><code><strong>pRS2_device</strong> = POpaqueData;</code></td>
+</tr>
+<tr><td colspan="1">
+&nbsp;</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="pvoid"></span><code><strong>pvoid</strong> = POpaqueData;</code></td>
+</tr>
+<tr><td colspan="1">
+&nbsp;</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="pRS2_device_hub"></span><code><strong>pRS2_device_hub</strong> = POpaqueData;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+?? void*</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="pRS2_pipeline"></span><code><strong>pRS2_pipeline</strong> = POpaqueData;</code></td>
+</tr>
+<tr><td colspan="1">
+&nbsp;</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="pRS2_exception_type"></span><code><strong>pRS2_exception_type</strong> = POpaqueData;</code></td>
+</tr>
+<tr><td colspan="1">
+&nbsp;</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="pRS2_config"></span><code><strong>pRS2_config</strong> = POpaqueData;</code></td>
+</tr>
+<tr><td colspan="1">
+&nbsp;</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="pRS2_pipeline_profile"></span><code><strong>pRS2_pipeline_profile</strong> = POpaqueData;</code></td>
+</tr>
+<tr><td colspan="1">
+&nbsp;</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="pRS2_frame"></span><code><strong>pRS2_frame</strong> = POpaqueData;</code></td>
+</tr>
+<tr><td colspan="1">
+&nbsp;</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="pRS2_raw_data_buffer"></span><code><strong>pRS2_raw_data_buffer</strong> = POpaqueData;</code></td>
+</tr>
+<tr><td colspan="1">
+&nbsp;</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="pRS2_sensor_list"></span><code><strong>pRS2_sensor_list</strong> = POpaqueData;</code></td>
+</tr>
+<tr><td colspan="1">
+&nbsp;</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="pRS2_frame_queue"></span><code><strong>pRS2_frame_queue</strong> = POpaqueData;</code></td>
+</tr>
+<tr><td colspan="1">
+&nbsp;</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="pRS2_sensor"></span><code><strong>pRS2_sensor</strong> = POpaqueData;</code></td>
+</tr>
+<tr><td colspan="1">
+&nbsp;</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="pRS2_stream_profile"></span><code><strong>pRS2_stream_profile</strong> = POpaqueData;</code></td>
+</tr>
+<tr><td colspan="1">
+&nbsp;</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="prs2_stream_profile_list"></span><code><strong>prs2_stream_profile_list</strong> = POpaqueData;</code></td>
+</tr>
+<tr><td colspan="1">
+&nbsp;</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="pRS2_source"></span><code><strong>pRS2_source</strong> = POpaqueData;</code></td>
+</tr>
+<tr><td colspan="1">
+&nbsp;</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="pRS2_notification"></span><code><strong>pRS2_notification</strong> = POpaqueData;</code></td>
+</tr>
+<tr><td colspan="1">
+&nbsp;</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="pRS2_processing_block_list"></span><code><strong>pRS2_processing_block_list</strong> = POpaqueData;</code></td>
+</tr>
+<tr><td colspan="1">
+&nbsp;</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="pRS2_processing_block"></span><code><strong>pRS2_processing_block</strong> = POpaqueData;</code></td>
+</tr>
+<tr><td colspan="1">
+&nbsp;</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="pRS2_frame_processor_callback"></span><code><strong>pRS2_frame_processor_callback</strong> = POpaqueData;</code></td>
+</tr>
+<tr><td colspan="1">
+&nbsp;</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="pRS2_frame_processor_callback_ptr"></span><code><strong>pRS2_frame_processor_callback_ptr</strong> = POpaqueData;</code></td>
+</tr>
+<tr><td colspan="1">
+&nbsp;</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="pRS2_options_list"></span><code><strong>pRS2_options_list</strong> = POpaqueData;</code></td>
+</tr>
+<tr><td colspan="1">
+&nbsp;</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="pRS2_options"></span><code><strong>pRS2_options</strong> = POpaqueData;</code></td>
+</tr>
+<tr><td colspan="1">
+&nbsp;</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="pRS2_log_message"></span><code><strong>pRS2_log_message</strong> = POpaqueData;</code></td>
+</tr>
+<tr><td colspan="1">
+&nbsp;</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="pRS2_firmware_log_message"></span><code><strong>pRS2_firmware_log_message</strong> = POpaqueData;</code></td>
+</tr>
+<tr><td colspan="1">
+&nbsp;</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="pRS2_firmware_log_parsed_message"></span><code><strong>pRS2_firmware_log_parsed_message</strong> = POpaqueData;</code></td>
+</tr>
+<tr><td colspan="1">
+&nbsp;</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="pRS2_terminal_parser"></span><code><strong>pRS2_terminal_parser</strong> = POpaqueData;</code></td>
+</tr>
+<tr><td colspan="1">
+&nbsp;</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="Trs2_time_t"></span><code><strong>Trs2_time_t</strong> = double;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Timestamp format. units are milliseconds</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="Trs2_metadata_type"></span><code><strong>Trs2_metadata_type</strong> = Int64;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Metadata attribute type is defined as 64 bit signed integer</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="Trs2_notification_category"></span><code><strong>Trs2_notification_category</strong> = (...);</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Category of the librealsense notification.</p>
+<h6 class="description_section">Values</h6>
+<ul>
+<li>
+<span id="RS2_NOTIFICATION_CATEGORY_FRAMES_TIMEOUT">RS2_NOTIFICATION_CATEGORY_FRAMES_TIMEOUT</span>: Frames didn't arrived within 5 seconds</li>
+<li>
+<span id="RS2_NOTIFICATION_CATEGORY_FRAME_CORRUPTED">RS2_NOTIFICATION_CATEGORY_FRAME_CORRUPTED</span>: Received partial/incomplete frame</li>
+<li>
+<span id="RS2_NOTIFICATION_CATEGORY_HARDWARE_ERROR">RS2_NOTIFICATION_CATEGORY_HARDWARE_ERROR</span>: Error reported from the device</li>
+<li>
+<span id="RS2_NOTIFICATION_CATEGORY_HARDWARE_EVENT">RS2_NOTIFICATION_CATEGORY_HARDWARE_EVENT</span>: General Hardeware notification that is not an error</li>
+<li>
+<span id="RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR">RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR</span>: Received unknown error from the device</li>
+<li>
+<span id="RS2_NOTIFICATION_CATEGORY_FIRMWARE_UPDATE_RECOMMENDED">RS2_NOTIFICATION_CATEGORY_FIRMWARE_UPDATE_RECOMMENDED</span>: Current firmware version installed is not the latest available</li>
+<li>
+<span id="RS2_NOTIFICATION_CATEGORY_POSE_RELOCALIZATION">RS2_NOTIFICATION_CATEGORY_POSE_RELOCALIZATION</span>: A relocalization event has updated the pose provided by a pose sensor</li>
+<li>
+<span id="RS2_NOTIFICATION_CATEGORY_COUNT">RS2_NOTIFICATION_CATEGORY_COUNT</span>: Number of enumeration values. Not a valid input: intended to be used in for-loops.</li>
+</ul>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="Trs2_extension"></span><code><strong>Trs2_extension</strong> = (...);</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Specifies advanced interfaces (capabilities) objects may implement.</p>
+<h6 class="description_section">Values</h6>
+<ul>
+<li>
+<span id="RS2_EXTENSION_UNKNOWN">RS2_EXTENSION_UNKNOWN</span></li>
+<li>
+<span id="RS2_EXTENSION_DEBUG">RS2_EXTENSION_DEBUG</span></li>
+<li>
+<span id="RS2_EXTENSION_INFO">RS2_EXTENSION_INFO</span></li>
+<li>
+<span id="RS2_EXTENSION_MOTION">RS2_EXTENSION_MOTION</span></li>
+<li>
+<span id="RS2_EXTENSION_OPTIONS">RS2_EXTENSION_OPTIONS</span></li>
+<li>
+<span id="RS2_EXTENSION_VIDEO">RS2_EXTENSION_VIDEO</span></li>
+<li>
+<span id="RS2_EXTENSION_ROI">RS2_EXTENSION_ROI</span></li>
+<li>
+<span id="RS2_EXTENSION_DEPTH_SENSOR">RS2_EXTENSION_DEPTH_SENSOR</span></li>
+<li>
+<span id="RS2_EXTENSION_VIDEO_FRAME">RS2_EXTENSION_VIDEO_FRAME</span></li>
+<li>
+<span id="RS2_EXTENSION_MOTION_FRAME">RS2_EXTENSION_MOTION_FRAME</span></li>
+<li>
+<span id="RS2_EXTENSION_COMPOSITE_FRAME">RS2_EXTENSION_COMPOSITE_FRAME</span></li>
+<li>
+<span id="RS2_EXTENSION_POINTS">RS2_EXTENSION_POINTS</span></li>
+<li>
+<span id="RS2_EXTENSION_DEPTH_FRAME">RS2_EXTENSION_DEPTH_FRAME</span></li>
+<li>
+<span id="RS2_EXTENSION_ADVANCED_MODE">RS2_EXTENSION_ADVANCED_MODE</span></li>
+<li>
+<span id="RS2_EXTENSION_RECORD">RS2_EXTENSION_RECORD</span></li>
+<li>
+<span id="RS2_EXTENSION_VIDEO_PROFILE">RS2_EXTENSION_VIDEO_PROFILE</span></li>
+<li>
+<span id="RS2_EXTENSION_PLAYBACK">RS2_EXTENSION_PLAYBACK</span></li>
+<li>
+<span id="RS2_EXTENSION_DEPTH_STEREO_SENSOR">RS2_EXTENSION_DEPTH_STEREO_SENSOR</span></li>
+<li>
+<span id="RS2_EXTENSION_DISPARITY_FRAME">RS2_EXTENSION_DISPARITY_FRAME</span></li>
+<li>
+<span id="RS2_EXTENSION_MOTION_PROFILE">RS2_EXTENSION_MOTION_PROFILE</span></li>
+<li>
+<span id="RS2_EXTENSION_POSE_FRAME">RS2_EXTENSION_POSE_FRAME</span></li>
+<li>
+<span id="RS2_EXTENSION_POSE_PROFILE">RS2_EXTENSION_POSE_PROFILE</span></li>
+<li>
+<span id="RS2_EXTENSION_TM2">RS2_EXTENSION_TM2</span></li>
+<li>
+<span id="RS2_EXTENSION_SOFTWARE_DEVICE">RS2_EXTENSION_SOFTWARE_DEVICE</span></li>
+<li>
+<span id="RS2_EXTENSION_SOFTWARE_SENSOR">RS2_EXTENSION_SOFTWARE_SENSOR</span></li>
+<li>
+<span id="RS2_EXTENSION_DECIMATION_FILTER">RS2_EXTENSION_DECIMATION_FILTER</span></li>
+<li>
+<span id="RS2_EXTENSION_THRESHOLD_FILTER">RS2_EXTENSION_THRESHOLD_FILTER</span></li>
+<li>
+<span id="RS2_EXTENSION_DISPARITY_FILTER">RS2_EXTENSION_DISPARITY_FILTER</span></li>
+<li>
+<span id="RS2_EXTENSION_SPATIAL_FILTER">RS2_EXTENSION_SPATIAL_FILTER</span></li>
+<li>
+<span id="RS2_EXTENSION_TEMPORAL_FILTER">RS2_EXTENSION_TEMPORAL_FILTER</span></li>
+<li>
+<span id="RS2_EXTENSION_HOLE_FILLING_FILTER">RS2_EXTENSION_HOLE_FILLING_FILTER</span></li>
+<li>
+<span id="RS2_EXTENSION_ZERO_ORDER_FILTER">RS2_EXTENSION_ZERO_ORDER_FILTER</span></li>
+<li>
+<span id="RS2_EXTENSION_RECOMMENDED_FILTERS">RS2_EXTENSION_RECOMMENDED_FILTERS</span></li>
+<li>
+<span id="RS2_EXTENSION_POSE">RS2_EXTENSION_POSE</span></li>
+<li>
+<span id="RS2_EXTENSION_POSE_SENSOR">RS2_EXTENSION_POSE_SENSOR</span></li>
+<li>
+<span id="RS2_EXTENSION_WHEEL_ODOMETER">RS2_EXTENSION_WHEEL_ODOMETER</span></li>
+<li>
+<span id="RS2_EXTENSION_GLOBAL_TIMER">RS2_EXTENSION_GLOBAL_TIMER</span></li>
+<li>
+<span id="RS2_EXTENSION_UPDATABLE">RS2_EXTENSION_UPDATABLE</span></li>
+<li>
+<span id="RS2_EXTENSION_UPDATE_DEVICE">RS2_EXTENSION_UPDATE_DEVICE</span></li>
+<li>
+<span id="RS2_EXTENSION_L500_DEPTH_SENSOR">RS2_EXTENSION_L500_DEPTH_SENSOR</span></li>
+<li>
+<span id="RS2_EXTENSION_TM2_SENSOR">RS2_EXTENSION_TM2_SENSOR</span></li>
+<li>
+<span id="RS2_EXTENSION_AUTO_CALIBRATED_DEVICE">RS2_EXTENSION_AUTO_CALIBRATED_DEVICE</span></li>
+<li>
+<span id="RS2_EXTENSION_COLOR_SENSOR">RS2_EXTENSION_COLOR_SENSOR</span></li>
+<li>
+<span id="RS2_EXTENSION_MOTION_SENSOR">RS2_EXTENSION_MOTION_SENSOR</span></li>
+<li>
+<span id="RS2_EXTENSION_FISHEYE_SENSOR">RS2_EXTENSION_FISHEYE_SENSOR</span></li>
+<li>
+<span id="RS2_EXTENSION_DEPTH_HUFFMAN_DECODER">RS2_EXTENSION_DEPTH_HUFFMAN_DECODER</span></li>
+<li>
+<span id="RS2_EXTENSION_SERIALIZABLE">RS2_EXTENSION_SERIALIZABLE</span></li>
+<li>
+<span id="RS2_EXTENSION_FW_LOGGER">RS2_EXTENSION_FW_LOGGER</span></li>
+<li>
+<span id="RS2_EXTENSION_AUTO_CALIBRATION_FILTER">RS2_EXTENSION_AUTO_CALIBRATION_FILTER</span></li>
+<li>
+<span id="RS2_EXTENSION_DEVICE_CALIBRATION">RS2_EXTENSION_DEVICE_CALIBRATION</span></li>
+<li>
+<span id="RS2_EXTENSION_CALIBRATED_SENSOR">RS2_EXTENSION_CALIBRATED_SENSOR</span></li>
+<li>
+<span id="RS2_EXTENSION_HDR_MERGE">RS2_EXTENSION_HDR_MERGE</span></li>
+<li>
+<span id="RS2_EXTENSION_SEQUENCE_ID_FILTER">RS2_EXTENSION_SEQUENCE_ID_FILTER</span></li>
+<li>
+<span id="RS2_EXTENSION_MAX_USABLE_RANGE_SENSOR">RS2_EXTENSION_MAX_USABLE_RANGE_SENSOR</span></li>
+<li>
+<span id="RS2_EXTENSION_DEBUG_STREAM_SENSOR">RS2_EXTENSION_DEBUG_STREAM_SENSOR</span></li>
+<li>
+<span id="RS2_EXTENSION_CALIBRATION_CHANGE_DEVICE">RS2_EXTENSION_CALIBRATION_CHANGE_DEVICE</span></li>
+<li>
+<span id="RS2_EXTENSION_COUNT">RS2_EXTENSION_COUNT</span></li>
+</ul>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="Trs2_format"></span><code><strong>Trs2_format</strong> = (...);</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+A stream's format identifies how binary data is encoded within a frame. */</p>
+<h6 class="description_section">Values</h6>
+<ul>
+<li>
+<span id="RS2_FORMAT_ANY">RS2_FORMAT_ANY</span>: When passed to enable stream, librealsense will try to provide best suited format */</li>
+<li>
+<span id="RS2_FORMAT_Z16">RS2_FORMAT_Z16</span>: 16-bit linear depth values. The depth is meters is equal to depth scale * pixel value. */</li>
+<li>
+<span id="RS2_FORMAT_DISPARITY16">RS2_FORMAT_DISPARITY16</span>: 16-bit float-point disparity values. Depth-&gt;Disparity conversion : Disparity = Baseline*FocalLength/Depth. */</li>
+<li>
+<span id="RS2_FORMAT_XYZ32F">RS2_FORMAT_XYZ32F</span>: 32-bit floating point 3D coordinates. */</li>
+<li>
+<span id="RS2_FORMAT_YUYV">RS2_FORMAT_YUYV</span>: 32-bit y0, u, y1, v data for every two pixels. Similar to YUV422 but packed in a different order - <a href="https://en.wikipedia.org/wiki/YUV">https://en.wikipedia.org/wiki/YUV</a> */</li>
+<li>
+<span id="RS2_FORMAT_RGB8">RS2_FORMAT_RGB8</span>: 8-bit red, green and blue channels */</li>
+<li>
+<span id="RS2_FORMAT_BGR8">RS2_FORMAT_BGR8</span>: 8-bit blue, green, and red channels &ndash; suitable for OpenCV */</li>
+<li>
+<span id="RS2_FORMAT_RGBA8">RS2_FORMAT_RGBA8</span>: 8-bit red, green and blue channels + constant alpha channel equal to FF */</li>
+<li>
+<span id="RS2_FORMAT_BGRA8">RS2_FORMAT_BGRA8</span>: 8-bit blue, green, and red channels + constant alpha channel equal to FF */</li>
+<li>
+<span id="RS2_FORMAT_Y8">RS2_FORMAT_Y8</span>: 8-bit per-pixel grayscale image */</li>
+<li>
+<span id="RS2_FORMAT_Y16">RS2_FORMAT_Y16</span>: 16-bit per-pixel grayscale image */</li>
+<li>
+<span id="RS2_FORMAT_RAW10">RS2_FORMAT_RAW10</span>: Four 10 bits per pixel luminance values packed into a 5-byte macropixel */</li>
+<li>
+<span id="RS2_FORMAT_RAW16">RS2_FORMAT_RAW16</span>: 16-bit raw image */</li>
+<li>
+<span id="RS2_FORMAT_RAW8">RS2_FORMAT_RAW8</span>: 8-bit raw image */</li>
+<li>
+<span id="RS2_FORMAT_UYVY">RS2_FORMAT_UYVY</span>: Similar to the standard YUYV pixel format, but packed in a different order */</li>
+<li>
+<span id="RS2_FORMAT_MOTION_RAW">RS2_FORMAT_MOTION_RAW</span>: Raw data from the motion sensor */</li>
+<li>
+<span id="RS2_FORMAT_MOTION_XYZ32F">RS2_FORMAT_MOTION_XYZ32F</span>: Motion data packed as 3 32-bit float values, for X, Y, and Z axis */</li>
+<li>
+<span id="RS2_FORMAT_GPIO_RAW">RS2_FORMAT_GPIO_RAW</span>: Raw data from the external sensors hooked to one of the GPIO's */</li>
+<li>
+<span id="RS2_FORMAT_6DOF">RS2_FORMAT_6DOF</span>: Pose data packed as floats array, containing translation vector, rotation quaternion and prediction velocities and accelerations vectors */</li>
+<li>
+<span id="RS2_FORMAT_DISPARITY32">RS2_FORMAT_DISPARITY32</span>: 32-bit float-point disparity values. Depth-&gt;Disparity conversion : Disparity = Baseline*FocalLength/Depth */</li>
+<li>
+<span id="RS2_FORMAT_Y10BPACK">RS2_FORMAT_Y10BPACK</span>: 16-bit per-pixel grayscale image unpacked from 10 bits per pixel packed ([8:8:8:8:2222]) grey-scale image. The data is unpacked to LSB and padded with 6 zero bits */</li>
+<li>
+<span id="RS2_FORMAT_DISTANCE">RS2_FORMAT_DISTANCE</span>: 32-bit float-point depth distance value. */</li>
+<li>
+<span id="RS2_FORMAT_MJPEG">RS2_FORMAT_MJPEG</span>: Bitstream encoding for video in which an image of each frame is encoded as JPEG-DIB */</li>
+<li>
+<span id="RS2_FORMAT_Y8I">RS2_FORMAT_Y8I</span>: 8-bit per pixel interleaved. 8-bit left, 8-bit right. */</li>
+<li>
+<span id="RS2_FORMAT_Y12I">RS2_FORMAT_Y12I</span>: 12-bit per pixel interleaved. 12-bit left, 12-bit right. Each pixel is stored in a 24-bit word in little-endian order. */</li>
+<li>
+<span id="RS2_FORMAT_INZI">RS2_FORMAT_INZI</span>: multi-planar Depth 16bit + IR 10bit. */</li>
+<li>
+<span id="RS2_FORMAT_INVI">RS2_FORMAT_INVI</span>: 8-bit IR stream. */</li>
+<li>
+<span id="RS2_FORMAT_W10">RS2_FORMAT_W10</span>: Grey-scale image as a bit-packed array. 4 pixel data stream taking 5 bytes */</li>
+<li>
+<span id="RS2_FORMAT_Z16H">RS2_FORMAT_Z16H</span>: Variable-length Huffman-compressed 16-bit depth values. */</li>
+<li>
+<span id="RS2_FORMAT_FG">RS2_FORMAT_FG</span>: 16-bit per-pixel frame grabber format. */</li>
+<li>
+<span id="RS2_FORMAT_Y411">RS2_FORMAT_Y411</span>: 12-bit per-pixel. */</li>
+<li>
+<span id="RS2_FORMAT_COUNT">RS2_FORMAT_COUNT</span>: Number of enumeration values. Not a valid input: intended to be used in for-loops. */</li>
+</ul>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="pRS2_format"></span><code><strong>pRS2_format</strong> = <a href="rs_types.html#Trs2_format">Trs2_format</a>;</code></td>
+</tr>
+<tr><td colspan="1">
+&nbsp;</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="Trs2_distortion"></span><code><strong>Trs2_distortion</strong> = (...);</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Distortion model: defines how pixel coordinates should be mapped to sensor coordinates. */</p>
+<h6 class="description_section">Values</h6>
+<ul>
+<li>
+<span id="RS2_DISTORTION_NONE">RS2_DISTORTION_NONE</span>: Rectilinear images. No distortion compensation required. */</li>
+<li>
+<span id="RS2_DISTORTION_MODIFIED_BROWN_CONRADY">RS2_DISTORTION_MODIFIED_BROWN_CONRADY</span>: Equivalent to Brown-Conrady distortion, except that tangential distortion is applied to radially distorted points */</li>
+<li>
+<span id="RS2_DISTORTION_INVERSE_BROWN_CONRADY">RS2_DISTORTION_INVERSE_BROWN_CONRADY</span>: Equivalent to Brown-Conrady distortion, except undistorts image instead of distorting it */</li>
+<li>
+<span id="RS2_DISTORTION_FTHETA">RS2_DISTORTION_FTHETA</span>: F-Theta fish-eye distortion model */</li>
+<li>
+<span id="RS2_DISTORTION_BROWN_CONRADY">RS2_DISTORTION_BROWN_CONRADY</span>: Unmodified Brown-Conrady distortion model */</li>
+<li>
+<span id="RS2_DISTORTION_KANNALA_BRANDT4">RS2_DISTORTION_KANNALA_BRANDT4</span>: Four parameter Kannala Brandt distortion model */</li>
+<li>
+<span id="RS2_DISTORTION_COUNT">RS2_DISTORTION_COUNT</span>: Number of enumeration values. Not a valid input: intended to be used in for-loops. */</li>
+</ul>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="PRS2_distortion"></span><code><strong>PRS2_distortion</strong> = &circ;<a href="rs_types.html#Trs2_distortion">Trs2_distortion</a>;</code></td>
+</tr>
+<tr><td colspan="1">
+&nbsp;</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="pRS2_intrinsics"></span><code><strong>pRS2_intrinsics</strong> = &circ;<a href="rs_types.Trs2_intrinsics.html">Trs2_intrinsics</a>;</code></td>
+</tr>
+<tr><td colspan="1">
+&nbsp;</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="pRS2_frame_callback_ptr"></span><code><strong>pRS2_frame_callback_ptr</strong> = &circ;<a href="rs_types.html#Trs2_frame_callback_ptr">Trs2_frame_callback_ptr</a>;</code></td>
+</tr>
+<tr><td colspan="1">
+&nbsp;</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="Trs2_frame_callback_ptr"></span><code><strong>Trs2_frame_callback_ptr</strong> = procedure(frame: <a href="rs_types.html#pRS2_frame">pRS2_frame</a>; void: <a href="rs_types.html#pvoid">pvoid</a>); cdecl;</code></td>
+</tr>
+<tr><td colspan="1">
+&nbsp;</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="pRS2_devices_changed_callback"></span><code><strong>pRS2_devices_changed_callback</strong> = &circ;<a href="rs_types.html#RS2_devices_changed_callback">RS2_devices_changed_callback</a>;</code></td>
+</tr>
+<tr><td colspan="1">
+&nbsp;</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="RS2_devices_changed_callback"></span><code><strong>RS2_devices_changed_callback</strong> = procedure(DeviceList1: <a href="rs_types.html#pRS2_device_list">pRS2_Device_List</a>; DeviceList2: <a href="rs_types.html#pRS2_device_list">pRS2_Device_List</a>); cdecl;</code></td>
+</tr>
+<tr><td colspan="1">
+&nbsp;</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="prs2_update_progress_callback_ptr"></span><code><strong>prs2_update_progress_callback_ptr</strong> = &circ;<a href="rs_types.html#rs2_update_progress_callback_ptr">rs2_update_progress_callback_ptr</a>;</code></td>
+</tr>
+<tr><td colspan="1">
+&nbsp;</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_update_progress_callback_ptr"></span><code><strong>rs2_update_progress_callback_ptr</strong> = procedure(const Value: single; aPointer: <a href="rs_types.html#pvoid">pVoid</a>); cdecl;</code></td>
+</tr>
+<tr><td colspan="1">
+&nbsp;</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="pRS2_notification_callback_ptr"></span><code><strong>pRS2_notification_callback_ptr</strong> = &circ;<a href="rs_types.html#rs2_notification_callback_ptr">rs2_notification_callback_ptr</a>;</code></td>
+</tr>
+<tr><td colspan="1">
+&nbsp;</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_notification_callback_ptr"></span><code><strong>rs2_notification_callback_ptr</strong> = procedure(rs2_notification: <a href="rs_types.html#pRS2_notification">pRS2_notification</a>; Data: <a href="rs_types.html#pvoid">pvoid</a>);</code></td>
+</tr>
+<tr><td colspan="1">
+&nbsp;</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="Trs2_exception_type"></span><code><strong>Trs2_exception_type</strong> = (...);</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Exception types are the different categories of errors that RealSense API might return. */</p>
+<h6 class="description_section">Values</h6>
+<ul>
+<li>
+<span id="RS2_EXCEPTION_TYPE_UNKNOWN">RS2_EXCEPTION_TYPE_UNKNOWN</span></li>
+<li>
+<span id="RS2_EXCEPTION_TYPE_CAMERA_DISCONNECTED">RS2_EXCEPTION_TYPE_CAMERA_DISCONNECTED</span>: Device was disconnected, this can be caused by outside intervention, by internal firmware error or due to insufficient power</li>
+<li>
+<span id="RS2_EXCEPTION_TYPE_BACKEND">RS2_EXCEPTION_TYPE_BACKEND</span>: Error was returned from the underlying OS-specific layer</li>
+<li>
+<span id="RS2_EXCEPTION_TYPE_INVALID_VALUE">RS2_EXCEPTION_TYPE_INVALID_VALUE</span>: Invalid value was passed to the API</li>
+<li>
+<span id="RS2_EXCEPTION_TYPE_WRONG_API_CALL_SEQUENCE">RS2_EXCEPTION_TYPE_WRONG_API_CALL_SEQUENCE</span>: Function precondition was violated</li>
+<li>
+<span id="RS2_EXCEPTION_TYPE_NOT_IMPLEMENTED">RS2_EXCEPTION_TYPE_NOT_IMPLEMENTED</span>: The method is not implemented at this point</li>
+<li>
+<span id="RS2_EXCEPTION_TYPE_DEVICE_IN_RECOVERY_MODE">RS2_EXCEPTION_TYPE_DEVICE_IN_RECOVERY_MODE</span>: Device is in recovery mode and might require firmware update</li>
+<li>
+<span id="RS2_EXCEPTION_TYPE_IO">RS2_EXCEPTION_TYPE_IO</span>: IO Device failure</li>
+<li>
+<span id="RS2_EXCEPTION_TYPE_COUNT">RS2_EXCEPTION_TYPE_COUNT</span>: Number of enumeration values. Not a valid input: intended to be used in for-loops.</li>
+</ul>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="pRS2_motion_device_intrinsic"></span><code><strong>pRS2_motion_device_intrinsic</strong> = &circ;<a href="rs_types.Trs2_motion_device_intrinsic.html">Trs2_motion_device_intrinsic</a>;</code></td>
+</tr>
+<tr><td colspan="1">
+&nbsp;</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="pRS2_dsm_params"></span><code><strong>pRS2_dsm_params</strong> = &circ;<a href="rs_types.Trs2_dsm_params.html">Trs2_dsm_params</a>;</code></td>
+</tr>
+<tr><td colspan="1">
+&nbsp;</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="Trs2_stream"></span><code><strong>Trs2_stream</strong> = (...);</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Streams are different types of data provided by RealSense devices.</p>
+<h6 class="description_section">Values</h6>
+<ul>
+<li>
+<span id="RS2_STREAM_ANY">RS2_STREAM_ANY</span></li>
+<li>
+<span id="RS2_STREAM_DEPTH">RS2_STREAM_DEPTH</span>: Native stream of depth data produced by RealSense device */</li>
+<li>
+<span id="RS2_STREAM_COLOR">RS2_STREAM_COLOR</span>: Native stream of color data captured by RealSense device */</li>
+<li>
+<span id="RS2_STREAM_INFRARED">RS2_STREAM_INFRARED</span>: Native stream of infrared data captured by RealSense device */</li>
+<li>
+<span id="RS2_STREAM_FISHEYE">RS2_STREAM_FISHEYE</span>: Native stream of fish-eye (wide) data captured from the dedicate motion camera */</li>
+<li>
+<span id="RS2_STREAM_GYRO">RS2_STREAM_GYRO</span>: Native stream of gyroscope motion data produced by RealSense device */</li>
+<li>
+<span id="RS2_STREAM_ACCEL">RS2_STREAM_ACCEL</span>: Native stream of accelerometer motion data produced by RealSense device */</li>
+<li>
+<span id="RS2_STREAM_GPIO">RS2_STREAM_GPIO</span>: Signals from external device connected through GPIO */</li>
+<li>
+<span id="RS2_STREAM_POSE">RS2_STREAM_POSE</span>: 6 Degrees of Freedom pose data, calculated by RealSense device */</li>
+<li>
+<span id="RS2_STREAM_CONFIDENCE">RS2_STREAM_CONFIDENCE</span>: 4 bit per-pixel depth confidence level */</li>
+<li>
+<span id="RS2_STREAM_COUNT">RS2_STREAM_COUNT</span></li>
+</ul>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="prs2_stream"></span><code><strong>prs2_stream</strong> = &circ;<a href="rs_types.html#Trs2_stream">Trs2_stream</a>;</code></td>
+</tr>
+<tr><td colspan="1">
+&nbsp;</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="Trs2_matchers"></span><code><strong>Trs2_matchers</strong> = (...);</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Specifies types of different matchers</p>
+<h6 class="description_section">Values</h6>
+<ul>
+<li>
+<span id="RS2_MATCHER_DI">RS2_MATCHER_DI</span>: compare depth and ir based on frame number</li>
+<li>
+<span id="RS2_MATCHER_DI_C">RS2_MATCHER_DI_C</span>: compare depth and ir based on frame number,compare the pair of corresponding depth and ir with color based on closest timestamp,commonly used by SR300</li>
+<li>
+<span id="RS2_MATCHER_DLR_C">RS2_MATCHER_DLR_C</span></li>
+<li>
+<span id="RS2_MATCHER_DLR">RS2_MATCHER_DLR</span>: compare depth, left and right ir based on frame number,compare the set of corresponding depth, left and right with color based on closest timestamp,commonly used by RS415, RS435</li>
+<li>
+<span id="RS2_MATCHER_DIC">RS2_MATCHER_DIC</span>: compare depth, left and right ir based on frame number,commonly used by RS400, RS405, RS410, RS420, RS430</li>
+<li>
+<span id="RS2_MATCHER_DIC_C">RS2_MATCHER_DIC_C</span>: compare depth, ir and confidence based on frame number used by RS500</li>
+<li>
+<span id="RS2_MATCHER_DEFAULT">RS2_MATCHER_DEFAULT</span>: compare depth, ir and confidence based on frame number,compare the set of corresponding depth, ir and confidence with color based on closest timestamp,commonly used by RS515</li>
+<li>
+<span id="RS2_MATCHER_COUNT">RS2_MATCHER_COUNT</span>: the default matcher compare all the streams based on closest timestamp</li>
+</ul>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="pRS2_pose"></span><code><strong>pRS2_pose</strong> = &circ;<a href="rs_types.Trs2_pose.html">Trs2_pose</a>;</code></td>
+</tr>
+<tr><td colspan="1">
+&nbsp;</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="Trs2_log_severity"></span><code><strong>Trs2_log_severity</strong> = (...);</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+brief Severity of the librealsense logger.</p>
+<h6 class="description_section">Values</h6>
+<ul>
+<li>
+<span id="RS2_LOG_SEVERITY_DEBUG">RS2_LOG_SEVERITY_DEBUG</span>: Detailed information about ordinary operations</li>
+<li>
+<span id="RS2_LOG_SEVERITY_INFO">RS2_LOG_SEVERITY_INFO</span>: Terse information about ordinary operations</li>
+<li>
+<span id="RS2_LOG_SEVERITY_WARN">RS2_LOG_SEVERITY_WARN</span>: Indication of possible failure</li>
+<li>
+<span id="RS2_LOG_SEVERITY_ERROR">RS2_LOG_SEVERITY_ERROR</span>: Indication of definite failure</li>
+<li>
+<span id="RS2_LOG_SEVERITY_FATAL">RS2_LOG_SEVERITY_FATAL</span>: Indication of unrecoverable failure</li>
+<li>
+<span id="RS2_LOG_SEVERITY_NONE">RS2_LOG_SEVERITY_NONE</span>: No logging will occur</li>
+<li>
+<span id="RS2_LOG_SEVERITY_COUNT">RS2_LOG_SEVERITY_COUNT</span>: Number of enumeration values. Not a valid input: intended to be used in for-loops.</li>
+<li>
+<span id="RS2_LOG_SEVERITY_ALL">RS2_LOG_SEVERITY_ALL = RS2_LOG_SEVERITY_DEBUG</span></li>
+</ul>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="pRS2_vertex"></span><code><strong>pRS2_vertex</strong> = &circ;<a href="rs_types.Trs2_vertex.html">Trs2_vertex</a>;</code></td>
+</tr>
+<tr><td colspan="1">
+&nbsp;</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="pRS2_pixel"></span><code><strong>pRS2_pixel</strong> = &circ;<a href="rs_types.Trs2_pixel.html">Trs2_pixel</a>;</code></td>
+</tr>
+<tr><td colspan="1">
+&nbsp;</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="pRS2_log_callback_ptr"></span><code><strong>pRS2_log_callback_ptr</strong> = &circ;<a href="rs_types.html#rs2_log_callback_ptr">rs2_log_callback_ptr</a>;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+typedef void (*rs2_log_callback_ptr)(rs2_log_severity, rs2_log_message const *, void * arg);</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_log_callback_ptr"></span><code><strong>rs2_log_callback_ptr</strong> = procedure(log_severity: <a href="rs_types.html#Trs2_log_severity">Trs2_log_severity</a>; const log_message: PChar; arg: <a href="rs_types.html#pvoid">pvoid</a>);</code></td>
+</tr>
+<tr><td colspan="1">
+&nbsp;</td></tr>
+</table>
+<hr><span class="appinfo"><em>Generated by <a href="https://pasdoc.github.io/">PasDoc 0.16.0</a>. </em>
+</span>
+</div></div></body></html>

@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title>rs_option</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="generator" content="PasDoc 0.16.0">
+<meta http-equiv="content-type" content="text/html; charset=utf-8">
+<link rel="stylesheet" type="text/css" href="tipuesearch/tipuesearch.css">
+
+<link rel="StyleSheet" type="text/css" href="pasdoc.css">
+</head>
+<body>
+<div class="container"><div class="navigation">
+<ul><li><a href="AllUnits.html">Units</a></li><li><a href="ClassHierarchy.html">Class Hierarchy</a></li><li><a href="AllClasses.html">Classes, Interfaces, Objects and Records</a></li><li><a href="AllTypes.html">Types</a></li><li><a href="AllVariables.html">Variables</a></li><li><a href="AllConstants.html">Constants</a></li><li><a href="AllFunctions.html">Functions and Procedures</a></li><li><a href="AllIdentifiers.html">Identifiers</a></li><li><form class="search-form" action="tipue_results.html"><div class="search-input"><input type="text" name="q" id="tipue_search_input" pattern=".{3,}" title="At least 3 characters" required><div class="search-button"><input type="button" id="tipue_search_button" onclick="this.form.submit();"></div></div></form>
+<div style="clear: both"></div>
+</li></ul></div><div class="content">
+<h1 class="unit">Unit rs_option</h1>
+<div class="sections">
+<div class="one_section"><a class="section" href="#PasDoc-Description">Description</a></div><div class="one_section">Uses</div><div class="one_section">Classes, Interfaces, Objects and Records</div><div class="one_section"><a class="section" href="#PasDoc-FuncsProcs">Functions and Procedures</a></div><div class="one_section"><a class="section" href="#PasDoc-Types">Types</a></div><div class="one_section">Constants</div><div class="one_section">Variables</div></div>
+<span id="PasDoc-Description"></span><h2 class="description">Description</h2>
+<p>
+Exposes sensor options functionality</p>
+<span id="PasDoc-Uses"></span><h2 class="overview">Overview</h2>
+<span id="PasDoc-FuncsProcs"></span><h3 class="summary">Functions and Procedures</h3>
+<table class="summary wide_list">
+<tr class="list">
+<td class="itemcode"><code>function <strong><a href="rs_option.html#rs2_option_to_string">rs2_option_to_string</a></strong>(option: <a href="rs_option.html#Trs2_option">Trs2_option</a>): PChar; cdecl; external REALSENSE_DLL; deprecated;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code>function <strong><a href="rs_option.html#rs2_sr300_visual_preset_to_string">rs2_sr300_visual_preset_to_string</a></strong>(preset: <a href="rs_option.html#Trs2_sr300_visual_preset">Trs2_sr300_visual_preset</a>): PChar; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code>function <strong><a href="rs_option.html#rs2_rs400_visual_preset_to_string">rs2_rs400_visual_preset_to_string</a></strong>(preset: <a href="rs_option.html#Trs2_rs400_visual_preset">Trs2_rs400_visual_preset</a>): PChar; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code>function <strong><a href="rs_option.html#rs2_l500_visual_preset_to_string">rs2_l500_visual_preset_to_string</a></strong>(preset: <a href="rs_option.html#Trs2_l500_visual_preset">Trs2_l500_visual_preset</a>): PChar; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code>function <strong><a href="rs_option.html#rs2_sensor_mode_to_string">rs2_sensor_mode_to_string</a></strong>(preset: <a href="rs_option.html#Trs2_sensor_mode">Trs2_sensor_mode</a>): PChar; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code>function <strong><a href="rs_option.html#rs2_ambient_light_to_string">rs2_ambient_light_to_string</a></strong>(preset: <a href="rs_option.html#Trs2_ambient_light">Trs2_ambient_light</a>): PChar; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code>function <strong><a href="rs_option.html#rs2_digital_gain">rs2_digital_gain</a></strong>(preset: <a href="rs_option.html#Trs2_digital_gain">Trs2_digital_gain</a>): PChar; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code>function <strong><a href="rs_option.html#rs2_host_perf_mode_to_string">rs2_host_perf_mode_to_string</a></strong>(perf: <a href="rs_option.html#Trs2_host_perf_mode">Trs2_host_perf_mode</a>): PChar; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code>function <strong><a href="rs_option.html#rs2_is_option_read_only">rs2_is_option_read_only</a></strong>(options: <a href="rs_option.html#pRS2_option">pRS2_option</a>; option: <a href="rs_option.html#Trs2_option">Trs2_option</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): integer; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code>function <strong><a href="rs_option.html#rs2_get_option">rs2_get_option</a></strong>(const options: <a href="rs_option.html#pRS2_option">pRS2_option</a>; option: <a href="rs_option.html#Trs2_option">Trs2_option</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): single; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code>procedure <strong><a href="rs_option.html#rs2_set_option">rs2_set_option</a></strong>(const options: <a href="rs_option.html#pRS2_option">pRS2_option</a>; option: <a href="rs_option.html#Trs2_option">Trs2_option</a>; Value: single; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code>function <strong><a href="rs_option.html#rs2_options_list">rs2_options_list</a></strong>(const options: <a href="rs_option.html#pRS2_option">pRS2_option</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): <a href="rs_types.html#pRS2_options_list">pRS2_options_list</a>; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code>function <strong><a href="rs_option.html#rs2_get_options_list_size">rs2_get_options_list_size</a></strong>(const options: <a href="rs_types.html#pRS2_options_list">pRS2_options_list</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): integer; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code>function <strong><a href="rs_option.html#rs2_get_option_name">rs2_get_option_name</a></strong>(const options: <a href="rs_types.html#pRS2_options">pRS2_options</a>; option: <a href="rs_option.html#Trs2_option">Trs2_option</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): PChar; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code>function <strong><a href="rs_option.html#rs2_get_option_from_list">rs2_get_option_from_list</a></strong>(options: <a href="rs_types.html#pRS2_options_list">pRS2_options_list</a>; i: integer; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): <a href="rs_option.html#pRS2_option">pRS2_option</a>; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code>procedure <strong><a href="rs_option.html#rs2_delete_options_list">rs2_delete_options_list</a></strong>(list: <a href="rs_types.html#pRS2_options_list">pRS2_options_list</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code>function <strong><a href="rs_option.html#rs2_supports_option">rs2_supports_option</a></strong>(options: <a href="rs_types.html#pRS2_options">pRS2_options</a>; option: <a href="rs_option.html#Trs2_option">Trs2_option</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): integer; cdecl  external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code>procedure <strong><a href="rs_option.html#rs2_get_option_range">rs2_get_option_range</a></strong>(const sensor: <a href="rs_types.html#pRS2_options">pRS2_options</a>; option: <a href="rs_option.html#Trs2_option">Trs2_option</a>; min: single; max: single; step: single; def: PSingle; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code>function <strong><a href="rs_option.html#rs2_get_option_description">rs2_get_option_description</a></strong>(const options: <a href="rs_types.html#pRS2_options">pRS2_options</a>; option: <a href="rs_option.html#Trs2_option">Trs2_option</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): PChar; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code>function <strong><a href="rs_option.html#rs2_get_option_value_description">rs2_get_option_value_description</a></strong>(const options: <a href="rs_types.html#pRS2_options">pRS2_options</a>; option: <a href="rs_option.html#Trs2_option">Trs2_option</a>; Value: single; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): PChar; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+</table>
+<span id="PasDoc-Types"></span><h3 class="summary">Types</h3>
+<table class="summary wide_list">
+<tr class="list">
+<td class="itemcode"><code><strong><a href="rs_option.html#Trs2_option">Trs2_option</a></strong> = (...);</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code><strong><a href="rs_option.html#pRS2_option">pRS2_option</a></strong> = &circ;<a href="rs_option.html#Trs2_option">Trs2_option</a>;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code><strong><a href="rs_option.html#Trs2_sr300_visual_preset">Trs2_sr300_visual_preset</a></strong> = (...);</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code><strong><a href="rs_option.html#Trs2_rs400_visual_preset">Trs2_rs400_visual_preset</a></strong> = (...);</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code><strong><a href="rs_option.html#Trs2_l500_visual_preset">Trs2_l500_visual_preset</a></strong> = (...);</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code><strong><a href="rs_option.html#Trs2_sensor_mode">Trs2_sensor_mode</a></strong> = (...);</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code><strong><a href="rs_option.html#Trs2_ambient_light">Trs2_ambient_light</a></strong> = (...);</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code><strong><a href="rs_option.html#Trs2_digital_gain">Trs2_digital_gain</a></strong> = (...);</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code><strong><a href="rs_option.html#Trs2_host_perf_mode">Trs2_host_perf_mode</a></strong> = (...);</code></td>
+</tr>
+</table>
+<h2 class="description">Description</h2>
+<h3 class="detail">Functions and Procedures</h3>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_option_to_string"></span><code>function <strong>rs2_option_to_string</strong>(option: <a href="rs_option.html#Trs2_option">Trs2_option</a>): PChar; cdecl; external REALSENSE_DLL; deprecated;</code></td>
+</tr>
+<tr><td colspan="1">
+<p class="hint_directive">Warning: this symbol is deprecated.</p><p>
+This function is being deprecated. For existing options it will return option name, but for future API additions the user should call rs2_get_option_name instead.</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_sr300_visual_preset_to_string"></span><code>function <strong>rs2_sr300_visual_preset_to_string</strong>(preset: <a href="rs_option.html#Trs2_sr300_visual_preset">Trs2_sr300_visual_preset</a>): PChar; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+&nbsp;</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_rs400_visual_preset_to_string"></span><code>function <strong>rs2_rs400_visual_preset_to_string</strong>(preset: <a href="rs_option.html#Trs2_rs400_visual_preset">Trs2_rs400_visual_preset</a>): PChar; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+*&lt; Number of enumeration values. Not a valid input: intended to be used in for-loops. */</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_l500_visual_preset_to_string"></span><code>function <strong>rs2_l500_visual_preset_to_string</strong>(preset: <a href="rs_option.html#Trs2_l500_visual_preset">Trs2_l500_visual_preset</a>): PChar; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+&nbsp;</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_sensor_mode_to_string"></span><code>function <strong>rs2_sensor_mode_to_string</strong>(preset: <a href="rs_option.html#Trs2_sensor_mode">Trs2_sensor_mode</a>): PChar; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+&nbsp;</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_ambient_light_to_string"></span><code>function <strong>rs2_ambient_light_to_string</strong>(preset: <a href="rs_option.html#Trs2_ambient_light">Trs2_ambient_light</a>): PChar; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+&nbsp;</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_digital_gain"></span><code>function <strong>rs2_digital_gain</strong>(preset: <a href="rs_option.html#Trs2_digital_gain">Trs2_digital_gain</a>): PChar; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+&nbsp;</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_host_perf_mode_to_string"></span><code>function <strong>rs2_host_perf_mode_to_string</strong>(perf: <a href="rs_option.html#Trs2_host_perf_mode">Trs2_host_perf_mode</a>): PChar; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+&nbsp;</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_is_option_read_only"></span><code>function <strong>rs2_is_option_read_only</strong>(options: <a href="rs_option.html#pRS2_option">pRS2_option</a>; option: <a href="rs_option.html#Trs2_option">Trs2_option</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): integer; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+check if an option is read-only param[in] options the options container param[in] option option id to be checked param[out] error if non-null, receives any error that occurs during this call, otherwise, errors are ignored return true if option is read-only</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_get_option"></span><code>function <strong>rs2_get_option</strong>(const options: <a href="rs_option.html#pRS2_option">pRS2_option</a>; option: <a href="rs_option.html#Trs2_option">Trs2_option</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): single; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+read option value from the sensor param[in] options the options container param[in] option option id to be queried param[out] error if non-null, receives any error that occurs during this call, otherwise, errors are ignored return value of the option</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_set_option"></span><code>procedure <strong>rs2_set_option</strong>(const options: <a href="rs_option.html#pRS2_option">pRS2_option</a>; option: <a href="rs_option.html#Trs2_option">Trs2_option</a>; Value: single; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+write new value to sensor option param[in] options the options container param[in] option option id to be queried param[in] value new value for the option param[out] error if non-null, receives any error that occurs during this call, otherwise, errors are ignored</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_options_list"></span><code>function <strong>rs2_options_list</strong>(const options: <a href="rs_option.html#pRS2_option">pRS2_option</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): <a href="rs_types.html#pRS2_options_list">pRS2_options_list</a>; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+get the list of supported options of options container param[in] options the options container param[out] error if non-null, receives any error that occurs during this call, otherwise, errors are ignored</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_get_options_list_size"></span><code>function <strong>rs2_get_options_list_size</strong>(const options: <a href="rs_types.html#pRS2_options_list">pRS2_options_list</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): integer; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+get the size of options list param[in] options the option list param[out] error if non-null, receives any error that occurs during this call, otherwise, errors are ignored</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_get_option_name"></span><code>function <strong>rs2_get_option_name</strong>(const options: <a href="rs_types.html#pRS2_options">pRS2_options</a>; option: <a href="rs_option.html#Trs2_option">Trs2_option</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): PChar; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+get option name param[in] options the options container param[in] option option id to be checked param[out] error if non-null, receives any error that occurs during this call, otherwise, errors are ignored return human-readable option name</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_get_option_from_list"></span><code>function <strong>rs2_get_option_from_list</strong>(options: <a href="rs_types.html#pRS2_options_list">pRS2_options_list</a>; i: integer; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): <a href="rs_option.html#pRS2_option">pRS2_option</a>; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+get the specific option from options list param[in] i the index of the option param[out] error if non-null, receives any error that occurs during this call, otherwise, errors are ignored</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_delete_options_list"></span><code>procedure <strong>rs2_delete_options_list</strong>(list: <a href="rs_types.html#pRS2_options_list">pRS2_options_list</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Deletes options list param[in] list list to delete</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_supports_option"></span><code>function <strong>rs2_supports_option</strong>(options: <a href="rs_types.html#pRS2_options">pRS2_options</a>; option: <a href="rs_option.html#Trs2_option">Trs2_option</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): integer; cdecl  external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+check if particular option is supported by a subdevice param[in] options the options container param[in] option option id to be checked param[out] error if non-null, receives any error that occurs during this call, otherwise, errors are ignored return true if option is supported</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_get_option_range"></span><code>procedure <strong>rs2_get_option_range</strong>(const sensor: <a href="rs_types.html#pRS2_options">pRS2_options</a>; option: <a href="rs_option.html#Trs2_option">Trs2_option</a>; min: single; max: single; step: single; def: PSingle; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+retrieve the available range of values of a supported option param[in] sensor the RealSense device param[in] option the option whose range should be queried param[out] min the minimum value which will be accepted for this option param[out] max the maximum value which will be accepted for this option param[out] step the granularity of options which accept discrete values, or zero if the option accepts continuous values param[out] def the default value of the option param[out] error if non-null, receives any error that occurs during this call, otherwise, errors are ignored</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_get_option_description"></span><code>function <strong>rs2_get_option_description</strong>(const options: <a href="rs_types.html#pRS2_options">pRS2_options</a>; option: <a href="rs_option.html#Trs2_option">Trs2_option</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): PChar; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+get option description param[in] options the options container param[in] option option id to be checked param[out] error if non-null, receives any error that occurs during this call, otherwise, errors are ignored return human-readable option description</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_get_option_value_description"></span><code>function <strong>rs2_get_option_value_description</strong>(const options: <a href="rs_types.html#pRS2_options">pRS2_options</a>; option: <a href="rs_option.html#Trs2_option">Trs2_option</a>; Value: single; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): PChar; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+get option value description (in case specific option value hold special meaning) param[in] options the options container param[in] option option id to be checked param[in] value value of the option param[out] error if non-null, receives any error that occurs during this call, otherwise, errors are ignored return human-readable description of a specific value of an option or null if no special meaning</p>
+</td></tr>
+</table>
+<h3 class="detail">Types</h3>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="Trs2_option"></span><code><strong>Trs2_option</strong> = (...);</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Defines general configuration controls. These can generally be mapped to camera UVC controls, and can be set / queried at any time unless stated otherwise.</p>
+<h6 class="description_section">Values</h6>
+<ul>
+<li>
+<span id="RS2_OPTION_BACKLIGHT_COMPENSATION">RS2_OPTION_BACKLIGHT_COMPENSATION</span>: Enable / disable color backlight compensation*/</li>
+<li>
+<span id="RS2_OPTION_BRIGHTNESS">RS2_OPTION_BRIGHTNESS</span>: Color image brightness*/</li>
+<li>
+<span id="RS2_OPTION_CONTRAST">RS2_OPTION_CONTRAST</span>: Color image contrast*/</li>
+<li>
+<span id="RS2_OPTION_EXPOSURE">RS2_OPTION_EXPOSURE</span>: Controls exposure time of color camera. Setting any value will disable auto exposure*/</li>
+<li>
+<span id="RS2_OPTION_GAIN">RS2_OPTION_GAIN</span>: Color image gain*/</li>
+<li>
+<span id="RS2_OPTION_GAMMA">RS2_OPTION_GAMMA</span>: Color image gamma setting*/</li>
+<li>
+<span id="RS2_OPTION_HUE">RS2_OPTION_HUE</span>: Color image hue*/</li>
+<li>
+<span id="RS2_OPTION_SATURATION">RS2_OPTION_SATURATION</span>: Color image saturation setting*/</li>
+<li>
+<span id="RS2_OPTION_SHARPNESS">RS2_OPTION_SHARPNESS</span>: Color image sharpness setting*/</li>
+<li>
+<span id="RS2_OPTION_WHITE_BALANCE">RS2_OPTION_WHITE_BALANCE</span>: Controls white balance of color image. Setting any value will disable auto white balance*/</li>
+<li>
+<span id="RS2_OPTION_ENABLE_AUTO_EXPOSURE">RS2_OPTION_ENABLE_AUTO_EXPOSURE</span>: Enable / disable color image auto-exposure*/</li>
+<li>
+<span id="RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE">RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE</span>: Enable / disable color image auto-white-balance*/</li>
+<li>
+<span id="RS2_OPTION_VISUAL_PRESET">RS2_OPTION_VISUAL_PRESET</span>: Provide access to several recommend sets of option presets for the depth camera */</li>
+<li>
+<span id="RS2_OPTION_LASER_POWER">RS2_OPTION_LASER_POWER</span>: Power of the laser emitter, with 0 meaning projector off*/</li>
+<li>
+<span id="RS2_OPTION_ACCURACY">RS2_OPTION_ACCURACY</span>: Set the number of patterns projected per frame. The higher the accuracy value the more patterns projected. Increasing the number of patterns help to achieve better accuracy. Note that this control is affecting the Depth FPS */</li>
+<li>
+<span id="RS2_OPTION_MOTION_RANGE">RS2_OPTION_MOTION_RANGE</span>: Motion vs. Range trade-off, with lower values allowing for better motion sensitivity and higher values allowing for better depth range*/</li>
+<li>
+<span id="RS2_OPTION_FILTER_OPTION">RS2_OPTION_FILTER_OPTION</span>: Set the filter to apply to each depth frame. Each one of the filter is optimized per the application requirements*/</li>
+<li>
+<span id="RS2_OPTION_CONFIDENCE_THRESHOLD">RS2_OPTION_CONFIDENCE_THRESHOLD</span>: The confidence level threshold used by the Depth algorithm pipe to set whether a pixel will get a valid range or will be marked with invalid range*/</li>
+<li>
+<span id="RS2_OPTION_EMITTER_ENABLED">RS2_OPTION_EMITTER_ENABLED</span>: Emitter select: 0 – disable all emitters. 1 – enable laser. 2 – enable auto laser. 3 – enable LED.*/</li>
+<li>
+<span id="RS2_OPTION_FRAMES_QUEUE_SIZE">RS2_OPTION_FRAMES_QUEUE_SIZE</span>: Number of frames the user is allowed to keep per stream. Trying to hold-on to more frames will cause frame-drops.*/</li>
+<li>
+<span id="RS2_OPTION_TOTAL_FRAME_DROPS">RS2_OPTION_TOTAL_FRAME_DROPS</span>: Total number of detected frame drops from all streams */</li>
+<li>
+<span id="RS2_OPTION_AUTO_EXPOSURE_MODE">RS2_OPTION_AUTO_EXPOSURE_MODE</span>: Auto-Exposure modes: Static, Anti-Flicker and Hybrid */</li>
+<li>
+<span id="RS2_OPTION_POWER_LINE_FREQUENCY">RS2_OPTION_POWER_LINE_FREQUENCY</span>: Power Line Frequency control for anti-flickering Off/50Hz/60Hz/Auto */</li>
+<li>
+<span id="RS2_OPTION_ASIC_TEMPERATURE">RS2_OPTION_ASIC_TEMPERATURE</span>: Current Asic Temperature */</li>
+<li>
+<span id="RS2_OPTION_ERROR_POLLING_ENABLED">RS2_OPTION_ERROR_POLLING_ENABLED</span>: disable error handling */</li>
+<li>
+<span id="RS2_OPTION_PROJECTOR_TEMPERATURE">RS2_OPTION_PROJECTOR_TEMPERATURE</span>: Current Projector Temperature */</li>
+<li>
+<span id="RS2_OPTION_OUTPUT_TRIGGER_ENABLED">RS2_OPTION_OUTPUT_TRIGGER_ENABLED</span>: Enable / disable trigger to be outputed from the camera to any external device on every depth frame */</li>
+<li>
+<span id="RS2_OPTION_MOTION_MODULE_TEMPERATURE">RS2_OPTION_MOTION_MODULE_TEMPERATURE</span>: Current Motion-Module Temperature */</li>
+<li>
+<span id="RS2_OPTION_DEPTH_UNITS">RS2_OPTION_DEPTH_UNITS</span>: Number of meters represented by a single depth unit */</li>
+<li>
+<span id="RS2_OPTION_ENABLE_MOTION_CORRECTION">RS2_OPTION_ENABLE_MOTION_CORRECTION</span>: Enable/Disable automatic correction of the motion data */</li>
+<li>
+<span id="RS2_OPTION_AUTO_EXPOSURE_PRIORITY">RS2_OPTION_AUTO_EXPOSURE_PRIORITY</span>: Allows sensor to dynamically ajust the frame rate depending on lighting conditions */</li>
+<li>
+<span id="RS2_OPTION_COLOR_SCHEME">RS2_OPTION_COLOR_SCHEME</span>: Color scheme for data visualization */</li>
+<li>
+<span id="RS2_OPTION_HISTOGRAM_EQUALIZATION_ENABLED">RS2_OPTION_HISTOGRAM_EQUALIZATION_ENABLED</span>: Perform histogram equalization post-processing on the depth data */</li>
+<li>
+<span id="RS2_OPTION_MIN_DISTANCE">RS2_OPTION_MIN_DISTANCE</span>: Minimal distance to the target */</li>
+<li>
+<span id="RS2_OPTION_MAX_DISTANCE">RS2_OPTION_MAX_DISTANCE</span>: Maximum distance to the target */</li>
+<li>
+<span id="RS2_OPTION_TEXTURE_SOURCE">RS2_OPTION_TEXTURE_SOURCE</span>: Texture mapping stream unique ID */</li>
+<li>
+<span id="RS2_OPTION_FILTER_MAGNITUDE">RS2_OPTION_FILTER_MAGNITUDE</span>: The 2D-filter effect. The specific interpretation is given within the context of the filter */</li>
+<li>
+<span id="RS2_OPTION_FILTER_SMOOTH_ALPHA">RS2_OPTION_FILTER_SMOOTH_ALPHA</span>: 2D-filter parameter controls the weight/radius for smoothing.*/</li>
+<li>
+<span id="RS2_OPTION_FILTER_SMOOTH_DELTA">RS2_OPTION_FILTER_SMOOTH_DELTA</span>: 2D-filter range/validity threshold*/</li>
+<li>
+<span id="RS2_OPTION_HOLES_FILL">RS2_OPTION_HOLES_FILL</span>: Enhance depth data post-processing with holes filling where appropriate*/</li>
+<li>
+<span id="RS2_OPTION_STEREO_BASELINE">RS2_OPTION_STEREO_BASELINE</span>: The distance in mm between the first and the second imagers in stereo-based depth cameras*/</li>
+<li>
+<span id="RS2_OPTION_AUTO_EXPOSURE_CONVERGE_STEP">RS2_OPTION_AUTO_EXPOSURE_CONVERGE_STEP</span>: Allows dynamically ajust the converge step value of the target exposure in Auto-Exposure algorithm*/</li>
+<li>
+<span id="RS2_OPTION_INTER_CAM_SYNC_MODE">RS2_OPTION_INTER_CAM_SYNC_MODE</span>: Impose Inter-camera HW synchronization mode. Applicable for D400/L500/Rolling Shutter SKUs */</li>
+<li>
+<span id="RS2_OPTION_STREAM_FILTER">RS2_OPTION_STREAM_FILTER</span>: Select a stream to process */</li>
+<li>
+<span id="RS2_OPTION_STREAM_FORMAT_FILTER">RS2_OPTION_STREAM_FORMAT_FILTER</span>: Select a stream format to process */</li>
+<li>
+<span id="RS2_OPTION_STREAM_INDEX_FILTER">RS2_OPTION_STREAM_INDEX_FILTER</span>: Select a stream index to process */</li>
+<li>
+<span id="RS2_OPTION_EMITTER_ON_OFF">RS2_OPTION_EMITTER_ON_OFF</span>: When supported, this option make the camera to switch the emitter state every frame. 0 for disabled, 1 for enabled */</li>
+<li>
+<span id="RS2_OPTION_ZERO_ORDER_POINT_X">RS2_OPTION_ZERO_ORDER_POINT_X</span>: Deprecated!!! - Zero order point x*/</li>
+<li>
+<span id="RS2_OPTION_ZERO_ORDER_POINT_Y">RS2_OPTION_ZERO_ORDER_POINT_Y</span>: Deprecated!!! - Zero order point y*/</li>
+<li>
+<span id="RS2_OPTION_LLD_TEMPERATURE">RS2_OPTION_LLD_TEMPERATURE</span>: LDD temperature*/</li>
+<li>
+<span id="RS2_OPTION_MC_TEMPERATURE">RS2_OPTION_MC_TEMPERATURE</span>: MC temperature*/</li>
+<li>
+<span id="RS2_OPTION_MA_TEMPERATURE">RS2_OPTION_MA_TEMPERATURE</span>: MA temperature*/</li>
+<li>
+<span id="RS2_OPTION_HARDWARE_PRESET">RS2_OPTION_HARDWARE_PRESET</span>: Hardware stream configuration */</li>
+<li>
+<span id="RS2_OPTION_GLOBAL_TIME_ENABLED">RS2_OPTION_GLOBAL_TIME_ENABLED</span>: disable global time */</li>
+<li>
+<span id="RS2_OPTION_APD_TEMPERATURE">RS2_OPTION_APD_TEMPERATURE</span>: APD temperature*/</li>
+<li>
+<span id="RS2_OPTION_ENABLE_MAPPING">RS2_OPTION_ENABLE_MAPPING</span>: Enable an internal map */</li>
+<li>
+<span id="RS2_OPTION_ENABLE_RELOCALIZATION">RS2_OPTION_ENABLE_RELOCALIZATION</span>: Enable appearance based relocalization */</li>
+<li>
+<span id="RS2_OPTION_ENABLE_POSE_JUMPING">RS2_OPTION_ENABLE_POSE_JUMPING</span>: Enable position jumping */</li>
+<li>
+<span id="RS2_OPTION_ENABLE_DYNAMIC_CALIBRATION">RS2_OPTION_ENABLE_DYNAMIC_CALIBRATION</span>: Enable dynamic calibration */</li>
+<li>
+<span id="RS2_OPTION_DEPTH_OFFSET">RS2_OPTION_DEPTH_OFFSET</span>: Offset from sensor to depth origin in millimetrers*/</li>
+<li>
+<span id="RS2_OPTION_LED_POWER">RS2_OPTION_LED_POWER</span>: Power of the LED (light emitting diode), with 0 meaning LED off*/</li>
+<li>
+<span id="RS2_OPTION_ZERO_ORDER_ENABLED">RS2_OPTION_ZERO_ORDER_ENABLED</span>: DEPRECATED! - Toggle Zero-Order mode */</li>
+<li>
+<span id="RS2_OPTION_ENABLE_MAP_PRESERVATION">RS2_OPTION_ENABLE_MAP_PRESERVATION</span>: Preserve previous map when starting */</li>
+<li>
+<span id="RS2_OPTION_FREEFALL_DETECTION_ENABLED">RS2_OPTION_FREEFALL_DETECTION_ENABLED</span>: Enable/disable sensor shutdown when a free-fall is detected (on by default) */</li>
+<li>
+<span id="RS2_OPTION_AVALANCHE_PHOTO_DIODE">RS2_OPTION_AVALANCHE_PHOTO_DIODE</span>: Changes the exposure time of Avalanche Photo Diode in the receiver */</li>
+<li>
+<span id="RS2_OPTION_POST_PROCESSING_SHARPENING">RS2_OPTION_POST_PROCESSING_SHARPENING</span>: Changes the amount of sharpening in the post-processed image */</li>
+<li>
+<span id="RS2_OPTION_PRE_PROCESSING_SHARPENING">RS2_OPTION_PRE_PROCESSING_SHARPENING</span>: Changes the amount of sharpening in the pre-processed image */</li>
+<li>
+<span id="RS2_OPTION_NOISE_FILTERING">RS2_OPTION_NOISE_FILTERING</span>: Control edges and background noise */</li>
+<li>
+<span id="RS2_OPTION_INVALIDATION_BYPASS">RS2_OPTION_INVALIDATION_BYPASS</span>: Enable\disable pixel invalidation */</li>
+<li>
+<span id="RS2_OPTION_AMBIENT_LIGHT">RS2_OPTION_AMBIENT_LIGHT</span>: DEPRECATED! - Use RS2_OPTION_DIGITAL_GAIN instead. */</li>
+<li>
+<span id="RS2_OPTION_DIGITAL_GAIN">RS2_OPTION_DIGITAL_GAIN = RS2_OPTION_AMBIENT_LIGHT</span>: Change the depth digital gain see rs2_digital_gain for values */</li>
+<li>
+<span id="RS2_OPTION_SENSOR_MODE">RS2_OPTION_SENSOR_MODE</span>: The resolution mode: see rs2_sensor_mode for values */</li>
+<li>
+<span id="RS2_OPTION_EMITTER_ALWAYS_ON">RS2_OPTION_EMITTER_ALWAYS_ON</span>: Enable Laser On constantly (GS SKU Only) */</li>
+<li>
+<span id="RS2_OPTION_THERMAL_COMPENSATION">RS2_OPTION_THERMAL_COMPENSATION</span>: Depth Thermal Compensation for selected D400 SKUs */</li>
+<li>
+<span id="RS2_OPTION_TRIGGER_CAMERA_ACCURACY_HEALTH">RS2_OPTION_TRIGGER_CAMERA_ACCURACY_HEALTH</span>: DEPRECATED as of 2.46! */</li>
+<li>
+<span id="RS2_OPTION_RESET_CAMERA_ACCURACY_HEALTH">RS2_OPTION_RESET_CAMERA_ACCURACY_HEALTH</span>: DEPRECATED as of 2.46! */</li>
+<li>
+<span id="RS2_OPTION_HOST_PERFORMANCE">RS2_OPTION_HOST_PERFORMANCE</span>: Set host performance mode to optimize device settings so host can keep up with workload, for example, USB transaction granularity, setting option to low performance host leads to larger USB transaction size and reduced number of transactions which improves performance and stability if host is relatively weak as compared to workload */</li>
+<li>
+<span id="RS2_OPTION_HDR_ENABLED">RS2_OPTION_HDR_ENABLED</span>: Enable / disable HDR */</li>
+<li>
+<span id="RS2_OPTION_SEQUENCE_NAME">RS2_OPTION_SEQUENCE_NAME</span>: HDR Sequence name */</li>
+<li>
+<span id="RS2_OPTION_SEQUENCE_SIZE">RS2_OPTION_SEQUENCE_SIZE</span>: HDR Sequence size */</li>
+<li>
+<span id="RS2_OPTION_SEQUENCE_ID">RS2_OPTION_SEQUENCE_ID</span>: HDR Sequence ID - 0 is not HDR; sequence ID for HDR configuration starts from 1 */</li>
+<li>
+<span id="RS2_OPTION_HUMIDITY_TEMPERATURE">RS2_OPTION_HUMIDITY_TEMPERATURE</span>: Humidity temperature [Deg Celsius]*/</li>
+<li>
+<span id="RS2_OPTION_ENABLE_MAX_USABLE_RANGE">RS2_OPTION_ENABLE_MAX_USABLE_RANGE</span>: Turn on/off the maximum usable depth sensor range given the amount of ambient light in the scene */</li>
+<li>
+<span id="RS2_OPTION_ALTERNATE_IR">RS2_OPTION_ALTERNATE_IR</span>: Turn on/off the alternate IR, When enabling alternate IR, the IR image is holding the amplitude of the depth correlation. */</li>
+<li>
+<span id="RS2_OPTION_NOISE_ESTIMATION">RS2_OPTION_NOISE_ESTIMATION</span>: Noise estimation - indicates the noise on the IR image */</li>
+<li>
+<span id="RS2_OPTION_ENABLE_IR_REFLECTIVITY">RS2_OPTION_ENABLE_IR_REFLECTIVITY</span>: Enables data collection for calculating IR pixel reflectivity */</li>
+<li>
+<span id="RS2_OPTION_AUTO_EXPOSURE_LIMIT">RS2_OPTION_AUTO_EXPOSURE_LIMIT</span>: Set and get auto exposure limit in microseconds. If the requested exposure limit is greater than frame time, it will be set to frame time at runtime. Setting will not take effect until next streaming session. */</li>
+<li>
+<span id="RS2_OPTION_AUTO_GAIN_LIMIT">RS2_OPTION_AUTO_GAIN_LIMIT</span>: Set and get auto gain limits ranging from 16 to 248. If the requested gain limit is less than 16, it will be set to 16. If the requested gain limit is greater than 248, it will be set to 248. Setting will not take effect until next streaming session. */</li>
+<li>
+<span id="RS2_OPTION_AUTO_RX_SENSITIVITY">RS2_OPTION_AUTO_RX_SENSITIVITY</span>: Enable receiver sensitivity according to ambient light, bounded by the Receiver Gain control. */</li>
+<li>
+<span id="RS2_OPTION_TRANSMITTER_FREQUENCY">RS2_OPTION_TRANSMITTER_FREQUENCY</span>: changes the transmitter frequencies increasing effective range over sharpness. */</li>
+<li>
+<span id="RS2_OPTION_VERTICAL_BINNING">RS2_OPTION_VERTICAL_BINNING</span>: Enables vertical binning which increases the maximal sensed distance. */</li>
+<li>
+<span id="RS2_OPTION_RECEIVER_SENSITIVITY">RS2_OPTION_RECEIVER_SENSITIVITY</span>: Control receiver sensitivity to incoming light, both projected and ambient (same as APD on L515). */</li>
+<li>
+<span id="RS2_OPTION_AUTO_EXPOSURE_LIMIT_TOGGLE">RS2_OPTION_AUTO_EXPOSURE_LIMIT_TOGGLE</span>: Enable / disable color image auto-exposure*/</li>
+<li>
+<span id="RS2_OPTION_AUTO_GAIN_LIMIT_TOGGLE">RS2_OPTION_AUTO_GAIN_LIMIT_TOGGLE</span>: Enable / disable color image auto-gain*/</li>
+<li>
+<span id="RS2_OPTION_COUNT">RS2_OPTION_COUNT</span>: Number of enumeration values. Not a valid input: intended to be used in for-loops. */</li>
+</ul>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="pRS2_option"></span><code><strong>pRS2_option</strong> = &circ;<a href="rs_option.html#Trs2_option">Trs2_option</a>;</code></td>
+</tr>
+<tr><td colspan="1">
+&nbsp;</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="Trs2_sr300_visual_preset"></span><code><strong>Trs2_sr300_visual_preset</strong> = (...);</code></td>
+</tr>
+<tr><td colspan="1">
+&nbsp;<h6 class="description_section">Values</h6>
+<ul>
+<li>
+<span id="RS2_SR300_VISUAL_PRESET_SHORT_RANGE">RS2_SR300_VISUAL_PRESET_SHORT_RANGE</span>: Preset for short range</li>
+<li>
+<span id="RS2_SR300_VISUAL_PRESET_LONG_RANGE">RS2_SR300_VISUAL_PRESET_LONG_RANGE</span>: Preset for long range</li>
+<li>
+<span id="RS2_SR300_VISUAL_PRESET_BACKGROUND_SEGMENTATION">RS2_SR300_VISUAL_PRESET_BACKGROUND_SEGMENTATION</span>: Preset for background segmentation</li>
+<li>
+<span id="RS2_SR300_VISUAL_PRESET_GESTURE_RECOGNITION">RS2_SR300_VISUAL_PRESET_GESTURE_RECOGNITION</span>: Preset for gesture recognition</li>
+<li>
+<span id="RS2_SR300_VISUAL_PRESET_OBJECT_SCANNING">RS2_SR300_VISUAL_PRESET_OBJECT_SCANNING</span>: Preset for object scanning</li>
+<li>
+<span id="RS2_SR300_VISUAL_PRESET_FACE_ANALYTICS">RS2_SR300_VISUAL_PRESET_FACE_ANALYTICS</span>: Preset for face analytics</li>
+<li>
+<span id="RS2_SR300_VISUAL_PRESET_FACE_LOGIN">RS2_SR300_VISUAL_PRESET_FACE_LOGIN</span>: Preset for face login</li>
+<li>
+<span id="RS2_SR300_VISUAL_PRESET_GR_CURSOR">RS2_SR300_VISUAL_PRESET_GR_CURSOR</span>: Preset for GR cursor</li>
+<li>
+<span id="RS2_SR300_VISUAL_PRESET_DEFAULT">RS2_SR300_VISUAL_PRESET_DEFAULT</span>: Camera default settings</li>
+<li>
+<span id="RS2_SR300_VISUAL_PRESET_MID_RANGE">RS2_SR300_VISUAL_PRESET_MID_RANGE</span>: Preset for mid-range</li>
+<li>
+<span id="RS2_SR300_VISUAL_PRESET_IR_ONLY">RS2_SR300_VISUAL_PRESET_IR_ONLY</span>: Preset for IR only</li>
+<li>
+<span id="RS2_SR300_VISUAL_PRESET_COUNT">RS2_SR300_VISUAL_PRESET_COUNT</span>: Number of enumeration values. Not a valid input: intended to be used in for-loops.</li>
+</ul>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="Trs2_rs400_visual_preset"></span><code><strong>Trs2_rs400_visual_preset</strong> = (...);</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+For RS400 devices: provides optimized settings (presets) for specific types of usage. */</p>
+<h6 class="description_section">Values</h6>
+<ul>
+<li>
+<span id="RS2_RS400_VISUAL_PRESET_CUSTOM">RS2_RS400_VISUAL_PRESET_CUSTOM</span></li>
+<li>
+<span id="RS2_RS400_VISUAL_PRESET_DEFAULT">RS2_RS400_VISUAL_PRESET_DEFAULT</span></li>
+<li>
+<span id="RS2_RS400_VISUAL_PRESET_HAND">RS2_RS400_VISUAL_PRESET_HAND</span></li>
+<li>
+<span id="RS2_RS400_VISUAL_PRESET_HIGH_ACCURACY">RS2_RS400_VISUAL_PRESET_HIGH_ACCURACY</span></li>
+<li>
+<span id="RS2_RS400_VISUAL_PRESET_HIGH_DENSITY">RS2_RS400_VISUAL_PRESET_HIGH_DENSITY</span></li>
+<li>
+<span id="RS2_RS400_VISUAL_PRESET_MEDIUM_DENSITY">RS2_RS400_VISUAL_PRESET_MEDIUM_DENSITY</span></li>
+<li>
+<span id="RS2_RS400_VISUAL_PRESET_REMOVE_IR_PATTERN">RS2_RS400_VISUAL_PRESET_REMOVE_IR_PATTERN</span></li>
+<li>
+<span id="RS2_RS400_VISUAL_PRESET_COUNT">RS2_RS400_VISUAL_PRESET_COUNT</span></li>
+</ul>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="Trs2_l500_visual_preset"></span><code><strong>Trs2_l500_visual_preset</strong> = (...);</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+For L500 devices: provides optimized settings (presets) for specific types of usage.</p>
+<h6 class="description_section">Values</h6>
+<ul>
+<li>
+<span id="RS2_L500_VISUAL_PRESET_CUSTOM">RS2_L500_VISUAL_PRESET_CUSTOM</span></li>
+<li>
+<span id="RS2_L500_VISUAL_PRESET_DEFAULT">RS2_L500_VISUAL_PRESET_DEFAULT</span></li>
+<li>
+<span id="RS2_L500_VISUAL_PRESET_NO_AMBIENT">RS2_L500_VISUAL_PRESET_NO_AMBIENT</span></li>
+<li>
+<span id="RS2_L500_VISUAL_PRESET_LOW_AMBIENT">RS2_L500_VISUAL_PRESET_LOW_AMBIENT</span></li>
+<li>
+<span id="RS2_L500_VISUAL_PRESET_MAX_RANGE">RS2_L500_VISUAL_PRESET_MAX_RANGE</span></li>
+<li>
+<span id="RS2_L500_VISUAL_PRESET_SHORT_RANGE">RS2_L500_VISUAL_PRESET_SHORT_RANGE</span></li>
+<li>
+<span id="RS2_L500_VISUAL_PRESET_AUTOMATIC">RS2_L500_VISUAL_PRESET_AUTOMATIC</span></li>
+<li>
+<span id="RS2_L500_VISUAL_PRESET_COUNT">RS2_L500_VISUAL_PRESET_COUNT</span>: Number of enumeration values. Not a valid input: intended to be used in for-loops. */</li>
+</ul>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="Trs2_sensor_mode"></span><code><strong>Trs2_sensor_mode</strong> = (...);</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+For setting the camera_mode option</p>
+<h6 class="description_section">Values</h6>
+<ul>
+<li>
+<span id="RS2_SENSOR_MODE_VGA">RS2_SENSOR_MODE_VGA</span></li>
+<li>
+<span id="RS2_SENSOR_MODE_XGA">RS2_SENSOR_MODE_XGA</span></li>
+<li>
+<span id="RS2_SENSOR_MODE_QVGA">RS2_SENSOR_MODE_QVGA</span></li>
+<li>
+<span id="RS2_SENSOR_MODE_COUNT">RS2_SENSOR_MODE_COUNT</span>: Number of enumeration values. Not a valid input: intended to be used in for-loops. */</li>
+</ul>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="Trs2_ambient_light"></span><code><strong>Trs2_ambient_light</strong> = (...);</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+DEPRECATED! - Use RS2_OPTION_DIGITAL_GAIN instead. */</p>
+<h6 class="description_section">Values</h6>
+<ul>
+<li>
+<span id="RS2_AMBIENT_LIGHT_NO_AMBIENT">RS2_AMBIENT_LIGHT_NO_AMBIENT = 1</span></li>
+<li>
+<span id="RS2_AMBIENT_LIGHT_LOW_AMBIENT">RS2_AMBIENT_LIGHT_LOW_AMBIENT = 2</span></li>
+</ul>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="Trs2_digital_gain"></span><code><strong>Trs2_digital_gain</strong> = (...);</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+digital gain for RS2_OPTION_DIGITAL_GAIN option. */</p>
+<h6 class="description_section">Values</h6>
+<ul>
+<li>
+<span id="RS2_DIGITAL_GAIN_AUTO">RS2_DIGITAL_GAIN_AUTO = 0</span></li>
+<li>
+<span id="RS2_DIGITAL_GAIN_HIGH">RS2_DIGITAL_GAIN_HIGH = 1</span></li>
+<li>
+<span id="RS2_DIGITAL_GAIN_LOW">RS2_DIGITAL_GAIN_LOW = 2</span></li>
+</ul>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="Trs2_host_perf_mode"></span><code><strong>Trs2_host_perf_mode</strong> = (...);</code></td>
+</tr>
+<tr><td colspan="1">
+&nbsp;<h6 class="description_section">Values</h6>
+<ul>
+<li>
+<span id="RS2_HOST_PERF_DEFAULT">RS2_HOST_PERF_DEFAULT = 0</span>: no change in settings, use device defaults */</li>
+<li>
+<span id="RS2_HOST_PERF_LOW">RS2_HOST_PERF_LOW = 1</span>: low performance host mode, if host cannot keep up with workload, this option may improve stability, for example, it sets larger USB transaction granularity, reduces number of transactions and improve performance and stability on relatively weak hosts as compared to the workload */</li>
+<li>
+<span id="RS2_HOST_PERF_HIGH">RS2_HOST_PERF_HIGH = 2</span>: high performance host mode, if host is strong as compared to the work and can handle workload without delay, this option sets smaller USB transactions granularity and as result larger number of transactions and workload on host, but reduces chance in device frame drops */</li>
+<li>
+<span id="RS2_HOST_PERF_COUNT">RS2_HOST_PERF_COUNT</span>: Number of enumeration values. Not a valid input: intended to be used in for-loops. */</li>
+</ul>
+</td></tr>
+</table>
+<hr><span class="appinfo"><em>Generated by <a href="https://pasdoc.github.io/">PasDoc 0.16.0</a>. </em>
+</span>
+</div></div></body></html>

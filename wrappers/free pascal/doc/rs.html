@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title>rs</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="generator" content="PasDoc 0.16.0">
+<meta http-equiv="content-type" content="text/html; charset=utf-8">
+<link rel="stylesheet" type="text/css" href="tipuesearch/tipuesearch.css">
+
+<link rel="StyleSheet" type="text/css" href="pasdoc.css">
+</head>
+<body>
+<div class="container"><div class="navigation">
+<ul><li><a href="AllUnits.html">Units</a></li><li><a href="ClassHierarchy.html">Class Hierarchy</a></li><li><a href="AllClasses.html">Classes, Interfaces, Objects and Records</a></li><li><a href="AllTypes.html">Types</a></li><li><a href="AllVariables.html">Variables</a></li><li><a href="AllConstants.html">Constants</a></li><li><a href="AllFunctions.html">Functions and Procedures</a></li><li><a href="AllIdentifiers.html">Identifiers</a></li><li><form class="search-form" action="tipue_results.html"><div class="search-input"><input type="text" name="q" id="tipue_search_input" pattern=".{3,}" title="At least 3 characters" required><div class="search-button"><input type="button" id="tipue_search_button" onclick="this.form.submit();"></div></div></form>
+<div style="clear: both"></div>
+</li></ul></div><div class="content">
+<h1 class="unit">Unit rs</h1>
+<div class="sections">
+<div class="one_section"><a class="section" href="#PasDoc-Description">Description</a></div><div class="one_section">Uses</div><div class="one_section">Classes, Interfaces, Objects and Records</div><div class="one_section"><a class="section" href="#PasDoc-FuncsProcs">Functions and Procedures</a></div><div class="one_section">Types</div><div class="one_section"><a class="section" href="#PasDoc-Constants">Constants</a></div><div class="one_section">Variables</div></div>
+<span id="PasDoc-Description"></span><h2 class="description">Description</h2>
+<p>
+Exposes librealsense functionality</p>
+<span id="PasDoc-Uses"></span><h2 class="overview">Overview</h2>
+<span id="PasDoc-FuncsProcs"></span><h3 class="summary">Functions and Procedures</h3>
+<table class="summary wide_list">
+<tr class="list">
+<td class="itemcode"><code>function <strong><a href="rs.html#RS2_API_VERSION_STR">RS2_API_VERSION_STR</a></strong>: string;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code>function <strong><a href="rs.html#RS2_API_FULL_VERSION_STR">RS2_API_FULL_VERSION_STR</a></strong>: string;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code>function <strong><a href="rs.html#rs2_get_raw_data_size">rs2_get_raw_data_size</a></strong>(const buffer: <a href="rs_types.html#pRS2_raw_data_buffer">pRS2_raw_data_buffer</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): integer; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code>procedure <strong><a href="rs.html#rs2_delete_raw_data">rs2_delete_raw_data</a></strong>(const buffer: <a href="rs_types.html#pRS2_raw_data_buffer">pRS2_raw_data_buffer</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code>function <strong><a href="rs.html#rs2_get_raw_data">rs2_get_raw_data</a></strong>(buffer: <a href="rs_types.html#pRS2_raw_data_buffer">pRS2_raw_data_buffer</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): byte; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code>function <strong><a href="rs.html#rs2_get_api_version">rs2_get_api_version</a></strong>(error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): integer; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code>procedure <strong><a href="rs.html#rs2_log_to_console">rs2_log_to_console</a></strong>(min_severity: <a href="rs_types.html#Trs2_log_severity">Trs2_log_severity</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code>procedure <strong><a href="rs.html#rs2_log_to_file">rs2_log_to_file</a></strong>(min_severity: <a href="rs_types.html#Trs2_log_severity">Trs2_log_severity</a>; const file_path: PChar; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code>procedure <strong><a href="rs.html#rs2_log_to_callback">rs2_log_to_callback</a></strong>(min_severity: <a href="rs_types.html#Trs2_log_severity">Trs2_log_severity</a>; callback: <a href="rs_types.html#pRS2_log_callback_ptr">pRS2_log_callback_ptr</a>; arg: <a href="rs_types.html#pvoid">pvoid</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code>procedure <strong><a href="rs.html#rs2_reset_logger">rs2_reset_logger</a></strong>(error: <a href="rs_types.html#pRS2_error">prs2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code>procedure <strong><a href="rs.html#rs2_enable_rolling_log_file">rs2_enable_rolling_log_file</a></strong>(max_size: nativeuint; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code>function <strong><a href="rs.html#rs2_get_log_message_line_number">rs2_get_log_message_line_number</a></strong>(const msg: <a href="rs_types.html#pRS2_log_message">pRS2_log_message</a>; error: <a href="rs_types.html#pRS2_log_message">pRS2_log_message</a>): nativeuint; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code>function <strong><a href="rs.html#rs2_get_log_message_filename">rs2_get_log_message_filename</a></strong>(const msg: <a href="rs_types.html#pRS2_log_message">pRS2_log_message</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): PChar; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code>function <strong><a href="rs.html#rs2_get_raw_log_message">rs2_get_raw_log_message</a></strong>(const msg: <a href="rs_types.html#pRS2_log_message">pRS2_log_message</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): PChar; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code>function <strong><a href="rs.html#rs2_get_full_log_message">rs2_get_full_log_message</a></strong>(const msg: <a href="rs_types.html#pRS2_log_message">pRS2_log_message</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): PChar; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code>procedure <strong><a href="rs.html#rs2_log">rs2_log</a></strong>(severity: <a href="rs_types.html#Trs2_log_severity">Trs2_log_severity</a>; const message: PChar; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code>function <strong><a href="rs.html#rs2_depth_frame_get_distance">rs2_depth_frame_get_distance</a></strong>(const frame_ref: <a href="rs_types.html#pRS2_frame">pRS2_frame</a>; x: integer; y: integer; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): single; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code>function <strong><a href="rs.html#rs2_get_time">rs2_get_time</a></strong>(error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): <a href="rs_types.html#Trs2_time_t">Trs2_time_t</a>; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+</table>
+<span id="PasDoc-Constants"></span><h3 class="summary">Constants</h3>
+<table class="summary wide_list">
+<tr class="list">
+<td class="itemcode"><code><strong><a href="rs.html#RS2_API_MAJOR_VERSION">RS2_API_MAJOR_VERSION</a></strong> = 2;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code><strong><a href="rs.html#RS2_API_MINOR_VERSION">RS2_API_MINOR_VERSION</a></strong> = 51;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code><strong><a href="rs.html#RS2_API_PATCH_VERSION">RS2_API_PATCH_VERSION</a></strong> = 1;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code><strong><a href="rs.html#RS2_API_BUILD_VERSION">RS2_API_BUILD_VERSION</a></strong> = 4348;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code><strong><a href="rs.html#RS2_API_VERSION">RS2_API_VERSION</a></strong> = (((<a href="rs.html#RS2_API_MAJOR_VERSION">RS2_API_MAJOR_VERSION</a>) * 10000) +
+    ((<a href="rs.html#RS2_API_MINOR_VERSION">RS2_API_MINOR_VERSION</a>) * 100) + (<a href="rs.html#RS2_API_PATCH_VERSION">RS2_API_PATCH_VERSION</a>));</code></td>
+</tr>
+</table>
+<h2 class="description">Description</h2>
+<h3 class="detail">Functions and Procedures</h3>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="RS2_API_VERSION_STR"></span><code>function <strong>RS2_API_VERSION_STR</strong>: string;</code></td>
+</tr>
+<tr><td colspan="1">
+&nbsp;</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="RS2_API_FULL_VERSION_STR"></span><code>function <strong>RS2_API_FULL_VERSION_STR</strong>: string;</code></td>
+</tr>
+<tr><td colspan="1">
+&nbsp;</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_get_raw_data_size"></span><code>function <strong>rs2_get_raw_data_size</strong>(const buffer: <a href="rs_types.html#pRS2_raw_data_buffer">pRS2_raw_data_buffer</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): integer; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+get the size of rs2_raw_data_buffer param[in] buffer pointer to rs2_raw_data_buffer returned by rs2_send_and_receive_raw_data param[out] error if non-null, receives any error that occurs during this call, otherwise, errors are ignored return size of rs2_raw_data_buffer</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_delete_raw_data"></span><code>procedure <strong>rs2_delete_raw_data</strong>(const buffer: <a href="rs_types.html#pRS2_raw_data_buffer">pRS2_raw_data_buffer</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Delete rs2_raw_data_buffer param[in] buffer rs2_raw_data_buffer returned by rs2_send_and_receive_raw_data</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_get_raw_data"></span><code>function <strong>rs2_get_raw_data</strong>(buffer: <a href="rs_types.html#pRS2_raw_data_buffer">pRS2_raw_data_buffer</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): byte; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Retrieve char array from rs2_raw_data_buffer param[in] buffer rs2_raw_data_buffer returned by rs2_send_and_receive_raw_data param[out] error if non-null, receives any error that occurs during this call, otherwise, errors are ignored return raw data</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_get_api_version"></span><code>function <strong>rs2_get_api_version</strong>(error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): integer; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Retrieve the API version from the source code. Evaluate that the value is conformant to the established policies param[out] error if non-null, receives any error that occurs during this call, otherwise, errors are ignored return the version API encoded into integer value &quot;1.9.3&quot; -&gt; 10903</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_log_to_console"></span><code>procedure <strong>rs2_log_to_console</strong>(min_severity: <a href="rs_types.html#Trs2_log_severity">Trs2_log_severity</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+&nbsp;</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_log_to_file"></span><code>procedure <strong>rs2_log_to_file</strong>(min_severity: <a href="rs_types.html#Trs2_log_severity">Trs2_log_severity</a>; const file_path: PChar; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+&nbsp;</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_log_to_callback"></span><code>procedure <strong>rs2_log_to_callback</strong>(min_severity: <a href="rs_types.html#Trs2_log_severity">Trs2_log_severity</a>; callback: <a href="rs_types.html#pRS2_log_callback_ptr">pRS2_log_callback_ptr</a>; arg: <a href="rs_types.html#pvoid">pvoid</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+&nbsp;</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_reset_logger"></span><code>procedure <strong>rs2_reset_logger</strong>(error: <a href="rs_types.html#pRS2_error">prs2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+&nbsp;</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_enable_rolling_log_file"></span><code>procedure <strong>rs2_enable_rolling_log_file</strong>(max_size: nativeuint; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Enable rolling log file when used with rs2_log_to_file: Upon reaching (max_size/2) bytes, the log will be renamed with an &quot;.old&quot; suffix and a new log created. Any previous .old file will be erased. Must have permissions to remove/rename files in log file directory. param[in] max_size max file size in megabytes param[out] error if non-null, receives any error that occurs during this call, otherwise, errors are ignored</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_get_log_message_line_number"></span><code>function <strong>rs2_get_log_message_line_number</strong>(const msg: <a href="rs_types.html#pRS2_log_message">pRS2_log_message</a>; error: <a href="rs_types.html#pRS2_log_message">pRS2_log_message</a>): nativeuint; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+&nbsp;</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_get_log_message_filename"></span><code>function <strong>rs2_get_log_message_filename</strong>(const msg: <a href="rs_types.html#pRS2_log_message">pRS2_log_message</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): PChar; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+&nbsp;</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_get_raw_log_message"></span><code>function <strong>rs2_get_raw_log_message</strong>(const msg: <a href="rs_types.html#pRS2_log_message">pRS2_log_message</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): PChar; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+&nbsp;</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_get_full_log_message"></span><code>function <strong>rs2_get_full_log_message</strong>(const msg: <a href="rs_types.html#pRS2_log_message">pRS2_log_message</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): PChar; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+&nbsp;</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_log"></span><code>procedure <strong>rs2_log</strong>(severity: <a href="rs_types.html#Trs2_log_severity">Trs2_log_severity</a>; const message: PChar; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Add custom message into librealsense log param[in] severity The log level for the message to be written under param[in] message Message to be logged param[out] error if non-null, receives any error that occurs during this call, otherwise, errors are ignored</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_depth_frame_get_distance"></span><code>function <strong>rs2_depth_frame_get_distance</strong>(const frame_ref: <a href="rs_types.html#pRS2_frame">pRS2_frame</a>; x: integer; y: integer; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): single; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Given the 2D depth coordinate (x,y) provide the corresponding depth in metric units param[in] frame_ref 2D depth pixel coordinates (Left-Upper corner origin) param[in] x,y 2D depth pixel coordinates (Left-Upper corner origin) param[out] error if non-null, receives any error that occurs during this call, otherwise, errors are ignored</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_get_time"></span><code>function <strong>rs2_get_time</strong>(error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): <a href="rs_types.html#Trs2_time_t">Trs2_time_t</a>; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+return the time at specific time point param[out] error if non-null, receives any error that occurs during this call, otherwise, errors are ignored return the time at specific time point, in live and record mode it will return the system time and in playback mode it will return the recorded time</p>
+</td></tr>
+</table>
+<h3 class="detail">Constants</h3>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="RS2_API_MAJOR_VERSION"></span><code><strong>RS2_API_MAJOR_VERSION</strong> = 2;</code></td>
+</tr>
+<tr><td colspan="1">
+&nbsp;</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="RS2_API_MINOR_VERSION"></span><code><strong>RS2_API_MINOR_VERSION</strong> = 51;</code></td>
+</tr>
+<tr><td colspan="1">
+&nbsp;</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="RS2_API_PATCH_VERSION"></span><code><strong>RS2_API_PATCH_VERSION</strong> = 1;</code></td>
+</tr>
+<tr><td colspan="1">
+&nbsp;</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="RS2_API_BUILD_VERSION"></span><code><strong>RS2_API_BUILD_VERSION</strong> = 4348;</code></td>
+</tr>
+<tr><td colspan="1">
+&nbsp;</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="RS2_API_VERSION"></span><code><strong>RS2_API_VERSION</strong> = (((<a href="rs.html#RS2_API_MAJOR_VERSION">RS2_API_MAJOR_VERSION</a>) * 10000) +
+    ((<a href="rs.html#RS2_API_MINOR_VERSION">RS2_API_MINOR_VERSION</a>) * 100) + (<a href="rs.html#RS2_API_PATCH_VERSION">RS2_API_PATCH_VERSION</a>));</code></td>
+</tr>
+<tr><td colspan="1">
+&nbsp;</td></tr>
+</table>
+<hr><span class="appinfo"><em>Generated by <a href="https://pasdoc.github.io/">PasDoc 0.16.0</a>. </em>
+</span>
+</div></div></body></html>

@@ -1,0 +1,152 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CONFIG>
+  <ProjectSession>
+    <PathDelim Value="\"/>
+    <Version Value="12"/>
+    <BuildModes Active="Default"/>
+    <Units>
+      <Unit>
+        <Filename Value="saveimage.lpr"/>
+        <IsPartOfProject Value="True"/>
+        <IsVisibleTab Value="True"/>
+        <TopLine Value="174"/>
+        <CursorPos X="71" Y="184"/>
+        <UsageCount Value="22"/>
+        <Loaded Value="True"/>
+      </Unit>
+      <Unit>
+        <Filename Value="C:\lazarus\components\images\imagesforlazarus.pas"/>
+        <UnitName Value="ImagesForLazarus"/>
+        <EditorIndex Value="-1"/>
+        <CursorPos X="36" Y="21"/>
+        <UsageCount Value="10"/>
+      </Unit>
+    </Units>
+    <JumpHistory HistoryIndex="29">
+      <Position>
+        <Filename Value="saveimage.lpr"/>
+        <Caret Line="201" TopLine="181"/>
+      </Position>
+      <Position>
+        <Filename Value="saveimage.lpr"/>
+        <Caret Line="202" TopLine="181"/>
+      </Position>
+      <Position>
+        <Filename Value="saveimage.lpr"/>
+        <Caret Line="201" Column="9" TopLine="182"/>
+      </Position>
+      <Position>
+        <Filename Value="saveimage.lpr"/>
+        <Caret Line="203" Column="33" TopLine="188"/>
+      </Position>
+      <Position>
+        <Filename Value="saveimage.lpr"/>
+        <Caret Line="202" Column="35" TopLine="190"/>
+      </Position>
+      <Position>
+        <Filename Value="saveimage.lpr"/>
+        <Caret Line="19" Column="22"/>
+      </Position>
+      <Position>
+        <Filename Value="saveimage.lpr"/>
+        <Caret Line="202" Column="8" TopLine="188"/>
+      </Position>
+      <Position>
+        <Filename Value="saveimage.lpr"/>
+        <Caret Line="206" TopLine="184"/>
+      </Position>
+      <Position>
+        <Filename Value="saveimage.lpr"/>
+        <Caret Line="189" Column="16" TopLine="176"/>
+      </Position>
+      <Position>
+        <Filename Value="saveimage.lpr"/>
+        <Caret Line="29" Column="31" TopLine="17"/>
+      </Position>
+      <Position>
+        <Filename Value="saveimage.lpr"/>
+        <Caret Line="196" Column="14" TopLine="184"/>
+      </Position>
+      <Position>
+        <Filename Value="saveimage.lpr"/>
+        <Caret Line="197" TopLine="184"/>
+      </Position>
+      <Position>
+        <Filename Value="saveimage.lpr"/>
+        <Caret Line="198" TopLine="184"/>
+      </Position>
+      <Position>
+        <Filename Value="saveimage.lpr"/>
+        <Caret Line="199" TopLine="184"/>
+      </Position>
+      <Position>
+        <Filename Value="saveimage.lpr"/>
+        <Caret Line="200" TopLine="184"/>
+      </Position>
+      <Position>
+        <Filename Value="saveimage.lpr"/>
+        <Caret Line="29" Column="28" TopLine="25"/>
+      </Position>
+      <Position>
+        <Filename Value="saveimage.lpr"/>
+        <Caret Line="196" TopLine="183"/>
+      </Position>
+      <Position>
+        <Filename Value="saveimage.lpr"/>
+        <Caret Line="197" TopLine="183"/>
+      </Position>
+      <Position>
+        <Filename Value="saveimage.lpr"/>
+        <Caret Line="198" TopLine="183"/>
+      </Position>
+      <Position>
+        <Filename Value="saveimage.lpr"/>
+        <Caret Line="199" TopLine="183"/>
+      </Position>
+      <Position>
+        <Filename Value="saveimage.lpr"/>
+        <Caret Line="201" Column="11" TopLine="188"/>
+      </Position>
+      <Position>
+        <Filename Value="saveimage.lpr"/>
+        <Caret Line="208" Column="56" TopLine="188"/>
+      </Position>
+      <Position>
+        <Filename Value="saveimage.lpr"/>
+        <Caret Line="51" Column="3" TopLine="59"/>
+      </Position>
+      <Position>
+        <Filename Value="saveimage.lpr"/>
+        <Caret Line="189" Column="22" TopLine="175"/>
+      </Position>
+      <Position>
+        <Filename Value="saveimage.lpr"/>
+        <Caret Line="190" Column="13" TopLine="177"/>
+      </Position>
+      <Position>
+        <Filename Value="saveimage.lpr"/>
+        <Caret Line="213" Column="7" TopLine="199"/>
+      </Position>
+      <Position>
+        <Filename Value="saveimage.lpr"/>
+        <Caret Line="214" Column="14" TopLine="199"/>
+      </Position>
+      <Position>
+        <Filename Value="saveimage.lpr"/>
+        <Caret Line="212" Column="62" TopLine="187"/>
+      </Position>
+      <Position>
+        <Filename Value="saveimage.lpr"/>
+        <Caret Line="139" Column="9" TopLine="126"/>
+      </Position>
+      <Position>
+        <Filename Value="saveimage.lpr"/>
+        <Caret Line="193" Column="51" TopLine="180"/>
+      </Position>
+    </JumpHistory>
+    <RunParams>
+      <FormatVersion Value="2"/>
+      <Modes ActiveMode=""/>
+    </RunParams>
+  </ProjectSession>
+</CONFIG>
