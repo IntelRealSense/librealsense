@@ -26,7 +26,7 @@ namespace librealsense
         using namespace ds;
 
         _ds_active_common = std::make_shared<ds_active_common>(get_raw_depth_sensor(), get_depth_sensor(), this,
-            _device_capabilities);
+            _device_capabilities, _hw_monitor, _fw_version);
 
         _ds_active_common->register_options();
     }

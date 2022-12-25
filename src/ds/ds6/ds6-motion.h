@@ -23,7 +23,7 @@ namespace librealsense
     protected:
         friend class ds_motion_common;
         friend class ds_fisheye_sensor;
-        friend class ds_hid_sensor;
+        friend class ds_motion_sensor;
 
         std::shared_ptr<ds_motion_common> _ds_motion_common;
 

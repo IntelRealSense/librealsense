@@ -46,7 +46,6 @@ namespace librealsense
         friend class ds6_depth_sensor;
 
         device* _owner;
-        ds::ds_device_type _ds_device_type;
         std::shared_ptr<hw_monitor> _hw_monitor;
         bool _is_locked;
     };

@@ -25,7 +25,7 @@ namespace librealsense
                         found = (result.mi == 6);
                         break;
                     default:
-                        throw not_implemented_exception(to_string() << "USB device "
+                        throw not_implemented_exception(rsutils::string::from() << "USB device "
                             << std::hex << info.pid << ":" << info.vid << std::dec << " is not supported.");
                         break;
                     }

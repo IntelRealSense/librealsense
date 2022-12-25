@@ -34,7 +34,7 @@ namespace librealsense
         auto safety_devs_info = filter_by_mi(group.uvc_devices, safety_stream_mi);
         
         if (safety_devs_info.size() != 1)
-            throw invalid_value_exception(to_string() << "RS5XX with Safety models are expected to include a single safety device! - "
+            throw invalid_value_exception(rsutils::string::from() << "RS5XX with Safety models are expected to include a single safety device! - "
                 << safety_devs_info.size() << " found");
 
         auto safety_ep = create_safety_device(ctx, safety_devs_info);
@@ -240,7 +240,7 @@ namespace librealsense
         std::vector< uint8_t > response = _owner->_hw_monitor->send(cmd);
         if (response.size() < sizeof(rs2_safety_preset_with_header))
         {
-            throw io_exception(to_string() << "Safety preset read at index=" << index << " failed");
+            throw io_exception(rsutils::string::from() << "Safety preset read at index=" << index << " failed");
         }
 
         // cast response to safety_preset_with_header struct
@@ -250,7 +250,7 @@ namespace librealsense
         auto computed_crc32 = calc_crc32(response.data() + sizeof(rs2_safety_preset_header), sizeof(rs2_safety_preset));
         if (computed_crc32 != result->header.crc32)
         {
-            throw invalid_value_exception(to_string() << "invalid CRC value for index=" << index);
+            throw invalid_value_exception(rsutils::string::from() << "invalid CRC value for index=" << index);
         }
 
         return result->safety_preset;

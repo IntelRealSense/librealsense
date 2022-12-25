@@ -57,7 +57,7 @@ namespace librealsense
         if (auto dev = dynamic_cast<const ds5_motion*>(_owner))
             return dev->_ds_motion_common->get_fisheye_calibration_table();
         if (auto dev = dynamic_cast<const ds5_motion_uvc*>(_owner))
-            return dev->_ds_motion_common->get_fisheye_stream();
+            return dev->_ds_motion_common->get_fisheye_calibration_table();
         if (auto dev = dynamic_cast<const ds6_motion*>(_owner))
             return dev->_ds_motion_common->get_fisheye_calibration_table();
         throw std::runtime_error("device not referenced in the product line");
