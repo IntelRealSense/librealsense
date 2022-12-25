@@ -12,11 +12,15 @@ namespace librealsense
     ds_active_common::ds_active_common(uvc_sensor& raw_depth_ep,
         synthetic_sensor& depth_ep,
         device* owner,
-        d400_caps device_capabilities) :
+        d400_caps device_capabilities,
+        std::shared_ptr<hw_monitor> hw_monitor,
+        firmware_version fw_version) :
         _raw_depth_ep(raw_depth_ep),
         _depth_ep(depth_ep),
         _owner(owner),
-        _device_capabilities(device_capabilities){}
+        _device_capabilities(device_capabilities),
+        _hw_monitor(hw_monitor),
+        _fw_version(fw_version) {}
 
     void ds_active_common::register_options()
     {
@@ -61,9 +65,31 @@ namespace librealsense
             }
 
             //PROJECTOR TEMPERATURE OPTION
+            if (pid == ds::RS457_PID)
+            {
             _depth_ep.register_option(RS2_OPTION_PROJECTOR_TEMPERATURE,
+                    std::make_shared<projector_temperature_option_mipi>(_hw_monitor,
+                        RS2_OPTION_PROJECTOR_TEMPERATURE));
+            }
+            else
+            {
+                _depth_ep.register_option(RS2_OPTION_PROJECTOR_TEMPERATURE,
                 std::make_shared<asic_and_projector_temperature_options>(_raw_depth_ep,
                     RS2_OPTION_PROJECTOR_TEMPERATURE));
+            }
+
+            // EMITTER FREQUENCY OPTION
+            if ((pid == ds::RS457_PID || pid == ds::RS455_PID)
+                && _fw_version >= firmware_version("5.14.0"))
+            {
+                auto emitter_freq = std::make_shared<emitter_frequency>(
+                    _raw_depth_ep,
+                    std::map<float, std::string>{
+                        { (float)RS2_EMITTER_FREQUENCY_57_KHZ, "57 KHZ" },
+                    { (float)RS2_EMITTER_FREQUENCY_91_KHZ, "91 KHZ" } });
+
+                _depth_ep.register_option(RS2_OPTION_EMITTER_FREQUENCY, emitter_freq);
+            }
         }
         else
         {

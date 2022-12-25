@@ -91,14 +91,18 @@ namespace rs2
                         }
                         catch (...)
                         {
-                            _viewer_model.not_model->add_notification(notification_data{ to_string() << "Metrics Recording: JSON Serializaion has failed",
-                                RS2_LOG_SEVERITY_WARN, RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR });
+                            _viewer_model.not_model->add_notification(
+                                notification_data{ "Metrics Recording: JSON Serializaion has failed",
+                                                   RS2_LOG_SEVERITY_WARN,
+                                                   RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR } );
                         }
                     }
                 }
                 _samples.clear();
-                _viewer_model.not_model->add_notification(notification_data{ to_string() << "Finished to record frames and matrics data " ,
-                    RS2_LOG_SEVERITY_INFO, RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR });
+                _viewer_model.not_model->add_notification(
+                    notification_data{ "Finished to record frames and matrics data ",
+                                       RS2_LOG_SEVERITY_INFO,
+                                       RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR } );
             }
 
             bool is_recording()
@@ -112,7 +116,7 @@ namespace rs2
             viewer_model& _viewer_model;
             std::vector<metric_definition> _metric_data;
             std::vector<sample> _samples;
-            utilities::time::stopwatch _model_timer;
+            rsutils::time::stopwatch _model_timer;
             std::mutex _m;
             bool _recording;
             std::string _filename_base;
@@ -210,7 +214,7 @@ namespace rs2
             bool _enabled;
             const bool _requires_plane_fit;
 
-            utilities::time::stopwatch _model_timer;
+            rsutils::time::stopwatch _model_timer;
             temporal_event _trending_up;
             temporal_event _trending_down;
             temporal_event _persistent_visibility;  // Control the metric visualization
@@ -391,7 +395,7 @@ namespace rs2
             metrics_model                   _metrics_model;
             std::string                     _error_message;
             bool                            _first_frame = true;
-            utilities::time::periodic_timer  _update_readonly_options_timer;
+            rsutils::time::periodic_timer  _update_readonly_options_timer;
             bool                            _device_in_use = false;
 
             float                           _roi_percent = 0.4f;

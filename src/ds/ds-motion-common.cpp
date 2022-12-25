@@ -47,8 +47,7 @@ namespace librealsense
         return _roi;
     }
 
-    ds_fisheye_sensor::ds_fisheye_sensor(std::shared_ptr<sensor_base> sensor,
-        device* owner)
+    ds_fisheye_sensor::ds_fisheye_sensor(std::shared_ptr<sensor_base> sensor, device* owner)
         : synthetic_sensor("Wide FOV Camera", sensor, owner, fisheye_fourcc_to_rs2_format, fisheye_fourcc_to_rs2_stream),
         _owner(owner)
     {}
@@ -57,6 +56,8 @@ namespace librealsense
     {
         if (auto dev = dynamic_cast<const ds5_motion*>(_owner))
             return dev->_ds_motion_common->get_fisheye_calibration_table();
+        if (auto dev = dynamic_cast<const ds5_motion_uvc*>(_owner))
+            return dev->_ds_motion_common->get_fisheye_stream();
         if (auto dev = dynamic_cast<const ds6_motion*>(_owner))
             return dev->_ds_motion_common->get_fisheye_calibration_table();
         throw std::runtime_error("device not referenced in the product line");
@@ -65,6 +66,8 @@ namespace librealsense
     std::shared_ptr<stream_interface> ds_fisheye_sensor::get_fisheye_stream() const
     {
         if (auto dev = dynamic_cast<const ds5_motion*>(_owner))
+            return dev->_ds_motion_common->get_fisheye_stream();
+        if (auto dev = dynamic_cast<const ds5_motion_uvc*>(_owner))
             return dev->_ds_motion_common->get_fisheye_stream();
         if (auto dev = dynamic_cast<const ds6_motion*>(_owner))
             return dev->_ds_motion_common->get_fisheye_stream();
@@ -117,22 +120,34 @@ namespace librealsense
         return uvc_raw_sensor;
     }
     
-    ds_hid_sensor::ds_hid_sensor(std::string name,
+    ds_motion_sensor::ds_motion_sensor(std::string name,
         std::shared_ptr<sensor_base> sensor, device* owner)
         : synthetic_sensor(name, sensor, owner),
         _owner(owner)
     {}
 
-    rs2_motion_device_intrinsic ds_hid_sensor::get_motion_intrinsics(rs2_stream stream) const
+    ds_motion_sensor::ds_motion_sensor(std::string name,
+        std::shared_ptr<sensor_base> sensor, device* owner,
+        const std::map<uint32_t, rs2_format>& motion_fourcc_to_rs2_format,
+        const std::map<uint32_t, rs2_stream>& motion_fourcc_to_rs2_stream)
+        : synthetic_sensor(name, sensor, owner,
+                           motion_fourcc_to_rs2_format,
+                           motion_fourcc_to_rs2_stream),
+        _owner(owner)
+    {}
+
+    rs2_motion_device_intrinsic ds_motion_sensor::get_motion_intrinsics(rs2_stream stream) const
     {
         if (auto dev = dynamic_cast<const ds5_motion*>(_owner))
+            return dev->get_motion_intrinsics(stream);
+        if (auto dev = dynamic_cast<const ds5_motion_uvc*>(_owner))
             return dev->get_motion_intrinsics(stream);
         if (auto dev = dynamic_cast<const ds6_motion*>(_owner))
             return dev->get_motion_intrinsics(stream);
         throw std::runtime_error("device not referenced in the product line");
     }
 
-    stream_profiles ds_hid_sensor::init_stream_profiles()
+    stream_profiles ds_motion_sensor::init_stream_profiles()
     {
         auto lock = environment::get_instance().get_extrinsics_graph().lock();
         auto results = synthetic_sensor::init_stream_profiles();
@@ -161,18 +176,22 @@ namespace librealsense
         return results;
     }
 
-    std::shared_ptr<stream_interface> ds_hid_sensor::get_accel_stream() const
+    std::shared_ptr<stream_interface> ds_motion_sensor::get_accel_stream() const
     {
         if (auto dev = dynamic_cast<const ds5_motion*>(_owner))
+            return dev->_ds_motion_common->get_accel_stream();
+        if (auto dev = dynamic_cast<const ds5_motion_uvc*>(_owner))
             return dev->_ds_motion_common->get_accel_stream();
         if (auto dev = dynamic_cast<const ds6_motion*>(_owner))
             return dev->_ds_motion_common->get_accel_stream();
         throw std::runtime_error("device not referenced in the product line");
     }
 
-    std::shared_ptr<stream_interface> ds_hid_sensor::get_gyro_stream() const
+    std::shared_ptr<stream_interface> ds_motion_sensor::get_gyro_stream() const
     {
         if (auto dev = dynamic_cast<const ds5_motion*>(_owner))
+            return dev->_ds_motion_common->get_gyro_stream();
+        if (auto dev = dynamic_cast<const ds5_motion_uvc*>(_owner))
             return dev->_ds_motion_common->get_gyro_stream();
         if (auto dev = dynamic_cast<const ds6_motion*>(_owner))
             return dev->_ds_motion_common->get_gyro_stream();
@@ -268,13 +287,15 @@ namespace librealsense
         if (stream == RS2_STREAM_GYRO)
             return ds::create_motion_intrinsics(**_gyro_intrinsic);
 
-        throw std::runtime_error(to_string() << "Motion Intrinsics unknown for stream " << rs2_stream_to_string(stream) << "!");
+        throw std::runtime_error(rsutils::string::from() << "Motion Intrinsics unknown for stream " << rs2_stream_to_string(stream) << "!");
     }
 
     std::vector<platform::uvc_device_info> ds_motion_common::filter_device_by_capability(const std::vector<platform::uvc_device_info>& devices,
         d400_caps caps)
     {
         if (auto dev = dynamic_cast<const ds5_motion*>(_owner))
+            return filter_ds5_device_by_capability(devices, ds::d400_caps::CAP_FISHEYE_SENSOR);
+        if (auto dev = dynamic_cast<const ds5_motion_uvc*>(_owner))
             return filter_ds5_device_by_capability(devices, ds::d400_caps::CAP_FISHEYE_SENSOR);
         if (auto dev = dynamic_cast<const ds6_motion*>(_owner))
             return std::vector<platform::uvc_device_info>();
@@ -296,7 +317,7 @@ namespace librealsense
 
         // Inconsistent FW
         if (fe_dev_present ^ fe_capability)
-            throw invalid_value_exception(to_string()
+            throw invalid_value_exception(rsutils::string::from()
                 << "Inconsistent HW/FW setup, FW FishEye capability = " << fe_capability
                 << ", FishEye devices " << std::dec << fisheye_infos.size()
                 << " while expecting " << fe_capability);
@@ -332,6 +353,11 @@ namespace librealsense
     void ds_motion_common::register_streams_to_extrinsic_groups()
     {
         if (auto dev = dynamic_cast<ds5_motion*>(_owner))
+        {
+            dev->register_stream_to_extrinsic_group(*_gyro_stream, 0);
+            dev->register_stream_to_extrinsic_group(*_accel_stream, 0);
+        }
+        else if (auto dev = dynamic_cast<ds5_motion_uvc*>(_owner))
         {
             dev->register_stream_to_extrinsic_group(*_gyro_stream, 0);
             dev->register_stream_to_extrinsic_group(*_accel_stream, 0);
@@ -447,7 +473,7 @@ namespace librealsense
             _sensor_name_and_hid_profiles,
             _owner);
 
-        auto hid_ep = std::make_shared<ds_hid_sensor>("Motion Module", raw_hid_ep, _owner);
+        auto hid_ep = std::make_shared<ds_motion_sensor>("Motion Module", raw_hid_ep, _owner);
 
         hid_ep->register_option(RS2_OPTION_GLOBAL_TIME_ENABLED, enable_global_time_option);
 

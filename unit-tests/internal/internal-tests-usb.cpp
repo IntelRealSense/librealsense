@@ -8,6 +8,9 @@
 #include "librealsense2/h/rs_option.h"
 #include <map>
 
+#include <rsutils/string/from.h>
+
+
 using namespace librealsense::platform;
 
 #define USB_SUBCLASS_CONTROL 1
@@ -243,7 +246,7 @@ void read_gvd(const rs_usb_device& dev)
     int fw_version_offset = is_sr300 ? 0 : 12;
 
     librealsense::copy(fws, res.data() + header_size + fw_version_offset, 8);
-    std::string fw = librealsense::to_string() << static_cast<int>(fws[3]) << "." << static_cast<int>(fws[2])
+    std::string fw = rsutils::string::from() << static_cast<int>(fws[3]) << "." << static_cast<int>(fws[2])
         << "." << static_cast<int>(fws[1]) << "." << static_cast<int>(fws[0]);
 
     printf("device: %s, fw: %s\n", dev->get_info().unique_id.c_str(), fw.c_str());

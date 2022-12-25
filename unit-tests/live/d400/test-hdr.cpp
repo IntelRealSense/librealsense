@@ -5,7 +5,7 @@
 // This set of tests is valid for any device that supports the HDR feature //
 /////////////////////////////////////////////////////////////////////////////
 
-//#test:device D400*
+//#test:device D400* !D457
 
 #include "../../catch.h"
 #include "../../unit-tests-common.h"
@@ -722,7 +722,7 @@ TEST_CASE("HDR Start Stop - recover manual exposure and gain", "[HDR]")
 
                 int iteration = 0;
                 int iteration_for_disable = 50;
-                int iteration_to_check_after_disable = iteration_for_disable + 2;
+                int iteration_to_check_after_disable = iteration_for_disable + 5; // Was 2, aligned to validation KPI's [DSO-18682] 
                 while (++iteration < 70)
                 {
                     rs2::frameset data;

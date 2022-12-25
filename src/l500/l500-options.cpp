@@ -6,6 +6,9 @@
 #include "l500-depth.h"
 #include "../common/fw/firmware-version.h"
 
+#include <rsutils/string/from.h>
+
+
 const std::string MIN_CONTROLS_FW_VERSION("1.3.9.0");
 const std::string MIN_GET_DEFAULT_FW_VERSION( "1.5.4.0" );
 
@@ -522,7 +525,7 @@ namespace librealsense
     {
         if( static_cast< rs2_l500_visual_preset >( int( value ) )
             == RS2_L500_VISUAL_PRESET_DEFAULT )
-            throw invalid_value_exception( to_string()
+            throw invalid_value_exception( rsutils::string::from()
                                            << "RS2_L500_VISUAL_PRESET_DEFAULT was deprecated!" );
 
         verify_max_usable_range_restrictions( RS2_OPTION_VISUAL_PRESET, value );
@@ -548,8 +551,7 @@ namespace librealsense
                 return;
 
             throw wrong_api_call_sequence_exception(
-                to_string()
-                << "Visual Preset cannot be changed while Max Usable Range is enabled" );
+                rsutils::string::from() << "Visual Preset cannot be changed while Max Usable Range is enabled" );
         }
     }
 
@@ -570,8 +572,7 @@ namespace librealsense
         }
         else
             throw wrong_api_call_sequence_exception(
-                to_string() << "on_set_option support advanced controls only " << opt
-                            << " injected" );
+                rsutils::string::from() << "on_set_option support advanced controls only " << opt << " injected" );
     }
 
     void l500_options::change_gain( rs2_l500_visual_preset preset )

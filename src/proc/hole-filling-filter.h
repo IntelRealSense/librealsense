@@ -43,8 +43,8 @@ namespace librealsense
                 holes_fill_nearest(data, _width, _height, _stride);
                 break;
             default:
-                throw invalid_value_exception(to_string()
-                    << "Unsupported hole filling mode: " << _hole_filling_mode << " is out of range.");
+                throw invalid_value_exception( rsutils::string::from() << "Unsupported hole filling mode: "
+                                                                       << _hole_filling_mode << " is out of range." );
             }
         }
 

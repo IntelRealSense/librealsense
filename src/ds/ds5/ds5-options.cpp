@@ -5,8 +5,86 @@
 #include "ds/ds5/ds5-thermal-monitor.h"
 #include "ds5-options.h"
 
+#include <rsutils/string/from.h>
+
+
 namespace librealsense
 {
+    emitter_frequency::emitter_frequency(
+        uvc_sensor& ep, const std::map< float, std::string >& description_per_value)
+        : uvc_xu_option(ep,
+            ds::depth_xu,
+            ds::DS5_EMITTER_FREQUENCY,
+            "Controls the emitter frequency, 57 [KHZ] / 91 [KHZ]",
+            description_per_value)
+    {
+    }
+
+    void emitter_frequency::set(float value)
+    {
+        if (_ep.is_streaming())
+            throw wrong_api_call_sequence_exception("Setting the emitter frequency during streaming is not allowed");
+
+        uvc_xu_option::set(value);
+        _recording_function(*this);
+    }
+
+    asic_temperature_option_mipi::asic_temperature_option_mipi(std::shared_ptr<hw_monitor> hwm, rs2_option opt)
+        : _hw_monitor(hwm), _option(opt)
+    {}
+
+    float asic_temperature_option_mipi::query() const
+    {
+        if (!is_enabled() || !_hw_monitor)
+            throw wrong_api_call_sequence_exception("query is available during streaming only");
+
+        float temperature = -1;
+        try {
+            command cmd(ds::ASIC_TEMP_MIPI);
+            auto res = _hw_monitor->send(cmd);
+            temperature = static_cast<float>(res[0]);
+        }
+        catch (...)
+        {
+            throw wrong_api_call_sequence_exception("hw monitor command for asic temperature failed");
+        }
+
+        return temperature;
+    }
+
+    option_range asic_temperature_option_mipi::get_range() const
+    {
+        return option_range{ -40, 125, 0, 0 };
+    }
+
+    projector_temperature_option_mipi::projector_temperature_option_mipi(std::shared_ptr<hw_monitor> hwm, rs2_option opt)
+        : _hw_monitor(hwm), _option(opt)
+    {}
+
+    float projector_temperature_option_mipi::query() const
+    {
+        if (!is_enabled() || !_hw_monitor)
+            throw wrong_api_call_sequence_exception("query is available during streaming only");
+
+        float temperature;
+        try {
+            command cmd(ds::PROJ_TEMP_MIPI);
+            auto res = _hw_monitor->send(cmd);
+            temperature = static_cast<float>(res[0]);
+        }
+        catch (...)
+        {
+            throw wrong_api_call_sequence_exception("hw monitor command for projector temperature failed");
+        }
+
+        return temperature;
+    }
+
+    option_range projector_temperature_option_mipi::get_range() const
+    {
+        return option_range{ -40, 125, 0, 0 };
+    }
+
     auto_exposure_limit_option::auto_exposure_limit_option(hw_monitor& hwm, sensor_base* ep, option_range range, std::shared_ptr<limits_option> exposure_limit_enable)
         : option_base(range), _hwm(hwm), _sensor(ep), _exposure_limit_toggle(exposure_limit_enable)
     {

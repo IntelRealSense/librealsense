@@ -237,7 +237,8 @@ namespace librealsense
                 return get_color_stream_intrinsic(raw_data, width, height);
             }
             default:
-                throw invalid_value_exception(to_string() << "Parsing Calibration table type " << table_id << " is not supported");
+                throw invalid_value_exception( rsutils::string::from() << "Parsing Calibration table type " << table_id
+                                                                       << " is not supported" );
             }
         }
 
@@ -265,8 +266,6 @@ namespace librealsense
             trans_vector.z *= trans_scale;
 
             return{ rect_rot_mat,trans_vector };
-        }
-
         flash_structure get_rw_flash_structure(const uint32_t flash_version)
         {
             switch (flash_version)

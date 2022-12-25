@@ -8,7 +8,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
 # View the makefile commands during build
 #set(CMAKE_VERBOSE_MAKEFILE on)
 
-list(APPEND DEPENDENCIES realsense2 utilities)
+list(APPEND DEPENDENCIES realsense2)
 
 if(BUILD_TOOLS)
 add_subdirectory(convert)

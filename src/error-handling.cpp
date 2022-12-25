@@ -2,6 +2,8 @@
 // Copyright(c) 2019 Intel Corporation. All Rights Reserved.
 #include "error-handling.h"
 
+#include <rsutils/string/from.h>
+
 #include <memory>
 
 
@@ -74,10 +76,10 @@ namespace librealsense
                         // the error polling loop to stop
                         if( reseted_val != 0 )
                         {
-                            std::string error_str
-                                = to_string() << "Error polling loop is not behaving as expected! "
-                                                 "expecting value : 0 got : "
-                                              << std::to_string( val ) << "\nShutting down error polling loop";
+                            std::string error_str = rsutils::string::from()
+                                                 << "Error polling loop is not behaving as expected! "
+                                                    "expecting value : 0 got : "
+                                                 << std::to_string( val ) << "\nShutting down error polling loop";
                             LOG_ERROR( error_str );
                             notification postcondition_failed{
                                 RS2_NOTIFICATION_CATEGORY_HARDWARE_ERROR,

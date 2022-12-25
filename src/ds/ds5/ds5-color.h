@@ -38,6 +38,9 @@ namespace librealsense
         void register_metadata();
         void register_processing_blocks();
 
+        void register_metadata(const synthetic_sensor& color_ep) const;
+        void register_metadata_mipi(const synthetic_sensor& color_ep) const;
+
         void register_stream_to_extrinsic_group(const stream_interface& stream, uint32_t group_index);
 
         void create_color_device(std::shared_ptr<context> ctx,

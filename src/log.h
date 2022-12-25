@@ -4,6 +4,14 @@
 #pragma once
 
 #include "types.h"
+#include <rsutils/string/from.h>
+#include <rsutils/easylogging/easyloggingpp.h>
+#include <librealsense2/h/rs_types.h>  // rs2_log_severity
+
+#include <stdexcept>
+#include <mutex>
+#include <fstream>
+
 
 namespace librealsense
 {
@@ -131,7 +139,7 @@ namespace librealsense
 
 
         logger_type()
-            : filename(to_string() << datetime_string() << ".log")
+            : filename( rsutils::string::from::datetime() + ".log" )
         {
             rs2_log_severity severity;
             if (try_get_log_severity(severity))

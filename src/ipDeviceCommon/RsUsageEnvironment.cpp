@@ -17,7 +17,7 @@ RSUsageEnvironment::~RSUsageEnvironment()
 {
     CLOG(INFO, "netdev") << "RealSense network logging closed";
 
-    el::Loggers::unregisterLogger("librealsense");
+    el::Loggers::unregisterLogger(LIBREALSENSE_ELPP_ID);
     el::Loggers::unregisterLogger("netdev");
 }
 
@@ -29,7 +29,7 @@ RSUsageEnvironment* RSUsageEnvironment::createNew(TaskScheduler& taskScheduler)
     {
         env->ptr = env->buffer;
         env->netdev_log = el::Loggers::getLogger("netdev");
-        env->lrs_log = el::Loggers::getLogger("librealsense");
+        env->lrs_log = el::Loggers::getLogger(LIBREALSENSE_ELPP_ID);
 
         el::Loggers::reconfigureAllLoggers(el::Level::Global, el::ConfigurationType::Format, "%datetime{%y%M%d%H%m%s.%g} [%logger]\t%levshort: %msg");
         el::Loggers::reconfigureAllLoggers(el::Level::Debug, el::ConfigurationType::Enabled, "false");

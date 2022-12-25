@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.1.0)
 
 project(RealsenseWrappers)
 
-set(DEPENDENCIES realsense2 utilities)
+set(DEPENDENCIES realsense2)
 
 if (BUILD_PYTHON_BINDINGS OR BUILD_PYTHON_DOCS)
     if (NOT INTERNET_CONNECTION)
@@ -13,9 +13,6 @@ if (BUILD_PYTHON_BINDINGS OR BUILD_PYTHON_DOCS)
 
 endif()
 
-if (BUILD_NODEJS_BINDINGS)
-  add_subdirectory(nodejs)
-endif()
 
 if (BUILD_CV_EXAMPLES)
   add_subdirectory(opencv)

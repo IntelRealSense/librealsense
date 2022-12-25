@@ -545,7 +545,14 @@ const char * get_string( rs2_frame_metadata_value value )
     CASE( SEQUENCE_NAME )
     CASE( SEQUENCE_ID )
     CASE( SEQUENCE_SIZE )
-    CASE( SAFETY_DEPTH_FRAME_COUNTER )
+    CASE( TRIGGER )
+    CASE( PRESET )
+    CASE( INPUT_WIDTH )
+    CASE( INPUT_HEIGHT )
+    CASE( SUB_PRESET_INFO )
+    CASE( CALIB_INFO )
+    CASE( CRC )
+	CASE( SAFETY_DEPTH_FRAME_COUNTER )
     CASE( SAFETY_LEVEL1 )
     CASE( SAFETY_LEVEL1_ORIGIN )
     CASE( SAFETY_LEVEL2 )
@@ -559,6 +566,7 @@ const char * get_string( rs2_frame_metadata_value value )
     CASE( SAFETY_FUSA_EVENT )
     CASE( SAFETY_FUSA_ACTION )
     CASE( SAFETY_CRC32 )
+
     default:
         assert( ! is_valid( value ) );
         return UNKNOWN_VALUE;
