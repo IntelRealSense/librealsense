@@ -576,9 +576,7 @@ namespace librealsense
                 stream->start_streaming( [p = profile, this]( realdds::topics::device::image && dds_frame ) {
                     rs2_stream_profile prof = { p.get() };
 
-                    if( p->get_stream_type() != RS2_STREAM_GYRO  &&
-                        p->get_stream_type() != RS2_STREAM_ACCEL &&
-                        p->get_stream_type() != RS2_STREAM_POSE )
+                    if( Is< video_stream_profile >(p) )
                     {
                         rs2_software_video_frame rs2_frame;
 
@@ -796,7 +794,7 @@ namespace librealsense
             struct sensor_info
             {
                 std::shared_ptr< dds_sensor_proxy > proxy;
-                int sensor_index;
+                int sensor_index = 0;
             };
             std::map< std::string, sensor_info > sensor_name_to_info;
             // We assign (sid,index) based on the stream type:
@@ -1196,7 +1194,7 @@ namespace librealsense
         auto prev_playback_devices = _playback_devices;
         _playback_devices[file] = dinfo;
         on_device_changed({}, {}, prev_playback_devices, _playback_devices);
-        return std::move(dinfo);
+        return dinfo;
     }
 
     void context::add_software_device(std::shared_ptr<device_info> dev)
