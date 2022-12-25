@@ -727,14 +727,16 @@ namespace librealsense
             ::close(fd);
         }
 
-        uvc_device_info v4l_uvc_device::get_info_from_mipi_device_path(const std::string& video_path, const std::string& name)
+        uvc_device_info v4l_uvc_device::get_info_from_mipi_device_path(const std::string& video_path, const std::string& name, int& depth_node)
         {
             uint16_t vid{}, pid{}, mi{};
             usb_spec usb_specification(usb_undefined);
             std::string bus_info, card;
+            uint32_t dev_capabilities{};
 
             auto dev_name = "/dev/" + name;
 
+            dev_capabilities = get_dev_capabilities(dev_name);
             get_mipi_device_info(dev_name, bus_info, card);
 
             // the following 2 lines need to be changed in order to enable multiple mipi devices support
@@ -762,19 +764,53 @@ namespace librealsense
             // - video5 for IMU (accel or gyro TBD)
             // next several lines permit to use D457 even if a usb device has already "taken" the video0,1,2 (for example)
             // further development is needed to permit use of several mipi devices
-            static int  first_video_index = ind;
-            ind = (ind - first_video_index) % 6; // offset from first mipi video node and assume 6 nodes per mipi camera
-            if (ind == 0 || ind == 2 || ind == 4)
-                mi = 0;
-            else if (ind == 1 | ind == 3)
+            if (dev_capabilities & V4L2_CAP_META_CAPTURE)
+            {
                 mi = 3;
-            else if (ind == 5)
-                mi = 4;
+            }
             else
             {
-                LOG_WARNING("Unresolved Video4Linux device mi, device is skipped");
-                throw linux_backend_exception("Unresolved Video4Linux device, device is skipped");
+                bool is_imu = false;
+                {
+                    auto fd = ::open(dev_name.c_str(), O_RDWR);
+
+                    struct v4l2_fmtdesc fmtdesc{};
+                    fmtdesc.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+
+                    while (ioctl(fd, VIDIOC_ENUM_FMT, &fmtdesc) == 0) {
+                        if (fmtdesc.pixelformat == V4L2_PIX_FMT_Z16) {
+                            depth_node++;
+                        }
+                        fmtdesc.index++;
+                    }
+
+                    struct v4l2_frmsizeenum frmsz {};
+                    frmsz.index = 0;
+                    frmsz.pixel_format = V4L2_PIX_FMT_GREY;
+                    while (ioctl(fd, VIDIOC_ENUM_FRAMESIZES, &frmsz) == 0)
+                    {
+                        if (frmsz.discrete.height == 1)
+                        {
+                            is_imu = true;
+                            break;
+                        }
+                        frmsz.index++;
+                    }
+                    ::close(fd);
+                }
+                if (is_imu)
+                {
+                    mi = 4;
+                }
+                else
+                {
+                    mi = 0;
+                }
             }
+
+            std::stringstream ss_bus_info_postfix;
+            ss_bus_info_postfix << "." << depth_node;
+            std::string bus_info_postfix = ss_bus_info_postfix.str();
 
             uvc_device_info info{};
             info.pid = pid;
@@ -787,9 +823,9 @@ namespace librealsense
             // are not available via mipi
             // TODO - find a way to assign unique id for mipi
             // maybe using bus_info and card params (see above in this method)
-            info.unique_id = bus_info; // use bus_info as per camera unique id for mipi
+            info.unique_id = bus_info + bus_info_postfix; // use bus_info as per camera unique id for mipi
             info.conn_spec = usb_specification;
-            info.uvc_capabilities = get_dev_capabilities(dev_name);
+            info.uvc_capabilities = dev_capabilities;
 
             return info;
         }
@@ -810,6 +846,11 @@ namespace librealsense
             typedef std::pair<uvc_device_info,std::string> node_info;
             std::vector<node_info> uvc_nodes,uvc_devices;
 
+            // For D457, SUPPOSE, the DEPTH is the first sensor for each camera device.
+            // if there is more than one device but not all sensors are enumerated,
+            //    there is the same number DEPTH sensor can be found.
+            int depth_node = 0;
+
             for(auto&& video_path : video_paths)
             {
                 // following line grabs video0 from
@@ -824,7 +865,7 @@ namespace librealsense
                     }
                     else //video4linux devices that are not USB devices
                     {
-                        info = get_info_from_mipi_device_path(video_path, name);
+                        info = get_info_from_mipi_device_path(video_path, name, depth_node);
                     }
 
                     auto dev_name = "/dev/" + name;
