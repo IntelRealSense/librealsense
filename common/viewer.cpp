@@ -838,7 +838,7 @@ namespace rs2
                 std::string tmp = realsense_udev_rules;
                 tmp.erase(tmp.find_last_of("\n") + 1);
                 const std::string udev = tmp;
-                float udev_file_ver{}, built_in_file_ver{};
+                float udev_file_ver{0}, built_in_file_ver{0};
 
                 // The udev-rules file shall start with version token expressed as ##Version=xx.yy##
                 std::regex udev_ver_regex("^##Version=(\\d+\\.\\d+)##");
