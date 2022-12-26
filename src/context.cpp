@@ -575,24 +575,46 @@ namespace librealsense
                 auto & stream = _streams[sid_index( profile->get_unique_id(), profile->get_stream_index() )];
                 stream->start_streaming( [p = profile, this]( realdds::topics::device::image && dds_frame ) {
                     rs2_stream_profile prof = { p.get() };
-                    rs2_software_video_frame rs2_frame;
-                    
-                    //Copying from dds into LibRS space, same as copy from USB backend.
-                    //TODO - use memory pool or some other frame allocator
-                    rs2_frame.pixels = new uint8_t[dds_frame.size];
-                    if ( !rs2_frame.pixels )
-                        throw std::runtime_error( "Could not allocate memory for new frame" );
-                    memcpy( rs2_frame.pixels, dds_frame.raw_data.data(), dds_frame.size );
-                    
-                    rs2_frame.deleter = []( void * ptr) { delete[] ptr; };
-                    rs2_frame.stride = dds_frame.size / dds_frame.height;
-                    rs2_frame.bpp = rs2_frame.stride / dds_frame.width;
-                    rs2_frame.timestamp = frame_counter * 1000.0 / p->get_framerate(); // TODO - timestamp from dds
-                    rs2_frame.domain = RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK; // TODO - timestamp domain from options?
-                    rs2_frame.frame_number = frame_counter++; // TODO - frame_number from dds
-                    rs2_frame.profile = &prof;
-                    rs2_frame.depth_units = 0.001f; //TODO - depth unit from dds, if needed
-                    on_video_frame( rs2_frame );
+
+                    if( Is< video_stream_profile >(p) )
+                    {
+                        rs2_software_video_frame rs2_frame;
+
+                        //Copying from dds into LibRS space, same as copy from USB backend.
+                        //TODO - use memory pool or some other frame allocator
+                        rs2_frame.pixels = new uint8_t[dds_frame.size];
+                        if( !rs2_frame.pixels )
+                            throw std::runtime_error( "Could not allocate memory for new frame" );
+                        memcpy( rs2_frame.pixels, dds_frame.raw_data.data(), dds_frame.size );
+
+                        rs2_frame.deleter = []( void * ptr ) { delete[] ptr; };
+                        rs2_frame.stride = dds_frame.height > 0 ? dds_frame.size / dds_frame.height : dds_frame.size;
+                        rs2_frame.bpp = dds_frame.width > 0 ? rs2_frame.stride / dds_frame.width : rs2_frame.stride;
+                        rs2_frame.timestamp = frame_counter * 1000.0 / p->get_framerate(); // TODO - timestamp from dds
+                        rs2_frame.domain = RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK; // TODO - timestamp domain from options?
+                        rs2_frame.frame_number = frame_counter++; // TODO - frame_number from dds
+                        rs2_frame.profile = &prof;
+                        rs2_frame.depth_units = 0.001f; //TODO - depth unit from dds, if needed
+                        on_video_frame( rs2_frame );
+                    }
+                    else
+                    {
+                        rs2_software_motion_frame rs2_frame;
+
+                        //Copying from dds into LibRS space, same as copy from USB backend.
+                        //TODO - use memory pool or some other frame allocator
+                        rs2_frame.data = new uint8_t[dds_frame.size];
+                        if( !rs2_frame.data )
+                            throw std::runtime_error( "Could not allocate memory for new frame" );
+                        memcpy( rs2_frame.data, dds_frame.raw_data.data(), dds_frame.size );
+
+                        rs2_frame.deleter = []( void * ptr ) { delete[] ptr; };
+                        rs2_frame.timestamp = frame_counter * 1000.0 / p->get_framerate(); // TODO - timestamp from dds
+                        rs2_frame.domain = RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK; // TODO - timestamp domain from options?
+                        rs2_frame.frame_number = frame_counter++; // TODO - frame_number from dds
+                        rs2_frame.profile = &prof;
+                        on_motion_frame( rs2_frame );
+                    }
                 } );
             }
 
@@ -772,7 +794,7 @@ namespace librealsense
             struct sensor_info
             {
                 std::shared_ptr< dds_sensor_proxy > proxy;
-                int sensor_index;
+                int sensor_index = 0;
             };
             std::map< std::string, sensor_info > sensor_name_to_info;
             // We assign (sid,index) based on the stream type:
@@ -857,7 +879,7 @@ namespace librealsense
 
         platform::backend_device_group get_device_data() const override
         {
-            return platform::backend_device_group{};
+            return platform::backend_device_group{ { platform::playback_device_info{ _dev->device_info().topic_root } } };
         }
     };
 #endif //BUILD_WITH_DDS
@@ -989,28 +1011,35 @@ namespace librealsense
                 LOG_DEBUG("\nDevice connected:\n\n" << std::string(devices_info_added[i]->get_device_data()));
             }
 
-            std::map<uint64_t, devices_changed_callback_ptr> devices_changed_callbacks;
-            {
-                std::lock_guard<std::mutex> lock(_devices_changed_callbacks_mtx);
-                devices_changed_callbacks = _devices_changed_callbacks;
-            }
-
-            for (auto& kvp : devices_changed_callbacks)
-            {
-                try
-                {
-                    kvp.second->on_devices_changed(new rs2_device_list({ shared_from_this(), rs2_devices_info_removed }),
-                                                   new rs2_device_list({ shared_from_this(), rs2_devices_info_added }));
-                }
-                catch (...)
-                {
-                    LOG_ERROR("Exception thrown from user callback handler");
-                }
-            }
-
-            raise_devices_changed(rs2_devices_info_removed, rs2_devices_info_added);
+            invoke_devices_changed_callbacks( rs2_devices_info_removed, rs2_devices_info_added );
         }
     }
+
+    void context::invoke_devices_changed_callbacks( std::vector<rs2_device_info> & rs2_devices_info_removed,
+                                                    std::vector<rs2_device_info> & rs2_devices_info_added )
+    {
+        std::map<uint64_t, devices_changed_callback_ptr> devices_changed_callbacks;
+        {
+            std::lock_guard<std::mutex> lock( _devices_changed_callbacks_mtx );
+            devices_changed_callbacks = _devices_changed_callbacks;
+        }
+
+        for( auto & kvp : devices_changed_callbacks )
+        {
+            try
+            {
+                kvp.second->on_devices_changed( new rs2_device_list( { shared_from_this(), rs2_devices_info_removed } ),
+                                                new rs2_device_list( { shared_from_this(), rs2_devices_info_added } ) );
+            }
+            catch( ... )
+            {
+                LOG_ERROR( "Exception thrown from user callback handler" );
+            }
+        }
+
+        raise_devices_changed( rs2_devices_info_removed, rs2_devices_info_added );
+    }
+
     void context::raise_devices_changed(const std::vector<rs2_device_info>& removed, const std::vector<rs2_device_info>& added)
     {
         if (_devices_changed_callback)
@@ -1038,12 +1067,22 @@ namespace librealsense
 #ifdef BUILD_WITH_DDS
     void context::start_dds_device_watcher( size_t message_timeout_ms )
     {
-        // TODO Here we should add DDS devices to the `on_device_changed`parameters
-        // on_device_changed(old, curr, _playback_devices, _playback_devices);
         _dds_watcher->on_device_added( [this, message_timeout_ms]( std::shared_ptr< realdds::dds_device > const & dev ) {
             dev->run( message_timeout_ms );
+
+            std::vector<rs2_device_info> rs2_device_info_added;
+            std::vector<rs2_device_info> rs2_device_info_removed;
+            std::shared_ptr< device_info > info = std::make_shared< dds_device_info >( shared_from_this(), dev );
+            rs2_device_info_added.push_back( { shared_from_this(), info } );
+            invoke_devices_changed_callbacks( rs2_device_info_removed, rs2_device_info_added );
         } );
-        _dds_watcher->on_device_removed( [this]( std::shared_ptr< realdds::dds_device > const & dev ) {} );
+        _dds_watcher->on_device_removed( [this]( std::shared_ptr< realdds::dds_device > const & dev ) {
+            std::vector<rs2_device_info> rs2_device_info_added;
+            std::vector<rs2_device_info> rs2_device_info_removed;
+            std::shared_ptr< device_info > info = std::make_shared< dds_device_info >( shared_from_this(), dev );
+            rs2_device_info_removed.push_back( { shared_from_this(), info } );
+            invoke_devices_changed_callbacks( rs2_device_info_removed, rs2_device_info_added );
+        } );
         _dds_watcher->start();
     }
 #endif //BUILD_WITH_DDS
@@ -1155,7 +1194,7 @@ namespace librealsense
         auto prev_playback_devices = _playback_devices;
         _playback_devices[file] = dinfo;
         on_device_changed({}, {}, prev_playback_devices, _playback_devices);
-        return std::move(dinfo);
+        return dinfo;
     }
 
     void context::add_software_device(std::shared_ptr<device_info> dev)

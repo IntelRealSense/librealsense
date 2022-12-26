@@ -4,7 +4,7 @@ Copyright(c) 2022 Intel Corporation. All Rights Reserved. */
 #include "python.hpp"
 
 #include <realdds/dds-participant.h>
-#include <realdds/topics/dds-topics.h>
+#include <realdds/topics/flexible/flexible-msg.h>
 #include <realdds/topics/flexible/flexiblePubSubTypes.h>
 #include <realdds/dds-device-broadcaster.h>
 #include <realdds/dds-device-server.h>
