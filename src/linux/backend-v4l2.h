@@ -147,7 +147,6 @@ namespace librealsense
             uint32_t _offset;
             bool _use_memory_map;
             uint32_t _index;
-            uint8_t _num_planes;
             v4l2_buffer _buf;
             std::mutex _mutex;
             bool _must_enqueue = false;
@@ -417,16 +416,9 @@ namespace librealsense
             std::unique_ptr<std::thread> _thread;
             std::unique_ptr<named_mutex> _named_mtx;
             struct device {
-                int fd;
-                int opened;
                 enum v4l2_buf_type type;
-                enum v4l2_memory memtype;
-                unsigned int nbufs;
-                uint32_t buffer_qbuf_flags;
-                uint32_t buffer_dqbuf_flags;
                 std::string _name;
                 unsigned char num_planes;
-                struct v4l2_plane_pix_format plane_fmt[VIDEO_MAX_PLANES];
                 struct v4l2_capability cap;
                 struct v4l2_cropcap cropcap;
             } _dev;
@@ -467,6 +459,9 @@ namespace librealsense
             virtual inline std::shared_ptr<buffer> get_md_buffer(__u32 index) const {return _md_buffers[index];}
             int _md_fd = -1;
             std::string _md_name = "";
+            int _md_mi = 3;
+
+            v4l2_buf_type _md_type = LOCAL_V4L2_BUF_TYPE_META_CAPTURE;
 
             std::vector<std::shared_ptr<buffer>> _md_buffers;
             stream_profile _md_profile;
