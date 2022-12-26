@@ -34,7 +34,6 @@ namespace librealsense
         std::shared_ptr<stream_interface> _accel_stream;
         std::shared_ptr<stream_interface> _gyro_stream;
 
-        uint16_t _pid;    // product PID
         std::shared_ptr<mm_calib_handler>        _mm_calib;
         optional_value<uint8_t> _motion_module_device_idx;
     };
@@ -53,10 +52,6 @@ namespace librealsense
 
     protected:
         friend class ds_motion_common;
-        friend class ds_fisheye_sensor;
-        friend class ds_motion_sensor;
-
-        std::shared_ptr<ds_motion_common> _ds_motion_common;        
 
     private:
         void register_fisheye_options();
@@ -67,8 +62,6 @@ namespace librealsense
         void initialize_fisheye_sensor(std::shared_ptr<context> ctx, const platform::backend_device_group& group);
 
         optional_value<uint8_t> _fisheye_device_idx;
-        optional_value<uint8_t> _motion_module_device_idx;
-
     };
 
     class ds5_motion_uvc : public ds5_motion_base
