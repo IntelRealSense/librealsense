@@ -75,9 +75,9 @@ std::vector<std::string> librealsense::aus_get_counters_list()
    return aus_data_obj.get_counters_list();
 }
 
-void librealsense::aus_on_device_changed( std::string serial, std::string name )
+void librealsense::aus_on_device_changed(std::shared_ptr<device_interface> device)
 {
-    aus_data_obj.on_device_changed( serial,name);
+    aus_data_obj.on_device_changed(device);
 }
 
 

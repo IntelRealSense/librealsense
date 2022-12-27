@@ -140,6 +140,7 @@ namespace librealsense
         configure_depth_options();
     }
 
+
     l500_depth_sensor & l500_device::get_depth_sensor()
     {
         return dynamic_cast<l500_depth_sensor &>(get_sensor( _depth_device_idx ));

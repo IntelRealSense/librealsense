@@ -4,6 +4,7 @@
 #pragma once
 
 #include "types.h"
+#include "device.h"
 
 namespace librealsense
 {
@@ -158,7 +159,7 @@ namespace librealsense
                 _mp[key]->set(value);
             }
             else
-            {//_mp[key] = std::make_unique<aus_counter>(new aus_counter(value));
+            {
                 _mp[key] = new aus_counter(value);
             }
 
@@ -172,7 +173,6 @@ namespace librealsense
             }
             else
             {
-               // _mp[key] = std::make_unique<aus_counter>(new aus_counter(1));
                 _mp[key] = new aus_counter(1);
             }
         }
@@ -235,11 +235,16 @@ namespace librealsense
             _mp_devices_manager[serial]=name;
         }
 
-        void on_device_changed(std::string serial, std::string name )
+        void on_device_changed(std::shared_ptr<device_interface> device)
         {
-            if ( !device_exist( serial ) )
+            if (device->supports_info(RS2_CAMERA_INFO_ASIC_SERIAL_NUMBER) && device->supports_info(RS2_CAMERA_INFO_NAME))
             {
-                insert_device_to_device_manager( serial, name );
+                std::string serial = device->get_info(RS2_CAMERA_INFO_ASIC_SERIAL_NUMBER);
+                std::string name = device->get_info(RS2_CAMERA_INFO_NAME);
+                if (!device_exist(serial))
+                {
+                    insert_device_to_device_manager(serial, name);
+                }
             }
         } 
 
@@ -323,6 +328,10 @@ namespace librealsense
             throw std::runtime_error("get_counters_names is not supported without BUILD_AUS");
         }
 
+        void on_device_changed(std::shared_ptr<device_interface> device)
+        {
+            return;
+        }
     }; // end of class aus_data
 
 #endif

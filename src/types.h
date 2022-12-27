@@ -216,7 +216,8 @@ namespace librealsense
     std::string aus_build_system_timer_name(std::string suffix, std::string device_name = "");
     std::string aus_build_system_counter_name(std::string suffix, std::string device_name = "");
     std::vector<std::string> aus_get_counters_list();
-    void aus_on_device_changed( std::string serial,std::string name);
+    class device_interface;
+    void aus_on_device_changed(std::shared_ptr<device_interface> device);
 
     // Enhancement for debug mode that incurs performance penalty with STL
     // std::clamp to be introduced with c++17
