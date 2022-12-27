@@ -43,29 +43,40 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
         test.check_equal( len(n_devs), 1 )
         
         remote.run( 'instance2 = broadcast_device( d405, d405.device_info )', timeout=5 )
-        sleep( 2 ) # Wait for device to be received and built, otherwise wait_for_devices will return immediately with d435i only
+        sleep( 1 ) # Wait for device to be received and built, otherwise wait_for_devices will return immediately with previous devices
         n_devs = wait_for_devices()
         test.check_equal( len(n_devs), 2 )
+        
+        remote.run( 'instance3 = broadcast_device( d455, d455.device_info )', timeout=5 )
+        sleep( 1 ) # Wait for device to be received and built, otherwise wait_for_devices will return immediately with previous devices
+        n_devs = wait_for_devices()
+        test.check_equal( len(n_devs), 3 )
         
         remote.run( 'close_server( instance )', timeout=5 )
         remote.run( 'instance = None', timeout=1 )
-        sleep( 1 ) # Give client device time to close
-        n_devs = wait_for_devices()
-        test.check_equal( len(n_devs), 1 )
-        
-        remote.run( 'instance3 = broadcast_device( d435i, d435i.device_info )', timeout=5 )
-        sleep( 2 ) # Wait for device to be received and built, otherwise wait_for_devices will return immediately with d405 only
+        sleep( 0.5 ) # Give client device time to close
         n_devs = wait_for_devices()
         test.check_equal( len(n_devs), 2 )
         
+        remote.run( 'instance4 = broadcast_device( d435i, d435i.device_info )', timeout=5 )
+        sleep( 1 ) # Wait for device to be received and built, otherwise wait_for_devices will return immediately with previous devices
+        n_devs = wait_for_devices()
+        test.check_equal( len(n_devs), 3 )
+        
         remote.run( 'close_server( instance2 )', timeout=5 )
         remote.run( 'instance2 = None', timeout=1 )
-        sleep( 1 ) # Give client device time to close
+        sleep( 0.5 ) # Give client device time to close
+        n_devs = wait_for_devices()
+        test.check_equal( len(n_devs), 2 )
+        
+        remote.run( 'close_server( instance3 )', timeout=5 )
+        remote.run( 'instance2 = None', timeout=1 )
+        sleep( 0.5 ) # Give client device time to close
         n_devs = wait_for_devices()
         test.check_equal( len(n_devs), 1 )
         
-        remote.run( 'close_server( instance3 )', timeout=5 )
-        sleep( 1 ) # Give client device time to close
+        remote.run( 'close_server( instance4 )', timeout=5 )
+        sleep( 0.5 ) # Give client device time to close
         n_devs = wait_for_devices()
         test.check_equal( n_devs, None )
     except:

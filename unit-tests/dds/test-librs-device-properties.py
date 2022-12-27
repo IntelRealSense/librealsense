@@ -8,6 +8,8 @@ log.nested = 'C  '
 
 import d435i
 import d405
+import d455
+
 import pyrealsense2 as rs
 rs.log_to_console( rs.log_severity.debug )
 from time import sleep
@@ -26,7 +28,6 @@ def wait_for_devices( tries = 3 ):
             return devices
         tries -= 1
         sleep( 1 )
-    
 
 
 import os.path
@@ -89,7 +90,35 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
     test.finish()
     #
     #############################################################################################
-
+    #
+    test.start( "Test D455" )
+    try:
+        remote.run( 'instance = broadcast_device( d455, d455.device_info )', timeout=5 )
+        n_devs = 0
+        for dev in wait_for_devices():
+            n_devs += 1
+        test.check_equal( n_devs, 1 )
+        test.check_equal( dev.get_info( rs.camera_info.name ), d455.device_info.name )
+        test.check_equal( dev.get_info( rs.camera_info.serial_number ), d455.device_info.serial )
+        test.check_equal( dev.get_info( rs.camera_info.physical_port ), d455.device_info.topic_root )
+        sensors = {sensor.get_info( rs.camera_info.name ) : sensor for sensor in dev.query_sensors()}
+        test.check_equal( len(sensors), 3 )
+        if test.check( 'Stereo Module' in sensors ):
+            sensor = sensors.get('Stereo Module')
+            test.check_equal( len(sensor.get_stream_profiles()), len(d455.depth_stream_profiles())+2*len(d455.ir_stream_profiles())+len(d455.colored_infrared_stream_profiles()) )
+        if test.check( 'RGB Camera' in sensors ):
+            sensor = sensors['RGB Camera']
+            test.check_equal( len(sensor.get_stream_profiles()), len(d455.color_stream_profiles()) )
+        if test.check( 'Motion Module' in sensors ):
+            sensor = sensors['Motion Module']
+            test.check_equal( len(sensor.get_stream_profiles()), len(d455.accel_stream_profiles())+len(d455.gyro_stream_profiles()) )
+        remote.run( 'close_server( instance )', timeout=5 )
+    except:
+        test.unexpected_exception()
+    dev = None
+    test.finish()
+    #
+    #############################################################################################
 
 context = None
 test.print_results_and_exit()
