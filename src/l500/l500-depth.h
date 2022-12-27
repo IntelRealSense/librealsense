@@ -20,6 +20,9 @@
 #include "max-usable-range-sensor.h"
 #include "debug-stream-sensor.h"
 
+#include <rsutils/string/from.h>
+
+
 namespace librealsense
 {
     class l500_depth : public virtual l500_device
@@ -135,7 +138,8 @@ namespace librealsense
                 else if (model_raw.pinhole_cam_model.height == height && model_raw.pinhole_cam_model.width == width)
                     return  model_raw;
             }
-            throw std::runtime_error(to_string() << "intrinsics for resolution " << width << "," << height << " doesn't exist");
+            throw std::runtime_error( rsutils::string::from()
+                                      << "intrinsics for resolution " << width << "," << height << " doesn't exist" );
         }
 
         rs2_intrinsics get_intrinsics(const stream_profile& profile) const override

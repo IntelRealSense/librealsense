@@ -110,15 +110,15 @@ namespace rs2
         bool use_glsl = false;
 
         // Absolutely arbitrary list of manufacturers that are likely to benefit from GLSL optimisation
-        if (starts_with(utilities::string::to_lower(vendor), "intel") ||
-            starts_with(utilities::string::to_lower(vendor), "ati") ||
-            starts_with(utilities::string::to_lower(vendor), "nvidia"))
+        if (starts_with(rsutils::string::to_lower(vendor), "intel") ||
+            starts_with(rsutils::string::to_lower(vendor), "ati") ||
+            starts_with(rsutils::string::to_lower(vendor), "nvidia"))
         {
             use_glsl = true;
         }
 
         // Double-check that GLSL 1.3+ is supported
-        if (starts_with(utilities::string::to_lower(vendor), "1.1") || starts_with(utilities::string::to_lower(vendor), "1.2"))
+        if (starts_with(rsutils::string::to_lower(vendor), "1.1") || starts_with(rsutils::string::to_lower(vendor), "1.2"))
         {
             use_glsl = false;
         }
@@ -262,7 +262,7 @@ namespace rs2
         _fullscreen = config_file::instance().get(configurations::window::is_fullscreen);
 
         rs2_error* e = nullptr;
-        _title_str = to_string() << _title << " v" << api_version_to_string(rs2_get_api_version(&e));
+        _title_str = rsutils::string::from() << _title << " v" << api_version_to_string(rs2_get_api_version(&e));
         auto debug = is_debug();
         if (debug)
         {
@@ -482,7 +482,7 @@ namespace rs2
         }
 
         std::string hourglass = u8"\uf251";
-        static utilities::time::periodic_timer every_200ms(std::chrono::milliseconds(200));
+        static rsutils::time::periodic_timer every_200ms(std::chrono::milliseconds(200));
         bool do_200ms = every_200ms;
         if (_query_devices && do_200ms)
         {
@@ -697,7 +697,7 @@ namespace rs2
 
         if (fw != _fb_width || fh != _fb_height)
         {
-            std::string msg = to_string() << "Framebuffer size changed to " << _fb_width << " x " << _fb_height;
+            std::string msg = rsutils::string::from() << "Framebuffer size changed to " << _fb_width << " x " << _fb_height;
             rs2::log(RS2_LOG_SEVERITY_INFO, msg.c_str());
         }
 
@@ -711,13 +711,13 @@ namespace rs2
 
         if (w != _width || h != _height)
         {
-            std::string msg = to_string() << "Window size changed to " << _width << " x " << _height;
+            std::string msg = rsutils::string::from() << "Window size changed to " << _width << " x " << _height;
             rs2::log(RS2_LOG_SEVERITY_INFO, msg.c_str());
         }
 
         if (_scale_factor != sf)
         {
-            std::string msg = to_string() << "Scale Factor is now " << _scale_factor;
+            std::string msg = rsutils::string::from() << "Scale Factor is now " << _scale_factor;
             rs2::log(RS2_LOG_SEVERITY_INFO, msg.c_str());
         }
 

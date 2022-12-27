@@ -23,6 +23,9 @@
 #include "proc/color-formats-converter.h"
 #include "firmware_logger_device.h"
 
+#include <rsutils/string/from.h>
+
+
 namespace librealsense
 {
     const uint16_t SR306_PID = 0x0aa3;
@@ -219,7 +222,9 @@ namespace librealsense
             void set(float value) override
             {
                 if (!is_valid(value))
-                    throw invalid_value_exception(to_string() << "set(preset_option) failed! Given value " << value << " is out of range.");
+                    throw invalid_value_exception( rsutils::string::from()
+                                                   << "set(preset_option) failed! Given value " << value
+                                                   << " is out of range." );
 
                 _owner.rs2_apply_ivcam_preset(static_cast<int>(value));
                 last_value = value;

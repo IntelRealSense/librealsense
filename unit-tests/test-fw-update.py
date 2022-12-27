@@ -3,17 +3,17 @@
 
 # we want this test to run first so that all tests run with updated FW versions, so we give it priority 0
 #test:priority 0
+#test:device each(D400*) !D457
 #test:device each(L500*)
-#test:device each(D400*)
 
-import pyrealsense2 as rs, sys, os, subprocess
+import sys
 import os
 import subprocess
 import re
 import platform
 import pyrealsense2 as rs
+import pyrsutils as rsutils
 from rspy import devices, log, test, file, repo
-import re, platform
 
 
 if not devices.acroname:
@@ -156,31 +156,12 @@ if device.is_update_device():
         devices.query( monitor_changes = False )
         device = devices.get_first( devices.all() ).handle
 
-current_fw_version = repo.pretty_fw_version( device.get_info( rs.camera_info.firmware_version ))
+current_fw_version = rsutils.version( device.get_info( rs.camera_info.firmware_version ))
 log.d( 'FW version:', current_fw_version )
-bundled_fw_version = repo.pretty_fw_version( device.get_info( rs.camera_info.recommended_firmware_version ) )
+bundled_fw_version = rsutils.version( device.get_info( rs.camera_info.recommended_firmware_version ) )
 log.d( 'bundled FW version:', bundled_fw_version )
 
-def compare_fw_versions( v1, v2 ):
-    """
-    :param v1: left FW version
-    :param v2: right FW version
-    :return: 1 if v1 > v2; -1 is v1 < v2; 0 if they're equal
-    """
-    v1_list = v1.split( '.' )
-    v2_list = v2.split( '.' )
-    if len(v1_list) != 4:
-        raise RuntimeError( "FW version (left) '" + v1 + "' is invalid" )
-    if len(v2_list) != 4:
-        raise RuntimeError( "FW version (right) '" + v2 + "' is invalid" )
-    for n1, n2 in zip( v1_list, v2_list ):
-        if int(n1) > int(n2):
-            return 1
-        if int(n1) < int(n2):
-            return -1
-    return 0
-
-if compare_fw_versions( current_fw_version, bundled_fw_version ) == 0:
+if current_fw_version == bundled_fw_version:
     # Current is same as bundled
     if recovered or 'nightly' not in test.context:
         # In nightly, we always update; otherwise we try to save time, so do not do anything!
@@ -198,7 +179,11 @@ if update_counter >= 19:
     reset_update_counter( device )
     update_counter = 0
 
-image_file = find_image_or_exit(product_name, re.escape( bundled_fw_version ))
+fw_version_regex = bundled_fw_version.to_string()
+if not bundled_fw_version.build():
+    fw_version_regex += ".0"  # version drops the build if 0
+fw_version_regex = re.escape( fw_version_regex )
+image_file = find_image_or_exit(product_name, fw_version_regex)
 # finding file containing image for FW update
 
 cmd = [fw_updater_exe, '-f', image_file]
@@ -210,7 +195,7 @@ subprocess.run( cmd )   # may throw
 devices.query( monitor_changes = False )
 sn_list = devices.all()
 device = devices.get_first( sn_list ).handle
-current_fw_version = repo.pretty_fw_version( device.get_info( rs.camera_info.firmware_version ))
+current_fw_version = rsutils.version( device.get_info( rs.camera_info.firmware_version ))
 test.check_equal( current_fw_version, bundled_fw_version )
 new_update_counter = get_update_counter( device )
 # According to FW: "update counter zeros if you load newer FW than (ever) before"

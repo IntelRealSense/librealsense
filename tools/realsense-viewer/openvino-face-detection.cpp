@@ -11,6 +11,8 @@
 #include <rs-vino/detected-object.h>
 #include <cv-helpers.hpp>
 
+#include <rsutils/string/from.h>
+
 namespace openvino = InferenceEngine;
 
 /* We need to extend the basic detected_object to include facial characteristics
@@ -328,7 +330,7 @@ private:
                 }
                 objects.emplace_back(
                     face->get_id(),
-                    rs2::to_string() << (face->is_male() ? u8"\uF183" : u8"\uF182") << "  " << face->get_age(),
+                    rsutils::string::from() << (face->is_male() ? u8"\uF183" : u8"\uF182") << "  " << face->get_age(),
                     normalized_color_bbox,
                     normalized_depth_bbox,
                     face->get_depth()

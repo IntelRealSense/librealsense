@@ -1,8 +1,9 @@
 /* License: Apache 2.0. See LICENSE file in root directory.
 Copyright(c) 2017 Intel Corporation. All Rights Reserved. */
 
-#include "python.hpp"
-#include "../include/librealsense2/rsutil.h"
+#include "pyrealsense2.h"
+#include <librealsense2/rsutil.h>
+
 
 void init_util(py::module &m) {
     /** rsutil.h **/

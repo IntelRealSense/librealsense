@@ -48,7 +48,7 @@ namespace librealsense
                         found = (result.mi == 5);
                         break;
                     default:
-                        throw not_implemented_exception(to_string() << "USB device "
+                        throw not_implemented_exception(rsutils::string::from() << "USB device "
                             << std::hex << info.pid << ":" << info.vid << std::dec << " is not supported.");
                         break;
                     }
@@ -78,7 +78,7 @@ namespace librealsense
                     });
                 break;
             default:
-                throw invalid_value_exception(to_string()
+                throw invalid_value_exception(rsutils::string::from()
                     << "Capability filters are not implemented for val "
                     << std::hex << caps << std::dec);
             }

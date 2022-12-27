@@ -6,6 +6,7 @@
 #include "backend.h"
 #include "types.h"
 #include "fw-update/fw-update-unsigned.h"
+#include <rsutils/string/from.h>
 
 #include <map>
 #include <iomanip>
@@ -13,7 +14,7 @@
 
 //#define DEBUG_THERMAL_LOOP
 #ifdef DEBUG_THERMAL_LOOP
-#define LOG_DEBUG_THERMAL_LOOP(...)   do { CLOG(WARNING   ,"librealsense") << __VA_ARGS__; } while(false)
+#define LOG_DEBUG_THERMAL_LOOP(...)   do { CLOG(WARNING   ,LIBREALSENSE_ELPP_ID) << __VA_ARGS__; } while(false)
 #else
 #define LOG_DEBUG_THERMAL_LOOP(...)
 #endif //DEBUG_THERMAL_LOOP
@@ -35,7 +36,7 @@ namespace librealsense
         const uint8_t DS5_ENABLE_AUTO_EXPOSURE = 0xB;
         const uint8_t DS5_LED_PWR = 0xE;
         const uint8_t DS5_THERMAL_COMPENSATION = 0xF;
-
+        const uint8_t DS5_EMITTER_FREQUENCY               = 0x10;
         // DS5 fisheye XU identifiers
         const uint8_t FISHEYE_EXPOSURE = 1;
 
@@ -73,6 +74,7 @@ namespace librealsense
             DFU = 0x1E,     // Enter to FW update mode
             HWRST = 0x20,     // hardware reset
             OBW = 0x29,     // OVT bypass write
+            PROJ_TEMP_MIPI  = 0x2A,     // get ASIC temperature - with mipi device
             SET_ADV = 0x2B,     // set advanced mode control
             GET_ADV = 0x2C,     // get advanced mode control
             EN_ADV = 0x2D,     // enable advanced mode
@@ -91,6 +93,7 @@ namespace librealsense
             GETRGBAEROI = 0x76,     // get RGB auto-exposure region of interest
             SET_PWM_ON_OFF = 0x77,     // set emitter on and off mode
             GET_PWM_ON_OFF = 0x78,     // get emitter on and off mode
+            ASIC_TEMP_MIPI  = 0x7A,     // get ASIC temperature - with mipi device
             SETSUBPRESET = 0x7B,     // Download sub-preset
             GETSUBPRESET = 0x7C,     // Upload the current sub-preset
             GETSUBPRESETID = 0x7D,     // Retrieve sub-preset's name
@@ -131,7 +134,7 @@ namespace librealsense
                 ENUM2STR(GETSUBPRESET);
                 ENUM2STR(GETSUBPRESETID);
             default:
-                return (to_string() << "Unrecognized FW command " << state);
+              return ( rsutils::string::from() << "Unrecognized FW command " << state );
             }
         }
 
@@ -283,13 +286,16 @@ namespace librealsense
             auto header = reinterpret_cast<const table_header*>(raw_data.data());
             if (raw_data.size() < sizeof(table_header))
             {
-                throw invalid_value_exception(to_string() << "Calibration data invalid, buffer too small : expected " << sizeof(table_header) << " , actual: " << raw_data.size());
+                throw invalid_value_exception( rsutils::string::from()
+                                               << "Calibration data invalid, buffer too small : expected "
+                                               << sizeof( table_header ) << " , actual: " << raw_data.size() );
             }
             // verify the parsed table
-            if (table->header.crc32 != calc_crc32(raw_data.data() + sizeof(table_header), raw_data.size() - sizeof(table_header)))
+            // D457 development
+            /*if (table->header.crc32 != calc_crc32(raw_data.data() + sizeof(table_header), raw_data.size() - sizeof(table_header)))
             {
                 throw invalid_value_exception("Calibration data CRC error, parsing aborted!");
-            }
+            }*/
             LOG_DEBUG("Loaded Valid Table: version [mjr.mnr]: 0x" <<
                 hex << setfill('0') << setw(4) << header->version << dec
                 << ", type " << header->table_type << ", size " << header->table_size

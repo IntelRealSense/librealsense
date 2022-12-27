@@ -99,7 +99,7 @@ target_link_libraries( ''' + testname + ''' ${DEPENDENCIES} )
 
 set_target_properties( ''' + testname + ''' PROPERTIES FOLDER "Unit-Tests/''' + os.path.dirname( testdir ) + '''" )
 
-include( "${REPO_ROOT}/third-party/utilities/include/utilities/easylogging/shared-init.cmake" )
+using_easyloggingpp( ${PROJECT_NAME} SHARED )
 
 # Add the repo root directory (so includes into src/ will be specific: <src/...>)
 target_include_directories(''' + testname + ''' PRIVATE ''' + root + ''')
@@ -126,7 +126,7 @@ def find_include( include, relative_to ):
 
 standard_include_dirs = [
     os.path.join( root, 'include' ),
-    os.path.join( root, 'third-party', 'utilities', 'include' ),
+    os.path.join( root, 'third-party', 'rsutils', 'include' ),
     root
     ]
 def find_include_in_dirs( include ):
@@ -321,10 +321,6 @@ log.d( 'Creating "' + name + '" project in', cmakefile )
 handle = open( cmakefile, 'w' )
 handle.write( '''
 
-# We make use of ELPP (EasyLogging++):
-#include( ''' + dir +  '''/../include/librealsense2/utilities/easylogging/easyloggingpp.cmake )
-#include_directories( ${ELPP_INCLUDES} )
-#include( "${REPO_ROOT}/third-party/utilities/include/utilities/easylogging/shared-init.cmake" )
 set( CATCH_FILES
     ''' + dir + '''/catch/catch.hpp
 )

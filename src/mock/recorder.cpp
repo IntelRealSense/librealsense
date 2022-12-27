@@ -6,7 +6,7 @@
 #include "sql.h"
 #include <algorithm>
 #include "types.h"
-#include <iostream>
+#include <rsutils/string/from.h>
 
 using namespace std;
 using namespace sql;
@@ -193,7 +193,9 @@ namespace librealsense
                     auto result = check_section_unique();
                     if (result[0].get_int() > 0)
                     {
-                        throw runtime_error(to_string() << "Append record - can't save over existing section in file " << filename << "!");
+                        throw runtime_error( rsutils::string::from()
+                                             << "Append record - can't save over existing section in file " << filename
+                                             << "!" );
                     }
                 }
 
@@ -218,7 +220,8 @@ namespace librealsense
                     auto result = check_section_exists();
                     if (result[0].get_int() == 0)
                     {
-                        throw runtime_error(to_string() << "Append record - Could not find section " << section << " in file " << filename << "!");
+                        throw runtime_error( rsutils::string::from() << "Append record - Could not find section "
+                                                                     << section << " in file " << filename << "!" );
                     }
                 }
                 {
@@ -243,7 +246,7 @@ namespace librealsense
                     statement insert(c, CONFIG_INSERT);
                     insert.bind(1, section_id);
                     insert.bind(2, CREATED_AT_KEY);
-                    auto datetime = datetime_string();
+                    auto datetime = rsutils::string::from::datetime();
                     insert.bind(3, datetime.c_str());
                     insert();
                 }
@@ -374,7 +377,7 @@ namespace librealsense
             for (int i = 0; i < ver_size; i++)
             {
                 if(min_version[i] < 0)
-                    throw runtime_error(to_string() << "Minimum provided version is in wrong format, expexted format: 0.0.0, actual string: " << min_api_version);
+                    throw runtime_error( rsutils::string::from() << "Minimum provided version is in wrong format, expexted format: 0.0.0, actual string: " << min_api_version);
                 if (section_version[i] == min_version[i]) continue;
                 if (section_version[i] > min_version[i]) continue;
                 if (section_version[i] < min_version[i]) return false;
@@ -406,7 +409,7 @@ namespace librealsense
                 auto result = check_section_exists();
                 if (result[0].get_int() == 0)
                 {
-                    throw runtime_error(to_string() << "Could not find section " << section << "!");
+                    throw runtime_error( rsutils::string::from() << "Could not find section " << section << "!");
                 }
             }
             {
@@ -422,8 +425,10 @@ namespace librealsense
                 select_api_version.bind(2, API_VERSION_KEY);
                 auto api_version = select_api_version()[0].get_string();
                 if(is_heighr_or_equel_to_min_version(api_version, min_api_version) == false)
-                    throw runtime_error(to_string() << "File version is lower than the minimum required version that was defind by the test, file version: " <<
-                        api_version << " min version: " << min_api_version);
+                    throw runtime_error( rsutils::string::from()
+                                         << "File version is lower than the minimum required version that was defind "
+                                            "by the test, file version: "
+                                         << api_version << " min version: " << min_api_version );
                 LOG_WARNING("Loaded recording from API version " << api_version);
             }
 
@@ -486,8 +491,8 @@ namespace librealsense
                     hid_device_info info;
                     info.id = row[2].get_string();
                     info.unique_id = row[3].get_string();
-                    info.pid = to_string() << row[4].get_int();
-                    info.vid = to_string() << row[5].get_int();
+                    info.pid = rsutils::string::from( row[4].get_int() );
+                    info.vid = rsutils::string::from( row[5].get_int() );
                     info.device_path = row[6].get_string();
 
                     result->hid_device_infos.push_back(info);

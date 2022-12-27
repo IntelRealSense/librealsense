@@ -6,6 +6,7 @@
 #include "context.h"
 #include "core/extension.h"
 #include "device.h"
+#include <rsutils/string/from.h>
 
 #include <type_traits>
 #include <iostream>
@@ -451,15 +452,19 @@ inline int lrs_patch(int version)
 
 inline std::string api_version_to_string(int version)
 {
-    if (lrs_major(version) == 0) return librealsense::to_string() << version;
-    return librealsense::to_string() << lrs_major(version) << "." << lrs_minor(version) << "." << lrs_patch(version);
+    if( lrs_major( version ) == 0 )
+        return rsutils::string::from( version );
+    return rsutils::string::from() << lrs_major( version ) << "." << lrs_minor( version ) << "."
+                                     << lrs_patch( version );
 }
 
 inline void report_version_mismatch(int runtime, int compiletime)
 {
-    throw librealsense::invalid_value_exception(librealsense::to_string() << "API version mismatch: librealsense.so was compiled with API version "
-        << api_version_to_string(runtime) << " but the application was compiled with "
-        << api_version_to_string(compiletime) << "! Make sure correct version of the library is installed (make install)");
+    throw librealsense::invalid_value_exception(
+        rsutils::string::from() << "API version mismatch: librealsense.so was compiled with API version "
+                                  << api_version_to_string( runtime ) << " but the application was compiled with "
+                                  << api_version_to_string( compiletime )
+                                  << "! Make sure correct version of the library is installed (make install)" );
 }
 
 inline void verify_version_compatibility(int api_version)

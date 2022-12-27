@@ -10,6 +10,9 @@
 #include "core/streaming.h"
 #include "command_transfer.h"
 #include "error-handling.h"
+
+#include <rsutils/string/from.h>
+
 #include <chrono>
 #include <memory>
 #include <vector>
@@ -189,7 +192,8 @@ namespace librealsense
         {
             T val = static_cast<T>(value);
             if ((_max < val) || (_min > val))
-                throw invalid_value_exception(to_string() << "Given value " << value << " is outside [" << _min << "," << _max << "] range!");
+                throw invalid_value_exception( rsutils::string::from() << "Given value " << value << " is outside ["
+                                                                       << _min << "," << _max << "] range!" );
             *_value = val;
             _on_set(value);
         }
@@ -336,7 +340,9 @@ namespace librealsense
                 {
                     T t = static_cast<T>(value);
                     if (!dev.set_xu(_xu, _id, reinterpret_cast<uint8_t*>(&t), sizeof(T)))
-                        throw invalid_value_exception(to_string() << "set_xu(id=" << std::to_string(_id) << ") failed!" << " Last Error: " << strerror(errno));
+                        throw invalid_value_exception( rsutils::string::from()
+                                                       << "set_xu(id=" << std::to_string( _id ) << ") failed!"
+                                                       << " Last Error: " << strerror( errno ) );
                     _recording_function(*this);
                 });
         }
@@ -348,7 +354,9 @@ namespace librealsense
                 {
                     T t;
                     if (!dev.get_xu(_xu, _id, reinterpret_cast<uint8_t*>(&t), sizeof(T)))
-                        throw invalid_value_exception(to_string() << "get_xu(id=" << std::to_string(_id) << ") failed!" << " Last Error: " << strerror(errno));
+                        throw invalid_value_exception( rsutils::string::from()
+                                                       << "get_xu(id=" << std::to_string( _id ) << ") failed!"
+                                                       << " Last Error: " << strerror( errno ) );
 
                     return static_cast<float>(t);
                 }));
@@ -651,7 +659,7 @@ namespace librealsense
             {
                 auto strong = gated.first.lock();
                 if (!strong)
-                    return;
+                    continue;  // if gated option is not available, step over it
                 auto val = strong->query();
                 if (val)
                 {

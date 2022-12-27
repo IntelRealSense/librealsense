@@ -9,6 +9,9 @@
 #include "environment.h"
 #include "sync.h"
 
+#include <rsutils/string/from.h>
+
+
 using namespace librealsense;
 
 static bool is_video_stream( rs2_stream stream )
@@ -248,7 +251,8 @@ void playback_device::set_frame_rate(double rate)
     LOG_INFO("Request to change playback frame rate to: " << rate);
     if(rate < 0)
     {
-        throw invalid_value_exception(to_string() << "Failed to set frame rate to " << std::to_string(rate) << ", value is less than 0");
+        throw invalid_value_exception( rsutils::string::from() << "Failed to set frame rate to "
+                                                               << std::to_string( rate ) << ", value is less than 0" );
     }
     (*m_read_thread)->invoke([this, rate](dispatcher::cancellable_timer t)
     {
@@ -279,7 +283,9 @@ void playback_device::seek_to_time(std::chrono::nanoseconds time)
                 {
                     if (frame->stream_id.device_index != get_device_index() || frame->stream_id.sensor_index >= m_sensors.size())
                     {
-                        std::string error_msg = to_string() << "Unexpected sensor index while playing file (Read index = " << frame->stream_id.sensor_index << ")";
+                        std::string error_msg = rsutils::string::from()
+                                             << "Unexpected sensor index while playing file (Read index = "
+                                             << frame->stream_id.sensor_index << ")";
                         LOG_ERROR(error_msg);
                     }
                     //push frame to the sensor (see handle_frame definition for more details)
@@ -623,7 +629,9 @@ void playback_device::try_looping()
             frame->frame.frame->set_blocking(!m_real_time);
             if (frame->stream_id.device_index != get_device_index() || frame->stream_id.sensor_index >= m_sensors.size())
             {
-                std::string error_msg = to_string() << "Unexpected sensor index while playing file (Read index = " << frame->stream_id.sensor_index << ")";
+                std::string error_msg = rsutils::string::from()
+                                     << "Unexpected sensor index while playing file (Read index = "
+                                     << frame->stream_id.sensor_index << ")";
                 LOG_ERROR(error_msg);
                 throw invalid_value_exception(error_msg);
             }

@@ -19,14 +19,12 @@ def close_resources(sensor):
         sensor.close()
 
 
-def set_and_verify_timestamp_domain(sensor, global_time_enabled: bool):
+def set_and_verify_timestamp_domain(sensor, frame_queue, global_time_enabled: bool):
     """
     Perform sensor (depth or color) test according given global time
     :sensor: depth or color sensor in device
     :global_time_enabled bool: True - timestamp is enabled otherwise false
     """
-    global frame_queue
-
     sensor.set_option(rs.option.global_time_enabled, global_time_enabled)
     time.sleep(0.3)  # Waiting for new frame from device. Need in case low FPS.
     frame = frame_queue.wait_for_frame()
@@ -38,44 +36,49 @@ def set_and_verify_timestamp_domain(sensor, global_time_enabled: bool):
         rs.timestamp_domain.hardware_clock
 
     test.check_equal(sensor.get_option(rs.option.global_time_enabled), global_time_enabled)
+
+    test.info(str(frame.get_profile().stream_type()) + " frame", frame)
     test.check_equal(frame.get_frame_timestamp_domain(), expected_ts_domain)
 
 
-frame_queue = rs.frame_queue(capacity=1, keep_frames=False)
 device = test.find_first_device_or_exit()
 
 # Depth sensor test
+depth_frame_queue = rs.frame_queue(capacity=1, keep_frames=False)
+
 depth_sensor = device.first_depth_sensor()
 depth_profile = next(p for p in depth_sensor.profiles if p.stream_type() == rs.stream.depth)
 depth_sensor.open(depth_profile)
-depth_sensor.start(frame_queue)
+depth_sensor.start(depth_frame_queue)
 
 # Test #1
 test.start('Check setting global time domain: depth sensor - timestamp domain is OFF')
-set_and_verify_timestamp_domain(depth_sensor, False)
+set_and_verify_timestamp_domain(depth_sensor, depth_frame_queue, False)
 test.finish()
 
 # Test #2
 test.start('Check setting global time domain: depth sensor - timestamp domain is ON')
-set_and_verify_timestamp_domain(depth_sensor, True)
+set_and_verify_timestamp_domain(depth_sensor, depth_frame_queue, True)
 test.finish()
 
 close_resources(depth_sensor)
 
 # Color sensor test
+color_frame_queue = rs.frame_queue(capacity=1, keep_frames=False)
+
 color_sensor = device.first_color_sensor()
 color_profile = next(p for p in color_sensor.profiles if p.stream_type() == rs.stream.color)
 color_sensor.open(color_profile)
-color_sensor.start(frame_queue)
+color_sensor.start(color_frame_queue)
 
 # Test #3
 test.start('Check setting global time domain: color sensor - timestamp domain is OFF')
-set_and_verify_timestamp_domain(color_sensor, False)
+set_and_verify_timestamp_domain(color_sensor, color_frame_queue, False)
 test.finish()
 
 # Test #4
 test.start('Check setting global time domain: color sensor - timestamp domain is ON')
-set_and_verify_timestamp_domain(color_sensor, True)
+set_and_verify_timestamp_domain(color_sensor, color_frame_queue, True)
 test.finish()
 
 close_resources(color_sensor)

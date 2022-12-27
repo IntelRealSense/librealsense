@@ -34,8 +34,10 @@ if [ "$install" = true ]; then
         echo -e "\e[0m"
     fi
     sudo cp config/99-realsense-libusb.rules /etc/udev/rules.d/
+    sudo cp config/99-realsense-d4xx-mipi-dfu.rules /etc/udev/rules.d/
 else
     sudo rm /etc/udev/rules.d/99-realsense-libusb.rules
+    sudo rm /etc/udev/rules.d/99-realsense-d4xx-mipi-dfu.rules
 fi
 
 sudo udevadm control --reload-rules && udevadm trigger

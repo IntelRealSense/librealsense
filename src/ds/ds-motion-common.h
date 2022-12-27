@@ -5,6 +5,7 @@
 
 #include "ds-device-common.h"
 #include "core/video.h"
+#include <rsutils/string/from.h>
 #include "ds-calib-parsers.h"
 
 namespace librealsense
@@ -75,12 +76,17 @@ namespace librealsense
         device* _owner;
     };
 
-    class ds_hid_sensor : public synthetic_sensor,
+    class ds_motion_sensor : public synthetic_sensor,
                           public motion_sensor
     {
     public:
-        explicit ds_hid_sensor(std::string name,
+        explicit ds_motion_sensor(std::string name,
             std::shared_ptr<sensor_base> sensor, device* owner);
+
+        explicit ds_motion_sensor(std::string name,
+            std::shared_ptr<sensor_base> sensor, device* owner,
+            const std::map<uint32_t, rs2_format>& motion_fourcc_to_rs2_format,
+            const std::map<uint32_t, rs2_stream>& motion_fourcc_to_rs2_stream);
 
         rs2_motion_device_intrinsic get_motion_intrinsics(rs2_stream stream) const;
 
@@ -144,7 +150,7 @@ namespace librealsense
         std::vector<platform::uvc_device_info> filter_device_by_capability(const std::vector<platform::uvc_device_info>& devices,
             ds::d400_caps caps);
 
-        friend class ds_hid_sensor;
+        friend class ds_motion_sensor;
         friend class ds_fisheye_sensor;
 
         device* _owner;

@@ -3,6 +3,8 @@
 #include "hw-monitor.h"
 #include "types.h"
 #include <iomanip>
+#include <limits>
+#include <sstream>
 
 namespace librealsense
 {
@@ -73,14 +75,15 @@ namespace librealsense
             if (res.size() < static_cast<int>(sizeof(uint32_t)))
                 throw invalid_value_exception("Incomplete bulk usb transfer!");
 
-            if (res.size() > IVCAM_MONITOR_MAX_BUFFER_SIZE)
-                throw invalid_value_exception("Out buffer is greater than max buffer size!");
+            //if (res.size() > IVCAM_MONITOR_MAX_BUFFER_SIZE)
+             //   throw invalid_value_exception("Out buffer is greater than max buffer size!");
 
             op = *reinterpret_cast<uint32_t *>(res.data());
-            if (res.size() > static_cast<int>(inSize))
-                throw invalid_value_exception("bulk transfer failed - user buffer too small");
+            //D457 uses an ad-hoc logic to transmit the data outside
+            //if (res.size() > static_cast<int>(inSize))
+            //    throw invalid_value_exception("bulk transfer failed - user buffer too small");
 
-            inSize = res.size();
+            inSize = std::min(res.size(),inSize); // For D457 only
             librealsense::copy(in, res.data(), inSize);
         }
     }
@@ -193,14 +196,14 @@ namespace librealsense
     std::string hwmon_error_string( command const & cmd, hwmon_response e )
     {
         auto str = hwmon_error2str( e );
-        to_string err;
+        std::ostringstream err;
         err << "hwmon command 0x" << std::hex << unsigned(cmd.cmd) << '(';
         err << ' ' << cmd.param1;
         err << ' ' << cmd.param2;
         err << ' ' << cmd.param3;
         err << ' ' << cmd.param4 << std::dec;
         err << " ) failed (response " << e << "= " << ( str.empty() ? "unknown" : str ) << ")";
-        return err;
+        return err.str();
     }
 
 

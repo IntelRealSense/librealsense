@@ -70,8 +70,7 @@ TEST_CASE_METHOD( test_fixture, "rs2::log vs LOG()", "[log]" ) {
         REQUIRE( n_callbacks_our == 1 );
     }
     SECTION( "our logger is separate from librealsense logger" ) {
-        // ("librealsense" is the name of the LRS logger; look in log.cpp)
-        CLOG( INFO, "librealsense" ) << "LOG() message to \"librealsense\" logger";
+        CLOG( INFO, LIBREALSENSE_ELPP_ID ) << "LOG() message to \"librealsense\" logger";
         REQUIRE( n_callbacks_lrs == 0 );
         REQUIRE( n_callbacks_our == 1 );
     }

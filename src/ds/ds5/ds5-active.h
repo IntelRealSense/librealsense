@@ -8,6 +8,7 @@
 
 namespace librealsense
 {
+    // Active means the HW includes an active projector
     class ds5_active : public virtual ds5_device
     {
     public:

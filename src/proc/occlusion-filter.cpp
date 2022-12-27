@@ -1,9 +1,11 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2018 Intel Corporation. All Rights Reserved.
 
-#include "../include/librealsense2/rs.hpp"
+#include <librealsense2/rs.hpp>
 #include "proc/synthetic-stream.h"
 #include "proc/occlusion-filter.h"
+
+#include <rsutils/string/from.h>
 
 #include <vector>
 #include <cmath>
@@ -31,8 +33,8 @@ namespace librealsense
             monotonic_heuristic_invalidation(points, uv_map, pix_coord, depth);
             break;
         default:
-            throw std::runtime_error(to_string() << "Unsupported occlusion filter type " << _occlusion_filter << " requested");
-            break;
+            throw std::runtime_error( rsutils::string::from()
+                                      << "Unsupported occlusion filter type " << _occlusion_filter << " requested" );
         }
     }
    int gcd(int a, int b) {

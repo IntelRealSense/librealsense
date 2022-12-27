@@ -156,18 +156,27 @@ else:
 # if the user (Travis included) has pyrealsense2 installed but even if so, we want to use the one we compiled.
 # we search the librealsense repository for the .pyd file (.so file in linux)
 pyrs = ""
-if linux:
-    for so in file.find( exe_dir or build_dir or repo.root, '(^|/)pyrealsense2.*\.so$' ):
-        pyrs = so
-else:
-    for pyd in file.find( exe_dir or build_dir or repo.root, '(^|/)pyrealsense2.*\.pyd$' ):
+pyd_dirs = set()
+pyrs_search_dir = exe_dir or build_dir or repo.root
+for pyd in file.find( pyrs_search_dir, linux and r'.*python.*\.so$' or r'(^|/)py.*\.pyd$' ):
+    if re.search( r'(^|/)pyrealsense2', pyd ):
+        if pyrs:
+            raise RuntimeError( f'found more than one possible pyrealsense2!\n    previous: {pyrs}\n    and:      {pyd}' )
         pyrs = pyd
+    # The path is relative; make it absolute so it can be found by tests
+    pyd_dirs.add( os.path.dirname( os.path.join( pyrs_search_dir, pyd )))
+pyrs_path = None
 if pyrs:
     # The path is relative; make it absolute and add to PYTHONPATH so it can be found by tests
-    pyrs_path = os.path.join( exe_dir or build_dir or repo.root, pyrs )
+    pyrs_path = os.path.join( pyrs_search_dir, pyrs )
     # We need to add the directory not the file itself
     pyrs_path = os.path.dirname( pyrs_path )
-    log.d( 'found pyrealsense pyd in:', pyrs_path )
+elif len(pyd_dirs) == 1:
+    # Maybe we found other libraries, like pyrsutils?
+    log.d( 'did not find pyrealsense2' )
+    pyrs_path = next(iter(pyd_dirs))
+if pyrs_path:
+    log.d( 'found python libraries in:', pyd_dirs )
     if not exe_dir:
         build_dir = find_build_dir( pyrs_path )
         if linux:
@@ -194,10 +203,8 @@ if not exe_dir and build_dir:
         exe_dir = dir_with_test
 
 if not to_stdout:
-    if exe_dir:
-        logdir = exe_dir + os.sep + 'unit-tests'
-    else:  # no test executables were found. We put the logs directly in build directory
-        logdir = os.path.join( repo.root, 'build', 'unit-tests' )
+    # If no test executables were found, put the logs directly in the build directory
+    logdir = os.path.join( exe_dir or build_dir or os.path.join( repo.root, 'build' ), 'unit-tests' )
     os.makedirs( logdir, exist_ok=True )
     libci.logdir = logdir
 n_tests = 0
@@ -206,10 +213,10 @@ n_tests = 0
 # PYTHONPATH is what Python will ADD to sys.path for child processes BEFORE any standard python paths
 # (We can simply change `sys.path` but any child python scripts won't see it; we change the environment instead)
 #
-os.environ["PYTHONPATH"] = current_dir + os.sep + "py"
+os.environ["PYTHONPATH"] = os.path.join( current_dir, 'py' )
 #
-if pyrs:
-    os.environ["PYTHONPATH"] += os.pathsep + pyrs_path
+for dir in pyd_dirs:
+    os.environ["PYTHONPATH"] += os.pathsep + dir
 
 
 def configuration_str( configuration, repetition = 1, prefix = '', suffix = '' ):
@@ -294,8 +301,6 @@ def get_tests():
         # Go over all the tests from a "manifest" we take from the result of the last CMake
         # run (rather than, for example, looking for test-* in the build-directory):
         manifestfile = os.path.join( build_dir, 'CMakeFiles', 'TargetDirectories.txt' )
-        if linux:
-            manifestfile = exe_dir + '/CMakeFiles/TargetDirectories.txt'
         # log.d( manifestfile )
         for manifest_ctx in file.grep( r'(?<=unit-tests/build/)\S+(?=/CMakeFiles/test-\S+.dir$)', manifestfile ):
             # We need to first create the test name so we can see if it fits the regex
@@ -311,10 +316,12 @@ def get_tests():
             if regex and not pattern.search( testname ):
                 continue
 
+            exe = os.path.join( exe_dir, testname )
             if linux:
-                exe = exe_dir + '/unit-tests/build/' + testdir + '/' + testname
+                if not os.path.isfile( exe ):
+                    exe = os.path.join( build_dir, 'unit-tests', 'build', testdir, testname )
             else:
-                exe = exe_dir + '/' + testname + '.exe'
+                exe += '.exe'
 
             yield libci.ExeTest( testname, exe, context )
 

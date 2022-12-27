@@ -80,37 +80,6 @@ namespace librealsense
         return f.good();
     }
 
-    std::string firmware_version::to_string() const
-    {
-        if (is_any) return "any";
-
-        std::stringstream s;
-        s << std::setfill('0') << std::setw(2) << m_major << "."
-            << std::setfill('0') << std::setw(2) << m_minor << "."
-            << std::setfill('0') << std::setw(2) << m_patch << "."
-            << std::setfill('0') << std::setw(2) << m_build;
-        return s.str();
-    }
-
-    std::vector<std::string> firmware_version::split(const std::string& str)
-    {
-        std::vector<std::string> result;
-        auto e = str.end();
-        auto i = str.begin();
-        while (i != e) {
-            i = find_if_not(i, e, [](char c) { return c == '.'; });
-            if (i == e) break;
-            auto j = find(i, e, '.');
-            result.emplace_back(i, j);
-            i = j;
-        }
-        return result;
-    }
-
-    int firmware_version::parse_part(const std::string& name, int part)
-    {
-        return atoi(split(name)[part].c_str());
-    }
 
     /// Convert orientation angles stored in rodrigues conventions to rotation matrix
     /// for details: http://mesh.brown.edu/en193s08-2003/notes/en193s08-rots.pdf
