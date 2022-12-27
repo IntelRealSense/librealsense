@@ -47,7 +47,7 @@ def usage():
     print( '        --config <>         Ignore test configurations; use the one provided' )
     print( '        --no-reset          Do not try to reset any devices, with or without Acroname' )
     print( '        --rslog             Enable LibRS logging (LOG_DEBUG etc.) to console in each test' )
-    print( '        --skip-disconnected Skip live test if required device is disconnected' )
+    print( '        --skip-disconnected Skip live test if required device is disconnected,this only applies when no acroname is connected' )
     print( 'Examples:' )
     print( 'Running: python run-unit-tests.py -s' )
     print( '    Runs all tests, but direct their output to the console rather than log files' )
@@ -407,7 +407,7 @@ try:
         devices.query()
         devices.map_unknown_ports()
         #
-        # Under a vendor's CI system, we'll have no devices and no acroname
+        # Under a development environment, we'll may not have devices and no acroname
         skip_live_tests = len( devices.all() ) == 0 and not devices.acroname
         exceptions = None
         if not skip_live_tests:
@@ -462,7 +462,7 @@ try:
             #
             if skip_live_tests:
                 if skip_disconnected:
-                    log.w( test.name + ':', 'is live and there are no cameras; skipping' )
+                    log.w( test.name + ':', 'is live and no cameras found and skip_disconnected is on; skipping' )
                     continue
                 else:
                     log.e( test.name + ':', 'is live and there are no cameras' )
