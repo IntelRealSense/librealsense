@@ -4,6 +4,7 @@
 import pyrealdds as dds
 from rspy import log, test
 import d435i
+import d405
 
 dds.debug( True, log.nested )
 
