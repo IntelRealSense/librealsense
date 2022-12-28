@@ -181,7 +181,8 @@ namespace librealsense
 
         void decrement(std::string key)
         {
-            if (_mp.find( key ) != _mp.end() && _mp[key] >0)
+            assert_key_exists(key);
+            if (_mp[key]->get()>0)
             {
                 _mp[key]->decrement();
             }
@@ -221,7 +222,7 @@ namespace librealsense
             return result;
         }
 
-        bool device_exist( std::string serial )
+        bool device_exist(std::string serial)
         {
             if ( _mp_devices_manager.find( serial ) == _mp_devices_manager.end())
             {
@@ -230,7 +231,7 @@ namespace librealsense
             return true;
         }
 
-        void insert_device_to_device_manager( std::string serial, std::string name )
+        void insert_device_to_device_manager(std::string serial, std::string name)
         {
             increment( librealsense::aus_build_system_counter_name( "CONNECTED_DEVICES" ));
             increment( librealsense::aus_build_system_counter_name( "CONNECTED_DEVICES", name ) );
