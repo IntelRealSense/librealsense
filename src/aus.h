@@ -6,6 +6,8 @@
 #include "types.h"
 #include "device.h"
 
+#define NOT_SUPPORTED(func_api)  func_api##{throw std::runtime_error("function " #func_api " is not supported without BUILD_AUS flag on");}
+
 namespace librealsense
 {
     
@@ -292,46 +294,14 @@ namespace librealsense
     class aus_data
     {
     public:
-
-        void set(std::string key, long value)
-        {
-            throw std::runtime_error("set is not supported without BUILD_AUS");
-        }
-
-        void increment(std::string key)
-        {
-            throw std::runtime_error("increase is not supported without BUILD_AUS");
-        }
-
-        void decrement( std::string key )
-        {
-            throw std::runtime_error( "decrease is not supported without BUILD_AUS" );
-        }
-
-        long get(std::string key)
-        {
-            throw std::runtime_error("get is not supported without BUILD_AUS");
-        }
-        
-        void start(std::string key)
-        {
-            throw std::runtime_error("start_timer is not supported without BUILD_AUS");
-        }
-
-        void stop(std::string key)
-        {
-            throw std::runtime_error("stop_timer is not supported without BUILD_AUS");
-        }
-
-        std::vector<std::string> get_counters_names()
-        {
-            throw std::runtime_error("get_counters_names is not supported without BUILD_AUS");
-        }
-
-        void on_device_changed(std::shared_ptr<device_interface> device)
-        {
-            return;
-        }
+        NOT_SUPPORTED(void set(std::string key, long value));
+        NOT_SUPPORTED(void increment(std::string key));
+        NOT_SUPPORTED(void decrement(std::string key));
+        NOT_SUPPORTED(long get(std::string key));
+        NOT_SUPPORTED(void start(std::string key));
+        NOT_SUPPORTED(void stop(std::string key));
+        NOT_SUPPORTED(std::vector<std::string> get_counters_names());
+        NOT_SUPPORTED(void on_device_changed(std::shared_ptr<device_interface> device));
     }; // end of class aus_data
 
 #endif

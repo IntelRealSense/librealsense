@@ -5,6 +5,7 @@
 #include "aus.h"
 #include <fstream>
 
+#define NOT_SUPPORTED(func_api)  func_api##{throw std::runtime_error("function " #func_api " is not supported without BUILD_AUS flag on");}
 #ifdef BUILD_AUS
 
 namespace librealsense
@@ -95,53 +96,22 @@ void librealsense::aus_system_timer_start(std::string suffix, std::string device
 
 #else // BUILD_AUS
 
+NOT_SUPPORTED(void librealsense::aus_set(std::string counter, int value));
+NOT_SUPPORTED(void librealsense::aus_increment(std::string counter));
+NOT_SUPPORTED(void librealsense::aus_decrement(std::string counter));
+NOT_SUPPORTED(void librealsense::aus_start(std::string timer));
+NOT_SUPPORTED(void librealsense::aus_stop(std::string timer));
+NOT_SUPPORTED(std::string librealsense::aus_build_system_timer_name(std::string suffix, std::string device_name));
+NOT_SUPPORTED(std::string librealsense::aus_build_system_counter_name(std::string suffix, std::string device_name));
+NOT_SUPPORTED(long librealsense::aus_get(std::string counter));
+NOT_SUPPORTED(std::vector<std::string> librealsense::aus_get_counters_list());
+NOT_SUPPORTED(void librealsense::aus_system_counter_increment(std::string suffix, std::string device_name));
+NOT_SUPPORTED(void librealsense::aus_system_timer_start(std::string suffix, std::string device_name));
 
-void librealsense::aus_set(std::string counter, int value)
+void librealsense::aus_on_device_changed(std::shared_ptr<device_interface> device)
 {
-    throw std::runtime_error("aus_print_stats is not supported without BUILD_AUS");
+    return;
 }
-
-void librealsense::aus_increment(std::string counter)
-{
-    throw std::runtime_error("aus_increment is not supported without BUILD_AUS");
-}
-
-void librealsense::aus_decrement( std::string counter )
-{
-    throw std::runtime_error( "aus_decrement is not supported without BUILD_AUS" );
-}
-
-void librealsense::aus_start(std::string timer)
-{
-    throw std::runtime_error("aus_start is not supported without BUILD_AUS");
-}
-
-void librealsense::aus_stop(std::string timer)
-{
-    throw std::runtime_error("aus_stop is not supported without BUILD_AUS");
-}
-
-std::string librealsense::aus_build_system_timer_name(std::string suffix, std::string device_name)
-{
-    throw std::runtime_error("aus_build_system_timer_name is not supported without BUILD_AUS");
-}
-
-std::string librealsense::aus_build_system_counter_name(std::string suffix, std::string device_name)
-{
-    throw std::runtime_error("aus_build_system_counter_name is not supported without BUILD_AUS");
-}
-
-long librealsense::aus_get(std::string counter)
-{
-    throw std::runtime_error("aus_get is not supported without BUILD_AUS");
-}
-
-
-std::vector<std::string> librealsense::aus_get_counters_list()
-{
-    throw std::runtime_error("get_counters_list is not supported without BUILD_AUS");
-}
-
 
 #endif // BUILD_AUS
 
