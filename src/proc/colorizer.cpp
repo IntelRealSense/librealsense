@@ -138,10 +138,8 @@ namespace librealsense
         : colorizer("Depth Visualization")
     {
         std::string device_name = this->get_info(RS2_CAMERA_INFO_NAME);
-        std::string timer_name = librealsense::aus_build_system_timer_name("COLORIZER", device_name);
-        librealsense::aus_start(timer_name);
-        std::string colorizer_init_counter = librealsense::aus_build_system_counter_name("COLORIZER_FILTER_INIT", device_name);
-        librealsense::aus_increment(colorizer_init_counter);
+        librealsense::aus_system_timer_start("COLORIZER", device_name);
+        librealsense::aus_system_counter_increment("COLORIZER_FILTER_INIT", device_name);
     }
 
     colorizer::colorizer(const char* name)
@@ -340,9 +338,7 @@ namespace librealsense
         else
             make_value_cropped_frame(f, ret);
 
-        std::string device_name = this->get_info(RS2_CAMERA_INFO_NAME);
-        std::string colorized_frames_counter = librealsense::aus_build_system_counter_name("COLORIZED_FRAMES", device_name);
-        librealsense::aus_increment(colorized_frames_counter);
+        librealsense::aus_system_counter_increment("COLORIZED_FRAMES", this->get_info(RS2_CAMERA_INFO_NAME));
 
         return ret;
     }

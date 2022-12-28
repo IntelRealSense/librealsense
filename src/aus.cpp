@@ -80,6 +80,18 @@ void librealsense::aus_on_device_changed(std::shared_ptr<device_interface> devic
     aus_data_obj.on_device_changed(device);
 }
 
+void librealsense::aus_system_counter_increment(std::string suffix, std::string device_name)
+{
+    std::string counter_name = librealsense::aus_build_system_counter_name(suffix, device_name);
+    librealsense::aus_increment(counter_name);
+}
+
+void librealsense::aus_system_timer_start(std::string suffix, std::string device_name)
+{
+    std::string timer_name = aus_build_system_timer_name(suffix, device_name);
+    librealsense::aus_start(timer_name);
+}
+
 
 #else // BUILD_AUS
 
