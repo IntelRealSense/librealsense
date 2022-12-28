@@ -259,7 +259,7 @@ namespace librealsense
         soc_fusa_action_attribute               = (1u << 12),
         mb_fusa_event_attribute                 = (1u << 13),
         mb_fusa_action_attribute                = (1u << 14),
-        crc32_attribute                         = (1u << 15)
+        crc32_attribute                         = (1u << 31)
     };
 
     /**\brief md_hid_imu_attributes - bit mask to designate the enabled attributed,
