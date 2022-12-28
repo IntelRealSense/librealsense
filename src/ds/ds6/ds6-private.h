@@ -56,8 +56,8 @@ namespace librealsense
 
         enum class ds6_calibration_table_id
         {
-            coefficients_table_id = 40, // TODO - move to ds6
-            rgb_calibration_id = 41,
+            coefficients_table_id = 0xb4, // TODO - move to ds6
+            rgb_calibration_id = 0xb9,
             max_id = -1
         };
 
