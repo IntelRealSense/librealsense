@@ -18,16 +18,13 @@
 #include "common/fw/D4XX_FW_Image.h"
 #include "common/fw/SR3XX_FW_Image.h"
 #include "common/fw/L51X_FW_Image.h"
-#include "common/fw/L53X_FW_Image.h"
 #else
 #define FW_D4XX_FW_IMAGE_VERSION ""
 #define FW_SR3XX_FW_IMAGE_VERSION ""
 #define FW_L51X_FW_IMAGE_VERSION ""
-#define FW_L53X_FW_IMAGE_VERSION ""
 const char* fw_get_D4XX_FW_Image(int) { return NULL; }
 const char* fw_get_SR3XX_FW_Image(int) { return NULL; }
 const char* fw_get_L51X_FW_Image(int) { return NULL; }
-const char* fw_get_L53X_FW_Image(int) { return NULL; }
 
 
 #endif // INTERNAL_FW
@@ -63,7 +60,6 @@ namespace rs2
     {
         if (product_line == RS2_PRODUCT_LINE_D400) return FW_D4XX_FW_IMAGE_VERSION;
         //else if (product_line == RS2_PRODUCT_LINE_SR300) return FW_SR3XX_FW_IMAGE_VERSION;
-        else if (product_line == RS2_PRODUCT_LINE_L500 && pid == "0B68") return FW_L53X_FW_IMAGE_VERSION;
         else if (product_line == RS2_PRODUCT_LINE_L500) return FW_L51X_FW_IMAGE_VERSION;
         else return "";
     }
@@ -94,16 +90,6 @@ namespace rs2
             }
             break;
         case RS2_PRODUCT_LINE_L500:
-            if( pid == "0B68" || pid == "0B72" )  // L535 || L535 Recovery
-            {
-                if( strlen( FW_L53X_FW_IMAGE_VERSION ) )
-                {
-                    int size = 0;
-                    auto hex = fw_get_L53X_FW_Image( size );
-                    image = std::vector< uint8_t >( hex, hex + size );
-                }
-            }
-            else
             {  // default for all L515 use cases (include recovery usb2 old pid)
                 if( strlen( FW_L51X_FW_IMAGE_VERSION ) )
                 {

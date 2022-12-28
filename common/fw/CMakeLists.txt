@@ -36,12 +36,6 @@ message(STATUS "L51X_FW_VERSION: ${L51X_FW_VERSION}")
 set(L51X_FW_SHA1 ab73e5bfc520c0aa0340cada4b3e317b8fd31a4d)
 set(L51X_FW_URL "${REALSENSE_FIRMWARE_URL}/Releases/L5xx/FW")
 
-string(REGEX MATCH "L53X_RECOMMENDED_FIRMWARE_VERSION \"([0-9]+\.[0-9]+\.[0-9]+\.[0-9]+)\"" _ ${ver})
-set(L53X_FW_VERSION ${CMAKE_MATCH_1})
-message(STATUS "L53X_FW_VERSION: ${L53X_FW_VERSION}")
-set(L53X_FW_SHA1 9bc28aaf079b105d9a20a0bd845ea222b8754571)
-set(L53X_FW_URL "${REALSENSE_FIRMWARE_URL}/Releases/L5xx/FW")
-
 add_library(${PROJECT_NAME} STATIC empty.c)
 
 # disable link time optimization for fw by adding -fno-lto to disable -flto flag
@@ -94,7 +88,6 @@ target_binary( "${D4XX_FW_URL}"  "${D4XX_FW_VERSION}"  "${D4XX_FW_SHA1}" D4XX_FW
 target_binary( "${SR3XX_FW_URL}"  "${SR3XX_FW_VERSION}"  "${SR3XX_FW_SHA1}" SR3XX_FW_Image .bin)
 target_binary( "${T26X_FW_URL}"  "${T26X_FW_VERSION}"  "${T26X_FW_SHA1}" target .mvcmd)
 target_binary( "${L51X_FW_URL}"  "${L51X_FW_VERSION}"  "${L51X_FW_SHA1}" L51X_FW_Image .bin)
-target_binary( "${L53X_FW_URL}"  "${L53X_FW_VERSION}"  "${L53X_FW_SHA1}" L53X_FW_Image .bin)
 
 
 
