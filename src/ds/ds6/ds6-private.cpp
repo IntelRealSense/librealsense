@@ -65,6 +65,15 @@ namespace librealsense
         // calib_new.focal_length = calib_org.focal_length.*scale_ratio;
         float4 compute_rect_params_from_resolution(const ds::ds6_coefficients_table* table, uint32_t width, uint32_t height)
         {
+            if (!table)
+                throw invalid_value_exception(rsutils::string::from() << "table is null");
+            if (table->left_coefficients_table.base_instrinsics.image_width == 0 ||
+                table->left_coefficients_table.base_instrinsics.image_height == 0)
+                throw invalid_value_exception(rsutils::string::from() << 
+                    "resolution in table->left_coefficients_table.base_instrinsics is 0: width = " << 
+                    table->left_coefficients_table.base_instrinsics.image_width <<
+                    ", height = " << table->left_coefficients_table.base_instrinsics.image_height);
+
             auto scale_ratio_x = static_cast<float>(width) / table->left_coefficients_table.base_instrinsics.image_width;
             auto scale_ratio_y = static_cast<float>(height) / table->left_coefficients_table.base_instrinsics.image_height;
             auto scale_ratio = std::max<float>(scale_ratio_x, scale_ratio_y);

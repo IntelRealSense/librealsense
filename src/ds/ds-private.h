@@ -281,7 +281,6 @@ namespace librealsense
                                                << sizeof( table_header ) << " , actual: " << raw_data.size() );
             }
             // verify the parsed table
-            // D457 development
             if (table->header.crc32 != calc_crc32(raw_data.data() + sizeof(table_header), raw_data.size() - sizeof(table_header)))
             {
                 throw invalid_value_exception("Calibration data CRC error, parsing aborted!");
