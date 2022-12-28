@@ -28,26 +28,26 @@ def usage():
     print( 'Syntax: ' + ourname + ' [options] [dir]' )
     print( '        dir: location of executable tests to run' )
     print( 'Options:' )
-    print( '        --debug             Turn on debugging information (does not include LibRS debug logs; see --rslog)' )
-    print( '        -v, --verbose       Errors will dump the log to stdout' )
-    print( '        -q, --quiet         Suppress output; rely on exit status (0=no failures)' )
-    print( '        -s, --stdout        Do not redirect stdout to logs' )
-    print( '        -r, --regex         Run all tests whose name matches the following regular expression' )
-    print( '        -t, --tag           Run all tests with the following tag. If used multiple times runs all tests matching' )
-    print( '                            all tags. e.g. -t tag1 -t tag2 will run tests who have both tag1 and tag2' )
-    print( '                            tests automatically get tagged with \'exe\' or \'py\' and based on their location' )
-    print( '                            inside unit-tests/, e.g. unit-tests/func/test-hdr.py gets [func, py]' )
-    print( '        --list-tags         Print out all available tags. This option will not run any tests' )
-    print( '        --list-tests        Print out all available tests. This option will not run any tests' )
-    print( '                            If both list-tags and list-tests are specified each test will be printed along' )
-    print( '                            with its tags' )
-    print( '        --no-exceptions     Do not load the LibCI/exceptions.specs file' )
-    print( '        --context <>        The context to use for test configuration' )
-    print( '        --repeat <#>        Repeat each test <#> times' )
-    print( '        --config <>         Ignore test configurations; use the one provided' )
-    print( '        --no-reset          Do not try to reset any devices, with or without Acroname' )
-    print( '        --rslog             Enable LibRS logging (LOG_DEBUG etc.) to console in each test' )
-    print( '        --skip-disconnected Skip live test if required device is disconnected,this only applies when no acroname is connected' )
+    print( '        --debug              Turn on debugging information (does not include LibRS debug logs; see --rslog)' )
+    print( '        -v, --verbose        Errors will dump the log to stdout' )
+    print( '        -q, --quiet          Suppress output; rely on exit status (0=no failures)' )
+    print( '        -s, --stdout         Do not redirect stdout to logs' )
+    print( '        -r, --regex          Run all tests whose name matches the following regular expression' )
+    print( '        -t, --tag            Run all tests with the following tag. If used multiple times runs all tests matching' )
+    print( '                             all tags. e.g. -t tag1 -t tag2 will run tests who have both tag1 and tag2' )
+    print( '                             tests automatically get tagged with \'exe\' or \'py\' and based on their location' )
+    print( '                             inside unit-tests/, e.g. unit-tests/func/test-hdr.py gets [func, py]' )
+    print( '        --list-tags          Print out all available tags. This option will not run any tests' )
+    print( '        --list-tests         Print out all available tests. This option will not run any tests' )
+    print( '                             If both list-tags and list-tests are specified each test will be printed along' )
+    print( '                             with its tags' )
+    print( '        --no-exceptions      Do not load the LibCI/exceptions.specs file' )
+    print( '        --context <>         The context to use for test configuration' )
+    print( '        --repeat <#>         Repeat each test <#> times' )
+    print( '        --config <>          Ignore test configurations; use the one provided' )
+    print( '        --no-reset           Do not try to reset any devices, with or without Acroname' )
+    print( '        --rslog              Enable LibRS logging (LOG_DEBUG etc.) to console in each test' )
+    print( '        --skip-disconnected  Skip live test if required device is disconnected (only applies w/o Acroname)' )
     print( 'Examples:' )
     print( 'Running: python run-unit-tests.py -s' )
     print( '    Runs all tests, but direct their output to the console rather than log files' )
@@ -407,8 +407,10 @@ try:
         devices.query()
         devices.map_unknown_ports()
         #
-        # Under a development environment, we'll may not have devices and no acroname
+        # Under a development environment (i.e., without an Acroname), we may only have one device connected
+        # or even none and want to only show a warning for live tests:
         skip_live_tests = len( devices.all() ) == 0 and not devices.acroname
+        #
         exceptions = None
         if not skip_live_tests:
             if not to_stdout:
@@ -462,11 +464,10 @@ try:
             #
             if skip_live_tests:
                 if skip_disconnected:
-                    log.w( test.name + ':', 'is live and no cameras found and skip_disconnected is on; skipping' )
-                    continue
+                    log.w( test.name + ':', 'is live & no cameras were found; skipping due to --skip-disconnected' )
                 else:
                     log.e( test.name + ':', 'is live and there are no cameras' )
-
+                continue
             #
             for configuration, serial_numbers in devices_by_test_config( test, exceptions ):
                 for repetition in range(repeat):
