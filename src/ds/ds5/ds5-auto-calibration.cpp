@@ -186,9 +186,8 @@ namespace librealsense
     const int DEFAULT_FY_SCAN_DIRECTION = 0;
     const int DEFAULT_WHITE_WALL_MODE = 0;
 
-    auto_calibrated::auto_calibrated(std::shared_ptr<hw_monitor>& hwm)
-        : _hw_monitor(hwm),
-          _interactive_state(interactive_calibration_state::RS2_OCC_STATE_NOT_ACTIVE),
+    auto_calibrated::auto_calibrated()
+        : _interactive_state(interactive_calibration_state::RS2_OCC_STATE_NOT_ACTIVE),
           _interactive_scan(false),
           _action(auto_calib_action::RS2_OCC_ACTION_ON_CHIP_CALIB),
           _average_step_count(-1),
@@ -2521,5 +2520,10 @@ namespace librealsense
         }
         else
             throw std::runtime_error("Failed to extract target dimension info!");
+    }
+
+    void auto_calibrated::set_hw_monitor_for_auto_calib(std::shared_ptr<hw_monitor> hwm)
+    {
+        _hw_monitor = hwm;
     }
 }
