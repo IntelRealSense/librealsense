@@ -8,25 +8,12 @@ log.nested = 'C  '
 
 import d435i
 import d405
+import dds
 import pyrealsense2 as rs
 rs.log_to_console( rs.log_severity.debug )
 from time import sleep
 
-context = rs.context( '{"dds-domain":123}' )
 only_sw_devices = int(rs.product_line.sw_only) | int(rs.product_line.any_intel)
-
-
-def wait_for_devices( tries = 3 ):
-    """
-    Since DDS devices may take time to be recognized and then initialized, we try over time:
-    """
-    while tries:
-        devices = context.query_devices( only_sw_devices )
-        if len(devices) > 0:
-            return devices
-        tries -= 1
-        sleep( 1 )
-    
 
 import os.path
 cwd = os.path.dirname(os.path.realpath(__file__))
@@ -39,45 +26,45 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
     test.start( "Multiple cameras disconnection/reconnection" )
     try:
         remote.run( 'instance = broadcast_device( d435i, d435i.device_info )', timeout=5 )
-        n_devs = wait_for_devices()
-        test.check_equal( len(n_devs), 1 )
-        
         remote.run( 'instance2 = broadcast_device( d405, d405.device_info )', timeout=5 )
-        sleep( 1 ) # Wait for device to be received and built, otherwise wait_for_devices will return immediately with previous devices
-        n_devs = wait_for_devices()
+        
+        #Create context after remote device is ready to test discovery on start-up
+        #Later on, other connections will test discovery using the callback functions
+        context = rs.context( '{"dds-domain":123}' )
+        n_devs = dds.wait_for_devices( context, only_sw_devices )
         test.check_equal( len(n_devs), 2 )
         
         remote.run( 'instance3 = broadcast_device( d455, d455.device_info )', timeout=5 )
         sleep( 1 ) # Wait for device to be received and built, otherwise wait_for_devices will return immediately with previous devices
-        n_devs = wait_for_devices()
+        n_devs = dds.wait_for_devices( context, only_sw_devices )
         test.check_equal( len(n_devs), 3 )
         
         remote.run( 'close_server( instance )', timeout=5 )
         remote.run( 'instance = None', timeout=1 )
         sleep( 0.5 ) # Give client device time to close
-        n_devs = wait_for_devices()
+        n_devs = dds.wait_for_devices( context, only_sw_devices )
         test.check_equal( len(n_devs), 2 )
         
         remote.run( 'instance4 = broadcast_device( d435i, d435i.device_info )', timeout=5 )
         sleep( 1 ) # Wait for device to be received and built, otherwise wait_for_devices will return immediately with previous devices
-        n_devs = wait_for_devices()
+        n_devs = dds.wait_for_devices( context, only_sw_devices )
         test.check_equal( len(n_devs), 3 )
         
         remote.run( 'close_server( instance2 )', timeout=5 )
         remote.run( 'instance2 = None', timeout=1 )
         sleep( 0.5 ) # Give client device time to close
-        n_devs = wait_for_devices()
+        n_devs = dds.wait_for_devices( context, only_sw_devices )
         test.check_equal( len(n_devs), 2 )
         
         remote.run( 'close_server( instance3 )', timeout=5 )
         remote.run( 'instance2 = None', timeout=1 )
         sleep( 0.5 ) # Give client device time to close
-        n_devs = wait_for_devices()
+        n_devs = dds.wait_for_devices( context, only_sw_devices )
         test.check_equal( len(n_devs), 1 )
         
         remote.run( 'close_server( instance4 )', timeout=5 )
+        n_devs = dds.wait_for_devices( context, only_sw_devices )
         sleep( 0.5 ) # Give client device time to close
-        n_devs = wait_for_devices()
         test.check_equal( n_devs, None )
     except:
         test.unexpected_exception()

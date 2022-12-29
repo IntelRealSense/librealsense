@@ -9,6 +9,7 @@ log.nested = 'C  '
 import d435i
 import d405
 import d455
+import dds
 
 import pyrealsense2 as rs
 rs.log_to_console( rs.log_severity.debug )
@@ -16,18 +17,6 @@ from time import sleep
 
 context = rs.context( '{"dds-domain":123}' )
 only_sw_devices = int(rs.product_line.sw_only) | int(rs.product_line.any_intel)
-
-
-def wait_for_devices( tries = 3 ):
-    """
-    Since DDS devices may take time to be recognized and then initialized, we try over time:
-    """
-    while tries:
-        devices = context.query_devices( only_sw_devices )
-        if len(devices) > 0:
-            return devices
-        tries -= 1
-        sleep( 1 )
 
 
 import os.path
@@ -42,7 +31,7 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
     try:
         remote.run( 'instance = broadcast_device( d435i, d435i.device_info )', timeout=5 )
         n_devs = 0
-        for dev in wait_for_devices():
+        for dev in dds.wait_for_devices( context, only_sw_devices ):
             n_devs += 1
         test.check_equal( n_devs, 1 )
         test.check_equal( dev.get_info( rs.camera_info.name ), d435i.device_info.name )
@@ -71,7 +60,7 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
     try:
         remote.run( 'instance = broadcast_device( d405, d405.device_info )', timeout=5 )
         n_devs = 0
-        for dev in wait_for_devices():
+        for dev in dds.wait_for_devices( context, only_sw_devices ):
             n_devs += 1
         test.check_equal( n_devs, 1 )
         test.check_equal( dev.get_info( rs.camera_info.name ), d405.device_info.name )
@@ -95,7 +84,7 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
     try:
         remote.run( 'instance = broadcast_device( d455, d455.device_info )', timeout=5 )
         n_devs = 0
-        for dev in wait_for_devices():
+        for dev in dds.wait_for_devices( context, only_sw_devices ):
             n_devs += 1
         test.check_equal( n_devs, 1 )
         test.check_equal( dev.get_info( rs.camera_info.name ), d455.device_info.name )
