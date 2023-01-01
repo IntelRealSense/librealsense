@@ -4,6 +4,7 @@
 #pragma once
 
 #include "ds/ds6/ds6-private.h"
+#include "ds/ds6/hw_monitor_extended_buffers.h"
 
 #include "algo.h"
 #include "error-handling.h"

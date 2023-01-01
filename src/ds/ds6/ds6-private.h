@@ -54,9 +54,26 @@ namespace librealsense
         bool ds6_try_fetch_usb_device(std::vector<platform::usb_device_info>& devices,
             const platform::uvc_device_info& info, platform::usb_device_info& result);
 
+        enum class ds6_gvd_fields      // gvd fields for Safety Camera
+        {
+            // Keep sorted
+            ds6_gvd_camera_fw_version_offset = 12,
+            ds6_gvd_is_camera_locked_offset = 25,
+            ds6_gvd_module_serial_offset = 48,
+            ds6_gvd_module_asic_serial_offset = 64,
+            ds6_gvd_fisheye_sensor_lb = 112,
+            ds6_gvd_fisheye_sensor_hb = 113,
+            ds6_gvd_imu_acc_chip_id = 124,
+            ds6_gvd_depth_sensor_type = 166,
+            ds6_gvd_active_projector = 170,
+            ds6_gvd_rgb_sensor = 174,
+            ds6_gvd_imu_sensor = 178,
+            ds6_gvd_motion_module_fw_version_offset = 212
+        };
+
         enum class ds6_calibration_table_id
         {
-            coefficients_table_id = 0xb4, // TODO - move to ds6
+            coefficients_table_id = 0xb4,
             rgb_calibration_id = 0xb9,
             max_id = -1
         };

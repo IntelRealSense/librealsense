@@ -9,6 +9,7 @@ target_sources(${LRS_TARGET}
         "${CMAKE_CURRENT_LIST_DIR}/ds6-private.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/ds6-factory.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/ds6-safety.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/hw_monitor_extended_buffers.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/ds6-device.h"
         "${CMAKE_CURRENT_LIST_DIR}/ds6-color.h"
         "${CMAKE_CURRENT_LIST_DIR}/ds6-motion.h"
@@ -16,4 +17,5 @@ target_sources(${LRS_TARGET}
         "${CMAKE_CURRENT_LIST_DIR}/ds6-private.h"
         "${CMAKE_CURRENT_LIST_DIR}/ds6-factory.h"
         "${CMAKE_CURRENT_LIST_DIR}/ds6-safety.h"
+        "${CMAKE_CURRENT_LIST_DIR}/hw_monitor_extended_buffers.h"
 )
