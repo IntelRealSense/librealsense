@@ -19,6 +19,7 @@
 #define LOG_DEBUG_THERMAL_LOOP(...)
 #endif //DEBUG_THERMAL_LOOP
 
+
 namespace librealsense
 {
     namespace ds
@@ -100,8 +101,11 @@ namespace librealsense
             RECPARAMSGET = 0x7E,     // Retrieve depth calibration table in new format (fw >= 5.11.12.100)
             LASERONCONST = 0x7F,     // Enable Laser On constantly (GS SKU Only)
             AUTO_CALIB = 0x80,      // auto calibration commands
-            SAFETY_PRESET_READ = 0x94,  // Read safety preset from given index  
-            SAFETY_PRESET_WRITE = 0x95   // Write safety preset to given index
+            SAFETY_PRESET_READ = 0x94,  // Read safety preset from given index
+            SAFETY_PRESET_WRITE = 0x95,   // Write safety preset to given index
+            SET_HKR_CONFIG_TABLE = 0xA6, // HKR Set Internal sub calibration table
+            GET_HKR_CONFIG_TABLE = 0xA7, // HKR Get Internal sub calibration table
+            CALIBRESTOREEPROM = 0xA8 // HKR Store EEPROM Calibration
         };
 
 #define TOSTRING(arg) #arg
@@ -230,7 +234,7 @@ namespace librealsense
             uint32_t                crc32;          // crc of all the actual table data excluding header/CRC
         };
 
-        enum ds5_rect_resolutions : unsigned short
+        enum ds_rect_resolutions : unsigned short
         {
             res_1920_1080,
             res_1280_720,
@@ -249,21 +253,7 @@ namespace librealsense
             res_576_576,
             res_720_720,
             res_1152_1152,
-            max_ds5_rect_resolutions
-        };
-
-        struct coefficients_table
-        {
-            table_header        header;
-            float3x3            intrinsic_left;             //  left camera intrinsic data, normilized
-            float3x3            intrinsic_right;            //  right camera intrinsic data, normilized
-            float3x3            world2left_rot;             //  the inverse rotation of the left camera
-            float3x3            world2right_rot;            //  the inverse rotation of the right camera
-            float               baseline;                   //  the baseline between the cameras in mm units
-            uint32_t            brown_model;                //  Distortion model: 0 - DS distorion model, 1 - Brown model
-            uint8_t             reserved1[88];
-            float4              rect_params[max_ds5_rect_resolutions];
-            uint8_t             reserved2[64];
+            max_ds_rect_resolutions
         };
 
         struct new_calibration_item
@@ -291,11 +281,11 @@ namespace librealsense
                                                << sizeof( table_header ) << " , actual: " << raw_data.size() );
             }
             // verify the parsed table
-            // D457 development
-            /*if (table->header.crc32 != calc_crc32(raw_data.data() + sizeof(table_header), raw_data.size() - sizeof(table_header)))
+            if (table->header.crc32 != calc_crc32(raw_data.data() + sizeof(table_header), raw_data.size() - sizeof(table_header)))
             {
                 throw invalid_value_exception("Calibration data CRC error, parsing aborted!");
-            }*/
+            }
+
             LOG_DEBUG("Loaded Valid Table: version [mjr.mnr]: 0x" <<
                 hex << setfill('0') << setw(4) << header->version << dec
                 << ", type " << header->table_type << ", size " << header->table_size
@@ -537,46 +527,9 @@ namespace librealsense
             // Keep sorted
             module_serial_size = 6
         };
+        
 
-        enum calibration_table_id
-        {
-            coefficients_table_id = 25,
-            depth_calibration_id = 31,
-            rgb_calibration_id = 32,
-            fisheye_calibration_id = 33,
-            imu_calibration_id = 34,
-            lens_shading_id = 35,
-            projector_id = 36,
-            max_id = -1
-        };
-
-        struct ds5_calibration
-        {
-            uint16_t        version;                        // major.minor
-            rs2_intrinsics   left_imager_intrinsic;
-            rs2_intrinsics   right_imager_intrinsic;
-            rs2_intrinsics   depth_intrinsic[max_ds5_rect_resolutions];
-            rs2_extrinsics   left_imager_extrinsic;
-            rs2_extrinsics   right_imager_extrinsic;
-            rs2_extrinsics   depth_extrinsic;
-            std::map<calibration_table_id, bool> data_present;
-
-            ds5_calibration() : version(0), left_imager_intrinsic({}), right_imager_intrinsic({}),
-                left_imager_extrinsic({}), right_imager_extrinsic({}), depth_extrinsic({})
-            {
-                for (auto i = 0; i < max_ds5_rect_resolutions; i++)
-                    depth_intrinsic[i] = {};
-                data_present.emplace(coefficients_table_id, false);
-                data_present.emplace(depth_calibration_id, false);
-                data_present.emplace(rgb_calibration_id, false);
-                data_present.emplace(fisheye_calibration_id, false);
-                data_present.emplace(imu_calibration_id, false);
-                data_present.emplace(lens_shading_id, false);
-                data_present.emplace(projector_id, false);
-            }
-        };
-
-        static std::map< ds5_rect_resolutions, int2> resolutions_list = {
+        static std::map< ds_rect_resolutions, int2> resolutions_list = {
             { res_320_240,{ 320, 240 } },
             { res_424_240,{ 424, 240 } },
             { res_480_270,{ 480, 270 } },
@@ -594,19 +547,11 @@ namespace librealsense
             { res_1152_1152,{ 1152, 1152 } },
         };
 
-        
+        ds_rect_resolutions width_height_to_ds_rect_resolutions(uint32_t width, uint32_t height);
 
-
-        ds5_rect_resolutions width_height_to_ds5_rect_resolutions(uint32_t width, uint32_t height);
-
+        rs2_intrinsics get_color_stream_intrinsic(const std::vector<uint8_t>& raw_data, uint32_t width, uint32_t height);
         bool try_get_intrinsic_by_resolution_new(const std::vector<uint8_t>& raw_data,
             uint32_t width, uint32_t height, rs2_intrinsics* result);
-
-        rs2_intrinsics get_intrinsic_by_resolution(const std::vector<uint8_t>& raw_data, calibration_table_id table_id, uint32_t width, uint32_t height);
-        rs2_intrinsics get_intrinsic_by_resolution_coefficients_table(const std::vector<uint8_t>& raw_data, uint32_t width, uint32_t height);
-        rs2_intrinsics get_intrinsic_fisheye_table(const std::vector<uint8_t>& raw_data, uint32_t width, uint32_t height);
-        pose get_fisheye_extrinsics_data(const std::vector<uint8_t>& raw_data);
-        pose get_color_stream_extrinsic(const std::vector<uint8_t>& raw_data);
 
         enum ds5_notifications_types
         {
@@ -689,6 +634,8 @@ namespace librealsense
         const std::vector<uint8_t> alternating_emitter_pattern{ 0x5, ALTERNATING_EMITTER_SUBPRESET_ID, 0, 0, 0x2,
             0x4, 0x1, 0, 0x1, 0, 0, 0, 0, 0,
             0x4, 0x1, 0, 0x1, 0, 0x1, 0, 0, 0 };
+
+        pose get_color_stream_extrinsic(const std::vector<uint8_t>& raw_data);
 
     } // librealsense::ds
 } // namespace librealsense

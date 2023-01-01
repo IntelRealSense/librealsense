@@ -4,6 +4,7 @@
 #pragma once
 
 #include "ds/ds6/ds6-private.h"
+#include "ds/ds6/hw_monitor_extended_buffers.h"
 
 #include "algo.h"
 #include "error-handling.h"
@@ -67,7 +68,7 @@ namespace librealsense
     protected:
         std::shared_ptr<ds_device_common> _ds_device_common;
 
-        std::vector<uint8_t> get_raw_calibration_table(ds::calibration_table_id table_id) const;
+        std::vector<uint8_t> get_ds6_raw_calibration_table(ds::ds6_calibration_table_id table_id) const;
         std::vector<uint8_t> get_new_calibration_table() const;
 
         bool is_camera_in_advanced_mode() const;
@@ -85,10 +86,10 @@ namespace librealsense
 
         friend class ds6_depth_sensor;
 
-        std::shared_ptr<hw_monitor> _hw_monitor;
-        firmware_version            _fw_version;
-        firmware_version            _recommended_fw_version;
-        ds::d400_caps               _device_capabilities;
+        std::shared_ptr<hw_monitor_extended_buffers> _hw_monitor;
+        firmware_version _fw_version;
+        firmware_version _recommended_fw_version;
+        ds::d400_caps _device_capabilities;
 
         std::shared_ptr<stream_interface> _depth_stream;
         std::shared_ptr<stream_interface> _left_ir_stream;

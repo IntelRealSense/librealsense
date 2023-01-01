@@ -162,5 +162,63 @@ namespace librealsense
         bool ds5_try_fetch_usb_device(std::vector<platform::usb_device_info>& devices,
             const platform::uvc_device_info& info, platform::usb_device_info& result);
 
+        enum class ds5_calibration_table_id
+        {
+            coefficients_table_id = 25,
+            depth_calibration_id = 31,
+            rgb_calibration_id = 32,
+            fisheye_calibration_id = 33,
+            imu_calibration_id = 34,
+            lens_shading_id = 35,
+            projector_id = 36,
+            max_id = -1
+        };
+
+        struct ds5_calibration
+        {
+            uint16_t        version;                        // major.minor
+            rs2_intrinsics   left_imager_intrinsic;
+            rs2_intrinsics   right_imager_intrinsic;
+            rs2_intrinsics   depth_intrinsic[max_ds_rect_resolutions];
+            rs2_extrinsics   left_imager_extrinsic;
+            rs2_extrinsics   right_imager_extrinsic;
+            rs2_extrinsics   depth_extrinsic;
+            std::map<ds5_calibration_table_id, bool> data_present;
+
+            ds5_calibration() : version(0), left_imager_intrinsic({}), right_imager_intrinsic({}),
+                left_imager_extrinsic({}), right_imager_extrinsic({}), depth_extrinsic({})
+            {
+                for (auto i = 0; i < max_ds_rect_resolutions; i++)
+                    depth_intrinsic[i] = {};
+                data_present.emplace(ds5_calibration_table_id::coefficients_table_id, false);
+                data_present.emplace(ds5_calibration_table_id::depth_calibration_id, false);
+                data_present.emplace(ds5_calibration_table_id::rgb_calibration_id, false);
+                data_present.emplace(ds5_calibration_table_id::fisheye_calibration_id, false);
+                data_present.emplace(ds5_calibration_table_id::imu_calibration_id, false);
+                data_present.emplace(ds5_calibration_table_id::lens_shading_id, false);
+                data_present.emplace(ds5_calibration_table_id::projector_id, false);
+            }
+        };
+
+        struct ds5_coefficients_table
+        {
+            table_header        header;
+            float3x3            intrinsic_left;             //  left camera intrinsic data, normilized
+            float3x3            intrinsic_right;            //  right camera intrinsic data, normilized
+            float3x3            world2left_rot;             //  the inverse rotation of the left camera
+            float3x3            world2right_rot;            //  the inverse rotation of the right camera
+            float               baseline;                   //  the baseline between the cameras in mm units
+            uint32_t            brown_model;                //  Distortion model: 0 - DS distorion model, 1 - Brown model
+            uint8_t             reserved1[88];
+            float4              rect_params[max_ds_rect_resolutions];
+            uint8_t             reserved2[64];
+        };
+
+        rs2_intrinsics get_ds5_intrinsic_by_resolution(const std::vector<uint8_t>& raw_data, ds5_calibration_table_id table_id, uint32_t width, uint32_t height);
+        rs2_intrinsics get_ds5_intrinsic_by_resolution_coefficients_table(const std::vector<uint8_t>& raw_data, uint32_t width, uint32_t height);
+        pose get_ds5_color_stream_extrinsic(const std::vector<uint8_t>& raw_data);
+
+        rs2_intrinsics get_intrinsic_fisheye_table(const std::vector<uint8_t>& raw_data, uint32_t width, uint32_t height);
+        pose get_fisheye_extrinsics_data(const std::vector<uint8_t>& raw_data);
     } // namespace ds
 } // namespace librealsense

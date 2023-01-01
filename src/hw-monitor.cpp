@@ -6,6 +6,7 @@
 #include <limits>
 #include <sstream>
 
+
 namespace librealsense
 {
     std::string hw_monitor::get_firmware_version_string(const std::vector<uint8_t>& buff, size_t index, size_t length)
@@ -115,12 +116,12 @@ namespace librealsense
         update_cmd_details(details, receivedCmdLen, outputBuffer);
     }
 
-    std::vector< uint8_t > hw_monitor::send( std::vector< uint8_t > const & data ) const
+    std::vector<uint8_t> hw_monitor::send( std::vector< uint8_t > const & data ) const
     {
         return _locked_transfer->send_receive(data);
     }
 
-    std::vector< uint8_t >
+    std::vector<uint8_t>
     hw_monitor::send( command cmd, hwmon_response * p_response, bool locked_transfer ) const
     {
         hwmon_cmd newCommand(cmd);
@@ -142,15 +143,15 @@ namespace librealsense
 
         if (locked_transfer)
         {
-            return _locked_transfer->send_receive({ details.sendCommandData.begin(),details.sendCommandData.end()});
+            return _locked_transfer->send_receive({ details.sendCommandData.begin(),details.sendCommandData.end() });
         }
 
         send_hw_monitor_command(details);
 
         // Error/exit conditions
-        if( p_response )
+        if (p_response)
             *p_response = hwm_Success;
-        if( newCommand.oneDirection )
+        if (newCommand.oneDirection)
             return std::vector<uint8_t>();
 
         librealsense::copy(newCommand.receivedOpcode, details.receivedOpcode.data(), 4);
@@ -159,18 +160,18 @@ namespace librealsense
 
         // endian?
         auto opCodeAsUint32 = pack(details.receivedOpcode[3], details.receivedOpcode[2],
-                                    details.receivedOpcode[1], details.receivedOpcode[0]);
+            details.receivedOpcode[1], details.receivedOpcode[0]);
         if (opCodeAsUint32 != opCodeXmit)
         {
             auto err_type = static_cast<hwmon_response>(opCodeAsUint32);
-            std::string err = hwmon_error_string( cmd, err_type );
-            LOG_DEBUG( err );
-            if( p_response )
+            std::string err = hwmon_error_string(cmd, err_type);
+            LOG_DEBUG(err);
+            if (p_response)
             {
                 *p_response = err_type;
                 return std::vector<uint8_t>();
             }
-            throw invalid_value_exception( err );
+            throw invalid_value_exception(err);
         }
 
         return std::vector<uint8_t>(newCommand.receivedCommandData,

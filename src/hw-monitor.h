@@ -256,6 +256,7 @@ namespace librealsense
 
     class hw_monitor
     {
+    protected:
         struct hwmon_cmd
         {
             uint8_t     cmd;
@@ -330,8 +331,8 @@ namespace librealsense
                                       uint8_t * bufferToSend,
                                       int & length );
 
-        std::vector< uint8_t > send( std::vector< uint8_t > const & data ) const;
-        std::vector<uint8_t> send( command cmd, hwmon_response * = nullptr, bool locked_transfer = false ) const;
+        virtual std::vector<uint8_t> send( std::vector<uint8_t> const & data ) const;
+        virtual std::vector<uint8_t> send( command cmd, hwmon_response * = nullptr, bool locked_transfer = false ) const;
         std::vector<uint8_t> build_command(uint32_t opcode,
             uint32_t param1 = 0,
             uint32_t param2 = 0,

@@ -44,7 +44,7 @@ namespace librealsense
 
         _color_calib_table_raw = [this]()
         {
-            return get_raw_calibration_table(rgb_calibration_id);
+            return get_ds6_raw_calibration_table(ds6_calibration_table_id::rgb_calibration_id);
         };
 
         _color_extrinsic = std::make_shared<lazy<rs2_extrinsics>>([this]() { return from_pose(get_color_stream_extrinsic(*_color_calib_table_raw)); });
@@ -126,9 +126,9 @@ namespace librealsense
 
     rs2_intrinsics ds6_color_sensor::get_intrinsics(const stream_profile& profile) const
     {
-        return get_intrinsic_by_resolution(
+        return get_ds6_intrinsic_by_resolution(
             *_owner->_color_calib_table_raw,
-            ds::calibration_table_id::rgb_calibration_id,
+            ds::ds6_calibration_table_id::rgb_calibration_id,
             profile.width, profile.height);
     }
 

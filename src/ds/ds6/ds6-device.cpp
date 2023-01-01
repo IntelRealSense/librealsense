@@ -13,7 +13,7 @@
 #include "metadata-parser.h"
 
 #include "ds6-device.h"
-#include "ds/ds6/ds6-private.h"
+#include "ds6-private.h"
 #include "ds/ds-options.h"
 #include "ds/ds-timestamp.h"
 #include "stream.h"
@@ -144,9 +144,9 @@ namespace librealsense
             }
             else 
             {
-                return get_intrinsic_by_resolution(
+                return get_ds6_intrinsic_by_resolution(
                     *_owner->_coefficients_table_raw,
-                    ds::calibration_table_id::coefficients_table_id,
+                    ds::ds6_calibration_table_id::coefficients_table_id,
                     profile.width, profile.height);
             }
         }
@@ -181,9 +181,9 @@ namespace librealsense
 
         rs2_intrinsics get_color_intrinsics(const stream_profile& profile) const
         {
-            return get_intrinsic_by_resolution(
+            return get_ds6_intrinsic_by_resolution(
                 *_owner->_color_calib_table_raw,
-                ds::calibration_table_id::rgb_calibration_id,
+                ds::ds6_calibration_table_id::rgb_calibration_id,
                 profile.width, profile.height);
         }
 
@@ -332,13 +332,17 @@ namespace librealsense
     float ds6_device::get_stereo_baseline_mm() const // to be ds6 adapted
     {
         using namespace ds;
-        auto table = check_calib<coefficients_table>(*_coefficients_table_raw);
+        auto table = check_calib<ds6_coefficients_table>(*_coefficients_table_raw);
         return fabs(table->baseline);
     }
 
-    std::vector<uint8_t> ds6_device::get_raw_calibration_table(ds::calibration_table_id table_id) const // to be ds6 adapted
+    std::vector<uint8_t> ds6_device::get_ds6_raw_calibration_table(ds::ds6_calibration_table_id table_id) const // to be ds6 adapted
     {
-        command cmd(ds::GETINTCAL, table_id);
+        using namespace ds;
+        command cmd(GET_HKR_CONFIG_TABLE, 
+            static_cast<int>(ds6_calib_location::ds6_calib_eeprom), 
+            static_cast<int>(table_id),
+            static_cast<int>(ds6_calib_type::ds6_calib_dynamic));
         return _hw_monitor->send(cmd);
     }
 
@@ -426,7 +430,7 @@ namespace librealsense
     ds6_device::ds6_device(std::shared_ptr<context> ctx,
         const platform::backend_device_group& group)
         : device(ctx, group), global_time_interface(),
-          auto_calibrated(_hw_monitor),
+          auto_calibrated(),
           _device_capabilities(ds::d400_caps::CAP_UNDEFINED),
           _depth_stream(new stream(RS2_STREAM_DEPTH)),
           _left_ir_stream(new stream(RS2_STREAM_INFRARED, 1)),
@@ -448,12 +452,12 @@ namespace librealsense
 
         _color_calib_table_raw = [this]()
         {
-            return get_raw_calibration_table(rgb_calibration_id);
+            return get_ds6_raw_calibration_table(ds6_calibration_table_id::rgb_calibration_id);
         };
 
         if (((hw_mon_over_xu) && (RS400_IMU_PID != _pid)) || (!group.usb_devices.size()))
         {
-            _hw_monitor = std::make_shared<hw_monitor>(
+            _hw_monitor = std::make_shared<hw_monitor_extended_buffers>(
                 std::make_shared<locked_transfer>(
                     std::make_shared<command_transfer_over_xu>(
                         raw_sensor, depth_xu, DS5_HWMONITOR),
@@ -461,10 +465,11 @@ namespace librealsense
         }
         else
         {
-            _hw_monitor = std::make_shared<hw_monitor>(
+            _hw_monitor = std::make_shared<hw_monitor_extended_buffers>(
                 std::make_shared<locked_transfer>(
                     backend.create_usb_device(group.usb_devices.front()), raw_sensor));
         }
+        set_hw_monitor_for_auto_calib(_hw_monitor);
 
         _ds_device_common = std::make_shared<ds_device_common>(this, _hw_monitor);
 
@@ -473,7 +478,7 @@ namespace librealsense
         _left_right_extrinsics = std::make_shared<lazy<rs2_extrinsics>>([this]()
             {
                 rs2_extrinsics ext = identity_matrix();
-                auto table = check_calib<coefficients_table>(*_coefficients_table_raw);
+                auto table = check_calib<ds6_coefficients_table>(*_coefficients_table_raw);
                 ext.translation[0] = 0.001f * table->baseline; // mm to meters
                 return ext;
             });
@@ -485,7 +490,7 @@ namespace librealsense
         register_stream_to_extrinsic_group(*_left_ir_stream, 0);
         register_stream_to_extrinsic_group(*_right_ir_stream, 0);
 
-        _coefficients_table_raw = [this]() { return get_raw_calibration_table(coefficients_table_id); };
+        _coefficients_table_raw = [this]() { return get_ds6_raw_calibration_table(ds6_calibration_table_id::coefficients_table_id); };
         _new_calib_table_raw = [this]() { return get_new_calibration_table(); };
 
         std::string device_name = (rs500_sku_names.end() != rs500_sku_names.find(_pid)) ? rs500_sku_names.at(_pid) : "RS5xx";
@@ -503,12 +508,9 @@ namespace librealsense
         std::string optic_serial, asic_serial, pid_hex_str, usb_type_str;
         bool advanced_mode, usb_modality;
         group_multiple_fw_calls(depth_sensor, [&]() {
+            std::string fwv;
+            _ds_device_common->get_fw_details(optic_serial, asic_serial, fwv);
 
-            _hw_monitor->get_gvd(gvd_buff.size(), gvd_buff.data(), GVD);
-
-            optic_serial = _hw_monitor->get_module_serial_string(gvd_buff, module_serial_offset);
-            asic_serial = _hw_monitor->get_module_serial_string(gvd_buff, module_asic_serial_offset);
-            auto fwv = _hw_monitor->get_firmware_version_string(gvd_buff, camera_fw_version_offset);
             _fw_version = firmware_version(fwv);
 
             _recommended_fw_version = firmware_version(D4XX_RECOMMENDED_FIRMWARE_VERSION);
@@ -540,34 +542,13 @@ namespace librealsense
                 []() { return std::make_shared<y8i_to_y8y8>(); }
             ); // L+R
 
-            if (_pid == RS_D585_PID || _pid == RS_D585S_PID)
-            {
-                depth_sensor.register_processing_block(
-                    { RS2_FORMAT_Y16I },
-                    { {RS2_FORMAT_Y16, RS2_STREAM_INFRARED, 1}, {RS2_FORMAT_Y16, RS2_STREAM_INFRARED, 2} },
-                    []() {return std::make_shared<y16i_to_y10msby10msb>(); }
-                );
-            }
-            else
-            {
-                depth_sensor.register_processing_block(
-                    { RS2_FORMAT_Y12I },
-                    { {RS2_FORMAT_Y16, RS2_STREAM_INFRARED, 1}, {RS2_FORMAT_Y16, RS2_STREAM_INFRARED, 2} },
-                    []() {return std::make_shared<y12i_to_y16y16>(); }
-                );
-            }
+            depth_sensor.register_processing_block(
+                { RS2_FORMAT_Y16I },
+                { {RS2_FORMAT_Y16, RS2_STREAM_INFRARED, 1}, {RS2_FORMAT_Y16, RS2_STREAM_INFRARED, 2} },
+                []() {return std::make_shared<y16i_to_y10msby10msb>(); }
+            );
                 
             pid_hex_str = hexify(_pid);
-
-            if ((_pid == RS416_PID || _pid == RS416_RGB_PID) && _fw_version >= firmware_version("5.12.0.1"))
-            {
-                depth_sensor.register_option(RS2_OPTION_HARDWARE_PRESET,
-                    std::make_shared<uvc_xu_option<uint8_t>>(raw_depth_sensor, depth_xu, DS5_HARDWARE_PRESET,
-                        "Hardware pipe configuration"));
-                depth_sensor.register_option(RS2_OPTION_LED_POWER,
-                    std::make_shared<uvc_xu_option<uint16_t>>(raw_depth_sensor, depth_xu, DS5_LED_PWR,
-                        "Set the power level of the LED, with 0 meaning LED off"));
-            }
 
             if (_fw_version >= firmware_version("5.6.3.0"))
             {
@@ -613,7 +594,7 @@ namespace librealsense
                 DS5_ENABLE_AUTO_EXPOSURE,
                 "Enable Auto Exposure");
             depth_sensor.register_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE, enable_auto_exposure);
-
+            
             // register HDR options
             //auto global_shutter_mask = d400_caps::CAP_GLOBAL_SHUTTER;
             if ((_fw_version >= hdr_firmware_version))// && ((_device_capabilities & global_shutter_mask) == global_shutter_mask) )

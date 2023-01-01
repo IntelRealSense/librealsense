@@ -186,9 +186,8 @@ namespace librealsense
     const int DEFAULT_FY_SCAN_DIRECTION = 0;
     const int DEFAULT_WHITE_WALL_MODE = 0;
 
-    auto_calibrated::auto_calibrated(std::shared_ptr<hw_monitor>& hwm)
-        : _hw_monitor(hwm),
-          _interactive_state(interactive_calibration_state::RS2_OCC_STATE_NOT_ACTIVE),
+    auto_calibrated::auto_calibrated()
+        : _interactive_state(interactive_calibration_state::RS2_OCC_STATE_NOT_ACTIVE),
           _interactive_scan(false),
           _action(auto_calib_action::RS2_OCC_ACTION_ON_CHIP_CALIB),
           _average_step_count(-1),
@@ -1746,7 +1745,7 @@ namespace librealsense
         std::vector<uint8_t> res;
 
         // Fetch current calibration using GETINITCAL command
-        command cmd(ds::GETINTCAL, ds::coefficients_table_id);
+        command cmd(ds::GETINTCAL, static_cast<int>(ds::ds5_calibration_table_id::coefficients_table_id));
         auto calib = _hw_monitor->send(cmd);
 
         if (calib.size() < sizeof(table_header)) throw std::runtime_error("Missing calibration header from GETINITCAL!");
@@ -1770,28 +1769,28 @@ namespace librealsense
             throw std::runtime_error("Write calibration can be called only after set calibration table was called");
 
         table_header* hd = (table_header*)(_curr_calibration.data());
-        calibration_table_id tbl_id = static_cast<calibration_table_id>(hd->table_type);
+        ds5_calibration_table_id tbl_id = static_cast<ds5_calibration_table_id>(hd->table_type);
         fw_cmd cmd{};
         int param2 = 0;
         switch (tbl_id)
         {
-        case coefficients_table_id:
+        case ds5_calibration_table_id::coefficients_table_id:
             cmd = SETINTCAL;
             break;
-        case rgb_calibration_id:
-            cmd = SETINTCALNEW;
+        case ds5_calibration_table_id::rgb_calibration_id:
+            cmd = SETINTCALNEW;  // TODO - REMI - CAN BE REMOVED???
             param2 = 1;
             break;
         default:
             throw std::runtime_error( rsutils::string::from() << "Flashing calibration table type 0x" << std::hex
-                                                              << tbl_id << " is not supported" );
+                                                              << static_cast<int>(tbl_id) << " is not supported" );
         }
 
-        command write_calib(cmd, tbl_id, param2);
+        command write_calib(cmd, static_cast<int>(tbl_id), param2);
         write_calib.data = _curr_calibration;
         _hw_monitor->send(write_calib);
 
-        LOG_DEBUG("Flashing " << ((tbl_id == coefficients_table_id) ? "Depth" : "RGB") << " calibration table");
+        LOG_DEBUG("Flashing " << ((tbl_id == ds5_calibration_table_id::coefficients_table_id) ? "Depth" : "RGB") << " calibration table");
 
     }
 
@@ -1800,11 +1799,11 @@ namespace librealsense
         using namespace ds;
 
         table_header* hd = (table_header*)(calibration.data());
-        ds::calibration_table_id tbl_id = static_cast<ds::calibration_table_id>(hd->table_type);
+        ds::ds5_calibration_table_id tbl_id = static_cast<ds::ds5_calibration_table_id>(hd->table_type);
 
         switch (tbl_id)
         {
-            case coefficients_table_id: // Load the modified depth calib table into flash RAM
+        case ds5_calibration_table_id::coefficients_table_id: // Load the modified depth calib table into flash RAM
             {
                 uint8_t* table = (uint8_t*)(calibration.data() + sizeof(table_header));
                 command write_calib(ds::CALIBRECALC, 0, 0, 0, 0xcafecafe);
@@ -1818,12 +1817,12 @@ namespace librealsense
                     LOG_ERROR("Flashing coefficients_table_id failed");
                 }
             }
-            case rgb_calibration_id: // case fall-through by design. For RGB skip loading to RAM (not supported)
+        case ds5_calibration_table_id::rgb_calibration_id: // case fall-through by design. For RGB skip loading to RAM (not supported)
                 _curr_calibration = calibration;
                 break;
             default:
                 throw std::runtime_error( rsutils::string::from()
-                                          << "the operation is not defined for calibration table type " << tbl_id );
+                                          << "the operation is not defined for calibration table type " << static_cast<int>(tbl_id));
         }
     }
 
@@ -1906,7 +1905,7 @@ namespace librealsense
         const float correction_factor = 0.5f;
 
         auto calib_table = get_calibration_table();
-        auto table = (librealsense::ds::coefficients_table*)calib_table.data();
+        auto table = (librealsense::ds::ds5_coefficients_table*)calib_table.data();
 
         float ar[2] = { 0 };
         float tmp = left_rect_sides[2] + left_rect_sides[3];
@@ -2392,7 +2391,7 @@ namespace librealsense
         const float max_change = 16.0f;
         if (fabs(color_intrin.ppx - ppx) < max_change && fabs(color_intrin.ppy - ppy) < max_change && fabs(color_intrin.fx - fx) < max_change && fabs(color_intrin.fy - fy) < max_change)
         {
-            ret = _hw_monitor->send(command{ds::GETINTCAL, ds::rgb_calibration_id });
+            ret = _hw_monitor->send(command{ds::GETINTCAL, static_cast<int>(ds::ds5_calibration_table_id::rgb_calibration_id) });
             auto table = reinterpret_cast<librealsense::ds::rgb_calibration_table*>(ret.data());
 
             health[0] = table->intrinsic(2, 0); // px
@@ -2521,5 +2520,10 @@ namespace librealsense
         }
         else
             throw std::runtime_error("Failed to extract target dimension info!");
+    }
+
+    void auto_calibrated::set_hw_monitor_for_auto_calib(std::shared_ptr<hw_monitor> hwm)
+    {
+        _hw_monitor = hwm;
     }
 }

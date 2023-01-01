@@ -76,10 +76,11 @@ namespace librealsense
 
     rs2_intrinsics ds_fisheye_sensor::get_intrinsics(const stream_profile& profile) const
     {
+        // ds5 used because no fisheye in ds6
         auto fisheye_calib = get_fisheye_calibration_table();
-        return get_intrinsic_by_resolution(
+        return get_ds5_intrinsic_by_resolution(
             fisheye_calib,
-            ds::calibration_table_id::fisheye_calibration_id,
+            ds::ds5_calibration_table_id::fisheye_calibration_id,
             profile.width, profile.height);
     }
 
