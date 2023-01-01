@@ -4,6 +4,7 @@
 #include <realdds/topics/device-info-msg.h>
 
 #include <librealsense2/utilities/json.h>
+#include <librealsense2/utilities/easylogging/easyloggingpp.h>
 
 namespace realdds {
 namespace topics {
@@ -25,7 +26,7 @@ namespace topics {
 
 nlohmann::json device_info::to_json() const
 {
-    return nlohmann::json( {
+    auto msg = nlohmann::json( {
         { "name", name },
         { "serial", serial },
         { "product-line", product_line },
@@ -33,6 +34,8 @@ nlohmann::json device_info::to_json() const
         { "topic-root", topic_root },
         { "locked", locked },
     } );
+    LOG_DEBUG( "-----> JSON = " << msg.dump() );
+    return msg;
 }
 
 }  // namespace topics
