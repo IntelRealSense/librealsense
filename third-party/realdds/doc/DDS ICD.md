@@ -1,29 +1,32 @@
-# realdds Topics
 
-There are 2 topic types in the realdds domain
-* **flexible** - Carries a buffer of data that can be JSON, CBOR or other user custom data
-See https://github.com/IntelRealSense/librealsense/blob/dds/third-party/realdds/include/realdds/topics/flexible/flexible.idl
-* **image** - A buffer of data with some extra fields that describe the image
-See https://github.com/IntelRealSense/librealsense/blob/dds/third-party/realdds/include/realdds/topics/image/image.idl
+This document aims to list all the topics that realdds object publish or subscribe to, enabling users to write their own implementations that communicate with realdds applications.
 
-There are 4 main topics, consisted of these 2 types.
+# Topics
+
+Information in realdds domain is being passed using 4 main topics
 * **realdds/device-info** of type flexible - The server sends a sample of this topic to inform readers of a connected camera.
-  Some of the details included are the camera model and serial number, this information will be used in the other topic names to ease communication with verious cameras in the network.
-* **realdds/\<model\>/\<serial\>/notification** of type flexible - Notifications are sent from the camera server to the camera user.
-  Some notificaitons are being sent at discovery to convey the full device information, e.g streams, supported options, etc...
+  Some of the details included are the *camera model* and *serial number*, this information will be used in the other topic names to ease communication with various cameras in the network.
+* **realdds/\<model\>/\<serial\>/notification** of type flexible - Notifications are sent from the camera's server to the camera's user.
+  Some notifications are being sent at discovery to convey the full device information, e.g. streams, supported options, etc...
   Other notifications are sent as needed, mostly as reply to a control message
-* **realdds/\<model\>/\<serial\>/control** of type flexible - Controls are commands from the camera user to the camera, e.g start streaming, set option value etc...
-* **realdds/\<model\>/\<serial\>/<stream name>** of type image - Frames of data of the appropriate stream from the camera server to the user.
+* **realdds/\<model\>/\<serial\>/control** of type flexible - Controls are commands from the camera's user to the camera, e.g. start streaming, set option value etc...
+* **realdds/\<model\>/\<serial\>/\<stream name\>** of type image - Frames of the selected stream from the camera's server to the user.
+
+All the topics in the realdds domain use one of these 2 topic types
+* **flexible** - Carries a buffer of data that can be JSON, CBOR or other user custom data. See [flexible.idl](https://github.com/IntelRealSense/librealsense/blob/dds/third-party/realdds/include/realdds/topics/flexible/flexible.idl)
+* **image** - A buffer of data with some extra fields that describe the image. See [image.idl](https://github.com/IntelRealSense/librealsense/blob/dds/third-party/realdds/include/realdds/topics/image/image.idl)
+
+For instructions about how to generate code from the IDL files see [here](https://github.com/IntelRealSense/librealsense/blob/dds/third-party/realdds/include/realdds/topics/readme.md)
 
 # Messages
 
 ## device-info
 
-On the camera user side, `realdds::dds_device_watcher` can be used to listen to incoming device-info messages.
+On the camera's user side, `realdds::dds_device_watcher` can be used to listen to incoming device-info messages.
 When compiling librealsense with the `BUILD_WITH_DDS` flag the context automatically creates and uses a `realdds::dds_device_watcher` object to identify DDS connected cameras.
 
 The server side can use `realdds::dds_device_broadcaster` to add or remove cameras from the DDS network.
-When a camera is added to the network the broadcaster will crerate a dds writer for it. If there is a **realdds/device-info** reader that mathces the broadcaster writer, topic sample will be sent with the appropriate device details.
+When a camera is added to the network the broadcaster will create a dds writer for it. If there is a **realdds/device-info** reader that matches the broadcaster writer, topic sample will be sent with the appropriate device details.
 When a camera is removed from the network the broadcaster will close the writer, thus informing possible readers that the camera is disconnected.
 
 ### device-info message format example
@@ -41,16 +44,18 @@ device-info uses the **flexible** type with a JSON format of the following struc
 
 Notifications are messages from the camera to the user.
 
-When a user receives a `device-info` topic he can create a reader for this camera notifications using the `topic-root` field of the message.
-This can also be achived by using `realdds::dds_device` that will create the reader and wait for discovery notification messages to build an appropriate `realdds::dds_stream`s.
+When a user receives a `device-info` topic he can create a reader for this camera's notifications using the `topic-root` field of the message.
+This can also be achieved by using `realdds::dds_device` that will create the reader and wait for discovery notification messages to build appropriate `realdds::dds_stream` objects.
 
-When using librealsense API, received notifications will automatically be handled and reflected in the `rs2::device` and `rs2::sensor`s state.
+When using librealsense API, received notifications will automatically be handled and reflected in the `rs2::device` and `rs2::sensor` objects state.
 
 All notifications use the **flexible** type with JSON format
 
 ### Discovery notifications
 
-On the discovery phase the camera server will send a **device-header** message, a possible **device-options** message and for each stream a **stream-header** and **stream-options** messages.
+On the discovery phase the camera server will send a **device-header** message, a **device-options** message, if applicable[^1], and for each stream a **stream-header** and **stream-options** messages, in this order.
+
+[^1] Most options affect a stream (e.g. gain, exposure, etc...) not all cameras have options that affect all the streams at once. **device-options** message will be sent only for cameras that support device level options.
 
 #### device-header format example
 
@@ -110,12 +115,13 @@ Other notifications are sent as needed, as a reply to **set-option** or **query-
     "successful":false,
     "failure-reason":""
 
-## Control
+## Controls
 
 Controls are commands from the user to the camera.
-Using controls the user can open or close streaming, or he can query current option values or set new values affecting the camera behaviour.
+Using controls, the user can open or close streaming, or he can query current option values or set new values affecting the camera behaviour.
 
 When using librealsense API commands will automatically be converted to the appropriate commands that will be sent to the camera over the DDS network.
+For instance, using `rs2::sensor.open( profile )` will be converted to DDS **open-streams** command using a control topic.
 
 ### open-streams command format example
 
@@ -130,18 +136,16 @@ When using librealsense API commands will automatically be converted to the appr
 ### query-option command format example
 
     "id":"query-option",
-    "counter":107,        //Integer, unique identifier for this command
+    "counter":107,        //Integer, increasing counter to uniquely identify this message and match a reply to it
     "option-name":"Auto Gain Limit Toggle",
     "owner-name":"Depth"
 
 ### set-option command format example
 
     "id":"set-option",
-    "counter":108,        //Integer, unique identifier for this command
+    "counter":108,        //Integer, increasing counter to uniquely identify this message and match a reply to it
     "option-name":"Enable Auto Exposure",
     "owner-name":"Depth",
     "value":0.0
-
-
 
 
