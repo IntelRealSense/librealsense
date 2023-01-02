@@ -129,6 +129,12 @@ namespace librealsense
 
         void add_software_device(std::shared_ptr<device_info> software_device);
 
+        void stop_device_watcher()
+        {
+            if (!_device_watcher->is_stopped())
+                _device_watcher->stop();
+        }
+
 #if WITH_TRACKING
         void unload_tracking_module();
 #endif
