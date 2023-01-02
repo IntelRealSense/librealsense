@@ -16,21 +16,7 @@ The various topics are arranged hierarchically:
 			* `<stream-name>` — frame-based streaming for each stream enumerating upon client subscription
 				* `metadata`
 
-### realsense/device-info
-
-This is the basic enumeration topic. Devices are published here as they are available.
-
-| field         | details                                         |
-| ------------- | ----------------------------------------------- |
-| name          | device name                                     |
-| serial_number | device serial number                            |
-| product_line  | device product line (D4xx/L5xx ...)             |
-| topic_root    | name of topic to interact with device           |
-| locked        | true if device flash is locked, false otherwise |
-
-The `topic_root` is the key for further interaction.
-Each device is a collection of multiple topics all gathered under a hierarchical topic-root. For example, a D435i with a serial number of `12345` would have topics all starting with `realsense/D435i/12345/`.
-
+For a complete overview of the topics structure please refer to [DDS ICD]("https://github.com/IntelRealSense/librealsense/blob/dds/third-party/realdds/doc/DDS ICD.md")
 
 ## Generating
 

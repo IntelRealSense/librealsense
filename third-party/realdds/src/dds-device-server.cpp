@@ -138,6 +138,9 @@ static void on_discovery_stream_header( std::shared_ptr< dds_stream_server > con
         { "n-options", stream->options().size() },
         { "options" , stream_options }
         } );
+    LOG_DEBUG( "-----> JSON = " << stream_options_message.json_data().dump() );
+    LOG_DEBUG( "-----> JSON size = " << stream_options_message.json_data().dump().length() );
+    LOG_DEBUG( "-----> CBOR size = " << json::to_cbor( stream_options_message.json_data() ).size() );
     notifications.add_discovery_notification( std::move( stream_options_message ) );
 }
 
@@ -209,6 +212,8 @@ void dds_device_server::handle_control_message( topics::flexible_msg control_mes
 {
     auto j = control_message.json_data();
     auto id = utilities::json::get< std::string >( j, "id" );
+    LOG_DEBUG( "-----> JSON = " << j.dump() );
+
     if ( id.compare("open-streams") == 0 )
     {
         if ( _open_streams_callback )
