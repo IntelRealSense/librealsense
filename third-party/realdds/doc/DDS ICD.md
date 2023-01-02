@@ -13,10 +13,10 @@ Information in realdds domain is being passed using 4 main topics
 * **realdds/\<model\>/\<serial\>/\<stream name\>** of type image - Frames of the selected stream from the camera's server to the user.
 
 All the topics in the realdds domain use one of these 2 topic types
-* **flexible** - Carries a buffer of data that can be JSON, CBOR or other user custom data. See [flexible.idl](https://github.com/IntelRealSense/librealsense/blob/dds/third-party/realdds/include/realdds/topics/flexible/flexible.idl)
-* **image** - A buffer of data with some extra fields that describe the image. See [image.idl](https://github.com/IntelRealSense/librealsense/blob/dds/third-party/realdds/include/realdds/topics/image/image.idl)
+* **flexible** - Carries a buffer of data that can be JSON, CBOR or other user custom data. See [flexible.idl](https://github.com/IntelRealSense/librealsense/blob/dds/third-party/realdds/include/realdds/topics/flexible/flexible.idl).
+* **image** - A buffer of data with some extra fields that describe the image. See [image.idl](https://github.com/IntelRealSense/librealsense/blob/dds/third-party/realdds/include/realdds/topics/image/image.idl).
 
-For instructions about how to generate code from the IDL files see [here](https://github.com/IntelRealSense/librealsense/blob/dds/third-party/realdds/include/realdds/topics/readme.md)
+For instructions about how to generate code from the IDL files see [here](https://github.com/IntelRealSense/librealsense/blob/dds/third-party/realdds/include/realdds/topics/readme.md).
 
 # Messages
 
@@ -42,7 +42,7 @@ device-info uses the **flexible** type with a JSON format of the following struc
 
 ## Notifications
 
-Notifications are messages from the camera to the user.
+Notifications are messages from the camera to the user. There are several types of notification messages. Some are sent at the discovery stage and some ("instatnt") are sent as needed, after the initialization is finished.
 
 When a user receives a `device-info` topic he can create a reader for this camera's notifications using the `topic-root` field of the message.
 This can also be achieved by using `realdds::dds_device` that will create the reader and wait for discovery notification messages to build appropriate `realdds::dds_stream` objects.
@@ -53,9 +53,9 @@ All notifications use the **flexible** type with JSON format
 
 ### Discovery notifications
 
-On the discovery phase the camera server will send a **device-header** message, a **device-options** message, if applicable[^1], and for each stream a **stream-header** and **stream-options** messages, in this order.
+On the discovery phase the camera server will send a **device-header** message, a **device-options** message, if applicable[*], and for each stream a **stream-header** and **stream-options** messages, in this order.
 
-[^1] Most options affect a stream (e.g. gain, exposure, etc...) not all cameras have options that affect all the streams at once. **device-options** message will be sent only for cameras that support device level options.
+[*] Most options affect a stream (e.g. gain, exposure, etc...) not all cameras have options that affect all the streams at once. **device-options** message will be sent only for cameras that support device level options.
 
 #### device-header format example
 
