@@ -798,6 +798,18 @@ namespace rs2
             }
         }
 
+        // Hack to restore "Enable Histogram Equalization" flag if needed.
+        // The flag is set to true by colorizer constructor, but setting min/max_distance options above or during
+        // restore_processing_block earlier, causes the registered observer to unset it, which is not the desired
+        // behaviour. Observer should affect only if a user is setting the values after construction phase is over.
+        auto colorizer_options = depth_colorizer->get_supported_options();
+        if( std::find( colorizer_options.begin(), colorizer_options.end(), RS2_OPTION_VISUAL_PRESET ) != colorizer_options.end() )
+        {
+            //Option is supported
+            auto option_value = depth_colorizer->get_option( RS2_OPTION_VISUAL_PRESET );
+            depth_colorizer->set_option( RS2_OPTION_VISUAL_PRESET, option_value );
+        }
+
         ss.str("");
         ss << "##" << dev.get_info(RS2_CAMERA_INFO_NAME)
             << "/" << s->get_info(RS2_CAMERA_INFO_NAME)
