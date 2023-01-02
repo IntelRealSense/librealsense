@@ -16,7 +16,7 @@ namespace librealsense
                         // the range moves from [0 : 2^10-1] to [0 : 2^16-1], so the values should be converted accordingly:
                         // x is range [0 : 2^10-1] is converted to y = x * (2^16-1)/(2^10-1) approx= x * (64 + 1/16)
                         // And x * (64 + 1/16) = x * 64 + x * 1/16 = x << 6 | x >> 4
-                        // This operation is done using shiftings to make it more efficient.
+                        // This operation is done using shiftings to make it more efficient, and with a non-significant accuracy loss.
                         uint16_t l() const { return left << 6 | left >> 4; }
                         uint16_t r() const { return right << 6 | right >> 4; }
     };
