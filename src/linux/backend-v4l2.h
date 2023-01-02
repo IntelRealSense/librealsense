@@ -399,7 +399,6 @@ namespace librealsense
             virtual inline bool is_metadata_streamed() const { return false;}
             virtual inline std::shared_ptr<buffer> get_video_buffer(__u32 index) const {return _buffers[index];}
             virtual inline std::shared_ptr<buffer> get_md_buffer(__u32 index) const {return nullptr;}
-            bool video_is_mplane();
 
             power_state _state = D3;
             std::string _name = "";
@@ -416,8 +415,7 @@ namespace librealsense
             std::unique_ptr<std::thread> _thread;
             std::unique_ptr<named_mutex> _named_mtx;
             struct device {
-                enum v4l2_buf_type type;
-                std::string _name;
+                enum v4l2_buf_type buf_type;
                 unsigned char num_planes;
                 struct v4l2_capability cap;
                 struct v4l2_cropcap cropcap;
@@ -459,8 +457,6 @@ namespace librealsense
             virtual inline std::shared_ptr<buffer> get_md_buffer(__u32 index) const {return _md_buffers[index];}
             int _md_fd = -1;
             std::string _md_name = "";
-            int _md_mi = 3;
-
             v4l2_buf_type _md_type = LOCAL_V4L2_BUF_TYPE_META_CAPTURE;
 
             std::vector<std::shared_ptr<buffer>> _md_buffers;
