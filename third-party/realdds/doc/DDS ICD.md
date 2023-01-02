@@ -1,5 +1,5 @@
 
-This document aims to list all the topics that realdds object publish or subscribe to, enabling users to write their own implementations that communicate with realdds applications.
+This document aims to list all the topics that realdds object publishes or subscribes to, enabling users to write their own implementations that communicate with realdds applications.
 
 # Topics
 
@@ -23,7 +23,7 @@ For instructions about how to generate code from the IDL files see [here](https:
 ## device-info
 
 On the camera's user side, `realdds::dds_device_watcher` can be used to listen to incoming device-info messages.
-When compiling librealsense with the `BUILD_WITH_DDS` flag the context automatically creates and uses a `realdds::dds_device_watcher` object to identify DDS connected cameras.
+When compiling librealsense with the cmake `BUILD_WITH_DDS` flag the context automatically creates and uses a `realdds::dds_device_watcher` object to identify DDS connected cameras.
 
 The server side can use `realdds::dds_device_broadcaster` to add or remove cameras from the DDS network.
 When a camera is added to the network the broadcaster will create a dds writer for it. If there is a **realdds/device-info** reader that matches the broadcaster writer, topic sample will be sent with the appropriate device details.
@@ -42,7 +42,7 @@ device-info uses the **flexible** type with a JSON format of the following struc
 
 ## Notifications
 
-Notifications are messages from the camera to the user. There are several types of notification messages. Some are sent at the discovery stage and some ("instatnt") are sent as needed, after the initialization is finished.
+Notifications are messages from the camera to the user. There are several types of notification messages. Some are sent at the discovery stage and some ("instant") are sent as needed, after the initialization is finished.
 
 When a user receives a `device-info` topic he can create a reader for this camera's notifications using the `topic-root` field of the message.
 This can also be achieved by using `realdds::dds_device` that will create the reader and wait for discovery notification messages to build appropriate `realdds::dds_stream` objects.
