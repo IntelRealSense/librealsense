@@ -45,13 +45,14 @@ namespace librealsense
         case RS2_FORMAT_6DOF: return 1;
         case RS2_FORMAT_MJPEG: return 8;
         case RS2_FORMAT_Y8I: return 16;
-        case RS2_FORMAT_Y12I: return 32;//24 - D457 dev - should be removed after it is corrected in SerDes;
+        case RS2_FORMAT_Y12I: return 32;  // bpp for Y12i format was 24, but since D457 GMSL SerDes required 32, it had been increased to 32 for both
         case RS2_FORMAT_INZI: return 32;
         case RS2_FORMAT_INVI: return 16;
         case RS2_FORMAT_W10: return 32;
         case RS2_FORMAT_Z16H: return 16;
         case RS2_FORMAT_FG: return 16;
         case RS2_FORMAT_Y411: return 12;
+        case RS2_FORMAT_Y16I: return 32;
         default: assert(false); return 0;
         }
     }
