@@ -42,7 +42,6 @@ macro(os_set_flags)
     
     if(APPLE)
         set(FORCE_RSUSB_BACKEND ON)
-        set(BUILD_WITH_TM2 ON)
     endif()
     
     if(FORCE_RSUSB_BACKEND)

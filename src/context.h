@@ -129,10 +129,6 @@ namespace librealsense
 
         void add_software_device(std::shared_ptr<device_info> software_device);
 
-#if WITH_TRACKING
-        void unload_tracking_module();
-#endif
-
     private:
         void on_device_changed(platform::backend_device_group old,
                                platform::backend_device_group curr,

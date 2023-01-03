@@ -60,7 +60,6 @@
 const size_t MAX_DEV_PARENT_DIR = 10;
 const double DEFAULT_KPI_FRAME_DROPS_PERCENTAGE = 0.05;
 
-#include "../tm2/tm-boot.h"
 //D457 Dev. TODO -shall be refactored into the kernel headers.
 constexpr uint32_t RS_STREAM_CONFIG_0                       = 0x4000;
 constexpr uint32_t RS_CAMERA_CID_BASE                       = (V4L2_CTRL_CLASS_CAMERA | RS_STREAM_CONFIG_0);
@@ -2513,12 +2512,6 @@ namespace librealsense
         std::vector<usb_device_info> v4l_backend::query_usb_devices() const
         {
             auto device_infos = usb_enumerator::query_devices_info();
-            // Give the device a chance to restart, if we don't catch
-            // it, the watcher will find it later.
-            if(tm_boot(device_infos)) {
-                std::this_thread::sleep_for(std::chrono::milliseconds(2000));
-                device_infos = usb_enumerator::query_devices_info();
-            }
             return device_infos;
         }
 
