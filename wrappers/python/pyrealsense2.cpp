@@ -54,25 +54,74 @@ PYBIND11_MODULE(NAME, m) {
         .def("__str__", &rs2::log_message::raw)
         .def("__repr__", &rs2::log_message::full);
 
-    m.def("log_to_callback",
-        [](rs2_log_severity min_severity, std::function<void(rs2_log_severity, rs2::log_message)> callback)
+    // We want to enable Python callbacks for logging, but need to be careful:
+    // The machanism used by librealsense keeps a pointer to an object that is then released
+    // on destruction/exit. Usually this works fine, except that here, with Python and its GIL,
+    // Pybind tries to acquire the GIL when the thread state is no longer valid and we get
+    // into an infinite wait.
+    // This is how the code would look like if we didn't had this issue
+#if 0
+    m.def( "log_to_callback",
+           []( rs2_log_severity min_severity, std::function< void( rs2_log_severity, rs2::log_message ) > callback )
+           {
+               py::gil_scoped_release gil;
+               rs2::log_to_callback( min_severity,
+                                     [callback]( rs2_log_severity severity, rs2::log_message const & msg ) noexcept
+                                     {
+                                         py::gil_scoped_acquire gil;
+                                         callback( severity, msg );
+                                     } );
+           } );
+#else
+    // Instead, as a workaround, we override the usual mechanism to intentionally not free up
+    // if we see the Python thread state isn't valid (see release() below):
+    class py_log_callback : public rs2::log_callback
+    {
+        typedef rs2::log_callback super;
+
+    public:
+        py_log_callback( log_fn && on_log )
+            : super( std::move( on_log ) )
         {
-            rs2::log_to_callback( min_severity,
-                [callback]( rs2_log_severity severity, rs2::log_message const & msg ) noexcept
-                {
-                    try
-                    {
-                        // We're not being called from Python but instead are calling it,
-                        // we need to acquire it to not have issues with other threads...
-                        py::gil_scoped_acquire gil;
-                        callback( severity, msg );
-                    }
-                    catch( ... )
-                    {
-                        std::cerr << "?!?!?!!? exception in python log_to_callback callback ?!?!?!?!?" << std::endl;
-                    }
-                } );
-        }, "min_severity"_a, "callback"_a);
+        }
+
+        void on_log( rs2_log_severity severity, rs2_log_message const & msg ) noexcept override
+        {
+            try
+            {
+                // We're not being called from Python but instead are calling it,
+                // we need to acquire it to not have issues with other threads...
+                py::gil_scoped_acquire gil;
+                super::on_log( severity, msg );
+            }
+            catch( std::exception const & e )
+            {
+                std::cerr << "EXCEPTION in " SNAME ".log_to_callback: " << e.what() << std::endl;
+            }
+            catch( ... )
+            {
+                std::cerr << "UNKNOWN EXCEPTION in " SNAME ".log_to_callback" << std::endl;
+            }
+        }
+
+        void release() override
+        {
+            // When we exit() python, we get here with an invalid thread-state and the delete
+            // locks the thread indefinitely!
+            if( PyGILState_GetThisThreadState() )
+                super::release();
+        }
+    };
+    m.def( "log_to_callback",
+           []( rs2_log_severity min_severity, py_log_callback::log_fn callback )
+           {
+               rs2_error * e = nullptr;
+               py::gil_scoped_release gil;
+               rs2_log_to_callback_cpp( min_severity, new py_log_callback( std::move( callback ) ), &e );
+               rs2::error::handle( e );
+           } );
+#endif
+
     // A call to rs.log() will cause a callback to get called! We should already own the GIL, but
     // release it just in case to let others do their thing...
     m.def("log", &rs2::log, "severity"_a, "message"_a, py::call_guard<py::gil_scoped_release>());

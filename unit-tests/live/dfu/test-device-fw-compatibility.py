@@ -52,12 +52,10 @@ pid_to_min_fw_version = {  # D400 product line:
     '0B5C': d400_fw_min_version_2,  # D455
     # L500 product line:
     '0B55': l500_fw_min_version_valid,  # L500_RECOVERY
-    '0B72': l500_fw_min_version_valid,  # L535_RECOVERY
     '0ADC': l500_fw_min_version_valid,  # L500_USB2_RECOVERY_OLD
     '0B0D': l500_fw_min_version_valid,  # L500
     '0B3D': l500_fw_min_version_valid,  # L515_PRE_PRQ
     '0B64': l500_fw_min_version_valid,  # L515
-    '0B68': l500_fw_min_version_valid,  # L535
     # SR300 product line:
     '0AA5': sr300_fw_min_version_1,  # SR300
     '0AB3': sr300_fw_min_version_1,  # SR300_RECOVERY
