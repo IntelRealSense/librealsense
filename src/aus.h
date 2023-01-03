@@ -121,8 +121,6 @@ namespace librealsense
         long _total; 
     };
 
-#ifdef BUILD_AUS
-
     class aus_data
     {
 
@@ -291,19 +289,5 @@ namespace librealsense
 
     }; // end of class aus_data
 
-#else
-    class aus_data
-    {
-    public:
-        NOT_SUPPORTED(void set(std::string key, long value));
-        NOT_SUPPORTED(void increment(std::string key));
-        NOT_SUPPORTED(void decrement(std::string key));
-        NOT_SUPPORTED(long get(std::string key));
-        NOT_SUPPORTED(void start(std::string key));
-        NOT_SUPPORTED(void stop(std::string key));
-        NOT_SUPPORTED(std::vector<std::string> get_counters_names());
-        NOT_SUPPORTED(void on_device_changed(std::shared_ptr<device_interface> device));
-    }; // end of class aus_data
 
-#endif
 }

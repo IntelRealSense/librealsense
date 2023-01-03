@@ -5,7 +5,6 @@
 #include "aus.h"
 #include <fstream>
 
-#define NOT_SUPPORTED(func_api)  func_api##{throw std::runtime_error("function " #func_api " is not supported without BUILD_AUS flag on");}
 #ifdef BUILD_AUS
 
 namespace librealsense
