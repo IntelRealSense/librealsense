@@ -629,7 +629,7 @@ void log_callback_end( uint32_t fps,
         _source.set_callback(callback);
         _is_streaming = true;
    
-        std::string device_name = this->get_device().get_info(RS2_CAMERA_INFO_NAME);
+        std::string device_name = get_device().get_info(RS2_CAMERA_INFO_NAME);
         auto active_streams = get_active_streams();
         for (auto profile : active_streams)
         {
@@ -647,7 +647,7 @@ void log_callback_end( uint32_t fps,
 
         _is_streaming = false;
 
-        std::string device_name = this->get_device().get_info(RS2_CAMERA_INFO_NAME);
+        std::string device_name = get_device().get_info(RS2_CAMERA_INFO_NAME);
         auto active_streams = get_active_streams();
         for (auto profile : active_streams)
         {
@@ -1053,7 +1053,7 @@ void log_callback_end( uint32_t fps,
         });
         _is_streaming = true;
 
-        std::string device_name = this->get_device().get_info(RS2_CAMERA_INFO_NAME);
+        std::string device_name = get_device().get_info(RS2_CAMERA_INFO_NAME);
         auto active_streams = get_active_streams();
         for (auto profile : active_streams)
         {
@@ -1072,7 +1072,7 @@ void log_callback_end( uint32_t fps,
         _hid_device->stop_capture();
         _is_streaming = false;
 
-        std::string device_name = this->get_device().shared_from_this()->get_info(RS2_CAMERA_INFO_NAME);
+        std::string device_name = get_device().get_info(RS2_CAMERA_INFO_NAME);
         auto active_streams = get_active_streams();
         for (auto profile : active_streams)
         {
