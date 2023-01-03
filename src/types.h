@@ -220,6 +220,7 @@ namespace librealsense
     void aus_on_device_changed(std::shared_ptr<device_interface> device);
     void aus_system_counter_increment(std::string suffix, std::string device_name);
     void aus_system_timer_start(std::string suffix, std::string device_name);
+    void aus_system_timer_stop(std::string suffix, std::string device_name);
 
     // Enhancement for debug mode that incurs performance penalty with STL
     // std::clamp to be introduced with c++17
