@@ -364,13 +364,33 @@ bool dds_device::impl::init()
 
                     n_stream_options_received++;
 
-                    dds_options options;
-                    for( auto & option : j["options"] )
+                    if( utilities::json::has( j, "options" ) )
                     {
-                        options.push_back( dds_option::from_json( option, stream_it->second->name() ) );
+                        dds_options options;
+                        for( auto & option : j["options"] )
+                        {
+                            options.push_back( dds_option::from_json( option, stream_it->second->name() ) );
+                        }
+
+                        stream_it->second->init_options( options );
                     }
 
-                    stream_it->second->init_options( options );
+                    if( utilities::json::has( j, "intrinsics" ) )
+                    {
+                        auto video_stream = std::dynamic_pointer_cast< dds_video_stream >( stream_it->second );
+                        auto motion_server = std::dynamic_pointer_cast< dds_motion_stream >( stream_it->second );
+                        if( video_stream )
+                        {
+                            std::set< video_intrinsics > intrinsics;
+                            for( auto & intr : j["intrinsics"] )
+                                intrinsics.insert( video_intrinsics::from_json( intr ) );
+                            video_stream->set_intrinsics( std::move( intrinsics ) );
+                        }
+                        if( motion_server )
+                        {
+                            motion_server->set_intrinsics( motion_intrinsics::from_json( j["intrinsics"][0] ) );
+                        }
+                    }
 
                     if( _streams.size() >= n_streams_expected )
                         state = state_type::DONE;

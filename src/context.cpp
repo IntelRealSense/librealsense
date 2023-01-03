@@ -746,7 +746,8 @@ namespace librealsense
         static rs2_video_stream
         to_rs2_video_stream( rs2_stream const stream_type,
                              sid_index const & sidx,
-                             std::shared_ptr< realdds::dds_video_stream_profile > const & profile )
+                             std::shared_ptr< realdds::dds_video_stream_profile > const & profile,
+                             const std::set< realdds::video_intrinsics > & intrinsics)
         {
             rs2_video_stream prof;
             prof.type = stream_type;
@@ -756,7 +757,22 @@ namespace librealsense
             prof.height = profile->height();
             prof.fps = profile->frequency();
             prof.fmt = static_cast< rs2_format >( profile->format().to_rs2() );
-            // TODO - add intrinsics
+            
+            //Handle intrinsics
+            auto intr = std::find_if( intrinsics.begin(), intrinsics.end(), [profile]( const realdds::video_intrinsics & intr ) {
+                return profile->width() == intr.width && profile->height() == intr.height;
+            } );
+            if( intr != intrinsics.end() ) //Some profiles don't have intrinsics
+            {
+                prof.intrinsics.width = intr->width;
+                prof.intrinsics.height = intr->height;
+                prof.intrinsics.ppx = intr->principal_point_x;
+                prof.intrinsics.ppy = intr->principal_point_y;
+                prof.intrinsics.fx = intr->focal_lenght_x;
+                prof.intrinsics.fy = intr->focal_lenght_y;
+                prof.intrinsics.model = static_cast< rs2_distortion >( intr->distortion_model );
+                memcpy( prof.intrinsics.coeffs, intr->distortion_coeffs, sizeof( prof.intrinsics.coeffs ) );
+            }
 
             return prof;
         }
@@ -764,7 +780,8 @@ namespace librealsense
         static rs2_motion_stream
         to_rs2_motion_stream( rs2_stream const stream_type,
                               sid_index const & sidx,
-                              std::shared_ptr< realdds::dds_motion_stream_profile > const & profile )
+                              std::shared_ptr< realdds::dds_motion_stream_profile > const & profile,
+                              const realdds::motion_intrinsics & intrinsics )
         {
             rs2_motion_stream prof;
             prof.type = stream_type;
@@ -772,6 +789,10 @@ namespace librealsense
             prof.uid = sidx.sid;
             prof.fps = profile->frequency();
             prof.fmt = static_cast< rs2_format >( profile->format().to_rs2() );
+
+            memcpy( prof.intrinsics.data, intrinsics.data, sizeof( prof.intrinsics.data ) );
+            memcpy( prof.intrinsics.noise_variances, intrinsics.noise_variances, sizeof( prof.intrinsics.noise_variances ) );
+            memcpy( prof.intrinsics.bias_variances, intrinsics.bias_variances, sizeof( prof.intrinsics.bias_variances ) );
 
             return prof;
         }
@@ -837,7 +858,8 @@ namespace librealsense
                             to_rs2_video_stream(
                                 stream_type,
                                 sidx,
-                                std::static_pointer_cast< realdds::dds_video_stream_profile >( profile ) ),
+                                std::static_pointer_cast< realdds::dds_video_stream_profile >( profile ),
+                                video_stream->get_intrinsics() ),
                             profile == default_profile );
                     }
                     else if( motion_stream )
@@ -846,7 +868,8 @@ namespace librealsense
                             to_rs2_motion_stream(
                                 stream_type,
                                 sidx,
-                                std::static_pointer_cast< realdds::dds_motion_stream_profile >( profile ) ),
+                                std::static_pointer_cast< realdds::dds_motion_stream_profile >( profile ),
+                                motion_stream->get_intrinsics() ),
                             profile == default_profile );
                     }
                 }

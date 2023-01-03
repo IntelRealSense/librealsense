@@ -4,8 +4,9 @@
 #pragma once
 
 
-#include "dds-stream-profile.h"
-#include "dds-option.h"
+#include <realdds/dds-stream-profile.h>
+#include <realdds/dds-option.h>
+#include <realdds/dds-defines.h>
 
 #include <memory>
 #include <string>

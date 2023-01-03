@@ -7,6 +7,7 @@
 
 #include <string>
 #include <vector>
+#include <set>
 #include <functional>
 
 namespace realdds {
@@ -58,9 +59,14 @@ class dds_video_stream : public dds_stream
 public:
     dds_video_stream( std::string const & stream_name, std::string const & sensor_name );
 
+    void set_intrinsics( std::set< video_intrinsics > && intrinsics ) { _intrinsics = std::move( intrinsics ); }
+    const std::set< video_intrinsics > & get_intrinsics() const { return _intrinsics; }
+
 private:
     class impl;
     std::shared_ptr< impl > _impl;
+
+    std::set< video_intrinsics > _intrinsics;
 };
 
 class dds_depth_stream : public dds_video_stream
@@ -120,9 +126,14 @@ class dds_motion_stream : public dds_stream
 public:
     dds_motion_stream( std::string const & stream_name, std::string const & sensor_name );
 
+    void set_intrinsics( motion_intrinsics && intrinsics ) { _intrinsics = std::move( intrinsics ); }
+    const motion_intrinsics & get_intrinsics() const { return _intrinsics; }
+
 private:
     class impl;
     std::shared_ptr< impl > _impl;
+
+    motion_intrinsics _intrinsics;
 };
 
 class dds_accel_stream : public dds_motion_stream
