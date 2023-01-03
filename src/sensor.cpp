@@ -647,13 +647,11 @@ void log_callback_end( uint32_t fps,
 
         _is_streaming = false;
 
-        std::string device_name = this->get_device().shared_from_this()->get_info(RS2_CAMERA_INFO_NAME);
+        std::string device_name = this->get_device().get_info(RS2_CAMERA_INFO_NAME);
         auto active_streams = get_active_streams();
         for (auto profile : active_streams)
         {
-            auto stream_type = rs2_stream_to_string(profile->get_stream_type());
-            std::string timer_name = librealsense::aus_build_system_timer_name(stream_type, device_name);
-            librealsense::aus_stop(timer_name);
+            librealsense::aus_system_timer_stop(rs2_stream_to_string(profile->get_stream_type()), device_name);
         }
 
         _device->stop_callbacks();
@@ -1078,9 +1076,7 @@ void log_callback_end( uint32_t fps,
         auto active_streams = get_active_streams();
         for (auto profile : active_streams)
         {
-            auto stream_type = rs2_stream_to_string(profile->get_stream_type());
-            std::string timer_name = librealsense::aus_build_system_timer_name(stream_type, device_name);
-            librealsense::aus_stop(timer_name);
+            librealsense::aus_system_timer_stop(rs2_stream_to_string(profile->get_stream_type()), device_name);
         }
 
         _source.flush();
