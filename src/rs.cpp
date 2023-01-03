@@ -804,7 +804,7 @@ const char* rs2_get_device_info(const rs2_device* dev, rs2_camera_info info, rs2
         return dev->device->get_info(info).c_str();
     }
     throw librealsense::invalid_value_exception( rsutils::string::from() << "info " << rs2_camera_info_to_string( info )
-        << " not supported by the device!" );
+                                                                         << " not supported by the device!" );
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, dev, info)
 
@@ -826,7 +826,7 @@ const char* rs2_get_sensor_info(const rs2_sensor* sensor, rs2_camera_info info, 
         return sensor->sensor->get_info(info).c_str();
     }
     throw librealsense::invalid_value_exception( rsutils::string::from() << "info " << rs2_camera_info_to_string( info )
-        << " not supported by the sensor!" );
+                                                                         << " not supported by the sensor!" );
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, sensor, info)
 
