@@ -13,19 +13,19 @@ set(REALSENSE_FIRMWARE_URL "https://librealsense.intel.com" CACHE STRING
 
 string(REGEX MATCH "D4XX_RECOMMENDED_FIRMWARE_VERSION \"([0-9]+.[0-9]+.[0-9]+.[0-9]+)\"" _ ${ver})
 set(D4XX_FW_VERSION ${CMAKE_MATCH_1})
-message(STATUS "D4XX_FW_VERSION: ${D4XX_FW_VERSION}")
+#message(STATUS "D4XX_FW_VERSION: ${D4XX_FW_VERSION}")
 set(D4XX_FW_SHA1 8dc3b8a0b9fdf03410c15b30e04f57701985064a)
 set(D4XX_FW_URL "${REALSENSE_FIRMWARE_URL}/Releases/RS4xx/FW")
 
 string(REGEX MATCH "SR3XX_RECOMMENDED_FIRMWARE_VERSION \"([0-9]+.[0-9]+.[0-9]+.[0-9]+)\"" _ ${ver})
 set(SR3XX_FW_VERSION ${CMAKE_MATCH_1})
-message(STATUS "SR3XX_FW_VERSION: ${SR3XX_FW_VERSION}")
+#message(STATUS "SR3XX_FW_VERSION: ${SR3XX_FW_VERSION}")
 set(SR3XX_FW_SHA1 55237dba5d7db20e7c218975375d05b4210e9460)
 set(SR3XX_FW_URL "${REALSENSE_FIRMWARE_URL}/Releases/SR300/FW")
 
 string(REGEX MATCH "L51X_RECOMMENDED_FIRMWARE_VERSION \"([0-9]+\.[0-9]+\.[0-9]+\.[0-9]+)\"" _ ${ver})
 set(L51X_FW_VERSION ${CMAKE_MATCH_1})
-message(STATUS "L51X_FW_VERSION: ${L51X_FW_VERSION}")
+#message(STATUS "L51X_FW_VERSION: ${L51X_FW_VERSION}")
 set(L51X_FW_SHA1 ab73e5bfc520c0aa0340cada4b3e317b8fd31a4d)
 set(L51X_FW_URL "${REALSENSE_FIRMWARE_URL}/Releases/L5xx/FW")
 
@@ -51,15 +51,15 @@ set_target_properties (${PROJECT_NAME} PROPERTIES FOLDER Resources)
 
 function(target_binary url version sha1 symbol ext)
   set(binary "${CMAKE_CURRENT_BINARY_DIR}/${symbol}-${version}${ext}")
-  message(STATUS "${url}/${symbol}-${version}${ext}")
+  message(STATUS "... ${url}/${symbol}-${version}${ext}")
   file(DOWNLOAD "${url}/${symbol}-${version}${ext}" "${binary}"
        EXPECTED_HASH SHA1=${sha1}
        STATUS status)
   list(GET status 0 error_code)
   if (NOT ${error_code} EQUAL 0)
-    message(FATAL_ERROR "Download firmwnare (${status}) - ${url}")
+      message(FATAL_ERROR "FAILED with status ${status}")
   else()
-    message(STATUS "Download firmware ${status} for ${symbol}-${version}${ext}")
+      #message(STATUS "Download firmware ${status} for ${symbol}-${version}${ext}")
   endif()
   string(TOUPPER ${symbol} SYMBOL)
   string(REPLACE "." "," version_commas ${version})
