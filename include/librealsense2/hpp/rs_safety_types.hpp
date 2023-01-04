@@ -7,6 +7,7 @@
 #include "../h/rs_safety_types.h"
 #include <iostream>
 #include <sstream>
+#include <cstring>
 
 inline std::string sc_reserved_arr_to_string(const uint8_t* data)
 {
