@@ -1441,7 +1441,7 @@ int rs2_is_sensor_extendable_to(const rs2_sensor* sensor, rs2_extension extensio
     case RS2_EXTENSION_SOFTWARE_SENSOR         : return VALIDATE_INTERFACE_NO_THROW(sensor->sensor, librealsense::software_sensor)        != nullptr;
     case RS2_EXTENSION_POSE_SENSOR             : return VALIDATE_INTERFACE_NO_THROW(sensor->sensor, librealsense::pose_sensor_interface)  != nullptr;
     case RS2_EXTENSION_WHEEL_ODOMETER          : return VALIDATE_INTERFACE_NO_THROW(sensor->sensor, librealsense::wheel_odometry_interface)!= nullptr;
-    case RS2_EXTENSION_TM2_SENSOR              : return VALIDATE_INTERFACE_NO_THROW(sensor->sensor, librealsense::tm2_sensor_interface)   != nullptr;
+    case RS2_EXTENSION_TM2_SENSOR              : return false;
     case RS2_EXTENSION_COLOR_SENSOR            : return VALIDATE_INTERFACE_NO_THROW(sensor->sensor, librealsense::color_sensor)           != nullptr;
     case RS2_EXTENSION_MOTION_SENSOR           : return VALIDATE_INTERFACE_NO_THROW(sensor->sensor, librealsense::motion_sensor)          != nullptr;
     case RS2_EXTENSION_FISHEYE_SENSOR          : return VALIDATE_INTERFACE_NO_THROW(sensor->sensor, librealsense::fisheye_sensor)         != nullptr;
@@ -1475,7 +1475,7 @@ int rs2_is_device_extendable_to(const rs2_device* dev, rs2_extension extension, 
         case RS2_EXTENSION_ADVANCED_MODE         : return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::ds_advanced_mode_interface) != nullptr;
         case RS2_EXTENSION_RECORD                : return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::record_device)               != nullptr;
         case RS2_EXTENSION_PLAYBACK              : return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::playback_device)             != nullptr;
-        case RS2_EXTENSION_TM2                   : return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::tm2_extensions)              != nullptr;
+        case RS2_EXTENSION_TM2                   : return false;
         case RS2_EXTENSION_UPDATABLE             : return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::updatable)                   != nullptr;
         case RS2_EXTENSION_UPDATE_DEVICE         : return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::update_device_interface)     != nullptr;
         case RS2_EXTENSION_GLOBAL_TIMER          : return VALIDATE_INTERFACE_NO_THROW(dev->device, librealsense::global_time_interface)       != nullptr;
@@ -1580,10 +1580,6 @@ HANDLE_EXCEPTIONS_AND_RETURN(, ctx, file)
 
 void rs2_context_unload_tracking_module(rs2_context* ctx, rs2_error** error) BEGIN_API_CALL
 {
-#if WITH_TRACKING
-    VALIDATE_NOT_NULL(ctx);
-    ctx->ctx->unload_tracking_module();
-#endif
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, ctx)
 
@@ -2727,60 +2723,37 @@ HANDLE_EXCEPTIONS_AND_RETURN(, severity, message)
 
 void rs2_loopback_enable(const rs2_device* device, const char* from_file, rs2_error** error) BEGIN_API_CALL
 {
-    VALIDATE_NOT_NULL(device);
-    VALIDATE_NOT_NULL(from_file);
-
-    auto loopback = VALIDATE_INTERFACE(device->device, librealsense::tm2_extensions);
-    loopback->enable_loopback(from_file);
-
+    throw not_implemented_exception( "deprecated" );
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, device, from_file)
 
 void rs2_loopback_disable(const rs2_device* device, rs2_error** error) BEGIN_API_CALL
 {
-    VALIDATE_NOT_NULL(device);
-
-    auto loopback = VALIDATE_INTERFACE(device->device, librealsense::tm2_extensions);
-    loopback->disable_loopback();
+    throw not_implemented_exception( "deprecated" );
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, device)
 
 int rs2_loopback_is_enabled(const rs2_device* device, rs2_error** error) BEGIN_API_CALL
 {
-    VALIDATE_NOT_NULL(device);
-
-    auto loopback = VALIDATE_INTERFACE(device->device, librealsense::tm2_extensions);
-    return loopback->is_enabled() ? 1 : 0;
+    throw not_implemented_exception( "deprecated" );
 }
 HANDLE_EXCEPTIONS_AND_RETURN(0, device)
 
 void rs2_connect_tm2_controller(const rs2_device* device, const unsigned char* mac, rs2_error** error) BEGIN_API_CALL
 {
-    VALIDATE_NOT_NULL(device);
-    VALIDATE_NOT_NULL(mac);
-
-    auto tm2 = VALIDATE_INTERFACE(device->device, librealsense::tm2_extensions);
-    tm2->connect_controller({ mac[0], mac[1], mac[2], mac[3], mac[4], mac[5] });
+    throw not_implemented_exception( "deprecated" );
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, device)
 
 void rs2_disconnect_tm2_controller(const rs2_device* device, int id, rs2_error** error) BEGIN_API_CALL
 {
-    VALIDATE_NOT_NULL(device);
-
-    auto tm2 = VALIDATE_INTERFACE(device->device, librealsense::tm2_extensions);
-    tm2->disconnect_controller(id);
+    throw not_implemented_exception( "deprecated" );
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, device)
 
 void rs2_set_intrinsics(const rs2_sensor* sensor, const rs2_stream_profile* profile, const rs2_intrinsics* intrinsics, rs2_error** error) BEGIN_API_CALL
 {
-    VALIDATE_NOT_NULL(sensor);
-    VALIDATE_NOT_NULL(profile);
-    VALIDATE_NOT_NULL(intrinsics);
-
-    auto tm2 = VALIDATE_INTERFACE(sensor->sensor, librealsense::tm2_sensor_interface);
-    tm2->set_intrinsics(*profile->profile, *intrinsics);
+    throw not_implemented_exception( "deprecated" );
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, sensor, profile, intrinsics)
 
@@ -2796,68 +2769,33 @@ HANDLE_EXCEPTIONS_AND_RETURN( , sensor, intrinsics )
 
 void rs2_set_extrinsics(const rs2_sensor* from_sensor, const rs2_stream_profile* from_profile, rs2_sensor* to_sensor, const rs2_stream_profile* to_profile, const rs2_extrinsics* extrinsics, rs2_error** error) BEGIN_API_CALL
 {
-    VALIDATE_NOT_NULL(from_sensor);
-    VALIDATE_NOT_NULL(from_profile);
-    VALIDATE_NOT_NULL(to_sensor);
-    VALIDATE_NOT_NULL(to_profile);
-    VALIDATE_NOT_NULL(extrinsics);
-    
-    auto from_dev = from_sensor->parent.device;
-    if (!from_dev) from_dev = from_sensor->sensor->get_device().shared_from_this();
-    auto to_dev = to_sensor->parent.device;
-    if (!to_dev) to_dev = to_sensor->sensor->get_device().shared_from_this();
-    
-    if (from_dev != to_dev)
-    {
-        LOG_ERROR("Cannot set extrinsics of two different devices \n");
-        return;
-    }
-
-    auto tm2 = VALIDATE_INTERFACE(from_sensor->sensor, librealsense::tm2_sensor_interface);
-    tm2->set_extrinsics(*from_profile->profile, *to_profile->profile, *extrinsics);
+    throw not_implemented_exception( "deprecated" );
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, from_sensor, from_profile, to_sensor, to_profile, extrinsics)
 
 void rs2_set_motion_device_intrinsics(const rs2_sensor* sensor, const rs2_stream_profile* profile, const rs2_motion_device_intrinsic* intrinsics, rs2_error** error) BEGIN_API_CALL
 {
-    VALIDATE_NOT_NULL(sensor);
-    VALIDATE_NOT_NULL(profile);
-    VALIDATE_NOT_NULL(intrinsics);
-
-    auto tm2 = VALIDATE_INTERFACE(sensor->sensor, librealsense::tm2_sensor_interface);
-    tm2->set_motion_device_intrinsics(*profile->profile, *intrinsics);
+    throw not_implemented_exception( "deprecated" );
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, sensor, profile, intrinsics)
 
 void rs2_reset_to_factory_calibration(const rs2_device* device, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(device);
-    auto tm2 = dynamic_cast<tm2_sensor_interface*>(&device->device->get_sensor(0));
-    if (tm2)
-        tm2->reset_to_factory_calibration();
-    else
-    {
-        auto auto_calib = std::dynamic_pointer_cast<auto_calibrated_interface>(device->device);
-        if (!auto_calib)
-            throw std::runtime_error("this device does not supports reset to factory calibration");
-        auto_calib->reset_to_factory_calibration();
-    }
+    auto auto_calib = std::dynamic_pointer_cast<auto_calibrated_interface>(device->device);
+    if (!auto_calib)
+        throw std::runtime_error("this device does not support reset to factory calibration");
+    auto_calib->reset_to_factory_calibration();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, device)
 
 void rs2_write_calibration(const rs2_device* device, rs2_error** error) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL(device);
-    auto tm2 = dynamic_cast<tm2_sensor_interface*>(&device->device->get_sensor(0));
-    if (tm2)
-        tm2->write_calibration();
-    else
-    {
-        auto auto_calib = std::dynamic_pointer_cast<auto_calibrated_interface>(device->device);
-        if (!auto_calib)
-            throw std::runtime_error("this device does not supports auto calibration");
-        auto_calib->write_calibration();
-    }
+    auto auto_calib = std::dynamic_pointer_cast<auto_calibrated_interface>(device->device);
+    if (!auto_calib)
+        throw std::runtime_error("this device does not support auto calibration");
+    auto_calib->write_calibration();
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, device)
 

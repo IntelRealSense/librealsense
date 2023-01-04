@@ -53,10 +53,6 @@ if(${BACKEND} STREQUAL RS2_USE_LIBUVC_BACKEND)
     include(${_rel_path}/libuvc/CMakeLists.txt)
 endif()
 
-if (BUILD_WITH_TM2)
-    include(${_rel_path}/tm2/CMakeLists.txt)
-endif()
-
 if(BUILD_WITH_CUDA)
     include(${_rel_path}/cuda/CMakeLists.txt)
 endif()

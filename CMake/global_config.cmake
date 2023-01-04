@@ -116,12 +116,3 @@ macro(global_target_config)
 
 endmacro()
 
-macro(add_tm2)
-    message(STATUS "Building with TM2")
-    include(libusb_config)
-    target_link_libraries(${LRS_TARGET} PRIVATE usb)
-    if(USE_EXTERNAL_USB)
-        add_dependencies(${LRS_TARGET} libusb)
-    endif()
-    target_compile_definitions(${LRS_TARGET} PRIVATE WITH_TRACKING=1)
-endmacro()

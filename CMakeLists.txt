@@ -14,12 +14,6 @@ if(${FORCE_LIBUVC} OR ${FORCE_WINUSB_UVC} OR ${ANDROID_USB_HOST_UVC})
     set(FORCE_RSUSB_BACKEND ON)
 endif()
 
-# Checking Internet connection, as TM2 needs to download the FW from amazon cloud
-if(BUILD_WITH_TM2 AND NOT INTERNET_CONNECTION)
-    message(WARNING "No internet connection, disabling BUILD_WITH_TM2")
-    set(BUILD_WITH_TM2 OFF)
-endif()
-
 # Checking Internet connection, as DEPTH CAM needs to download the FW from amazon cloud
 if(IMPORT_DEPTH_CAM_FW AND NOT INTERNET_CONNECTION)
     message(WARNING "No internet connection, disabling IMPORT_DEPTH_CAM_FW")
@@ -102,10 +96,6 @@ endif()
 if(BUILD_NETWORK_DEVICE)
     add_subdirectory(src/ethernet)
     add_subdirectory(src/compression)
-endif()
-
-if(BUILD_WITH_TM2)
-    add_tm2()
 endif()
 
 if(IMPORT_DEPTH_CAM_FW)
