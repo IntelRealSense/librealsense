@@ -5,6 +5,7 @@
 
 #include "types.h"
 #include "device.h"
+#include <mutex>
 
 #define NOT_SUPPORTED(func_api)  func_api##{throw std::runtime_error("function " #func_api " is not supported without BUILD_AUS flag on");}
 
@@ -29,6 +30,7 @@ namespace librealsense
 
         long get()
         {
+            std::lock_guard<std::mutex> lock(_m);
             if (_is_running)
             {
                 return get_current_time() - _start + _total;
@@ -55,6 +57,7 @@ namespace librealsense
 
         void start()
         {
+            std::lock_guard<std::mutex> lock(_m);
             _start = std::chrono::system_clock::to_time_t(
                 std::chrono::system_clock::now());
             _is_running = true;
@@ -62,6 +65,7 @@ namespace librealsense
 
         void stop()
         {
+            std::lock_guard<std::mutex> lock(_m);
             if (!_is_running)
             {
                 return;
@@ -78,6 +82,8 @@ namespace librealsense
         long _start;
         long _total;
         bool _is_running;
+        std::mutex _m;
+
 
         time_t get_current_time() 
         {
@@ -94,20 +100,24 @@ namespace librealsense
         
         long get()
         {
+            std::lock_guard<std::mutex> lock(_m);
             return _counter;
         }
 
         void set(long value) {
+            std::lock_guard<std::mutex> lock(_m);
             _counter = value;
         }
 
         void increment()
         {
+            std::lock_guard<std::mutex> lock(_m);
             _counter++;
         }
 
         void decrement()
         {
+            std::lock_guard<std::mutex> lock(_m);
             _counter--;
         }
 
@@ -118,7 +128,8 @@ namespace librealsense
 
     private:
         long _counter;
-        long _total; 
+        long _total;
+        std::mutex _m;
     };
 
     class aus_data
@@ -160,7 +171,7 @@ namespace librealsense
             }
             else
             {
-                _mp[key] = new aus_counter(value);
+                _mp[key] = std::make_shared<aus_counter>(value);
             }
 
         }
@@ -173,7 +184,7 @@ namespace librealsense
             }
             else
             {
-                _mp[key] = new aus_counter(1);
+                _mp[key] = std::make_shared<aus_counter>(1);
             }
         }
 
@@ -196,7 +207,8 @@ namespace librealsense
         {
             if (_mp.find(key) == _mp.end())
             {
-                _mp.insert(std::make_pair(key, new aus_timer()));
+ 
+                _mp.insert(std::make_pair(key, std::make_shared<aus_timer>()));
                 _mp[key]->start();
             }
             else
@@ -250,7 +262,7 @@ namespace librealsense
         } 
 
     private:
-        std::unordered_map<std::string, aus_value*> _mp;
+        std::unordered_map<std::string, std::shared_ptr<aus_value>>_mp;
         std::unordered_map<std::string, std::string > _mp_devices_manager;
 
         long _start_time;
