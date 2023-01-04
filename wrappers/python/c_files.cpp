@@ -145,23 +145,27 @@ void init_c_files(py::module &m) {
     /** rs_safety_types.h **/
     py::class_<sc_float2> float2(m, "float2"); // No docstring in C++
     float2.def(py::init<>())
+        .def(py::init<float, float>())
         .def_readwrite("x", &sc_float2::x, "x")
         .def_readwrite("y", &sc_float2::y, "y");
 
     py::class_<sc_float3> float3(m, "float3"); // No docstring in C++
     float3.def(py::init<>())
+        .def(py::init<float, float, float>())
         .def_readwrite("x", &sc_float3::x, "x")
         .def_readwrite("y", &sc_float3::y, "y")
         .def_readwrite("z", &sc_float3::z, "z");
 
     py::class_<sc_float3x3> float3x3(m, "float3x3"); // No docstring in C++
     float3x3.def(py::init<>())
+        .def(py::init<sc_float3, sc_float3, sc_float3>())
         .def_readwrite("x", &sc_float3x3::x, "x")
         .def_readwrite("y", &sc_float3x3::y, "y")
         .def_readwrite("z", &sc_float3x3::z, "z");
 
     py::class_<rs2_safety_extrinsics_table> safety_extrinsics_table(m, "safety_extrinsics_table"); // No docstring in C++
     safety_extrinsics_table.def(py::init<>())
+        .def(py::init<sc_float3x3, sc_float3>())
         .def_readwrite("rotation", &rs2_safety_extrinsics_table::rotation, "Rotation Value")
         .def_readwrite("translation", &rs2_safety_extrinsics_table::translation, "Translation Value");
 
@@ -230,6 +234,9 @@ void init_c_files(py::module &m) {
             },
             "Safety Zones")
         .def_readwrite("environment", &rs2_safety_preset::environment, "Environment")
+        .def("__eq__", [](const rs2_safety_preset& self, const rs2_safety_preset& other) {
+                return self == other;
+        })
         .def("__repr__", [](const rs2_safety_preset& self) {
             std::stringstream ss;
             ss << self;

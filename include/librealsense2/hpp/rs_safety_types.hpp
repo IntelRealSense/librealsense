@@ -114,4 +114,9 @@ inline std::ostream& operator<<(std::ostream& out, rs2_safety_preset const& sp)
     return out;
 }
 
+inline bool operator==(rs2_safety_preset const& self, rs2_safety_preset const& other)
+{
+    return !std::memcmp(&self, &other, sizeof(rs2_safety_preset));
+}
+
 #endif // LIBREALSENSE_RS2_SAFETY_TYPES_HPP
