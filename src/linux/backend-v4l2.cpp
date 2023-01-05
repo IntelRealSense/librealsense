@@ -1557,6 +1557,24 @@ namespace librealsense
             buf_mgr.set_md_attributes(bytesused, md_start);
         }
 
+        bool v4l_mipi_device::is_platform_jetson() const
+        {
+            int fd = open(_name.c_str(), O_RDONLY);
+            if(fd < 0)
+                throw linux_backend_exception(rsutils::string::from() <<__FUNCTION__ << " Cannot open '" << _name);
+
+            v4l2_capability cap = {};
+            if(xioctl(fd, VIDIOC_QUERYCAP, &cap) < 0)
+            {
+                if(errno == EINVAL)
+                    throw linux_backend_exception(_name + " is not V4L2 device");
+                else
+                    throw linux_backend_exception("xioctl(VIDIOC_QUERYCAP) failed");
+            }
+
+            std::string driver_str = reinterpret_cast<char*>(cap.driver);
+            return (driver_str.substr(0, 5) == "tegra");
+        }
 
         void v4l_uvc_device::acquire_metadata(buffers_mgr& buf_mgr,fd_set &, bool compressed_format)
         {
