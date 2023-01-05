@@ -364,6 +364,8 @@ namespace librealsense
 
             virtual ~uvc_device() = default;
 
+            virtual bool is_platform_jetson() const = 0;
+
         protected:
             std::function<void(const notification& n)> _error_handler;
         };
@@ -489,6 +491,8 @@ namespace librealsense
 
             void lock() const override { _dev->lock(); }
             void unlock() const override { _dev->unlock(); }
+
+            bool is_platform_jetson() const override {return _dev->is_platform_jetson();}
 
         private:
             std::shared_ptr<uvc_device> _dev;
@@ -776,6 +780,8 @@ namespace librealsense
                     elem->unlock();
                 }
             }
+
+            bool is_platform_jetson() const override {return false;}
 
         private:
             uint32_t get_dev_index_by_profiles(const stream_profile& profile) const

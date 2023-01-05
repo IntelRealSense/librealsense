@@ -65,6 +65,8 @@ namespace librealsense
             virtual std::string get_device_location() const override;
             virtual usb_spec  get_usb_specification() const override;
 
+            bool is_platform_jetson() const override { return false;}
+
         private:
             friend class source_reader_callback;
 
