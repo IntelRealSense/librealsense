@@ -1,6 +1,7 @@
 # License: Apache 2.0. See LICENSE file in root directory.
 # Copyright(c) 2020 Intel Corporation. All Rights Reserved.
 
+#test:device D400* !D457
 #test:device L500*
 
 import platform
@@ -88,7 +89,11 @@ for i in range(1,5):
 test.finish()
 
 # reset everything back
-depth_sensor.set_option( rs.option.visual_preset, int(rs.l500_visual_preset.max_range) )
+if depth_sensor.supports(rs.option.visual_preset):
+    if product_line == "D400":
+        depth_sensor.set_option(rs.option.visual_preset, int(rs.rs400_visual_preset.default))
+    if product_line == "L500":
+        depth_sensor.set_option(rs.option.visual_preset, int(rs.l500_visual_preset.max_range))
 
 
 #############################################################################################
