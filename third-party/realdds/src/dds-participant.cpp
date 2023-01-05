@@ -148,6 +148,13 @@ void dds_participant::init( dds_domain_id domain_id, std::string const & partici
 
     LOG_DEBUG( "participant '" << participant_name << "' (" << realdds::print( guid() ) << ") is up on domain "
                                << domain_id );
+#ifdef BUILD_EASYLOGGINGPP
+    // DDS participant destruction happens when all contexts are done with it but, in some situations (e.g., Python), it
+    // means that it may happen last -- even after ELPP has already been destroyed! So, just like we keep the participant
+    // factory alive above, we want to keep the logging mechanism alive as long as a participant is!
+    // (because a participant has callbacks, and callbacks use the log)
+    _elpp = el::base::elStorage;
+#endif
 }
 
 

@@ -20,6 +20,13 @@ class DomainParticipantFactory;
 }  // namespace dds
 }  // namespace fastdds
 }  // namespace eprosima
+#ifdef BUILD_EASYLOGGINGPP
+namespace el {
+namespace base {
+class Storage;
+}  // namespace base
+}  // namespace el
+#endif
 
 
 namespace realdds {
@@ -32,6 +39,9 @@ class dds_participant
 {
     eprosima::fastdds::dds::DomainParticipant * _participant = nullptr;
     std::shared_ptr< eprosima::fastdds::dds::DomainParticipantFactory > _participant_factory;
+#ifdef BUILD_EASYLOGGINGPP
+    std::shared_ptr< el::base::Storage > _elpp;
+#endif
 
     struct listener_impl;
 
