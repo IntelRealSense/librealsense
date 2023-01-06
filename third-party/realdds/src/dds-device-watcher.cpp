@@ -74,7 +74,8 @@ void dds_device_watcher::start()
         init();
     }
     _active_object.start();
-    LOG_DEBUG( "DDS device watcher started" );
+    LOG_DEBUG( "DDS device watcher started on '" << _participant->get()->get_qos().name() << "' "
+                                                 << realdds::print( _participant->guid() ) );
 }
 
 void dds_device_watcher::stop()
