@@ -430,7 +430,7 @@ def start(*test_name):
     test_failed = False
     test_in_progress = True
     reset_info( persistent = True )
-    log.out( *test_name )
+    log.i( 'Test:', *test_name )
 
 
 def finish():
