@@ -16,6 +16,7 @@
 
 #include <boost/config.hpp>
 #include <boost/detail/workaround.hpp>
+#include <cstddef> //for std::size_t
 
 #if defined(__GNUC__) && !defined(__GXX_EXPERIMENTAL_CXX0X__)
 //
@@ -30,13 +31,13 @@
 #  ifndef BOOST_NO_CXX11_VARIADIC_MACROS
 #     define BOOST_STATIC_ASSERT_MSG( ... ) static_assert(__VA_ARGS__)
 #  else
-#     define BOOST_STATIC_ASSERT_MSG( B, Msg ) BOOST_STATIC_ASSERT( B )
+#     define BOOST_STATIC_ASSERT_MSG( B, Msg ) static_assert( B, Msg )
 #  endif
 #else
 #     define BOOST_STATIC_ASSERT_MSG( B, Msg ) BOOST_STATIC_ASSERT( B )
 #endif
 
-#ifdef __BORLANDC__
+#ifdef BOOST_BORLANDC
 //
 // workaround for buggy integral-constant expression support:
 #define BOOST_BUGGY_INTEGRAL_CONSTANT_EXPRESSIONS
@@ -53,9 +54,9 @@
 //
 #if defined(__GNUC__) && ((__GNUC__ > 3) || ((__GNUC__ == 3) && (__GNUC_MINOR__ >= 4)))
 #  ifndef BOOST_NO_CXX11_VARIADIC_MACROS
-#     define BOOST_STATIC_ASSERT_BOOL_CAST( ... ) ((__VA_ARGS__) == 0 ? false : true)
+#     define BOOST_STATIC_ASSERT_BOOL_CAST( ... ) ((__VA_ARGS__) != 0)
 #  else
-#     define BOOST_STATIC_ASSERT_BOOL_CAST( x ) ((x) == 0 ? false : true)
+#     define BOOST_STATIC_ASSERT_BOOL_CAST( x ) ((x) != 0)
 #  endif
 #else
 #  ifndef BOOST_NO_CXX11_VARIADIC_MACROS
@@ -63,14 +64,6 @@
 #  else
 #     define BOOST_STATIC_ASSERT_BOOL_CAST(x) (bool)(x)
 #  endif
-#endif
-//
-// If the compiler warns about unused typedefs then enable this:
-//
-#if defined(__GNUC__) && ((__GNUC__ > 4) || ((__GNUC__ == 4) && (__GNUC_MINOR__ >= 7)))
-#  define BOOST_STATIC_ASSERT_UNUSED_ATTRIBUTE __attribute__((unused))
-#else
-#  define BOOST_STATIC_ASSERT_UNUSED_ATTRIBUTE
 #endif
 
 #ifndef BOOST_NO_CXX11_STATIC_ASSERT
@@ -89,7 +82,7 @@ template <bool x> struct STATIC_ASSERTION_FAILURE;
 template <> struct STATIC_ASSERTION_FAILURE<true> { enum { value = 1 }; };
 
 // HP aCC cannot deal with missing names for template value parameters
-template<int x> struct static_assert_test{};
+template<std::size_t x> struct static_assert_test{};
 
 }
 
@@ -117,14 +110,7 @@ template<int x> struct static_assert_test{};
 //
 #if !defined(BOOST_BUGGY_INTEGRAL_CONSTANT_EXPRESSIONS)
 
-#if defined(BOOST_MSVC) && (BOOST_MSVC < 1300)
-// __LINE__ macro broken when -ZI is used see Q199057
-// fortunately MSVC ignores duplicate typedef's.
-#define BOOST_STATIC_ASSERT( B ) \
-   typedef ::boost::static_assert_test<\
-      sizeof(::boost::STATIC_ASSERTION_FAILURE< (bool)( B ) >)\
-      > boost_static_assert_typedef_
-#elif defined(BOOST_MSVC) && defined(BOOST_NO_CXX11_VARIADIC_MACROS)
+#if defined(BOOST_MSVC) && defined(BOOST_NO_CXX11_VARIADIC_MACROS)
 #define BOOST_STATIC_ASSERT( B ) \
    typedef ::boost::static_assert_test<\
       sizeof(::boost::STATIC_ASSERTION_FAILURE< BOOST_STATIC_ASSERT_BOOL_CAST ( B ) >)>\
@@ -167,12 +153,12 @@ template<int x> struct static_assert_test{};
 #     define BOOST_STATIC_ASSERT( ... ) \
          typedef ::boost::static_assert_test<\
             sizeof(::boost::STATIC_ASSERTION_FAILURE< BOOST_STATIC_ASSERT_BOOL_CAST( __VA_ARGS__ ) >)>\
-               BOOST_JOIN(boost_static_assert_typedef_, __LINE__) BOOST_STATIC_ASSERT_UNUSED_ATTRIBUTE
+               BOOST_JOIN(boost_static_assert_typedef_, __LINE__) BOOST_ATTRIBUTE_UNUSED
 #  else
 #     define BOOST_STATIC_ASSERT( B ) \
          typedef ::boost::static_assert_test<\
             sizeof(::boost::STATIC_ASSERTION_FAILURE< BOOST_STATIC_ASSERT_BOOL_CAST( B ) >)>\
-               BOOST_JOIN(boost_static_assert_typedef_, __LINE__) BOOST_STATIC_ASSERT_UNUSED_ATTRIBUTE
+               BOOST_JOIN(boost_static_assert_typedef_, __LINE__) BOOST_ATTRIBUTE_UNUSED
 #  endif
 #endif
 

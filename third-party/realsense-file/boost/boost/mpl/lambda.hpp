@@ -15,7 +15,7 @@
 // $Revision$
 
 #include <boost/mpl/lambda_fwd.hpp>
-//#include <boost/mpl/bind.hpp>
+#include <boost/mpl/bind.hpp>
 #include <boost/mpl/aux_/config/lambda.hpp>
 
 #if !defined(BOOST_MPL_CFG_NO_FULL_LAMBDA_SUPPORT)

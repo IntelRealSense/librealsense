@@ -33,7 +33,7 @@
 #include "ros/time.h"
 
 #include <string>
-#include "boost/enable_if.hpp"
+#include <boost/core/enable_if.hpp>
 
 #include <memory.h>
 #include <boost/type_traits/remove_reference.hpp>

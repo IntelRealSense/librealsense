@@ -12,7 +12,7 @@
 # ifndef BOOST_PREPROCESSOR_CONTROL_IIF_HPP
 # define BOOST_PREPROCESSOR_CONTROL_IIF_HPP
 #
-# include "../config/config.hpp"
+# include <boost/preprocessor/config/config.hpp>
 #
 # if ~BOOST_PP_CONFIG_FLAGS() & BOOST_PP_CONFIG_MWCC()
 #    define BOOST_PP_IIF(bit, t, f) BOOST_PP_IIF_I(bit, t, f)

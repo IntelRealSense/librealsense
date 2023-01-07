@@ -35,8 +35,6 @@
 #ifndef ROSBAG_BAG_PLAYER_H
 #define ROSBAG_BAG_PLAYER_H
 
-#include <boost/foreach.hpp>
-
 #include "rosbag/bag.h"
 #include "rosbag/view.h"
 

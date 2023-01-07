@@ -1,5 +1,5 @@
 // Copyright (C) 2003, Fernando Luis Cacciola Carballal.
-// Copyright (C) 2014 Andrzej Krzemienski.
+// Copyright (C) 2014, 2015 Andrzej Krzemienski.
 //
 // Distributed under the Boost Software License, Version 1.0.
 // (See accompanying file LICENSE_1_0.txt or copy at
@@ -13,6 +13,7 @@
 #ifndef BOOST_NONE_17SEP2003_HPP
 #define BOOST_NONE_17SEP2003_HPP
 
+#include "boost/config.hpp"
 #include "boost/none_t.hpp"
 
 // NOTE: Borland users have to include this header outside any precompiled headers
@@ -22,8 +23,10 @@
 namespace boost {
 
 #ifdef BOOST_OPTIONAL_USE_OLD_DEFINITION_OF_NONE
-none_t const none = (static_cast<none_t>(0)) ;
-#else
+
+BOOST_INLINE_VARIABLE none_t BOOST_CONSTEXPR_OR_CONST none = (static_cast<none_t>(0)) ;
+
+#elif defined BOOST_OPTIONAL_USE_SINGLETON_DEFINITION_OF_NONE
 
 namespace detail { namespace optional_detail {
 
@@ -33,7 +36,7 @@ namespace detail { namespace optional_detail {
   {
     static const T instance;
   };
-  
+
   template <typename T>
   const T none_instance<T>::instance = T(); // global, but because 'tis a template, no cpp file required
 
@@ -42,12 +45,15 @@ namespace detail { namespace optional_detail {
 
 namespace {
   // TU-local
-  const none_t& none = detail::optional_detail::none_instance<none_t>::instance; 
+  const none_t& none = detail::optional_detail::none_instance<none_t>::instance;
 }
 
-#endif
+#else
+
+BOOST_INLINE_VARIABLE BOOST_CONSTEXPR_OR_CONST none_t none ((none_t::init_tag()));
+
+#endif // older definitions
 
 } // namespace boost
 
-#endif
-
+#endif // header guard

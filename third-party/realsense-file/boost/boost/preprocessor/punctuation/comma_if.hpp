@@ -14,10 +14,10 @@
 # ifndef BOOST_PREPROCESSOR_PUNCTUATION_COMMA_IF_HPP
 # define BOOST_PREPROCESSOR_PUNCTUATION_COMMA_IF_HPP
 #
-# include "../config/config.hpp"
-# include "../control/if.hpp"
-# include "../facilities/empty.hpp"
-# include "comma.hpp"
+# include <boost/preprocessor/config/config.hpp>
+# include <boost/preprocessor/control/if.hpp>
+# include <boost/preprocessor/facilities/empty.hpp>
+# include <boost/preprocessor/punctuation/comma.hpp>
 #
 # /* BOOST_PP_COMMA_IF */
 #

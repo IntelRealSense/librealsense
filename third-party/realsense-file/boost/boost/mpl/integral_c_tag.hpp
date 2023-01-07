@@ -15,8 +15,8 @@
 // $Revision$
 
 
-#include "aux_/adl_barrier.hpp"
-#include "aux_/config/static_constant.hpp"
+#include <boost/mpl/aux_/adl_barrier.hpp>
+#include <boost/mpl/aux_/config/static_constant.hpp>
 
 BOOST_MPL_AUX_ADL_BARRIER_NAMESPACE_OPEN
 struct integral_c_tag { BOOST_STATIC_CONSTANT(int, value = 0); };

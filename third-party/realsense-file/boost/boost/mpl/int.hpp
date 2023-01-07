@@ -14,9 +14,9 @@
 // $Date$
 // $Revision$
 
-#include "int_fwd.hpp"
+#include <boost/mpl/int_fwd.hpp>
 
 #define AUX_WRAPPER_VALUE_TYPE int
-#include "aux_/integral_wrapper.hpp"
+#include <boost/mpl/aux_/integral_wrapper.hpp>
 
 #endif // BOOST_MPL_INT_HPP_INCLUDED

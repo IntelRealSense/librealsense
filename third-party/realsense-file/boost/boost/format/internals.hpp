@@ -17,6 +17,7 @@
 
 #include <string>
 #include <boost/assert.hpp>
+#include <boost/core/ignore_unused.hpp>
 #include <boost/optional.hpp>
 #include <boost/limits.hpp>
 #include <boost/format/detail/compat_workarounds.hpp>
@@ -111,7 +112,7 @@ namespace detail {
         else if(loc_default)
             os.imbue(*loc_default);
 #else
-        (void) loc_default; // keep compiler quiet if we don't support locales
+        ignore_unused(loc_default);
 #endif        
         // set the state of this stream according to our params
         if(width_ != -1)

@@ -23,6 +23,16 @@
    #define BOOST_MOVE_PERFECT_FORWARDING
 #endif
 
+#if defined(__has_feature)
+   #define BOOST_MOVE_HAS_FEATURE __has_feature
+#else
+   #define BOOST_MOVE_HAS_FEATURE(x) 0
+#endif
+
+#if BOOST_MOVE_HAS_FEATURE(address_sanitizer) || defined(__SANITIZE_ADDRESS__)
+   #define BOOST_MOVE_ADDRESS_SANITIZER_ON
+#endif
+
 //Macros for documentation purposes. For code, expands to the argument
 #define BOOST_MOVE_IMPDEF(TYPE) TYPE
 #define BOOST_MOVE_SEEDOC(TYPE) TYPE
@@ -40,6 +50,22 @@
    #define BOOST_MOVE_MSVC_AUTO_MOVE_RETURN_BUG
 #elif defined(_MSC_VER) && (_MSC_VER == 1700)
    #define BOOST_MOVE_MSVC_AUTO_MOVE_RETURN_BUG
+#endif
+
+//#define BOOST_MOVE_DISABLE_FORCEINLINE
+
+#if defined(BOOST_MOVE_DISABLE_FORCEINLINE)
+   #define BOOST_MOVE_FORCEINLINE inline
+#elif defined(BOOST_MOVE_FORCEINLINE_IS_BOOST_FORCELINE)
+   #define BOOST_MOVE_FORCEINLINE BOOST_FORCEINLINE
+#elif defined(BOOST_MSVC) && (_MSC_VER < 1900 || defined(_DEBUG))
+   //"__forceinline" and MSVC seems to have some bugs in old versions and in debug mode
+   #define BOOST_MOVE_FORCEINLINE inline
+#elif defined(BOOST_GCC) && (__GNUC__ <= 5)
+   //Older GCCs have problems with forceinline
+   #define BOOST_MOVE_FORCEINLINE inline
+#else
+   #define BOOST_MOVE_FORCEINLINE BOOST_FORCEINLINE
 #endif
 
 #endif   //#ifndef BOOST_MOVE_DETAIL_WORKAROUND_HPP

@@ -15,6 +15,8 @@
 
 #include <boost/type_traits/declval.hpp>
 #include <boost/type_traits/is_destructible.hpp>
+#include <boost/type_traits/is_complete.hpp>
+#include <boost/static_assert.hpp>
 
 namespace boost{
 
@@ -27,12 +29,19 @@ namespace boost{
 
    }
 
-   template <class T> struct has_nothrow_destructor : public detail::has_nothrow_destructor_imp<T, boost::is_destructible<T>::value>{};
-   template <class T, std::size_t N> struct has_nothrow_destructor<T[N]> : public has_nothrow_destructor<T>{};
+   template <class T> struct has_nothrow_destructor : public detail::has_nothrow_destructor_imp<T, boost::is_destructible<T>::value>
+   {
+      BOOST_STATIC_ASSERT_MSG(boost::is_complete<T>::value, "Arguments to has_nothrow_destructor must be complete types");
+   };
+   template <class T, std::size_t N> struct has_nothrow_destructor<T[N]> : public has_nothrow_destructor<T>
+   {
+      BOOST_STATIC_ASSERT_MSG(boost::is_complete<T>::value, "Arguments to has_nothrow_destructor must be complete types");
+   };
    template <class T> struct has_nothrow_destructor<T&> : public integral_constant<bool, false>{};
 #if !defined(BOOST_NO_CXX11_RVALUE_REFERENCES) 
    template <class T> struct has_nothrow_destructor<T&&> : public integral_constant<bool, false>{};
 #endif
+   template <> struct has_nothrow_destructor<void> : public false_type {};
 }
 #else
 

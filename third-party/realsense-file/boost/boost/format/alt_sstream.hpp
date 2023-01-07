@@ -16,11 +16,12 @@
 #define BOOST_SK_ALT_SSTREAM_HPP
 
 #include <string>
+#include <boost/core/allocator_access.hpp>
 #include <boost/format/detail/compat_workarounds.hpp>
 #include <boost/utility/base_from_member.hpp>
-//#include <boost/shared_ptr.hpp>
+#include <boost/shared_ptr.hpp>
+#include <boost/config.hpp>
 #include <boost/assert.hpp>
-#include <memory.h>
 
 namespace boost {
     namespace io {
@@ -63,7 +64,7 @@ namespace boost {
                                         = ::std::ios_base::in | ::std::ios_base::out)
                 : putend_(NULL), is_allocated_(false), mode_(mode) 
                 { dealloc(); str(s); }
-            virtual ~basic_altstringbuf() 
+            virtual ~basic_altstringbuf() BOOST_NOEXCEPT_OR_NOTHROW
                 { dealloc(); }
             using streambuf_t::pbase;
             using streambuf_t::pptr;
@@ -119,7 +120,7 @@ namespace boost {
 // ---   class basic_oaltstringstream ----------------------------------------
         template <class Ch, class Tr, class Alloc>
         class basic_oaltstringstream 
-            : private base_from_member< std::shared_ptr< basic_altstringbuf< Ch, Tr, Alloc> > >,
+            : private base_from_member< shared_ptr< basic_altstringbuf< Ch, Tr, Alloc> > >,
               public ::std::basic_ostream<Ch, Tr>
         {
             class No_Op { 
@@ -129,7 +130,7 @@ namespace boost {
                 const T & operator()(const T & arg) { return arg; }
             };
             typedef ::std::basic_ostream<Ch, Tr> stream_t;
-            typedef boost::base_from_member<std::shared_ptr<
+            typedef boost::base_from_member<boost::shared_ptr<
                 basic_altstringbuf<Ch,Tr, Alloc> > > 
                 pbase_type;
             typedef ::std::basic_string<Ch, Tr, Alloc>  string_type;
@@ -138,13 +139,13 @@ namespace boost {
         public:
             typedef Alloc  allocator_type;
             basic_oaltstringstream() 
-                : pbase_type(new stringbuf_t), stream_t(rdbuf()) 
+                : pbase_type(new stringbuf_t), stream_t(pbase_type::member.get())
                 { }
-            basic_oaltstringstream(::std::shared_ptr<stringbuf_t> buf) 
-                : pbase_type(buf), stream_t(rdbuf()) 
+            basic_oaltstringstream(::boost::shared_ptr<stringbuf_t> buf) 
+                : pbase_type(buf), stream_t(pbase_type::member.get())
                 { }
             basic_oaltstringstream(stringbuf_t * buf) 
-                : pbase_type(buf, No_Op() ), stream_t(rdbuf()) 
+                : pbase_type(buf, No_Op() ), stream_t(pbase_type::member.get())
                 { }
             stringbuf_t * rdbuf() const 
                 { return pbase_type::member.get(); }

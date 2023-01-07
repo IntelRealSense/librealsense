@@ -8,8 +8,9 @@
 #endif
 
 #include <boost/config.hpp>
-#include <boost/utility/addressof.hpp>
-#include <boost/detail/workaround.hpp>
+#include <boost/config/workaround.hpp>
+#include <boost/core/addressof.hpp>
+#include <boost/core/enable_if.hpp>
 
 //
 //  ref.hpp - ref/cref, useful helper functions
@@ -19,7 +20,8 @@
 //  Copyright (C) 2002 David Abrahams
 //
 //  Copyright (C) 2014 Glen Joseph Fernandes
-//  glenfe at live dot com
+//  (glenjofe@gmail.com)
+//
 //  Copyright (C) 2014 Agustin Berge
 //
 // Distributed under the Boost Software License, Version 1.0. (See
@@ -44,6 +46,26 @@ namespace boost
     struct ref_workaround_tag {};
 
 #endif
+
+namespace detail
+{
+
+template< class Y, class T > struct ref_convertible
+{
+    typedef char (&yes) [1];
+    typedef char (&no)  [2];
+
+    static yes f( T* );
+    static no  f( ... );
+
+    enum _vt { value = sizeof( (f)( static_cast<Y*>(0) ) ) == sizeof(yes) };
+};
+
+struct ref_empty
+{
+};
+
+} // namespace detail
 
 // reference_wrapper
 
@@ -86,6 +108,21 @@ public:
 public:
 #endif
 
+    template<class Y> friend class reference_wrapper;
+
+    /**
+     Constructs a `reference_wrapper` object that stores the
+     reference stored in the compatible `reference_wrapper` `r`.
+
+     @remark Only enabled when `Y*` is convertible to `T*`.
+     @remark Does not throw.
+    */
+    template<class Y> reference_wrapper( reference_wrapper<Y> r,
+        typename enable_if_c<boost::detail::ref_convertible<Y, T>::value,
+            boost::detail::ref_empty>::type = boost::detail::ref_empty() ): t_( r.t_ )
+    {
+    }
+
     /**
      @return The stored reference.
      @remark Does not throw.
@@ -115,7 +152,7 @@ private:
 /**
  @cond
 */
-#if defined( __BORLANDC__ ) && BOOST_WORKAROUND( __BORLANDC__, BOOST_TESTED_AT(0x581) )
+#if defined( BOOST_BORLANDC ) && BOOST_WORKAROUND( BOOST_BORLANDC, BOOST_TESTED_AT(0x581) )
 #  define BOOST_REF_CONST
 #else
 #  define BOOST_REF_CONST const

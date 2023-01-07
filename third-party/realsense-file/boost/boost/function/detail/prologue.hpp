@@ -15,7 +15,7 @@
 #  include <boost/throw_exception.hpp>
 #  include <boost/config.hpp>
 #  include <boost/function/function_base.hpp>
-//#  include <boost/mem_fn.hpp>
+#  include <boost/mem_fn.hpp>
 #  include <boost/type_traits/is_integral.hpp>
 #  include <boost/preprocessor/enum.hpp>
 #  include <boost/preprocessor/enum_params.hpp>

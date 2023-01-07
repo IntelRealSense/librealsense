@@ -11,10 +11,21 @@
 
 // locate which std lib we are using and define BOOST_STDLIB_CONFIG as needed:
 
-// First include <cstddef> to determine if some version of STLport is in use as the std lib
+// First, check if __has_include is available and <version> include can be located,
+// otherwise include <cstddef> to determine if some version of STLport is in use as the std lib
 // (do not rely on this header being included since users can short-circuit this header 
 //  if they know whose std lib they are using.)
-#ifdef __cplusplus
+#if defined(__cplusplus) && defined(__has_include)
+#  if __has_include(<version>)
+// It should be safe to include `<version>` when it is present without checking
+// the actual C++ language version as it consists solely of macro definitions.
+// [version.syn] p1: The header <version> supplies implementation-dependent
+// information about the C++ standard library (e.g., version number and release date).
+#    include <version>
+#  else
+#    include <cstddef>
+#  endif
+#elif defined(__cplusplus)
 #  include <cstddef>
 #else
 #  include <stddef.h>
@@ -66,6 +77,10 @@
 // MSL standard lib:
 #  define BOOST_STDLIB_CONFIG "boost/config/stdlib/msl.hpp"
 
+#elif defined(__IBMCPP__) && defined(__COMPILER_VER__) && defined(__MVS__)
+// IBM z/OS XL C/C++
+#  define BOOST_STDLIB_CONFIG "boost/config/stdlib/xlcpp_zos.hpp"
+
 #elif defined(__IBMCPP__)
 // take the default VACPP std lib
 #  define BOOST_STDLIB_CONFIG "boost/config/stdlib/vacpp.hpp"
@@ -98,6 +113,7 @@
 #  include "boost/config/stdlib/libstdcpp3.hpp"
 #  include "boost/config/stdlib/sgi.hpp"
 #  include "boost/config/stdlib/msl.hpp"
+#  include "boost/config/stdlib/xlcpp_zos.hpp"
 #  include "boost/config/stdlib/vacpp.hpp"
 #  include "boost/config/stdlib/modena.hpp"
 #  include "boost/config/stdlib/dinkumware.hpp"

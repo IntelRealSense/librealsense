@@ -85,9 +85,9 @@ public:
    // of ct_imp to handle the logic. (JM)
    typedef typename boost::detail::ct_imp<
       T,
-      ::std::is_pointer<T>::value,
-      ::std::is_arithmetic<T>::value,
-      ::std::is_enum<T>::value
+      ::boost::is_pointer<T>::value,
+      ::boost::is_arithmetic<T>::value,
+      ::boost::is_enum<T>::value
    >::param_type param_type;
 };
 
@@ -100,7 +100,7 @@ struct call_traits<T&>
    typedef T& param_type;  // hh removed const
 };
 
-#if BOOST_WORKAROUND( __BORLANDC__,  < 0x5A0 )
+#if BOOST_WORKAROUND( BOOST_BORLANDC,  < 0x5A0 )
 // these are illegal specialisations; cv-qualifies applied to
 // references have no effect according to [8.3.2p1],
 // C++ Builder requires them though as it treats cv-qualified

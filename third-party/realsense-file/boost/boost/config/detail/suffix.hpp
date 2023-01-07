@@ -35,7 +35,7 @@
 #endif
 
 //
-// ensure that visibility macros are always defined, thus symplifying use
+// ensure that visibility macros are always defined, thus simplifying use
 //
 #ifndef BOOST_SYMBOL_EXPORT
 # define BOOST_SYMBOL_EXPORT
@@ -48,13 +48,29 @@
 #endif
 
 //
+// disable explicitly enforced visibility
+//
+#if defined(BOOST_DISABLE_EXPLICIT_SYMBOL_VISIBILITY)
+
+#undef BOOST_SYMBOL_EXPORT
+#define BOOST_SYMBOL_EXPORT
+
+#undef BOOST_SYMBOL_IMPORT
+#define BOOST_SYMBOL_IMPORT
+
+#undef BOOST_SYMBOL_VISIBLE
+#define BOOST_SYMBOL_VISIBLE
+
+#endif
+
+//
 // look for long long by looking for the appropriate macros in <limits.h>.
 // Note that we use limits.h rather than climits for maximal portability,
 // remember that since these just declare a bunch of macros, there should be
 // no namespace issues from this.
 //
 #if !defined(BOOST_HAS_LONG_LONG) && !defined(BOOST_NO_LONG_LONG)                                              \
-   && !defined(BOOST_MSVC) && !defined(__BORLANDC__)
+   && !defined(BOOST_MSVC) && !defined(BOOST_BORLANDC)
 # include <limits.h>
 # if (defined(ULLONG_MAX) || defined(ULONG_LONG_MAX) || defined(ULONGLONG_MAX))
 #   define BOOST_HAS_LONG_LONG
@@ -444,10 +460,12 @@ namespace std {
 // is defined, in which case it evaluates to return x; Use when you have a return
 // statement that can never be reached.
 
-#ifdef BOOST_NO_UNREACHABLE_RETURN_DETECTION
-#  define BOOST_UNREACHABLE_RETURN(x) return x;
-#else
-#  define BOOST_UNREACHABLE_RETURN(x)
+#ifndef BOOST_UNREACHABLE_RETURN
+#  ifdef BOOST_NO_UNREACHABLE_RETURN_DETECTION
+#     define BOOST_UNREACHABLE_RETURN(x) return x;
+#  else
+#     define BOOST_UNREACHABLE_RETURN(x)
+#  endif
 #endif
 
 // BOOST_DEDUCED_TYPENAME workaround ------------------------------------------//
@@ -471,6 +489,16 @@ namespace std {
 #  define BOOST_CTOR_TYPENAME typename
 #else
 #  define BOOST_CTOR_TYPENAME
+#endif
+
+//
+// If we're on a CUDA device (note DEVICE not HOST, irrespective of compiler) then disable __int128 and __float128 support if present:
+//
+#if defined(__CUDA_ARCH__) && defined(BOOST_HAS_FLOAT128)
+#  undef BOOST_HAS_FLOAT128
+#endif
+#if defined(__CUDA_ARCH__) && defined(BOOST_HAS_INT128)
+#  undef BOOST_HAS_INT128
 #endif
 
 // long long workaround ------------------------------------------//
@@ -501,6 +529,16 @@ namespace boost{
 #  endif
 }
 #endif
+// same again for __float128:
+#if defined(BOOST_HAS_FLOAT128) && defined(__cplusplus)
+namespace boost {
+#  ifdef __GNUC__
+   __extension__ typedef __float128 float128_type;
+#  else
+   typedef __float128 float128_type;
+#  endif
+}
+#endif
 
 // BOOST_[APPEND_]EXPLICIT_TEMPLATE_[NON_]TYPE macros --------------------------//
 
@@ -517,33 +555,21 @@ namespace boost{
 #  define BOOST_APPEND_EXPLICIT_TEMPLATE_NON_TYPE_SPEC(t, v)
 
 // When BOOST_NO_STD_TYPEINFO is defined, we can just import
-// the global definition into std namespace:
-#if defined(BOOST_NO_STD_TYPEINFO) && defined(__cplusplus)
+// the global definition into std namespace, 
+// see https://svn.boost.org/trac10/ticket/4115
+#if defined(BOOST_NO_STD_TYPEINFO) && defined(__cplusplus) && defined(BOOST_MSVC)
 #include <typeinfo>
 namespace std{ using ::type_info; }
+// Since we do now have typeinfo, undef the macro:
+#undef BOOST_NO_STD_TYPEINFO
 #endif
 
 // ---------------------------------------------------------------------------//
 
-//
 // Helper macro BOOST_STRINGIZE:
-// Converts the parameter X to a string after macro replacement
-// on X has been performed.
-//
-#define BOOST_STRINGIZE(X) BOOST_DO_STRINGIZE(X)
-#define BOOST_DO_STRINGIZE(X) #X
-
-//
 // Helper macro BOOST_JOIN:
-// The following piece of macro magic joins the two
-// arguments together, even when one of the arguments is
-// itself a macro (see 16.3.1 in C++ standard).  The key
-// is that macro expansion of macro arguments does not
-// occur in BOOST_DO_JOIN2 but does in BOOST_DO_JOIN.
-//
-#define BOOST_JOIN( X, Y ) BOOST_DO_JOIN( X, Y )
-#define BOOST_DO_JOIN( X, Y ) BOOST_DO_JOIN2(X,Y)
-#define BOOST_DO_JOIN2( X, Y ) X##Y
+
+#include <boost/config/helper_macros.hpp>
 
 //
 // Set some default values for compiler/library/platform names.
@@ -571,6 +597,33 @@ namespace std{ using ::type_info; }
 #  define BOOST_GPU_ENABLED
 #  endif
 
+// BOOST_RESTRICT ---------------------------------------------//
+// Macro to use in place of 'restrict' keyword variants
+#if !defined(BOOST_RESTRICT)
+#  if defined(_MSC_VER)
+#    define BOOST_RESTRICT __restrict
+#    if !defined(BOOST_NO_RESTRICT_REFERENCES) && (_MSC_FULL_VER < 190023026)
+#      define BOOST_NO_RESTRICT_REFERENCES
+#    endif
+#  elif defined(__GNUC__) && __GNUC__ > 3
+     // Clang also defines __GNUC__ (as 4)
+#    define BOOST_RESTRICT __restrict__
+#  else
+#    define BOOST_RESTRICT
+#    if !defined(BOOST_NO_RESTRICT_REFERENCES)
+#      define BOOST_NO_RESTRICT_REFERENCES
+#    endif
+#  endif
+#endif
+
+// BOOST_MAY_ALIAS -----------------------------------------------//
+// The macro expands to an attribute to mark a type that is allowed to alias other types.
+// The macro is defined in the compiler-specific headers.
+#if !defined(BOOST_MAY_ALIAS)
+#  define BOOST_NO_MAY_ALIAS
+#  define BOOST_MAY_ALIAS
+#endif
+
 // BOOST_FORCEINLINE ---------------------------------------------//
 // Macro to use in place of 'inline' to force a function to be inline
 #if !defined(BOOST_FORCEINLINE)
@@ -592,8 +645,11 @@ namespace std{ using ::type_info; }
 #  elif defined(__GNUC__) && __GNUC__ > 3
      // Clang also defines __GNUC__ (as 4)
 #    if defined(__CUDACC__)
-       // nvcc doesn't always parse __noinline__, 
+       // nvcc doesn't always parse __noinline__,
        // see: https://svn.boost.org/trac/boost/ticket/9392
+#      define BOOST_NOINLINE __attribute__ ((noinline))
+#    elif defined(__HIP__)
+       // See https://github.com/boostorg/config/issues/392
 #      define BOOST_NOINLINE __attribute__ ((noinline))
 #    else
 #      define BOOST_NOINLINE __attribute__ ((__noinline__))
@@ -610,12 +666,39 @@ namespace std{ using ::type_info; }
 #if !defined(BOOST_NORETURN)
 #  if defined(_MSC_VER)
 #    define BOOST_NORETURN __declspec(noreturn)
-#  elif defined(__GNUC__)
+#  elif defined(__GNUC__) || defined(__CODEGEARC__) && defined(__clang__)
 #    define BOOST_NORETURN __attribute__ ((__noreturn__))
-#  else
-#    define BOOST_NO_NORETURN
-#    define BOOST_NORETURN
+#  elif defined(__has_attribute) && defined(__SUNPRO_CC) && (__SUNPRO_CC > 0x5130)
+#    if __has_attribute(noreturn)
+#      define BOOST_NORETURN [[noreturn]]
+#    endif
+#  elif defined(__has_cpp_attribute) 
+#    if __has_cpp_attribute(noreturn)
+#      define BOOST_NORETURN [[noreturn]]
+#    endif
 #  endif
+#endif
+
+#if !defined(BOOST_NORETURN)
+#  define BOOST_NO_NORETURN
+#  define BOOST_NORETURN
+#endif
+
+// BOOST_DEPRECATED -------------------------------------------//
+// The macro can be used to mark deprecated symbols, such as functions, objects and types.
+// Any code that uses these symbols will produce warnings, possibly with a message specified
+// as an argument. The warnings can be suppressed by defining BOOST_ALLOW_DEPRECATED_SYMBOLS
+// or BOOST_ALLOW_DEPRECATED.
+#if !defined(BOOST_DEPRECATED) && __cplusplus >= 201402
+#define BOOST_DEPRECATED(msg) [[deprecated(msg)]]
+#endif
+
+#if defined(BOOST_ALLOW_DEPRECATED_SYMBOLS) || defined(BOOST_ALLOW_DEPRECATED)
+#undef BOOST_DEPRECATED
+#endif
+
+#if !defined(BOOST_DEPRECATED)
+#define BOOST_DEPRECATED(msg)
 #endif
 
 // Branch prediction hints
@@ -633,22 +716,35 @@ namespace std{ using ::type_info; }
 #  define BOOST_UNLIKELY(x) x
 #endif
 
+#if !defined(BOOST_NO_CXX11_OVERRIDE)
+#  define BOOST_OVERRIDE override
+#else
+#  define BOOST_OVERRIDE
+#endif
+
 // Type and data alignment specification
 //
-#if !defined(BOOST_NO_CXX11_ALIGNAS)
-#  define BOOST_ALIGNMENT(x) alignas(x)
-#elif defined(_MSC_VER)
-#  define BOOST_ALIGNMENT(x) __declspec(align(x))
-#elif defined(__GNUC__)
-#  define BOOST_ALIGNMENT(x) __attribute__ ((__aligned__(x)))
-#else
-#  define BOOST_NO_ALIGNMENT
-#  define BOOST_ALIGNMENT(x)
+#if !defined(BOOST_ALIGNMENT)
+#  if !defined(BOOST_NO_CXX11_ALIGNAS)
+#    define BOOST_ALIGNMENT(x) alignas(x)
+#  elif defined(_MSC_VER)
+#    define BOOST_ALIGNMENT(x) __declspec(align(x))
+#  elif defined(__GNUC__)
+#    define BOOST_ALIGNMENT(x) __attribute__ ((__aligned__(x)))
+#  else
+#    define BOOST_NO_ALIGNMENT
+#    define BOOST_ALIGNMENT(x)
+#  endif
 #endif
 
 // Lack of non-public defaulted functions is implied by the lack of any defaulted functions
 #if !defined(BOOST_NO_CXX11_NON_PUBLIC_DEFAULTED_FUNCTIONS) && defined(BOOST_NO_CXX11_DEFAULTED_FUNCTIONS)
 #  define BOOST_NO_CXX11_NON_PUBLIC_DEFAULTED_FUNCTIONS
+#endif
+
+// Lack of defaulted moves is implied by the lack of either rvalue references or any defaulted functions
+#if !defined(BOOST_NO_CXX11_DEFAULTED_MOVES) && (defined(BOOST_NO_CXX11_DEFAULTED_FUNCTIONS) || defined(BOOST_NO_CXX11_RVALUE_REFERENCES))
+#  define BOOST_NO_CXX11_DEFAULTED_MOVES
 #endif
 
 // Defaulted and deleted function declaration helpers
@@ -902,6 +998,14 @@ namespace std{ using ::type_info; }
 //  ------------------ End of deprecated macros for 1.51 ---------------------------
 
 
+//
+// Helper macro for marking types and methods final
+//
+#if !defined(BOOST_NO_CXX11_FINAL)
+#  define BOOST_FINAL final
+#else
+#  define BOOST_FINAL
+#endif
 
 //
 // Helper macros BOOST_NOEXCEPT, BOOST_NOEXCEPT_IF, BOOST_NOEXCEPT_EXPR
@@ -946,13 +1050,63 @@ namespace std{ using ::type_info; }
 #endif
 
 //
+// C++17 inline variables
+//
+#if !defined(BOOST_NO_CXX17_INLINE_VARIABLES)
+#define BOOST_INLINE_VARIABLE inline
+#else
+#define BOOST_INLINE_VARIABLE
+#endif
+//
+// C++17 if constexpr
+//
+#if !defined(BOOST_NO_CXX17_IF_CONSTEXPR)
+#  define BOOST_IF_CONSTEXPR if constexpr
+#else
+#  define BOOST_IF_CONSTEXPR if
+#endif
+
+#define BOOST_INLINE_CONSTEXPR  BOOST_INLINE_VARIABLE BOOST_CONSTEXPR_OR_CONST
+
+//
 // Unused variable/typedef workarounds:
 //
 #ifndef BOOST_ATTRIBUTE_UNUSED
 #  define BOOST_ATTRIBUTE_UNUSED
 #endif
+//
+// [[nodiscard]]:
+//
+#if defined(__has_attribute) && defined(__SUNPRO_CC) && (__SUNPRO_CC > 0x5130)
+#if __has_attribute(nodiscard)
+# define BOOST_ATTRIBUTE_NODISCARD [[nodiscard]]
+#endif
+#if __has_attribute(no_unique_address)
+# define BOOST_ATTRIBUTE_NO_UNIQUE_ADDRESS [[no_unique_address]]
+#endif
+#elif defined(__has_cpp_attribute)
+// clang-6 accepts [[nodiscard]] with -std=c++14, but warns about it -pedantic
+#if __has_cpp_attribute(nodiscard) && !(defined(__clang__) && (__cplusplus < 201703L)) && !(defined(__GNUC__) && (__cplusplus < 201100))
+# define BOOST_ATTRIBUTE_NODISCARD [[nodiscard]]
+#endif
+#if __has_cpp_attribute(no_unique_address) && !(defined(__GNUC__) && (__cplusplus < 201100))
+# define BOOST_ATTRIBUTE_NO_UNIQUE_ADDRESS [[no_unique_address]]
+#endif
+#endif
+#ifndef BOOST_ATTRIBUTE_NODISCARD
+# define BOOST_ATTRIBUTE_NODISCARD
+#endif
+#ifndef BOOST_ATTRIBUTE_NO_UNIQUE_ADDRESS
+# define BOOST_ATTRIBUTE_NO_UNIQUE_ADDRESS
+#endif
 
 #define BOOST_STATIC_CONSTEXPR  static BOOST_CONSTEXPR_OR_CONST
+
+#if !defined(BOOST_NO_CXX11_NULLPTR)
+# define BOOST_NULLPTR nullptr
+#else
+# define BOOST_NULLPTR 0
+#endif
 
 //
 // Set BOOST_HAS_STATIC_ASSERT when BOOST_NO_CXX11_STATIC_ASSERT is not defined
@@ -981,6 +1135,135 @@ namespace std{ using ::type_info; }
 #if defined(BOOST_NO_CXX11_VARIADIC_TEMPLATES) && !defined(BOOST_NO_CXX11_FIXED_LENGTH_VARIADIC_TEMPLATE_EXPANSION_PACKS)
 #  define BOOST_NO_CXX11_FIXED_LENGTH_VARIADIC_TEMPLATE_EXPANSION_PACKS
 #endif
+
+// This is a catch all case for obsolete compilers / std libs:
+#if !defined(_YVALS) && !defined(_CPPLIB_VER)  // msvc std lib already configured
+#if (!defined(__has_include) || (__cplusplus < 201700))
+#  define BOOST_NO_CXX17_HDR_OPTIONAL
+#  define BOOST_NO_CXX17_HDR_STRING_VIEW
+#  define BOOST_NO_CXX17_HDR_VARIANT
+#  define BOOST_NO_CXX17_HDR_ANY
+#  define BOOST_NO_CXX17_HDR_MEMORY_RESOURCE
+#  define BOOST_NO_CXX17_HDR_CHARCONV
+#  define BOOST_NO_CXX17_HDR_EXECUTION
+#  define BOOST_NO_CXX17_HDR_FILESYSTEM
+#else
+#if !__has_include(<optional>)
+#  define BOOST_NO_CXX17_HDR_OPTIONAL
+#endif
+#if !__has_include(<string_view>)
+#  define BOOST_NO_CXX17_HDR_STRING_VIEW
+#endif
+#if !__has_include(<variant>)
+#  define BOOST_NO_CXX17_HDR_VARIANT
+#endif
+#if !__has_include(<any>)
+#  define BOOST_NO_CXX17_HDR_ANY
+#endif
+#if !__has_include(<memory_resource>)
+#  define BOOST_NO_CXX17_HDR_MEMORY_RESOURCE
+#endif
+#if !__has_include(<charconv>)
+#  define BOOST_NO_CXX17_HDR_CHARCONV
+#endif
+#if !__has_include(<execution>)
+#  define BOOST_NO_CXX17_HDR_EXECUTION
+#endif
+#if !__has_include(<filesystem>)
+#  define BOOST_NO_CXX17_HDR_FILESYSTEM
+#endif
+#endif
+#endif
+//
+// Define the std level that the compiler claims to support:
+//
+#ifndef BOOST_CXX_VERSION
+#  define BOOST_CXX_VERSION __cplusplus
+#endif
+
+#if (!defined(__has_include) || (BOOST_CXX_VERSION < 201704))
+#  define BOOST_NO_CXX20_HDR_BARRIER
+#  define BOOST_NO_CXX20_HDR_FORMAT
+#  define BOOST_NO_CXX20_HDR_SOURCE_LOCATION
+#  define BOOST_NO_CXX20_HDR_BIT
+#  define BOOST_NO_CXX20_HDR_LATCH
+#  define BOOST_NO_CXX20_HDR_SPAN
+#  define BOOST_NO_CXX20_HDR_COMPARE
+#  define BOOST_NO_CXX20_HDR_NUMBERS
+#  define BOOST_NO_CXX20_HDR_STOP_TOKEN
+#  define BOOST_NO_CXX20_HDR_CONCEPTS
+#  define BOOST_NO_CXX20_HDR_RANGES
+#  define BOOST_NO_CXX20_HDR_SYNCSTREAM
+#  define BOOST_NO_CXX20_HDR_COROUTINE
+#  define BOOST_NO_CXX20_HDR_SEMAPHORE
+#else
+#if (!__has_include(<barrier>) || !defined(__cpp_lib_barrier) || (__cpp_lib_barrier < 201907L)) && !defined(BOOST_NO_CXX20_HDR_BARRIER)
+#  define BOOST_NO_CXX20_HDR_BARRIER
+#endif
+#if (!__has_include(<format>) || !defined(__cpp_lib_format) || (__cpp_lib_format < 201907L)) && !defined(BOOST_NO_CXX20_HDR_FORMAT)
+#  define BOOST_NO_CXX20_HDR_FORMAT
+#endif
+#if (!__has_include(<source_location>) || !defined(__cpp_lib_source_location) || (__cpp_lib_source_location < 201907L)) && !defined(BOOST_NO_CXX20_HDR_SOURCE_LOCATION)
+#  define BOOST_NO_CXX20_HDR_SOURCE_LOCATION
+#endif
+#if (!__has_include(<bit>) || !defined(__cpp_lib_bit_cast) || (__cpp_lib_bit_cast < 201806L) || !defined(__cpp_lib_bitops) || (__cpp_lib_bitops < 201907L) || !defined(__cpp_lib_endian) || (__cpp_lib_endian < 201907L)) && !defined(BOOST_NO_CXX20_HDR_BIT)
+#  define BOOST_NO_CXX20_HDR_BIT
+#endif
+#if (!__has_include(<latch>) || !defined(__cpp_lib_latch) || (__cpp_lib_latch < 201907L)) && !defined(BOOST_NO_CXX20_HDR_LATCH)
+#  define BOOST_NO_CXX20_HDR_LATCH
+#endif
+#if (!__has_include(<span>) || !defined(__cpp_lib_span) || (__cpp_lib_span < 202002L)) && !defined(BOOST_NO_CXX20_HDR_SPAN)
+#  define BOOST_NO_CXX20_HDR_SPAN
+#endif
+#if (!__has_include(<compare>) || !defined(__cpp_lib_three_way_comparison) || (__cpp_lib_three_way_comparison < 201907L)) && !defined(BOOST_NO_CXX20_HDR_COMPARE)
+#  define BOOST_NO_CXX20_HDR_COMPARE
+#endif
+#if (!__has_include(<numbers>) || !defined(__cpp_lib_math_constants) || (__cpp_lib_math_constants < 201907L)) && !defined(BOOST_NO_CXX20_HDR_NUMBERS)
+#  define BOOST_NO_CXX20_HDR_NUMBERS
+#endif
+#if (!__has_include(<stop_token>) || !defined(__cpp_lib_jthread) || (__cpp_lib_jthread < 201911L)) && !defined(BOOST_NO_CXX20_HDR_STOP_TOKEN)
+#  define BOOST_NO_CXX20_HDR_STOP_TOKEN
+#endif
+#if (!__has_include(<concepts>) || !defined(__cpp_lib_concepts) || (__cpp_lib_concepts < 202002L)) && !defined(_YVALS) && !defined(_CPPLIB_VER) && !defined(BOOST_NO_CXX20_HDR_CONCEPTS)
+#  define BOOST_NO_CXX20_HDR_CONCEPTS
+#endif
+#if (!__has_include(<ranges>) || !defined(__cpp_lib_ranges) || (__cpp_lib_ranges < 201911L)) && !defined(BOOST_NO_CXX20_HDR_RANGES)
+#  define BOOST_NO_CXX20_HDR_RANGES
+#endif
+#if (!__has_include(<syncstream>) || !defined(__cpp_lib_syncbuf) || (__cpp_lib_syncbuf < 201803L)) && !defined(BOOST_NO_CXX20_HDR_SYNCSTREAM)
+#  define BOOST_NO_CXX20_HDR_SYNCSTREAM
+#endif
+#if (!__has_include(<coroutine>) || !defined(__cpp_lib_coroutine) || (__cpp_lib_coroutine < 201902L)) && !defined(BOOST_NO_CXX20_HDR_COROUTINE)
+#  define BOOST_NO_CXX20_HDR_COROUTINE
+#endif
+#if (!__has_include(<semaphore>) || !defined(__cpp_lib_semaphore) || (__cpp_lib_semaphore < 201907L)) && !defined(BOOST_NO_CXX20_HDR_SEMAPHORE)
+#  define BOOST_NO_CXX20_HDR_SEMAPHORE
+#endif
+#endif
+
+#if defined(__cplusplus) && defined(__has_include)
+#if !__has_include(<version>)
+#  define BOOST_NO_CXX20_HDR_VERSION
+#else
+// For convenience, this is always included:
+#  include <version>
+#endif
+#else
+#  define BOOST_NO_CXX20_HDR_VERSION
+#endif
+
+#if defined(BOOST_MSVC)
+#if (BOOST_MSVC < 1914) || (_MSVC_LANG < 201703)
+#  define BOOST_NO_CXX17_DEDUCTION_GUIDES
+#endif
+#elif !defined(__cpp_deduction_guides) || (__cpp_deduction_guides < 201606)
+#  define BOOST_NO_CXX17_DEDUCTION_GUIDES
+#endif
+
+//
+// Define composite agregate macros:
+//
+#include <boost/config/detail/cxx_composite.hpp>
 
 //
 // Finish off with checks for macros that are depricated / no longer supported,

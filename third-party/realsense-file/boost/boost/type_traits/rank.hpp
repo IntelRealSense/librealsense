@@ -15,7 +15,7 @@
 
 namespace boost {
 
-#if !defined( __CODEGEARC__ )
+#if !defined( BOOST_CODEGEARC )
 
 namespace detail{
 
@@ -49,7 +49,7 @@ struct rank_imp<T const volatile[R], N>
    BOOST_STATIC_CONSTANT(std::size_t, value = (::boost::detail::rank_imp<T, N+1>::value));
 };
 
-#if !BOOST_WORKAROUND(__BORLANDC__, < 0x600) && !defined(__IBMCPP__) &&  !BOOST_WORKAROUND(__DMC__, BOOST_TESTED_AT(0x840))
+#if !BOOST_WORKAROUND(BOOST_BORLANDC, < 0x600) && !defined(__IBMCPP__) &&  !BOOST_WORKAROUND(__DMC__, BOOST_TESTED_AT(0x840))
 template <class T, std::size_t N>
 struct rank_imp<T[], N>
 {
@@ -74,9 +74,9 @@ struct rank_imp<T const volatile[], N>
 #endif
 }
 
-#endif // !defined( __CODEGEARC__ )
+#endif // !defined( BOOST_CODEGEARC )
 
-#if defined( __CODEGEARC__ )
+#if defined( BOOST_CODEGEARC )
 template <class T> struct rank : public integral_constant<std::size_t, __array_rank(T)>{};
 #else
 template <class T> struct rank : public integral_constant<std::size_t, (::boost::detail::rank_imp<T, 0>::value)>{};

@@ -11,8 +11,7 @@
 
 #include <boost/config.hpp>
 #include <boost/type_traits/detail/yes_no_type.hpp>
-#include <boost/type_traits/is_base_and_derived.hpp>
-#include <boost/noncopyable.hpp>
+#include <boost/type_traits/is_noncopyable.hpp>
 
 #if !defined(BOOST_NO_CXX11_DELETED_FUNCTIONS) && !defined(BOOST_NO_CXX11_DECLTYPE) \
    && !defined(BOOST_INTEL_CXX_VERSION) && \
@@ -112,7 +111,7 @@ struct is_copy_assignable_impl {
     typedef BOOST_DEDUCED_TYPENAME boost::remove_reference<T>::type unreferenced_t;
     BOOST_STATIC_CONSTANT(bool, value = (
         boost::detail::is_copy_assignable_impl2<
-            boost::is_base_and_derived<boost::noncopyable, T>::value
+            boost::is_noncopyable<T>::value
             || boost::is_const<unreferenced_t>::value || boost::is_array<unreferenced_t>::value
             ,T
         >::value
@@ -120,7 +119,7 @@ struct is_copy_assignable_impl {
     #else
     BOOST_STATIC_CONSTANT(bool, value = (
         boost::detail::is_copy_assignable_impl2<
-            boost::is_base_and_derived<boost::noncopyable, T>::value,T
+            boost::is_noncopyable<T>::value,T
         >::value
     ));
     #endif

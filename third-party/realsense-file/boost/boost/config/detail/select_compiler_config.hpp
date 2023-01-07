@@ -39,8 +39,7 @@
 //  Intel
 #   define BOOST_COMPILER_CONFIG "boost/config/compiler/intel.hpp"
 
-#elif defined __clang__ && !defined(__CUDACC__)
-// when using clang and cuda at same time, you want to appear as gcc
+#elif defined __clang__ && !defined(__ibmxl__) && !defined(__CODEGEARC__)
 //  Clang C++ emulates GCC, so it has to appear early.
 #   define BOOST_COMPILER_CONFIG "boost/config/compiler/clang.hpp"
 
@@ -48,7 +47,15 @@
 //  Digital Mars C++
 #   define BOOST_COMPILER_CONFIG "boost/config/compiler/digitalmars.hpp"
 
-# elif defined __GNUC__
+#elif defined __DCC__
+//  Wind River Diab C++
+#   define BOOST_COMPILER_CONFIG "boost/config/compiler/diab.hpp"
+
+#elif defined(__PGI)
+//  Portland Group Inc.
+#   define BOOST_COMPILER_CONFIG "boost/config/compiler/pgi.hpp"
+
+# elif defined(__GNUC__) && !defined(__ibmxl__)
 //  GNU C++:
 #   define BOOST_COMPILER_CONFIG "boost/config/compiler/gcc.hpp"
 
@@ -92,13 +99,17 @@
 //  MPW MrCpp or SCpp
 #   define BOOST_COMPILER_CONFIG "boost/config/compiler/mpw.hpp"
 
-#elif defined(__IBMCPP__)
-//  IBM Visual Age
-#   define BOOST_COMPILER_CONFIG "boost/config/compiler/vacpp.hpp"
+#elif defined(__IBMCPP__) && defined(__COMPILER_VER__) && defined(__MVS__)
+//  IBM z/OS XL C/C++
+#   define BOOST_COMPILER_CONFIG "boost/config/compiler/xlcpp_zos.hpp"
 
-#elif defined(__PGI)
-//  Portland Group Inc.
-#   define BOOST_COMPILER_CONFIG "boost/config/compiler/pgi.hpp"
+#elif defined(__ibmxl__)
+//  IBM XL C/C++ for Linux (Little Endian)
+#   define BOOST_COMPILER_CONFIG "boost/config/compiler/xlcpp.hpp"
+
+#elif defined(__IBMCPP__)
+//  IBM Visual Age or IBM XL C/C++ for Linux (Big Endian)
+#   define BOOST_COMPILER_CONFIG "boost/config/compiler/vacpp.hpp"
 
 #elif defined _MSC_VER
 //  Microsoft Visual C++
@@ -118,27 +129,29 @@
 //
 // This section allows dependency scanners to find all the headers we *might* include:
 //
-#include "boost/config/compiler/gcc_xml.hpp"
-#include "boost/config/compiler/cray.hpp"
-#include "boost/config/compiler/comeau.hpp"
-#include "boost/config/compiler/pathscale.hpp"
-#include "boost/config/compiler/intel.hpp"
-#include "boost/config/compiler/clang.hpp"
-#include "boost/config/compiler/digitalmars.hpp"
-#include "boost/config/compiler/gcc.hpp"
-#include "boost/config/compiler/kai.hpp"
-#include "boost/config/compiler/sgi_mipspro.hpp"
-#include "boost/config/compiler/compaq_cxx.hpp"
-#include "boost/config/compiler/greenhills.hpp"
-#include "boost/config/compiler/codegear.hpp"
-#include "boost/config/compiler/borland.hpp"
-#include "boost/config/compiler/metrowerks.hpp"
-#include "boost/config/compiler/sunpro_cc.hpp"
-#include "boost/config/compiler/hp_acc.hpp"
-#include "boost/config/compiler/mpw.hpp"
-#include "boost/config/compiler/vacpp.hpp"
-#include "boost/config/compiler/pgi.hpp"
-#include "boost/config/compiler/visualc.hpp"
+#include <boost/config/compiler/gcc_xml.hpp>
+#include <boost/config/compiler/cray.hpp>
+#include <boost/config/compiler/comeau.hpp>
+#include <boost/config/compiler/pathscale.hpp>
+#include <boost/config/compiler/intel.hpp>
+#include <boost/config/compiler/clang.hpp>
+#include <boost/config/compiler/digitalmars.hpp>
+#include <boost/config/compiler/gcc.hpp>
+#include <boost/config/compiler/kai.hpp>
+#include <boost/config/compiler/sgi_mipspro.hpp>
+#include <boost/config/compiler/compaq_cxx.hpp>
+#include <boost/config/compiler/greenhills.hpp>
+#include <boost/config/compiler/codegear.hpp>
+#include <boost/config/compiler/borland.hpp>
+#include <boost/config/compiler/metrowerks.hpp>
+#include <boost/config/compiler/sunpro_cc.hpp>
+#include <boost/config/compiler/hp_acc.hpp>
+#include <boost/config/compiler/mpw.hpp>
+#include <boost/config/compiler/xlcpp_zos.hpp>
+#include <boost/config/compiler/xlcpp.hpp>
+#include <boost/config/compiler/vacpp.hpp>
+#include <boost/config/compiler/pgi.hpp>
+#include <boost/config/compiler/visualc.hpp>
 
 #endif
 

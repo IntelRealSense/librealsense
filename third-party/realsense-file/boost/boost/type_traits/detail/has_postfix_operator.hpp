@@ -7,6 +7,59 @@
 //  See http://www.boost.org/libs/type_traits for most recent version including documentation.
 
 #include <boost/config.hpp>
+#include <boost/type_traits/detail/config.hpp>
+
+#if defined(BOOST_TT_HAS_ACCURATE_BINARY_OPERATOR_DETECTION)
+
+#include <boost/type_traits/integral_constant.hpp>
+#include <boost/type_traits/make_void.hpp>
+#include <boost/type_traits/is_convertible.hpp>
+#include <boost/type_traits/is_void.hpp>
+#include <boost/type_traits/add_reference.hpp>
+#include <utility>
+
+namespace boost
+{
+
+   namespace binary_op_detail {
+
+      struct dont_care;
+
+      template <class T, class Ret, class = void>
+      struct BOOST_JOIN(BOOST_TT_TRAIT_NAME, _ret_imp) : public boost::false_type {};
+
+      template <class T, class Ret>
+      struct BOOST_JOIN(BOOST_TT_TRAIT_NAME, _ret_imp)<T, Ret, typename boost::make_void<decltype(std::declval<typename add_reference<T>::type>() BOOST_TT_TRAIT_OP) >::type>
+         : public boost::integral_constant<bool, ::boost::is_convertible<decltype(std::declval<typename add_reference<T>::type>() BOOST_TT_TRAIT_OP), Ret>::value> {};
+
+      template <class T, class = void >
+      struct BOOST_JOIN(BOOST_TT_TRAIT_NAME, _void_imp) : public boost::false_type {};
+
+      template <class T>
+      struct BOOST_JOIN(BOOST_TT_TRAIT_NAME, _void_imp)<T, typename boost::make_void<decltype(std::declval<typename add_reference<T>::type>()BOOST_TT_TRAIT_OP)>::type>
+         : public boost::integral_constant<bool, ::boost::is_void<decltype(std::declval<typename add_reference<T>::type>() BOOST_TT_TRAIT_OP)>::value> {};
+
+      template <class T, class = void>
+      struct BOOST_JOIN(BOOST_TT_TRAIT_NAME, _dc_imp) : public boost::false_type {};
+
+      template <class T>
+      struct BOOST_JOIN(BOOST_TT_TRAIT_NAME, _dc_imp)<T, typename boost::make_void<decltype(std::declval<typename add_reference<T>::type>() BOOST_TT_TRAIT_OP)>::type>
+         : public boost::true_type {};
+
+   }
+
+   template <class T, class Ret = boost::binary_op_detail::dont_care>
+   struct BOOST_TT_TRAIT_NAME : public boost::binary_op_detail::BOOST_JOIN(BOOST_TT_TRAIT_NAME, _ret_imp) <T, Ret> {};
+   template <class T>
+   struct BOOST_TT_TRAIT_NAME<T, void> : public boost::binary_op_detail::BOOST_JOIN(BOOST_TT_TRAIT_NAME, _void_imp) <T> {};
+   template <class T>
+   struct BOOST_TT_TRAIT_NAME<T, boost::binary_op_detail::dont_care> : public boost::binary_op_detail::BOOST_JOIN(BOOST_TT_TRAIT_NAME, _dc_imp) <T> {};
+
+
+}
+
+#else
+
 #include <boost/type_traits/detail/yes_no_type.hpp>
 #include <boost/type_traits/integral_constant.hpp>
 #include <boost/type_traits/is_const.hpp>
@@ -23,7 +76,7 @@
 #   pragma GCC system_header
 #elif defined(BOOST_MSVC)
 #   pragma warning ( push )
-#   pragma warning ( disable : 4244 4913)
+#   pragma warning ( disable : 4244 4913 4800)
 #   if BOOST_WORKAROUND(BOOST_MSVC_FULL_VER, >= 140050000)
 #       pragma warning ( disable : 6334)
 #   endif
@@ -192,4 +245,6 @@ struct BOOST_TT_TRAIT_NAME : public integral_constant<bool, (::boost::detail::BO
 
 #if defined(BOOST_MSVC)
 #   pragma warning ( pop )
+#endif
+
 #endif

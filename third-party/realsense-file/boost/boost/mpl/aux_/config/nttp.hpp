@@ -14,8 +14,8 @@
 // $Date$
 // $Revision$
 
-#include "msvc.hpp"
-#include "workaround.hpp"
+#include <boost/mpl/aux_/config/msvc.hpp>
+#include <boost/mpl/aux_/config/workaround.hpp>
 
 // MSVC 6.5 ICE-s on the code as simple as this (see "aux_/nttp_decl.hpp"
 // for a workaround):

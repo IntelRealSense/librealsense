@@ -14,7 +14,7 @@
 // $Date$
 // $Revision$
 
-#include "config/nttp.hpp"
+#include <boost/mpl/aux_/config/nttp.hpp>
 
 #if defined(BOOST_MPL_CFG_NTTP_BUG)
 
