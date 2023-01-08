@@ -45,15 +45,15 @@ struct MultiArrayLayout_
 
 
 
-  typedef boost::shared_ptr< ::std_msgs::MultiArrayLayout_<ContainerAllocator> > Ptr;
-  typedef boost::shared_ptr< ::std_msgs::MultiArrayLayout_<ContainerAllocator> const> ConstPtr;
+  typedef std::shared_ptr< ::std_msgs::MultiArrayLayout_<ContainerAllocator> > Ptr;
+  typedef std::shared_ptr< ::std_msgs::MultiArrayLayout_<ContainerAllocator> const> ConstPtr;
 
 }; // struct MultiArrayLayout_
 
 typedef ::std_msgs::MultiArrayLayout_<std::allocator<void> > MultiArrayLayout;
 
-typedef boost::shared_ptr< ::std_msgs::MultiArrayLayout > MultiArrayLayoutPtr;
-typedef boost::shared_ptr< ::std_msgs::MultiArrayLayout const> MultiArrayLayoutConstPtr;
+typedef std::shared_ptr< ::std_msgs::MultiArrayLayout > MultiArrayLayoutPtr;
+typedef std::shared_ptr< ::std_msgs::MultiArrayLayout const> MultiArrayLayoutConstPtr;
 
 // constants requiring out of line definition
 
