@@ -144,6 +144,7 @@ namespace librealsense
             uint8_t* _start;
             uint32_t _length;
             uint32_t _original_length;
+            uint32_t _offset;
             bool _use_memory_map;
             uint32_t _index;
             v4l2_buffer _buf;
@@ -413,6 +414,12 @@ namespace librealsense
             std::atomic<bool> _is_started;
             std::unique_ptr<std::thread> _thread;
             std::unique_ptr<named_mutex> _named_mtx;
+            struct device {
+                enum v4l2_buf_type buf_type;
+                unsigned char num_planes;
+                struct v4l2_capability cap;
+                struct v4l2_cropcap cropcap;
+            } _dev;
             bool _use_memory_map;
             int _max_fd = 0;                    // specifies the maximal pipe number the polling process will monitor
             std::vector<int>  _fds;             // list the file descriptors to be monitored during frames polling
@@ -450,6 +457,7 @@ namespace librealsense
             virtual inline std::shared_ptr<buffer> get_md_buffer(__u32 index) const {return _md_buffers[index];}
             int _md_fd = -1;
             std::string _md_name = "";
+            v4l2_buf_type _md_type = LOCAL_V4L2_BUF_TYPE_META_CAPTURE;
 
             std::vector<std::shared_ptr<buffer>> _md_buffers;
             stream_profile _md_profile;
