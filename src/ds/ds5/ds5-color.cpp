@@ -9,7 +9,7 @@
 #include "proc/color-formats-converter.h"
 #include "ds5-color.h"
 #include <rsutils/string/from.h>
-#include "common/os.h"
+#include <rsutils/os/os.h>
 
 namespace librealsense
 {
@@ -217,10 +217,9 @@ namespace librealsense
         }
         else
         {
-            if (rs2::is_platform_jetson())
+            if (rsutils::os::is_platform_jetson())
             {
                 // Work-around for discrepancy between the RGB YUYV descriptor and the parser . Use UYUV parser instead
-                color_ep.register_processing_block(processing_block_factory::create_pbf_vector<uyvy_converter>(RS2_FORMAT_UYVY, map_supported_color_formats(RS2_FORMAT_UYVY), RS2_STREAM_COLOR));
                 color_ep.register_processing_block(processing_block_factory::create_pbf_vector<uyvy_converter>(RS2_FORMAT_YUYV, map_supported_color_formats(RS2_FORMAT_YUYV), RS2_STREAM_COLOR));
             }
             else

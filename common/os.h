@@ -68,6 +68,4 @@ namespace rs2
     std::string get_os_name();
 
     bool is_debug();
-
-    bool is_platform_jetson();
 }

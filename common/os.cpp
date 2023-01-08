@@ -39,7 +39,6 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <pwd.h>
-#include <fcntl.h>
 #endif
 
 #include <GLFW/glfw3.h>
@@ -417,18 +416,5 @@ Some auxillary functionalities might be affected. Please report this message if 
             }
 
         return escaped.str();
-    }
-
-    bool is_platform_jetson()
-    {
-#ifdef __linux__
-        // RAII to handle exceptions
-        std::unique_ptr<int, std::function<void(int*)> > fd(
-            new int(open("/etc/nv_tegra_release", O_RDONLY)),
-            [](int* d) { if (d && (*d)) { ::close(*d); } delete d; });
-        return (fd >= 0);
-#else
-        return false;
-#endif
     }
 }
