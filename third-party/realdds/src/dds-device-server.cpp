@@ -114,30 +114,37 @@ static void on_discovery_stream_header( std::shared_ptr< dds_stream_server > con
     auto profiles = nlohmann::json::array();
     for( auto & sp : stream->profiles() )
         profiles.push_back( std::move( sp->to_json() ) );
-    json msg = {
+    topics::flexible_msg stream_header_message( json {
         { "id", "stream-header" },
         { "type", stream->type_string() },
         { "name", stream->name() },
         { "sensor-name", stream->sensor_name() },
         { "profiles", profiles },
         { "default-profile-index", stream->default_profile_index() },
-    };
-    LOG_DEBUG( "-----> JSON = " << msg.dump() );
-    LOG_DEBUG( "-----> JSON size = " << msg.dump().length() );
-    LOG_DEBUG( "-----> CBOR size = " << json::to_cbor( msg ).size() );
-
-    topics::flexible_msg notification( msg );
-    notifications.add_discovery_notification( std::move( notification ) );
+    } );
+    LOG_DEBUG( "-----> JSON = " << stream_header_message.json_data().dump() );
+    LOG_DEBUG( "-----> JSON size = " << stream_header_message.json_data().dump().length() );
+    LOG_DEBUG( "-----> CBOR size = " << json::to_cbor( stream_header_message.json_data() ).size() );
+    notifications.add_discovery_notification( std::move( stream_header_message ) );
 
     auto stream_options = nlohmann::json::array();
     for( auto & opt : stream->options() )
         stream_options.push_back( std::move( opt->to_json() ) );
+    auto video_stream = std::dynamic_pointer_cast< dds_video_stream_server >( stream );
+    auto motion_stream = std::dynamic_pointer_cast< dds_motion_stream_server >( stream );
+    auto intrinsics = nlohmann::json::array();
+    if( video_stream )
+        for( auto & intr : video_stream->get_intrinsics() )
+            intrinsics.push_back( intr.to_json() );
+    if( motion_stream )
+        intrinsics.push_back( motion_stream->get_intrinsics().to_json() );
     topics::flexible_msg stream_options_message( json {
         { "id", "stream-options" },
         { "stream-name", stream->name() },
         { "n-options", stream->options().size() },
-        { "options" , stream_options }
-        } );
+        { "options" , stream_options },
+        { "intrinsics" , intrinsics }
+    } );
     LOG_DEBUG( "-----> JSON = " << stream_options_message.json_data().dump() );
     LOG_DEBUG( "-----> JSON size = " << stream_options_message.json_data().dump().length() );
     LOG_DEBUG( "-----> CBOR size = " << json::to_cbor( stream_options_message.json_data() ).size() );

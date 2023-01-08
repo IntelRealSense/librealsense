@@ -20,13 +20,18 @@ dds_option::dds_option( const std::string & name, const std::string & owner_name
 
 dds_option::dds_option( nlohmann::json const & j, const std::string & owner_name )
 {
-    _name                = utilities::json::get< std::string >( j, "name" );
-    _value               = utilities::json::get< float >( j, "value" );
-    _range.min           = utilities::json::get< float >( j, "range-min" );
-    _range.max           = utilities::json::get< float >( j, "range-max" );
-    _range.step          = utilities::json::get< float >( j, "range-step" );
-    _range.default_value = utilities::json::get< float >( j, "range-default" );
-    _description         = utilities::json::get< std::string >( j, "description" );
+    int index = 0;
+
+    _name                = utilities::json::get< std::string >( j, index++ );
+    _value               = utilities::json::get< float >( j, index++ );
+    _range.min           = utilities::json::get< float >( j, index++ );
+    _range.max           = utilities::json::get< float >( j, index++ );
+    _range.step          = utilities::json::get< float >( j, index++ );
+    _range.default_value = utilities::json::get< float >( j, index++ );
+    _description         = utilities::json::get< std::string >( j, index++ );
+
+    if( index != j.size() )
+        DDS_THROW( runtime_error, "expected end of json at index " + std::to_string( index ) );
 
     _owner_name = owner_name;
 }
@@ -40,15 +45,7 @@ dds_option::dds_option( nlohmann::json const & j, const std::string & owner_name
 
 nlohmann::json dds_option::to_json() const
 {
-    return json( {
-        { "name", _name },
-        { "value", _value },
-        { "range-min", _range.min },
-        { "range-max", _range.max },
-        { "range-step", _range.step },
-        { "range-default", _range.default_value },
-        { "description", _description }
-        } );
+    return json::array( { _name, _value, _range.min, _range.max, _range.step, _range.default_value, _description } );
 }
 
 }  // namespace realdds
