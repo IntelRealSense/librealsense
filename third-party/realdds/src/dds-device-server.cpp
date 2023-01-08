@@ -131,13 +131,13 @@ static void on_discovery_stream_header( std::shared_ptr< dds_stream_server > con
     for( auto & opt : stream->options() )
         stream_options.push_back( std::move( opt->to_json() ) );
     auto video_stream = std::dynamic_pointer_cast< dds_video_stream_server >( stream );
-    auto motion_server = std::dynamic_pointer_cast< dds_motion_stream_server >( stream );
+    auto motion_stream = std::dynamic_pointer_cast< dds_motion_stream_server >( stream );
     auto intrinsics = nlohmann::json::array();
     if( video_stream )
         for( auto & intr : video_stream->get_intrinsics() )
             intrinsics.push_back( intr.to_json() );
-    if( motion_server )
-        intrinsics.push_back( motion_server->get_intrinsics().to_json() );
+    if( motion_stream )
+        intrinsics.push_back( motion_stream->get_intrinsics().to_json() );
     topics::flexible_msg stream_options_message( json {
         { "id", "stream-options" },
         { "stream-name", stream->name() },

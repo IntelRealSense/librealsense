@@ -378,7 +378,7 @@ bool dds_device::impl::init()
                     if( utilities::json::has( j, "intrinsics" ) )
                     {
                         auto video_stream = std::dynamic_pointer_cast< dds_video_stream >( stream_it->second );
-                        auto motion_server = std::dynamic_pointer_cast< dds_motion_stream >( stream_it->second );
+                        auto motion_stream = std::dynamic_pointer_cast< dds_motion_stream >( stream_it->second );
                         if( video_stream )
                         {
                             std::set< video_intrinsics > intrinsics;
@@ -386,9 +386,9 @@ bool dds_device::impl::init()
                                 intrinsics.insert( video_intrinsics::from_json( intr ) );
                             video_stream->set_intrinsics( std::move( intrinsics ) );
                         }
-                        if( motion_server )
+                        if( motion_stream )
                         {
-                            motion_server->set_intrinsics( motion_intrinsics::from_json( j["intrinsics"][0] ) );
+                            motion_stream->set_intrinsics( motion_intrinsics::from_json( j["intrinsics"][0] ) );
                         }
                     }
 
