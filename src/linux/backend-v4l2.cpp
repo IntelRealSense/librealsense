@@ -512,7 +512,7 @@ namespace librealsense
         }
 
         // Retrieve device video capabilities to discriminate video capturing and metadata nodes
-        static uint32_t get_dev_capabilities(const std::string dev_name)
+        static v4l2_capability get_dev_capabilities(const std::string dev_name)
         {
             // RAII to handle exceptions
             std::unique_ptr<int, std::function<void(int*)> > fd(
@@ -531,7 +531,7 @@ namespace librealsense
                     throw linux_backend_exception(rsutils::string::from() <<__FUNCTION__ << " xioctl(VIDIOC_QUERYCAP) failed");
             }
 
-            return cap.device_caps;
+            return cap;
         }
 
         void stream_ctl_on(int fd, v4l2_buf_type type=V4L2_BUF_TYPE_VIDEO_CAPTURE)
@@ -703,7 +703,7 @@ namespace librealsense
             info.device_path = video_path;
             info.unique_id = busnum + "-" + devpath + "-" + devnum;
             info.conn_spec = usb_specification;
-            info.uvc_capabilities = get_dev_capabilities(dev_name);
+            info.uvc_capabilities = get_dev_capabilities(dev_name).device_caps;
 
             return info;
         }
@@ -807,7 +807,7 @@ namespace librealsense
             // Note - jetson can use only bus_info, as card is different for each sensor and metadata node.
             info.unique_id = bus_info + "-" + std::to_string(cam_id); // use bus_info as per camera unique id for mipi
             info.conn_spec = usb_specification;
-            info.uvc_capabilities = get_dev_capabilities(dev_name);
+            info.uvc_capabilities = get_dev_capabilities(dev_name).device_caps;
 
             return info;
         }
@@ -1632,18 +1632,7 @@ namespace librealsense
 
         bool v4l_mipi_device::is_platform_jetson() const
         {
-            int fd = open(_name.c_str(), O_RDONLY);
-            if(fd < 0)
-                throw linux_backend_exception(rsutils::string::from() <<__FUNCTION__ << " Cannot open '" << _name);
-
-            v4l2_capability cap = {};
-            if(xioctl(fd, VIDIOC_QUERYCAP, &cap) < 0)
-            {
-                if(errno == EINVAL)
-                    throw linux_backend_exception(_name + " is not V4L2 device");
-                else
-                    throw linux_backend_exception("xioctl(VIDIOC_QUERYCAP) failed");
-            }
+            v4l2_capability cap = get_dev_capabilities(_name);
 
             std::string driver_str = reinterpret_cast<char*>(cap.driver);
             return (driver_str.substr(0, 5) == "tegra");
