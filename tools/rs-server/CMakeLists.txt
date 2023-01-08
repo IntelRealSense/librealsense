@@ -49,7 +49,7 @@ else()
     ${LIVE}/BasicUsageEnvironment/include
   )
 
-  set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 14)
+  set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 11)
 
   set(DEPENDENCIES ${DEPENDENCIES} realsense2 Threads::Threads realsense2-compression ${ZLIB_LIBRARIES} ${JPEG_LIBRARIES})
 

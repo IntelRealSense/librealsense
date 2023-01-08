@@ -14,7 +14,7 @@ add_executable(rs-embed
    ${LZ4_DIR}/lz4.c
 )
 
-set_property(TARGET rs-embed PROPERTY CXX_STANDARD 14)
+set_property(TARGET rs-embed PROPERTY CXX_STANDARD 11)
 
 include_directories(rs-embed ${LZ4_DIR} ../../third-party ../../third-party/tclap/include)
 set_target_properties (rs-embed PROPERTIES FOLDER Tools)
