@@ -3,10 +3,6 @@
 
 #pragma once
 
-#if defined __linux__
-#include <fcntl.h>
-#endif
-
 namespace rsutils {
 namespace os {
 
