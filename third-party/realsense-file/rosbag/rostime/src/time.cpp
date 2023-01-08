@@ -46,9 +46,6 @@
 #include <limits>
 #include <mutex>
 #include "math.h"
-//#include <boost/thread/mutex.hpp>
-#include <boost/io/ios_state.hpp>
-//#include <boost/date_time/posix_time/ptime.hpp>
 
 /*********************************************************************
  ** Preprocessor
@@ -329,14 +326,20 @@ namespace rs2rosinternal
 
   std::ostream& operator<<(std::ostream& os, const Time &rhs)
   {
-    boost::io::ios_all_saver s(os);
+    std::ios old_state( nullptr );
+    old_state.copyfmt( os );
+
     os << rhs.sec << "." << std::setw(9) << std::setfill('0') << rhs.nsec;
+
+    os.copyfmt( old_state );
     return os;
   }
 
   std::ostream& operator<<(std::ostream& os, const Duration& rhs)
   {
-    boost::io::ios_all_saver s(os);
+    std::ios old_state( nullptr );
+    old_state.copyfmt( os );
+
     if (rhs.sec >= 0 || rhs.nsec == 0)
     {
       os << rhs.sec << "." << std::setw(9) << std::setfill('0') << rhs.nsec;
@@ -345,6 +348,8 @@ namespace rs2rosinternal
     {
       os << (rhs.sec == -1 ? "-" : "") << (rhs.sec + 1) << "." << std::setw(9) << std::setfill('0') << (1000000000 - rhs.nsec);
     }
+
+    os.copyfmt( old_state );
     return os;
   }
 
@@ -429,8 +434,12 @@ namespace rs2rosinternal
 
   std::ostream &operator<<(std::ostream& os, const WallTime &rhs)
   {
-    boost::io::ios_all_saver s(os);
+    std::ios old_state( nullptr );
+    old_state.copyfmt( os );
+    
     os << rhs.sec << "." << std::setw(9) << std::setfill('0') << rhs.nsec;
+
+    os.copyfmt(old_state);
     return os;
   }
 
@@ -444,7 +453,9 @@ namespace rs2rosinternal
 
   std::ostream &operator<<(std::ostream& os, const WallDuration& rhs)
   {
-    boost::io::ios_all_saver s(os);
+    std::ios old_state( nullptr );
+    old_state.copyfmt( os );
+
     if (rhs.sec >= 0 || rhs.nsec == 0)
     {
       os << rhs.sec << "." << std::setw(9) << std::setfill('0') << rhs.nsec;
@@ -453,6 +464,8 @@ namespace rs2rosinternal
     {
       os << (rhs.sec == -1 ? "-" : "") << (rhs.sec + 1) << "." << std::setw(9) << std::setfill('0') << (1000000000 - rhs.nsec);
     }
+    
+    os.copyfmt(old_state);
     return os;
   }
 
