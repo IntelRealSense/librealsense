@@ -31,6 +31,7 @@
 
 #include <set>
 #include <assert.h>
+#include <algorithm>
 
 using std::map;
 using std::string;
