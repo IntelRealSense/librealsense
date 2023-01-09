@@ -93,32 +93,32 @@ namespace message_traits
 
 template <class ContainerAllocator>
 struct IsFixedSize< ::sensor_msgs::MagneticField_<ContainerAllocator> >
-  : FalseType
+  : std::false_type
   { };
 
 template <class ContainerAllocator>
 struct IsFixedSize< ::sensor_msgs::MagneticField_<ContainerAllocator> const>
-  : FalseType
+  : std::false_type
   { };
 
 template <class ContainerAllocator>
 struct IsMessage< ::sensor_msgs::MagneticField_<ContainerAllocator> >
-  : TrueType
+  : std::true_type
   { };
 
 template <class ContainerAllocator>
 struct IsMessage< ::sensor_msgs::MagneticField_<ContainerAllocator> const>
-  : TrueType
+  : std::true_type
   { };
 
 template <class ContainerAllocator>
 struct HasHeader< ::sensor_msgs::MagneticField_<ContainerAllocator> >
-  : TrueType
+  : std::true_type
   { };
 
 template <class ContainerAllocator>
 struct HasHeader< ::sensor_msgs::MagneticField_<ContainerAllocator> const>
-  : TrueType
+  : std::true_type
   { };
 
 

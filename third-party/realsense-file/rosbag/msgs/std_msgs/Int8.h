@@ -79,32 +79,32 @@ namespace message_traits
 
 template <class ContainerAllocator>
 struct IsFixedSize< ::std_msgs::Int8_<ContainerAllocator> >
-  : TrueType
+  : std::true_type
   { };
 
 template <class ContainerAllocator>
 struct IsFixedSize< ::std_msgs::Int8_<ContainerAllocator> const>
-  : TrueType
+  : std::true_type
   { };
 
 template <class ContainerAllocator>
 struct IsMessage< ::std_msgs::Int8_<ContainerAllocator> >
-  : TrueType
+  : std::true_type
   { };
 
 template <class ContainerAllocator>
 struct IsMessage< ::std_msgs::Int8_<ContainerAllocator> const>
-  : TrueType
+  : std::true_type
   { };
 
 template <class ContainerAllocator>
 struct HasHeader< ::std_msgs::Int8_<ContainerAllocator> >
-  : FalseType
+  : std::false_type
   { };
 
 template <class ContainerAllocator>
 struct HasHeader< ::std_msgs::Int8_<ContainerAllocator> const>
-  : FalseType
+  : std::false_type
   { };
 
 

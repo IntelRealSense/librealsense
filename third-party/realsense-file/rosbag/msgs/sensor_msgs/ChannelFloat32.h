@@ -84,32 +84,32 @@ namespace message_traits
 
 template <class ContainerAllocator>
 struct IsFixedSize< ::sensor_msgs::ChannelFloat32_<ContainerAllocator> >
-  : FalseType
+  : std::false_type
   { };
 
 template <class ContainerAllocator>
 struct IsFixedSize< ::sensor_msgs::ChannelFloat32_<ContainerAllocator> const>
-  : FalseType
+  : std::false_type
   { };
 
 template <class ContainerAllocator>
 struct IsMessage< ::sensor_msgs::ChannelFloat32_<ContainerAllocator> >
-  : TrueType
+  : std::true_type
   { };
 
 template <class ContainerAllocator>
 struct IsMessage< ::sensor_msgs::ChannelFloat32_<ContainerAllocator> const>
-  : TrueType
+  : std::true_type
   { };
 
 template <class ContainerAllocator>
 struct HasHeader< ::sensor_msgs::ChannelFloat32_<ContainerAllocator> >
-  : FalseType
+  : std::false_type
   { };
 
 template <class ContainerAllocator>
 struct HasHeader< ::sensor_msgs::ChannelFloat32_<ContainerAllocator> const>
-  : FalseType
+  : std::false_type
   { };
 
 

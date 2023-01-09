@@ -84,32 +84,32 @@ namespace message_traits
 
 template <class ContainerAllocator>
 struct IsFixedSize< ::diagnostic_msgs::KeyValue_<ContainerAllocator> >
-  : FalseType
+  : std::false_type
   { };
 
 template <class ContainerAllocator>
 struct IsFixedSize< ::diagnostic_msgs::KeyValue_<ContainerAllocator> const>
-  : FalseType
+  : std::false_type
   { };
 
 template <class ContainerAllocator>
 struct IsMessage< ::diagnostic_msgs::KeyValue_<ContainerAllocator> >
-  : TrueType
+  : std::true_type
   { };
 
 template <class ContainerAllocator>
 struct IsMessage< ::diagnostic_msgs::KeyValue_<ContainerAllocator> const>
-  : TrueType
+  : std::true_type
   { };
 
 template <class ContainerAllocator>
 struct HasHeader< ::diagnostic_msgs::KeyValue_<ContainerAllocator> >
-  : FalseType
+  : std::false_type
   { };
 
 template <class ContainerAllocator>
 struct HasHeader< ::diagnostic_msgs::KeyValue_<ContainerAllocator> const>
-  : FalseType
+  : std::false_type
   { };
 
 

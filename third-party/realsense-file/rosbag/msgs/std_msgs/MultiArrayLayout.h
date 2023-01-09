@@ -85,32 +85,32 @@ namespace message_traits
 
 template <class ContainerAllocator>
 struct IsFixedSize< ::std_msgs::MultiArrayLayout_<ContainerAllocator> >
-  : FalseType
+  : std::false_type
   { };
 
 template <class ContainerAllocator>
 struct IsFixedSize< ::std_msgs::MultiArrayLayout_<ContainerAllocator> const>
-  : FalseType
+  : std::false_type
   { };
 
 template <class ContainerAllocator>
 struct IsMessage< ::std_msgs::MultiArrayLayout_<ContainerAllocator> >
-  : TrueType
+  : std::true_type
   { };
 
 template <class ContainerAllocator>
 struct IsMessage< ::std_msgs::MultiArrayLayout_<ContainerAllocator> const>
-  : TrueType
+  : std::true_type
   { };
 
 template <class ContainerAllocator>
 struct HasHeader< ::std_msgs::MultiArrayLayout_<ContainerAllocator> >
-  : FalseType
+  : std::false_type
   { };
 
 template <class ContainerAllocator>
 struct HasHeader< ::std_msgs::MultiArrayLayout_<ContainerAllocator> const>
-  : FalseType
+  : std::false_type
   { };
 
 
