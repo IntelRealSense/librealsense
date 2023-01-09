@@ -50,16 +50,12 @@
 #include "ros/message_event.h"
 #include "ros/serialization.h"
 
-//#include "ros/subscription_callback_helper.h"
-
 #include <ios>
 #include <map>
 #include <queue>
 #include <set>
 #include <stdexcept>
-
-//#include <boost/format.hpp>
-//#include <boost/iterator/iterator_facade.hpp>
+#include <type_traits>
 
 #include "../../../console_bridge/include/console_bridge/console.h"
 

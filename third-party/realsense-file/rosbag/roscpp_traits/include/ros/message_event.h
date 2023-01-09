@@ -34,14 +34,7 @@
 #include "ros/message_traits.h"
 
 #include <type_traits>
-//#include "boost/type_traits/is_void.hpp"
-//#include "boost/type_traits/is_base_of.hpp"
-//#include "boost/type_traits/is_const.hpp"
-//#include "boost/type_traits/add_const.hpp"
-//#include "boost/type_traits/remove_const.hpp"
-//#include "boost/utility/enable_if.hpp"
 #include <functional>
-//#include "boost/function.hpp"
 
 
 namespace rs2rosinternal

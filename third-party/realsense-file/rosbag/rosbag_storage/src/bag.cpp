@@ -41,7 +41,6 @@
 #include <map>
 #include <tuple>
 #include <tuple>
-//#include <boost/foreach.hpp>
 
 #include "console_bridge/console.h"
 #include <memory.h>
@@ -50,7 +49,6 @@ using std::map;
 using std::string;
 using std::vector;
 using std::multiset;
-//using boost::format;
 using std::shared_ptr;
 using rs2rosinternal::M_string;
 using rs2rosinternal::Time;

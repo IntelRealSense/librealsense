@@ -9,21 +9,21 @@
 #include <iomanip>
 #include <array>
 
-#include "../../third-party/realsense-file/rosbag/rosbag_storage/include/rosbag/bag.h"
-#include "../../third-party/realsense-file/rosbag/msgs/sensor_msgs/Imu.h"
-#include "../../third-party/realsense-file/rosbag/msgs/sensor_msgs/Image.h"
-#include "../../third-party/realsense-file/rosbag/msgs/diagnostic_msgs/KeyValue.h"
-#include "../../third-party/realsense-file/rosbag/msgs/std_msgs/UInt32.h"
-#include "../../third-party/realsense-file/rosbag/msgs/std_msgs/String.h"
-#include "../../third-party/realsense-file/rosbag/msgs/std_msgs/Float32.h"
-#include "../../third-party/realsense-file/rosbag/msgs/realsense_msgs/StreamInfo.h"
-#include "../../third-party/realsense-file/rosbag/msgs/realsense_msgs/ImuIntrinsic.h"
-#include "../../third-party/realsense-file/rosbag/msgs/sensor_msgs/CameraInfo.h"
-#include "../../third-party/realsense-file/rosbag/msgs/sensor_msgs/TimeReference.h"
-#include "../../third-party/realsense-file/rosbag/msgs/geometry_msgs/Transform.h"
-#include "../../third-party/realsense-file/rosbag/msgs/geometry_msgs/Twist.h"
-#include "../../third-party/realsense-file/rosbag/msgs/geometry_msgs/Accel.h"
-#include "../../third-party/realsense-file/rosbag/msgs/realsense_legacy_msgs/legacy_headers.h"
+#include <third-party/realsense-file/rosbag/rosbag_storage/include/rosbag/bag.h>
+#include <third-party/realsense-file/rosbag/msgs/sensor_msgs/Imu.h>
+#include <third-party/realsense-file/rosbag/msgs/sensor_msgs/Image.h>
+#include <third-party/realsense-file/rosbag/msgs/diagnostic_msgs/KeyValue.h>
+#include <third-party/realsense-file/rosbag/msgs/std_msgs/UInt32.h>
+#include <third-party/realsense-file/rosbag/msgs/std_msgs/String.h>
+#include <third-party/realsense-file/rosbag/msgs/std_msgs/Float32.h>
+#include <third-party/realsense-file/rosbag/msgs/realsense_msgs/StreamInfo.h>
+#include <third-party/realsense-file/rosbag/msgs/realsense_msgs/ImuIntrinsic.h>
+#include <third-party/realsense-file/rosbag/msgs/sensor_msgs/CameraInfo.h>
+#include <third-party/realsense-file/rosbag/msgs/sensor_msgs/TimeReference.h>
+#include <third-party/realsense-file/rosbag/msgs/geometry_msgs/Transform.h>
+#include <third-party/realsense-file/rosbag/msgs/geometry_msgs/Twist.h>
+#include <third-party/realsense-file/rosbag/msgs/geometry_msgs/Accel.h>
+#include <third-party/realsense-file/rosbag/msgs/realsense_legacy_msgs/legacy_headers.h>
 
 namespace rosbag_inspector
 {

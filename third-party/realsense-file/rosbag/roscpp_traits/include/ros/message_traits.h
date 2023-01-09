@@ -33,10 +33,8 @@
 #include "ros/time.h"
 
 #include <string>
-#include <type_traits> // <boost/core/enable_if.hpp>
-
+#include <type_traits>
 #include <memory.h>
-//#include <boost/type_traits/remove_reference.hpp>
 
 namespace std_msgs
 {
