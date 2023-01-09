@@ -152,7 +152,7 @@ struct Header
 };
 
 template<typename M>
-struct Header< M, std::enable_if_t< HasHeader< M >::value > >
+struct Header< M, typename std::enable_if< HasHeader< M >::value >::type >
 {
   static std_msgs::Header* pointer(M& m) { return &m.header; }
   static std_msgs::Header const* pointer(const M& m) { return &m.header; }
@@ -171,7 +171,7 @@ struct FrameId
 };
 
 template<typename M>
-struct FrameId< M, std::enable_if_t< HasHeader< M >::value > >
+struct FrameId< M, typename std::enable_if< HasHeader< M >::value >::type >
 {
   static std::string* pointer(M& m) { return &m.header.frame_id; }
   static std::string const* pointer(const M& m) { return &m.header.frame_id; }
@@ -191,7 +191,7 @@ struct TimeStamp
 };
 
 template<typename M>
-struct TimeStamp< M, std::enable_if_t< HasHeader< M >::value > >
+struct TimeStamp< M, typename std::enable_if< HasHeader< M >::value >::type >
 {
   static rs2rosinternal::Time* pointer(typename std::remove_const<M>::type &m) { return &m.header.stamp; }
   static rs2rosinternal::Time const* pointer(const M& m) { return &m.header.stamp; }

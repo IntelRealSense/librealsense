@@ -55,7 +55,6 @@
 #include <queue>
 #include <set>
 #include <stdexcept>
-#include <type_traits>
 
 #include "../../../console_bridge/include/console_bridge/console.h"
 

@@ -207,7 +207,7 @@ public:
 
 private:
   template<typename M2>
-  std::enable_if_t<!std::is_void<M2>::value, std::shared_ptr<M> > copyMessageIfNecessary() const
+  typename std::enable_if< !std::is_void<M2>::value, std::shared_ptr<M> >::type copyMessageIfNecessary() const
   {
     if (std::is_const<M>::value || !nonconst_need_copy_)
     {
@@ -227,7 +227,7 @@ private:
   }
 
   template<typename M2>
-  std::enable_if_t< std::is_void<M2>::value, std::shared_ptr<M> > copyMessageIfNecessary() const
+  typename std::enable_if< std::is_void<M2>::value, std::shared_ptr<M> >::type copyMessageIfNecessary() const
   {
     return std::const_pointer_cast<Message>(message_);
   }
