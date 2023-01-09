@@ -59,6 +59,8 @@ public:
     void set_option_value( const std::shared_ptr< dds_option > & option, float new_value );
     float query_option_value( const std::shared_ptr< dds_option > & option );
 
+    std::shared_ptr< extrinsics > get_extrinsics( std::string from, std::string to ) const;
+
 private:
     class impl;
     std::shared_ptr< impl > _impl;

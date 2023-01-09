@@ -720,6 +720,8 @@ namespace librealsense
     class dds_device_proxy : public software_device
     {
         std::shared_ptr< realdds::dds_device > _dds_dev;
+        std::map< std::string, std::vector< std::shared_ptr< stream_profile_interface > > > _stream_name_to_profiles;
+        std::map< std::string, std::shared_ptr< librealsense::stream > > _stream_name_to_librs_stream;
 
         static rs2_stream to_rs2_stream_type( std::string const & type_string )
         {
@@ -797,6 +799,16 @@ namespace librealsense
             return prof;
         }
 
+        static rs2_extrinsics to_rs2_extrinsics( const std::shared_ptr< realdds::extrinsics > & dds_extrinsics )
+        {
+            rs2_extrinsics rs2_extr;
+
+            memcpy( rs2_extr.rotation, dds_extrinsics->rotation, sizeof( rs2_extr.rotation ) );
+            memcpy( rs2_extr.translation , dds_extrinsics->translation, sizeof( rs2_extr.translation ) );
+
+            return rs2_extr;
+        }
+
     public:
         dds_device_proxy( std::shared_ptr< context > ctx, std::shared_ptr< realdds::dds_device > const & dev )
             : software_device( ctx )
@@ -842,6 +854,7 @@ namespace librealsense
                 }
                 auto stream_type = to_rs2_stream_type( stream->type_string() );
                 sid_index sidx( stream_type, counts[stream_type]++ );
+                _stream_name_to_librs_stream[stream->name()] = std::make_shared< librealsense::stream >( stream_type, sidx.index );
                 sensor_info.proxy->add_dds_stream( sidx, stream );
                 LOG_DEBUG( sidx.to_string() << " " << stream->sensor_name() << " : " << stream->name() );
 
@@ -854,23 +867,25 @@ namespace librealsense
                 {
                     if( video_stream )
                     {
-                        sensor.add_video_stream(
+                        auto added_stream_profile = sensor.add_video_stream(
                             to_rs2_video_stream(
                                 stream_type,
                                 sidx,
                                 std::static_pointer_cast< realdds::dds_video_stream_profile >( profile ),
                                 video_stream->get_intrinsics() ),
                             profile == default_profile );
+                        _stream_name_to_profiles[stream->name()].push_back( added_stream_profile ); // for extrinsics
                     }
                     else if( motion_stream )
                     {
-                        sensor.add_motion_stream(
+                        auto added_stream_profile = sensor.add_motion_stream(
                             to_rs2_motion_stream(
                                 stream_type,
                                 sidx,
                                 std::static_pointer_cast< realdds::dds_motion_stream_profile >( profile ),
                                 motion_stream->get_intrinsics() ),
                             profile == default_profile );
+                        _stream_name_to_profiles[stream->name()].push_back( added_stream_profile ); // for extrinsics
                     }
                 }
 
@@ -880,6 +895,43 @@ namespace librealsense
                     sensor_info.proxy->add_option( option );
                 }
             } );  // End foreach_stream lambda
+
+            // According to extrinsics_graph (in environment.h) we need 3 steps
+            // 1. Register streams with extrinsics between them
+            for( auto & from_stream : _stream_name_to_librs_stream )
+            {
+                for( auto & to_stream : _stream_name_to_librs_stream )
+                {
+                    if( from_stream.first != to_stream.first )
+                    {
+                        const auto & dds_extr = _dds_dev->get_extrinsics( from_stream.first, to_stream.first );
+                        if( dds_extr )
+                        {
+                            rs2_extrinsics extr = to_rs2_extrinsics( dds_extr );
+                            environment::get_instance().get_extrinsics_graph().register_extrinsics( *from_stream.second,
+                                                                                                    *to_stream.second,
+                                                                                                    extr );
+                        }
+                    }
+                }
+            }
+            // 2. Register all profiles
+            for( auto & it : _stream_name_to_profiles )
+            {
+                for( auto profile : it.second )
+                {
+                    environment::get_instance().get_extrinsics_graph().register_profile( *profile );
+                }
+            }
+            // 3. Link profile to it's stream
+            for( auto & it : _stream_name_to_librs_stream )
+            {
+                for( auto & profile : _stream_name_to_profiles[it.first] )
+                {
+                    environment::get_instance().get_extrinsics_graph().register_same_extrinsics( *it.second, *profile );
+                }
+            }
+            // TODO - need to register extrinsics group in dev?
         } //End dds_device_proxy constructor
     };
 

@@ -82,5 +82,39 @@ nlohmann::json motion_intrinsics::to_json() const
     return ret;
 }
 
+nlohmann::json extrinsics::to_json() const
+{
+    return nlohmann::json::array( {
+        rotation[0], rotation[1], rotation[2],
+        rotation[3], rotation[4], rotation[5],
+        rotation[6], rotation[7], rotation[8],
+        translation[0], translation[1], translation[2]
+    } );
+}
+
+/* static  */ extrinsics extrinsics::from_json( nlohmann::json const & j )
+{
+    extrinsics ret;
+    int index = 0;
+
+    ret.rotation[0] = utilities::json::get< float >( j, index++ );
+    ret.rotation[1] = utilities::json::get< float >( j, index++ );
+    ret.rotation[2] = utilities::json::get< float >( j, index++ );
+    ret.rotation[3] = utilities::json::get< float >( j, index++ );
+    ret.rotation[4] = utilities::json::get< float >( j, index++ );
+    ret.rotation[5] = utilities::json::get< float >( j, index++ );
+    ret.rotation[6] = utilities::json::get< float >( j, index++ );
+    ret.rotation[7] = utilities::json::get< float >( j, index++ );
+    ret.rotation[8] = utilities::json::get< float >( j, index++ );
+    ret.translation[0] = utilities::json::get< float >( j, index++ );
+    ret.translation[1] = utilities::json::get< float >( j, index++ );
+    ret.translation[2] = utilities::json::get< float >( j, index++ );
+
+    if( index != j.size() )
+        DDS_THROW( runtime_error, "expected end of json at index " + std::to_string( index ) );
+
+    return ret;
+}
+
 
 }  // namespace realdds

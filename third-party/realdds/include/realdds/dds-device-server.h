@@ -4,6 +4,8 @@
 #pragma once
 
 #include <realdds/dds-option.h>
+#include <realdds/dds-defines.h>
+
 #include <librealsense2/utilities/concurrency/concurrency.h>
 #include <third-party/json_fwd.hpp>
 
@@ -59,7 +61,7 @@ public:
     // On successful return from init(), each of the streams will be alive so clients will be able
     // to subscribe.
     void init( const std::vector< std::shared_ptr< dds_stream_server > > & streams,
-               const dds_options & options );
+               const dds_options & options, const extrinsics_map & extr );
 
     bool is_valid() const { return( nullptr != _notification_server.get() ); }
     bool operator!() const { return ! is_valid(); }
@@ -102,6 +104,8 @@ private:
     control_callback _close_streams_callback = nullptr;
     set_option_callback _set_option_callback = nullptr;
     query_option_callback _query_option_callback = nullptr;
+
+    extrinsics_map _extrinsics_map; // <from stream, to stream> to extrinsics
 };  // class dds_device_server
 
 

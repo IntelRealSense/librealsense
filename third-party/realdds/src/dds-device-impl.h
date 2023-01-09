@@ -55,6 +55,8 @@ public:
 
     dds_options _options;
 
+    extrinsics_map _extrinsics_map; // <from stream, to stream> to extrinsics
+
     impl( std::shared_ptr< dds_participant > const & participant,
           dds_guid const & guid,
           topics::device_info const & info );

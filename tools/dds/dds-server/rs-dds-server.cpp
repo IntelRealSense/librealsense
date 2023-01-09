@@ -40,7 +40,7 @@ using namespace realdds;
     }                                                                                                                  \
     break
 
-realdds::dds_option_range to_realdds( rs2::option_range range )
+realdds::dds_option_range to_realdds( const rs2::option_range & range )
 {
     realdds::dds_option_range ret_val;
     ret_val.max = range.max;
@@ -51,7 +51,7 @@ realdds::dds_option_range to_realdds( rs2::option_range range )
     return ret_val;
 }
 
-realdds::video_intrinsics to_realdds( rs2_intrinsics intr )
+realdds::video_intrinsics to_realdds( const rs2_intrinsics & intr )
 {
     realdds::video_intrinsics ret;
 
@@ -67,7 +67,7 @@ realdds::video_intrinsics to_realdds( rs2_intrinsics intr )
     return ret;
 }
 
-realdds::motion_intrinsics to_realdds( rs2_motion_device_intrinsic rs2_intr )
+realdds::motion_intrinsics to_realdds( const rs2_motion_device_intrinsic & rs2_intr )
 {
     realdds::motion_intrinsics intr;
 
@@ -78,7 +78,17 @@ realdds::motion_intrinsics to_realdds( rs2_motion_device_intrinsic rs2_intr )
     return intr;
 }
 
-std::vector< std::shared_ptr< realdds::dds_stream_server > > get_supported_streams( rs2::device dev )
+realdds::extrinsics to_realdds( const rs2_extrinsics & rs2_extr )
+{
+    realdds::extrinsics extr;
+
+    memcpy( extr.rotation, rs2_extr.rotation, sizeof( extr.rotation ) );
+    memcpy( extr.translation, rs2_extr.translation, sizeof( extr.translation ) );
+
+    return extr;
+}
+
+std::vector< std::shared_ptr< realdds::dds_stream_server > > get_supported_streams( const rs2::device & dev )
 {
     std::map< std::string, realdds::dds_stream_profiles > stream_name_to_profiles;
     std::map< std::string, int > stream_name_to_default_profile;
@@ -230,6 +240,43 @@ std::vector< std::shared_ptr< realdds::dds_stream_server > > get_supported_strea
 
 #undef NAME2SERVER
 
+extrinsics_map get_extrinsics_map( const rs2::device & dev )
+{
+    extrinsics_map ret;
+    std::map< std::string, rs2::stream_profile > stream_name_to_rs2_stream_profile;
+
+    //Iterate over profiles of all sensors and split to streams
+    for( auto sensor : dev.query_sensors() )
+    {
+        auto stream_profiles = sensor.get_stream_profiles();
+        std::for_each( stream_profiles.begin(), stream_profiles.end(), [&]( const rs2::stream_profile & sp ) {
+            std::string stream_name = sp.stream_name();
+            if( stream_name_to_rs2_stream_profile.count( stream_name ) == 0 )
+                stream_name_to_rs2_stream_profile[stream_name] = sp; // Any profile of this stream will do, take the first
+        } );
+    }
+
+    //For each stream, get extrinsics to all other streams
+    for( auto & from : stream_name_to_rs2_stream_profile )
+    {
+        auto const & from_stream_name = from.first;
+        for( auto & to : stream_name_to_rs2_stream_profile )
+        {
+            auto & to_stream_name = to.first;
+            if( from_stream_name != to_stream_name )
+            {
+                //Get rs2::stream_profile objects for get_extrinsics API call
+                const rs2::stream_profile & from_profile = from.second;
+                const rs2::stream_profile & to_profile = to.second;
+                const auto & extrinsics = from_profile.get_extrinsics_to( to_profile );
+                ret[std::make_pair( from_stream_name, to_stream_name )] =
+                    std::make_shared< realdds::extrinsics >( to_realdds( extrinsics ) );
+            }
+        }
+    }
+
+    return ret;
+}
 
 std::string get_topic_root( topics::device_info const & dev_info )
 {
@@ -366,11 +413,13 @@ try
             // Create a supported streams list for initializing the relevant DDS topics
             auto supported_streams = get_supported_streams( dev );
 
+            auto extrins_map = get_extrinsics_map( dev );
+
             //TODO - get all device level options
             realdds::dds_options dev_options;
 
             // Initialize the DDS device server with the supported streams
-            dds_device_server->init( supported_streams, dev_options );
+            dds_device_server->init( supported_streams, dev_options, extrins_map );
 
             // Keep a pair of device controller and server per RS device
             device_handlers_list.emplace( dev, device_handler{ dev_info, dds_device_server, lrs_device_controller } );
