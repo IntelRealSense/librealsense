@@ -49,6 +49,8 @@
 #        define fileno _fileno
 #        define ftruncate _chsize_s //Intel Realsense Change, Was: #define ftruncate _chsize 
 #    endif
+#else
+#include <unistd.h>
 #endif
 
 using std::string;
