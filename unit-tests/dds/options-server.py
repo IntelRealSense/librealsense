@@ -21,7 +21,7 @@ def test_no_options():
     dev_opts = []
     global server
     server = dds.device_server( participant, "realdds/device/topic-root" )
-    server.init( [s1], dev_opts )
+    server.init( [s1], dev_opts, {} )
 
 def test_device_options_discovery( values ):
     # Create one stream with one profile so device init won't fail, no stream options
@@ -36,7 +36,7 @@ def test_device_options_discovery( values ):
         dev_opts.append( option )
     global server
     server = dds.device_server( participant, "realdds/device/topic-root" )
-    server.init( [s1], dev_opts )
+    server.init( [s1], dev_opts, {})
 
 def test_stream_options_discovery( value, min, max, step, default, description ):
     s1p1 = dds.video_stream_profile( 9, dds.stream_format("RGB8"), 10, 10 )
@@ -57,7 +57,7 @@ def test_stream_options_discovery( value, min, max, step, default, description )
     s1.init_options( [so1, so2, so3] )
     global server
     server = dds.device_server( participant, "realdds/device/topic-root" )
-    server.init( [s1], [] )
+    server.init( [s1], [], {} )
 
 def test_device_and_multiple_stream_options_discovery( dev_values, stream_values ):
     dev_options = []
@@ -85,7 +85,7 @@ def test_device_and_multiple_stream_options_discovery( dev_values, stream_values
     
     global server
     server = dds.device_server( participant, "realdds/device/topic-root" )
-    server.init( [s1, s2], dev_options )
+    server.init( [s1, s2], dev_options, {} )
 
 def close_server():
     global server

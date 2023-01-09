@@ -25,7 +25,7 @@ def build( participant ):
     color = color_stream()
     #
     d455 = dds.device_server( participant, device_info.topic_root )
-    d455.init( [accel, gyro, depth, ir0, ir1, ir2, color], [] )
+    d455.init( [accel, gyro, depth, ir0, ir1, ir2, color], [], {} )
     return d455
 
 
