@@ -1,6 +1,6 @@
 # Save the command line compile commands in the build output
 set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
-set(CMAKE_CXX_STANDARD 11)
+
 # View the makefile commands during build
 #set(CMAKE_VERBOSE_MAKEFILE on)
 
@@ -18,7 +18,6 @@ if(ENABLE_CCACHE)
 endif()
 
 macro(global_set_flags)
-    set(LRS_TARGET realsense2)
     set(LRS_LIB_NAME ${LRS_TARGET})
 
     add_definitions(-DELPP_THREAD_SAFE)
