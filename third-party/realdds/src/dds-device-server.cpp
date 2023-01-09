@@ -88,11 +88,16 @@ void dds_device_server::publish_image( const std::string & stream_name, const ui
 
 
 static void on_discovery_device_header( size_t const n_streams, const dds_options & options,
-                                        dds_notification_server & notifications )
+                                        const extrinsics_map & extr, dds_notification_server & notifications )
 {
+    auto extrinsics_json = json::array();
+    for( auto & ex : extr )
+        extrinsics_json.push_back( json::array( { ex.first.first, ex.first.second, ex.second->to_json() } ) );
+
     topics::flexible_msg device_header( json{
         { "id", "device-header" },
         { "n-streams", n_streams },
+        { "extrinsics", extrinsics_json }
     } );
     notifications.add_discovery_notification( std::move( device_header ) );
 
@@ -153,7 +158,7 @@ static void on_discovery_stream_header( std::shared_ptr< dds_stream_server > con
 
 
 void dds_device_server::init( std::vector< std::shared_ptr< dds_stream_server > > const & streams,
-                              const dds_options & options)
+                              const dds_options & options, const extrinsics_map & extr )
 {
     if( is_valid() )
         DDS_THROW( runtime_error, "device server '" + _topic_root + "' is already initialized" );
@@ -166,7 +171,7 @@ void dds_device_server::init( std::vector< std::shared_ptr< dds_stream_server > 
         // If a previous init failed (e.g., one of the streams has no profiles):
         _stream_name_to_server.clear();
 
-        on_discovery_device_header( streams.size(), options, *_notification_server );
+        on_discovery_device_header( streams.size(), options, extr, *_notification_server );
         for( auto& stream : streams )
         {
             std::string topic_name = _topic_root + '/' + stream->name();

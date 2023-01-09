@@ -143,4 +143,14 @@ float dds_device::query_option_value( const std::shared_ptr< dds_option > & opti
     return _impl->query_option_value( option );
 }
 
+std::shared_ptr< extrinsics > dds_device::get_extrinsics( std::string from, std::string to ) const
+{
+    auto iter = _impl->_extrinsics_map.find( std::make_pair( from, to ) );
+    if( iter != _impl->_extrinsics_map.end() )
+        return iter->second;
+
+    std::shared_ptr< extrinsics > empty;
+    return empty;
+}
+
 }  // namespace realdds

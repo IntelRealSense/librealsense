@@ -286,6 +286,17 @@ bool dds_device::impl::init()
                     n_streams_expected = utilities::json::get< size_t >( j, "n-streams" );
                     LOG_DEBUG( "... device-header: " << n_streams_expected << " streams expected" );
 
+                    if( utilities::json::has( j, "extrinsics" ) )
+                    {
+                        for( auto & ex : j["extrinsics"] )
+                        {
+                            std::string to_name = utilities::json::get< std::string >( ex, 0 );
+                            std::string from_name = utilities::json::get< std::string >( ex, 1 );
+                            extrinsics extr = extrinsics::from_json( utilities::json::get< json >( ex, 2 ) );
+                            _extrinsics_map[std::make_pair( to_name, from_name )] = std::make_shared< extrinsics >( extr );
+                        }
+                    }
+
                     state = state_type::WAIT_FOR_DEVICE_OPTIONS;
                 }
                 else if( state_type::WAIT_FOR_DEVICE_OPTIONS == state && id == "device-options" )

@@ -72,4 +72,19 @@ struct motion_intrinsics
 };
 
 
+// Cross-stream extrinsics: encodes the topology describing how the different devices are oriented.
+struct extrinsics
+{
+    float rotation[9];    // Column-major 3x3 rotation matrix
+    float translation[3]; // Three-element translation vector, in meters
+
+    nlohmann::json to_json() const;
+    static extrinsics from_json( nlohmann::json const & j );
+};
+
+
+// Maps < from stream_name, to stream_name > pairs to extrinsics
+typedef std::map< std::pair< std::string, std::string >, std::shared_ptr< extrinsics > > extrinsics_map;
+
+
 }  // namespace realdds
