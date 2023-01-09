@@ -7,6 +7,7 @@
 #include "../h/rs_safety_types.h"
 #include <iostream>
 #include <sstream>
+#include <cstring>
 
 inline std::string sc_reserved_arr_to_string(const uint8_t* data)
 {
@@ -112,6 +113,11 @@ inline std::ostream& operator<<(std::ostream& out, rs2_safety_preset const& sp)
     out << "\n\t" << "Safety Zone #3:" << "\n" << sp.safety_zones[3];
     out << "\n\t" << "Environment:" << "\n" << sp.environment;
     return out;
+}
+
+inline bool operator==(rs2_safety_preset const& self, rs2_safety_preset const& other)
+{
+    return !std::memcmp(&self, &other, sizeof(rs2_safety_preset));
 }
 
 #endif // LIBREALSENSE_RS2_SAFETY_TYPES_HPP
