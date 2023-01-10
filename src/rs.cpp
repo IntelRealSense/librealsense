@@ -457,7 +457,6 @@ NOEXCEPT_RETURN( , buffer )
 const char * rs2_aus_get_counter_data( const rs2_strings_list * buffer, int i, rs2_error ** error ) BEGIN_API_CALL
 {
     VALIDATE_NOT_NULL( buffer );
-    //VALIDATE_NOT_NULL(buffer[i]);
     return buffer->buffer[i].c_str();
 }
 HANDLE_EXCEPTIONS_AND_RETURN( 0, buffer )
