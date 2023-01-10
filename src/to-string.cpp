@@ -565,7 +565,6 @@ const char * get_string( rs2_frame_metadata_value value )
     CASE( SAFETY_SOC_FUSA_ACTION )
     CASE( SAFETY_FUSA_EVENT )
     CASE( SAFETY_FUSA_ACTION )
-    CASE( SAFETY_CRC32 )
 
     default:
         assert( ! is_valid( value ) );

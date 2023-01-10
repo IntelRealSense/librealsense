@@ -173,16 +173,9 @@ namespace librealsense
             make_attribute_parser(&md_safety_info::mb_fusa_action, 
                 md_safety_info_attributes::mb_fusa_action_attribute, md_prop_offset));
 
-        raw_safety_ep->register_metadata(RS2_FRAME_METADATA_SAFETY_CRC32,
-            make_attribute_parser(&md_safety_info::crc32,
-                md_safety_info_attributes::crc32_attribute, md_prop_offset,
-                [](const rs2_metadata_type& param) {
-                    // compute crc and check validity
-                    // TODO - REMI - check next line works well during integration - alignement of struct md_safety_info to 4 is needed
-                    uint8_t* start_of_md_struct = reinterpret_cast<uint8_t*>(&const_cast<rs2_metadata_type&>(param)) - sizeof(md_safety_info) + sizeof(param);
-                    auto computed_crc32 = calc_crc32(start_of_md_struct, sizeof(md_safety_info) - sizeof(md_safety_info::crc32));
-                    return (param == computed_crc32);
-                }));
+        raw_safety_ep->register_metadata(RS2_FRAME_METADATA_CRC,
+            make_attribute_parser_with_crc(&md_safety_info::crc32,
+                md_safety_info_attributes::crc32_attribute, md_prop_offset));
     }
 
     void ds6_safety::register_processing_blocks(std::shared_ptr<ds6_safety_sensor> safety_ep)
