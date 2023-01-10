@@ -5970,126 +5970,129 @@ namespace rs2
         {
             if (auto dpt = sub->s->as<depth_sensor>())
             {
-                ImGui::SetCursorPos({ panel_pos.x + 8, ImGui::GetCursorPosY() + 10 });
-                //TODO: set this once!
-                const auto draw_preset_combo_box = [&](option_model& opt_model, std::string& error_message, notifications_model& model)
+                if (dpt.supports(RS2_OPTION_VISUAL_PRESET))
                 {
-                    bool is_clicked = false;
-                    assert(opt_model.opt == RS2_OPTION_VISUAL_PRESET);
-                    ImGui::Text("Preset: ");
-                    if (ImGui::IsItemHovered())
+                    ImGui::SetCursorPos({ panel_pos.x + 8, ImGui::GetCursorPosY() + 10 });
+                    //TODO: set this once!
+                    const auto draw_preset_combo_box = [&](option_model& opt_model, std::string& error_message, notifications_model& model)
                     {
-                        ImGui::SetTooltip("Select a preset configuration (or use the load button)");
-                    }
-
-                    ImGui::SameLine();
-                    ImGui::PushItemWidth(185);
-
-                    ///////////////////////////////////////////
-                    //TODO: make this a member function
-                    std::vector<const char*> labels;
-                    std::vector< float > counters;
-                    auto selected = 0, counter = 0;
-                    for (auto i = opt_model.range.min; i <= opt_model.range.max; i += opt_model.range.step)
-                    {
-                        std::string product = dev.get_info( RS2_CAMERA_INFO_PRODUCT_LINE );
-
-                        // Default is only there for backwards compatibility and will throw an
-                        // exception if used
-                        if( product == "L500" && (size_t)(i) == RS2_L500_VISUAL_PRESET_DEFAULT )
-                            continue;
-
-                        if (std::fabs(i - opt_model.value) < 0.001f)
+                        bool is_clicked = false;
+                        assert(opt_model.opt == RS2_OPTION_VISUAL_PRESET);
+                        ImGui::Text("Preset: ");
+                        if (ImGui::IsItemHovered())
                         {
-                            selected = counter;
+                            ImGui::SetTooltip("Select a preset configuration (or use the load button)");
                         }
-                        labels.push_back(opt_model.endpoint->get_option_value_description(opt_model.opt, i));
-                        counters.push_back( i );
-                        counter++;
-                    }
-                    ///////////////////////////////////////////
 
-                    ImGui_ScopePushStyleColor(ImGuiCol_TextSelectedBg, white);
-                    ImGui_ScopePushStyleColor(ImGuiCol_Button, button_color);
-                    ImGui_ScopePushStyleColor(ImGuiCol_ButtonHovered, button_color + 0.1f);
-                    ImGui_ScopePushStyleColor(ImGuiCol_ButtonActive, button_color + 0.1f);
-                    ImVec2 padding{ 2,2 };
-                    ImGui_ScopePushStyleVar(ImGuiStyleVar_FramePadding, padding);
-                    ///////////////////////////////////////////
-                    // Go over the loaded files and add them to the combo box
-                    std::vector<std::string> full_files_names(advanced_mode_settings_file_names.begin(), advanced_mode_settings_file_names.end());
-                    std::vector<std::string> files_labels;
-                    int i = static_cast<int>(labels.size());
-                    for (auto&& file : full_files_names)
-                    {
-                        files_labels.push_back(get_file_name(file));
-                        if (selected_file_preset == file)
+                        ImGui::SameLine();
+                        ImGui::PushItemWidth(185);
+
+                        ///////////////////////////////////////////
+                        //TODO: make this a member function
+                        std::vector<const char*> labels;
+                        std::vector< float > counters;
+                        auto selected = 0, counter = 0;
+                        for (auto i = opt_model.range.min; i <= opt_model.range.max; i += opt_model.range.step)
                         {
-                            selected = i;
-                        }
-                        i++;
-                    }
-                    std::transform(files_labels.begin(), files_labels.end(), std::back_inserter(labels), [](const std::string& s) { return s.c_str(); });
+                            std::string product = dev.get_info(RS2_CAMERA_INFO_PRODUCT_LINE);
 
-                    try
-                    {
-                        if (ImGui::Combo(opt_model.id.c_str(), &selected, labels.data(),
-                            static_cast<int>(labels.size())))
-                        {
-                            *opt_model.invalidate_flag = true;
-                            
-                            auto advanced = dev.as<advanced_mode>();
-                            if (advanced)
-                                if (!advanced.is_enabled())
-                                    sub->draw_advanced_mode_prompt = false;
+                            // Default is only there for backwards compatibility and will throw an
+                            // exception if used
+                            if (product == "L500" && (size_t)(i) == RS2_L500_VISUAL_PRESET_DEFAULT)
+                                continue;
 
-
-                            if (!sub->draw_advanced_mode_prompt)
+                            if (std::fabs(i - opt_model.value) < 0.001f)
                             {
-                                if (selected < static_cast<int>(labels.size() - files_labels.size()))
-                                {
-                                    //Known preset was chosen
-                                    auto new_val = counters[selected];
-                                    model.add_log( rsutils::string::from()
-                                                   << "Setting " << opt_model.opt << " to " << new_val << " ("
-                                                   << labels[selected] << ")" );
+                                selected = counter;
+                            }
+                            labels.push_back(opt_model.endpoint->get_option_value_description(opt_model.opt, i));
+                            counters.push_back(i);
+                            counter++;
+                        }
+                        ///////////////////////////////////////////
 
-                                    opt_model.set_option(opt_model.opt, static_cast<float>(new_val), error_message);
+                        ImGui_ScopePushStyleColor(ImGuiCol_TextSelectedBg, white);
+                        ImGui_ScopePushStyleColor(ImGuiCol_Button, button_color);
+                        ImGui_ScopePushStyleColor(ImGuiCol_ButtonHovered, button_color + 0.1f);
+                        ImGui_ScopePushStyleColor(ImGuiCol_ButtonActive, button_color + 0.1f);
+                        ImVec2 padding{ 2,2 };
+                        ImGui_ScopePushStyleVar(ImGuiStyleVar_FramePadding, padding);
+                        ///////////////////////////////////////////
+                        // Go over the loaded files and add them to the combo box
+                        std::vector<std::string> full_files_names(advanced_mode_settings_file_names.begin(), advanced_mode_settings_file_names.end());
+                        std::vector<std::string> files_labels;
+                        int i = static_cast<int>(labels.size());
+                        for (auto&& file : full_files_names)
+                        {
+                            files_labels.push_back(get_file_name(file));
+                            if (selected_file_preset == file)
+                            {
+                                selected = i;
+                            }
+                            i++;
+                        }
+                        std::transform(files_labels.begin(), files_labels.end(), std::back_inserter(labels), [](const std::string& s) { return s.c_str(); });
 
-                                    // Only apply preset to GUI if set_option was succesful
-                                    selected_file_preset = "";
-                                    is_clicked = true;
-                                }
-                                else
+                        try
+                        {
+                            if (ImGui::Combo(opt_model.id.c_str(), &selected, labels.data(),
+                                static_cast<int>(labels.size())))
+                            {
+                                *opt_model.invalidate_flag = true;
+
+                                auto advanced = dev.as<advanced_mode>();
+                                if (advanced)
+                                    if (!advanced.is_enabled())
+                                        sub->draw_advanced_mode_prompt = false;
+
+
+                                if (!sub->draw_advanced_mode_prompt)
                                 {
-                                    //File was chosen
-                                    auto file = selected - static_cast<int>(labels.size() - files_labels.size());
-                                    if (file < 0 || file >= full_files_names.size())
-                                        throw std::runtime_error("not a valid format");
-                                    auto f = full_files_names[file];
-                                    error_message = safe_call([&]() { load_json(f); });
-                                    selected_file_preset = f;
+                                    if (selected < static_cast<int>(labels.size() - files_labels.size()))
+                                    {
+                                        //Known preset was chosen
+                                        auto new_val = counters[selected];
+                                        model.add_log(rsutils::string::from()
+                                            << "Setting " << opt_model.opt << " to " << new_val << " ("
+                                            << labels[selected] << ")");
+
+                                        opt_model.set_option(opt_model.opt, static_cast<float>(new_val), error_message);
+
+                                        // Only apply preset to GUI if set_option was succesful
+                                        selected_file_preset = "";
+                                        is_clicked = true;
+                                    }
+                                    else
+                                    {
+                                        //File was chosen
+                                        auto file = selected - static_cast<int>(labels.size() - files_labels.size());
+                                        if (file < 0 || file >= full_files_names.size())
+                                            throw std::runtime_error("not a valid format");
+                                        auto f = full_files_names[file];
+                                        error_message = safe_call([&]() { load_json(f); });
+                                        selected_file_preset = f;
+                                    }
                                 }
                             }
+                            if (sub->draw_advanced_mode_prompt)
+                            {
+                                sub->draw_advanced_mode_prompt = prompt_toggle_advanced_mode(true, popup_message, restarting_device_info, viewer, window, error_message);
+                            }
                         }
-                        if (sub->draw_advanced_mode_prompt)
+                        catch (const error& e)
                         {
-                            sub->draw_advanced_mode_prompt = prompt_toggle_advanced_mode(true, popup_message, restarting_device_info, viewer, window, error_message);
+                            error_message = error_to_string(e);
                         }
-                    }
-                    catch (const error& e)
-                    {
-                        error_message = error_to_string(e);
-                    }
 
-                    ImGui::PopItemWidth();
-                    return is_clicked;
-                };
-                sub->options_metadata[RS2_OPTION_VISUAL_PRESET].custom_draw_method = draw_preset_combo_box;
-                if (sub->draw_option(RS2_OPTION_VISUAL_PRESET, dev.is<playback>() || update_read_only_options, error_message, *viewer.not_model))
-                {
-                    get_curr_advanced_controls = true;
-                    selected_file_preset.clear();
+                        ImGui::PopItemWidth();
+                        return is_clicked;
+                    };
+                    sub->options_metadata[RS2_OPTION_VISUAL_PRESET].custom_draw_method = draw_preset_combo_box;
+                    if (sub->draw_option(RS2_OPTION_VISUAL_PRESET, dev.is<playback>() || update_read_only_options, error_message, *viewer.not_model))
+                    {
+                        get_curr_advanced_controls = true;
+                        selected_file_preset.clear();
+                    }
                 }
             }
         }
