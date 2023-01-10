@@ -36,7 +36,7 @@ struct MultiArrayLayout_
 
 
 
-   typedef std::vector< ::std_msgs::MultiArrayDimension_<ContainerAllocator> , typename ContainerAllocator::template rebind< ::std_msgs::MultiArrayDimension_<ContainerAllocator> >::other >  _dim_type;
+   typedef std::vector< ::std_msgs::MultiArrayDimension_<ContainerAllocator> , typename std::allocator_traits< ContainerAllocator >::template rebind_alloc< ::std_msgs::MultiArrayDimension_<ContainerAllocator>  > >  _dim_type;
   _dim_type dim;
 
    typedef uint32_t _data_offset_type;

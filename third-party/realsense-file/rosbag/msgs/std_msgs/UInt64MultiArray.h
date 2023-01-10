@@ -39,7 +39,7 @@ struct UInt64MultiArray_
    typedef  ::std_msgs::MultiArrayLayout_<ContainerAllocator>  _layout_type;
   _layout_type layout;
 
-   typedef std::vector<uint64_t, typename ContainerAllocator::template rebind<uint64_t>::other >  _data_type;
+   typedef std::vector<uint64_t, typename std::allocator_traits< ContainerAllocator >::template rebind_alloc< uint64_t > >  _data_type;
   _data_type data;
 
 

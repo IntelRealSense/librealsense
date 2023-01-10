@@ -48,7 +48,7 @@ struct occupancy_map_
    typedef uint16_t _tile_count_type;
   _tile_count_type tile_count;
 
-   typedef std::vector<float, typename ContainerAllocator::template rebind<float>::other >  _tiles_type;
+   typedef std::vector<float, typename std::allocator_traits< ContainerAllocator >::template rebind_alloc< float > >  _tiles_type;
   _tiles_type tiles;
 
 
