@@ -1635,7 +1635,9 @@ namespace librealsense
             v4l2_capability cap = get_dev_capabilities(_name);
 
             std::string driver_str = reinterpret_cast<char*>(cap.driver);
-            return (driver_str.substr(0, 5) == "tegra");
+            // checking if "tegra" is part of the driver string
+            size_t pos = driver_str.find("tegra");
+            return pos != std::string::npos;
         }
 
         void v4l_uvc_device::acquire_metadata(buffers_mgr& buf_mgr,fd_set &, bool compressed_format)
