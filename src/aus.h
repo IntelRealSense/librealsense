@@ -30,7 +30,6 @@ namespace librealsense
 
         long get()
         {
-            std::lock_guard<std::mutex> lock(_m);
             if (_is_running)
             {
                 return get_current_time() - _start + _total;
@@ -57,7 +56,6 @@ namespace librealsense
 
         void start()
         {
-            std::lock_guard<std::mutex> lock(_m);
             _start = std::chrono::system_clock::to_time_t(
                 std::chrono::system_clock::now());
             _is_running = true;
@@ -65,7 +63,6 @@ namespace librealsense
 
         void stop()
         {
-            std::lock_guard<std::mutex> lock(_m);
             if (!_is_running)
             {
                 return;
@@ -82,7 +79,6 @@ namespace librealsense
         long _start;
         long _total;
         bool _is_running;
-        std::mutex _m;
 
 
         time_t get_current_time() 
@@ -100,24 +96,20 @@ namespace librealsense
         
         long get()
         {
-            std::lock_guard<std::mutex> lock(_m);
             return _counter;
         }
 
         void set(long value) {
-            std::lock_guard<std::mutex> lock(_m);
             _counter = value;
         }
 
         void increment()
         {
-            std::lock_guard<std::mutex> lock(_m);
             _counter++;
         }
 
         void decrement()
         {
-            std::lock_guard<std::mutex> lock(_m);
             _counter--;
         }
 
@@ -129,7 +121,6 @@ namespace librealsense
     private:
         long _counter;
         long _total;
-        std::mutex _m;
     };
 
     class aus_data
@@ -165,6 +156,7 @@ namespace librealsense
         
         void set(std::string key, long value)
         {
+            std::lock_guard<std::mutex> lock(_m);
             if (_mp.find(key) != _mp.end())
             {
                 _mp[key]->set(value);
@@ -178,6 +170,7 @@ namespace librealsense
 
         void increment(std::string key)
         {
+            std::lock_guard<std::mutex> lock(_m);
             if (_mp.find(key) != _mp.end())
             {
                 _mp[key]->increment();
@@ -190,6 +183,7 @@ namespace librealsense
 
         void decrement(std::string key)
         {
+            std::lock_guard<std::mutex> lock(_m);
             assert_key_exists(key);
             if (_mp[key]->get()>0)
             {
@@ -199,12 +193,14 @@ namespace librealsense
 
         long get(std::string key)
         {
+            std::lock_guard<std::mutex> lock(_m);
             assert_key_exists(key);
             return _mp[key]->get();
         }
 
         void start(std::string key)
         {
+            std::lock_guard<std::mutex> lock(_m);
             if (_mp.find(key) == _mp.end())
             {
  
@@ -219,12 +215,14 @@ namespace librealsense
 
         void stop(std::string key)
         {
+            std::lock_guard<std::mutex> lock(_m);
             assert_key_exists(key);
             _mp[key]->stop();
         }
 
         std::vector<std::string> get_counters_list()
         {
+            std::lock_guard<std::mutex> lock(_m);
             std::vector<std::string> result;
             for (const auto& pair : _mp) {
                 result.push_back(pair.first);
@@ -250,6 +248,7 @@ namespace librealsense
 
         void on_device_changed(std::shared_ptr<device_interface> device)
         {
+            std::lock_guard<std::mutex> lock(_m);
             if (device->supports_info(RS2_CAMERA_INFO_ASIC_SERIAL_NUMBER) && device->supports_info(RS2_CAMERA_INFO_NAME))
             {
                 std::string serial = device->get_info(RS2_CAMERA_INFO_ASIC_SERIAL_NUMBER);
@@ -264,6 +263,7 @@ namespace librealsense
     private:
         std::unordered_map<std::string, std::shared_ptr<aus_value>>_mp;
         std::unordered_map<std::string, std::string > _mp_devices_manager;
+        std::mutex _m;
 
         long _start_time;
 
