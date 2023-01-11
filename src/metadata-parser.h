@@ -145,23 +145,30 @@ namespace librealsense
         }
 
     protected:
-        bool is_attribute_valid( const S * s ) const
+        virtual bool is_attribute_valid( const S * s ) const
         {
             // verify that the struct is of the correct type
             // Check that the header id and the struct size corresponds.
             // Note that this heurisic is not deterministic and may validate false frames! TODO - requires review
             md_type expected_type = md_type_trait< S >::type;
 
-            if( ( s->header.md_type_id != expected_type ) || ( s->header.md_size < sizeof( *s ) ) )
+            if (s->header.md_type_id != expected_type)
             {
                 std::string type
-                    = ( md_type_desc.count( s->header.md_type_id ) > 0 )
-                        ? md_type_desc.at( s->header.md_type_id )
-                        : ( rsutils::string::from()
-                            << "0x" << std::hex << static_cast< uint32_t >( s->header.md_type_id ) << std::dec );
-                LOG_DEBUG( "Metadata mismatch - actual: " << type << ", expected: 0x" << std::hex
-                                                          << (uint32_t)expected_type << std::dec << " ("
-                                                          << md_type_desc.at( expected_type ) << ")" );
+                    = (md_type_desc.count(s->header.md_type_id) > 0)
+                    ? md_type_desc.at(s->header.md_type_id)
+                    : (rsutils::string::from()
+                        << "0x" << std::hex << static_cast<uint32_t>(s->header.md_type_id) << std::dec);
+                LOG_DEBUG("Metadata type mismatch - actual: " << type << ", expected: 0x" << std::hex
+                    << (uint32_t)expected_type << std::dec << " ("
+                    << md_type_desc.at(expected_type) << ")");
+                return false;
+            }
+
+            if (s->header.md_size < sizeof(*s))
+            {
+                LOG_DEBUG("Metadata size mismatch - actual: " << (uint32_t)s->header.md_size << ", expected: " << sizeof(*s) << std::dec << " ("
+                    << md_type_desc.at(expected_type) << ")");
                 return false;
             }
 
@@ -170,14 +177,14 @@ namespace librealsense
             return attribute_enabled;
         }
 
-    private:
-        md_attribute_parser() = delete;
-        md_attribute_parser(const md_attribute_parser&) = delete;
-
         Attribute S::*      _md_attribute;  // Pointer to the attribute within struct that holds the relevant data
         Flag                _md_flag;       // Bit that indicates whether the particular attribute is active
         unsigned long long  _offset;        // Inner struct offset with regard to the most outer one
         attrib_modifyer     _modifyer;      // Post-processing on received attribute
+
+    private:
+        md_attribute_parser() = delete;
+        md_attribute_parser(const md_attribute_parser&) = delete;
     };
 
     /**\brief A helper function to create a specialized attribute parser.
@@ -323,6 +330,58 @@ namespace librealsense
         };
     };
 
+    template<class S, class Attribute, typename Flag>
+    class md_attribute_parser_with_crc : public md_attribute_parser<S, Attribute, Flag>
+    {
+    public: 
+        md_attribute_parser_with_crc(Attribute S::* attribute_name, Flag flag, unsigned long long offset, attrib_modifyer mod)
+            : md_attribute_parser<S, Attribute, Flag>(attribute_name, flag, offset, mod) {}
+
+    protected:
+        bool is_attribute_valid(const S* s) const override
+        {
+            if (!md_attribute_parser<S, Attribute, Flag>::is_attribute_valid(s))
+                return false;
+                
+            if (!is_crc_valid(s))
+            {
+                LOG_DEBUG("Metadata CRC mismatch");
+                return false;
+            }
+
+            return true;
+        }
+
+    private:
+        md_attribute_parser_with_crc() = delete;
+        md_attribute_parser_with_crc(const md_attribute_parser_with_crc&) = delete;
+
+        bool is_crc_valid(const S* s) const
+        {
+            md_type current_type = md_type_trait< S >::type;
+
+            if (current_type == md_type::META_DATA_INTEL_SAFETY_ID)
+            {
+                 auto safety_md_const = reinterpret_cast<const md_safety_info*>(((const uint8_t*)s));
+                 auto safety_md = const_cast<md_safety_info*>(safety_md_const);
+                 uint32_t safety_crc = safety_md->crc32;
+                 auto computed_crc32 = calc_crc32(reinterpret_cast<uint8_t*>(safety_md),
+                     sizeof(md_safety_info) - sizeof(safety_crc));
+                 return (safety_crc == computed_crc32);
+            }
+            LOG_ERROR("No CRC is sent within this stream's metadata");
+            return false;
+        }
+    };
+
+    /**\brief A helper function to create a specialized attribute parser.
+     *  Return it as a pointer to a base-class*/
+    template<class S, class Attribute, typename Flag>
+    std::shared_ptr<md_attribute_parser_base> make_attribute_parser_with_crc(Attribute S::* attribute, Flag flag, unsigned long long offset, attrib_modifyer mod = nullptr)
+    {
+        std::shared_ptr<md_attribute_parser<S, Attribute, Flag>> parser(new md_attribute_parser_with_crc<S, Attribute, Flag>(attribute, flag, offset, mod));
+        return parser;
+    }
 
     class actual_fps_calculator
     {

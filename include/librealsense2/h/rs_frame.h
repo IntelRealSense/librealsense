@@ -87,7 +87,6 @@ typedef enum rs2_frame_metadata_value
     RS2_FRAME_METADATA_SAFETY_SOC_FUSA_ACTION,
     RS2_FRAME_METADATA_SAFETY_FUSA_EVENT,
     RS2_FRAME_METADATA_SAFETY_FUSA_ACTION,
-    RS2_FRAME_METADATA_SAFETY_CRC32,        // TODO - check if this value should remain and should be part of api
     RS2_FRAME_METADATA_COUNT
 } rs2_frame_metadata_value;
 const char* rs2_frame_metadata_to_string(rs2_frame_metadata_value metadata);
