@@ -121,6 +121,7 @@ target_sources(${LRS_TARGET}
         "${CMAKE_CURRENT_LIST_DIR}/metadata.h"
         "${CMAKE_CURRENT_LIST_DIR}/metadata-parser.h"
         "${CMAKE_CURRENT_LIST_DIR}/option.h"
+        "${CMAKE_CURRENT_LIST_DIR}/safety-sensor.h"
         "${CMAKE_CURRENT_LIST_DIR}/sensor.h"
         "${CMAKE_CURRENT_LIST_DIR}/software-device.h"
         "${CMAKE_CURRENT_LIST_DIR}/source.h"

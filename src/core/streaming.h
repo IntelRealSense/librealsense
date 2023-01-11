@@ -6,6 +6,7 @@
 #include "../types.h"
 #include "../depth-sensor.h"
 #include "../color-sensor.h"
+#include "../safety-sensor.h"
 #include "../composite-frame.h"
 #include "../points.h"
 #include "info.h"

@@ -227,6 +227,7 @@ namespace librealsense
         static constexpr const char* ros_image_type_str() { return "image"; }
         static constexpr const char* ros_imu_type_str() { return "imu"; }
         static constexpr const char* ros_pose_type_str() { return "pose"; }
+        static constexpr const char* ros_safety_type_str() { return "safety"; }
 
         static uint32_t get_device_index(const std::string& topic)
         {
@@ -417,6 +418,8 @@ namespace librealsense
 
             case RS2_STREAM_POSE:
                 return ros_pose_type_str();
+            case RS2_STREAM_SAFETY:
+                return ros_safety_type_str();
             }
             throw io_exception( rsutils::string::from() << "Unknown stream type when resolving ros type: " << type );
         }
@@ -494,6 +497,7 @@ namespace librealsense
         static std::string data_msg_types()
         {   //Either "image" or "imu" or "pose/transform"
             return rsutils::string::from() << ros_topic::ros_image_type_str() << "|" << ros_topic::ros_imu_type_str()
+                                             << "|" << ros_topic::ros_safety_type_str()
                                              << "|" << ros_topic::ros_pose_type_str() << "/transform";
         }
 
