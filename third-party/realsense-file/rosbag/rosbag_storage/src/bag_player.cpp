@@ -1,7 +1,5 @@
 #include "rosbag/bag_player.h"
 
-#define foreach BOOST_FOREACH
-
 namespace rosbag
 {
 

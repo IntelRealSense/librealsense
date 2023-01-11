@@ -36,15 +36,15 @@ struct Empty_
 
 
 
-  typedef boost::shared_ptr< ::std_msgs::Empty_<ContainerAllocator> > Ptr;
-  typedef boost::shared_ptr< ::std_msgs::Empty_<ContainerAllocator> const> ConstPtr;
+  typedef std::shared_ptr< ::std_msgs::Empty_<ContainerAllocator> > Ptr;
+  typedef std::shared_ptr< ::std_msgs::Empty_<ContainerAllocator> const> ConstPtr;
 
 }; // struct Empty_
 
 typedef ::std_msgs::Empty_<std::allocator<void> > Empty;
 
-typedef boost::shared_ptr< ::std_msgs::Empty > EmptyPtr;
-typedef boost::shared_ptr< ::std_msgs::Empty const> EmptyConstPtr;
+typedef std::shared_ptr< ::std_msgs::Empty > EmptyPtr;
+typedef std::shared_ptr< ::std_msgs::Empty const> EmptyConstPtr;
 
 // constants requiring out of line definition
 

@@ -45,15 +45,15 @@ struct Int8MultiArray_
 
 
 
-  typedef boost::shared_ptr< ::std_msgs::Int8MultiArray_<ContainerAllocator> > Ptr;
-  typedef boost::shared_ptr< ::std_msgs::Int8MultiArray_<ContainerAllocator> const> ConstPtr;
+  typedef std::shared_ptr< ::std_msgs::Int8MultiArray_<ContainerAllocator> > Ptr;
+  typedef std::shared_ptr< ::std_msgs::Int8MultiArray_<ContainerAllocator> const> ConstPtr;
 
 }; // struct Int8MultiArray_
 
 typedef ::std_msgs::Int8MultiArray_<std::allocator<void> > Int8MultiArray;
 
-typedef boost::shared_ptr< ::std_msgs::Int8MultiArray > Int8MultiArrayPtr;
-typedef boost::shared_ptr< ::std_msgs::Int8MultiArray const> Int8MultiArrayConstPtr;
+typedef std::shared_ptr< ::std_msgs::Int8MultiArray > Int8MultiArrayPtr;
+typedef std::shared_ptr< ::std_msgs::Int8MultiArray const> Int8MultiArrayConstPtr;
 
 // constants requiring out of line definition
 

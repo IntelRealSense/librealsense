@@ -50,15 +50,15 @@ struct Temperature_
 
 
 
-  typedef boost::shared_ptr< ::sensor_msgs::Temperature_<ContainerAllocator> > Ptr;
-  typedef boost::shared_ptr< ::sensor_msgs::Temperature_<ContainerAllocator> const> ConstPtr;
+  typedef std::shared_ptr< ::sensor_msgs::Temperature_<ContainerAllocator> > Ptr;
+  typedef std::shared_ptr< ::sensor_msgs::Temperature_<ContainerAllocator> const> ConstPtr;
 
 }; // struct Temperature_
 
 typedef ::sensor_msgs::Temperature_<std::allocator<void> > Temperature;
 
-typedef boost::shared_ptr< ::sensor_msgs::Temperature > TemperaturePtr;
-typedef boost::shared_ptr< ::sensor_msgs::Temperature const> TemperatureConstPtr;
+typedef std::shared_ptr< ::sensor_msgs::Temperature > TemperaturePtr;
+typedef std::shared_ptr< ::sensor_msgs::Temperature const> TemperatureConstPtr;
 
 // constants requiring out of line definition
 

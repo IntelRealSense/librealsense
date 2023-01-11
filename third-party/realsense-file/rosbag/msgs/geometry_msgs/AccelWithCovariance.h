@@ -9,6 +9,7 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <array>
 
 #include <ros/types.h>
 #include <ros/serialization.h>
@@ -41,7 +42,7 @@ struct AccelWithCovariance_
    typedef  ::geometry_msgs::Accel_<ContainerAllocator>  _accel_type;
   _accel_type accel;
 
-   typedef boost::array<double, 36>  _covariance_type;
+   typedef std::array<double, 36>  _covariance_type;
   _covariance_type covariance;
 
 

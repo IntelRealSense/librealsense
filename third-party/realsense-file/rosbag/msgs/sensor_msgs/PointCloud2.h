@@ -81,15 +81,15 @@ struct PointCloud2_
 
 
 
-  typedef boost::shared_ptr< ::sensor_msgs::PointCloud2_<ContainerAllocator> > Ptr;
-  typedef boost::shared_ptr< ::sensor_msgs::PointCloud2_<ContainerAllocator> const> ConstPtr;
+  typedef std::shared_ptr< ::sensor_msgs::PointCloud2_<ContainerAllocator> > Ptr;
+  typedef std::shared_ptr< ::sensor_msgs::PointCloud2_<ContainerAllocator> const> ConstPtr;
 
 }; // struct PointCloud2_
 
 typedef ::sensor_msgs::PointCloud2_<std::allocator<void> > PointCloud2;
 
-typedef boost::shared_ptr< ::sensor_msgs::PointCloud2 > PointCloud2Ptr;
-typedef boost::shared_ptr< ::sensor_msgs::PointCloud2 const> PointCloud2ConstPtr;
+typedef std::shared_ptr< ::sensor_msgs::PointCloud2 > PointCloud2Ptr;
+typedef std::shared_ptr< ::sensor_msgs::PointCloud2 const> PointCloud2ConstPtr;
 
 // constants requiring out of line definition
 

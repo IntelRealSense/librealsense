@@ -126,15 +126,15 @@ struct BatteryState_
      enum { POWER_SUPPLY_TECHNOLOGY_LIMN = 6u };
  
 
-  typedef boost::shared_ptr< ::sensor_msgs::BatteryState_<ContainerAllocator> > Ptr;
-  typedef boost::shared_ptr< ::sensor_msgs::BatteryState_<ContainerAllocator> const> ConstPtr;
+  typedef std::shared_ptr< ::sensor_msgs::BatteryState_<ContainerAllocator> > Ptr;
+  typedef std::shared_ptr< ::sensor_msgs::BatteryState_<ContainerAllocator> const> ConstPtr;
 
 }; // struct BatteryState_
 
 typedef ::sensor_msgs::BatteryState_<std::allocator<void> > BatteryState;
 
-typedef boost::shared_ptr< ::sensor_msgs::BatteryState > BatteryStatePtr;
-typedef boost::shared_ptr< ::sensor_msgs::BatteryState const> BatteryStateConstPtr;
+typedef std::shared_ptr< ::sensor_msgs::BatteryState > BatteryStatePtr;
+typedef std::shared_ptr< ::sensor_msgs::BatteryState const> BatteryStateConstPtr;
 
 // constants requiring out of line definition
 

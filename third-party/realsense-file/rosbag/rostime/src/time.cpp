@@ -135,9 +135,9 @@ namespace rs2rosinternal
         // why did they choose 1601 as the time zero, instead of 1970?
         // there were no outstanding hard rock bands in 1601.
 #ifdef _MSC_VER
-    	start_li.QuadPart -= 116444736000000000Ui64;
+        start_li.QuadPart -= 116444736000000000Ui64;
 #else
-    	start_li.QuadPart -= 116444736000000000ULL;
+        start_li.QuadPart -= 116444736000000000ULL;
 #endif
         start_sec = (uint32_t)(start_li.QuadPart / 10000000); // 100-ns units. odd.
         start_nsec = (start_li.LowPart % 10000000) * 100;
@@ -305,24 +305,6 @@ namespace rs2rosinternal
 
     return true;
   }
-
- /* Time Time::fromBoost(const boost::posix_time::ptime& t)
-  {
-   boost::posix_time::time_duration diff = t - boost::posix_time::from_time_t(0);
-   return Time::fromBoost(diff);
-  }
-
-  Time Time::fromBoost(const boost::posix_time::time_duration& d)
-  {
-    Time t;
-    t.sec = d.total_seconds();
-#if defined(BOOST_DATE_TIME_HAS_NANOSECONDS)
-    t.nsec = d.fractional_seconds();
-#else
-    t.nsec = static_cast<uint32_t>(d.fractional_seconds()*1000);
-#endif
-    return t;
-  }*/
 
   std::ostream& operator<<(std::ostream& os, const Time &rhs)
   {

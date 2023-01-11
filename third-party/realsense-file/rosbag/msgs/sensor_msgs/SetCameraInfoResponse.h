@@ -44,15 +44,15 @@ struct SetCameraInfoResponse_
 
 
 
-  typedef boost::shared_ptr< ::sensor_msgs::SetCameraInfoResponse_<ContainerAllocator> > Ptr;
-  typedef boost::shared_ptr< ::sensor_msgs::SetCameraInfoResponse_<ContainerAllocator> const> ConstPtr;
+  typedef std::shared_ptr< ::sensor_msgs::SetCameraInfoResponse_<ContainerAllocator> > Ptr;
+  typedef std::shared_ptr< ::sensor_msgs::SetCameraInfoResponse_<ContainerAllocator> const> ConstPtr;
 
 }; // struct SetCameraInfoResponse_
 
 typedef ::sensor_msgs::SetCameraInfoResponse_<std::allocator<void> > SetCameraInfoResponse;
 
-typedef boost::shared_ptr< ::sensor_msgs::SetCameraInfoResponse > SetCameraInfoResponsePtr;
-typedef boost::shared_ptr< ::sensor_msgs::SetCameraInfoResponse const> SetCameraInfoResponseConstPtr;
+typedef std::shared_ptr< ::sensor_msgs::SetCameraInfoResponse > SetCameraInfoResponsePtr;
+typedef std::shared_ptr< ::sensor_msgs::SetCameraInfoResponse const> SetCameraInfoResponseConstPtr;
 
 // constants requiring out of line definition
 

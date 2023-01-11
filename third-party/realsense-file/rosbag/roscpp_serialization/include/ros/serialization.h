@@ -89,7 +89,6 @@ namespace rs2rosinternal
 namespace serialization
 {
 namespace mt = message_traits;
-//namespace mpl = boost::mpl;
 
 class ROSCPP_SERIALIZATION_DECL StreamOverrunException : public rs2rosinternal::Exception
 {

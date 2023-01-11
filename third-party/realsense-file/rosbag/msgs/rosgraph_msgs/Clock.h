@@ -39,15 +39,15 @@ struct Clock_
 
 
 
-  typedef boost::shared_ptr< ::rosgraph_msgs::Clock_<ContainerAllocator> > Ptr;
-  typedef boost::shared_ptr< ::rosgraph_msgs::Clock_<ContainerAllocator> const> ConstPtr;
+  typedef std::shared_ptr< ::rosgraph_msgs::Clock_<ContainerAllocator> > Ptr;
+  typedef std::shared_ptr< ::rosgraph_msgs::Clock_<ContainerAllocator> const> ConstPtr;
 
 }; // struct Clock_
 
 typedef ::rosgraph_msgs::Clock_<std::allocator<void> > Clock;
 
-typedef boost::shared_ptr< ::rosgraph_msgs::Clock > ClockPtr;
-typedef boost::shared_ptr< ::rosgraph_msgs::Clock const> ClockConstPtr;
+typedef std::shared_ptr< ::rosgraph_msgs::Clock > ClockPtr;
+typedef std::shared_ptr< ::rosgraph_msgs::Clock const> ClockConstPtr;
 
 // constants requiring out of line definition
 

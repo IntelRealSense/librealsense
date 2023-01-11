@@ -133,13 +133,13 @@ public:
     return size;
   }
 
-  typedef boost::shared_ptr< ::roslib::Header_<ContainerAllocator> > Ptr;
-  typedef boost::shared_ptr< ::roslib::Header_<ContainerAllocator>  const> ConstPtr;
+  typedef std::shared_ptr< ::roslib::Header_<ContainerAllocator> > Ptr;
+  typedef std::shared_ptr< ::roslib::Header_<ContainerAllocator>  const> ConstPtr;
 }; // struct Header
 typedef  ::roslib::Header_<std::allocator<void> > Header;
 
-typedef boost::shared_ptr< ::roslib::Header> HeaderPtr;
-typedef boost::shared_ptr< ::roslib::Header const> HeaderConstPtr;
+typedef std::shared_ptr< ::roslib::Header> HeaderPtr;
+typedef std::shared_ptr< ::roslib::Header const> HeaderConstPtr;
 
 
 template<typename ContainerAllocator>

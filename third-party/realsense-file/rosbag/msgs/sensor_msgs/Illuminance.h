@@ -50,15 +50,15 @@ struct Illuminance_
 
 
 
-  typedef boost::shared_ptr< ::sensor_msgs::Illuminance_<ContainerAllocator> > Ptr;
-  typedef boost::shared_ptr< ::sensor_msgs::Illuminance_<ContainerAllocator> const> ConstPtr;
+  typedef std::shared_ptr< ::sensor_msgs::Illuminance_<ContainerAllocator> > Ptr;
+  typedef std::shared_ptr< ::sensor_msgs::Illuminance_<ContainerAllocator> const> ConstPtr;
 
 }; // struct Illuminance_
 
 typedef ::sensor_msgs::Illuminance_<std::allocator<void> > Illuminance;
 
-typedef boost::shared_ptr< ::sensor_msgs::Illuminance > IlluminancePtr;
-typedef boost::shared_ptr< ::sensor_msgs::Illuminance const> IlluminanceConstPtr;
+typedef std::shared_ptr< ::sensor_msgs::Illuminance > IlluminancePtr;
+typedef std::shared_ptr< ::sensor_msgs::Illuminance const> IlluminanceConstPtr;
 
 // constants requiring out of line definition
 

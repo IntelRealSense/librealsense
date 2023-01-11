@@ -34,7 +34,6 @@
 #include <set>
 #include <list>
 #include <memory>
-//#include <boost/shared_ptr.hpp>
 
 
 namespace rs2rosinternal {

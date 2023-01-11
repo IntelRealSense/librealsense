@@ -50,15 +50,15 @@ struct Joy_
 
 
 
-  typedef boost::shared_ptr< ::sensor_msgs::Joy_<ContainerAllocator> > Ptr;
-  typedef boost::shared_ptr< ::sensor_msgs::Joy_<ContainerAllocator> const> ConstPtr;
+  typedef std::shared_ptr< ::sensor_msgs::Joy_<ContainerAllocator> > Ptr;
+  typedef std::shared_ptr< ::sensor_msgs::Joy_<ContainerAllocator> const> ConstPtr;
 
 }; // struct Joy_
 
 typedef ::sensor_msgs::Joy_<std::allocator<void> > Joy;
 
-typedef boost::shared_ptr< ::sensor_msgs::Joy > JoyPtr;
-typedef boost::shared_ptr< ::sensor_msgs::Joy const> JoyConstPtr;
+typedef std::shared_ptr< ::sensor_msgs::Joy > JoyPtr;
+typedef std::shared_ptr< ::sensor_msgs::Joy const> JoyConstPtr;
 
 // constants requiring out of line definition
 

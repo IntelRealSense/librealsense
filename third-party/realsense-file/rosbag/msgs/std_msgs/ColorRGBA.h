@@ -54,15 +54,15 @@ struct ColorRGBA_
 
 
 
-  typedef boost::shared_ptr< ::std_msgs::ColorRGBA_<ContainerAllocator> > Ptr;
-  typedef boost::shared_ptr< ::std_msgs::ColorRGBA_<ContainerAllocator> const> ConstPtr;
+  typedef std::shared_ptr< ::std_msgs::ColorRGBA_<ContainerAllocator> > Ptr;
+  typedef std::shared_ptr< ::std_msgs::ColorRGBA_<ContainerAllocator> const> ConstPtr;
 
 }; // struct ColorRGBA_
 
 typedef ::std_msgs::ColorRGBA_<std::allocator<void> > ColorRGBA;
 
-typedef boost::shared_ptr< ::std_msgs::ColorRGBA > ColorRGBAPtr;
-typedef boost::shared_ptr< ::std_msgs::ColorRGBA const> ColorRGBAConstPtr;
+typedef std::shared_ptr< ::std_msgs::ColorRGBA > ColorRGBAPtr;
+typedef std::shared_ptr< ::std_msgs::ColorRGBA const> ColorRGBAConstPtr;
 
 // constants requiring out of line definition
 

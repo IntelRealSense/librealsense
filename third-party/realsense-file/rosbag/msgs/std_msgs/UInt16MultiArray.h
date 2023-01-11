@@ -45,15 +45,15 @@ struct UInt16MultiArray_
 
 
 
-  typedef boost::shared_ptr< ::std_msgs::UInt16MultiArray_<ContainerAllocator> > Ptr;
-  typedef boost::shared_ptr< ::std_msgs::UInt16MultiArray_<ContainerAllocator> const> ConstPtr;
+  typedef std::shared_ptr< ::std_msgs::UInt16MultiArray_<ContainerAllocator> > Ptr;
+  typedef std::shared_ptr< ::std_msgs::UInt16MultiArray_<ContainerAllocator> const> ConstPtr;
 
 }; // struct UInt16MultiArray_
 
 typedef ::std_msgs::UInt16MultiArray_<std::allocator<void> > UInt16MultiArray;
 
-typedef boost::shared_ptr< ::std_msgs::UInt16MultiArray > UInt16MultiArrayPtr;
-typedef boost::shared_ptr< ::std_msgs::UInt16MultiArray const> UInt16MultiArrayConstPtr;
+typedef std::shared_ptr< ::std_msgs::UInt16MultiArray > UInt16MultiArrayPtr;
+typedef std::shared_ptr< ::std_msgs::UInt16MultiArray const> UInt16MultiArrayConstPtr;
 
 // constants requiring out of line definition
 

@@ -62,15 +62,15 @@ struct PointField_
      enum { FLOAT64 = 8u };
  
 
-  typedef boost::shared_ptr< ::sensor_msgs::PointField_<ContainerAllocator> > Ptr;
-  typedef boost::shared_ptr< ::sensor_msgs::PointField_<ContainerAllocator> const> ConstPtr;
+  typedef std::shared_ptr< ::sensor_msgs::PointField_<ContainerAllocator> > Ptr;
+  typedef std::shared_ptr< ::sensor_msgs::PointField_<ContainerAllocator> const> ConstPtr;
 
 }; // struct PointField_
 
 typedef ::sensor_msgs::PointField_<std::allocator<void> > PointField;
 
-typedef boost::shared_ptr< ::sensor_msgs::PointField > PointFieldPtr;
-typedef boost::shared_ptr< ::sensor_msgs::PointField const> PointFieldConstPtr;
+typedef std::shared_ptr< ::sensor_msgs::PointField > PointFieldPtr;
+typedef std::shared_ptr< ::sensor_msgs::PointField const> PointFieldConstPtr;
 
 // constants requiring out of line definition
 

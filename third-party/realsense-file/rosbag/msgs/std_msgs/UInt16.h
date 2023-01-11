@@ -39,15 +39,15 @@ struct UInt16_
 
 
 
-  typedef boost::shared_ptr< ::std_msgs::UInt16_<ContainerAllocator> > Ptr;
-  typedef boost::shared_ptr< ::std_msgs::UInt16_<ContainerAllocator> const> ConstPtr;
+  typedef std::shared_ptr< ::std_msgs::UInt16_<ContainerAllocator> > Ptr;
+  typedef std::shared_ptr< ::std_msgs::UInt16_<ContainerAllocator> const> ConstPtr;
 
 }; // struct UInt16_
 
 typedef ::std_msgs::UInt16_<std::allocator<void> > UInt16;
 
-typedef boost::shared_ptr< ::std_msgs::UInt16 > UInt16Ptr;
-typedef boost::shared_ptr< ::std_msgs::UInt16 const> UInt16ConstPtr;
+typedef std::shared_ptr< ::std_msgs::UInt16 > UInt16Ptr;
+typedef std::shared_ptr< ::std_msgs::UInt16 const> UInt16ConstPtr;
 
 // constants requiring out of line definition
 

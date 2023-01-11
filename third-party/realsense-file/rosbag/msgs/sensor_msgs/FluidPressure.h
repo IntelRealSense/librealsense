@@ -50,15 +50,15 @@ struct FluidPressure_
 
 
 
-  typedef boost::shared_ptr< ::sensor_msgs::FluidPressure_<ContainerAllocator> > Ptr;
-  typedef boost::shared_ptr< ::sensor_msgs::FluidPressure_<ContainerAllocator> const> ConstPtr;
+  typedef std::shared_ptr< ::sensor_msgs::FluidPressure_<ContainerAllocator> > Ptr;
+  typedef std::shared_ptr< ::sensor_msgs::FluidPressure_<ContainerAllocator> const> ConstPtr;
 
 }; // struct FluidPressure_
 
 typedef ::sensor_msgs::FluidPressure_<std::allocator<void> > FluidPressure;
 
-typedef boost::shared_ptr< ::sensor_msgs::FluidPressure > FluidPressurePtr;
-typedef boost::shared_ptr< ::sensor_msgs::FluidPressure const> FluidPressureConstPtr;
+typedef std::shared_ptr< ::sensor_msgs::FluidPressure > FluidPressurePtr;
+typedef std::shared_ptr< ::sensor_msgs::FluidPressure const> FluidPressureConstPtr;
 
 // constants requiring out of line definition
 

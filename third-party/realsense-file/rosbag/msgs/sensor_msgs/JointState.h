@@ -60,15 +60,15 @@ struct JointState_
 
 
 
-  typedef boost::shared_ptr< ::sensor_msgs::JointState_<ContainerAllocator> > Ptr;
-  typedef boost::shared_ptr< ::sensor_msgs::JointState_<ContainerAllocator> const> ConstPtr;
+  typedef std::shared_ptr< ::sensor_msgs::JointState_<ContainerAllocator> > Ptr;
+  typedef std::shared_ptr< ::sensor_msgs::JointState_<ContainerAllocator> const> ConstPtr;
 
 }; // struct JointState_
 
 typedef ::sensor_msgs::JointState_<std::allocator<void> > JointState;
 
-typedef boost::shared_ptr< ::sensor_msgs::JointState > JointStatePtr;
-typedef boost::shared_ptr< ::sensor_msgs::JointState const> JointStateConstPtr;
+typedef std::shared_ptr< ::sensor_msgs::JointState > JointStatePtr;
+typedef std::shared_ptr< ::sensor_msgs::JointState const> JointStateConstPtr;
 
 // constants requiring out of line definition
 

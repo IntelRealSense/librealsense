@@ -44,15 +44,15 @@ struct ChannelFloat32_
 
 
 
-  typedef boost::shared_ptr< ::sensor_msgs::ChannelFloat32_<ContainerAllocator> > Ptr;
-  typedef boost::shared_ptr< ::sensor_msgs::ChannelFloat32_<ContainerAllocator> const> ConstPtr;
+  typedef std::shared_ptr< ::sensor_msgs::ChannelFloat32_<ContainerAllocator> > Ptr;
+  typedef std::shared_ptr< ::sensor_msgs::ChannelFloat32_<ContainerAllocator> const> ConstPtr;
 
 }; // struct ChannelFloat32_
 
 typedef ::sensor_msgs::ChannelFloat32_<std::allocator<void> > ChannelFloat32;
 
-typedef boost::shared_ptr< ::sensor_msgs::ChannelFloat32 > ChannelFloat32Ptr;
-typedef boost::shared_ptr< ::sensor_msgs::ChannelFloat32 const> ChannelFloat32ConstPtr;
+typedef std::shared_ptr< ::sensor_msgs::ChannelFloat32 > ChannelFloat32Ptr;
+typedef std::shared_ptr< ::sensor_msgs::ChannelFloat32 const> ChannelFloat32ConstPtr;
 
 // constants requiring out of line definition
 
