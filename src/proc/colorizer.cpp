@@ -136,11 +136,7 @@ namespace librealsense
 
     colorizer::colorizer()
         : colorizer("Depth Visualization")
-    {
-        std::string device_name = this->get_info(RS2_CAMERA_INFO_NAME);
-        librealsense::aus_system_timer_start("COLORIZER", device_name);
-        librealsense::aus_system_counter_increment("COLORIZER_FILTER_INIT", device_name);
-    }
+    {}
 
     colorizer::colorizer(const char* name)
         : stream_filter_processing_block(name),
