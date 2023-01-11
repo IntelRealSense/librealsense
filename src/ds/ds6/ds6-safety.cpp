@@ -47,6 +47,9 @@ namespace librealsense
         using namespace ds;
         auto&& backend = ctx->get_backend();
 
+        register_stream_to_extrinsic_group(*_safety_stream, 0);
+        environment::get_instance().get_extrinsics_graph().register_same_extrinsics(*_depth_stream, *_safety_stream);
+
         std::unique_ptr<frame_timestamp_reader> ds_timestamp_reader_backup(new ds_timestamp_reader(backend.create_time_service()));
         std::unique_ptr<frame_timestamp_reader> ds_timestamp_reader_metadata(new ds_timestamp_reader_from_metadata(std::move(ds_timestamp_reader_backup)));
 
@@ -201,9 +204,28 @@ namespace librealsense
             // Register stream types
             if (p->get_stream_type() == RS2_STREAM_SAFETY)
                 assign_stream(_owner->_safety_stream, p);
+
+            auto&& video = dynamic_cast<video_stream_profile_interface*>(p.get());
+            const auto&& profile = to_profile(p.get());
+
+            std::weak_ptr<ds6_safety_sensor> wp =
+                std::dynamic_pointer_cast<ds6_safety_sensor>(this->shared_from_this());
+            video->set_intrinsics([profile, wp]()
+                {
+                    auto sp = wp.lock();
+                    if (sp)
+                        return sp->get_intrinsics(profile);
+                    else
+                        return rs2_intrinsics{};
+                });
         }
 
         return results;
+    }
+
+    rs2_intrinsics ds6_safety_sensor::get_intrinsics(const stream_profile& profile) const
+    {
+        return rs2_intrinsics();
     }
 
     void ds6_safety_sensor::set_safety_preset(int index, const rs2_safety_preset& sp) const

@@ -4,6 +4,7 @@
 #pragma once
 
 #include "ds6-device.h"
+#include "core/video.h"
 
 namespace librealsense
 {
@@ -32,6 +33,7 @@ namespace librealsense
     };
 
     class ds6_safety_sensor : public synthetic_sensor,
+                              public video_sensor_interface,
                               public safety_sensor
     {
     public:
@@ -43,8 +45,7 @@ namespace librealsense
             _owner(owner)
         {}
 
-        // TODO REMI - check if needed
-        // rs2_intrinsics get_intrinsics(const stream_profile& profile) const override;
+        rs2_intrinsics get_intrinsics(const stream_profile& profile) const override;
         stream_profiles init_stream_profiles() override;
 
         void set_safety_preset(int index, const rs2_safety_preset& sp) const override;
