@@ -357,13 +357,19 @@ namespace librealsense
 
         bool is_crc_valid(const S* s) const
         {
-            auto safety_md_const = reinterpret_cast<const md_safety_info*>(((const uint8_t*)s));
-            auto safety_md = const_cast<md_safety_info*>(safety_md_const);
-            uint32_t safety_crc = safety_md->crc32;
-            auto computed_crc32 = calc_crc32(
-                reinterpret_cast<uint8_t*>(safety_md),
-                sizeof(md_safety_info) - sizeof(md_safety_info::crc32));
-            return (safety_crc == computed_crc32);
+            md_type current_type = md_type_trait< S >::type;
+
+            if (current_type == md_type::META_DATA_INTEL_SAFETY_ID)
+            {
+                 auto safety_md_const = reinterpret_cast<const md_safety_info*>(((const uint8_t*)s));
+                 auto safety_md = const_cast<md_safety_info*>(safety_md_const);
+                 uint32_t safety_crc = safety_md->crc32;
+                 auto computed_crc32 = calc_crc32(reinterpret_cast<uint8_t*>(safety_md),
+                     sizeof(md_safety_info) - sizeof(safety_crc));
+                 return (safety_crc == computed_crc32);
+            }
+            LOG_ERROR("No CRC is sent within this stream's metadata");
+            return false;
         }
     };
 
