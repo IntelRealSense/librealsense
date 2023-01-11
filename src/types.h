@@ -221,6 +221,9 @@ namespace librealsense
     void aus_system_counter_increment(std::string suffix, std::string device_name);
     void aus_system_timer_start(std::string suffix, std::string device_name);
     void aus_system_timer_stop(std::string suffix, std::string device_name);
+    class stream_profile_interface;
+    void aus_start_active_streams_timer(std::string device_name, std::vector<std::shared_ptr<stream_profile_interface>> active_streams);
+    void aus_stop_active_streams_timer(std::string device_name, std::vector<std::shared_ptr<stream_profile_interface>> active_streams);
 
     // Enhancement for debug mode that incurs performance penalty with STL
     // std::clamp to be introduced with c++17

@@ -6,6 +6,7 @@
 #include <fstream>
 
 #ifdef BUILD_AUS
+class stream_profile_interface;
 
 namespace librealsense
 {
@@ -98,6 +99,22 @@ void librealsense::aus_system_timer_stop(std::string suffix, std::string device_
     librealsense::aus_stop(timer_name);
 }
 
+void librealsense::aus_start_active_streams_timer(std::string device_name, std::vector<std::shared_ptr<stream_profile_interface>> active_streams)
+{
+    for (auto profile : active_streams)
+    {
+        librealsense::aus_system_timer_start(rs2_stream_to_string(profile->get_stream_type()), device_name);
+    }
+}
+
+void librealsense::aus_stop_active_streams_timer(std::string device_name, std::vector<std::shared_ptr<stream_profile_interface>> active_streams)
+{
+    for (auto profile : active_streams)
+    {
+        librealsense::aus_system_timer_stop(rs2_stream_to_string(profile->get_stream_type()), device_name);
+    }
+}
+
 #else // BUILD_AUS
 
 NOT_SUPPORTED(void librealsense::aus_set(std::string counter, int value));
@@ -117,6 +134,17 @@ void librealsense::aus_on_device_changed(std::shared_ptr<device_interface> devic
 {
     return;
 }
+
+void librealsense::aus_start_active_streams_timer(std::string device_name, librealsense::stream_profiles active_streams)
+{
+    return;
+}
+
+void librealsense::aus_stop_active_streams_timer(std::string device_name, librealsense::stream_profiles active_streams)
+{
+    return;
+}
+
 
 #endif // BUILD_AUS
 

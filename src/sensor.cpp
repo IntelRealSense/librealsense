@@ -628,14 +628,9 @@ void log_callback_end( uint32_t fps,
         raise_on_before_streaming_changes(true); //Required to be just before actual start allow recording to work
         _source.set_callback(callback);
         _is_streaming = true;
-   
-        std::string device_name = get_device().get_info(RS2_CAMERA_INFO_NAME);
-        auto active_streams = get_active_streams();
-        for (auto profile : active_streams)
-        {
-            librealsense::aus_system_timer_start(rs2_stream_to_string(profile->get_stream_type()), device_name);
-        }
   
+        librealsense::aus_start_active_streams_timer(get_device().get_info(RS2_CAMERA_INFO_NAME), get_active_streams());
+
         _device->start_callbacks();
     }
 
@@ -647,12 +642,7 @@ void log_callback_end( uint32_t fps,
 
         _is_streaming = false;
 
-        std::string device_name = get_device().get_info(RS2_CAMERA_INFO_NAME);
-        auto active_streams = get_active_streams();
-        for (auto profile : active_streams)
-        {
-            librealsense::aus_system_timer_stop(rs2_stream_to_string(profile->get_stream_type()), device_name);
-        }
+        librealsense::aus_stop_active_streams_timer(get_device().get_info(RS2_CAMERA_INFO_NAME), get_active_streams());
 
         _device->stop_callbacks();
         _timestamp_reader->reset();
@@ -1053,12 +1043,7 @@ void log_callback_end( uint32_t fps,
         });
         _is_streaming = true;
 
-        std::string device_name = get_device().get_info(RS2_CAMERA_INFO_NAME);
-        auto active_streams = get_active_streams();
-        for (auto profile : active_streams)
-        {
-            librealsense:aus_system_timer_start(rs2_stream_to_string(profile->get_stream_type()), device_name);
-        }
+        librealsense::aus_start_active_streams_timer(get_device().get_info(RS2_CAMERA_INFO_NAME), get_active_streams());
 
     }
 
@@ -1072,12 +1057,7 @@ void log_callback_end( uint32_t fps,
         _hid_device->stop_capture();
         _is_streaming = false;
 
-        std::string device_name = get_device().get_info(RS2_CAMERA_INFO_NAME);
-        auto active_streams = get_active_streams();
-        for (auto profile : active_streams)
-        {
-            librealsense::aus_system_timer_stop(rs2_stream_to_string(profile->get_stream_type()), device_name);
-        }
+        librealsense::aus_stop_active_streams_timer(get_device().get_info(RS2_CAMERA_INFO_NAME), get_active_streams());
 
         _source.flush();
         _source.reset();
