@@ -1303,6 +1303,16 @@ namespace rs2
         return res;
     }
 
+    void force_minimum_size_for_display(rs2::stream_model& model)
+    {
+        // patch for safety sensor
+        if (model.profile.stream_type() == RS2_STREAM_SAFETY)
+        {
+            model.size.x = 7.f;
+            model.size.y = 10.f;
+        }
+    }
+
     std::map<int, rect> viewer_model::calc_layout(const rect& r)
     {
         const int top_bar_height = 32;
@@ -1313,6 +1323,8 @@ namespace rs2
         {
             if (stream.second.is_stream_visible())
             {
+                force_minimum_size_for_display(stream.second);
+                
                 active_streams.insert(&stream.second);
                 stream_index[&stream.second] = stream.first;
             }
