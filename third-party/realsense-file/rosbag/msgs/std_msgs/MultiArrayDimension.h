@@ -49,15 +49,15 @@ struct MultiArrayDimension_
 
 
 
-  typedef boost::shared_ptr< ::std_msgs::MultiArrayDimension_<ContainerAllocator> > Ptr;
-  typedef boost::shared_ptr< ::std_msgs::MultiArrayDimension_<ContainerAllocator> const> ConstPtr;
+  typedef std::shared_ptr< ::std_msgs::MultiArrayDimension_<ContainerAllocator> > Ptr;
+  typedef std::shared_ptr< ::std_msgs::MultiArrayDimension_<ContainerAllocator> const> ConstPtr;
 
 }; // struct MultiArrayDimension_
 
 typedef ::std_msgs::MultiArrayDimension_<std::allocator<void> > MultiArrayDimension;
 
-typedef boost::shared_ptr< ::std_msgs::MultiArrayDimension > MultiArrayDimensionPtr;
-typedef boost::shared_ptr< ::std_msgs::MultiArrayDimension const> MultiArrayDimensionConstPtr;
+typedef std::shared_ptr< ::std_msgs::MultiArrayDimension > MultiArrayDimensionPtr;
+typedef std::shared_ptr< ::std_msgs::MultiArrayDimension const> MultiArrayDimensionConstPtr;
 
 // constants requiring out of line definition
 
@@ -89,32 +89,32 @@ namespace message_traits
 
 template <class ContainerAllocator>
 struct IsFixedSize< ::std_msgs::MultiArrayDimension_<ContainerAllocator> >
-  : FalseType
+  : std::false_type
   { };
 
 template <class ContainerAllocator>
 struct IsFixedSize< ::std_msgs::MultiArrayDimension_<ContainerAllocator> const>
-  : FalseType
+  : std::false_type
   { };
 
 template <class ContainerAllocator>
 struct IsMessage< ::std_msgs::MultiArrayDimension_<ContainerAllocator> >
-  : TrueType
+  : std::true_type
   { };
 
 template <class ContainerAllocator>
 struct IsMessage< ::std_msgs::MultiArrayDimension_<ContainerAllocator> const>
-  : TrueType
+  : std::true_type
   { };
 
 template <class ContainerAllocator>
 struct HasHeader< ::std_msgs::MultiArrayDimension_<ContainerAllocator> >
-  : FalseType
+  : std::false_type
   { };
 
 template <class ContainerAllocator>
 struct HasHeader< ::std_msgs::MultiArrayDimension_<ContainerAllocator> const>
-  : FalseType
+  : std::false_type
   { };
 
 

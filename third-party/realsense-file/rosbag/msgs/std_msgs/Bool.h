@@ -39,15 +39,15 @@ struct Bool_
 
 
 
-  typedef boost::shared_ptr< ::std_msgs::Bool_<ContainerAllocator> > Ptr;
-  typedef boost::shared_ptr< ::std_msgs::Bool_<ContainerAllocator> const> ConstPtr;
+  typedef std::shared_ptr< ::std_msgs::Bool_<ContainerAllocator> > Ptr;
+  typedef std::shared_ptr< ::std_msgs::Bool_<ContainerAllocator> const> ConstPtr;
 
 }; // struct Bool_
 
 typedef ::std_msgs::Bool_<std::allocator<void> > Bool;
 
-typedef boost::shared_ptr< ::std_msgs::Bool > BoolPtr;
-typedef boost::shared_ptr< ::std_msgs::Bool const> BoolConstPtr;
+typedef std::shared_ptr< ::std_msgs::Bool > BoolPtr;
+typedef std::shared_ptr< ::std_msgs::Bool const> BoolConstPtr;
 
 // constants requiring out of line definition
 
@@ -79,32 +79,32 @@ namespace message_traits
 
 template <class ContainerAllocator>
 struct IsFixedSize< ::std_msgs::Bool_<ContainerAllocator> >
-  : TrueType
+  : std::true_type
   { };
 
 template <class ContainerAllocator>
 struct IsFixedSize< ::std_msgs::Bool_<ContainerAllocator> const>
-  : TrueType
+  : std::true_type
   { };
 
 template <class ContainerAllocator>
 struct IsMessage< ::std_msgs::Bool_<ContainerAllocator> >
-  : TrueType
+  : std::true_type
   { };
 
 template <class ContainerAllocator>
 struct IsMessage< ::std_msgs::Bool_<ContainerAllocator> const>
-  : TrueType
+  : std::true_type
   { };
 
 template <class ContainerAllocator>
 struct HasHeader< ::std_msgs::Bool_<ContainerAllocator> >
-  : FalseType
+  : std::false_type
   { };
 
 template <class ContainerAllocator>
 struct HasHeader< ::std_msgs::Bool_<ContainerAllocator> const>
-  : FalseType
+  : std::false_type
   { };
 
 

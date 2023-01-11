@@ -27,7 +27,7 @@ include_directories(
 
 #Disabled due to CMake 3.5.1 compatibility
 #target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_11)
-set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 11)
+set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 14)
 
 add_dependencies(${PROJECT_NAME}
     libjpeg-turbo

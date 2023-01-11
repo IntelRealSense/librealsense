@@ -87,15 +87,15 @@ struct MultiEchoLaserScan_
 
 
 
-  typedef boost::shared_ptr< ::sensor_msgs::MultiEchoLaserScan_<ContainerAllocator> > Ptr;
-  typedef boost::shared_ptr< ::sensor_msgs::MultiEchoLaserScan_<ContainerAllocator> const> ConstPtr;
+  typedef std::shared_ptr< ::sensor_msgs::MultiEchoLaserScan_<ContainerAllocator> > Ptr;
+  typedef std::shared_ptr< ::sensor_msgs::MultiEchoLaserScan_<ContainerAllocator> const> ConstPtr;
 
 }; // struct MultiEchoLaserScan_
 
 typedef ::sensor_msgs::MultiEchoLaserScan_<std::allocator<void> > MultiEchoLaserScan;
 
-typedef boost::shared_ptr< ::sensor_msgs::MultiEchoLaserScan > MultiEchoLaserScanPtr;
-typedef boost::shared_ptr< ::sensor_msgs::MultiEchoLaserScan const> MultiEchoLaserScanConstPtr;
+typedef std::shared_ptr< ::sensor_msgs::MultiEchoLaserScan > MultiEchoLaserScanPtr;
+typedef std::shared_ptr< ::sensor_msgs::MultiEchoLaserScan const> MultiEchoLaserScanConstPtr;
 
 // constants requiring out of line definition
 
@@ -127,32 +127,32 @@ namespace message_traits
 
 template <class ContainerAllocator>
 struct IsFixedSize< ::sensor_msgs::MultiEchoLaserScan_<ContainerAllocator> >
-  : FalseType
+  : std::false_type
   { };
 
 template <class ContainerAllocator>
 struct IsFixedSize< ::sensor_msgs::MultiEchoLaserScan_<ContainerAllocator> const>
-  : FalseType
+  : std::false_type
   { };
 
 template <class ContainerAllocator>
 struct IsMessage< ::sensor_msgs::MultiEchoLaserScan_<ContainerAllocator> >
-  : TrueType
+  : std::true_type
   { };
 
 template <class ContainerAllocator>
 struct IsMessage< ::sensor_msgs::MultiEchoLaserScan_<ContainerAllocator> const>
-  : TrueType
+  : std::true_type
   { };
 
 template <class ContainerAllocator>
 struct HasHeader< ::sensor_msgs::MultiEchoLaserScan_<ContainerAllocator> >
-  : TrueType
+  : std::true_type
   { };
 
 template <class ContainerAllocator>
 struct HasHeader< ::sensor_msgs::MultiEchoLaserScan_<ContainerAllocator> const>
-  : TrueType
+  : std::true_type
   { };
 
 

@@ -2087,7 +2087,7 @@ namespace rs2
                 pose = f;
                 rs2_pose pose_data = pose.get_pose_data();
 
-                auto t = tm2_pose_to_world_transformation(pose_data);
+                auto t = pose_to_world_transformation(pose_data);
                 float model[4][4];
                 t.to_column_major((float*)model);
                 auto m = model;
