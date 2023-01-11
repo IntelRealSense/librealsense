@@ -340,15 +340,16 @@ namespace librealsense
     protected:
         bool is_attribute_valid(const S* s) const override
         {
-            if (!md_attribute_parser<S, Attribute, Flag>::is_attribute_valid(s) || !is_crc_valid(s))
+            if (!md_attribute_parser<S, Attribute, Flag>::is_attribute_valid(s))
+                return false;
+                
+            if (!is_crc_valid(s))
             {
                 LOG_DEBUG("Metadata CRC mismatch");
                 return false;
             }
 
-            // Check if the attribute's flag is set
-            auto attribute_enabled = (0 != (s->flags & static_cast<uint32_t>(this->_md_flag)));
-            return attribute_enabled;
+            return true;
         }
 
     private:
