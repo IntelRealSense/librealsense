@@ -513,7 +513,7 @@ namespace librealsense
         }
 
         // Retrieve device video capabilities to discriminate video capturing and metadata nodes
-        static uint32_t get_dev_capabilities(const std::string dev_name)
+        static v4l2_capability get_dev_capabilities(const std::string dev_name)
         {
             // RAII to handle exceptions
             std::unique_ptr<int, std::function<void(int*)> > fd(
@@ -532,7 +532,7 @@ namespace librealsense
                     throw linux_backend_exception(rsutils::string::from() <<__FUNCTION__ << " xioctl(VIDIOC_QUERYCAP) failed");
             }
 
-            return cap.device_caps;
+            return cap;
         }
 
         void stream_ctl_on(int fd, v4l2_buf_type type=V4L2_BUF_TYPE_VIDEO_CAPTURE)
@@ -704,7 +704,7 @@ namespace librealsense
             info.device_path = video_path;
             info.unique_id = busnum + "-" + devpath + "-" + devnum;
             info.conn_spec = usb_specification;
-            info.uvc_capabilities = get_dev_capabilities(dev_name);
+            info.uvc_capabilities = get_dev_capabilities(dev_name).device_caps;
 
             return info;
         }
@@ -805,7 +805,7 @@ namespace librealsense
             // maybe using bus_info and card params (see above in this method)
             info.unique_id = bus_info; // use bus_info as per camera unique id for mipi
             info.conn_spec = usb_specification;
-            info.uvc_capabilities = get_dev_capabilities(dev_name);
+            info.uvc_capabilities = get_dev_capabilities(dev_name).device_caps;
 
             return info;
         }
@@ -1557,6 +1557,15 @@ namespace librealsense
             buf_mgr.set_md_attributes(bytesused, md_start);
         }
 
+        bool v4l_mipi_device::is_platform_jetson() const
+        {
+            v4l2_capability cap = get_dev_capabilities(_name);
+
+            std::string driver_str = reinterpret_cast<char*>(cap.driver);
+            // checking if "tegra" is part of the driver string
+            size_t pos = driver_str.find("tegra");
+            return pos != std::string::npos;
+        }
 
         void v4l_uvc_device::acquire_metadata(buffers_mgr& buf_mgr,fd_set &, bool compressed_format)
         {

@@ -346,6 +346,7 @@ namespace librealsense
             void unlock() const override;
             std::string get_device_location() const override;
             usb_spec get_usb_specification() const override;
+            bool is_platform_jetson() const override { return false;}
 
             explicit record_uvc_device(
                 std::shared_ptr<uvc_device> source,
@@ -527,6 +528,7 @@ namespace librealsense
             void unlock() const override;
             std::string get_device_location() const override;
             usb_spec get_usb_specification() const override;
+            bool is_platform_jetson() const override { return false;}
 
             explicit playback_uvc_device(std::shared_ptr<recording> rec, int id);
 
