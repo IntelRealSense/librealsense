@@ -152,16 +152,23 @@ namespace librealsense
             // Note that this heurisic is not deterministic and may validate false frames! TODO - requires review
             md_type expected_type = md_type_trait< S >::type;
 
-            if( ( s->header.md_type_id != expected_type ) || ( s->header.md_size < sizeof( *s ) ) )
+            if (s->header.md_type_id != expected_type)
             {
                 std::string type
-                    = ( md_type_desc.count( s->header.md_type_id ) > 0 )
-                        ? md_type_desc.at( s->header.md_type_id )
-                        : ( rsutils::string::from()
-                            << "0x" << std::hex << static_cast< uint32_t >( s->header.md_type_id ) << std::dec );
-                LOG_DEBUG( "Metadata mismatch - actual: " << type << ", expected: 0x" << std::hex
-                                                          << (uint32_t)expected_type << std::dec << " ("
-                                                          << md_type_desc.at( expected_type ) << ")" );
+                    = (md_type_desc.count(s->header.md_type_id) > 0)
+                    ? md_type_desc.at(s->header.md_type_id)
+                    : (rsutils::string::from()
+                        << "0x" << std::hex << static_cast<uint32_t>(s->header.md_type_id) << std::dec);
+                LOG_DEBUG("Metadata type mismatch - actual: " << type << ", expected: 0x" << std::hex
+                    << (uint32_t)expected_type << std::dec << " ("
+                    << md_type_desc.at(expected_type) << ")");
+                return false;
+            }
+
+            if (s->header.md_size < sizeof(*s))
+            {
+                LOG_DEBUG("Metadata size mismatch - actual: " << (uint32_t)s->header.md_size << ", expected: " << sizeof(*s) << std::dec << " ("
+                    << md_type_desc.at(expected_type) << ")");
                 return false;
             }
 
@@ -328,45 +335,19 @@ namespace librealsense
     {
     public: 
         md_attribute_parser_with_crc(Attribute S::* attribute_name, Flag flag, unsigned long long offset, attrib_modifyer mod)
-            : md_attribute_parser(attribute_name, flag, offset, mod) {}
+            : md_attribute_parser<S, Attribute, Flag>(attribute_name, flag, offset, mod) {}
 
     protected:
         bool is_attribute_valid(const S* s) const override
         {
-            // verify that the struct is of the correct type
-            // Check that the header id and the struct size corresponds.
-            // Note that this heurisic is not deterministic and may validate false frames! TODO - requires review
-            md_type expected_type = md_type_trait< S >::type;
-
-            if (s->header.md_type_id != expected_type)
+            if (!md_attribute_parser<S, Attribute, Flag>::is_attribute_valid(s) || !is_crc_valid(s))
             {
-                std::string type
-                    = (md_type_desc.count(s->header.md_type_id) > 0)
-                    ? md_type_desc.at(s->header.md_type_id)
-                    : (rsutils::string::from()
-                        << "0x" << std::hex << static_cast<uint32_t>(s->header.md_type_id) << std::dec);
-                LOG_DEBUG("Metadata type mismatch - actual: " << type << ", expected: 0x" << std::hex
-                    << (uint32_t)expected_type << std::dec << " ("
-                    << md_type_desc.at(expected_type) << ")");
-                return false;
-            }
-
-            if (s->header.md_size < sizeof(*s))
-            {
-                LOG_DEBUG("Metadata size mismatch - actual: " << (uint32_t)s->header.md_size << ", expected: " << sizeof(*s) << std::dec << " ("
-                    << md_type_desc.at(expected_type) << ")");
-                return false;
-            }
-
-            if (!is_crc_valid(s))
-            {
-                LOG_DEBUG("Metadata CRC mismatch" << " ("
-                    << md_type_desc.at(expected_type) << ")");
+                LOG_DEBUG("Metadata CRC mismatch");
                 return false;
             }
 
             // Check if the attribute's flag is set
-            auto attribute_enabled = (0 != (s->flags & static_cast<uint32_t>(_md_flag)));
+            auto attribute_enabled = (0 != (s->flags & static_cast<uint32_t>(this->_md_flag)));
             return attribute_enabled;
         }
 
