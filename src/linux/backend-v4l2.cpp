@@ -821,10 +821,51 @@ namespace librealsense
                                    const std::string&)> action)
         {
             std::vector<std::string> video_paths = get_video_paths();
-
-            // Collect UVC nodes info to bundle metadata and video
             typedef std::pair<uvc_device_info,std::string> node_info;
             std::vector<node_info> uvc_nodes,uvc_devices;
+            std::vector<node_info> mipi_nodes;
+            /* With usage of rs-enum script */
+            std::vector<std::string> video_sensors = {"depth", "rgb", "ir", "imu"};
+            const int MAX_V4L2_DEVICES = 8;
+
+            for ( int i = 0; i < MAX_V4L2_DEVICES; i++ ) {
+                for (const auto &vs: video_sensors) {
+                    int vfd = -1;
+                    std::string device_path = "video-rs-" + vs + "-" + std::to_string(i);
+                    std::string device_md_path = "video-rs-" + vs + "-md-" + std::to_string(i);
+                    std::string video_path = "/dev/" + device_path;
+                    std::string video_md_path = "/dev/" + device_md_path;
+                    uvc_device_info info{};
+
+                    // Get Video node
+                    vfd = open(video_path.c_str(), O_RDONLY | O_NONBLOCK);
+                    if (vfd < 0)
+                        continue;
+                    if (vfd)
+                        ::close(vfd);
+                    info = get_info_from_mipi_device_path(video_path, device_path);
+                    info.mi = 0;
+                    if (!vs.compare("imu"))
+                        info.mi = 4;
+                    info.unique_id += "-" + std::to_string(i);
+                    mipi_nodes.emplace_back(info, video_path);
+
+                    // Get metadata node
+                    vfd = open(video_md_path.c_str(), O_RDONLY | O_NONBLOCK);
+                    if (vfd < 0)
+                        continue;
+                    if (vfd)
+                        ::close(vfd);
+                    info = info = get_info_from_mipi_device_path(video_md_path, device_md_path);
+                    info.mi = 3;
+                    info.unique_id += "-" + std::to_string(i);
+                    mipi_nodes.emplace_back(info, video_md_path);
+                }
+            }
+            if(mipi_nodes.size())
+                uvc_nodes.insert(uvc_nodes.end(), mipi_nodes.begin(), mipi_nodes.end());
+
+            // Collect UVC nodes info to bundle metadata and video
 
             for(auto&& video_path : video_paths)
             {
@@ -838,11 +879,14 @@ namespace librealsense
                     {
                         info = get_info_from_usb_device_path(video_path, name);
                     }
-                    else //video4linux devices that are not USB devices
+                    else if(mipi_nodes.empty()) //video4linux devices that are not USB devices
                     {
                         info = get_info_from_mipi_device_path(video_path, name);
                     }
-
+                    else
+                    {
+                        continue;
+                    }
                     auto dev_name = "/dev/" + name;
                     uvc_nodes.emplace_back(info, dev_name);
                 }
