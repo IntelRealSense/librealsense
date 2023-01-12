@@ -179,43 +179,6 @@ install(FILES "${CMAKE_BINARY_DIR}/wrappers/python/pyrealsense2ConfigVersion.cma
 target_include_directories(pybackend2 PRIVATE ../../src)
 target_include_directories(pyrealsense2 PRIVATE ../../src)
 
-if(BUILD_NETWORK_DEVICE)
-    pybind11_add_module(pyrealsense2-net SHARED pyrs_net.cpp)
-    target_link_libraries(pyrealsense2-net PRIVATE realsense2-net)
-    set_target_properties(pyrealsense2-net PROPERTIES FOLDER Library/Python)
-    set_target_properties(pyrealsense2-net PROPERTIES
-        VERSION     ${REALSENSE_VERSION_STRING}
-        SOVERSION   "${REALSENSE_VERSION_MAJOR}.${REALSENSE_VERSION_MINOR}"
-    )
-    include_directories(../../include)
-    install(TARGETS pyrealsense2-net
-        EXPORT pyrealsense2-netTargets
-        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-        LIBRARY DESTINATION ${PYTHON_INSTALL_DIR}
-        ARCHIVE DESTINATION ${PYTHON_INSTALL_DIR}
-    )
-
-    write_basic_package_version_file("${CMAKE_CURRENT_BINARY_DIR}/pyrealsense2-netConfigVersion.cmake"
-        VERSION ${REALSENSE_VERSION_STRING} COMPATIBILITY AnyNewerVersion)
-
-    configure_package_config_file(../../CMake/pyrealsense2-netConfig.cmake.in pyrealsense2-netConfig.cmake
-        INSTALL_DESTINATION ${CMAKECONFIG_PY_INSTALL_DIR}
-        INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX}/bin
-        PATH_VARS CMAKE_INSTALL_INCLUDEDIR)
-
-    install(EXPORT pyrealsense2-netTargets
-        FILE pyrealsense2-netTargets.cmake
-        NAMESPACE pyrealsense2-net::
-        DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/pyrealsense2-net")
-
-    install(FILES "${CMAKE_BINARY_DIR}/wrappers/python/pyrealsense2-netConfig.cmake"
-        DESTINATION ${CMAKECONFIG_PY_INSTALL_DIR})
-
-    install(FILES "${CMAKE_BINARY_DIR}/wrappers/python/pyrealsense2-netConfigVersion.cmake"
-      DESTINATION ${CMAKECONFIG_PY_INSTALL_DIR})
-
-endif()
-
 if (BUILD_PYTHON_DOCS)
     add_subdirectory(docs)
 endif()
