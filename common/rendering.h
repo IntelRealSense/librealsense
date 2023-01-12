@@ -197,31 +197,31 @@ namespace rs2
         return { a * b.x, a * b.y };
     }
 
-    inline matrix4 tm2_pose_to_world_transformation(const rs2_pose& pose)
+    inline matrix4 pose_to_world_transformation(const rs2_pose& pose)
     {
         matrix4 rotation(pose.rotation);
         matrix4 translation(pose.translation);
-        matrix4 G_tm2_body_to_tm2_world = translation * rotation;
+        matrix4 G_body_to_world = translation * rotation;
         float rotate_180_y[4][4] = { { -1, 0, 0, 0 },
                                      { 0, 1, 0, 0 },
                                      { 0, 0,-1, 0 },
                                      { 0, 0, 0, 1 } };
-        matrix4 G_vr_body_to_tm2_body(rotate_180_y);
-        matrix4 G_vr_body_to_tm2_world = G_tm2_body_to_tm2_world * G_vr_body_to_tm2_body;
+        matrix4 G_vr_body_to_body(rotate_180_y);
+        matrix4 G_vr_body_to_world = G_body_to_world * G_vr_body_to_body;
 
         float rotate_90_x[4][4] = { { 1, 0, 0, 0 },
                                     { 0, 0,-1, 0 },
                                     { 0, 1, 0, 0 },
                                     { 0, 0, 0, 1 } };
-        matrix4 G_tm2_world_to_vr_world(rotate_90_x);
-        matrix4 G_vr_body_to_vr_world = G_tm2_world_to_vr_world * G_vr_body_to_tm2_world;
+        matrix4 G_world_to_vr_world(rotate_90_x);
+        matrix4 G_vr_body_to_vr_world = G_world_to_vr_world * G_vr_body_to_world;
 
         return G_vr_body_to_vr_world;
     }
 
-    inline rs2_pose correct_tm2_pose(const rs2_pose& pose)
+    inline rs2_pose correct_pose(const rs2_pose& pose)
     {
-        matrix4 G_vr_body_to_vr_world = tm2_pose_to_world_transformation(pose);
+        matrix4 G_vr_body_to_vr_world = pose_to_world_transformation(pose);
         rs2_pose res = pose;
         res.translation.x = G_vr_body_to_vr_world.mat[0][3];
         res.translation.y = G_vr_body_to_vr_world.mat[1][3];
@@ -974,7 +974,7 @@ namespace rs2
             draw_axes(0.3f, 2.f);
 
             // Drawing pose:
-            matrix4 pose_trans = tm2_pose_to_world_transformation(pose);
+            matrix4 pose_trans = pose_to_world_transformation(pose);
             float model[16];
             pose_trans.to_column_major(model);
 

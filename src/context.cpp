@@ -22,10 +22,6 @@
 #include "context.h"
 #include "fw-update/fw-update-factory.h"
 
-#ifdef WITH_TRACKING
-#include "tm2/tm-info.h"
-#endif
-
 template<unsigned... Is> struct seq{};
 template<unsigned N, unsigned... Is>
 struct gen_seq : gen_seq<N-1, N-1, Is...>{};
@@ -360,13 +356,6 @@ namespace librealsense
             std::copy(begin(sr300_devices), end(sr300_devices), std::back_inserter(list));
         }
 
-#ifdef WITH_TRACKING
-        if (mask & RS2_PRODUCT_LINE_T200)
-        {
-            auto tm2_devices = tm2_info::pick_tm2_devices(ctx, devices.usb_devices);
-            std::copy(begin(tm2_devices), end(tm2_devices), std::back_inserter(list));
-        }
-#endif
         // Supported recovery devices
         if (mask & RS2_PRODUCT_LINE_D400 || mask & RS2_PRODUCT_LINE_SR300 || mask & RS2_PRODUCT_LINE_L500) 
         {
@@ -601,12 +590,6 @@ namespace librealsense
         _playback_devices.erase(it);
         on_device_changed({},{}, prev_playback_devices, _playback_devices);
     }
-
-#if WITH_TRACKING
-    void context::unload_tracking_module()
-    {
-    }
-#endif
 
     std::vector<std::vector<platform::uvc_device_info>> group_devices_by_unique_id(const std::vector<platform::uvc_device_info>& devices)
     {

@@ -7,7 +7,6 @@ include(config.cmake)
 FILE(GLOB_RECURSE AllSources
         ${LZ4_DIR}/lz4.h
         ${LZ4_DIR}/lz4.c
-        ${BOOST_DIR}
         ${ROSBAG_DIR}/*.h
         ${ROSBAG_DIR}/*.cpp
         ${ROSBAG_DIR}/*.c
@@ -21,10 +20,6 @@ source_group("Source Files\\lz4" FILES
         lz4/lz4.c
         )
 
-source_group("Header Files\\boost" REGULAR_EXPRESSION
-         boost/boost/*.hpp
-        )
-
 add_library(${PROJECT_NAME} STATIC
     ${AllSources}
     ${HEADER_FILES_ROSBAG}
@@ -34,7 +29,6 @@ add_library(${PROJECT_NAME} STATIC
 
 target_include_directories(${PROJECT_NAME} PRIVATE
         ${ROSBAG_HEADER_DIRS}
-        ${BOOST_INCLUDE_PATH}
         ${LZ4_INCLUDE_PATH}
         )
 

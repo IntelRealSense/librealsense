@@ -37,8 +37,8 @@ namespace message_traits
 {
 
 #define ROSLIB_CREATE_SIMPLE_TRAITS(Type) \
-    template<> struct IsSimple<Type> : public TrueType {}; \
-    template<> struct IsFixedSize<Type> : public TrueType {};
+    template<> struct IsSimple<Type> : public std::true_type {}; \
+    template<> struct IsFixedSize<Type> : public std::true_type {};
 
 ROSLIB_CREATE_SIMPLE_TRAITS(uint8_t)
 ROSLIB_CREATE_SIMPLE_TRAITS(int8_t)
@@ -54,7 +54,7 @@ ROSLIB_CREATE_SIMPLE_TRAITS(Time)
 ROSLIB_CREATE_SIMPLE_TRAITS(Duration)
 
 // because std::vector<bool> is not a true vector, bool is not a simple type
-template<> struct IsFixedSize<bool> : public TrueType {};
+template<> struct IsFixedSize<bool> : public std::true_type {};
 
 } // namespace message_traits
 } // namespace rs2rosinternal
