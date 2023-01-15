@@ -33,7 +33,7 @@ def check_counter_and_timestamp_increase(frame, fps):
         current_counter = frame.get_frame_metadata(rs.frame_metadata_value.frame_counter)
         current_ts = frame.get_frame_metadata(rs.frame_metadata_value.frame_timestamp)
         test.check(current_counter == prev_counter + 1)
-        test.check((current_ts - prev_ts) / 1000 < 2 * fps)
+        test.check((current_ts - prev_ts) / 1000 < 2 * 1000 / fps)
         prev_counter = current_counter
         prev_ts = current_ts
 
