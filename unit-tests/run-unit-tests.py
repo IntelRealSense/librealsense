@@ -278,29 +278,14 @@ def check_log_for_fails( path_to_log, testname, configuration = None, repetition
 
 
 def get_tests():
-    global regex, exe_dir, pyrs, current_dir, linux, context, list_only
+    global regex, build_dir, exe_dir, pyrs, current_dir, linux, context, list_only
     if regex:
         pattern = re.compile( regex )
-    if list_only:
-        # We want to list all tests, even if they weren't built.
-        # So we look for the source files instead of using the manifest
-        for cpp_test in file.find( current_dir, '(^|/)test-.*\.cpp' ):
-            testparent = os.path.dirname( cpp_test )  # "log/internal" <-  "log/internal/test-all.py"
-            if testparent:
-                testname = 'test-' + testparent.replace( '/', '-' ) + '-' + os.path.basename( cpp_test )[
-                                                                            5:-4]  # remove .cpp
-            else:
-                testname = os.path.basename( cpp_test )[:-4]
-
-            if regex and not pattern.search( testname ):
-                continue
-
-            yield libci.ExeTest( testname )
-    elif exe_dir:
-        # In Linux, the build targets are located elsewhere than on Windows
-        # Go over all the tests from a "manifest" we take from the result of the last CMake
-        # run (rather than, for example, looking for test-* in the build-directory):
-        manifestfile = os.path.join( build_dir, 'CMakeFiles', 'TargetDirectories.txt' )
+    # In Linux, the build targets are located elsewhere than on Windows
+    # Go over all the tests from a "manifest" we take from the result of the last CMake
+    # run (rather than, for example, looking for test-* in the build-directory):
+    manifestfile = os.path.join( build_dir, 'CMakeFiles', 'TargetDirectories.txt' )
+    if os.path.isfile( manifestfile ) and exe_dir:
         # log.d( manifestfile )
         for manifest_ctx in file.grep( r'(?<=unit-tests/build/)\S+(?=/CMakeFiles/test-\S+.dir$)', manifestfile ):
             # We need to first create the test name so we can see if it fits the regex
@@ -324,6 +309,21 @@ def get_tests():
                 exe += '.exe'
 
             yield libci.ExeTest( testname, exe, context )
+    elif list_only:
+        # We want to list all tests, even if they weren't built.
+        # So we look for the source files instead of using the manifest
+        for cpp_test in file.find( current_dir, '(^|/)test-.*\.cpp' ):
+            testparent = os.path.dirname( cpp_test )  # "log/internal" <-  "log/internal/test-all.py"
+            if testparent:
+                testname = 'test-' + testparent.replace( '/', '-' ) + '-' + os.path.basename( cpp_test )[
+                                                                            5:-4]  # remove .cpp
+            else:
+                testname = os.path.basename( cpp_test )[:-4]
+
+            if regex and not pattern.search( testname ):
+                continue
+
+            yield libci.ExeTest( testname, context = context )
 
     # Python unit-test scripts are in the same directory as us... we want to consider running them
     # (we may not if they're live and we have no pyrealsense2.pyd):
@@ -436,8 +436,15 @@ try:
             if test.config.donotrun:
                 continue
             #
-            if required_tags and not all( tag in test.config.tags for tag in required_tags ):
-                log.d( 'does not fit --tag:', test.config.tags )
+            unfit_tags = []
+            for tag in required_tags:
+                if tag.startswith('!'):
+                    if tag[1:] in test.config.tags:
+                        unfit_tags.append( tag )
+                elif tag not in test.config.tags:
+                    unfit_tags.append( tag )
+            if unfit_tags:
+                log.d( f'skipping: does not fit {unfit_tags}' )
                 continue
             #
             if 'Windows' in test.config.flags and linux:
