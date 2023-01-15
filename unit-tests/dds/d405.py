@@ -21,9 +21,10 @@ def build( participant ):
     ir1 = ir_stream( 1 )
     ir2 = ir_stream( 2 )
     color = color_stream()
+    extrinsics = get_extrinsics()
     #
     d405 = dds.device_server( participant, device_info.topic_root )
-    d405.init( [ir0, ir1, ir2, color, depth], [], {} )
+    d405.init( [ir0, ir1, ir2, color, depth], [], extrinsics )
     return d405
 
 
@@ -699,3 +700,90 @@ def stereo_module_options():
     options.append( option )
 
     return options
+
+def get_extrinsics():
+    extrinsics = {}
+
+    extr = dds.extrinsics();
+    extr.rotation = (0.9999844431877136,0.0014127078466117382,0.0053943851962685585,-0.001408747979439795,0.9999987483024597,-0.0007378021255135536,-0.005395420826971531,0.000730191299226135,0.9999851584434509)
+    extr.translation = (6.110243703005835e-05,1.1573569281608798e-05,6.581118213944137e-06)
+    extrinsics[("Color","Depth")] = extr
+    extr = dds.extrinsics();
+    extr.rotation = (0.9999844431877136,0.0014127078466117382,0.0053943851962685585,-0.001408747979439795,0.9999987483024597,-0.0007378021255135536,-0.005395420826971531,0.000730191299226135,0.9999851584434509)
+    extr.translation = (6.110243703005835e-05,1.1573569281608798e-05,6.581118213944137e-06)
+    extrinsics[("Color","Infrared") ] = extr
+    extr = dds.extrinsics();
+    extr.rotation = (0.9999844431877136,0.0014127078466117382,0.0053943851962685585,-0.001408747979439795,0.9999987483024597,-0.0007378021255135536,-0.005395420826971531,0.000730191299226135,0.9999851584434509)
+    extr.translation = (6.110243703005835e-05,1.1573569281608798e-05,6.581118213944137e-06)
+    extrinsics[("Color","Infrared 1")] = extr
+    extr = dds.extrinsics();
+    extr.rotation = (0.9999844431877136,0.0014127078466117382,0.0053943851962685585,-0.001408747979439795,0.9999987483024597,-0.0007378021255135536,-0.005395420826971531,0.000730191299226135,0.9999851584434509)
+    extr.translation = (-0.017938679084181786,1.1573569281608798e-05,6.581118213944137e-06)
+    extrinsics[("Color","Infrared 2")] = extr
+    extr = dds.extrinsics();
+    extr.rotation = (0.9999844431877136,-0.001408747979439795,-0.005395420826971531,0.0014127078466117382,0.9999987483024597,0.000730191299226135,0.0053943851962685585,-0.0007378021255135536,0.9999851584434509)
+    extr.translation = (-6.115333235356957e-05,-1.1482620720926207e-05,-6.2597978285339195e-06)
+    extrinsics[("Depth","Color")] = extr
+    extr = dds.extrinsics();
+    extr.rotation = (1.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,1.0)
+    extr.translation = (0.0,0.0,0.0)
+    extrinsics[("Depth","Infrared")] = extr
+    extr = dds.extrinsics();
+    extr.rotation = (1.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,1.0)
+    extr.translation = (0.0,0.0,0.0)
+    extrinsics[("Depth","Infrared 1")] = extr 
+    extr = dds.extrinsics();
+    extr.rotation = (1.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,1.0)
+    extr.translation = (-0.017999781295657158,0.0,0.0)
+    extrinsics[("Depth","Infrared 2")] = extr
+    extr = dds.extrinsics();
+    extr.rotation = (0.9999844431877136,-0.001408747979439795,-0.005395420826971531,0.0014127078466117382,0.9999987483024597,0.000730191299226135,0.0053943851962685585,-0.0007378021255135536,0.9999851584434509)
+    extr.translation = (-6.115333235356957e-05,-1.1482620720926207e-05,-6.2597978285339195e-06)
+    extrinsics[("Infrared","Color")] = extr
+    extr = dds.extrinsics();
+    extr.rotation = (1.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,1.0)
+    extr.translation = (0.0,0.0,0.0)
+    extrinsics[("Infrared","Depth")] = extr
+    extr = dds.extrinsics();
+    extr.rotation = (1.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,1.0)
+    extr.translation = (0.0,0.0,0.0)
+    extrinsics[("Infrared","Infrared 1")] = extr
+    extr = dds.extrinsics();
+    extr.rotation = (1.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,1.0)
+    extr.translation = (-0.017999781295657158,0.0,0.0)
+    extrinsics[("Infrared","Infrared 2")] = extr
+    extr = dds.extrinsics();
+    extr.rotation = (0.9999844431877136,-0.001408747979439795,-0.005395420826971531,0.0014127078466117382,0.9999987483024597,0.000730191299226135,0.0053943851962685585,-0.0007378021255135536,0.9999851584434509)
+    extr.translation = (-6.115333235356957e-05,-1.1482620720926207e-05,-6.2597978285339195e-06)
+    extrinsics[("Infrared 1","Color")] = extr
+    extr = dds.extrinsics();
+    extr.rotation = (1.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,1.0)
+    extr.translation = (0.0,0.0,0.0)
+    extrinsics[("Infrared 1","Depth")] = extr
+    extr = dds.extrinsics();
+    extr.rotation = (1.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,1.0)
+    extr.translation = (0.0,0.0,0.0)
+    extrinsics[("Infrared 1","Infrared")] = extr
+    extr = dds.extrinsics();
+    extr.rotation = (1.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,1.0)
+    extr.translation = (-0.017999781295657158,0.0,0.0)
+    extrinsics[("Infrared 1","Infrared 2")] = extr
+    extr = dds.extrinsics();
+    extr.rotation = (0.9999844431877136,-0.001408747979439795,-0.005395420826971531,0.0014127078466117382,0.9999987483024597,0.000730191299226135,0.0053943851962685585,-0.0007378021255135536,0.9999851584434509)
+    extr.translation = (0.01793834939599037,-3.683977774926461e-05,-0.00010337619460187852)
+    extrinsics[("Infrared 2","Color")] = extr
+    extr = dds.extrinsics();
+    extr.rotation = (1.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,1.0)
+    extr.translation = (0.017999781295657158,0.0,0.0)
+    extrinsics[("Infrared 2","Depth")] = extr
+    extr = dds.extrinsics();
+    extr.rotation = (1.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,1.0)
+    extr.translation = (0.017999781295657158,0.0,0.0)
+    extrinsics[("Infrared 2","Infrared")] = extr
+    extr = dds.extrinsics();
+    extr.rotation = (1.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,1.0)
+    extr.translation = (0.017999781295657158,0.0,0.0)
+    extrinsics[("Infrared 2","Infrared 1")] = extr
+    
+    return extrinsics
+

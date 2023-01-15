@@ -3,6 +3,7 @@ Copyright(c) 2022 Intel Corporation. All Rights Reserved. */
 
 #include "python.hpp"
 
+#include <realdds/dds-defines.h>
 #include <realdds/dds-participant.h>
 #include <realdds/topics/flexible/flexible-msg.h>
 #include <realdds/topics/flexible/flexiblePubSubTypes.h>
@@ -213,6 +214,30 @@ PYBIND11_MODULE(NAME, m) {
     //      info = dds.device_info( dds.raw.device_info( reader ) )
     //auto raw = m.def_submodule( "raw", "all the topics that " SNAME " can work with" );
 
+    using realdds::video_intrinsics;
+    py::class_< video_intrinsics >( m, "video_intrinsics" )
+        .def( py::init<>() )
+        .def_readwrite( "width", &video_intrinsics::width )
+        .def_readwrite( "height", &video_intrinsics::height )
+        .def_readwrite( "principal_point_x", &video_intrinsics::principal_point_x )
+        .def_readwrite( "principal_point_y", &video_intrinsics::principal_point_y )
+        .def_readwrite( "focal_lenght_x", &video_intrinsics::focal_lenght_x )
+        .def_readwrite( "focal_lenght_y", &video_intrinsics::focal_lenght_y )
+        .def_readwrite( "distortion_model", &video_intrinsics::distortion_model )
+        .def_readwrite( "distortion_coeffs", &video_intrinsics::distortion_coeffs );
+
+    using realdds::motion_intrinsics;
+    py::class_< motion_intrinsics >( m, "motion_intrinsics" )
+        .def( py::init<>() )
+        .def_readwrite( "data", &motion_intrinsics::data )
+        .def_readwrite( "noise_variances", &motion_intrinsics::noise_variances )
+        .def_readwrite( "bias_variances", &motion_intrinsics::bias_variances );
+
+    using realdds::extrinsics;
+    py::class_< extrinsics, std::shared_ptr< extrinsics > >( m, "extrinsics" )
+        .def( py::init<>() )
+        .def_readwrite( "rotation", &extrinsics::rotation )
+        .def_readwrite( "translation", &extrinsics::translation );
 
     using realdds::dds_topic;
     py::class_< dds_topic, std::shared_ptr< dds_topic > >( m, "topic" )

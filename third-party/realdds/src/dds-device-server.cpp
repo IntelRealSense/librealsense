@@ -99,6 +99,9 @@ static void on_discovery_device_header( size_t const n_streams, const dds_option
         { "n-streams", n_streams },
         { "extrinsics", extrinsics_json }
     } );
+    LOG_DEBUG( "-----> JSON = " << device_header.json_data().dump() );
+    LOG_DEBUG( "-----> JSON size = " << device_header.json_data().dump().length() );
+    LOG_DEBUG( "-----> CBOR size = " << json::to_cbor( device_header.json_data() ).size() );
     notifications.add_discovery_notification( std::move( device_header ) );
 
     auto device_options = nlohmann::json::array();
@@ -109,6 +112,9 @@ static void on_discovery_device_header( size_t const n_streams, const dds_option
         { "n-options", options.size() },
         { "options" , device_options }
         } );
+    LOG_DEBUG( "-----> JSON = " << device_options_message.json_data().dump() );
+    LOG_DEBUG( "-----> JSON size = " << device_options_message.json_data().dump().length() );
+    LOG_DEBUG( "-----> CBOR size = " << json::to_cbor( device_options_message.json_data() ).size() );
     notifications.add_discovery_notification( std::move( device_options_message ) );
 }
 

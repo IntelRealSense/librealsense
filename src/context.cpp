@@ -773,7 +773,7 @@ namespace librealsense
                 prof.intrinsics.fx = intr->focal_lenght_x;
                 prof.intrinsics.fy = intr->focal_lenght_y;
                 prof.intrinsics.model = static_cast< rs2_distortion >( intr->distortion_model );
-                memcpy( prof.intrinsics.coeffs, intr->distortion_coeffs, sizeof( prof.intrinsics.coeffs ) );
+                memcpy( prof.intrinsics.coeffs, intr->distortion_coeffs.data(), sizeof( prof.intrinsics.coeffs ) );
             }
 
             return prof;
@@ -792,9 +792,9 @@ namespace librealsense
             prof.fps = profile->frequency();
             prof.fmt = static_cast< rs2_format >( profile->format().to_rs2() );
 
-            memcpy( prof.intrinsics.data, intrinsics.data, sizeof( prof.intrinsics.data ) );
-            memcpy( prof.intrinsics.noise_variances, intrinsics.noise_variances, sizeof( prof.intrinsics.noise_variances ) );
-            memcpy( prof.intrinsics.bias_variances, intrinsics.bias_variances, sizeof( prof.intrinsics.bias_variances ) );
+            memcpy( prof.intrinsics.data, intrinsics.data.data(), sizeof( prof.intrinsics.data ) );
+            memcpy( prof.intrinsics.noise_variances, intrinsics.noise_variances.data(), sizeof( prof.intrinsics.noise_variances ) );
+            memcpy( prof.intrinsics.bias_variances, intrinsics.bias_variances.data(), sizeof( prof.intrinsics.bias_variances ) );
 
             return prof;
         }
@@ -803,8 +803,8 @@ namespace librealsense
         {
             rs2_extrinsics rs2_extr;
 
-            memcpy( rs2_extr.rotation, dds_extrinsics->rotation, sizeof( rs2_extr.rotation ) );
-            memcpy( rs2_extr.translation , dds_extrinsics->translation, sizeof( rs2_extr.translation ) );
+            memcpy( rs2_extr.rotation, dds_extrinsics->rotation.data(), sizeof( rs2_extr.rotation ) );
+            memcpy( rs2_extr.translation , dds_extrinsics->translation.data(), sizeof( rs2_extr.translation ) );
 
             return rs2_extr;
         }
