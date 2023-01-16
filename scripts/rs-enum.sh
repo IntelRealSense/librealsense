@@ -1,5 +1,6 @@
 #!/bin/bash
 # Create symbolic links for video nodes and for metadata nodes - /dev/video-rs-[<sensor>|<sensor>-md]-[camera-index]
+<<<<<<< HEAD
 # This script intended for mipi devices on Jetson and IPU6.
 # After running this script in enumeration mode, it will create links as follow for example:
 # Example of the output:
@@ -17,14 +18,33 @@
 # Alderlake:
 #$ ./rs-enum.sh 
 # Bus   Camera  Sensor  Node Type  Video Node    RS Link
+=======
+# This script intended for mipi devices on IPU6.
+# Currently it supports only IPU6 platforms, Jetson support will be added later.
+# After running this script in enumeration mode, it will create links as follow for example:
+# $ ls -1l /dev/video-rs-*
+# /dev/video-rs-color-3 -> /dev/video54
+# /dev/video-rs-color-md-3 -> /dev/video55
+# /dev/video-rs-depth-3 -> /dev/video52
+# /dev/video-rs-depth-md-3 -> /dev/video53
+# /dev/video-rs-ir-3 -> /dev/video56
+
+# Example of the output:
+#$ ./rs-enum.sh 
+#Bus    Camera  Sensor  Node Type  Video Node    RS Link
+>>>>>>> 3e6b49677 (Following code review.)
 # ipu6  3       depth   Streaming  /dev/video52  /dev/video-rs-depth-3
 # ipu6  3       depth   Metadata   /dev/video53  /dev/video-rs-depth-md-3
 # ipu6  3       ir      Streaming  /dev/video56  /dev/video-rs-ir-3
 # ipu6  3       color   Streaming  /dev/video54  /dev/video-rs-color-3
 # ipu6  3       color   Metadata   /dev/video55  /dev/video-rs-color-md-3
+<<<<<<< HEAD
 #
 # Dependency: v4l-utils
 #
+=======
+
+>>>>>>> 3e6b49677 (Following code review.)
 # parse command line parameters
 # for '-i' parameter, print links only
 while [[ $# -gt 0 ]]; do
@@ -45,6 +65,7 @@ declare -A camera_idx=( [a]=0 [b]=1 [c]=2 [d]=3 )
 declare -A d4xx_vc=([1]=1 [2]=3 [4]=5)
 declare -A d4xx_vc_named=([depth]=1 [rgb]=3 ["motion detection"]=5 [imu]=7)
 declare -A camera_names=( [depth]=depth [rgb]=color ["motion detection"]=ir [imu]=imu )
+<<<<<<< HEAD
 
 camera_vid=("depth" "depth-md" "color" "color-md" "ir" "imu")
 
@@ -85,6 +106,11 @@ fi
 #ADL-P IPU6
 # cache media-ctl output
 dot=$(media-ctl --print-dot)
+=======
+# cache media-ctl output
+dot=$(media-ctl --print-dot)
+printf "Bus\tCamera\tSensor\tNode Type\tVideo Node\tRS Link\n"
+>>>>>>> 3e6b49677 (Following code review.)
 # for all d457 muxes a, b, c and d
 for camera in a b c d; do
   for sens in "${!d4xx_vc_named[@]}"; do
