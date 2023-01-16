@@ -301,20 +301,7 @@ namespace librealsense
 
         float get_preset_max_value() const override
         {
-            float preset_max_value = RS2_RS400_VISUAL_PRESET_COUNT - 1;
-            switch (_owner->_pid)
-            {
-            case ds::RS400_PID:
-            case ds::RS410_PID:
-            case ds::RS415_PID:
-            case ds::RS465_PID:
-            case ds::RS460_PID:
-                preset_max_value = static_cast<float>(RS2_RS400_VISUAL_PRESET_REMOVE_IR_PATTERN);
-                break;
-            default:
-                preset_max_value = static_cast<float>(RS2_RS400_VISUAL_PRESET_MEDIUM_DENSITY);
-            }
-            return preset_max_value;
+            return static_cast<float>(RS2_RS400_VISUAL_PRESET_MEDIUM_DENSITY);
         }
 
     protected:
@@ -348,12 +335,8 @@ namespace librealsense
 
     std::vector<uint8_t> ds6_device::get_new_calibration_table() const // to be ds6 adapted
     {
-        if (_fw_version >= firmware_version("5.11.9.5"))
-        {
-            command cmd(ds::RECPARAMSGET);
-            return _hw_monitor->send(cmd);
-        }
-        return {};
+        command cmd(ds::RECPARAMSGET);
+        return _hw_monitor->send(cmd);
     }
 
     ds::d400_caps ds6_device::parse_device_capabilities() const // to be ds6 adapted
@@ -386,9 +369,7 @@ namespace librealsense
             val |= d400_caps::CAP_ROLLING_SHUTTER;  // e.g. ASRC
         if (0x2 == gvd_buf[depth_sensor_type])
             val |= d400_caps::CAP_GLOBAL_SHUTTER;   // e.g. AWGC
-        // Option INTER_CAM_SYNC_MODE is not enabled in D405
-        if (_pid != ds::RS405_PID)
-            val |= d400_caps::CAP_INTERCAM_HW_SYNC;
+        val |= d400_caps::CAP_INTERCAM_HW_SYNC;
 
         return val;
     }
@@ -502,39 +483,25 @@ namespace librealsense
 
         using namespace platform;
 
-        // minimal firmware version in which hdr feature is supported
-        firmware_version hdr_firmware_version("5.12.8.100");
-
         std::string optic_serial, asic_serial, pid_hex_str, usb_type_str;
         bool advanced_mode, usb_modality;
         group_multiple_fw_calls(depth_sensor, [&]() {
             std::string fwv;
             _ds_device_common->get_fw_details(optic_serial, asic_serial, fwv);
-
             _fw_version = firmware_version(fwv);
-
             _recommended_fw_version = firmware_version(D4XX_RECOMMENDED_FIRMWARE_VERSION);
-            if (_fw_version >= firmware_version("5.10.4.0"))
-                _device_capabilities = parse_device_capabilities();
-
+            _device_capabilities = parse_device_capabilities();
             advanced_mode = is_camera_in_advanced_mode();
 
             auto _usb_mode = usb3_type;
             usb_type_str = usb_spec_names.at(_usb_mode);
-            usb_modality = (_fw_version >= firmware_version("5.9.8.0"));
-            if (usb_modality)
-            {
-                _usb_mode = raw_depth_sensor.get_usb_specification();
-                if (usb_spec_names.count(_usb_mode) && (usb_undefined != _usb_mode))
-                    usb_type_str = usb_spec_names.at(_usb_mode);
-                else  // Backend fails to provide USB descriptor  - occurs with RS3 build. Requires further work
-                    usb_modality = false;
-            }
+            _usb_mode = raw_depth_sensor.get_usb_specification();
+            if (usb_spec_names.count(_usb_mode) && (usb_undefined != _usb_mode))
+                usb_type_str = usb_spec_names.at(_usb_mode);
+            else  // Backend fails to provide USB descriptor  - occurs with RS3 build. Requires further work
+                usb_modality = false;
 
-            if (_fw_version >= firmware_version("5.12.1.1"))
-            {
-                depth_sensor.register_processing_block(processing_block_factory::create_id_pbf(RS2_FORMAT_Z16H, RS2_STREAM_DEPTH));
-            }
+            depth_sensor.register_processing_block(processing_block_factory::create_id_pbf(RS2_FORMAT_Z16H, RS2_STREAM_DEPTH));
 
             depth_sensor.register_processing_block(
                 { {RS2_FORMAT_Y8I} },
@@ -550,30 +517,24 @@ namespace librealsense
                 
             pid_hex_str = hexify(_pid);
 
-            if (_fw_version >= firmware_version("5.6.3.0"))
-            {
-                _is_locked = _ds_device_common->is_locked(GVD, is_camera_locked_offset);
-            }
+            _is_locked = _ds_device_common->is_locked(GVD, is_camera_locked_offset);
 
-            if (_fw_version >= firmware_version("5.5.8.0"))
-            {
-                depth_sensor.register_option(RS2_OPTION_OUTPUT_TRIGGER_ENABLED,
-                    std::make_shared<uvc_xu_option<uint8_t>>(raw_depth_sensor, depth_xu, DS5_EXT_TRIGGER,
-                        "Generate trigger from the camera to external device once per frame"));
+            depth_sensor.register_option(RS2_OPTION_OUTPUT_TRIGGER_ENABLED,
+                std::make_shared<uvc_xu_option<uint8_t>>(raw_depth_sensor, depth_xu, DS5_EXT_TRIGGER,
+                    "Generate trigger from the camera to external device once per frame"));
 
-                auto error_control = std::make_shared<uvc_xu_option<uint8_t>>(raw_depth_sensor, depth_xu, DS5_ERROR_REPORTING, "Error reporting");
+            auto error_control = std::make_shared<uvc_xu_option<uint8_t>>(raw_depth_sensor, depth_xu, DS5_ERROR_REPORTING, "Error reporting");
 
-                _polling_error_handler = std::make_shared<polling_error_handler>(1000,
-                    error_control,
-                    raw_depth_sensor.get_notifications_processor(),
-                    std::make_shared<ds_notification_decoder>());
+            _polling_error_handler = std::make_shared<polling_error_handler>(1000,
+                error_control,
+                raw_depth_sensor.get_notifications_processor(),
+                std::make_shared<ds_notification_decoder>());
 
-                depth_sensor.register_option(RS2_OPTION_ERROR_POLLING_ENABLED, std::make_shared<polling_errors_disable>(_polling_error_handler));
+            depth_sensor.register_option(RS2_OPTION_ERROR_POLLING_ENABLED, std::make_shared<polling_errors_disable>(_polling_error_handler));
 
-                depth_sensor.register_option(RS2_OPTION_ASIC_TEMPERATURE,
-                    std::make_shared<asic_and_projector_temperature_options>(raw_depth_sensor,
-                        RS2_OPTION_ASIC_TEMPERATURE));
-            }
+            depth_sensor.register_option(RS2_OPTION_ASIC_TEMPERATURE,
+                std::make_shared<asic_and_projector_temperature_options>(raw_depth_sensor,
+                    RS2_OPTION_ASIC_TEMPERATURE));
 
             std::shared_ptr<option> exposure_option = nullptr;
             std::shared_ptr<option> gain_option = nullptr;
@@ -597,56 +558,48 @@ namespace librealsense
             
             // register HDR options
             //auto global_shutter_mask = d400_caps::CAP_GLOBAL_SHUTTER;
-            if ((_fw_version >= hdr_firmware_version))// && ((_device_capabilities & global_shutter_mask) == global_shutter_mask) )
-            {
-                auto ds6_depth = As<ds6_depth_sensor, synthetic_sensor>(&get_depth_sensor());
-                ds6_depth->init_hdr_config(exposure_range, gain_range);
-                auto&& hdr_cfg = ds6_depth->get_hdr_config();
+            auto ds6_depth = As<ds6_depth_sensor, synthetic_sensor>(&get_depth_sensor());
+            ds6_depth->init_hdr_config(exposure_range, gain_range);
+            auto&& hdr_cfg = ds6_depth->get_hdr_config();
 
-                // values from 4 to 14 - for internal use
-                // value 15 - saved for emiter on off subpreset
-                option_range hdr_id_range = { 0.f /*min*/, 3.f /*max*/, 1.f /*step*/, 1.f /*default*/ };
-                auto hdr_id_option = std::make_shared<hdr_option>(hdr_cfg, RS2_OPTION_SEQUENCE_NAME, hdr_id_range,
-                    std::map<float, std::string>{ {0.f, "0"}, { 1.f, "1" }, { 2.f, "2" }, { 3.f, "3" } });
-                depth_sensor.register_option(RS2_OPTION_SEQUENCE_NAME, hdr_id_option);
+            // values from 4 to 14 - for internal use
+            // value 15 - saved for emiter on off subpreset
+            option_range hdr_id_range = { 0.f /*min*/, 3.f /*max*/, 1.f /*step*/, 1.f /*default*/ };
+            auto hdr_id_option = std::make_shared<hdr_option>(hdr_cfg, RS2_OPTION_SEQUENCE_NAME, hdr_id_range,
+                std::map<float, std::string>{ {0.f, "0"}, { 1.f, "1" }, { 2.f, "2" }, { 3.f, "3" } });
+            depth_sensor.register_option(RS2_OPTION_SEQUENCE_NAME, hdr_id_option);
 
-                option_range hdr_sequence_size_range = { 2.f /*min*/, 2.f /*max*/, 1.f /*step*/, 2.f /*default*/ };
-                auto hdr_sequence_size_option = std::make_shared<hdr_option>(hdr_cfg, RS2_OPTION_SEQUENCE_SIZE, hdr_sequence_size_range,
-                    std::map<float, std::string>{ { 2.f, "2" } });
-                depth_sensor.register_option(RS2_OPTION_SEQUENCE_SIZE, hdr_sequence_size_option);
+            option_range hdr_sequence_size_range = { 2.f /*min*/, 2.f /*max*/, 1.f /*step*/, 2.f /*default*/ };
+            auto hdr_sequence_size_option = std::make_shared<hdr_option>(hdr_cfg, RS2_OPTION_SEQUENCE_SIZE, hdr_sequence_size_range,
+                std::map<float, std::string>{ { 2.f, "2" } });
+            depth_sensor.register_option(RS2_OPTION_SEQUENCE_SIZE, hdr_sequence_size_option);
 
-                option_range hdr_sequ_id_range = { 0.f /*min*/, 2.f /*max*/, 1.f /*step*/, 0.f /*default*/ };
-                auto hdr_sequ_id_option = std::make_shared<hdr_option>(hdr_cfg, RS2_OPTION_SEQUENCE_ID, hdr_sequ_id_range,
-                    std::map<float, std::string>{ {0.f, "UVC"}, { 1.f, "1" }, { 2.f, "2" } });
-                depth_sensor.register_option(RS2_OPTION_SEQUENCE_ID, hdr_sequ_id_option);
+            option_range hdr_sequ_id_range = { 0.f /*min*/, 2.f /*max*/, 1.f /*step*/, 0.f /*default*/ };
+            auto hdr_sequ_id_option = std::make_shared<hdr_option>(hdr_cfg, RS2_OPTION_SEQUENCE_ID, hdr_sequ_id_range,
+                std::map<float, std::string>{ {0.f, "UVC"}, { 1.f, "1" }, { 2.f, "2" } });
+            depth_sensor.register_option(RS2_OPTION_SEQUENCE_ID, hdr_sequ_id_option);
 
-                option_range hdr_enable_range = { 0.f /*min*/, 1.f /*max*/, 1.f /*step*/, 0.f /*default*/ };
-                hdr_enabled_option = std::make_shared<hdr_option>(hdr_cfg, RS2_OPTION_HDR_ENABLED, hdr_enable_range);
-                depth_sensor.register_option(RS2_OPTION_HDR_ENABLED, hdr_enabled_option);
+            option_range hdr_enable_range = { 0.f /*min*/, 1.f /*max*/, 1.f /*step*/, 0.f /*default*/ };
+            hdr_enabled_option = std::make_shared<hdr_option>(hdr_cfg, RS2_OPTION_HDR_ENABLED, hdr_enable_range);
+            depth_sensor.register_option(RS2_OPTION_HDR_ENABLED, hdr_enabled_option);
 
-                //EXPOSURE AND GAIN - preparing hdr options
-                auto hdr_exposure_option = std::make_shared<hdr_option>(hdr_cfg, RS2_OPTION_EXPOSURE, exposure_range);
-                auto hdr_gain_option = std::make_shared<hdr_option>(hdr_cfg, RS2_OPTION_GAIN, gain_range);
+            //EXPOSURE AND GAIN - preparing hdr options
+            auto hdr_exposure_option = std::make_shared<hdr_option>(hdr_cfg, RS2_OPTION_EXPOSURE, exposure_range);
+            auto hdr_gain_option = std::make_shared<hdr_option>(hdr_cfg, RS2_OPTION_GAIN, gain_range);
 
-                //EXPOSURE AND GAIN - preparing hybrid options
-                auto hdr_conditional_exposure_option = std::make_shared<hdr_conditional_option>(hdr_cfg, uvc_xu_exposure_option, hdr_exposure_option);
-                auto hdr_conditional_gain_option = std::make_shared<hdr_conditional_option>(hdr_cfg, uvc_pu_gain_option, hdr_gain_option);
+            //EXPOSURE AND GAIN - preparing hybrid options
+            auto hdr_conditional_exposure_option = std::make_shared<hdr_conditional_option>(hdr_cfg, uvc_xu_exposure_option, hdr_exposure_option);
+            auto hdr_conditional_gain_option = std::make_shared<hdr_conditional_option>(hdr_cfg, uvc_pu_gain_option, hdr_gain_option);
 
-                exposure_option = hdr_conditional_exposure_option;
-                gain_option = hdr_conditional_gain_option;
+            exposure_option = hdr_conditional_exposure_option;
+            gain_option = hdr_conditional_gain_option;
 
-                std::vector<std::pair<std::shared_ptr<option>, std::string>> options_and_reasons = { std::make_pair(hdr_enabled_option,
-                        "Auto Exposure cannot be set while HDR is enabled") };
-                depth_sensor.register_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE,
-                    std::make_shared<gated_option>(
-                        enable_auto_exposure,
-                        options_and_reasons));
-            }
-            else
-            {
-                exposure_option = uvc_xu_exposure_option;
-                gain_option = uvc_pu_gain_option;
-            }
+            std::vector<std::pair<std::shared_ptr<option>, std::string>> options_and_reasons = { std::make_pair(hdr_enabled_option,
+                    "Auto Exposure cannot be set while HDR is enabled") };
+            depth_sensor.register_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE,
+                std::make_shared<gated_option>(
+                    enable_auto_exposure,
+                    options_and_reasons));
 
             //EXPOSURE
             depth_sensor.register_option(RS2_OPTION_EXPOSURE,
@@ -663,13 +616,12 @@ namespace librealsense
             // Alternating laser pattern is applicable for global shutter/active SKUs
             auto mask = d400_caps::CAP_GLOBAL_SHUTTER | d400_caps::CAP_ACTIVE_PROJECTOR;
             // Alternating laser pattern should be set and query in a different way according to the firmware version
-            if ((_fw_version >= firmware_version("5.11.3.0")) && ((_device_capabilities & mask) == mask))
+            if ((_device_capabilities & mask) == mask)
             {
-                bool is_fw_version_using_id = (_fw_version >= firmware_version("5.12.8.100"));
-                auto alternating_emitter_opt = std::make_shared<alternating_emitter_option>(*_hw_monitor, &raw_depth_sensor, is_fw_version_using_id);
+                auto alternating_emitter_opt = std::make_shared<alternating_emitter_option>(*_hw_monitor, &raw_depth_sensor);
                 auto emitter_always_on_opt = std::make_shared<emitter_always_on_option>(*_hw_monitor, &depth_sensor);
 
-                if ((_fw_version >= firmware_version("5.12.1.0")) && ((_device_capabilities & d400_caps::CAP_GLOBAL_SHUTTER) == d400_caps::CAP_GLOBAL_SHUTTER))
+                if ((_device_capabilities & d400_caps::CAP_GLOBAL_SHUTTER) == d400_caps::CAP_GLOBAL_SHUTTER)
                 {
                     std::vector<std::pair<std::shared_ptr<option>, std::string>> options_and_reasons = { std::make_pair(alternating_emitter_opt,
                         "Emitter always ON cannot be set while Emitter ON/OFF is enabled") };
@@ -679,44 +631,28 @@ namespace librealsense
                             options_and_reasons));
                 }
 
-                if (_fw_version >= hdr_firmware_version)
-                {
-                    std::vector<std::pair<std::shared_ptr<option>, std::string>> options_and_reasons = { std::make_pair(hdr_enabled_option, "Emitter ON/OFF cannot be set while HDR is enabled"),
+                std::vector<std::pair<std::shared_ptr<option>, std::string>> options_and_reasons = { std::make_pair(hdr_enabled_option, "Emitter ON/OFF cannot be set while HDR is enabled"),
                             std::make_pair(emitter_always_on_opt, "Emitter ON/OFF cannot be set while Emitter always ON is enabled") };
-                    depth_sensor.register_option(RS2_OPTION_EMITTER_ON_OFF,
-                        std::make_shared<gated_option>(
-                            alternating_emitter_opt,
-                            options_and_reasons
-                            ));
-                }
-                else if ((_fw_version >= firmware_version("5.12.1.0")) && ((_device_capabilities & d400_caps::CAP_GLOBAL_SHUTTER) == d400_caps::CAP_GLOBAL_SHUTTER))
-                {
-                    std::vector<std::pair<std::shared_ptr<option>, std::string>> options_and_reasons = { std::make_pair(emitter_always_on_opt,
-                        "Emitter ON/OFF cannot be set while Emitter always ON is enabled") };
-                    depth_sensor.register_option(RS2_OPTION_EMITTER_ON_OFF,
-                        std::make_shared<gated_option>(
-                            alternating_emitter_opt,
-                            options_and_reasons));
-                }
-                else
-                {
-                    depth_sensor.register_option(RS2_OPTION_EMITTER_ON_OFF, alternating_emitter_opt);
-                }
+                depth_sensor.register_option(RS2_OPTION_EMITTER_ON_OFF,
+                    std::make_shared<gated_option>(
+                        alternating_emitter_opt,
+                        options_and_reasons
+                        ));
             }
 
             if ((_device_capabilities & d400_caps::CAP_INTERCAM_HW_SYNC) == d400_caps::CAP_INTERCAM_HW_SYNC)
             {
-                if (_fw_version >= firmware_version("5.12.12.100") && (_device_capabilities & d400_caps::CAP_GLOBAL_SHUTTER) == d400_caps::CAP_GLOBAL_SHUTTER)
+                if ((_device_capabilities & d400_caps::CAP_GLOBAL_SHUTTER) == d400_caps::CAP_GLOBAL_SHUTTER)
                 {
                     depth_sensor.register_option(RS2_OPTION_INTER_CAM_SYNC_MODE,
                         std::make_shared<external_sync_mode>(*_hw_monitor, &raw_depth_sensor, 3));
                 }
-                else if (_fw_version >= firmware_version("5.12.4.0") && (_device_capabilities & d400_caps::CAP_GLOBAL_SHUTTER) == d400_caps::CAP_GLOBAL_SHUTTER)
+                else if ((_device_capabilities & d400_caps::CAP_GLOBAL_SHUTTER) == d400_caps::CAP_GLOBAL_SHUTTER)
                 {
                     depth_sensor.register_option(RS2_OPTION_INTER_CAM_SYNC_MODE,
                         std::make_shared<external_sync_mode>(*_hw_monitor, &raw_depth_sensor, 2));
                 }
-                else if (_fw_version >= firmware_version("5.9.15.1"))
+                else
                 {
                     depth_sensor.register_option(RS2_OPTION_INTER_CAM_SYNC_MODE,
                         std::make_shared<external_sync_mode>(*_hw_monitor, &raw_depth_sensor, 1));
@@ -730,7 +666,7 @@ namespace librealsense
             depth_sensor.register_option(RS2_OPTION_STEREO_BASELINE, std::make_shared<const_value_option>("Distance in mm between the stereo imagers",
                 lazy<float>([this]() { return get_stereo_baseline_mm(); })));
 
-            if (advanced_mode && _fw_version >= firmware_version("5.6.3.0"))
+            if (advanced_mode)
             {
                 auto depth_scale = std::make_shared<depth_scale_option>(*_hw_monitor);
                 auto depth_sensor = As<ds6_depth_sensor, synthetic_sensor>(&get_depth_sensor());
@@ -746,9 +682,6 @@ namespace librealsense
             else
             {
                 float default_depth_units = 0.001f; //meters
-                // default depth units is different for D405
-                if (_pid == RS405_PID)
-                    default_depth_units = 0.0001f;  //meters
                 depth_sensor.register_option(RS2_OPTION_DEPTH_UNITS, std::make_shared<const_value_option>("Number of meters represented by a single depth unit",
                     lazy<float>([default_depth_units]()
                         { return default_depth_units; })));
@@ -804,43 +737,37 @@ namespace librealsense
         depth_sensor.register_metadata((rs2_frame_metadata_value)RS2_FRAME_METADATA_HEIGHT, make_attribute_parser(&md_configuration::height, md_configuration_attributes::height_attribute, md_prop_offset));
         depth_sensor.register_metadata((rs2_frame_metadata_value)RS2_FRAME_METADATA_ACTUAL_FPS,  std::make_shared<ds5_md_attribute_actual_fps> ());
 
-        if (_fw_version >= firmware_version("5.12.7.0"))
-        {
-            depth_sensor.register_metadata(RS2_FRAME_METADATA_GPIO_INPUT_DATA, make_attribute_parser(&md_configuration::gpioInputData, md_configuration_attributes::gpio_input_data_attribute, md_prop_offset));
-        }
+        depth_sensor.register_metadata(RS2_FRAME_METADATA_GPIO_INPUT_DATA, make_attribute_parser(&md_configuration::gpioInputData, md_configuration_attributes::gpio_input_data_attribute, md_prop_offset));
 
-        if (_fw_version >= hdr_firmware_version)
-        {
-            // attributes of md_capture_timing
-            auto md_prop_offset = offsetof(metadata_raw, mode) + offsetof(md_depth_mode, depth_y_mode) + offsetof(md_depth_y_normal_mode, intel_configuration);
+        // attributes of md_capture_timing
+        md_prop_offset = offsetof(metadata_raw, mode) + offsetof(md_depth_mode, depth_y_mode) + offsetof(md_depth_y_normal_mode, intel_configuration);
 
-            depth_sensor.register_metadata(RS2_FRAME_METADATA_SEQUENCE_SIZE,
-                make_attribute_parser(&md_configuration::sub_preset_info,
-                    md_configuration_attributes::sub_preset_info_attribute, md_prop_offset ,
+        depth_sensor.register_metadata(RS2_FRAME_METADATA_SEQUENCE_SIZE,
+            make_attribute_parser(&md_configuration::sub_preset_info,
+                md_configuration_attributes::sub_preset_info_attribute, md_prop_offset,
                 [](const rs2_metadata_type& param) {
-                        // bit mask and offset used to get data from bitfield
-                        return (param & md_configuration::SUB_PRESET_BIT_MASK_SEQUENCE_SIZE)
-                            >> md_configuration::SUB_PRESET_BIT_OFFSET_SEQUENCE_SIZE;
-                    }));
+                    // bit mask and offset used to get data from bitfield
+                    return (param & md_configuration::SUB_PRESET_BIT_MASK_SEQUENCE_SIZE)
+                        >> md_configuration::SUB_PRESET_BIT_OFFSET_SEQUENCE_SIZE;
+                }));
 
-            depth_sensor.register_metadata(RS2_FRAME_METADATA_SEQUENCE_ID,
-                make_attribute_parser(&md_configuration::sub_preset_info,
-                    md_configuration_attributes::sub_preset_info_attribute, md_prop_offset ,
+        depth_sensor.register_metadata(RS2_FRAME_METADATA_SEQUENCE_ID,
+            make_attribute_parser(&md_configuration::sub_preset_info,
+                md_configuration_attributes::sub_preset_info_attribute, md_prop_offset,
                 [](const rs2_metadata_type& param) {
-                        // bit mask and offset used to get data from bitfield
-                        return (param & md_configuration::SUB_PRESET_BIT_MASK_SEQUENCE_ID)
-                            >> md_configuration::SUB_PRESET_BIT_OFFSET_SEQUENCE_ID;
-                    }));
+                    // bit mask and offset used to get data from bitfield
+                    return (param & md_configuration::SUB_PRESET_BIT_MASK_SEQUENCE_ID)
+                        >> md_configuration::SUB_PRESET_BIT_OFFSET_SEQUENCE_ID;
+                }));
 
-            depth_sensor.register_metadata(RS2_FRAME_METADATA_SEQUENCE_NAME,
-                make_attribute_parser(&md_configuration::sub_preset_info,
-                    md_configuration_attributes::sub_preset_info_attribute, md_prop_offset,
-                    [](const rs2_metadata_type& param) {
-                        // bit mask and offset used to get data from bitfield
-                        return (param & md_configuration::SUB_PRESET_BIT_MASK_ID)
-                            >> md_configuration::SUB_PRESET_BIT_OFFSET_ID;
-                    }));
-        }
+        depth_sensor.register_metadata(RS2_FRAME_METADATA_SEQUENCE_NAME,
+            make_attribute_parser(&md_configuration::sub_preset_info,
+                md_configuration_attributes::sub_preset_info_attribute, md_prop_offset,
+                [](const rs2_metadata_type& param) {
+                    // bit mask and offset used to get data from bitfield
+                    return (param & md_configuration::SUB_PRESET_BIT_MASK_ID)
+                        >> md_configuration::SUB_PRESET_BIT_OFFSET_ID;
+                }));
 
 
         register_info(RS2_CAMERA_INFO_NAME, device_name);
