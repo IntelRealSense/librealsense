@@ -61,6 +61,11 @@ On the discovery phase the camera server will send a **device-header** message, 
 
     "id":"device-header",
     "n-streams": 5        //Integer, number of streams
+    "extrinsics":         //Array of extrinsics data, describing transformation between different streams in the device
+    [
+        ["Depth","Gyro",[1.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,1.0,-0.005520000122487545,0.005100000184029341,0.011739999987185001]]
+        ["Depth","Infrared 2",[1.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,1.0,-0.04986396059393883,0.0,0.0]]
+    ]
 
 #### device-options format example
 
@@ -87,6 +92,11 @@ On the discovery phase the camera server will send a **device-header** message, 
 #### stream-options format example
 
     "id":"stream-options",
+    "intrinsics":         //Array of intrinsics data, describing internal properties of the stream.
+    [
+        [640,480,320.14276123046875,238.4058837890625,378.80572509765625,378.80572509765625,4,0.0,0.0,0.0,0.0,0.0]
+        [1280,720,640.2379150390625,357.3431396484375,631.3428955078125,631.3428955078125,4,0.0,0.0,0.0,0.0,0.0]
+    ]
     "n-options":3,        //Integer, number of device options
     "options":            //Array of supported options, the size of n-options
     [
