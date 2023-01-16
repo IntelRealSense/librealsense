@@ -22,7 +22,7 @@ fi
 source ./scripts/patch-utils.sh
 
 # Get the required tools to build the patched modules
-sudo apt-get install build-essential git -y
+sudo apt-get install build-essential git libssl-dev -y
 
 #Activate fan to prevent overheat during KM compilation
 if [ -f /sys/devices/pwm-fan/target_pwm ]; then
