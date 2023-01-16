@@ -215,7 +215,7 @@ PYBIND11_MODULE(NAME, m) {
     //auto raw = m.def_submodule( "raw", "all the topics that " SNAME " can work with" );
 
     using realdds::video_intrinsics;
-    py::class_< video_intrinsics >( m, "video_intrinsics" )
+    py::class_< video_intrinsics, std::shared_ptr< video_intrinsics > >( m, "video_intrinsics" )
         .def( py::init<>() )
         .def_readwrite( "width", &video_intrinsics::width )
         .def_readwrite( "height", &video_intrinsics::height )
@@ -227,7 +227,7 @@ PYBIND11_MODULE(NAME, m) {
         .def_readwrite( "distortion_coeffs", &video_intrinsics::distortion_coeffs );
 
     using realdds::motion_intrinsics;
-    py::class_< motion_intrinsics >( m, "motion_intrinsics" )
+    py::class_< motion_intrinsics, std::shared_ptr< motion_intrinsics > >( m, "motion_intrinsics" )
         .def( py::init<>() )
         .def_readwrite( "data", &motion_intrinsics::data )
         .def_readwrite( "noise_variances", &motion_intrinsics::noise_variances )
@@ -548,6 +548,8 @@ PYBIND11_MODULE(NAME, m) {
     using realdds::dds_video_stream_server;
     py::class_< dds_video_stream_server, std::shared_ptr< dds_video_stream_server > >
         video_stream_server_base( m, "video_stream_server", stream_server_base );
+    video_stream_server_base
+        .def( "set_intrinsics", &dds_video_stream_server::set_intrinsics );
 
     using realdds::dds_depth_stream_server;
     py::class_< dds_depth_stream_server, std::shared_ptr< dds_depth_stream_server > >( m, "depth_stream_server", video_stream_server_base )
@@ -572,6 +574,8 @@ PYBIND11_MODULE(NAME, m) {
     using realdds::dds_motion_stream_server;
     py::class_< dds_motion_stream_server, std::shared_ptr< dds_motion_stream_server > >
         motion_stream_server_base( m, "motion_stream_server", stream_server_base );
+    motion_stream_server_base
+        .def( "set_intrinsics", &dds_motion_stream_server::set_intrinsics );
 
     using realdds::dds_accel_stream_server;
     py::class_< dds_accel_stream_server, std::shared_ptr< dds_accel_stream_server > >( m, "accel_stream_server", motion_stream_server_base )
@@ -607,6 +611,8 @@ PYBIND11_MODULE(NAME, m) {
     using realdds::dds_video_stream;
     py::class_< dds_video_stream, std::shared_ptr< dds_video_stream > >
         video_stream_client_base( m, "video_stream", stream_client_base );
+    video_stream_client_base
+        .def( "set_intrinsics", &dds_video_stream::set_intrinsics );
 
     using realdds::dds_depth_stream;
     py::class_< dds_depth_stream, std::shared_ptr< dds_depth_stream > >( m, "depth_stream", video_stream_client_base )
@@ -631,6 +637,8 @@ PYBIND11_MODULE(NAME, m) {
     using realdds::dds_motion_stream;
     py::class_< dds_motion_stream, std::shared_ptr< dds_motion_stream > >
         motion_stream_client_base( m, "motion_stream", stream_client_base );
+    motion_stream_client_base
+        .def( "set_intrinsics", &dds_motion_stream::set_intrinsics );
 
     using realdds::dds_accel_stream;
     py::class_< dds_accel_stream, std::shared_ptr< dds_accel_stream > >( m, "accel_stream", motion_stream_client_base )

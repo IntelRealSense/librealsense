@@ -59,7 +59,7 @@ class dds_video_stream : public dds_stream
 public:
     dds_video_stream( std::string const & stream_name, std::string const & sensor_name );
 
-    void set_intrinsics( std::set< video_intrinsics > && intrinsics ) { _intrinsics = std::move( intrinsics ); }
+    void set_intrinsics( const std::set< video_intrinsics > & intrinsics ) { _intrinsics = intrinsics; }
     const std::set< video_intrinsics > & get_intrinsics() const { return _intrinsics; }
 
 private:
@@ -126,7 +126,7 @@ class dds_motion_stream : public dds_stream
 public:
     dds_motion_stream( std::string const & stream_name, std::string const & sensor_name );
 
-    void set_intrinsics( motion_intrinsics && intrinsics ) { _intrinsics = std::move( intrinsics ); }
+    void set_intrinsics( const motion_intrinsics & intrinsics ) { _intrinsics = intrinsics; }
     const motion_intrinsics & get_intrinsics() const { return _intrinsics; }
 
 private:

@@ -69,7 +69,7 @@ public:
 
     void open( std::string const & topic_name, std::shared_ptr< dds_publisher > const & ) override;
 
-    void set_intrinsics( std::set< video_intrinsics > && intrinsics ) { _intrinsics = std::move( intrinsics ); }
+    void set_intrinsics( const std::set< video_intrinsics > & intrinsics ) { _intrinsics = intrinsics; }
     const std::set< video_intrinsics > & get_intrinsics() const { return _intrinsics; }
 
 private:
@@ -143,7 +143,7 @@ public:
     
     void open( std::string const & topic_name, std::shared_ptr< dds_publisher > const & ) override;
 
-    void set_intrinsics( motion_intrinsics && intrinsics ) { _intrinsics = std::move( intrinsics ); }
+    void set_intrinsics( const motion_intrinsics & intrinsics ) { _intrinsics = intrinsics; }
     const motion_intrinsics & get_intrinsics() const { return _intrinsics; }
 
 private:
