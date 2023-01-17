@@ -94,11 +94,6 @@ if(BUILD_UNIT_TESTS OR BUILD_LEGACY_LIVE_TEST)
     add_subdirectory(unit-tests)
 endif()
 
-if(BUILD_NETWORK_DEVICE)
-    add_subdirectory(src/ethernet)
-    add_subdirectory(src/compression)
-endif()
-
 if(IMPORT_DEPTH_CAM_FW)
     add_subdirectory(common/fw)
 endif()

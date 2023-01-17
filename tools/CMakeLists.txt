@@ -18,12 +18,6 @@ add_subdirectory(terminal)
 add_subdirectory(recorder)
 add_subdirectory(fw-update)
 add_subdirectory(embed)
-
-if(NOT WIN32)
-    if(BUILD_NETWORK_DEVICE)
-        add_subdirectory(rs-server)
-    endif()
-endif()
 endif()
 
 if(BUILD_EXAMPLES)
