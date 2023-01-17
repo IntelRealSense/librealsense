@@ -248,7 +248,6 @@ namespace librealsense
 
         void on_device_changed(std::shared_ptr<device_interface> device)
         {
-            std::lock_guard<std::mutex> lock(_m);
             if (device->supports_info(RS2_CAMERA_INFO_ASIC_SERIAL_NUMBER) && device->supports_info(RS2_CAMERA_INFO_NAME))
             {
                 std::string serial = device->get_info(RS2_CAMERA_INFO_ASIC_SERIAL_NUMBER);
