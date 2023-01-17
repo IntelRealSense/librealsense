@@ -8,7 +8,7 @@ on:
 
 env:
   # Expected error count should decrease as we handle the errors. Update accordingly.
-  CPPCHECK_EXPECTED_ERROR_COUNT: 63
+  CPPCHECK_EXPECTED_ERROR_COUNT: 57
 
 jobs:
   cppcheck:
@@ -56,11 +56,16 @@ jobs:
         shell: bash
         run: |
           ERROR_COUNT=$(grep cppcheck_run.log -e "severity=\"error\"" -c);
-          if [ $ERROR_COUNT == ${{env.CPPCHECK_EXPECTED_ERROR_COUNT}} ];
+          if [ $ERROR_COUNT -eq ${{env.CPPCHECK_EXPECTED_ERROR_COUNT}} ];
           then
             echo "cppcheck_run succeeded, found" $ERROR_COUNT "errors, as expected";
             exit 0;
+          elif [ $ERROR_COUNT -lt ${{env.CPPCHECK_EXPECTED_ERROR_COUNT}} ];
+          then
+            echo "cppcheck_run ---> SUCCEEDED <--- but found" $ERROR_COUNT "errors when expecting" ${{env.CPPCHECK_EXPECTED_ERROR_COUNT}};
+            echo "see log for details, or update .github/workflows/static_analysis.yaml";
+            exit 1;
           else
-            echo "cppcheck_run failed, found" $ERROR_COUNT "errors, expected " ${{env.CPPCHECK_EXPECTED_ERROR_COUNT}} " see log for details";
+            echo "cppcheck_run ---> FAILED <--- with" $ERROR_COUNT "errors; expecting" ${{env.CPPCHECK_EXPECTED_ERROR_COUNT}} "- see log for details";
             exit 1;
           fi
