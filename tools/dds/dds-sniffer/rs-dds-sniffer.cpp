@@ -18,7 +18,7 @@
 #include <tclap/ValueArg.h>
 #include <tclap/SwitchArg.h>
 
-#include <utilities/easylogging/easyloggingpp.h>
+#include <rsutils/easylogging/easyloggingpp.h>
 #include <realdds/dds-utilities.h>
 #include <realdds/dds-guid.h>
 #include <realdds/dds-log-consumer.h>
@@ -66,7 +66,7 @@ int main( int argc, char ** argv ) try
     cmd.parse( argc, argv );
 
     // Intercept DDS messages and redirect them to our own logging mechanism
-    utilities::configure_elpp_logger( debug_arg.isSet() );
+    rsutils::configure_elpp_logger( debug_arg.isSet() );
     eprosima::fastdds::dds::Log::ClearConsumers();
     eprosima::fastdds::dds::Log::RegisterConsumer( realdds::log_consumer::create() );
 

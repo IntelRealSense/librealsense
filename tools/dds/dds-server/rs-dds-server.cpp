@@ -1,7 +1,7 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2022 Intel Corporation. All Rights Reserved.
 
-#include <utilities/easylogging/easyloggingpp.h>
+#include <rsutils/easylogging/easyloggingpp.h>
 
 #include <realdds/dds-device-broadcaster.h>
 #include <realdds/dds-device-server.h>
@@ -185,7 +185,7 @@ try
     cmd.parse( argc, argv );
 
     // Configure the same logger as librealsense
-    utilities::configure_elpp_logger( debug_arg.isSet() );
+    rsutils::configure_elpp_logger( debug_arg.isSet() );
     // Intercept DDS messages and redirect them to our own logging mechanism
     eprosima::fastdds::dds::Log::ClearConsumers();
     eprosima::fastdds::dds::Log::RegisterConsumer( realdds::log_consumer::create() );
