@@ -62,7 +62,7 @@ realdds::video_intrinsics to_realdds( const rs2_intrinsics & intr )
     ret.focal_lenght_x = intr.fx;
     ret.focal_lenght_y = intr.fy;
     ret.distortion_model = intr.model;
-    memcpy( ret.distortion_coeffs, intr.coeffs, sizeof( ret.distortion_coeffs ) );
+    memcpy( ret.distortion_coeffs.data(), intr.coeffs, sizeof( ret.distortion_coeffs ) );
 
     return ret;
 }
@@ -71,9 +71,9 @@ realdds::motion_intrinsics to_realdds( const rs2_motion_device_intrinsic & rs2_i
 {
     realdds::motion_intrinsics intr;
 
-    memcpy( intr.data, rs2_intr.data, sizeof( intr.data ) );
-    memcpy( intr.noise_variances, rs2_intr.noise_variances, sizeof( intr.noise_variances ) );
-    memcpy( intr.bias_variances, rs2_intr.bias_variances, sizeof( intr.bias_variances ) );
+    memcpy( intr.data.data(), rs2_intr.data, sizeof( intr.data ) );
+    memcpy( intr.noise_variances.data(), rs2_intr.noise_variances, sizeof( intr.noise_variances ) );
+    memcpy( intr.bias_variances.data(), rs2_intr.bias_variances, sizeof( intr.bias_variances ) );
 
     return intr;
 }
@@ -82,8 +82,8 @@ realdds::extrinsics to_realdds( const rs2_extrinsics & rs2_extr )
 {
     realdds::extrinsics extr;
 
-    memcpy( extr.rotation, rs2_extr.rotation, sizeof( extr.rotation ) );
-    memcpy( extr.translation, rs2_extr.translation, sizeof( extr.translation ) );
+    memcpy( extr.rotation.data(), rs2_extr.rotation, sizeof( extr.rotation ) );
+    memcpy( extr.translation.data(), rs2_extr.translation, sizeof( extr.translation ) );
 
     return extr;
 }

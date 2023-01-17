@@ -48,7 +48,7 @@ struct video_intrinsics
     float focal_lenght_x = 0.0f;        // As a multiple of pixel width
     float focal_lenght_y = 0.0f;        // As a multiple of pixel height
     int   distortion_model = 0;         // Distortion model of the image
-    float distortion_coeffs[5] = { 0 }; // Distortion model coefficients
+    std::array< float, 5 > distortion_coeffs = { 0 }; // Distortion model coefficients
 
     bool is_valid() const { return focal_lenght_x > 0 && focal_lenght_y > 0; }
     bool operator<( const video_intrinsics & rhs ) const {
@@ -63,9 +63,9 @@ struct video_intrinsics
 // Contain scale, bias and variances for each dimension.
 struct motion_intrinsics
 {
-    float data[3][4] = { 0 };
-    float noise_variances[3] = { 0 };
-    float bias_variances[3] = { 0 };
+    std::array< std::array< float, 4 >, 3 > data = { 0 }; // float[3][4] array
+    std::array< float, 3 > noise_variances = { 0 };
+    std::array< float, 3 > bias_variances = { 0 };
 
     nlohmann::json to_json() const;
     static motion_intrinsics from_json( nlohmann::json const & j );
@@ -75,8 +75,8 @@ struct motion_intrinsics
 // Cross-stream extrinsics: encodes the topology describing how the different devices are oriented.
 struct extrinsics
 {
-    float rotation[9];    // Column-major 3x3 rotation matrix
-    float translation[3]; // Three-element translation vector, in meters
+    std::array< float, 9 > rotation;    // Column-major 3x3 rotation matrix
+    std::array< float, 3 > translation; // Three-element translation vector, in meters
 
     nlohmann::json to_json() const;
     static extrinsics from_json( nlohmann::json const & j );
