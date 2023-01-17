@@ -142,9 +142,7 @@ recovered = False
 if device.is_update_device():
     log.d( "recovering device ..." )
     try:
-        # TODO: this needs to improve for L535
         image_file = find_image_or_exit( product_name )
-
         cmd = [fw_updater_exe, '-r', '-f', image_file]
         log.d( 'running:', cmd )
         subprocess.run( cmd )

@@ -45,8 +45,8 @@ void init_util(py::module &m) {
     {
         std::array<float, 2> to_pixel{-1.0f, -1.0f};
         rs2_project_color_pixel_to_depth_pixel(to_pixel.data(), static_cast<const uint16_t*>(data._ptr), 
-                depth_scale, depth_min, depth_max, &depth_intrin, &color_intrin, &depth_to_color,
-                &color_to_depth, from_pixel.data());
+                depth_scale, depth_min, depth_max, &depth_intrin, &color_intrin, &color_to_depth,
+                &depth_to_color, from_pixel.data());
         return to_pixel;
     };
 

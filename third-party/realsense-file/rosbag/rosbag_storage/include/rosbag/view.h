@@ -36,7 +36,8 @@
 #define ROSBAG_VIEW_H
 
 #include <memory.h>
-#include "boost/iterator/iterator_facade.hpp"
+#include <iterator>
+#include <functional>
 
 #include "rosbag/message_instance.h"
 #include "rosbag/query.h"
@@ -57,35 +58,45 @@ public:
      * MessageInstance is destroyed.  You should never store the
      * pointer to this reference.
      */
-    class iterator : public boost::iterator_facade<iterator,
-                                                   MessageInstance,
-                                                   boost::forward_traversal_tag>
+    class iterator
     {
     public:
-        iterator(iterator const& i);
-        iterator &operator=(iterator const& i);
+        using iterator_category = std::forward_iterator_tag;
+        using value_type = MessageInstance;
+        using difference_type = std::ptrdiff_t;
+        using pointer = value_type *;
+        using reference = value_type &;
+
+    public:
+        iterator( iterator const & i );
+        iterator & operator=( iterator const & i );
         iterator();
         ~iterator();
 
+        iterator& operator++() { increment(); return *this; }
+        iterator operator++(int) { iterator retval = *this; increment(); return retval; }
+        bool operator==(iterator const & other) const { return equal( other ); }
+        bool operator!=(iterator const & other) const { return ! equal( other ); }
+        reference operator*() const { return dereference(); }
+
     protected:
-        iterator(View* view, bool end = false);
+        iterator( View * view, bool end = false );
 
     private:
         friend class View;
-        friend class boost::iterator_core_access;
 
-		void populate();
-		void populateSeek(std::multiset<IndexEntry>::const_iterator iter);
+        void populate();
+        void populateSeek( std::multiset< IndexEntry >::const_iterator iter );
 
-        bool equal(iterator const& other) const;
+        bool equal( iterator const & other ) const;
 
         void increment();
 
-        MessageInstance& dereference() const;
+        MessageInstance & dereference() const;
 
     private:
         View* view_;
-        std::vector<ViewIterHelper> iters_;
+        std::vector< ViewIterHelper > iters_;
         uint32_t view_revision_;
         mutable MessageInstance* message_instance_;
     };
@@ -119,7 +130,7 @@ public:
      * param end_time        The end of the time range for the query
      * param reduce_overlap  If multiple views return the same messages, reduce them to a single message
      */
-    View(Bag const& bag, boost::function<bool(ConnectionInfo const*)> query,
+    View(Bag const& bag, std::function<bool(ConnectionInfo const*)> query,
          rs2rosinternal::Time const& start_time = rs2rosinternal::TIME_MIN, rs2rosinternal::Time const& end_time = rs2rosinternal::TIME_MAX, bool const& reduce_overlap = false);
 
     ~View();
@@ -143,7 +154,7 @@ public:
      * param start_time The beginning of the time range for the query
      * param end_time   The end of the time range for the query
      */
-    void addQuery(Bag const& bag, boost::function<bool(ConnectionInfo const*)> query,
+    void addQuery(Bag const& bag, std::function<bool(ConnectionInfo const*)> query,
     		      rs2rosinternal::Time const& start_time = rs2rosinternal::TIME_MIN, rs2rosinternal::Time const& end_time = rs2rosinternal::TIME_MAX);
 
     std::vector<const ConnectionInfo*> getConnections();

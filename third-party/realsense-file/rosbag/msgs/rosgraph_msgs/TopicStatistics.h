@@ -104,15 +104,15 @@ struct TopicStatistics_
 
 
 
-  typedef boost::shared_ptr< ::rosgraph_msgs::TopicStatistics_<ContainerAllocator> > Ptr;
-  typedef boost::shared_ptr< ::rosgraph_msgs::TopicStatistics_<ContainerAllocator> const> ConstPtr;
+  typedef std::shared_ptr< ::rosgraph_msgs::TopicStatistics_<ContainerAllocator> > Ptr;
+  typedef std::shared_ptr< ::rosgraph_msgs::TopicStatistics_<ContainerAllocator> const> ConstPtr;
 
 }; // struct TopicStatistics_
 
 typedef ::rosgraph_msgs::TopicStatistics_<std::allocator<void> > TopicStatistics;
 
-typedef boost::shared_ptr< ::rosgraph_msgs::TopicStatistics > TopicStatisticsPtr;
-typedef boost::shared_ptr< ::rosgraph_msgs::TopicStatistics const> TopicStatisticsConstPtr;
+typedef std::shared_ptr< ::rosgraph_msgs::TopicStatistics > TopicStatisticsPtr;
+typedef std::shared_ptr< ::rosgraph_msgs::TopicStatistics const> TopicStatisticsConstPtr;
 
 // constants requiring out of line definition
 
@@ -144,32 +144,32 @@ namespace message_traits
 
 template <class ContainerAllocator>
 struct IsFixedSize< ::rosgraph_msgs::TopicStatistics_<ContainerAllocator> >
-  : FalseType
+  : std::false_type
   { };
 
 template <class ContainerAllocator>
 struct IsFixedSize< ::rosgraph_msgs::TopicStatistics_<ContainerAllocator> const>
-  : FalseType
+  : std::false_type
   { };
 
 template <class ContainerAllocator>
 struct IsMessage< ::rosgraph_msgs::TopicStatistics_<ContainerAllocator> >
-  : TrueType
+  : std::true_type
   { };
 
 template <class ContainerAllocator>
 struct IsMessage< ::rosgraph_msgs::TopicStatistics_<ContainerAllocator> const>
-  : TrueType
+  : std::true_type
   { };
 
 template <class ContainerAllocator>
 struct HasHeader< ::rosgraph_msgs::TopicStatistics_<ContainerAllocator> >
-  : FalseType
+  : std::false_type
   { };
 
 template <class ContainerAllocator>
 struct HasHeader< ::rosgraph_msgs::TopicStatistics_<ContainerAllocator> const>
-  : FalseType
+  : std::false_type
   { };
 
 
