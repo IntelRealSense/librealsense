@@ -415,7 +415,7 @@ long rs2_aus_get( const char * counter, rs2_error ** error ) BEGIN_API_CALL
     VALIDATE_STRING( counter );
     return librealsense::aus_get( counter );
 }
-NOARGS_HANDLE_EXCEPTIONS_AND_RETURN( 0 );
+NOARGS_HANDLE_EXCEPTIONS_AND_RETURN( 0 )
 
 void rs2_aus_start( const char * timer, rs2_error ** error ) BEGIN_API_CALL
 {
@@ -438,7 +438,7 @@ const rs2_strings_list * rs2_aus_get_counters_list( rs2_error ** error ) BEGIN_A
     return new rs2_strings_list { std::move( ret ) };
 
 }
-NOARGS_HANDLE_EXCEPTIONS_AND_RETURN( 0 );
+NOARGS_HANDLE_EXCEPTIONS_AND_RETURN( 0 )
 
 int rs2_aus_get_counters_list_size( const rs2_strings_list * buffer, rs2_error ** error ) BEGIN_API_CALL
 {
