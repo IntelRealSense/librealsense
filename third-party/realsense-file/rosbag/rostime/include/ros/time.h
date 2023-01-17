@@ -54,7 +54,6 @@
 #include <cmath>
 #include "../../../cpp_common/include/ros/exception.h"
 #include "duration.h"
-//#include <boost/math/special_functions/round.hpp>
 #include "rostime_decl.h"
 
 /*********************************************************************
@@ -68,13 +67,6 @@
 #endif
 
 #include "math.h"
-
-//namespace boost {
-//  namespace posix_time {
-//    class ptime;
-//    class time_duration;
-//  }
-//}
 
 namespace rs2rosinternal
 {
@@ -165,7 +157,6 @@ namespace rs2rosinternal
 
     inline bool isZero() const { return sec == 0 && nsec == 0; }
     inline bool is_zero() const { return isZero(); }
-   // boost::posix_time::ptime toBoost() const;
 
   };
 
@@ -218,8 +209,6 @@ namespace rs2rosinternal
      */
     static bool waitForValid(const rs2rosinternal::WallDuration& timeout);
 
-    /*static Time fromBoost(const boost::posix_time::ptime& t);
-    static Time fromBoost(const boost::posix_time::time_duration& d);*/
   };
 
   extern ROSTIME_DECL const Time TIME_MAX;

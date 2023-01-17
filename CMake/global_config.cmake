@@ -1,6 +1,6 @@
 # Save the command line compile commands in the build output
 set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
-set(CMAKE_CXX_STANDARD 11)
+
 # View the makefile commands during build
 #set(CMAKE_VERBOSE_MAKEFILE on)
 
@@ -18,11 +18,9 @@ if(ENABLE_CCACHE)
 endif()
 
 macro(global_set_flags)
-    set(LRS_TARGET realsense2)
     set(LRS_LIB_NAME ${LRS_TARGET})
 
     add_definitions(-DELPP_THREAD_SAFE)
-    add_definitions(-DELPP_NO_DEFAULT_LOG_FILE)
 
     if (BUILD_GLSL_EXTENSIONS)
         set(LRS_GL_TARGET realsense2-gl)
@@ -121,12 +119,3 @@ macro(global_target_config)
 
 endmacro()
 
-macro(add_tm2)
-    message(STATUS "Building with TM2")
-    include(libusb_config)
-    target_link_libraries(${LRS_TARGET} PRIVATE usb)
-    if(USE_EXTERNAL_USB)
-        add_dependencies(${LRS_TARGET} libusb)
-    endif()
-    target_compile_definitions(${LRS_TARGET} PRIVATE WITH_TRACKING=1)
-endmacro()

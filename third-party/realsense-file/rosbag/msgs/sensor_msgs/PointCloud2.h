@@ -81,15 +81,15 @@ struct PointCloud2_
 
 
 
-  typedef boost::shared_ptr< ::sensor_msgs::PointCloud2_<ContainerAllocator> > Ptr;
-  typedef boost::shared_ptr< ::sensor_msgs::PointCloud2_<ContainerAllocator> const> ConstPtr;
+  typedef std::shared_ptr< ::sensor_msgs::PointCloud2_<ContainerAllocator> > Ptr;
+  typedef std::shared_ptr< ::sensor_msgs::PointCloud2_<ContainerAllocator> const> ConstPtr;
 
 }; // struct PointCloud2_
 
 typedef ::sensor_msgs::PointCloud2_<std::allocator<void> > PointCloud2;
 
-typedef boost::shared_ptr< ::sensor_msgs::PointCloud2 > PointCloud2Ptr;
-typedef boost::shared_ptr< ::sensor_msgs::PointCloud2 const> PointCloud2ConstPtr;
+typedef std::shared_ptr< ::sensor_msgs::PointCloud2 > PointCloud2Ptr;
+typedef std::shared_ptr< ::sensor_msgs::PointCloud2 const> PointCloud2ConstPtr;
 
 // constants requiring out of line definition
 
@@ -121,32 +121,32 @@ namespace message_traits
 
 template <class ContainerAllocator>
 struct IsFixedSize< ::sensor_msgs::PointCloud2_<ContainerAllocator> >
-  : FalseType
+  : std::false_type
   { };
 
 template <class ContainerAllocator>
 struct IsFixedSize< ::sensor_msgs::PointCloud2_<ContainerAllocator> const>
-  : FalseType
+  : std::false_type
   { };
 
 template <class ContainerAllocator>
 struct IsMessage< ::sensor_msgs::PointCloud2_<ContainerAllocator> >
-  : TrueType
+  : std::true_type
   { };
 
 template <class ContainerAllocator>
 struct IsMessage< ::sensor_msgs::PointCloud2_<ContainerAllocator> const>
-  : TrueType
+  : std::true_type
   { };
 
 template <class ContainerAllocator>
 struct HasHeader< ::sensor_msgs::PointCloud2_<ContainerAllocator> >
-  : TrueType
+  : std::true_type
   { };
 
 template <class ContainerAllocator>
 struct HasHeader< ::sensor_msgs::PointCloud2_<ContainerAllocator> const>
-  : TrueType
+  : std::true_type
   { };
 
 

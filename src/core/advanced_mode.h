@@ -2,12 +2,12 @@
 // Copyright(c) 2017 Intel Corporation. All Rights Reserved.
 #pragma once
 
-#include "ds5/ds5-private.h"
+#include "ds/ds-private.h"
 #include "hw-monitor.h"
 #include "streaming.h"
 #include "option.h"
 #define RS400_ADVANCED_MODE_HPP
-#include "ds5/advanced_mode/presets.h"
+#include "ds/advanced_mode/presets.h"
 #include "../../include/librealsense2/h/rs_advanced_mode_command.h"
 #include "serializable-interface.h"
 
@@ -35,8 +35,6 @@ EtAdvancedModeRegGroup;
 
 namespace librealsense
 {
-    class ds5_color_sensor;
-
     template<class T>
     struct advanced_mode_traits;
 
@@ -57,7 +55,7 @@ namespace librealsense
     MAP_ADVANCED_MODE(STAFactor, etAFactor);
 
 
-    class ds5_advanced_mode_interface : public serializable_interface, public recordable<ds5_advanced_mode_interface>
+    class ds_advanced_mode_interface : public serializable_interface, public recordable<ds_advanced_mode_interface>
     {
     public:
         virtual bool is_enabled() const = 0;
@@ -96,23 +94,23 @@ namespace librealsense
         virtual void set_census_radius(const STCensusRadius& val) = 0;
         virtual void set_amp_factor(const STAFactor& val) = 0;
 
-        virtual ~ds5_advanced_mode_interface() = default;
+        virtual ~ds_advanced_mode_interface() = default;
     };
 
-    MAP_EXTENSION(RS2_EXTENSION_ADVANCED_MODE, librealsense::ds5_advanced_mode_interface);
+    MAP_EXTENSION(RS2_EXTENSION_ADVANCED_MODE, librealsense::ds_advanced_mode_interface);
 
     class advanced_mode_preset_option;
 
-    class ds5_advanced_mode_base : public ds5_advanced_mode_interface
+    class ds_advanced_mode_base : public ds_advanced_mode_interface
     {
     public:
-        explicit ds5_advanced_mode_base(std::shared_ptr<hw_monitor> hwm,
+        explicit ds_advanced_mode_base(std::shared_ptr<hw_monitor> hwm,
             synthetic_sensor& depth_sensor);
 
-        void create_snapshot(std::shared_ptr<ds5_advanced_mode_interface>& snapshot) const override {};
-        void enable_recording(std::function<void(const ds5_advanced_mode_interface&)> recording_function) override {};
+        void create_snapshot(std::shared_ptr<ds_advanced_mode_interface>& snapshot) const override {};
+        void enable_recording(std::function<void(const ds_advanced_mode_interface&)> recording_function) override {};
 
-        virtual ~ds5_advanced_mode_base() = default;
+        virtual ~ds_advanced_mode_base() = default;
 
         bool is_enabled() const override;
         void toggle_advanced_mode(bool enable) override;
@@ -150,6 +148,9 @@ namespace librealsense
 
         std::vector<uint8_t> serialize_json() const override;
         void load_json(const std::string& json_content) override;
+
+        void register_to_visual_preset_option();
+        void unregister_from_visual_preset_option();
 
         static const uint16_t HW_MONITOR_COMMAND_SIZE = 1000;
         static const uint16_t HW_MONITOR_BUFFER_SIZE = 1024;
@@ -205,7 +206,7 @@ namespace librealsense
 
         std::shared_ptr<hw_monitor> _hw_monitor;
         synthetic_sensor& _depth_sensor;
-        lazy<ds5_color_sensor*> _color_sensor;
+        lazy<synthetic_sensor*> _color_sensor;
         lazy<bool> _enabled;
         std::shared_ptr<advanced_mode_preset_option> _preset_opt;
         lazy<bool> _rgb_exposure_gain_bind;
@@ -260,7 +261,7 @@ namespace librealsense
     class advanced_mode_preset_option : public option_base
     {
     public:
-        advanced_mode_preset_option(ds5_advanced_mode_base& advanced, synthetic_sensor& ep,
+        advanced_mode_preset_option(ds_advanced_mode_base& advanced, synthetic_sensor& ep,
                                     const option_range& opt_range);
 
         static rs2_rs400_visual_preset to_preset(float x);
@@ -276,7 +277,7 @@ namespace librealsense
 
         std::mutex _mtx;
         synthetic_sensor& _ep;
-        ds5_advanced_mode_base& _advanced;
+        ds_advanced_mode_base& _advanced;
         rs2_rs400_visual_preset _last_preset;
     };
 }

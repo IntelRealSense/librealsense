@@ -9,6 +9,7 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <array>
 
 #include <ros/types.h>
 #include <ros/serialization.h>
@@ -41,7 +42,7 @@ struct AccelWithCovariance_
    typedef  ::geometry_msgs::Accel_<ContainerAllocator>  _accel_type;
   _accel_type accel;
 
-   typedef boost::array<double, 36>  _covariance_type;
+   typedef std::array<double, 36>  _covariance_type;
   _covariance_type covariance;
 
 
@@ -87,32 +88,32 @@ namespace message_traits
 
 template <class ContainerAllocator>
 struct IsFixedSize< ::geometry_msgs::AccelWithCovariance_<ContainerAllocator> >
-  : TrueType
+  : std::true_type
   { };
 
 template <class ContainerAllocator>
 struct IsFixedSize< ::geometry_msgs::AccelWithCovariance_<ContainerAllocator> const>
-  : TrueType
+  : std::true_type
   { };
 
 template <class ContainerAllocator>
 struct IsMessage< ::geometry_msgs::AccelWithCovariance_<ContainerAllocator> >
-  : TrueType
+  : std::true_type
   { };
 
 template <class ContainerAllocator>
 struct IsMessage< ::geometry_msgs::AccelWithCovariance_<ContainerAllocator> const>
-  : TrueType
+  : std::true_type
   { };
 
 template <class ContainerAllocator>
 struct HasHeader< ::geometry_msgs::AccelWithCovariance_<ContainerAllocator> >
-  : FalseType
+  : std::false_type
   { };
 
 template <class ContainerAllocator>
 struct HasHeader< ::geometry_msgs::AccelWithCovariance_<ContainerAllocator> const>
-  : FalseType
+  : std::false_type
   { };
 
 

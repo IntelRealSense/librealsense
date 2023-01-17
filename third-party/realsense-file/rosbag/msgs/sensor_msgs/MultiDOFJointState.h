@@ -63,15 +63,15 @@ struct MultiDOFJointState_
 
 
 
-  typedef boost::shared_ptr< ::sensor_msgs::MultiDOFJointState_<ContainerAllocator> > Ptr;
-  typedef boost::shared_ptr< ::sensor_msgs::MultiDOFJointState_<ContainerAllocator> const> ConstPtr;
+  typedef std::shared_ptr< ::sensor_msgs::MultiDOFJointState_<ContainerAllocator> > Ptr;
+  typedef std::shared_ptr< ::sensor_msgs::MultiDOFJointState_<ContainerAllocator> const> ConstPtr;
 
 }; // struct MultiDOFJointState_
 
 typedef ::sensor_msgs::MultiDOFJointState_<std::allocator<void> > MultiDOFJointState;
 
-typedef boost::shared_ptr< ::sensor_msgs::MultiDOFJointState > MultiDOFJointStatePtr;
-typedef boost::shared_ptr< ::sensor_msgs::MultiDOFJointState const> MultiDOFJointStateConstPtr;
+typedef std::shared_ptr< ::sensor_msgs::MultiDOFJointState > MultiDOFJointStatePtr;
+typedef std::shared_ptr< ::sensor_msgs::MultiDOFJointState const> MultiDOFJointStateConstPtr;
 
 // constants requiring out of line definition
 
@@ -103,32 +103,32 @@ namespace message_traits
 
 template <class ContainerAllocator>
 struct IsFixedSize< ::sensor_msgs::MultiDOFJointState_<ContainerAllocator> >
-  : FalseType
+  : std::false_type
   { };
 
 template <class ContainerAllocator>
 struct IsFixedSize< ::sensor_msgs::MultiDOFJointState_<ContainerAllocator> const>
-  : FalseType
+  : std::false_type
   { };
 
 template <class ContainerAllocator>
 struct IsMessage< ::sensor_msgs::MultiDOFJointState_<ContainerAllocator> >
-  : TrueType
+  : std::true_type
   { };
 
 template <class ContainerAllocator>
 struct IsMessage< ::sensor_msgs::MultiDOFJointState_<ContainerAllocator> const>
-  : TrueType
+  : std::true_type
   { };
 
 template <class ContainerAllocator>
 struct HasHeader< ::sensor_msgs::MultiDOFJointState_<ContainerAllocator> >
-  : TrueType
+  : std::true_type
   { };
 
 template <class ContainerAllocator>
 struct HasHeader< ::sensor_msgs::MultiDOFJointState_<ContainerAllocator> const>
-  : TrueType
+  : std::true_type
   { };
 
 

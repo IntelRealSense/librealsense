@@ -52,15 +52,15 @@ struct NavSatStatus_
      enum { SERVICE_GALILEO = 8u };
  
 
-  typedef boost::shared_ptr< ::sensor_msgs::NavSatStatus_<ContainerAllocator> > Ptr;
-  typedef boost::shared_ptr< ::sensor_msgs::NavSatStatus_<ContainerAllocator> const> ConstPtr;
+  typedef std::shared_ptr< ::sensor_msgs::NavSatStatus_<ContainerAllocator> > Ptr;
+  typedef std::shared_ptr< ::sensor_msgs::NavSatStatus_<ContainerAllocator> const> ConstPtr;
 
 }; // struct NavSatStatus_
 
 typedef ::sensor_msgs::NavSatStatus_<std::allocator<void> > NavSatStatus;
 
-typedef boost::shared_ptr< ::sensor_msgs::NavSatStatus > NavSatStatusPtr;
-typedef boost::shared_ptr< ::sensor_msgs::NavSatStatus const> NavSatStatusConstPtr;
+typedef std::shared_ptr< ::sensor_msgs::NavSatStatus > NavSatStatusPtr;
+typedef std::shared_ptr< ::sensor_msgs::NavSatStatus const> NavSatStatusConstPtr;
 
 // constants requiring out of line definition
 
@@ -108,32 +108,32 @@ namespace message_traits
 
 template <class ContainerAllocator>
 struct IsFixedSize< ::sensor_msgs::NavSatStatus_<ContainerAllocator> >
-  : TrueType
+  : std::true_type
   { };
 
 template <class ContainerAllocator>
 struct IsFixedSize< ::sensor_msgs::NavSatStatus_<ContainerAllocator> const>
-  : TrueType
+  : std::true_type
   { };
 
 template <class ContainerAllocator>
 struct IsMessage< ::sensor_msgs::NavSatStatus_<ContainerAllocator> >
-  : TrueType
+  : std::true_type
   { };
 
 template <class ContainerAllocator>
 struct IsMessage< ::sensor_msgs::NavSatStatus_<ContainerAllocator> const>
-  : TrueType
+  : std::true_type
   { };
 
 template <class ContainerAllocator>
 struct HasHeader< ::sensor_msgs::NavSatStatus_<ContainerAllocator> >
-  : FalseType
+  : std::false_type
   { };
 
 template <class ContainerAllocator>
 struct HasHeader< ::sensor_msgs::NavSatStatus_<ContainerAllocator> const>
-  : FalseType
+  : std::false_type
   { };
 
 
