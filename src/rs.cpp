@@ -410,7 +410,7 @@ void rs2_aus_decrement( const char * counter, rs2_error ** error ) BEGIN_API_CAL
 }
 NOARGS_HANDLE_EXCEPTIONS_AND_RETURN_VOID()
 
-long rs2_aus_get( const char * counter, rs2_error ** error ) BEGIN_API_CALL
+long long rs2_aus_get( const char * counter, rs2_error ** error ) BEGIN_API_CALL
 {
     VALIDATE_STRING( counter );
     return librealsense::aus_get( counter );

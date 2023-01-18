@@ -31,10 +31,10 @@ namespace rs2
         error::handle( e );
     }
 
-    inline long aus_get(const char* counter)
+    inline long long aus_get(const char* counter)
     {
         rs2_error* e = nullptr;
-        long result = rs2_aus_get(counter, &e);
+        long long result = rs2_aus_get(counter, &e);
         error::handle(e);
         return result;
     }

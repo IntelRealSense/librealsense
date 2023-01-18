@@ -210,7 +210,7 @@ namespace librealsense
     void aus_set(std::string counter, int value);
     void aus_increment(std::string counter);
     void aus_decrement(std::string counter);
-    long aus_get(std::string counter);
+    long long aus_get(std::string counter);
     void aus_start(std::string counter);
     void aus_stop(std::string counter);
     std::string aus_build_system_timer_name(std::string suffix, std::string device_name = "");

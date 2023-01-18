@@ -65,7 +65,7 @@ void librealsense::aus_stop(std::string timer)
     aus_data_obj.stop(timer);
 }
 
-long librealsense::aus_get(std::string counter)
+long long librealsense::aus_get(std::string counter)
 {
     return aus_data_obj.get(counter);
 }
@@ -124,7 +124,7 @@ NOT_SUPPORTED(void librealsense::aus_start(std::string timer));
 NOT_SUPPORTED(void librealsense::aus_stop(std::string timer));
 NOT_SUPPORTED(std::string librealsense::aus_build_system_timer_name(std::string suffix, std::string device_name));
 NOT_SUPPORTED(std::string librealsense::aus_build_system_counter_name(std::string suffix, std::string device_name));
-NOT_SUPPORTED(long librealsense::aus_get(std::string counter));
+NOT_SUPPORTED(long long librealsense::aus_get(std::string counter));
 NOT_SUPPORTED(std::vector<std::string> librealsense::aus_get_counters_list());
 NOT_SUPPORTED(void librealsense::aus_system_counter_increment(std::string suffix, std::string device_name));
 NOT_SUPPORTED(void librealsense::aus_system_timer_start(std::string suffix, std::string device_name));

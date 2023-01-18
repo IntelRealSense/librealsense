@@ -46,7 +46,7 @@ extern "C" {
     * \param[out] error    if non-null, receives any error that occurs during this call, otherwise, errors are ignored
     * \return     counter value
     */
-    long rs2_aus_get(const char* counter, rs2_error** error);
+    long long rs2_aus_get(const char* counter, rs2_error** error);
 
     /**
     * starts timer

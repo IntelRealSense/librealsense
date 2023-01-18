@@ -15,8 +15,8 @@ namespace librealsense
     class aus_value
     {
     public:
-        virtual long get() = 0;
-        virtual void set(long value) = 0;
+        virtual long long get() = 0;
+        virtual void set(long long value) = 0;
         virtual void increment() = 0;
         virtual void decrement() = 0;
         virtual void start() = 0;
@@ -28,7 +28,7 @@ namespace librealsense
     public:
         aus_timer() : _is_running(false), _total(0), _start(0) { }
 
-        long get()
+        long long get()
         {
             if (_is_running)
             {
@@ -40,7 +40,7 @@ namespace librealsense
             }
         }
         
-        void set(long value) {
+        void set(long long value) {
             return;
         }
 
@@ -68,7 +68,7 @@ namespace librealsense
                 return;
             }
             _is_running = false;
-            long current_time = get_current_time();
+            long long current_time = get_current_time();
             _total += (current_time - _start);
             _start = current_time;
         }
@@ -76,8 +76,8 @@ namespace librealsense
 
 
     private:
-        long _start;
-        long _total;
+        long long _start;
+        long long _total;
         bool _is_running;
 
 
@@ -92,14 +92,14 @@ namespace librealsense
     class aus_counter : public aus_value
     {
     public:
-        aus_counter(long value = 0) : _counter(value), _total(0) { }
+        aus_counter(long long value = 0) : _counter(value), _total(0) { }
         
-        long get()
+        long long get()
         {
             return _counter;
         }
 
-        void set(long value) {
+        void set(long long value) {
             _counter = value;
         }
 
@@ -119,8 +119,8 @@ namespace librealsense
 
 
     private:
-        long _counter;
-        long _total;
+        long long _counter;
+        long long _total;
     };
 
     class aus_data
@@ -154,7 +154,7 @@ namespace librealsense
         }
 
         
-        void set(std::string key, long value)
+        void set(std::string key, long long value)
         {
             std::lock_guard<std::mutex> lock(_m);
             if (_mp.find(key) != _mp.end())
@@ -191,7 +191,7 @@ namespace librealsense
             }
         }
 
-        long get(std::string key)
+        long long get(std::string key)
         {
             std::lock_guard<std::mutex> lock(_m);
             assert_key_exists(key);
@@ -264,7 +264,7 @@ namespace librealsense
         std::unordered_map<std::string, std::string > _mp_devices_manager;
         std::mutex _m;
 
-        long _start_time;
+        long long _start_time;
 
         std::string _librealsense_version;
         std::string _os_name;
