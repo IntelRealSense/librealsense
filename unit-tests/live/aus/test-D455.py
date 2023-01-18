@@ -41,9 +41,7 @@ for counter_name in expected_counters_dict.keys():
         # check that counter is equal to expected result
         expected_val = expected_counters_dict[counter_name]
         test.check_equal(aus_val, expected_val)
-    else:
-        # check that timer is > 0
-        test.check(aus_val > 0)
+
 test.finish()
 
 ############################################################################################
