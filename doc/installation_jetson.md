@@ -92,7 +92,7 @@ You can also double-TAB after typing `rs-` to see the full list of SDK examples.
 
 ⮕ Use the V4L Native backend by applying the kernel patching
 
-The method was verified with **Jetson AGX** boards with JetPack **4.2.3**[L4T 32.2.1,32.2.3], **4.3**[L4T 32.3.1], **4.4**[L4T 32.4.3], **4.5.1**[L4T 32.5.1] and **5.0.2**[L4T 32.7.1].
+The method was verified with **Jetson AGX** boards with JetPack **4.2.3**[L4T 32.2.1,32.2.3], **4.3**[L4T 32.3.1], **4.4**[L4T 32.4.3], **4.5.1**[L4T 32.5.1] and **5.0.2**[L4T 35.1.0].
 
 The method has not yet been verified on the **Jetson Nano** board.
 
