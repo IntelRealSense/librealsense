@@ -65,7 +65,7 @@ namespace rs2
         error::handle(e);
 
         std::vector<std::string> results;
-        for (size_t i = 0; i < size; ++i) {
+        for (int i = 0; i < size; ++i) {
             const char* item_cstr = rs2_aus_get_counter_data(list.get(), i, &e);
             error::handle(e);
             results.push_back(item_cstr);
