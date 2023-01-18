@@ -57,8 +57,8 @@ case ${JETSON_L4T_VERSION} in
     PATCHES_REV="4.4"		# Baseline for the patches
     echo -e "\e[32mNote: the patch makes changes to kernel device tree to support HID IMU sensors\e[0m"
     ;;
-  "32.4.4" | "32.5" | "32.5.1" | "32.6.1")
-    PATCHES_REV="4.4.1"	# JP 4.4.1
+  "32.4.4" | "32.5" | "32.5.1" | "32.6.1" | "32.7.1")
+    PATCHES_REV="4.4.1"	# JP 4.4.1, 32.7.1 is JP 4.6.1
     ;;
   "35.1")
     PATCHES_REV="5.0.2"	# JP 5.0.2
