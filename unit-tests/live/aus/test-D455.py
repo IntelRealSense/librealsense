@@ -29,7 +29,7 @@ expected_counters_dict = \
         'RS2_AUS_INTEL_REALSENSE_D455_COLOR_TIMER': -1,
         'RS2_AUS_INTEL_REALSENSE_D455_ACCEL_TIMER': -1,
     }
-test.check_equal_lists(counters_list, expected_counters_dict.keys())
+test.check_equal_lists(sorted(counters_list), sorted(expected_counters_dict.keys()))
 test.finish()
 
 #############################################################################################

@@ -80,7 +80,7 @@ test.finish()
 test.start("Test get counters names list")
 counters_list = rs.aus_get_counters_list()
 expected_list = ['USER_COUNTER_1', 'USER_COUNTER_2', 'USER_COUNTER_3', 'TEST_TIMER']
-test.check_equal_lists(expected_list, counters_list)
+test.check_equal_lists(sorted(expected_list), sorted(counters_list))
 test.finish()
 
 #############################################################################################
