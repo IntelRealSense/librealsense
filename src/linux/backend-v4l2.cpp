@@ -803,6 +803,7 @@ namespace librealsense
             // are not available via mipi
             // TODO - find a way to assign unique id for mipi
             // maybe using bus_info and card params (see above in this method)
+            // Note - jetson can use only bus_info, as card is different for each sensor and metadata node.
             info.unique_id = bus_info; // use bus_info as per camera unique id for mipi
             info.conn_spec = usb_specification;
             info.uvc_capabilities = get_dev_capabilities(dev_name).device_caps;
@@ -821,10 +822,75 @@ namespace librealsense
                                    const std::string&)> action)
         {
             std::vector<std::string> video_paths = get_video_paths();
-
-            // Collect UVC nodes info to bundle metadata and video
             typedef std::pair<uvc_device_info,std::string> node_info;
             std::vector<node_info> uvc_nodes,uvc_devices;
+            std::vector<node_info> mipi_rs_enum_nodes;
+            /* Enumerate mipi nodes by links with usage of rs-enum script */
+            std::vector<std::string> video_sensors = {"depth", "color", "ir", "imu"};
+            const int MAX_V4L2_DEVICES = 8; // assume maximum 8 mipi devices
+
+            for ( int i = 0; i < MAX_V4L2_DEVICES; i++ ) {
+                for (const auto &vs: video_sensors) {
+                    int vfd = -1;
+                    std::string device_path = "video-rs-" + vs + "-" + std::to_string(i);
+                    std::string device_md_path = "video-rs-" + vs + "-md-" + std::to_string(i);
+                    std::string video_path = "/dev/" + device_path;
+                    std::string video_md_path = "/dev/" + device_md_path;
+                    uvc_device_info info{};
+
+                    // Get Video node
+                    // Check if file on video_path is exists
+                    vfd = open(video_path.c_str(), O_RDONLY | O_NONBLOCK);
+
+                    if (vfd < 0) // file does not exists, continue to the next one
+                        continue;
+                    else
+                        ::close(vfd); // file exists, close file and continue to assign it
+                    try
+                    {
+                        info = get_info_from_mipi_device_path(video_path, device_path);
+                    }
+                    catch(const std::exception & e)
+                    {
+                        LOG_WARNING("MIPI video device issue: " << e.what());
+                        continue;
+                    }
+
+                    info.mi = vs.compare("imu") ? 0 : 4;
+                    info.unique_id += "-" + std::to_string(i);
+                    mipi_rs_enum_nodes.emplace_back(info, video_path);
+
+                    // Get metadata node
+                    // Check if file on video_md_path is exists
+                    vfd = open(video_md_path.c_str(), O_RDONLY | O_NONBLOCK);
+
+                    if (vfd < 0) // file does not exists, continue to the next one
+                        continue;
+                    else
+                        ::close(vfd); // file exists, close file and continue to assign it
+
+                    try
+                    {
+                        info = get_info_from_mipi_device_path(video_md_path, device_md_path);
+                    }
+                    catch(const std::exception & e)
+                    {
+                        LOG_WARNING("MIPI video metadata device issue: " << e.what());
+                        continue;
+                    }
+                    info.mi = 3;
+                    info.unique_id += "-" + std::to_string(i);
+                    mipi_rs_enum_nodes.emplace_back(info, video_md_path);
+                }
+            }
+
+            // Append mipi nodes to uvc nodes list
+            if(mipi_rs_enum_nodes.size())
+            {
+                uvc_nodes.insert(uvc_nodes.end(), mipi_rs_enum_nodes.begin(), mipi_rs_enum_nodes.end());
+            }
+
+            // Collect UVC nodes info to bundle metadata and video
 
             for(auto&& video_path : video_paths)
             {
@@ -838,11 +904,14 @@ namespace librealsense
                     {
                         info = get_info_from_usb_device_path(video_path, name);
                     }
-                    else //video4linux devices that are not USB devices
+                    else if(mipi_rs_enum_nodes.empty()) //video4linux devices that are not USB devices and not previously enumerated by rs links
                     {
                         info = get_info_from_mipi_device_path(video_path, name);
                     }
-
+                    else // continue as we already have mipi nodes enumerated by rs links in uvc_nodes
+                    {
+                        continue;
+                    }
                     auto dev_name = "/dev/" + name;
                     uvc_nodes.emplace_back(info, dev_name);
                 }
