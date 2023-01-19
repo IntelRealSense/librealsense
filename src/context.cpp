@@ -31,10 +31,24 @@
 #include <realdds/topics/device-info/device-info-msg.h>
 #include <realdds/topics/image/image-msg.h>
 #include <rsutils/shared-ptr-singleton.h>
+#include <fastdds/dds/domain/DomainParticipant.hpp>
 
-static rsutils::shared_ptr_singleton< realdds::dds_participant > _dds_participant;  // common to all contexts!
-static rsutils::shared_ptr_singleton< realdds::dds_device_watcher > _dds_watcher;
-#endif //BUILD_WITH_DDS
+// We manage one participant and device-watcher per domain:
+// Two contexts with the same domain-id will share the same participant and watcher, while a third context on a
+// different domain will have its own.
+//
+struct dds_domain_context
+{
+    rsutils::shared_ptr_singleton< realdds::dds_participant > participant;
+    rsutils::shared_ptr_singleton< realdds::dds_device_watcher > device_watcher;
+};
+//
+// Domains are mapped by ID:
+// Two contexts with the same participant name on different domain-ids are using two different participants!
+//
+static std::map< realdds::dds_domain_id, dds_domain_context > dds_domain_context_by_id;
+
+#endif // BUILD_WITH_DDS
 
 #include <rsutils/json.h>
 using json = nlohmann::json;
@@ -161,9 +175,14 @@ namespace librealsense
         case backend_type::standard:
             _backend = platform::create_backend();
 #ifdef BUILD_WITH_DDS
-            if( ! _dds_participant.instance()->is_valid() )
-                _dds_participant->init( 0, "librealsense" );
-            _dds_watcher.instance( _dds_participant.get() );
+            {
+                realdds::dds_domain_id domain_id = 0;
+                auto & domain = dds_domain_context_by_id[domain_id];
+                _dds_participant = domain.participant.instance();
+                if( ! _dds_participant->is_valid() )
+                    _dds_participant->init( domain_id, "librealsense" );
+                _dds_watcher = domain.device_watcher.instance( _dds_participant );
+            }
 #endif //BUILD_WITH_DDS
             break;
         case backend_type::record:
@@ -195,18 +214,24 @@ namespace librealsense
 #ifdef BUILD_WITH_DDS
         if( rsutils::json::get< bool >( settings, "dds-discovery", true ) )
         {
-            if( ! _dds_participant.instance()->is_valid() )
+            realdds::dds_domain_id domain_id = rsutils::json::get< int >( settings, "dds-domain", 0 );
+            std::string participant_name = rsutils::json::get< std::string >( settings, "dds-participant-name", "librealsense" );
+
+            auto & domain = dds_domain_context_by_id[domain_id];
+            _dds_participant = domain.participant.instance();
+            if( ! _dds_participant->is_valid() )
             {
-                _dds_participant->init(
-                    rsutils::json::get< int >( settings, "dds-domain", 0 ),
-                    rsutils::json::get< std::string >( settings, "dds-participant-name", "librealsense" ) );
+                _dds_participant->init( domain_id, participant_name );
             }
-            else if( rsutils::json::has_value( settings, "dds-domain" )
-                     || rsutils::json::has_value( settings, "dds-participant-name" ) )
+            else if( rsutils::json::has_value( settings, "dds-participant-name" )
+                     && participant_name != _dds_participant->get()->get_qos().name().to_string() )
             {
-                LOG_WARNING( "DDS participant has already been created; ignoring DDS settings" );
+                throw std::runtime_error(
+                    rsutils::string::from()
+                    << "A DDS participant '" << _dds_participant->get()->get_qos().name().to_string()
+                    << "' already exists in domain " << domain_id << "; cannot create '" << participant_name << "'" );
             }
-            _dds_watcher.instance( _dds_participant.get() );
+            _dds_watcher = domain.device_watcher.instance( _dds_participant );
 
             // When building with DDS allowed, we want the DDS device watcher always on.
             // Not only when it has device change callback.

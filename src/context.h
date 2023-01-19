@@ -161,6 +161,9 @@ namespace librealsense
         std::map<std::string, std::weak_ptr<device_info>> _playback_devices;
         std::map<uint64_t, devices_changed_callback_ptr> _devices_changed_callbacks;
 #ifdef BUILD_WITH_DDS
+        std::shared_ptr< realdds::dds_participant > _dds_participant;
+        std::shared_ptr< realdds::dds_device_watcher > _dds_watcher;
+
         void start_dds_device_watcher();
 #endif
 
