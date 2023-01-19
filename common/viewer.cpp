@@ -1308,6 +1308,9 @@ namespace rs2
         // patch for safety sensor
         if (model.profile.stream_type() == RS2_STREAM_SAFETY)
         {
+            // The following values have been chosen so that the safety stream's
+            // metadata could be shown entirely (without that,, the safety window
+            // is too thin to permit the user to see the metadata fields
             model.size.x = 7.f;
             model.size.y = 10.f;
         }
