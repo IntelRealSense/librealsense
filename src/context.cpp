@@ -235,7 +235,7 @@ namespace librealsense
             
             if( _dds_watcher && _dds_watcher->is_stopped() )
             {
-                start_dds_device_watcher( utilities::json::get< size_t >( settings, "dds-message-timeout-ms", 5000 ) );
+                start_dds_device_watcher( rsutils::json::get< size_t >( settings, "dds-message-timeout-ms", 5000 ) );
             }
             //_dds_backend = ...; TODO
         }
@@ -711,7 +711,7 @@ namespace librealsense
             }
 
             if( option_id == RS2_OPTION_COUNT )
-                throw librealsense::invalid_value_exception( to_string() << "Option " << option->get_name() << " type not found" );
+                throw librealsense::invalid_value_exception( "Option " + option->get_name() + " type not found" );
 
             auto opt = std::make_shared< rs2_dds_option >( option,
                 [&]( const std::string & name, float value ) { set_option( name, value ); },

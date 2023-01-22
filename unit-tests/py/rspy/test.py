@@ -241,12 +241,12 @@ def check_equal(result, expected, abort_if_failed = False):
         print_stack()
         log.out( "    left  type:", type(result) )
         log.out( "    right type:", type(expected) )
-		return check_failed( abort_if_failed )
+        return check_failed( abort_if_failed )
     if result != expected:
         print_stack()
         log.out( "    left  :", result )
         log.out( "    right :", expected )
-		return check_failed( abort_if_failed )
+        return check_failed( abort_if_failed )
     return check_passed()
 
 

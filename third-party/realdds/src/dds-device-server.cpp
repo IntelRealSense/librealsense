@@ -254,9 +254,9 @@ void dds_device_server::handle_control_message( topics::flexible_msg control_mes
 
 void dds_device_server::handle_set_option( const nlohmann::json & j )
 {
-    const std::string & option_name = utilities::json::get< std::string >( j, "option-name" );
-    const std::string & owner_name = utilities::json::get< std::string >( j, "owner-name" );
-    uint32_t counter = utilities::json::get< uint32_t >( j, "counter" );
+    const std::string & option_name = rsutils::json::get< std::string >( j, "option-name" );
+    const std::string & owner_name = rsutils::json::get< std::string >( j, "owner-name" );
+    uint32_t counter = rsutils::json::get< uint32_t >( j, "counter" );
 
     std::shared_ptr< dds_option > opt = find_option( option_name, owner_name );
 
@@ -264,7 +264,7 @@ void dds_device_server::handle_set_option( const nlohmann::json & j )
     {
         try
         {
-            float value = utilities::json::get< float >( j, "value" );
+            float value = rsutils::json::get< float >( j, "value" );
             _set_option_callback( opt, value ); //Handle setting option outside realdds
             opt->set_value( value ); //Update option object. Do second to check if _set_option_callback did not throw
             send_set_option_success( counter );
@@ -282,9 +282,9 @@ void dds_device_server::handle_set_option( const nlohmann::json & j )
 
 void dds_device_server::handle_query_option( const nlohmann::json & j )
 {
-    const std::string & option_name = utilities::json::get< std::string >( j, "option-name" );
-    const std::string & owner_name = utilities::json::get< std::string >( j, "owner-name" );
-    uint32_t counter = utilities::json::get< uint32_t >( j, "counter" );
+    const std::string & option_name = rsutils::json::get< std::string >( j, "option-name" );
+    const std::string & owner_name = rsutils::json::get< std::string >( j, "owner-name" );
+    uint32_t counter = rsutils::json::get< uint32_t >( j, "counter" );
 
     std::shared_ptr< dds_option > opt = find_option( option_name, owner_name );
 

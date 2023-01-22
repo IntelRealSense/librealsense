@@ -3,8 +3,8 @@
 
 #include <realdds/topics/device-info-msg.h>
 
-#include <librealsense2/utilities/json.h>
-#include <librealsense2/utilities/easylogging/easyloggingpp.h>
+#include <rsutils/json.h>
+#include <rsutils/easylogging/easyloggingpp.h>
 
 namespace realdds {
 namespace topics {
@@ -14,12 +14,12 @@ namespace topics {
 {
     device_info ret;
 
-    ret.name         = utilities::json::get< std::string >( j, "name" );
-    ret.serial       = utilities::json::get< std::string >( j, "serial" );
-    ret.product_line = utilities::json::get< std::string >( j, "product-line" );
-    ret.product_id   = utilities::json::get< std::string >( j, "product-id" );
-    ret.topic_root   = utilities::json::get< std::string >( j, "topic-root" );
-    ret.locked       = utilities::json::get< bool >( j, "locked" );
+    ret.name         = rsutils::json::get< std::string >( j, "name" );
+    ret.serial       = rsutils::json::get< std::string >( j, "serial" );
+    ret.product_line = rsutils::json::get< std::string >( j, "product-line" );
+    ret.product_id   = rsutils::json::get< std::string >( j, "product-id" );
+    ret.topic_root   = rsutils::json::get< std::string >( j, "topic-root" );
+    ret.locked       = rsutils::json::get< bool >( j, "locked" );
 
     return ret;
 }

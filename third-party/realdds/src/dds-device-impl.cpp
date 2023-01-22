@@ -17,8 +17,6 @@
 #include <rsutils/time/timer.h>
 #include <rsutils/json.h>
 
-#include <third-party/json.hpp>
-
 #include <cassert>
 
 
@@ -104,7 +102,7 @@ void dds_device::impl::run( size_t message_timeout_ms )
             if( !notification.is_valid() )
                 continue;
             auto j = notification.json_data();
-            auto id = utilities::json::get< std::string >( j, "id" );
+            auto id = rsutils::json::get< std::string >( j, "id" );
             if( id == "set-option" || id == "query-option" )
             {
                 _option_response_queue.push( j );
@@ -189,10 +187,10 @@ void dds_device::impl::set_option_value( const std::shared_ptr< dds_option > & o
 
     auto response = _option_response_queue.front();
     _option_response_queue.pop();
-    if( utilities::json::get< bool >( response, "successful" ) )
+    if( rsutils::json::get< bool >( response, "successful" ) )
         option->set_value( new_value );
     else
-        throw std::runtime_error( utilities::json::get< std::string >( response, "failure-reason" ) );
+        throw std::runtime_error( rsutils::json::get< std::string >( response, "failure-reason" ) );
 }
 
 float dds_device::impl::query_option_value( const std::shared_ptr< dds_option > & option )
@@ -219,10 +217,10 @@ float dds_device::impl::query_option_value( const std::shared_ptr< dds_option > 
 
     auto response = _option_response_queue.front();
     _option_response_queue.pop();
-    if( utilities::json::get< bool >( response, "successful" ) )
-        return utilities::json::get< float >( response, "value" );
+    if( rsutils::json::get< bool >( response, "successful" ) )
+        return rsutils::json::get< float >( response, "value" );
     else
-        throw std::runtime_error( utilities::json::get< std::string >( response, "failure-reason" ) );
+        throw std::runtime_error( rsutils::json::get< std::string >( response, "failure-reason" ) );
 }
 
 void dds_device::impl::write_control_message( topics::flexible_msg && msg )
@@ -286,13 +284,13 @@ bool dds_device::impl::init()
                     n_streams_expected = rsutils::json::get< size_t >( j, "n-streams" );
                     LOG_DEBUG( "... device-header: " << n_streams_expected << " streams expected" );
 
-                    if( utilities::json::has( j, "extrinsics" ) )
+                    if( rsutils::json::has( j, "extrinsics" ) )
                     {
                         for( auto & ex : j["extrinsics"] )
                         {
-                            std::string to_name = utilities::json::get< std::string >( ex, 0 );
-                            std::string from_name = utilities::json::get< std::string >( ex, 1 );
-                            extrinsics extr = extrinsics::from_json( utilities::json::get< json >( ex, 2 ) );
+                            std::string to_name = rsutils::json::get< std::string >( ex, 0 );
+                            std::string from_name = rsutils::json::get< std::string >( ex, 1 );
+                            extrinsics extr = extrinsics::from_json( rsutils::json::get< json >( ex, 2 ) );
                             _extrinsics_map[std::make_pair( to_name, from_name )] = std::make_shared< extrinsics >( extr );
                         }
                     }
@@ -367,15 +365,15 @@ bool dds_device::impl::init()
                 }
                 else if( state_type::WAIT_FOR_STREAM_OPTIONS == state && id == "stream-options" )
                 {
-                    auto stream_it = _streams.find( utilities::json::get< std::string >( j, "stream-name" ) );
+                    auto stream_it = _streams.find( rsutils::json::get< std::string >( j, "stream-name" ) );
                     if( stream_it == _streams.end() )
                         DDS_THROW( runtime_error, std::string ( "Received stream options for stream '" ) +
-                                   utilities::json::get< std::string >( j, "stream-name" ) +
+                                   rsutils::json::get< std::string >( j, "stream-name" ) +
                                    "' whose header was not received yet" );
 
                     n_stream_options_received++;
 
-                    if( utilities::json::has( j, "options" ) )
+                    if( rsutils::json::has( j, "options" ) )
                     {
                         dds_options options;
                         for( auto & option : j["options"] )
@@ -386,7 +384,7 @@ bool dds_device::impl::init()
                         stream_it->second->init_options( options );
                     }
 
-                    if( utilities::json::has( j, "intrinsics" ) )
+                    if( rsutils::json::has( j, "intrinsics" ) )
                     {
                         auto video_stream = std::dynamic_pointer_cast< dds_video_stream >( stream_it->second );
                         auto motion_stream = std::dynamic_pointer_cast< dds_motion_stream >( stream_it->second );

@@ -5,7 +5,7 @@
 
 #include <stdint.h>
 
-#include <librealsense2/utilities/json.h>
+#include <rsutils/json.h>
 
 namespace eprosima {
 namespace fastrtps {

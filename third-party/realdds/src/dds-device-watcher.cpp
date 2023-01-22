@@ -11,9 +11,10 @@
 #include <realdds/topics/flexible/flexible-msg.h>
 #include <realdds/topics/device-info-msg.h>
 
-#include <librealsense2/utilities/json.h>
+#include <rsutils/json.h>
 
 #include <fastdds/dds/subscriber/DataReader.hpp>
+#include <fastdds/dds/domain/DomainParticipant.hpp>
 
 
 using namespace eprosima::fastdds::dds;
