@@ -4,7 +4,9 @@
 #pragma once
 
 
-#include "dds-stream-profile.h"
+#include <realdds/dds-stream-profile.h>
+#include <realdds/dds-option.h>
+#include <realdds/dds-defines.h>
 
 #include <memory>
 #include <string>
@@ -26,19 +28,22 @@ protected:
     std::string const _sensor_name;
     int _default_profile_index = 0;
     dds_stream_profiles _profiles;
+    dds_options _options;
 
     dds_stream_base( std::string const & stream_name, std::string const & sensor_name );
     
 public:
     virtual ~dds_stream_base() = default;
 
-    // This function can only be called once!
+    // Init functions can only be called once!
     void init_profiles( dds_stream_profiles const & profiles, int default_profile_index = 0 );
+    void init_options( dds_options const & options );
 
     std::string const & name() const { return _name; }
     std::string const & sensor_name() const { return _sensor_name; }
     dds_stream_profiles const & profiles() const { return _profiles; }
     int default_profile_index() const { return _default_profile_index; }
+    dds_options const & options() const { return _options; }
 
     // For serialization, we need a string representation of the stream type (also the profile types)
     virtual char const * type_string() const = 0;

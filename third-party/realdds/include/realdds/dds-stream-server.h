@@ -8,6 +8,7 @@
 
 #include <memory>
 #include <string>
+#include <set>
 
 
 namespace realdds {
@@ -68,8 +69,13 @@ public:
 
     void open( std::string const & topic_name, std::shared_ptr< dds_publisher > const & ) override;
 
+    void set_intrinsics( const std::set< video_intrinsics > & intrinsics ) { _intrinsics = intrinsics; }
+    const std::set< video_intrinsics > & get_intrinsics() const { return _intrinsics; }
+
 private:
     void check_profile( std::shared_ptr< dds_stream_profile > const & ) const override;
+
+    std::set< video_intrinsics > _intrinsics;
 };
 
 
@@ -137,8 +143,13 @@ public:
     
     void open( std::string const & topic_name, std::shared_ptr< dds_publisher > const & ) override;
 
+    void set_intrinsics( const motion_intrinsics & intrinsics ) { _intrinsics = intrinsics; }
+    const motion_intrinsics & get_intrinsics() const { return _intrinsics; }
+
 private:
     void check_profile( std::shared_ptr< dds_stream_profile > const & ) const override;
+
+    motion_intrinsics _intrinsics;
 };
 
 

@@ -3,7 +3,7 @@
 
 import pyrealdds
 from rspy import log, test
-
+from time import sleep
 
 def run_server( server_script, nested_indent = 'svr' ):
     import os.path
@@ -30,3 +30,14 @@ def run_server( server_script, nested_indent = 'svr' ):
         run_time = time.time() - start_time
         log.d( "server took", run_time, "seconds" )
 
+
+def wait_for_devices( context, mask, tries = 3 ):
+    """
+    Since DDS devices may take time to be recognized and then initialized, we try over time:
+    """
+    while tries:
+        devices = context.query_devices( mask )
+        if len(devices) > 0:
+            return devices
+        tries -= 1
+        sleep( 1 )

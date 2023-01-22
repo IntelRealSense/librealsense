@@ -14,7 +14,7 @@ In addition you may want to use the 'info' functions in this module to add more 
 messages in case of a failed check
 """
 
-import os, sys, subprocess, traceback, platform
+import os, sys, subprocess, traceback, platform, math
 
 from rspy import log
 
@@ -324,6 +324,41 @@ def check_equal_lists(result, expected, abort_if_failed = False):
         log.out( "    expected list:", expected )
         return check_failed( abort_if_failed )
     return check_passed()
+
+
+def check_float_lists(result, expected, epsilon=1e-6, abort_if_failed = False):
+    """
+    Like check_equal_lists but checks that floats diff is less then epsilon, not exactly equal
+    :param result: The actual list
+    :param expected: The expected list
+    :param epsilon:  allowed difference between appropriate elements in the lists.
+    :param abort_if_failed:  If True and assertion failed the test will be aborted
+    :return: True if assertion passed, False otherwise
+    """
+    global n_assertions
+    n_assertions += 1
+    failed = False
+    if len(result) != len(expected):
+        failed = True
+        log.out("Check float lists failed due to lists of different sizes:")
+        log.out("The resulted list has", len(result), "elements, but the expected list has", len(expected), "elements")
+    i = 0
+    for res, exp in zip(result, expected):
+        if math.fabs( res - exp ) > epsilon:
+            failed = True
+            log.out("Check float lists failed due to unequal elements:")
+            log.out("The difference between elements of index", i, "in both lists was larger than epsilon", epsilon)
+        i += 1
+    if failed:
+        print_stack()
+        log.out( "    result list  :", result )
+        log.out( "    expected list:", expected )
+        check_failed()
+        if abort_if_failed:
+            abort()
+        return False
+    reset_info()
+    return True
 
 
 def check_exception(exception, expected_type, expected_msg = None, abort_if_failed = False):

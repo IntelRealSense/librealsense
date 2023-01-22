@@ -18,21 +18,34 @@ dds_stream_base::dds_stream_base( std::string const & name,
 
 void dds_stream_base::init_profiles( dds_stream_profiles const & profiles, int default_profile_index )
 {
-    if( ! _profiles.empty() )
-        DDS_THROW( runtime_error, "stream '" + _name + "' is already initialized" );
+    if( !_profiles.empty() )
+        DDS_THROW( runtime_error, "stream '" + _name + "' profiles are already initialized" );
     if( profiles.empty() )
         DDS_THROW( runtime_error, "at least one profile is required to initialize stream '" + _name + "'" );
+
+    _default_profile_index = default_profile_index;
     if( _default_profile_index < 0 || _default_profile_index >= profiles.size() )
         DDS_THROW( runtime_error,
-                   "invalid default profile index (" + std::to_string( _default_profile_index ) + " for "
-                       + std::to_string( profiles.size() ) + " stream profiles" );
+            "invalid default profile index (" + std::to_string( _default_profile_index ) + " for "
+            + std::to_string( profiles.size() ) + " stream profiles" );
+
     auto self = weak_from_this();
     for( auto const & profile : profiles )
     {
         check_profile( profile );
         profile->init_stream( self );
     }
+
     _profiles = profiles;
+}
+
+
+void dds_stream_base::init_options( dds_options const & options )
+{
+    if( !_options.empty() )
+        DDS_THROW( runtime_error, "stream '" + _name + "' options are already initialized" );
+
+    _options = options;
 }
 
 

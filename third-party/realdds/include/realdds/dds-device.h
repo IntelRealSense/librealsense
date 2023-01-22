@@ -44,16 +44,22 @@ public:
     bool is_running() const;
 
     // Make the device ready for use. This may take time! Better to do it in the background...
-    void run();
+    void run( size_t message_timeout_ms );
 
     //----------- below this line, a device must be running!
 
     size_t number_of_streams() const;
 
     size_t foreach_stream( std::function< void( std::shared_ptr< dds_stream > stream ) > fn ) const;
+    size_t foreach_option( std::function< void( std::shared_ptr< dds_option > option ) > fn ) const;
 
     void open( const dds_stream_profiles & profiles );
     void close( const dds_streams & streams );
+
+    void set_option_value( const std::shared_ptr< dds_option > & option, float new_value );
+    float query_option_value( const std::shared_ptr< dds_option > & option );
+
+    std::shared_ptr< extrinsics > get_extrinsics( std::string from, std::string to ) const;
 
 private:
     class impl;

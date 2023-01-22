@@ -10,6 +10,7 @@
 #include <fastdds/dds/domain/DomainParticipant.hpp>
 #include <fastrtps/types/DynamicDataFactory.h>
 #include <fastdds/dds/core/status/SubscriptionMatchedStatus.hpp>
+#include <fastdds/rtps/transport/UDPv4TransportDescriptor.h>
 
 #include <map>
 #include <mutex>
@@ -131,6 +132,14 @@ void dds_participant::init( dds_domain_id domain_id, std::string const & partici
 
     // Indicates for how much time should a remote DomainParticipant consider the local DomainParticipant to be alive.
     pqos.wire_protocol().builtin.discovery_config.leaseDuration = { 10, 0 };  // [sec,nsec]
+
+    //Disable shared memory, use only UDP
+    //Disabling because sometimes, after improper destruction (e.g. stopping debug) the shared memory is not opened
+    //correctly and the application is stuck. eProsima is working on it. Manual solution delete shared memory files,
+    //C:\ProgramData\eprosima\fastrtps_interprocess on Windows, /dev/shm on Linux
+    auto udp_transport = std::make_shared<eprosima::fastdds::rtps::UDPv4TransportDescriptor>();
+    pqos.transport().use_builtin_transports = false;
+    pqos.transport().user_transports.push_back( udp_transport );
 
     // Listener will call DataReaderListener::on_data_available for a specific reader,
     // not SubscriberListener::on_data_on_readers for any reader

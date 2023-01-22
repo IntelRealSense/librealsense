@@ -76,6 +76,19 @@ int stream_name_to_index( std::string const & type_string )
     return index;
 }
 
+rs2_option option_name_to_type( const std::string & name, const rs2::sensor & sensor )
+{
+    for( size_t i = 0; i < static_cast< size_t >( RS2_OPTION_COUNT ); i++ )
+    {
+        if( name.compare( sensor.get_option_name( static_cast< rs2_option >( i ) ) ) == 0 )
+        {
+            return static_cast< rs2_option >( i );
+        }
+    }
+
+    throw std::runtime_error( "Option " + name + " type not found" );
+}
+
 rs2::stream_profile get_required_profile( const rs2::sensor & sensor,
                                           std::string stream_name,
                                           std::shared_ptr< dds_stream_profile > profile )
@@ -111,6 +124,12 @@ lrs_device_controller::lrs_device_controller( rs2::device dev, std::shared_ptr< 
 
     _dds_device_server->on_open_streams( [&]( const json & msg ) { start_streaming( msg ); } );
     _dds_device_server->on_close_streams( [&]( const json & msg ) { stop_streaming( msg ); } );
+    _dds_device_server->on_set_option( [&]( const std::shared_ptr< realdds::dds_option > & option, float value ) {
+        set_option( option, value );
+    } );
+    _dds_device_server->on_query_option( [&]( const std::shared_ptr< realdds::dds_option > & option ) -> float {
+        return query_option( option );
+    } );
 
     //query_sensors returns a copy of the sensors, we keep it to use same copy throughout the run time.
     //Otherwise problems could arise like opening streams and they would close at start_streaming scope end.
@@ -163,7 +182,16 @@ void lrs_device_controller::start_streaming( const json & msg )
     _sensors[sensor_index].start( [&]( rs2::frame f ) {
         _dds_device_server->publish_image( f.get_profile().stream_name(), static_cast< const uint8_t * >( f.get_data() ), f.get_data_size() );
     } );
-    std::cout << realdds_streams_to_start[0].first << " stream started" << std::endl;
+    if( realdds_streams_to_start.size() == 1 )
+        std::cout << realdds_streams_to_start[0].first << " stream started" << std::endl;
+    else
+    {
+        std::cout << "[\"";
+        size_t i = 0;
+        for( ; i < realdds_streams_to_start.size() - 1; ++i )
+            std::cout << realdds_streams_to_start[i].first << "\", \"";
+        std::cout << realdds_streams_to_start[i].first << "\"] streams started" << std::endl;
+    }
 }
 
 void lrs_device_controller::stop_streaming( const json & msg )
@@ -178,7 +206,7 @@ void lrs_device_controller::stop_streaming( const json & msg )
             break; //TODO - currently assumes all streams are from one sensor. Add support for multiple sensors
 
         if ( sensor_index == _sensors.size() )
-            throw std::runtime_error( "Could not find sensor to close `" + requested_stream_name + "` for" );
+            throw std::runtime_error( "Could not find sensor to close `" + requested_stream_name + "`" );
     }
 
     //Stop streaming
@@ -186,6 +214,38 @@ void lrs_device_controller::stop_streaming( const json & msg )
     _sensors[sensor_index].close();
     _dds_device_server->stop_streaming( stream_names );
     std::cout << _sensors[sensor_index].get_info( RS2_CAMERA_INFO_NAME ) << " closed. Streams requested to stop: " << stream_names << std::endl;
+}
+
+void lrs_device_controller::set_option( const std::shared_ptr< realdds::dds_option > & option, float new_value )
+{
+    size_t sensor_index = 0;
+    find_sensor( option->owner_name(), sensor_index );
+        
+    if( sensor_index == _sensors.size() )
+    {
+        //TODO - handle device options
+        throw std::runtime_error( "Could not find sensor with `" + option->owner_name() + "` stream" );
+    }
+
+    rs2_option opt_type = option_name_to_type( option->get_name(), _sensors[sensor_index] );
+
+    _sensors[sensor_index].set_option( opt_type, new_value );
+}
+
+float lrs_device_controller::query_option( const std::shared_ptr< realdds::dds_option > & option )
+{
+    size_t sensor_index = 0;
+    find_sensor( option->owner_name(), sensor_index );
+
+    if( sensor_index == _sensors.size() )
+    {
+        //TODO - handle device options
+        throw std::runtime_error( "Could not find sensor with `" + option->owner_name() + "` stream" );
+    }
+
+    rs2_option opt_type = option_name_to_type( option->get_name(), _sensors[sensor_index] );
+
+    return _sensors[sensor_index].get_option( opt_type );
 }
 
 bool tools::lrs_device_controller::find_sensor( const std::string & requested_stream_name, size_t & sensor_index )

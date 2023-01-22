@@ -78,9 +78,9 @@ bool dds_device::is_running() const
     return _impl->_running;
 }
 
-void dds_device::run()
+void dds_device::run( size_t message_timeout_ms )
 {
-    _impl->run();
+    _impl->run( message_timeout_ms );
 }
 
 std::shared_ptr< dds_participant > const& dds_device::participant() const
@@ -113,6 +113,16 @@ size_t dds_device::foreach_stream( std::function< void( std::shared_ptr< dds_str
     return _impl->_streams.size();
 }
 
+size_t dds_device::foreach_option( std::function< void( std::shared_ptr< dds_option > option ) > fn ) const
+{
+    for( auto const & option : _impl->_options)
+    {
+        fn( option );
+    }
+
+    return _impl->_options.size();
+}
+
 void dds_device::open( const dds_stream_profiles & profiles )
 {
     _impl->open( profiles );
@@ -123,5 +133,24 @@ void dds_device::close( dds_streams const & streams )
     _impl->close( streams );
 }
 
+void dds_device::set_option_value( const std::shared_ptr< dds_option > & option, float new_value )
+{
+    _impl->set_option_value( option, new_value );
+}
+
+float dds_device::query_option_value( const std::shared_ptr< dds_option > & option )
+{
+    return _impl->query_option_value( option );
+}
+
+std::shared_ptr< extrinsics > dds_device::get_extrinsics( std::string from, std::string to ) const
+{
+    auto iter = _impl->_extrinsics_map.find( std::make_pair( from, to ) );
+    if( iter != _impl->_extrinsics_map.end() )
+        return iter->second;
+
+    std::shared_ptr< extrinsics > empty;
+    return empty;
+}
 
 }  // namespace realdds

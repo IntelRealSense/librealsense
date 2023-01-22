@@ -149,6 +149,8 @@ namespace librealsense
                                platform::backend_device_group curr,
                                const std::map<std::string, std::weak_ptr<device_info>>& old_playback_devices,
                                const std::map<std::string, std::weak_ptr<device_info>>& new_playback_devices);
+        void invoke_devices_changed_callbacks( std::vector<rs2_device_info> & rs2_devices_info_removed,
+                                               std::vector<rs2_device_info> & rs2_devices_info_added );
         void raise_devices_changed(const std::vector<rs2_device_info>& removed, const std::vector<rs2_device_info>& added);
         void start_device_watcher();
         std::shared_ptr<platform::backend> _backend;
@@ -160,7 +162,7 @@ namespace librealsense
         std::shared_ptr< realdds::dds_participant > _dds_participant;
         std::shared_ptr< realdds::dds_device_watcher > _dds_watcher;
 
-        void start_dds_device_watcher();
+        void start_dds_device_watcher( size_t message_timeout_ms );
 #endif
 
         devices_changed_callback_ptr _devices_changed_callback;

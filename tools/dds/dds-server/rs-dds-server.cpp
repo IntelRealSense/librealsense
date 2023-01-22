@@ -7,13 +7,8 @@
 #include <realdds/dds-device-server.h>
 #include <realdds/dds-stream-server.h>
 #include <realdds/dds-participant.h>
-#include <realdds/dds-utilities.h>
+#include <realdds/dds-option.h>
 #include <realdds/dds-log-consumer.h>
-#include <realdds/topics/device-info/device-info-msg.h>
-#include <realdds/topics/flexible/flexible-msg.h>
-
-#include <fastrtps/types/TypesBase.h>
-#include <fastdds/dds/log/Log.hpp>
 
 #include "lrs-device-watcher.h"
 #include "lrs-device-controller.h"
@@ -24,7 +19,7 @@
 #include <string>
 #include <iostream>
 #include <map>
-#include <unordered_set>
+#include <set>
 
 using namespace TCLAP;
 using namespace realdds;
@@ -45,20 +40,74 @@ using namespace realdds;
     }                                                                                                                  \
     break
 
-
-std::vector< std::shared_ptr< realdds::dds_stream_server > > get_supported_streams( rs2::device dev )
+realdds::dds_option_range to_realdds( const rs2::option_range & range )
 {
-    std::map< std::string, realdds::dds_stream_profiles > name_to_profiles;
-    std::map< std::string, int > name_to_default_profile;
-    std::map< std::string, std::string > name_to_sensor;
-    std::map< std::string, std::shared_ptr< realdds::dds_stream_server > > name_to_server;
+    realdds::dds_option_range ret_val;
+    ret_val.max = range.max;
+    ret_val.min = range.min;
+    ret_val.step = range.step;
+    ret_val.default_value = range.def;
+
+    return ret_val;
+}
+
+realdds::video_intrinsics to_realdds( const rs2_intrinsics & intr )
+{
+    realdds::video_intrinsics ret;
+
+    ret.width = intr.width;
+    ret.height = intr.height;
+    ret.principal_point_x = intr.ppx;
+    ret.principal_point_y = intr.ppy;
+    ret.focal_lenght_x = intr.fx;
+    ret.focal_lenght_y = intr.fy;
+    ret.distortion_model = intr.model;
+    memcpy( ret.distortion_coeffs.data(), intr.coeffs, sizeof( ret.distortion_coeffs ) );
+
+    return ret;
+}
+
+realdds::motion_intrinsics to_realdds( const rs2_motion_device_intrinsic & rs2_intr )
+{
+    realdds::motion_intrinsics intr;
+
+    memcpy( intr.data.data(), rs2_intr.data, sizeof( intr.data ) );
+    memcpy( intr.noise_variances.data(), rs2_intr.noise_variances, sizeof( intr.noise_variances ) );
+    memcpy( intr.bias_variances.data(), rs2_intr.bias_variances, sizeof( intr.bias_variances ) );
+
+    return intr;
+}
+
+realdds::extrinsics to_realdds( const rs2_extrinsics & rs2_extr )
+{
+    realdds::extrinsics extr;
+
+    memcpy( extr.rotation.data(), rs2_extr.rotation, sizeof( extr.rotation ) );
+    memcpy( extr.translation.data(), rs2_extr.translation, sizeof( extr.translation ) );
+
+    return extr;
+}
+
+std::vector< std::shared_ptr< realdds::dds_stream_server > > get_supported_streams( const rs2::device & dev )
+{
+    std::map< std::string, realdds::dds_stream_profiles > stream_name_to_profiles;
+    std::map< std::string, int > stream_name_to_default_profile;
+    std::map< std::string, std::string > stream_name_to_sensor_name;
+    std::map< std::string, std::shared_ptr< realdds::dds_stream_server > > stream_name_to_server;
+    std::map< std::string, std::set< realdds::video_intrinsics > > stream_name_to_video_intrinsics;
+    std::map< std::string, realdds::motion_intrinsics > stream_name_to_motion_intrinsics;
+
+    //Iterate over all profiles of all sensors and build appropriate dds_stream_servers
     for( auto sensor : dev.query_sensors() )
     {
         std::string const sensor_name = sensor.get_info( RS2_CAMERA_INFO_NAME );
         auto stream_profiles = sensor.get_stream_profiles();
         std::for_each( stream_profiles.begin(), stream_profiles.end(), [&]( const rs2::stream_profile & sp ) {
             std::string stream_name = sp.stream_name();
-            auto & server = name_to_server[stream_name];
+            stream_name_to_sensor_name[stream_name] = sensor_name;
+
+            //Create a realdds::dds_stream_server object for each unique profile type+index
+            auto & server = stream_name_to_server[stream_name];
             switch( sp.stream_type() )
             {
             case RS2_STREAM_DEPTH: NAME2SERVER( depth );
@@ -73,8 +122,9 @@ std::vector< std::shared_ptr< realdds::dds_stream_server > > get_supported_strea
                 LOG_ERROR( "unsupported stream type " << sp.stream_type() );
                 return;
             }
-            name_to_sensor[stream_name] = sensor_name;
-            auto & profiles = name_to_profiles[stream_name];
+
+            //Create appropriate realdds::profile for each sensor profile and map to a stream
+            auto & profiles = stream_name_to_profiles[stream_name];
             std::shared_ptr< realdds::dds_stream_profile > profile;
             if( sp.is< rs2::video_stream_profile >() )
             {
@@ -84,6 +134,12 @@ std::vector< std::shared_ptr< realdds::dds_stream_server > > get_supported_strea
                     realdds::dds_stream_format::from_rs2( vsp.format() ),
                     static_cast< uint16_t >( vsp.width() ),
                     static_cast< int16_t >( vsp.height() ) );
+                try
+                {
+                    auto intr = to_realdds( vsp.get_intrinsics() );
+                    stream_name_to_video_intrinsics[stream_name].insert( intr );
+                }
+                catch( ... ) {} //Some profiles don't have intrinsics
             }
             else if( sp.is< rs2::motion_stream_profile >() )
             {
@@ -91,6 +147,8 @@ std::vector< std::shared_ptr< realdds::dds_stream_server > > get_supported_strea
                 profile = std::make_shared< realdds::dds_motion_stream_profile >(
                     static_cast< int16_t >( msp.fps() ),
                     realdds::dds_stream_format::from_rs2( msp.format() ) );
+
+                stream_name_to_motion_intrinsics[stream_name] = to_realdds( msp.get_motion_intrinsics() );
             }
             else
             {
@@ -98,19 +156,21 @@ std::vector< std::shared_ptr< realdds::dds_stream_server > > get_supported_strea
                 return;
             }
             if( sp.is_default() )
-                name_to_default_profile[stream_name] = static_cast< int >( profiles.size() );
+                stream_name_to_default_profile[stream_name] = static_cast< int >( profiles.size() );
             profiles.push_back( profile );
             LOG_DEBUG( stream_name << ": " << profile->to_string() );
         } );
     }
+
+    //Iterate over the mapped streams and initialize 
     std::vector< std::shared_ptr< realdds::dds_stream_server > > servers;
-    for( auto & it : name_to_profiles )
+    for( auto & it : stream_name_to_profiles )
     {
         auto const & stream_name = it.first;
         
         int default_profile_index = 0;
-        auto default_profile_it = name_to_default_profile.find( stream_name );
-        if( default_profile_it != name_to_default_profile.end() )
+        auto default_profile_it = stream_name_to_default_profile.find( stream_name );
+        if( default_profile_it != stream_name_to_default_profile.end() )
             default_profile_index = default_profile_it->second;
 
         auto const& profiles = it.second;
@@ -119,14 +179,60 @@ std::vector< std::shared_ptr< realdds::dds_stream_server > > get_supported_strea
             LOG_ERROR( "ignoring stream '" << stream_name << "' with no profiles" );
             continue;
         }
-        std::string const & sensor_name = name_to_sensor[stream_name];
-        auto server = name_to_server[stream_name];
+        auto server = stream_name_to_server[stream_name];
         if( ! server )
         {
             LOG_ERROR( "ignoring stream '" << stream_name << "' with no server" );
             continue;
         }
         server->init_profiles( profiles, default_profile_index );
+        
+        //Set stream intrinsics
+        auto video_server = std::dynamic_pointer_cast< dds_video_stream_server >( server );
+        auto motion_server = std::dynamic_pointer_cast< dds_motion_stream_server >( server );
+        if( video_server )
+        {
+            video_server->set_intrinsics( std::move( stream_name_to_video_intrinsics[stream_name] ) );
+        }
+        if( motion_server )
+        {
+            motion_server->set_intrinsics( std::move( stream_name_to_motion_intrinsics[stream_name] ) );
+        }
+
+        realdds::dds_options options;
+        //Get supported options for this stream
+        for( auto sensor : dev.query_sensors() )
+        {
+            std::string const sensor_name = sensor.get_info( RS2_CAMERA_INFO_NAME );
+            if( server->sensor_name().compare( sensor_name ) == 0 )
+            {
+                //Get all sensor supported options
+                auto supported_options = sensor.get_supported_options();
+                //Hack - some options can be queried only if streaming so start sensor and close after query
+                //sensor.open( sensor.get_stream_profiles()[0] );
+                //sensor.start( []( rs2::frame f ) {} );
+                for( auto option : supported_options )
+                {
+                    auto dds_opt = std::make_shared< realdds::dds_option >( std::string( sensor.get_option_name( option ) ),
+                                                                            server->name() );
+                    try
+                    {
+                        dds_opt->set_value( sensor.get_option( option ) );
+                        dds_opt->set_range( to_realdds( sensor.get_option_range( option ) ) );
+                        dds_opt->set_description( sensor.get_option_description( option ) );
+                    }
+                    catch( ... )
+                    {
+                        LOG_ERROR( "Cannot query details of option " << option );
+                        continue; //Some options can be queried only if certain conditions exist skip them for now
+                    }
+                    options.push_back( dds_opt ); //TODO - filter options relevant for stream type
+                }
+                //sensor.stop();
+                //sensor.close();
+            }
+        }
+        server->init_options( options );
         servers.push_back( server );
     }
     return servers;
@@ -134,6 +240,43 @@ std::vector< std::shared_ptr< realdds::dds_stream_server > > get_supported_strea
 
 #undef NAME2SERVER
 
+extrinsics_map get_extrinsics_map( const rs2::device & dev )
+{
+    extrinsics_map ret;
+    std::map< std::string, rs2::stream_profile > stream_name_to_rs2_stream_profile;
+
+    //Iterate over profiles of all sensors and split to streams
+    for( auto sensor : dev.query_sensors() )
+    {
+        auto stream_profiles = sensor.get_stream_profiles();
+        std::for_each( stream_profiles.begin(), stream_profiles.end(), [&]( const rs2::stream_profile & sp ) {
+            std::string stream_name = sp.stream_name();
+            if( stream_name_to_rs2_stream_profile.count( stream_name ) == 0 )
+                stream_name_to_rs2_stream_profile[stream_name] = sp; // Any profile of this stream will do, take the first
+        } );
+    }
+
+    //For each stream, get extrinsics to all other streams
+    for( auto & from : stream_name_to_rs2_stream_profile )
+    {
+        auto const & from_stream_name = from.first;
+        for( auto & to : stream_name_to_rs2_stream_profile )
+        {
+            auto & to_stream_name = to.first;
+            if( from_stream_name != to_stream_name )
+            {
+                //Get rs2::stream_profile objects for get_extrinsics API call
+                const rs2::stream_profile & from_profile = from.second;
+                const rs2::stream_profile & to_profile = to.second;
+                const auto & extrinsics = from_profile.get_extrinsics_to( to_profile );
+                ret[std::make_pair( from_stream_name, to_stream_name )] =
+                    std::make_shared< realdds::extrinsics >( to_realdds( extrinsics ) );
+            }
+        }
+    }
+
+    return ret;
+}
 
 std::string get_topic_root( topics::device_info const & dev_info )
 {
@@ -159,7 +302,8 @@ topics::device_info rs2_device_to_info( rs2::device const & dev )
     dev_info.name = dev.get_info( RS2_CAMERA_INFO_NAME );
     dev_info.serial = dev.get_info( RS2_CAMERA_INFO_SERIAL_NUMBER );
     dev_info.product_line = dev.get_info( RS2_CAMERA_INFO_PRODUCT_LINE );
-    dev_info.locked = ( dev.get_info( RS2_CAMERA_INFO_CAMERA_LOCKED ) == "YES" );
+    dev_info.product_id = dev.get_info( RS2_CAMERA_INFO_PRODUCT_ID );
+    dev_info.locked = ( strcmp( dev.get_info( RS2_CAMERA_INFO_CAMERA_LOCKED ), "YES" ) == 0 );
 
     // Build device topic root path
     dev_info.topic_root = get_topic_root( dev_info );
@@ -262,8 +406,13 @@ try
             // Create a supported streams list for initializing the relevant DDS topics
             auto supported_streams = get_supported_streams( dev );
 
+            auto extrins_map = get_extrinsics_map( dev );
+
+            //TODO - get all device level options
+            realdds::dds_options dev_options;
+
             // Initialize the DDS device server with the supported streams
-            dds_device_server->init( supported_streams );
+            dds_device_server->init( supported_streams, dev_options, extrins_map );
 
             // Keep a pair of device controller and server per RS device
             device_handlers_list.emplace( dev, device_handler{ dev_info, dds_device_server, lrs_device_controller } );

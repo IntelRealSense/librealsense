@@ -28,7 +28,7 @@
 #include <realdds/dds-stream-profile.h>
 #include "software-device.h"
 #include <librealsense2/h/rs_internal.h>
-#include <realdds/topics/device-info/device-info-msg.h>
+#include <realdds/topics/device-info-msg.h>
 #include <realdds/topics/image/image-msg.h>
 #include <rsutils/shared-ptr-singleton.h>
 #include <fastdds/dds/domain/DomainParticipant.hpp>
@@ -235,7 +235,7 @@ namespace librealsense
             
             if( _dds_watcher && _dds_watcher->is_stopped() )
             {
-                start_dds_device_watcher();
+                start_dds_device_watcher( utilities::json::get< size_t >( settings, "dds-message-timeout-ms", 5000 ) );
             }
             //_dds_backend = ...; TODO
         }
@@ -456,6 +456,49 @@ namespace librealsense
         }
     };
 
+    //A facade for a realdds::dds_option exposing librealsense interface
+    class rs2_dds_option : public option_base
+    {
+    public:
+        typedef std::function< void( const std::string & name, float value ) > set_option_callback;
+        typedef std::function< float( const std::string & name ) > query_option_callback;
+
+        rs2_dds_option( const std::shared_ptr< realdds::dds_option > & dds_opt,
+                        set_option_callback set_opt_cb,
+                        query_option_callback query_opt_cb )
+            : option_base( { dds_opt->get_range().min, dds_opt->get_range().max,
+                             dds_opt->get_range().step, dds_opt->get_range().default_value } )
+            , _dds_opt( dds_opt )
+            , _set_opt_cb( set_opt_cb )
+            , _query_opt_cb( query_opt_cb )
+        {
+        }
+
+        void set( float value ) override
+        {
+            if( ! _set_opt_cb )
+                throw std::runtime_error( "Set option callback is not set for option " + _dds_opt->get_name() );
+
+            _set_opt_cb( _dds_opt->get_name(), value );
+        }
+
+        float query() const override
+        {
+            if( !_query_opt_cb )
+                throw std::runtime_error( "Query option callback is not set for option " + _dds_opt->get_name() );
+
+            return _query_opt_cb( _dds_opt->get_name() );
+        }
+
+        bool is_enabled() const override { return true; };
+        const char * get_description() const override { return _dds_opt->get_description().c_str(); };
+
+    protected:
+        std::shared_ptr< realdds::dds_option > _dds_opt;
+
+        set_option_callback _set_opt_cb;
+        query_option_callback _query_opt_cb;
+    };
 
     class dds_sensor_proxy : public software_sensor
     {
@@ -584,24 +627,46 @@ namespace librealsense
                 auto & stream = _streams[sid_index( profile->get_unique_id(), profile->get_stream_index() )];
                 stream->start_streaming( [p = profile, this]( realdds::topics::device::image && dds_frame ) {
                     rs2_stream_profile prof = { p.get() };
-                    rs2_software_video_frame rs2_frame;
-                    
-                    //Copying from dds into LibRS space, same as copy from USB backend.
-                    //TODO - use memory pool or some other frame allocator
-                    rs2_frame.pixels = new uint8_t[dds_frame.size];
-                    if ( !rs2_frame.pixels )
-                        throw std::runtime_error( "Could not allocate memory for new frame" );
-                    memcpy( rs2_frame.pixels, dds_frame.raw_data.data(), dds_frame.size );
-                    
-                    rs2_frame.deleter = []( void * ptr) { delete[] ptr; };
-                    rs2_frame.stride = dds_frame.size / dds_frame.height;
-                    rs2_frame.bpp = rs2_frame.stride / dds_frame.width;
-                    rs2_frame.timestamp = frame_counter * 1000.0 / p->get_framerate(); // TODO - timestamp from dds
-                    rs2_frame.domain = RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK; // TODO - timestamp domain from options?
-                    rs2_frame.frame_number = frame_counter++; // TODO - frame_number from dds
-                    rs2_frame.profile = &prof;
-                    rs2_frame.depth_units = 0.001f; //TODO - depth unit from dds, if needed
-                    on_video_frame( rs2_frame );
+
+                    if( Is< video_stream_profile >(p) )
+                    {
+                        rs2_software_video_frame rs2_frame;
+
+                        //Copying from dds into LibRS space, same as copy from USB backend.
+                        //TODO - use memory pool or some other frame allocator
+                        rs2_frame.pixels = new uint8_t[dds_frame.size];
+                        if( !rs2_frame.pixels )
+                            throw std::runtime_error( "Could not allocate memory for new frame" );
+                        memcpy( rs2_frame.pixels, dds_frame.raw_data.data(), dds_frame.size );
+
+                        rs2_frame.deleter = []( void * ptr ) { delete[] ptr; };
+                        rs2_frame.stride = dds_frame.height > 0 ? dds_frame.size / dds_frame.height : dds_frame.size;
+                        rs2_frame.bpp = dds_frame.width > 0 ? rs2_frame.stride / dds_frame.width : rs2_frame.stride;
+                        rs2_frame.timestamp = frame_counter * 1000.0 / p->get_framerate(); // TODO - timestamp from dds
+                        rs2_frame.domain = RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK; // TODO - timestamp domain from options?
+                        rs2_frame.frame_number = frame_counter++; // TODO - frame_number from dds
+                        rs2_frame.profile = &prof;
+                        rs2_frame.depth_units = 0.001f; //TODO - depth unit from dds, if needed
+                        on_video_frame( rs2_frame );
+                    }
+                    else
+                    {
+                        rs2_software_motion_frame rs2_frame;
+
+                        //Copying from dds into LibRS space, same as copy from USB backend.
+                        //TODO - use memory pool or some other frame allocator
+                        rs2_frame.data = new uint8_t[dds_frame.size];
+                        if( !rs2_frame.data )
+                            throw std::runtime_error( "Could not allocate memory for new frame" );
+                        memcpy( rs2_frame.data, dds_frame.raw_data.data(), dds_frame.size );
+
+                        rs2_frame.deleter = []( void * ptr ) { delete[] ptr; };
+                        rs2_frame.timestamp = frame_counter * 1000.0 / p->get_framerate(); // TODO - timestamp from dds
+                        rs2_frame.domain = RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK; // TODO - timestamp domain from options?
+                        rs2_frame.frame_number = frame_counter++; // TODO - frame_number from dds
+                        rs2_frame.profile = &prof;
+                        on_motion_frame( rs2_frame );
+                    }
                 } );
             }
 
@@ -632,8 +697,60 @@ namespace librealsense
             software_sensor::close();
         }
 
-        //float get_option( rs2_option option ) const override;
-        //void set_option( rs2_option option, float value ) const override;
+        void add_option( std::shared_ptr< realdds::dds_option > option )
+        {
+            //Convert name to rs2_option type
+            rs2_option option_id = RS2_OPTION_COUNT;
+            for( size_t i = 0; i < static_cast< size_t >( RS2_OPTION_COUNT ); i++ )
+            {
+                if( option->get_name().compare( get_string( static_cast< rs2_option >( i ) ) ) == 0 )
+                {
+                    option_id = static_cast< rs2_option >( i );
+                    break;
+                }
+            }
+
+            if( option_id == RS2_OPTION_COUNT )
+                throw librealsense::invalid_value_exception( to_string() << "Option " << option->get_name() << " type not found" );
+
+            auto opt = std::make_shared< rs2_dds_option >( option,
+                [&]( const std::string & name, float value ) { set_option( name, value ); },
+                [&]( const std::string & name ) -> float { return query_option( name ); } );
+            register_option( option_id, opt );
+        }
+
+        void set_option( const std::string & name, float value ) const
+        {
+            // Sensor is setting the option for all supporting streams (with same value)
+            for( auto & stream : _streams )
+            {
+                for( auto & dds_opt : stream.second->options() )
+                {
+                    if( dds_opt->get_name().compare( name ) == 0 )
+                    {
+                        _dev->set_option_value( dds_opt, value );
+                        break;
+                    }
+                }
+            }
+        }
+
+        float query_option( const std::string & name ) const
+        {
+            for( auto & stream : _streams )
+            {
+                for( auto & dds_opt : stream.second->options() )
+                {
+                    if( dds_opt->get_name().compare( name ) == 0 )
+                    {
+                        //Assumes value is same for all relevant streams in the sensor, values are always set together
+                        return _dev->query_option_value( dds_opt );
+                    }
+                }
+            }
+
+            throw std::runtime_error( "Could not find a stream that supports option " + name );
+        }
 
         const std::string & get_name() const { return _name; }
 
@@ -655,6 +772,8 @@ namespace librealsense
     class dds_device_proxy : public software_device
     {
         std::shared_ptr< realdds::dds_device > _dds_dev;
+        std::map< std::string, std::vector< std::shared_ptr< stream_profile_interface > > > _stream_name_to_profiles;
+        std::map< std::string, std::shared_ptr< librealsense::stream > > _stream_name_to_librs_stream;
 
         static rs2_stream to_rs2_stream_type( std::string const & type_string )
         {
@@ -681,7 +800,8 @@ namespace librealsense
         static rs2_video_stream
         to_rs2_video_stream( rs2_stream const stream_type,
                              sid_index const & sidx,
-                             std::shared_ptr< realdds::dds_video_stream_profile > const & profile )
+                             std::shared_ptr< realdds::dds_video_stream_profile > const & profile,
+                             const std::set< realdds::video_intrinsics > & intrinsics)
         {
             rs2_video_stream prof;
             prof.type = stream_type;
@@ -691,7 +811,22 @@ namespace librealsense
             prof.height = profile->height();
             prof.fps = profile->frequency();
             prof.fmt = static_cast< rs2_format >( profile->format().to_rs2() );
-            // TODO - add intrinsics
+            
+            //Handle intrinsics
+            auto intr = std::find_if( intrinsics.begin(), intrinsics.end(), [profile]( const realdds::video_intrinsics & intr ) {
+                return profile->width() == intr.width && profile->height() == intr.height;
+            } );
+            if( intr != intrinsics.end() ) //Some profiles don't have intrinsics
+            {
+                prof.intrinsics.width = intr->width;
+                prof.intrinsics.height = intr->height;
+                prof.intrinsics.ppx = intr->principal_point_x;
+                prof.intrinsics.ppy = intr->principal_point_y;
+                prof.intrinsics.fx = intr->focal_lenght_x;
+                prof.intrinsics.fy = intr->focal_lenght_y;
+                prof.intrinsics.model = static_cast< rs2_distortion >( intr->distortion_model );
+                memcpy( prof.intrinsics.coeffs, intr->distortion_coeffs.data(), sizeof( prof.intrinsics.coeffs ) );
+            }
 
             return prof;
         }
@@ -699,7 +834,8 @@ namespace librealsense
         static rs2_motion_stream
         to_rs2_motion_stream( rs2_stream const stream_type,
                               sid_index const & sidx,
-                              std::shared_ptr< realdds::dds_motion_stream_profile > const & profile )
+                              std::shared_ptr< realdds::dds_motion_stream_profile > const & profile,
+                              const realdds::motion_intrinsics & intrinsics )
         {
             rs2_motion_stream prof;
             prof.type = stream_type;
@@ -708,7 +844,21 @@ namespace librealsense
             prof.fps = profile->frequency();
             prof.fmt = static_cast< rs2_format >( profile->format().to_rs2() );
 
+            memcpy( prof.intrinsics.data, intrinsics.data.data(), sizeof( prof.intrinsics.data ) );
+            memcpy( prof.intrinsics.noise_variances, intrinsics.noise_variances.data(), sizeof( prof.intrinsics.noise_variances ) );
+            memcpy( prof.intrinsics.bias_variances, intrinsics.bias_variances.data(), sizeof( prof.intrinsics.bias_variances ) );
+
             return prof;
+        }
+
+        static rs2_extrinsics to_rs2_extrinsics( const std::shared_ptr< realdds::extrinsics > & dds_extrinsics )
+        {
+            rs2_extrinsics rs2_extr;
+
+            memcpy( rs2_extr.rotation, dds_extrinsics->rotation.data(), sizeof( rs2_extr.rotation ) );
+            memcpy( rs2_extr.translation , dds_extrinsics->translation.data(), sizeof( rs2_extr.translation ) );
+
+            return rs2_extr;
         }
 
     public:
@@ -717,18 +867,19 @@ namespace librealsense
             , _dds_dev( dev )
         {
             LOG_DEBUG( "=====> dds-device-proxy " << this << " created on top of dds-device " << _dds_dev.get() );
-            auto & info = dev->device_info();
-            register_info( RS2_CAMERA_INFO_NAME, info.name );
-            register_info( RS2_CAMERA_INFO_PRODUCT_LINE, info.product_line );
-            register_info( RS2_CAMERA_INFO_SERIAL_NUMBER, info.serial );
-            register_info( RS2_CAMERA_INFO_CAMERA_LOCKED, info.locked ? "YES" : "NO" );
-            register_info( RS2_CAMERA_INFO_PHYSICAL_PORT, info.topic_root );
+            auto & dev_info = dev->device_info();
+            register_info( RS2_CAMERA_INFO_NAME, dev_info.name );
+            register_info( RS2_CAMERA_INFO_SERIAL_NUMBER, dev_info.serial );
+            register_info( RS2_CAMERA_INFO_PRODUCT_LINE, dev_info.product_line );
+            register_info( RS2_CAMERA_INFO_PRODUCT_ID, dev_info.product_id );
+            register_info( RS2_CAMERA_INFO_PHYSICAL_PORT, dev_info.topic_root );
+            register_info( RS2_CAMERA_INFO_CAMERA_LOCKED, dev_info.locked ? "YES" : "NO" );
 
             //Assumes dds_device initialization finished
             struct sensor_info
             {
                 std::shared_ptr< dds_sensor_proxy > proxy;
-                int sensor_index;
+                int sensor_index = 0;
             };
             std::map< std::string, sensor_info > sensor_name_to_info;
             // We assign (sid,index) based on the stream type:
@@ -744,21 +895,22 @@ namespace librealsense
                 count = ( count > 1 ) ? 1 : 0;
             // Now we can finally assign (sid,index):
             _dds_dev->foreach_stream( [&]( std::shared_ptr< realdds::dds_stream > const & stream ) {
-                auto & info = sensor_name_to_info[stream->sensor_name()];
-                if( ! info.proxy )
+                auto & sensor_info = sensor_name_to_info[stream->sensor_name()];
+                if( ! sensor_info.proxy )
                 {
                     // This is a new sensor we haven't seen yet
-                    info.proxy = std::make_shared< dds_sensor_proxy >( stream->sensor_name(), this, _dds_dev );
-                    info.sensor_index = add_sensor( info.proxy );
-                    assert( info.sensor_index == _software_sensors.size() );
-                    _software_sensors.push_back( info.proxy );
+                    sensor_info.proxy = std::make_shared< dds_sensor_proxy >( stream->sensor_name(), this, _dds_dev );
+                    sensor_info.sensor_index = add_sensor( sensor_info.proxy );
+                    assert( sensor_info.sensor_index == _software_sensors.size() );
+                    _software_sensors.push_back( sensor_info.proxy );
                 }
                 auto stream_type = to_rs2_stream_type( stream->type_string() );
                 sid_index sidx( stream_type, counts[stream_type]++ );
-                info.proxy->add_dds_stream( sidx, stream );
+                _stream_name_to_librs_stream[stream->name()] = std::make_shared< librealsense::stream >( stream_type, sidx.index );
+                sensor_info.proxy->add_dds_stream( sidx, stream );
                 LOG_DEBUG( sidx.to_string() << " " << stream->sensor_name() << " : " << stream->name() );
 
-                software_sensor & sensor = get_software_sensor( info.sensor_index );
+                software_sensor & sensor = get_software_sensor( sensor_info.sensor_index );
                 auto video_stream = std::dynamic_pointer_cast< realdds::dds_video_stream >( stream );
                 auto motion_stream = std::dynamic_pointer_cast< realdds::dds_motion_stream >( stream );
                 auto & profiles = stream->profiles();
@@ -767,24 +919,71 @@ namespace librealsense
                 {
                     if( video_stream )
                     {
-                        sensor.add_video_stream(
+                        auto added_stream_profile = sensor.add_video_stream(
                             to_rs2_video_stream(
                                 stream_type,
                                 sidx,
-                                std::static_pointer_cast< realdds::dds_video_stream_profile >( profile ) ),
+                                std::static_pointer_cast< realdds::dds_video_stream_profile >( profile ),
+                                video_stream->get_intrinsics() ),
                             profile == default_profile );
+                        _stream_name_to_profiles[stream->name()].push_back( added_stream_profile ); // for extrinsics
                     }
                     else if( motion_stream )
                     {
-                        sensor.add_motion_stream(
+                        auto added_stream_profile = sensor.add_motion_stream(
                             to_rs2_motion_stream(
                                 stream_type,
                                 sidx,
-                                std::static_pointer_cast< realdds::dds_motion_stream_profile >( profile ) ),
+                                std::static_pointer_cast< realdds::dds_motion_stream_profile >( profile ),
+                                motion_stream->get_intrinsics() ),
                             profile == default_profile );
+                        _stream_name_to_profiles[stream->name()].push_back( added_stream_profile ); // for extrinsics
                     }
                 }
+
+                auto & options = stream->options();
+                for( auto & option : options )
+                {
+                    sensor_info.proxy->add_option( option );
+                }
             } );  // End foreach_stream lambda
+
+            // According to extrinsics_graph (in environment.h) we need 3 steps
+            // 1. Register streams with extrinsics between them
+            for( auto & from_stream : _stream_name_to_librs_stream )
+            {
+                for( auto & to_stream : _stream_name_to_librs_stream )
+                {
+                    if( from_stream.first != to_stream.first )
+                    {
+                        const auto & dds_extr = _dds_dev->get_extrinsics( from_stream.first, to_stream.first );
+                        if( dds_extr )
+                        {
+                            rs2_extrinsics extr = to_rs2_extrinsics( dds_extr );
+                            environment::get_instance().get_extrinsics_graph().register_extrinsics( *from_stream.second,
+                                                                                                    *to_stream.second,
+                                                                                                    extr );
+                        }
+                    }
+                }
+            }
+            // 2. Register all profiles
+            for( auto & it : _stream_name_to_profiles )
+            {
+                for( auto profile : it.second )
+                {
+                    environment::get_instance().get_extrinsics_graph().register_profile( *profile );
+                }
+            }
+            // 3. Link profile to it's stream
+            for( auto & it : _stream_name_to_librs_stream )
+            {
+                for( auto & profile : _stream_name_to_profiles[it.first] )
+                {
+                    environment::get_instance().get_extrinsics_graph().register_same_extrinsics( *it.second, *profile );
+                }
+            }
+            // TODO - need to register extrinsics group in dev?
         } //End dds_device_proxy constructor
     };
 
@@ -807,7 +1006,7 @@ namespace librealsense
 
         platform::backend_device_group get_device_data() const override
         {
-            return platform::backend_device_group{};
+            return platform::backend_device_group{ { platform::playback_device_info{ _dev->device_info().topic_root } } };
         }
     };
 #endif //BUILD_WITH_DDS
@@ -932,28 +1131,35 @@ namespace librealsense
                 LOG_DEBUG("\nDevice connected:\n\n" << std::string(devices_info_added[i]->get_device_data()));
             }
 
-            std::map<uint64_t, devices_changed_callback_ptr> devices_changed_callbacks;
-            {
-                std::lock_guard<std::mutex> lock(_devices_changed_callbacks_mtx);
-                devices_changed_callbacks = _devices_changed_callbacks;
-            }
-
-            for (auto& kvp : devices_changed_callbacks)
-            {
-                try
-                {
-                    kvp.second->on_devices_changed(new rs2_device_list({ shared_from_this(), rs2_devices_info_removed }),
-                                                   new rs2_device_list({ shared_from_this(), rs2_devices_info_added }));
-                }
-                catch (...)
-                {
-                    LOG_ERROR("Exception thrown from user callback handler");
-                }
-            }
-
-            raise_devices_changed(rs2_devices_info_removed, rs2_devices_info_added);
+            invoke_devices_changed_callbacks( rs2_devices_info_removed, rs2_devices_info_added );
         }
     }
+
+    void context::invoke_devices_changed_callbacks( std::vector<rs2_device_info> & rs2_devices_info_removed,
+                                                    std::vector<rs2_device_info> & rs2_devices_info_added )
+    {
+        std::map<uint64_t, devices_changed_callback_ptr> devices_changed_callbacks;
+        {
+            std::lock_guard<std::mutex> lock( _devices_changed_callbacks_mtx );
+            devices_changed_callbacks = _devices_changed_callbacks;
+        }
+
+        for( auto & kvp : devices_changed_callbacks )
+        {
+            try
+            {
+                kvp.second->on_devices_changed( new rs2_device_list( { shared_from_this(), rs2_devices_info_removed } ),
+                                                new rs2_device_list( { shared_from_this(), rs2_devices_info_added } ) );
+            }
+            catch( ... )
+            {
+                LOG_ERROR( "Exception thrown from user callback handler" );
+            }
+        }
+
+        raise_devices_changed( rs2_devices_info_removed, rs2_devices_info_added );
+    }
+
     void context::raise_devices_changed(const std::vector<rs2_device_info>& removed, const std::vector<rs2_device_info>& added)
     {
         if (_devices_changed_callback)
@@ -979,12 +1185,24 @@ namespace librealsense
     }
 
 #ifdef BUILD_WITH_DDS
-    void context::start_dds_device_watcher()
+    void context::start_dds_device_watcher( size_t message_timeout_ms )
     {
-        // TODO Here we should add DDS devices to the `on_device_changed`parameters
-        // on_device_changed(old, curr, _playback_devices, _playback_devices);
-        _dds_watcher->on_device_added( [this]( std::shared_ptr< realdds::dds_device > const & dev ) { dev->run(); } );
-        _dds_watcher->on_device_removed( [this]( std::shared_ptr< realdds::dds_device > const & dev ) {} );
+        _dds_watcher->on_device_added( [this, message_timeout_ms]( std::shared_ptr< realdds::dds_device > const & dev ) {
+            dev->run( message_timeout_ms );
+
+            std::vector<rs2_device_info> rs2_device_info_added;
+            std::vector<rs2_device_info> rs2_device_info_removed;
+            std::shared_ptr< device_info > info = std::make_shared< dds_device_info >( shared_from_this(), dev );
+            rs2_device_info_added.push_back( { shared_from_this(), info } );
+            invoke_devices_changed_callbacks( rs2_device_info_removed, rs2_device_info_added );
+        } );
+        _dds_watcher->on_device_removed( [this]( std::shared_ptr< realdds::dds_device > const & dev ) {
+            std::vector<rs2_device_info> rs2_device_info_added;
+            std::vector<rs2_device_info> rs2_device_info_removed;
+            std::shared_ptr< device_info > info = std::make_shared< dds_device_info >( shared_from_this(), dev );
+            rs2_device_info_removed.push_back( { shared_from_this(), info } );
+            invoke_devices_changed_callbacks( rs2_device_info_removed, rs2_device_info_added );
+        } );
         _dds_watcher->start();
     }
 #endif //BUILD_WITH_DDS
@@ -1097,7 +1315,7 @@ namespace librealsense
         auto prev_playback_devices = _playback_devices;
         _playback_devices[file] = dinfo;
         on_device_changed({}, {}, prev_playback_devices, _playback_devices);
-        return std::move(dinfo);
+        return dinfo;
     }
 
     void context::add_software_device(std::shared_ptr<device_info> dev)

@@ -3,9 +3,9 @@
 
 #include <rsutils/py/pybind11.h>
 
+#include <realdds/dds-defines.h>
 #include <realdds/dds-participant.h>
-#include <realdds/topics/dds-topics.h>
-#include <realdds/topics/device-info/deviceInfoPubSubTypes.h>
+#include <realdds/topics/flexible/flexible-msg.h>
 #include <realdds/topics/flexible/flexiblePubSubTypes.h>
 #include <realdds/dds-device-broadcaster.h>
 #include <realdds/dds-device-server.h>
@@ -19,14 +19,12 @@
 #include <realdds/dds-topic.h>
 #include <realdds/dds-topic-reader.h>
 #include <realdds/dds-topic-writer.h>
-#include <realdds/dds-utilities.h>
 #include <realdds/dds-log-consumer.h>
 
 #include <rsutils/easylogging/easyloggingpp.h>
+
 #include <fastdds/dds/domain/qos/DomainParticipantQos.hpp>
 #include <fastdds/dds/domain/DomainParticipant.hpp>
-#include <fastdds/dds/core/status/SubscriptionMatchedStatus.hpp>
-#include <fastdds/dds/core/status/PublicationMatchedStatus.hpp>
 #include <fastdds/dds/subscriber/SampleInfo.hpp>
 #include <fastrtps/types/DynamicType.h>
 
@@ -195,6 +193,30 @@ PYBIND11_MODULE(NAME, m) {
     //      info = dds.device_info( dds.raw.device_info( reader ) )
     //auto raw = m.def_submodule( "raw", "all the topics that " SNAME " can work with" );
 
+    using realdds::video_intrinsics;
+    py::class_< video_intrinsics, std::shared_ptr< video_intrinsics > >( m, "video_intrinsics" )
+        .def( py::init<>() )
+        .def_readwrite( "width", &video_intrinsics::width )
+        .def_readwrite( "height", &video_intrinsics::height )
+        .def_readwrite( "principal_point_x", &video_intrinsics::principal_point_x )
+        .def_readwrite( "principal_point_y", &video_intrinsics::principal_point_y )
+        .def_readwrite( "focal_lenght_x", &video_intrinsics::focal_lenght_x )
+        .def_readwrite( "focal_lenght_y", &video_intrinsics::focal_lenght_y )
+        .def_readwrite( "distortion_model", &video_intrinsics::distortion_model )
+        .def_readwrite( "distortion_coeffs", &video_intrinsics::distortion_coeffs );
+
+    using realdds::motion_intrinsics;
+    py::class_< motion_intrinsics, std::shared_ptr< motion_intrinsics > >( m, "motion_intrinsics" )
+        .def( py::init<>() )
+        .def_readwrite( "data", &motion_intrinsics::data )
+        .def_readwrite( "noise_variances", &motion_intrinsics::noise_variances )
+        .def_readwrite( "bias_variances", &motion_intrinsics::bias_variances );
+
+    using realdds::extrinsics;
+    py::class_< extrinsics, std::shared_ptr< extrinsics > >( m, "extrinsics" )
+        .def( py::init<>() )
+        .def_readwrite( "rotation", &extrinsics::rotation )
+        .def_readwrite( "translation", &extrinsics::translation );
 
     using realdds::dds_topic;
     py::class_< dds_topic, std::shared_ptr< dds_topic > >( m, "topic" )
@@ -269,53 +291,35 @@ PYBIND11_MODULE(NAME, m) {
     // The actual types are declared as functions and not classes: the py::init<> inheritance rules are pretty strict
     // and, coupled with shared_ptr usage, are very hard to get around. This is much simpler...
     using realdds::topics::device_info;
-    using raw_device_info = realdds::topics::raw::device_info;
-    types.def( "device_info", []() { return TypeSupport( new device_info::type ); } );
+    using realdds::topics::flexible_msg;
+    types.def( "device_info", []() { return TypeSupport( new flexible_msg::type ); } );
 
     py::class_< device_info >( m, "device_info" )
         .def( py::init<>() )
         .def_readwrite( "name", &device_info::name )
         .def_readwrite( "serial", &device_info::serial )
         .def_readwrite( "product_line", &device_info::product_line )
+        .def_readwrite( "product_id", &device_info::product_id )
         .def_readwrite( "locked", &device_info::locked )
         .def_readwrite( "topic_root", &device_info::topic_root )
-        .def( "invalidate", &device_info::invalidate )
-        .def( "is_valid", &device_info::is_valid )
-        .def( "__nonzero__", &device_info::is_valid )  // Called to implement truth value testing in Python 2
-        .def( "__bool__", &device_info::is_valid )     // Called to implement truth value testing in Python 3
         .def( "__repr__",
               []( device_info const & self ) {
                   std::ostringstream os;
                   os << "<" SNAME ".device_info ";
-                  if( ! self.is_valid() )
-                      os << "INVALID";
-                  else
-                  {
-                      if( ! self.name.empty() )
-                          os << "\"" << self.name << "\" ";
-                      if( ! self.serial.empty() )
-                          os << "s/n \"" << self.serial << "\" ";
-                      if( ! self.topic_root.empty() )
-                          os << "@ \"" << self.topic_root << "\" ";
-                      if( ! self.product_line.empty() )
-                          os << "product-line \"" << self.product_line << "\" ";
-                      os << ( self.locked ? "locked" : "unlocked" );
-                  }
+                    if( ! self.name.empty() )
+                        os << "\"" << self.name << "\" ";
+                    if( ! self.serial.empty() )
+                        os << "s/n \"" << self.serial << "\" ";
+                    if( ! self.topic_root.empty() )
+                        os << "@ \"" << self.topic_root << "\" ";
+                    if( ! self.product_line.empty() )
+                        os << "product-line \"" << self.product_line << "\" ";
+                    if( !self.product_id.empty() )
+                        os << "product-id \"" << self.product_id << "\" ";
+                    os << ( self.locked ? "locked" : "unlocked" );
                   os << ">";
                   return os.str();
-              } )
-        .def( "take_next",
-              []( dds_topic_reader & reader ) {
-                  auto actual_type = reader.topic()->get()->get_type_name();
-                  if( actual_type != device_info::type().getName() )
-                      throw std::runtime_error( "can't initialize raw::device_info from " + actual_type );
-                  device_info data;
-                  if( ! device_info::take_next( reader, &data ) )
-                      assert( ! data.is_valid() );
-                  return data;
-              } )
-        .def( "create_topic", &device_info::create_topic )
-        .attr( "TOPIC_NAME" ) = device_info::TOPIC_NAME;
+              } );
 
     using realdds::topics::flexible_msg;
     using raw_flexible = realdds::topics::raw::flexible;
@@ -430,6 +434,27 @@ PYBIND11_MODULE(NAME, m) {
         .def( "add_device", &dds_device_broadcaster::add_device )
         .def( "remove_device", &dds_device_broadcaster::remove_device );
 
+    using realdds::dds_option_range;
+    py::class_< dds_option_range >( m, "dds_option_range" )
+        .def( py::init<>() )
+        .def_readwrite( "min", &dds_option_range::min )
+        .def_readwrite( "max", &dds_option_range::max )
+        .def_readwrite( "step", &dds_option_range::step )
+        .def_readwrite( "default_value", &dds_option_range::default_value );
+
+    using realdds::dds_option;
+    py::class_< dds_option, std::shared_ptr< dds_option > >( m, "dds_option" )
+        .def( py::init< std::string const &, std::string const & >() )
+        .def( "get_name", &dds_option::get_name )
+        .def( "owner_name", &dds_option::owner_name )
+        .def( "get_value", &dds_option::get_value )
+        .def( "set_value", &dds_option::set_value )
+        .def( "get_range", &dds_option::get_range )
+        .def( "set_range", &dds_option::set_range )
+        .def( "get_description", &dds_option::get_description )
+        .def( "set_description", &dds_option::set_description )
+        .def( "to_json", []( dds_option const & self ) { return self.to_json().dump(); } );
+
     using realdds::dds_stream_format;
     py::class_< dds_stream_format >( m, "stream_format" )
         .def( py::init<>() )
@@ -478,7 +503,9 @@ PYBIND11_MODULE(NAME, m) {
         .def( "type_string", &dds_stream_base::type_string )
         .def( "profiles", &dds_stream_base::profiles )
         .def( "init_profiles", &dds_stream_base::init_profiles )
+        .def( "init_options", &dds_stream_base::init_options )
         .def( "default_profile_index", &dds_stream_base::default_profile_index )
+        .def( "options", &dds_stream_base::options )
         .def( "is_open", &dds_stream_base::is_open )
         .def( "is_streaming", &dds_stream_base::is_streaming )
         .def( "get_topic", &dds_stream_base::get_topic );
@@ -500,6 +527,8 @@ PYBIND11_MODULE(NAME, m) {
     using realdds::dds_video_stream_server;
     py::class_< dds_video_stream_server, std::shared_ptr< dds_video_stream_server > >
         video_stream_server_base( m, "video_stream_server", stream_server_base );
+    video_stream_server_base
+        .def( "set_intrinsics", &dds_video_stream_server::set_intrinsics );
 
     using realdds::dds_depth_stream_server;
     py::class_< dds_depth_stream_server, std::shared_ptr< dds_depth_stream_server > >( m, "depth_stream_server", video_stream_server_base )
@@ -524,6 +553,8 @@ PYBIND11_MODULE(NAME, m) {
     using realdds::dds_motion_stream_server;
     py::class_< dds_motion_stream_server, std::shared_ptr< dds_motion_stream_server > >
         motion_stream_server_base( m, "motion_stream_server", stream_server_base );
+    motion_stream_server_base
+        .def( "set_intrinsics", &dds_motion_stream_server::set_intrinsics );
 
     using realdds::dds_accel_stream_server;
     py::class_< dds_accel_stream_server, std::shared_ptr< dds_accel_stream_server > >( m, "accel_stream_server", motion_stream_server_base )
@@ -559,6 +590,8 @@ PYBIND11_MODULE(NAME, m) {
     using realdds::dds_video_stream;
     py::class_< dds_video_stream, std::shared_ptr< dds_video_stream > >
         video_stream_client_base( m, "video_stream", stream_client_base );
+    video_stream_client_base
+        .def( "set_intrinsics", &dds_video_stream::set_intrinsics );
 
     using realdds::dds_depth_stream;
     py::class_< dds_depth_stream, std::shared_ptr< dds_depth_stream > >( m, "depth_stream", video_stream_client_base )
@@ -583,6 +616,8 @@ PYBIND11_MODULE(NAME, m) {
     using realdds::dds_motion_stream;
     py::class_< dds_motion_stream, std::shared_ptr< dds_motion_stream > >
         motion_stream_client_base( m, "motion_stream", stream_client_base );
+    motion_stream_client_base
+        .def( "set_intrinsics", &dds_motion_stream::set_intrinsics );
 
     using realdds::dds_accel_stream;
     py::class_< dds_accel_stream, std::shared_ptr< dds_accel_stream > >( m, "accel_stream", motion_stream_client_base )
@@ -613,6 +648,12 @@ PYBIND11_MODULE(NAME, m) {
                   self.foreach_stream(
                       [&]( std::shared_ptr< dds_stream > const & stream ) { streams.push_back( stream ); } );
                   return streams;
+              } )
+        .def( "options",
+              []( dds_device const & self ) {
+                  std::vector< std::shared_ptr< dds_option > > options;
+                  self.foreach_option( [&]( std::shared_ptr< dds_option > const & option ) { options.push_back( option ); } );
+                  return options;
               } )
         .def( "__repr__", []( dds_device const & self ) {
             std::ostringstream os;
