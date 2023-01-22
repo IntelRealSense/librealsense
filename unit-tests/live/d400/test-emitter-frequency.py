@@ -13,7 +13,7 @@ device = test.find_first_device_or_exit();
 depth_sensor = device.first_depth_sensor()
 
 fw_version = rsutils.version( device.get_info( rs.camera_info.firmware_version ))
-if fw_version <= rsutils.version(5,13,1,53):
+if fw_version <= rsutils.version(5,14,0,0):
     log.i(f"FW version {fw_version} does not support EMITTER_FREQUENCY option, skipping test...")
     test.print_results_and_exit()
 

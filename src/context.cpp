@@ -9,9 +9,9 @@
 #include <array>
 #include <chrono>
 #include "ivcam/sr300.h"
-#include "ds5/ds5-factory.h"
+#include "ds/ds5/ds5-factory.h"
 #include "l500/l500-factory.h"
-#include "ds5/ds5-timestamp.h"
+#include "ds/ds-timestamp.h"
 #include "backend.h"
 #include "mock/recorder.h"
 #include <media/ros/ros_reader.h>
@@ -52,10 +52,6 @@ static std::map< realdds::dds_domain_id, dds_domain_context > dds_domain_context
 
 #include <rsutils/json.h>
 using json = nlohmann::json;
-
-#ifdef WITH_TRACKING
-#include "tm2/tm-info.h"
-#endif
 
 template<unsigned... Is> struct seq{};
 template<unsigned N, unsigned... Is>
@@ -372,10 +368,10 @@ namespace librealsense
             for (auto&& info : uvc_infos)
                 devs.push_back(ctx->get_backend().create_uvc_device(info));
 
-            std::unique_ptr<frame_timestamp_reader> host_timestamp_reader_backup(new ds5_timestamp_reader(environment::get_instance().get_time_service()));
+            std::unique_ptr<frame_timestamp_reader> host_timestamp_reader_backup(new ds_timestamp_reader(environment::get_instance().get_time_service()));
             auto raw_color_ep = std::make_shared<uvc_sensor>("Raw RGB Camera",
                 std::make_shared<platform::multi_pins_uvc_device>(devs),
-                std::unique_ptr<frame_timestamp_reader>(new ds5_timestamp_reader_from_metadata(std::move(host_timestamp_reader_backup))),
+                std::unique_ptr<frame_timestamp_reader>(new ds_timestamp_reader_from_metadata(std::move(host_timestamp_reader_backup))),
                 this);
             auto color_ep = std::make_shared<platform_camera_sensor>(this, raw_color_ep);
             add_sensor(color_ep);
@@ -883,13 +879,6 @@ namespace librealsense
             } );
 #endif //BUILD_WITH_DDS
 
-#ifdef WITH_TRACKING
-        if (mask & RS2_PRODUCT_LINE_T200)
-        {
-            auto tm2_devices = tm2_info::pick_tm2_devices(ctx, devices.usb_devices);
-            std::copy(begin(tm2_devices), end(tm2_devices), std::back_inserter(list));
-        }
-#endif //WITH_TRACKING
         // Supported recovery devices
         if( mask & RS2_PRODUCT_LINE_D400 || mask & RS2_PRODUCT_LINE_SR300 || mask & RS2_PRODUCT_LINE_L500 ) 
         {
@@ -1138,12 +1127,6 @@ namespace librealsense
         _playback_devices.erase(it);
         on_device_changed({},{}, prev_playback_devices, _playback_devices);
     }
-
-#if WITH_TRACKING
-    void context::unload_tracking_module()
-    {
-    }
-#endif
 
     std::vector<std::vector<platform::uvc_device_info>> group_devices_by_unique_id(const std::vector<platform::uvc_device_info>& devices)
     {

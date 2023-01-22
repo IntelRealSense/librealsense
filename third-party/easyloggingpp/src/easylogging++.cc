@@ -1780,10 +1780,12 @@ std::string TypedConfigurations::resolveFilename(const std::string& filename) {
 }
 
 void TypedConfigurations::insertFile(Level level, const std::string& fullFilename) {
+  if( fullFilename.empty() )
+    return;
   std::string resolvedFilename = resolveFilename(fullFilename);
   if (resolvedFilename.empty()) {
-    std::cerr << "Could not load empty file for logging, please re-check your configurations for level ["
-              << LevelHelper::convertToString(level) << "]";
+    std::cerr << "Could not load empty file (fullFIlename= '" << fullFilename << "') for logging, please re - check your configurations for level["
+              << LevelHelper::convertToString(level) << "]" << std::endl;
   }
   std::string filePath = base::utils::File::extractPathFromFilename(resolvedFilename, base::consts::kFilePathSeparator);
   if (filePath.size() < resolvedFilename.size()) {

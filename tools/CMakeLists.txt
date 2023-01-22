@@ -21,12 +21,6 @@ if(BUILD_TOOLS)
     if(BUILD_WITH_DDS)
         add_subdirectory(dds)
     endif()
-
-    if(NOT WIN32)
-        if(BUILD_NETWORK_DEVICE)
-            add_subdirectory(rs-server)
-        endif()
-    endif()
 endif()
 
 if(BUILD_EXAMPLES)

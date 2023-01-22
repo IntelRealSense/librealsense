@@ -3700,7 +3700,7 @@ TEST_CASE("Per-frame metadata sanity check", "[live][!mayfail]") {
 
                 std::vector<internal_frame_additional_data> frames_additional_data;
                 auto frames = 0;
-                double start = internal::get_time();;
+                double start = 0;
                 std::condition_variable cv;
                 std::mutex m;
                 auto first = true;
@@ -5575,7 +5575,6 @@ TEST_CASE("Positional_Sensors_API", "[live]")
         else
         {
             CAPTURE(dev);
-            REQUIRE(dev.is<rs2::tm2>());
             REQUIRE_NOTHROW(dev.first<rs2::pose_sensor>());
             auto pose_snr = dev.first<rs2::pose_sensor>();
             CAPTURE(pose_snr);
@@ -5708,7 +5707,6 @@ TEST_CASE("Wheel_Odometry_API", "[live]")
         else
         {
             CAPTURE(dev);
-            REQUIRE(dev.is<rs2::tm2>());
             auto wheel_odom_snr = dev.first<rs2::wheel_odometer>();
             CAPTURE(wheel_odom_snr);
             REQUIRE(wheel_odom_snr);

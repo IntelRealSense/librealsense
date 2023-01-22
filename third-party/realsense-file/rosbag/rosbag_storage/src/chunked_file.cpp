@@ -36,8 +36,6 @@
 
 #include <iostream>
 
-#include "boost/format.hpp"
-
 //#include <ros/ros.h>
 #ifdef _WIN32
 #    ifdef __MINGW32__
@@ -51,10 +49,11 @@
 #        define fileno _fileno
 #        define ftruncate _chsize_s //Intel Realsense Change, Was: #define ftruncate _chsize 
 #    endif
+#else
+#include <unistd.h>
 #endif
 
 using std::string;
-using boost::format;
 using std::shared_ptr;
 using rs2rosinternal::Exception;
 
@@ -81,7 +80,7 @@ void ChunkedFile::openRead     (string const& filename) { open(filename, "rb"); 
 void ChunkedFile::open(string const& filename, string const& mode) {
     // Check if file is already open
     if (file_)
-        throw BagIOException((format("File already open: %1%") % filename_.c_str()).str());
+        throw BagIOException( "File already open: " + filename );
 
     // Open the file
     if (mode == "r+b") {
@@ -116,7 +115,7 @@ void ChunkedFile::open(string const& filename, string const& mode) {
         #endif
 
     if (!file_)
-        throw BagIOException((format("Error opening file: %1%") % filename.c_str()).str());
+        throw BagIOException( "Error opening file: " + filename );
 
     read_stream_  = std::make_shared<UncompressedStream>(this);
     write_stream_ = std::make_shared<UncompressedStream>(this);
@@ -141,7 +140,7 @@ void ChunkedFile::close() {
     // Close the file
     int success = fclose(file_);
     if (success != 0)
-        throw BagIOException((format("Error closing file: %1%") % filename_.c_str()).str());
+        throw BagIOException( "Error closing file: " + filename_ );
 
     file_ = NULL;
     filename_.clear();

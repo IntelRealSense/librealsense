@@ -33,10 +33,8 @@
 #include "ros/time.h"
 
 #include <string>
-#include "boost/enable_if.hpp"
-
+#include <type_traits>
 #include <memory.h>
-#include <boost/type_traits/remove_reference.hpp>
 
 namespace std_msgs
 {
@@ -73,43 +71,23 @@ namespace message_traits
 {
 
 /**
- * \brief Base type for compile-type true/false tests.  Compatible with Boost.MPL.  classes inheriting from this type
- * are \b true values.
- */
-struct TrueType
-{
-  static const bool value = true;
-  typedef TrueType type;
-};
-
-/**
- * \brief Base type for compile-type true/false tests.  Compatible with Boost.MPL.  classes inheriting from this type
- * are \b false values.
- */
-struct FalseType
-{
-  static const bool value = false;
-  typedef FalseType type;
-};
-
-/**
  * \brief A simple datatype is one that can be memcpy'd directly in array form, i.e. it's a POD, fixed-size type and
  * sizeof(M) == sum(serializationLength(M:a...))
  */
-template<typename M> struct IsSimple : public FalseType {};
+template<typename M> struct IsSimple : public std::false_type {};
 /**
  * \brief A fixed-size datatype is one whose size is constant, i.e. it has no variable-length arrays or strings
  */
-template<typename M> struct IsFixedSize : public FalseType {};
+template<typename M> struct IsFixedSize : public std::false_type {};
 /**
  * \brief HasHeader informs whether or not there is a header that gets serialized as the first thing in the message
  */
-template<typename M> struct HasHeader : public FalseType {};
+template<typename M> struct HasHeader : public std::false_type {};
 
 /**
  * \brief Am I message or not
  */
-template<typename M> struct IsMessage : public FalseType {};
+template<typename M> struct IsMessage : public std::false_type {};
 
 /**
  * \brief Specialize to provide the md5sum for a message
@@ -174,7 +152,7 @@ struct Header
 };
 
 template<typename M>
-struct Header<M, typename boost::enable_if<HasHeader<M> >::type >
+struct Header< M, typename std::enable_if< HasHeader< M >::value >::type >
 {
   static std_msgs::Header* pointer(M& m) { return &m.header; }
   static std_msgs::Header const* pointer(const M& m) { return &m.header; }
@@ -193,7 +171,7 @@ struct FrameId
 };
 
 template<typename M>
-struct FrameId<M, typename boost::enable_if<HasHeader<M> >::type >
+struct FrameId< M, typename std::enable_if< HasHeader< M >::value >::type >
 {
   static std::string* pointer(M& m) { return &m.header.frame_id; }
   static std::string const* pointer(const M& m) { return &m.header.frame_id; }
@@ -213,7 +191,7 @@ struct TimeStamp
 };
 
 template<typename M>
-struct TimeStamp<M, typename boost::enable_if<HasHeader<M> >::type >
+struct TimeStamp< M, typename std::enable_if< HasHeader< M >::value >::type >
 {
   static rs2rosinternal::Time* pointer(typename std::remove_const<M>::type &m) { return &m.header.stamp; }
   static rs2rosinternal::Time const* pointer(const M& m) { return &m.header.stamp; }
@@ -226,7 +204,7 @@ struct TimeStamp<M, typename boost::enable_if<HasHeader<M> >::type >
 template<typename M>
 inline const char* md5sum()
 {
-  return MD5Sum<typename boost::remove_reference<typename std::remove_const<M>::type>::type>::value();
+  return MD5Sum<typename std::remove_reference<typename std::remove_const<M>::type>::type>::value();
 }
 
 /**
@@ -235,7 +213,7 @@ inline const char* md5sum()
 template<typename M>
 inline const char* datatype()
 {
-  return DataType<typename boost::remove_reference<typename std::remove_const<M>::type>::type>::value();
+  return DataType<typename std::remove_reference<typename std::remove_const<M>::type>::type>::value();
 }
 
 /**
@@ -244,7 +222,7 @@ inline const char* datatype()
 template<typename M>
 inline const char* definition()
 {
-  return Definition<typename boost::remove_reference<typename std::remove_const<M>::type>::type>::value();
+  return Definition<typename std::remove_reference<typename std::remove_const<M>::type>::type>::value();
 }
 
 /**
@@ -253,7 +231,7 @@ inline const char* definition()
 template<typename M>
 inline const char* md5sum(const M& m)
 {
-  return MD5Sum<typename boost::remove_reference<typename std::remove_const<M>::type>::type>::value(m);
+  return MD5Sum<typename std::remove_reference<typename std::remove_const<M>::type>::type>::value(m);
 }
 
 /**
@@ -262,7 +240,7 @@ inline const char* md5sum(const M& m)
 template<typename M>
 inline const char* datatype(const M& m)
 {
-  return DataType<typename boost::remove_reference<typename std::remove_const<M>::type>::type>::value(m);
+  return DataType<typename std::remove_reference<typename std::remove_const<M>::type>::type>::value(m);
 }
 
 /**
@@ -271,7 +249,7 @@ inline const char* datatype(const M& m)
 template<typename M>
 inline const char* definition(const M& m)
 {
-  return Definition<typename boost::remove_reference<typename std::remove_const<M>::type>::type>::value(m);
+  return Definition<typename std::remove_reference<typename std::remove_const<M>::type>::type>::value(m);
 }
 
 /**
@@ -280,7 +258,7 @@ inline const char* definition(const M& m)
 template<typename M>
 inline std_msgs::Header* header(M& m)
 {
-  return Header<typename boost::remove_reference<typename std::remove_const<M>::type>::type>::pointer(m);
+  return Header<typename std::remove_reference<typename std::remove_const<M>::type>::type>::pointer(m);
 }
 
 /**
@@ -289,7 +267,7 @@ inline std_msgs::Header* header(M& m)
 template<typename M>
 inline std_msgs::Header const* header(const M& m)
 {
-  return Header<typename boost::remove_reference<typename std::remove_const<M>::type>::type>::pointer(m);
+  return Header<typename std::remove_reference<typename std::remove_const<M>::type>::type>::pointer(m);
 }
 
 /**
@@ -298,7 +276,7 @@ inline std_msgs::Header const* header(const M& m)
 template<typename M>
 inline std::string* frameId(M& m)
 {
-  return FrameId<typename boost::remove_reference<typename std::remove_const<M>::type>::type>::pointer(m);
+  return FrameId<typename std::remove_reference<typename std::remove_const<M>::type>::type>::pointer(m);
 }
 
 /**
@@ -307,7 +285,7 @@ inline std::string* frameId(M& m)
 template<typename M>
 inline std::string const* frameId(const M& m)
 {
-  return FrameId<typename boost::remove_reference<typename std::remove_const<M>::type>::type>::pointer(m);
+  return FrameId<typename std::remove_reference<typename std::remove_const<M>::type>::type>::pointer(m);
 }
 
 /**
@@ -316,7 +294,7 @@ inline std::string const* frameId(const M& m)
 template<typename M>
 inline rs2rosinternal::Time* timeStamp(M& m)
 {
-  return TimeStamp<typename boost::remove_reference<typename std::remove_const<M>::type>::type>::pointer(m);
+  return TimeStamp<typename std::remove_reference<typename std::remove_const<M>::type>::type>::pointer(m);
 }
 
 /**
@@ -325,7 +303,7 @@ inline rs2rosinternal::Time* timeStamp(M& m)
 template<typename M>
 inline rs2rosinternal::Time const* timeStamp(const M& m)
 {
-  return TimeStamp<typename boost::remove_reference<typename std::remove_const<M>::type>::type>::pointer(m);
+  return TimeStamp<typename std::remove_reference<typename std::remove_const<M>::type>::type>::pointer(m);
 }
 
 /**
@@ -334,7 +312,7 @@ inline rs2rosinternal::Time const* timeStamp(const M& m)
 template<typename M>
 inline bool isSimple()
 {
-  return IsSimple<typename boost::remove_reference<typename std::remove_const<M>::type>::type>::value;
+  return IsSimple<typename std::remove_reference<typename std::remove_const<M>::type>::type>::value;
 }
 
 /**
@@ -343,7 +321,7 @@ inline bool isSimple()
 template<typename M>
 inline bool isFixedSize()
 {
-  return IsFixedSize<typename boost::remove_reference<typename std::remove_const<M>::type>::type>::value;
+  return IsFixedSize<typename std::remove_reference<typename std::remove_const<M>::type>::type>::value;
 }
 
 /**
@@ -352,7 +330,7 @@ inline bool isFixedSize()
 template<typename M>
 inline bool hasHeader()
 {
-  return HasHeader<typename boost::remove_reference<typename std::remove_const<M>::type>::type>::value;
+  return HasHeader<typename std::remove_reference<typename std::remove_const<M>::type>::type>::value;
 }
 
 } // namespace message_traits

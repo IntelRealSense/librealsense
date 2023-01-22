@@ -240,11 +240,6 @@ if (IMPORT_DEPTH_CAM_FW)
     target_link_libraries(${PROJECT_NAME} fw)
 endif()
 
-if(BUILD_NETWORK_DEVICE)
-    add_definitions(-DNETWORK_DEVICE)
-    set(RS_VIEWER_LIBS ${RS_VIEWER_LIBS} realsense2-net)
-endif()
-
 target_link_libraries(${PROJECT_NAME} ${DEPENDENCIES} ${RS_VIEWER_LIBS})
 
 set_target_properties (${PROJECT_NAME} PROPERTIES
