@@ -14,14 +14,50 @@
 
 #include <map>
 #include <mutex>
+#include <vector>
 
 using namespace eprosima::fastdds::dds;
 using namespace realdds;
 
 
 namespace {
-    std::map< dds_guid_prefix, std::string > participants;
     std::mutex participants_mutex;
+    typedef int participant_id;
+    participant_id last_participants_id = 0;
+
+    struct participant_info
+    {
+        std::string name;
+        participant_id id;
+
+        participant_info( char const * name_sz )
+        {
+            {
+                std::lock_guard< std::mutex > lock( participants_mutex );
+                id = ++last_participants_id;
+            }
+            if( name_sz )
+            {
+                name = name_sz;
+                if( name_sz[0] == '/' && ! name_sz[1] )
+                {
+                    // This is likely a ROS participant, without an actual name. There will be one per ROS process at
+                    // least, so many could exist with the same name!
+                    // To make it readable, we use the id, converting to '/<id>'
+                    //      010f58cfc2dd816201000000.1c1  ->  /.1
+                    // NOTE: see 1.1.1 Valid Names (http://wiki.ros.org/Names)
+                    //      "A valid name has the following characteristics :
+                    //          - First character is an alpha character ([a-z|A-Z]), tilde (~) or forward slash (/)
+                    //          - Subsequent characters can be alphanumeric ([0-9|a-z|A-Z]), underscores (_), or forward slashes (/)"
+                    // The '.' after the '/' is not strictly valid so can be identified as a custom addition by us...
+                    name += '.';
+                    name += std::to_string( id );
+                }
+            }
+        }
+    };
+
+    std::map< dds_guid_prefix, participant_info > participants;
 }
 
 
@@ -40,15 +76,16 @@ struct dds_participant::listener_impl : public eprosima::fastdds::dds::DomainPar
     {
         switch( info.status )
         {
-        case eprosima::fastrtps::rtps::ParticipantDiscoveryInfo::DISCOVERED_PARTICIPANT:
-            LOG_DEBUG( "+participant '" << info.info.m_participantName << "' (" << _owner.print( info.info.m_guid )
-                                        << ")" );
+        case eprosima::fastrtps::rtps::ParticipantDiscoveryInfo::DISCOVERED_PARTICIPANT: {
+            participant_info pinfo( info.info.m_participantName );
+            LOG_DEBUG( "+participant '" << pinfo.name << "' " << realdds::print( info.info.m_guid ) );
             {
                 std::lock_guard< std::mutex > lock( participants_mutex );
-                participants.emplace( info.info.m_guid.guidPrefix, info.info.m_participantName );
+                participants.emplace( info.info.m_guid.guidPrefix, pinfo );
             }
-            _owner.on_participant_added( info.info.m_guid, info.info.m_participantName.c_str() );
+            _owner.on_participant_added( info.info.m_guid, pinfo.name.c_str() );
             break;
+        }
         case eprosima::fastrtps::rtps::ParticipantDiscoveryInfo::REMOVED_PARTICIPANT:
         case eprosima::fastrtps::rtps::ParticipantDiscoveryInfo::DROPPED_PARTICIPANT:
             LOG_DEBUG( "-participant " << _owner.print( info.info.m_guid ) );
@@ -200,7 +237,7 @@ std::string dds_participant::print( dds_guid const & guid_to_print ) const
     std::lock_guard< std::mutex > lock( participants_mutex );
     auto it = participants.find( pref );
     if( it != participants.end() )
-        participant = it->second;
+        participant = it->second.name;
     return participant;
 }
 
