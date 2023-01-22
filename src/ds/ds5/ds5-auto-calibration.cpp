@@ -2235,10 +2235,13 @@ namespace librealsense
 
         for (int i = 0; i < 4; ++i)
         {
-            left_z_tl[i] /= counter;
-            left_z_tr[i] /= counter;
-            left_z_bl[i] /= counter;
-            left_z_br[i] /= counter;
+            if (counter > 0)
+            {
+                left_z_tl[i] /= counter;
+                left_z_tr[i] /= counter;
+                left_z_bl[i] /= counter;
+                left_z_br[i] /= counter;
+            }
         }
 
         float z_1 = 0.0f;
