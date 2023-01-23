@@ -7,6 +7,7 @@ set(COMMON_SRC
         "${CMAKE_CURRENT_LIST_DIR}/float3.h"
         "${CMAKE_CURRENT_LIST_DIR}/float4.h"
         "${CMAKE_CURRENT_LIST_DIR}/matrix4.h"
+	"${CMAKE_CURRENT_LIST_DIR}/plane.h"
         "${CMAKE_CURRENT_LIST_DIR}/rect.h"
         "${CMAKE_CURRENT_LIST_DIR}/rendering.h"
         "${CMAKE_CURRENT_LIST_DIR}/model-views.h"
