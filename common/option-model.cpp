@@ -510,6 +510,7 @@ bool option_model::draw_checkbox( notifications_model & model,
                                                << ( bool_value ? "ON" : "OFF" ) << ")" );
 
         set_option( opt, bool_value ? 1.f : 0.f, error_message );
+        *invalidate_flag = true;
     }
     if( ImGui::IsItemHovered() && description )
     {
