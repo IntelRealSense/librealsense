@@ -220,7 +220,7 @@ rs2_pose reset_object_pose(const rs2_pose& device_pose_in_world)
 
 rs2_pose pose_inverse(const rs2_pose& p)
 {
-    rs2_pose i;
+    rs2_pose i = { 0 };
     i.rotation = quaternion_conjugate(p.rotation);
     i.translation = vector_negate(quaternion_rotate_vector(i.rotation, p.translation));
     return i;
@@ -228,7 +228,7 @@ rs2_pose pose_inverse(const rs2_pose& p)
 
 rs2_pose pose_multiply(const rs2_pose& ref2_in_ref1, const rs2_pose& ref3_in_ref2)
 {
-    rs2_pose ref3_in_ref1;
+    rs2_pose ref3_in_ref1 = { 0 };
     ref3_in_ref1.rotation = quaternion_multiply(ref2_in_ref1.rotation, ref3_in_ref2.rotation);
     ref3_in_ref1.translation = vector_addition(quaternion_rotate_vector(ref2_in_ref1.rotation, ref3_in_ref2.translation), ref2_in_ref1.translation);
     return ref3_in_ref1;
