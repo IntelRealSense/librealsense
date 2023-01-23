@@ -4,6 +4,7 @@
 #include "sr300-fw-update-device.h"
 #include "sr300.h"
 #include "ivcam-private.h"
+#include <librealsense2/h/rs_internal.h>
 
 #include <rsutils/string/from.h>
 
