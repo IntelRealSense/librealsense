@@ -334,6 +334,8 @@ namespace librealsense
         else
             make_value_cropped_frame(f, ret);
 
+        librealsense::aus_system_counter_increment("COLORIZED_FRAMES", this->get_info(RS2_CAMERA_INFO_NAME));
+
         return ret;
     }
 }

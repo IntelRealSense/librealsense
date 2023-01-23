@@ -5,6 +5,7 @@
 
 #include "api.h"
 #include "log.h"
+#include "aus.h"
 #include "context.h"
 #include "device.h"
 #include "algo.h"
@@ -387,6 +388,78 @@ void rs2_get_video_stream_intrinsics(const rs2_stream_profile* from, rs2_intrins
     *intr = vid->get_intrinsics();
 }
 HANDLE_EXCEPTIONS_AND_RETURN( , from, intr )
+
+void rs2_aus_set( const char * counter, int value, rs2_error ** error ) BEGIN_API_CALL
+{
+    VALIDATE_STRING( counter );
+    librealsense::aus_set( counter, value );
+}
+NOARGS_HANDLE_EXCEPTIONS_AND_RETURN_VOID()
+
+void rs2_aus_increment( const char * counter, rs2_error ** error ) BEGIN_API_CALL
+{
+    VALIDATE_STRING( counter );
+    librealsense::aus_increment( counter );
+}
+NOARGS_HANDLE_EXCEPTIONS_AND_RETURN_VOID()
+
+void rs2_aus_decrement( const char * counter, rs2_error ** error ) BEGIN_API_CALL
+{
+    VALIDATE_STRING( counter );
+    librealsense::aus_decrement( counter );
+}
+NOARGS_HANDLE_EXCEPTIONS_AND_RETURN_VOID()
+
+long long rs2_aus_get( const char * counter, rs2_error ** error ) BEGIN_API_CALL
+{
+    VALIDATE_STRING( counter );
+    return librealsense::aus_get( counter );
+}
+NOARGS_HANDLE_EXCEPTIONS_AND_RETURN( 0 )
+
+void rs2_aus_start( const char * timer, rs2_error ** error ) BEGIN_API_CALL
+{
+    VALIDATE_STRING( timer );
+    librealsense::aus_start( timer );
+}
+NOARGS_HANDLE_EXCEPTIONS_AND_RETURN_VOID()
+
+void rs2_aus_stop( const char * timer, rs2_error ** error ) BEGIN_API_CALL
+{
+    VALIDATE_STRING( timer );
+    librealsense::aus_stop( timer );
+}
+NOARGS_HANDLE_EXCEPTIONS_AND_RETURN_VOID()
+
+
+const rs2_strings_list * rs2_aus_get_counters_list( rs2_error ** error ) BEGIN_API_CALL
+{
+    auto ret = librealsense::aus_get_counters_list();
+    return new rs2_strings_list { std::move( ret ) };
+
+}
+NOARGS_HANDLE_EXCEPTIONS_AND_RETURN( 0 )
+
+int rs2_aus_get_counters_list_size( const rs2_strings_list * buffer, rs2_error ** error ) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL( buffer );
+    return static_cast< int >( buffer->buffer.size() );
+}
+HANDLE_EXCEPTIONS_AND_RETURN( 0, buffer )
+
+void rs2_aus_delete_counters_list( const rs2_strings_list * buffer ) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL( buffer );
+    delete buffer;
+}
+NOEXCEPT_RETURN( , buffer )
+
+const char * rs2_aus_get_counter_data( const rs2_strings_list * buffer, int i, rs2_error ** error ) BEGIN_API_CALL
+{
+    VALIDATE_NOT_NULL( buffer );
+    return buffer->buffer[i].c_str();
+}
+HANDLE_EXCEPTIONS_AND_RETURN( 0, buffer )
 
 // librealsense wrapper around a C function
 class calibration_change_callback : public rs2_calibration_change_callback
@@ -3918,3 +3991,4 @@ float rs2_calculate_target_z(rs2_device* device, rs2_frame_queue* queue1, rs2_fr
     }
 }
 HANDLE_EXCEPTIONS_AND_RETURN(-1.f, device, queue1, queue2, queue3, target_width, target_height)
+

@@ -628,6 +628,9 @@ void log_callback_end( uint32_t fps,
         raise_on_before_streaming_changes(true); //Required to be just before actual start allow recording to work
         _source.set_callback(callback);
         _is_streaming = true;
+  
+        librealsense::aus_start_active_streams_timer(get_device().get_info(RS2_CAMERA_INFO_NAME), get_active_streams());
+
         _device->start_callbacks();
     }
 
@@ -638,6 +641,9 @@ void log_callback_end( uint32_t fps,
             throw wrong_api_call_sequence_exception("stop_streaming() failed. UVC device is not streaming!");
 
         _is_streaming = false;
+
+        librealsense::aus_stop_active_streams_timer(get_device().get_info(RS2_CAMERA_INFO_NAME), get_active_streams());
+
         _device->stop_callbacks();
         _timestamp_reader->reset();
         raise_on_before_streaming_changes(false);
@@ -1036,6 +1042,9 @@ void log_callback_end( uint32_t fps,
             log_callback_end( fps, callback_start_time, stream_type, frame_number );
         });
         _is_streaming = true;
+
+        librealsense::aus_start_active_streams_timer(get_device().get_info(RS2_CAMERA_INFO_NAME), get_active_streams());
+
     }
 
     void hid_sensor::stop()
@@ -1047,6 +1056,9 @@ void log_callback_end( uint32_t fps,
 
         _hid_device->stop_capture();
         _is_streaming = false;
+
+        librealsense::aus_stop_active_streams_timer(get_device().get_info(RS2_CAMERA_INFO_NAME), get_active_streams());
+
         _source.flush();
         _source.reset();
         _hid_iio_timestamp_reader->reset();
