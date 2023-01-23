@@ -8,9 +8,7 @@
 #include <vector>
 #include <mutex>
 #include <array>
-//#include <imgui.h>
 #include <librealsense2/rs.hpp>
-//#include "rendering.h"
 #include "float3.h"
 #include "plane.h"
 
