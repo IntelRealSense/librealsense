@@ -146,7 +146,7 @@ namespace librealsense
             {
                 return get_ds6_intrinsic_by_resolution(
                     *_owner->_coefficients_table_raw,
-                    ds::ds6_calibration_table_id::coefficients_table_id,
+                    ds::ds6_calibration_table_id::depth_calibration_id,
                     profile.width, profile.height);
             }
         }
@@ -471,7 +471,7 @@ namespace librealsense
         register_stream_to_extrinsic_group(*_left_ir_stream, 0);
         register_stream_to_extrinsic_group(*_right_ir_stream, 0);
 
-        _coefficients_table_raw = [this]() { return get_ds6_raw_calibration_table(ds6_calibration_table_id::coefficients_table_id); };
+        _coefficients_table_raw = [this]() { return get_ds6_raw_calibration_table(ds6_calibration_table_id::depth_calibration_id); };
         _new_calib_table_raw = [this]() { return get_new_calibration_table(); };
 
         std::string device_name = (rs500_sku_names.end() != rs500_sku_names.find(_pid)) ? rs500_sku_names.at(_pid) : "RS5xx";

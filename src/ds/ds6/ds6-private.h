@@ -73,9 +73,35 @@ namespace librealsense
 
         enum class ds6_calibration_table_id
         {
-            coefficients_table_id = 0xb4,
+            depth_eeprom_toc_id = 0xb0,
+            module_info_id = 0xb1,
+            rgb_lens_shading_id = 0xb2,
+            str_lens_shading_id = 0xb3,
+            depth_calibration_id = 0xb4,
+            left_x_lut_id = 0xb5,
+            left_y_lut_id = 0xb6,
+            right_x_lut_id = 0xb7,
+            right_y_lut_id = 0xb8,
             rgb_calibration_id = 0xb9,
+            rgb_lut_id = 0xba,
+            imu_calibration_id = 0xbb,
             max_id = -1
+        };
+
+        const std::map<ds::ds6_calibration_table_id, uint32_t> ds6_calibration_tables_size =
+        {
+            {ds6_calibration_table_id::depth_eeprom_toc_id, 640},
+            {ds6_calibration_table_id::module_info_id, 320},
+            {ds6_calibration_table_id::rgb_lens_shading_id, 1088},
+            {ds6_calibration_table_id::str_lens_shading_id, 1088},
+            {ds6_calibration_table_id::depth_calibration_id, 512},
+            {ds6_calibration_table_id::left_x_lut_id, 4160},
+            {ds6_calibration_table_id::left_y_lut_id, 4160},
+            {ds6_calibration_table_id::right_x_lut_id, 4160},
+            {ds6_calibration_table_id::right_y_lut_id, 4160},
+            {ds6_calibration_table_id::rgb_calibration_id, 256},
+            {ds6_calibration_table_id::rgb_lut_id, 8256},
+            {ds6_calibration_table_id::imu_calibration_id, 192}
         };
 
         struct ds6_calibration
@@ -94,8 +120,7 @@ namespace librealsense
             {
                 for (auto i = 0; i < max_ds_rect_resolutions; i++)
                     depth_intrinsic[i] = {};
-                data_present.emplace(ds6_calibration_table_id::coefficients_table_id, false);
-                //data_present.emplace(ds6_calibration_table_id::depth_calibration_id, false);
+                data_present.emplace(ds6_calibration_table_id::depth_calibration_id, false);
                 data_present.emplace(ds6_calibration_table_id::rgb_calibration_id, false);
                 //data_present.emplace(ds6_calibration_table_id::fisheye_calibration_id, false);
                 //data_present.emplace(ds6_calibration_table_id::imu_calibration_id, false);
