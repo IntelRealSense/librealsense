@@ -11,7 +11,7 @@
 #include <librealsense2/hpp/rs_internal.hpp>
 
 using namespace rs2;
-using namespace utilities::string;
+using namespace rsutils::string;
 
 void output_model::thread_loop()
 {
@@ -43,8 +43,12 @@ void output_model::thread_loop()
                             }
                             catch (const std::exception& ex)
                             {
-                                add_log(RS2_LOG_SEVERITY_WARN, __FILE__, __LINE__,
-                                    to_string() << "Invalid Hardware Logger XML at '" << hwlogger_xml << "': " << ex.what() << "\nEither configure valid XML or remove it");
+                                add_log( RS2_LOG_SEVERITY_WARN,
+                                         __FILE__,
+                                         __LINE__,
+                                         rsutils::string::from()
+                                             << "Invalid Hardware Logger XML at '" << hwlogger_xml << "': " << ex.what()
+                                             << "\nEither configure valid XML or remove it" );
                             }
                         }
 
@@ -60,9 +64,11 @@ void output_model::thread_loop()
                                 {
                                     parsed_ok = true;
 
-                                    add_log(message.get_severity(),
-                                        parsed.file_name(), parsed.line(), to_string()
-                                            << "FW-LOG [" << parsed.thread_name() << "] " << parsed.message());
+                                    add_log( message.get_severity(),
+                                             parsed.file_name(),
+                                             parsed.line(),
+                                             rsutils::string::from()
+                                                 << "FW-LOG [" << parsed.thread_name() << "] " << parsed.message() );
                                 }
                             }
 
@@ -80,8 +86,10 @@ void output_model::thread_loop()
                 }
                 catch(const std::exception& ex)
                 {
-                    add_log(RS2_LOG_SEVERITY_WARN, __FILE__, __LINE__,
-                        to_string() << "Failed to fetch firmware logs: " << ex.what());
+                    add_log( RS2_LOG_SEVERITY_WARN,
+                             __FILE__,
+                             __LINE__,
+                             rsutils::string::from() << "Failed to fetch firmware logs: " << ex.what() );
                 }
             }
         // FW define the logs polling intervals to be no less than 100msec to cope with limited resources.
@@ -382,7 +390,7 @@ void output_model::draw(ux_window& win, rect view_rect, device_models_list & dev
             if (log.line_number)
             {
                 line = log.filename.substr(log.filename.find_last_of("/\\") + 1) + ":";
-                line += std::string(to_string() << log.line_number) + " - ";
+                line += std::string( rsutils::string::from() << log.line_number) + " - ";
                 line += log.line;
             }
 
@@ -442,7 +450,7 @@ void output_model::draw(ux_window& win, rect view_rect, device_models_list & dev
             ImGui::SetCursorPosX(ImGui::GetCursorPosX() - 4);
             ImGui::SetCursorPosY(ImGui::GetCursorPosY() - 4);
 
-            std::string label = to_string() << "##log_entry" << i++;
+            std::string label = rsutils::string::from() << "##log_entry" << i++;
             ImGui::InputTextEx(label.c_str(),
                         (char*)line.data(),
                         static_cast<int>(line.size() + 1),
@@ -454,7 +462,7 @@ void output_model::draw(ux_window& win, rect view_rect, device_models_list & dev
             ImGui::PushStyleColor(ImGuiCol_HeaderHovered, light_blue);
             ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, white);
             ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(5,5));
-            label = to_string() << "##log_entry" << i << "_context_menu";
+            label = rsutils::string::from() << "##log_entry" << i << "_context_menu";
             if (ImGui::BeginPopupContextItem(label.c_str()))
             {
                 log.selected = true;
@@ -786,7 +794,7 @@ void output_model::run_command(std::string command, device_models_list & device_
 
         if (std::regex_match(command, e))
         {
-            add_log(RS2_LOG_SEVERITY_INFO, __FILE__, 0, to_string() << "Trying to send " << command << "...");
+            add_log(RS2_LOG_SEVERITY_INFO, __FILE__, 0, rsutils::string::from() << "Trying to send " << command << "...");
 
             std::vector<uint8_t> raw_data;
             std::stringstream ss(command);
@@ -859,7 +867,7 @@ void output_model::run_command(std::string command, device_models_list & device_
                     found = true;
                     auto res = dbg.send_and_receive_raw_data(buffer);
 
-                    std::string response = to_string() << "\n" << terminal_parser.parse_response(to_lower(command), res);
+                    std::string response = rsutils::string::from() << "\n" << terminal_parser.parse_response(to_lower(command), res);
                     add_log(RS2_LOG_SEVERITY_INFO, __FILE__, 0, response);
                 }
             }
@@ -870,7 +878,7 @@ void output_model::run_command(std::string command, device_models_list & device_
             return;
         }
 
-        add_log(RS2_LOG_SEVERITY_WARN, __FILE__, __LINE__, to_string() << "Unrecognized command '" << command << "'");
+        add_log(RS2_LOG_SEVERITY_WARN, __FILE__, __LINE__, rsutils::string::from() << "Unrecognized command '" << command << "'");
     }
     catch(const std::exception& ex)
     {
@@ -910,7 +918,7 @@ bool output_model::user_defined_command( std::string command, device_models_list
         add_log( RS2_LOG_SEVERITY_WARN,
                  __FILE__,
                  __LINE__,
-                 to_string() << "None of the connected devices supports '" << command << "'" );
+                 rsutils::string::from() << "None of the connected devices supports '" << command << "'" );
     }
 
     return user_defined_command_detected;
@@ -954,7 +962,7 @@ void stream_dashboard::draw_dashboard(ux_window& win, rect& r)
     for (int i = 0; i <= ticks_y; i++)
     {
         auto y = max_y - i * (gap_y / ticks_y);
-        std::string y_label = to_string() << std::fixed << std::setprecision(2) << y;
+        std::string y_label = rsutils::string::from() << std::fixed << std::setprecision(2) << y;
         auto size = ImGui::CalcTextSize(y_label.c_str());
         max_y_label_width = std::max(max_y_label_width,
             size.x);
@@ -977,7 +985,7 @@ void stream_dashboard::draw_dashboard(ux_window& win, rect& r)
     ImGui::PushStyleColor(ImGuiCol_Text, grey);
     ImGui::SetCursorPosX(r.w - 25);
     ImGui::SetCursorPosY(3);
-    std::string id = to_string() << u8"\uF00D##Close_" << name;
+    std::string id = rsutils::string::from() << u8"\uF00D##Close_" << name;
     if (ImGui::Button(id.c_str(),ImVec2(22,22)))
     {
         close();
@@ -996,7 +1004,7 @@ void stream_dashboard::draw_dashboard(ux_window& win, rect& r)
     for (int i = 0; i <= ticks_y; i++)
     {
         auto y = max_y - i * (gap_y / ticks_y);
-        std::string y_label = to_string() << std::fixed << std::setprecision(2) << y;
+        std::string y_label = rsutils::string::from() << std::fixed << std::setprecision(2) << y;
         auto y_pixel = ImGui::GetTextLineHeight() + i * (height_y / ticks_y);
         ImGui::SetCursorPos(ImVec2( 10, y_pixel ));
         ImGui::Text("%s", y_label.c_str());
@@ -1015,7 +1023,7 @@ void stream_dashboard::draw_dashboard(ux_window& win, rect& r)
         for (int i = 0; i <= ticks_x; i++)
         {
             auto x = min_x + i * (gap_x / ticks_x);
-            std::string x_label = to_string() << std::fixed << std::setprecision(2) << x;
+            std::string x_label = rsutils::string::from() << std::fixed << std::setprecision(2) << x;
             auto size = ImGui::CalcTextSize(x_label.c_str());
             total += size.x;
         }
@@ -1027,7 +1035,7 @@ void stream_dashboard::draw_dashboard(ux_window& win, rect& r)
     for (int i = 0; i < ticks_x; i++)
     {
         auto x = min_x + i * (gap_x / ticks_x);
-        std::string x_label = to_string() << std::fixed << std::setprecision(2) << x;
+        std::string x_label = rsutils::string::from() << std::fixed << std::setprecision(2) << x;
         ImGui::SetCursorPos(ImVec2( 15 + max_y_label_width+ i * (graph_width / ticks_x), r.h - ImGui::GetTextLineHeight() ));
         ImGui::Text("%s", x_label.c_str());
 

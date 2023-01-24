@@ -17,9 +17,7 @@
 #include "l500-depth.h"
 #include "l500-motion.h"
 #include "l500-color.h"
-#include "l535-color-device.h"
 #include "l500-serializable.h"
-#include "l535-device-options.h"
 #include "../firmware_logger_device.h"
 
 namespace librealsense
@@ -65,45 +63,6 @@ namespace librealsense
         };
     };
 
-    class l535_device : public l500_depth,
-        public l535::device_options,
-        public l535::color_device,
-        public l500_motion,
-        public l500_serializable,
-        public firmware_logger_device
-    {
-    public:
-        l535_device(std::shared_ptr<context> ctx,
-            const platform::backend_device_group& group,
-            bool register_device_notifications)
-            : device(ctx, group, register_device_notifications),
-            l500_device(ctx, group),
-            l500_depth(ctx, group),
-            device_options(ctx, group),
-            color_device(ctx, group),
-            l500_motion(ctx, group),
-            l500_serializable(l500_device::_hw_monitor, get_depth_sensor()),
-            firmware_logger_device(ctx, group, l500_device::_hw_monitor,
-                get_firmware_logs_command(),
-                get_flash_logs_command())
-        {}
-        
-        std::shared_ptr<matcher> create_matcher(const frame_holder& frame) const override;
-        
-        std::vector<tagged_profile> get_profiles_tags() const override
-        {
-            std::vector<tagged_profile> tags;
-            auto depth_profiles = l500_depth::get_profiles_tags();
-            auto color_profiles = l500_color::get_profiles_tags();
-            auto motion_profiles = l500_motion::get_profiles_tags();
-            
-            tags.insert(tags.begin(), depth_profiles.begin(), depth_profiles.end());
-            tags.insert(tags.begin(), color_profiles.begin(), color_profiles.end());
-            tags.insert(tags.begin(), motion_profiles.begin(), motion_profiles.end());
-            return tags;
-        };
-    };
-
     class rs500_device : public l500_depth,
         public firmware_logger_device
     {
@@ -138,11 +97,9 @@ namespace librealsense
         case L515_PID_PRE_PRQ:
         case L515_PID:
             return std::make_shared<l515_device>(ctx, group, register_device_notifications);
-        case L535_PID:
-            return std::make_shared<l535_device>(ctx, group, register_device_notifications);
        default:
-            throw std::runtime_error(to_string() << "Unsupported L500 model! 0x"
-                << std::hex << std::setw(4) << std::setfill('0') << (int)pid);
+            throw std::runtime_error( rsutils::string::from() << "Unsupported L500 model! 0x" << std::hex
+                                                              << std::setw( 4 ) << std::setfill( '0' ) << (int)pid );
         }
     }
 
@@ -153,7 +110,7 @@ namespace librealsense
         std::vector<platform::uvc_device_info> chosen;
         std::vector<std::shared_ptr<device_info>> results;
 
-        auto correct_pid = filter_by_product(group.uvc_devices, { L500_PID, L515_PID, L535_PID, L515_PID_PRE_PRQ });
+        auto correct_pid = filter_by_product(group.uvc_devices, { L500_PID, L515_PID, L515_PID_PRE_PRQ });
         auto group_devices = group_devices_and_hids_by_unique_id(group_devices_by_unique_id(correct_pid), group.hid_devices);
         for (auto& g : group_devices)
         {
@@ -206,21 +163,6 @@ namespace librealsense
         auto identity_accel = std::make_shared<identity_matcher>(_accel_stream->get_unique_id(), _accel_stream->get_stream_type());
 
         std::vector<std::shared_ptr<matcher>> depth_rgb_imu_matchers = {ts_depth_rgb, identity_gyro, identity_accel};
-        return std::make_shared<composite_identity_matcher>(depth_rgb_imu_matchers);
-    }
-
-    std::shared_ptr<matcher> l535_device::create_matcher(const frame_holder & frame) const
-    {
-        LOG_DEBUG("l535_device::create_matcher");
-        std::vector<std::shared_ptr<matcher>> depth_rgb_matchers = { l500_depth::create_matcher(frame),
-            std::make_shared<identity_matcher>(_color_stream->get_unique_id(), _color_stream->get_stream_type()) };
-        
-        auto ts_depth_rgb = std::make_shared<timestamp_composite_matcher>(depth_rgb_matchers);
-        
-        auto identity_gyro = std::make_shared<identity_matcher>(_gyro_stream->get_unique_id(), _gyro_stream->get_stream_type());
-        auto identity_accel = std::make_shared<identity_matcher>(_accel_stream->get_unique_id(), _accel_stream->get_stream_type());
-        
-        std::vector<std::shared_ptr<matcher>> depth_rgb_imu_matchers = { ts_depth_rgb, identity_gyro, identity_accel };
         return std::make_shared<composite_identity_matcher>(depth_rgb_imu_matchers);
     }
 }

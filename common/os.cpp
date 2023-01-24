@@ -28,7 +28,7 @@
 #include <wchar.h>
 #include <KnownFolders.h>
 #include <shlobj.h>
-#include <librealsense2/utilities/os/hresult.h>
+#include <rsutils/os/hresult.h>
 #endif
 
 #if (defined(_WIN32) || defined(_WIN64))

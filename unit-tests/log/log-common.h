@@ -4,7 +4,7 @@
 #pragma once
 
 #include <unit-tests/test.h>
-#include <easylogging++.h>
+#include <rsutils/easylogging/easyloggingpp.h>
 
 
 // Define our own logging macro for debugging to stdout

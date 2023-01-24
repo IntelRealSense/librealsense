@@ -22,18 +22,18 @@ nlohmann::json video_intrinsics::to_json() const
     video_intrinsics ret;
     int index = 0;
 
-    ret.width = utilities::json::get< int >( j, index++ );
-    ret.height = utilities::json::get< int >( j, index++ );
-    ret.principal_point_x = utilities::json::get< float >( j, index++ );
-    ret.principal_point_y = utilities::json::get< float >( j, index++ );
-    ret.focal_lenght_x = utilities::json::get< float >( j, index++ );
-    ret.focal_lenght_y = utilities::json::get< float >( j, index++ );
-    ret.distortion_model = utilities::json::get< int >( j, index++ );
-    ret.distortion_coeffs[0] = utilities::json::get< float >( j, index++ );
-    ret.distortion_coeffs[1] = utilities::json::get< float >( j, index++ );
-    ret.distortion_coeffs[2] = utilities::json::get< float >( j, index++ );
-    ret.distortion_coeffs[3] = utilities::json::get< float >( j, index++ );
-    ret.distortion_coeffs[4] = utilities::json::get< float >( j, index++ );
+    ret.width = rsutils::json::get< int >( j, index++ );
+    ret.height = rsutils::json::get< int >( j, index++ );
+    ret.principal_point_x = rsutils::json::get< float >( j, index++ );
+    ret.principal_point_y = rsutils::json::get< float >( j, index++ );
+    ret.focal_lenght_x = rsutils::json::get< float >( j, index++ );
+    ret.focal_lenght_y = rsutils::json::get< float >( j, index++ );
+    ret.distortion_model = rsutils::json::get< int >( j, index++ );
+    ret.distortion_coeffs[0] = rsutils::json::get< float >( j, index++ );
+    ret.distortion_coeffs[1] = rsutils::json::get< float >( j, index++ );
+    ret.distortion_coeffs[2] = rsutils::json::get< float >( j, index++ );
+    ret.distortion_coeffs[3] = rsutils::json::get< float >( j, index++ );
+    ret.distortion_coeffs[4] = rsutils::json::get< float >( j, index++ );
 
     if( index != j.size() )
         DDS_THROW( runtime_error, "expected end of json at index " + std::to_string( index ) );
@@ -57,24 +57,24 @@ nlohmann::json motion_intrinsics::to_json() const
     motion_intrinsics ret;
     int index = 0;
 
-    ret.data[0][0] = utilities::json::get< float >( j, index++ );
-    ret.data[0][1] = utilities::json::get< float >( j, index++ );
-    ret.data[0][2] = utilities::json::get< float >( j, index++ );
-    ret.data[0][3] = utilities::json::get< float >( j, index++ );
-    ret.data[1][0] = utilities::json::get< float >( j, index++ );
-    ret.data[1][1] = utilities::json::get< float >( j, index++ );
-    ret.data[1][2] = utilities::json::get< float >( j, index++ );
-    ret.data[1][3] = utilities::json::get< float >( j, index++ );
-    ret.data[2][0] = utilities::json::get< float >( j, index++ );
-    ret.data[2][1] = utilities::json::get< float >( j, index++ );
-    ret.data[2][2] = utilities::json::get< float >( j, index++ );
-    ret.data[2][3] = utilities::json::get< float >( j, index++ );
-    ret.noise_variances[0] = utilities::json::get< float >( j, index++ );
-    ret.noise_variances[1] = utilities::json::get< float >( j, index++ );
-    ret.noise_variances[2] = utilities::json::get< float >( j, index++ );
-    ret.bias_variances[0] = utilities::json::get< float >( j, index++ );
-    ret.bias_variances[1] = utilities::json::get< float >( j, index++ );
-    ret.bias_variances[2] = utilities::json::get< float >( j, index++ );
+    ret.data[0][0] = rsutils::json::get< float >( j, index++ );
+    ret.data[0][1] = rsutils::json::get< float >( j, index++ );
+    ret.data[0][2] = rsutils::json::get< float >( j, index++ );
+    ret.data[0][3] = rsutils::json::get< float >( j, index++ );
+    ret.data[1][0] = rsutils::json::get< float >( j, index++ );
+    ret.data[1][1] = rsutils::json::get< float >( j, index++ );
+    ret.data[1][2] = rsutils::json::get< float >( j, index++ );
+    ret.data[1][3] = rsutils::json::get< float >( j, index++ );
+    ret.data[2][0] = rsutils::json::get< float >( j, index++ );
+    ret.data[2][1] = rsutils::json::get< float >( j, index++ );
+    ret.data[2][2] = rsutils::json::get< float >( j, index++ );
+    ret.data[2][3] = rsutils::json::get< float >( j, index++ );
+    ret.noise_variances[0] = rsutils::json::get< float >( j, index++ );
+    ret.noise_variances[1] = rsutils::json::get< float >( j, index++ );
+    ret.noise_variances[2] = rsutils::json::get< float >( j, index++ );
+    ret.bias_variances[0] = rsutils::json::get< float >( j, index++ );
+    ret.bias_variances[1] = rsutils::json::get< float >( j, index++ );
+    ret.bias_variances[2] = rsutils::json::get< float >( j, index++ );
 
     if( index != j.size() )
         DDS_THROW( runtime_error, "expected end of json at index " + std::to_string( index ) );
@@ -97,18 +97,18 @@ nlohmann::json extrinsics::to_json() const
     extrinsics ret;
     int index = 0;
 
-    ret.rotation[0] = utilities::json::get< float >( j, index++ );
-    ret.rotation[1] = utilities::json::get< float >( j, index++ );
-    ret.rotation[2] = utilities::json::get< float >( j, index++ );
-    ret.rotation[3] = utilities::json::get< float >( j, index++ );
-    ret.rotation[4] = utilities::json::get< float >( j, index++ );
-    ret.rotation[5] = utilities::json::get< float >( j, index++ );
-    ret.rotation[6] = utilities::json::get< float >( j, index++ );
-    ret.rotation[7] = utilities::json::get< float >( j, index++ );
-    ret.rotation[8] = utilities::json::get< float >( j, index++ );
-    ret.translation[0] = utilities::json::get< float >( j, index++ );
-    ret.translation[1] = utilities::json::get< float >( j, index++ );
-    ret.translation[2] = utilities::json::get< float >( j, index++ );
+    ret.rotation[0] = rsutils::json::get< float >( j, index++ );
+    ret.rotation[1] = rsutils::json::get< float >( j, index++ );
+    ret.rotation[2] = rsutils::json::get< float >( j, index++ );
+    ret.rotation[3] = rsutils::json::get< float >( j, index++ );
+    ret.rotation[4] = rsutils::json::get< float >( j, index++ );
+    ret.rotation[5] = rsutils::json::get< float >( j, index++ );
+    ret.rotation[6] = rsutils::json::get< float >( j, index++ );
+    ret.rotation[7] = rsutils::json::get< float >( j, index++ );
+    ret.rotation[8] = rsutils::json::get< float >( j, index++ );
+    ret.translation[0] = rsutils::json::get< float >( j, index++ );
+    ret.translation[1] = rsutils::json::get< float >( j, index++ );
+    ret.translation[2] = rsutils::json::get< float >( j, index++ );
 
     if( index != j.size() )
         DDS_THROW( runtime_error, "expected end of json at index " + std::to_string( index ) );

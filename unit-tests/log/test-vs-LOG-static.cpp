@@ -3,7 +3,7 @@
 
 //#cmake: static!
 
-#include <easylogging++.h>
+#include <rsutils/easylogging/easyloggingpp.h>
 // Catch also defines CHECK(), and so we have to undefine it or we get compilation errors!
 #undef CHECK
 #include "../catch.h"
@@ -33,7 +33,8 @@ TEST_CASE( "rs2_log vs LOG() - internal", "[log]" )
     protected:
         void handle( const el::LogDispatchData* data ) noexcept override
         {
-            (*pn_callbacks)++;
+            if( pn_callbacks )
+                (*pn_callbacks)++;
             TRACE( data->logMessage()->logger()->logBuilder()->build( data->logMessage(), true ));
         }
     };
@@ -47,15 +48,12 @@ TEST_CASE( "rs2_log vs LOG() - internal", "[log]" )
     LOG(INFO) << "Log message to default logger";
     REQUIRE( n_callbacks == 1 );
 
-    // CLOG(XXX,"librealsense") is the librealsense logger
-    CLOG(INFO, "librealsense") << "Log message to \"librealsense\" logger";
+    CLOG(INFO, LIBREALSENSE_ELPP_ID) << "Log message to \"librealsense\" logger";
     REQUIRE( n_callbacks == 2 );
 
-    // LOG_XXX() is same as CLOG( ..., "librealsense" )
     LOG_INFO( "Log message using LOG_INFO()" );
     REQUIRE( n_callbacks == 3 );
 
-    // LOG_XXX() is same as CLOG( ..., "librealsense" )
     REQUIRE_NOTHROW( rs2_log( RS2_LOG_SEVERITY_INFO, "Log message using rs2_log()", nullptr ));
     REQUIRE( n_callbacks == 4 );
 

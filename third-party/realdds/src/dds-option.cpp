@@ -4,7 +4,7 @@
 #include <realdds/dds-option.h>
 #include <realdds/dds-exceptions.h>
 
-#include <librealsense2/utilities/json.h>
+#include <rsutils/json.h>
 using nlohmann::json;
 
 
@@ -22,13 +22,13 @@ dds_option::dds_option( nlohmann::json const & j, const std::string & owner_name
 {
     int index = 0;
 
-    _name                = utilities::json::get< std::string >( j, index++ );
-    _value               = utilities::json::get< float >( j, index++ );
-    _range.min           = utilities::json::get< float >( j, index++ );
-    _range.max           = utilities::json::get< float >( j, index++ );
-    _range.step          = utilities::json::get< float >( j, index++ );
-    _range.default_value = utilities::json::get< float >( j, index++ );
-    _description         = utilities::json::get< std::string >( j, index++ );
+    _name                = rsutils::json::get< std::string >( j, index++ );
+    _value               = rsutils::json::get< float >( j, index++ );
+    _range.min           = rsutils::json::get< float >( j, index++ );
+    _range.max           = rsutils::json::get< float >( j, index++ );
+    _range.step          = rsutils::json::get< float >( j, index++ );
+    _range.default_value = rsutils::json::get< float >( j, index++ );
+    _description         = rsutils::json::get< std::string >( j, index++ );
 
     if( index != j.size() )
         DDS_THROW( runtime_error, "expected end of json at index " + std::to_string( index ) );

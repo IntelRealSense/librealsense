@@ -3,8 +3,8 @@
 
 #include "lrs-device-controller.h"
 
-#include <librealsense2/utilities/easylogging/easyloggingpp.h>
-#include <librealsense2/utilities/json.h>
+#include <rsutils/easylogging/easyloggingpp.h>
+#include <rsutils/json.h>
 
 #include <realdds/dds-device-server.h>
 #include <realdds/dds-stream-server.h>

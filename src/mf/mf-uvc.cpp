@@ -28,6 +28,8 @@ The library will be compiled without the metadata support!\n")
 #include "../types.h"
 #include "uvc/uvc-types.h"
 
+#include <rsutils/string/from.h>
+
 #include "Shlwapi.h"
 #include <Windows.h>
 #include <limits>
@@ -35,7 +37,6 @@ The library will be compiled without the metadata support!\n")
 #include <vidcap.h>
 #include <ksmedia.h>    // Metadata Extension
 #include <Mferror.h>
-#include <librealsense2/utilities/os/hresult.h>
 
 #pragma comment(lib, "Shlwapi.lib")
 #pragma comment(lib, "mf.lib")
@@ -322,7 +323,8 @@ namespace librealsense
             CHECK_HR( hr );
 
             if (bytes_received != len)
-                throw std::runtime_error(to_string() << "Get XU n:" << (int)ctrl << " received " << bytes_received << "/" << len << " bytes");
+                throw std::runtime_error( rsutils::string::from() << "Get XU n:" << (int)ctrl << " received "
+                                                                  << bytes_received << "/" << len << " bytes" );
 
             return true;
         }
@@ -541,7 +543,7 @@ namespace librealsense
                 }
             }
 
-            throw std::runtime_error(to_string() << "Unsupported control - " << opt);
+            throw std::runtime_error( rsutils::string::from() << "Unsupported control - " << opt );
         }
 
         bool wmf_uvc_device::set_pu(rs2_option opt, int value)
@@ -626,7 +628,7 @@ namespace librealsense
                         {
                             if( hr == SEMAPHORE_TIMEOUT_ERROR )
                                 LOG_DEBUG( "set_pu returned error code: "
-                                           << utilities::hresult::hr_to_string( hr ) );
+                                           << rsutils::hresult::hr_to_string( hr ) );
                             return false;
                         }
 
@@ -676,7 +678,7 @@ namespace librealsense
                     return true;
                 }
             }
-            throw std::runtime_error(to_string() << "Unsupported control - " << opt);
+            throw std::runtime_error( rsutils::string::from() << "Unsupported control - " << opt );
         }
 
         control_range wmf_uvc_device::get_pu_range(rs2_option opt) const
@@ -740,7 +742,7 @@ namespace librealsense
 
                     WCHAR * wchar_name = nullptr; UINT32 length;
                     CHECK_HR(pDevice->GetAllocatedString(MF_DEVSOURCE_ATTRIBUTE_SOURCE_TYPE_VIDCAP_SYMBOLIC_LINK, &wchar_name, &length));
-                    auto name = utilities::string::windows::win_to_utf(wchar_name);
+                    auto name = rsutils::string::windows::win_to_utf(wchar_name);
                     CoTaskMemFree(wchar_name);
 
                     uint16_t vid, pid, mi; std::string unique_id, guid;
@@ -1170,7 +1172,7 @@ namespace librealsense
                         if (sts == MF_E_HW_MFT_FAILED_START_STREAMING)
                             throw std::runtime_error("Camera already streaming");
 
-                        throw std::runtime_error(to_string() << "Flush failed" << sts);
+                        throw std::runtime_error( rsutils::string::from() << "Flush failed" << sts );
                     }
 
                     _is_flushed.wait(INFINITE);

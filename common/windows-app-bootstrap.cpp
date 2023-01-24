@@ -18,7 +18,7 @@
 #include "os.h"
 #include "metadata-helper.h"
 #include "rendering.h"
-#include <librealsense2/utilities/string/windows.h>
+#include <rsutils/string/windows.h>
 
 #include <delayimp.h>
 
@@ -75,9 +75,12 @@ std::string exception_code_to_string(int code, struct _EXCEPTION_POINTERS *ep)
         auto details = (DelayLoadInfo*)ep->ExceptionRecord->ExceptionInformation[0];
         std::string dll_name = details->szDll;
         std::string fname = details->dlp.szProcName;
-        return rs2::to_string() << "Could not find " << dll_name << " library required for " << fname << ".\nMake sure all program dependencies are reachable or download standalone version of the App from our GitHub";
+        return rsutils::string::from() << "Could not find " << dll_name << " library required for " << fname
+                                       << ".\nMake sure all program dependencies are reachable or download standalone "
+                                          "version of the App from our GitHub";
     }
-    else return rs2::to_string() << "Unknown error (" << code << ")!";
+    else
+        return rsutils::string::from() << "Unknown error (" << code << ")!";
 }
 
 // Show custom error message box with OK and Report options
@@ -167,7 +170,7 @@ int CALLBACK WinMain(
     std::vector<std::string> args;
     for (int i = 0; i < argCount; i++)
     {
-        std::string s = utilities::string::windows::win_to_utf( szArgList.get()[i] );
+        std::string s = rsutils::string::windows::win_to_utf( szArgList.get()[i] );
 
         if (s == rs2::metadata_helper::get_command_line_param())
         {

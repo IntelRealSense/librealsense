@@ -10,8 +10,6 @@
 
 #include <fastdds/dds/topic/Topic.hpp>
 
-#include <librealsense2/utilities/easylogging/easyloggingpp.h>
-#include <librealsense2/utilities/time/timer.h>
 #include <third-party/json.hpp>
 
 

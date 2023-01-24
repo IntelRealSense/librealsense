@@ -28,26 +28,26 @@ def usage():
     print( 'Syntax: ' + ourname + ' [options] [dir]' )
     print( '        dir: location of executable tests to run' )
     print( 'Options:' )
-    print( '        --debug          Turn on debugging information (does not include LibRS debug logs; see --rslog)' )
-    print( '        -v, --verbose    Errors will dump the log to stdout' )
-    print( '        -q, --quiet      Suppress output; rely on exit status (0=no failures)' )
-    print( '        -s, --stdout     Do not redirect stdout to logs' )
-    print( '        -r, --regex      Run all tests whose name matches the following regular expression' )
-    print( '        -t, --tag        Run all tests with the following tag. If used multiple times runs all tests matching' )
-    print( '                         all tags. e.g. -t tag1 -t tag2 will run tests who have both tag1 and tag2' )
-    print( '                         tests automatically get tagged with \'exe\' or \'py\' and based on their location' )
-    print( '                         inside unit-tests/, e.g. unit-tests/func/test-hdr.py gets [func, py]' )
-    print( '        --list-tags      Print out all available tags. This option will not run any tests' )
-    print( '        --list-tests     Print out all available tests. This option will not run any tests' )
-    print( '                         If both list-tags and list-tests are specified each test will be printed along' )
-    print( '                         with its tags' )
-    print( '        --no-exceptions  Do not load the LibCI/exceptions.specs file' )
-    print( '        --context <>     The context to use for test configuration' )
-    print( '        --repeat <#>     Repeat each test <#> times' )
-    print( '        --config <>      Ignore test configurations; use the one provided' )
-    print( '        --no-reset       Do not try to reset any devices, with or without Acroname' )
-    print( '        --rslog          Enable LibRS logging (LOG_DEBUG etc.) to console in each test' )
-    print()
+    print( '        --debug              Turn on debugging information (does not include LibRS debug logs; see --rslog)' )
+    print( '        -v, --verbose        Errors will dump the log to stdout' )
+    print( '        -q, --quiet          Suppress output; rely on exit status (0=no failures)' )
+    print( '        -s, --stdout         Do not redirect stdout to logs' )
+    print( '        -r, --regex          Run all tests whose name matches the following regular expression' )
+    print( '        -t, --tag            Run all tests with the following tag. If used multiple times runs all tests matching' )
+    print( '                             all tags. e.g. -t tag1 -t tag2 will run tests who have both tag1 and tag2' )
+    print( '                             tests automatically get tagged with \'exe\' or \'py\' and based on their location' )
+    print( '                             inside unit-tests/, e.g. unit-tests/func/test-hdr.py gets [func, py]' )
+    print( '        --list-tags          Print out all available tags. This option will not run any tests' )
+    print( '        --list-tests         Print out all available tests. This option will not run any tests' )
+    print( '                             If both list-tags and list-tests are specified each test will be printed along' )
+    print( '                             with its tags' )
+    print( '        --no-exceptions      Do not load the LibCI/exceptions.specs file' )
+    print( '        --context <>         The context to use for test configuration' )
+    print( '        --repeat <#>         Repeat each test <#> times' )
+    print( '        --config <>          Ignore test configurations; use the one provided' )
+    print( '        --no-reset           Do not try to reset any devices, with or without Acroname' )
+    print( '        --rslog              Enable LibRS logging (LOG_DEBUG etc.) to console in each test' )
+    print( '        --skip-disconnected  Skip live test if required device is disconnected (only applies w/o Acroname)' )
     print( 'Examples:' )
     print( 'Running: python run-unit-tests.py -s' )
     print( '    Runs all tests, but direct their output to the console rather than log files' )
@@ -74,7 +74,7 @@ try:
     opts, args = getopt.getopt( sys.argv[1:], 'hvqr:st:',
                                 longopts=['help', 'verbose', 'debug', 'quiet', 'regex=', 'stdout', 'tag=', 'list-tags',
                                           'list-tests', 'no-exceptions', 'context=', 'repeat=', 'config=', 'no-reset',
-                                          'rslog'] )
+                                          'rslog', 'skip-disconnected'] )
 except getopt.GetoptError as err:
     log.e( err )  # something like "option -a not recognized"
     usage()
@@ -88,6 +88,7 @@ context = []
 repeat = 1
 forced_configurations = None
 no_reset = False
+skip_disconnected = False
 rslog = False
 for opt, arg in opts:
     if opt in ('-h', '--help'):
@@ -121,6 +122,8 @@ for opt, arg in opts:
         no_reset = True
     elif opt == '--rslog':
         rslog = True
+    elif opt == '--skip-disconnected':
+        skip_disconnected = True
 
 def find_build_dir( dir ):
     """
@@ -156,18 +159,27 @@ else:
 # if the user (Travis included) has pyrealsense2 installed but even if so, we want to use the one we compiled.
 # we search the librealsense repository for the .pyd file (.so file in linux)
 pyrs = ""
-if linux:
-    for so in file.find( exe_dir or build_dir or repo.root, '(^|/)pyrealsense2.*\.so$' ):
-        pyrs = so
-else:
-    for pyd in file.find( exe_dir or build_dir or repo.root, '(^|/)pyrealsense2.*\.pyd$' ):
+pyd_dirs = set()
+pyrs_search_dir = exe_dir or build_dir or repo.root
+for pyd in file.find( pyrs_search_dir, linux and r'.*python.*\.so$' or r'(^|/)py.*\.pyd$' ):
+    if re.search( r'(^|/)pyrealsense2', pyd ):
+        if pyrs:
+            raise RuntimeError( f'found more than one possible pyrealsense2!\n    previous: {pyrs}\n    and:      {pyd}' )
         pyrs = pyd
+    # The path is relative; make it absolute so it can be found by tests
+    pyd_dirs.add( os.path.dirname( os.path.join( pyrs_search_dir, pyd )))
+pyrs_path = None
 if pyrs:
     # The path is relative; make it absolute and add to PYTHONPATH so it can be found by tests
-    pyrs_path = os.path.join( exe_dir or build_dir or repo.root, pyrs )
+    pyrs_path = os.path.join( pyrs_search_dir, pyrs )
     # We need to add the directory not the file itself
     pyrs_path = os.path.dirname( pyrs_path )
-    log.d( 'found pyrealsense pyd in:', pyrs_path )
+elif len(pyd_dirs) == 1:
+    # Maybe we found other libraries, like pyrsutils?
+    log.d( 'did not find pyrealsense2' )
+    pyrs_path = next(iter(pyd_dirs))
+if pyrs_path:
+    log.d( 'found python libraries in:', pyd_dirs )
     if not exe_dir:
         build_dir = find_build_dir( pyrs_path )
         if linux:
@@ -194,10 +206,8 @@ if not exe_dir and build_dir:
         exe_dir = dir_with_test
 
 if not to_stdout:
-    if exe_dir:
-        logdir = exe_dir + os.sep + 'unit-tests'
-    else:  # no test executables were found. We put the logs directly in build directory
-        logdir = os.path.join( repo.root, 'build', 'unit-tests' )
+    # If no test executables were found, put the logs directly in the build directory
+    logdir = os.path.join( exe_dir or build_dir or os.path.join( repo.root, 'build' ), 'unit-tests' )
     os.makedirs( logdir, exist_ok=True )
     libci.logdir = logdir
 n_tests = 0
@@ -206,10 +216,10 @@ n_tests = 0
 # PYTHONPATH is what Python will ADD to sys.path for child processes BEFORE any standard python paths
 # (We can simply change `sys.path` but any child python scripts won't see it; we change the environment instead)
 #
-os.environ["PYTHONPATH"] = current_dir + os.sep + "py"
+os.environ["PYTHONPATH"] = os.path.join( current_dir, 'py' )
 #
-if pyrs:
-    os.environ["PYTHONPATH"] += os.pathsep + pyrs_path
+for dir in pyd_dirs:
+    os.environ["PYTHONPATH"] += os.pathsep + dir
 
 
 def configuration_str( configuration, repetition = 1, prefix = '', suffix = '' ):
@@ -271,31 +281,14 @@ def check_log_for_fails( path_to_log, testname, configuration = None, repetition
 
 
 def get_tests():
-    global regex, exe_dir, pyrs, current_dir, linux, context, list_only
+    global regex, build_dir, exe_dir, pyrs, current_dir, linux, context, list_only
     if regex:
         pattern = re.compile( regex )
-    if list_only:
-        # We want to list all tests, even if they weren't built.
-        # So we look for the source files instead of using the manifest
-        for cpp_test in file.find( current_dir, '(^|/)test-.*\.cpp' ):
-            testparent = os.path.dirname( cpp_test )  # "log/internal" <-  "log/internal/test-all.py"
-            if testparent:
-                testname = 'test-' + testparent.replace( '/', '-' ) + '-' + os.path.basename( cpp_test )[
-                                                                            5:-4]  # remove .cpp
-            else:
-                testname = os.path.basename( cpp_test )[:-4]
-
-            if regex and not pattern.search( testname ):
-                continue
-
-            yield libci.ExeTest( testname )
-    elif exe_dir:
-        # In Linux, the build targets are located elsewhere than on Windows
-        # Go over all the tests from a "manifest" we take from the result of the last CMake
-        # run (rather than, for example, looking for test-* in the build-directory):
-        manifestfile = os.path.join( build_dir, 'CMakeFiles', 'TargetDirectories.txt' )
-        if linux:
-            manifestfile = exe_dir + '/CMakeFiles/TargetDirectories.txt'
+    # In Linux, the build targets are located elsewhere than on Windows
+    # Go over all the tests from a "manifest" we take from the result of the last CMake
+    # run (rather than, for example, looking for test-* in the build-directory):
+    manifestfile = os.path.join( build_dir, 'CMakeFiles', 'TargetDirectories.txt' )
+    if os.path.isfile( manifestfile ) and exe_dir:
         # log.d( manifestfile )
         for manifest_ctx in file.grep( r'(?<=unit-tests/build/)\S+(?=/CMakeFiles/test-\S+.dir$)', manifestfile ):
             # We need to first create the test name so we can see if it fits the regex
@@ -311,12 +304,29 @@ def get_tests():
             if regex and not pattern.search( testname ):
                 continue
 
+            exe = os.path.join( exe_dir, testname )
             if linux:
-                exe = exe_dir + '/unit-tests/build/' + testdir + '/' + testname
+                if not os.path.isfile( exe ):
+                    exe = os.path.join( build_dir, 'unit-tests', 'build', testdir, testname )
             else:
-                exe = exe_dir + '/' + testname + '.exe'
+                exe += '.exe'
 
             yield libci.ExeTest( testname, exe, context )
+    elif list_only:
+        # We want to list all tests, even if they weren't built.
+        # So we look for the source files instead of using the manifest
+        for cpp_test in file.find( current_dir, '(^|/)test-.*\.cpp' ):
+            testparent = os.path.dirname( cpp_test )  # "log/internal" <-  "log/internal/test-all.py"
+            if testparent:
+                testname = 'test-' + testparent.replace( '/', '-' ) + '-' + os.path.basename( cpp_test )[
+                                                                            5:-4]  # remove .cpp
+            else:
+                testname = os.path.basename( cpp_test )[:-4]
+
+            if regex and not pattern.search( testname ):
+                continue
+
+            yield libci.ExeTest( testname, context = context )
 
     # Python unit-test scripts are in the same directory as us... we want to consider running them
     # (we may not if they're live and we have no pyrealsense2.pyd):
@@ -397,13 +407,14 @@ try:
         devices.query()
         devices.map_unknown_ports()
         #
-        # Under Travis, we'll have no devices and no acroname
+        # Under a development environment (i.e., without an Acroname), we may only have one device connected
+        # or even none and want to only show a warning for live tests:
         skip_live_tests = len( devices.all() ) == 0 and not devices.acroname
         #
+        exceptions = None
         if not skip_live_tests:
             if not to_stdout:
                 log.i( 'Logs in:', libci.logdir )
-            exceptions = None
             if not no_exceptions and os.path.isfile( libci.exceptionsfile ):
                 try:
                     log.d( 'loading device exceptions from:', libci.exceptionsfile )
@@ -429,8 +440,15 @@ try:
             if test.config.donotrun:
                 continue
             #
-            if required_tags and not all( tag in test.config.tags for tag in required_tags ):
-                log.d( 'does not fit --tag:', test.config.tags )
+            unfit_tags = []
+            for tag in required_tags:
+                if tag.startswith('!'):
+                    if tag[1:] in test.config.tags:
+                        unfit_tags.append( tag )
+                elif tag not in test.config.tags:
+                    unfit_tags.append( tag )
+            if unfit_tags:
+                log.d( f'skipping: does not fit {unfit_tags}' )
                 continue
             #
             if 'Windows' in test.config.flags and linux:
@@ -452,7 +470,10 @@ try:
                 continue
             #
             if skip_live_tests:
-                log.w( test.name + ':', 'is live and there are no cameras; skipping' )
+                if skip_disconnected:
+                    log.w( test.name + ':', 'is live & no cameras were found; skipping due to --skip-disconnected' )
+                else:
+                    log.e( test.name + ':', 'is live and there are no cameras' )
                 continue
             #
             for configuration, serial_numbers in devices_by_test_config( test, exceptions ):

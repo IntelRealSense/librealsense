@@ -11,6 +11,9 @@
 #include "log.h"
 #include <chrono>
 
+#include <rsutils/string/from.h>
+
+
 using namespace std;
 
 namespace librealsense
@@ -88,7 +91,7 @@ namespace librealsense
             case RS2_OPTION_HUMIDITY_TEMPERATURE:
                 return float(temperature_data.HUM_temperature);
             default:
-                throw invalid_value_exception(to_string() << _option << " is not temperature option!");
+                throw invalid_value_exception( rsutils::string::from() << _option << " is not temperature option!" );
             }
         }
 
@@ -210,7 +213,7 @@ namespace librealsense
             else if ((width == 1024 && height == 768) || (width == 768 && height == 1024))
                 return RS2_SENSOR_MODE_XGA;
             else
-                throw std::runtime_error(to_string() << "Invalid resolution " << width << "x" << height);
+                throw std::runtime_error( rsutils::string::from() << "Invalid resolution " << width << "x" << height );
         }
 
 } // librealsense::ivcam2

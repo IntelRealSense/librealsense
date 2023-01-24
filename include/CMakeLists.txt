@@ -37,5 +37,3 @@ target_sources( ${PROJECT_NAME}
 
 )
 
-include(${CMAKE_CURRENT_LIST_DIR}/librealsense2/utilities/CMakeLists.txt)
-

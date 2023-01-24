@@ -102,6 +102,13 @@ namespace librealsense
             const unsigned long long& last_frame_number,
             std::shared_ptr<stream_profile_interface> profile);
 
+        inline int compute_frame_expected_size(int width, int height, int bpp) const
+        {
+            return width * height * bpp >> 3;
+        }
+
+        std::vector<byte> align_width_to_64(int width, int height, int bpp, byte* pix) const;
+
         std::vector<platform::stream_profile> _internal_config;
 
         std::atomic<bool> _is_streaming;
@@ -356,6 +363,7 @@ namespace librealsense
     protected:
         stream_profiles init_stream_profiles() override;
         rs2_extension stream_to_frame_types(rs2_stream stream) const;
+        void verify_supported_requests(const stream_profiles& requests) const;
 
     private:
         void acquire_power();

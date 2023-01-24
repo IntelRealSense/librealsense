@@ -9,7 +9,8 @@
 
 #include <librealsense2/rs.hpp>
 #include <librealsense2-gl/rs_processing_gl.hpp>
-#include <librealsense2/utilities/time/timer.h>
+#include <rsutils/time/stopwatch.h>
+#include <rsutils/string/from.h>
 
 #include "matrix4.h"
 #include "float3.h"
@@ -196,31 +197,31 @@ namespace rs2
         return { a * b.x, a * b.y };
     }
 
-    inline matrix4 tm2_pose_to_world_transformation(const rs2_pose& pose)
+    inline matrix4 pose_to_world_transformation(const rs2_pose& pose)
     {
         matrix4 rotation(pose.rotation);
         matrix4 translation(pose.translation);
-        matrix4 G_tm2_body_to_tm2_world = translation * rotation;
+        matrix4 G_body_to_world = translation * rotation;
         float rotate_180_y[4][4] = { { -1, 0, 0, 0 },
                                      { 0, 1, 0, 0 },
                                      { 0, 0,-1, 0 },
                                      { 0, 0, 0, 1 } };
-        matrix4 G_vr_body_to_tm2_body(rotate_180_y);
-        matrix4 G_vr_body_to_tm2_world = G_tm2_body_to_tm2_world * G_vr_body_to_tm2_body;
+        matrix4 G_vr_body_to_body(rotate_180_y);
+        matrix4 G_vr_body_to_world = G_body_to_world * G_vr_body_to_body;
 
         float rotate_90_x[4][4] = { { 1, 0, 0, 0 },
                                     { 0, 0,-1, 0 },
                                     { 0, 1, 0, 0 },
                                     { 0, 0, 0, 1 } };
-        matrix4 G_tm2_world_to_vr_world(rotate_90_x);
-        matrix4 G_vr_body_to_vr_world = G_tm2_world_to_vr_world * G_vr_body_to_tm2_world;
+        matrix4 G_world_to_vr_world(rotate_90_x);
+        matrix4 G_vr_body_to_vr_world = G_world_to_vr_world * G_vr_body_to_world;
 
         return G_vr_body_to_vr_world;
     }
 
-    inline rs2_pose correct_tm2_pose(const rs2_pose& pose)
+    inline rs2_pose correct_pose(const rs2_pose& pose)
     {
-        matrix4 G_vr_body_to_vr_world = tm2_pose_to_world_transformation(pose);
+        matrix4 G_vr_body_to_vr_world = pose_to_world_transformation(pose);
         rs2_pose res = pose;
         res.translation.x = G_vr_body_to_vr_world.mat[0][3];
         res.translation.y = G_vr_body_to_vr_world.mat[1][3];
@@ -393,7 +394,7 @@ namespace rs2
         std::mutex _m;
         clock::duration _window;
         std::vector<std::pair<clock::time_point, bool>> _measurements;
-        utilities::time::stopwatch _t;
+        rsutils::time::stopwatch _t;
     };
 
     class texture_buffer
@@ -948,7 +949,7 @@ namespace rs2
             draw_axes(0.3f, 2.f);
 
             // Drawing pose:
-            matrix4 pose_trans = tm2_pose_to_world_transformation(pose);
+            matrix4 pose_trans = pose_to_world_transformation(pose);
             float model[16];
             pose_trans.to_column_major(model);
 
@@ -1098,24 +1099,19 @@ namespace rs2
         return (fabs(fmod(f, 1)) < std::numeric_limits<float>::min());
     }
 
-    struct to_string
-    {
-        std::ostringstream ss;
-        template<class T> to_string & operator << (const T & val) { ss << val; return *this; }
-        operator std::string() const { return ss.str(); }
-    };
-
     inline std::string error_to_string(const error& e)
     {
-        return to_string() << rs2_exception_type_to_string(e.get_type())
+        return rsutils::string::from() << rs2_exception_type_to_string(e.get_type())
             << " in " << e.get_failed_function() << "("
             << e.get_failed_args() << "):\n" << e.what();
     }
 
     inline std::string api_version_to_string(int version)
     {
-        if (version / 10000 == 0) return to_string() << version;
-        return to_string() << (version / 10000) << "." << (version % 10000) / 100 << "." << (version % 100);
+        if( version / 10000 == 0 )
+            return rsutils::string::from() << version;
+        return rsutils::string::from() << ( version / 10000 ) << "." << ( version % 10000 ) / 100 << "."
+                                       << ( version % 100 );
     }
 
     // Comparing parameter against a range of values of the same type

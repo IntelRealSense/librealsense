@@ -53,12 +53,6 @@
 #include <stdint.h>
 #include "rostime_decl.h"
 
-namespace boost {
-  namespace posix_time {
-    class time_duration;
-  }
-}
-
 namespace rs2rosinternal
 {
 ROSTIME_DECL void normalizeSecNSecSigned(int64_t& sec, int64_t& nsec);
@@ -95,7 +89,6 @@ public:
   T& fromSec(double t);
   T& fromNSec(int64_t t);
   bool isZero() const;
-  //boost::posix_time::time_duration toBoost() const;
 };
 
 class Rate;

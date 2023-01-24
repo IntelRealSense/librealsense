@@ -8,17 +8,9 @@ project(RealsenseExamplesAR)
 # Save the command line compile commands in the build output
 set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
 
-include(CheckCXXCompilerFlag)
-CHECK_CXX_COMPILER_FLAG("-std=c++11" COMPILER_SUPPORTS_CXX11)
-CHECK_CXX_COMPILER_FLAG("-std=c++0x" COMPILER_SUPPORTS_CXX0X)
-if(COMPILER_SUPPORTS_CXX11)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
-elseif(COMPILER_SUPPORTS_CXX0X)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
-endif()
-
 if(BUILD_GRAPHICAL_EXAMPLES)
     add_executable(rs-ar-basic rs-ar-basic.cpp ../example.hpp)
+    set_property(TARGET rs-ar-basic PROPERTY CXX_STANDARD 11)
     target_include_directories(rs-ar-basic PUBLIC ../)
     target_link_libraries(rs-ar-basic ${DEPENDENCIES})
     set_target_properties (rs-ar-basic PROPERTIES FOLDER Examples)

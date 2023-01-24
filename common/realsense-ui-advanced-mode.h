@@ -6,7 +6,7 @@
 #include <librealsense2/rs_advanced_mode.hpp>
 #include <types.h>
 #include <type_traits>
-#include <librealsense2/utilities/string/string-utilities.h>
+#include <rsutils/string/string-utilities.h>
 
 #define TEXT_BUFF_SIZE 1024
 
@@ -20,14 +20,14 @@ bool* draw_edit_button(const char* id, T val, std::string*& val_str)
     ImGui::SetCursorPosX(268);
     if (!edit_mode[id])
     {
-        std::string edit_id = rs2::to_string() << u8"\uf044##" << id;
+        std::string edit_id = rsutils::string::from() << u8"\uf044##" << id;
         ImGui::PushStyleColor(ImGuiCol_Text,  { 0.8f, 0.8f, 0.8f, 1.f });
         ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, { 0.8f, 0.8f, 0.8f, 1.f } );
         ImGui::PushStyleColor(ImGuiCol_ButtonHovered, { 1.f,1.f,1.f,0.f });
         ImGui::PushStyleColor(ImGuiCol_Button, { 1.f,1.f,1.f,0.f });
         if (ImGui::Button(edit_id.c_str(), { 20, 20 }))
         {
-            edit_value[id] = rs2::to_string() << val;
+            edit_value[id] = rsutils::string::from( val );
             edit_mode[id] = true;
         }
         if (ImGui::IsItemHovered())
@@ -38,7 +38,7 @@ bool* draw_edit_button(const char* id, T val, std::string*& val_str)
     }
     else
     {
-        std::string edit_id = rs2::to_string() << u8"\uf044##" << id;
+        std::string edit_id = rsutils::string::from() << u8"\uf044##" << id;
         ImGui::PushStyleColor(ImGuiCol_Text,  { 0.8f, 0.8f, 1.f, 1.f });
         ImGui::PushStyleColor(ImGuiCol_TextSelectedBg,  { 0.8f, 0.8f, 1.f, 1.f });
         ImGui::PushStyleColor(ImGuiCol_ButtonHovered, { 1.f,1.f,1.f,0.f });
@@ -69,7 +69,7 @@ inline void slider_int(std::string& error_message, const char* id, T* val, S T::
     std::string* val_ptr;
     auto edit_mode = draw_edit_button(id, temp, val_ptr);
 
-    std::string slider_id = rs2::to_string() << "##" << id;
+    std::string slider_id = rsutils::string::from() << "##" << id;
 
     if (*edit_mode)
     {
@@ -80,7 +80,7 @@ inline void slider_int(std::string& error_message, const char* id, T* val, S T::
             ImGuiInputTextFlags_EnterReturnsTrue))
         {
             int new_value{};
-            if (!utilities::string::string_to_value<int>(buff, new_value))
+            if (!rsutils::string::string_to_value<int>(buff, new_value))
             {
                 error_message = "Invalid integer input!";
             }
@@ -134,7 +134,7 @@ inline void slider_float(std::string& error_message, const char* id, T* val, S T
     auto edit_mode = draw_edit_button(id, temp, val_ptr);
 
 
-    std::string slider_id = rs2::to_string() << "##" << id;
+    std::string slider_id = rsutils::string::from() << "##" << id;
 
     if (*edit_mode)
     {
@@ -145,7 +145,7 @@ inline void slider_float(std::string& error_message, const char* id, T* val, S T
             ImGuiInputTextFlags_EnterReturnsTrue))
         {
             int new_value;
-            if (!utilities::string::string_to_value<int>(buff, new_value))
+            if (!rsutils::string::string_to_value<int>(buff, new_value))
             {
                 error_message = "Invalid integer input!";
             }

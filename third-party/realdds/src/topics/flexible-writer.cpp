@@ -10,8 +10,7 @@
 
 #include <fastdds/dds/topic/Topic.hpp>
 
-#include <librealsense2/utilities/easylogging/easyloggingpp.h>
-#include <librealsense2/utilities/time/timer.h>
+#include <rsutils/time/timer.h>
 #include <third-party/json.hpp>
 
 
@@ -37,7 +36,7 @@ std::string const & flexible_writer::name() const
 
 void flexible_writer::wait_for_readers( int n_readers, std::chrono::seconds timeout )
 {
-    utilities::time::timer timer( timeout );
+    rsutils::time::timer timer( timeout );
     while( _n_readers < n_readers )
     {
         if( timer.has_expired() )

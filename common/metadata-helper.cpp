@@ -16,7 +16,7 @@
 #include <memory>
 
 #include <librealsense2/rs.hpp>
-#include <librealsense2/utilities/string/windows.h>
+#include <rsutils/string/windows.h>
 
 #define MAX_KEY_LENGTH 255
 #define MAX_VALUE_NAME 16383
@@ -135,7 +135,7 @@ namespace rs2
                             std::wstring suffix = achKey;
                             device_id rdid;
 
-                            std::string a = utilities::string::windows::win_to_utf( suffix.c_str() );
+                            std::string a = rsutils::string::windows::win_to_utf( suffix.c_str() );
 
                             if (parse_device_id(a, &rdid))
                             {
@@ -162,7 +162,7 @@ namespace rs2
             if (mi == "00")
             {
                 // L500 has 3 media-pins
-                if (equal(pid, "0b0d") || equal(pid, "0b3d") || equal(pid, "0b64") || equal(pid, "0b68")) return 3;
+                if (equal(pid, "0b0d") || equal(pid, "0b3d") || equal(pid, "0b64")) return 3;
                 // D405 has 3 media-pins
                 else if (equal(pid, "0b5b")) return 3;
                 else return 2; // D400 has two

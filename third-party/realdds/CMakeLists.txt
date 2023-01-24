@@ -3,17 +3,17 @@
 
 project( realdds )
 
-add_library( ${PROJECT_NAME} STATIC )
+add_library( ${PROJECT_NAME} STATIC "" )
 set_target_properties( ${PROJECT_NAME} PROPERTIES FOLDER Library )
 
 target_include_directories( ${PROJECT_NAME}
-    PRIVATE
-        "${REPO_ROOT}/include"  # we need the utilities
     PUBLIC
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
 )
 
-target_link_libraries( ${PROJECT_NAME} PUBLIC dds )  # FastDDS
+# We, and all our dependents, need these:
+target_link_libraries( ${PROJECT_NAME}
+    PUBLIC rsutils dds )  # dds=FastDDS
 
 
 # Headers -----------------------------------------------------------------------------------
@@ -52,4 +52,15 @@ source_group( "Source Files/topics" FILES ${REALDDS_TOPICS_SOURCE_FILES} )
 
 # Install -----------------------------------------------------------------------------------
 #
-install( TARGETS realdds EXPORT realsense2Targets)
+install( TARGETS ${PROJECT_NAME}
+    EXPORT realsense2Targets
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    )
+
+
+# Python Wrapper ---------------------------------------------------------------------------
+#
+if (BUILD_PYTHON_BINDINGS)
+    add_subdirectory(py)
+endif()
+

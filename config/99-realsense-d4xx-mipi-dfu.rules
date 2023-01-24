@@ -1,0 +1,2 @@
+SUBSYSTEM=="d4xx-class",KERNEL=="d4xx-dfu[0-9]*", GROUP="video", MODE="0660"
+

@@ -11,9 +11,10 @@
 #include <realdds/topics/flexible/flexible-msg.h>
 #include <realdds/topics/device-info-msg.h>
 
-#include <librealsense2/utilities/json.h>
+#include <rsutils/json.h>
 
 #include <fastdds/dds/subscriber/DataReader.hpp>
+#include <fastdds/dds/domain/DomainParticipant.hpp>
 
 
 using namespace eprosima::fastdds::dds;
@@ -79,7 +80,8 @@ void dds_device_watcher::start()
         init();
     }
     _active_object.start();
-    LOG_DEBUG( "DDS device watcher started" );
+    LOG_DEBUG( "DDS device watcher started on '" << _participant->get()->get_qos().name() << "' "
+                                                 << realdds::print( _participant->guid() ) );
 }
 
 void dds_device_watcher::stop()

@@ -12,9 +12,6 @@
 #include <realdds/topics/flexible/flexible-msg.h>
 #include <realdds/topics/flexible/flexiblePubSubTypes.h>
 
-#include <librealsense2/utilities/easylogging/easyloggingpp.h>
-#include <librealsense2/utilities/json.h>
-
 #include <iostream>
 
 using namespace eprosima::fastdds::dds;

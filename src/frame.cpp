@@ -1,16 +1,20 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2021 Intel Corporation. All Rights Reserved.
+
 #include "frame.h"
 #include "archive.h"
 #include "metadata-parser.h"
 #include "environment.h"
+
+#include <rsutils/string/from.h>
+
 
 namespace librealsense {
 
 std::ostream & operator<<( std::ostream & os, frame_header const & header )
 {
     os << "#" << header.frame_number;
-    os << " @" << ( std::string )( to_string() << std::fixed << std::setprecision( 2 ) << (double)header.timestamp );
+    os << " @" << ( rsutils::string::from() << std::fixed << std::setprecision( 2 ) << (double)header.timestamp ).str();
     if( header.timestamp_domain != RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK )
         os << "/" << rs2_timestamp_domain_to_string( header.timestamp_domain );
     return os;
@@ -95,17 +99,17 @@ frame_interface * frame::publish( std::shared_ptr< archive_interface > new_owner
 rs2_metadata_type frame::get_frame_metadata( const rs2_frame_metadata_value & frame_metadata ) const
 {
     if( ! metadata_parsers )
-        throw invalid_value_exception( to_string() << "metadata not available for "
-                                                   << get_string( get_stream()->get_stream_type() )
-                                                   << " stream" );
+        throw invalid_value_exception( rsutils::string::from()
+                                       << "metadata not available for " << get_string( get_stream()->get_stream_type() )
+                                       << " stream" );
 
     auto parsers = metadata_parsers->equal_range( frame_metadata );
     if( parsers.first
         == metadata_parsers
                ->end() )  // Possible user error - md attribute is not supported by this frame type
-        throw invalid_value_exception(
-            to_string() << get_string( frame_metadata ) << " attribute is not applicable for "
-                        << get_string( get_stream()->get_stream_type() ) << " stream " );
+        throw invalid_value_exception( rsutils::string::from()
+                                       << get_string( frame_metadata ) << " attribute is not applicable for "
+                                       << get_string( get_stream()->get_stream_type() ) << " stream " );
 
     rs2_metadata_type result = -1;
     bool value_retrieved = false;
@@ -210,8 +214,8 @@ float depth_frame::get_distance( int x, int y ) const
         pixel = reinterpret_cast< const uint64_t * >( get_frame_data() )[y * get_width() + x];
         break;
     default:
-        throw std::runtime_error( to_string() << "Unrecognized depth format "
-                                              << int( get_bpp() / 8 ) << " bytes per pixel" );
+        throw std::runtime_error( rsutils::string::from()
+                                  << "Unrecognized depth format " << int( get_bpp() / 8 ) << " bytes per pixel" );
     }
 
     return pixel * get_units();

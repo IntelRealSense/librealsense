@@ -1,8 +1,8 @@
 /* License: Apache 2.0. See LICENSE file in root directory.
 Copyright(c) 2017 Intel Corporation. All Rights Reserved. */
 
-#include "python.hpp"
-#include "../include/librealsense2/rs.hpp"
+#include "pyrealsense2.h"
+#include <librealsense2/rs.hpp>
 
 void init_frame(py::module &m) {
     py::class_<BufData> BufData_py(m, "BufData", py::buffer_protocol());

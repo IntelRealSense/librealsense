@@ -9,6 +9,9 @@
 #include "metadata.h"
 #include <cmath>
 
+#include <rsutils/string/from.h>
+
+
 namespace librealsense
 {
 /** \brief Metadata fields that are utilized internally by librealsense
@@ -151,10 +154,11 @@ namespace librealsense
 
             if( ( s->header.md_type_id != expected_type ) || ( s->header.md_size < sizeof( *s ) ) )
             {
-                std::string type = ( md_type_desc.count( s->header.md_type_id ) > 0 )
-                                     ? md_type_desc.at( s->header.md_type_id )
-                                     : ( to_string() << "0x" << std::hex
-                                                     << static_cast< uint32_t >( s->header.md_type_id ) << std::dec );
+                std::string type
+                    = ( md_type_desc.count( s->header.md_type_id ) > 0 )
+                        ? md_type_desc.at( s->header.md_type_id )
+                        : ( rsutils::string::from()
+                            << "0x" << std::hex << static_cast< uint32_t >( s->header.md_type_id ) << std::dec );
                 LOG_DEBUG( "Metadata mismatch - actual: " << type << ", expected: 0x" << std::hex
                                                           << (uint32_t)expected_type << std::dec << " ("
                                                           << md_type_desc.at( expected_type ) << ")" );

@@ -5,7 +5,7 @@
 // This set of tests is valid for any device that supports the HDR feature //
 /////////////////////////////////////////////////////////////////////////////
 
-//#test:device D400*
+//#test:device D400* !D457
 
 #include "../../catch.h"
 #include "../../unit-tests-common.h"
@@ -25,6 +25,7 @@ TEST_CASE("Gain/ Exposure auto limits", "[live]")
     rs2_option limits_toggle[2] = { RS2_OPTION_AUTO_EXPOSURE_LIMIT_TOGGLE, RS2_OPTION_AUTO_GAIN_LIMIT_TOGGLE };
     rs2_option limits_value[2] = { RS2_OPTION_AUTO_EXPOSURE_LIMIT, RS2_OPTION_AUTO_GAIN_LIMIT };
     std::array < std::map<rs2_option, sensor>, 2> picked_sensor;
+    bool are_limit_options_supported = true;
 
     // 1. Scenario 1:
     //          - Change control value few times
@@ -38,6 +39,7 @@ TEST_CASE("Gain/ Exposure auto limits", "[live]")
     //          - Toggle on each control
     //          - Check that control limit value in each device is set to the device cached value
 
+
     for (auto i = 0; i < 2; i++) // 2 controls
     {
         for (auto j = 0; j < 2; j++) // 2 devices
@@ -47,7 +49,10 @@ TEST_CASE("Gain/ Exposure auto limits", "[live]")
             {
                 std::string val = s.get_info(RS2_CAMERA_INFO_NAME);
                 if (!s.supports(limits_value[i]))
+                {
+                    are_limit_options_supported = false;
                     continue;
+                }
                 picked_sensor[j][limits_value[i]] = s.get();//std::make_shared<sensor>(s);
                 auto range = s.get_option_range(limits_value[i]);
                 // 1. Scenario 1:
@@ -76,28 +81,31 @@ TEST_CASE("Gain/ Exposure auto limits", "[live]")
         //        2.2. toggle dev2 on :
         //                  * verify that the limit value is the value that was stored(cached) in dev2.
 
-    for (auto i = 0; i < 2; i++) // exposure or gain
+    if (are_limit_options_supported)
     {
-        auto s1 = picked_sensor[0][limits_value[i]];
-        auto s2 = picked_sensor[1][limits_value[i]];
+        for (auto i = 0; i < 2; i++) // exposure or gain
+        {
+            auto s1 = picked_sensor[0][limits_value[i]];
+            auto s2 = picked_sensor[1][limits_value[i]];
 
-        auto range = s1.get_option_range(limits_value[i]); // should be same range from both sensors
-        s1.set_option(limits_value[i], range.max / 4.0f);
-        s1.set_option(limits_toggle[i], 0.0); // off
-        s2.set_option(limits_value[i], range.max - 5.0f);
-        s2.set_option(limits_toggle[i], 0.0); // off
+            auto range = s1.get_option_range(limits_value[i]); // should be same range from both sensors
+            s1.set_option(limits_value[i], range.max / 4.0f);
+            s1.set_option(limits_toggle[i], 0.0); // off
+            s2.set_option(limits_value[i], range.max - 5.0f);
+            s2.set_option(limits_toggle[i], 0.0); // off
 
-        // 2.1
-        s1.set_option(limits_toggle[i], 1.0); // on
-        auto limit1 = s1.get_option(limits_value[i]);
-        REQUIRE(limit1 == range.max / 4.0);
-        // keep toggle of dev2 off
-        auto limit2 = s2.get_option(limits_value[i]);
-        REQUIRE(limit1 == limit2);
+            // 2.1
+            s1.set_option(limits_toggle[i], 1.0); // on
+            auto limit1 = s1.get_option(limits_value[i]);
+            REQUIRE(limit1 == range.max / 4.0);
+            // keep toggle of dev2 off
+            auto limit2 = s2.get_option(limits_value[i]);
+            REQUIRE(limit1 == limit2);
 
-        // 2.2
-        s2.set_option(limits_toggle[i], 1.0); // on
-        limit2 = s2.get_option(limits_value[i]);
-        REQUIRE(limit2 == range.max - 5.0);
+            // 2.2
+            s2.set_option(limits_toggle[i], 1.0); // on
+            limit2 = s2.get_option(limits_value[i]);
+            REQUIRE(limit2 == range.max - 5.0);
+        }
     }
 }

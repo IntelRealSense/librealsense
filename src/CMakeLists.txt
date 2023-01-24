@@ -3,7 +3,7 @@
 string(REPLACE ${PROJECT_SOURCE_DIR}/ "" _rel_path ${CMAKE_CURRENT_LIST_DIR})
 include(${_rel_path}/algo/CMakeLists.txt)
 include(${_rel_path}/core/CMakeLists.txt)
-include(${_rel_path}/ds5/CMakeLists.txt)
+include(${_rel_path}/ds/CMakeLists.txt)
 include(${_rel_path}/ivcam/CMakeLists.txt)
 include(${_rel_path}/l500/CMakeLists.txt)
 include(${_rel_path}/media/CMakeLists.txt)
@@ -51,10 +51,6 @@ endif()
 
 if(${BACKEND} STREQUAL RS2_USE_LIBUVC_BACKEND)
     include(${_rel_path}/libuvc/CMakeLists.txt)
-endif()
-
-if (BUILD_WITH_TM2)
-    include(${_rel_path}/tm2/CMakeLists.txt)
 endif()
 
 if(BUILD_WITH_CUDA)

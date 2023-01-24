@@ -21,6 +21,7 @@ namespace rs2
         recording_context(const std::string& filename,
                           const std::string& section = "",
                           rs2_recording_mode mode = RS2_RECORDING_MODE_BLANK_FRAMES)
+            : context( uninitialized )
         {
             rs2_error* e = nullptr;
             _context = std::shared_ptr<rs2_context>(
@@ -43,6 +44,7 @@ namespace rs2
         mock_context(const std::string& filename,
                      const std::string& section = "",
                      const std::string& min_api_version = "0.0.0")
+            : context( uninitialized )
         {
             rs2_error* e = nullptr;
             _context = std::shared_ptr<rs2_context>(

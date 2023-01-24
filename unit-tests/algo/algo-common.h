@@ -7,7 +7,7 @@
 
 #include "../catch.h"
 
-#include <easylogging++.h>
+#include <rsutils/easylogging/easyloggingpp.h>
 
 #if defined( __ALGO_EPSILON )
 #define __EPSILON __ALGO_EPSILON

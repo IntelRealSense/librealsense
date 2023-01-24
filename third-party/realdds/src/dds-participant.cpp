@@ -5,7 +5,6 @@
 #include <realdds/dds-utilities.h>
 #include <realdds/dds-guid.h>
 
-#include <librealsense2/utilities/easylogging/easyloggingpp.h>
 #include <fastdds/dds/domain/DomainParticipantFactory.hpp>
 #include <fastdds/dds/domain/DomainParticipantListener.hpp>
 #include <fastdds/dds/domain/DomainParticipant.hpp>
@@ -146,10 +145,9 @@ void dds_participant::init( dds_domain_id domain_id, std::string const & partici
     // not SubscriberListener::on_data_on_readers for any reader
     // ( See note on https://fast-dds.docs.eprosima.com/en/v2.7.0/fastdds/dds_layer/core/entity/entity.html )
     StatusMask par_mask = StatusMask::all() >> StatusMask::data_on_readers();
-    _participant = DDS_API_CALL( DomainParticipantFactory::get_instance()->create_participant( domain_id,
-                                                                                               pqos,
-                                                                                               _domain_listener.get(),
-                                                                                               par_mask ) );
+    _participant_factory = DomainParticipantFactory::get_shared_instance();
+    _participant
+        = DDS_API_CALL( _participant_factory->create_participant( domain_id, pqos, _domain_listener.get(), par_mask ) );
 
     if( ! _participant )
     {
@@ -159,6 +157,13 @@ void dds_participant::init( dds_domain_id domain_id, std::string const & partici
 
     LOG_DEBUG( "participant '" << participant_name << "' (" << realdds::print( guid() ) << ") is up on domain "
                                << domain_id );
+#ifdef BUILD_EASYLOGGINGPP
+    // DDS participant destruction happens when all contexts are done with it but, in some situations (e.g., Python), it
+    // means that it may happen last -- even after ELPP has already been destroyed! So, just like we keep the participant
+    // factory alive above, we want to keep the logging mechanism alive as long as a participant is!
+    // (because a participant has callbacks, and callbacks use the log)
+    _elpp = el::base::elStorage;
+#endif
 }
 
 
@@ -172,7 +177,7 @@ dds_participant::~dds_participant()
             DDS_API_CALL_NO_THROW( _participant->delete_contained_entities() );
         }
 
-        DDS_API_CALL_NO_THROW( DomainParticipantFactory::get_instance()->delete_participant( _participant ) );
+        DDS_API_CALL_NO_THROW( _participant_factory->delete_participant( _participant ) );
     }
 }
 

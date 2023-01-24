@@ -382,7 +382,6 @@ namespace librealsense
         }
     }
 
-
     /////////////////////////////
     // UYVY unpacking routines //
     /////////////////////////////

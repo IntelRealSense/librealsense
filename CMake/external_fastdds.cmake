@@ -16,7 +16,7 @@ function(get_fastdds)
     FetchContent_Declare(
       fastdds
       GIT_REPOSITORY https://github.com/eProsima/Fast-DDS.git
-      GIT_TAG        7124ff87c4813bed26858fd89d3b915a5857dbc7 # Git tag "v2.6.0", when updating this version consider removing the patches listed below.
+      GIT_TAG        v2.9.1
       GIT_SUBMODULES ""     # Submodules will be cloned as part of the FastDDS cmake configure stage
       GIT_SHALLOW ON        # No history needed
       SOURCE_DIR ${CMAKE_BINARY_DIR}/third-party/fastdds

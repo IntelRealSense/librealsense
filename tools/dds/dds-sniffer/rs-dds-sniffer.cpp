@@ -18,8 +18,7 @@
 #include <tclap/ValueArg.h>
 #include <tclap/SwitchArg.h>
 
-#include <librealsense2/utilities/easylogging/easyloggingpp.h>
-#include <librealsense2/rs.hpp>  // Include RealSense Cross Platform API
+#include <rsutils/easylogging/easyloggingpp.h>
 #include <realdds/dds-utilities.h>
 #include <realdds/dds-guid.h>
 #include <realdds/dds-log-consumer.h>
@@ -67,28 +66,9 @@ int main( int argc, char ** argv ) try
     cmd.parse( argc, argv );
 
     // Intercept DDS messages and redirect them to our own logging mechanism
+    rsutils::configure_elpp_logger( debug_arg.isSet() );
     eprosima::fastdds::dds::Log::ClearConsumers();
     eprosima::fastdds::dds::Log::RegisterConsumer( realdds::log_consumer::create() );
-
-#ifdef BUILD_SHARED_LIBS
-    // Configure the same logger as librealsense, and default to only errors by default...
-    el::Configurations defaultConf;
-    defaultConf.setToDefault();
-    defaultConf.setGlobally( el::ConfigurationType::ToStandardOutput, "false" );
-    defaultConf.set( el::Level::Error, el::ConfigurationType::ToStandardOutput, "true" );
-    defaultConf.setGlobally( el::ConfigurationType::Format, "-%levshort- %datetime{%H:%m:%s.%g} %msg (%fbase:%line [%thread])" );
-    el::Loggers::reconfigureLogger( "librealsense", defaultConf );
-#endif
-
-    if( debug_arg.isSet() )
-    {
-        rs2::log_to_console( RS2_LOG_SEVERITY_DEBUG );
-        eprosima::fastdds::dds::Log::SetVerbosity( eprosima::fastdds::dds::Log::Info );
-    }
-    else
-    {
-        rs2::log_to_console( RS2_LOG_SEVERITY_ERROR );
-    }
 
     if( snapshot_arg.isSet() )
     {

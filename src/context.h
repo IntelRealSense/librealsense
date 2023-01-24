@@ -7,9 +7,9 @@
 #include "backend.h"
 #include "mock/recorder.h"
 #include "core/streaming.h"
-#include <librealsense2/utilities/shared-ptr-singleton.h>
 
 #include <vector>
+#include <third-party/json_fwd.hpp>
 #include "media/playback/playback_device.h"
 
 namespace librealsense
@@ -123,6 +123,7 @@ namespace librealsense
             rs2_recording_mode mode = RS2_RECORDING_MODE_COUNT,
             std::string min_api_version = "0.0.0");
 
+        explicit context( nlohmann::json const & );
         explicit context( char const * json_settings );
 
         void stop() { _device_watcher->stop(); }
@@ -143,10 +144,6 @@ namespace librealsense
         void add_software_device(std::shared_ptr<device_info> software_device);
         
 
-#if WITH_TRACKING
-        void unload_tracking_module();
-#endif
-
     private:
         void on_device_changed(platform::backend_device_group old,
                                platform::backend_device_group curr,
@@ -162,8 +159,9 @@ namespace librealsense
         std::map<std::string, std::weak_ptr<device_info>> _playback_devices;
         std::map<uint64_t, devices_changed_callback_ptr> _devices_changed_callbacks;
 #ifdef BUILD_WITH_DDS
-        shared_ptr_singleton< realdds::dds_participant > _dds_participant;  // common to all contexts!
-        shared_ptr_singleton< realdds::dds_device_watcher > _dds_watcher;
+        std::shared_ptr< realdds::dds_participant > _dds_participant;
+        std::shared_ptr< realdds::dds_device_watcher > _dds_watcher;
+
         void start_dds_device_watcher( size_t message_timeout_ms );
 #endif
 

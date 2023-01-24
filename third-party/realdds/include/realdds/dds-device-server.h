@@ -6,7 +6,7 @@
 #include <realdds/dds-option.h>
 #include <realdds/dds-defines.h>
 
-#include <librealsense2/utilities/concurrency/concurrency.h>
+#include <rsutils/concurrency/concurrency.h>
 #include <third-party/json_fwd.hpp>
 
 #include <unordered_map>

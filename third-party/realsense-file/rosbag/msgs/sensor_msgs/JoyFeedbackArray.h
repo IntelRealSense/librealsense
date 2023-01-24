@@ -40,15 +40,15 @@ struct JoyFeedbackArray_
 
 
 
-  typedef boost::shared_ptr< ::sensor_msgs::JoyFeedbackArray_<ContainerAllocator> > Ptr;
-  typedef boost::shared_ptr< ::sensor_msgs::JoyFeedbackArray_<ContainerAllocator> const> ConstPtr;
+  typedef std::shared_ptr< ::sensor_msgs::JoyFeedbackArray_<ContainerAllocator> > Ptr;
+  typedef std::shared_ptr< ::sensor_msgs::JoyFeedbackArray_<ContainerAllocator> const> ConstPtr;
 
 }; // struct JoyFeedbackArray_
 
 typedef ::sensor_msgs::JoyFeedbackArray_<std::allocator<void> > JoyFeedbackArray;
 
-typedef boost::shared_ptr< ::sensor_msgs::JoyFeedbackArray > JoyFeedbackArrayPtr;
-typedef boost::shared_ptr< ::sensor_msgs::JoyFeedbackArray const> JoyFeedbackArrayConstPtr;
+typedef std::shared_ptr< ::sensor_msgs::JoyFeedbackArray > JoyFeedbackArrayPtr;
+typedef std::shared_ptr< ::sensor_msgs::JoyFeedbackArray const> JoyFeedbackArrayConstPtr;
 
 // constants requiring out of line definition
 
@@ -80,32 +80,32 @@ namespace message_traits
 
 template <class ContainerAllocator>
 struct IsFixedSize< ::sensor_msgs::JoyFeedbackArray_<ContainerAllocator> >
-  : FalseType
+  : std::false_type
   { };
 
 template <class ContainerAllocator>
 struct IsFixedSize< ::sensor_msgs::JoyFeedbackArray_<ContainerAllocator> const>
-  : FalseType
+  : std::false_type
   { };
 
 template <class ContainerAllocator>
 struct IsMessage< ::sensor_msgs::JoyFeedbackArray_<ContainerAllocator> >
-  : TrueType
+  : std::true_type
   { };
 
 template <class ContainerAllocator>
 struct IsMessage< ::sensor_msgs::JoyFeedbackArray_<ContainerAllocator> const>
-  : TrueType
+  : std::true_type
   { };
 
 template <class ContainerAllocator>
 struct HasHeader< ::sensor_msgs::JoyFeedbackArray_<ContainerAllocator> >
-  : FalseType
+  : std::false_type
   { };
 
 template <class ContainerAllocator>
 struct HasHeader< ::sensor_msgs::JoyFeedbackArray_<ContainerAllocator> const>
-  : FalseType
+  : std::false_type
   { };
 
 

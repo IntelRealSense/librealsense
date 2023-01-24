@@ -1,0 +1,84 @@
+name: static_analysis
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+    branches: ['**']
+
+jobs:
+  cppcheck:
+    name: cppcheck
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Install 
+        shell: bash
+        run: |
+          sudo apt-get update;
+          sudo apt-get install -qq cppcheck;
+        
+      - name: Run
+        shell: bash
+        #Selected run options:
+        #  ./xxx            :   Folders to scan
+        #  --quiet          :   Don't show current checked configuration in log
+        #  --std=c++11      :   Use C++11 standard (default but worth mentioning)
+        #  --xml            :   Output in XML format
+        #  -j4              :   Run parallel jobs for a faster scan. current HW is 2 core (https://docs.github.com/en/actions/using-github-hosted-runners/about-github-hosted-runners) using 4 to future proof
+        #  --enable         :   Additional check to run. options are [all, warning, style, performance, protability, information, unusedFunction, missingInclude]
+        #  -I               :   Include directories
+        #  -i               :   Ignore directories. Ignore third-party libs that we don't want to check
+        #  --suppress       :   Don't issue errors about files matching the expression (when -i for folders is not enough)
+        #  --force          :   Check all configurations, takes a very long time (~2 hours) and did not find additional errors. Removed.
+        #  --max-configs=6  :   Using less configuration permutations (default is 12) to reduce run time. Detects less errors. Removed.
+        #  -Dxxx            :   preprocessor configuration to use. Relevant flags taken from build on Ubuntu.
+        run: > 
+          cppcheck ./src ./include ./common ./tools ./examples ./third-party/realdds ./third-party/rsutils
+          --quiet --std=c++11 --xml -j4 --enable=warning
+          -I./src -I./include -I./third-party/rsutils/include -I./common
+          -i./src/mf -i./src/uvc -i./src/win -i./src/winusb --suppress=*:third-party/json.hpp
+          -DBUILD_WITH_DDS -DHWM_OVER_XU -DRS2_USE_V4L2_BACKEND -DUNICODE -DUSING_UDEV -DCHECK_FOR_UPDATES -D__linux__
+          &> cppcheck_run.log
+
+      - name: Diff
+        id: diff-step
+        continue-on-error: true 
+        shell: bash
+        run: |
+          python3 .github/workflows/cppcheck-parse.py --severity E cppcheck_run.log | sort --key 3 > cppcheck_run.parsed.log
+          python3 .github/workflows/cppcheck-parse.py --severity E .github/workflows/cppcheck_run.log | sort --key 3 > cppcheck_run.parsed.golden
+          diff cppcheck_run.parsed.golden cppcheck_run.parsed.log
+
+      - name: Upload logs
+        uses: actions/upload-artifact@v3
+        with: 
+          name: cppcheck_log
+          path: |
+            cppcheck_run.log
+            cppcheck_run.parsed.log
+  
+      - name: Provide correct exit status
+        shell: bash
+        run: |
+          ERROR_COUNT=$(grep cppcheck_run.log -e "severity=\"error\"" -c)
+          EXPECTED_ERROR_COUNT=$(grep .github/workflows/cppcheck_run.log -e "severity=\"error\"" -c)
+          if [ $ERROR_COUNT -eq $EXPECTED_ERROR_COUNT ]
+          then
+            echo "cppcheck_run succeeded, found" $ERROR_COUNT "errors, as expected"
+            if [ ${{steps.diff-step.outcome}} == "failure" ]
+            then
+               echo "however, the ---> DIFF FAILED <---"
+            else
+               exit 0
+            fi
+          elif [ $ERROR_COUNT -lt $EXPECTED_ERROR_COUNT ]
+          then
+            echo "cppcheck_run ---> SUCCEEDED <--- but found" $ERROR_COUNT "errors when expecting" $EXPECTED_ERROR_COUNT
+          else
+            echo "cppcheck_run ---> FAILED <--- with" $ERROR_COUNT "errors; expecting" $EXPECTED_ERROR_COUNT
+          fi
+          echo "see the diff step above, or the uploaded cppcheck_run.log for details"
+          echo "update .github/workflows/cppcheck_run.log if these are valid results"
+          exit 1

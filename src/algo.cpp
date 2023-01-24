@@ -646,7 +646,7 @@ void rect_gaussian_dots_target_calculator::normalize(const uint8_t* img)
         for (int j = 0; j < _height; ++j)
         {
             for (int i = 0; i < _width; ++i)
-                *q++ = 1.0 - (*p++ - min_val) * factor;
+                *q++ = 1.0f - (*p++ - min_val) * factor;
 
             p += jumper;
         }
@@ -768,7 +768,7 @@ bool rect_gaussian_dots_target_calculator::find_corners()
     _pts[1].x = 0;
     _pts[1].y = 0;
     peak = 0.0f;
-    p = _ncc.data() + _htsize * _width;
+    p = _ncc.data() + (_htsize * _width);
     for (int j = _htsize; j < _hheight; ++j)
     {
         p += _hwidth;
@@ -792,7 +792,7 @@ bool rect_gaussian_dots_target_calculator::find_corners()
     _pts[2].x = 0;
     _pts[2].y = 0;
     peak = 0.0f;
-    p = _ncc.data() + _hheight * _width;
+    p = _ncc.data() + (_hheight * _width);
     for (int j = _hheight; j < _height - _htsize; ++j)
     {
         p += _htsize;
@@ -816,7 +816,7 @@ bool rect_gaussian_dots_target_calculator::find_corners()
     _pts[3].x = 0;
     _pts[3].y = 0;
     peak = 0.0f;
-    p = _ncc.data() + _hheight * _width;
+    p = _ncc.data() + (_hheight * _width);
     for (int j = _hheight; j < _height - _htsize; ++j)
     {
         p += _hwidth;
@@ -849,52 +849,54 @@ void rect_gaussian_dots_target_calculator::refine_corners()
     // upper left
     int pos = (_pts[0].y - hs) * _width + _pts[0].x - hs;
 
-    _corners[0].x = static_cast<double>(_pts[0].x - hs);
+    _corners[0].x = static_cast<double>(_pts[0].x) - hs;
     minimize_x(_ncc.data() + pos, _patch_size, f, _corners[0].x);
 
-    _corners[0].y = static_cast<double>(_pts[0].y - hs);
+    _corners[0].y = static_cast<double>(_pts[0].y) - hs;
     minimize_y(_ncc.data() + pos, _patch_size, f, _corners[0].y);
 
     // upper right
     pos = (_pts[1].y - hs) * _width + _pts[1].x - hs;
 
-    _corners[1].x = static_cast<double>(_pts[1].x - hs);
+    _corners[1].x = static_cast<double>(_pts[1].x) - hs;
     minimize_x(_ncc.data() + pos, _patch_size, f, _corners[1].x);
 
-    _corners[1].y = static_cast<double>(_pts[1].y - hs);
+    _corners[1].y = static_cast<double>(_pts[1].y) - hs;
     minimize_y(_ncc.data() + pos, _patch_size, f, _corners[1].y);
 
     // lower left
     pos = (_pts[2].y - hs) * _width + _pts[2].x - hs;
 
-    _corners[2].x = static_cast<double>(_pts[2].x - hs);
+    _corners[2].x = static_cast<double>(_pts[2].x) - hs;
     minimize_x(_ncc.data() + pos, _patch_size, f, _corners[2].x);
 
-    _corners[2].y = static_cast<double>(_pts[2].y - hs);
+    _corners[2].y = static_cast<double>(_pts[2].y) - hs;
     minimize_y(_ncc.data() + pos, _patch_size, f, _corners[2].y);
 
     // lower right
     pos = (_pts[3].y - hs) * _width + _pts[3].x - hs;
 
-    _corners[3].x = static_cast<double>(_pts[3].x - hs);
+    _corners[3].x = static_cast<double>(_pts[3].x) - hs;
     minimize_x(_ncc.data() + pos, _patch_size, f, _corners[3].x);
 
-    _corners[3].y = static_cast<double>(_pts[3].y - hs);
+    _corners[3].y = static_cast<double>(_pts[3].y) - hs;
     minimize_y(_ncc.data() + pos, _patch_size, f, _corners[3].y);
 }
 
 bool rect_gaussian_dots_target_calculator::validate_corners(const uint8_t* img)
 {
+    bool ok = true;
+
     static const int pos_diff_threshold = 4;
     if (abs(_corners[0].x - _corners[2].x) > pos_diff_threshold ||
         abs(_corners[1].x - _corners[3].x) > pos_diff_threshold ||
         abs(_corners[0].y - _corners[1].y) > pos_diff_threshold ||
         abs(_corners[2].y - _corners[3].y) > pos_diff_threshold)
     {
-        return false;
+        ok = false;
     }
 
-    return true;
+    return ok;
 }
 
 void rect_gaussian_dots_target_calculator::calculate_rect_sides(float* rect_sides)
@@ -997,7 +999,7 @@ double rect_gaussian_dots_target_calculator::subpixel_agj(double* f, int s)
 
     double right_mv = 0.0f;
     if (x_0 == s - 1)
-        right_mv = static_cast<double>(s - 1);
+        right_mv = static_cast<double>(s) - 1;
     else
     {
         x_1 = x_0 + 1;

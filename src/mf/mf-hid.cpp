@@ -15,7 +15,6 @@
 #include "metadata.h"
 
 #include <PortableDeviceTypes.h>
-//#include <PortableDeviceClassExtension.h>
 #include <PortableDevice.h>
 #include <Windows.h>
 #include <Sensorsapi.h>
@@ -24,8 +23,7 @@
 #include <initguid.h>
 #include <propkeydef.h>
 #include <comutil.h>
-#include <string>
-#include <librealsense2/utilities/string/windows.h>
+#include <rsutils/string/from.h>
 
 #pragma comment(lib, "Sensorsapi.lib")
 #pragma comment(lib, "PortableDeviceGuids.lib")
@@ -426,8 +424,8 @@ namespace librealsense
                                         {
                                             if (IsEqualPropertyKey(propertyKey, SENSOR_PROPERTY_DEVICE_PATH))
                                             {
-                                                info.device_path = utilities::string::windows::win_to_utf( propertyValue.pwszVal );
-                                                info.id = utilities::string::windows::win_to_utf( fName );
+                                                info.device_path = rsutils::string::windows::win_to_utf( propertyValue.pwszVal );
+                                                info.id = rsutils::string::windows::win_to_utf( fName );
 
                                                 uint16_t vid, pid, mi;
                                                 std::string uid, guid;
@@ -456,13 +454,13 @@ namespace librealsense
                                                         // Leave it empty: it won't be matched against anything
                                                     }
 
-                                                    info.pid = to_string() << std::hex << pid;
-                                                    info.vid = to_string() << std::hex << vid;
+                                                    info.pid = rsutils::string::from() << std::hex << pid;
+                                                    info.vid = rsutils::string::from() << std::hex << vid;
                                                 }
                                             }
                                             if (IsEqualPropertyKey(propertyKey, SENSOR_PROPERTY_SERIAL_NUMBER))
                                             {
-                                                auto str = utilities::string::windows::win_to_utf( propertyValue.pwszVal );
+                                                auto str = rsutils::string::windows::win_to_utf( propertyValue.pwszVal );
                                                 std::transform(begin(str), end(str), begin(str), ::tolower);
                                                 info.serial_number = str;
                                             }

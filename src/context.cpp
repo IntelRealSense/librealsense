@@ -9,9 +9,9 @@
 #include <array>
 #include <chrono>
 #include "ivcam/sr300.h"
-#include "ds5/ds5-factory.h"
+#include "ds/ds5/ds5-factory.h"
 #include "l500/l500-factory.h"
-#include "ds5/ds5-timestamp.h"
+#include "ds/ds-timestamp.h"
 #include "backend.h"
 #include "mock/recorder.h"
 #include <media/ros/ros_reader.h>
@@ -30,15 +30,28 @@
 #include <librealsense2/h/rs_internal.h>
 #include <realdds/topics/device-info-msg.h>
 #include <realdds/topics/image/image-msg.h>
-#endif //BUILD_WITH_DDS
+#include <rsutils/shared-ptr-singleton.h>
+#include <fastdds/dds/domain/DomainParticipant.hpp>
 
-#include <librealsense2/utilities/json.h>
+// We manage one participant and device-watcher per domain:
+// Two contexts with the same domain-id will share the same participant and watcher, while a third context on a
+// different domain will have its own.
+//
+struct dds_domain_context
+{
+    rsutils::shared_ptr_singleton< realdds::dds_participant > participant;
+    rsutils::shared_ptr_singleton< realdds::dds_device_watcher > device_watcher;
+};
+//
+// Domains are mapped by ID:
+// Two contexts with the same participant name on different domain-ids are using two different participants!
+//
+static std::map< realdds::dds_domain_id, dds_domain_context > dds_domain_context_by_id;
 
+#endif // BUILD_WITH_DDS
+
+#include <rsutils/json.h>
 using json = nlohmann::json;
-
-#ifdef WITH_TRACKING
-#include "tm2/tm-info.h"
-#endif
 
 template<unsigned... Is> struct seq{};
 template<unsigned N, unsigned... Is>
@@ -59,43 +72,66 @@ constexpr std::array<char const, N1+N2-1> concat(char const (&a1)[N1], char cons
 // The string is used to retrieve the version embedded into .so file on Linux
 constexpr auto rs2_api_version = concat("VERSION: ",RS2_API_VERSION_STR);
 
+namespace {
+
+template< class T >
+bool contains( const T & first, const T & second )
+{
+    return first == second;
+}
+
 template<>
-bool contains(const std::shared_ptr<librealsense::device_info>& first,
-              const std::shared_ptr<librealsense::device_info>& second)
+bool contains( const std::shared_ptr< librealsense::device_info > & first,
+               const std::shared_ptr< librealsense::device_info > & second )
 {
     auto first_data = first->get_device_data();
     auto second_data = second->get_device_data();
 
-    for (auto&& uvc : first_data.uvc_devices)
+    for( auto && uvc : first_data.uvc_devices )
     {
-        if (std::find(second_data.uvc_devices.begin(),
-            second_data.uvc_devices.end(), uvc) ==
-            second_data.uvc_devices.end())
+        if( std::find( second_data.uvc_devices.begin(), second_data.uvc_devices.end(), uvc )
+            == second_data.uvc_devices.end() )
             return false;
     }
-    for (auto&& usb : first_data.usb_devices)
+    for( auto && usb : first_data.usb_devices )
     {
-        if (std::find(second_data.usb_devices.begin(),
-            second_data.usb_devices.end(), usb) ==
-            second_data.usb_devices.end())
+        if( std::find( second_data.usb_devices.begin(), second_data.usb_devices.end(), usb )
+            == second_data.usb_devices.end() )
             return false;
     }
-    for (auto&& hid : first_data.hid_devices)
+    for( auto && hid : first_data.hid_devices )
     {
-        if (std::find(second_data.hid_devices.begin(),
-            second_data.hid_devices.end(), hid) ==
-            second_data.hid_devices.end())
+        if( std::find( second_data.hid_devices.begin(), second_data.hid_devices.end(), hid )
+            == second_data.hid_devices.end() )
             return false;
     }
-    for (auto&& pd : first_data.playback_devices)
+    for( auto && pd : first_data.playback_devices )
     {
-        if (std::find(second_data.playback_devices.begin(),
-            second_data.playback_devices.end(), pd) ==
-            second_data.playback_devices.end())
+        if( std::find( second_data.playback_devices.begin(), second_data.playback_devices.end(), pd )
+            == second_data.playback_devices.end() )
             return false;
     }
     return true;
 }
+
+template< class T >
+std::vector< std::shared_ptr< T > > subtract_sets( const std::vector< std::shared_ptr< T > > & first,
+                                                   const std::vector< std::shared_ptr< T > > & second )
+{
+    std::vector< std::shared_ptr< T > > results;
+    std::for_each( first.begin(), first.end(), [&]( std::shared_ptr< T > data ) {
+        if( std::find_if( second.begin(),
+                          second.end(),
+                          [&]( std::shared_ptr< T > new_dev ) { return contains( data, new_dev ); } )
+            == second.end() )
+        {
+            results.push_back( data );
+        }
+    } );
+    return results;
+}
+
+}  // namespace
 
 namespace librealsense
 {
@@ -135,9 +171,14 @@ namespace librealsense
         case backend_type::standard:
             _backend = platform::create_backend();
 #ifdef BUILD_WITH_DDS
-            if( ! _dds_participant.instance()->is_valid() )
-                _dds_participant->init( 0, "librealsense" );
-            _dds_watcher.instance( _dds_participant.get() );
+            {
+                realdds::dds_domain_id domain_id = 0;
+                auto & domain = dds_domain_context_by_id[domain_id];
+                _dds_participant = domain.participant.instance();
+                if( ! _dds_participant->is_valid() )
+                    _dds_participant->init( domain_id, "librealsense" );
+                _dds_watcher = domain.device_watcher.instance( _dds_participant );
+            }
 #endif //BUILD_WITH_DDS
             break;
         case backend_type::record:
@@ -156,11 +197,9 @@ namespace librealsense
     }
 
 
-    context::context( char const * json_settings )
+    context::context( json const & settings )
         : context()
     {
-        json settings = json_settings ? json::parse( json_settings ) : json();
-
         _backend = platform::create_backend();  // standard type
 
         environment::get_instance().set_time_service( _backend->create_time_service() );
@@ -169,20 +208,26 @@ namespace librealsense
         assert( _device_watcher->is_stopped() );
 
 #ifdef BUILD_WITH_DDS
-        if( utilities::json::get< bool >( settings, "dds-discovery", true ) )
+        if( rsutils::json::get< bool >( settings, "dds-discovery", true ) )
         {
-            if( ! _dds_participant.instance()->is_valid() )
+            realdds::dds_domain_id domain_id = rsutils::json::get< int >( settings, "dds-domain", 0 );
+            std::string participant_name = rsutils::json::get< std::string >( settings, "dds-participant-name", "librealsense" );
+
+            auto & domain = dds_domain_context_by_id[domain_id];
+            _dds_participant = domain.participant.instance();
+            if( ! _dds_participant->is_valid() )
             {
-                _dds_participant->init(
-                    utilities::json::get< int >( settings, "dds-domain", 0 ),
-                    utilities::json::get< std::string >( settings, "dds-participant-name", "librealsense" ) );
+                _dds_participant->init( domain_id, participant_name );
             }
-            else if( utilities::json::has_value( settings, "dds-domain" )
-                     || utilities::json::has_value( settings, "dds-participant-name" ) )
+            else if( rsutils::json::has_value( settings, "dds-participant-name" )
+                     && participant_name != _dds_participant->get()->get_qos().name().to_string() )
             {
-                LOG_WARNING( "DDS participant has already been created; ignoring DDS settings" );
+                throw std::runtime_error(
+                    rsutils::string::from()
+                    << "A DDS participant '" << _dds_participant->get()->get_qos().name().to_string()
+                    << "' already exists in domain " << domain_id << "; cannot create '" << participant_name << "'" );
             }
-            _dds_watcher.instance( _dds_participant.get() );
+            _dds_watcher = domain.device_watcher.instance( _dds_participant );
 
             // When building with DDS allowed, we want the DDS device watcher always on.
             // Not only when it has device change callback.
@@ -190,11 +235,17 @@ namespace librealsense
             
             if( _dds_watcher && _dds_watcher->is_stopped() )
             {
-                start_dds_device_watcher( utilities::json::get< size_t >( settings, "dds-message-timeout-ms", 5000 ) );
+                start_dds_device_watcher( rsutils::json::get< size_t >( settings, "dds-message-timeout-ms", 5000 ) );
             }
             //_dds_backend = ...; TODO
         }
 #endif //BUILD_WITH_DDS
+    }
+
+
+    context::context( char const * json_settings )
+        : context( json_settings ? json::parse( json_settings ) : json() )
+    {
     }
 
 
@@ -317,16 +368,17 @@ namespace librealsense
             for (auto&& info : uvc_infos)
                 devs.push_back(ctx->get_backend().create_uvc_device(info));
 
-            std::unique_ptr<frame_timestamp_reader> host_timestamp_reader_backup(new ds5_timestamp_reader(environment::get_instance().get_time_service()));
+            std::unique_ptr<frame_timestamp_reader> host_timestamp_reader_backup(new ds_timestamp_reader(environment::get_instance().get_time_service()));
             auto raw_color_ep = std::make_shared<uvc_sensor>("Raw RGB Camera",
                 std::make_shared<platform::multi_pins_uvc_device>(devs),
-                std::unique_ptr<frame_timestamp_reader>(new ds5_timestamp_reader_from_metadata(std::move(host_timestamp_reader_backup))),
+                std::unique_ptr<frame_timestamp_reader>(new ds_timestamp_reader_from_metadata(std::move(host_timestamp_reader_backup))),
                 this);
             auto color_ep = std::make_shared<platform_camera_sensor>(this, raw_color_ep);
             add_sensor(color_ep);
 
             register_info(RS2_CAMERA_INFO_NAME, "Platform Camera");
-            std::string pid_str(to_string() << std::setfill('0') << std::setw(4) << std::hex << uvc_infos.front().pid);
+            std::string pid_str( rsutils::string::from()
+                                 << std::setfill( '0' ) << std::setw( 4 ) << std::hex << uvc_infos.front().pid );
             std::transform(pid_str.begin(), pid_str.end(), pid_str.begin(), ::toupper);
 
             using namespace platform;
@@ -659,7 +711,7 @@ namespace librealsense
             }
 
             if( option_id == RS2_OPTION_COUNT )
-                throw librealsense::invalid_value_exception( to_string() << "Option " << option->get_name() << " type not found" );
+                throw librealsense::invalid_value_exception( "Option " + option->get_name() + " type not found" );
 
             auto opt = std::make_shared< rs2_dds_option >( option,
                 [&]( const std::string & name, float value ) { set_option( name, value ); },
@@ -1026,13 +1078,6 @@ namespace librealsense
             } );
 #endif //BUILD_WITH_DDS
 
-#ifdef WITH_TRACKING
-        if (mask & RS2_PRODUCT_LINE_T200)
-        {
-            auto tm2_devices = tm2_info::pick_tm2_devices(ctx, devices.usb_devices);
-            std::copy(begin(tm2_devices), end(tm2_devices), std::back_inserter(list));
-        }
-#endif //WITH_TRACKING
         // Supported recovery devices
         if( mask & RS2_PRODUCT_LINE_D400 || mask & RS2_PRODUCT_LINE_SR300 || mask & RS2_PRODUCT_LINE_L500 ) 
         {
@@ -1262,7 +1307,8 @@ namespace librealsense
         if (it != _playback_devices.end() && it->second.lock())
         {
             //Already exists
-            throw librealsense::invalid_value_exception(to_string() << "File \"" << file << "\" already loaded to context");
+            throw librealsense::invalid_value_exception( rsutils::string::from()
+                                                         << "File \"" << file << "\" already loaded to context" );
         }
         auto playback_dev = std::make_shared<playback_device>(shared_from_this(), std::make_shared<ros_reader>(file, shared_from_this()));
         auto dinfo = std::make_shared<playback_device_info>(playback_dev);
@@ -1280,7 +1326,7 @@ namespace librealsense
         if (it != _playback_devices.end() && it->second.lock())
         {
             //Already exists
-            throw librealsense::invalid_value_exception(to_string() << "File \"" << file << "\" already loaded to context");
+            throw librealsense::invalid_value_exception( rsutils::string::from() << "File \"" << file << "\" already loaded to context");
         }
         auto prev_playback_devices = _playback_devices;
         _playback_devices[file] = dev;
@@ -1299,12 +1345,6 @@ namespace librealsense
         _playback_devices.erase(it);
         on_device_changed({},{}, prev_playback_devices, _playback_devices);
     }
-
-#if WITH_TRACKING
-    void context::unload_tracking_module()
-    {
-    }
-#endif
 
     std::vector<std::vector<platform::uvc_device_info>> group_devices_by_unique_id(const std::vector<platform::uvc_device_info>& devices)
     {

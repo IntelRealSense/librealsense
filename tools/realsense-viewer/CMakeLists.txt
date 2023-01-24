@@ -5,9 +5,9 @@ cmake_minimum_required(VERSION 3.1.0)
 project(realsense-viewer)
 
 if(WIN32)
-add_executable( ${PROJECT_NAME} WIN32 "" )
+    add_executable( ${PROJECT_NAME} WIN32 "" )
 else()
-add_executable( ${PROJECT_NAME} "" )
+    add_executable( ${PROJECT_NAME} "" )
 endif()
 
 set(THREADS_PREFER_PTHREAD_FLAG ON)
@@ -15,9 +15,7 @@ find_package(Threads REQUIRED)
 
 include_directories(${CMAKE_BINARY_DIR})
 
-include("${REPO_ROOT}/include/librealsense2/utilities/easylogging/easyloggingpp.cmake")
-target_sources( ${PROJECT_NAME} PRIVATE ${ELPP_SOURCE_FILES} )
-source_group( "EasyLogging++" FILES ${ELPP_SOURCE_FILES} )
+using_easyloggingpp( ${PROJECT_NAME} SHARED )
 
 include(../../common/CMakeLists.txt)
 
@@ -240,11 +238,6 @@ endif()
 if (IMPORT_DEPTH_CAM_FW)
     add_definitions(-DINTERNAL_FW)
     target_link_libraries(${PROJECT_NAME} fw)
-endif()
-
-if(BUILD_NETWORK_DEVICE)
-    add_definitions(-DNETWORK_DEVICE)
-    set(RS_VIEWER_LIBS ${RS_VIEWER_LIBS} realsense2-net)
 endif()
 
 target_link_libraries(${PROJECT_NAME} ${DEPENDENCIES} ${RS_VIEWER_LIBS})

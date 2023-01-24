@@ -39,7 +39,7 @@ In order to enable the full capabilities of RealSense devices certain modificati
 NVIDIA's L4T delivers an Ubuntu-based distribution with a customized kernel based on version 4.9. The way the kernel is configured and deployed is different from a desktop Ubuntu image with two notable differences being the list of kernel modules included in default configuration and the way a new image is flashed.
 
 And while it is possible to rebuild and flash a new kernel image the procedure can be perceived as challenging and shall be performed with extra caution.
-This guide comes with a script that allows to modify the kernel modules with Librealsense2-related patches without replacing the kernel image. The script has been verified with **Jetson AGX Xavier™** board using L4T versions 4.2.3, 4.3 and 4.4 (Sept 2020). Scroll to the end of the guide for details.
+This guide comes with a script that allows to modify the kernel modules with Librealsense2-related patches without replacing the kernel image. The script has been verified with **Jetson AGX Xavier™** board using L4T versions 4.2.3, 4.3, 4.4 (Sept 2020) and 5.0.2. Scroll to the end of the guide for details.
 
 ### 4. Install with Debian Packages
  The minimum JetPack SDK required to run the precompiled Debians is [JetPack version 4.4.1](https://developer.nvidia.com/jetpack-sdk-441-archive) ( L4T 32.4.4 , CUDA version 10.2).
@@ -92,7 +92,7 @@ You can also double-TAB after typing `rs-` to see the full list of SDK examples.
 
 ⮕ Use the V4L Native backend by applying the kernel patching
 
-The method was verified with **Jetson AGX** boards with JetPack **4.2.3**[L4T 32.2.1,32.2.3], **4.3**[L4T 32.3.1], **4.4**[L4T 32.4.3] and **4.5.1**[L4T 32.5.1].
+The method was verified with **Jetson AGX** boards with JetPack **4.2.3**[L4T 32.2.1,32.2.3], **4.3**[L4T 32.3.1], **4.4**[L4T 32.4.3], **4.5.1**[L4T 32.5.1] and **5.0.2**[L4T 35.1.0].
 
 The method has not yet been verified on the **Jetson Nano** board.
 

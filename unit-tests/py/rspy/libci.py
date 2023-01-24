@@ -98,7 +98,7 @@ class TestConfig( ABC ):  # Abstract Base Class
         if self._timeout != 200:
             log.d( 'timeout:', self._timeout )
         if len( self._tags ) > 1:
-            log.d( 'tags:', { tag for tag in self._tags if tag != "exe" and tag != "py" } )
+            log.d( 'tags:', self._tags )
         if self._flags:
             log.d( 'flags:', self._flags )
         if len( self._configurations ) > 1:
@@ -205,7 +205,7 @@ class TestConfigFromText( TestConfig ):
                                 log.e(source + '+' + str(line['index']) + ': invalid syntax:', params,
                                       '. All device names after \'' + params[0] +
                                       '\' must start with \'!\' in order to skip them')
-                            break
+                                break
                         else:
                             self._configurations.append( params )
                 else:
@@ -418,8 +418,6 @@ class ExeTest( Test ):
         :param context: context in which the test will run
         """
         global unit_tests_dir
-        if exe and not os.path.isfile( exe ):
-            log.d( "Tried to create exe test with invalid exe file: " + exe )
         Test.__init__( self, testname )
         self.exe = exe
 
@@ -428,6 +426,15 @@ class ExeTest( Test ):
             self._config = TestConfigFromCpp( unit_tests_dir + os.sep + relative_test_path, context )
         else:
             self._config = TestConfig(context)
+            self._config.tags.add( 'exe' )
+
+    def debug_dump( self ):
+        if self.exe:
+            if not os.path.isfile( self.exe ):
+                log.d( "exe does not exist: " + self.exe )
+            else:
+                log.d( 'exe:', self.exe )
+        Test.debug_dump( self )
 
     @property
     def command( self ):

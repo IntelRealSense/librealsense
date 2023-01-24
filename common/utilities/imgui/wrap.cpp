@@ -5,7 +5,7 @@
 #include <vector>
 #include <sstream>
 #include "wrap.h"
-#include <librealsense2/utilities/string/split.h>
+#include <rsutils/string/split.h>
 #include "../third-party/imgui/imgui.h"
 
 namespace utilities {
@@ -102,7 +102,7 @@ std::string wrap( const std::string & text, int wrap_pixels_width )
         return text;
 
     // Split text into paragraphs
-    auto paragraphs_vector = string::split( text, '\n' );
+    auto paragraphs_vector = rsutils::string::split( text, '\n' );
 
     std::string wrapped_text;
     size_t line_number = 1;
