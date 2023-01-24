@@ -3,7 +3,6 @@
 
 #test:device L500*
 #test:device D400*
-#test:device SR300*
 
 import pyrealsense2 as rs
 from rspy import test
