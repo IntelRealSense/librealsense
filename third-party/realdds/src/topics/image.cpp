@@ -26,15 +26,15 @@ using namespace eprosima::fastcdr::exception;
 
 realdds::topics::raw::device::image::image()
 {
-    // m_raw_data com.eprosima.idl.parser.typecode.SequenceTypeCode@617faa95
+    // m_raw_data com.eprosima.idl.parser.typecode.SequenceTypeCode@396f6598
 
-    // m_size com.eprosima.idl.parser.typecode.PrimitiveTypeCode@1e127982
+    // m_size com.eprosima.idl.parser.typecode.PrimitiveTypeCode@394e1a0f
     m_size = 0;
-    // m_width com.eprosima.idl.parser.typecode.PrimitiveTypeCode@60c6f5b
+    // m_width com.eprosima.idl.parser.typecode.PrimitiveTypeCode@27a5f880
     m_width = 0;
-    // m_height com.eprosima.idl.parser.typecode.PrimitiveTypeCode@2038ae61
+    // m_height com.eprosima.idl.parser.typecode.PrimitiveTypeCode@1d29cf23
     m_height = 0;
-    // m_format com.eprosima.idl.parser.typecode.PrimitiveTypeCode@3c0f93f1
+    // m_format com.eprosima.idl.parser.typecode.PrimitiveTypeCode@5f282abb
     m_format = 0;
 
     // Just to register all known types

@@ -13,7 +13,7 @@ message(CHECK_START  "Fetching & Installing foonathan_memory...")
 FetchContent_Declare(
   foonathan_memory
   GIT_REPOSITORY https://github.com/foonathan/memory.git
-  GIT_TAG        19ab0759c7f053d88657c0eb86d879493f784d61 # GIT_TAG "v0.7-1"
+  GIT_TAG        "v0.7-2"
   GIT_SHALLOW ON    # No history needed
   SOURCE_DIR ${CMAKE_CURRENT_BINARY_DIR}/third-party/foonathan_memory
 )
