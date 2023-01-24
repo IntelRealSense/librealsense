@@ -15,7 +15,6 @@ struct short3
 #include <res/d435.h>
 #include <res/d415.h>
 #include <res/sr300.h>
-#include <res/t265.h>
 #include <res/l500.h>
 
 static const char* vertex_shader_text =
@@ -126,7 +125,6 @@ namespace librealsense
             camera_mesh.push_back(load_model(uncompress_d415_obj));
             camera_mesh.push_back(load_model(uncompress_d435_obj));
             camera_mesh.push_back(load_model(uncompress_sr305_obj));
-            camera_mesh.push_back(load_model(uncompress_t265_obj));
             camera_mesh.push_back(load_model(uncompress_L515_obj));
 
             register_option(RS2_OPTION_FILTER_MAGNITUDE, std::make_shared<librealsense::float_option>(option_range{ 0, 1, 0, 1 }));

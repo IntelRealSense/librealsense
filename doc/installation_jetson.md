@@ -9,7 +9,7 @@
 ### 1. Prerequisites
 
 * NVIDIA® **Jetson Nano™**, **Jetson TX2™** and **Jetson AGX Xavier™** board (may also work on other Jetson devices)
-* RealSense **D415**, **D435**, **D435i**, **D455**, **L515**, **SR300** and **T265** Camera devices.
+* RealSense **D415**, **D435**, **D435i**, **D455**, **L515** and **SR300** Camera devices.
 
 ### 2. Establish Developer's Environment
 
@@ -77,8 +77,6 @@ Note that a lower version may not work due to non compatible CUDA versions limit
 4. Reconnect the RealSense device and run the following to verify the installation: `realsense-viewer`
 
 ![d400](./img/jetson-d400.png)
-
-![t265](./img/jetson-t265.png)
 
 You can also double-TAB after typing `rs-` to see the full list of SDK examples.
 
