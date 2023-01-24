@@ -101,11 +101,11 @@ namespace librealsense
 
     std::vector<uint8_t> hw_monitor_extended_buffers::get_data_for_current_iteration(const std::vector<uint8_t>& table_data, int iteration) const
     {
-        auto remaining_data_size_to_be_sent = table_data.size() - iteration * HW_MONITOR_BUFFER_SIZE;
+        auto remaining_data_size_to_be_sent = table_data.size() - iteration * HW_MONITOR_COMMAND_SIZE;
 
-        auto start_iterator_for_current_chunk = table_data.begin() + iteration * HW_MONITOR_BUFFER_SIZE;
-        auto end_iterator_for_current_chunk = (remaining_data_size_to_be_sent >= HW_MONITOR_BUFFER_SIZE) ?
-            start_iterator_for_current_chunk + HW_MONITOR_BUFFER_SIZE :
+        auto start_iterator_for_current_chunk = table_data.begin() + iteration * HW_MONITOR_COMMAND_SIZE;
+        auto end_iterator_for_current_chunk = (remaining_data_size_to_be_sent >= HW_MONITOR_COMMAND_SIZE) ?
+            start_iterator_for_current_chunk + HW_MONITOR_COMMAND_SIZE :
             start_iterator_for_current_chunk + remaining_data_size_to_be_sent;
 
         return std::vector<uint8_t>(start_iterator_for_current_chunk, end_iterator_for_current_chunk);

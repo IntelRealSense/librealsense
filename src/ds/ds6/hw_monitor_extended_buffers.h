@@ -28,7 +28,7 @@ namespace librealsense
     private:
         int get_msg_length(command cmd) const;
         int get_number_of_chunks(int msg_length) const;
-        hwm_buffer_type hw_monitor_extended_buffers::get_buffer_type(command cmd) const;
+        hwm_buffer_type get_buffer_type(command cmd) const;
         std::vector<uint8_t> send_big_buffer_to_receive(command cmd, hwmon_response* p_response, bool locked_transfer) const;
         std::vector<uint8_t> send_big_buffer_to_send(command cmd, hwmon_response* p_response, bool locked_transfer) const;
 
