@@ -832,6 +832,7 @@ namespace librealsense
     ivcam2::intrinsic_depth ros_reader::ros_l500_depth_data_to_intrinsic_depth(ros_reader::l500_depth_data data)
     {
         ivcam2::intrinsic_depth res;
+        res.orient = { 0, 0, 0, 0, 0.f };
         res.resolution.num_of_resolutions = data.num_of_resolution;
 
         for (auto i = 0;i < data.num_of_resolution; i++)
@@ -845,7 +846,6 @@ namespace librealsense
             res.resolution.intrinsic_resolution[i].world.pinhole_cam_model.height = data.data[i].res_world.y;
             res.resolution.intrinsic_resolution[i].world.zo.x = data.data[i].zo_world.x;
             res.resolution.intrinsic_resolution[i].world.zo.y = data.data[i].zo_world.y;
-
         }
         return res;
     }
