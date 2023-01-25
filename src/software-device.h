@@ -5,6 +5,7 @@
 #include "core/streaming.h"
 #include "device.h"
 #include "context.h"
+#include <librealsense2/h/rs_internal.h>
 
 namespace librealsense
 {

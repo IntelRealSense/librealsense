@@ -5,7 +5,6 @@
 
 #include "types.h"
 #include "backend.h"
-#include "mock/recorder.h"
 #include "core/streaming.h"
 
 #include <vector>
@@ -80,9 +79,7 @@ namespace librealsense
 
     enum class backend_type
     {
-        standard,
-        record,
-        playback
+        standard
     };
 
 
@@ -117,11 +114,7 @@ namespace librealsense
     {
         context();
     public:
-        explicit context(backend_type type,
-            const char* filename = nullptr,
-            const char* section = nullptr,
-            rs2_recording_mode mode = RS2_RECORDING_MODE_COUNT,
-            std::string min_api_version = "0.0.0");
+        explicit context( backend_type type );
 
         explicit context( nlohmann::json const & );
         explicit context( char const * json_settings );
