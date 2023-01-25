@@ -570,7 +570,7 @@ TEST_CASE("Post-Processing processing pipe", "[post-processing-filters]")
 }
 
 TEST_CASE("Align Processing Block", "[live][pipeline][post-processing-filters][!mayfail]") {
-    rs2::context ctx = make_context( SECTION_FROM_TEST_NAME, "2.20.0" );
+    rs2::context ctx = make_context( SECTION_FROM_TEST_NAME );
     if( ctx )
     {
         auto list = ctx.query_devices();

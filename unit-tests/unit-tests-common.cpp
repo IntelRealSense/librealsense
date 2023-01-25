@@ -195,41 +195,12 @@ dev_type get_PID( rs2::device & dev )
 }
 
 
-static command_line_params g_command_line_params;
-static std::string g_command_line_base_filename;
-static bool g_command_line_record = false;
-static bool g_command_line_playback = false;
-
-
 void command_line_params::init( int argc, char const * const * const argv )
 {
     rs2::log_to_file( RS2_LOG_SEVERITY_DEBUG );
-    for( auto i = 0; i < argc; i++ )
-    {
-        std::string param( argv[i] );
-        if( param == "into" )
-        {
-            i++;
-            if( i < argc )
-            {
-                g_command_line_base_filename = argv[i];
-                g_command_line_record = true;
-            }
-        }
-        else if( param == "from" )
-        {
-            i++;
-            if( i < argc )
-            {
-                g_command_line_base_filename = argv[i];
-                g_command_line_playback = true;
-            }
-        }
-    }
 }
 
 
-static std::map< std::string, int > _counters;
 static bool g_found_any_section = false;
 
 
@@ -239,30 +210,12 @@ bool found_any_section()
 }
 
 
-rs2::context make_context( const char * id, std::string min_api_version )
+rs2::context make_context( const char * /*id*/ )
 {
-    _counters[id]++;
-
-    std::stringstream ss;
-    ss << id << "." << _counters[id] << ".test";
-    auto section = ss.str();
-
-
     rs2::context ctx( rs2::context::uninitialized );
     try
     {
-        if( g_command_line_record )
-        {
-            ctx = rs2::recording_context( g_command_line_base_filename, section );
-        }
-        else if( g_command_line_playback )
-        {
-            ctx = rs2::mock_context( g_command_line_base_filename, section, min_api_version );
-        }
-        else
-        {
-            ctx = rs2::context( "{\"dds-discovery\":false}" );
-        }
+        ctx = rs2::context( "{\"dds-discovery\":false}" );
         g_found_any_section = true;
     }
     catch( ... )
