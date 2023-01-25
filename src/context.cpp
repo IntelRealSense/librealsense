@@ -13,7 +13,6 @@
 #include "l500/l500-factory.h"
 #include "ds/ds-timestamp.h"
 #include "backend.h"
-#include "mock/recorder.h"
 #include <media/ros/ros_reader.h>
 #include "types.h"
 #include "stream.h"
@@ -159,41 +158,25 @@ namespace librealsense
     }
 
 
-    context::context(backend_type type,
-                     const char* filename,
-                     const char* section,
-                     rs2_recording_mode mode,
-                     std::string min_api_version)
+    context::context( backend_type type )
         : context()
     {
-        switch(type)
-        {
-        case backend_type::standard:
-            _backend = platform::create_backend();
+        _backend = platform::create_backend();
 #ifdef BUILD_WITH_DDS
-            {
-                realdds::dds_domain_id domain_id = 0;
-                auto & domain = dds_domain_context_by_id[domain_id];
-                _dds_participant = domain.participant.instance();
-                if( ! _dds_participant->is_valid() )
-                    _dds_participant->init( domain_id, "librealsense" );
-                _dds_watcher = domain.device_watcher.instance( _dds_participant );
-            }
-#endif //BUILD_WITH_DDS
-            break;
-        case backend_type::record:
-            _backend = std::make_shared<platform::record_backend>(platform::create_backend(), filename, section, mode);
-            break;
-        case backend_type::playback:
-            _backend = std::make_shared<platform::playback_backend>(filename, section, min_api_version);
-            break;
-            // Strongly-typed enum. Default is redundant
+        {
+            realdds::dds_domain_id domain_id = 0;
+            auto & domain = dds_domain_context_by_id[domain_id];
+            _dds_participant = domain.participant.instance();
+            if( ! _dds_participant->is_valid() )
+                _dds_participant->init( domain_id, "librealsense" );
+            _dds_watcher = domain.device_watcher.instance( _dds_participant );
         }
+#endif //BUILD_WITH_DDS
 
-       environment::get_instance().set_time_service(_backend->create_time_service());
+        environment::get_instance().set_time_service(_backend->create_time_service());
 
-       _device_watcher = _backend->create_device_watcher();
-       assert(_device_watcher->is_stopped());
+        _device_watcher = _backend->create_device_watcher();
+        assert(_device_watcher->is_stopped());
     }
 
 

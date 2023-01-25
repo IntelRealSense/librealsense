@@ -17,7 +17,7 @@ using namespace rs2;
 // HDR CONFIGURATION TESTS
 TEST_CASE("HDR Config - default config", "[hdr][live]") 
 {
-    rs2::context ctx = make_context( SECTION_FROM_TEST_NAME, "2.39.0" );
+    rs2::context ctx = make_context( SECTION_FROM_TEST_NAME );
     if (ctx)
     {
         rs2::device_list devices_list = ctx.query_devices();
@@ -60,7 +60,7 @@ TEST_CASE("HDR Config - default config", "[hdr][live]")
 TEST_CASE("HDR Config - custom config", "[hdr][live]") 
 {
     // Require at least one device to be plugged in
-    rs2::context ctx = make_context( SECTION_FROM_TEST_NAME, "2.39.0" );
+    rs2::context ctx = make_context( SECTION_FROM_TEST_NAME );
     if (ctx)
     {
         rs2::device_list devices_list = ctx.query_devices();
@@ -106,7 +106,7 @@ TEST_CASE("HDR Config - custom config", "[hdr][live]")
 // HDR STREAMING TESTS
 TEST_CASE("HDR Streaming - default config", "[hdr][live][using_pipeline]") 
 {
-    rs2::context ctx = make_context( SECTION_FROM_TEST_NAME, "2.39.0" );
+    rs2::context ctx = make_context( SECTION_FROM_TEST_NAME );
     if (ctx)
     {
         rs2::device_list devices_list = ctx.query_devices();
@@ -168,7 +168,7 @@ TEST_CASE("HDR Streaming - default config", "[hdr][live][using_pipeline]")
 
 TEST_CASE("HDR Streaming - custom config", "[hdr][live][using_pipeline]")
 {
-    rs2::context ctx = make_context( SECTION_FROM_TEST_NAME, "2.39.0" );
+    rs2::context ctx = make_context( SECTION_FROM_TEST_NAME );
     if (ctx)
     {
         rs2::device_list devices_list = ctx.query_devices();
@@ -333,7 +333,7 @@ TEST_CASE("HDR Config while Streaming", "[hdr][live][using_pipeline]")
 // CHECKING HDR AFTER PIPE RESTART
 TEST_CASE("HDR Running - restart hdr at restream", "[hdr][live][using_pipeline]")
 {
-    rs2::context ctx = make_context( SECTION_FROM_TEST_NAME, "2.39.0" );
+    rs2::context ctx = make_context( SECTION_FROM_TEST_NAME );
     if( ctx )
     {
         rs2::device_list devices_list = ctx.query_devices();
@@ -422,7 +422,7 @@ bool check_hdr_frame_counter(rs2::pipeline& pipe, int num_of_frames, rs2::hdr_me
 // CHECKING HDR MERGE AFTER HDR RESTART
 TEST_CASE("HDR Running - hdr merge after hdr restart", "[hdr][live][using_pipeline]")
 {
-    rs2::context ctx = make_context( SECTION_FROM_TEST_NAME, "2.39.0" );
+    rs2::context ctx = make_context( SECTION_FROM_TEST_NAME );
     if( ctx )
     {
         rs2::device_list devices_list = ctx.query_devices();
@@ -476,7 +476,7 @@ TEST_CASE("HDR Running - hdr merge after hdr restart", "[hdr][live][using_pipeli
 // CHECKING SEQUENCE ID WHILE STREAMING
 TEST_CASE("HDR Streaming - checking sequence id", "[hdr][live][using_pipeline]")
 {
-    rs2::context ctx = make_context( SECTION_FROM_TEST_NAME, "2.39.0" );
+    rs2::context ctx = make_context( SECTION_FROM_TEST_NAME );
     if( ctx )
     {
         rs2::device_list devices_list = ctx.query_devices();
@@ -538,7 +538,7 @@ TEST_CASE("HDR Streaming - checking sequence id", "[hdr][live][using_pipeline]")
 
 TEST_CASE("Emitter on/off - checking sequence id", "[hdr][live][using_pipeline]") 
 {
-    rs2::context ctx = make_context( SECTION_FROM_TEST_NAME, "2.39.0" );
+    rs2::context ctx = make_context( SECTION_FROM_TEST_NAME );
     if( ctx )
     {
         rs2::device_list devices_list = ctx.query_devices();
@@ -610,7 +610,7 @@ TEST_CASE("Emitter on/off - checking sequence id", "[hdr][live][using_pipeline]"
 //This tests checks that the previously saved merged frame is discarded after a pipe restart
 TEST_CASE("HDR Merge - discard merged frame", "[hdr][live][using_pipeline]") {
 
-    rs2::context ctx = make_context( SECTION_FROM_TEST_NAME, "2.39.0" );
+    rs2::context ctx = make_context( SECTION_FROM_TEST_NAME );
     if( ctx )
     {
         rs2::device_list devices_list = ctx.query_devices();
@@ -695,7 +695,7 @@ TEST_CASE("HDR Merge - discard merged frame", "[hdr][live][using_pipeline]") {
 
 TEST_CASE("HDR Start Stop - recover manual exposure and gain", "[HDR]") 
 {
-    rs2::context ctx = make_context( SECTION_FROM_TEST_NAME, "2.39.0" );
+    rs2::context ctx = make_context( SECTION_FROM_TEST_NAME );
     if( ctx )
     {
         rs2::device_list devices_list = ctx.query_devices();
@@ -763,7 +763,7 @@ TEST_CASE("HDR Start Stop - recover manual exposure and gain", "[HDR]")
 
 // CONTROLS STABILITY WHILE HDR ACTIVE
 TEST_CASE("HDR Active - set locked options", "[hdr][live]") {
-    rs2::context ctx = make_context( SECTION_FROM_TEST_NAME, "2.39.0" );
+    rs2::context ctx = make_context( SECTION_FROM_TEST_NAME );
     if( ctx )
     {
         rs2::device_list devices_list = ctx.query_devices();
@@ -820,7 +820,7 @@ TEST_CASE("HDR Active - set locked options", "[hdr][live]") {
 
 
 TEST_CASE("HDR Streaming - set locked options", "[hdr][live][using_pipeline]") {
-    rs2::context ctx = make_context( SECTION_FROM_TEST_NAME, "2.39.0" );
+    rs2::context ctx = make_context( SECTION_FROM_TEST_NAME );
     if( ctx )
     {
         rs2::device_list devices_list = ctx.query_devices();

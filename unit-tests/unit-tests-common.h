@@ -137,7 +137,7 @@ inline bool file_exists(const std::string& filename)
     return f.good();
 }
 
-rs2::context make_context( const char * id, std::string min_api_version = "0.0.0" );
+rs2::context make_context( const char * id );
 
 // Can be passed to rs2_error ** parameters, requires that an error is indicated with the specific provided message
 class require_error

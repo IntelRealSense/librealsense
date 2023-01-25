@@ -11,18 +11,19 @@
 #include "l500-color.h"
 #include "l500-private.h"
 
-#include "proc/decimation-filter.h"
-#include "proc/threshold.h" 
-#include "proc/spatial-filter.h"
-#include "proc/temporal-filter.h"
-#include "proc/hole-filling-filter.h"
-#include "proc/zero-order.h"
-#include "proc/syncer-processing-block.h"
-#include "proc/rotation-transform.h"
-#include "../common/fw/firmware-version.h"
+#include <src/proc/decimation-filter.h>
+#include <src/proc/threshold.h>
+#include <src/proc/spatial-filter.h>
+#include <src/proc/temporal-filter.h>
+#include <src/proc/hole-filling-filter.h>
+#include <src/proc/zero-order.h>
+#include <src/proc/syncer-processing-block.h>
+#include <src/proc/rotation-transform.h>
+
+#include <common/fw/firmware-version.h>
 #include <rsutils/time/periodic-timer.h>
 #include <rsutils/time/work-week.h>
-#include "../common/utilities/time/l500/get-mfr-ww.h"
+#include <common/utilities/time/l500/get-mfr-ww.h>
 #include <rsutils/string/from.h>
 
 #include <vector>
@@ -314,11 +315,6 @@ namespace librealsense
 
     double l500_device::get_device_time_ms()
     {
-        if (dynamic_cast<const platform::playback_backend*>(&(get_context()->get_backend())) != nullptr)
-        {
-            throw not_implemented_exception("device time not supported for backend.");
-        }
-
         if (!_hw_monitor)
             throw wrong_api_call_sequence_exception("_hw_monitor is not initialized yet");
 
