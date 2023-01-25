@@ -48,6 +48,7 @@
 #include "firmware_logger_device.h"
 #include "device-calibration.h"
 #include "calibrated-sensor.h"
+#include <librealsense2/h/rs_internal.h>
 
 #include <rsutils/string/from.h>
 
@@ -170,7 +171,7 @@ rs2_context* rs2_create_context(int api_version, rs2_error** error) BEGIN_API_CA
 {
     verify_version_compatibility(api_version);
 
-    return new rs2_context{ std::make_shared<librealsense::context>(librealsense::backend_type::standard) };
+    return new rs2_context{ std::make_shared< librealsense::context >( librealsense::backend_type::standard ) };
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, api_version)
 
@@ -1248,31 +1249,19 @@ HANDLE_EXCEPTIONS_AND_RETURN(0, RS2_API_MAJOR_VERSION, RS2_API_MINOR_VERSION, RS
 
 rs2_context* rs2_create_recording_context(int api_version, const char* filename, const char* section, rs2_recording_mode mode, rs2_error** error) BEGIN_API_CALL
 {
-    VALIDATE_NOT_NULL(filename);
-    VALIDATE_NOT_NULL(section);
-    verify_version_compatibility(api_version);
-
-    return new rs2_context{ std::make_shared<librealsense::context>(librealsense::backend_type::record, filename, section, mode) };
+    throw not_implemented_exception( "deprecated" );
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, api_version, filename, section, mode)
 
 rs2_context* rs2_create_mock_context_versioned(int api_version, const char* filename, const char* section, const char* min_api_version, rs2_error** error) BEGIN_API_CALL
 {
-    VALIDATE_NOT_NULL(filename);
-    VALIDATE_NOT_NULL(section);
-    verify_version_compatibility(api_version);
-
-    return new rs2_context{ std::make_shared<librealsense::context>(librealsense::backend_type::playback, filename, section, RS2_RECORDING_MODE_COUNT, std::string(min_api_version)) };
+    throw not_implemented_exception( "deprecated" );
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, api_version, filename, section)
 
 rs2_context* rs2_create_mock_context(int api_version, const char* filename, const char* section, rs2_error** error) BEGIN_API_CALL
 {
-    VALIDATE_NOT_NULL(filename);
-    VALIDATE_NOT_NULL(section);
-    verify_version_compatibility(api_version);
-
-    return new rs2_context{ std::make_shared<librealsense::context>(librealsense::backend_type::playback, filename, section, RS2_RECORDING_MODE_COUNT) };
+    throw not_implemented_exception( "deprecated" );
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, api_version, filename, section)
 

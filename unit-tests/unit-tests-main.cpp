@@ -18,25 +18,7 @@ int main(int argc, char* const argv[])
 
     for (auto i = 0; i < argc; i++)
     {
-        std::string param(argv[i]);
-        if (param != "into" && param != "from")
-        {
-            new_argvs.push_back(argv[i]);
-        }
-        else
-        {
-            i++;
-            if (i < argc && param == "from")
-            {
-                auto filename = argv[i];
-                std::ifstream f(filename);
-                if (!f.good())
-                {
-                    std::cout << "Could not load " << filename << "!"  << std::endl;
-                    return EXIT_FAILURE;
-                }
-            }
-        }
+        new_argvs.push_back(argv[i]);
     }
 
     auto result = Catch::Session().run(static_cast<int>(new_argvs.size()), new_argvs.data());
