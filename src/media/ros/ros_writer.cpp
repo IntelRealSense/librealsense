@@ -564,7 +564,7 @@ namespace librealsense
 
     void ros_writer::write_sensor_processing_blocks(device_serializer::sensor_identifier sensor_id, const nanoseconds& timestamp, std::shared_ptr<recommended_proccesing_blocks_interface> proccesing_blocks)
     {
-        rs2_extension ext;
+        rs2_extension ext = RS2_EXTENSION_UNKNOWN;
         for (auto block : proccesing_blocks->get_recommended_processing_blocks())
         {
             try
