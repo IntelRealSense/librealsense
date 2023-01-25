@@ -17,7 +17,7 @@ namespace librealsense
             if (it == ds::ds6_calibration_tables_size.end())
                 throw std::runtime_error(rsutils::string::from() << " hwm command with wromg param2");
 
-            msg_length = ds::ds6_calibration_tables_size.at(calib_table_id);
+            msg_length = it->second;
         }
         return msg_length;
     }
@@ -32,7 +32,7 @@ namespace librealsense
         if (cmd.cmd == ds::fw_cmd::GET_HKR_CONFIG_TABLE || cmd.cmd == ds::fw_cmd::SET_HKR_CONFIG_TABLE)
         {
             auto calibration_table_size = get_msg_length(cmd);
-            if (calibration_table_size < HW_MONITOR_BUFFER_SIZE)
+            if (calibration_table_size <= HW_MONITOR_COMMAND_SIZE)
                 return hwm_buffer_type::standard;
             if (cmd.cmd == ds::fw_cmd::GET_HKR_CONFIG_TABLE)
                 return hwm_buffer_type::big_buffer_to_receive;
@@ -55,7 +55,8 @@ namespace librealsense
             return send_big_buffer_to_receive(cmd, p_response, locked_transfer);
 
         // hwm_buffer_type::big_buffer_to_send is the last remaining option
-        return send_big_buffer_to_send(cmd, p_response, locked_transfer);
+        send_big_buffer_to_send(cmd, p_response, locked_transfer);
+        return std::vector<uint8_t>();
     }
 
     std::vector<uint8_t> hw_monitor_extended_buffers::send_big_buffer_to_receive(command cmd, hwmon_response* p_response, bool locked_transfer) const
@@ -75,7 +76,7 @@ namespace librealsense
         return recv_msg;
     }
 
-    std::vector<uint8_t> hw_monitor_extended_buffers::send_big_buffer_to_send(command cmd, hwmon_response* p_response, bool locked_transfer) const
+    void hw_monitor_extended_buffers::send_big_buffer_to_send(command cmd, hwmon_response* p_response, bool locked_transfer) const
     {
         int send_msg_length = get_msg_length(cmd);
         uint16_t overall_chunks = get_number_of_chunks(send_msg_length);
@@ -89,14 +90,12 @@ namespace librealsense
         for (int i = 0; i < overall_chunks; ++i)
         {
             // preparing data to be sent in current chunk
-            cmd.data = get_data_for_current_iteration(table_data, i);
+            cmd.data = std::move(get_data_for_current_iteration(table_data, i));
             // chunk number is in param4
             cmd.param4 = compute_chunks_param(overall_chunks, i);
 
-            answer = hw_monitor::send(cmd, p_response, locked_transfer);
+            hw_monitor::send(cmd, p_response, locked_transfer);
         }
-        return answer;
-
     }
 
     std::vector<uint8_t> hw_monitor_extended_buffers::get_data_for_current_iteration(const std::vector<uint8_t>& table_data, int iteration) const
