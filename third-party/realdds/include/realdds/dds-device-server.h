@@ -69,7 +69,7 @@ public:
     void start_streaming( const std::vector< std::pair < std::string, image_header > > & ); //< stream_name, header > pairs
     void stop_streaming( const std::vector< std::string > & stream_to_close );
 
-    void publish_image( const std::string & stream_name, const uint8_t * data, size_t size );
+    void publish_image( const std::string & stream_name, const uint8_t * data, size_t size, const nlohmann::json & metadata );
     void publish_notification( topics::flexible_msg && );
     
     typedef std::function< void( const nlohmann::json & msg ) > control_callback;

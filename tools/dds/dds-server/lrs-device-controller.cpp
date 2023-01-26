@@ -446,7 +446,15 @@ void lrs_device_controller::start_streaming( const json & msg )
     _dds_device_server->start_streaming( realdds_streams_to_start );
     _sensors[sensor_index].open( rs_profiles_to_open );
     _sensors[sensor_index].start( [&]( rs2::frame f ) {
-        _dds_device_server->publish_image( f.get_profile().stream_name(), static_cast< const uint8_t * >( f.get_data() ), f.get_data_size() );
+        json metadata = json();
+        for( size_t i = 0; i < static_cast< size_t >( RS2_FRAME_METADATA_COUNT ); ++i )
+        {
+            rs2_frame_metadata_value val = static_cast< rs2_frame_metadata_value >( i );
+            if( f.supports_frame_metadata( val ) )
+                metadata[rs2_frame_metadata_to_string( val )] = f.get_frame_metadata( val );
+        }
+        _dds_device_server->publish_image( f.get_profile().stream_name(), static_cast< const uint8_t * >( f.get_data() ),
+                                           f.get_data_size(), metadata );
     } );
     if( realdds_streams_to_start.size() == 1 )
         std::cout << realdds_streams_to_start[0].first << " stream started" << std::endl;

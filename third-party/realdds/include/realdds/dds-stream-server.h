@@ -3,8 +3,10 @@
 
 #pragma once
 
-#include "dds-stream-profile.h"
-#include "dds-stream-base.h"
+#include <realdds/dds-stream-profile.h>
+#include <realdds/dds-stream-base.h>
+
+#include <rsutils/json.h>
 
 #include <memory>
 #include <string>
@@ -43,19 +45,20 @@ protected:
 public:
     virtual ~dds_stream_server();
 
-    bool is_open() const override { return !! _writer; }
-    virtual void open( std::string const & topic_name, std::shared_ptr< dds_publisher > const & ) = 0;
+    bool is_open() const override { return !! _image_writer; }
+    virtual void open( std::string const & topic_name, std::shared_ptr< dds_publisher > const & );
 
     bool is_streaming() const override { return _image_header.is_valid(); }
     void start_streaming( const image_header & header );
     void stop_streaming();
 
-    void publish_image( const uint8_t * data, size_t size );
+    void publish_image( const uint8_t * data, size_t size, const nlohmann::json & metadata );
 
     std::shared_ptr< dds_topic > const & get_topic() const override;
 
 protected:
-    std::shared_ptr< dds_topic_writer > _writer;
+    std::shared_ptr< dds_topic_writer > _image_writer;
+    std::shared_ptr< dds_topic_writer > _metadata_writer;
     image_header _image_header;
 };
 

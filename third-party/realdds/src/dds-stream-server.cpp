@@ -9,6 +9,7 @@
 #include <realdds/dds-publisher.h>
 #include <realdds/dds-utilities.h>
 #include <realdds/topics/image/image-msg.h>
+#include <realdds/topics/flexible/flexible-msg.h>
 #include <realdds/topics/image/imagePubSubTypes.h>
 
 #include <fastdds/dds/topic/Topic.hpp>
@@ -106,32 +107,22 @@ dds_pose_stream_server::dds_pose_stream_server( std::string const & stream_name,
 }
 
 
-void dds_video_stream_server::open( std::string const & topic_name, std::shared_ptr< dds_publisher > const & publisher )
+void dds_stream_server::open( std::string const & topic_name, std::shared_ptr< dds_publisher > const & publisher )
 {
     if( is_open() )
         DDS_THROW( runtime_error, "stream '" + name() + "' is already open" );
     if( profiles().empty() )
         DDS_THROW( runtime_error, "stream '" + name() + "' has no profiles" );
 
-    auto topic = topics::device::image::create_topic( publisher->get_participant(), topic_name.c_str() );
+    auto image_topic = topics::device::image::create_topic( publisher->get_participant(), topic_name.c_str() );
 
-    _writer = std::make_shared< dds_topic_writer >( topic, publisher );
-    _writer->run( dds_topic_writer::qos( BEST_EFFORT_RELIABILITY_QOS ) );  // no retries
-}
+    _image_writer = std::make_shared< dds_topic_writer >( image_topic, publisher );
+    _image_writer->run( dds_topic_writer::qos( BEST_EFFORT_RELIABILITY_QOS ) );  // no retries
 
+    auto md_topic = topics::flexible_msg::create_topic( publisher->get_participant(), ( topic_name + "/md" ).c_str() );
 
-void dds_motion_stream_server::open( std::string const & topic_name,
-                                     std::shared_ptr< dds_publisher > const & publisher )
-{
-    if( is_open() )
-        DDS_THROW( runtime_error, "stream '" + name() + "' is already open" );
-    if( profiles().empty() )
-        DDS_THROW( runtime_error, "stream '" + name() + "' has no profiles" );
-
-    auto topic = topics::device::image::create_topic( publisher->get_participant(), topic_name.c_str() );
-
-    _writer = std::make_shared< dds_topic_writer >( topic, publisher );
-    _writer->run( dds_topic_writer::qos( BEST_EFFORT_RELIABILITY_QOS ) );  // no retries
+    _metadata_writer = std::make_shared< dds_topic_writer >( md_topic, publisher );
+    _metadata_writer->run( dds_topic_writer::qos( BEST_EFFORT_RELIABILITY_QOS ) );  // no retries
 }
 
 
@@ -140,7 +131,7 @@ std::shared_ptr< dds_topic > const & dds_stream_server::get_topic() const
     if( ! is_open() )
         DDS_THROW( runtime_error, "stream '" + name() + "' must be open to get_topic()" );
 
-    return _writer->topic();
+    return _image_writer->topic();
 }
 
 
@@ -153,17 +144,19 @@ void dds_stream_server::start_streaming( const image_header & header )
     _image_header = header;
 }
 
+
 void dds_stream_server::stop_streaming()
 {
     _image_header.invalidate();
 }
 
-void dds_stream_server::publish_image( const uint8_t * data, size_t size )
+
+void dds_stream_server::publish_image( const uint8_t * data, size_t size, const nlohmann::json & metadata )
 {
     if( ! _image_header.is_valid() )
         DDS_THROW( runtime_error, "stream '" + name() + "' cannot publish_image() before start_streaming()" );
 
-    LOG_DEBUG( "publishing a DDS video frame for topic: " << _writer->topic()->get()->get_name() );
+    LOG_DEBUG( "publishing a DDS video frame for topic: " << _image_writer->topic()->get()->get_name() );
     topics::raw::device::image raw_image;
     raw_image.size() = static_cast< uint32_t >( size );
     raw_image.format() = _image_header.format;
@@ -171,5 +164,8 @@ void dds_stream_server::publish_image( const uint8_t * data, size_t size )
     raw_image.width() = _image_header.width;
     raw_image.raw_data().assign( data, data + size );
 
-    DDS_API_CALL( _writer->get()->write( &raw_image ) );
+    DDS_API_CALL( _image_writer->get()->write( &raw_image ) );
+
+    topics::flexible_msg md_message( metadata );
+    md_message.write_to( *_metadata_writer );
 }
