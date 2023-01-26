@@ -9,7 +9,8 @@
 #include <realdds/dds-publisher.h>
 #include <realdds/dds-utilities.h>
 #include <realdds/topics/image/image-msg.h>
-#include <realdds/topics/image/imagePubSubTypes.h>
+#include <realdds/topics/ros2/ros2imagePubSubTypes.h>
+#include <realdds/dds-time.h>
 
 #include <fastdds/dds/topic/Topic.hpp>
 #include <fastdds/dds/publisher/DataWriter.hpp>
@@ -164,12 +165,17 @@ void dds_stream_server::publish_image( const uint8_t * data, size_t size )
         DDS_THROW( runtime_error, "stream '" + name() + "' cannot publish_image() before start_streaming()" );
 
     LOG_DEBUG( "publishing a DDS video frame for topic: " << _writer->topic()->get()->get_name() );
-    topics::raw::device::image raw_image;
-    raw_image.size() = static_cast< uint32_t >( size );
-    raw_image.format() = _image_header.format;
+    sensor_msgs::msg::Image raw_image;
+    raw_image.header().frame_id() = std::to_string( ++_frame_id );
+    auto const now = realdds::now();
+    raw_image.header().stamp().sec() = now.seconds();
+    raw_image.header().stamp().nanosec() = now.nanosec();
+    raw_image.encoding() = dds_stream_format::from_rs2( _image_header.format );
     raw_image.height() = _image_header.height;
     raw_image.width() = _image_header.width;
-    raw_image.raw_data().assign( data, data + size );
+    raw_image.step() = uint32_t( size / _image_header.height );
+    raw_image.is_bigendian() = false;
+    raw_image.data().assign( data, data + size );
 
     DDS_API_CALL( _writer->get()->write( &raw_image ) );
 }

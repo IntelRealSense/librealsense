@@ -17,6 +17,13 @@ struct SampleInfo;
 }  // namespace fastdds
 }  // namespace eprosima
 
+namespace sensor_msgs {
+namespace msg {
+class ImagePubSubType;
+class Image;
+}  // namespace msg
+}  // namespace sensor_msgs
+
 namespace realdds {
 
 
@@ -26,22 +33,13 @@ class dds_topic_reader;
 
 
 namespace topics {
-namespace raw {
-namespace device {
-class imagePubSubType;
-class image;
-}  // namespace device
-}  // namespace raw
-
-    
-    
 namespace device {
 
     
 class image
 {
 public:
-    using type = raw::device::imagePubSubType;
+    using type = sensor_msgs::msg::ImagePubSubType;
 
     image() = default;
 
@@ -51,9 +49,9 @@ public:
 
     //move is OK
     image( image && ) = default;
-    image( raw::device::image && );
+    image( sensor_msgs::msg::Image && );
     image & operator=( image && ) = default;
-    image & operator=( raw::device::image && );
+    image & operator=( sensor_msgs::msg::Image && );
 
     bool is_valid() const { return width != -1 && height != -1; }
     void invalidate() { width = -1; }
@@ -76,8 +74,6 @@ public:
     std::vector<uint8_t> raw_data;
     int width = -1;
     int height = -1;
-    int size;
-    int format;
 };
 
 

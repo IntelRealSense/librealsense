@@ -57,6 +57,7 @@ public:
 protected:
     std::shared_ptr< dds_topic_writer > _writer;
     image_header _image_header;
+    unsigned _frame_id = 0;
 };
 
 

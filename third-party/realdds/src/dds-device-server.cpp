@@ -180,7 +180,7 @@ void dds_device_server::init( std::vector< std::shared_ptr< dds_stream_server > 
         on_discovery_device_header( streams.size(), options, extr, *_notification_server );
         for( auto& stream : streams )
         {
-            std::string topic_name = _topic_root + '/' + stream->name();
+            std::string topic_name = "rt/" + _topic_root + '/' + stream->name();
             stream->open( topic_name, _publisher );
             _stream_name_to_server[stream->name()] = stream;
             on_discovery_stream_header( stream, *_notification_server );

@@ -617,13 +617,13 @@ namespace librealsense
 
                         //Copying from dds into LibRS space, same as copy from USB backend.
                         //TODO - use memory pool or some other frame allocator
-                        rs2_frame.pixels = new uint8_t[dds_frame.size];
+                        rs2_frame.pixels = new uint8_t[dds_frame.raw_data.size()];
                         if( !rs2_frame.pixels )
                             throw std::runtime_error( "Could not allocate memory for new frame" );
-                        memcpy( rs2_frame.pixels, dds_frame.raw_data.data(), dds_frame.size );
+                        memcpy( rs2_frame.pixels, dds_frame.raw_data.data(), dds_frame.raw_data.size() );
 
                         rs2_frame.deleter = []( void * ptr ) { delete[] ptr; };
-                        rs2_frame.stride = dds_frame.height > 0 ? dds_frame.size / dds_frame.height : dds_frame.size;
+                        rs2_frame.stride = int( dds_frame.height > 0 ? dds_frame.raw_data.size() / dds_frame.height : dds_frame.raw_data.size() );
                         rs2_frame.bpp = dds_frame.width > 0 ? rs2_frame.stride / dds_frame.width : rs2_frame.stride;
                         rs2_frame.timestamp = frame_counter * 1000.0 / p->get_framerate(); // TODO - timestamp from dds
                         rs2_frame.domain = RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK; // TODO - timestamp domain from options?
@@ -638,10 +638,10 @@ namespace librealsense
 
                         //Copying from dds into LibRS space, same as copy from USB backend.
                         //TODO - use memory pool or some other frame allocator
-                        rs2_frame.data = new uint8_t[dds_frame.size];
+                        rs2_frame.data = new uint8_t[dds_frame.raw_data.size()];
                         if( !rs2_frame.data )
                             throw std::runtime_error( "Could not allocate memory for new frame" );
-                        memcpy( rs2_frame.data, dds_frame.raw_data.data(), dds_frame.size );
+                        memcpy( rs2_frame.data, dds_frame.raw_data.data(), dds_frame.raw_data.size() );
 
                         rs2_frame.deleter = []( void * ptr ) { delete[] ptr; };
                         rs2_frame.timestamp = frame_counter * 1000.0 / p->get_framerate(); // TODO - timestamp from dds
