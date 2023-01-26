@@ -44,7 +44,7 @@ namespace librealsense
         {
             switch (table_id)
             {
-            case ds6_calibration_table_id::coefficients_table_id:
+            case ds6_calibration_table_id::depth_calibration_id:
             {
                 return get_ds6_intrinsic_by_resolution_coefficients_table(raw_data, width, height);
             }
