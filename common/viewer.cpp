@@ -49,64 +49,6 @@ namespace rs2
             s.frame_ready(std::move(f));
     }) {}
 
-    void viewer_model::render_pose(rs2::rect stream_rect, float buttons_heights)
-    {
-        int num_of_pose_buttons = 2; // trajectory, info
-
-        // Draw selection buttons on the pose header, the buttons are global to all the streaming devices
-        ImGui::SetCursorPos({ stream_rect.w - 32 * num_of_pose_buttons - 5, buttons_heights });
-
-        bool color_icon = pose_info_object_button.is_pressed(); //draw trajectory is on - color the icon
-        if (color_icon)
-        {
-            ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
-            ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue);
-        }
-
-        // Draw info object button (is not synchronized with the info buttons in the 2D view)
-        if (ImGui::Button(pose_info_object_button.get_icon().c_str(), { 24, buttons_heights }))
-        {
-            pose_info_object_button.toggle_button();
-        }
-        if (ImGui::IsItemHovered())
-        {
-            ImGui::SetTooltip("%s", pose_info_object_button.get_tooltip().c_str());
-        }
-        if (color_icon)
-        {
-            ImGui::PopStyleColor(2);
-        }
-
-        // Draw grid object button
-        ImGui::SameLine();
-
-        color_icon = trajectory_button.is_pressed(); //draw trajectory is on - color the icon
-        if (color_icon)
-        {
-            ImGui::PushStyleColor(ImGuiCol_Text, light_blue);
-            ImGui::PushStyleColor(ImGuiCol_TextSelectedBg, light_blue);
-        }
-        if (ImGui::Button(trajectory_button.get_icon().c_str(), { 24, buttons_heights }))
-        {
-            trajectory_button.toggle_button();
-            for (auto&& s : streams)
-            {
-                if (s.second.profile.stream_type() == RS2_STREAM_POSE)
-                    streams[s.second.profile.unique_id()].dev->tm2.record_trajectory(trajectory_button.is_pressed());
-            }
-        }
-        if (color_icon)
-        {
-            ImGui::PopStyleColor(2);
-        }
-        if (ImGui::IsItemHovered())
-        {
-            ImGui::SetTooltip("%s", trajectory_button.get_tooltip().c_str());
-        }
-
-        //ImGui::End();
-    }
-
     // Need out of class declaration to take reference
     const rs2_option save_to_ply::OPTION_IGNORE_COLOR;
     const rs2_option save_to_ply::OPTION_PLY_MESH;
@@ -733,22 +675,6 @@ namespace rs2
                 _measurements.enable();
             }
         }
-        left += 60;
-
-        // -------------------- Trajectory (T265) -------------------
-
-        active = trajectory_button.is_pressed();
-        if (big_button(&active, win, 5 + left, 0, u8"\uf1b0",
-            "Route", false, pose_render, "Show 6-dof Pose Trajectory\nRequires T265 tracking device"))
-        {
-            trajectory_button.toggle_button();
-            for (auto&& s : streams)
-            {
-                if (s.second.profile.stream_type() == RS2_STREAM_POSE)
-                    streams[s.second.profile.unique_id()].dev->tm2.record_trajectory(trajectory_button.is_pressed());
-            }
-        }
-
         left += 60;
 
         // -------------------- Export ------------------
@@ -2102,7 +2028,7 @@ namespace rs2
 
                 glMultMatrixf((float*)_rx);
 
-                streams[f.get_profile().unique_id()].dev->tm2.draw_trajectory(trajectory_button.is_pressed());
+                streams[f.get_profile().unique_id()].dev->tm2.draw_trajectory( false );
 
                 // remove model matrix from the rest of the render
                 glPopMatrix();
