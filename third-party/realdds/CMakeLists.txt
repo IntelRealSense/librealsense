@@ -25,12 +25,10 @@ file(GLOB_RECURSE REALDDS_HEADER_FILES
     "${REALDDS_INCLUDE_DIR}/*.h"
 )
 target_sources( ${PROJECT_NAME} PRIVATE ${REALDDS_HEADER_FILES} )
-file(GLOB_RECURSE REALDDS_TOPICS_HEADER_FILES
-    LIST_DIRECTORIES false
-    RELATIVE ${CMAKE_CURRENT_LIST_DIR}
-    "${REALDDS_INCLUDE_DIR}/topics/*.h"
-)
-source_group( "Header Files/topics" FILES ${REALDDS_TOPICS_HEADER_FILES} )
+source_group(
+    TREE ${REALDDS_INCLUDE_DIR}
+    PREFIX "Header Files"
+    FILES ${REALDDS_HEADER_FILES} )
 
 
 # Sources -----------------------------------------------------------------------------------
@@ -42,12 +40,10 @@ file(GLOB_RECURSE REALDDS_SOURCE_FILES
     "${REALDDS_SRC_DIR}/*"
 )
 target_sources( ${PROJECT_NAME} PRIVATE ${REALDDS_SOURCE_FILES} )
-file(GLOB_RECURSE REALDDS_TOPICS_SOURCE_FILES
-    LIST_DIRECTORIES false
-    RELATIVE ${CMAKE_CURRENT_LIST_DIR}
-    "${REALDDS_SRC_DIR}/topics/*"
-)
-source_group( "Source Files/topics" FILES ${REALDDS_TOPICS_SOURCE_FILES} )
+source_group(
+    TREE ${REALDDS_SRC_DIR}
+    PREFIX "Source Files"
+    FILES ${REALDDS_SOURCE_FILES} )
 
 
 # Install -----------------------------------------------------------------------------------
