@@ -70,8 +70,6 @@ class dds_video_stream_server : public dds_stream_server
 public:
     dds_video_stream_server( std::string const & stream_name, std::string const & sensor_name );
 
-    void open( std::string const & topic_name, std::shared_ptr< dds_publisher > const & ) override;
-
     void set_intrinsics( const std::set< video_intrinsics > & intrinsics ) { _intrinsics = intrinsics; }
     const std::set< video_intrinsics > & get_intrinsics() const { return _intrinsics; }
 
@@ -143,8 +141,6 @@ class dds_motion_stream_server : public dds_stream_server
 
 public:
     dds_motion_stream_server( std::string const & stream_name, std::string const & sensor_name );
-    
-    void open( std::string const & topic_name, std::shared_ptr< dds_publisher > const & ) override;
 
     void set_intrinsics( const motion_intrinsics & intrinsics ) { _intrinsics = intrinsics; }
     const motion_intrinsics & get_intrinsics() const { return _intrinsics; }
