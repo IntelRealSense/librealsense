@@ -9,4 +9,3 @@ E danglingLifetime               third-party/rsutils/include/rsutils/concurrency
 E danglingLifetime               third-party/rsutils/include/rsutils/concurrency/concurrency.h+55 Non-local variable '_queue' will use object that points to local variable 'q'.
 E uninitStructMember             src/l500/l500-color.cpp+265                        Uninitialized struct member: intrinsics.model
 E shiftTooManyBitsSigned         third-party/stb_image.h+1647                       Shifting signed 32-bit value by 31 bits is undefined behaviour
-E shiftTooManyBitsSigned         tools/convert/converters/converter-bin.hpp+51      Shifting signed 32-bit value by 31 bits is undefined behaviour
