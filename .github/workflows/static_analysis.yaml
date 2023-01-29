@@ -50,11 +50,15 @@ jobs:
           python3 .github/workflows/cppcheck-parse.py --severity E cppcheck_run.log | sort --key 3 > cppcheck_run.parsed.log
           python3 .github/workflows/cppcheck-parse.py --severity E .github/workflows/cppcheck_run.log | sort --key 3 > cppcheck_run.parsed.golden
           diff cppcheck_run.parsed.golden cppcheck_run.parsed.log \
-            &&  echo "No diffs found in cppcheck_run.log"  \
-            ||  echo "^^^ Diffs in cppcheck_run.log!"
+            &&  echo "No diffs found in cppcheck_run.log"
+
+      - name: Ensure cppcheck_run.parsed.log was updated
+        id: diff-parsed-step
+        continue-on-error: true 
+        shell: bash
+        run: |
           diff cppcheck_run.parsed.golden .github/workflows/cppcheck_run.parsed.log \
-            &&  echo "No diffs found in cppcheck_run.parsed.log"  \
-            ||  echo "^^^ Diffs in cppcheck_run.parsed.log!"
+            &&  echo "No diffs found in cppcheck_run.parsed.log"
 
       - name: Upload logs
         uses: actions/upload-artifact@v3
@@ -75,6 +79,9 @@ jobs:
             if [ ${{steps.diff-step.outcome}} == "failure" ]
             then
                echo "however, the ---> DIFF FAILED <---"
+            elif [ ${{steps.diff-parsed-step.outcome}} == "failure" ]
+            then
+               echo "however, the ---> PARSED log was not UPDATED <---"
             else
                exit 0
             fi
