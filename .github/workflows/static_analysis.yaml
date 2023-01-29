@@ -50,6 +50,7 @@ jobs:
           python3 .github/workflows/cppcheck-parse.py --severity E cppcheck_run.log | sort --key 3 > cppcheck_run.parsed.log
           python3 .github/workflows/cppcheck-parse.py --severity E .github/workflows/cppcheck_run.log | sort --key 3 > cppcheck_run.parsed.golden
           diff cppcheck_run.parsed.golden cppcheck_run.parsed.log
+          diff cppcheck_run.parsed.golden .github/workflows/cppcheck_run.parsed.log
 
       - name: Upload logs
         uses: actions/upload-artifact@v3
@@ -79,6 +80,6 @@ jobs:
           else
             echo "cppcheck_run ---> FAILED <--- with" $ERROR_COUNT "errors; expecting" $EXPECTED_ERROR_COUNT
           fi
-          echo "see the diff step above, or the uploaded cppcheck_run.log for details"
-          echo "update .github/workflows/cppcheck_run.log if these are valid results"
+          echo "see the diff step above, or the 'cppcheck_log' artifact (under Summary) for details"
+          echo "commit all files in the artifact to .github/workflows/ if these are valid results"
           exit 1
