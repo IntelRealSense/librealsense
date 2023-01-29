@@ -72,11 +72,6 @@ macro(global_set_flags)
         include(CMake/external_pybind11.cmake)
     endif()
 
-    if(BUILD_NETWORK_DEVICE)
-        add_definitions(-DNET_DEVICE)
-        set(LRS_NET_TARGET realsense2-net)
-    endif()
-    
     if(CHECK_FOR_UPDATES)
         if (ANDROID_NDK_TOOLCHAIN_INCLUDED)
             message(STATUS "Android build do not support CHECK_FOR_UPDATES flag, turning it off..")

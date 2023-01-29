@@ -317,64 +317,10 @@ inline bool file_exists(const std::string& filename)
 inline bool make_context(const char* id, rs2::context* ctx, std::string min_api_version = "0.0.0")
 {
     rs2::log_to_file(RS2_LOG_SEVERITY_DEBUG);
+    min_api_version;
 
-    static std::map<std::string, int> _counters;
-
-    _counters[id]++;
-
-    auto argc = command_line_params::instance().get_argc();
-    auto argv = command_line_params::instance().get_argv();
-
-
-    std::string base_filename;
-    bool record = false;
-    bool playback = false;
-    for (auto i = 0u; i < argc; i++)
-    {
-        std::string param(argv[i]);
-        if (param == "into")
-        {
-            i++;
-            if (i < argc)
-            {
-                base_filename = argv[i];
-                record = true;
-            }
-        }
-        else if (param == "from")
-        {
-            i++;
-            if (i < argc)
-            {
-                base_filename = argv[i];
-                playback = true;
-            }
-        }
-    }
-
-    std::stringstream ss;
-    ss << id << "." << _counters[id] << ".test";
-    auto section = ss.str();
-
-
-    try
-    {
-        if (record)
-        {
-            *ctx = rs2::recording_context(base_filename, section);
-        }
-        else if (playback)
-        {
-            *ctx = rs2::mock_context(base_filename, section, min_api_version);
-        }
-        command_line_params::instance()._found_any_section = true;
-        return true;
-    }
-    catch (...)
-    {
-        return false;
-    }
-
+    command_line_params::instance()._found_any_section = true;
+    return true;
 }
 
 // Can be passed to rs2_error ** parameters, requires that an error is indicated with the specific provided message

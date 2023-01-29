@@ -102,7 +102,6 @@ namespace rs2
 
         void popup_firmware_update_progress(const ux_window& window, const float progress);
 
-        void render_pose(rs2::rect stream_rect, float buttons_heights);
         void try_select_pointcloud(ux_window& win);
 
         void show_3dviewer_header(ux_window& window, rs2::rect stream_rect, bool& paused, std::string& error_message);
@@ -186,9 +185,7 @@ namespace rs2
         bool glsl_available = false;
         bool modal_notification_on = false; // a notification which was expanded
 
-        press_button_model trajectory_button{ u8"\uf1b0", u8"\uf1b0","Draw trajectory", "Stop drawing trajectory", true };
         press_button_model grid_object_button{ u8"\uf1cb", u8"\uf1cb",  "Configure Grid", "Configure Grid", false };
-        press_button_model pose_info_object_button{ u8"\uf05a", u8"\uf05a",  "Show pose stream info overlay", "Hide pose stream info overlay", false };
 
         viewer_model(context &ctx_);
 
