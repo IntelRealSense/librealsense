@@ -3,9 +3,6 @@
 
 
 #include <librealsense2/rs.hpp>
-#ifdef NETWORK_DEVICE
-#include <librealsense2-net/rs_net.hpp>
-#endif
 #include "viewer.h"
 #include "os.h"
 #include "ux-window.h"
@@ -48,13 +45,9 @@ void update_viewer_configuration(viewer_model& viewer_model)
 
 bool add_remote_device(context& ctx, std::string address)
 {
-#ifdef NETWORK_DEVICE
-    rs2::net_device dev(address);
-    dev.add_to(ctx);
-    return true; // NEtwork device exists
-#else
+    // Return true if a network device exists at the given address; throw an error otherwise
+    // For now, this is unsupported!
     return false;
-#endif
 }
 
 void add_playback_device(context& ctx, device_models_list& device_models,
@@ -364,7 +357,7 @@ int main(int argc, const char** argv) try
     {
         try
         {
-            is_ip_device_connected = add_remote_device(ctx, argv[1]);;
+            is_ip_device_connected = add_remote_device(ctx, argv[1]);
         }
         catch (std::runtime_error e)
         {
@@ -508,15 +501,9 @@ int main(int argc, const char** argv) try
 
             if (!is_ip_device_connected)
             {
-                //ImGui::Separator();
                 if (ImGui::Selectable("Add Network Device", false, ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_DontClosePopups))
                 {
-#ifdef NETWORK_DEVICE
-                    ip_address = config_file::instance().get_or_default(configurations::viewer::last_ip, std::string{});
-                    ImGui::OpenPopup("Network Device");
-#else
-                    error_message = "To enable RealSense device over network, please build the SDK with CMake flag -DBUILD_NETWORK_DEVICE=ON.\nThis binary distribution was built with network features disabled.";
-#endif
+                    error_message = "RealSense Network Devices are unsupported at this time";
                 }
 
                 float width = 300;
@@ -569,7 +556,7 @@ int main(int argc, const char** argv) try
                     {
                         try
                         {
-                            is_ip_device_connected = add_remote_device(ctx, ip_address);;
+                            is_ip_device_connected = add_remote_device(ctx, ip_address);
                             refresh_devices(m, ctx, devices_connection_changes, connected_devs, device_names, *device_models, viewer_model, error_message);
                             auto dev = connected_devs[connected_devs.size() - 1];
                             device_models->emplace_back(new device_model(dev, error_message, viewer_model));
