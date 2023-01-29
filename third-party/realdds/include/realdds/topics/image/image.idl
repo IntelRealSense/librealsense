@@ -16,6 +16,7 @@ module realdds
                     unsigned short width;
                     unsigned short height;
                     octet format; // See librealsense 'rs2_format' type for values
+                    string frame_id; // String to match ros frame_id (see http://docs.ros.org/en/melodic/api/std_msgs/html/msg/Header.html)
                 };
             };
         };

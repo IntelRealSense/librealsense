@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2022 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2023 Intel Corporation. All Rights Reserved.
 
 /*!
  * @file image.h
@@ -86,7 +86,7 @@ namespace realdds {
                      * @param x Reference to the object realdds::topics::raw::device::image that will be copied.
                      */
                     eProsima_user_DllExport image(
-                            image&& x);
+                            image&& x) noexcept;
 
                     /*!
                      * @brief Copy assignment.
@@ -100,7 +100,7 @@ namespace realdds {
                      * @param x Reference to the object realdds::topics::raw::device::image that will be copied.
                      */
                     eProsima_user_DllExport image& operator =(
-                            image&& x);
+                            image&& x) noexcept;
 
                     /*!
                      * @brief Comparison operator.
@@ -217,6 +217,31 @@ namespace realdds {
                      */
                     eProsima_user_DllExport uint8_t& format();
 
+                    /*!
+                     * @brief This function copies the value in member frame_id
+                     * @param _frame_id New value to be copied in member frame_id
+                     */
+                    eProsima_user_DllExport void frame_id(
+                            const std::string& _frame_id);
+
+                    /*!
+                     * @brief This function moves the value in member frame_id
+                     * @param _frame_id New value to be moved in member frame_id
+                     */
+                    eProsima_user_DllExport void frame_id(
+                            std::string&& _frame_id);
+
+                    /*!
+                     * @brief This function returns a constant reference to member frame_id
+                     * @return Constant reference to member frame_id
+                     */
+                    eProsima_user_DllExport const std::string& frame_id() const;
+
+                    /*!
+                     * @brief This function returns a reference to member frame_id
+                     * @return Reference to member frame_id
+                     */
+                    eProsima_user_DllExport std::string& frame_id();
 
                     /*!
                      * @brief This function returns the maximum serialized size of an object
@@ -282,6 +307,7 @@ namespace realdds {
                     uint16_t m_width;
                     uint16_t m_height;
                     uint8_t m_format;
+                    std::string m_frame_id;
                 };
             } // namespace device
         } // namespace raw

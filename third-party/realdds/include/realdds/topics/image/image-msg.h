@@ -78,6 +78,7 @@ public:
     int height = -1;
     int size;
     int format;
+    std::string frame_id;
 };
 
 

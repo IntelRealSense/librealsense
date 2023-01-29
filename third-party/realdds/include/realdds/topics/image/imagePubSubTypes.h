@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2022 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2023 Intel Corporation. All Rights Reserved.
 /*!
  * @file imagePubSubTypes.h
  * This header file contains the declaration of the serialization functions.
@@ -18,6 +18,7 @@
 
 #if !defined(GEN_API_VER) || (GEN_API_VER != 1)
 #error \
+
     Generated image is not compatible with current installed Fast DDS. Please, regenerate it with fastddsgen.
 #endif  // GEN_API_VER
 

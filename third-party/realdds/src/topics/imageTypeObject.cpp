@@ -1,5 +1,5 @@
 // License: Apache 2.0. See LICENSE file in root directory.
-// Copyright(c) 2022 Intel Corporation. All Rights Reserved.
+// Copyright(c) 2023 Intel Corporation. All Rights Reserved.
 
 /*!
  * @file imageTypeObject.cpp
@@ -182,6 +182,25 @@ namespace realdds {
                     }
                     type_object->minimal().struct_type().member_seq().emplace_back(mst_format);
 
+                    MinimalStructMember mst_frame_id;
+                    mst_frame_id.common().member_id(memberId++);
+                    mst_frame_id.common().member_flags().TRY_CONSTRUCT1(false); // Unsupported
+                    mst_frame_id.common().member_flags().TRY_CONSTRUCT2(false); // Unsupported
+                    mst_frame_id.common().member_flags().IS_EXTERNAL(false); // Unsupported
+                    mst_frame_id.common().member_flags().IS_OPTIONAL(false);
+                    mst_frame_id.common().member_flags().IS_MUST_UNDERSTAND(false);
+                    mst_frame_id.common().member_flags().IS_KEY(false);
+                    mst_frame_id.common().member_flags().IS_DEFAULT(false); // Doesn't apply
+                    mst_frame_id.common().member_type_id(*TypeObjectFactory::get_instance()->get_string_identifier(255, false));
+
+
+                    MD5 frame_id_hash("frame_id");
+                    for(int i = 0; i < 4; ++i)
+                    {
+                        mst_frame_id.detail().name_hash()[i] = frame_id_hash.digest[i];
+                    }
+                    type_object->minimal().struct_type().member_seq().emplace_back(mst_frame_id);
+
 
                     // Header
                     // TODO Inheritance
@@ -309,6 +328,22 @@ namespace realdds {
                     cst_format.detail().name("format");
 
                     type_object->complete().struct_type().member_seq().emplace_back(cst_format);
+
+                    CompleteStructMember cst_frame_id;
+                    cst_frame_id.common().member_id(memberId++);
+                    cst_frame_id.common().member_flags().TRY_CONSTRUCT1(false); // Unsupported
+                    cst_frame_id.common().member_flags().TRY_CONSTRUCT2(false); // Unsupported
+                    cst_frame_id.common().member_flags().IS_EXTERNAL(false); // Unsupported
+                    cst_frame_id.common().member_flags().IS_OPTIONAL(false);
+                    cst_frame_id.common().member_flags().IS_MUST_UNDERSTAND(false);
+                    cst_frame_id.common().member_flags().IS_KEY(false);
+                    cst_frame_id.common().member_flags().IS_DEFAULT(false); // Doesn't apply
+                    cst_frame_id.common().member_type_id(*TypeObjectFactory::get_instance()->get_string_identifier(255, false));
+
+
+                    cst_frame_id.detail().name("frame_id");
+
+                    type_object->complete().struct_type().member_seq().emplace_back(cst_frame_id);
 
 
                     // Header
