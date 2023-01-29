@@ -9,6 +9,7 @@
 #include <vector>
 #include <set>
 #include <functional>
+#include <deque>
 
 namespace realdds {
 
@@ -16,10 +17,13 @@ namespace topics {
 namespace device {
     class image;
 } // namespace device
+class flexible_msg;
 } // namespace topics
 
 class dds_subscriber;
 class dds_topic_reader;
+
+class frame_metadata_syncer;
 
 // Represents a stream of information (images, motion data, etc..) from a single source received via the DDS system.
 // A stream can have several profiles, i.e different data frequency, image resolution, etc..
@@ -34,12 +38,12 @@ protected:
     dds_stream( std::string const & stream_name, std::string const & sensor_name );
 
 public:
-    bool is_open() const override { return !! _reader; }
+    bool is_open() const override { return !! _image_reader; }
     virtual void open( std::string const & topic_name, std::shared_ptr< dds_subscriber > const & );
     virtual void close();
 
-    bool is_streaming() const override { return _on_data_available != nullptr; }
-    typedef std::function< void( topics::device::image && f) > on_data_available_callback;
+    bool is_streaming() const override;
+    typedef std::function< void( topics::device::image && f, topics::flexible_msg && md ) > on_data_available_callback;
     void start_streaming( on_data_available_callback cb );
     void stop_streaming();
 
@@ -47,9 +51,11 @@ public:
 
 protected:
     void handle_frames();
+    void handle_metadata();
 
-    std::shared_ptr< dds_topic_reader > _reader;
-    on_data_available_callback _on_data_available = nullptr;
+    std::shared_ptr< dds_topic_reader > _image_reader;
+    std::shared_ptr< dds_topic_reader > _metadata_reader;
+    std::unique_ptr< frame_metadata_syncer > _syncer;
 };
 
 class dds_video_stream : public dds_stream

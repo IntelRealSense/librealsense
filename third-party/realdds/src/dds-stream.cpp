@@ -8,18 +8,101 @@
 #include <realdds/dds-topic-reader.h>
 #include <realdds/dds-subscriber.h>
 #include <realdds/topics/image/image-msg.h>
+#include <realdds/topics/flexible/flexible-msg.h>
 #include <realdds/dds-exceptions.h>
 
 #include <fastdds/dds/subscriber/SampleInfo.hpp>
 
-using namespace realdds;
+#include <deque>
+
+
+namespace realdds {
+
+// Image data (pixels) and metadata are sent as two seperate streams.
+// They are synchronized using frame_id for matching data+metadata sets.
+class frame_metadata_syncer
+{
+public:
+    void enqueue_image( topics::device::image && image )
+    {
+        _image_queue.push_back( std::move( image ) );
+        search_for_match();
+    }
+
+    void enqueue_metadata( topics::flexible_msg && md )
+    {
+        _metadata_queue.push_back( std::move( md ) );
+        search_for_match();
+    }
+
+    dds_stream::on_data_available_callback get_callback() { return _cb; }
+
+    void reset( dds_stream::on_data_available_callback cb = nullptr)
+    {
+        _image_queue.clear();
+        _metadata_queue.clear();
+        _cb = nullptr;
+    }
+
+private:
+    void search_for_match()
+    {
+        // Wait for image + metadata set
+        if( _image_queue.empty() || _metadata_queue.empty() )
+            return;
+
+        // Sync using frame ID. Frame IDs are assumed to be increasing with time
+        // If one of the set is lost throw the other.
+        std::string image_frame_id = _image_queue.front().frame_id;
+        std::string md_frame_id = rsutils::json::get< std::string >( _metadata_queue.front().json_data(), "frame_id" );
+
+        while( image_frame_id > md_frame_id && _metadata_queue.size() > 1 )
+        {
+            // Metadata without frame, remove it from queue and check next
+            _metadata_queue.pop_front();
+            md_frame_id = rsutils::json::get< std::string >( _metadata_queue.front().json_data(), "frame_id" );
+        }
+
+        while( md_frame_id > image_frame_id && _image_queue.size() > 1 )
+        {
+            // Image without metadata, remove it from queue and check next
+            _image_queue.pop_front();
+            image_frame_id = _image_queue.front().frame_id;
+        }
+
+        if( image_frame_id == md_frame_id )
+            handle_match();
+    }
+
+    void handle_match()
+    {
+        topics::device::image & image = _image_queue.front();
+        topics::flexible_msg & md = _metadata_queue.front();
+
+        if( _cb )
+            _cb( std::move( image ), std::move( md ) );
+
+        _image_queue.pop_front();
+        _metadata_queue.pop_front();
+    }
+
+    dds_stream::on_data_available_callback _cb;
+
+    std::deque< topics::device::image > _image_queue;
+    std::deque< topics::flexible_msg > _metadata_queue;
+};
 
 
 dds_stream::dds_stream( std::string const & stream_name, std::string const & sensor_name )
     : super( stream_name, sensor_name )
+    , _syncer( std::make_unique< frame_metadata_syncer >() )
 {
 }
 
+bool dds_stream::is_streaming() const
+{
+    return _syncer->get_callback() != nullptr;
+}
 
 void dds_stream::open( std::string const & topic_name, std::shared_ptr< dds_subscriber > const & subscriber )
 {
@@ -29,20 +112,28 @@ void dds_stream::open( std::string const & topic_name, std::shared_ptr< dds_subs
         DDS_THROW( runtime_error, "stream '" + name() + "' has no profiles" );
 
     //Topics with same name and type can be created multiple times (multiple open() calls) without an error.
-    auto topic = topics::device::image::create_topic( subscriber->get_participant(), topic_name.c_str() );
+    auto image_topic = topics::device::image::create_topic( subscriber->get_participant(), topic_name.c_str() );
+    auto md_topic = topics::flexible_msg::create_topic( subscriber->get_participant(), ( topic_name + "/md" ).c_str() );
 
-    //To support automatic streaming (without the need to handle start/stop-streaming commands) the reader is created
+    //To support automatic streaming (without the need to handle start/stop-streaming commands) the readers are created
     //here and destroyed on close()
-    _reader = std::make_shared< dds_topic_reader >( topic, subscriber );
-    _reader->on_data_available( [&]() { handle_frames(); } );
-    _reader->run( dds_topic_reader::qos( eprosima::fastdds::dds::BEST_EFFORT_RELIABILITY_QOS ) );  // no retries
+    _image_reader = std::make_shared< dds_topic_reader >( image_topic, subscriber );
+    _image_reader->on_data_available( [&]() { handle_frames(); } );
+    _image_reader->run( dds_topic_reader::qos( eprosima::fastdds::dds::BEST_EFFORT_RELIABILITY_QOS ) );  // no retries
+
+    _metadata_reader = std::make_shared< dds_topic_reader >( md_topic, subscriber );
+    _metadata_reader->on_data_available( [&]() { handle_metadata(); } );
+    _metadata_reader->run( dds_topic_reader::qos( eprosima::fastdds::dds::BEST_EFFORT_RELIABILITY_QOS ) );  // no retries
 }
 
 
 void dds_stream::close()
 {
-    _reader->on_data_available( [](){} );
-    _reader.reset();
+    _image_reader->on_data_available( [](){} );
+    _image_reader.reset();
+
+    _metadata_reader->on_data_available( [](){} );
+    _metadata_reader.reset();
 }
 
 
@@ -53,8 +144,7 @@ void dds_stream::start_streaming( on_data_available_callback cb )
     if( is_streaming() )
         DDS_THROW( runtime_error, "stream '" + name() + "' is already streaming" );
 
-    _on_data_available = cb;
-
+    _syncer->reset( cb );
 }
 
 
@@ -62,13 +152,26 @@ void dds_stream::handle_frames()
 {
     topics::device::image frame;
     eprosima::fastdds::dds::SampleInfo info;
-    while ( _reader && topics::device::image::take_next( *_reader, &frame, &info ) )
+    while ( _image_reader && topics::device::image::take_next( *_image_reader, &frame, &info ) )
     {
         if ( !frame.is_valid() )
             continue;
 
-        if ( _on_data_available )
-            _on_data_available( std::move( frame ) );
+        _syncer->enqueue_image( std::move( frame ) );
+    }
+}
+
+
+void dds_stream::handle_metadata()
+{
+    topics::flexible_msg metadata;
+    eprosima::fastdds::dds::SampleInfo info;
+    while( _image_reader && topics::flexible_msg::take_next( *_metadata_reader, &metadata, &info ) )
+    {
+        if( !metadata.is_valid() )
+            continue;
+
+        _syncer->enqueue_metadata( std::move( metadata ) );
     }
 }
 
@@ -78,7 +181,7 @@ void dds_stream::stop_streaming()
     if ( !is_streaming() )
         DDS_THROW( runtime_error, "stream '" + name() + "' is not streaming" );
 
-    _on_data_available = nullptr;
+    _syncer->reset( nullptr ); // Delete callback
 }
 
 
@@ -148,3 +251,5 @@ dds_pose_stream::dds_pose_stream( std::string const & stream_name, std::string c
     : super( stream_name, sensor_name )
 {
 }
+
+} //namespace realdds

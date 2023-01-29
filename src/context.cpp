@@ -29,6 +29,7 @@
 #include <librealsense2/h/rs_internal.h>
 #include <realdds/topics/device-info-msg.h>
 #include <realdds/topics/image/image-msg.h>
+#include <realdds/topics/flexible/flexible-msg.h>
 #include <rsutils/shared-ptr-singleton.h>
 #include <fastdds/dds/domain/DomainParticipant.hpp>
 
@@ -608,7 +609,8 @@ namespace librealsense
             {
                 //stream is the dds_stream matching the librealsense active stream
                 auto & stream = _streams[sid_index( profile->get_unique_id(), profile->get_stream_index() )];
-                stream->start_streaming( [p = profile, this]( realdds::topics::device::image && dds_frame ) {
+                stream->start_streaming( [p = profile, this]( realdds::topics::device::image && dds_frame,
+                                                              realdds::topics::flexible_msg && dds_md ) {
                     rs2_stream_profile prof = { p.get() };
 
                     if( Is< video_stream_profile >(p) )
@@ -627,9 +629,17 @@ namespace librealsense
                         rs2_frame.bpp = dds_frame.width > 0 ? rs2_frame.stride / dds_frame.width : rs2_frame.stride;
                         rs2_frame.timestamp = frame_counter * 1000.0 / p->get_framerate(); // TODO - timestamp from dds
                         rs2_frame.domain = RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK; // TODO - timestamp domain from options?
-                        rs2_frame.frame_number = frame_counter++; // TODO - frame_number from dds
+                        rs2_frame.frame_number = rsutils::json::get< int >( dds_md.json_data(), "frame_id" ); // "frame_id" is always expected in metadata
                         rs2_frame.profile = &prof;
                         rs2_frame.depth_units = 0.001f; //TODO - depth unit from dds, if needed
+
+                        for( size_t i = 0; i < static_cast< size_t >( RS2_FRAME_METADATA_COUNT ); ++i )
+                        {
+                            const char * str = rs2_frame_metadata_to_string( static_cast< rs2_frame_metadata_value >( i ) );
+                            if( rsutils::json::has( dds_md.json_data(), str ) )
+                                set_metadata( static_cast< rs2_frame_metadata_value >( i ),
+                                              rsutils::json::get< rs2_metadata_type >( dds_md.json_data(), str ) );
+                        }
                         on_video_frame( rs2_frame );
                     }
                     else
