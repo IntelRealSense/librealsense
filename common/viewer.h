@@ -197,6 +197,10 @@ namespace rs2
 
         void check_permissions();
         void hide_common_options();
+        std::string shorten_error_message(const std::string& message) const;
+        bool is_one_connected_device_unlocked() const;
+        bool check_config_file(const std::string& msg) const;
+        void save_to_config_file(const std::string& msg) const;
         std::vector<popup> _active_popups;
 
         struct rgb {

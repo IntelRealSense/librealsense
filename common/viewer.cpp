@@ -987,6 +987,49 @@ namespace rs2
         ImGui::PopStyleVar(2);
     }
 
+    bool viewer_model::is_one_connected_device_unlocked() const
+    {
+        auto devices = ctx.query_devices();
+        for (auto&& dev : devices)
+        {
+            if (dev.supports(RS2_CAMERA_INFO_CAMERA_LOCKED))
+                if (std::string(dev.get_info(RS2_CAMERA_INFO_CAMERA_LOCKED)) == "NO")
+                    return true;
+        }
+        return false;
+    }
+
+    void viewer_model::save_to_config_file(const std::string& msg) const
+    {
+        time_t rawtime;
+        time(&rawtime);
+        int days = 30;
+        std::string str = rsutils::string::from() << "error." << msg << ".next";
+        config_file::instance().set(str.c_str(), (long long)(rawtime + days * 60 * 60 * 24));
+    }
+
+    bool viewer_model::check_config_file(const std::string& msg) const
+    {
+        time_t rawtime;
+        time(&rawtime);
+        std::string str = rsutils::string::from() << "error." << msg << ".next";
+        long long next_time = config_file::instance().get_or_default(str.c_str(), (long long)0);
+        return rawtime < next_time;
+    }
+
+    std::string viewer_model::shorten_error_message(const std::string& message) const
+    {
+        std::string get_option_str("rs2_get_option");
+        size_t pos = message.find(get_option_str);
+        if (pos == std::string::npos)
+            return message;
+        std::string str_for_before_delim("option:");
+        auto before_delim = message.find(str_for_before_delim) + str_for_before_delim.length();
+        auto after_delim = message.find_first_of(")");
+        return get_option_str + "_" + message.substr(before_delim, after_delim - before_delim);
+
+    }
+
     void viewer_model::popup_if_error(const ux_window& window, std::string& message)
     {
         if (message == "")
@@ -1005,7 +1048,9 @@ namespace rs2
             return;
 
         auto simplified_error_message = simplify_error_message(message);
-        if (errors_not_to_show.count(simplified_error_message))
+        auto very_short_error_message = shorten_error_message(message);
+        static bool is_one_device_unlocked = is_one_connected_device_unlocked();
+        if (errors_not_to_show.count(simplified_error_message) || (is_one_device_unlocked && check_config_file(very_short_error_message)))
         {
             not_model->add_notification({ message,
                 RS2_LOG_SEVERITY_ERROR,
@@ -1049,6 +1094,11 @@ namespace rs2
                 if (dont_show_this_error)
                 {
                     errors_not_to_show.insert(simplify_error_message(msg));
+                    if (is_one_device_unlocked)
+                    {
+                        auto very_short_error_message = shorten_error_message(msg);
+                        save_to_config_file(very_short_error_message);
+                    }
                 }
                 ImGui::CloseCurrentPopup();
                 _active_popups.erase(_active_popups.begin());
