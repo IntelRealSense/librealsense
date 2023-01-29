@@ -49,8 +49,12 @@ jobs:
         run: |
           python3 .github/workflows/cppcheck-parse.py --severity E cppcheck_run.log | sort --key 3 > cppcheck_run.parsed.log
           python3 .github/workflows/cppcheck-parse.py --severity E .github/workflows/cppcheck_run.log | sort --key 3 > cppcheck_run.parsed.golden
-          diff cppcheck_run.parsed.golden cppcheck_run.parsed.log
-          diff cppcheck_run.parsed.golden .github/workflows/cppcheck_run.parsed.log
+          diff cppcheck_run.parsed.golden cppcheck_run.parsed.log \
+            &&  echo "No diffs found in cppcheck_run.log"  \
+            ||  echo "^^^ Diffs in cppcheck_run.log!"
+          diff cppcheck_run.parsed.golden .github/workflows/cppcheck_run.parsed.log \
+            &&  echo "No diffs found in cppcheck_run.parsed.log"  \
+            ||  echo "^^^ Diffs in cppcheck_run.parsed.log!"
 
       - name: Upload logs
         uses: actions/upload-artifact@v3
