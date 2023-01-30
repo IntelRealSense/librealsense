@@ -103,7 +103,7 @@ private:
 
 dds_stream::dds_stream( std::string const & stream_name, std::string const & sensor_name )
     : super( stream_name, sensor_name )
-    , _syncer( std::make_unique< frame_metadata_syncer >() )
+    , _syncer( std::make_shared< frame_metadata_syncer >() )
 {
 }
 

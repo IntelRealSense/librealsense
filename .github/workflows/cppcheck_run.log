@@ -59,7 +59,7 @@
         <error id="uninitMemberVar" severity="warning" msg="Member variable &apos;xml_attribute &lt; char &gt;::m_next_attribute&apos; is not initialized in the constructor." verbose="Member variable &apos;xml_attribute &lt; char &gt;::m_next_attribute&apos; is not initialized in the constructor." cwe="398" file0="common/calibration-model.cpp">
             <location file="third-party/rapidxml/rapidxml.hpp" line="810" column="9"/>
         </error>
-        <error id="virtualCallInConstructor" severity="style" msg="Virtual function &apos;clear&apos; is called from constructor &apos;frame_drops_dashboard(std::string name,int*frame_drop_count,int*total)&apos; at line 97. Dynamic binding is not used." verbose="Virtual function &apos;clear&apos; is called from constructor &apos;frame_drops_dashboard(std::string name,int*frame_drop_count,int*total)&apos; at line 97. Dynamic binding is not used." file0="common/measurement.cpp">
+        <error id="virtualCallInConstructor" severity="style" msg="Virtual function &apos;clear&apos; is called from constructor &apos;frame_drops_dashboard(std::string name,int*frame_drop_count,int*total)&apos; at line 97. Dynamic binding is not used." verbose="Virtual function &apos;clear&apos; is called from constructor &apos;frame_drops_dashboard(std::string name,int*frame_drop_count,int*total)&apos; at line 97. Dynamic binding is not used." file0="common/fw-update-helper.cpp">
             <location file="common/output-model.h" line="104" column="14" info="clear is a virtual function"/>
             <location file="common/output-model.h" line="97" column="13" info="Calling clear"/>
         </error>
@@ -135,6 +135,9 @@
             <location file="common/notifications.cpp" line="760" column="32" info="Calling function &apos;enqueue&apos;, 1st argument &apos;[&amp;q,&amp;action](){try{action();q.enqueue(true);}catch(...){q.enqueue(false);}}&apos; value is lifetime=q"/>
             <location file="common/notifications.cpp" line="760" column="34" info="Lambda captures variable by reference here."/>
         </error>
+        <error id="uninitMemberVar" severity="warning" msg="Member variable &apos;notification_model::category&apos; is not initialized in the constructor." verbose="Member variable &apos;notification_model::category&apos; is not initialized in the constructor." cwe="398" file0="common/notifications.cpp">
+            <location file="common/notifications.cpp" line="61" column="25"/>
+        </error>
         <error id="nullPointerRedundantCheck" severity="warning" msg="Either the condition &apos;dev&apos; is redundant or there is possible null pointer dereference: dev." verbose="Either the condition &apos;dev&apos; is redundant or there is possible null pointer dereference: dev." cwe="476" file0="common/model-views.cpp">
             <location file="common/model-views.cpp" line="2288" column="13" info="Null pointer dereference"/>
             <location file="common/model-views.cpp" line="2295" column="13" info="Assuming that condition &apos;dev&apos; is not redundant"/>
@@ -146,9 +149,6 @@
         <error id="nullPointerRedundantCheck" severity="warning" msg="Either the condition &apos;dev&apos; is redundant or there is possible null pointer dereference: dev." verbose="Either the condition &apos;dev&apos; is redundant or there is possible null pointer dereference: dev." cwe="476" file0="common/model-views.cpp">
             <location file="common/model-views.cpp" line="2290" column="13" info="Null pointer dereference"/>
             <location file="common/model-views.cpp" line="2295" column="13" info="Assuming that condition &apos;dev&apos; is not redundant"/>
-        </error>
-        <error id="uninitMemberVar" severity="warning" msg="Member variable &apos;notification_model::category&apos; is not initialized in the constructor." verbose="Member variable &apos;notification_model::category&apos; is not initialized in the constructor." cwe="398" file0="common/notifications.cpp">
-            <location file="common/notifications.cpp" line="61" column="25"/>
         </error>
         <error id="uninitvar" severity="error" msg="Uninitialized variables: option.unset_value, option.have_unset_value, option.read_only, option.edit_mode" verbose="Uninitialized variables: option.unset_value, option.have_unset_value, option.read_only, option.edit_mode" cwe="457" file0="common/model-views.cpp">
             <location file="common/model-views.cpp" line="554" column="16"/>
@@ -217,12 +217,6 @@
         <error id="uninitvar" severity="error" msg="Uninitialized variables: ref3_in_ref1.velocity, ref3_in_ref1.acceleration, ref3_in_ref1.angular_velocity, ref3_in_ref1.angular_acceleration, ref3_in_ref1.tracker_confidence, ref3_in_ref1.mapper_confidence" verbose="Uninitialized variables: ref3_in_ref1.velocity, ref3_in_ref1.acceleration, ref3_in_ref1.angular_velocity, ref3_in_ref1.angular_acceleration, ref3_in_ref1.tracker_confidence, ref3_in_ref1.mapper_confidence" cwe="457" file0="examples/ar-advanced/rs-ar-advanced.cpp">
             <location file="examples/ar-advanced/rs-ar-advanced.cpp" line="301" column="12"/>
         </error>
-        <error id="nullPointer" severity="warning" msg="Possible null pointer dereference: exporter" verbose="Possible null pointer dereference: exporter" cwe="476" file0="common/viewer.cpp">
-            <location file="common/viewer.cpp" line="276" column="29" info="Null pointer dereference"/>
-            <location file="common/viewer.cpp" line="274" column="66" info="Assuming container is not empty"/>
-            <location file="common/viewer.cpp" line="270" column="33" info="Assuming condition is false"/>
-            <location file="common/viewer.cpp" line="269" column="54" info="Assignment &apos;std::unique_ptr&lt;rs2::filter&gt;exporter&apos;, assigned value is 0"/>
-        </error>
         <error id="uninitStructMember" severity="error" msg="Uninitialized struct member: pose.velocity" verbose="Uninitialized struct member: pose.velocity" cwe="457" file0="examples/ar-basic/rs-ar-basic.cpp">
             <location file="examples/ar-basic/rs-ar-basic.cpp" line="200" column="12"/>
         </error>
@@ -243,6 +237,12 @@
         </error>
         <error id="uninitvar" severity="error" msg="Uninitialized variables: pose.velocity, pose.acceleration, pose.angular_velocity, pose.angular_acceleration, pose.tracker_confidence, pose.mapper_confidence" verbose="Uninitialized variables: pose.velocity, pose.acceleration, pose.angular_velocity, pose.angular_acceleration, pose.tracker_confidence, pose.mapper_confidence" cwe="457" file0="examples/ar-basic/rs-ar-basic.cpp">
             <location file="examples/ar-basic/rs-ar-basic.cpp" line="200" column="12"/>
+        </error>
+        <error id="nullPointer" severity="warning" msg="Possible null pointer dereference: exporter" verbose="Possible null pointer dereference: exporter" cwe="476" file0="common/viewer.cpp">
+            <location file="common/viewer.cpp" line="276" column="29" info="Null pointer dereference"/>
+            <location file="common/viewer.cpp" line="274" column="66" info="Assuming container is not empty"/>
+            <location file="common/viewer.cpp" line="270" column="33" info="Assuming condition is false"/>
+            <location file="common/viewer.cpp" line="269" column="54" info="Assignment &apos;std::unique_ptr&lt;rs2::filter&gt;exporter&apos;, assigned value is 0"/>
         </error>
         <error id="uninitMemberVar" severity="warning" msg="Member variable &apos;instructions_printer::rendered_frames&apos; is not initialized in the constructor." verbose="Member variable &apos;instructions_printer::rendered_frames&apos; is not initialized in the constructor." cwe="398" file0="examples/gl/rs-gl.cpp">
             <location file="examples/gl/rs-gl.cpp" line="170" column="23"/>
@@ -274,6 +274,12 @@
         <error id="operatorEqVarError" severity="warning" msg="Member variable &apos;backend_frame::owner&apos; is not assigned a value in &apos;backend_frame::operator=&apos;." verbose="Member variable &apos;backend_frame::owner&apos; is not assigned a value in &apos;backend_frame::operator=&apos;." cwe="398" file0="src/android/device_watcher.cpp">
             <location file="src/uvc/uvc-types.h" line="431" column="20"/>
         </error>
+        <error id="uninitMemberVar" severity="warning" msg="Member variable &apos;rect_gaussian_dots_target_calculator::_corners&apos; is not initialized in the constructor." verbose="Member variable &apos;rect_gaussian_dots_target_calculator::_corners&apos; is not initialized in the constructor." cwe="398" file0="src/algo.cpp">
+            <location file="src/algo.cpp" line="564" column="39"/>
+        </error>
+        <error id="uninitMemberVar" severity="warning" msg="Member variable &apos;rect_gaussian_dots_target_calculator::_pts&apos; is not initialized in the constructor." verbose="Member variable &apos;rect_gaussian_dots_target_calculator::_pts&apos; is not initialized in the constructor." cwe="398" file0="src/algo.cpp">
+            <location file="src/algo.cpp" line="564" column="39"/>
+        </error>
         <error id="virtualCallInConstructor" severity="style" msg="Virtual function &apos;reset&apos; is called from constructor &apos;l500_timestamp_reader(std::shared_ptr&lt;platform::time_service&gt;ts)&apos; at line 488. Dynamic binding is not used." verbose="Virtual function &apos;reset&apos; is called from constructor &apos;l500_timestamp_reader(std::shared_ptr&lt;platform::time_service&gt;ts)&apos; at line 488. Dynamic binding is not used." file0="src/algo/thermal-loop/l500-thermal-loop.cpp">
             <location file="src/l500/l500-private.h" line="491" column="18" info="reset is a virtual function"/>
             <location file="src/l500/l500-private.h" line="488" column="17" info="Calling reset"/>
@@ -282,38 +288,8 @@
             <location file="src/l500/l500-private.h" line="566" column="18" info="reset is a virtual function"/>
             <location file="src/l500/l500-private.h" line="559" column="17" info="Calling reset"/>
         </error>
-        <error id="uninitMemberVar" severity="warning" msg="Member variable &apos;rect_gaussian_dots_target_calculator::_corners&apos; is not initialized in the constructor." verbose="Member variable &apos;rect_gaussian_dots_target_calculator::_corners&apos; is not initialized in the constructor." cwe="398" file0="src/algo.cpp">
-            <location file="src/algo.cpp" line="564" column="39"/>
-        </error>
-        <error id="uninitMemberVar" severity="warning" msg="Member variable &apos;rect_gaussian_dots_target_calculator::_pts&apos; is not initialized in the constructor." verbose="Member variable &apos;rect_gaussian_dots_target_calculator::_pts&apos; is not initialized in the constructor." cwe="398" file0="src/algo.cpp">
-            <location file="src/algo.cpp" line="564" column="39"/>
-        </error>
         <error id="uninitMemberVar" severity="warning" msg="Member variable &apos;serialized_frame::stream_id&apos; is not initialized in the constructor." verbose="Member variable &apos;serialized_frame::stream_id&apos; is not initialized in the constructor." cwe="398" file0="src/device.cpp">
             <location file="src/core/serialization.h" line="106" column="13"/>
-        </error>
-        <error id="danglingTempReference" severity="error" msg="Using reference to dangling temporary." verbose="Using reference to dangling temporary." cwe="562" file0="src/context.cpp">
-            <location file="src/context.cpp" line="854" column="50"/>
-            <location file="src/context.cpp" line="853" column="29" info="Assigned to reference."/>
-        </error>
-        <error id="danglingTempReference" severity="error" msg="Using reference to dangling temporary." verbose="Using reference to dangling temporary." cwe="562" file0="src/context.cpp">
-            <location file="src/context.cpp" line="855" column="59"/>
-            <location file="src/context.cpp" line="853" column="29" info="Assigned to reference."/>
-        </error>
-        <error id="danglingTempReference" severity="error" msg="Using reference to dangling temporary." verbose="Using reference to dangling temporary." cwe="562" file0="src/context.cpp">
-            <location file="src/context.cpp" line="856" column="58"/>
-            <location file="src/context.cpp" line="853" column="29" info="Assigned to reference."/>
-        </error>
-        <error id="danglingTempReference" severity="error" msg="Using reference to dangling temporary." verbose="Using reference to dangling temporary." cwe="562" file0="src/context.cpp">
-            <location file="src/context.cpp" line="857" column="56"/>
-            <location file="src/context.cpp" line="853" column="29" info="Assigned to reference."/>
-        </error>
-        <error id="danglingTempReference" severity="error" msg="Using reference to dangling temporary." verbose="Using reference to dangling temporary." cwe="562" file0="src/context.cpp">
-            <location file="src/context.cpp" line="858" column="59"/>
-            <location file="src/context.cpp" line="853" column="29" info="Assigned to reference."/>
-        </error>
-        <error id="danglingTempReference" severity="error" msg="Using reference to dangling temporary." verbose="Using reference to dangling temporary." cwe="562" file0="src/context.cpp">
-            <location file="src/context.cpp" line="859" column="59"/>
-            <location file="src/context.cpp" line="853" column="29" info="Assigned to reference."/>
         </error>
         <error id="virtualCallInConstructor" severity="style" msg="Virtual function &apos;reset&apos; is called from constructor &apos;sr300_timestamp_reader_from_metadata()&apos; at line 162. Dynamic binding is not used." verbose="Virtual function &apos;reset&apos; is called from constructor &apos;sr300_timestamp_reader_from_metadata()&apos; at line 162. Dynamic binding is not used." file0="src/context.cpp">
             <location file="src/ivcam/sr300.h" line="169" column="14" info="reset is a virtual function"/>
@@ -330,10 +306,6 @@
         <error id="duplInheritedMember" severity="warning" msg="The class &apos;l500_depth_sensor&apos; defines member variable with name &apos;_owner&apos; also defined in its parent class &apos;sensor_base&apos;." verbose="The class &apos;l500_depth_sensor&apos; defines member variable with name &apos;_owner&apos; also defined in its parent class &apos;sensor_base&apos;." cwe="398" file0="src/context.cpp">
             <location file="src/l500/l500-depth.h" line="269" column="29" info="Derived variable &apos;l500_depth_sensor::_owner&apos;"/>
             <location file="src/sensor.h" line="123" column="17" info="Parent variable &apos;sensor_base::_owner&apos;"/>
-        </error>
-        <error id="uninitvar" severity="error" msg="Uninitialized variables: prof.bpp, prof.intrinsics" verbose="Uninitialized variables: prof.bpp, prof.intrinsics" cwe="457" file0="src/context.cpp">
-            <location file="src/context.cpp" line="814" column="20"/>
-            <location file="src/context.cpp" line="802" column="22" info="Assuming condition is false"/>
         </error>
         <error id="uninitMemberVar" severity="warning" msg="Member variable &apos;limits_option::_cached_limit&apos; is not initialized in the constructor." verbose="Member variable &apos;limits_option::_cached_limit&apos; is not initialized in the constructor." cwe="398" file0="src/ds/ds-active-common.cpp">
             <location file="src/ds/ds5/ds5-options.h" line="112" column="9"/>
@@ -353,6 +325,29 @@
         <error id="duplInheritedMember" severity="warning" msg="The class &apos;ds5_color_sensor&apos; defines member variable with name &apos;_owner&apos; also defined in its parent class &apos;sensor_base&apos;." verbose="The class &apos;ds5_color_sensor&apos; defines member variable with name &apos;_owner&apos; also defined in its parent class &apos;sensor_base&apos;." cwe="398" file0="src/ds/ds-active-common.cpp">
             <location file="src/ds/ds5/ds5-color.h" line="78" column="26" info="Derived variable &apos;ds5_color_sensor::_owner&apos;"/>
             <location file="src/sensor.h" line="123" column="17" info="Parent variable &apos;sensor_base::_owner&apos;"/>
+        </error>
+        <error id="uninitMemberVar" severity="warning" msg="Member variable &apos;optional_value &lt; uint8_t &gt;::_value&apos; is not initialized in the constructor." verbose="Member variable &apos;optional_value &lt; uint8_t &gt;::_value&apos; is not initialized in the constructor." cwe="398" file0="src/ds/ds-motion-common.cpp">
+            <location file="src/types.h" line="1259" column="9"/>
+        </error>
+        <error id="duplInheritedMember" severity="warning" msg="The class &apos;ds_fisheye_sensor&apos; defines member variable with name &apos;_owner&apos; also defined in its parent class &apos;sensor_base&apos;." verbose="The class &apos;ds_fisheye_sensor&apos; defines member variable with name &apos;_owner&apos; also defined in its parent class &apos;sensor_base&apos;." cwe="398" file0="src/ds/ds-motion-common.cpp">
+            <location file="src/ds/ds-motion-common.h" line="75" column="17" info="Derived variable &apos;ds_fisheye_sensor::_owner&apos;"/>
+            <location file="src/sensor.h" line="123" column="17" info="Parent variable &apos;sensor_base::_owner&apos;"/>
+        </error>
+        <error id="duplInheritedMember" severity="warning" msg="The class &apos;ds_motion_sensor&apos; defines member variable with name &apos;_owner&apos; also defined in its parent class &apos;sensor_base&apos;." verbose="The class &apos;ds_motion_sensor&apos; defines member variable with name &apos;_owner&apos; also defined in its parent class &apos;sensor_base&apos;." cwe="398" file0="src/ds/ds-motion-common.cpp">
+            <location file="src/ds/ds-motion-common.h" line="98" column="23" info="Derived variable &apos;ds_motion_sensor::_owner&apos;"/>
+            <location file="src/sensor.h" line="123" column="17" info="Parent variable &apos;sensor_base::_owner&apos;"/>
+        </error>
+        <error id="duplInheritedMember" severity="warning" msg="The class &apos;ds5_motion_base&apos; defines member variable with name &apos;_pid&apos; also defined in its parent class &apos;device&apos;." verbose="The class &apos;ds5_motion_base&apos; defines member variable with name &apos;_pid&apos; also defined in its parent class &apos;device&apos;." cwe="398" file0="src/ds/ds-motion-common.cpp">
+            <location file="src/ds/ds5/ds5-motion.h" line="37" column="18" info="Derived variable &apos;ds5_motion_base::_pid&apos;"/>
+            <location file="src/device.h" line="90" column="14" info="Parent variable &apos;device::_pid&apos;"/>
+        </error>
+        <error id="duplInheritedMember" severity="warning" msg="The class &apos;ds5_motion&apos; defines member variable with name &apos;_motion_module_device_idx&apos; also defined in its parent class &apos;ds5_motion_base&apos;." verbose="The class &apos;ds5_motion&apos; defines member variable with name &apos;_motion_module_device_idx&apos; also defined in its parent class &apos;ds5_motion_base&apos;." cwe="398" file0="src/ds/ds-motion-common.cpp">
+            <location file="src/ds/ds5/ds5-motion.h" line="69" column="33" info="Derived variable &apos;ds5_motion::_motion_module_device_idx&apos;"/>
+            <location file="src/ds/ds5/ds5-motion.h" line="39" column="33" info="Parent variable &apos;ds5_motion_base::_motion_module_device_idx&apos;"/>
+        </error>
+        <error id="duplInheritedMember" severity="warning" msg="The class &apos;motion_to_accel_gyro&apos; defines member variable with name &apos;_source_stream_profile&apos; also defined in its parent class &apos;functional_processing_block&apos;." verbose="The class &apos;motion_to_accel_gyro&apos; defines member variable with name &apos;_source_stream_profile&apos; also defined in its parent class &apos;functional_processing_block&apos;." cwe="398" file0="src/ds/ds-motion-common.cpp">
+            <location file="src/proc/motion-transform.h" line="49" column="51" info="Derived variable &apos;motion_to_accel_gyro::_source_stream_profile&apos;"/>
+            <location file="src/proc/synthetic-stream.h" line="154" column="29" info="Parent variable &apos;functional_processing_block::_source_stream_profile&apos;"/>
         </error>
         <error id="uninitMemberVar" severity="warning" msg="Member variable &apos;preset_param_group::depth_controls&apos; is not initialized in the constructor." verbose="Member variable &apos;preset_param_group::depth_controls&apos; is not initialized in the constructor." cwe="398" file0="src/ds/advanced_mode/advanced_mode.cpp">
             <location file="src/ds/advanced_mode/json_loader.hpp" line="70" column="9"/>
@@ -395,29 +390,6 @@
         </error>
         <error id="uninitMemberVar" severity="warning" msg="Member variable &apos;json_string_struct_field::strct&apos; is not initialized in the constructor." verbose="Member variable &apos;json_string_struct_field::strct&apos; is not initialized in the constructor." cwe="398" file0="src/ds/advanced_mode/advanced_mode.cpp">
             <location file="src/ds/advanced_mode/json_loader.hpp" line="171" column="9"/>
-        </error>
-        <error id="uninitMemberVar" severity="warning" msg="Member variable &apos;optional_value &lt; uint8_t &gt;::_value&apos; is not initialized in the constructor." verbose="Member variable &apos;optional_value &lt; uint8_t &gt;::_value&apos; is not initialized in the constructor." cwe="398" file0="src/ds/ds-motion-common.cpp">
-            <location file="src/types.h" line="1259" column="9"/>
-        </error>
-        <error id="duplInheritedMember" severity="warning" msg="The class &apos;ds_fisheye_sensor&apos; defines member variable with name &apos;_owner&apos; also defined in its parent class &apos;sensor_base&apos;." verbose="The class &apos;ds_fisheye_sensor&apos; defines member variable with name &apos;_owner&apos; also defined in its parent class &apos;sensor_base&apos;." cwe="398" file0="src/ds/ds-motion-common.cpp">
-            <location file="src/ds/ds-motion-common.h" line="75" column="17" info="Derived variable &apos;ds_fisheye_sensor::_owner&apos;"/>
-            <location file="src/sensor.h" line="123" column="17" info="Parent variable &apos;sensor_base::_owner&apos;"/>
-        </error>
-        <error id="duplInheritedMember" severity="warning" msg="The class &apos;ds_motion_sensor&apos; defines member variable with name &apos;_owner&apos; also defined in its parent class &apos;sensor_base&apos;." verbose="The class &apos;ds_motion_sensor&apos; defines member variable with name &apos;_owner&apos; also defined in its parent class &apos;sensor_base&apos;." cwe="398" file0="src/ds/ds-motion-common.cpp">
-            <location file="src/ds/ds-motion-common.h" line="98" column="23" info="Derived variable &apos;ds_motion_sensor::_owner&apos;"/>
-            <location file="src/sensor.h" line="123" column="17" info="Parent variable &apos;sensor_base::_owner&apos;"/>
-        </error>
-        <error id="duplInheritedMember" severity="warning" msg="The class &apos;ds5_motion_base&apos; defines member variable with name &apos;_pid&apos; also defined in its parent class &apos;device&apos;." verbose="The class &apos;ds5_motion_base&apos; defines member variable with name &apos;_pid&apos; also defined in its parent class &apos;device&apos;." cwe="398" file0="src/ds/ds-motion-common.cpp">
-            <location file="src/ds/ds5/ds5-motion.h" line="37" column="18" info="Derived variable &apos;ds5_motion_base::_pid&apos;"/>
-            <location file="src/device.h" line="90" column="14" info="Parent variable &apos;device::_pid&apos;"/>
-        </error>
-        <error id="duplInheritedMember" severity="warning" msg="The class &apos;ds5_motion&apos; defines member variable with name &apos;_motion_module_device_idx&apos; also defined in its parent class &apos;ds5_motion_base&apos;." verbose="The class &apos;ds5_motion&apos; defines member variable with name &apos;_motion_module_device_idx&apos; also defined in its parent class &apos;ds5_motion_base&apos;." cwe="398" file0="src/ds/ds-motion-common.cpp">
-            <location file="src/ds/ds5/ds5-motion.h" line="69" column="33" info="Derived variable &apos;ds5_motion::_motion_module_device_idx&apos;"/>
-            <location file="src/ds/ds5/ds5-motion.h" line="39" column="33" info="Parent variable &apos;ds5_motion_base::_motion_module_device_idx&apos;"/>
-        </error>
-        <error id="duplInheritedMember" severity="warning" msg="The class &apos;motion_to_accel_gyro&apos; defines member variable with name &apos;_source_stream_profile&apos; also defined in its parent class &apos;functional_processing_block&apos;." verbose="The class &apos;motion_to_accel_gyro&apos; defines member variable with name &apos;_source_stream_profile&apos; also defined in its parent class &apos;functional_processing_block&apos;." cwe="398" file0="src/ds/ds-motion-common.cpp">
-            <location file="src/proc/motion-transform.h" line="49" column="51" info="Derived variable &apos;motion_to_accel_gyro::_source_stream_profile&apos;"/>
-            <location file="src/proc/synthetic-stream.h" line="154" column="29" info="Parent variable &apos;functional_processing_block::_source_stream_profile&apos;"/>
         </error>
         <error id="virtualCallInConstructor" severity="style" msg="Virtual function &apos;reset&apos; is called from constructor &apos;ds_timestamp_reader_from_metadata(std::unique_ptr&lt;frame_timestamp_reader&gt;backup_timestamp_reader)&apos; at line 21. Dynamic binding is not used." verbose="Virtual function &apos;reset&apos; is called from constructor &apos;ds_timestamp_reader_from_metadata(std::unique_ptr&lt;frame_timestamp_reader&gt;backup_timestamp_reader)&apos; at line 21. Dynamic binding is not used." file0="src/ds/ds-timestamp.cpp">
             <location file="src/ds/ds-timestamp.h" line="31" column="14" info="reset is a virtual function"/>
@@ -601,6 +573,10 @@
             <location file="src/l500/l500-motion.cpp" line="96" column="28" info="Derived variable &apos;l500_hid_sensor::_owner&apos;"/>
             <location file="src/sensor.h" line="123" column="17" info="Parent variable &apos;sensor_base::_owner&apos;"/>
         </error>
+        <error id="virtualCallInConstructor" severity="style" msg="Virtual function &apos;stop&apos; is called from destructor &apos;~polling_device_watcher()&apos; at line 27. Dynamic binding is not used." verbose="Virtual function &apos;stop&apos; is called from destructor &apos;~polling_device_watcher()&apos; at line 27. Dynamic binding is not used." file0="src/libuvc/rsusb-backend-linux.cpp">
+            <location file="src/polling-device-watcher.h" line="57" column="10" info="stop is a virtual function"/>
+            <location file="src/polling-device-watcher.h" line="27" column="33" info="Calling stop"/>
+        </error>
         <error id="uninitDerivedMemberVar" severity="warning" msg="Member variable &apos;usb_request_base::_client_data&apos; is not initialized in the constructor. Maybe it should be initialized directly in the class usb_request_base?" verbose="Member variable &apos;usb_request_base::_client_data&apos; is not initialized in the constructor. Maybe it should be initialized directly in the class usb_request_base?" cwe="398" file0="src/libusb/request-libusb.cpp">
             <location file="src/libusb/request-libusb.cpp" line="27" column="29"/>
         </error>
@@ -610,10 +586,6 @@
         <error id="virtualCallInConstructor" severity="style" msg="Virtual function &apos;stop&apos; is called from destructor &apos;~udev_device_watcher()&apos; at line 182. Dynamic binding is not used." verbose="Virtual function &apos;stop&apos; is called from destructor &apos;~udev_device_watcher()&apos; at line 182. Dynamic binding is not used." file0="src/linux/udev-device-watcher.cpp">
             <location file="src/linux/udev-device-watcher.h" line="44" column="10" info="stop is a virtual function"/>
             <location file="src/linux/udev-device-watcher.cpp" line="182" column="5" info="Calling stop"/>
-        </error>
-        <error id="virtualCallInConstructor" severity="style" msg="Virtual function &apos;stop&apos; is called from destructor &apos;~polling_device_watcher()&apos; at line 27. Dynamic binding is not used." verbose="Virtual function &apos;stop&apos; is called from destructor &apos;~polling_device_watcher()&apos; at line 27. Dynamic binding is not used." file0="src/libuvc/rsusb-backend-linux.cpp">
-            <location file="src/polling-device-watcher.h" line="57" column="10" info="stop is a virtual function"/>
-            <location file="src/polling-device-watcher.h" line="27" column="33" info="Calling stop"/>
         </error>
         <error id="virtualCallInConstructor" severity="style" msg="Virtual function &apos;reset&apos; is called from constructor &apos;ros_reader(const std::string&amp;file,const std::shared_ptr&lt;context&gt;&amp;ctx)&apos; at line 39. Dynamic binding is not used." verbose="Virtual function &apos;reset&apos; is called from constructor &apos;ros_reader(const std::string&amp;file,const std::shared_ptr&lt;context&gt;&amp;ctx)&apos; at line 39. Dynamic binding is not used." file0="src/media/ros/ros_reader.cpp">
             <location file="src/media/ros/ros_reader.h" line="26" column="14" info="reset is a virtual function"/>

@@ -55,7 +55,7 @@ protected:
 
     std::shared_ptr< dds_topic_reader > _image_reader;
     std::shared_ptr< dds_topic_reader > _metadata_reader;
-    std::unique_ptr< frame_metadata_syncer > _syncer;
+    std::shared_ptr< frame_metadata_syncer > _syncer; // shared_ptr, not unique_ptr, to avoid defining frame_metadata_syncer here
 };
 
 class dds_video_stream : public dds_stream
