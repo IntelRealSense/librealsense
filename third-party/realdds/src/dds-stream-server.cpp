@@ -163,7 +163,7 @@ void dds_stream_server::publish_image( const uint8_t * data, size_t size, const 
     raw_image.height() = _image_header.height;
     raw_image.width() = _image_header.width;
     raw_image.raw_data().assign( data, data + size );
-    raw_image.frame_id() = rsutils::json::get< std::string >( metadata, "frame_id" );
+    raw_image.frame_id( rsutils::json::get< std::string >( metadata, "frame_id" ) );
 
     DDS_API_CALL( _image_writer->get()->write( &raw_image ) );
 

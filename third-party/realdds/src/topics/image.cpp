@@ -28,16 +28,16 @@ realdds::topics::raw::device::image::image()
 {
     // m_raw_data com.eprosima.idl.parser.typecode.SequenceTypeCode@2038ae61
 
-    // m_size com.eprosima.idl.parser.typecode.PrimitiveTypeCode@3c0f93f1
-    m_size = 0;
-    // m_width com.eprosima.idl.parser.typecode.PrimitiveTypeCode@31dc339b
-    m_width = 0;
-    // m_height com.eprosima.idl.parser.typecode.PrimitiveTypeCode@544fe44c
-    m_height = 0;
-    // m_format com.eprosima.idl.parser.typecode.PrimitiveTypeCode@31610302
-    m_format = 0;
-    // m_frame_id com.eprosima.idl.parser.typecode.StringTypeCode@71318ec4
+    // m_frame_id com.eprosima.idl.parser.typecode.StringTypeCode@3c0f93f1
     m_frame_id ="";
+    // m_size com.eprosima.idl.parser.typecode.PrimitiveTypeCode@31dc339b
+    m_size = 0;
+    // m_width com.eprosima.idl.parser.typecode.PrimitiveTypeCode@544fe44c
+    m_width = 0;
+    // m_height com.eprosima.idl.parser.typecode.PrimitiveTypeCode@31610302
+    m_height = 0;
+    // m_format com.eprosima.idl.parser.typecode.PrimitiveTypeCode@71318ec4
+    m_format = 0;
 
     // Just to register all known types
     registerimageTypes();
@@ -57,22 +57,22 @@ realdds::topics::raw::device::image::image(
         const image& x)
 {
     m_raw_data = x.m_raw_data;
+    m_frame_id = x.m_frame_id;
     m_size = x.m_size;
     m_width = x.m_width;
     m_height = x.m_height;
     m_format = x.m_format;
-    m_frame_id = x.m_frame_id;
 }
 
 realdds::topics::raw::device::image::image(
         image&& x) noexcept 
 {
     m_raw_data = std::move(x.m_raw_data);
+    m_frame_id = std::move(x.m_frame_id);
     m_size = x.m_size;
     m_width = x.m_width;
     m_height = x.m_height;
     m_format = x.m_format;
-    m_frame_id = std::move(x.m_frame_id);
 }
 
 realdds::topics::raw::device::image& realdds::topics::raw::device::image::operator =(
@@ -80,11 +80,11 @@ realdds::topics::raw::device::image& realdds::topics::raw::device::image::operat
 {
 
     m_raw_data = x.m_raw_data;
+    m_frame_id = x.m_frame_id;
     m_size = x.m_size;
     m_width = x.m_width;
     m_height = x.m_height;
     m_format = x.m_format;
-    m_frame_id = x.m_frame_id;
 
     return *this;
 }
@@ -94,11 +94,11 @@ realdds::topics::raw::device::image& realdds::topics::raw::device::image::operat
 {
 
     m_raw_data = std::move(x.m_raw_data);
+    m_frame_id = std::move(x.m_frame_id);
     m_size = x.m_size;
     m_width = x.m_width;
     m_height = x.m_height;
     m_format = x.m_format;
-    m_frame_id = std::move(x.m_frame_id);
 
     return *this;
 }
@@ -107,7 +107,7 @@ bool realdds::topics::raw::device::image::operator ==(
         const image& x) const
 {
 
-    return (m_raw_data == x.m_raw_data && m_size == x.m_size && m_width == x.m_width && m_height == x.m_height && m_format == x.m_format && m_frame_id == x.m_frame_id);
+    return (m_raw_data == x.m_raw_data && m_frame_id == x.m_frame_id && m_size == x.m_size && m_width == x.m_width && m_height == x.m_height && m_format == x.m_format);
 }
 
 bool realdds::topics::raw::device::image::operator !=(
@@ -128,6 +128,8 @@ size_t realdds::topics::raw::device::image::getMaxCdrSerializedSize(
 
 
 
+    current_alignment += 4 + eprosima::fastcdr::Cdr::alignment(current_alignment, 4) + 255 + 1;
+
     current_alignment += 4 + eprosima::fastcdr::Cdr::alignment(current_alignment, 4);
 
 
@@ -139,8 +141,6 @@ size_t realdds::topics::raw::device::image::getMaxCdrSerializedSize(
 
     current_alignment += 1 + eprosima::fastcdr::Cdr::alignment(current_alignment, 1);
 
-
-    current_alignment += 4 + eprosima::fastcdr::Cdr::alignment(current_alignment, 4) + 255 + 1;
 
 
     return current_alignment - initial_alignment;
@@ -163,6 +163,8 @@ size_t realdds::topics::raw::device::image::getCdrSerializedSize(
 
 
 
+    current_alignment += 4 + eprosima::fastcdr::Cdr::alignment(current_alignment, 4) + data.frame_id().size() + 1;
+
     current_alignment += 4 + eprosima::fastcdr::Cdr::alignment(current_alignment, 4);
 
 
@@ -175,8 +177,6 @@ size_t realdds::topics::raw::device::image::getCdrSerializedSize(
     current_alignment += 1 + eprosima::fastcdr::Cdr::alignment(current_alignment, 1);
 
 
-    current_alignment += 4 + eprosima::fastcdr::Cdr::alignment(current_alignment, 4) + data.frame_id().size() + 1;
-
 
     return current_alignment - initial_alignment;
 }
@@ -186,11 +186,11 @@ void realdds::topics::raw::device::image::serialize(
 {
 
     scdr << m_raw_data;
+    scdr << m_frame_id.c_str();
     scdr << m_size;
     scdr << m_width;
     scdr << m_height;
     scdr << m_format;
-    scdr << m_frame_id.c_str();
 
 }
 
@@ -199,11 +199,11 @@ void realdds::topics::raw::device::image::deserialize(
 {
 
     dcdr >> m_raw_data;
+    dcdr >> m_frame_id;
     dcdr >> m_size;
     dcdr >> m_width;
     dcdr >> m_height;
     dcdr >> m_format;
-    dcdr >> m_frame_id;
 }
 
 /*!
@@ -242,6 +242,43 @@ const std::vector<uint8_t>& realdds::topics::raw::device::image::raw_data() cons
 std::vector<uint8_t>& realdds::topics::raw::device::image::raw_data()
 {
     return m_raw_data;
+}
+/*!
+ * @brief This function copies the value in member frame_id
+ * @param _frame_id New value to be copied in member frame_id
+ */
+void realdds::topics::raw::device::image::frame_id(
+        const std::string& _frame_id)
+{
+    m_frame_id = _frame_id;
+}
+
+/*!
+ * @brief This function moves the value in member frame_id
+ * @param _frame_id New value to be moved in member frame_id
+ */
+void realdds::topics::raw::device::image::frame_id(
+        std::string&& _frame_id)
+{
+    m_frame_id = std::move(_frame_id);
+}
+
+/*!
+ * @brief This function returns a constant reference to member frame_id
+ * @return Constant reference to member frame_id
+ */
+const std::string& realdds::topics::raw::device::image::frame_id() const
+{
+    return m_frame_id;
+}
+
+/*!
+ * @brief This function returns a reference to member frame_id
+ * @return Reference to member frame_id
+ */
+std::string& realdds::topics::raw::device::image::frame_id()
+{
+    return m_frame_id;
 }
 /*!
  * @brief This function sets a value in member size
@@ -355,43 +392,6 @@ uint8_t& realdds::topics::raw::device::image::format()
     return m_format;
 }
 
-/*!
- * @brief This function copies the value in member frame_id
- * @param _frame_id New value to be copied in member frame_id
- */
-void realdds::topics::raw::device::image::frame_id(
-        const std::string& _frame_id)
-{
-    m_frame_id = _frame_id;
-}
-
-/*!
- * @brief This function moves the value in member frame_id
- * @param _frame_id New value to be moved in member frame_id
- */
-void realdds::topics::raw::device::image::frame_id(
-        std::string&& _frame_id)
-{
-    m_frame_id = std::move(_frame_id);
-}
-
-/*!
- * @brief This function returns a constant reference to member frame_id
- * @return Constant reference to member frame_id
- */
-const std::string& realdds::topics::raw::device::image::frame_id() const
-{
-    return m_frame_id;
-}
-
-/*!
- * @brief This function returns a reference to member frame_id
- * @return Reference to member frame_id
- */
-std::string& realdds::topics::raw::device::image::frame_id()
-{
-    return m_frame_id;
-}
 
 size_t realdds::topics::raw::device::image::getKeyMaxCdrSerializedSize(
         size_t current_alignment)

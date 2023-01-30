@@ -21,6 +21,7 @@ namespace device {
 image::image( raw::device::image && rhs )
 {
     raw_data = std::move( rhs.raw_data() );
+    frame_id = std::move( rhs.frame_id() );
     width    = std::move( rhs.width() );
     height   = std::move( rhs.height() );
     size     = std::move( rhs.size() );
@@ -31,6 +32,7 @@ image::image( raw::device::image && rhs )
 image & image::operator=( raw::device::image && rhs )
 {
     raw_data = std::move( rhs.raw_data() );
+    frame_id = std::move( rhs.frame_id() );
     width    = std::move( rhs.width() );
     height   = std::move( rhs.height() );
     size     = std::move( rhs.size() );

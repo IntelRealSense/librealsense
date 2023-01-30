@@ -446,7 +446,15 @@ void lrs_device_controller::start_streaming( const json & msg )
     _dds_device_server->start_streaming( realdds_streams_to_start );
     _sensors[sensor_index].open( rs_profiles_to_open );
     _sensors[sensor_index].start( [&]( rs2::frame f ) {
-        json metadata = json( { { "frame_id", f.get_frame_number() } } ); // Special data that is always expected by realdds
+        json metadata = json( {
+            // Special data that is always expected by realdds
+            { "frame_id", std::to_string( f.get_frame_number() ) },
+            { "timestamp", f.get_timestamp() },
+            { "timestamp_domain", f.get_frame_timestamp_domain() }
+            } );
+        if( f.is< rs2::depth_frame >() )
+            metadata["depth_units"] = f.as< rs2::depth_frame >().get_units();
+
         for( size_t i = 0; i < static_cast< size_t >( RS2_FRAME_METADATA_COUNT ); ++i )
         {
             rs2_frame_metadata_value val = static_cast< rs2_frame_metadata_value >( i );

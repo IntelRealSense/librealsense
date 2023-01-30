@@ -11,6 +11,8 @@
 #include <realdds/topics/flexible/flexible-msg.h>
 #include <realdds/dds-exceptions.h>
 
+#include <rsutils/json.h>
+
 #include <fastdds/dds/subscriber/SampleInfo.hpp>
 
 #include <deque>
@@ -25,26 +27,30 @@ class frame_metadata_syncer
 public:
     void enqueue_image( topics::device::image && image )
     {
+        std::lock_guard< std::mutex > lock( _queues_lock );
         _image_queue.push_back( std::move( image ) );
-        search_for_match();
+        search_for_match(); //Call under lock
     }
 
     void enqueue_metadata( topics::flexible_msg && md )
     {
+        std::lock_guard< std::mutex > lock( _queues_lock );
         _metadata_queue.push_back( std::move( md ) );
-        search_for_match();
+        search_for_match(); //Call under lock
     }
 
     dds_stream::on_data_available_callback get_callback() { return _cb; }
 
     void reset( dds_stream::on_data_available_callback cb = nullptr)
     {
+        std::lock_guard< std::mutex > lock( _queues_lock );
         _image_queue.clear();
         _metadata_queue.clear();
-        _cb = nullptr;
+        _cb = cb;
     }
 
 private:
+    //Call under lock
     void search_for_match()
     {
         // Wait for image + metadata set
@@ -74,6 +80,7 @@ private:
             handle_match();
     }
 
+    //Call under lock, will pass callback to dispatcher to avoid delaying enqueing threads
     void handle_match()
     {
         topics::device::image & image = _image_queue.front();
@@ -86,10 +93,11 @@ private:
         _metadata_queue.pop_front();
     }
 
-    dds_stream::on_data_available_callback _cb;
+    dds_stream::on_data_available_callback _cb = nullptr;
 
     std::deque< topics::device::image > _image_queue;
     std::deque< topics::flexible_msg > _metadata_queue;
+    std::mutex _queues_lock;
 };
 
 

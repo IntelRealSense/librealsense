@@ -616,6 +616,7 @@ namespace librealsense
                     if( Is< video_stream_profile >(p) )
                     {
                         rs2_software_video_frame rs2_frame;
+                        rs2_frame.profile = &prof;
 
                         //Copying from dds into LibRS space, same as copy from USB backend.
                         //TODO - use memory pool or some other frame allocator
@@ -623,16 +624,19 @@ namespace librealsense
                         if( !rs2_frame.pixels )
                             throw std::runtime_error( "Could not allocate memory for new frame" );
                         memcpy( rs2_frame.pixels, dds_frame.raw_data.data(), dds_frame.size );
-
+                        // The way to release allocated memory
                         rs2_frame.deleter = []( void * ptr ) { delete[] ptr; };
+                        // Info sent with image topic
                         rs2_frame.stride = dds_frame.height > 0 ? dds_frame.size / dds_frame.height : dds_frame.size;
                         rs2_frame.bpp = dds_frame.width > 0 ? rs2_frame.stride / dds_frame.width : rs2_frame.stride;
-                        rs2_frame.timestamp = frame_counter * 1000.0 / p->get_framerate(); // TODO - timestamp from dds
-                        rs2_frame.domain = RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK; // TODO - timestamp domain from options?
-                        rs2_frame.frame_number = rsutils::json::get< int >( dds_md.json_data(), "frame_id" ); // "frame_id" is always expected in metadata
-                        rs2_frame.profile = &prof;
-                        rs2_frame.depth_units = 0.001f; //TODO - depth unit from dds, if needed
-
+                        // Always expected metadata
+                        rs2_frame.timestamp = rsutils::json::get< rs2_time_t >( dds_md.json_data(), "timestamp" );
+                        rs2_frame.domain = rsutils::json::get< rs2_timestamp_domain >( dds_md.json_data(), "timestamp_domain" );
+                        rs2_frame.frame_number = std::stoi( rsutils::json::get< std::string >( dds_md.json_data(), "frame_id" ) );
+                        // Expected metadata for all depth images
+                        if( rsutils::json::has( dds_md.json_data(), "depth_units" ) )
+                            rs2_frame.depth_units = rsutils::json::get< float >( dds_md.json_data(), "depth_units" );
+                        // Other metadata fields
                         for( size_t i = 0; i < static_cast< size_t >( RS2_FRAME_METADATA_COUNT ); ++i )
                         {
                             const char * str = rs2_frame_metadata_to_string( static_cast< rs2_frame_metadata_value >( i ) );
@@ -645,6 +649,7 @@ namespace librealsense
                     else
                     {
                         rs2_software_motion_frame rs2_frame;
+                        rs2_frame.profile = &prof;
 
                         //Copying from dds into LibRS space, same as copy from USB backend.
                         //TODO - use memory pool or some other frame allocator
@@ -652,12 +657,20 @@ namespace librealsense
                         if( !rs2_frame.data )
                             throw std::runtime_error( "Could not allocate memory for new frame" );
                         memcpy( rs2_frame.data, dds_frame.raw_data.data(), dds_frame.size );
-
+                        // The way to release allocated memory
                         rs2_frame.deleter = []( void * ptr ) { delete[] ptr; };
-                        rs2_frame.timestamp = frame_counter * 1000.0 / p->get_framerate(); // TODO - timestamp from dds
-                        rs2_frame.domain = RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK; // TODO - timestamp domain from options?
-                        rs2_frame.frame_number = frame_counter++; // TODO - frame_number from dds
-                        rs2_frame.profile = &prof;
+                        // Always expected metadata
+                        rs2_frame.timestamp = rsutils::json::get< rs2_time_t >( dds_md.json_data(), "timestamp" );
+                        rs2_frame.domain = rsutils::json::get< rs2_timestamp_domain >( dds_md.json_data(), "timestamp_domain" );
+                        rs2_frame.frame_number = std::stoi( rsutils::json::get< std::string >( dds_md.json_data(), "frame_id" ) );
+                        // Other metadata fields
+                        for( size_t i = 0; i < static_cast< size_t >( RS2_FRAME_METADATA_COUNT ); ++i )
+                        {
+                            const char * str = rs2_frame_metadata_to_string( static_cast< rs2_frame_metadata_value >( i ) );
+                            if( rsutils::json::has( dds_md.json_data(), str ) )
+                                set_metadata( static_cast< rs2_frame_metadata_value >( i ),
+                                    rsutils::json::get< rs2_metadata_type >( dds_md.json_data(), str ) );
+                        }
                         on_motion_frame( rs2_frame );
                     }
                 } );
@@ -796,7 +809,7 @@ namespace librealsense
                              std::shared_ptr< realdds::dds_video_stream_profile > const & profile,
                              const std::set< realdds::video_intrinsics > & intrinsics)
         {
-            rs2_video_stream prof;
+            rs2_video_stream prof = {};
             prof.type = stream_type;
             prof.index = sidx.index;
             prof.uid = sidx.sid;
@@ -860,7 +873,7 @@ namespace librealsense
             , _dds_dev( dev )
         {
             LOG_DEBUG( "=====> dds-device-proxy " << this << " created on top of dds-device " << _dds_dev.get() );
-            auto & dev_info = dev->device_info();
+            auto dev_info = dev->device_info();
             register_info( RS2_CAMERA_INFO_NAME, dev_info.name );
             register_info( RS2_CAMERA_INFO_SERIAL_NUMBER, dev_info.serial );
             register_info( RS2_CAMERA_INFO_PRODUCT_LINE, dev_info.product_line );
