@@ -1,8 +1,9 @@
 
-realdds is a library to help control a realsense camera over network using librealsense API.
-It is a work in progress aimed at, ultimately, enabling remote users to do with the camera everything a user can do with a USB connected camera, and more (multiple clients for frames, etc...)
+realdds is a library that ease the control of a realsense camera over network using librealsense API.
+realdds provides "off the shelf" types and logic that makes it easier and faster to write applications that control a camera over the network.
+It is a work in progress aimed at, ultimately, enabling remote users to do with the camera everything a user can do with a USB connected camera, and more (multiple clients for frames, etc...).
 
-realdds uses DDS topics to send and receive information to/from the camera. See https://github.com/IntelRealSense/librealsense/blob/dds/doc/DDS/DDS%20ICD.md
+realdds uses DDS topics to send and receive information to/from the camera. See [DDS-ICD](https://github.com/IntelRealSense/librealsense/blob/dds/doc/DDS/DDS%20ICD.md)
 
 Users can use realdds stand-alone, or use librealsense with the cmake `BUILD_WITH_DDS` flag on, to use DDS devices seemlessly as any other librealsense device.
 
@@ -10,7 +11,7 @@ Users can use realdds stand-alone, or use librealsense with the cmake `BUILD_WIT
 
 ## Server/Camera
 
-The **server** or **camera** is either a physical device with built in capabilities supporting these use cases, like Intel RealSense D585, or a dedicated software operating some other device, e.g., Intel RealSense D455, giving it the required capabilities.
+The **server** or **camera** is either a physical device with built in capabilities supporting these use cases, or a dedicated software operating some other device, e.g., Intel RealSense D455, giving it the required capabilities.
 
 An example software tool like this is the [dds-server](https://github.com/IntelRealSense/librealsense/tree/dds/tools/dds/dds-server)
 
@@ -56,7 +57,7 @@ Using the discovery data, the **user** can have a complete knowledge of the came
 1.
 
 **Constraints**
-1. Discovery *notification* messages timeout is 30 seconds.
+1. Discovery *notification* messages timeout is **30 seconds**.
 
 
 ## Camera Disconnection
@@ -95,7 +96,7 @@ The **user** requests to receive streams of data (images, IMU, etc...). The **se
 
 **Preconditions**
 1. The **server** and **client** are running, and using the same DDS domain.
-2. Camera Discovery phase (see use-case) have completed successfully.
+2. Camera Discovery phase (see use-case) has completed successfully.
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                
 **Trigger** - The **user** triggers this use-case upon demand.
 
@@ -147,7 +148,9 @@ None.
 None.
 
 **Notes**
-1. Currently, when using librealsense API to control the device (as is the case with the rs-dds-server tool), when stoping a stream all streams in the containing sensor will be stopped. 
+1. When using librealsense API to control the device (as is the case with the `rs-dds-server` tool), when stoping a stream all streams in the containing sensor will be stopped.
+realdds does not use a "sensor" concept to start or stop streams, it is a librealsense limitation.
+For example, if "Infrared 1" and "Infrared 2" streams of the "Stereo Module" are both streaming and one of them is requested to stop, both will stop streaming.
 
 
 ## Query Option
