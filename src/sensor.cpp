@@ -426,8 +426,6 @@ void log_callback_end( uint32_t fps,
                     if (msp)
                         expected_size = 64;//32; // D457 - WORKAROUND - SHOULD BE REMOVED AFTER CORRECTION IN DRIVER
 
-                    frame_continuation release_and_enqueue(continuation, f.pixels);
-
                     LOG_DEBUG("FrameAccepted," << librealsense::get_string(req_profile_base->get_stream_type())
                         << ",Counter," << std::dec << fr->additional_data.frame_number
                         << ",Index," << req_profile_base->get_stream_index()
@@ -509,10 +507,9 @@ void log_callback_end( uint32_t fps,
                     diff = environment::get_instance().get_time_service()->get_time() - system_time;
                     if (diff >10 )
                         LOG_DEBUG("!! Frame memcpy took " << diff << " msec");
-                    if (!requires_processing)
-                    {
-                        fh->attach_continuation(std::move(release_and_enqueue));
-                    }
+
+                    // calling the continuation method, and releasing the backend frame buffer
+                    continuation();
 
                     if (fh->get_stream().get())
                     {
