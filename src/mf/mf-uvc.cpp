@@ -1132,10 +1132,10 @@ namespace librealsense
 
             check_connection();
 
-            auto& elem = std::find_if(_streams.begin(), _streams.end(),
-                [&](const profile_and_callback& pac) {
-                return (pac.profile == profile && (pac.callback));
-            });
+            auto elem = std::find_if( _streams.begin(),
+                                      _streams.end(),
+                                      [&]( const profile_and_callback & pac )
+                                      { return ( pac.profile == profile && ( pac.callback ) ); } );
 
             if (elem == _streams.end() && _frame_callbacks.empty())
                 throw std::runtime_error("Camera is not streaming!");

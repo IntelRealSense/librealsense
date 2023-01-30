@@ -76,10 +76,10 @@ struct LaserScan_
    typedef float _range_max_type;
   _range_max_type range_max;
 
-   typedef std::vector<float, typename ContainerAllocator::template rebind<float>::other >  _ranges_type;
+   typedef std::vector<float, typename std::allocator_traits< ContainerAllocator >::template rebind_alloc< float > >  _ranges_type;
   _ranges_type ranges;
 
-   typedef std::vector<float, typename ContainerAllocator::template rebind<float>::other >  _intensities_type;
+   typedef std::vector<float, typename std::allocator_traits< ContainerAllocator >::template rebind_alloc< float > >  _intensities_type;
   _intensities_type intensities;
 
 

@@ -33,7 +33,7 @@ struct LaserEcho_
 
 
 
-   typedef std::vector<float, typename ContainerAllocator::template rebind<float>::other >  _echoes_type;
+   typedef std::vector<float, typename std::allocator_traits< ContainerAllocator >::template rebind_alloc< float > >  _echoes_type;
   _echoes_type echoes;
 
 
