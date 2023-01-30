@@ -659,7 +659,10 @@ void rs2_set_option(const rs2_options* options, rs2_option option, float value, 
 {
     VALIDATE_NOT_NULL(options);
     VALIDATE_OPTION(options, option);
-    options->options->get_option(option).set(value);
+    auto& option_ref = options->options->get_option(option);
+    auto range = option_ref.get_range();
+    VALIDATE_RANGE(value, range.min, range.max);
+    option_ref.set(value);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, options, option, value)
 
