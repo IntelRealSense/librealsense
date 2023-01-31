@@ -25,18 +25,31 @@ namespace realdds {
 class frame_metadata_syncer
 {
 public:
+    // We don't want the queue to get large, it means lots of drops and data that we store to (probably) throw later
+    static constexpr size_t max_queue_size = 8;
+
     void enqueue_image( topics::device::image && image )
     {
         std::lock_guard< std::mutex > lock( _queues_lock );
-        _image_queue.push_back( std::move( image ) );
-        search_for_match(); //Call under lock
+        if( _image_queue.size() < max_queue_size )
+        {
+            _image_queue.push_back( std::move( image ) );
+            search_for_match(); //Call under lock
+        }
+        else
+            _image_queue.clear();
     }
 
     void enqueue_metadata( topics::flexible_msg && md )
     {
         std::lock_guard< std::mutex > lock( _queues_lock );
-        _metadata_queue.push_back( std::move( md ) );
-        search_for_match(); //Call under lock
+        if( _metadata_queue.size() < max_queue_size )
+        {
+            _metadata_queue.push_back( std::move( md ) );
+            search_for_match(); //Call under lock
+        }
+        else
+            _metadata_queue.clear();
     }
 
     dds_stream::on_data_available_callback get_callback() { return _cb; }
