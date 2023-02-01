@@ -414,7 +414,6 @@ void log_callback_end( uint32_t fps,
                     }
 
                     const auto&& fr = generate_frame_from_data(f, _timestamp_reader.get(), last_timestamp, last_frame_number, req_profile_base);
-                    const auto&& requires_processing = true; // TODO - Ariel add option
                     const auto&& timestamp_domain = _timestamp_reader->get_frame_timestamp_domain(fr);
                     auto bpp = get_image_bpp( req_profile_base->get_format() );
                     auto&& frame_counter = fr->additional_data.frame_number;
@@ -425,8 +424,6 @@ void log_callback_end( uint32_t fps,
                     auto&& msp = As<motion_stream_profile, stream_profile_interface>(req_profile);
                     if (msp)
                         expected_size = 64;//32; // D457 - WORKAROUND - SHOULD BE REMOVED AFTER CORRECTION IN DRIVER
-
-                    frame_continuation release_and_enqueue(continuation, f.pixels);
 
                     LOG_DEBUG("FrameAccepted," << librealsense::get_string(req_profile_base->get_stream_type())
                         << ",Counter," << std::dec << fr->additional_data.frame_number
@@ -461,7 +458,7 @@ void log_callback_end( uint32_t fps,
                         stream_to_frame_types( req_profile_base->get_stream_type() ),
                         expected_size,
                         fr->additional_data,
-                        requires_processing );
+                        true );
                     auto diff = environment::get_instance().get_time_service()->get_time() - system_time;
                     if( diff > 10 )
                         LOG_DEBUG("!! Frame allocation took " << diff << " msec");
@@ -509,10 +506,10 @@ void log_callback_end( uint32_t fps,
                     diff = environment::get_instance().get_time_service()->get_time() - system_time;
                     if (diff >10 )
                         LOG_DEBUG("!! Frame memcpy took " << diff << " msec");
-                    if (!requires_processing)
-                    {
-                        fh->attach_continuation(std::move(release_and_enqueue));
-                    }
+
+                    // calling the continuation method, and releasing the backend frame buffer
+                    // since the content of the OS frame buffer has been copied, it can released ASAP
+                    continuation();
 
                     if (fh->get_stream().get())
                     {
