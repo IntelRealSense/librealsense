@@ -6,9 +6,11 @@
 #include <third-party/json_fwd.hpp>
 
 #include <unordered_map>
+#include <vector>
 
 namespace realdds {
     class dds_device_server;
+    class dds_stream_server;
     class dds_option;
 }
 
@@ -27,6 +29,7 @@ public:
 
 private:
     bool find_sensor( const std::string & requested_stream_name, size_t & sensor_index );
+    std::vector< std::shared_ptr< realdds::dds_stream_server > > get_supported_streams();
 
     rs2::device _rs_dev;
     std::string _device_sn;
