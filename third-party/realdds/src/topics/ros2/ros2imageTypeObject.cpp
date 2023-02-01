@@ -44,9 +44,9 @@ void registerImageTypes()
 
 
 
-    factory->add_type_object("sensor_msgs::msg::Image", sensor_msgs::msg::GetImageIdentifier(true),
+    factory->add_type_object("sensor_msgs::msg::dds_::Image_", sensor_msgs::msg::GetImageIdentifier(true),
             sensor_msgs::msg::GetImageObject(true));
-    factory->add_type_object("sensor_msgs::msg::Image", sensor_msgs::msg::GetImageIdentifier(false),
+    factory->add_type_object("sensor_msgs::msg::dds_::Image_", sensor_msgs::msg::GetImageIdentifier(false),
             sensor_msgs::msg::GetImageObject(false));
 
 

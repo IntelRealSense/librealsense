@@ -21,7 +21,7 @@ namespace sensor_msgs {
     namespace msg {
         ImagePubSubType::ImagePubSubType()
         {
-            setName("sensor_msgs::msg::Image");
+            setName("sensor_msgs::msg::dds_::Image_");
             auto type_size = Image::getMaxCdrSerializedSize();
             type_size += eprosima::fastcdr::Cdr::alignment(type_size, 4); /* possible submessage alignment */
             m_typeSize = static_cast<uint32_t>(type_size) + 4; /*encapsulation*/
