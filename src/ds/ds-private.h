@@ -24,19 +24,20 @@ namespace librealsense
     namespace ds
     {
         // DS5 depth XU identifiers
-        const uint8_t DS5_HWMONITOR = 1;
-        const uint8_t DS5_DEPTH_EMITTER_ENABLED = 2;
-        const uint8_t DS5_EXPOSURE = 3;
-        const uint8_t DS5_LASER_POWER = 4;
-        const uint8_t DS5_HARDWARE_PRESET = 6;
-        const uint8_t DS5_ERROR_REPORTING = 7;
-        const uint8_t DS5_EXT_TRIGGER = 8;
-        const uint8_t DS5_ASIC_AND_PROJECTOR_TEMPERATURES = 9;
-        const uint8_t DS5_ENABLE_AUTO_WHITE_BALANCE = 0xA;
-        const uint8_t DS5_ENABLE_AUTO_EXPOSURE = 0xB;
-        const uint8_t DS5_LED_PWR = 0xE;
-        const uint8_t DS5_THERMAL_COMPENSATION = 0xF;
-        const uint8_t DS5_EMITTER_FREQUENCY               = 0x10;
+        const uint8_t DS5_HWMONITOR                         = 1;
+        const uint8_t DS5_DEPTH_EMITTER_ENABLED             = 2;
+        const uint8_t DS5_EXPOSURE                          = 3;
+        const uint8_t DS5_LASER_POWER                       = 4;
+        const uint8_t DS5_HARDWARE_PRESET                   = 6;
+        const uint8_t DS5_ERROR_REPORTING                   = 7;
+        const uint8_t DS5_EXT_TRIGGER                       = 8;
+        const uint8_t DS5_ASIC_AND_PROJECTOR_TEMPERATURES   = 9;
+        const uint8_t DS5_ENABLE_AUTO_WHITE_BALANCE         = 0xA;
+        const uint8_t DS5_ENABLE_AUTO_EXPOSURE              = 0xB;
+        const uint8_t DS5_LED_PWR                           = 0xE;
+        const uint8_t DS5_THERMAL_COMPENSATION              = 0xF;
+        const uint8_t DS5_EMITTER_FREQUENCY                 = 0x10;
+        const uint8_t DS5_DEPTH_AUTO_EXPOSURE_MODE          = 0x11;
 
         enum class ds_device_type
         {

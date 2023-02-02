@@ -764,6 +764,26 @@ namespace librealsense
                 gain_option = uvc_pu_gain_option;
             }
 
+            // DEPTH AUTO EXPOSURE MODE
+            if ((val_in_range(_pid, { RS455_PID })) && (_fw_version >= firmware_version("5.15.0.0")))
+            {
+                auto depth_auto_exposure_mode = std::make_shared<uvc_xu_option<uint8_t>>( raw_depth_sensor,
+                    depth_xu,
+                    DS5_DEPTH_AUTO_EXPOSURE_MODE,
+                    "Depth Auto Exposure Mode",
+                    std::map<float, std::string>{
+                    { (float)RS2_DEPTH_AUTO_EXPOSURE_REGULAR, "Regular" },
+                    { (float)RS2_DEPTH_AUTO_EXPOSURE_ACCELERATED, "Accelerated" } } , false);
+
+                std::vector< std::pair< std::shared_ptr< option >, std::string > > options_and_reasons
+                    = { std::make_pair( enable_auto_exposure,
+                                        "Depth auto exposure mode cannot be set when auto exposure is enabled" ) };
+
+                depth_sensor.register_option(
+                    RS2_OPTION_DEPTH_AUTO_EXPOSURE_MODE,
+                    std::make_shared< gated_option >( depth_auto_exposure_mode, options_and_reasons ) );
+            }
+
             //EXPOSURE
             depth_sensor.register_option(RS2_OPTION_EXPOSURE,
                 std::make_shared<auto_disabling_control>(
