@@ -6,6 +6,8 @@
 #include "stream.h"
 #include "l500/l500-depth.h"
 
+#include <rsutils/string/from.h>
+
 using namespace librealsense;
 
 librealsense::record_sensor::record_sensor( device_interface& device,
@@ -213,7 +215,7 @@ void record_sensor::unregister_before_start_callback(int token)
 }
 
 template <typename T>
-void librealsense::record_sensor::record_snapshot(rs2_extension extension_type, const recordable<T>& ext)
+void librealsense::record_sensor::record_snapshot(rs2_extension extension_type, const librealsense::recordable<T>& ext)
 {
     std::shared_ptr<T> snapshot;
     ext.create_snapshot(snapshot);
@@ -230,7 +232,7 @@ void record_sensor::stop_with_error(const std::string& error_msg)
     disable_recording();
     if (m_user_notification_callback)
     {
-        std::string msg = to_string() << "Stopping recording for sensor (streaming will continue). (Error: " << error_msg << ")";
+        std::string msg = rsutils::string::from() << "Stopping recording for sensor (streaming will continue). (Error: " << error_msg << ")";
         notification noti(RS2_NOTIFICATION_CATEGORY_UNKNOWN_ERROR, 0, RS2_LOG_SEVERITY_ERROR, msg);
         rs2_notification rs2_noti(&noti);
         m_user_notification_callback->on_notification(&rs2_noti);

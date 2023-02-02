@@ -1,16 +1,15 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2019 Intel Corporation. All Rights Reserved.
-#include "types.h"
+
 #include "log.h"
 
-#include <fstream>
 
 #ifdef BUILD_EASYLOGGINGPP
 INITIALIZE_EASYLOGGINGPP
 
 namespace librealsense
 {
-    char log_name[] = "librealsense";
+    char log_name[] = LIBREALSENSE_ELPP_ID;
     static logger_type<log_name> logger;
 }
 

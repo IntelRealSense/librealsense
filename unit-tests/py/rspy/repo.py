@@ -11,7 +11,11 @@ root = os.path.dirname( os.path.dirname( os.path.dirname( os.path.dirname( os.pa
 # ... but first check the expected LibCI build directories:
 #
 if platform.system() == 'Linux':
-    build = os.path.join( root, 'x86_64', 'static' )
+    if platform.processor() == 'aarch64':
+        # for jetson (arm)
+        build = os.path.join(root, 'arm64', 'static')
+    else:
+        build = os.path.join( root, 'x86_64', 'static' )
 else:
     build = os.path.join( root, 'win10', 'win64', 'static' )
 if not os.path.isdir( build ):
@@ -28,6 +32,8 @@ def find_pyrs():
     :return: the location (absolute path) of the pyrealsense2 .so (linux) or .pyd (windows)
     """
     global build
+    if not build:
+        return None
     from rspy import file
     if platform.system() == 'Linux':
         for so in file.find( build, '(^|/)pyrealsense2.*\.so$' ):
@@ -47,13 +53,6 @@ def find_pyrs_dir():
         return pyrs_dir
 
 
-def pretty_fw_version( fw_version_as_string ):
-    """
-    :return: a version with leading zeros removed, so as to be a little easier to read
-    """
-    return '.'.join( [str(int(c)) for c in fw_version_as_string.split( '.' )] )
-
-
 def find_built_exe( source, name ):
     """
     Find an executable that was built in the repo
@@ -62,21 +61,18 @@ def find_built_exe( source, name ):
     :param name: The name of the exe, without any platform-specific extensions like .exe
     :return: The full path, or None, of the exe
     """
-    exe = None
+    if platform.system() != 'Linux':
+        name += '.exe'
+    import sys
+    for p in sys.path:
+        exe = os.path.join( p, name )
+        if os.path.isfile( exe ):
+            return exe
     if platform.system() == 'Linux':
+        # The Linux build leaves all the executables in their source dir
         global build
         exe = os.path.join( build, source, name )
-        if not os.path.isfile( exe ):
-            return None
-    else:
-        # In Windows, the name will be without extension and we need to find it somewhere
-        # in the path
-        import sys
-        for p in sys.path:
-            exe = os.path.join( p, name + '.exe' )
-            if os.path.isfile( exe ):
-                break
-        else:
-            return None
-    return exe
+        if os.path.isfile( exe ):
+            return exe
+    return None
 

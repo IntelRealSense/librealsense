@@ -2,14 +2,13 @@
 # Copyright(c) 2019 Intel Corporation. All Rights Reserved.
 #  minimum required cmake version: 3.1.0
 cmake_minimum_required(VERSION 3.1.0)
-project(RealsenseTools)
 
 # Save the command line compile commands in the build output
 set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
 # View the makefile commands during build
 #set(CMAKE_VERBOSE_MAKEFILE on)
 
-set(DEPENDENCIES ${DEPENDENCIES} realsense2)
+list(APPEND DEPENDENCIES realsense2)
 
 if(BUILD_TOOLS)
 add_subdirectory(convert)
@@ -19,12 +18,6 @@ add_subdirectory(terminal)
 add_subdirectory(recorder)
 add_subdirectory(fw-update)
 add_subdirectory(embed)
-
-if(NOT WIN32)
-    if(BUILD_NETWORK_DEVICE)
-        add_subdirectory(rs-server)
-    endif()
-endif()
 endif()
 
 if(BUILD_EXAMPLES)

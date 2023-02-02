@@ -4,7 +4,7 @@
 #pragma once
 
 #include <librealsense2/h/rs_types.h>
-#include "easyloggingpp.h"
+#include <rsutils/easylogging/easyloggingpp.h>
 #include "basics.h"  // LRS_EXTENSION_API
 
 #include <exception>

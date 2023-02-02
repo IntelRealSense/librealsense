@@ -4,12 +4,15 @@
 #include "fw-update-factory.h"
 #include "fw-update-device.h"
 #include "usb/usb-enumerator.h"
-#include "ds5/ds5-private.h"
-#include "ds5/ds5-fw-update-device.h"
+#include "ds/ds5/ds5-private.h"
+#include "ds/ds5/ds5-fw-update-device.h"
 #include "ivcam/sr300.h"
 #include "ivcam/sr300-fw-update-device.h"
 #include "l500/l500-private.h"
 #include "l500/l500-fw-update-device.h"
+
+#include <rsutils/string/from.h>
+
 
 #define FW_UPDATE_INTERFACE_NUMBER 0
 #define DEFAULT_TIMEOUT 100
@@ -74,7 +77,7 @@ namespace librealsense
             return RS2_PRODUCT_LINE_SR300;
         if( ds::RS_RECOVERY_PID == usb_info.pid )
             return RS2_PRODUCT_LINE_D400;
-        if( L500_RECOVERY_PID == usb_info.pid || L535_RECOVERY_PID == usb_info.pid)
+        if( L500_RECOVERY_PID == usb_info.pid )
             return RS2_PRODUCT_LINE_L500;
         if( ds::RS_USB2_RECOVERY_PID == usb_info.pid || L500_USB2_RECOVERY_PID_OLD == usb_info.pid )
         {
@@ -130,7 +133,7 @@ namespace librealsense
                     return std::make_shared<ds_update_device>(ctx, register_device_notifications, usb);                   
                 if (SR300_RECOVERY == info.pid)
                     return std::make_shared<sr300_update_device>(ctx, register_device_notifications, usb);
-                if (L500_RECOVERY_PID == info.pid || L535_RECOVERY_PID == info.pid)
+                if (L500_RECOVERY_PID == info.pid )
                     return std::make_shared<l500_update_device>(ctx, register_device_notifications, usb);
                 if (ds::RS_USB2_RECOVERY_PID == info.pid || L500_USB2_RECOVERY_PID_OLD == info.pid)
                 {
@@ -145,6 +148,7 @@ namespace librealsense
                 }
             }
         }
-        throw std::runtime_error(to_string() << "Failed to create FW update device, device id: " << _dfu.id);
+        throw std::runtime_error( rsutils::string::from()
+                                  << "Failed to create FW update device, device id: " << _dfu.id );
     }
 }

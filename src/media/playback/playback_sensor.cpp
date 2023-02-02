@@ -6,8 +6,11 @@
 #include <map>
 #include "types.h"
 #include "context.h"
-#include "ds5/ds5-options.h"
+#include "ds/ds5/ds5-options.h"
 #include "media/ros/ros_reader.h"
+
+#include <rsutils/string/from.h>
+
 
 using namespace librealsense;
 
@@ -78,7 +81,8 @@ void playback_sensor::open(const stream_profiles& requests)
             std::end(m_available_profiles),
             [r](const std::shared_ptr<stream_profile_interface>& s) { return r->get_unique_id() == s->get_unique_id(); }) == std::end(m_available_profiles))
         {
-            throw std::runtime_error(to_string() << "Failed to open sensor, requested profile: " << profile_to_string(r) << " is not available");
+            throw std::runtime_error( rsutils::string::from() << "Failed to open sensor, requested profile: "
+                                                              << profile_to_string( r ) << " is not available" );
         }
     }
     std::vector<device_serializer::stream_identifier> opened_streams;

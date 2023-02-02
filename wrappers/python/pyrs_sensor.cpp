@@ -1,8 +1,8 @@
 /* License: Apache 2.0. See LICENSE file in root directory.
 Copyright(c) 2017 Intel Corporation. All Rights Reserved. */
 
-#include "python.hpp"
-#include "../include/librealsense2/hpp/rs_sensor.hpp"
+#include "pyrealsense2.h"
+#include <librealsense2/hpp/rs_sensor.hpp>
 #include "calibrated-sensor.h"
 #include "max-usable-range-sensor.h"
 
@@ -38,7 +38,7 @@ void init_sensor(py::module &m) {
 
     py::class_<rs2::sensor, rs2::options> sensor(m, "sensor"); // No docstring in C++
     sensor.def("open", (void (rs2::sensor::*)(const rs2::stream_profile&) const) &rs2::sensor::open,
-               "Open sensor for exclusive access, by commiting to a configuration", "profile"_a)
+               "Open sensor for exclusive access, by commiting to a configuration", "profile"_a, py::call_guard<py::gil_scoped_release>())
         .def("supports", (bool (rs2::sensor::*)(rs2_camera_info) const) &rs2::sensor::supports,
              "Check if specific camera info is supported.", "info")
         .def("supports", (bool (rs2::sensor::*)(rs2_option) const) &rs2::options::supports,
@@ -50,7 +50,7 @@ void init_sensor(py::module &m) {
         }, "Register Notifications callback", "callback"_a)
         .def("open", (void (rs2::sensor::*)(const std::vector<rs2::stream_profile>&) const) &rs2::sensor::open,
              "Open sensor for exclusive access, by committing to a composite configuration, specifying one or "
-             "more stream profiles.", "profiles"_a)
+             "more stream profiles.", "profiles"_a, py::call_guard<py::gil_scoped_release>())
         .def("close", &rs2::sensor::close, "Close sensor for exclusive access.", py::call_guard<py::gil_scoped_release>())
         .def("start", [](const rs2::sensor& self, std::function<void(rs2::frame)> callback) {
             self.start(callback);

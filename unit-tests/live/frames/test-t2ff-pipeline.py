@@ -4,6 +4,7 @@
 # test:device L500*
 # test:device D400*
 
+
 import pyrealsense2 as rs
 from rspy.stopwatch import Stopwatch
 from rspy import test, log

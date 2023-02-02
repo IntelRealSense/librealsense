@@ -3,14 +3,14 @@
 
 #include "l500-color.h"
 
-#include <cstddef>
-#include <mutex>
-
-
-
 #include "l500-private.h"
 #include "proc/color-formats-converter.h"
 #include "algo/thermal-loop/l500-thermal-loop.h"
+
+#include <rsutils/string/from.h>
+
+#include <cstddef>
+#include <mutex>
 
 
 namespace librealsense
@@ -177,8 +177,9 @@ namespace librealsense
     {
         auto color_devs_info = filter_by_mi(group.uvc_devices, 4);
         if (color_devs_info.size() != 1)
-            throw invalid_value_exception(to_string() << "L500 with RGB models are expected to include a single color device! - "
-                << color_devs_info.size() << " found");
+            throw invalid_value_exception( rsutils::string::from()
+                                           << "L500 with RGB models are expected to include a single color device! - "
+                                           << color_devs_info.size() << " found" );
 
         _color_intrinsics_table = [this]() { return read_intrinsics_table(); };
         _color_extrinsics_table_raw = [this]() { return get_raw_extrinsics_table(); };
@@ -206,9 +207,9 @@ namespace librealsense
                 LOG_WARNING( "Failed to read FW table 0x"
                              << std::hex
                              << algo::thermal_loop::l500::thermal_calibration_table::id );
-                throw invalid_value_exception(
-                    to_string() << "Failed to read FW table 0x" << std::hex
-                                << algo::thermal_loop::l500::thermal_calibration_table::id );
+                throw invalid_value_exception( rsutils::string::from()
+                                               << "Failed to read FW table 0x" << std::hex
+                                               << algo::thermal_loop::l500::thermal_calibration_table::id );
             }
 
             if( data.size() > sizeof( table_header ))
@@ -264,8 +265,8 @@ namespace librealsense
                 return intrinsics;
             }
         }
-        throw std::runtime_error( to_string() << "intrinsics for resolution " << width << ","
-                                              << height << " don't exist" );
+        throw std::runtime_error( rsutils::string::from()
+                                  << "intrinsics for resolution " << width << "," << height << " don't exist" );
     }
 
     rs2_intrinsics normalize( const rs2_intrinsics & intr )
@@ -382,7 +383,7 @@ namespace librealsense
 
             auto host_perf = get_option(RS2_OPTION_HOST_PERFORMANCE).query();
 
-            if (host_perf == RS2_HOST_PERF_LOW || host_perf == RS2_HOST_PERF_HIGH)
+            if (static_cast<int>(host_perf) == RS2_HOST_PERF_LOW || static_cast<int>(host_perf) == RS2_HOST_PERF_HIGH)
             {
                 // TPROC USB Granularity and TRB threshold settings for improved performance and stability
                 // on hosts with weak cpu and system performance
@@ -392,7 +393,7 @@ namespace librealsense
                 // and improve performance
                 int usb_trb = 7;       // 7 KB
 
-                if (host_perf == RS2_HOST_PERF_LOW)
+                if (static_cast<int>(host_perf) == RS2_HOST_PERF_LOW)
                 {
                     usb_trb = 32;      // 32 KB
                 }
@@ -413,7 +414,7 @@ namespace librealsense
                     LOG_WARNING("Failed to update color usb tproc granularity and TRB threshold. performance and stability maybe impacted on certain platforms.");
                 }
             }
-            else if (host_perf == RS2_HOST_PERF_DEFAULT)
+            else if (static_cast<int>(host_perf) == RS2_HOST_PERF_DEFAULT)
             {
                     LOG_DEBUG("Default host performance mode, color usb tproc granularity and TRB threshold not changed");
             }
@@ -507,9 +508,10 @@ namespace librealsense
         if (expected_size > response_vec.size() ||
             num_of_resolutions > MAX_NUM_OF_RGB_RESOLUTIONS)
         {
-            throw invalid_value_exception(
-                to_string() << "Calibration data invalid, number of resolutions is: " << num_of_resolutions <<
-                ", expected size: " << expected_size << " , actual size: " << response_vec.size());
+            throw invalid_value_exception( rsutils::string::from()
+                                           << "Calibration data invalid, number of resolutions is: "
+                                           << num_of_resolutions << ", expected size: " << expected_size
+                                           << " , actual size: " << response_vec.size() );
         }
 
         // Set a new memory allocated intrinsics struct (Full size 5 resolutions)

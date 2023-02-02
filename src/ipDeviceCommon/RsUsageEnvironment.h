@@ -4,7 +4,7 @@
 #pragma once
 
 #include <BasicUsageEnvironment.hh>
-#include <easylogging++.h>
+#include <rsutils/easylogging/easyloggingpp.h>
 
 #define RS_MAX_LOG_MSG_SIZE 1024
 #define RS_MAX_LOG_MSG_THLD 128

@@ -7,6 +7,9 @@
 #include "../backend.h"
 #include "proc/motion-transform.h"
 
+#include <rsutils/string/from.h>
+
+
 namespace librealsense
 {
 
@@ -199,7 +202,8 @@ namespace librealsense
         if (stream == RS2_STREAM_GYRO)
             return create_motion_intrinsics(**_gyro_intrinsic);
 
-        throw std::runtime_error(to_string() << "Motion Intrinsics unknown for stream " << rs2_stream_to_string(stream) << "!");
+        throw std::runtime_error( rsutils::string::from()
+                                  << "Motion Intrinsics unknown for stream " << rs2_stream_to_string( stream ) << "!" );
 
     }
 }

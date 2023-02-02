@@ -22,7 +22,7 @@ endif()
 
 add_executable(${PROJECT_NAME} ${INTERNAL_TESTS_SOURCES})
 set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 11)
-target_link_libraries(${PROJECT_NAME} ${DEPENDENCIES})
+target_link_libraries(${PROJECT_NAME} ${DEPENDENCIES} rsutils)
 include_directories(../ ../../src/)
 set_target_properties (${PROJECT_NAME} PROPERTIES FOLDER "Unit-Tests")
 

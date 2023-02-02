@@ -1,0 +1,60 @@
+name: build_lrs_ROS2_package
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+    branches: ['**']
+
+jobs:
+
+  build_lrs_ros2_package:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        ros_distribution:
+          - foxy
+          - galactic
+          - humble
+          - rolling
+
+        include:
+          # Foxy Fitzroy
+          - docker_image: ubuntu:focal
+            ros_distribution: foxy
+
+          # Galactic Geochelone
+          - docker_image: ubuntu:focal
+            ros_distribution: galactic
+
+          # Humble Hawksbill
+          - docker_image: ubuntu:jammy
+            ros_distribution: humble
+
+          # Rolling Ridley
+          - docker_image: ubuntu:jammy
+            ros_distribution: rolling
+
+    container:
+      image: ${{ matrix.docker_image }}
+    steps:
+
+      - name: setup ROS environment
+        uses: ros-tooling/setup-ros@v0.4
+        with:
+          required-ros-distributions: ${{ matrix.ros_distribution }}
+
+      - name: build librealsense ROS 2
+        uses: ros-tooling/action-ros-ci@v0.2
+        with:
+          target-ros2-distro: ${{ matrix.ros_distribution }}
+          skip-tests: true
+          colcon-defaults: |  # We align the build flags to the librealsense2 ROS2 release build.
+            {
+              "build": {
+                "cmake-args": [
+                    "-DBUILD_GRAPHICAL_EXAMPLES=OFF",
+                    "-DBUILD_EXAMPLES=OFF"
+                ]
+              }
+            }

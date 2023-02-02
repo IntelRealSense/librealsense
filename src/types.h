@@ -12,9 +12,10 @@
 #include <librealsense2/hpp/rs_types.hpp>
 
 #include "backend.h"
-#include "concurrency.h"
+#include <rsutils/concurrency/concurrency.h>
 #include "librealsense-exception.h"
-#include "easyloggingpp.h"
+#include <rsutils/easylogging/easyloggingpp.h>
+#include <rsutils/version.h>
 
 #ifndef _USE_MATH_DEFINES
 #define _USE_MATH_DEFINES
@@ -75,6 +76,19 @@ namespace librealsense
         byte reserved3[2];
     };
 
+    // D457 dev
+    struct hid_mipi_data
+    {
+        uint8_t typeID;
+        uint8_t skip1;
+        uint64_t hwTs;
+        int16_t x;
+        int16_t y;
+        int16_t z;
+        uint64_t hwTs2;
+        uint64_t skip2;
+    };
+
 #pragma pack(pop)
 
     static const double TIMESTAMP_USEC_TO_MSEC = 0.001;
@@ -82,12 +96,6 @@ namespace librealsense
     ///////////////////////////////////
     // Utility types for general use //
     ///////////////////////////////////
-    struct to_string
-    {
-        std::ostringstream ss;
-        template<class T> to_string & operator << (const T & val) { ss << val; return *this; }
-        operator std::string() const { return ss.str(); }
-    };
 
     template<typename T>
     constexpr size_t arr_size(T const&) { return 1; }
@@ -385,6 +393,7 @@ namespace librealsense
     RS2_ENUM_HELPERS_CUSTOMIZED(rs2_ambient_light, RS2_AMBIENT_LIGHT_NO_AMBIENT, RS2_AMBIENT_LIGHT_LOW_AMBIENT)
     RS2_ENUM_HELPERS_CUSTOMIZED(rs2_digital_gain, RS2_DIGITAL_GAIN_HIGH, RS2_DIGITAL_GAIN_LOW)
     RS2_ENUM_HELPERS(rs2_host_perf_mode, HOST_PERF)
+    RS2_ENUM_HELPERS(rs2_emitter_frequency_mode, EMITTER_FREQUENCY)
 
 
     ////////////////////////////////////////////
@@ -590,67 +599,7 @@ namespace librealsense
 
     class frame_interface;
 
-    class firmware_version
-    {
-        int                 m_major, m_minor, m_patch, m_build;
-        bool                is_any;
-        std::string         string_representation;
-
-        std::string to_string() const;
-        static std::vector<std::string> split(const std::string& str);
-        static int parse_part(const std::string& name, int part);
-
-    public:
-        firmware_version() : m_major(0), m_minor(0), m_patch(0), m_build(0), is_any(true), string_representation(to_string()) {}
-
-        firmware_version(int major, int minor, int patch, int build, bool is_any = false)
-            : m_major(major), m_minor(minor), m_patch(patch), m_build(build), is_any(is_any), string_representation(to_string()) {}
-
-        // CTO experimental firmware versions are marked with build >= 90
-        bool experimental() const { return m_build >= 90; }
-
-        static firmware_version any()
-        {
-            return{};
-        }
-
-        explicit firmware_version(const std::string& name)
-            : m_major(parse_part(name, 0)), m_minor(parse_part(name, 1)), m_patch(parse_part(name, 2)), m_build(parse_part(name, 3)), is_any(false), string_representation(to_string()) {}
-
-        bool operator<=(const firmware_version& other) const
-        {
-            if (is_any || other.is_any) return true;
-            if (m_major > other.m_major) return false;
-            if ((m_major == other.m_major) && (m_minor > other.m_minor)) return false;
-            if ((m_major == other.m_major) && (m_minor == other.m_minor) && (m_patch > other.m_patch)) return false;
-            if ((m_major == other.m_major) && (m_minor == other.m_minor) && (m_patch == other.m_patch) && (m_build > other.m_build)) return false;
-            return true;
-        }
-        bool operator==(const firmware_version& other) const
-        {
-            return is_any || (other.m_major == m_major && other.m_minor == m_minor && other.m_patch == m_patch && other.m_build == m_build);
-        }
-
-        bool operator> (const firmware_version& other) const { return !(*this < other) || is_any; }
-        bool operator!=(const firmware_version& other) const { return !(*this == other); }
-        bool operator<(const firmware_version& other) const { return !(*this == other) && (*this <= other); }
-        bool operator>=(const firmware_version& other) const { return (*this == other) || (*this > other); }
-
-        bool is_between(const firmware_version& from, const firmware_version& until) const
-        {
-            return (from <= *this) && (*this <= until);
-        }
-
-        operator const char*() const
-        {
-            return string_representation.c_str();
-        }
-
-        operator std::string() const
-        {
-            return string_representation.c_str();
-        }
-    };
+    using firmware_version = rsutils::version;
 
     // This class is used to buffer up several writes to a structure-valued XU control, and send the entire structure all at once
     // Additionally, it will ensure that any fields not set in a given struct will retain their original values
@@ -1174,15 +1123,6 @@ namespace librealsense
         return std::find_if(data.begin(), data.end(), [](byte b){ return b!=0; }) != data.end();
     }
 
-    inline std::string datetime_string()
-    {
-        auto t = time(nullptr);
-        char buffer[20] = {};
-        const tm* time = localtime(&t);
-        if (nullptr != time)
-            strftime(buffer, sizeof(buffer), "%Y-%m-%d-%H_%M_%S", time);
-        return to_string() << buffer;
-    }
 
     bool file_exists(const char* filename);
 

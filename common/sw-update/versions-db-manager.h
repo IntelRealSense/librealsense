@@ -8,7 +8,8 @@
 #include <string>
 #include <vector>
 #include "http-downloader.h"
-#include <regex>
+#include <sstream>
+#include <rsutils/version.h>
 
 namespace rs2
 {
@@ -26,76 +27,7 @@ namespace rs2
         bool from_string( const std::string & component_str, component_part_type & component_val );
         bool from_string( const std::string & policy_str, update_policy_type & policy_val );
 
-        struct version
-        {
-            int mjor, mnor, patch, build;
-
-            version() : mjor(0), mnor(0), patch(0), build(0) {}
-
-            version( long long ver )
-            {
-                build = ver % 10000;
-                patch = (ver / 10000) % 100;
-                mnor = (ver / 1000000) % 100;
-                mjor = (ver / 100000000) % 100;
-            }
-
-            version(const std::string& str) : version()
-            {
-                constexpr int MINIMAL_MATCH_SECTIONS = 4;
-                constexpr int MATCH_SECTIONS_INC_BUILD_NUM = 5;
-                std::regex rgx("^(\\d{1,2})\\.(\\d{1,2})\\.(\\d{1,2})(\\.\\d{1,4})?$");
-                std::smatch match;
-
-                if (std::regex_search(str.begin(), str.end(), match, rgx) && match.size() >= MINIMAL_MATCH_SECTIONS)
-                {
-                    mjor = atoi(std::string(match[1]).c_str());
-                    mnor = atoi(std::string(match[2]).c_str());
-                    patch = atoi(std::string(match[3]).c_str());
-                    if (match.size() == MATCH_SECTIONS_INC_BUILD_NUM)
-                    {
-                        auto build_str = std::string(match[4]);  // INCLUDING '.' at the beginning!!!
-                        if (build_str.size() >= 2)
-                            build = atoi(&build_str[1]);
-                    }
-                }
-            }
-
-            bool operator<=(const version& other) const
-            {
-                if (mjor > other.mjor) return false;
-                if ((mjor == other.mjor) && (mnor > other.mnor)) return false;
-                if ((mjor == other.mjor) && (mnor == other.mnor) && (patch > other.patch)) return false;
-                if ((mjor == other.mjor) && (mnor == other.mnor) && (patch == other.patch) && (build > other.build)) return false;
-                return true;
-            }
-            bool operator==(const version& other) const
-            {
-                return (other.mjor == mjor && other.mnor == mnor && other.patch == patch && other.build == build);
-            }
-
-            bool operator> (const version& other) const { return !(*this <= other); }
-            bool operator!=(const version& other) const { return !(*this == other); }
-            bool operator>=(const version& other) const { return (*this == other) || (*this > other); }
-            bool operator<(const version& other) const { return !(*this >= other); }
-
-            bool is_between(const version& from, const version& until) const
-            {
-                return (from <= *this) && (*this <= until);
-            }
-
-            operator std::string() const
-            {
-                std::ostringstream ss;
-                ss << mjor << "." << mnor << "." << patch << "." << build;
-                return ss.str();
-            }
-
-            operator bool() const
-            {
-                return *this != version(0);
-            }
-        };
+        using version = rsutils::version;
 
 
         // The version_db_manager class download, parse and supply queries for the RS components versions information.

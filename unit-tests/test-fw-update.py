@@ -3,12 +3,17 @@
 
 # we want this test to run first so that all tests run with updated FW versions, so we give it priority 0
 #test:priority 0
+#test:device each(D400*) !D457
 #test:device each(L500*)
-#test:device each(D400*)
 
-import pyrealsense2 as rs, sys, os, subprocess
+import sys
+import os
+import subprocess
+import re
+import platform
+import pyrealsense2 as rs
+import pyrsutils as rsutils
 from rspy import devices, log, test, file, repo
-import re, platform
 
 
 if not devices.acroname:
@@ -26,62 +31,56 @@ except acroname.NoneFoundError as e:
 # needed to verify it is available above...
 devices.acroname = None
 
-def send_hardware_monitor_command( device, command ):
-    command_input = []  # array of uint_8t
 
-    # Parsing the command to array of unsigned integers(size should be < 8bits)
-    # threw out spaces
-    command = command.lower()
-    command = command.replace(" ", "")
-    current_uint8_t_string = ''
-    for i in range(0, len(command)):
-        current_uint8_t_string += command[i]
-        if len(current_uint8_t_string) >= 2:
-            command_input.append(int('0x' + current_uint8_t_string, 0))
-            current_uint8_t_string = ''
-    if current_uint8_t_string != '':
-        command_input.append(int('0x' + current_uint8_t_string, 0))
-
+def send_hardware_monitor_command(device, command):
     # byte_index = -1
-    raw_result = rs.debug_protocol( device ).send_and_receive_raw_data( command_input )
+    raw_result = rs.debug_protocol(device).send_and_receive_raw_data(command)
 
     return raw_result[4:]
 
-def get_update_counter( device ):
-    product_line = device.get_info( rs.camera_info.product_line )
-    cmd = None
+
+def get_update_counter(device):
+    product_line = device.get_info(rs.camera_info.product_line)
+    opcode = 0x09
+    start_index = 0x30
+    size = None
 
     if product_line == "L500":
-        cmd = "14 00 AB CD 09 00 00 00 30 00 00 00 01 00 00 00 00 00 00 00 00 00 00 00"
+        size = 0x1
     elif product_line == "D400":
-        cmd = "14 00 AB CD 09 00 00 00 30 00 00 00 02 00 00 00 00 00 00 00 00 00 00 00"
+        size = 0x2
     else:
         log.f( "Incompatible product line:", product_line )
 
-    counter = send_hardware_monitor_command( device, cmd )
+    raw_cmd = rs.debug_protocol(device).build_command(opcode, start_index, size)
+    counter = send_hardware_monitor_command(device, raw_cmd)
     return counter[0]
+
 
 def reset_update_counter( device ):
     product_line = device.get_info( rs.camera_info.product_line )
-    cmd = None
 
     if product_line == "L500":
-        cmd = "14 00 AB CD 0A 00 00 00 30 00 00 00 01 00 00 00 00 00 00 00 00 00 00 00 00"
+        opcode = 0x0A
+        start_index = 0x30
+        size = 0x01
+        raw_cmd = rs.debug_protocol(device).build_command(opcode, start_index, size)
     elif product_line == "D400":
-        cmd = "14 00 AB CD 86 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00"
+        opcode = 0x86
+        raw_cmd = rs.debug_protocol(device).build_command(opcode)
     else:
         log.f( "Incompatible product line:", product_line )
 
-    send_hardware_monitor_command( device, cmd )
+    send_hardware_monitor_command( device, raw_cmd )
 
 def find_image_or_exit( product_name, fw_version_regex = r'(\d+\.){3}(\d+)' ):
     """
     Searches for a FW image file for the given camera name and optional version. If none are
     found, exits with an error!
-    
+
     :param product_name: the name of the camera, from get_info(rs.camera_info.name)
     :param fw_version_regex: optional regular expression specifying which FW version image to find
-    
+
     :return: the image file corresponding to product_name and fw_version if exist, otherwise exit
     """
     pattern = re.compile( r'^Intel RealSense (((\S+?)(\d+))(\S*))' )
@@ -143,9 +142,7 @@ recovered = False
 if device.is_update_device():
     log.d( "recovering device ..." )
     try:
-        # TODO: this needs to improve for L535
         image_file = find_image_or_exit( product_name )
-
         cmd = [fw_updater_exe, '-r', '-f', image_file]
         log.d( 'running:', cmd )
         subprocess.run( cmd )
@@ -157,33 +154,14 @@ if device.is_update_device():
         devices.query( monitor_changes = False )
         device = devices.get_first( devices.all() ).handle
 
-current_fw_version = repo.pretty_fw_version( device.get_info( rs.camera_info.firmware_version ))
+current_fw_version = rsutils.version( device.get_info( rs.camera_info.firmware_version ))
 log.d( 'FW version:', current_fw_version )
-bundled_fw_version = repo.pretty_fw_version( device.get_info( rs.camera_info.recommended_firmware_version ) )
+bundled_fw_version = rsutils.version( device.get_info( rs.camera_info.recommended_firmware_version ) )
 log.d( 'bundled FW version:', bundled_fw_version )
 
-def compare_fw_versions( v1, v2 ):
-    """
-    :param v1: left FW version
-    :param v2: right FW version
-    :return: 1 if v1 > v2; -1 is v1 < v2; 0 if they're equal
-    """
-    v1_list = v1.split( '.' )
-    v2_list = v2.split( '.' )
-    if len(v1_list) != 4:
-        raise RuntimeError( "FW version (left) '" + v1 + "' is invalid" )
-    if len(v2_list) != 4:
-        raise RuntimeError( "FW version (right) '" + v2 + "' is invalid" )
-    for n1, n2 in zip( v1_list, v2_list ):
-        if int(n1) > int(n2):
-            return 1
-        if int(n1) < int(n2):
-            return -1
-    return 0
-
-if compare_fw_versions( current_fw_version, bundled_fw_version ) == 0:
+if current_fw_version == bundled_fw_version:
     # Current is same as bundled
-    if recovered or test.context != 'nightly':
+    if recovered or 'nightly' not in test.context:
         # In nightly, we always update; otherwise we try to save time, so do not do anything!
         log.d( 'versions are same; skipping FW update' )
         test.finish()
@@ -199,7 +177,11 @@ if update_counter >= 19:
     reset_update_counter( device )
     update_counter = 0
 
-image_file = find_image_or_exit(product_name, re.escape( bundled_fw_version ))
+fw_version_regex = bundled_fw_version.to_string()
+if not bundled_fw_version.build():
+    fw_version_regex += ".0"  # version drops the build if 0
+fw_version_regex = re.escape( fw_version_regex )
+image_file = find_image_or_exit(product_name, fw_version_regex)
 # finding file containing image for FW update
 
 cmd = [fw_updater_exe, '-f', image_file]
@@ -211,7 +193,7 @@ subprocess.run( cmd )   # may throw
 devices.query( monitor_changes = False )
 sn_list = devices.all()
 device = devices.get_first( sn_list ).handle
-current_fw_version = repo.pretty_fw_version( device.get_info( rs.camera_info.firmware_version ))
+current_fw_version = rsutils.version( device.get_info( rs.camera_info.firmware_version ))
 test.check_equal( current_fw_version, bundled_fw_version )
 new_update_counter = get_update_counter( device )
 # According to FW: "update counter zeros if you load newer FW than (ever) before"

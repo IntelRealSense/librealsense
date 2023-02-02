@@ -1,8 +1,8 @@
 # Linux Distribution
 
 #### Using pre-build packages
-**Intel® RealSense™ SDK 2.0** provides installation packages for Intel X86/AMD64-based Debian distributions in [`dpkg`](https://en.wikipedia.org/wiki/Dpkg) format for Ubuntu 16/18/20 [LTS](https://wiki.ubuntu.com/LTS).    
-The Realsense [DKMS](https://en.wikipedia.org/wiki/Dynamic_Kernel_Module_Support) kernel drivers package (`librealsense2-dkms`) supports Ubuntu LTS kernels 4.4, 4.8, 4.10, 4.13, 4.15, 4.18*, 5.0*, 5.3* and 5.4. Please refer to [Ubuntu Kernel Release Schedule](https://wiki.ubuntu.com/Kernel/Support) for further details.
+**Intel® RealSense™ SDK 2.0** provides installation packages for Intel X86/AMD64-based Debian distributions in [`dpkg`](https://en.wikipedia.org/wiki/Dpkg) format for Ubuntu 16/18/20/22 [LTS](https://wiki.ubuntu.com/LTS).    
+The Realsense [DKMS](https://en.wikipedia.org/wiki/Dynamic_Kernel_Module_Support) kernel drivers package (`librealsense2-dkms`) supports Ubuntu LTS kernels 4.4, 4.8, 4.10, 4.13, 4.15, 4.18*, 5.0*, 5.3*, 5.4, 5.13 and 5.15. Please refer to [Ubuntu Kernel Release Schedule](https://wiki.ubuntu.com/Kernel/Support) for further details.
 
 #### Configuring and building from the source code
 While we strongly recommend to use DKMS package whenever possible, there are certain cases where installing and patching the system manually is necessary:
@@ -72,9 +72,6 @@ librealsense2-dbg | Debug symbols for developers  | librealsense2
 librealsense2-gl | GLSL extension module runtime and configuration file | librealsense2
 librealsense2-gl-dev | GLSL development header files and symbolic link | librealsense2
 librealsense2-gl-dbg | GLSL debug symbols required for debugging purposes | librealsense2
-librealsense2-net | Data over Ethernet extension module, runtime and configuration file | librealsense2 
-librealsense2-net-dev | Network module developer's files | librealsense2 
-librealsense2-net-dbg | Network module debug symbols | librealsense2
 
 **Note** The packages include binaries and configuration files only.
 Use the github repository to obtain the source code.

@@ -39,15 +39,15 @@ struct UInt16_
 
 
 
-  typedef boost::shared_ptr< ::std_msgs::UInt16_<ContainerAllocator> > Ptr;
-  typedef boost::shared_ptr< ::std_msgs::UInt16_<ContainerAllocator> const> ConstPtr;
+  typedef std::shared_ptr< ::std_msgs::UInt16_<ContainerAllocator> > Ptr;
+  typedef std::shared_ptr< ::std_msgs::UInt16_<ContainerAllocator> const> ConstPtr;
 
 }; // struct UInt16_
 
 typedef ::std_msgs::UInt16_<std::allocator<void> > UInt16;
 
-typedef boost::shared_ptr< ::std_msgs::UInt16 > UInt16Ptr;
-typedef boost::shared_ptr< ::std_msgs::UInt16 const> UInt16ConstPtr;
+typedef std::shared_ptr< ::std_msgs::UInt16 > UInt16Ptr;
+typedef std::shared_ptr< ::std_msgs::UInt16 const> UInt16ConstPtr;
 
 // constants requiring out of line definition
 
@@ -79,32 +79,32 @@ namespace message_traits
 
 template <class ContainerAllocator>
 struct IsFixedSize< ::std_msgs::UInt16_<ContainerAllocator> >
-  : TrueType
+  : std::true_type
   { };
 
 template <class ContainerAllocator>
 struct IsFixedSize< ::std_msgs::UInt16_<ContainerAllocator> const>
-  : TrueType
+  : std::true_type
   { };
 
 template <class ContainerAllocator>
 struct IsMessage< ::std_msgs::UInt16_<ContainerAllocator> >
-  : TrueType
+  : std::true_type
   { };
 
 template <class ContainerAllocator>
 struct IsMessage< ::std_msgs::UInt16_<ContainerAllocator> const>
-  : TrueType
+  : std::true_type
   { };
 
 template <class ContainerAllocator>
 struct HasHeader< ::std_msgs::UInt16_<ContainerAllocator> >
-  : FalseType
+  : std::false_type
   { };
 
 template <class ContainerAllocator>
 struct HasHeader< ::std_msgs::UInt16_<ContainerAllocator> const>
-  : FalseType
+  : std::false_type
   { };
 
 

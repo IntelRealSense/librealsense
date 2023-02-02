@@ -3,7 +3,7 @@
 #include "os.h"
 #include "ux-window.h"
 
-#include "../src/ds5/ds5-private.h"
+#include "../src/ds/ds5/ds5-private.h"
 
 
 using namespace rs2;
@@ -26,7 +26,7 @@ void calibration_model::draw_float(std::string name, float& x, const float& orig
 {
     if (abs(x - orig) > 0.00001) ImGui::PushStyleColor(ImGuiCol_FrameBg, regular_blue);
     else ImGui::PushStyleColor(ImGuiCol_FrameBg, black);
-    if (ImGui::DragFloat(std::string(to_string() << "##" << name).c_str(), &x, 0.001f))
+    if (ImGui::DragFloat(std::string( rsutils::string::from() << "##" << name).c_str(), &x, 0.001f))
     {
         changed = true;
     }
@@ -192,17 +192,17 @@ void calibration_model::update(ux_window& window, std::string& error_message)
                     table->baseline = cf.get("baseline");
 
                     auto load_float3x4 = [&](std::string name, librealsense::float3x3& m){
-                        m.x.x = cf.get(std::string(to_string() << name << ".x.x").c_str());
-                        m.x.y = cf.get(std::string(to_string() << name << ".x.y").c_str());
-                        m.x.z = cf.get(std::string(to_string() << name << ".x.z").c_str());
+                        m.x.x = cf.get(std::string( rsutils::string::from() << name << ".x.x").c_str());
+                        m.x.y = cf.get(std::string( rsutils::string::from() << name << ".x.y").c_str());
+                        m.x.z = cf.get(std::string( rsutils::string::from() << name << ".x.z").c_str());
 
-                        m.y.x = cf.get(std::string(to_string() << name << ".y.x").c_str());
-                        m.y.y = cf.get(std::string(to_string() << name << ".y.y").c_str());
-                        m.y.z = cf.get(std::string(to_string() << name << ".y.z").c_str());
+                        m.y.x = cf.get(std::string( rsutils::string::from() << name << ".y.x").c_str());
+                        m.y.y = cf.get(std::string( rsutils::string::from() << name << ".y.y").c_str());
+                        m.y.z = cf.get(std::string( rsutils::string::from() << name << ".y.z").c_str());
 
-                        m.z.x = cf.get(std::string(to_string() << name << ".z.x").c_str());
-                        m.z.y = cf.get(std::string(to_string() << name << ".z.y").c_str());
-                        m.z.z = cf.get(std::string(to_string() << name << ".z.z").c_str());
+                        m.z.x = cf.get(std::string( rsutils::string::from() << name << ".z.x").c_str());
+                        m.z.y = cf.get(std::string( rsutils::string::from() << name << ".z.y").c_str());
+                        m.z.z = cf.get(std::string( rsutils::string::from() << name << ".z.z").c_str());
                     };
 
                     load_float3x4("intrinsic_left", table->intrinsic_left);
@@ -212,11 +212,11 @@ void calibration_model::update(ux_window& window, std::string& error_message)
 
                     for (int i = 0; i < librealsense::ds::max_ds5_rect_resolutions; i++)
                     {
-                        table->rect_params[i].x = cf.get(std::string(to_string() << "rectified." << i << ".fx").c_str());
-                        table->rect_params[i].y = cf.get(std::string(to_string() << "rectified." << i << ".fy").c_str());
+                        table->rect_params[i].x = cf.get(std::string( rsutils::string::from() << "rectified." << i << ".fx").c_str());
+                        table->rect_params[i].y = cf.get(std::string( rsutils::string::from() << "rectified." << i << ".fy").c_str());
 
-                        table->rect_params[i].z = cf.get(std::string(to_string() << "rectified." << i << ".ppx").c_str());
-                        table->rect_params[i].w = cf.get(std::string(to_string() << "rectified." << i << ".ppy").c_str());
+                        table->rect_params[i].z = cf.get(std::string( rsutils::string::from() << "rectified." << i << ".ppx").c_str());
+                        table->rect_params[i].w = cf.get(std::string( rsutils::string::from() << "rectified." << i << ".ppy").c_str());
                     }
                 }
 
@@ -244,17 +244,17 @@ void calibration_model::update(ux_window& window, std::string& error_message)
                     cf.set("baseline", table->baseline);
 
                     auto save_float3x4 = [&](std::string name, librealsense::float3x3& m){
-                        cf.set(std::string(to_string() << name << ".x.x").c_str(), m.x.x);
-                        cf.set(std::string(to_string() << name << ".x.y").c_str(), m.x.y);
-                        cf.set(std::string(to_string() << name << ".x.z").c_str(), m.x.z);
+                        cf.set(std::string( rsutils::string::from() << name << ".x.x").c_str(), m.x.x);
+                        cf.set(std::string( rsutils::string::from() << name << ".x.y").c_str(), m.x.y);
+                        cf.set(std::string( rsutils::string::from() << name << ".x.z").c_str(), m.x.z);
 
-                        cf.set(std::string(to_string() << name << ".y.x").c_str(), m.y.x);
-                        cf.set(std::string(to_string() << name << ".y.y").c_str(), m.y.y);
-                        cf.set(std::string(to_string() << name << ".y.z").c_str(), m.y.z);
+                        cf.set(std::string( rsutils::string::from() << name << ".y.x").c_str(), m.y.x);
+                        cf.set(std::string( rsutils::string::from() << name << ".y.y").c_str(), m.y.y);
+                        cf.set(std::string( rsutils::string::from() << name << ".y.z").c_str(), m.y.z);
 
-                        cf.set(std::string(to_string() << name << ".z.x").c_str(), m.z.x);
-                        cf.set(std::string(to_string() << name << ".z.y").c_str(), m.z.y);
-                        cf.set(std::string(to_string() << name << ".z.z").c_str(), m.z.z);
+                        cf.set(std::string( rsutils::string::from() << name << ".z.x").c_str(), m.z.x);
+                        cf.set(std::string( rsutils::string::from() << name << ".z.y").c_str(), m.z.y);
+                        cf.set(std::string( rsutils::string::from() << name << ".z.z").c_str(), m.z.z);
                     };
 
                     save_float3x4("intrinsic_left", table->intrinsic_left);
@@ -267,14 +267,14 @@ void calibration_model::update(ux_window& window, std::string& error_message)
                         auto xy = librealsense::ds::resolutions_list[(librealsense::ds::ds5_rect_resolutions)i];
                         int w = xy.x; int h = xy.y;
 
-                        cf.set(std::string(to_string() << "rectified." << i << ".width").c_str(), w);
-                        cf.set(std::string(to_string() << "rectified." << i << ".height").c_str(), h);
+                        cf.set(std::string( rsutils::string::from() << "rectified." << i << ".width").c_str(), w);
+                        cf.set(std::string( rsutils::string::from() << "rectified." << i << ".height").c_str(), h);
 
-                        cf.set(std::string(to_string() << "rectified." << i << ".fx").c_str(), table->rect_params[i].x);
-                        cf.set(std::string(to_string() << "rectified." << i << ".fy").c_str(), table->rect_params[i].y);
+                        cf.set(std::string( rsutils::string::from() << "rectified." << i << ".fx").c_str(), table->rect_params[i].x);
+                        cf.set(std::string( rsutils::string::from() << "rectified." << i << ".fy").c_str(), table->rect_params[i].y);
 
-                        cf.set(std::string(to_string() << "rectified." << i << ".ppx").c_str(), table->rect_params[i].z);
-                        cf.set(std::string(to_string() << "rectified." << i << ".ppy").c_str(), table->rect_params[i].w);
+                        cf.set(std::string( rsutils::string::from() << "rectified." << i << ".ppx").c_str(), table->rect_params[i].z);
+                        cf.set(std::string( rsutils::string::from() << "rectified." << i << ".ppy").c_str(), table->rect_params[i].w);
                     }
                 }
             }
@@ -303,7 +303,7 @@ void calibration_model::update(ux_window& window, std::string& error_message)
 
                     if (auto nm = _not_model.lock())
                     {
-                        nm->add_notification({ to_string() << "Depth Calibration is reset to Factory Settings",
+                        nm->add_notification({ rsutils::string::from() << "Depth Calibration is reset to Factory Settings",
                             RS2_LOG_SEVERITY_INFO, RS2_NOTIFICATION_CATEGORY_HARDWARE_EVENT });
                     }
                 }
@@ -368,7 +368,7 @@ void calibration_model::update(ux_window& window, std::string& error_message)
             int w = xy.x; int h = xy.y;
             if (w != 0) {
                 resolution_offset.push_back(i);
-                std::string name = to_string() << w <<" x "<<h;
+                std::string name = rsutils::string::from() << w << " x " << h;
                 resolution_names.push_back(name);
             }
         }

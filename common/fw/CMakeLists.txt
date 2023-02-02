@@ -13,36 +13,30 @@ set(REALSENSE_FIRMWARE_URL "https://librealsense.intel.com" CACHE STRING
 
 string(REGEX MATCH "D4XX_RECOMMENDED_FIRMWARE_VERSION \"([0-9]+.[0-9]+.[0-9]+.[0-9]+)\"" _ ${ver})
 set(D4XX_FW_VERSION ${CMAKE_MATCH_1})
-message(STATUS "D4XX_FW_VERSION: ${D4XX_FW_VERSION}")
-set(D4XX_FW_SHA1 d5502ba0c51a9994caca72123ce19735bbbbbf97)
+#message(STATUS "D4XX_FW_VERSION: ${D4XX_FW_VERSION}")
+set(D4XX_FW_SHA1 8dc3b8a0b9fdf03410c15b30e04f57701985064a)
 set(D4XX_FW_URL "${REALSENSE_FIRMWARE_URL}/Releases/RS4xx/FW")
-
 
 string(REGEX MATCH "SR3XX_RECOMMENDED_FIRMWARE_VERSION \"([0-9]+.[0-9]+.[0-9]+.[0-9]+)\"" _ ${ver})
 set(SR3XX_FW_VERSION ${CMAKE_MATCH_1})
-message(STATUS "SR3XX_FW_VERSION: ${SR3XX_FW_VERSION}")
+#message(STATUS "SR3XX_FW_VERSION: ${SR3XX_FW_VERSION}")
 set(SR3XX_FW_SHA1 55237dba5d7db20e7c218975375d05b4210e9460)
 set(SR3XX_FW_URL "${REALSENSE_FIRMWARE_URL}/Releases/SR300/FW")
 
-string(REGEX MATCH "T26X_FIRMWARE_VERSION \"([0-9]+.[0-9]+.[0-9]+.[0-9]+)\"" _ ${ver})
-set(T26X_FW_VERSION ${CMAKE_MATCH_1})
-message(STATUS "T26X_FW_VERSION: ${T26X_FW_VERSION}")
-set(T26X_FW_SHA1 c3940ccbb0e3045603e4aceaa2d73427f96e24bc)
-set(T26X_FW_URL "${REALSENSE_FIRMWARE_URL}/Releases/TM2/FW/target/${T26X_FW_VERSION}")
-
 string(REGEX MATCH "L51X_RECOMMENDED_FIRMWARE_VERSION \"([0-9]+\.[0-9]+\.[0-9]+\.[0-9]+)\"" _ ${ver})
 set(L51X_FW_VERSION ${CMAKE_MATCH_1})
-message(STATUS "L51X_FW_VERSION: ${L51X_FW_VERSION}")
+#message(STATUS "L51X_FW_VERSION: ${L51X_FW_VERSION}")
 set(L51X_FW_SHA1 ab73e5bfc520c0aa0340cada4b3e317b8fd31a4d)
 set(L51X_FW_URL "${REALSENSE_FIRMWARE_URL}/Releases/L5xx/FW")
 
-string(REGEX MATCH "L53X_RECOMMENDED_FIRMWARE_VERSION \"([0-9]+\.[0-9]+\.[0-9]+\.[0-9]+)\"" _ ${ver})
-set(L53X_FW_VERSION ${CMAKE_MATCH_1})
-message(STATUS "L53X_FW_VERSION: ${L53X_FW_VERSION}")
-set(L53X_FW_SHA1 9bc28aaf079b105d9a20a0bd845ea222b8754571)
-set(L53X_FW_URL "${REALSENSE_FIRMWARE_URL}/Releases/L5xx/FW")
-
 add_library(${PROJECT_NAME} STATIC empty.c)
+
+# disable link time optimization for fw by adding -fno-lto to disable -flto flag
+# jammy debian has build errors without it
+if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+  message(STATUS "disable link time optimization for fw project")
+  target_compile_options(${PROJECT_NAME} PRIVATE -fno-lto)
+endif()
 
 if (MSVC)
   # lib.exe can't handle multiple .res files, so include them in one.
@@ -57,15 +51,15 @@ set_target_properties (${PROJECT_NAME} PROPERTIES FOLDER Resources)
 
 function(target_binary url version sha1 symbol ext)
   set(binary "${CMAKE_CURRENT_BINARY_DIR}/${symbol}-${version}${ext}")
-  message(STATUS "${url}/${symbol}-${version}${ext}")
+  message(STATUS "... ${url}/${symbol}-${version}${ext}")
   file(DOWNLOAD "${url}/${symbol}-${version}${ext}" "${binary}"
        EXPECTED_HASH SHA1=${sha1}
        STATUS status)
   list(GET status 0 error_code)
   if (NOT ${error_code} EQUAL 0)
-    message(FATAL_ERROR "Download firmwnare (${status}) - ${url}")
+      message(FATAL_ERROR "FAILED with status ${status}")
   else()
-    message(STATUS "Download firmware ${status} for ${symbol}-${version}${ext}")
+      #message(STATUS "Download firmware ${status} for ${symbol}-${version}${ext}")
   endif()
   string(TOUPPER ${symbol} SYMBOL)
   string(REPLACE "." "," version_commas ${version})
@@ -85,13 +79,11 @@ endfunction()
 
 target_binary( "${D4XX_FW_URL}"  "${D4XX_FW_VERSION}"  "${D4XX_FW_SHA1}" D4XX_FW_Image .bin)
 target_binary( "${SR3XX_FW_URL}"  "${SR3XX_FW_VERSION}"  "${SR3XX_FW_SHA1}" SR3XX_FW_Image .bin)
-target_binary( "${T26X_FW_URL}"  "${T26X_FW_VERSION}"  "${T26X_FW_SHA1}" target .mvcmd)
 target_binary( "${L51X_FW_URL}"  "${L51X_FW_VERSION}"  "${L51X_FW_SHA1}" L51X_FW_Image .bin)
-target_binary( "${L53X_FW_URL}"  "${L53X_FW_VERSION}"  "${L53X_FW_SHA1}" L53X_FW_Image .bin)
-
 
 
 install(TARGETS ${PROJECT_NAME} EXPORT realsense2Targets
         RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
         LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
         ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
+

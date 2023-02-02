@@ -50,15 +50,15 @@ struct RelativeHumidity_
 
 
 
-  typedef boost::shared_ptr< ::sensor_msgs::RelativeHumidity_<ContainerAllocator> > Ptr;
-  typedef boost::shared_ptr< ::sensor_msgs::RelativeHumidity_<ContainerAllocator> const> ConstPtr;
+  typedef std::shared_ptr< ::sensor_msgs::RelativeHumidity_<ContainerAllocator> > Ptr;
+  typedef std::shared_ptr< ::sensor_msgs::RelativeHumidity_<ContainerAllocator> const> ConstPtr;
 
 }; // struct RelativeHumidity_
 
 typedef ::sensor_msgs::RelativeHumidity_<std::allocator<void> > RelativeHumidity;
 
-typedef boost::shared_ptr< ::sensor_msgs::RelativeHumidity > RelativeHumidityPtr;
-typedef boost::shared_ptr< ::sensor_msgs::RelativeHumidity const> RelativeHumidityConstPtr;
+typedef std::shared_ptr< ::sensor_msgs::RelativeHumidity > RelativeHumidityPtr;
+typedef std::shared_ptr< ::sensor_msgs::RelativeHumidity const> RelativeHumidityConstPtr;
 
 // constants requiring out of line definition
 
@@ -90,32 +90,32 @@ namespace message_traits
 
 template <class ContainerAllocator>
 struct IsFixedSize< ::sensor_msgs::RelativeHumidity_<ContainerAllocator> >
-  : FalseType
+  : std::false_type
   { };
 
 template <class ContainerAllocator>
 struct IsFixedSize< ::sensor_msgs::RelativeHumidity_<ContainerAllocator> const>
-  : FalseType
+  : std::false_type
   { };
 
 template <class ContainerAllocator>
 struct IsMessage< ::sensor_msgs::RelativeHumidity_<ContainerAllocator> >
-  : TrueType
+  : std::true_type
   { };
 
 template <class ContainerAllocator>
 struct IsMessage< ::sensor_msgs::RelativeHumidity_<ContainerAllocator> const>
-  : TrueType
+  : std::true_type
   { };
 
 template <class ContainerAllocator>
 struct HasHeader< ::sensor_msgs::RelativeHumidity_<ContainerAllocator> >
-  : TrueType
+  : std::true_type
   { };
 
 template <class ContainerAllocator>
 struct HasHeader< ::sensor_msgs::RelativeHumidity_<ContainerAllocator> const>
-  : TrueType
+  : std::true_type
   { };
 
 

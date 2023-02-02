@@ -2,7 +2,7 @@
 # Copyright(c) 2021 Intel Corporation. All Rights Reserved.
 
 #test:device L500*
-#test:device D400*
+#test:device D400* !D457
 
 import pyrealsense2 as rs, os, time, tempfile, platform, sys
 from rspy import devices, log, test

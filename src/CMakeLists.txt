@@ -3,11 +3,10 @@
 string(REPLACE ${PROJECT_SOURCE_DIR}/ "" _rel_path ${CMAKE_CURRENT_LIST_DIR})
 include(${_rel_path}/algo/CMakeLists.txt)
 include(${_rel_path}/core/CMakeLists.txt)
-include(${_rel_path}/ds5/CMakeLists.txt)
+include(${_rel_path}/ds/CMakeLists.txt)
 include(${_rel_path}/ivcam/CMakeLists.txt)
 include(${_rel_path}/l500/CMakeLists.txt)
 include(${_rel_path}/media/CMakeLists.txt)
-include(${_rel_path}/mock/CMakeLists.txt)
 include(${_rel_path}/proc/CMakeLists.txt)
 include(${_rel_path}/res/CMakeLists.txt)
 include(${_rel_path}/pipeline/CMakeLists.txt)
@@ -53,10 +52,6 @@ if(${BACKEND} STREQUAL RS2_USE_LIBUVC_BACKEND)
     include(${_rel_path}/libuvc/CMakeLists.txt)
 endif()
 
-if (BUILD_WITH_TM2)
-    include(${_rel_path}/tm2/CMakeLists.txt)
-endif()
-
 if(BUILD_WITH_CUDA)
     include(${_rel_path}/cuda/CMakeLists.txt)
 endif()
@@ -77,7 +72,6 @@ target_sources(${LRS_TARGET}
         "${CMAKE_CURRENT_LIST_DIR}/context.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/device.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/device_hub.cpp"
-        "${CMAKE_CURRENT_LIST_DIR}/dispatcher.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/environment.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/error-handling.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/firmware_logger_device.cpp"
@@ -106,7 +100,6 @@ target_sources(${LRS_TARGET}
         "${CMAKE_CURRENT_LIST_DIR}/api.h"
         "${CMAKE_CURRENT_LIST_DIR}/archive.h"
         "${CMAKE_CURRENT_LIST_DIR}/backend.h"
-        "${CMAKE_CURRENT_LIST_DIR}/concurrency.h"
         "${CMAKE_CURRENT_LIST_DIR}/context.h"
         "${CMAKE_CURRENT_LIST_DIR}/device.h"
         "${CMAKE_CURRENT_LIST_DIR}/device_hub.h"
@@ -144,7 +137,6 @@ target_sources(${LRS_TARGET}
         "${CMAKE_CURRENT_LIST_DIR}/depth-sensor.h"
         "${CMAKE_CURRENT_LIST_DIR}/color-sensor.h"
         "${CMAKE_CURRENT_LIST_DIR}/callback-invocation.h"
-        "${CMAKE_CURRENT_LIST_DIR}/easyloggingpp.h"
         "${CMAKE_CURRENT_LIST_DIR}/librealsense-exception.h"
         "${CMAKE_CURRENT_LIST_DIR}/polling-device-watcher.h"
         "${CMAKE_CURRENT_LIST_DIR}/small-heap.h"

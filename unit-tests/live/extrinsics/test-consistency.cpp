@@ -5,7 +5,7 @@
 //#test:device L500*
 //#test:device SR300*
 
-#include <easylogging++.h>
+#include <rsutils/easylogging/easyloggingpp.h>
 
 #include "../../catch.h"
 

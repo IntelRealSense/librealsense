@@ -1,6 +1,12 @@
 #  minimum required cmake version: 3.1.0
 cmake_minimum_required(VERSION 3.1.0)
-project(librealsense2 LANGUAGES CXX C)
+
+set( LRS_TARGET realsense2 )
+project( ${LRS_TARGET} LANGUAGES CXX C )
+
+# Allow librealsense2 and all of the nested project to include the main repo folder
+set(REPO_ROOT ${CMAKE_CURRENT_SOURCE_DIR})
+include_directories(${REPO_ROOT})
 
 include(CMake/lrs_options.cmake)
 include(CMake/connectivity_check.cmake)
@@ -8,12 +14,6 @@ include(CMake/connectivity_check.cmake)
 if(${FORCE_LIBUVC} OR ${FORCE_WINUSB_UVC} OR ${ANDROID_USB_HOST_UVC})
     MESSAGE(DEPRECATION "FORCE_LIBUVC, FORCE_WINUSB_UVC and ANDROID_USB_HOST_UVC are deprecated, use FORCE_RSUSB_BACKEND instead")
     set(FORCE_RSUSB_BACKEND ON)
-endif()
-
-# Checking Internet connection, as TM2 needs to download the FW from amazon cloud
-if(BUILD_WITH_TM2 AND NOT INTERNET_CONNECTION)
-    message(WARNING "No internet connection, disabling BUILD_WITH_TM2")
-    set(BUILD_WITH_TM2 OFF)
 endif()
 
 # Checking Internet connection, as DEPTH CAM needs to download the FW from amazon cloud
@@ -31,9 +31,6 @@ list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR}/CMake)
 
 # include librealsense general configuration
 include(CMake/global_config.cmake)
-
-
-config_cxx_flags()
 
 # include os specific macros
 # macro definition located at "CMake/global_config.cmake"
@@ -53,6 +50,8 @@ else()
     add_library(${LRS_TARGET} STATIC "")
 endif()
 
+config_cxx_flags()
+
 # set library version
 set_target_properties(${LRS_TARGET} PROPERTIES VERSION ${REALSENSE_VERSION_STRING} SOVERSION "${REALSENSE_VERSION_MAJOR}.${REALSENSE_VERSION_MINOR}")
 
@@ -60,6 +59,8 @@ include(include/CMakeLists.txt)
 include(src/CMakeLists.txt)
 include(third-party/CMakeLists.txt)
 include(common/utilities/CMakeLists.txt)
+
+target_link_libraries( ${LRS_TARGET} PUBLIC rsutils )
 
 # configure the project according to OS specific requirments
 # macro definition located at "CMake/<OS>_config.cmake"
@@ -91,15 +92,6 @@ endif()
 
 if(BUILD_UNIT_TESTS OR BUILD_LEGACY_LIVE_TEST)
     add_subdirectory(unit-tests)
-endif()
-
-if(BUILD_NETWORK_DEVICE)
-    add_subdirectory(src/ethernet)
-    add_subdirectory(src/compression)
-endif()
-
-if(BUILD_WITH_TM2)
-    add_tm2()
 endif()
 
 if(IMPORT_DEPTH_CAM_FW)

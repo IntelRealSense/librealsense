@@ -6,7 +6,7 @@
 
 #include "option.h"
 #include "context.h"
-#include "ds5/ds5-private.h"
+#include "ds/ds5/ds5-private.h"
 #include "core/video.h"
 #include "proc/synthetic-stream.h"
 #include "proc/disparity-transform.h"
@@ -21,21 +21,6 @@ namespace librealsense
         _update_target(false),
         _width(0), _height(0), _bpp(0)
     {
-        auto transform_opt = std::make_shared<ptr_option<bool>>(
-            false,true,true,true,
-            &_transform_to_disparity,
-            "Stereoscopic Transformation Mode");
-        transform_opt->set_description(false, "Disparity to Depth");
-        transform_opt->set_description(true, "Depth to Disparity");
-        transform_opt->on_set([this, transform_opt](float val)
-        {
-            std::lock_guard<std::mutex> lock(_mutex);
-            if (!transform_opt->is_valid(val))
-                throw invalid_value_exception(to_string() << "Unsupported transformation mode" << (int)val << " is out of range.");
-
-            on_set_mode(static_cast<bool>(!!int(val)));
-        });
-
         unregister_option(RS2_OPTION_FRAMES_QUEUE_SIZE);
 
         on_set_mode(_transform_to_disparity);

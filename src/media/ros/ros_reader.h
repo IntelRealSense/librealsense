@@ -2,9 +2,13 @@
 // Copyright(c) 2017 Intel Corporation. All Rights Reserved.
 
 #pragma once
+
 #include <core/serialization.h>
 #include "rosbag/view.h"
 #include "ros_file_format.h"
+
+#include <rsutils/string/from.h>
+
 
 namespace librealsense
 {
@@ -32,11 +36,10 @@ namespace librealsense
             typename ROS_TYPE::ConstPtr msg_instnance_ptr = msg.instantiate<ROS_TYPE>();
             if (msg_instnance_ptr == nullptr)
             {
-                throw io_exception(to_string()
-                    << "Invalid file format, expected "
-                    << rs2rosinternal::message_traits::DataType<ROS_TYPE>::value()
-                    << " message but got: " << msg.getDataType()
-                    << "(Topic: " << msg.getTopic() << ")");
+                throw io_exception(
+                    rsutils::string::from()
+                    << "Invalid file format, expected " << rs2rosinternal::message_traits::DataType< ROS_TYPE >::value()
+                    << " message but got: " << msg.getDataType() << "(Topic: " << msg.getTopic() << ")" );
             }
             return msg_instnance_ptr;
         }
@@ -85,7 +88,7 @@ namespace librealsense
         bool is_color_sensor(std::string sensor_name);
         bool is_motion_module_sensor(std::string sensor_name);
         bool is_fisheye_module_sensor(std::string sensor_name);
-        bool is_ds5_PID(int pid);
+        bool is_ds_PID(int pid);
         bool is_sr300_PID(int pid);
         bool is_l500_PID(int pid);
         std::shared_ptr<recommended_proccesing_blocks_snapshot> read_proccesing_blocks_for_version_under_4(std::string pid, std::string sensor_name, std::shared_ptr<options_interface> options);

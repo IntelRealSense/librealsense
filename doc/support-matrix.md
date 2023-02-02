@@ -25,10 +25,6 @@ Please check the Supported Features matrix at https://dev.intelrealsense.com/doc
 * Multicamera is technically supported similar to D400 but SR300 devices suffer from destructive interference, hence should not share field of view
 * On-Chip Calibration is not applicable to the SR300 since the structured light module does not lose depth calibration over time
 
-## T265 Tracking Module Notes:
-
-* Tracking module is currently not available on Android
-
 ## L500 Camera Notes:
 * On Chip calibration is only relevant for D400 stereo cameras
 

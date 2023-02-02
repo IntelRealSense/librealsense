@@ -12,7 +12,7 @@
 
 #include <windows.h>
 #include <cfgmgr32.h>
-#include "../../common/utilities/os/hresult.h"
+#include <rsutils/os/hresult.h>
 
 #define WAIT_FOR_MUTEX_TIME_OUT  (5000)
 

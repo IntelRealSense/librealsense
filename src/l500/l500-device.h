@@ -48,6 +48,13 @@ namespace librealsense
         }
 
         std::vector< uint8_t > send_receive_raw_data(const std::vector< uint8_t > & input) override;
+        std::vector<uint8_t> build_command(uint32_t opcode,
+            uint32_t param1 = 0,
+            uint32_t param2 = 0,
+            uint32_t param3 = 0,
+            uint32_t param4 = 0,
+            uint8_t const * data = nullptr,
+            size_t dataLength = 0) const override;
 
         void hardware_reset() override
         {
@@ -80,7 +87,6 @@ namespace librealsense
 
         std::shared_ptr<hw_monitor> _hw_monitor;
         uint8_t _depth_device_idx;
-        uint16_t _pid;
 
         std::shared_ptr<polling_error_handler> _polling_error_handler;
 

@@ -4,9 +4,9 @@
 #test:timeout 1500
 #test:donotrun:!nightly
 
-import pyrealsense2 as rs, os, time
+import pyrealsense2 as rs, os
 from rspy import log, test, repo
-from rspy.timer import Timer
+from playback_helper import PlaybackStatusVerifier
 
 file_name = os.path.join( repo.build, 'unit-tests', 'recordings', 'all_combinations_depth_color.bag' )
 log.d( 'deadlock file:', file_name )
@@ -18,55 +18,40 @@ def frame_callback( f ):
     global frames_count
     frames_count += 1
 
-
 ################################################################################################
 test.start( "Playback stress test" )
 
 log.d( "Playing back: " + file_name )
-wait_for_stop_timer = Timer(10)
 for i in range(250):
     try:
-        log.d("Starting iteration # " , i)
+        log.d("Test - Starting iteration # " , i)
         ctx = rs.context()
         dev = ctx.load_device( file_name )
+        psv = PlaybackStatusVerifier( dev );
         dev.set_real_time( False )
         sensors = dev.query_sensors()
         frames_count = 0
+        log.d("Opening Sensors")
         for sensor in sensors:
             sensor.open( sensor.get_stream_profiles() )
-            
+        log.d("Starting Sensors")
         for sensor in sensors:
             sensor.start( frame_callback )
-    
-        while( True ):
-            if dev.current_status() != rs.playback_status.playing:
-                time.sleep(0.05)
-                continue
-            else:
-                break
-        
-        test.check_equal( dev.current_status(), rs.playback_status.playing )
-        
-        wait_for_stop_timer.start()
-        
+
+        psv.wait_for_status( 5, rs.playback_status.playing )
+
         # We allow 10 seconds to each iteration to verify the playback_stopped event.
-        while( not wait_for_stop_timer.has_expired() ):
-        
-            status = dev.current_status()
-            
-            if status == rs.playback_status.stopped:
-                log.d( 'stopped!' )
-                break
-            else:
-                log.d( "status =", status )
-                
-            time.sleep( 1 )
-            
-        test.check(not wait_for_stop_timer.has_expired())
-        
+        psv.wait_for_status( 10,  rs.playback_status.stopped )
+
+        log.d("Stopping Sensors")
         for sensor in sensors:
             sensor.stop()
+
+        log.d("Closing Sensors")
+        for sensor in sensors:
+            #log.d("Test Closing Sensor ", sensor)
             sensor.close()
+        log.d("Test - Loop ended")
     except Exception:
         test.unexpected_exception()
     finally:

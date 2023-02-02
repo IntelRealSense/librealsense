@@ -12,7 +12,3 @@ add_subdirectory(tutorial/software-dev)
 add_subdirectory(tutorial/d400-occ)
 add_subdirectory(tutorial/load-json)
 
-if(BUILD_NETWORK_DEVICE)
-    add_subdirectory(Intel.RealSense.Net)
-    add_subdirectory(tutorial/net-dev)
-endif()

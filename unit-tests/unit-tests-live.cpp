@@ -2035,14 +2035,12 @@ void metadata_verification(const std::vector<internal_frame_additional_data>& da
 ////serialize_json
 void trigger_error(const rs2::device& dev, int num)
 {
-    std::vector<uint8_t> raw_data(24, 0);
-    raw_data[0] = 0x14;
-    raw_data[2] = 0xab;
-    raw_data[3] = 0xcd;
-    raw_data[4] = 0x4d;
-    raw_data[8] = num;
+    int opcode = 0x4d;
     if (auto debug = dev.as<debug_protocol>())
+    {
+        auto raw_data = debug.build_command(opcode, num);
         debug.send_and_receive_raw_data(raw_data);
+    }
 }
 
 
@@ -3716,7 +3714,7 @@ TEST_CASE("Per-frame metadata sanity check", "[live][!mayfail]") {
 
                 std::vector<internal_frame_additional_data> frames_additional_data;
                 auto frames = 0;
-                double start;
+                double start = 0;
                 std::condition_variable cv;
                 std::mutex m;
                 auto first = true;
@@ -5604,7 +5602,6 @@ TEST_CASE("Positional_Sensors_API", "[live]")
         else
         {
             CAPTURE(dev);
-            REQUIRE(dev.is<rs2::tm2>());
             REQUIRE_NOTHROW(dev.first<rs2::pose_sensor>());
             auto pose_snr = dev.first<rs2::pose_sensor>();
             CAPTURE(pose_snr);
@@ -5738,7 +5735,6 @@ TEST_CASE("Wheel_Odometry_API", "[live]")
         else
         {
             CAPTURE(dev);
-            REQUIRE(dev.is<rs2::tm2>());
             auto wheel_odom_snr = dev.first<rs2::wheel_odometer>();
             CAPTURE(wheel_odom_snr);
             REQUIRE(wheel_odom_snr);

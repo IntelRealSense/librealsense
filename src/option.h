@@ -10,6 +10,9 @@
 #include "core/streaming.h"
 #include "command_transfer.h"
 #include "error-handling.h"
+
+#include <rsutils/string/from.h>
+
 #include <chrono>
 #include <memory>
 #include <vector>
@@ -189,7 +192,8 @@ namespace librealsense
         {
             T val = static_cast<T>(value);
             if ((_max < val) || (_min > val))
-                throw invalid_value_exception(to_string() << "Given value " << value << " is outside [" << _min << "," << _max << "] range!");
+                throw invalid_value_exception( rsutils::string::from() << "Given value " << value << " is outside ["
+                                                                       << _min << "," << _max << "] range!" );
             *_value = val;
             _on_set(value);
         }
@@ -295,15 +299,9 @@ namespace librealsense
             return true;
         }
 
-        uvc_pu_option(uvc_sensor& ep, rs2_option id)
-            : _ep(ep), _id(id)
-        {
-        }
+        uvc_pu_option(uvc_sensor& ep, rs2_option id);
 
-        uvc_pu_option(uvc_sensor& ep, rs2_option id, const std::map<float, std::string>& description_per_value)
-            : _ep(ep), _id(id), _description_per_value(description_per_value)
-        {
-        }
+        uvc_pu_option(uvc_sensor& ep, rs2_option id, const std::map<float, std::string>& description_per_value);
 
         const char* get_description() const override;
 
@@ -322,6 +320,7 @@ namespace librealsense
         rs2_option _id;
         const std::map<float, std::string> _description_per_value;
         std::function<void(const option&)> _record = [](const option&) {};
+        lazy<option_range> _range;
     };
 
     // XU control with exclusing access to setter/getters
@@ -336,7 +335,9 @@ namespace librealsense
                 {
                     T t = static_cast<T>(value);
                     if (!dev.set_xu(_xu, _id, reinterpret_cast<uint8_t*>(&t), sizeof(T)))
-                        throw invalid_value_exception(to_string() << "set_xu(id=" << std::to_string(_id) << ") failed!" << " Last Error: " << strerror(errno));
+                        throw invalid_value_exception( rsutils::string::from()
+                                                       << "set_xu(id=" << std::to_string( _id ) << ") failed!"
+                                                       << " Last Error: " << strerror( errno ) );
                     _recording_function(*this);
                 });
         }
@@ -348,7 +349,9 @@ namespace librealsense
                 {
                     T t;
                     if (!dev.get_xu(_xu, _id, reinterpret_cast<uint8_t*>(&t), sizeof(T)))
-                        throw invalid_value_exception(to_string() << "get_xu(id=" << std::to_string(_id) << ") failed!" << " Last Error: " << strerror(errno));
+                        throw invalid_value_exception( rsutils::string::from()
+                                                       << "get_xu(id=" << std::to_string( _id ) << ") failed!"
+                                                       << " Last Error: " << strerror( errno ) );
 
                     return static_cast<float>(t);
                 }));
@@ -651,7 +654,7 @@ namespace librealsense
             {
                 auto strong = gated.first.lock();
                 if (!strong)
-                    return;
+                    continue;  // if gated option is not available, step over it
                 auto val = strong->query();
                 if (val)
                 {

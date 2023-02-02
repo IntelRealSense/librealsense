@@ -4,6 +4,9 @@
 #include "software-device.h"
 #include "stream.h"
 
+#include <rsutils/string/from.h>
+
+
 namespace librealsense
 {
     software_device::software_device()
@@ -389,7 +392,8 @@ namespace librealsense
         if (auto opt = dynamic_cast<readonly_float_option*>(&get_option(option)))
             opt->update(val);
         else
-            throw invalid_value_exception(to_string() << "option " << get_string(option) << " is not read-only or is deprecated type");
+            throw invalid_value_exception( rsutils::string::from() << "option " << get_string( option )
+                                                                   << " is not read-only or is deprecated type" );
     }
 
     void software_sensor::add_option(rs2_option option, option_range range, bool is_writable)

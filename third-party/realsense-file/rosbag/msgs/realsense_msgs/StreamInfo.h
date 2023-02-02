@@ -40,7 +40,7 @@ struct StreamInfo_
    typedef uint32_t _fps_type;
   _fps_type fps;
 
-   typedef std::basic_string<char, std::char_traits<char>, typename ContainerAllocator::template rebind<char>::other >  _encoding_type;
+   typedef std::basic_string<char, std::char_traits<char>, typename std::allocator_traits< ContainerAllocator >::template rebind_alloc< char > >  _encoding_type;
   _encoding_type encoding;
 
    typedef uint8_t _is_recommended_type;
@@ -89,32 +89,32 @@ namespace message_traits
 
 template <class ContainerAllocator>
 struct IsFixedSize< ::realsense_msgs::StreamInfo_<ContainerAllocator> >
-  : FalseType
+  : std::false_type
   { };
 
 template <class ContainerAllocator>
 struct IsFixedSize< ::realsense_msgs::StreamInfo_<ContainerAllocator> const>
-  : FalseType
+  : std::false_type
   { };
 
 template <class ContainerAllocator>
 struct IsMessage< ::realsense_msgs::StreamInfo_<ContainerAllocator> >
-  : TrueType
+  : std::true_type
   { };
 
 template <class ContainerAllocator>
 struct IsMessage< ::realsense_msgs::StreamInfo_<ContainerAllocator> const>
-  : TrueType
+  : std::true_type
   { };
 
 template <class ContainerAllocator>
 struct HasHeader< ::realsense_msgs::StreamInfo_<ContainerAllocator> >
-  : FalseType
+  : std::false_type
   { };
 
 template <class ContainerAllocator>
 struct HasHeader< ::realsense_msgs::StreamInfo_<ContainerAllocator> const>
-  : FalseType
+  : std::false_type
   { };
 
 
@@ -195,7 +195,7 @@ struct Printer< ::realsense_msgs::StreamInfo_<ContainerAllocator> >
     s << indent << "fps: ";
     Printer<uint32_t>::stream(s, indent + "  ", v.fps);
     s << indent << "encoding: ";
-    Printer<std::basic_string<char, std::char_traits<char>, typename ContainerAllocator::template rebind<char>::other > >::stream(s, indent + "  ", v.encoding);
+    Printer<std::basic_string<char, std::char_traits<char>, typename std::allocator_traits< ContainerAllocator >::template rebind_alloc< char > > >::stream(s, indent + "  ", v.encoding);
     s << indent << "is_recommended: ";
     Printer<uint8_t>::stream(s, indent + "  ", v.is_recommended);
   }

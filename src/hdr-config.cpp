@@ -2,7 +2,10 @@
 // Copyright(c) 2020 Intel Corporation. All Rights Reserved.
 
 #include "hdr-config.h"
-#include "ds5/ds5-private.h"
+#include "ds/ds5/ds5-private.h"
+
+#include <rsutils/string/from.h>
+
 
 namespace librealsense
 {
@@ -160,7 +163,8 @@ namespace librealsense
             // should never happen
             catch (std::out_of_range)
             {
-                throw invalid_value_exception(to_string() << "hdr_config::get(...) failed! Index is above the sequence size.");
+                throw invalid_value_exception( rsutils::string::from()
+                                               << "hdr_config::get(...) failed! Index is above the sequence size." );
             }
             break;
         case RS2_OPTION_GAIN:
@@ -170,11 +174,13 @@ namespace librealsense
             // should never happen
             catch (std::out_of_range)
             {
-                throw invalid_value_exception(to_string() << "hdr_config::get(...) failed! Index is above the sequence size.");
+                throw invalid_value_exception( rsutils::string::from()
+                                               << "hdr_config::get(...) failed! Index is above the sequence size." );
             }
             break;
         default:
-            throw invalid_value_exception(to_string() << "option: " << rs2_option_to_string(option) << " is not an HDR option");
+            throw invalid_value_exception( rsutils::string::from()
+                                           << "option: " << rs2_option_to_string( option ) << " is not an HDR option" );
         }
         return rv;
     }
@@ -182,8 +188,9 @@ namespace librealsense
     void hdr_config::set(rs2_option option, float value, option_range range)
     {
         if (value < range.min || value > range.max)
-            throw invalid_value_exception(to_string() << "hdr_config::set(...) failed! value: " << value <<
-                " is out of the option range: [" << range.min << ", " << range.max << "].");
+            throw invalid_value_exception( rsutils::string::from() << "hdr_config::set(...) failed! value: " << value
+                                                                   << " is out of the option range: [" << range.min
+                                                                   << ", " << range.max << "]." );
 
         switch (option)
         {
@@ -469,7 +476,9 @@ namespace librealsense
     {
         size_t new_size = static_cast<size_t>(value);
         if (new_size > 3 || new_size < 2)
-            throw invalid_value_exception(to_string() << "hdr_config::set_sequence_size(...) failed! Only size 2 or 3 are supported.");
+            throw invalid_value_exception(
+                rsutils::string::from()
+                << "hdr_config::set_sequence_size(...) failed! Only size 2 or 3 are supported." );
 
         if (new_size != _sequence_size)
         {
@@ -489,7 +498,8 @@ namespace librealsense
             _current_hdr_sequence_index = (int)new_index - 1;
         }
         else
-            throw invalid_value_exception(to_string() << "hdr_config::set_sequence_index(...) failed! Index above sequence size.");
+            throw invalid_value_exception(
+                rsutils::string::from() << "hdr_config::set_sequence_index(...) failed! Index above sequence size." );
     }
 
     void hdr_config::set_exposure(float value)

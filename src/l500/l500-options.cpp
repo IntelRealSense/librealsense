@@ -6,6 +6,9 @@
 #include "l500-depth.h"
 #include "../common/fw/firmware-version.h"
 
+#include <rsutils/string/from.h>
+
+
 const std::string MIN_CONTROLS_FW_VERSION("1.3.9.0");
 const std::string MIN_GET_DEFAULT_FW_VERSION( "1.5.4.0" );
 
@@ -522,7 +525,7 @@ namespace librealsense
     {
         if( static_cast< rs2_l500_visual_preset >( int( value ) )
             == RS2_L500_VISUAL_PRESET_DEFAULT )
-            throw invalid_value_exception( to_string()
+            throw invalid_value_exception( rsutils::string::from()
                                            << "RS2_L500_VISUAL_PRESET_DEFAULT was deprecated!" );
 
         verify_max_usable_range_restrictions( RS2_OPTION_VISUAL_PRESET, value );
@@ -544,12 +547,11 @@ namespace librealsense
                  == 1.0f ) )
         {
             if( ( RS2_OPTION_VISUAL_PRESET == opt )
-                && ( value == RS2_L500_VISUAL_PRESET_MAX_RANGE ) )
+                && (static_cast<int>(value) == RS2_L500_VISUAL_PRESET_MAX_RANGE ) )
                 return;
 
             throw wrong_api_call_sequence_exception(
-                to_string()
-                << "Visual Preset cannot be changed while Max Usable Range is enabled" );
+                rsutils::string::from() << "Visual Preset cannot be changed while Max Usable Range is enabled" );
         }
     }
 
@@ -570,8 +572,7 @@ namespace librealsense
         }
         else
             throw wrong_api_call_sequence_exception(
-                to_string() << "on_set_option support advanced controls only " << opt
-                            << " injected" );
+                rsutils::string::from() << "on_set_option support advanced controls only " << opt << " injected" );
     }
 
     void l500_options::change_gain( rs2_l500_visual_preset preset )
@@ -756,7 +757,7 @@ namespace librealsense
         {
             auto &sensor_mode_option = ds.get_option(RS2_OPTION_SENSOR_MODE);
             auto sensor_mode = sensor_mode_option.query();
-            bool sensor_mode_is_vga = (sensor_mode == rs2_sensor_mode::RS2_SENSOR_MODE_VGA);
+            bool sensor_mode_is_vga = (static_cast<int>(sensor_mode) == rs2_sensor_mode::RS2_SENSOR_MODE_VGA);
 
             bool visual_preset_is_max_range = ds.is_max_range_preset();
 
@@ -805,7 +806,7 @@ namespace librealsense
 
         if( ds.supports_option( RS2_OPTION_ENABLE_IR_REFLECTIVITY )
             && ds.get_option( RS2_OPTION_ENABLE_IR_REFLECTIVITY ).query() == 1.0f
-            && ( value != rs2_sensor_mode::RS2_SENSOR_MODE_VGA ) )
+            && (static_cast<int>(value) != rs2_sensor_mode::RS2_SENSOR_MODE_VGA ) )
         {
             ds.get_option( RS2_OPTION_ENABLE_IR_REFLECTIVITY ).set( 0.0f );
             LOG_INFO( "IR Reflectivity was on - turning it off" );
@@ -813,7 +814,7 @@ namespace librealsense
 
         if( ds.supports_option( RS2_OPTION_ENABLE_MAX_USABLE_RANGE )
             && ( ds.get_option( RS2_OPTION_ENABLE_MAX_USABLE_RANGE ).query() == 1.0f )
-            && ( value != rs2_sensor_mode::RS2_SENSOR_MODE_VGA ) )
+            && (static_cast<int>(value) != rs2_sensor_mode::RS2_SENSOR_MODE_VGA ) )
         {
             ds.get_option( RS2_OPTION_ENABLE_MAX_USABLE_RANGE ).set( 0.0f );
             LOG_INFO( "Max Usable Range was on - turning it off" );
@@ -851,7 +852,7 @@ namespace librealsense
 
             auto &sensor_mode_option = ds.get_option(RS2_OPTION_SENSOR_MODE);
             auto sensor_mode = sensor_mode_option.query();
-            bool sensor_mode_is_vga = (sensor_mode == rs2_sensor_mode::RS2_SENSOR_MODE_VGA);
+            bool sensor_mode_is_vga = (static_cast<int>(sensor_mode) == rs2_sensor_mode::RS2_SENSOR_MODE_VGA);
 
             bool visual_preset_is_max_range = ds.is_max_range_preset();
 

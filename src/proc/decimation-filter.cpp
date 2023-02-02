@@ -1,8 +1,8 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2017 Intel Corporation. All Rights Reserved.
 
-#include "../include/librealsense2/hpp/rs_sensor.hpp"
-#include "../include/librealsense2/hpp/rs_processing.hpp"
+#include <librealsense2/hpp/rs_sensor.hpp>
+#include <librealsense2/hpp/rs_processing.hpp>
 
 #include <numeric>
 #include <cmath>
@@ -12,6 +12,8 @@
 #include "core/video.h"
 #include "proc/synthetic-stream.h"
 #include "proc/decimation-filter.h"
+
+#include <rsutils/string/from.h>
 
 
 #define PIX_SORT(a,b) { if ((a)>(b)) PIX_SWAP((a),(b)); }
@@ -221,13 +223,18 @@ namespace librealsense
             decimation_step,
             decimation_default_val,
             &_control_val, "Decimation scale");
-        decimation_control->on_set([this, decimation_control](float val)
+
+        auto weak_decimation_control = std::weak_ptr<ptr_option<uint8_t>>(decimation_control);
+        decimation_control->on_set([this, weak_decimation_control](float val)
         {
+            auto strong_decimation_control = weak_decimation_control.lock();
+            if(!strong_decimation_control) return;
+
             std::lock_guard<std::mutex> lock(_mutex);
 
-            if (!decimation_control->is_valid(val))
-                throw invalid_value_exception(to_string()
-                    << "Unsupported decimation scale " << val << " is out of range.");
+            if (!strong_decimation_control->is_valid(val))
+                throw invalid_value_exception( rsutils::string::from()
+                                               << "Unsupported decimation scale " << val << " is out of range." );
 
             // Linear decimation factor
             if (_control_val != _decimation_factor)

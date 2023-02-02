@@ -31,7 +31,7 @@ context = None
 if '--context' in sys.argv:
     context_index = sys.argv.index( '--context' )
     try:
-        context = sys.argv.pop(context_index + 1)
+        context = sys.argv.pop(context_index + 1).split()
     except IndexError:
         log.f( "Received context flag but no context" )
     sys.argv.pop( context_index )
@@ -66,18 +66,37 @@ def set_env_vars( env_vars ):
         for env_var, val in env_vars.items():
             os.environ[env_var] = val
         cmd = [sys.executable]
-        if 'site' not in sys.modules:
-            #     -S     : don't imply 'import site' on initialization
-            cmd += ["-S"]
+        #
+        # PYTHON FLAGS
+        #
+        #     -u     : force the stdout and stderr streams to be unbuffered; same as PYTHONUNBUFFERED=1
+        # With buffering we may end up losing output in case of crashes! (in Python 3.7 the text layer of the
+        # streams is unbuffered, but we assume 3.6)
+        cmd += ['-u']
+        #if 'site' not in sys.modules:
+        #    #     -S     : don't imply 'import site' on initialization
+        #    cmd += ["-S"]
+        #
         if sys.flags.verbose:
             #     -v     : verbose (trace import statements)
             cmd += ["-v"]
-        cmd += sys.argv  # --debug, or any other args
+        #
+        cmd += [sys.argv[0]]
+        #
+        # SCRIPT FLAGS
+        #
+        # Pass in the same args as the current script got:
+        cmd += log.original_args
+        #
+        # And add a flag 'rerun' that we'll see next time we get here in the subprocess
         cmd += ["rerun"]
-        log.d( 'running:', cmd )
-        p = subprocess.run( cmd, stderr=subprocess.PIPE, universal_newlines=True )
+        log.d( f'[pid {os.getpid()}] running: {cmd}' )
+        p = subprocess.run( cmd,
+                            stdout=None,
+                            stderr=subprocess.STDOUT,
+                            universal_newlines=True )
         sys.exit( p.returncode )
-    log.d( 'rerun detected' )
+    log.d( f'[pid {os.getpid()}] rerun detected' )
     sys.argv = sys.argv[:-1]  # Remove the rerun
 
 
@@ -137,14 +156,34 @@ is used by sending abort=True to check functions
 """
 
 
-def check_failed():
+def _count_check():
+    global n_assertions
+    n_assertions += 1
+
+
+def check_passed():
     """
     Function for when a check fails
+    :return: always False (so you can 'return check_failed()'
     """
+    _count_check()
+    reset_info()
+    return True
+
+
+def check_failed( abort = False ):
+    """
+    Function for when a check fails
+    :return: always False (so you can 'return check_failed()'
+    """
+    _count_check()
     global n_failed_assertions, test_failed
     n_failed_assertions += 1
     test_failed = True
     print_info()
+    if abort:
+        abort()
+    return False
 
 
 def abort():
@@ -159,20 +198,22 @@ def check( exp, description = None, abort_if_failed = False):
     :param abort_if_failed: If True and assertion failed the test will be aborted
     :return: True if assertion passed, False otherwise
     """
-    global n_assertions
-    n_assertions += 1
     if not exp:
         print_stack()
         if description:
             log.out( f"    {description}" )
         else:
             log.out( f"    check failed; received {exp}" )
-        check_failed()
-        if abort_if_failed:
-            abort()
-        return False
+        return check_failed( abort_if_failed )
     reset_info()
-    return True
+    return check_passed()
+
+
+def check_false( exp, description = None, abort_if_failed = False):
+    """
+    Opposite of check()
+    """
+    return check( not exp, description, abort_if_failed )
 
 
 def check_equal(result, expected, abort_if_failed = False):
@@ -185,21 +226,42 @@ def check_equal(result, expected, abort_if_failed = False):
     """
     if type(expected) == list:
         log.out("check_equal should not be used for lists. Use check_equal_lists instead")
-        if abort_if_failed:
-            abort()
-        return False
-    global n_assertions
-    n_assertions += 1
+        return check_failed( abort_if_failed )
     if result != expected:
         print_stack()
         log.out( "    left  :", result )
         log.out( "    right :", expected )
-        check_failed()
-        if abort_if_failed:
-            abort()
-        return False
-    reset_info()
-    return True
+        return check_failed( abort_if_failed )
+    return check_passed()
+
+
+def check_between( result, min, max, abort_if_failed = False ):
+    """
+    Used for asserting a variable is between two values
+    :param result: The actual value of a variable
+    :param min: The minimum expected value of the result
+    :param max: The maximum expected value of the result
+    :param abort_if_failed:  If True and assertion failed the test will be aborted
+    :return: True if assertion passed, False otherwise
+    """
+    if result < min  or  result > max:
+        print_stack()
+        log.out( "   result :", result )
+        log.out( "  between :", min, '-', max )
+        return check_failed( abort_if_failed )
+    return check_passed()
+
+
+def check_approx_abs( result, expected, abs_err, abort_if_failed = False ):
+    """
+    Used for asserting a variable has the expected value, plus/minus 'abs_err'
+    :param result: The actual value of a variable
+    :param expected: The expected value of the result
+    :param abs_err: How far away from expected we're allowed to get
+    :param abort_if_failed:  If True and assertion failed the test will be aborted
+    :return: True if assertion passed, False otherwise
+    """
+    return check_between( result, expected - abs_err, expected + abs_err, abort_if_failed )
 
 
 def unreachable( abort_if_failed = False ):
@@ -207,12 +269,8 @@ def unreachable( abort_if_failed = False ):
     Used to assert that a certain section of code (exp: an if block) is not reached
     :param abort_if_failed: If True and this function is reached the test will be aborted
     """
-    global n_assertions
-    n_assertions += 1
     print_stack()
-    check_failed()
-    if abort_if_failed:
-        abort()
+    check_failed( abort_if_failed )
 
 
 def unexpected_exception():
@@ -220,8 +278,6 @@ def unexpected_exception():
     Used to assert that an except block is not reached. It's different from unreachable because it expects
     to be in an except block and prints the stack of the error and not the call-stack for this function
     """
-    global n_assertions
-    n_assertions += 1
     traceback.print_exc( file = sys.stdout )
     check_failed()
 
@@ -235,8 +291,6 @@ def check_equal_lists(result, expected, abort_if_failed = False):
     :param abort_if_failed:  If True and assertion failed the test will be aborted
     :return: True if assertion passed, False otherwise
     """
-    global n_assertions
-    n_assertions += 1
     failed = False
     if len(result) != len(expected):
         failed = True
@@ -253,12 +307,8 @@ def check_equal_lists(result, expected, abort_if_failed = False):
         print_stack()
         log.out( "    result list  :", result )
         log.out( "    expected list:", expected )
-        check_failed()
-        if abort_if_failed:
-            abort()
-        return False
-    reset_info()
-    return True
+        return check_failed( abort_if_failed )
+    return check_passed()
 
 
 def check_exception(exception, expected_type, expected_msg = None, abort_if_failed = False):
@@ -272,18 +322,31 @@ def check_exception(exception, expected_type, expected_msg = None, abort_if_fail
     """
     failed = False
     if type(exception) != expected_type:
-        failed = [ "    raised exception was of type", type(exception), "\n    but expected type", expected_type ]
+        failed = [ "    raised exception was", type(exception),
+                 "\n    but expected", expected_type,
+                 "\n  With message:", str(exception) ]
     elif expected_msg and str(exception) != expected_msg:
-        failed = [ "    exception message:", str(exception), "\n    but we expected:", expected_msg ]
+        failed = [ "    exception message:", str(exception),
+                 "\n    but we expected:", expected_msg ]
     if failed:
         print_stack()
         log.out( *failed )
-        check_failed()
-        if abort_if_failed:
-            abort()
-        return False
-    reset_info()
-    return True
+        return check_failed( abort_if_failed )
+    return check_passed()
+
+
+def check_throws( _lambda, expected_type, expected_msg = None, abort_if_failed = False ):
+    """
+    We expect the lambda, when called, to raise an exception!
+    """
+    if not callable( _lambda ):
+        raise RuntimeError( "expecting a function, not " + _lambda )
+    try:
+        _lambda()
+    except Exception as e:
+        check_exception( e, expected_type, expected_msg, abort_if_failed )
+        return check_passed()
+    return check_failed( abort_if_failed )
 
 
 def check_frame_drops(frame, previous_frame_number, allowed_drops = 1, allow_frame_counter_reset = False):

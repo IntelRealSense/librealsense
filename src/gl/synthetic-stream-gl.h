@@ -13,7 +13,6 @@
 #include "tiny-profiler.h"  // common/
 #include <glad/glad.h>
 
-#include "../concurrency.h"
 #include <functional>
 #include <thread>
 #include <deque>

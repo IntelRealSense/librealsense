@@ -23,6 +23,9 @@
 #include "proc/color-formats-converter.h"
 #include "firmware_logger_device.h"
 
+#include <rsutils/string/from.h>
+
+
 namespace librealsense
 {
     const uint16_t SR306_PID = 0x0aa3;
@@ -219,7 +222,9 @@ namespace librealsense
             void set(float value) override
             {
                 if (!is_valid(value))
-                    throw invalid_value_exception(to_string() << "set(preset_option) failed! Given value " << value << " is out of range.");
+                    throw invalid_value_exception( rsutils::string::from()
+                                                   << "set(preset_option) failed! Given value " << value
+                                                   << " is out of range." );
 
                 _owner.rs2_apply_ivcam_preset(static_cast<int>(value));
                 last_value = value;
@@ -341,6 +346,18 @@ namespace librealsense
             return _hw_monitor->send(input);
         }
 
+
+        std::vector<uint8_t> build_command(uint32_t opcode,
+            uint32_t param1 = 0,
+            uint32_t param2 = 0,
+            uint32_t param3 = 0,
+            uint32_t param4 = 0,
+            uint8_t const * data = nullptr,
+            size_t dataLength = 0) const override
+        {
+            return _hw_monitor->build_command(opcode, param1, param2, param3, param4, data, dataLength);
+        }
+
         void hardware_reset() override
         {
             force_hardware_reset();
@@ -438,7 +455,7 @@ namespace librealsense
 
     private:
         const uint8_t _depth_device_idx;
-        uint16_t _pid;
+
         bool _is_locked = true;
 
         template<class T>

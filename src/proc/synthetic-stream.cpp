@@ -9,6 +9,9 @@
 #include "stream.h"
 #include "types.h"
 
+#include <rsutils/string/from.h>
+
+
 namespace librealsense
 {
     void processing_block::set_processing_callback(frame_processor_callback_ptr callback)
@@ -173,12 +176,14 @@ namespace librealsense
         std::weak_ptr<ptr_option<int>> stream_selector_ref = stream_selector;
         stream_selector->on_set([this, stream_selector_ref](float val)
         {
+            auto stream_selector_strong_ref = stream_selector_ref.lock();
+            if(!stream_selector_strong_ref) return;
+
+            if (!stream_selector_strong_ref->is_valid(val))
+                throw invalid_value_exception( rsutils::string::from()
+                                               << "Unsupported stream filter, " << val << " is out of range." );
+
             std::lock_guard<std::mutex> lock(_mutex);
-
-            if (!stream_selector_ref.lock()->is_valid(val))
-                throw invalid_value_exception(to_string()
-                    << "Unsupported stream filter, " << val << " is out of range.");
-
             _stream_filter.stream = static_cast<rs2_stream>((int)val);
         });
 
@@ -190,12 +195,14 @@ namespace librealsense
         std::weak_ptr<ptr_option<int>> format_selector_ref = format_selector;
         format_selector->on_set([this, format_selector_ref](float val)
         {
+            auto format_selector_strong_ref = format_selector_ref.lock();
+            if(!format_selector_strong_ref) return;
+
+            if (!format_selector_strong_ref->is_valid(val))
+                throw invalid_value_exception( rsutils::string::from()
+                                               << "Unsupported stream format filter, " << val << " is out of range." );
+
             std::lock_guard<std::mutex> lock(_mutex);
-
-            if (!format_selector_ref.lock()->is_valid(val))
-                throw invalid_value_exception(to_string()
-                    << "Unsupported stream format filter, " << val << " is out of range.");
-
             _stream_filter.format = static_cast<rs2_format>((int)val);
         });
 
@@ -203,12 +210,14 @@ namespace librealsense
         std::weak_ptr<ptr_option<int>> index_selector_ref = index_selector;
         index_selector->on_set([this, index_selector_ref](float val)
         {
+            auto index_selector_strong_ref = index_selector_ref.lock();
+            if(!index_selector_strong_ref) return;
+
+            if (!index_selector_strong_ref->is_valid(val))
+                throw invalid_value_exception( rsutils::string::from()
+                                               << "Unsupported stream index filter, " << val << " is out of range." );
+
             std::lock_guard<std::mutex> lock(_mutex);
-
-            if (!index_selector_ref.lock()->is_valid(val))
-                throw invalid_value_exception(to_string()
-                    << "Unsupported stream index filter, " << val << " is out of range.");
-
             _stream_filter.index = (int)val;
         });
 
