@@ -4034,7 +4034,7 @@ static int tkinter2Present(void)
 {
     static int lTkinter2Present = -1 ;
         char lPythonCommand[256];
-        char lPythonParams[256] =
+        char lPythonParams[224] =
 "-S -c \"try:\n\timport Tkinter;\nexcept:\n\tprint 0;\"";
 
 
@@ -4043,7 +4043,7 @@ static int tkinter2Present(void)
                 lTkinter2Present = 0 ;
                 if ( python2Present() )
         {
-                    sprintf( lPythonCommand , "%s %s" , gPython2Name , lPythonParams ) ;
+                    snprintf( lPythonCommand , sizeof(lPythonCommand) , "%s %s" , gPython2Name , lPythonParams ) ;
                     lTkinter2Present = tryCommand(lPythonCommand) ;
                 }
                 if (tinyfd_verbose) printf("lTkinter2Present %d\n", lTkinter2Present) ;
@@ -4056,7 +4056,7 @@ static int tkinter3Present(void)
 {
         static int lTkinter3Present = -1 ;
         char lPythonCommand[256];
-        char lPythonParams[256] =
+        char lPythonParams[224] =
                 "-S -c \"try:\n\timport tkinter;\nexcept:\n\tprint(0);\"";
 
         if ( lTkinter3Present < 0 )
@@ -4064,7 +4064,7 @@ static int tkinter3Present(void)
                 lTkinter3Present = 0 ;
                 if ( python3Present() )
                 {
-                        sprintf( lPythonCommand , "%s %s" , gPython3Name , lPythonParams ) ;
+                        snprintf( lPythonCommand , sizeof(lPythonCommand) , "%s %s" , gPython3Name , lPythonParams ) ;
                         lTkinter3Present = tryCommand(lPythonCommand) ;
                 }
                 if (tinyfd_verbose) printf("lTkinter3Present %d\n", lTkinter3Present) ;
@@ -4077,7 +4077,7 @@ static int pythonDbusPresent(void)
 {
     static int lDbusPresent = -1 ;
         char lPythonCommand[256];
-        char lPythonParams[256] =
+        char lPythonParams[224] =
 "-c \"try:\n\timport dbus;bus=dbus.SessionBus();\
 notif=bus.get_object('org.freedesktop.Notifications','/org/freedesktop/Notifications');\
 notify=dbus.Interface(notif,'org.freedesktop.Notifications');\nexcept:\n\tprint(0);\"";
@@ -4088,14 +4088,14 @@ notify=dbus.Interface(notif,'org.freedesktop.Notifications');\nexcept:\n\tprint(
                 if ( python2Present() )
                 {
                         strcpy(gPythonName , gPython2Name ) ;
-                        sprintf( lPythonCommand , "%s %s" , gPythonName , lPythonParams ) ;
+                        snprintf( lPythonCommand , sizeof(lPythonCommand) , "%s %s" , gPythonName , lPythonParams ) ;
                         lDbusPresent = tryCommand(lPythonCommand) ;
                 }
 
                 if ( ! lDbusPresent && python3Present() )
                 {
                         strcpy(gPythonName , gPython3Name ) ;
-                        sprintf( lPythonCommand , "%s %s" , gPythonName , lPythonParams ) ;
+                        snprintf( lPythonCommand , sizeof(lPythonCommand) , "%s %s" , gPythonName , lPythonParams ) ;
                         lDbusPresent = tryCommand(lPythonCommand) ;
                 }
 
