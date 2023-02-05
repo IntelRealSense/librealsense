@@ -1201,13 +1201,28 @@ namespace rs2
         auto cell_width = static_cast<float>(r.w / factor);
         auto cell_height = static_cast<float>(r.h / complement);
 
-        auto it = active_streams.begin();
+        // using the active streams sorted acc to stream type and stream index
+        // typical order will then be: depth, color, ir1, ir2, motion....
+        std::vector<stream_model*> active_streams_ordered;
+        for (auto&& active_stream : active_streams)
+        {
+            active_streams_ordered.push_back(active_stream);
+        }
+
+        std::sort(active_streams_ordered.begin(), active_streams_ordered.end(),
+            [](const stream_model* sm1, const stream_model* sm2)
+            {
+                return (sm1->profile.stream_type() < sm2->profile.stream_type()) ||
+                    ((sm1->profile.stream_type() == sm2->profile.stream_type()) && (sm1->profile.stream_index() < sm2->profile.stream_index()));
+            });
+
+        auto it = active_streams_ordered.begin();
         for (auto x = 0; x < factor; x++)
         {
             for (auto y = 0; y < complement; y++)
             {
                 // There might be spare boxes at the end (3 streams in 2x2 array for example)
-                if (it == active_streams.end()) break;
+                if (it == active_streams_ordered.end()) break;
 
                 rect rxy = { r.x + x * cell_width, r.y + y * cell_height + top_bar_height,
                     cell_width, cell_height - top_bar_height };
