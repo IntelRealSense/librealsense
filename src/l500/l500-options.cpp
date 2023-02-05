@@ -38,7 +38,7 @@ namespace librealsense
                     "Alternate IR cannot be enabled with IR Reflectivity" );
         }
 
-        _hw_monitor->send(command{ AMCSET, _type, (int)value });
+        _hw_monitor->send(command{ AMCSET, (uint32_t)_type, (uint32_t)value });
     }
 
     option_range l500_hw_options::get_range() const
@@ -138,7 +138,7 @@ namespace librealsense
         auto res = _hw_monitor->send( command{ AMCGET,
                                                _type,
                                                l500_command::get_default,
-                                               (int)query_sensor_mode( *_resolution ) },
+                                               (uint32_t)query_sensor_mode( *_resolution ) },
                                       &response );
 
         // Some controls that are automatically set by the FW (e.g., APD when digital gain is AUTO) are read-only
@@ -176,7 +176,7 @@ namespace librealsense
         //     4. Read the current value
         //     5. Restore the current value
         auto current = query_current( query_sensor_mode( *_resolution ) );
-        _hw_monitor->send( command{ AMCSET, _type, -1 } );
+        _hw_monitor->send( command{ AMCSET, _type, (uint32_t) -1 } );
 
         // if the sensor is streaming the value of control will update only when the next frame
         // arrive
@@ -186,14 +186,14 @@ namespace librealsense
         auto def = query_current( query_sensor_mode( *_resolution ) );
 
         if( current != def )
-            _hw_monitor->send( command{ AMCSET, _type, (int)current } );
+            _hw_monitor->send( command{ AMCSET, _type, (uint32_t)current } );
 
         return def;
     }
 
     float l500_hw_options::query_current( rs2_sensor_mode mode ) const 
     {
-        auto res = _hw_monitor->send( command{ AMCGET, _type, get_current, mode } );
+        auto res = _hw_monitor->send( command{ AMCGET, _type, (uint32_t)get_current, (uint32_t)mode } );
 
         if( res.size() < sizeof( int32_t ) )
         {
