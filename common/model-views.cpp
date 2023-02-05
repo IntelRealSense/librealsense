@@ -523,7 +523,7 @@ namespace rs2
         bool* options_invalidated,
         std::string& error_message)
     {
-        option_model option;
+        option_model option = {};
 
         std::stringstream ss;
 
