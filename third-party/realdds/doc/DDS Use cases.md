@@ -54,7 +54,7 @@ Using the discovery data, the **user** can have a complete knowledge of the came
     1. Continue from step 2 of the Main Scenario.
 
 **Exceptions**
-1.
+None.
 
 **Constraints**
 1. Discovery *notification* messages timeout is **30 seconds**.
@@ -113,7 +113,7 @@ None.
 **Exceptions**
 1. The device is already streaming data from this sensor
     1. The **server** will decline the request //TODO - should handle throw in rs-dds-server?
-    2. Terminate the use-case. //TODO - send failure *notification*? Currently not in the ICD
+    2. Terminate the use-case. //TODO - send failure *notification*? Currently not in the ICD, still WIP, will probably change to automatically stream when a reader is matched.
 
 **Constraints**
 None.
