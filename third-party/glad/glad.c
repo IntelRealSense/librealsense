@@ -27,6 +27,11 @@
 #include <stdlib.h>
 #include <string.h>
 #include <glad/glad.h>
+// next 4 lines --------> manually added by LRS Team!!!
+#ifdef __linux__
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpedantic"
+#endif
 
 struct gladGLversionStruct GLVersion = { 0, 0 };
 
@@ -855,8 +860,6 @@ PFNGLGETOBJECTLABELKHRPROC glad_glGetObjectLabelKHR = NULL;
 PFNGLOBJECTPTRLABELKHRPROC glad_glObjectPtrLabelKHR = NULL;
 PFNGLGETOBJECTPTRLABELKHRPROC glad_glGetObjectPtrLabelKHR = NULL;
 PFNGLGETPOINTERVKHRPROC glad_glGetPointervKHR = NULL;
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wpedantic"
 static void load_GL_VERSION_1_0(GLADloadproc load) {
 	if(!GLAD_GL_VERSION_1_0) return;
 	glad_glCullFace = (PFNGLCULLFACEPROC)load("glCullFace");
@@ -1625,7 +1628,7 @@ static void load_GL_KHR_debug(GLADloadproc load) {
 	glad_glGetObjectPtrLabelKHR = (PFNGLGETOBJECTPTRLABELKHRPROC)load("glGetObjectPtrLabelKHR");
 	glad_glGetPointervKHR = (PFNGLGETPOINTERVKHRPROC)load("glGetPointervKHR");
 }
-#pragma GCC diagnostic pop
+
 static int find_extensionsGL(void) {
 	if (!get_exts()) return 0;
 	GLAD_GL_APPLE_vertex_array_object = has_ext("GL_APPLE_vertex_array_object");
@@ -1692,10 +1695,7 @@ static void find_coreGL(void) {
 
 int gladLoadGLLoader(GLADloadproc load) {
 	GLVersion.major = 0; GLVersion.minor = 0;
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wpedantic"
 	glGetString = (PFNGLGETSTRINGPROC)load("glGetString");
-#pragma GCC diagnostic pop
 	if(glGetString == NULL) return 0;
 	if(glGetString(GL_VERSION) == NULL) return 0;
 	find_coreGL();
@@ -1720,3 +1720,7 @@ int gladLoadGLLoader(GLADloadproc load) {
 	return GLVersion.major != 0 || GLVersion.minor != 0;
 }
 
+// next 3 lines --------> manually added by LRS Team!!!
+#ifdef __linux__
+#pragma GCC diagnostic pop
+#endif
