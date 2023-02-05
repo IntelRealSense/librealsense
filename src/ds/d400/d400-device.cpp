@@ -446,7 +446,10 @@ namespace librealsense
         // Option INTER_CAM_SYNC_MODE is not enabled in D405
         if (_pid != ds::RS405_PID)
             val |= d400_caps::CAP_INTERCAM_HW_SYNC;
-
+        if (gvd_buf[ip65_sealed] == 0xFF) // TODO: change to 0x1 after test
+            val |= d400_caps::CAP_IP65;
+        if (gvd_buf[filter_sensor] == 0xFF) // TODO: change to 0x1 after test
+            val |= d400_caps::CAP_IR_FILTER;
         return val;
     }
 
@@ -691,6 +694,26 @@ namespace librealsense
                 depth_sensor.register_option(RS2_OPTION_THERMAL_COMPENSATION,
                 std::make_shared<thermal_compensation>(_thermal_monitor,thermal_compensation_toggle));
             }
+
+            // TODO: chage firmware_version after test to "5.15.0.0"
+            auto ir_filter_mask = d400_caps::CAP_IR_FILTER;
+            if (_fw_version >= firmware_version("5.14.0.0") &&
+                val_in_range(_pid, {RS435_RGB_PID, RS435I_PID, RS455_PID}) &&
+                (_device_capabilities & ir_filter_mask) == ir_filter_mask)
+            {
+                device_name += "F";
+            }
+
+            // TODO: chage firmware_version after test to "5.15.0.0"
+            auto ip65_mask = d400_caps::CAP_IP65;
+            if (_fw_version >= firmware_version("5.14.0.0") &&
+                val_in_range(_pid, { RS455_PID }) &&
+                (_device_capabilities & ip65_mask) == ip65_mask)
+            {
+                device_name = device_name.substr(0, device_name.size() - 1);
+                device_name += "6";
+            }
+
 
             std::shared_ptr<option> exposure_option = nullptr;
             std::shared_ptr<option> gain_option = nullptr;

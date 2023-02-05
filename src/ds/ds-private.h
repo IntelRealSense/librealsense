@@ -174,6 +174,8 @@ namespace librealsense
             CAP_BMI_055 = (1u << 6),
             CAP_BMI_085 = (1u << 7),
             CAP_INTERCAM_HW_SYNC = (1u << 8),
+            CAP_IP65 = (1u << 9),
+            CAP_IR_FILTER = (1u << 10),
             CAP_MAX
         };
 
@@ -186,7 +188,9 @@ namespace librealsense
             { d400_caps::CAP_GLOBAL_SHUTTER,   "Global Shutter"    },
             { d400_caps::CAP_ROLLING_SHUTTER,  "Rolling Shutter"   },
             { d400_caps::CAP_BMI_055,          "IMU BMI_055"       },
-            { d400_caps::CAP_BMI_085,          "IMU BMI_085"       }
+            { d400_caps::CAP_BMI_085,          "IMU BMI_085"       },
+            { d400_caps::CAP_IP65,             "IP65 Sealed device"},
+            { d400_caps::CAP_IR_FILTER,        "IR filter"         }
         };
 
         inline d400_caps operator &(const d400_caps lhs, const d400_caps rhs)
@@ -214,7 +218,8 @@ namespace librealsense
             for (auto i : { d400_caps::CAP_ACTIVE_PROJECTOR,d400_caps::CAP_RGB_SENSOR,
                             d400_caps::CAP_FISHEYE_SENSOR,  d400_caps::CAP_IMU_SENSOR,
                             d400_caps::CAP_GLOBAL_SHUTTER,  d400_caps::CAP_ROLLING_SHUTTER,
-                            d400_caps::CAP_BMI_055,         d400_caps::CAP_BMI_085 })
+                            d400_caps::CAP_BMI_055,         d400_caps::CAP_BMI_085,
+                            d400_caps::CAP_IP65,            d400_caps::CAP_IR_FILTER })
             {
                 if (i == (i & cap))
                     stream << d400_capabilities_names.at(i) << "/";
@@ -525,7 +530,9 @@ namespace librealsense
             module_asic_serial_offset = 64,
             fisheye_sensor_lb = 112,
             fisheye_sensor_hb = 113,
+            ip65_sealed = 120,
             imu_acc_chip_id = 124,
+            filter_sensor = 164,
             depth_sensor_type = 166,
             active_projector = 170,
             rgb_sensor = 174,
