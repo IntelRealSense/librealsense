@@ -1199,7 +1199,10 @@ namespace librealsense
 
                 struct timeval current_time = { mono_time.tv_sec, mono_time.tv_nsec / 1000 };
                 timersub(&expiration_time, &current_time, &remaining);
-                if (timercmp(&current_time, &expiration_time, <)) {
+                // timercmp fails cpp check, reduce macro function from time.h
+# define timercmp_lt(a, b) \
+  (((a)->tv_sec == (b)->tv_sec) ? ((a)->tv_usec < (b)->tv_usec) : ((a)->tv_sec < (b)->tv_sec))
+                if (timercmp_lt(&current_time, &expiration_time)) {
                     val = select(_max_fd + 1, &fds, nullptr, nullptr, &remaining);
                 }
                 else {
