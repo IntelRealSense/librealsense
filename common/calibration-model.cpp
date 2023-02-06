@@ -299,6 +299,8 @@ void calibration_model::update(ux_window& window, std::string& error_message)
                     dev.as<rs2::auto_calibrated_device>().reset_to_factory_calibration();
                     _calibration = dev.as<rs2::auto_calibrated_device>().get_calibration_table();
                     _original = _calibration;
+                    table = (librealsense::ds::coefficients_table*)_calibration.data();
+                    orig_table = (librealsense::ds::coefficients_table*)_original.data();
                     changed = true;
 
                     if (auto nm = _not_model.lock())
@@ -444,6 +446,7 @@ void calibration_model::update(ux_window& window, std::string& error_message)
                     dev.as<rs2::auto_calibrated_device>().set_calibration_table(_calibration);
                     dev.as<rs2::auto_calibrated_device>().write_calibration();
                     _original = _calibration;
+                    orig_table = (librealsense::ds::coefficients_table*)_original.data();
                     ImGui::CloseCurrentPopup();
                 }
                 catch (const std::exception& ex)
