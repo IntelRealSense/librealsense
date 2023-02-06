@@ -216,8 +216,9 @@ namespace rs2
                     std::wstring wcmd(cmd_line.begin(), cmd_line.end());
                     sei.lpParameters = wcmd.c_str();
 
-                    if (ShellExecuteEx(&sei) != ERROR_SUCCESS)
+                    if (!ShellExecuteEx(&sei))
                     {
+                        auto errstr = GetLastError();
                         rs2::log(RS2_LOG_SEVERITY_WARN, "Unable to elevate to admin privilege to enable metadata!");
                         return false;
                     }
