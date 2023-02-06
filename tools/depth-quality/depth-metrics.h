@@ -11,6 +11,8 @@
 #include <librealsense2/rs.hpp>
 #include "float3.h"
 #include "plane.h"
+#define _USE_MATH_DEFINES
+#include <cmath>
 
 namespace rs2
 {
