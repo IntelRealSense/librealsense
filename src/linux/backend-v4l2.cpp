@@ -762,13 +762,16 @@ namespace librealsense
             // next several lines permit to use D457 even if a usb device has already "taken" the video0,1,2 (for example)
             // further development is needed to permit use of several mipi devices
             static int  first_video_index = ind;
-            ind = (ind - first_video_index) % 6; // offset from first mipi video node and assume 6 nodes per mipi camera
+            // Use camera_video_nodes as number of /dev/video[%d] for each camera sensor subset
+            const int camera_video_nodes = 6;
+            int cam_id = ind / camera_video_nodes;
+            ind = (ind - first_video_index) % camera_video_nodes; // offset from first mipi video node and assume 6 nodes per mipi camera
             if (ind == 0 || ind == 2 || ind == 4)
-                mi = 0;
+                mi = 0; // video node indicator
             else if (ind == 1 | ind == 3)
-                mi = 3;
+                mi = 3; // metadata node indicator
             else if (ind == 5)
-                mi = 4;
+                mi = 4; // IMU node indicator
             else
             {
                 LOG_WARNING("Unresolved Video4Linux device mi, device is skipped");
@@ -781,12 +784,12 @@ namespace librealsense
             info.mi = mi;
             info.id = dev_name;
             info.device_path = video_path;
-            // unique id for MIPI:
+            // unique id for MIPI: This will assign sensor set for each camera.
             // it cannot be generated as in usb, because the params busnum, devpath and devnum
             // are not available via mipi
-            // TODO - find a way to assign unique id for mipi
-            // maybe using bus_info and card params (see above in this method)
-            info.unique_id = bus_info; // use bus_info as per camera unique id for mipi
+            // assign unique id for mipi by appending camera id to bus_info (bus_info is same for each mipi port)
+            // Note - jetson can use only bus_info, as card is different for each sensor and metadata node.
+            info.unique_id = bus_info + "-" + std::to_string(cam_id); // use bus_info as per camera unique id for mipi
             info.conn_spec = usb_specification;
             info.uvc_capabilities = get_dev_capabilities(dev_name);
 
@@ -1196,7 +1199,10 @@ namespace librealsense
 
                 struct timeval current_time = { mono_time.tv_sec, mono_time.tv_nsec / 1000 };
                 timersub(&expiration_time, &current_time, &remaining);
-                if (timercmp(&current_time, &expiration_time, <)) {
+                // timercmp fails cpp check, reduce macro function from time.h
+# define timercmp_lt(a, b) \
+  (((a)->tv_sec == (b)->tv_sec) ? ((a)->tv_usec < (b)->tv_usec) : ((a)->tv_sec < (b)->tv_sec))
+                if (timercmp_lt(&current_time, &expiration_time)) {
                     val = select(_max_fd + 1, &fds, nullptr, nullptr, &remaining);
                 }
                 else {
