@@ -54,7 +54,7 @@ namespace rs2
     public:
         static bool parse_device_id(const std::string& id, device_id* res)
         {
-            static const std::regex regex("pid_([0-9a-f]+)&mi_([0-9]+)#[0-9a-f]&([0-9a-f]+)&[\\s\\S]*\\{([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\\}", std::regex_constants::icase);
+            static const std::regex regex("pid_([0-9a-f]+)&mi_([0-9a-f]+)#[0-9a-f]&([0-9a-f]+)&[\\s\\S]*\\{([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\\}", std::regex_constants::icase);
 
             std::match_results<std::string::const_iterator> match;
 
@@ -218,8 +218,9 @@ namespace rs2
 
                     if (!ShellExecuteEx(&sei))
                     {
-                        auto errstr = GetLastError();
-                        rs2::log(RS2_LOG_SEVERITY_WARN, "Unable to elevate to admin privilege to enable metadata!");
+                        auto errstr = std::system_category().message(GetLastError());
+                        std::string msg = "Unable to elevate to admin privilege to enable metadata! " + errstr;
+                        rs2::log(RS2_LOG_SEVERITY_WARN, msg.c_str());
                         return false;
                     }
                     else
@@ -230,7 +231,10 @@ namespace rs2
                         CloseHandle(sei.hProcess);
                         if (exitCode)
                             throw std::runtime_error("Failed to set metadata registry keys!");
-                        return true;
+                        // returning false here so that the instandce that runs "not as admin"
+                        // will not even try to do the writing to registry job
+                        // This job is done by the "run as admin" instance.
+                        return false;
                     }
                 }
                 else
@@ -312,7 +316,8 @@ namespace rs2
                                     {
                                         std::string port = sen.get_info(RS2_CAMERA_INFO_PHYSICAL_PORT);
                                         device_id did;
-                                        if (parse_device_id(port, &did)) dids.push_back(did);
+                                        if (parse_device_id(port, &did))
+                                            dids.push_back(did);
                                     }
                                 }
                             }
