@@ -231,7 +231,7 @@ namespace rs2
                         CloseHandle(sei.hProcess);
                         if (exitCode)
                             throw std::runtime_error("Failed to set metadata registry keys!");
-                        // returning false here so that the instandce that runs "not as admin"
+                        // returning false here so that the instance that runs "not as admin"
                         // will not even try to do the writing to registry job
                         // This job is done by the "run as admin" instance.
                         return false;
