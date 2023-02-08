@@ -486,7 +486,7 @@ void lrs_device_controller::start_streaming( const json & msg )
             auto it = streams.find( metadata_stream_name );
             if( it == streams.end() )
                 throw std::runtime_error( "stream '" + metadata_stream_name + "' does not exist" );
-            auto & metadata_stream = std::dynamic_pointer_cast< realdds::dds_metadata_stream_server >( it->second );
+            auto metadata_stream = std::dynamic_pointer_cast< realdds::dds_metadata_stream_server >( it->second );
             if( !metadata_stream )
                 throw std::runtime_error( "stream '" + stream_name + "' does not have a matching metadata stream" );
 

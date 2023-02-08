@@ -604,7 +604,7 @@ namespace librealsense
             s = stream;
         }
 
-        void add_dds_metadata_stream( sid_index data_sidx, std::shared_ptr< realdds::dds_metadata_stream > & md_stream )
+        void add_dds_metadata_stream( sid_index data_sidx, std::shared_ptr< realdds::dds_metadata_stream > md_stream )
         {
             _data_stream_to_metadata[data_sidx] = md_stream;
         }
@@ -1157,7 +1157,7 @@ namespace librealsense
 
                 if( _dds_dev->supports_metadata() && !metadata_stream )
                 {
-                    _dds_dev->foreach_stream( [&]( std::shared_ptr< realdds::dds_stream > & s ) {
+                    _dds_dev->foreach_stream( [&]( std::shared_ptr< realdds::dds_stream > s ) {
                         if( ( stream->name() + " metadata" ).compare( s->name() ) == 0 )
                         {
                             sensor_info.proxy->add_dds_metadata_stream( sidx, std::dynamic_pointer_cast< realdds::dds_metadata_stream >( s ) );
