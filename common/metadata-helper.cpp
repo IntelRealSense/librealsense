@@ -198,54 +198,41 @@ namespace rs2
             return result == TRUE;
         }
 
-        bool elevate_to_admin()
+        void enable_metadata_with_new_admin_process()
         {
-            if (!is_running_as_admin())
+            wchar_t szPath[MAX_PATH];
+            if (GetModuleFileName(NULL, szPath, ARRAYSIZE(szPath)))
             {
-                wchar_t szPath[MAX_PATH];
-                if (GetModuleFileName(NULL, szPath, ARRAYSIZE(szPath)))
+                SHELLEXECUTEINFO sei = { sizeof(sei) };
+
+                sei.lpVerb = L"runas";
+                sei.fMask = SEE_MASK_NOCLOSEPROCESS;
+                sei.lpFile = szPath;
+                sei.hwnd = NULL;
+                sei.nShow = SW_NORMAL;
+                auto cmd_line = get_command_line_param();
+                std::wstring wcmd(cmd_line.begin(), cmd_line.end());
+                sei.lpParameters = wcmd.c_str();
+
+                if (!ShellExecuteEx(&sei))
                 {
-                    SHELLEXECUTEINFO sei = { sizeof(sei) };
-
-                    sei.lpVerb = L"runas";
-                    sei.fMask = SEE_MASK_NOCLOSEPROCESS;
-                    sei.lpFile = szPath;
-                    sei.hwnd = NULL;
-                    sei.nShow = SW_NORMAL;
-                    auto cmd_line = get_command_line_param();
-                    std::wstring wcmd(cmd_line.begin(), cmd_line.end());
-                    sei.lpParameters = wcmd.c_str();
-
-                    if (!ShellExecuteEx(&sei))
-                    {
-                        auto errstr = std::system_category().message(GetLastError());
-                        std::string msg = "Unable to elevate to admin privilege to enable metadata! " + errstr;
-                        rs2::log(RS2_LOG_SEVERITY_WARN, msg.c_str());
-                        return false;
-                    }
-                    else
-                    {
-                        WaitForSingleObject(sei.hProcess, INFINITE);
-                        DWORD exitCode = 0;
-                        GetExitCodeProcess(sei.hProcess, &exitCode);
-                        CloseHandle(sei.hProcess);
-                        if (exitCode)
-                            throw std::runtime_error("Failed to set metadata registry keys!");
-                        // returning false here so that the instance that runs "not as admin"
-                        // will not even try to do the writing to registry job
-                        // This job is done by the "run as admin" instance.
-                        return false;
-                    }
+                    auto errstr = std::system_category().message(GetLastError());
+                    std::string msg = "Unable to elevate to admin privilege to enable metadata! " + errstr;
+                    rs2::log(RS2_LOG_SEVERITY_WARN, msg.c_str());
                 }
                 else
                 {
-                    rs2::log(RS2_LOG_SEVERITY_WARN, "Unable to fetch module name!");
-                    return false;
+                    WaitForSingleObject(sei.hProcess, INFINITE);
+                    DWORD exitCode = 0;
+                    GetExitCodeProcess(sei.hProcess, &exitCode);
+                    CloseHandle(sei.hProcess);
+                    if (exitCode)
+                        throw std::runtime_error("Failed to set metadata registry keys!");
                 }
             }
             else
             {
-                return true;
+                rs2::log(RS2_LOG_SEVERITY_WARN, "Unable to fetch module name!");
             }
         }
 
@@ -293,7 +280,11 @@ namespace rs2
 
         void enable_metadata() override
         {
-            if (elevate_to_admin()) // Elevation to admin was succesful?
+            if (!is_running_as_admin())
+            {
+                enable_metadata_with_new_admin_process();
+            }
+            else
             {
                 std::vector<device_id> dids;
 
@@ -351,7 +342,7 @@ namespace rs2
                             }
                         }
                     }
-                });
+                    });
                 if (failure) throw std::runtime_error("Unable to write to metadata registry key!");
             }
         }
