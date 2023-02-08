@@ -1,24 +1,30 @@
 #!/bin/bash
 # Create symbolic links for video nodes and for metadata nodes - /dev/video-rs-[<sensor>|<sensor>-md]-[camera-index]
-# This script intended for mipi devices on IPU6.
-# Currently it supports only IPU6 platforms, Jetson support will be added later.
+# This script intended for mipi devices on Jetson and IPU6.
 # After running this script in enumeration mode, it will create links as follow for example:
-# $ ls -1l /dev/video-rs-*
-# /dev/video-rs-color-3 -> /dev/video54
-# /dev/video-rs-color-md-3 -> /dev/video55
-# /dev/video-rs-depth-3 -> /dev/video52
-# /dev/video-rs-depth-md-3 -> /dev/video53
-# /dev/video-rs-ir-3 -> /dev/video56
-
 # Example of the output:
+#
+# Jetson:
+# $ ./rs-enum.sh 
+# Bus	  Camera	Sensor	Node Type	Video Node	RS Link
+# mipi	0	      depth	  Streaming	/dev/video0	/dev/video-rs-depth-0
+# mipi	0	      depth	  Metadata	/dev/video1	/dev/video-rs-depth-md-0
+# mipi	0	      color	  Streaming	/dev/video2	/dev/video-rs-color-0
+# mipi	0	      color	  Metadata	/dev/video3	/dev/video-rs-color-md-0
+# mipi	0	      ir	    Streaming	/dev/video4	/dev/video-rs-ir-0
+# mipi	0	      imu	    Streaming	/dev/video5	/dev/video-rs-imu-0
+#
+# Alderlake:
 #$ ./rs-enum.sh 
-#Bus    Camera  Sensor  Node Type  Video Node    RS Link
+# Bus   Camera  Sensor  Node Type  Video Node    RS Link
 # ipu6  3       depth   Streaming  /dev/video52  /dev/video-rs-depth-3
 # ipu6  3       depth   Metadata   /dev/video53  /dev/video-rs-depth-md-3
 # ipu6  3       ir      Streaming  /dev/video56  /dev/video-rs-ir-3
 # ipu6  3       color   Streaming  /dev/video54  /dev/video-rs-color-3
 # ipu6  3       color   Metadata   /dev/video55  /dev/video-rs-color-md-3
-
+#
+# Dependency: v4l-utils
+#
 # parse command line parameters
 # for '-i' parameter, print links only
 while [[ $# -gt 0 ]]; do
@@ -119,4 +125,3 @@ for camera in a b c d; do
 done
 
 # end of file
-
