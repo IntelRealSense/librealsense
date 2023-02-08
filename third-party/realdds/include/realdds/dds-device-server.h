@@ -69,7 +69,7 @@ public:
     void start_streaming( const std::vector< std::pair < std::string, image_header > > & ); //< stream_name, header > pairs
     void stop_streaming( const std::vector< std::string > & stream_to_close );
 
-    void publish_image( const std::string & stream_name, const uint8_t * data, size_t size, const nlohmann::json & metadata );
+    //void publish_image( const std::string & stream_name, const uint8_t * data, size_t size );
     void publish_notification( topics::flexible_msg && );
     
     typedef std::function< void( const nlohmann::json & msg ) > control_callback;
@@ -80,6 +80,8 @@ public:
     typedef std::function< float( const std::shared_ptr< realdds::dds_option > & option ) > query_option_callback;
     void on_set_option( set_option_callback callback ) { _set_option_callback = std::move( callback ); }
     void on_query_option( query_option_callback callback ) { _query_option_callback = std::move( callback ); }
+
+    std::unordered_map< std::string, std::shared_ptr< dds_stream_server > > & get_streams() { return _stream_name_to_server; }
 
 private:
     void on_control_message_received();
@@ -96,7 +98,7 @@ private:
     std::shared_ptr< dds_publisher > _publisher;
     std::shared_ptr< dds_subscriber > _subscriber;
     std::string _topic_root;
-    std::unordered_map< std::string, std::shared_ptr<dds_stream_server > > _stream_name_to_server;
+    std::unordered_map< std::string, std::shared_ptr< dds_stream_server > > _stream_name_to_server;
     std::shared_ptr< dds_notification_server > _notification_server;
     std::shared_ptr< dds_topic_reader > _control_reader;
     dispatcher _control_dispatcher;

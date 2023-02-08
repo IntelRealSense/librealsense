@@ -45,20 +45,19 @@ protected:
 public:
     virtual ~dds_stream_server();
 
-    bool is_open() const override { return !! _image_writer; }
-    virtual void open( std::string const & topic_name, std::shared_ptr< dds_publisher > const & );
+    bool is_open() const override { return !! _writer; }
+    virtual void open( std::string const & topic_name, std::shared_ptr< dds_publisher > const & ) = 0;
 
     bool is_streaming() const override { return _image_header.is_valid(); }
     void start_streaming( const image_header & header );
     void stop_streaming();
 
-    void publish_image( const uint8_t * data, size_t size, const nlohmann::json & metadata );
+    virtual void publish( const uint8_t * data, size_t size, unsigned long long id );
 
     std::shared_ptr< dds_topic > const & get_topic() const override;
 
 protected:
-    std::shared_ptr< dds_topic_writer > _image_writer;
-    std::shared_ptr< dds_topic_writer > _metadata_writer;
+    std::shared_ptr< dds_topic_writer > _writer;
     image_header _image_header;
 };
 
@@ -69,6 +68,8 @@ class dds_video_stream_server : public dds_stream_server
 
 public:
     dds_video_stream_server( std::string const & stream_name, std::string const & sensor_name );
+
+    void open( std::string const & topic_name, std::shared_ptr< dds_publisher > const & ) override;
 
     void set_intrinsics( const std::set< video_intrinsics > & intrinsics ) { _intrinsics = intrinsics; }
     const std::set< video_intrinsics > & get_intrinsics() const { return _intrinsics; }
@@ -142,6 +143,8 @@ class dds_motion_stream_server : public dds_stream_server
 public:
     dds_motion_stream_server( std::string const & stream_name, std::string const & sensor_name );
 
+    void open( std::string const & topic_name, std::shared_ptr< dds_publisher > const & ) override;
+
     void set_intrinsics( const motion_intrinsics & intrinsics ) { _intrinsics = intrinsics; }
     const motion_intrinsics & get_intrinsics() const { return _intrinsics; }
 
@@ -182,6 +185,21 @@ public:
     dds_pose_stream_server( std::string const & stream_name, std::string const & sensor_name );
 
     char const * type_string() const override { return "pose"; }
+};
+
+
+class dds_metadata_stream_server : public dds_stream_server
+{
+    typedef dds_stream_server super;
+
+public:
+    dds_metadata_stream_server( std::string const & stream_name, std::string const & sensor_name );
+
+    char const * type_string() const override { return "metadata"; }
+
+    void open( std::string const & topic_name, std::shared_ptr< dds_publisher > const & ) override;
+
+    void publish( nlohmann::json && metadata );
 };
 
 

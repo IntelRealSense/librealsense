@@ -74,20 +74,6 @@ void dds_device_server::stop_streaming( const std::vector< std::string > & strea
 }
 
 
-void dds_device_server::publish_image( const std::string & stream_name, const uint8_t * data, size_t size,
-                                       const nlohmann::json & metadata )
-{
-    auto it = _stream_name_to_server.find( stream_name );
-    if( it == _stream_name_to_server.end() )
-        DDS_THROW( runtime_error, "stream '" + stream_name + "' does not exist" );
-    auto & stream = it->second;
-    if( ! stream->is_streaming() )
-        DDS_THROW( runtime_error, "stream '" + stream_name + "' is not streaming" );
-
-    stream->publish_image( data, size, metadata );
-}
-
-
 static void on_discovery_device_header( size_t const n_streams, const dds_options & options,
                                         const extrinsics_map & extr, dds_notification_server & notifications )
 {
@@ -184,7 +170,10 @@ void dds_device_server::init( std::vector< std::shared_ptr< dds_stream_server > 
             std::string topic_name = _topic_root + '/' + stream->name();
             stream->open( topic_name, _publisher );
             _stream_name_to_server[stream->name()] = stream;
-            on_discovery_stream_header( stream, *_notification_server );
+            if( !std::dynamic_pointer_cast< dds_metadata_stream_server >( stream ) )
+            { // Sending stream with "supports metadata" option, no need to send the metadata stream details
+                on_discovery_stream_header( stream, *_notification_server );
+            }
         }
 
         _notification_server->run();

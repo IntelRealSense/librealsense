@@ -54,6 +54,7 @@ public:
     std::shared_ptr< dds_topic_writer > _control_writer;
 
     dds_options _options;
+    bool _md_supported = false;
 
     extrinsics_map _extrinsics_map; // <from stream, to stream> to extrinsics
 

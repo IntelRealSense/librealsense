@@ -129,6 +129,11 @@ void dds_device::impl::open( const dds_stream_profiles & profiles )
         stream_profiles[stream->name()] = profile->to_json();
 
         _streams[stream->name()]->open( _info.topic_root + '/' + stream->name(), _subscriber );
+        if( _md_supported )
+        {
+            std::string metadata_stream_name = stream->name() + " metadata";
+            _streams[metadata_stream_name]->open( _info.topic_root + '/' + metadata_stream_name, _subscriber );
+        }
     }
 
     nlohmann::json j = {
@@ -301,9 +306,12 @@ bool dds_device::impl::init()
                 {
                     LOG_DEBUG( "... device-options: " << j["n-options"] << " options received" );
 
-                    for( auto & option : j["options"] )
+                    for( auto & option_json : j["options"] )
                     {
-                        _options.push_back( dds_option::from_json( option, _info.name ) );
+                        auto option = dds_option::from_json( option_json, _info.name );
+                        _options.push_back( option );
+                        if( option->get_name() == "metadata_enabled" )
+                            _md_supported = option->get_value();
                     }
 
                     if( n_streams_expected )
@@ -345,9 +353,12 @@ bool dds_device::impl::init()
                     TYPE2STREAM( fisheye, video )
                     TYPE2STREAM( confidence, video )
                     TYPE2STREAM( pose, motion )
-                        DDS_THROW( runtime_error, "stream '" + stream_name + "' is of unknown type '" + stream_type + "'" );
+                    DDS_THROW( runtime_error, "stream '" + stream_name + "' is of unknown type '" + stream_type + "'" );
 
-                    if( default_profile_index < 0 || default_profile_index >= profiles.size() )
+                    if( default_profile_index >= 0 && default_profile_index < profiles.size() )
+                        stream->init_profiles( profiles, default_profile_index );
+                    else if( std::dynamic_pointer_cast< dds_video_stream >( stream ) ||
+                             std::dynamic_pointer_cast< dds_motion_stream >( stream ) )
                         DDS_THROW( runtime_error,
                                    "stream '" + stream_name + "' default profile index "
                                    + std::to_string( default_profile_index ) + " is out of bounds" );
@@ -359,7 +370,11 @@ bool dds_device::impl::init()
                     LOG_DEBUG( "... stream '" << stream_name << "' (" << _streams.size() << "/" << n_streams_expected
                                               << ") received with " << profiles.size() << " profiles" );
 
-                    stream->init_profiles( profiles, default_profile_index );
+                    if( _md_supported )
+                    {
+                        auto md_stream_name = stream_name + " metadata";
+                        _streams[md_stream_name] = std::make_shared< dds_metadata_stream >( md_stream_name, sensor_name );
+                    }
 
                     state = state_type::WAIT_FOR_STREAM_OPTIONS;
                 }

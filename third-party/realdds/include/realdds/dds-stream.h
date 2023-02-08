@@ -38,24 +38,22 @@ protected:
     dds_stream( std::string const & stream_name, std::string const & sensor_name );
 
 public:
-    bool is_open() const override { return !! _image_reader; }
-    virtual void open( std::string const & topic_name, std::shared_ptr< dds_subscriber > const & );
+    bool is_open() const override { return !! _reader; }
+    virtual void open( std::string const & topic_name, std::shared_ptr< dds_subscriber > const & ) = 0;
     virtual void close();
 
-    bool is_streaming() const override;
-    typedef std::function< void( topics::device::image && f, topics::flexible_msg && md ) > on_data_available_callback;
-    void start_streaming( on_data_available_callback cb );
+    bool is_streaming() const override { return _streaming; }
+    void start_streaming();
     void stop_streaming();
 
     std::shared_ptr< dds_topic > const & get_topic() const override;
 
 protected:
-    void handle_frames();
-    void handle_metadata();
+    virtual void handle_data() = 0;
+    virtual bool can_start_streaming() const = 0;
 
-    std::shared_ptr< dds_topic_reader > _image_reader;
-    std::shared_ptr< dds_topic_reader > _metadata_reader;
-    std::shared_ptr< frame_metadata_syncer > _syncer; // shared_ptr, not unique_ptr, to avoid defining frame_metadata_syncer here
+    std::shared_ptr< dds_topic_reader > _reader;
+    bool _streaming = false;
 };
 
 class dds_video_stream : public dds_stream
@@ -65,14 +63,20 @@ class dds_video_stream : public dds_stream
 public:
     dds_video_stream( std::string const & stream_name, std::string const & sensor_name );
 
+    void open( std::string const & topic_name, std::shared_ptr< dds_subscriber > const & ) override;
+
+    typedef std::function< void( topics::device::image && f ) > on_data_available_callback;
+    void on_data_available( on_data_available_callback cb ) { _on_data_available = cb; }
+
     void set_intrinsics( const std::set< video_intrinsics > & intrinsics ) { _intrinsics = intrinsics; }
     const std::set< video_intrinsics > & get_intrinsics() const { return _intrinsics; }
 
-private:
-    class impl;
-    std::shared_ptr< impl > _impl;
+protected:
+    void handle_data() override;
+    bool can_start_streaming() const override { return _on_data_available != nullptr; }
 
     std::set< video_intrinsics > _intrinsics;
+    on_data_available_callback _on_data_available = nullptr;
 };
 
 class dds_depth_stream : public dds_video_stream
@@ -132,14 +136,20 @@ class dds_motion_stream : public dds_stream
 public:
     dds_motion_stream( std::string const & stream_name, std::string const & sensor_name );
 
+    void open( std::string const & topic_name, std::shared_ptr< dds_subscriber > const & ) override;
+
+    typedef std::function< void( topics::device::image && f ) > on_data_available_callback;
+    void on_data_available( on_data_available_callback cb ) { _on_data_available = cb; }
+
     void set_intrinsics( const motion_intrinsics & intrinsics ) { _intrinsics = intrinsics; }
     const motion_intrinsics & get_intrinsics() const { return _intrinsics; }
 
-private:
-    class impl;
-    std::shared_ptr< impl > _impl;
+protected:
+    void handle_data() override;
+    bool can_start_streaming() const override { return _on_data_available != nullptr; }
 
     motion_intrinsics _intrinsics;
+    on_data_available_callback _on_data_available = nullptr;
 };
 
 class dds_accel_stream : public dds_motion_stream
@@ -172,6 +182,26 @@ public:
     char const * type_string() const override { return "pose"; }
 };
 
+class dds_metadata_stream : public dds_stream
+{
+    typedef dds_stream super;
+
+public:
+    dds_metadata_stream( std::string const & stream_name, std::string const & sensor_name );
+
+    char const * type_string() const override { return "metadata"; }
+
+    void open( std::string const & topic_name, std::shared_ptr< dds_subscriber > const & ) override;
+
+    typedef std::function< void( topics::flexible_msg && md ) > on_data_available_callback;
+    void on_data_available( on_data_available_callback cb ) { _on_data_available = cb; }
+
+protected:
+    void handle_data() override;
+    bool can_start_streaming() const override { return _on_data_available != nullptr; }
+
+    on_data_available_callback _on_data_available = nullptr;
+};
 
 typedef std::vector< std::shared_ptr< dds_stream > > dds_streams;
 

@@ -3,6 +3,8 @@
 
 #include "lrs-device-controller.h"
 
+#include <common/metadata-helper.h>
+
 #include <rsutils/easylogging/easyloggingpp.h>
 #include <rsutils/json.h>
 
@@ -17,7 +19,7 @@ using namespace realdds;
 using tools::lrs_device_controller;
 
 
-#define NAME2SERVER( X )                                                                                               \
+#define CREATE_SERVER_IF_NEEDED( X )                                                                                               \
     if( server )                                                                                                       \
     {                                                                                                                  \
         if( strcmp( server->type_string(), #X ) )                                                                      \
@@ -103,14 +105,14 @@ std::vector< std::shared_ptr< realdds::dds_stream_server > > lrs_device_controll
             auto & server = stream_name_to_server[stream_name];
             switch( sp.stream_type() )
             {
-            case RS2_STREAM_DEPTH: NAME2SERVER( depth );
-            case RS2_STREAM_INFRARED: NAME2SERVER( ir );
-            case RS2_STREAM_COLOR: NAME2SERVER( color );
-            case RS2_STREAM_FISHEYE: NAME2SERVER( fisheye );
-            case RS2_STREAM_CONFIDENCE: NAME2SERVER( confidence );
-            case RS2_STREAM_ACCEL: NAME2SERVER( accel );
-            case RS2_STREAM_GYRO: NAME2SERVER( gyro );
-            case RS2_STREAM_POSE: NAME2SERVER( pose );
+            case RS2_STREAM_DEPTH: CREATE_SERVER_IF_NEEDED( depth );
+            case RS2_STREAM_INFRARED: CREATE_SERVER_IF_NEEDED( ir );
+            case RS2_STREAM_COLOR: CREATE_SERVER_IF_NEEDED( color );
+            case RS2_STREAM_FISHEYE: CREATE_SERVER_IF_NEEDED( fisheye );
+            case RS2_STREAM_CONFIDENCE: CREATE_SERVER_IF_NEEDED( confidence );
+            case RS2_STREAM_ACCEL: CREATE_SERVER_IF_NEEDED( accel );
+            case RS2_STREAM_GYRO: CREATE_SERVER_IF_NEEDED( gyro );
+            case RS2_STREAM_POSE: CREATE_SERVER_IF_NEEDED( pose );
             default:
                 LOG_ERROR( "unsupported stream type " << sp.stream_type() );
                 return;
@@ -228,10 +230,22 @@ std::vector< std::shared_ptr< realdds::dds_stream_server > > lrs_device_controll
         server->init_options( options );
         servers.push_back( server );
     }
+
+    // Add metadata streams
+    if( _md_enabled )
+    {
+        for( auto & it : stream_name_to_server )
+        {
+            auto stream_name = it.first;
+            auto md_server = std::make_shared< realdds::dds_metadata_stream_server >( stream_name + " metadata",
+                                                                                      it.second->sensor_name() );
+            servers.push_back( md_server );
+        }
+    }
     return servers;
 }
 
-#undef NAME2SERVER
+#undef CREATE_SERVER_IF_NEEDED
 
 extrinsics_map get_extrinsics_map( const rs2::device & dev )
 {
@@ -400,6 +414,13 @@ lrs_device_controller::lrs_device_controller( rs2::device dev, std::shared_ptr< 
 
     //TODO - get all device level options
     realdds::dds_options options;
+    auto option = std::make_shared< realdds::dds_option >( std::string( "metadata_enabled" ),
+                                                          _rs_dev.get_info( RS2_CAMERA_INFO_NAME ) );
+    _md_enabled = rs2::metadata_helper::instance().can_support_metadata( _rs_dev.get_info( RS2_CAMERA_INFO_PRODUCT_LINE ) ) &&
+                  rs2::metadata_helper::instance().is_enabled( _rs_dev.get_info( RS2_CAMERA_INFO_PHYSICAL_PORT ) );
+    option->set_value( _md_enabled );
+    option->set_description( "Is metadata being read and sent with frames" );
+    options.push_back( option );
 
     // Initialize the DDS device server with the supported streams
     _dds_device_server->init( supported_streams, options, extrinsics );
@@ -446,25 +467,49 @@ void lrs_device_controller::start_streaming( const json & msg )
     _dds_device_server->start_streaming( realdds_streams_to_start );
     _sensors[sensor_index].open( rs_profiles_to_open );
     _sensors[sensor_index].start( [&]( rs2::frame f ) {
-        json metadata = json( {
-            // Special data that is always expected by realdds
-            { "frame_id", std::to_string( f.get_frame_number() ) },
-            { "timestamp", f.get_timestamp() },
-            { "timestamp_domain", f.get_frame_timestamp_domain() }
-            } );
-        if( f.is< rs2::depth_frame >() )
-            metadata["depth_units"] = f.as< rs2::depth_frame >().get_units();
+        const auto & stream_name = f.get_profile().stream_name();
+        auto & streams = _dds_device_server->get_streams();
 
-        for( size_t i = 0; i < static_cast< size_t >( RS2_FRAME_METADATA_COUNT ); ++i )
+        auto it = streams.find( stream_name );
+        if( it == streams.end() )
+            throw std::runtime_error( "stream '" +stream_name + "' does not exist" );
+        auto & stream = it->second;
+        if( !stream->is_streaming() )
+            throw std::runtime_error( "stream '" +stream_name + "' is not streaming" );
+
+        stream->publish( static_cast< const uint8_t * >( f.get_data() ), f.get_data_size(), f.get_frame_number() );
+
+        if( _md_enabled )
         {
-            rs2_frame_metadata_value val = static_cast< rs2_frame_metadata_value >( i );
-            if( f.supports_frame_metadata( val ) )
+            const auto & metadata_stream_name = f.get_profile().stream_name() + " metadata";
+
+            auto it = streams.find( metadata_stream_name );
+            if( it == streams.end() )
+                throw std::runtime_error( "stream '" + metadata_stream_name + "' does not exist" );
+            auto & metadata_stream = std::dynamic_pointer_cast< realdds::dds_metadata_stream_server >( it->second );
+            if( !metadata_stream )
+                throw std::runtime_error( "stream '" + stream_name + "' does not have a matching metadata stream" );
+
+            json metadata = json( {
+                // Special data that is always expected by realdds
+                { "frame_id", std::to_string( f.get_frame_number() ) },
+                { "timestamp", f.get_timestamp() },
+                { "timestamp_domain", f.get_frame_timestamp_domain() }
+                } );
+            if( f.is< rs2::depth_frame >() )
+                metadata["depth_units"] = f.as< rs2::depth_frame >().get_units();
+
+            for( size_t i = 0; i < static_cast< size_t >( RS2_FRAME_METADATA_COUNT ); ++i )
             {
-                metadata[rs2_frame_metadata_to_string( val )] = f.get_frame_metadata( val );
+                rs2_frame_metadata_value val = static_cast< rs2_frame_metadata_value >( i );
+                if( f.supports_frame_metadata( val ) )
+                {
+                    metadata[rs2_frame_metadata_to_string( val )] = f.get_frame_metadata( val );
+                }
             }
+
+            metadata_stream->publish( std::move( metadata ) );
         }
-        _dds_device_server->publish_image( f.get_profile().stream_name(), static_cast< const uint8_t * >( f.get_data() ),
-                                           f.get_data_size(), metadata );
     } );
     if( realdds_streams_to_start.size() == 1 )
         std::cout << realdds_streams_to_start[0].first << " stream started" << std::endl;

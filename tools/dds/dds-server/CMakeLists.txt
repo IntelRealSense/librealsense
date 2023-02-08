@@ -3,17 +3,21 @@
 cmake_minimum_required( VERSION 3.1.0 )
 project( rs-dds-server )
 
+include(../../../common/CMakeLists.txt)
+
 set(TOOL_FILES
     rs-dds-server.cpp
     lrs-device-watcher.h
     lrs-device-watcher.cpp
     lrs-device-controller.h
     lrs-device-controller.cpp
+    ../../../common/metadata-helper.cpp
     )
 
 add_executable( ${PROJECT_NAME} ${TOOL_FILES} )
 target_include_directories( ${PROJECT_NAME} PRIVATE
     ${REPO_ROOT}/third-party/tclap/include
+    ${REPO_ROOT}/common
     )
 target_link_libraries( ${PROJECT_NAME} PRIVATE realdds realsense2 )
 set_target_properties (${PROJECT_NAME} PROPERTIES

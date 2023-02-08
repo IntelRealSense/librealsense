@@ -61,6 +61,8 @@ public:
 
     std::shared_ptr< extrinsics > get_extrinsics( std::string from, std::string to ) const;
 
+    bool supports_metadata() const;
+
 private:
     class impl;
     std::shared_ptr< impl > _impl;

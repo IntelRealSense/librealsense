@@ -35,6 +35,7 @@ private:
     std::string _device_sn;
     std::vector< rs2::sensor > _sensors;
     std::shared_ptr< realdds::dds_device_server > _dds_device_server;
+    bool _md_enabled;
 };  // class lrs_device_controller
 
 }  // namespace tools
