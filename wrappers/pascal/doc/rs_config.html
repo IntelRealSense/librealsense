@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title>rs_config</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="generator" content="PasDoc 0.16.0">
+<meta http-equiv="content-type" content="text/html; charset=utf-8">
+<link rel="stylesheet" type="text/css" href="tipuesearch/tipuesearch.css">
+
+<link rel="StyleSheet" type="text/css" href="pasdoc.css">
+</head>
+<body>
+<div class="container"><div class="navigation">
+<ul><li><a href="AllUnits.html">Units</a></li><li><a href="ClassHierarchy.html">Class Hierarchy</a></li><li><a href="AllClasses.html">Classes, Interfaces, Objects and Records</a></li><li><a href="AllTypes.html">Types</a></li><li><a href="AllVariables.html">Variables</a></li><li><a href="AllConstants.html">Constants</a></li><li><a href="AllFunctions.html">Functions and Procedures</a></li><li><a href="AllIdentifiers.html">Identifiers</a></li><li><form class="search-form" action="tipue_results.html"><div class="search-input"><input type="text" name="q" id="tipue_search_input" pattern=".{3,}" title="At least 3 characters" required><div class="search-button"><input type="button" id="tipue_search_button" onclick="this.form.submit();"></div></div></form>
+<div style="clear: both"></div>
+</li></ul></div><div class="content">
+<h1 class="unit">Unit rs_config</h1>
+<div class="sections">
+<div class="one_section"><a class="section" href="#PasDoc-Description">Description</a></div><div class="one_section">Uses</div><div class="one_section">Classes, Interfaces, Objects and Records</div><div class="one_section"><a class="section" href="#PasDoc-FuncsProcs">Functions and Procedures</a></div><div class="one_section">Types</div><div class="one_section"><a class="section" href="#PasDoc-Constants">Constants</a></div><div class="one_section">Variables</div></div>
+<span id="PasDoc-Description"></span><h2 class="description">Description</h2>
+<p>
+Exposes RealSense processing-block functionality</p>
+<span id="PasDoc-Uses"></span><h2 class="overview">Overview</h2>
+<span id="PasDoc-FuncsProcs"></span><h3 class="summary">Functions and Procedures</h3>
+<table class="summary wide_list">
+<tr class="list">
+<td class="itemcode"><code>function <strong><a href="rs_config.html#rs2_create_config">rs2_create_config</a></strong>(error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): <a href="rs_types.html#pRS2_config">prs2_config</a>; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code>procedure <strong><a href="rs_config.html#rs2_delete_config">rs2_delete_config</a></strong>(config: <a href="rs_types.html#pRS2_config">prs2_config</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code>procedure <strong><a href="rs_config.html#rs2_config_enable_stream">rs2_config_enable_stream</a></strong>(config: <a href="rs_types.html#pRS2_config">pRs2_config</a>; stream: <a href="rs_types.html#Trs2_stream">Trs2_stream</a>; index: integer; Width: integer; Height: integer; format: <a href="rs_types.html#Trs2_format">Trs2_format</a>; framerate: integer; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code>procedure <strong><a href="rs_config.html#rs2_config_enable_all_stream">rs2_config_enable_all_stream</a></strong>(config: <a href="rs_types.html#pRS2_config">pRS2_config</a>; error: <a href="rs_types.html#pRS2_config">pRS2_config</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code>procedure <strong><a href="rs_config.html#rs2_config_enable_device">rs2_config_enable_device</a></strong>(config: <a href="rs_types.html#pRS2_config">pRS2_config</a>; const serial: PChar; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code>procedure <strong><a href="rs_config.html#rs2_config_enable_device_from_file">rs2_config_enable_device_from_file</a></strong>(config: <a href="rs_types.html#pRS2_config">pRS2_config</a>; const FileName: PChar; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code>procedure <strong><a href="rs_config.html#rs2_config_enable_device_from_file_repeat_option">rs2_config_enable_device_from_file_repeat_option</a></strong>(config: <a href="rs_types.html#pRS2_config">pRS2_config</a>; const FileName: PChar; repeat_playback: integer; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code>procedure <strong><a href="rs_config.html#rs2_config_enable_record_to_file">rs2_config_enable_record_to_file</a></strong>(config: <a href="rs_types.html#pRS2_config">pRS2_config</a>; const FileName: PChar; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code>procedure <strong><a href="rs_config.html#rs2_config_disable_stream">rs2_config_disable_stream</a></strong>(configo: <a href="rs_types.html#pRS2_config">pRS2_config</a>; stream: <a href="rs_types.html#Trs2_stream">Trs2_stream</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code>procedure <strong><a href="rs_config.html#rs2_config_disable_indexed_stream">rs2_config_disable_indexed_stream</a></strong>(config: <a href="rs_types.html#pRS2_config">pRS2_config</a>; stream: <a href="rs_types.html#Trs2_stream">Trs2_stream</a>; index: integer; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code>procedure <strong><a href="rs_config.html#rs2_config_disable_all_streams">rs2_config_disable_all_streams</a></strong>(config: <a href="rs_types.html#pRS2_config">pRS2_config</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code>function <strong><a href="rs_config.html#rs2_config_resolve">rs2_config_resolve</a></strong>(config: <a href="rs_types.html#pRS2_config">pRS2_config</a>; pipe: <a href="rs_types.html#pRS2_pipeline">pRS2_pipeline</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): <a href="rs_types.html#pRS2_pipeline_profile">pRS2_pipeline_profile</a>; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code>function <strong><a href="rs_config.html#rs2_config_can_resolve">rs2_config_can_resolve</a></strong>(config: <a href="rs_types.html#pRS2_config">pRS2_config</a>; pipe: <a href="rs_types.html#pRS2_pipeline">pRS2_pipeline</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): integer; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+</table>
+<span id="PasDoc-Constants"></span><h3 class="summary">Constants</h3>
+<table class="summary wide_list">
+<tr class="list">
+<td class="itemcode"><code><strong><a href="rs_config.html#RS2_DEFAULT_TIMEOUT">RS2_DEFAULT_TIMEOUT</a></strong> = 15000;</code></td>
+</tr>
+</table>
+<h2 class="description">Description</h2>
+<h3 class="detail">Functions and Procedures</h3>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_create_config"></span><code>function <strong>rs2_create_config</strong>(error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): <a href="rs_types.html#pRS2_config">prs2_config</a>; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Create a config instance The config allows pipeline users to request filters for the pipeline streams and device selection and configuration. This is an optional step in pipeline creation, as the pipeline resolves its streaming device internally. Config provides its users a way to set the filters and test if there is no conflict with the pipeline requirements from the device. It also allows the user to find a matching device for the config filters and the pipeline, in order to select a device explicitly, and modify its controls before streaming starts.
+
+<p>param[out] error if non-null, receives any error that occurs during this call, otherwise, errors are ignored return rs2_config* A pointer to a new config instance</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_delete_config"></span><code>procedure <strong>rs2_delete_config</strong>(config: <a href="rs_types.html#pRS2_config">prs2_config</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Deletes an instance of a config param[in] config A pointer to an instance of a config</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_config_enable_stream"></span><code>procedure <strong>rs2_config_enable_stream</strong>(config: <a href="rs_types.html#pRS2_config">pRs2_config</a>; stream: <a href="rs_types.html#Trs2_stream">Trs2_stream</a>; index: integer; Width: integer; Height: integer; format: <a href="rs_types.html#Trs2_format">Trs2_format</a>; framerate: integer; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Enable a device stream explicitly, with selected stream parameters. The method allows the application to request a stream with specific configuration. If no stream is explicitly enabled, the pipeline configures the device and its streams according to the attached computer vision modules and processing blocks requirements, or default configuration for the first available device. The application can configure any of the input stream parameters according to its requirement, or set to 0 for don't care value. The config accumulates the application calls for enable configuration methods, until the configuration is applied. Multiple enable stream calls for the same stream with conflicting parameters override each other, and the last call is maintained. Upon calling \c resolve(), the config checks for conflicts between the application configuration requests and the attached computer vision modules and processing blocks requirements, and fails if conflicts are found. Before \c resolve() is called, no conflict check is done.
+
+<p>param[in] config A pointer to an instance of a config param[in] stream Stream type to be enabled param[in] index Stream index, used for multiple streams of the same type. -1 indicates any. param[in] width Stream image width - for images streams. 0 indicates any. param[in] height Stream image height - for images streams. 0 indicates any. param[in] format Stream data format - pixel format for images streams, of data type for other streams. RS2_FORMAT_ANY indicates any. param[in] framerate Stream frames per second. 0 indicates any. param[out] error if non-null, receives any error that occurs during this call, otherwise, errors are ignored</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_config_enable_all_stream"></span><code>procedure <strong>rs2_config_enable_all_stream</strong>(config: <a href="rs_types.html#pRS2_config">pRS2_config</a>; error: <a href="rs_types.html#pRS2_config">pRS2_config</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Enable all device streams explicitly. The conditions and behavior of this method are similar to those of \c enable_stream(). This filter enables all raw streams of the selected device. The device is either selected explicitly by the application, or by the pipeline requirements or default. The list of streams is device dependent.
+
+<p>param[in] config A pointer to an instance of a config param[out] error if non-null, receives any error that occurs during this call, otherwise, errors are ignored</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_config_enable_device"></span><code>procedure <strong>rs2_config_enable_device</strong>(config: <a href="rs_types.html#pRS2_config">pRS2_config</a>; const serial: PChar; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Select a specific device explicitly by its serial number, to be used by the pipeline. The conditions and behavior of this method are similar to those of \c enable_stream(). This method is required if the application needs to set device or sensor settings prior to pipeline streaming, to enforce the pipeline to use the configured device.
+
+<p>param[in] config A pointer to an instance of a config param[in] serial device serial number, as returned by RS2_CAMERA_INFO_SERIAL_NUMBER param[out] error if non-null, receives any error that occurs during this call, otherwise, errors are ignored</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_config_enable_device_from_file"></span><code>procedure <strong>rs2_config_enable_device_from_file</strong>(config: <a href="rs_types.html#pRS2_config">pRS2_config</a>; const FileName: PChar; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Select a recorded device from a file, to be used by the pipeline through playback. The device available streams are as recorded to the file, and \c resolve() considers only this device and configuration as available. This request cannot be used if enable_record_to_file() is called for the current config, and vise versa By default, playback is repeated once the file ends. To control this, see 'rs2_config_enable_device_from_file_repeat_option'.
+
+<p>param[in] config A pointer to an instance of a config param[in] file The playback file of the device param[out] error if non-null, receives any error that occurs during this call, otherwise, errors are ignored</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_config_enable_device_from_file_repeat_option"></span><code>procedure <strong>rs2_config_enable_device_from_file_repeat_option</strong>(config: <a href="rs_types.html#pRS2_config">pRS2_config</a>; const FileName: PChar; repeat_playback: integer; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Select a recorded device from a file, to be used by the pipeline through playback. The device available streams are as recorded to the file, and \c resolve() considers only this device and configuration as available. This request cannot be used if enable_record_to_file() is called for the current config, and vise versa
+
+<p>param[in] config A pointer to an instance of a config param[in] file The playback file of the device param[in] repeat_playback if true, when file ends the playback starts again, in an infinite loop; if false, when file ends playback does not start again, and should by stopped manually by the user. param[out] error if non-null, receives any error that occurs during this call, otherwise, errors are ignored</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_config_enable_record_to_file"></span><code>procedure <strong>rs2_config_enable_record_to_file</strong>(config: <a href="rs_types.html#pRS2_config">pRS2_config</a>; const FileName: PChar; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Requires that the resolved device would be recorded to file This request cannot be used if enable_device_from_file() is called for the current config, and vise versa
+
+<p>param[in] config A pointer to an instance of a config param[in] file The desired file for the output record param[out] error if non-null, receives any error that occurs during this call, otherwise, errors are ignored</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_config_disable_stream"></span><code>procedure <strong>rs2_config_disable_stream</strong>(configo: <a href="rs_types.html#pRS2_config">pRS2_config</a>; stream: <a href="rs_types.html#Trs2_stream">Trs2_stream</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Disable a device stream explicitly, to remove any requests on this stream type. The stream can still be enabled due to pipeline computer vision module request. This call removes any filter on the stream configuration.
+
+<p>param[in] config A pointer to an instance of a config param[in] stream Stream type, for which the filters are cleared param[out] error if non-null, receives any error that occurs during this call, otherwise, errors are ignored</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_config_disable_indexed_stream"></span><code>procedure <strong>rs2_config_disable_indexed_stream</strong>(config: <a href="rs_types.html#pRS2_config">pRS2_config</a>; stream: <a href="rs_types.html#Trs2_stream">Trs2_stream</a>; index: integer; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Disable a device stream explicitly, to remove any requests on this stream profile. The stream can still be enabled due to pipeline computer vision module request. This call removes any filter on the stream configuration. param[in] config A pointer to an instance of a config param[in] stream Stream type, for which the filters are cleared param[in] index Stream index, for which the filters are cleared param[out] error if non-null, receives any error that occurs during this call, otherwise, errors are ignored</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_config_disable_all_streams"></span><code>procedure <strong>rs2_config_disable_all_streams</strong>(config: <a href="rs_types.html#pRS2_config">pRS2_config</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Disable all device stream explicitly, to remove any requests on the streams profiles. The streams can still be enabled due to pipeline computer vision module request. This call removes any filter on the streams configuration.
+
+<p>param[in] config A pointer to an instance of a config param[out] error if non-null, receives any error that occurs during this call, otherwise, errors are ignored</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_config_resolve"></span><code>function <strong>rs2_config_resolve</strong>(config: <a href="rs_types.html#pRS2_config">pRS2_config</a>; pipe: <a href="rs_types.html#pRS2_pipeline">pRS2_pipeline</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): <a href="rs_types.html#pRS2_pipeline_profile">pRS2_pipeline_profile</a>; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Resolve the configuration filters, to find a matching device and streams profiles. The method resolves the user configuration filters for the device and streams, and combines them with the requirements of the computer vision modules and processing blocks attached to the pipeline. If there are no conflicts of requests, it looks for an available device, which can satisfy all requests, and selects the first matching streams configuration. In the absence of any request, the rs2::config selects the first available device and the first color and depth streams configuration. The pipeline profile selection during \c start() follows the same method. Thus, the selected profile is the same, if no change occurs to the available devices occurs. Resolving the pipeline configuration provides the application access to the pipeline selected device for advanced control. The returned configuration is not applied to the device, so the application doesn't own the device sensors. However, the application can call \c enable_device(), to enforce the device returned by this method is selected by pipeline \c start(), and configure the device and sensors options or extensions before streaming starts.
+
+<p>param[in] config A pointer to an instance of a config param[in] pipe The pipeline for which the selected filters are applied param[out] error if non-null, receives any error that occurs during this call, otherwise, errors are ignored return A matching device and streams profile, which satisfies the filters and pipeline requests.</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_config_can_resolve"></span><code>function <strong>rs2_config_can_resolve</strong>(config: <a href="rs_types.html#pRS2_config">pRS2_config</a>; pipe: <a href="rs_types.html#pRS2_pipeline">pRS2_pipeline</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): integer; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Check if the config can resolve the configuration filters, to find a matching device and streams profiles. The resolution conditions are as described in \c resolve().
+
+<p>param[in] config A pointer to an instance of a config param[in] pipe The pipeline for which the selected filters are applied param[out] error if non-null, receives any error that occurs during this call, otherwise, errors are ignored return True if a valid profile selection exists, false if no selection can be found under the config filters and the available devices.</p>
+</td></tr>
+</table>
+<h3 class="detail">Constants</h3>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="RS2_DEFAULT_TIMEOUT"></span><code><strong>RS2_DEFAULT_TIMEOUT</strong> = 15000;</code></td>
+</tr>
+<tr><td colspan="1">
+&nbsp;</td></tr>
+</table>
+<hr><span class="appinfo"><em>Generated by <a href="https://pasdoc.github.io/">PasDoc 0.16.0</a>. </em>
+</span>
+</div></div></body></html>

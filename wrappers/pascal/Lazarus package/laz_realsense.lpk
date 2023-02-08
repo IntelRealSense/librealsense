@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CONFIG>
+  <Package Version="5">
+    <PathDelim Value="\"/>
+    <Name Value="laz_realsense"/>
+    <Type Value="RunAndDesignTime"/>
+    <Author Value="Jorge Turiel Fernández"/>
+    <CompilerOptions>
+      <Version Value="11"/>
+      <PathDelim Value="\"/>
+      <SearchPaths>
+        <OtherUnitFiles Value="..\src"/>
+        <UnitOutputDirectory Value="lib\$(TargetCPU)-$(TargetOS)\"/>
+      </SearchPaths>
+    </CompilerOptions>
+    <Description Value="Package with the warpping to use librealsense library.
+Librealsense is sdk to use intel sense cameras"/>
+    <License Value="This packake and all files include adopt the same license 
+License: Apache 2.0."/>
+    <Version Major="1"/>
+    <Files>
+      <Item>
+        <Filename Value="..\src\rs.pas"/>
+        <UnitName Value="rs"/>
+      </Item>
+      <Item>
+        <Filename Value="..\src\rs_advanced_mode.pas"/>
+        <UnitName Value="rs_advanced_mode"/>
+      </Item>
+      <Item>
+        <Filename Value="..\src\rs_advanced_mode_command.pas"/>
+        <UnitName Value="rs_advanced_mode_command"/>
+      </Item>
+      <Item>
+        <Filename Value="..\src\rs_config.pas"/>
+        <UnitName Value="rs_config"/>
+      </Item>
+      <Item>
+        <Filename Value="..\src\rs_context.pas"/>
+        <UnitName Value="rs_context"/>
+      </Item>
+      <Item>
+        <Filename Value="..\src\rs_device.pas"/>
+        <UnitName Value="rs_device"/>
+      </Item>
+      <Item>
+        <Filename Value="..\src\rs_frame.pas"/>
+        <UnitName Value="rs_frame"/>
+      </Item>
+      <Item>
+        <Filename Value="..\src\rs_internal.pas"/>
+        <UnitName Value="rs_internal"/>
+      </Item>
+      <Item>
+        <Filename Value="..\src\rs_option.pas"/>
+        <UnitName Value="rs_option"/>
+      </Item>
+      <Item>
+        <Filename Value="..\src\rs_pipeline.pas"/>
+        <UnitName Value="rs_pipeline"/>
+      </Item>
+      <Item>
+        <Filename Value="..\src\rs_processing.pas"/>
+        <UnitName Value="rs_processing"/>
+      </Item>
+      <Item>
+        <Filename Value="..\src\rs_record_playback.pas"/>
+        <UnitName Value="rs_record_playback"/>
+      </Item>
+      <Item>
+        <Filename Value="..\src\rs_sensor.pas"/>
+        <UnitName Value="rs_sensor"/>
+      </Item>
+      <Item>
+        <Filename Value="..\src\rs_types.pas"/>
+        <UnitName Value="rs_types"/>
+      </Item>
+    </Files>
+    <RequiredPkgs>
+      <Item>
+        <PackageName Value="FCL"/>
+      </Item>
+    </RequiredPkgs>
+    <UsageOptions>
+      <UnitPath Value="$(PkgOutDir)"/>
+    </UsageOptions>
+    <PublishOptions>
+      <Version Value="2"/>
+      <UseFileFilters Value="True"/>
+    </PublishOptions>
+  </Package>
+</CONFIG>

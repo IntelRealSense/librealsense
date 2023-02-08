@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title>rs_record_playback</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="generator" content="PasDoc 0.16.0">
+<meta http-equiv="content-type" content="text/html; charset=utf-8">
+<link rel="stylesheet" type="text/css" href="tipuesearch/tipuesearch.css">
+
+<link rel="StyleSheet" type="text/css" href="pasdoc.css">
+</head>
+<body>
+<div class="container"><div class="navigation">
+<ul><li><a href="AllUnits.html">Units</a></li><li><a href="ClassHierarchy.html">Class Hierarchy</a></li><li><a href="AllClasses.html">Classes, Interfaces, Objects and Records</a></li><li><a href="AllTypes.html">Types</a></li><li><a href="AllVariables.html">Variables</a></li><li><a href="AllConstants.html">Constants</a></li><li><a href="AllFunctions.html">Functions and Procedures</a></li><li><a href="AllIdentifiers.html">Identifiers</a></li><li><form class="search-form" action="tipue_results.html"><div class="search-input"><input type="text" name="q" id="tipue_search_input" pattern=".{3,}" title="At least 3 characters" required><div class="search-button"><input type="button" id="tipue_search_button" onclick="this.form.submit();"></div></div></form>
+<div style="clear: both"></div>
+</li></ul></div><div class="content">
+<h1 class="unit">Unit rs_record_playback</h1>
+<div class="sections">
+<div class="one_section"><a class="section" href="#PasDoc-Description">Description</a></div><div class="one_section">Uses</div><div class="one_section">Classes, Interfaces, Objects and Records</div><div class="one_section"><a class="section" href="#PasDoc-FuncsProcs">Functions and Procedures</a></div><div class="one_section"><a class="section" href="#PasDoc-Types">Types</a></div><div class="one_section">Constants</div><div class="one_section">Variables</div></div>
+<span id="PasDoc-Description"></span><h2 class="description">Description</h2>
+<p>
+Exposes record and playback functionality</p>
+<span id="PasDoc-Uses"></span><h2 class="overview">Overview</h2>
+<span id="PasDoc-FuncsProcs"></span><h3 class="summary">Functions and Procedures</h3>
+<table class="summary wide_list">
+<tr class="list">
+<td class="itemcode"><code>function <strong><a href="rs_record_playback.html#rs2_playback_status_to_string">rs2_playback_status_to_string</a></strong>(status: <a href="rs_record_playback.html#Trs2_playback_status">Trs2_playback_status</a>): PChar; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code>function <strong><a href="rs_record_playback.html#rs2_create_record_device">rs2_create_record_device</a></strong>(const device: <a href="rs_types.html#pRS2_device">pRS2_device</a>; const FileName: PChar; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): <a href="rs_types.html#pRS2_device">pRS2_device</a>; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code>function <strong><a href="rs_record_playback.html#rs2_create_record_device_ex">rs2_create_record_device_ex</a></strong>(const device: <a href="rs_types.html#pRS2_device">pRS2_device</a>; const FileName: PChar; compression_enabled: integer; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): <a href="rs_types.html#pRS2_device">pRS2_device</a>; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code>procedure <strong><a href="rs_record_playback.html#rs2_record_device_pause">rs2_record_device_pause</a></strong>(const device: <a href="rs_types.html#pRS2_device">pRS2_device</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code>procedure <strong><a href="rs_record_playback.html#rs2_record_device_resume">rs2_record_device_resume</a></strong>(const device: <a href="rs_types.html#pRS2_device">pRS2_device</a>; error: <a href="rs_types.html#pRS2_device">pRS2_device</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code>function <strong><a href="rs_record_playback.html#rs2_record_device_filename">rs2_record_device_filename</a></strong>(const device: <a href="rs_types.html#pRS2_device">pRS2_device</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): PChar; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code>function <strong><a href="rs_record_playback.html#rs2_create_playback_device">rs2_create_playback_device</a></strong>(const FileName: PChar; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): <a href="rs_types.html#pRS2_device">pRS2_device</a>; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code>function <strong><a href="rs_record_playback.html#rs2_playback_device_get_file_path">rs2_playback_device_get_file_path</a></strong>(const device: <a href="rs_types.html#pRS2_device">pRS2_device</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): PChar; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code>function <strong><a href="rs_record_playback.html#rs2_playback_get_duration">rs2_playback_get_duration</a></strong>(const device: <a href="rs_types.html#pRS2_device">pRS2_device</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): uint64; cdecl  external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code>procedure <strong><a href="rs_record_playback.html#rs2_playback_seek">rs2_playback_seek</a></strong>(const Device: <a href="rs_types.html#pRS2_device">pRS2_device</a>; time: int64; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code>function <strong><a href="rs_record_playback.html#rs2_playback_get_position">rs2_playback_get_position</a></strong>(const device: <a href="rs_types.html#pRS2_device">pRS2_device</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): uint64; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code>procedure <strong><a href="rs_record_playback.html#rs2_playback_device_resume">rs2_playback_device_resume</a></strong>(const device: <a href="rs_types.html#pRS2_device">pRS2_device</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code>procedure <strong><a href="rs_record_playback.html#rs2_playback_device_pause">rs2_playback_device_pause</a></strong>(const device: <a href="rs_types.html#pRS2_device">pRS2_device</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code>procedure <strong><a href="rs_record_playback.html#rs2_playback_device_set_real_time">rs2_playback_device_set_real_time</a></strong>(const device: <a href="rs_types.html#pRS2_device">pRS2_device</a>; real_time: integer; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code>function <strong><a href="rs_record_playback.html#rs2_playback_device_is_real_time">rs2_playback_device_is_real_time</a></strong>(const device: <a href="rs_types.html#pRS2_device">pRS2_device</a>; real_time: integer; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): integer; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code>procedure <strong><a href="rs_record_playback.html#rs2_playback_device_set_status_changed_callback">rs2_playback_device_set_status_changed_callback</a></strong>(const pRS2_device; Callback: <a href="rs_record_playback.html#pRS2_playback_status_changed_callback_ptr">pRS2_playback_status_changed_callback_ptr</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code>function <strong><a href="rs_record_playback.html#rs2_playback_device_get_current_status">rs2_playback_device_get_current_status</a></strong>(const device: <a href="rs_types.html#pRS2_device">pRS2_device</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): <a href="rs_record_playback.html#PRS2_playback_status">PRS2_playback_status</a>; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code>procedure <strong><a href="rs_record_playback.html#rs2_playback_device_set_playback_speed">rs2_playback_device_set_playback_speed</a></strong>(const device: <a href="rs_types.html#pRS2_device">pRS2_device</a>; speed: single; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code>procedure <strong><a href="rs_record_playback.html#rs2_playback_device_stop">rs2_playback_device_stop</a></strong>(const device: <a href="rs_types.html#pRS2_device">pRS2_device</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+</table>
+<span id="PasDoc-Types"></span><h3 class="summary">Types</h3>
+<table class="summary wide_list">
+<tr class="list">
+<td class="itemcode"><code><strong><a href="rs_record_playback.html#Trs2_playback_status">Trs2_playback_status</a></strong> = (...);</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code><strong><a href="rs_record_playback.html#PRS2_playback_status">PRS2_playback_status</a></strong> = &circ;<a href="rs_record_playback.html#Trs2_playback_status">Trs2_playback_status</a>;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code><strong><a href="rs_record_playback.html#pRS2_playback_status_changed_callback_ptr">pRS2_playback_status_changed_callback_ptr</a></strong> =
+    &circ;<a href="rs_record_playback.html#rs2_playback_status_changed_callback_ptr">rs2_playback_status_changed_callback_ptr</a>;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code><strong><a href="rs_record_playback.html#rs2_playback_status_changed_callback_ptr">rs2_playback_status_changed_callback_ptr</a></strong> = procedure(aTrs2_playback_status: <a href="rs_record_playback.html#Trs2_playback_status">Trs2_playback_status</a>); cdecl;</code></td>
+</tr>
+</table>
+<h2 class="description">Description</h2>
+<h3 class="detail">Functions and Procedures</h3>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_playback_status_to_string"></span><code>function <strong>rs2_playback_status_to_string</strong>(status: <a href="rs_record_playback.html#Trs2_playback_status">Trs2_playback_status</a>): PChar; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+&nbsp;</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_create_record_device"></span><code>function <strong>rs2_create_record_device</strong>(const device: <a href="rs_types.html#pRS2_device">pRS2_device</a>; const FileName: PChar; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): <a href="rs_types.html#pRS2_device">pRS2_device</a>; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Creates a recording device to record the given device and save it to the given file param[in] device The device to record param[in] file The desired path to which the recorder should save the data param[out] error If non-null, receives any error that occurs during this call, otherwise, errors are ignored return A pointer to a device that records its data to file, or null in case of failure</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_create_record_device_ex"></span><code>function <strong>rs2_create_record_device_ex</strong>(const device: <a href="rs_types.html#pRS2_device">pRS2_device</a>; const FileName: PChar; compression_enabled: integer; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): <a href="rs_types.html#pRS2_device">pRS2_device</a>; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Creates a recording device to record the given device and save it to the given file param[in] device The device to record param[in] file The desired path to which the recorder should save the data param[in] compression_enabled Indicates if compression is enabled, 0 means false, otherwise true param[out] error If non-null, receives any error that occurs during this call, otherwise, errors are ignored return A pointer to a device that records its data to file, or null in case of failure</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_record_device_pause"></span><code>procedure <strong>rs2_record_device_pause</strong>(const device: <a href="rs_types.html#pRS2_device">pRS2_device</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Pause the recording device without stopping the actual device from streaming. Pausing will cause the device to stop writing new data to the file, in particular, frames and changes to extensions param[in] device A recording device param[out] error If non-null, receives any error that occurs during this call, otherwise, errors are ignored</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_record_device_resume"></span><code>procedure <strong>rs2_record_device_resume</strong>(const device: <a href="rs_types.html#pRS2_device">pRS2_device</a>; error: <a href="rs_types.html#pRS2_device">pRS2_device</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Unpause the recording device. Resume will cause the device to continue writing new data to the file, in particular, frames and changes to extensions param[in] device A recording device param[out] error If non-null, receives any error that occurs during this call, otherwise, errors are ignored</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_record_device_filename"></span><code>function <strong>rs2_record_device_filename</strong>(const device: <a href="rs_types.html#pRS2_device">pRS2_device</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): PChar; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Gets the name of the file to which the recorder is writing param[in] device A recording device param[out] error If non-null, receives any error that occurs during this call, otherwise, errors are ignored return The name of the file to which the recorder is writing</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_create_playback_device"></span><code>function <strong>rs2_create_playback_device</strong>(const FileName: PChar; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): <a href="rs_types.html#pRS2_device">pRS2_device</a>; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Creates a playback device to play the content of the given file param[in] file Path to the file to play param[out] error If non-null, receives any error that occurs during this call, otherwise, errors are ignored return A pointer to a device that plays data from the file, or null in case of failure</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_playback_device_get_file_path"></span><code>function <strong>rs2_playback_device_get_file_path</strong>(const device: <a href="rs_types.html#pRS2_device">pRS2_device</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): PChar; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Gets the path of the file used by the playback device param[in] device A playback device param[out] error If non-null, receives any error that occurs during this call, otherwise, errors are ignored return Path to the file used by the playback device</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_playback_get_duration"></span><code>function <strong>rs2_playback_get_duration</strong>(const device: <a href="rs_types.html#pRS2_device">pRS2_device</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): uint64; cdecl  external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Gets the total duration of the file in units of nanoseconds param[in] device A playback device param[out] error If non-null, receives any error that occurs during this call, otherwise, errors are ignored return Total duration of the file in units of nanoseconds</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_playback_seek"></span><code>procedure <strong>rs2_playback_seek</strong>(const Device: <a href="rs_types.html#pRS2_device">pRS2_device</a>; time: int64; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Set the playback to a specified time point of the played data param[in] device A playback device. param[in] time The time point to which playback should seek, expressed in units of nanoseconds (zero value = start) param[out] error If non-null, receives any error that occurs during this call, otherwise, errors are ignored</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_playback_get_position"></span><code>function <strong>rs2_playback_get_position</strong>(const device: <a href="rs_types.html#pRS2_device">pRS2_device</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): uint64; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Gets the current position of the playback in the file in terms of time. Units are expressed in nanoseconds param[in] device A playback device param[out] error If non-null, receives any error that occurs during this call, otherwise, errors are ignored return Current position of the playback in the file in terms of time. Units are expressed in nanoseconds</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_playback_device_resume"></span><code>procedure <strong>rs2_playback_device_resume</strong>(const device: <a href="rs_types.html#pRS2_device">pRS2_device</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Pauses the playback Calling pause() in &quot;Paused&quot; status does nothing If pause() is called while playback status is &quot;Playing&quot; or &quot;Stopped&quot;, the playback will not play until resume() is called param[in] device A playback device param[out] error If non-null, receives any error that occurs during this call, otherwise, errors are ignored</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_playback_device_pause"></span><code>procedure <strong>rs2_playback_device_pause</strong>(const device: <a href="rs_types.html#pRS2_device">pRS2_device</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Un-pauses the playback Calling resume() while playback status is &quot;Playing&quot; or &quot;Stopped&quot; does nothing param[in] device A playback device param[out] error If non-null, receives any error that occurs during this call, otherwise, errors are ignored</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_playback_device_set_real_time"></span><code>procedure <strong>rs2_playback_device_set_real_time</strong>(const device: <a href="rs_types.html#pRS2_device">pRS2_device</a>; real_time: integer; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Set the playback to work in real time or non real time
+
+<p>In real time mode, playback will play the same way the file was recorded. In real time mode if the application takes too long to handle the callback, frames may be dropped. In non real time mode, playback will wait for each callback to finish handling the data before reading the next frame. In this mode no frames will be dropped, and the application controls the frame rate of the playback (according to the callback handler duration). param[in] device A playback device param[in] real_time Indicates if real time is requested, 0 means false, otherwise true param[out] error If non-null, receives any error that occurs during this call, otherwise, errors are ignored</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_playback_device_is_real_time"></span><code>function <strong>rs2_playback_device_is_real_time</strong>(const device: <a href="rs_types.html#pRS2_device">pRS2_device</a>; real_time: integer; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): integer; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Indicates if playback is in real time mode or non real time param[in] device A playback device param[out] error If non-null, receives any error that occurs during this call, otherwise, errors are ignored return True iff playback is in real time mode. 0 means false, otherwise true</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_playback_device_set_status_changed_callback"></span><code>procedure <strong>rs2_playback_device_set_status_changed_callback</strong>(const pRS2_device; Callback: <a href="rs_record_playback.html#pRS2_playback_status_changed_callback_ptr">pRS2_playback_status_changed_callback_ptr</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Register to receive callback from playback device upon its status changes
+
+<p>Callbacks are invoked from the reading thread, any heavy processing in the callback handler will affect the reading thread and may cause frame drops\ high latency param[in] device A playback device param[in] callback A callback handler that will be invoked when the playback status changes param[out] error If non-null, receives any error that occurs during this call, otherwise, errors are ignored</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_playback_device_get_current_status"></span><code>function <strong>rs2_playback_device_get_current_status</strong>(const device: <a href="rs_types.html#pRS2_device">pRS2_device</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): <a href="rs_record_playback.html#PRS2_playback_status">PRS2_playback_status</a>; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Returns the current state of the playback device param[in] device A playback device param[out] error If non-null, receives any error that occurs during this call, otherwise, errors are ignored return Current state of the playback</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_playback_device_set_playback_speed"></span><code>procedure <strong>rs2_playback_device_set_playback_speed</strong>(const device: <a href="rs_types.html#pRS2_device">pRS2_device</a>; speed: single; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Set the playing speed
+
+<p>param[in] device A playback device param[in] speed Indicates a multiplication of the speed to play (e.g: 1 = normal, 0.5 twice as slow) param[out] error If non-null, receives any error that occurs during this call, otherwise, errors are ignored</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_playback_device_stop"></span><code>procedure <strong>rs2_playback_device_stop</strong>(const device: <a href="rs_types.html#pRS2_device">pRS2_device</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Stops the playback Calling stop() will stop all streaming playbakc sensors and will reset the playback (returning to beginning of file) param[in] device A playback device param[out] error If non-null, receives any error that occurs during this call, otherwise, errors are ignored</p>
+</td></tr>
+</table>
+<h3 class="detail">Types</h3>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="Trs2_playback_status"></span><code><strong>Trs2_playback_status</strong> = (...);</code></td>
+</tr>
+<tr><td colspan="1">
+&nbsp;<h6 class="description_section">Values</h6>
+<ul>
+<li>
+<span id="RS2_PLAYBACK_STATUS_UNKNOWN">RS2_PLAYBACK_STATUS_UNKNOWN</span>: Unknown state */</li>
+<li>
+<span id="RS2_PLAYBACK_STATUS_PLAYING">RS2_PLAYBACK_STATUS_PLAYING</span>: One or more sensors were started, playback is reading and raising data */</li>
+<li>
+<span id="RS2_PLAYBACK_STATUS_PAUSED">RS2_PLAYBACK_STATUS_PAUSED</span>: One or more sensors were started, but playback paused reading and paused raising data*/</li>
+<li>
+<span id="RS2_PLAYBACK_STATUS_STOPPED">RS2_PLAYBACK_STATUS_STOPPED</span>: All sensors were stopped, or playback has ended (all data was read). This is the initial playback status*/</li>
+<li>
+<span id="RS2_PLAYBACK_STATUS_COUNT">RS2_PLAYBACK_STATUS_COUNT</span></li>
+</ul>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="PRS2_playback_status"></span><code><strong>PRS2_playback_status</strong> = &circ;<a href="rs_record_playback.html#Trs2_playback_status">Trs2_playback_status</a>;</code></td>
+</tr>
+<tr><td colspan="1">
+&nbsp;</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="pRS2_playback_status_changed_callback_ptr"></span><code><strong>pRS2_playback_status_changed_callback_ptr</strong> =
+    &circ;<a href="rs_record_playback.html#rs2_playback_status_changed_callback_ptr">rs2_playback_status_changed_callback_ptr</a>;</code></td>
+</tr>
+<tr><td colspan="1">
+&nbsp;</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_playback_status_changed_callback_ptr"></span><code><strong>rs2_playback_status_changed_callback_ptr</strong> = procedure(aTrs2_playback_status: <a href="rs_record_playback.html#Trs2_playback_status">Trs2_playback_status</a>); cdecl;</code></td>
+</tr>
+<tr><td colspan="1">
+&nbsp;</td></tr>
+</table>
+<hr><span class="appinfo"><em>Generated by <a href="https://pasdoc.github.io/">PasDoc 0.16.0</a>. </em>
+</span>
+</div></div></body></html>

@@ -2,7 +2,12 @@ program testinitlib;
 
 uses
   SysUtils,
-  TypInfo, rs_types, rs_sensor, rs, rs_context, rs_device;
+  TypInfo,
+  rs,
+  rs_context,
+  rs_types,
+  rs_device,
+  rs_sensor;
 
 var
   ctx: prs2_context;

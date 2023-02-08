@@ -1,0 +1,989 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title>rs_sensor</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="generator" content="PasDoc 0.16.0">
+<meta http-equiv="content-type" content="text/html; charset=utf-8">
+<link rel="stylesheet" type="text/css" href="tipuesearch/tipuesearch.css">
+
+<link rel="StyleSheet" type="text/css" href="pasdoc.css">
+</head>
+<body>
+<div class="container"><div class="navigation">
+<ul><li><a href="AllUnits.html">Units</a></li><li><a href="ClassHierarchy.html">Class Hierarchy</a></li><li><a href="AllClasses.html">Classes, Interfaces, Objects and Records</a></li><li><a href="AllTypes.html">Types</a></li><li><a href="AllVariables.html">Variables</a></li><li><a href="AllConstants.html">Constants</a></li><li><a href="AllFunctions.html">Functions and Procedures</a></li><li><a href="AllIdentifiers.html">Identifiers</a></li><li><form class="search-form" action="tipue_results.html"><div class="search-input"><input type="text" name="q" id="tipue_search_input" pattern=".{3,}" title="At least 3 characters" required><div class="search-button"><input type="button" id="tipue_search_button" onclick="this.form.submit();"></div></div></form>
+<div style="clear: both"></div>
+</li></ul></div><div class="content">
+<h1 class="unit">Unit rs_sensor</h1>
+<div class="sections">
+<div class="one_section"><a class="section" href="#PasDoc-Description">Description</a></div><div class="one_section">Uses</div><div class="one_section"><a class="section" href="#PasDoc-Classes">Classes, Interfaces, Objects and Records</a></div><div class="one_section"><a class="section" href="#PasDoc-FuncsProcs">Functions and Procedures</a></div><div class="one_section"><a class="section" href="#PasDoc-Types">Types</a></div><div class="one_section">Constants</div><div class="one_section">Variables</div></div>
+<span id="PasDoc-Description"></span><h2 class="description">Description</h2>
+<p>
+Exposes RealSense sensor functionality</p>
+<span id="PasDoc-Uses"></span><h2 class="overview">Overview</h2>
+<span id="PasDoc-Classes"></span><h3 class="cio">Classes, Interfaces, Objects and Records</h3>
+<table class="classestable wide_list">
+<tr class="listheader">
+<th class="itemname">Name</th>
+<th class="itemdesc">Description</th>
+</tr>
+<tr class="list">
+<td class="itemname">Record&nbsp;<a class="bold" href="rs_sensor.Trs2_extrinsics.html"><code>Trs2_extrinsics</code></a></td>
+<td class="itemdesc">&nbsp;</td>
+</tr>
+</table>
+<span id="PasDoc-FuncsProcs"></span><h3 class="summary">Functions and Procedures</h3>
+<table class="summary wide_list">
+<tr class="list">
+<td class="itemcode"><code>function <strong><a href="rs_sensor.html#rs2_camera_info_to_string">rs2_camera_info_to_string</a></strong>(info: <a href="rs_sensor.html#Trs2_camera_info">Trs2_camera_info</a>): PChar; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code>function <strong><a href="rs_sensor.html#rs2_stream_to_string">rs2_stream_to_string</a></strong>(stream: <a href="rs_sensor.html#Trs2_stream">Trs2_stream</a>): PChar; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code>function <strong><a href="rs_sensor.html#rs2_format_to_string">rs2_format_to_string</a></strong>(format: <a href="rs_sensor.html#Trs2_format">Trs2_format</a>): PChar; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code>procedure <strong><a href="rs_sensor.html#rs2_delete_sensor_list">rs2_delete_sensor_list</a></strong>(info_list: <a href="rs_types.html#pRS2_sensor_list">pRS2_sensor_list</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code>function <strong><a href="rs_sensor.html#rs2_get_sensors_count">rs2_get_sensors_count</a></strong>(info_list: <a href="rs_types.html#pRS2_sensor">pRS2_sensor</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): integer; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code>procedure <strong><a href="rs_sensor.html#rs2_delete_sensor">rs2_delete_sensor</a></strong>(sendor: <a href="rs_types.html#pRS2_sensor">pRS2_sensor</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code>function <strong><a href="rs_sensor.html#rs2_create_sensor">rs2_create_sensor</a></strong>(const list: <a href="rs_types.html#pRS2_sensor_list">pRS2_sensor_list</a>; index: integer; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): <a href="rs_types.html#pRS2_sensor">pRS2_sensor</a>; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code>function <strong><a href="rs_sensor.html#rs2_create_device_from_sensor">rs2_create_device_from_sensor</a></strong>(sensor: <a href="rs_types.html#pRS2_sensor">pRS2_sensor</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): <a href="rs_types.html#pRS2_device">pRS2_device</a>; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code>function <strong><a href="rs_sensor.html#rs2_get_sensor_info">rs2_get_sensor_info</a></strong>(const sensor: <a href="rs_types.html#pRS2_sensor">pRS2_sensor</a>; info: <a href="rs_sensor.html#Trs2_camera_info">Trs2_camera_info</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): PChar; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code>function <strong><a href="rs_sensor.html#rs2_supports_sensor_info">rs2_supports_sensor_info</a></strong>(const sensor: <a href="rs_types.html#pRS2_sensor">pRS2_sensor</a>; info: <a href="rs_sensor.html#Trs2_camera_info">Trs2_camera_info</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): integer; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code>function <strong><a href="rs_sensor.html#rs2_is_sensor_extendable_to">rs2_is_sensor_extendable_to</a></strong>(const sensor: <a href="rs_types.html#pRS2_sensor">pRS2_sensor</a>; extension: <a href="rs_types.html#Trs2_extension">Trs2_extension</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): integer; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code>function <strong><a href="rs_sensor.html#rs2_get_depth_scale">rs2_get_depth_scale</a></strong>(sensor: <a href="rs_types.html#pRS2_sensor">pRS2_sensor</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): single; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code>function <strong><a href="rs_sensor.html#rs2_depth_stereo_frame_get_baseline">rs2_depth_stereo_frame_get_baseline</a></strong>(const frame: <a href="rs_types.html#pRS2_frame">pRS2_frame</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): single; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code>function <strong><a href="rs_sensor.html#rs2_get_stereo_baseline">rs2_get_stereo_baseline</a></strong>(sensor: <a href="rs_types.html#pRS2_sensor">pRS2_sensor</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): single; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code>procedure <strong><a href="rs_sensor.html#rs2_set_region_of_interest">rs2_set_region_of_interest</a></strong>(sensor: <a href="rs_types.html#pRS2_sensor">pRS2_sensor</a>; min_x: integer; min_y: integer; max_x: integer; max_y: integer; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code>procedure <strong><a href="rs_sensor.html#rs2_get_region_of_interest">rs2_get_region_of_interest</a></strong>(sensor: <a href="rs_types.html#pRS2_sensor">pRS2_sensor</a>; min_x: PInteger; min_y: PInteger; max_x: PInteger; max_y: <a href="rs_types.html#pRS2_error">pRS2_error</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code>procedure <strong><a href="rs_sensor.html#rs2_open">rs2_open</a></strong>(device: <a href="rs_types.html#pRS2_sensor">pRS2_sensor</a>; const profile: <a href="rs_types.html#pRS2_stream_profile">pRS2_stream_profile</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code>procedure <strong><a href="rs_sensor.html#rs2_open_multiple">rs2_open_multiple</a></strong>(device: <a href="rs_types.html#pRS2_sensor">pRS2_sensor</a>; const profiles: <a href="rs_types.html#pRS2_stream_profile">pRS2_stream_profile</a>; Count: integer; erroro: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code>procedure <strong><a href="rs_sensor.html#rs2_close">rs2_close</a></strong>(sensor: <a href="rs_types.html#pRS2_sensor">pRS2_sensor</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code>procedure <strong><a href="rs_sensor.html#rs2_start">rs2_start</a></strong>(sensor: <a href="rs_types.html#pRS2_sensor">pRS2_sensor</a>; on_frame: <a href="rs_types.html#pRS2_frame">pRS2_frame</a>; user: <a href="rs_types.html#pvoid">pvoid</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code>procedure <strong><a href="rs_sensor.html#rs2_start_queue">rs2_start_queue</a></strong>(sensor: <a href="rs_types.html#pRS2_sensor">pRS2_sensor</a>; queue: <a href="rs_types.html#pRS2_frame_queue">pRS2_frame_queue</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code>procedure <strong><a href="rs_sensor.html#rs2_stop">rs2_stop</a></strong>(sensor: <a href="rs_types.html#pRS2_sensor">pRS2_sensor</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code>procedure <strong><a href="rs_sensor.html#rs2_set_notifications_callback">rs2_set_notifications_callback</a></strong>(sensor: <a href="rs_types.html#pRS2_sensor">pRS2_sensor</a>; on_notification: <a href="rs_types.html#pRS2_notification_callback_ptr">pRS2_notification_callback_ptr</a>; user: <a href="rs_types.html#pvoid">pvoid</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code>function <strong><a href="rs_sensor.html#rs2_get_notification_description">rs2_get_notification_description</a></strong>(notification: <a href="rs_types.html#pRS2_notification">pRS2_notification</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): PChar; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code>function <strong><a href="rs_sensor.html#rs2_get_notification_timestamp">rs2_get_notification_timestamp</a></strong>(notification: <a href="rs_types.html#pRS2_notification">pRS2_notification</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): <a href="rs_types.html#Trs2_time_t">Trs2_time_t</a>; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code>function <strong><a href="rs_sensor.html#rs2_get_notification_severity">rs2_get_notification_severity</a></strong>(notification: <a href="rs_types.html#pRS2_notification">pRS2_notification</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): <a href="rs_types.html#Trs2_log_severity">Trs2_log_severity</a>; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code>function <strong><a href="rs_sensor.html#rs2_get_notification_category">rs2_get_notification_category</a></strong>(notification: <a href="rs_types.html#pRS2_notification">pRS2_notification</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): <a href="rs_types.html#Trs2_notification_category">Trs2_notification_category</a>; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code>function <strong><a href="rs_sensor.html#rs2_get_notification_serialized_data">rs2_get_notification_serialized_data</a></strong>(notification: <a href="rs_types.html#pRS2_notification">pRS2_notification</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): PChar; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code>function <strong><a href="rs_sensor.html#rs2_get_stream_profiles">rs2_get_stream_profiles</a></strong>(sensor: <a href="rs_types.html#pRS2_sensor">pRS2_sensor</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): <a href="rs_types.html#prs2_stream_profile_list">prs2_stream_profile_list</a>; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code>function <strong><a href="rs_sensor.html#rs2_get_debug_stream_profiles">rs2_get_debug_stream_profiles</a></strong>(sensor: <a href="rs_types.html#pRS2_sensor">pRS2_sensor</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): <a href="rs_types.html#prs2_stream_profile_list">prs2_stream_profile_list</a>; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code>function <strong><a href="rs_sensor.html#rs2_get_active_streams">rs2_get_active_streams</a></strong>(sensor: <a href="rs_types.html#pRS2_sensor">pRS2_sensor</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): <a href="rs_types.html#prs2_stream_profile_list">prs2_stream_profile_list</a>; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code>function <strong><a href="rs_sensor.html#rs2_get_stream_profile">rs2_get_stream_profile</a></strong>(const list: <a href="rs_types.html#pRS2_stream_profile">pRS2_stream_profile</a>; index: integer; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): <a href="rs_types.html#pRS2_stream_profile">pRS2_stream_profile</a>; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code>procedure <strong><a href="rs_sensor.html#rs2_get_stream_profile_data">rs2_get_stream_profile_data</a></strong>(const mode: <a href="rs_types.html#pRS2_stream_profile">pRS2_stream_profile</a>; stream: <a href="rs_types.html#prs2_stream">prs2_stream</a>; format: <a href="rs_types.html#pRS2_format">pRS2_format</a>; index: integer; unique_id: PInteger; framerate: PInteger; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code>function <strong><a href="rs_sensor.html#rs2_clone_stream_profile">rs2_clone_stream_profile</a></strong>(const mode: <a href="rs_types.html#pRS2_stream_profile">pRS2_stream_profile</a>; stream: <a href="rs_sensor.html#Trs2_stream">Trs2_stream</a>; index: integer; format: <a href="rs_sensor.html#Trs2_format">Trs2_format</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): <a href="rs_types.html#pRS2_stream_profile">pRS2_stream_profile</a>; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code>function <strong><a href="rs_sensor.html#rs2_clone_video_stream_profile">rs2_clone_video_stream_profile</a></strong>(const mode: <a href="rs_types.html#pRS2_stream_profile">pRS2_stream_profile</a>; stream: <a href="rs_sensor.html#Trs2_stream">Trs2_stream</a>; index: integer; format: <a href="rs_sensor.html#Trs2_format">Trs2_format</a>; Width: integer; Height: integer; const intr: <a href="rs_types.html#pRS2_intrinsics">pRS2_intrinsics</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): <a href="rs_types.html#pRS2_stream_profile">pRS2_stream_profile</a>; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code>procedure <strong><a href="rs_sensor.html#rs2_delete_stream_profile">rs2_delete_stream_profile</a></strong>(mode: <a href="rs_types.html#pRS2_stream_profile">pRS2_stream_profile</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code>function <strong><a href="rs_sensor.html#rs2_stream_profile_is">rs2_stream_profile_is</a></strong>(mode: <a href="rs_types.html#pRS2_stream_profile">pRS2_stream_profile</a>; atype: <a href="rs_types.html#Trs2_extension">Trs2_extension</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): integer; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code>procedure <strong><a href="rs_sensor.html#rs2_get_video_stream_resolution">rs2_get_video_stream_resolution</a></strong>(const mode: <a href="rs_types.html#pRS2_stream_profile">pRS2_stream_profile</a>; Width: PInteger; Height: PInteger; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code>procedure <strong><a href="rs_sensor.html#rs2_get_motion_intrinsics">rs2_get_motion_intrinsics</a></strong>(const mode: <a href="rs_types.html#pRS2_stream_profile">pRS2_stream_profile</a>; intrinsics: <a href="rs_types.html#pRS2_motion_device_intrinsic">pRS2_motion_device_intrinsic</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code>function <strong><a href="rs_sensor.html#rs2_is_stream_profile_default">rs2_is_stream_profile_default</a></strong>(const mode: <a href="rs_types.html#pRS2_stream_profile">pRS2_stream_profile</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): integer; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code>function <strong><a href="rs_sensor.html#rs2_get_stream_profiles_count">rs2_get_stream_profiles_count</a></strong>(const list: <a href="rs_types.html#prs2_stream_profile_list">pRS2_stream_profile_list</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): integer; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code>procedure <strong><a href="rs_sensor.html#rs2_delete_stream_profile_list">rs2_delete_stream_profile_list</a></strong>(const list: <a href="rs_types.html#prs2_stream_profile_list">pRS2_stream_profile_list</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code>procedure <strong><a href="rs_sensor.html#rs2_get_extrinsics">rs2_get_extrinsics</a></strong>(const afrom: <a href="rs_types.html#pRS2_stream_profile">pRS2_stream_profile</a>; ato: <a href="rs_types.html#pRS2_stream_profile">pRS2_stream_profile</a>; extrin: <a href="rs_sensor.html#pRS2_extrinsics">pRS2_extrinsics</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code>procedure <strong><a href="rs_sensor.html#rs2_register_extrinsics">rs2_register_extrinsics</a></strong>(const afrom: <a href="rs_types.html#pRS2_stream_profile">pRS2_stream_profile</a>; ato: <a href="rs_types.html#pRS2_stream_profile">pRS2_stream_profile</a>; extrin: <a href="rs_sensor.html#pRS2_extrinsics">pRS2_extrinsics</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code>procedure <strong><a href="rs_sensor.html#rs2_override_extrinsics">rs2_override_extrinsics</a></strong>(const sensor: <a href="rs_types.html#pRS2_sensor">pRS2_sensor</a>; const extrinsics: <a href="rs_sensor.html#pRS2_extrinsics">pRS2_extrinsics</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code>procedure <strong><a href="rs_sensor.html#rs2_get_video_stream_intrinsics">rs2_get_video_stream_intrinsics</a></strong>(const sensor: <a href="rs_types.html#pRS2_sensor">pRS2_sensor</a>; const extrinsics: <a href="rs_sensor.html#pRS2_extrinsics">pRS2_extrinsics</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code>function <strong><a href="rs_sensor.html#rs2_get_recommended_processing_blocks">rs2_get_recommended_processing_blocks</a></strong>(sensor: <a href="rs_types.html#pRS2_sensor">pRS2_sensor</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): <a href="rs_types.html#pRS2_processing_block_list">pRS2_processing_block_list</a>; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code>function <strong><a href="rs_sensor.html#rs2_get_processing_block">rs2_get_processing_block</a></strong>(const list: <a href="rs_types.html#pRS2_processing_block_list">pRS2_processing_block_list</a>; index: integer; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): <a href="rs_types.html#pRS2_processing_block">pRS2_processing_block</a>; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code>function <strong><a href="rs_sensor.html#rs2_get_recommended_processing_blocks_count">rs2_get_recommended_processing_blocks_count</a></strong>(const list: <a href="rs_types.html#pRS2_processing_block">pRS2_processing_block</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): integer; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code>procedure <strong><a href="rs_sensor.html#rs2_delete_recommended_processing_blocks">rs2_delete_recommended_processing_blocks</a></strong>(list: <a href="rs_types.html#pRS2_processing_block">pRS2_processing_block</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code>function <strong><a href="rs_sensor.html#rs2_import_localization_map">rs2_import_localization_map</a></strong>(const sensor: <a href="rs_types.html#pRS2_sensor">pRS2_sensor</a>; const lmap_blob: pbyte; blob_size: cardinal; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): integer; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code>function <strong><a href="rs_sensor.html#rs2_export_localization_map">rs2_export_localization_map</a></strong>(sensor: <a href="rs_types.html#pRS2_sensor">pRS2_sensor</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): <a href="rs_types.html#pRS2_raw_data_buffer">pRS2_raw_data_buffer</a>; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code>function <strong><a href="rs_sensor.html#rs2_set_static_node">rs2_set_static_node</a></strong>(const sensor: <a href="rs_types.html#pRS2_sensor">pRS2_sensor</a>; guid: PChar; const pos: <a href="rs_types.Trs2_vector.html">Trs2_vector</a>; const orient: <a href="rs_types.Trs2_quaternion.html">Trs2_quaternion</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): integer; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code>function <strong><a href="rs_sensor.html#rs2_get_static_node">rs2_get_static_node</a></strong>(const sensor: <a href="rs_types.html#pRS2_sensor">pRS2_sensor</a>; const guid: PChar; const pos: <a href="rs_types.Trs2_vector.html">Trs2_vector</a>; const orient: <a href="rs_types.Trs2_quaternion.html">Trs2_quaternion</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): integer; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code>function <strong><a href="rs_sensor.html#rs2_remove_static_node">rs2_remove_static_node</a></strong>(const sensor: <a href="rs_types.html#pRS2_sensor">pRS2_sensor</a>; const guid: PChar; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): integer; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code>function <strong><a href="rs_sensor.html#rs2_load_wheel_odometry_config">rs2_load_wheel_odometry_config</a></strong>(sendor: <a href="rs_types.html#pRS2_sensor">pRS2_sensor</a>; odometry_config_buf: pbyte; blob_size: cardinal; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): integer; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code>function <strong><a href="rs_sensor.html#rs2_send_wheel_odometry">rs2_send_wheel_odometry</a></strong>(const sensor: <a href="rs_types.html#pRS2_sensor">pRS2_sensor</a>; wo_sensor_id: char; frame_num: cardinal; const translation_velocity: <a href="rs_types.Trs2_vector.html">Trs2_vector</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): integer; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code>procedure <strong><a href="rs_sensor.html#rs2_set_intrinsics">rs2_set_intrinsics</a></strong>(const sensor: <a href="rs_types.html#pRS2_sensor">pRS2_sensor</a>; const profile: <a href="rs_types.html#pRS2_stream_profile">pRS2_stream_profile</a>; intrinsics: <a href="rs_types.html#pRS2_intrinsics">pRS2_intrinsics</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code>procedure <strong><a href="rs_sensor.html#rs2_override_intrinsics">rs2_override_intrinsics</a></strong>(const sensor: <a href="rs_types.html#pRS2_sensor">pRS2_sensor</a>; const extrinsics: <a href="rs_sensor.html#pRS2_extrinsics">pRS2_extrinsics</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code>procedure <strong><a href="rs_sensor.html#rs2_get_dsm_params">rs2_get_dsm_params</a></strong>(sensor: <a href="rs_types.html#pRS2_sensor">pRS2_sensor</a>; p_params_out: <a href="rs_types.html#pRS2_dsm_params">pRS2_dsm_params</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code>procedure <strong><a href="rs_sensor.html#rs2_override_dsm_params">rs2_override_dsm_params</a></strong>(const sensor: <a href="rs_types.html#pRS2_sensor">pRS2_sensor</a>; p_params: <a href="rs_types.html#pRS2_dsm_params">pRS2_dsm_params</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code>procedure <strong><a href="rs_sensor.html#rs2_reset_sensor_calibration">rs2_reset_sensor_calibration</a></strong>(const sensor: <a href="rs_types.html#pRS2_sensor">pRS2_sensor</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code>procedure <strong><a href="rs_sensor.html#rs2_set_motion_device_intrinsics">rs2_set_motion_device_intrinsics</a></strong>(const sensor: <a href="rs_types.html#pRS2_sensor">pRS2_sensor</a>; profile: <a href="rs_types.html#pRS2_stream_profile">pRS2_stream_profile</a>; const intrinsics: <a href="rs_types.html#pRS2_motion_device_intrinsic">pRS2_motion_device_intrinsic</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code>function <strong><a href="rs_sensor.html#rs2_get_max_usable_depth_range">rs2_get_max_usable_depth_range</a></strong>(sensor: <a href="rs_types.html#pRS2_sensor">pRS2_sensor</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): single; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+</table>
+<span id="PasDoc-Types"></span><h3 class="summary">Types</h3>
+<table class="summary wide_list">
+<tr class="list">
+<td class="itemcode"><code><strong><a href="rs_sensor.html#Trs2_camera_info">Trs2_camera_info</a></strong> = (...);</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code><strong><a href="rs_sensor.html#Trs2_stream">Trs2_stream</a></strong> = (...);</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code><strong><a href="rs_sensor.html#Trs2_format">Trs2_format</a></strong> = (...);</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code><strong><a href="rs_sensor.html#pRS2_extrinsics">pRS2_extrinsics</a></strong> = &circ;<a href="rs_sensor.Trs2_extrinsics.html">Trs2_extrinsics</a>;</code></td>
+</tr>
+</table>
+<h2 class="description">Description</h2>
+<h3 class="detail">Functions and Procedures</h3>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_camera_info_to_string"></span><code>function <strong>rs2_camera_info_to_string</strong>(info: <a href="rs_sensor.html#Trs2_camera_info">Trs2_camera_info</a>): PChar; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+&nbsp;</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_stream_to_string"></span><code>function <strong>rs2_stream_to_string</strong>(stream: <a href="rs_sensor.html#Trs2_stream">Trs2_stream</a>): PChar; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+&nbsp;</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_format_to_string"></span><code>function <strong>rs2_format_to_string</strong>(format: <a href="rs_sensor.html#Trs2_format">Trs2_format</a>): PChar; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+&nbsp;</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_delete_sensor_list"></span><code>procedure <strong>rs2_delete_sensor_list</strong>(info_list: <a href="rs_types.html#pRS2_sensor_list">pRS2_sensor_list</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Deletes sensors list, any sensors created from this list will remain unaffected param[in] info_list list to delete</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_get_sensors_count"></span><code>function <strong>rs2_get_sensors_count</strong>(info_list: <a href="rs_types.html#pRS2_sensor">pRS2_sensor</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): integer; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Determines number of sensors in a list param[in] info_list The list of connected sensors captured using rs2_query_sensors param[out] error if non-null, receives any error that occurs during this call, otherwise, errors are ignored return Sensors count</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_delete_sensor"></span><code>procedure <strong>rs2_delete_sensor</strong>(sendor: <a href="rs_types.html#pRS2_sensor">pRS2_sensor</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+delete relasense sensor param[in] sensor realsense sensor to delete</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_create_sensor"></span><code>function <strong>rs2_create_sensor</strong>(const list: <a href="rs_types.html#pRS2_sensor_list">pRS2_sensor_list</a>; index: integer; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): <a href="rs_types.html#pRS2_sensor">pRS2_sensor</a>; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+create sensor by index param[in] index the zero based index of sensor to retrieve param[out] error if non-null, receives any error that occurs during this call, otherwise, errors are ignored return the requested sensor, should be released by rs2_delete_sensor
+
+<p>rs2_sensor* rs2_create_sensor(const rs2_sensor_list* list, int index, rs2_error** error);</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_create_device_from_sensor"></span><code>function <strong>rs2_create_device_from_sensor</strong>(sensor: <a href="rs_types.html#pRS2_sensor">pRS2_sensor</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): <a href="rs_types.html#pRS2_device">pRS2_device</a>; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+This is a helper function allowing the user to discover the device from one of its sensors param[in] sensor Pointer to a sensor param[out] error if non-null, receives any error that occurs during this call, otherwise, errors are ignored return new device wrapper for the device of the sensor. Needs to be released by delete_device</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_get_sensor_info"></span><code>function <strong>rs2_get_sensor_info</strong>(const sensor: <a href="rs_types.html#pRS2_sensor">pRS2_sensor</a>; info: <a href="rs_sensor.html#Trs2_camera_info">Trs2_camera_info</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): PChar; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+retrieve sensor specific information, like versions of various internal components param[in] sensor the RealSense sensor param[in] info camera info type to retrieve param[out] error if non-null, receives any error that occurs during this call, otherwise, errors are ignored return the requested camera info string, in a format specific to the device model</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_supports_sensor_info"></span><code>function <strong>rs2_supports_sensor_info</strong>(const sensor: <a href="rs_types.html#pRS2_sensor">pRS2_sensor</a>; info: <a href="rs_sensor.html#Trs2_camera_info">Trs2_camera_info</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): integer; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+check if specific sensor info is supported param[in] info the parameter to check for support param[out] error if non-null, receives any error that occurs during this call, otherwise, errors are ignored return true if the parameter both exist and well-defined for the specific device</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_is_sensor_extendable_to"></span><code>function <strong>rs2_is_sensor_extendable_to</strong>(const sensor: <a href="rs_types.html#pRS2_sensor">pRS2_sensor</a>; extension: <a href="rs_types.html#Trs2_extension">Trs2_extension</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): integer; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Test if the given sensor can be extended to the requested extension param[in] sensor Realsense sensor param[in] extension The extension to which the sensor should be tested if it is extendable param[out] error if non-null, receives any error that occurs during this call, otherwise, errors are ignored return non-zero value iff the sensor can be extended to the given extension</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_get_depth_scale"></span><code>function <strong>rs2_get_depth_scale</strong>(sensor: <a href="rs_types.html#pRS2_sensor">pRS2_sensor</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): single; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+When called on a depth sensor, this method will return the number of meters represented by a single depth unit param[in] sensor depth sensor param[out] error if non-null, receives any error that occurs during this call, otherwise, errors are ignored return the number of meters represented by a single depth unit</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_depth_stereo_frame_get_baseline"></span><code>function <strong>rs2_depth_stereo_frame_get_baseline</strong>(const frame: <a href="rs_types.html#pRS2_frame">pRS2_frame</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): single; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Retrieve the stereoscopic baseline value from frame. Applicable to stereo-based depth modules param[out] float Stereoscopic baseline in millimeters param[out] error if non-null, receives any error that occurs during this call, otherwise, errors are ignored</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_get_stereo_baseline"></span><code>function <strong>rs2_get_stereo_baseline</strong>(sensor: <a href="rs_types.html#pRS2_sensor">pRS2_sensor</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): single; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Retrieve the stereoscopic baseline value from sensor. Applicable to stereo-based depth modules param[out] float Stereoscopic baseline in millimeters param[out] error if non-null, receives any error that occurs during this call, otherwise, errors are ignored</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_set_region_of_interest"></span><code>procedure <strong>rs2_set_region_of_interest</strong>(sensor: <a href="rs_types.html#pRS2_sensor">pRS2_sensor</a>; min_x: integer; min_y: integer; max_x: integer; max_y: integer; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+sets the active region of interest to be used by auto-exposure algorithm param[in] sensor the RealSense sensor param[in] min_x lower horizontal bound in pixels param[in] min_y lower vertical bound in pixels param[in] max_x upper horizontal bound in pixels param[in] max_y upper vertical bound in pixels param[out] error if non-null, receives any error that occurs during this call, otherwise, errors are ignored</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_get_region_of_interest"></span><code>procedure <strong>rs2_get_region_of_interest</strong>(sensor: <a href="rs_types.html#pRS2_sensor">pRS2_sensor</a>; min_x: PInteger; min_y: PInteger; max_x: PInteger; max_y: <a href="rs_types.html#pRS2_error">pRS2_error</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+brief gets the active region of interest to be used by auto-exposure algorithm param[in] sensor the RealSense sensor param[out] min_x lower horizontal bound in pixels param[out] min_y lower vertical bound in pixels param[out] max_x upper horizontal bound in pixels param[out] max_y upper vertical bound in pixels param[out] error if non-null, receives any error that occurs during this call, otherwise, errors are ignored</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_open"></span><code>procedure <strong>rs2_open</strong>(device: <a href="rs_types.html#pRS2_sensor">pRS2_sensor</a>; const profile: <a href="rs_types.html#pRS2_stream_profile">pRS2_stream_profile</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+open subdevice for exclusive access, by committing to a configuration param[in] device relevant RealSense device param[in] profile stream profile that defines single stream configuration param[out] error if non-null, receives any error that occurs during this call, otherwise, errors are ignored</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_open_multiple"></span><code>procedure <strong>rs2_open_multiple</strong>(device: <a href="rs_types.html#pRS2_sensor">pRS2_sensor</a>; const profiles: <a href="rs_types.html#pRS2_stream_profile">pRS2_stream_profile</a>; Count: integer; erroro: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+open subdevice for exclusive access, by committing to composite configuration, specifying one or more stream profiles this method should be used for interdependent streams, such as depth and infrared, that have to be configured together param[in] device relevant RealSense device param[in] profiles list of stream profiles discovered by get_stream_profiles param[in] count number of simultaneous stream profiles to configure param[out] error if non-null, receives any error that occurs during this call, otherwise, errors are ignored</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_close"></span><code>procedure <strong>rs2_close</strong>(sensor: <a href="rs_types.html#pRS2_sensor">pRS2_sensor</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+stop any streaming from specified subdevice param[in] sensor RealSense device param[out] error if non-null, receives any error that occurs during this call, otherwise, errors are ignored</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_start"></span><code>procedure <strong>rs2_start</strong>(sensor: <a href="rs_types.html#pRS2_sensor">pRS2_sensor</a>; on_frame: <a href="rs_types.html#pRS2_frame">pRS2_frame</a>; user: <a href="rs_types.html#pvoid">pvoid</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+start streaming from specified configured sensor param[in] sensor RealSense device param[in] on_frame function pointer to register as per-frame callback param[in] user auxiliary data the user wishes to receive together with every frame callback param[out] error if non-null, receives any error that occurs during this call, otherwise, errors are ignored</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_start_queue"></span><code>procedure <strong>rs2_start_queue</strong>(sensor: <a href="rs_types.html#pRS2_sensor">pRS2_sensor</a>; queue: <a href="rs_types.html#pRS2_frame_queue">pRS2_frame_queue</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+start streaming from specified configured sensor of specific stream to frame queue param[in] sensor RealSense Sensor param[in] queue frame-queue to store new frames into param[out] error if non-null, receives any error that occurs during this call, otherwise, errors are ignored</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_stop"></span><code>procedure <strong>rs2_stop</strong>(sensor: <a href="rs_types.html#pRS2_sensor">pRS2_sensor</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+stops streaming from specified configured device param[in] sensor RealSense sensor param[out] error if non-null, receives any error that occurs during this call, otherwise, errors are ignored</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_set_notifications_callback"></span><code>procedure <strong>rs2_set_notifications_callback</strong>(sensor: <a href="rs_types.html#pRS2_sensor">pRS2_sensor</a>; on_notification: <a href="rs_types.html#pRS2_notification_callback_ptr">pRS2_notification_callback_ptr</a>; user: <a href="rs_types.html#pvoid">pvoid</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+set callback to get notifications from specified sensor param[in] sensor RealSense device param[in] on_notification function pointer to register as per-notifications callback param[out] error if non-null, receives any error that occurs during this call, otherwise, errors are ignored</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_get_notification_description"></span><code>function <strong>rs2_get_notification_description</strong>(notification: <a href="rs_types.html#pRS2_notification">pRS2_notification</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): PChar; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+retrieve description from notification handle param[in] notification handle returned from a callback param[out] error if non-null, receives any error that occurs during this call, otherwise, errors are ignored return the notification description</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_get_notification_timestamp"></span><code>function <strong>rs2_get_notification_timestamp</strong>(notification: <a href="rs_types.html#pRS2_notification">pRS2_notification</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): <a href="rs_types.html#Trs2_time_t">Trs2_time_t</a>; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+retrieve timestamp from notification handle param[in] notification handle returned from a callback param[out] error if non-null, receives any error that occurs during this call, otherwise, errors are ignored return the notification timestamp</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_get_notification_severity"></span><code>function <strong>rs2_get_notification_severity</strong>(notification: <a href="rs_types.html#pRS2_notification">pRS2_notification</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): <a href="rs_types.html#Trs2_log_severity">Trs2_log_severity</a>; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+retrieve severity from notification handle param[in] notification handle returned from a callback param[out] error if non-null, receives any error that occurs during this call, otherwise, errors are ignored return the notification severity</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_get_notification_category"></span><code>function <strong>rs2_get_notification_category</strong>(notification: <a href="rs_types.html#pRS2_notification">pRS2_notification</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): <a href="rs_types.html#Trs2_notification_category">Trs2_notification_category</a>; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+retrieve category from notification handle param[in] notification handle returned from a callback param[out] error if non-null, receives any error that occurs during this call, otherwise, errors are ignored return the notification category</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_get_notification_serialized_data"></span><code>function <strong>rs2_get_notification_serialized_data</strong>(notification: <a href="rs_types.html#pRS2_notification">pRS2_notification</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): PChar; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+retrieve serialized data from notification handle param[in] notification handle returned from a callback param[out] error if non-null, receives any error that occurs during this call, otherwise, errors are ignored return the serialized data (in JSON format)</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_get_stream_profiles"></span><code>function <strong>rs2_get_stream_profiles</strong>(sensor: <a href="rs_types.html#pRS2_sensor">pRS2_sensor</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): <a href="rs_types.html#prs2_stream_profile_list">prs2_stream_profile_list</a>; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+check if physical subdevice is supported param[in] sensor input RealSense subdevice param[out] error if non-null, receives any error that occurs during this call, otherwise, errors are ignored return list of stream profiles that given subdevice can provide, should be released by rs2_delete_profiles_list</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_get_debug_stream_profiles"></span><code>function <strong>rs2_get_debug_stream_profiles</strong>(sensor: <a href="rs_types.html#pRS2_sensor">pRS2_sensor</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): <a href="rs_types.html#prs2_stream_profile_list">prs2_stream_profile_list</a>; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+retrieve list of debug stream profiles that given subdevice can provide param[in] sensor input RealSense subdevice param[out] error if non-null, receives any error that occurs during this call, otherwise, errors are ignored return list of debug stream profiles that given subdevice can provide, should be released by rs2_delete_profiles_list</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_get_active_streams"></span><code>function <strong>rs2_get_active_streams</strong>(sensor: <a href="rs_types.html#pRS2_sensor">pRS2_sensor</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): <a href="rs_types.html#prs2_stream_profile_list">prs2_stream_profile_list</a>; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+check how subdevice is streaming param[in] sensor input RealSense subdevice param[out] error if non-null, receives any error that occurs during this call, otherwise, errors are ignored return list of stream profiles that given subdevice is currently streaming, should be released by rs2_delete_profiles_list</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_get_stream_profile"></span><code>function <strong>rs2_get_stream_profile</strong>(const list: <a href="rs_types.html#pRS2_stream_profile">pRS2_stream_profile</a>; index: integer; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): <a href="rs_types.html#pRS2_stream_profile">pRS2_stream_profile</a>; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Get pointer to specific stream profile param[in] list the list of supported profiles returned by rs2_get_supported_profiles param[in] index the zero based index of the streaming mode param[out] error if non-null, receives any error that occurs during this call, otherwise, errors are ignored</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_get_stream_profile_data"></span><code>procedure <strong>rs2_get_stream_profile_data</strong>(const mode: <a href="rs_types.html#pRS2_stream_profile">pRS2_stream_profile</a>; stream: <a href="rs_types.html#prs2_stream">prs2_stream</a>; format: <a href="rs_types.html#pRS2_format">pRS2_format</a>; index: integer; unique_id: PInteger; framerate: PInteger; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Extract common parameters of a stream profiles param[in] mode input stream profile param[out] stream stream type of the input profile param[out] format binary data format of the input profile param[out] index stream index the input profile in case there are multiple streams of the same type param[out] unique_id identifier for the stream profile, unique within the application param[out] framerate expected rate for data frames to arrive, meaning expected number of frames per second param[out] error if non-null, receives any error that occurs during this call, otherwise, errors are ignored</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_clone_stream_profile"></span><code>function <strong>rs2_clone_stream_profile</strong>(const mode: <a href="rs_types.html#pRS2_stream_profile">pRS2_stream_profile</a>; stream: <a href="rs_sensor.html#Trs2_stream">Trs2_stream</a>; index: integer; format: <a href="rs_sensor.html#Trs2_format">Trs2_format</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): <a href="rs_types.html#pRS2_stream_profile">pRS2_stream_profile</a>; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Creates a copy of stream profile, assigning new values to some of the fields param[in] mode input stream profile param[in] stream stream type for the profile param[in] format binary data format of the profile param[in] index stream index the profile in case there are multiple streams of the same type param[out] error if non-null, receives any error that occurs during this call, otherwise, errors are ignored return new stream profile, must be deleted by rs2_delete_stream_profile</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_clone_video_stream_profile"></span><code>function <strong>rs2_clone_video_stream_profile</strong>(const mode: <a href="rs_types.html#pRS2_stream_profile">pRS2_stream_profile</a>; stream: <a href="rs_sensor.html#Trs2_stream">Trs2_stream</a>; index: integer; format: <a href="rs_sensor.html#Trs2_format">Trs2_format</a>; Width: integer; Height: integer; const intr: <a href="rs_types.html#pRS2_intrinsics">pRS2_intrinsics</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): <a href="rs_types.html#pRS2_stream_profile">pRS2_stream_profile</a>; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Creates a copy of stream profile, assigning new values to some of the fields param[in] mode input stream profile param[in] stream stream type for the profile param[in] format binary data format of the profile param[in] width new width for the profile param[in] height new height for the profile param[in] intr new intrinsics for the profile param[in] index stream index the profile in case there are multiple streams of the same type param[out] error if non-null, receives any error that occurs during this call, otherwise, errors are ignored return new stream profile, must be deleted by rs2_delete_stream_profile</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_delete_stream_profile"></span><code>procedure <strong>rs2_delete_stream_profile</strong>(mode: <a href="rs_types.html#pRS2_stream_profile">pRS2_stream_profile</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Delete stream profile allocated by rs2_clone_stream_profile Should not be called on stream profiles returned by the device param[in] mode input stream profile</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_stream_profile_is"></span><code>function <strong>rs2_stream_profile_is</strong>(mode: <a href="rs_types.html#pRS2_stream_profile">pRS2_stream_profile</a>; atype: <a href="rs_types.html#Trs2_extension">Trs2_extension</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): integer; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Try to extend stream profile to an extension type param[in] mode input stream profile param[in] type extension type, for example RS2_EXTENSION_VIDEO_STREAM_PROFILE param[out] error if non-null, receives any error that occurs during this call, otherwise, errors are ignored return non-zero if profile is extendable to specified extension, zero otherwise</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_get_video_stream_resolution"></span><code>procedure <strong>rs2_get_video_stream_resolution</strong>(const mode: <a href="rs_types.html#pRS2_stream_profile">pRS2_stream_profile</a>; Width: PInteger; Height: PInteger; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+When called on a video stream profile, will return the width and the height of the stream param[in] mode input stream profile param[out] width width in pixels of the video stream param[out] height height in pixels of the video stream param[out] error if non-null, receives any error that occurs during this call, otherwise, errors are ignored</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_get_motion_intrinsics"></span><code>procedure <strong>rs2_get_motion_intrinsics</strong>(const mode: <a href="rs_types.html#pRS2_stream_profile">pRS2_stream_profile</a>; intrinsics: <a href="rs_types.html#pRS2_motion_device_intrinsic">pRS2_motion_device_intrinsic</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Obtain the intrinsics of a specific stream configuration from the device. param[in] mode input stream profile param[out] intrinsics Pointer to the struct to store the data in param[out] error If non-null, receives any error that occurs during this call, otherwise, errors are ignored</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_is_stream_profile_default"></span><code>function <strong>rs2_is_stream_profile_default</strong>(const mode: <a href="rs_types.html#pRS2_stream_profile">pRS2_stream_profile</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): integer; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Returns non-zero if selected profile is recommended for the sensor This is an optional hint we offer to suggest profiles with best performance-quality tradeof param[in] mode input stream profile param[out] error if non-null, receives any error that occurs during this call, otherwise, errors are ignored return non-zero if selected profile is recommended for the sensor</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_get_stream_profiles_count"></span><code>function <strong>rs2_get_stream_profiles_count</strong>(const list: <a href="rs_types.html#prs2_stream_profile_list">pRS2_stream_profile_list</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): integer; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+get the number of supported stream profiles param[in] list the list of supported profiles returned by rs2_get_supported_profiles param[out] error if non-null, receives any error that occurs during this call, otherwise, errors are ignored return number of supported subdevice profiles</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_delete_stream_profile_list"></span><code>procedure <strong>rs2_delete_stream_profile_list</strong>(const list: <a href="rs_types.html#prs2_stream_profile_list">pRS2_stream_profile_list</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+delete stream profiles list param[in] list the list of supported profiles returned by rs2_get_supported_profiles</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_get_extrinsics"></span><code>procedure <strong>rs2_get_extrinsics</strong>(const afrom: <a href="rs_types.html#pRS2_stream_profile">pRS2_stream_profile</a>; ato: <a href="rs_types.html#pRS2_stream_profile">pRS2_stream_profile</a>; extrin: <a href="rs_sensor.html#pRS2_extrinsics">pRS2_extrinsics</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+param[in] from origin stream profile param[in] to target stream profile param[out] extrin extrinsics from origin to target param[out] error if non-null, receives any error that occurs during this call, otherwise, errors are ignored</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_register_extrinsics"></span><code>procedure <strong>rs2_register_extrinsics</strong>(const afrom: <a href="rs_types.html#pRS2_stream_profile">pRS2_stream_profile</a>; ato: <a href="rs_types.html#pRS2_stream_profile">pRS2_stream_profile</a>; extrin: <a href="rs_sensor.html#pRS2_extrinsics">pRS2_extrinsics</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+param[in] from origin stream profile param[in] to target stream profile param[out] extrin extrinsics from origin to target param[out] error if non-null, receives any error that occurs during this call, otherwise, errors are ignored</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_override_extrinsics"></span><code>procedure <strong>rs2_override_extrinsics</strong>(const sensor: <a href="rs_types.html#pRS2_sensor">pRS2_sensor</a>; const extrinsics: <a href="rs_sensor.html#pRS2_extrinsics">pRS2_extrinsics</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Override extrinsics of a given sensor that supports calibrated_sensor.
+
+<p>This will affect extrinsics at the source device and may affect multiple profiles. Used for DEPTH_TO_RGB calibration.
+
+<p>param[in] sensor The sensor param[in] extrinsics Extrinsics from Depth to the named sensor param[out] error If non-null, receives any error that occurs during this call, otherwise, errors are ignored</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_get_video_stream_intrinsics"></span><code>procedure <strong>rs2_get_video_stream_intrinsics</strong>(const sensor: <a href="rs_types.html#pRS2_sensor">pRS2_sensor</a>; const extrinsics: <a href="rs_sensor.html#pRS2_extrinsics">pRS2_extrinsics</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+When called on a video profile, returns the intrinsics of specific stream configuration param[in] mode input stream profile param[out] intrinsics resulting intrinsics for the video profile param[out] error if non-null, receives any error that occurs during this call, otherwise, errors are ignored</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_get_recommended_processing_blocks"></span><code>function <strong>rs2_get_recommended_processing_blocks</strong>(sensor: <a href="rs_types.html#pRS2_sensor">pRS2_sensor</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): <a href="rs_types.html#pRS2_processing_block_list">pRS2_processing_block_list</a>; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Returns the list of recommended processing blocks for a specific sensor. Order and configuration of the blocks are decided by the sensor param[in] sensor input sensor param[out] error if non-null, receives any error that occurs during this call, otherwise, errors are ignored return list of supported sensor recommended processing blocks</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_get_processing_block"></span><code>function <strong>rs2_get_processing_block</strong>(const list: <a href="rs_types.html#pRS2_processing_block_list">pRS2_processing_block_list</a>; index: integer; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): <a href="rs_types.html#pRS2_processing_block">pRS2_processing_block</a>; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Returns specific processing blocks from processing blocks list param[in] list the processing blocks list param[in] index the requested processing block param[out] error if non-null, receives any error that occurs during this call, otherwise, errors are ignored return processing block</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_get_recommended_processing_blocks_count"></span><code>function <strong>rs2_get_recommended_processing_blocks_count</strong>(const list: <a href="rs_types.html#pRS2_processing_block">pRS2_processing_block</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): integer; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Returns the processing blocks list size param[in] list the processing blocks list param[out] error if non-null, receives any error that occurs during this call, otherwise, errors are ignored return the processing block list size</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_delete_recommended_processing_blocks"></span><code>procedure <strong>rs2_delete_recommended_processing_blocks</strong>(list: <a href="rs_types.html#pRS2_processing_block">pRS2_processing_block</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Deletes processing blocks list param[in] list list to delete</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_import_localization_map"></span><code>function <strong>rs2_import_localization_map</strong>(const sensor: <a href="rs_types.html#pRS2_sensor">pRS2_sensor</a>; const lmap_blob: pbyte; blob_size: cardinal; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): integer; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Imports a localization map from file to tm2 tracking device param[in] sensor TM2 position-tracking sensor param[in] lmap_blob Localization map raw buffer, serialized param[in] blob_size The buffer's size in bytes param[out] error If non-null, receives any error that occurs during this call, otherwise, errors are ignored return Non-zero if succeeded, otherwise 0</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_export_localization_map"></span><code>function <strong>rs2_export_localization_map</strong>(sensor: <a href="rs_types.html#pRS2_sensor">pRS2_sensor</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): <a href="rs_types.html#pRS2_raw_data_buffer">pRS2_raw_data_buffer</a>; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Extract and store the localization map of tm2 tracking device to file param[in] sensor TM2 position-tracking sensor param[in] lmap_fname The file name of the localization map param[out] error If non-null, receives any error that occurs during this call, otherwise, errors are ignored return Device's response in a rs2_raw_data_buffer, which should be released by rs2_delete_raw_data</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_set_static_node"></span><code>function <strong>rs2_set_static_node</strong>(const sensor: <a href="rs_types.html#pRS2_sensor">pRS2_sensor</a>; guid: PChar; const pos: <a href="rs_types.Trs2_vector.html">Trs2_vector</a>; const orient: <a href="rs_types.Trs2_quaternion.html">Trs2_quaternion</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): integer; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Create a named location tag param[in] sensor T2xx position-tracking sensor param[in] guid Null-terminated string of up to 127 characters param[in] pos Position in meters, relative to the current tracking session param[in] orient Quaternion orientation, expressed the the coordinate system of the current tracking session param[out] error If non-null, receives any error that occurs during this call, otherwise, errors are ignored return Non-zero if succeeded, otherwise 0</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_get_static_node"></span><code>function <strong>rs2_get_static_node</strong>(const sensor: <a href="rs_types.html#pRS2_sensor">pRS2_sensor</a>; const guid: PChar; const pos: <a href="rs_types.Trs2_vector.html">Trs2_vector</a>; const orient: <a href="rs_types.Trs2_quaternion.html">Trs2_quaternion</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): integer; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Retrieve a named location tag param[in] sensor T2xx position-tracking sensor param[in] guid Null-terminated string of up to 127 characters param[out] pos Position in meters of the tagged (stored) location param[out] orient Quaternion orientation of the tagged (stored) location param[out] error If non-null, receives any error that occurs during this call, otherwise, errors are ignored return Non-zero if succeeded, otherwise 0</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_remove_static_node"></span><code>function <strong>rs2_remove_static_node</strong>(const sensor: <a href="rs_types.html#pRS2_sensor">pRS2_sensor</a>; const guid: PChar; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): integer; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Remove a named location tag param[in] sensor T2xx position-tracking sensor param[in] guid Null-terminated string of up to 127 characters param[out] error If non-null, receives any error that occurs during this call, otherwise, errors are ignored return Non-zero if succeeded, otherwise 0</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_load_wheel_odometry_config"></span><code>function <strong>rs2_load_wheel_odometry_config</strong>(sendor: <a href="rs_types.html#pRS2_sensor">pRS2_sensor</a>; odometry_config_buf: pbyte; blob_size: cardinal; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): integer; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+/** Load Wheel odometer settings from host to device * \param[in] odometry_config_buf odometer configuration/calibration blob serialized from jsom file * \return true on success */ int rs2_load_wheel_odometry_config(const rs2_sensor* sensor, const unsigned char* odometry_config_buf, unsigned int blob_size, rs2_error** error);</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_send_wheel_odometry"></span><code>function <strong>rs2_send_wheel_odometry</strong>(const sensor: <a href="rs_types.html#pRS2_sensor">pRS2_sensor</a>; wo_sensor_id: char; frame_num: cardinal; const translation_velocity: <a href="rs_types.Trs2_vector.html">Trs2_vector</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): integer; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+param[in] wo_sensor_id - Zero-based index of (wheel) sensor with the same type within device param[in] frame_num - Monotonocally increasing frame number, managed per sensor. param[in] translational_velocity - Translational velocity of the wheel sensor [meter/sec] return true on success</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_set_intrinsics"></span><code>procedure <strong>rs2_set_intrinsics</strong>(const sensor: <a href="rs_types.html#pRS2_sensor">pRS2_sensor</a>; const profile: <a href="rs_types.html#pRS2_stream_profile">pRS2_stream_profile</a>; intrinsics: <a href="rs_types.html#pRS2_intrinsics">pRS2_intrinsics</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Set intrinsics of a given sensor param[in] sensor The RealSense device param[in] profile Target stream profile param[in] intrinsics Intrinsics value to be written to the device param[out] error If non-null, receives any error that occurs during this call, otherwise, errors are ignored</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_override_intrinsics"></span><code>procedure <strong>rs2_override_intrinsics</strong>(const sensor: <a href="rs_types.html#pRS2_sensor">pRS2_sensor</a>; const extrinsics: <a href="rs_sensor.html#pRS2_extrinsics">pRS2_extrinsics</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Override intrinsics of a given sensor that supports calibrated_sensor.
+
+<p>This will affect intrinsics at the source and may affect multiple profiles. Used for DEPTH_TO_RGB calibration.
+
+<p>param[in] sensor The RealSense device param[in] intrinsics Intrinsics value to be written to the sensor param[out] error If non-null, receives any error that occurs during this call, otherwise, errors are ignored</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_get_dsm_params"></span><code>procedure <strong>rs2_get_dsm_params</strong>(sensor: <a href="rs_types.html#pRS2_sensor">pRS2_sensor</a>; p_params_out: <a href="rs_types.html#pRS2_dsm_params">pRS2_dsm_params</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Get the DSM parameters for a sensor param[in] sensor Sensor that supports the CALIBRATED_SENSOR extension param[out] p_params_out Pointer to the structure that will get the DSM parameters param[out] error If non-null, receives any error that occurs during this call, otherwise, errors are ignored</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_override_dsm_params"></span><code>procedure <strong>rs2_override_dsm_params</strong>(const sensor: <a href="rs_types.html#pRS2_sensor">pRS2_sensor</a>; p_params: <a href="rs_types.html#pRS2_dsm_params">pRS2_dsm_params</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Set the sensor DSM parameters This should ideally be done when the stream is NOT running. If it is, the parameters may not take effect immediately. param[in] sensor Sensor that supports the CALIBRATED_SENSOR extension param[out] p_params Pointer to the structure that contains the DSM parameters param[out] error If non-null, receives any error that occurs during this call, otherwise, errors are ignored</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_reset_sensor_calibration"></span><code>procedure <strong>rs2_reset_sensor_calibration</strong>(const sensor: <a href="rs_types.html#pRS2_sensor">pRS2_sensor</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Reset the sensor DSM parameters This should ideally be done when the stream is NOT running. May not take effect immediately. param[in] sensor Sensor that supports the CALIBRATED_SENSOR extension param[out] error If non-null, receives any error that occurs during this call, otherwise, errors are ignored</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_set_motion_device_intrinsics"></span><code>procedure <strong>rs2_set_motion_device_intrinsics</strong>(const sensor: <a href="rs_types.html#pRS2_sensor">pRS2_sensor</a>; profile: <a href="rs_types.html#pRS2_stream_profile">pRS2_stream_profile</a>; const intrinsics: <a href="rs_types.html#pRS2_motion_device_intrinsic">pRS2_motion_device_intrinsic</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Set motion device intrinsics param[in] sensor Motion sensor param[in] profile Motion stream profile param[out] intrinsics Pointer to the struct to store the data in param[out] error If non-null, receives any error that occurs during this call, otherwise, errors are ignored</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_get_max_usable_depth_range"></span><code>function <strong>rs2_get_max_usable_depth_range</strong>(sensor: <a href="rs_types.html#pRS2_sensor">pRS2_sensor</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>): single; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+When called on a depth sensor, this method will return the maximum range of the camera given the amount of ambient light in the scene param[in] sensor depth sensor param[out] error if non-null, receives any error that occurs during this call, otherwise, errors are ignored return the max usable range in meters</p>
+</td></tr>
+</table>
+<h3 class="detail">Types</h3>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="Trs2_camera_info"></span><code><strong>Trs2_camera_info</strong> = (...);</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+brief Read-only strings that can be queried from the device. Not all information attributes are available on all camera types. This information is mainly available for camera debug and troubleshooting and should not be used in applications.</p>
+<h6 class="description_section">Values</h6>
+<ul>
+<li>
+<span id="RS2_CAMERA_INFO_NAME">RS2_CAMERA_INFO_NAME</span>: Friendly name</li>
+<li>
+<span id="RS2_CAMERA_INFO_SERIAL_NUMBER">RS2_CAMERA_INFO_SERIAL_NUMBER</span>: Device serial number</li>
+<li>
+<span id="RS2_CAMERA_INFO_FIRMWARE_VERSION">RS2_CAMERA_INFO_FIRMWARE_VERSION</span>: Primary firmware version</li>
+<li>
+<span id="RS2_CAMERA_INFO_RECOMMENDED_FIRMWARE_VERSION">RS2_CAMERA_INFO_RECOMMENDED_FIRMWARE_VERSION</span>: Recommended firmware version</li>
+<li>
+<span id="RS2_CAMERA_INFO_PHYSICAL_PORT">RS2_CAMERA_INFO_PHYSICAL_PORT</span>: Unique identifier of the port the device is connected to (platform specific)</li>
+<li>
+<span id="RS2_CAMERA_INFO_DEBUG_OP_CODE">RS2_CAMERA_INFO_DEBUG_OP_CODE</span>: If device supports firmware logging,// this is the command to send to get logs from firmware</li>
+<li>
+<span id="RS2_CAMERA_INFO_ADVANCED_MODE">RS2_CAMERA_INFO_ADVANCED_MODE</span>: True iff the device is in advanced mode</li>
+<li>
+<span id="RS2_CAMERA_INFO_PRODUCT_ID">RS2_CAMERA_INFO_PRODUCT_ID</span>: Product ID as reported in the USB descriptor</li>
+<li>
+<span id="RS2_CAMERA_INFO_CAMERA_LOCKED">RS2_CAMERA_INFO_CAMERA_LOCKED</span>: True iff EEPROM is locked</li>
+<li>
+<span id="RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR">RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR</span>: Designated USB specification: USB2/USB3</li>
+<li>
+<span id="RS2_CAMERA_INFO_PRODUCT_LINE">RS2_CAMERA_INFO_PRODUCT_LINE</span>: Device product line D400/SR300/L500/T200</li>
+<li>
+<span id="RS2_CAMERA_INFO_ASIC_SERIAL_NUMBER">RS2_CAMERA_INFO_ASIC_SERIAL_NUMBER</span>: ASIC serial number</li>
+<li>
+<span id="RS2_CAMERA_INFO_FIRMWARE_UPDATE_ID">RS2_CAMERA_INFO_FIRMWARE_UPDATE_ID</span>: Firmware update ID</li>
+<li>
+<span id="RS2_CAMERA_INFO_IP_ADDRESS">RS2_CAMERA_INFO_IP_ADDRESS</span>: IP address for remote camera.</li>
+<li>
+<span id="RS2_CAMERA_INFO_COUNT">RS2_CAMERA_INFO_COUNT</span>: Number of enumeration values. Not a valid input: intended to be used in for-loops.</li>
+</ul>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="Trs2_stream"></span><code><strong>Trs2_stream</strong> = (...);</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+brief Streams are different types of data provided by RealSense devices./</p>
+<h6 class="description_section">Values</h6>
+<ul>
+<li>
+<span id="RS2_STREAM_ANY">RS2_STREAM_ANY</span></li>
+<li>
+<span id="RS2_STREAM_DEPTH">RS2_STREAM_DEPTH</span>: Native stream of depth data produced by RealSense device */</li>
+<li>
+<span id="RS2_STREAM_COLOR">RS2_STREAM_COLOR</span>: Native stream of color data captured by RealSense device */</li>
+<li>
+<span id="RS2_STREAM_INFRARED">RS2_STREAM_INFRARED</span>: Native stream of infrared data captured by RealSense device */</li>
+<li>
+<span id="RS2_STREAM_FISHEYE">RS2_STREAM_FISHEYE</span>: Native stream of fish-eye (wide) data captured from the dedicate motion camera */</li>
+<li>
+<span id="RS2_STREAM_GYRO">RS2_STREAM_GYRO</span>: Native stream of gyroscope motion data produced by RealSense device */</li>
+<li>
+<span id="RS2_STREAM_ACCEL">RS2_STREAM_ACCEL</span>: Native stream of accelerometer motion data produced by RealSense device */</li>
+<li>
+<span id="RS2_STREAM_GPIO">RS2_STREAM_GPIO</span>: Signals from external device connected through GPIO */</li>
+<li>
+<span id="RS2_STREAM_POSE">RS2_STREAM_POSE</span>: 6 Degrees of Freedom pose data, calculated by RealSense device */</li>
+<li>
+<span id="RS2_STREAM_CONFIDENCE">RS2_STREAM_CONFIDENCE</span>: 4 bit per-pixel depth confidence level */</li>
+<li>
+<span id="RS2_STREAM_COUNT">RS2_STREAM_COUNT</span></li>
+</ul>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="Trs2_format"></span><code><strong>Trs2_format</strong> = (...);</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+A stream's format identifies how binary data is encoded within a frame. */</p>
+<h6 class="description_section">Values</h6>
+<ul>
+<li>
+<span id="RS2_FORMAT_ANY">RS2_FORMAT_ANY</span>: When passed to enable stream, librealsense will try to provide best suited format */</li>
+<li>
+<span id="RS2_FORMAT_Z16">RS2_FORMAT_Z16</span>: 16-bit linear depth values. The depth is meters is equal to depth scale * pixel value. */</li>
+<li>
+<span id="RS2_FORMAT_DISPARITY16">RS2_FORMAT_DISPARITY16</span>: 16-bit float-point disparity values. Depth-&gt;Disparity conversion : Disparity = Baseline*FocalLength/Depth. */</li>
+<li>
+<span id="RS2_FORMAT_XYZ32F">RS2_FORMAT_XYZ32F</span>: 32-bit floating point 3D coordinates. */</li>
+<li>
+<span id="RS2_FORMAT_YUYV">RS2_FORMAT_YUYV</span>: 32-bit y0, u, y1, v data for every two pixels. Similar to YUV422 but packed in a different order - <a href="https://en.wikipedia.org/wiki/YUV">https://en.wikipedia.org/wiki/YUV</a> */</li>
+<li>
+<span id="RS2_FORMAT_RGB8">RS2_FORMAT_RGB8</span>: 8-bit red, green and blue channels */</li>
+<li>
+<span id="RS2_FORMAT_BGR8">RS2_FORMAT_BGR8</span>: 8-bit blue, green, and red channels &ndash; suitable for OpenCV */</li>
+<li>
+<span id="RS2_FORMAT_RGBA8">RS2_FORMAT_RGBA8</span>: 8-bit red, green and blue channels + constant alpha channel equal to FF */</li>
+<li>
+<span id="RS2_FORMAT_BGRA8">RS2_FORMAT_BGRA8</span>: 8-bit blue, green, and red channels + constant alpha channel equal to FF */</li>
+<li>
+<span id="RS2_FORMAT_Y8">RS2_FORMAT_Y8</span>: 8-bit per-pixel grayscale image */</li>
+<li>
+<span id="RS2_FORMAT_Y16">RS2_FORMAT_Y16</span>: 16-bit per-pixel grayscale image */</li>
+<li>
+<span id="RS2_FORMAT_RAW10">RS2_FORMAT_RAW10</span>: Four 10 bits per pixel luminance values packed into a 5-byte macropixel */</li>
+<li>
+<span id="RS2_FORMAT_RAW16">RS2_FORMAT_RAW16</span>: 16-bit raw image */</li>
+<li>
+<span id="RS2_FORMAT_RAW8">RS2_FORMAT_RAW8</span>: 8-bit raw image */</li>
+<li>
+<span id="RS2_FORMAT_UYVY">RS2_FORMAT_UYVY</span>: Similar to the standard YUYV pixel format, but packed in a different order */</li>
+<li>
+<span id="RS2_FORMAT_MOTION_RAW">RS2_FORMAT_MOTION_RAW</span>: Raw data from the motion sensor */</li>
+<li>
+<span id="RS2_FORMAT_MOTION_XYZ32F">RS2_FORMAT_MOTION_XYZ32F</span>: Motion data packed as 3 32-bit float values, for X, Y, and Z axis */</li>
+<li>
+<span id="RS2_FORMAT_GPIO_RAW">RS2_FORMAT_GPIO_RAW</span>: Raw data from the external sensors hooked to one of the GPIO's */</li>
+<li>
+<span id="RS2_FORMAT_6DOF">RS2_FORMAT_6DOF</span>: Pose data packed as floats array, containing translation vector, rotation quaternion and prediction velocities and accelerations vectors */</li>
+<li>
+<span id="RS2_FORMAT_DISPARITY32">RS2_FORMAT_DISPARITY32</span>: 32-bit float-point disparity values. Depth-&gt;Disparity conversion : Disparity = Baseline*FocalLength/Depth */</li>
+<li>
+<span id="RS2_FORMAT_Y10BPACK">RS2_FORMAT_Y10BPACK</span>: 16-bit per-pixel grayscale image unpacked from 10 bits per pixel packed ([8:8:8:8:2222]) grey-scale image. The data is unpacked to LSB and padded with 6 zero bits */</li>
+<li>
+<span id="RS2_FORMAT_DISTANCE">RS2_FORMAT_DISTANCE</span>: 32-bit float-point depth distance value. */</li>
+<li>
+<span id="RS2_FORMAT_MJPEG">RS2_FORMAT_MJPEG</span>: Bitstream encoding for video in which an image of each frame is encoded as JPEG-DIB */</li>
+<li>
+<span id="RS2_FORMAT_Y8I">RS2_FORMAT_Y8I</span>: 8-bit per pixel interleaved. 8-bit left, 8-bit right. */</li>
+<li>
+<span id="RS2_FORMAT_Y12I">RS2_FORMAT_Y12I</span>: 12-bit per pixel interleaved. 12-bit left, 12-bit right. Each pixel is stored in a 24-bit word in little-endian order. */</li>
+<li>
+<span id="RS2_FORMAT_INZI">RS2_FORMAT_INZI</span>: multi-planar Depth 16bit + IR 10bit. */</li>
+<li>
+<span id="RS2_FORMAT_INVI">RS2_FORMAT_INVI</span>: 8-bit IR stream. */</li>
+<li>
+<span id="RS2_FORMAT_W10">RS2_FORMAT_W10</span>: Grey-scale image as a bit-packed array. 4 pixel data stream taking 5 bytes */</li>
+<li>
+<span id="RS2_FORMAT_Z16H">RS2_FORMAT_Z16H</span>: Variable-length Huffman-compressed 16-bit depth values. */</li>
+<li>
+<span id="RS2_FORMAT_FG">RS2_FORMAT_FG</span>: 16-bit per-pixel frame grabber format. */</li>
+<li>
+<span id="RS2_FORMAT_Y411">RS2_FORMAT_Y411</span>: 12-bit per-pixel. */</li>
+<li>
+<span id="RS2_FORMAT_COUNT">RS2_FORMAT_COUNT</span>: Number of enumeration values. Not a valid input: intended to be used in for-loops. */</li>
+</ul>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="pRS2_extrinsics"></span><code><strong>pRS2_extrinsics</strong> = &circ;<a href="rs_sensor.Trs2_extrinsics.html">Trs2_extrinsics</a>;</code></td>
+</tr>
+<tr><td colspan="1">
+&nbsp;</td></tr>
+</table>
+<hr><span class="appinfo"><em>Generated by <a href="https://pasdoc.github.io/">PasDoc 0.16.0</a>. </em>
+</span>
+</div></div></body></html>

@@ -4,12 +4,12 @@ uses
   SysUtils,
   rs,
   rs_types,
+  rs_frame,
   rs_device,
   rs_sensor,
   rs_config,
   rs_context,
-  rs_pipeline,
-  rs_frame;
+  rs_pipeline;
 
 const
   STREAM = RS2_STREAM_DEPTH;

@@ -9,81 +9,101 @@
         <Filename Value="RsColor.lpr"/>
         <IsPartOfProject Value="True"/>
         <IsVisibleTab Value="True"/>
+        <CursorPos X="12" Y="12"/>
         <UsageCount Value="20"/>
         <Loaded Value="True"/>
       </Unit>
       <Unit>
         <Filename Value="..\src\rs.pas"/>
-        <IsPartOfProject Value="True"/>
         <UsageCount Value="20"/>
       </Unit>
       <Unit>
         <Filename Value="..\src\rs_context.pas"/>
-        <IsPartOfProject Value="True"/>
         <UsageCount Value="20"/>
       </Unit>
       <Unit>
         <Filename Value="..\src\rs_device.pas"/>
-        <IsPartOfProject Value="True"/>
         <UsageCount Value="20"/>
       </Unit>
       <Unit>
         <Filename Value="..\src\rs_pipeline.pas"/>
-        <IsPartOfProject Value="True"/>
         <UsageCount Value="20"/>
       </Unit>
       <Unit>
         <Filename Value="..\src\rs_sensor.pas"/>
-        <IsPartOfProject Value="True"/>
         <UsageCount Value="20"/>
       </Unit>
       <Unit>
         <Filename Value="..\src\rs_types.pas"/>
-        <IsPartOfProject Value="True"/>
         <UsageCount Value="20"/>
       </Unit>
       <Unit>
         <Filename Value="..\src\rs_config.pas"/>
-        <IsPartOfProject Value="True"/>
         <UsageCount Value="20"/>
       </Unit>
       <Unit>
         <Filename Value="..\src\rs_frame.pas"/>
-        <IsPartOfProject Value="True"/>
         <UsageCount Value="20"/>
       </Unit>
       <Unit>
         <Filename Value="..\src\rs_processing.pas"/>
-        <IsPartOfProject Value="True"/>
         <UsageCount Value="20"/>
       </Unit>
       <Unit>
         <Filename Value="..\src\rs_option.pas"/>
-        <IsPartOfProject Value="True"/>
         <UsageCount Value="20"/>
       </Unit>
       <Unit>
         <Filename Value="..\src\rs_internal.pas"/>
-        <IsPartOfProject Value="True"/>
         <UsageCount Value="20"/>
       </Unit>
       <Unit>
         <Filename Value="..\src\rs_record_playback.pas"/>
-        <IsPartOfProject Value="True"/>
         <UsageCount Value="20"/>
       </Unit>
       <Unit>
         <Filename Value="..\src\rs_advanced_mode_command.pas"/>
-        <IsPartOfProject Value="True"/>
         <UsageCount Value="20"/>
       </Unit>
       <Unit>
         <Filename Value="..\src\rs_advanced_mode.pas"/>
-        <IsPartOfProject Value="True"/>
         <UsageCount Value="20"/>
       </Unit>
     </Units>
-    <JumpHistory HistoryIndex="-1"/>
+    <JumpHistory HistoryIndex="7">
+      <Position>
+        <Filename Value="RsColor.lpr"/>
+        <Caret Line="6" Column="6"/>
+      </Position>
+      <Position>
+        <Filename Value="RsColor.lpr"/>
+        <Caret Line="24" Column="40"/>
+      </Position>
+      <Position>
+        <Filename Value="RsColor.lpr"/>
+        <Caret Line="38" Column="25" TopLine="25"/>
+      </Position>
+      <Position>
+        <Filename Value="RsColor.lpr"/>
+        <Caret Line="7" Column="11"/>
+      </Position>
+      <Position>
+        <Filename Value="RsColor.lpr"/>
+        <Caret Line="8" Column="12"/>
+      </Position>
+      <Position>
+        <Filename Value="RsColor.lpr"/>
+        <Caret Line="9" Column="12"/>
+      </Position>
+      <Position>
+        <Filename Value="RsColor.lpr"/>
+        <Caret Line="10" Column="14"/>
+      </Position>
+      <Position>
+        <Filename Value="RsColor.lpr"/>
+        <Caret Line="11" Column="14"/>
+      </Position>
+    </JumpHistory>
     <RunParams>
       <FormatVersion Value="2"/>
       <Modes ActiveMode=""/>

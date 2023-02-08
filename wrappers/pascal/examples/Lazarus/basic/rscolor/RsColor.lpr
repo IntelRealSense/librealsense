@@ -2,15 +2,14 @@ program RsColor;
 
 uses
   SysUtils,
-  rs,
   rs_types,
+  rs,
+  rs_frame,
   rs_device,
-  rs_context,
   rs_sensor,
+  rs_context,
   rs_pipeline,
-  rs_config,
-  rs_frame, rs_processing, rs_option, rs_internal, rs_record_playback, 
-rs_advanced_mode_command, rs_advanced_mode;
+  rs_config;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //                                     These parameters are reconfigurable                                        //

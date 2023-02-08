@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title>All Classes, Interfaces, Objects and Records</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="generator" content="PasDoc 0.16.0">
+<meta http-equiv="content-type" content="text/html; charset=utf-8">
+<link rel="stylesheet" type="text/css" href="tipuesearch/tipuesearch.css">
+
+<link rel="StyleSheet" type="text/css" href="pasdoc.css">
+</head>
+<body>
+<div class="container"><div class="navigation">
+<ul><li><a href="AllUnits.html">Units</a></li><li><a href="ClassHierarchy.html">Class Hierarchy</a></li><li><a href="AllClasses.html">Classes, Interfaces, Objects and Records</a></li><li><a href="AllTypes.html">Types</a></li><li><a href="AllVariables.html">Variables</a></li><li><a href="AllConstants.html">Constants</a></li><li><a href="AllFunctions.html">Functions and Procedures</a></li><li><a href="AllIdentifiers.html">Identifiers</a></li><li><form class="search-form" action="tipue_results.html"><div class="search-input"><input type="text" name="q" id="tipue_search_input" pattern=".{3,}" title="At least 3 characters" required><div class="search-button"><input type="button" id="tipue_search_button" onclick="this.form.submit();"></div></div></form>
+<div style="clear: both"></div>
+</li></ul></div><div class="content">
+<h1 class="allitems">All Classes, Interfaces, Objects and Records</h1>
+<table class="itemstable wide_list">
+<tr class="listheader">
+<th class="itemname">Name</th>
+<th class="itemunit">Unit</th>
+<th class="itemdesc">Description</th>
+</tr>
+<tr class="list">
+<td class="itemname"><a class="bold" href="rs_internal.Tpose_frame_info.html">Tpose_frame_info</a></td>
+<td class="itemunit"><a class="bold" href="rs_internal.html">rs_internal</a></td>
+<td class="itemdesc"><p>&nbsp;</p></td>
+</tr>
+<tr class="list2">
+<td class="itemname"><a class="bold" href="rs_types.Trs2_dsm_params.html">Trs2_dsm_params</a></td>
+<td class="itemunit"><a class="bold" href="rs_types.html">rs_types</a></td>
+<td class="itemdesc"><p>Video DSM (Digital Sync Module) parameters for calibration (same layout as in FW ac_depth_params) This is the block in MC that converts angles to dimensionless integers reported to MA (using &quot;DSM coefficients&quot;)</p></td>
+</tr>
+<tr class="list">
+<td class="itemname"><a class="bold" href="rs_sensor.Trs2_extrinsics.html">Trs2_extrinsics</a></td>
+<td class="itemunit"><a class="bold" href="rs_sensor.html">rs_sensor</a></td>
+<td class="itemdesc"><p>Cross-stream extrinsics: encodes the topology describing how the different devices are oriented. */</p></td>
+</tr>
+<tr class="list2">
+<td class="itemname"><a class="bold" href="rs_types.Trs2_intrinsics.html">Trs2_intrinsics</a></td>
+<td class="itemunit"><a class="bold" href="rs_types.html">rs_types</a></td>
+<td class="itemdesc"><p>Video stream intrinsics.</p></td>
+</tr>
+<tr class="list">
+<td class="itemname"><a class="bold" href="rs_types.Trs2_motion_device_intrinsic.html">Trs2_motion_device_intrinsic</a></td>
+<td class="itemunit"><a class="bold" href="rs_types.html">rs_types</a></td>
+<td class="itemdesc"><p>Motion device intrinsics: scale, bias, and variances. */</p></td>
+</tr>
+<tr class="list2">
+<td class="itemname"><a class="bold" href="rs_internal.Trs2_motion_stream.html">Trs2_motion_stream</a></td>
+<td class="itemunit"><a class="bold" href="rs_internal.html">rs_internal</a></td>
+<td class="itemdesc"><p>All the parameters required to define a motion stream.</p></td>
+</tr>
+<tr class="list">
+<td class="itemname"><a class="bold" href="rs_types.Trs2_pixel.html">Trs2_pixel</a></td>
+<td class="itemunit"><a class="bold" href="rs_types.html">rs_types</a></td>
+<td class="itemdesc"><p>Pixel location within 2D image. (0,0) is the topmost, left corner. Positive X is right, positive Y is down *</p></td>
+</tr>
+<tr class="list2">
+<td class="itemname"><a class="bold" href="rs_types.Trs2_pose.html">Trs2_pose</a></td>
+<td class="itemunit"><a class="bold" href="rs_types.html">rs_types</a></td>
+<td class="itemdesc"><p>translation; //&lt; X, Y, Z values of translation, in meters (relative to initial position) */ velocity; //&lt; X, Y, Z values of velocity, in meters/sec */ acceleration; //&lt; X, Y, Z values of acceleration, in meters/sec&circ;2 */ rotation; //&lt; Qi, Qj, Qk, Qr components of rotation as represented in quaternion rotation (relative to initial position) */ angular_velocity; //&lt; X, Y, Z values of angular velocity, in radians/sec */ angular_acceleration; //&lt; X, Y, Z values of angular acceleration, in radians/sec&circ;2 */ tracker_confidence; //&lt; Pose confidence 0x0 - Failed, 0x1 - Low, 0x2 - Medium, 0x3 - High */ mapper_confidence; //&lt; Pose map confidence 0x0 - Failed, 0x1 - Low, 0x2 - Medium, 0x3 - High */</p></td>
+</tr>
+<tr class="list">
+<td class="itemname"><a class="bold" href="rs_internal.Trs2_pose_stream.html">Trs2_pose_stream</a></td>
+<td class="itemunit"><a class="bold" href="rs_internal.html">rs_internal</a></td>
+<td class="itemdesc"><p>All the parameters required to define a pose stream.</p></td>
+</tr>
+<tr class="list2">
+<td class="itemname"><a class="bold" href="rs_types.Trs2_pose_stream.html">Trs2_pose_stream</a></td>
+<td class="itemunit"><a class="bold" href="rs_types.html">rs_types</a></td>
+<td class="itemdesc"><p>All the parameters required to define a pose stream.</p></td>
+</tr>
+<tr class="list">
+<td class="itemname"><a class="bold" href="rs_types.Trs2_quaternion.html">Trs2_quaternion</a></td>
+<td class="itemunit"><a class="bold" href="rs_types.html">rs_types</a></td>
+<td class="itemdesc"><p>Quaternion used to represent rotation</p></td>
+</tr>
+<tr class="list2">
+<td class="itemname"><a class="bold" href="rs_internal.Trs2_software_device_destruction_callback.html">Trs2_software_device_destruction_callback</a></td>
+<td class="itemunit"><a class="bold" href="rs_internal.html">rs_internal</a></td>
+<td class="itemdesc"><p>&nbsp;</p></td>
+</tr>
+<tr class="list">
+<td class="itemname"><a class="bold" href="rs_internal.Trs2_software_motion_frame.html">Trs2_software_motion_frame</a></td>
+<td class="itemunit"><a class="bold" href="rs_internal.html">rs_internal</a></td>
+<td class="itemdesc"><p>brief All the parameters required to define a motion frame.</p></td>
+</tr>
+<tr class="list2">
+<td class="itemname"><a class="bold" href="rs_internal.Trs2_software_notification.html">Trs2_software_notification</a></td>
+<td class="itemunit"><a class="bold" href="rs_internal.html">rs_internal</a></td>
+<td class="itemdesc"><p>All the parameters required to define a sensor notification. */</p></td>
+</tr>
+<tr class="list">
+<td class="itemname"><a class="bold" href="rs_internal.Trs2_software_pose_frame.html">Trs2_software_pose_frame</a></td>
+<td class="itemunit"><a class="bold" href="rs_internal.html">rs_internal</a></td>
+<td class="itemdesc"><p>All the parameters required to define a pose frame.</p></td>
+</tr>
+<tr class="list2">
+<td class="itemname"><a class="bold" href="rs_internal.Trs2_software_video_frame.html">Trs2_software_video_frame</a></td>
+<td class="itemunit"><a class="bold" href="rs_internal.html">rs_internal</a></td>
+<td class="itemdesc"><p>All the parameters required to define a video frame.</p></td>
+</tr>
+<tr class="list">
+<td class="itemname"><a class="bold" href="rs_types.Trs2_vector.html">Trs2_vector</a></td>
+<td class="itemunit"><a class="bold" href="rs_types.html">rs_types</a></td>
+<td class="itemdesc"><p>3D vector in Euclidean coordinate space</p></td>
+</tr>
+<tr class="list2">
+<td class="itemname"><a class="bold" href="rs_types.Trs2_vertex.html">Trs2_vertex</a></td>
+<td class="itemunit"><a class="bold" href="rs_types.html">rs_types</a></td>
+<td class="itemdesc"><p>3D coordinates with origin at topmost left corner of the lense, with positive Z pointing away from the camera, positive X pointing camera right and positive Y pointing camera down</p></td>
+</tr>
+<tr class="list">
+<td class="itemname"><a class="bold" href="rs_internal.Trs2_video_stream.html">Trs2_video_stream</a></td>
+<td class="itemunit"><a class="bold" href="rs_internal.html">rs_internal</a></td>
+<td class="itemdesc"><p>All the parameters required to define a video stream.</p></td>
+</tr>
+<tr class="list2">
+<td class="itemname"><a class="bold" href="rs_advanced_mode_command.TSTAEControl.html">TSTAEControl</a></td>
+<td class="itemunit"><a class="bold" href="rs_advanced_mode_command.html">rs_advanced_mode_command</a></td>
+<td class="itemdesc"><p>&nbsp;</p></td>
+</tr>
+<tr class="list">
+<td class="itemname"><a class="bold" href="rs_advanced_mode_command.TSTAFactor.html">TSTAFactor</a></td>
+<td class="itemunit"><a class="bold" href="rs_advanced_mode_command.html">rs_advanced_mode_command</a></td>
+<td class="itemdesc"><p>&nbsp;</p></td>
+</tr>
+<tr class="list2">
+<td class="itemname"><a class="bold" href="rs_advanced_mode_command.TSTCensusRadius.html">TSTCensusRadius</a></td>
+<td class="itemunit"><a class="bold" href="rs_advanced_mode_command.html">rs_advanced_mode_command</a></td>
+<td class="itemdesc"><p>&nbsp;</p></td>
+</tr>
+<tr class="list">
+<td class="itemname"><a class="bold" href="rs_advanced_mode_command.TSTColorControl.html">TSTColorControl</a></td>
+<td class="itemunit"><a class="bold" href="rs_advanced_mode_command.html">rs_advanced_mode_command</a></td>
+<td class="itemdesc"><p>&nbsp;</p></td>
+</tr>
+<tr class="list2">
+<td class="itemname"><a class="bold" href="rs_advanced_mode_command.TSTColorCorrection.html">TSTColorCorrection</a></td>
+<td class="itemunit"><a class="bold" href="rs_advanced_mode_command.html">rs_advanced_mode_command</a></td>
+<td class="itemdesc"><p>&nbsp;</p></td>
+</tr>
+<tr class="list">
+<td class="itemname"><a class="bold" href="rs_advanced_mode_command.TSTDepthControlGroup.html">TSTDepthControlGroup</a></td>
+<td class="itemunit"><a class="bold" href="rs_advanced_mode_command.html">rs_advanced_mode_command</a></td>
+<td class="itemdesc"><p>&nbsp;</p></td>
+</tr>
+<tr class="list2">
+<td class="itemname"><a class="bold" href="rs_advanced_mode_command.TSTDepthTableControl.html">TSTDepthTableControl</a></td>
+<td class="itemunit"><a class="bold" href="rs_advanced_mode_command.html">rs_advanced_mode_command</a></td>
+<td class="itemdesc"><p>&nbsp;</p></td>
+</tr>
+<tr class="list">
+<td class="itemname"><a class="bold" href="rs_advanced_mode_command.TSTHdad.html">TSTHdad</a></td>
+<td class="itemunit"><a class="bold" href="rs_advanced_mode_command.html">rs_advanced_mode_command</a></td>
+<td class="itemdesc"><p>&nbsp;</p></td>
+</tr>
+<tr class="list2">
+<td class="itemname"><a class="bold" href="rs_advanced_mode_command.TSTRauColorThresholdsControl.html">TSTRauColorThresholdsControl</a></td>
+<td class="itemunit"><a class="bold" href="rs_advanced_mode_command.html">rs_advanced_mode_command</a></td>
+<td class="itemdesc"><p>&nbsp;</p></td>
+</tr>
+<tr class="list">
+<td class="itemname"><a class="bold" href="rs_advanced_mode_command.TSTRauSupportVectorControl.html">TSTRauSupportVectorControl</a></td>
+<td class="itemunit"><a class="bold" href="rs_advanced_mode_command.html">rs_advanced_mode_command</a></td>
+<td class="itemdesc"><p>&nbsp;</p></td>
+</tr>
+<tr class="list2">
+<td class="itemname"><a class="bold" href="rs_advanced_mode_command.TSTRsm.html">TSTRsm</a></td>
+<td class="itemunit"><a class="bold" href="rs_advanced_mode_command.html">rs_advanced_mode_command</a></td>
+<td class="itemdesc"><p>&nbsp;</p></td>
+</tr>
+<tr class="list">
+<td class="itemname"><a class="bold" href="rs_advanced_mode_command.TSTSloColorThresholdsControl.html">TSTSloColorThresholdsControl</a></td>
+<td class="itemunit"><a class="bold" href="rs_advanced_mode_command.html">rs_advanced_mode_command</a></td>
+<td class="itemdesc"><p>&nbsp;</p></td>
+</tr>
+<tr class="list2">
+<td class="itemname"><a class="bold" href="rs_advanced_mode_command.TSTSloPenaltyControl.html">TSTSloPenaltyControl</a></td>
+<td class="itemunit"><a class="bold" href="rs_advanced_mode_command.html">rs_advanced_mode_command</a></td>
+<td class="itemdesc"><p>&nbsp;</p></td>
+</tr>
+</table>
+<hr><span class="appinfo"><em>Generated by <a href="https://pasdoc.github.io/">PasDoc 0.16.0</a>. </em>
+</span>
+</div></div></body></html>

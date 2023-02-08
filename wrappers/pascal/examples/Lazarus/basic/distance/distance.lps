@@ -9,75 +9,55 @@
         <Filename Value="distance.lpr"/>
         <IsPartOfProject Value="True"/>
         <IsVisibleTab Value="True"/>
-        <CursorPos Y="11"/>
+        <CursorPos X="12" Y="7"/>
         <UsageCount Value="20"/>
         <Loaded Value="True"/>
       </Unit>
       <Unit>
         <Filename Value="..\..\..\src\rs.pas"/>
-        <EditorIndex Value="-1"/>
-        <TopLine Value="87"/>
-        <CursorPos X="38" Y="105"/>
         <UsageCount Value="20"/>
       </Unit>
       <Unit>
         <Filename Value="..\..\..\src\rs_frame.pas"/>
-        <EditorIndex Value="-1"/>
-        <TopLine Value="282"/>
-        <CursorPos X="10" Y="282"/>
         <UsageCount Value="20"/>
       </Unit>
       <Unit>
         <Filename Value="..\..\..\src\rs_option.pas"/>
-        <EditorIndex Value="-1"/>
         <UsageCount Value="20"/>
       </Unit>
       <Unit>
         <Filename Value="..\..\..\src\rs_pipeline.pas"/>
-        <EditorIndex Value="-1"/>
-        <TopLine Value="17"/>
-        <CursorPos Y="33"/>
         <UsageCount Value="20"/>
       </Unit>
       <Unit>
         <Filename Value="..\..\..\src\rs_types.pas"/>
-        <EditorIndex Value="-1"/>
-        <TopLine Value="181"/>
         <UsageCount Value="20"/>
       </Unit>
       <Unit>
         <Filename Value="..\..\..\src\rs_context.pas"/>
-        <EditorIndex Value="-1"/>
         <UsageCount Value="20"/>
-      </Unit>
-      <Unit>
-        <Filename Value="..\..\..\src\rs_config.pas"/>
-        <EditorIndex Value="-1"/>
-        <TopLine Value="197"/>
-        <CursorPos Y="218"/>
-        <UsageCount Value="10"/>
-      </Unit>
-      <Unit>
-        <Filename Value="..\..\..\..\src\rs.pas"/>
-        <IsPartOfProject Value="True"/>
-        <EditorIndex Value="1"/>
-        <TopLine Value="7"/>
-        <UsageCount Value="20"/>
-        <Loaded Value="True"/>
       </Unit>
     </Units>
-    <JumpHistory HistoryIndex="6">
+    <JumpHistory HistoryIndex="10">
       <Position>
-        <Filename Value="..\..\..\..\src\rs.pas"/>
-        <Caret TopLine="7"/>
+        <Filename Value="distance.lpr"/>
+        <Caret Line="12" Column="52"/>
+      </Position>
+      <Position>
+        <Filename Value="distance.lpr"/>
+        <Caret Line="4" Column="12"/>
+      </Position>
+      <Position>
+        <Filename Value="distance.lpr"/>
+        <Caret Line="8" Column="11"/>
+      </Position>
+      <Position>
+        <Filename Value="distance.lpr"/>
+        <Caret Line="9" Column="13"/>
       </Position>
       <Position>
         <Filename Value="distance.lpr"/>
         <Caret Line="8" Column="12"/>
-      </Position>
-      <Position>
-        <Filename Value="..\..\..\..\src\rs.pas"/>
-        <Caret TopLine="7"/>
       </Position>
       <Position>
         <Filename Value="distance.lpr"/>
@@ -85,15 +65,23 @@
       </Position>
       <Position>
         <Filename Value="distance.lpr"/>
-        <Caret Line="106" Column="25" TopLine="90"/>
+        <Caret Line="8" Column="11"/>
       </Position>
       <Position>
         <Filename Value="distance.lpr"/>
-        <Caret Line="12" Column="11"/>
+        <Caret Line="5" Column="6"/>
       </Position>
       <Position>
         <Filename Value="distance.lpr"/>
-        <Caret Line="114" Column="35" TopLine="94"/>
+        <Caret Line="11" Column="14"/>
+      </Position>
+      <Position>
+        <Filename Value="distance.lpr"/>
+        <Caret Line="5" Column="6"/>
+      </Position>
+      <Position>
+        <Filename Value="distance.lpr"/>
+        <Caret Line="7" Column="12"/>
       </Position>
     </JumpHistory>
     <RunParams>

@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title>rs_types: Packed Record Trs2_dsm_params</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="generator" content="PasDoc 0.16.0">
+<meta http-equiv="content-type" content="text/html; charset=utf-8">
+<link rel="stylesheet" type="text/css" href="tipuesearch/tipuesearch.css">
+
+<link rel="StyleSheet" type="text/css" href="pasdoc.css">
+</head>
+<body>
+<div class="container"><div class="navigation">
+<ul><li><a href="AllUnits.html">Units</a></li><li><a href="ClassHierarchy.html">Class Hierarchy</a></li><li><a href="AllClasses.html">Classes, Interfaces, Objects and Records</a></li><li><a href="AllTypes.html">Types</a></li><li><a href="AllVariables.html">Variables</a></li><li><a href="AllConstants.html">Constants</a></li><li><a href="AllFunctions.html">Functions and Procedures</a></li><li><a href="AllIdentifiers.html">Identifiers</a></li><li><form class="search-form" action="tipue_results.html"><div class="search-input"><input type="text" name="q" id="tipue_search_input" pattern=".{3,}" title="At least 3 characters" required><div class="search-button"><input type="button" id="tipue_search_button" onclick="this.form.submit();"></div></div></form>
+<div style="clear: both"></div>
+</li></ul></div><div class="content">
+<span id="Trs2_dsm_params"></span><h1 class="cio">Packed Record Trs2_dsm_params</h1>
+<div class="sections">
+<div class="one_section"><a class="section" href="#PasDoc-Description">Description</a></div><div class="one_section">Hierarchy</div><div class="one_section"><a class="section" href="#PasDoc-Fields">Fields</a></div><div class="one_section">Methods</div><div class="one_section">Properties</div></div>
+<span id="PasDoc-Description"></span><h2 class="unit">Unit</h2>
+<p class="unitlink">
+<a href="rs_types.html">rs_types</a></p>
+<h2 class="declaration">Declaration</h2>
+<p class="declaration">
+<code>type Trs2_dsm_params = packed record</code></p>
+<h2 class="description">Description</h2>
+<p>
+Video DSM (Digital Sync Module) parameters for calibration (same layout as in FW ac_depth_params) This is the block in MC that converts angles to dimensionless integers reported to MA (using &quot;DSM coefficients&quot;)</p>
+<h2 class="overview">Overview</h2>
+<span id="PasDoc-Fields"></span><h3 class="summary">Fields</h3>
+<table class="summary wide_list">
+<tr class="list">
+<td class="visibility"><a href="legend.html"><img  src="public.gif" alt="Public" title="Public"></a></td>
+<td class="itemcode"><code><strong><a href="rs_types.Trs2_dsm_params.html#timestamp">timestamp</a></strong>: QWord;</code></td>
+</tr>
+<tr class="list2">
+<td class="visibility"><a href="legend.html"><img  src="public.gif" alt="Public" title="Public"></a></td>
+<td class="itemcode"><code><strong><a href="rs_types.Trs2_dsm_params.html#version">version</a></strong>: word;</code></td>
+</tr>
+<tr class="list">
+<td class="visibility"><a href="legend.html"><img  src="public.gif" alt="Public" title="Public"></a></td>
+<td class="itemcode"><code><strong><a href="rs_types.Trs2_dsm_params.html#model">model</a></strong>: byte;</code></td>
+</tr>
+<tr class="list2">
+<td class="visibility"><a href="legend.html"><img  src="public.gif" alt="Public" title="Public"></a></td>
+<td class="itemcode"><code><strong><a href="rs_types.Trs2_dsm_params.html#flags">flags</a></strong>: array [0..4] of byte;</code></td>
+</tr>
+<tr class="list">
+<td class="visibility"><a href="legend.html"><img  src="public.gif" alt="Public" title="Public"></a></td>
+<td class="itemcode"><code><strong><a href="rs_types.Trs2_dsm_params.html#h_scale">h_scale</a></strong>: single;</code></td>
+</tr>
+<tr class="list2">
+<td class="visibility"><a href="legend.html"><img  src="public.gif" alt="Public" title="Public"></a></td>
+<td class="itemcode"><code><strong><a href="rs_types.Trs2_dsm_params.html#v_scale">v_scale</a></strong>: single;</code></td>
+</tr>
+<tr class="list">
+<td class="visibility"><a href="legend.html"><img  src="public.gif" alt="Public" title="Public"></a></td>
+<td class="itemcode"><code><strong><a href="rs_types.Trs2_dsm_params.html#h_offset">h_offset</a></strong>: single;</code></td>
+</tr>
+<tr class="list2">
+<td class="visibility"><a href="legend.html"><img  src="public.gif" alt="Public" title="Public"></a></td>
+<td class="itemcode"><code><strong><a href="rs_types.Trs2_dsm_params.html#v_offset">v_offset</a></strong>: single;</code></td>
+</tr>
+<tr class="list">
+<td class="visibility"><a href="legend.html"><img  src="public.gif" alt="Public" title="Public"></a></td>
+<td class="itemcode"><code><strong><a href="rs_types.Trs2_dsm_params.html#rtd_offset">rtd_offset</a></strong>: single;</code></td>
+</tr>
+<tr class="list2">
+<td class="visibility"><a href="legend.html"><img  src="public.gif" alt="Public" title="Public"></a></td>
+<td class="itemcode"><code><strong><a href="rs_types.Trs2_dsm_params.html#temp_x2">temp_x2</a></strong>: byte;</code></td>
+</tr>
+<tr class="list">
+<td class="visibility"><a href="legend.html"><img  src="public.gif" alt="Public" title="Public"></a></td>
+<td class="itemcode"><code><strong><a href="rs_types.Trs2_dsm_params.html#mc_h_scale">mc_h_scale</a></strong>: single;</code></td>
+</tr>
+<tr class="list2">
+<td class="visibility"><a href="legend.html"><img  src="public.gif" alt="Public" title="Public"></a></td>
+<td class="itemcode"><code><strong><a href="rs_types.Trs2_dsm_params.html#mc_v_scale">mc_v_scale</a></strong>: single;</code></td>
+</tr>
+<tr class="list">
+<td class="visibility"><a href="legend.html"><img  src="public.gif" alt="Public" title="Public"></a></td>
+<td class="itemcode"><code><strong><a href="rs_types.Trs2_dsm_params.html#weeks_since_calibration">weeks_since_calibration</a></strong>: byte;</code></td>
+</tr>
+<tr class="list2">
+<td class="visibility"><a href="legend.html"><img  src="public.gif" alt="Public" title="Public"></a></td>
+<td class="itemcode"><code><strong><a href="rs_types.Trs2_dsm_params.html#ac_weeks_since_calibaration">ac_weeks_since_calibaration</a></strong>: byte;</code></td>
+</tr>
+<tr class="list">
+<td class="visibility"><a href="legend.html"><img  src="public.gif" alt="Public" title="Public"></a></td>
+<td class="itemcode"><code><strong><a href="rs_types.Trs2_dsm_params.html#reserved">reserved</a></strong>: byte;</code></td>
+</tr>
+</table>
+<h2 class="description">Description</h2>
+<h3 class="detail">Fields</h3>
+<table class="detail wide_list">
+<tr class="list">
+<td class="visibility"><a href="legend.html"><img  src="public.gif" alt="Public" title="Public"></a></td>
+<td class="itemcode"><span id="timestamp"></span><code><strong>timestamp</strong>: QWord;</code></td>
+</tr>
+<tr><td colspan="2">
+<p>
+system_clock::time_point::time_since_epoch().count()</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="visibility"><a href="legend.html"><img  src="public.gif" alt="Public" title="Public"></a></td>
+<td class="itemcode"><span id="version"></span><code><strong>version</strong>: word;</code></td>
+</tr>
+<tr><td colspan="2">
+<p>
+MAJOR&lt;&lt;12 | MINOR&lt;&lt;4 | PATCH</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="visibility"><a href="legend.html"><img  src="public.gif" alt="Public" title="Public"></a></td>
+<td class="itemcode"><span id="model"></span><code><strong>model</strong>: byte;</code></td>
+</tr>
+<tr><td colspan="2">
+<p>
+rs2_dsm_correction_model</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="visibility"><a href="legend.html"><img  src="public.gif" alt="Public" title="Public"></a></td>
+<td class="itemcode"><span id="flags"></span><code><strong>flags</strong>: array [0..4] of byte;</code></td>
+</tr>
+<tr><td colspan="2">
+<p>
+TBD, now 0s</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="visibility"><a href="legend.html"><img  src="public.gif" alt="Public" title="Public"></a></td>
+<td class="itemcode"><span id="h_scale"></span><code><strong>h_scale</strong>: single;</code></td>
+</tr>
+<tr><td colspan="2">
+<p>
+the scale factor to horizontal DSM scale thermal results</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="visibility"><a href="legend.html"><img  src="public.gif" alt="Public" title="Public"></a></td>
+<td class="itemcode"><span id="v_scale"></span><code><strong>v_scale</strong>: single;</code></td>
+</tr>
+<tr><td colspan="2">
+<p>
+the scale factor to vertical DSM scale thermal results</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="visibility"><a href="legend.html"><img  src="public.gif" alt="Public" title="Public"></a></td>
+<td class="itemcode"><span id="h_offset"></span><code><strong>h_offset</strong>: single;</code></td>
+</tr>
+<tr><td colspan="2">
+<p>
+the offset to horizontal DSM offset thermal results</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="visibility"><a href="legend.html"><img  src="public.gif" alt="Public" title="Public"></a></td>
+<td class="itemcode"><span id="v_offset"></span><code><strong>v_offset</strong>: single;</code></td>
+</tr>
+<tr><td colspan="2">
+<p>
+the offset to vertical DSM offset thermal results</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="visibility"><a href="legend.html"><img  src="public.gif" alt="Public" title="Public"></a></td>
+<td class="itemcode"><span id="rtd_offset"></span><code><strong>rtd_offset</strong>: single;</code></td>
+</tr>
+<tr><td colspan="2">
+<p>
+the offset to the Round-Trip-Distance delay thermal results</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="visibility"><a href="legend.html"><img  src="public.gif" alt="Public" title="Public"></a></td>
+<td class="itemcode"><span id="temp_x2"></span><code><strong>temp_x2</strong>: byte;</code></td>
+</tr>
+<tr><td colspan="2">
+<p>
+the temperature recorded times 2 (ldd for depth; hum for rgb)</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="visibility"><a href="legend.html"><img  src="public.gif" alt="Public" title="Public"></a></td>
+<td class="itemcode"><span id="mc_h_scale"></span><code><strong>mc_h_scale</strong>: single;</code></td>
+</tr>
+<tr><td colspan="2">
+<p>
+the scale factor to horizontal LOS coefficients in MC</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="visibility"><a href="legend.html"><img  src="public.gif" alt="Public" title="Public"></a></td>
+<td class="itemcode"><span id="mc_v_scale"></span><code><strong>mc_v_scale</strong>: single;</code></td>
+</tr>
+<tr><td colspan="2">
+<p>
+the scale factor to vertical LOS coefficients in MC</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="visibility"><a href="legend.html"><img  src="public.gif" alt="Public" title="Public"></a></td>
+<td class="itemcode"><span id="weeks_since_calibration"></span><code><strong>weeks_since_calibration</strong>: byte;</code></td>
+</tr>
+<tr><td colspan="2">
+<p>
+time (in weeks) since factory calibration</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="visibility"><a href="legend.html"><img  src="public.gif" alt="Public" title="Public"></a></td>
+<td class="itemcode"><span id="ac_weeks_since_calibaration"></span><code><strong>ac_weeks_since_calibaration</strong>: byte;</code></td>
+</tr>
+<tr><td colspan="2">
+<p>
+time (in weeks) between factory calibration and last AC event</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="visibility"><a href="legend.html"><img  src="public.gif" alt="Public" title="Public"></a></td>
+<td class="itemcode"><span id="reserved"></span><code><strong>reserved</strong>: byte;</code></td>
+</tr>
+<tr><td colspan="2">
+&nbsp;</td></tr>
+</table>
+<hr><span class="appinfo"><em>Generated by <a href="https://pasdoc.github.io/">PasDoc 0.16.0</a>. </em>
+</span>
+</div></div></body></html>

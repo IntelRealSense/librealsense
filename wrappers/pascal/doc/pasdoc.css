@@ -1,0 +1,257 @@
+/*
+  Copyright 1998-2018 PasDoc developers.
+
+  This file is part of "PasDoc".
+
+  "PasDoc" is free software; you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation; either version 2 of the License, or
+  (at your option) any later version.
+
+  "PasDoc" is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+
+  You should have received a copy of the GNU General Public License
+  along with "PasDoc"; if not, write to the Free Software
+  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA
+
+  ----------------------------------------------------------------------------
+*/
+
+body, html {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: Verdana,Arial;
+  color: black;
+  background-color: white;
+}
+
+.container {
+  width: 100%;
+  height: 100%;
+  border-spacing: 0;
+}
+
+.navigation {
+  float: left;
+  width: 20em; /* must match .content margin-left */
+  height: 100%;
+  color: white;
+  background-color: #787878;
+  position: fixed;
+  margin: 0;
+  box-sizing: border-box; /* without this, you could not have padding here, it would overlap with .content, causing errors on narrow screens */
+  padding: 1em;
+}
+.navigation ul {
+  margin: 0em;
+  padding: 0em;
+}
+.navigation li {
+  list-style-type: none;
+  margin: 0.2em 0em 0em 0em;
+  padding: 0.25em;
+}
+.navigation h2 {
+  text-align: center;
+  margin: 0em;
+  padding: 0.5em;
+}
+
+.content {
+  margin-left: 20em; /* must match .navigation width */
+  box-sizing: border-box; /* without this, you could not have padding here, it would overlap with .navigation, causing errors on narrow screens */
+  padding: 1em;
+}
+.content h1 {
+  margin-top: 0;
+}
+
+.appinfo {
+  float: right;
+  text-align: right;
+  margin-bottom: 1em;
+}
+
+img { border:0px; }
+
+hr {
+  border-bottom: medium none;
+  border-top: thin solid #888;
+}
+
+a:link {color:#C91E0C; text-decoration: none; }
+a:visited {color:#7E5C31; text-decoration: none; }
+a:hover {text-decoration: underline; }
+a:active {text-decoration: underline; }
+
+.navigation a:link { color: white; text-decoration: none; }
+.navigation a:visited { color: white; text-decoration: none; }
+.navigation a:hover { color: white; font-weight: bold; text-decoration: none; }
+.navigation a:active { color: white; text-decoration: none; }
+
+a.bold:link {color:#C91E0C; text-decoration: none; font-weight:bold; }
+a.bold:visited {color:#7E5C31; text-decoration: none; font-weight:bold; }
+a.bold:hover {text-decoration: underline; font-weight:bold; }
+a.bold:active {text-decoration: underline; font-weight:bold; }
+
+a.section {color: green; text-decoration: none; font-weight: bold; }
+a.section:hover {color: green; text-decoration: underline; font-weight: bold; }
+
+ul.useslist a:link {color:#C91E0C; text-decoration: none; font-weight:bold; }
+ul.useslist a:visited {color:#7E5C31; text-decoration: none; font-weight:bold; }
+ul.useslist a:hover {text-decoration: underline; font-weight:bold; }
+ul.useslist a:active {text-decoration: underline; font-weight:bold; }
+
+ul.hierarchy { list-style-type:none; }
+ul.hierarchylevel { list-style-type:none; }
+
+p.unitlink a:link {color:#C91E0C; text-decoration: none; font-weight:bold; }
+p.unitlink a:visited {color:#7E5C31; text-decoration: none; font-weight:bold; }
+p.unitlink a:hover {text-decoration: underline; font-weight:bold; }
+p.unitlink a:active {text-decoration: underline; font-weight:bold; }
+
+tr.list { background: #FFBF44; }
+tr.list2 { background: #FFC982; }
+tr.listheader { background: #C91E0C; color: white; }
+
+table.wide_list { border-spacing:2px; width:100%; }
+table.wide_list td { vertical-align:top; padding:4px; }
+
+table.markerlegend { width:auto; }
+table.markerlegend td.legendmarker { text-align:center; }
+
+.sections { background:white; }
+.sections .one_section {
+  background:lightgray;
+  display: inline-block;
+  margin: 0.2em;
+  padding: 0.5em 1em;
+}
+
+table.summary td.itemcode { width:100%; }
+table.detail td.itemcode { width:100%; }
+
+td.itemname {white-space:nowrap; }
+td.itemunit {white-space:nowrap; }
+td.itemdesc { width:100%; }
+
+div.nodescription { color:red; }
+dl.parameters dt {
+  color:blue;
+}
+
+code {
+  font-family: monospace;
+  font-size:1.2em;
+}
+
+/* style for warning and note tag */
+dl.tag.warning {
+  margin-left:-2px;
+  padding-left: 3px;
+  border-left:4px solid;
+  border-color: #FF0000;
+}
+dl.tag.note {
+  margin-left:-2px;
+  padding-left: 3px;
+  border-left:4px solid;
+  border-color: #D0C000;
+}
+
+/* Various browsers have various default styles for <h6>,
+   sometimes ugly for our purposes, so it's best to set things
+   like font-size and font-weight in out pasdoc.css explicitly. */
+h6.description_section {
+  /* font-size 100% means that it has the same font size as the
+     parent element, i.e. normal description text */
+  font-size: 100%;
+  font-weight: bold;
+  /* By default browsers usually have some large margin-bottom and
+     margin-top for <h1-6> tags. In our case, margin-bottom is
+     unnecessary, we want to visually show that description_section
+     is closely related to content below. In this situation
+     (where the font size is just as a normal text), smaller bottom
+     margin seems to look good. */
+  margin-top: 1.4em;
+  margin-bottom: 0em;
+}
+
+/* Style applied to Pascal code in documentation
+   (e.g. produced by @longcode tag) } */
+.longcode {
+  font-family: monospace;
+  font-size: 1.2em;
+  background-color: #eee;
+  padding: 0.5em;
+  border: thin solid #ccc;
+}
+span.pascal_string { color: #000080; }
+span.pascal_keyword { font-weight: bolder; }
+span.pascal_comment { color: #000080; font-style: italic; }
+span.pascal_compiler_comment { color: #008000; }
+span.pascal_numeric { }
+span.pascal_hex { }
+
+p.hint_directive { color: red; }
+
+input#search_text { }
+input#search_submit_button { }
+
+acronym.mispelling { background-color: #f00; }
+
+/* Actually this reduces vertical space between *every* paragraph
+   inside list with @itemSpacing(compact).
+   While we would like to reduce this space only for the
+   top of 1st and bottom of last paragraph within each list item.
+   But, well, user probably will not do any paragraph breaks
+   within a list with @itemSpacing(compact) anyway, so it's
+   acceptable solution. */
+ul.compact_spacing p { margin-top: 0em; margin-bottom: 0em; }
+ol.compact_spacing p { margin-top: 0em; margin-bottom: 0em; }
+dl.compact_spacing p { margin-top: 0em; margin-bottom: 0em; }
+
+/* Style for table created by @table tags:
+   just some thin border.
+
+   This way we have some borders around the cells
+   (so cells are visibly separated), but the border
+   "blends with the background" so it doesn't look too ugly.
+   Hopefully it looks satisfactory in most cases and for most
+   people.
+
+   We add padding for cells, otherwise they look too close.
+   This is normal thing to do when border-collapse is set to
+   collapse (because this eliminates spacing between cells).
+*/
+table.table_tag { border-collapse: collapse; }
+table.table_tag td { border: 1pt solid gray; padding: 0.3em; }
+table.table_tag th { border: 1pt solid gray; padding: 0.3em; }
+
+table.detail {
+  border: 1pt solid gray;
+  margin-top: 0.3em;
+  margin-bottom: 0.3em;
+}
+
+.search-form { white-space: nowrap; }
+.search-input input { max-width: 80%; } /* this provides some safe space to always fit even on very narrow screens */
+.search-input input, .search-button { display: inline-block; vertical-align: middle; }
+.search-input { display: inline-block; }
+
+/* Do not make extra vertical space at the beginning/end of table cells.
+   We need ">" selector, to not change paragraphs inside lists inside
+   table cells. */
+table.table_tag td > p:first-child,
+table.table_tag th > p:first-child,
+       td.itemdesc > p:first-child { margin-top: 0em; }
+
+table.table_tag td > p:last-child,
+table.table_tag th > p:last-child,
+       td.itemdesc > p:last-child { margin-bottom: 0em; }

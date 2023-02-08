@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title>rs_types: Record Trs2_pose</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="generator" content="PasDoc 0.16.0">
+<meta http-equiv="content-type" content="text/html; charset=utf-8">
+<link rel="stylesheet" type="text/css" href="tipuesearch/tipuesearch.css">
+
+<link rel="StyleSheet" type="text/css" href="pasdoc.css">
+</head>
+<body>
+<div class="container"><div class="navigation">
+<ul><li><a href="AllUnits.html">Units</a></li><li><a href="ClassHierarchy.html">Class Hierarchy</a></li><li><a href="AllClasses.html">Classes, Interfaces, Objects and Records</a></li><li><a href="AllTypes.html">Types</a></li><li><a href="AllVariables.html">Variables</a></li><li><a href="AllConstants.html">Constants</a></li><li><a href="AllFunctions.html">Functions and Procedures</a></li><li><a href="AllIdentifiers.html">Identifiers</a></li><li><form class="search-form" action="tipue_results.html"><div class="search-input"><input type="text" name="q" id="tipue_search_input" pattern=".{3,}" title="At least 3 characters" required><div class="search-button"><input type="button" id="tipue_search_button" onclick="this.form.submit();"></div></div></form>
+<div style="clear: both"></div>
+</li></ul></div><div class="content">
+<span id="Trs2_pose"></span><h1 class="cio">Record Trs2_pose</h1>
+<div class="sections">
+<div class="one_section"><a class="section" href="#PasDoc-Description">Description</a></div><div class="one_section">Hierarchy</div><div class="one_section"><a class="section" href="#PasDoc-Fields">Fields</a></div><div class="one_section">Methods</div><div class="one_section">Properties</div></div>
+<span id="PasDoc-Description"></span><h2 class="unit">Unit</h2>
+<p class="unitlink">
+<a href="rs_types.html">rs_types</a></p>
+<h2 class="declaration">Declaration</h2>
+<p class="declaration">
+<code>type Trs2_pose = record</code></p>
+<h2 class="description">Description</h2>
+<p>
+translation; //&lt; X, Y, Z values of translation, in meters (relative to initial position) */ velocity; //&lt; X, Y, Z values of velocity, in meters/sec */ acceleration; //&lt; X, Y, Z values of acceleration, in meters/sec&circ;2 */ rotation; //&lt; Qi, Qj, Qk, Qr components of rotation as represented in quaternion rotation (relative to initial position) */ angular_velocity; //&lt; X, Y, Z values of angular velocity, in radians/sec */ angular_acceleration; //&lt; X, Y, Z values of angular acceleration, in radians/sec&circ;2 */ tracker_confidence; //&lt; Pose confidence 0x0 - Failed, 0x1 - Low, 0x2 - Medium, 0x3 - High */ mapper_confidence; //&lt; Pose map confidence 0x0 - Failed, 0x1 - Low, 0x2 - Medium, 0x3 - High */</p>
+<h2 class="overview">Overview</h2>
+<span id="PasDoc-Fields"></span><h3 class="summary">Fields</h3>
+<table class="summary wide_list">
+<tr class="list">
+<td class="visibility"><a href="legend.html"><img  src="public.gif" alt="Public" title="Public"></a></td>
+<td class="itemcode"><code><strong><a href="rs_types.Trs2_pose.html#translation">translation</a></strong>: <a href="rs_types.Trs2_vector.html">Trs2_vector</a>;</code></td>
+</tr>
+<tr class="list2">
+<td class="visibility"><a href="legend.html"><img  src="public.gif" alt="Public" title="Public"></a></td>
+<td class="itemcode"><code><strong><a href="rs_types.Trs2_pose.html#velocity">velocity</a></strong>: <a href="rs_types.Trs2_vector.html">Trs2_vector</a>;</code></td>
+</tr>
+<tr class="list">
+<td class="visibility"><a href="legend.html"><img  src="public.gif" alt="Public" title="Public"></a></td>
+<td class="itemcode"><code><strong><a href="rs_types.Trs2_pose.html#acceleration">acceleration</a></strong>: <a href="rs_types.Trs2_vector.html">Trs2_vector</a>;</code></td>
+</tr>
+<tr class="list2">
+<td class="visibility"><a href="legend.html"><img  src="public.gif" alt="Public" title="Public"></a></td>
+<td class="itemcode"><code><strong><a href="rs_types.Trs2_pose.html#rotation">rotation</a></strong>: <a href="rs_types.Trs2_quaternion.html">Trs2_quaternion</a>;</code></td>
+</tr>
+<tr class="list">
+<td class="visibility"><a href="legend.html"><img  src="public.gif" alt="Public" title="Public"></a></td>
+<td class="itemcode"><code><strong><a href="rs_types.Trs2_pose.html#angular_velocity">angular_velocity</a></strong>: <a href="rs_types.Trs2_vector.html">Trs2_vector</a>;</code></td>
+</tr>
+<tr class="list2">
+<td class="visibility"><a href="legend.html"><img  src="public.gif" alt="Public" title="Public"></a></td>
+<td class="itemcode"><code><strong><a href="rs_types.Trs2_pose.html#tracker_confidence">tracker_confidence</a></strong>: integer;</code></td>
+</tr>
+<tr class="list">
+<td class="visibility"><a href="legend.html"><img  src="public.gif" alt="Public" title="Public"></a></td>
+<td class="itemcode"><code><strong><a href="rs_types.Trs2_pose.html#mapper_confidence">mapper_confidence</a></strong>: integer;</code></td>
+</tr>
+</table>
+<h2 class="description">Description</h2>
+<h3 class="detail">Fields</h3>
+<table class="detail wide_list">
+<tr class="list">
+<td class="visibility"><a href="legend.html"><img  src="public.gif" alt="Public" title="Public"></a></td>
+<td class="itemcode"><span id="translation"></span><code><strong>translation</strong>: <a href="rs_types.Trs2_vector.html">Trs2_vector</a>;</code></td>
+</tr>
+<tr><td colspan="2">
+&nbsp;</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="visibility"><a href="legend.html"><img  src="public.gif" alt="Public" title="Public"></a></td>
+<td class="itemcode"><span id="velocity"></span><code><strong>velocity</strong>: <a href="rs_types.Trs2_vector.html">Trs2_vector</a>;</code></td>
+</tr>
+<tr><td colspan="2">
+&nbsp;</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="visibility"><a href="legend.html"><img  src="public.gif" alt="Public" title="Public"></a></td>
+<td class="itemcode"><span id="acceleration"></span><code><strong>acceleration</strong>: <a href="rs_types.Trs2_vector.html">Trs2_vector</a>;</code></td>
+</tr>
+<tr><td colspan="2">
+&nbsp;</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="visibility"><a href="legend.html"><img  src="public.gif" alt="Public" title="Public"></a></td>
+<td class="itemcode"><span id="rotation"></span><code><strong>rotation</strong>: <a href="rs_types.Trs2_quaternion.html">Trs2_quaternion</a>;</code></td>
+</tr>
+<tr><td colspan="2">
+&nbsp;</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="visibility"><a href="legend.html"><img  src="public.gif" alt="Public" title="Public"></a></td>
+<td class="itemcode"><span id="angular_velocity"></span><code><strong>angular_velocity</strong>: <a href="rs_types.Trs2_vector.html">Trs2_vector</a>;</code></td>
+</tr>
+<tr><td colspan="2">
+&nbsp;</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="visibility"><a href="legend.html"><img  src="public.gif" alt="Public" title="Public"></a></td>
+<td class="itemcode"><span id="tracker_confidence"></span><code><strong>tracker_confidence</strong>: integer;</code></td>
+</tr>
+<tr><td colspan="2">
+&nbsp;</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="visibility"><a href="legend.html"><img  src="public.gif" alt="Public" title="Public"></a></td>
+<td class="itemcode"><span id="mapper_confidence"></span><code><strong>mapper_confidence</strong>: integer;</code></td>
+</tr>
+<tr><td colspan="2">
+<p>
+?? unsigned int</p>
+</td></tr>
+</table>
+<hr><span class="appinfo"><em>Generated by <a href="https://pasdoc.github.io/">PasDoc 0.16.0</a>. </em>
+</span>
+</div></div></body></html>

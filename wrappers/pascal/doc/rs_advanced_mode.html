@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title>rs_advanced_mode</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="generator" content="PasDoc 0.16.0">
+<meta http-equiv="content-type" content="text/html; charset=utf-8">
+<link rel="stylesheet" type="text/css" href="tipuesearch/tipuesearch.css">
+
+<link rel="StyleSheet" type="text/css" href="pasdoc.css">
+</head>
+<body>
+<div class="container"><div class="navigation">
+<ul><li><a href="AllUnits.html">Units</a></li><li><a href="ClassHierarchy.html">Class Hierarchy</a></li><li><a href="AllClasses.html">Classes, Interfaces, Objects and Records</a></li><li><a href="AllTypes.html">Types</a></li><li><a href="AllVariables.html">Variables</a></li><li><a href="AllConstants.html">Constants</a></li><li><a href="AllFunctions.html">Functions and Procedures</a></li><li><a href="AllIdentifiers.html">Identifiers</a></li><li><form class="search-form" action="tipue_results.html"><div class="search-input"><input type="text" name="q" id="tipue_search_input" pattern=".{3,}" title="At least 3 characters" required><div class="search-button"><input type="button" id="tipue_search_button" onclick="this.form.submit();"></div></div></form>
+<div style="clear: both"></div>
+</li></ul></div><div class="content">
+<h1 class="unit">Unit rs_advanced_mode</h1>
+<div class="sections">
+<div class="one_section"><a class="section" href="#PasDoc-Description">Description</a></div><div class="one_section">Uses</div><div class="one_section">Classes, Interfaces, Objects and Records</div><div class="one_section"><a class="section" href="#PasDoc-FuncsProcs">Functions and Procedures</a></div><div class="one_section">Types</div><div class="one_section">Constants</div><div class="one_section">Variables</div></div>
+<span id="PasDoc-Description"></span><h2 class="description">Description</h2>
+&nbsp;<span id="PasDoc-Uses"></span><h2 class="overview">Overview</h2>
+<span id="PasDoc-FuncsProcs"></span><h3 class="summary">Functions and Procedures</h3>
+<table class="summary wide_list">
+<tr class="list">
+<td class="itemcode"><code>procedure <strong><a href="rs_advanced_mode.html#rs2_toggle_advanced_mode">rs2_toggle_advanced_mode</a></strong>(dev: <a href="rs_types.html#pRS2_device">pRS2_device</a>; enable: integer; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code>procedure <strong><a href="rs_advanced_mode.html#rs2_is_enabled">rs2_is_enabled</a></strong>(dev: <a href="rs_types.html#pRS2_device">pRS2_device</a>; Enabled: PInteger; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code>procedure <strong><a href="rs_advanced_mode.html#rs2_set_depth_control">rs2_set_depth_control</a></strong>(dev: <a href="rs_types.html#pRS2_device">pRS2_device</a>; const group: <a href="rs_advanced_mode_command.html#pSTDepthControlGroup">pSTDepthControlGroup</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code>procedure <strong><a href="rs_advanced_mode.html#rs2_get_depth_control">rs2_get_depth_control</a></strong>(dev: <a href="rs_types.html#pRS2_device">pRS2_device</a>; group: <a href="rs_advanced_mode_command.html#pSTDepthControlGroup">pSTDepthControlGroup</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code>procedure <strong><a href="rs_advanced_mode.html#rs2_set_rsm">rs2_set_rsm</a></strong>(dev: <a href="rs_types.html#pRS2_device">pRS2_device</a>; const group: <a href="rs_advanced_mode_command.html#pSTRsm">pSTRsm</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code>procedure <strong><a href="rs_advanced_mode.html#rs2_get_rsm">rs2_get_rsm</a></strong>(dev: <a href="rs_types.html#pRS2_device">pRS2_device</a>; group: <a href="rs_advanced_mode_command.html#pSTRsm">pSTRsm</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code>procedure <strong><a href="rs_advanced_mode.html#rs2_set_rau_support_vector_control">rs2_set_rau_support_vector_control</a></strong>(dev: <a href="rs_types.html#pRS2_device">pRS2_device</a>; const group: <a href="rs_advanced_mode_command.html#pSTRauSupportVectorControl">pSTRauSupportVectorControl</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code>procedure <strong><a href="rs_advanced_mode.html#rs2_get_rau_support_vector_control">rs2_get_rau_support_vector_control</a></strong>(dev: <a href="rs_types.html#pRS2_device">pRS2_device</a>; group: <a href="rs_advanced_mode_command.html#pSTRauSupportVectorControl">pSTRauSupportVectorControl</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code>procedure <strong><a href="rs_advanced_mode.html#rs2_set_color_control">rs2_set_color_control</a></strong>(dev: <a href="rs_types.html#pRS2_device">pRS2_device</a>; const group: <a href="rs_advanced_mode_command.TSTColorControl.html">TSTColorControl</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code>procedure <strong><a href="rs_advanced_mode.html#rs2_get_color_control">rs2_get_color_control</a></strong>(dev: <a href="rs_types.html#pRS2_device">pRS2_device</a>; group: <a href="rs_advanced_mode_command.TSTColorControl.html">TSTColorControl</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code>procedure <strong><a href="rs_advanced_mode.html#rs2_set_rau_thresholds_control">rs2_set_rau_thresholds_control</a></strong>(dev: <a href="rs_types.html#pRS2_device">pRS2_device</a>; const group: <a href="rs_advanced_mode_command.TSTRauColorThresholdsControl.html">TSTRauColorThresholdsControl</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code>procedure <strong><a href="rs_advanced_mode.html#rs2_get_rau_thresholds_control">rs2_get_rau_thresholds_control</a></strong>(dev: <a href="rs_types.html#pRS2_device">pRS2_device</a>; group: <a href="rs_advanced_mode_command.TSTRauColorThresholdsControl.html">TSTRauColorThresholdsControl</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code>procedure <strong><a href="rs_advanced_mode.html#rs2_set_slo_color_thresholds_control">rs2_set_slo_color_thresholds_control</a></strong>(dev: <a href="rs_types.html#pRS2_device">pRS2_device</a>; const group: <a href="rs_advanced_mode_command.html#pSTSloColorThresholdsControl">pSTSloColorThresholdsControl</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code>procedure <strong><a href="rs_advanced_mode.html#rs2_get_slo_color_thresholds_control">rs2_get_slo_color_thresholds_control</a></strong>(dev: <a href="rs_types.html#pRS2_device">pRS2_device</a>; group: <a href="rs_advanced_mode_command.html#pSTSloColorThresholdsControl">pSTSloColorThresholdsControl</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code>procedure <strong><a href="rs_advanced_mode.html#rs2_set_slo_penalty_control">rs2_set_slo_penalty_control</a></strong>(dev: <a href="rs_types.html#pRS2_device">pRS2_device</a>; const group: <a href="rs_advanced_mode_command.html#pSTSloColorThresholdsControl">pSTSloColorThresholdsControl</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code>procedure <strong><a href="rs_advanced_mode.html#rs2_get_slo_penalty_control">rs2_get_slo_penalty_control</a></strong>(dev: <a href="rs_types.html#pRS2_device">pRS2_device</a>; group: <a href="rs_advanced_mode_command.html#pSTSloColorThresholdsControl">pSTSloColorThresholdsControl</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code>procedure <strong><a href="rs_advanced_mode.html#rs2_set_hdad">rs2_set_hdad</a></strong>(dev: <a href="rs_types.html#pRS2_device">pRS2_device</a>; const group: <a href="rs_advanced_mode_command.html#pSTHdad">pSTHdad</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code>procedure <strong><a href="rs_advanced_mode.html#rs2_get_hdad">rs2_get_hdad</a></strong>(dev: <a href="rs_types.html#pRS2_device">pRS2_device</a>; group: <a href="rs_advanced_mode_command.html#pSTHdad">pSTHdad</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code>procedure <strong><a href="rs_advanced_mode.html#rs2_set_color_correction">rs2_set_color_correction</a></strong>(dev: <a href="rs_types.html#pRS2_device">pRS2_device</a>; const group: <a href="rs_advanced_mode_command.html#pSTColorCorrection">pSTColorCorrection</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code>procedure <strong><a href="rs_advanced_mode.html#rs2_get_color_correction">rs2_get_color_correction</a></strong>(dev: <a href="rs_types.html#pRS2_device">pRS2_device</a>; group: <a href="rs_advanced_mode_command.html#pSTColorCorrection">pSTColorCorrection</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code>procedure <strong><a href="rs_advanced_mode.html#rs2_set_depth_table">rs2_set_depth_table</a></strong>(dev: <a href="rs_types.html#pRS2_device">pRS2_device</a>; const group: <a href="rs_advanced_mode_command.html#pSTDepthTableControl">pSTDepthTableControl</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code>procedure <strong><a href="rs_advanced_mode.html#rs2_get_depth_table">rs2_get_depth_table</a></strong>(dev: <a href="rs_types.html#pRS2_device">pRS2_device</a>; group: <a href="rs_advanced_mode_command.html#pSTDepthTableControl">pSTDepthTableControl</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code>procedure <strong><a href="rs_advanced_mode.html#rs2_set_ae_control">rs2_set_ae_control</a></strong>(dev: <a href="rs_types.html#pRS2_device">pRS2_device</a>; const group: <a href="rs_advanced_mode_command.html#pSTAEControl">pSTAEControl</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code>procedure <strong><a href="rs_advanced_mode.html#rs2_get_ae_control">rs2_get_ae_control</a></strong>(dev: <a href="rs_types.html#pRS2_device">pRS2_device</a>; group: <a href="rs_advanced_mode_command.html#pSTAEControl">pSTAEControl</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code>procedure <strong><a href="rs_advanced_mode.html#rs2_set_census">rs2_set_census</a></strong>(dev: <a href="rs_types.html#pRS2_device">pRS2_device</a>; const group: <a href="rs_advanced_mode_command.html#pSTCensusRadius">pSTCensusRadius</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code>procedure <strong><a href="rs_advanced_mode.html#rs2_get_census">rs2_get_census</a></strong>(dev: <a href="rs_types.html#pRS2_device">pRS2_device</a>; group: <a href="rs_advanced_mode_command.html#pSTCensusRadius">pSTCensusRadius</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code>procedure <strong><a href="rs_advanced_mode.html#rs2_set_amp_factor">rs2_set_amp_factor</a></strong>(dev: <a href="rs_types.html#pRS2_device">pRS2_device</a>; const group: <a href="rs_advanced_mode_command.html#pSTAFactor">pSTAFactor</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code>procedure <strong><a href="rs_advanced_mode.html#rs2_get_amp_factor">rs2_get_amp_factor</a></strong>(dev: <a href="rs_types.html#pRS2_device">pRS2_device</a>; group: <a href="rs_advanced_mode_command.html#pSTAFactor">pSTAFactor</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+</table>
+<h2 class="description">Description</h2>
+<h3 class="detail">Functions and Procedures</h3>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_toggle_advanced_mode"></span><code>procedure <strong>rs2_toggle_advanced_mode</strong>(dev: <a href="rs_types.html#pRS2_device">pRS2_device</a>; enable: integer; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Enable/Disable Advanced-Mode</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_is_enabled"></span><code>procedure <strong>rs2_is_enabled</strong>(dev: <a href="rs_types.html#pRS2_device">pRS2_device</a>; Enabled: PInteger; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Check if Advanced-Mode is enabled</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_set_depth_control"></span><code>procedure <strong>rs2_set_depth_control</strong>(dev: <a href="rs_types.html#pRS2_device">pRS2_device</a>; const group: <a href="rs_advanced_mode_command.html#pSTDepthControlGroup">pSTDepthControlGroup</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Sets new values for Depth Control Group, returns 0 if success</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_get_depth_control"></span><code>procedure <strong>rs2_get_depth_control</strong>(dev: <a href="rs_types.html#pRS2_device">pRS2_device</a>; group: <a href="rs_advanced_mode_command.html#pSTDepthControlGroup">pSTDepthControlGroup</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Gets new values for Depth Control Group, returns 0 if success */</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_set_rsm"></span><code>procedure <strong>rs2_set_rsm</strong>(dev: <a href="rs_types.html#pRS2_device">pRS2_device</a>; const group: <a href="rs_advanced_mode_command.html#pSTRsm">pSTRsm</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Sets new values for RSM Group, returns 0 if success</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_get_rsm"></span><code>procedure <strong>rs2_get_rsm</strong>(dev: <a href="rs_types.html#pRS2_device">pRS2_device</a>; group: <a href="rs_advanced_mode_command.html#pSTRsm">pSTRsm</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Gets new values for RSM Group, returns 0 if success</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_set_rau_support_vector_control"></span><code>procedure <strong>rs2_set_rau_support_vector_control</strong>(dev: <a href="rs_types.html#pRS2_device">pRS2_device</a>; const group: <a href="rs_advanced_mode_command.html#pSTRauSupportVectorControl">pSTRauSupportVectorControl</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+/* Sets new values for STRauSupportVectorControl, returns 0 if success */ void rs2_set_rau_support_vector_control(rs2_device* dev, const STRauSupportVectorControl* group, rs2_error** error);</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_get_rau_support_vector_control"></span><code>procedure <strong>rs2_get_rau_support_vector_control</strong>(dev: <a href="rs_types.html#pRS2_device">pRS2_device</a>; group: <a href="rs_advanced_mode_command.html#pSTRauSupportVectorControl">pSTRauSupportVectorControl</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Gets new values for STRauSupportVectorControl, returns 0 if success</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_set_color_control"></span><code>procedure <strong>rs2_set_color_control</strong>(dev: <a href="rs_types.html#pRS2_device">pRS2_device</a>; const group: <a href="rs_advanced_mode_command.TSTColorControl.html">TSTColorControl</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Sets new values for STColorControl, returns 0 if success */</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_get_color_control"></span><code>procedure <strong>rs2_get_color_control</strong>(dev: <a href="rs_types.html#pRS2_device">pRS2_device</a>; group: <a href="rs_advanced_mode_command.TSTColorControl.html">TSTColorControl</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Gets new values for STColorControl, returns 0 if success</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_set_rau_thresholds_control"></span><code>procedure <strong>rs2_set_rau_thresholds_control</strong>(dev: <a href="rs_types.html#pRS2_device">pRS2_device</a>; const group: <a href="rs_advanced_mode_command.TSTRauColorThresholdsControl.html">TSTRauColorThresholdsControl</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Sets new values for STRauColorThresholdsControl, returns 0 if success</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_get_rau_thresholds_control"></span><code>procedure <strong>rs2_get_rau_thresholds_control</strong>(dev: <a href="rs_types.html#pRS2_device">pRS2_device</a>; group: <a href="rs_advanced_mode_command.TSTRauColorThresholdsControl.html">TSTRauColorThresholdsControl</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Gets new values for STRauColorThresholdsControl, returns 0 if success</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_set_slo_color_thresholds_control"></span><code>procedure <strong>rs2_set_slo_color_thresholds_control</strong>(dev: <a href="rs_types.html#pRS2_device">pRS2_device</a>; const group: <a href="rs_advanced_mode_command.html#pSTSloColorThresholdsControl">pSTSloColorThresholdsControl</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Sets new values for STSloColorThresholdsControl, returns 0 if success</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_get_slo_color_thresholds_control"></span><code>procedure <strong>rs2_get_slo_color_thresholds_control</strong>(dev: <a href="rs_types.html#pRS2_device">pRS2_device</a>; group: <a href="rs_advanced_mode_command.html#pSTSloColorThresholdsControl">pSTSloColorThresholdsControl</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Gets new values for STRauColorThresholdsControl, returns 0 if success</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_set_slo_penalty_control"></span><code>procedure <strong>rs2_set_slo_penalty_control</strong>(dev: <a href="rs_types.html#pRS2_device">pRS2_device</a>; const group: <a href="rs_advanced_mode_command.html#pSTSloColorThresholdsControl">pSTSloColorThresholdsControl</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Sets new values for STSloPenaltyControl, returns 0 if success</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_get_slo_penalty_control"></span><code>procedure <strong>rs2_get_slo_penalty_control</strong>(dev: <a href="rs_types.html#pRS2_device">pRS2_device</a>; group: <a href="rs_advanced_mode_command.html#pSTSloColorThresholdsControl">pSTSloColorThresholdsControl</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Gets new values for STSloPenaltyControl, returns 0 if success</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_set_hdad"></span><code>procedure <strong>rs2_set_hdad</strong>(dev: <a href="rs_types.html#pRS2_device">pRS2_device</a>; const group: <a href="rs_advanced_mode_command.html#pSTHdad">pSTHdad</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Sets new values for STHdad, returns 0 if success</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_get_hdad"></span><code>procedure <strong>rs2_get_hdad</strong>(dev: <a href="rs_types.html#pRS2_device">pRS2_device</a>; group: <a href="rs_advanced_mode_command.html#pSTHdad">pSTHdad</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+/* Gets new values for STHdad, returns 0 if success */</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_set_color_correction"></span><code>procedure <strong>rs2_set_color_correction</strong>(dev: <a href="rs_types.html#pRS2_device">pRS2_device</a>; const group: <a href="rs_advanced_mode_command.html#pSTColorCorrection">pSTColorCorrection</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Sets new values for STColorCorrection, returns 0 if success</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_get_color_correction"></span><code>procedure <strong>rs2_get_color_correction</strong>(dev: <a href="rs_types.html#pRS2_device">pRS2_device</a>; group: <a href="rs_advanced_mode_command.html#pSTColorCorrection">pSTColorCorrection</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Gets new values for STColorCorrection, returns 0 if success</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_set_depth_table"></span><code>procedure <strong>rs2_set_depth_table</strong>(dev: <a href="rs_types.html#pRS2_device">pRS2_device</a>; const group: <a href="rs_advanced_mode_command.html#pSTDepthTableControl">pSTDepthTableControl</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+/* Sets new values for STDepthTableControl, returns 0 if success */ void rs2_set_depth_table(rs2_device* dev, const STDepthTableControl* group, rs2_error** error);</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_get_depth_table"></span><code>procedure <strong>rs2_get_depth_table</strong>(dev: <a href="rs_types.html#pRS2_device">pRS2_device</a>; group: <a href="rs_advanced_mode_command.html#pSTDepthTableControl">pSTDepthTableControl</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+/* Gets new values for STDepthTableControl, returns 0 if success */ void rs2_get_depth_table(rs2_device* dev, STDepthTableControl* group, int mode, rs2_error** error);</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_set_ae_control"></span><code>procedure <strong>rs2_set_ae_control</strong>(dev: <a href="rs_types.html#pRS2_device">pRS2_device</a>; const group: <a href="rs_advanced_mode_command.html#pSTAEControl">pSTAEControl</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+void rs2_set_ae_control(rs2_device* dev, const STAEControl* group, rs2_error** error);</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_get_ae_control"></span><code>procedure <strong>rs2_get_ae_control</strong>(dev: <a href="rs_types.html#pRS2_device">pRS2_device</a>; group: <a href="rs_advanced_mode_command.html#pSTAEControl">pSTAEControl</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+&nbsp;</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_set_census"></span><code>procedure <strong>rs2_set_census</strong>(dev: <a href="rs_types.html#pRS2_device">pRS2_device</a>; const group: <a href="rs_advanced_mode_command.html#pSTCensusRadius">pSTCensusRadius</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+&nbsp;</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_get_census"></span><code>procedure <strong>rs2_get_census</strong>(dev: <a href="rs_types.html#pRS2_device">pRS2_device</a>; group: <a href="rs_advanced_mode_command.html#pSTCensusRadius">pSTCensusRadius</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+&nbsp;</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_set_amp_factor"></span><code>procedure <strong>rs2_set_amp_factor</strong>(dev: <a href="rs_types.html#pRS2_device">pRS2_device</a>; const group: <a href="rs_advanced_mode_command.html#pSTAFactor">pSTAFactor</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+&nbsp;</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_get_amp_factor"></span><code>procedure <strong>rs2_get_amp_factor</strong>(dev: <a href="rs_types.html#pRS2_device">pRS2_device</a>; group: <a href="rs_advanced_mode_command.html#pSTAFactor">pSTAFactor</a>; error: <a href="rs_types.html#pRS2_error">pRS2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+&nbsp;</td></tr>
+</table>
+<hr><span class="appinfo"><em>Generated by <a href="https://pasdoc.github.io/">PasDoc 0.16.0</a>. </em>
+</span>
+</div></div></body></html>

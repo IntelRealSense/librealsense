@@ -9,36 +9,36 @@
         <Filename Value="testinitlib.lpr"/>
         <IsPartOfProject Value="True"/>
         <IsVisibleTab Value="True"/>
+        <CursorPos X="6" Y="6"/>
         <UsageCount Value="20"/>
         <Loaded Value="True"/>
       </Unit>
       <Unit>
         <Filename Value="..\src\rs.pas"/>
-        <IsPartOfProject Value="True"/>
         <UsageCount Value="20"/>
       </Unit>
       <Unit>
         <Filename Value="..\src\rs_context.pas"/>
-        <IsPartOfProject Value="True"/>
         <UsageCount Value="20"/>
       </Unit>
       <Unit>
         <Filename Value="..\src\rs_types.pas"/>
-        <IsPartOfProject Value="True"/>
         <UsageCount Value="20"/>
       </Unit>
       <Unit>
         <Filename Value="..\src\rs_device.pas"/>
-        <IsPartOfProject Value="True"/>
         <UsageCount Value="20"/>
       </Unit>
       <Unit>
         <Filename Value="..\src\rs_sensor.pas"/>
-        <IsPartOfProject Value="True"/>
         <UsageCount Value="20"/>
       </Unit>
     </Units>
-    <JumpHistory HistoryIndex="-1"/>
+    <JumpHistory>
+      <Position>
+        <Filename Value="testinitlib.lpr"/>
+      </Position>
+    </JumpHistory>
     <RunParams>
       <FormatVersion Value="2"/>
       <Modes ActiveMode=""/>

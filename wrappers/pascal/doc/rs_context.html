@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title>rs_context</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="generator" content="PasDoc 0.16.0">
+<meta http-equiv="content-type" content="text/html; charset=utf-8">
+<link rel="stylesheet" type="text/css" href="tipuesearch/tipuesearch.css">
+
+<link rel="StyleSheet" type="text/css" href="pasdoc.css">
+</head>
+<body>
+<div class="container"><div class="navigation">
+<ul><li><a href="AllUnits.html">Units</a></li><li><a href="ClassHierarchy.html">Class Hierarchy</a></li><li><a href="AllClasses.html">Classes, Interfaces, Objects and Records</a></li><li><a href="AllTypes.html">Types</a></li><li><a href="AllVariables.html">Variables</a></li><li><a href="AllConstants.html">Constants</a></li><li><a href="AllFunctions.html">Functions and Procedures</a></li><li><a href="AllIdentifiers.html">Identifiers</a></li><li><form class="search-form" action="tipue_results.html"><div class="search-input"><input type="text" name="q" id="tipue_search_input" pattern=".{3,}" title="At least 3 characters" required><div class="search-button"><input type="button" id="tipue_search_button" onclick="this.form.submit();"></div></div></form>
+<div style="clear: both"></div>
+</li></ul></div><div class="content">
+<h1 class="unit">Unit rs_context</h1>
+<div class="sections">
+<div class="one_section"><a class="section" href="#PasDoc-Description">Description</a></div><div class="one_section">Uses</div><div class="one_section">Classes, Interfaces, Objects and Records</div><div class="one_section"><a class="section" href="#PasDoc-FuncsProcs">Functions and Procedures</a></div><div class="one_section">Types</div><div class="one_section"><a class="section" href="#PasDoc-Constants">Constants</a></div><div class="one_section">Variables</div></div>
+<span id="PasDoc-Description"></span><h2 class="description">Description</h2>
+<p>
+Exposes RealSense context functionality</p>
+<span id="PasDoc-Uses"></span><h2 class="overview">Overview</h2>
+<span id="PasDoc-FuncsProcs"></span><h3 class="summary">Functions and Procedures</h3>
+<table class="summary wide_list">
+<tr class="list">
+<td class="itemcode"><code>function <strong><a href="rs_context.html#rs2_create_context">rs2_create_context</a></strong>(api_version: integer; var Error: <a href="rs_types.html#pRS2_error">PRS2_error</a>): <a href="rs_types.html#pRS2_context">pRS2_context</a>; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code>procedure <strong><a href="rs_context.html#rs2_delete_context">rs2_delete_context</a></strong>(Ctx: <a href="rs_types.html#pRS2_context">prs2_context</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code>procedure <strong><a href="rs_context.html#rs2_set_devices_changed_callback">rs2_set_devices_changed_callback</a></strong>(Context: <a href="rs_types.html#pRS2_context">prs2_context</a>; Devices_Changed_Callback: <a href="rs_types.html#RS2_devices_changed_callback">rs2_devices_changed_callback</a>; User: <a href="rs_types.html#pvoid">pVoid</a>; Error: <a href="rs_types.html#pRS2_error">prs2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code>function <strong><a href="rs_context.html#rs2_context_add_device">rs2_context_add_device</a></strong>(Ctx: <a href="rs_types.html#pRS2_context">prs2_context</a>; FileName: PChar; Error: <a href="rs_types.html#pRS2_error">prs2_error</a>): <a href="rs_types.html#pRS2_device">prs2_device</a>; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code>procedure <strong><a href="rs_context.html#rs2_context_add_software_device">rs2_context_add_software_device</a></strong>(Ctx: <a href="rs_types.html#pRS2_context">prs2_context</a>; Dev: <a href="rs_types.html#pRS2_device">prs2_device</a>; Error: <a href="rs_types.html#pRS2_error">prs2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code>procedure <strong><a href="rs_context.html#rs2_context_remove_device">rs2_context_remove_device</a></strong>(Ctx: <a href="rs_types.html#pRS2_context">prs2_context</a>; FileName: PChar; Error: <a href="rs_types.html#pRS2_error">prs2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code>procedure <strong><a href="rs_context.html#rs2_context_unload_tracking_module">rs2_context_unload_tracking_module</a></strong>(Ctx: <a href="rs_types.html#pRS2_context">prs2_context</a>; Error: <a href="rs_types.html#pRS2_error">prs2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code>function <strong><a href="rs_context.html#rs2_query_devices">rs2_query_devices</a></strong>(context: <a href="rs_types.html#pRS2_context">prs2_context</a>; var Error: <a href="rs_types.html#pRS2_error">prs2_error</a>): <a href="rs_types.html#pRS2_device_list">prs2_device_list</a>; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code>function <strong><a href="rs_context.html#rs2_query_devices_ex">rs2_query_devices_ex</a></strong>(Context: <a href="rs_types.html#pRS2_context">prs2_context</a>; Product_Mask: integer; Error: <a href="rs_types.html#pRS2_error">prs2_error</a>): <a href="rs_types.html#pRS2_device_list">prs2_device_list</a>; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code>function <strong><a href="rs_context.html#rs2_create_device_hub">rs2_create_device_hub</a></strong>(Context: <a href="rs_types.html#pRS2_context">prs2_context</a>; Error: <a href="rs_types.html#pRS2_error">prs2_error</a>): <a href="rs_types.html#pRS2_device_hub">prs2_device_hub</a>; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code>function <strong><a href="rs_context.html#rs2_device_hub_wait_for_device">rs2_device_hub_wait_for_device</a></strong>(Hub: <a href="rs_types.html#pRS2_device_hub">prs2_device_hub</a>; Error: <a href="rs_types.html#pRS2_error">prs2_error</a>): <a href="rs_types.html#pRS2_device">prs2_device</a>; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code>function <strong><a href="rs_context.html#rs2_device_hub_is_device_connected">rs2_device_hub_is_device_connected</a></strong>(Hub: <a href="rs_types.html#pRS2_device_hub">prs2_device_hub</a>; Device: <a href="rs_types.html#pRS2_device">prs2_device</a>; Error: <a href="rs_types.html#pRS2_error">prs2_error</a>): integer; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+</table>
+<span id="PasDoc-Constants"></span><h3 class="summary">Constants</h3>
+<table class="summary wide_list">
+<tr class="list">
+<td class="itemcode"><code><strong><a href="rs_context.html#RS2_PRODUCT_LINE_ANY">RS2_PRODUCT_LINE_ANY</a></strong> = $0ff;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code><strong><a href="rs_context.html#RS2_PRODUCT_LINE_ANY_INTEL">RS2_PRODUCT_LINE_ANY_INTEL</a></strong> = $fe;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code><strong><a href="rs_context.html#RS2_PRODUCT_LINE_NON_INTEL">RS2_PRODUCT_LINE_NON_INTEL</a></strong> = $01;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code><strong><a href="rs_context.html#RS2_PRODUCT_LINE_D400">RS2_PRODUCT_LINE_D400</a></strong> = $02;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code><strong><a href="rs_context.html#RS2_PRODUCT_LINE_SR300">RS2_PRODUCT_LINE_SR300</a></strong> = $04;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code><strong><a href="rs_context.html#RS2_PRODUCT_LINE_L500">RS2_PRODUCT_LINE_L500</a></strong> = $08;</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code><strong><a href="rs_context.html#RS2_PRODUCT_LINE_T200">RS2_PRODUCT_LINE_T200</a></strong> = $10;</code></td>
+</tr>
+<tr class="list2">
+<td class="itemcode"><code><strong><a href="rs_context.html#RS2_PRODUCT_LINE_DEPTH">RS2_PRODUCT_LINE_DEPTH</a></strong> =
+    (<a href="rs_context.html#RS2_PRODUCT_LINE_L500">RS2_PRODUCT_LINE_L500</a> or <a href="rs_context.html#RS2_PRODUCT_LINE_SR300">RS2_PRODUCT_LINE_SR300</a> or <a href="rs_context.html#RS2_PRODUCT_LINE_D400">RS2_PRODUCT_LINE_D400</a>);</code></td>
+</tr>
+<tr class="list">
+<td class="itemcode"><code><strong><a href="rs_context.html#RS2_PRODUCT_LINE_TRACKING">RS2_PRODUCT_LINE_TRACKING</a></strong> =
+    <a href="rs_context.html#RS2_PRODUCT_LINE_T200">RS2_PRODUCT_LINE_T200</a>;</code></td>
+</tr>
+</table>
+<h2 class="description">Description</h2>
+<h3 class="detail">Functions and Procedures</h3>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_create_context"></span><code>function <strong>rs2_create_context</strong>(api_version: integer; var Error: <a href="rs_types.html#pRS2_error">PRS2_error</a>): <a href="rs_types.html#pRS2_context">pRS2_context</a>; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+brief Creates RealSense context that is required for the rest of the API. param[in] api_version Users are expected to pass their version of \c RS2_API_VERSION to make sure they are running the correct librealsense version. param[out] error If non-null, receives any error that occurs during this call, otherwise, errors are ignored. return Context object</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_delete_context"></span><code>procedure <strong>rs2_delete_context</strong>(Ctx: <a href="rs_types.html#pRS2_context">prs2_context</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+brief Frees the relevant context object. param[in] context Object that is no longer needed</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_set_devices_changed_callback"></span><code>procedure <strong>rs2_set_devices_changed_callback</strong>(Context: <a href="rs_types.html#pRS2_context">prs2_context</a>; Devices_Changed_Callback: <a href="rs_types.html#RS2_devices_changed_callback">rs2_devices_changed_callback</a>; User: <a href="rs_types.html#pvoid">pVoid</a>; Error: <a href="rs_types.html#pRS2_error">prs2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+/** * set callback to get devices changed events * these events will be raised by the context whenever new RealSense device is connected or existing device gets disconnected * \param context Object representing librealsense session * \param[in] callback function pointer to register as per-notifications callback * \param[out] error if non-null, receives any error that occurs during this call, otherwise, errors are ignored */</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_context_add_device"></span><code>function <strong>rs2_context_add_device</strong>(Ctx: <a href="rs_types.html#pRS2_context">prs2_context</a>; FileName: PChar; Error: <a href="rs_types.html#pRS2_error">prs2_error</a>): <a href="rs_types.html#pRS2_device">prs2_device</a>; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Create a new device and add it to the context \param ctx The context to which the new device will be added \param file The file from which the device should be created \param[out] error If non-null, receives any error that occurs during this call, otherwise, errors are ignored </p>
+<h6 class="description_section">Returns</h6>
+<p class="return">A pointer to a device that plays data from the file, or null in case of failure</p></td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_context_add_software_device"></span><code>procedure <strong>rs2_context_add_software_device</strong>(Ctx: <a href="rs_types.html#pRS2_context">prs2_context</a>; Dev: <a href="rs_types.html#pRS2_device">prs2_device</a>; Error: <a href="rs_types.html#pRS2_error">prs2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Add an instance of software device to the context param ctx The context to which the new device will be added param dev Instance of software device to register into the context param[out] error If non-null, receives any error that occurs during this call, otherwise, errors are ignored</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_context_remove_device"></span><code>procedure <strong>rs2_context_remove_device</strong>(Ctx: <a href="rs_types.html#pRS2_context">prs2_context</a>; FileName: PChar; Error: <a href="rs_types.html#pRS2_error">prs2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Removes a playback device from the context, if exists \param[in] ctx The context from which the device should be removed \param[in] file The file name that was used to add the device \param[out] error If non-null, receives any error that occurs during this call, otherwise, errors are ignored</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_context_unload_tracking_module"></span><code>procedure <strong>rs2_context_unload_tracking_module</strong>(Ctx: <a href="rs_types.html#pRS2_context">prs2_context</a>; Error: <a href="rs_types.html#pRS2_error">prs2_error</a>); cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Removes tracking module. function query_devices() locks the tracking module in the tm_context object. If the tracking module device is not used it should be removed using this function, so that other applications could find it. This function can be used both before the call to query_device() to prevent enabling tracking modules or afterwards to release them.</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_query_devices"></span><code>function <strong>rs2_query_devices</strong>(context: <a href="rs_types.html#pRS2_context">prs2_context</a>; var Error: <a href="rs_types.html#pRS2_error">prs2_error</a>): <a href="rs_types.html#pRS2_device_list">prs2_device_list</a>; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+create a static snapshot of all connected devices at the time of the call \param context Object representing librealsense session \param[out] error if non-null, receives any error that occurs during this call, otherwise, errors are ignored \return the list of devices, should be released by rs2_delete_device_list</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_query_devices_ex"></span><code>function <strong>rs2_query_devices_ex</strong>(Context: <a href="rs_types.html#pRS2_context">prs2_context</a>; Product_Mask: integer; Error: <a href="rs_types.html#pRS2_error">prs2_error</a>): <a href="rs_types.html#pRS2_device_list">prs2_device_list</a>; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+create a static snapshot of all connected devices at the time of the call \param context Object representing librealsense session \param product_mask Controls what kind of devices will be returned \param[out] error if non-null, receives any error that occurs during this call, otherwise, errors are ignored \return the list of devices, should be released by rs2_delete_device_list</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_create_device_hub"></span><code>function <strong>rs2_create_device_hub</strong>(Context: <a href="rs_types.html#pRS2_context">prs2_context</a>; Error: <a href="rs_types.html#pRS2_error">prs2_error</a>): <a href="rs_types.html#pRS2_device_hub">prs2_device_hub</a>; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+brief Creates RealSense device_hub . \param[in] context The context for the device hub \param[out] error If non-null, receives any error that occurs during this call, otherwise, errors are ignored. \return Device hub object</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_device_hub_wait_for_device"></span><code>function <strong>rs2_device_hub_wait_for_device</strong>(Hub: <a href="rs_types.html#pRS2_device_hub">prs2_device_hub</a>; Error: <a href="rs_types.html#pRS2_error">prs2_error</a>): <a href="rs_types.html#pRS2_device">prs2_device</a>; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+If any device is connected return it, otherwise wait until next RealSense device connects. Calling this method multiple times will cycle through connected devices \param[in] ctx The context to creat the device \param[in] hub The device hub object \param[out] error If non-null, receives any error that occurs during this call, otherwise, errors are ignored. \return device object</p>
+</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="rs2_device_hub_is_device_connected"></span><code>function <strong>rs2_device_hub_is_device_connected</strong>(Hub: <a href="rs_types.html#pRS2_device_hub">prs2_device_hub</a>; Device: <a href="rs_types.html#pRS2_device">prs2_device</a>; Error: <a href="rs_types.html#pRS2_error">prs2_error</a>): integer; cdecl; external REALSENSE_DLL;</code></td>
+</tr>
+<tr><td colspan="1">
+<p>
+Checks if device is still connected \param[in] hub The device hub object \param[in] device The device \param[out] error If non-null, receives any error that occurs during this call, otherwise, errors are ignored. \return 1 if the device is connected, 0 otherwise</p>
+</td></tr>
+</table>
+<h3 class="detail">Constants</h3>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="RS2_PRODUCT_LINE_ANY"></span><code><strong>RS2_PRODUCT_LINE_ANY</strong> = $0ff;</code></td>
+</tr>
+<tr><td colspan="1">
+&nbsp;</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="RS2_PRODUCT_LINE_ANY_INTEL"></span><code><strong>RS2_PRODUCT_LINE_ANY_INTEL</strong> = $fe;</code></td>
+</tr>
+<tr><td colspan="1">
+&nbsp;</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="RS2_PRODUCT_LINE_NON_INTEL"></span><code><strong>RS2_PRODUCT_LINE_NON_INTEL</strong> = $01;</code></td>
+</tr>
+<tr><td colspan="1">
+&nbsp;</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="RS2_PRODUCT_LINE_D400"></span><code><strong>RS2_PRODUCT_LINE_D400</strong> = $02;</code></td>
+</tr>
+<tr><td colspan="1">
+&nbsp;</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="RS2_PRODUCT_LINE_SR300"></span><code><strong>RS2_PRODUCT_LINE_SR300</strong> = $04;</code></td>
+</tr>
+<tr><td colspan="1">
+&nbsp;</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="RS2_PRODUCT_LINE_L500"></span><code><strong>RS2_PRODUCT_LINE_L500</strong> = $08;</code></td>
+</tr>
+<tr><td colspan="1">
+&nbsp;</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="RS2_PRODUCT_LINE_T200"></span><code><strong>RS2_PRODUCT_LINE_T200</strong> = $10;</code></td>
+</tr>
+<tr><td colspan="1">
+&nbsp;</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="RS2_PRODUCT_LINE_DEPTH"></span><code><strong>RS2_PRODUCT_LINE_DEPTH</strong> =
+    (<a href="rs_context.html#RS2_PRODUCT_LINE_L500">RS2_PRODUCT_LINE_L500</a> or <a href="rs_context.html#RS2_PRODUCT_LINE_SR300">RS2_PRODUCT_LINE_SR300</a> or <a href="rs_context.html#RS2_PRODUCT_LINE_D400">RS2_PRODUCT_LINE_D400</a>);</code></td>
+</tr>
+<tr><td colspan="1">
+&nbsp;</td></tr>
+</table>
+<table class="detail wide_list">
+<tr class="list">
+<td class="itemcode"><span id="RS2_PRODUCT_LINE_TRACKING"></span><code><strong>RS2_PRODUCT_LINE_TRACKING</strong> =
+    <a href="rs_context.html#RS2_PRODUCT_LINE_T200">RS2_PRODUCT_LINE_T200</a>;</code></td>
+</tr>
+<tr><td colspan="1">
+&nbsp;</td></tr>
+</table>
+<hr><span class="appinfo"><em>Generated by <a href="https://pasdoc.github.io/">PasDoc 0.16.0</a>. </em>
+</span>
+</div></div></body></html>
