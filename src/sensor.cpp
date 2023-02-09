@@ -547,7 +547,7 @@ void log_callback_end( uint32_t fps,
         if (_on_open)
             _on_open(_internal_config);
 
-        _power = move(on);
+        _power = std::move(on);
         _is_opened = true;
 
         try {
@@ -824,8 +824,8 @@ void log_callback_end( uint32_t fps,
         _fps_and_sampling_frequency_per_rs2_stream(fps_and_sampling_frequency_per_rs2_stream),
         _hid_device(hid_device),
         _is_configured_stream(RS2_STREAM_COUNT),
-        _hid_iio_timestamp_reader(move(hid_iio_timestamp_reader)),
-        _custom_hid_timestamp_reader(move(custom_hid_timestamp_reader))
+        _hid_iio_timestamp_reader(std::move(hid_iio_timestamp_reader)),
+        _custom_hid_timestamp_reader(std::move(custom_hid_timestamp_reader))
     {
         register_metadata(RS2_FRAME_METADATA_BACKEND_TIMESTAMP, make_additional_data_parser(&frame_additional_data::backend_timestamp));
 
@@ -1113,7 +1113,7 @@ void log_callback_end( uint32_t fps,
         std::unique_ptr<frame_timestamp_reader> timestamp_reader,
         device* dev)
         : sensor_base(name, dev, (recommended_proccesing_blocks_interface*)this),
-        _device(move(uvc_device)),
+        _device(std::move(uvc_device)),
         _user_count(0),
         _timestamp_reader(std::move(timestamp_reader))
     {

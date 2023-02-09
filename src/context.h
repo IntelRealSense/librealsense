@@ -58,7 +58,7 @@ namespace librealsense
 
     protected:
         explicit device_info(std::shared_ptr<context> backend)
-            : _ctx(move(backend))
+            : _ctx(std::move(backend))
         {}
 
         virtual std::shared_ptr<device_interface> create(std::shared_ptr<context> ctx,
