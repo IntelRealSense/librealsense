@@ -1,8 +1,8 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2019 Intel Corporation. All Rights Reserved.
 
-#include "ds5-fw-update-device.h"
-#include "ds5-private.h"
+#include "d400-fw-update-device.h"
+#include "d400-private.h"
 
 namespace librealsense
 {
@@ -22,8 +22,8 @@ namespace librealsense
     bool ds_update_device::check_fw_compatibility(const std::vector<uint8_t>& image) const
     {
         std::string fw_version = extract_firmware_version_string(image);
-        auto it = ds::ds5_device_to_fw_min_version.find(_usb_device->get_info().pid);
-        if (it == ds::ds5_device_to_fw_min_version.end())
+        auto it = ds::d400_device_to_fw_min_version.find(_usb_device->get_info().pid);
+        if (it == ds::d400_device_to_fw_min_version.end())
             throw librealsense::invalid_value_exception(
                 rsutils::string::from() << "Min and Max firmware versions have not been defined for this device: "
                                         << std::hex << _pid );

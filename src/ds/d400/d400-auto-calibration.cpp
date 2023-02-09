@@ -3,10 +3,10 @@
 
 #include <numeric>
 #include "../third-party/json.hpp"
-#include "ds5-device.h"
-#include "ds5-private.h"
-#include "ds5-thermal-monitor.h"
-#include "ds5-auto-calibration.h"
+#include "d400-device.h"
+#include "d400-private.h"
+#include "d400-thermal-monitor.h"
+#include "d400-auto-calibration.h"
 #include "librealsense2/rsutil.h"
 #include "algo.h"
 

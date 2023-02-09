@@ -12,18 +12,18 @@
 #include "image.h"
 #include "metadata-parser.h"
 
-#include "ds5-nonmonochrome.h"
-#include "ds5-private.h"
-#include "ds5-options.h"
+#include "d400-nonmonochrome.h"
+#include "d400-private.h"
+#include "d400-options.h"
 #include "ds/ds-timestamp.h"
 #include "proc/color-formats-converter.h"
 #include "proc/depth-formats-converter.h"
 
 namespace librealsense
 {
-    ds5_nonmonochrome::ds5_nonmonochrome(std::shared_ptr<context> ctx,
+    d400_nonmonochrome::d400_nonmonochrome(std::shared_ptr<context> ctx,
                                          const platform::backend_device_group& group)
-        : device(ctx, group), ds5_device(ctx, group)
+        : device(ctx, group), d400_device(ctx, group)
     {
         using namespace ds;
 

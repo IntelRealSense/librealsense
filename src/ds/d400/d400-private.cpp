@@ -1,7 +1,7 @@
 //// License: Apache 2.0. See LICENSE file in root directory.
 //// Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
-#include "ds5-private.h"
+#include "d400-private.h"
 
 using namespace std;
 
@@ -9,7 +9,7 @@ namespace librealsense
 {
     namespace ds
     {
-        bool ds5_try_fetch_usb_device(std::vector<platform::usb_device_info>& devices,
+        bool d400_try_fetch_usb_device(std::vector<platform::usb_device_info>& devices,
             const platform::uvc_device_info& info, platform::usb_device_info& result)
         {
             for (auto it = devices.begin(); it != devices.end(); ++it)
@@ -63,7 +63,7 @@ namespace librealsense
             return false;
         }
 
-        std::vector<platform::uvc_device_info> filter_ds5_device_by_capability(const std::vector<platform::uvc_device_info>& devices,
+        std::vector<platform::uvc_device_info> filter_d400_device_by_capability(const std::vector<platform::uvc_device_info>& devices,
             d400_caps caps)
         {
             std::vector<platform::uvc_device_info> results;
@@ -74,7 +74,7 @@ namespace librealsense
                 std::copy_if(devices.begin(), devices.end(), std::back_inserter(results),
                     [](const platform::uvc_device_info& info)
                     {
-                        return ds5_fisheye_pid.find(info.pid) != ds5_fisheye_pid.end();
+                        return d400_fisheye_pid.find(info.pid) != d400_fisheye_pid.end();
                     });
                 break;
             default:

@@ -1,7 +1,7 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2016 Intel Corporation. All Rights Reserved.
 
-#include "ds5-motion.h"
+#include "d400-motion.h"
 
 #include <mutex>
 #include <chrono>
@@ -11,7 +11,7 @@
 #include <cstddef>
 
 #include "ds/ds-timestamp.h"
-#include "ds5-options.h"
+#include "d400-options.h"
 #include "stream.h"
 #include "proc/motion-transform.h"
 #include "proc/auto-exposure-processor.h"
@@ -27,12 +27,12 @@ namespace librealsense
         {rs_fourcc('G','R','E','Y'), RS2_STREAM_ACCEL},
     };
 
-    rs2_motion_device_intrinsic ds5_motion_base::get_motion_intrinsics(rs2_stream stream) const
+    rs2_motion_device_intrinsic d400_motion_base::get_motion_intrinsics(rs2_stream stream) const
     {
         return _ds_motion_common->get_motion_intrinsics(stream);
     }
 
-    std::shared_ptr<synthetic_sensor> ds5_motion_uvc::create_uvc_device(std::shared_ptr<context> ctx,
+    std::shared_ptr<synthetic_sensor> d400_motion_uvc::create_uvc_device(std::shared_ptr<context> ctx,
                                                   const std::vector<platform::uvc_device_info>& all_uvc_infos,
                                                   const firmware_version& camera_fw_version)
     {
@@ -86,22 +86,22 @@ namespace librealsense
     }
 
 
-    std::shared_ptr<synthetic_sensor> ds5_motion::create_hid_device(std::shared_ptr<context> ctx,
+    std::shared_ptr<synthetic_sensor> d400_motion::create_hid_device(std::shared_ptr<context> ctx,
                                                                 const std::vector<platform::hid_device_info>& all_hid_infos,
                                                                 const firmware_version& camera_fw_version)
     {
         return _ds_motion_common->create_hid_device(ctx, all_hid_infos, camera_fw_version, _tf_keeper);
     }
 
-    rs2_motion_device_intrinsic ds5_motion::get_motion_intrinsics(rs2_stream stream) const
+    rs2_motion_device_intrinsic d400_motion::get_motion_intrinsics(rs2_stream stream) const
     {
-        return ds5_motion_base::get_motion_intrinsics(stream);
+        return d400_motion_base::get_motion_intrinsics(stream);
     }
 
-    ds5_motion_base::ds5_motion_base(std::shared_ptr<context> ctx,
+    d400_motion_base::d400_motion_base(std::shared_ptr<context> ctx,
         const platform::backend_device_group& group)
         : device(ctx, group),
-        ds5_device(ctx, group),
+        d400_device(ctx, group),
         _accel_stream(new stream(RS2_STREAM_ACCEL)),
         _gyro_stream(new stream(RS2_STREAM_GYRO))
     {
@@ -109,11 +109,11 @@ namespace librealsense
             _device_capabilities, _hw_monitor);
     }
 
-    ds5_motion::ds5_motion(std::shared_ptr<context> ctx,
+    d400_motion::d400_motion(std::shared_ptr<context> ctx,
                            const platform::backend_device_group& group)
         : device(ctx, group), 
-        ds5_device(ctx, group),
-        ds5_motion_base(ctx, group)
+        d400_device(ctx, group),
+        d400_motion_base(ctx, group)
     {
         using namespace ds;
 
@@ -134,11 +134,11 @@ namespace librealsense
         }
     }
 
-    ds5_motion_uvc::ds5_motion_uvc(std::shared_ptr<context> ctx,
+    d400_motion_uvc::d400_motion_uvc(std::shared_ptr<context> ctx,
         const platform::backend_device_group& group)
-        : ds5_motion_base(ctx, group),
+        : d400_motion_base(ctx, group),
         device(ctx, group),
-        ds5_device(ctx, group)
+        d400_device(ctx, group)
     {
         using namespace ds;
 
@@ -162,7 +162,7 @@ namespace librealsense
         }
     }
 
-    void ds5_motion::initialize_fisheye_sensor(std::shared_ptr<context> ctx, const platform::backend_device_group& group)
+    void d400_motion::initialize_fisheye_sensor(std::shared_ptr<context> ctx, const platform::backend_device_group& group)
     {
         using namespace ds;
 
@@ -189,17 +189,17 @@ namespace librealsense
         _fisheye_device_idx = add_sensor(fisheye_ep);
     }
 
-    void ds5_motion::register_fisheye_options()
+    void d400_motion::register_fisheye_options()
     {
         _ds_motion_common->register_fisheye_options();
     }
 
-    void ds5_motion::register_fisheye_metadata()
+    void d400_motion::register_fisheye_metadata()
     {
         _ds_motion_common->register_fisheye_metadata();
     }
 
-    void ds5_motion::register_stream_to_extrinsic_group(const stream_interface& stream, uint32_t group_index)
+    void d400_motion::register_stream_to_extrinsic_group(const stream_interface& stream, uint32_t group_index)
     {
         device::register_stream_to_extrinsic_group(stream, group_index);
     }
