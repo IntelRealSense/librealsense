@@ -2,7 +2,7 @@
 // Copyright(c) 2022 Intel Corporation. All Rights Reserved.
 
 #include "ds-active-common.h"
-#include "ds5/ds5-color.h"
+#include "d400/d400-color.h"
 
 namespace librealsense
 {

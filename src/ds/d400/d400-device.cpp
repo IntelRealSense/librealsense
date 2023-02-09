@@ -6,14 +6,14 @@
 #include "image.h"
 #include "metadata-parser.h"
 
-#include "ds5-device.h"
-#include "ds5-private.h"
-#include "ds5-options.h"
+#include "d400-device.h"
+#include "d400-private.h"
+#include "d400-options.h"
 #include "ds/ds-timestamp.h"
 #include "stream.h"
 #include "environment.h"
-#include "ds5-color.h"
-#include "ds5-nonmonochrome.h"
+#include "d400-color.h"
+#include "d400-nonmonochrome.h"
 
 #include "proc/depth-formats-converter.h"
 #include "proc/y8i-to-y8y8.h"
@@ -22,7 +22,7 @@
 #include "proc/color-formats-converter.h"
 
 #include "hdr-config.h"
-#include "ds5-thermal-monitor.h"
+#include "d400-thermal-monitor.h"
 #include "../common/fw/firmware-version.h"
 #include "fw-update/fw-update-unsigned.h"
 #include "../third-party/json.hpp"
@@ -35,7 +35,7 @@ constexpr bool hw_mon_over_xu = false;
 
 namespace librealsense
 {
-    std::map<uint32_t, rs2_format> ds5_depth_fourcc_to_rs2_format = {
+    std::map<uint32_t, rs2_format> d400_depth_fourcc_to_rs2_format = {
         {rs_fourcc('Y','U','Y','2'), RS2_FORMAT_YUYV},
         {rs_fourcc('Y','U','Y','V'), RS2_FORMAT_YUYV},
         {rs_fourcc('U','Y','V','Y'), RS2_FORMAT_UYVY},
@@ -51,7 +51,7 @@ namespace librealsense
         {rs_fourcc('B','Y','R','2'), RS2_FORMAT_RAW16}
 
     };
-    std::map<uint32_t, rs2_stream> ds5_depth_fourcc_to_rs2_stream = {
+    std::map<uint32_t, rs2_stream> d400_depth_fourcc_to_rs2_stream = {
         {rs_fourcc('Y','U','Y','2'), RS2_STREAM_COLOR},
         {rs_fourcc('Y','U','Y','V'), RS2_STREAM_COLOR},
         {rs_fourcc('U','Y','V','Y'), RS2_STREAM_INFRARED},
@@ -67,12 +67,12 @@ namespace librealsense
         {rs_fourcc('M','J','P','G'), RS2_STREAM_COLOR}
     };
 
-    std::vector<uint8_t> ds5_device::send_receive_raw_data(const std::vector<uint8_t>& input)
+    std::vector<uint8_t> d400_device::send_receive_raw_data(const std::vector<uint8_t>& input)
     {
         return _hw_monitor->send(input);
     }
     
-    std::vector<uint8_t> ds5_device::build_command(uint32_t opcode,
+    std::vector<uint8_t> d400_device::build_command(uint32_t opcode,
         uint32_t param1,
         uint32_t param2,
         uint32_t param3,
@@ -83,39 +83,39 @@ namespace librealsense
         return _hw_monitor->build_command(opcode, param1, param2, param3, param4, data, dataLength);
     }
 
-    void ds5_device::hardware_reset()
+    void d400_device::hardware_reset()
     {
         command cmd(ds::HWRST);
         _hw_monitor->send(cmd);
     }
 
-    void ds5_device::enter_update_state() const
+    void d400_device::enter_update_state() const
     {
         _ds_device_common->enter_update_state();
     }
 
-    std::vector<uint8_t> ds5_device::backup_flash(update_progress_callback_ptr callback)
+    std::vector<uint8_t> d400_device::backup_flash(update_progress_callback_ptr callback)
     {
         return _ds_device_common->backup_flash(callback);
     }
 
-    void ds5_device::update_flash(const std::vector<uint8_t>& image, update_progress_callback_ptr callback, int update_mode)
+    void d400_device::update_flash(const std::vector<uint8_t>& image, update_progress_callback_ptr callback, int update_mode)
     {
         _ds_device_common->update_flash(image, callback, update_mode);
     }
 
-    bool ds5_device::check_fw_compatibility(const std::vector<uint8_t>& image) const
+    bool d400_device::check_fw_compatibility(const std::vector<uint8_t>& image) const
     {
         return _ds_device_common->check_fw_compatibility(image);
     }
 
-    class ds5_depth_sensor : public synthetic_sensor, public video_sensor_interface, public depth_stereo_sensor, public roi_sensor_base
+    class d400_depth_sensor : public synthetic_sensor, public video_sensor_interface, public depth_stereo_sensor, public roi_sensor_base
     {
     public:
-        explicit ds5_depth_sensor(ds5_device* owner,
+        explicit d400_depth_sensor(d400_device* owner,
             std::shared_ptr<uvc_sensor> uvc_sensor)
-            : synthetic_sensor(ds::DEPTH_STEREO, uvc_sensor, owner, ds5_depth_fourcc_to_rs2_format,
-                ds5_depth_fourcc_to_rs2_stream),
+            : synthetic_sensor(ds::DEPTH_STEREO, uvc_sensor, owner, d400_depth_fourcc_to_rs2_format,
+                d400_depth_fourcc_to_rs2_stream),
             _owner(owner),
             _depth_units(-1),
             _hdr_cfg(nullptr)
@@ -226,8 +226,8 @@ namespace librealsense
                 if (p->get_stream_type() == RS2_STREAM_COLOR)
                 {
                     const auto&& profile = to_profile(p.get());
-                    std::weak_ptr<ds5_depth_sensor> wp =
-                        std::dynamic_pointer_cast<ds5_depth_sensor>(this->shared_from_this());
+                    std::weak_ptr<d400_depth_sensor> wp =
+                        std::dynamic_pointer_cast<d400_depth_sensor>(this->shared_from_this());
                     vid_profile->set_intrinsics([profile, wp]()
                         {
                             auto sp = wp.lock();
@@ -241,8 +241,8 @@ namespace librealsense
                 else if (p->get_format() != RS2_FORMAT_Y16) // Y16 format indicate unrectified images, no intrinsics are available for these
                 {
                     const auto&& profile = to_profile(p.get());
-                    std::weak_ptr<ds5_depth_sensor> wp =
-                        std::dynamic_pointer_cast<ds5_depth_sensor>(this->shared_from_this());
+                    std::weak_ptr<d400_depth_sensor> wp =
+                        std::dynamic_pointer_cast<d400_depth_sensor>(this->shared_from_this());
                     vid_profile->set_intrinsics([profile, wp]()
                     {
                         auto sp = wp.lock();
@@ -319,18 +319,18 @@ namespace librealsense
         }
 
     protected:
-        const ds5_device* _owner;
+        const d400_device* _owner;
         mutable std::atomic<float> _depth_units;
         float _stereo_baseline_mm;
         std::shared_ptr<hdr_config> _hdr_cfg;
     };
 
-    class ds5u_depth_sensor : public ds5_depth_sensor
+    class ds5u_depth_sensor : public d400_depth_sensor
     {
     public:
         explicit ds5u_depth_sensor(ds5u_device* owner,
             std::shared_ptr<uvc_sensor> uvc_sensor)
-            : ds5_depth_sensor(owner, uvc_sensor), _owner(owner)
+            : d400_depth_sensor(owner, uvc_sensor), _owner(owner)
         {}
 
         stream_profiles init_stream_profiles() override
@@ -364,7 +364,7 @@ namespace librealsense
                 if (p->get_format() != RS2_FORMAT_Y16) // Y16 format indicate unrectified images, no intrinsics are available for these
                 {
                     const auto&& profile = to_profile(p.get());
-                    std::weak_ptr<ds5_depth_sensor> wp = std::dynamic_pointer_cast<ds5_depth_sensor>(this->shared_from_this());
+                    std::weak_ptr<d400_depth_sensor> wp = std::dynamic_pointer_cast<d400_depth_sensor>(this->shared_from_this());
                     video->set_intrinsics([profile, wp]()
                     {
                         auto sp = wp.lock();
@@ -383,25 +383,25 @@ namespace librealsense
         const ds5u_device* _owner;
     };
 
-    bool ds5_device::is_camera_in_advanced_mode() const
+    bool d400_device::is_camera_in_advanced_mode() const
     {
         return _ds_device_common->is_camera_in_advanced_mode();
     }
 
-    float ds5_device::get_stereo_baseline_mm() const
+    float d400_device::get_stereo_baseline_mm() const
     {
         using namespace ds;
         auto table = check_calib<coefficients_table>(*_coefficients_table_raw);
         return fabs(table->baseline);
     }
 
-    std::vector<uint8_t> ds5_device::get_raw_calibration_table(ds::calibration_table_id table_id) const
+    std::vector<uint8_t> d400_device::get_raw_calibration_table(ds::calibration_table_id table_id) const
     {
         command cmd(ds::GETINTCAL, table_id);
         return _hw_monitor->send(cmd);
     }
 
-    std::vector<uint8_t> ds5_device::get_new_calibration_table() const
+    std::vector<uint8_t> d400_device::get_new_calibration_table() const
     {
         if (_fw_version >= firmware_version("5.11.9.5"))
         {
@@ -411,7 +411,7 @@ namespace librealsense
         return {};
     }
 
-    ds::d400_caps ds5_device::parse_device_capabilities() const
+    ds::d400_caps d400_device::parse_device_capabilities() const
     {
         using namespace ds;
         std::array<unsigned char,HW_MONITOR_BUFFER_SIZE> gvd_buf;
@@ -430,9 +430,9 @@ namespace librealsense
                 val |= d400_caps::CAP_BMI_055;
             else if (gvd_buf[imu_acc_chip_id] == I2C_IMU_BMI085_ID_ACC)
                 val |= d400_caps::CAP_BMI_085;
-            else if (ds5_hid_bmi_055_pid.end() != ds5_hid_bmi_055_pid.find(_pid))
+            else if (d400_hid_bmi_055_pid.end() != d400_hid_bmi_055_pid.find(_pid))
                 val |= d400_caps::CAP_BMI_055;
-            else if (ds5_hid_bmi_085_pid.end() != ds5_hid_bmi_085_pid.find(_pid))
+            else if (d400_hid_bmi_085_pid.end() != d400_hid_bmi_085_pid.find(_pid))
                 val |= d400_caps::CAP_BMI_085;
             else
                 LOG_WARNING("The IMU sensor is undefined for PID " << std::hex << _pid << " and imu_chip_id: " << gvd_buf[imu_acc_chip_id] << std::dec);
@@ -450,7 +450,7 @@ namespace librealsense
         return val;
     }
 
-    std::shared_ptr<synthetic_sensor> ds5_device::create_depth_device(std::shared_ptr<context> ctx,
+    std::shared_ptr<synthetic_sensor> d400_device::create_depth_device(std::shared_ptr<context> ctx,
         const std::vector<platform::uvc_device_info>& all_device_infos)
     {
         using namespace ds;
@@ -476,7 +476,7 @@ namespace librealsense
 
         raw_depth_ep->register_xu(depth_xu); // make sure the XU is initialized every time we power the camera
 
-        auto depth_ep = std::make_shared<ds5_depth_sensor>(this, raw_depth_ep);
+        auto depth_ep = std::make_shared<d400_depth_sensor>(this, raw_depth_ep);
 
         depth_ep->register_info(RS2_CAMERA_INFO_PHYSICAL_PORT, filter_by_mi(all_device_infos, 0).front().device_path);
 
@@ -491,7 +491,7 @@ namespace librealsense
         return depth_ep;
     }
 
-    ds5_device::ds5_device(std::shared_ptr<context> ctx,
+    d400_device::d400_device(std::shared_ptr<context> ctx,
         const platform::backend_device_group& group)
         : device(ctx, group), global_time_interface(),
           auto_calibrated(_hw_monitor),
@@ -505,7 +505,7 @@ namespace librealsense
         init(ctx, group);
     }
 
-    void ds5_device::init(std::shared_ptr<context> ctx,
+    void d400_device::init(std::shared_ptr<context> ctx,
         const platform::backend_device_group& group)
     {
         using namespace ds;
@@ -686,7 +686,7 @@ namespace librealsense
 
                 auto temperature_sensor = depth_sensor.get_option_handler(RS2_OPTION_ASIC_TEMPERATURE);
 
-                _thermal_monitor = std::make_shared<ds5_thermal_monitor>(temperature_sensor, thermal_compensation_toggle);
+                _thermal_monitor = std::make_shared<d400_thermal_monitor>(temperature_sensor, thermal_compensation_toggle);
 
                 depth_sensor.register_option(RS2_OPTION_THERMAL_COMPENSATION,
                 std::make_shared<thermal_compensation>(_thermal_monitor,thermal_compensation_toggle));
@@ -715,9 +715,9 @@ namespace librealsense
             // register HDR options
             if (!mipi_sensor && (_fw_version >= hdr_firmware_version))
             {
-                auto ds5_depth = As<ds5_depth_sensor, synthetic_sensor>(&get_depth_sensor());
-                ds5_depth->init_hdr_config(exposure_range, gain_range);
-                auto&& hdr_cfg = ds5_depth->get_hdr_config();
+                auto d400_depth = As<d400_depth_sensor, synthetic_sensor>(&get_depth_sensor());
+                d400_depth->init_hdr_config(exposure_range, gain_range);
+                auto&& hdr_cfg = d400_depth->get_hdr_config();
 
                 // values from 4 to 14 - for internal use
                 // value 15 - saved for emiter on off subpreset
@@ -853,7 +853,7 @@ namespace librealsense
             if (advanced_mode && _fw_version >= firmware_version("5.6.3.0"))
             {
                 auto depth_scale = std::make_shared<depth_scale_option>(*_hw_monitor);
-                auto depth_sensor = As<ds5_depth_sensor, synthetic_sensor>(&get_depth_sensor());
+                auto depth_sensor = As<d400_depth_sensor, synthetic_sensor>(&get_depth_sensor());
                 assert(depth_sensor);
 
                 depth_scale->add_observer([depth_sensor](float val)
@@ -907,7 +907,7 @@ namespace librealsense
         std::string curr_version= _fw_version;
     }
 
-    void ds5_device::register_metadata(const synthetic_sensor &depth_sensor, const firmware_version& hdr_firmware_version) const
+    void d400_device::register_metadata(const synthetic_sensor &depth_sensor, const firmware_version& hdr_firmware_version) const
     {
         depth_sensor.register_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP, make_uvc_header_parser(&platform::uvc_header::timestamp));
 
@@ -956,7 +956,7 @@ namespace librealsense
         depth_sensor.register_metadata((rs2_frame_metadata_value)RS2_FRAME_METADATA_FORMAT, make_attribute_parser(&md_configuration::format, md_configuration_attributes::format_attribute, md_prop_offset));
         depth_sensor.register_metadata((rs2_frame_metadata_value)RS2_FRAME_METADATA_WIDTH, make_attribute_parser(&md_configuration::width, md_configuration_attributes::width_attribute, md_prop_offset));
         depth_sensor.register_metadata((rs2_frame_metadata_value)RS2_FRAME_METADATA_HEIGHT, make_attribute_parser(&md_configuration::height, md_configuration_attributes::height_attribute, md_prop_offset));
-        depth_sensor.register_metadata((rs2_frame_metadata_value)RS2_FRAME_METADATA_ACTUAL_FPS, std::make_shared<ds5_md_attribute_actual_fps>());
+        depth_sensor.register_metadata((rs2_frame_metadata_value)RS2_FRAME_METADATA_ACTUAL_FPS, std::make_shared<d400_md_attribute_actual_fps>());
 
         if (_fw_version >= firmware_version("5.12.7.0"))
         {
@@ -997,7 +997,7 @@ namespace librealsense
         }
     }
 
-    void ds5_device::register_metadata_mipi(const synthetic_sensor &depth_sensor) const
+    void d400_device::register_metadata_mipi(const synthetic_sensor &depth_sensor) const
     {
         depth_sensor.register_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP, make_uvc_header_parser(&platform::uvc_header::timestamp));
 
@@ -1072,16 +1072,16 @@ namespace librealsense
                                                              md_prop_offset));
     }
 
-    void ds5_device::create_snapshot(std::shared_ptr<debug_interface>& snapshot) const
+    void d400_device::create_snapshot(std::shared_ptr<debug_interface>& snapshot) const
     {
         //TODO: Implement
     }
-    void ds5_device::enable_recording(std::function<void(const debug_interface&)> record_action)
+    void d400_device::enable_recording(std::function<void(const debug_interface&)> record_action)
     {
         //TODO: Implement
     }
 
-    platform::usb_spec ds5_device::get_usb_spec() const
+    platform::usb_spec d400_device::get_usb_spec() const
     {
         if(!supports_info(RS2_CAMERA_INFO_USB_TYPE_DESCRIPTOR))
             return platform::usb_undefined;
@@ -1095,7 +1095,7 @@ namespace librealsense
     }
 
 
-    double ds5_device::get_device_time_ms()
+    double d400_device::get_device_time_ms()
     {
         //// TODO: Refactor the following query with an extension.
         //if (dynamic_cast<const platform::playback_backend*>(&(get_context()->get_backend())) != nullptr)
@@ -1119,12 +1119,12 @@ namespace librealsense
         return ts;
     }
 
-    command ds5_device::get_firmware_logs_command() const
+    command d400_device::get_firmware_logs_command() const
     {
         return command{ ds::GLD, 0x1f4 };
     }
 
-    command ds5_device::get_flash_logs_command() const
+    command d400_device::get_flash_logs_command() const
     {
         return command{ ds::FRB, 0x17a000, 0x3f8 };
     }
@@ -1140,11 +1140,11 @@ namespace librealsense
         for (auto&& info : filter_by_mi(all_device_infos, 0)) // Filter just mi=0, DEPTH
             depth_devices.push_back(backend.create_uvc_device(info));
 
-        std::unique_ptr<frame_timestamp_reader> ds5_timestamp_reader_backup(new ds_timestamp_reader(backend.create_time_service()));
-        std::unique_ptr<frame_timestamp_reader> ds5_timestamp_reader_metadata(new ds_timestamp_reader_from_metadata(std::move(ds5_timestamp_reader_backup)));
+        std::unique_ptr<frame_timestamp_reader> d400_timestamp_reader_backup(new ds_timestamp_reader(backend.create_time_service()));
+        std::unique_ptr<frame_timestamp_reader> d400_timestamp_reader_metadata(new ds_timestamp_reader_from_metadata(std::move(d400_timestamp_reader_backup)));
 
         auto enable_global_time_option = std::shared_ptr<global_time_option>(new global_time_option());
-        auto raw_depth_ep = std::make_shared<uvc_sensor>(ds::DEPTH_STEREO, std::make_shared<platform::multi_pins_uvc_device>(depth_devices), std::unique_ptr<frame_timestamp_reader>(new global_timestamp_reader(std::move(ds5_timestamp_reader_metadata), _tf_keeper, enable_global_time_option)), this);
+        auto raw_depth_ep = std::make_shared<uvc_sensor>(ds::DEPTH_STEREO, std::make_shared<platform::multi_pins_uvc_device>(depth_devices), std::unique_ptr<frame_timestamp_reader>(new global_timestamp_reader(std::move(d400_timestamp_reader_metadata), _tf_keeper, enable_global_time_option)), this);
         auto depth_ep = std::make_shared<ds5u_depth_sensor>(this, raw_depth_ep);
 
         depth_ep->register_option(RS2_OPTION_GLOBAL_TIME_ENABLED, enable_global_time_option);
@@ -1162,7 +1162,7 @@ namespace librealsense
 
     ds5u_device::ds5u_device(std::shared_ptr<context> ctx,
         const platform::backend_device_group& group)
-        : ds5_device(ctx, group), device(ctx, group)
+        : d400_device(ctx, group), device(ctx, group)
     {
         using namespace ds;
 

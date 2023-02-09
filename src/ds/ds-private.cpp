@@ -1,7 +1,7 @@
 //// License: Apache 2.0. See LICENSE file in root directory.
 //// Copyright(c) 2022 Intel Corporation. All Rights Reserved.
 
-#include "ds5/ds5-private.h"
+#include "d400/d400-private.h"
 
 using namespace std;
 
@@ -11,14 +11,14 @@ namespace librealsense
 {
     namespace ds
     {
-        ds5_rect_resolutions width_height_to_ds5_rect_resolutions(uint32_t width, uint32_t height)
+        d400_rect_resolutions width_height_to_d400_rect_resolutions(uint32_t width, uint32_t height)
         {
             for (auto& elem : resolutions_list)
             {
                 if (uint32_t(elem.second.x) == width && uint32_t(elem.second.y) == height)
                     return elem.first;
             }
-            return max_ds5_rect_resolutions;
+            return max_d400_rect_resolutions;
         }
 
         rs2_intrinsics get_intrinsic_by_resolution_coefficients_table(const std::vector<uint8_t>& raw_data, uint32_t width, uint32_t height)
@@ -39,15 +39,15 @@ namespace librealsense
                 << intrinsics_string(res_1280_800)
                 << intrinsics_string(res_960_540));
 
-            auto resolution = width_height_to_ds5_rect_resolutions(width, height);
+            auto resolution = width_height_to_d400_rect_resolutions(width, height);
 
             if (width == 848 && height == 100) // Special 848x100 resolution is available in some firmware versions
                 // for this resolution we use the same base-intrinsics as for 848x480 and adjust them later
             {
-                resolution = width_height_to_ds5_rect_resolutions(width, 480);
+                resolution = width_height_to_d400_rect_resolutions(width, 480);
             }
 
-            if (resolution < max_ds5_rect_resolutions)
+            if (resolution < max_d400_rect_resolutions)
             {
                 rs2_intrinsics intrinsics;
                 intrinsics.width = resolutions_list[resolution].x;
@@ -80,7 +80,7 @@ namespace librealsense
             else
             {
                 // Intrinsics not found in the calibration table - use the generic calculation
-                ds5_rect_resolutions resolution = res_1920_1080;
+                d400_rect_resolutions resolution = res_1920_1080;
                 rs2_intrinsics intrinsics;
                 intrinsics.width = width;
                 intrinsics.height = height;

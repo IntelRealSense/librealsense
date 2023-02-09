@@ -234,7 +234,7 @@ namespace librealsense
             uint32_t                crc32;          // crc of all the actual table data excluding header/CRC
         };
 
-        enum ds5_rect_resolutions : unsigned short
+        enum d400_rect_resolutions : unsigned short
         {
             res_1920_1080,
             res_1280_720,
@@ -253,7 +253,7 @@ namespace librealsense
             res_576_576,
             res_720_720,
             res_1152_1152,
-            max_ds5_rect_resolutions
+            max_d400_rect_resolutions
         };
 
         struct coefficients_table
@@ -266,7 +266,7 @@ namespace librealsense
             float               baseline;                   //  the baseline between the cameras in mm units
             uint32_t            brown_model;                //  Distortion model: 0 - DS distorion model, 1 - Brown model
             uint8_t             reserved1[88];
-            float4              rect_params[max_ds5_rect_resolutions];
+            float4              rect_params[max_d400_rect_resolutions];
             uint8_t             reserved2[64];
         };
 
@@ -554,21 +554,21 @@ namespace librealsense
             max_id = -1
         };
 
-        struct ds5_calibration
+        struct d400_calibration
         {
             uint16_t        version;                        // major.minor
             rs2_intrinsics   left_imager_intrinsic;
             rs2_intrinsics   right_imager_intrinsic;
-            rs2_intrinsics   depth_intrinsic[max_ds5_rect_resolutions];
+            rs2_intrinsics   depth_intrinsic[max_d400_rect_resolutions];
             rs2_extrinsics   left_imager_extrinsic;
             rs2_extrinsics   right_imager_extrinsic;
             rs2_extrinsics   depth_extrinsic;
             std::map<calibration_table_id, bool> data_present;
 
-            ds5_calibration() : version(0), left_imager_intrinsic({}), right_imager_intrinsic({}),
+            d400_calibration() : version(0), left_imager_intrinsic({}), right_imager_intrinsic({}),
                 left_imager_extrinsic({}), right_imager_extrinsic({}), depth_extrinsic({})
             {
-                for (auto i = 0; i < max_ds5_rect_resolutions; i++)
+                for (auto i = 0; i < max_d400_rect_resolutions; i++)
                     depth_intrinsic[i] = {};
                 data_present.emplace(coefficients_table_id, false);
                 data_present.emplace(depth_calibration_id, false);
@@ -580,7 +580,7 @@ namespace librealsense
             }
         };
 
-        static std::map< ds5_rect_resolutions, int2> resolutions_list = {
+        static std::map< d400_rect_resolutions, int2> resolutions_list = {
             { res_320_240,{ 320, 240 } },
             { res_424_240,{ 424, 240 } },
             { res_480_270,{ 480, 270 } },
@@ -601,7 +601,7 @@ namespace librealsense
         
 
 
-        ds5_rect_resolutions width_height_to_ds5_rect_resolutions(uint32_t width, uint32_t height);
+        d400_rect_resolutions width_height_to_d400_rect_resolutions(uint32_t width, uint32_t height);
 
         bool try_get_intrinsic_by_resolution_new(const std::vector<uint8_t>& raw_data,
             uint32_t width, uint32_t height, rs2_intrinsics* result);
@@ -612,7 +612,7 @@ namespace librealsense
         pose get_fisheye_extrinsics_data(const std::vector<uint8_t>& raw_data);
         pose get_color_stream_extrinsic(const std::vector<uint8_t>& raw_data);
 
-        enum ds5_notifications_types
+        enum d400_notifications_types
         {
             success = 0,
             hot_laser_power_reduce,
@@ -647,7 +647,7 @@ namespace librealsense
         };
 
         // Elaborate FW XU report. The reports may be consequently extended for PU/CTL/ISP
-        const std::map< uint8_t, std::string> ds5_fw_error_report = {
+        const std::map< uint8_t, std::string> d400_fw_error_report = {
             { success,                      "Success" },
             { hot_laser_power_reduce,       "Laser hot - power reduce" },
             { hot_laser_disable,            "Laser hot - disabled" },
