@@ -553,7 +553,7 @@ namespace librealsense
         bool try_get_intrinsic_by_resolution_new(const std::vector<uint8_t>& raw_data,
             uint32_t width, uint32_t height, rs2_intrinsics* result);
 
-        enum ds5_notifications_types
+        enum d400_notifications_types
         {
             success = 0,
             hot_laser_power_reduce,
@@ -588,7 +588,7 @@ namespace librealsense
         };
 
         // Elaborate FW XU report. The reports may be consequently extended for PU/CTL/ISP
-        const std::map< uint8_t, std::string> ds5_fw_error_report = {
+        const std::map< uint8_t, std::string> d400_fw_error_report = {
             { success,                      "Success" },
             { hot_laser_power_reduce,       "Laser hot - power reduce" },
             { hot_laser_disable,            "Laser hot - disabled" },

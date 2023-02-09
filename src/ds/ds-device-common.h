@@ -43,8 +43,8 @@ namespace librealsense
     private:
         uvc_sensor& get_raw_depth_sensor();
 
-        friend class ds5_depth_sensor;
-        friend class ds6_depth_sensor;
+        friend class d400_depth_sensor;
+        friend class d500_depth_sensor;
 
         device* _owner;
         std::shared_ptr<hw_monitor> _hw_monitor;

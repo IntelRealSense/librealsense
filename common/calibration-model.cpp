@@ -3,7 +3,7 @@
 #include "os.h"
 #include "ux-window.h"
 
-#include "../src/ds/ds5/ds5-private.h"
+#include "../src/ds/d400/d400-private.h"
 
 
 using namespace rs2;
@@ -146,8 +146,8 @@ void calibration_model::update(ux_window& window, std::string& error_message)
         to_open = false;
     }
 
-    auto table = (librealsense::ds::ds5_coefficients_table*)_calibration.data();
-    auto orig_table = (librealsense::ds::ds5_coefficients_table*)_original.data();
+    auto table = (librealsense::ds::d400_coefficients_table*)_calibration.data();
+    auto orig_table = (librealsense::ds::d400_coefficients_table*)_original.data();
     bool changed = false;
 
     const float w = 620;

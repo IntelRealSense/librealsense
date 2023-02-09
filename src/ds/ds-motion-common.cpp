@@ -12,8 +12,8 @@
 #include "proc/auto-exposure-processor.h"
 #include "core/roi.h"
 
-#include "ds5/ds5-motion.h"
-#include "ds6/ds6-motion.h"
+#include "d400/d400-motion.h"
+#include "d500/d500-motion.h"
 #include "proc/motion-transform.h"
 
 #include "ds-timestamp.h"
@@ -54,22 +54,22 @@ namespace librealsense
 
     const std::vector<uint8_t>& ds_fisheye_sensor::get_fisheye_calibration_table() const
     {
-        if (auto dev = dynamic_cast<const ds5_motion*>(_owner))
+        if (auto dev = dynamic_cast<const d400_motion*>(_owner))
             return dev->_ds_motion_common->get_fisheye_calibration_table();
-        if (auto dev = dynamic_cast<const ds5_motion_uvc*>(_owner))
+        if (auto dev = dynamic_cast<const d400_motion_uvc*>(_owner))
             return dev->_ds_motion_common->get_fisheye_calibration_table();
-        if (auto dev = dynamic_cast<const ds6_motion*>(_owner))
+        if (auto dev = dynamic_cast<const d500_motion*>(_owner))
             return dev->_ds_motion_common->get_fisheye_calibration_table();
         throw std::runtime_error("device not referenced in the product line");
     }
 
     std::shared_ptr<stream_interface> ds_fisheye_sensor::get_fisheye_stream() const
     {
-        if (auto dev = dynamic_cast<const ds5_motion*>(_owner))
+        if (auto dev = dynamic_cast<const d400_motion*>(_owner))
             return dev->_ds_motion_common->get_fisheye_stream();
-        if (auto dev = dynamic_cast<const ds5_motion_uvc*>(_owner))
+        if (auto dev = dynamic_cast<const d400_motion_uvc*>(_owner))
             return dev->_ds_motion_common->get_fisheye_stream();
-        if (auto dev = dynamic_cast<const ds6_motion*>(_owner))
+        if (auto dev = dynamic_cast<const d500_motion*>(_owner))
             return dev->_ds_motion_common->get_fisheye_stream();
         throw std::runtime_error("device not referenced in the product line");
     }
@@ -78,9 +78,9 @@ namespace librealsense
     {
         // ds5 used because no fisheye in ds6
         auto fisheye_calib = get_fisheye_calibration_table();
-        return get_ds5_intrinsic_by_resolution(
+        return get_d400_intrinsic_by_resolution(
             fisheye_calib,
-            ds::ds5_calibration_table_id::fisheye_calibration_id,
+            ds::d400_calibration_table_id::fisheye_calibration_id,
             profile.width, profile.height);
     }
 
@@ -139,11 +139,11 @@ namespace librealsense
 
     rs2_motion_device_intrinsic ds_motion_sensor::get_motion_intrinsics(rs2_stream stream) const
     {
-        if (auto dev = dynamic_cast<const ds5_motion*>(_owner))
+        if (auto dev = dynamic_cast<const d400_motion*>(_owner))
             return dev->get_motion_intrinsics(stream);
-        if (auto dev = dynamic_cast<const ds5_motion_uvc*>(_owner))
+        if (auto dev = dynamic_cast<const d400_motion_uvc*>(_owner))
             return dev->get_motion_intrinsics(stream);
-        if (auto dev = dynamic_cast<const ds6_motion*>(_owner))
+        if (auto dev = dynamic_cast<const d500_motion*>(_owner))
             return dev->get_motion_intrinsics(stream);
         throw std::runtime_error("device not referenced in the product line");
     }
@@ -179,22 +179,22 @@ namespace librealsense
 
     std::shared_ptr<stream_interface> ds_motion_sensor::get_accel_stream() const
     {
-        if (auto dev = dynamic_cast<const ds5_motion*>(_owner))
+        if (auto dev = dynamic_cast<const d400_motion*>(_owner))
             return dev->_ds_motion_common->get_accel_stream();
-        if (auto dev = dynamic_cast<const ds5_motion_uvc*>(_owner))
+        if (auto dev = dynamic_cast<const d400_motion_uvc*>(_owner))
             return dev->_ds_motion_common->get_accel_stream();
-        if (auto dev = dynamic_cast<const ds6_motion*>(_owner))
+        if (auto dev = dynamic_cast<const d500_motion*>(_owner))
             return dev->_ds_motion_common->get_accel_stream();
         throw std::runtime_error("device not referenced in the product line");
     }
 
     std::shared_ptr<stream_interface> ds_motion_sensor::get_gyro_stream() const
     {
-        if (auto dev = dynamic_cast<const ds5_motion*>(_owner))
+        if (auto dev = dynamic_cast<const d400_motion*>(_owner))
             return dev->_ds_motion_common->get_gyro_stream();
-        if (auto dev = dynamic_cast<const ds5_motion_uvc*>(_owner))
+        if (auto dev = dynamic_cast<const d400_motion_uvc*>(_owner))
             return dev->_ds_motion_common->get_gyro_stream();
-        if (auto dev = dynamic_cast<const ds6_motion*>(_owner))
+        if (auto dev = dynamic_cast<const d500_motion*>(_owner))
             return dev->_ds_motion_common->get_gyro_stream();
         throw std::runtime_error("device not referenced in the product line");
     }
@@ -294,11 +294,11 @@ namespace librealsense
     std::vector<platform::uvc_device_info> ds_motion_common::filter_device_by_capability(const std::vector<platform::uvc_device_info>& devices,
         d400_caps caps)
     {
-        if (auto dev = dynamic_cast<const ds5_motion*>(_owner))
-            return filter_ds5_device_by_capability(devices, ds::d400_caps::CAP_FISHEYE_SENSOR);
-        if (auto dev = dynamic_cast<const ds5_motion_uvc*>(_owner))
-            return filter_ds5_device_by_capability(devices, ds::d400_caps::CAP_FISHEYE_SENSOR);
-        if (auto dev = dynamic_cast<const ds6_motion*>(_owner))
+        if (auto dev = dynamic_cast<const d400_motion*>(_owner))
+            return filter_d400_device_by_capability(devices, ds::d400_caps::CAP_FISHEYE_SENSOR);
+        if (auto dev = dynamic_cast<const d400_motion_uvc*>(_owner))
+            return filter_d400_device_by_capability(devices, ds::d400_caps::CAP_FISHEYE_SENSOR);
+        if (auto dev = dynamic_cast<const d500_motion*>(_owner))
             return std::vector<platform::uvc_device_info>();
         throw std::runtime_error("device not referenced in the product line");
     }
@@ -353,17 +353,17 @@ namespace librealsense
 
     void ds_motion_common::register_streams_to_extrinsic_groups()
     {
-        if (auto dev = dynamic_cast<ds5_motion*>(_owner))
+        if (auto dev = dynamic_cast<d400_motion*>(_owner))
         {
             dev->register_stream_to_extrinsic_group(*_gyro_stream, 0);
             dev->register_stream_to_extrinsic_group(*_accel_stream, 0);
         }
-        else if (auto dev = dynamic_cast<ds5_motion_uvc*>(_owner))
+        else if (auto dev = dynamic_cast<d400_motion_uvc*>(_owner))
         {
             dev->register_stream_to_extrinsic_group(*_gyro_stream, 0);
             dev->register_stream_to_extrinsic_group(*_accel_stream, 0);
         }
-        else if (auto dev = dynamic_cast<ds6_motion*>(_owner))
+        else if (auto dev = dynamic_cast<d500_motion*>(_owner))
         {
             dev->register_stream_to_extrinsic_group(*_gyro_stream, 0);
             dev->register_stream_to_extrinsic_group(*_accel_stream, 0);
