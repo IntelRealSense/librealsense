@@ -327,7 +327,7 @@ namespace librealsense
     {
         using namespace ds;
         command cmd(GET_HKR_CONFIG_TABLE, 
-            static_cast<int>(ds6_calib_location::ds6_calib_eeprom), 
+            static_cast<int>(ds6_calib_location::ds6_calib_flash_memory),
             static_cast<int>(table_id),
             static_cast<int>(ds6_calib_type::ds6_calib_dynamic));
         return _hw_monitor->send(cmd);
