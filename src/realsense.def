@@ -165,6 +165,7 @@ EXPORTS
     rs2_aus_get_counters_list_size
     rs2_aus_delete_counters_list
     rs2_aus_get_counter_data
+    rs2_aus_receive_json_data
 
     rs2_get_log_message_line_number
     rs2_get_log_message_filename
