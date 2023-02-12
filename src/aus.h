@@ -6,6 +6,7 @@
 #include "types.h"
 #include "device.h"
 #include <mutex>
+#include <rsutils/os/os.h>
 
 #define NOT_SUPPORTED(func_api)  func_api{throw std::runtime_error("function " #func_api " is not supported without BUILD_AUS flag on");}
 
@@ -131,29 +132,11 @@ namespace librealsense
         {
             _start_time = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
             _librealsense_version = RS2_API_VERSION_STR;
-            _os_name = get_os_name();
-            _platform_name = PLATFORM;
+            _os_name = rsutils::get_os_name();
+            _platform_name = rsutils::get_platform_name();
 
         }
 
-        std::string get_os_name()
-        {
-            #ifdef _WIN32
-            return "Windows";
-            #else
-            #ifdef __APPLE__
-            return "Mac OS";
-            #else
-            #ifdef __linux__
-            return "Linux";
-            #else
-            return "Unknown";
-            #endif
-            #endif
-            #endif
-        }
-
-        
         void set(std::string key, long long value)
         {
             std::lock_guard<std::mutex> lock(_m);
@@ -269,26 +252,6 @@ namespace librealsense
         std::string _librealsense_version;
         std::string _os_name;
         std::string _platform_name;
-
-        const char * PLATFORM =
-
-            #ifdef _WIN64
-            "Windows amd64";
-        #elif _WIN32
-            "Windows x86";
-        #elif __linux__
-            #ifdef __arm__
-            "Linux arm";
-        #else
-            "Linux amd64";
-        #endif
-        #elif __APPLE__
-            "Mac OS";
-        #elif __ANDROID__
-            "Linux arm";
-        #else
-            "";
-        #endif
 
         void assert_key_exists(std::string key)
         {
