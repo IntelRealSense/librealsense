@@ -1,6 +1,9 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2016 Intel Corporation. All Rights Reserved.
 
+#include <regex>
+#include <iterator>
+
 #include "device.h"
 #include "context.h"
 #include "image.h"
@@ -446,9 +449,9 @@ namespace librealsense
         // Option INTER_CAM_SYNC_MODE is not enabled in D405
         if (_pid != ds::RS405_PID)
             val |= d400_caps::CAP_INTERCAM_HW_SYNC;
-        if (gvd_buf[ip65_sealed] == 0xFF) // TODO: change to 0x1 after test
+        if (gvd_buf[ip65_sealed_offset] == 0x1)
             val |= d400_caps::CAP_IP65;
-        if (gvd_buf[filter_sensor] == 0xFF) // TODO: change to 0x1 after test
+        if (gvd_buf[ir_filter_offset] == 0x1)
             val |= d400_caps::CAP_IR_FILTER;
         return val;
     }
@@ -695,25 +698,21 @@ namespace librealsense
                 std::make_shared<thermal_compensation>(_thermal_monitor,thermal_compensation_toggle));
             }
 
-            // TODO: chage firmware_version after test to "5.15.0.0"
             auto ir_filter_mask = d400_caps::CAP_IR_FILTER;
-            if (_fw_version >= firmware_version("5.14.0.0") &&
-                val_in_range(_pid, {RS435_RGB_PID, RS435I_PID, RS455_PID}) &&
-                (_device_capabilities & ir_filter_mask) == ir_filter_mask)
+            if (val_in_range(_pid, { RS435_RGB_PID, RS435I_PID, RS455_PID }) &&
+                (_device_capabilities & ir_filter_mask) == ir_filter_mask &&
+                is_capability_supports(d400_caps::CAP_IR_FILTER, gvd_buff[gvd_version_offset]))
             {
-                device_name += "F";
+                update_device_name(device_name, d400_caps::CAP_IR_FILTER);
             }
 
-            // TODO: chage firmware_version after test to "5.15.0.0"
             auto ip65_mask = d400_caps::CAP_IP65;
-            if (_fw_version >= firmware_version("5.14.0.0") &&
-                val_in_range(_pid, { RS455_PID }) &&
-                (_device_capabilities & ip65_mask) == ip65_mask)
+            if (val_in_range(_pid, { RS455_PID })&&
+                (_device_capabilities & ip65_mask) == ip65_mask &&
+                is_capability_supports(d400_caps::CAP_IP65, gvd_buff[gvd_version_offset]))
             {
-                device_name = device_name.substr(0, device_name.size() - 1);
-                device_name += "6";
+                update_device_name(device_name, d400_caps::CAP_IP65);
             }
-
 
             std::shared_ptr<option> exposure_option = nullptr;
             std::shared_ptr<option> gain_option = nullptr;
@@ -1102,6 +1101,32 @@ namespace librealsense
     void d400_device::enable_recording(std::function<void(const debug_interface&)> record_action)
     {
         //TODO: Implement
+    }
+
+    // Check if need change camera name due to number modifications on one device PID.
+    void update_device_name(std::string& device_name, const ds::d400_caps cap)
+    {
+        std::regex old_name_reg("D455");
+
+		switch (cap)
+		{
+		    case ds::d400_caps::CAP_IR_FILTER:
+                device_name += "F"; // Adding "F" to end of device name if it has IR filter.
+                break;
+
+		    case ds::d400_caps::CAP_IP65:
+                device_name = std::regex_replace(device_name, old_name_reg, "D456"); // Change device name from D455 to D456.
+                break;
+
+            default:
+                auto wrong_cap = ds::d400_capabilities_names.find(cap);
+
+                if (wrong_cap == ds::d400_capabilities_names.end())
+                    throw invalid_value_exception("Not found capabilty in map of cabability--gvd version.");
+                else
+                    throw invalid_value_exception("The device name " + wrong_cap->second + " can't be updated.");
+                break;
+        }
     }
 
     platform::usb_spec d400_device::get_usb_spec() const

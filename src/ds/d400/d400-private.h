@@ -162,5 +162,18 @@ namespace librealsense
         bool d400_try_fetch_usb_device(std::vector<platform::usb_device_info>& devices,
             const platform::uvc_device_info& info, platform::usb_device_info& result);
 
+        // Checks if given capability supporting by current gvd (firmware data) version.
+        static bool is_capability_supports(const ds::d400_caps capability, const uint8_t cur_gvd_version)
+        {
+            auto cap = ds::d400_cap_to_min_gvd_version.find(capability);
+            if (cap == ds::d400_cap_to_min_gvd_version.end())
+            {
+                throw invalid_value_exception("Not found capabilty in map of cabability--gvd version.");
+            }
+
+            uint8_t min_gvd_version = cap->second;
+            return min_gvd_version <= cur_gvd_version;
+        }
+
     } // namespace ds
 } // namespace librealsense

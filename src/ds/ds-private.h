@@ -193,6 +193,11 @@ namespace librealsense
             { d400_caps::CAP_IR_FILTER,        "IR filter"         }
         };
 
+        static const std::map<d400_caps, std::int8_t> d400_cap_to_min_gvd_version = {
+            {d400_caps::CAP_IP65, 0x4},
+            {d400_caps::CAP_IR_FILTER, 0x4}
+        };
+
         inline d400_caps operator &(const d400_caps lhs, const d400_caps rhs)
         {
             return static_cast<d400_caps>(static_cast<uint32_t>(lhs) & static_cast<uint32_t>(rhs));
@@ -524,15 +529,16 @@ namespace librealsense
         enum gvd_fields
         {
             // Keep sorted
+            gvd_version_offset = 2,
             camera_fw_version_offset = 12,
             is_camera_locked_offset = 25,
             module_serial_offset = 48,
             module_asic_serial_offset = 64,
             fisheye_sensor_lb = 112,
             fisheye_sensor_hb = 113,
-            ip65_sealed = 120,
             imu_acc_chip_id = 124,
-            filter_sensor = 164,
+            ip65_sealed_offset = 161,
+            ir_filter_offset = 164,
             depth_sensor_type = 166,
             active_projector = 170,
             rgb_sensor = 174,
