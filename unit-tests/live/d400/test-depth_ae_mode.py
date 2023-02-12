@@ -5,7 +5,7 @@
 
 import pyrealsense2 as rs
 import pyrsutils as rsutils
-from rspy import test
+from rspy import test, log
 
 ctx = rs.context()
 device = test.find_first_device_or_exit();
