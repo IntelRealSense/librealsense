@@ -44,7 +44,9 @@ namespace librealsense
     public:
         virtual std::shared_ptr<device_interface> create_device() const
         {
-            return create(_ctx, true);
+            auto device = create(_ctx, true);
+            librealsense::aus_on_device_changed(device);
+            return device;
         }
 
         virtual ~device_info() = default;

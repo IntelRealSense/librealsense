@@ -203,6 +203,28 @@ namespace librealsense
     void reset_logger();
     void enable_rolling_log_file( unsigned max_size );
 
+    ///////////////////////
+    //   AUS mechanism   //
+    ///////////////////////
+
+    void aus_set(std::string counter, int value);
+    void aus_increment(std::string counter);
+    void aus_decrement(std::string counter);
+    long long aus_get(std::string counter);
+    void aus_start(std::string counter);
+    void aus_stop(std::string counter);
+    std::string aus_build_system_timer_name(std::string suffix, std::string device_name = "");
+    std::string aus_build_system_counter_name(std::string suffix, std::string device_name = "");
+    std::vector<std::string> aus_get_counters_list();
+    class device_interface;
+    void aus_on_device_changed(std::shared_ptr<device_interface> device);
+    void aus_system_counter_increment(std::string suffix, std::string device_name);
+    void aus_system_timer_start(std::string suffix, std::string device_name);
+    void aus_system_timer_stop(std::string suffix, std::string device_name);
+    class stream_profile_interface;
+    void aus_start_active_streams_timer(std::string device_name, std::vector<std::shared_ptr<stream_profile_interface>> active_streams);
+    void aus_stop_active_streams_timer(std::string device_name, std::vector<std::shared_ptr<stream_profile_interface>> active_streams);
+
     // Enhancement for debug mode that incurs performance penalty with STL
     // std::clamp to be introduced with c++17
     template< typename T>
