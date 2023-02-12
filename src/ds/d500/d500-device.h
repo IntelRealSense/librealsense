@@ -3,8 +3,8 @@
 
 #pragma once
 
-#include "ds/ds6/ds6-private.h"
-#include "ds/ds6/hw_monitor_extended_buffers.h"
+#include "ds/d500/d500-private.h"
+#include "ds/d500/hw_monitor_extended_buffers.h"
 
 #include "algo.h"
 #include "error-handling.h"
@@ -24,7 +24,7 @@ namespace librealsense
     class d400_thermal_monitor;
     class ds_devices_common;
 
-    class ds6_device : public virtual device, public debug_interface, public global_time_interface, public updatable, public auto_calibrated
+    class d500_device : public virtual device, public debug_interface, public global_time_interface, public updatable, public auto_calibrated
     {
     public:
         std::shared_ptr<synthetic_sensor> create_depth_device(std::shared_ptr<context> ctx,
@@ -41,7 +41,7 @@ namespace librealsense
             return dynamic_cast<uvc_sensor&>(*depth_sensor.get_raw_sensor());
         }
 
-        ds6_device(std::shared_ptr<context> ctx,
+        d500_device(std::shared_ptr<context> ctx,
             const platform::backend_device_group& group);
 
         std::vector<uint8_t> send_receive_raw_data(const std::vector<uint8_t>& input) override;
@@ -68,7 +68,7 @@ namespace librealsense
     protected:
         std::shared_ptr<ds_device_common> _ds_device_common;
 
-        std::vector<uint8_t> get_ds6_raw_calibration_table(ds::ds6_calibration_table_id table_id) const;
+        std::vector<uint8_t> get_d500_raw_calibration_table(ds::d500_calibration_table_id table_id) const;
         std::vector<uint8_t> get_new_calibration_table() const;
 
         bool is_camera_in_advanced_mode() const;
@@ -84,7 +84,7 @@ namespace librealsense
         void init(std::shared_ptr<context> ctx,
             const platform::backend_device_group& group);
 
-        friend class ds6_depth_sensor;
+        friend class d500_depth_sensor;
 
         std::shared_ptr<hw_monitor_extended_buffers> _hw_monitor;
         firmware_version _fw_version;

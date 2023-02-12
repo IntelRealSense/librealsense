@@ -3,41 +3,41 @@
 
 #pragma once
 
-#include "ds6-device.h"
+#include "d500-device.h"
 #include "core/video.h"
 
 namespace librealsense
 {
-    class ds6_safety_sensor;
+    class d500_safety_sensor;
 
-    class ds6_safety : public virtual ds6_device
+    class d500_safety : public virtual d500_device
     {
     public:
         std::shared_ptr<synthetic_sensor> create_safety_device(std::shared_ptr<context> ctx,
             const std::vector<platform::uvc_device_info>& safety_devices_info);
 
-        ds6_safety(std::shared_ptr<context> ctx,
+        d500_safety(std::shared_ptr<context> ctx,
                    const platform::backend_device_group& group);
 
     private:
 
-        friend class ds6_safety_sensor;
+        friend class d500_safety_sensor;
 
-        void register_options(std::shared_ptr<ds6_safety_sensor> safety_ep, std::shared_ptr<uvc_sensor> raw_safety_sensor);
+        void register_options(std::shared_ptr<d500_safety_sensor> safety_ep, std::shared_ptr<uvc_sensor> raw_safety_sensor);
         void register_metadata(std::shared_ptr<uvc_sensor> safety_ep);
-        void register_processing_blocks(std::shared_ptr<ds6_safety_sensor> safety_ep);
+        void register_processing_blocks(std::shared_ptr<d500_safety_sensor> safety_ep);
 
     protected:
         std::shared_ptr<stream_interface> _safety_stream;
         uint8_t _safety_device_idx;
     };
 
-    class ds6_safety_sensor : public synthetic_sensor,
+    class d500_safety_sensor : public synthetic_sensor,
                               public video_sensor_interface,
                               public safety_sensor
     {
     public:
-        explicit ds6_safety_sensor(ds6_safety* owner,
+        explicit d500_safety_sensor(d500_safety* owner,
             std::shared_ptr<uvc_sensor> uvc_sensor,
             std::map<uint32_t, rs2_format> safety_fourcc_to_rs2_format,
             std::map<uint32_t, rs2_stream> safety_fourcc_to_rs2_stream)
@@ -51,7 +51,7 @@ namespace librealsense
         void set_safety_preset(int index, const rs2_safety_preset& sp) const override;
         rs2_safety_preset get_safety_preset(int index) const override;
     protected:
-        const ds6_safety* _owner;
+        const d500_safety* _owner;
     };
 
     // subdevice[h] unit[fw], node[h] guid[fw]

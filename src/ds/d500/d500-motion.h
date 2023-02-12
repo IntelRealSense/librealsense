@@ -3,19 +3,19 @@
 
 #pragma once
 
-#include "ds6-device.h"
+#include "d500-device.h"
 #include "ds/ds-motion-common.h"
 
 namespace librealsense
 {
-    class ds6_motion : public virtual ds6_device
+    class d500_motion : public virtual d500_device
     {
     public:
         std::shared_ptr<synthetic_sensor> create_hid_device(std::shared_ptr<context> ctx,
                                                       const std::vector<platform::hid_device_info>& all_hid_infos,
                                                       const firmware_version& camera_fw_version);
 
-        ds6_motion(std::shared_ptr<context> ctx,
+        d500_motion(std::shared_ptr<context> ctx,
                    const platform::backend_device_group& group);
 
         rs2_motion_device_intrinsic get_motion_intrinsics(rs2_stream) const;

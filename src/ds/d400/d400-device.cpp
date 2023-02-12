@@ -1171,7 +1171,7 @@ namespace librealsense
     {
         using namespace ds;
 
-        // Override the basic ds5 sensor with the development version
+        // Override the basic d400 sensor with the development version
         _depth_device_idx = assign_sensor(create_ds5u_depth_device(ctx, group.uvc_devices), _depth_device_idx);
 
         init(ctx, group);
