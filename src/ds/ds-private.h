@@ -234,7 +234,7 @@ namespace librealsense
             uint32_t                crc32;          // crc of all the actual table data excluding header/CRC
         };
 
-        enum d400_rect_resolutions : unsigned short
+        enum ds_rect_resolutions : unsigned short
         {
             res_1920_1080,
             res_1280_720,
@@ -253,7 +253,7 @@ namespace librealsense
             res_576_576,
             res_720_720,
             res_1152_1152,
-            max_d400_rect_resolutions
+            max_ds_rect_resolutions
         };
 
         struct new_calibration_item
@@ -529,7 +529,7 @@ namespace librealsense
         };
         
 
-        static std::map< d400_rect_resolutions, int2> resolutions_list = {
+        static std::map< ds_rect_resolutions, int2> resolutions_list = {
             { res_320_240,{ 320, 240 } },
             { res_424_240,{ 424, 240 } },
             { res_480_270,{ 480, 270 } },
@@ -547,7 +547,7 @@ namespace librealsense
             { res_1152_1152,{ 1152, 1152 } },
         };
 
-        d400_rect_resolutions width_height_to_d400_rect_resolutions(uint32_t width, uint32_t height);
+        ds_rect_resolutions width_height_to_ds_rect_resolutions(uint32_t width, uint32_t height);
 
         rs2_intrinsics get_color_stream_intrinsic(const std::vector<uint8_t>& raw_data, uint32_t width, uint32_t height);
         bool try_get_intrinsic_by_resolution_new(const std::vector<uint8_t>& raw_data,

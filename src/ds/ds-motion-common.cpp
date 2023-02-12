@@ -78,9 +78,9 @@ namespace librealsense
     {
         // ds5 used because no fisheye in ds6
         auto fisheye_calib = get_fisheye_calibration_table();
-        return get_ds5_intrinsic_by_resolution(
+        return get_d400_intrinsic_by_resolution(
             fisheye_calib,
-            ds::ds5_calibration_table_id::fisheye_calibration_id,
+            ds::d400_calibration_table_id::fisheye_calibration_id,
             profile.width, profile.height);
     }
 

@@ -187,7 +187,7 @@ namespace librealsense
 
         rs2_intrinsics get_ds6_intrinsic_by_resolution(const std::vector<uint8_t>& raw_data, ds6_calibration_table_id table_id, uint32_t width, uint32_t height);
         rs2_intrinsics get_ds6_intrinsic_by_resolution_coefficients_table(const std::vector<uint8_t>& raw_data, uint32_t width, uint32_t height);
-        pose get_ds5_color_stream_extrinsic(const std::vector<uint8_t>& raw_data);
+        pose get_d400_color_stream_extrinsic(const std::vector<uint8_t>& raw_data);
 
         enum class ds6_calib_location
         {

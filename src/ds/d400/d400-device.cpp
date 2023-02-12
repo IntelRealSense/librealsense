@@ -137,9 +137,9 @@ namespace librealsense
             }
             else 
             {
-                return get_ds5_intrinsic_by_resolution(
+                return get_d400_intrinsic_by_resolution(
                     *_owner->_coefficients_table_raw,
-                    ds::ds5_calibration_table_id::coefficients_table_id,
+                    ds::d400_calibration_table_id::coefficients_table_id,
                     profile.width, profile.height);
             }
         }
@@ -182,9 +182,9 @@ namespace librealsense
 
         rs2_intrinsics get_color_intrinsics(const stream_profile& profile) const
         {
-            return get_ds5_intrinsic_by_resolution(
+            return get_d400_intrinsic_by_resolution(
                 *_owner->_color_calib_table_raw,
-                ds::ds5_calibration_table_id::rgb_calibration_id,
+                ds::d400_calibration_table_id::rgb_calibration_id,
                 profile.width, profile.height);
         }
 
@@ -391,11 +391,11 @@ namespace librealsense
     float d400_device::get_stereo_baseline_mm() const
     {
         using namespace ds;
-        auto table = check_calib<coefficients_table>(*_coefficients_table_raw);
+        auto table = check_calib<d400_coefficients_table>(*_coefficients_table_raw);
         return fabs(table->baseline);
     }
 
-    std::vector<uint8_t> d400_device::get_raw_calibration_table(ds::calibration_table_id table_id) const
+    std::vector<uint8_t> d400_device::get_d400_raw_calibration_table(ds::d400_calibration_table_id table_id) const
     {
         command cmd(ds::GETINTCAL, static_cast<int>(table_id));
         return _hw_monitor->send(cmd);
@@ -506,7 +506,7 @@ namespace librealsense
         init(ctx, group);
     }
 
-    void ds5_device::register_interleaved_y16_processing_block(synthetic_sensor& depth_sensor) const
+    void d400_device::register_interleaved_y16_processing_block(synthetic_sensor& depth_sensor) const
     {
         depth_sensor.register_processing_block(
             { RS2_FORMAT_Y12I },
@@ -528,7 +528,7 @@ namespace librealsense
 
         _color_calib_table_raw = [this]()
         {
-            return get_ds5_raw_calibration_table(ds5_calibration_table_id::rgb_calibration_id);
+            return get_d400_raw_calibration_table(d400_calibration_table_id::rgb_calibration_id);
         };
 
         if (((hw_mon_over_xu) && (RS400_IMU_PID != _pid)) || (!group.usb_devices.size()))
@@ -555,7 +555,7 @@ namespace librealsense
         _left_right_extrinsics = std::make_shared<lazy<rs2_extrinsics>>([this]()
             {
                 rs2_extrinsics ext = identity_matrix();
-                auto table = check_calib<ds5_coefficients_table>(*_coefficients_table_raw);
+                auto table = check_calib<d400_coefficients_table>(*_coefficients_table_raw);
                 ext.translation[0] = 0.001f * table->baseline; // mm to meters
                 return ext;
             });
@@ -567,7 +567,7 @@ namespace librealsense
         register_stream_to_extrinsic_group(*_left_ir_stream, 0);
         register_stream_to_extrinsic_group(*_right_ir_stream, 0);
 
-        _coefficients_table_raw = [this]() { return get_ds5_raw_calibration_table(ds5_calibration_table_id::coefficients_table_id); };
+        _coefficients_table_raw = [this]() { return get_d400_raw_calibration_table(d400_calibration_table_id::coefficients_table_id); };
         _new_calib_table_raw = [this]() { return get_new_calibration_table(); };
 
         std::string device_name = (rs400_sku_names.end() != rs400_sku_names.find(_pid)) ? rs400_sku_names.at(_pid) : "RS4xx";

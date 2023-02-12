@@ -11,14 +11,14 @@ namespace librealsense
 {
     namespace ds
     {
-        d400_rect_resolutions width_height_to_d400_rect_resolutions(uint32_t width, uint32_t height)
+        ds_rect_resolutions width_height_to_ds_rect_resolutions(uint32_t width, uint32_t height)
         {
             for (auto& elem : resolutions_list)
             {
                 if (uint32_t(elem.second.x) == width && uint32_t(elem.second.y) == height)
                     return elem.first;
             }
-            return max_d400_rect_resolutions;
+            return max_ds_rect_resolutions;
         }
 
         rs2_intrinsics get_intrinsic_fisheye_table(const std::vector<uint8_t>& raw_data, uint32_t width, uint32_t height)

@@ -13,7 +13,7 @@
 #include "device.h"
 #include "global_timestamp_reader.h"
 #include "fw-update/fw-update-device-interface.h"
-#include "ds/ds5/ds5-auto-calibration.h"
+#include "ds/d400/d400-auto-calibration.h"
 #include "ds/ds-options.h"
 
 #include "ds/ds-device-common.h"
@@ -21,7 +21,7 @@
 namespace librealsense
 {
     class hdr_config;
-    class ds5_thermal_monitor;
+    class d400_thermal_monitor;
     class ds_devices_common;
 
     class ds6_device : public virtual device, public debug_interface, public global_time_interface, public updatable, public auto_calibrated
@@ -102,7 +102,7 @@ namespace librealsense
         lazy<std::vector<uint8_t>> _new_calib_table_raw;
 
         std::shared_ptr<polling_error_handler> _polling_error_handler;
-        std::shared_ptr<ds5_thermal_monitor> _thermal_monitor;
+        std::shared_ptr<d400_thermal_monitor> _thermal_monitor;
         std::shared_ptr<lazy<rs2_extrinsics>> _left_right_extrinsics;
         lazy<std::vector<uint8_t>> _color_calib_table_raw;
         std::shared_ptr<lazy<rs2_extrinsics>> _color_extrinsic;
