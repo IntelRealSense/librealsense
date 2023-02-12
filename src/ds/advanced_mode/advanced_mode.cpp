@@ -3,9 +3,10 @@
 
 #include "core/advanced_mode.h"
 #include "json_loader.hpp"
-#include "ds/ds5/ds5-color.h"
+#include "ds/d400/d400-color.h"
 #include "ds/ds6/ds6-color.h"
 #include <rsutils/string/from.h>
+
 namespace librealsense
 {
     void ds_advanced_mode_base::register_to_visual_preset_option()
@@ -44,12 +45,12 @@ namespace librealsense
             auto& dev = _depth_sensor.get_device();
             for (size_t i = 0; i < dev.get_sensors_count(); ++i)
             {
-                if (auto s = dynamic_cast<const ds5_color_sensor*>(&(dev.get_sensor(i))))
+                if (auto s = dynamic_cast<const d400_color_sensor*>(&(dev.get_sensor(i))))
                 {
-                    return const_cast<ds5_color_sensor*>(s);
+                    return const_cast<d400_color_sensor*>(s);
                 }
             }
-            return (ds5_color_sensor*)nullptr;
+            return (d400_color_sensor*)nullptr;
         };
         if (!*_color_sensor)
         {

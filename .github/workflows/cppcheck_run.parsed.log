@@ -1,6 +1,5 @@
 E uninitvar                      common/model-views.cpp+554                         Uninitialized variables: option.unset_value, option.have_unset_value, option.read_only, option.edit_mode
 E uninitvar                      src/l500/l500-color.cpp+265                        Uninitialized variable: intrinsics.model
-E syntaxError                    src/linux/backend-v4l2.cpp+1199                    syntax error: &lt;)
 E integerOverflow                src/l500/l500-depth.cpp+322                        Signed integer overflow for expression 'baseline_address+4'.
 E integerOverflow                src/l500/l500-device.cpp+321                       Signed integer overflow for expression 'ivcam2::REGISTER_CLOCK_0+4'.
 E invalidContainer               common/calibration-model.cpp+347                   Using pointer to member variable '_calibration' that may be invalid.

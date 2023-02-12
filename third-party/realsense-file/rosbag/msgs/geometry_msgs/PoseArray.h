@@ -40,7 +40,7 @@ struct PoseArray_
    typedef  ::std_msgs::Header_<ContainerAllocator>  _header_type;
   _header_type header;
 
-   typedef std::vector< ::geometry_msgs::Pose_<ContainerAllocator> , typename ContainerAllocator::template rebind< ::geometry_msgs::Pose_<ContainerAllocator> >::other >  _poses_type;
+   typedef std::vector< ::geometry_msgs::Pose_<ContainerAllocator> , typename std::allocator_traits< ContainerAllocator >::template rebind_alloc< ::geometry_msgs::Pose_<ContainerAllocator>  > >  _poses_type;
   _poses_type poses;
 
 

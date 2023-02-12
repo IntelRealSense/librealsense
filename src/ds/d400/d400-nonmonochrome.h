@@ -3,14 +3,14 @@
 
 #pragma once
 
-#include "ds5-device.h"
+#include "d400-device.h"
 
 namespace librealsense
 {
-    class ds5_nonmonochrome : public virtual ds5_device
+    class d400_nonmonochrome : public virtual d400_device
     {
     public:
-        ds5_nonmonochrome(std::shared_ptr<context> ctx,
+        d400_nonmonochrome(std::shared_ptr<context> ctx,
                           const platform::backend_device_group& group);
     };
 }

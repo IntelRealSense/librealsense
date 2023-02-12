@@ -62,7 +62,7 @@ namespace librealsense
             ds::RS457_PID
         };
 
-        static const std::set<std::uint16_t> ds5_multi_sensors_pid = {
+        static const std::set<std::uint16_t> d400_multi_sensors_pid = {
             ds::RS400_MM_PID,
             ds::RS410_MM_PID,
             ds::RS415_PID,
@@ -76,24 +76,24 @@ namespace librealsense
             ds::RS457_PID
         };
 
-        static const std::set<std::uint16_t> ds5_hid_sensors_pid = {
+        static const std::set<std::uint16_t> d400_hid_sensors_pid = {
             ds::RS435I_PID,
             ds::RS430I_PID,
             ds::RS465_PID,
             ds::RS455_PID
         };
 
-        static const std::set<std::uint16_t> ds5_hid_bmi_055_pid = {
+        static const std::set<std::uint16_t> d400_hid_bmi_055_pid = {
             ds::RS435I_PID,
             ds::RS430I_PID,
             ds::RS455_PID
         };
 
-        static const std::set<std::uint16_t> ds5_hid_bmi_085_pid = {
+        static const std::set<std::uint16_t> d400_hid_bmi_085_pid = {
             RS465_PID
         };
 
-        static const std::set<std::uint16_t> ds5_fisheye_pid = {
+        static const std::set<std::uint16_t> d400_fisheye_pid = {
             ds::RS400_MM_PID,
             ds::RS410_MM_PID,
             ds::RS420_MM_PID,
@@ -129,7 +129,7 @@ namespace librealsense
             { RS457_PID,            "Intel RealSense D457" },
         };
 
-        static std::map<uint16_t, std::string> ds5_device_to_fw_min_version = {
+        static std::map<uint16_t, std::string> d400_device_to_fw_min_version = {
             {RS400_PID, "5.8.15.0"},
             {RS410_PID, "5.8.15.0"},
             {RS415_PID, "5.8.15.0"},
@@ -157,12 +157,12 @@ namespace librealsense
             {RS457_PID, "5.13.1.1" }
         };
 
-        std::vector<platform::uvc_device_info> filter_ds5_device_by_capability(
+        std::vector<platform::uvc_device_info> filter_d400_device_by_capability(
             const std::vector<platform::uvc_device_info>& devices, d400_caps caps);
-        bool ds5_try_fetch_usb_device(std::vector<platform::usb_device_info>& devices,
+        bool d400_try_fetch_usb_device(std::vector<platform::usb_device_info>& devices,
             const platform::uvc_device_info& info, platform::usb_device_info& result);
 
-        enum class ds5_calibration_table_id
+        enum class d400_calibration_table_id
         {
             coefficients_table_id = 25,
             depth_calibration_id = 31,
@@ -174,7 +174,7 @@ namespace librealsense
             max_id = -1
         };
 
-        struct ds5_calibration
+        struct d400_calibration
         {
             uint16_t        version;                        // major.minor
             rs2_intrinsics   left_imager_intrinsic;
@@ -183,24 +183,24 @@ namespace librealsense
             rs2_extrinsics   left_imager_extrinsic;
             rs2_extrinsics   right_imager_extrinsic;
             rs2_extrinsics   depth_extrinsic;
-            std::map<ds5_calibration_table_id, bool> data_present;
+            std::map<d400_calibration_table_id, bool> data_present;
 
-            ds5_calibration() : version(0), left_imager_intrinsic({}), right_imager_intrinsic({}),
+            d400_calibration() : version(0), left_imager_intrinsic({}), right_imager_intrinsic({}),
                 left_imager_extrinsic({}), right_imager_extrinsic({}), depth_extrinsic({})
             {
                 for (auto i = 0; i < max_ds_rect_resolutions; i++)
                     depth_intrinsic[i] = {};
-                data_present.emplace(ds5_calibration_table_id::coefficients_table_id, false);
-                data_present.emplace(ds5_calibration_table_id::depth_calibration_id, false);
-                data_present.emplace(ds5_calibration_table_id::rgb_calibration_id, false);
-                data_present.emplace(ds5_calibration_table_id::fisheye_calibration_id, false);
-                data_present.emplace(ds5_calibration_table_id::imu_calibration_id, false);
-                data_present.emplace(ds5_calibration_table_id::lens_shading_id, false);
-                data_present.emplace(ds5_calibration_table_id::projector_id, false);
+                data_present.emplace(d400_calibration_table_id::coefficients_table_id, false);
+                data_present.emplace(d400_calibration_table_id::depth_calibration_id, false);
+                data_present.emplace(d400_calibration_table_id::rgb_calibration_id, false);
+                data_present.emplace(d400_calibration_table_id::fisheye_calibration_id, false);
+                data_present.emplace(d400_calibration_table_id::imu_calibration_id, false);
+                data_present.emplace(d400_calibration_table_id::lens_shading_id, false);
+                data_present.emplace(d400_calibration_table_id::projector_id, false);
             }
         };
 
-        struct ds5_coefficients_table
+        struct d400_coefficients_table
         {
             table_header        header;
             float3x3            intrinsic_left;             //  left camera intrinsic data, normilized
@@ -214,9 +214,9 @@ namespace librealsense
             uint8_t             reserved2[64];
         };
 
-        rs2_intrinsics get_ds5_intrinsic_by_resolution(const std::vector<uint8_t>& raw_data, ds5_calibration_table_id table_id, uint32_t width, uint32_t height);
-        rs2_intrinsics get_ds5_intrinsic_by_resolution_coefficients_table(const std::vector<uint8_t>& raw_data, uint32_t width, uint32_t height);
-        pose get_ds5_color_stream_extrinsic(const std::vector<uint8_t>& raw_data);
+        rs2_intrinsics get_d400_intrinsic_by_resolution(const std::vector<uint8_t>& raw_data, d400_calibration_table_id table_id, uint32_t width, uint32_t height);
+        rs2_intrinsics get_d400_intrinsic_by_resolution_coefficients_table(const std::vector<uint8_t>& raw_data, uint32_t width, uint32_t height);
+        pose get_d400_color_stream_extrinsic(const std::vector<uint8_t>& raw_data);
 
         rs2_intrinsics get_intrinsic_fisheye_table(const std::vector<uint8_t>& raw_data, uint32_t width, uint32_t height);
         pose get_fisheye_extrinsics_data(const std::vector<uint8_t>& raw_data);

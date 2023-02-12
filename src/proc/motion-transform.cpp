@@ -1,8 +1,8 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2019 Intel Corporation. All Rights Reserved.
 
-#include "ds/ds5/ds5-options.h"
-#include "ds/ds5/ds5-motion.h"
+#include "ds/d400/d400-options.h"
+#include "ds/d400/d400-motion.h"
 #include "synthetic-stream.h"
 #include "motion-transform.h"
 #include "stream.h"

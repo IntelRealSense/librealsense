@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include "ds5-private.h"
+#include "d400-private.h"
 
 #include "algo.h"
 #include "error-handling.h"
@@ -12,17 +12,17 @@
 #include "device.h"
 #include "global_timestamp_reader.h"
 #include "fw-update/fw-update-device-interface.h"
-#include "ds5-auto-calibration.h"
-#include "ds5-options.h"
+#include "d400-auto-calibration.h"
+#include "d400-options.h"
 
 #include "ds/ds-device-common.h"
 
 namespace librealsense
 {
     class hdr_config;
-    class ds5_thermal_monitor;
+    class d400_thermal_monitor;
 
-    class ds5_device : public virtual device, public debug_interface, public global_time_interface, public updatable, public auto_calibrated
+    class d400_device : public virtual device, public debug_interface, public global_time_interface, public updatable, public auto_calibrated
     {
     public:
         std::shared_ptr<synthetic_sensor> create_depth_device(std::shared_ptr<context> ctx,
@@ -39,7 +39,7 @@ namespace librealsense
             return dynamic_cast<uvc_sensor&>(*depth_sensor.get_raw_sensor());
         }
 
-        ds5_device(std::shared_ptr<context> ctx,
+        d400_device(std::shared_ptr<context> ctx,
                    const platform::backend_device_group& group);
 
         std::vector<uint8_t> send_receive_raw_data(const std::vector<uint8_t>& input) override;
@@ -67,7 +67,7 @@ namespace librealsense
         std::shared_ptr<ds_device_common> _ds_device_common;
         virtual void register_interleaved_y16_processing_block(synthetic_sensor& depth_sensor) const;
 
-        std::vector<uint8_t> get_ds5_raw_calibration_table(ds::ds5_calibration_table_id table_id) const;
+        std::vector<uint8_t> get_d400_raw_calibration_table(ds::d400_calibration_table_id table_id) const;
         virtual ds::d400_caps parse_device_capabilities() const;
         std::vector<uint8_t> get_new_calibration_table() const;
 
@@ -85,7 +85,7 @@ namespace librealsense
         void init(std::shared_ptr<context> ctx,
             const platform::backend_device_group& group);
 
-        friend class ds5_depth_sensor;
+        friend class d400_depth_sensor;
 
         std::shared_ptr<hw_monitor> _hw_monitor;
         firmware_version            _fw_version;
@@ -103,7 +103,7 @@ namespace librealsense
         lazy<std::vector<uint8_t>> _new_calib_table_raw;
 
         std::shared_ptr<polling_error_handler> _polling_error_handler;
-        std::shared_ptr<ds5_thermal_monitor> _thermal_monitor;
+        std::shared_ptr<d400_thermal_monitor> _thermal_monitor;
         std::shared_ptr<lazy<rs2_extrinsics>> _left_right_extrinsics;
         lazy<std::vector<uint8_t>> _color_calib_table_raw;
         std::shared_ptr<lazy<rs2_extrinsics>> _color_extrinsic;
@@ -113,7 +113,7 @@ namespace librealsense
         std::shared_ptr<auto_exposure_limit_option> _ae_limit_value_control;
     };
 
-    class ds5u_device : public ds5_device
+    class ds5u_device : public d400_device
     {
     public:
         ds5u_device(std::shared_ptr<context> ctx,

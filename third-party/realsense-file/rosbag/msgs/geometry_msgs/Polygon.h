@@ -34,7 +34,7 @@ struct Polygon_
 
 
 
-   typedef std::vector< ::geometry_msgs::Point32_<ContainerAllocator> , typename ContainerAllocator::template rebind< ::geometry_msgs::Point32_<ContainerAllocator> >::other >  _points_type;
+   typedef std::vector< ::geometry_msgs::Point32_<ContainerAllocator> , typename std::allocator_traits< ContainerAllocator >::template rebind_alloc< ::geometry_msgs::Point32_<ContainerAllocator>  > >  _points_type;
   _points_type points;
 
 

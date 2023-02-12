@@ -383,7 +383,7 @@ namespace librealsense
 
             auto host_perf = get_option(RS2_OPTION_HOST_PERFORMANCE).query();
 
-            if (host_perf == RS2_HOST_PERF_LOW || host_perf == RS2_HOST_PERF_HIGH)
+            if (static_cast<int>(host_perf) == RS2_HOST_PERF_LOW || static_cast<int>(host_perf) == RS2_HOST_PERF_HIGH)
             {
                 // TPROC USB Granularity and TRB threshold settings for improved performance and stability
                 // on hosts with weak cpu and system performance
@@ -393,7 +393,7 @@ namespace librealsense
                 // and improve performance
                 int usb_trb = 7;       // 7 KB
 
-                if (host_perf == RS2_HOST_PERF_LOW)
+                if (static_cast<int>(host_perf) == RS2_HOST_PERF_LOW)
                 {
                     usb_trb = 32;      // 32 KB
                 }
@@ -414,7 +414,7 @@ namespace librealsense
                     LOG_WARNING("Failed to update color usb tproc granularity and TRB threshold. performance and stability maybe impacted on certain platforms.");
                 }
             }
-            else if (host_perf == RS2_HOST_PERF_DEFAULT)
+            else if (static_cast<int>(host_perf) == RS2_HOST_PERF_DEFAULT)
             {
                     LOG_DEBUG("Default host performance mode, color usb tproc granularity and TRB threshold not changed");
             }

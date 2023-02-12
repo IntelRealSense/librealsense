@@ -5,21 +5,21 @@
 #include "metadata.h"
 
 #include "ds/ds-timestamp.h"
-#include "ds5-thermal-monitor.h"
+#include "d400-thermal-monitor.h"
 #include "proc/color-formats-converter.h"
-#include "ds5-color.h"
+#include "d400-color.h"
 #include <rsutils/string/from.h>
 
 namespace librealsense
 {
-    std::map<uint32_t, rs2_format> ds5_color_fourcc_to_rs2_format = {
+    std::map<uint32_t, rs2_format> d400_color_fourcc_to_rs2_format = {
          {rs_fourcc('Y','U','Y','2'), RS2_FORMAT_YUYV},
          {rs_fourcc('Y','U','Y','V'), RS2_FORMAT_YUYV},
          {rs_fourcc('U','Y','V','Y'), RS2_FORMAT_UYVY},
          {rs_fourcc('M','J','P','G'), RS2_FORMAT_MJPEG},
          {rs_fourcc('B','Y','R','2'), RS2_FORMAT_RAW16}
     };
-    std::map<uint32_t, rs2_stream> ds5_color_fourcc_to_rs2_stream = {
+    std::map<uint32_t, rs2_stream> d400_color_fourcc_to_rs2_stream = {
         {rs_fourcc('Y','U','Y','2'), RS2_STREAM_COLOR},
         {rs_fourcc('Y','U','Y','V'), RS2_STREAM_COLOR},
         {rs_fourcc('U','Y','V','Y'), RS2_STREAM_COLOR},
@@ -27,9 +27,9 @@ namespace librealsense
         {rs_fourcc('M','J','P','G'), RS2_STREAM_COLOR}
     };
 
-    ds5_color::ds5_color(std::shared_ptr<context> ctx,
+    d400_color::d400_color(std::shared_ptr<context> ctx,
         const platform::backend_device_group& group)
-        : ds5_device(ctx, group), device(ctx, group),
+        : d400_device(ctx, group), device(ctx, group),
           _color_stream(new stream(RS2_STREAM_COLOR)),
           _separate_color(true)
     {
@@ -37,17 +37,17 @@ namespace librealsense
         init();
     }
 
-    void ds5_color::create_color_device(std::shared_ptr<context> ctx, const platform::backend_device_group& group)
+    void d400_color::create_color_device(std::shared_ptr<context> ctx, const platform::backend_device_group& group)
     {
         using namespace ds;
         auto&& backend = ctx->get_backend();
 
         _color_calib_table_raw = [this]()
         {
-            return get_ds5_raw_calibration_table(ds5_calibration_table_id::rgb_calibration_id);
+            return get_d400_raw_calibration_table(d400_calibration_table_id::rgb_calibration_id);
         };
 
-        _color_extrinsic = std::make_shared<lazy<rs2_extrinsics>>([this]() { return from_pose(get_ds5_color_stream_extrinsic(*_color_calib_table_raw)); });
+        _color_extrinsic = std::make_shared<lazy<rs2_extrinsics>>([this]() { return from_pose(get_d400_color_stream_extrinsic(*_color_calib_table_raw)); });
         environment::get_instance().get_extrinsics_graph().register_extrinsics(*_color_stream, *_depth_stream, _color_extrinsic);
         register_stream_to_extrinsic_group(*_color_stream, 0);
 
@@ -63,12 +63,12 @@ namespace librealsense
                 color_devs_info = group.uvc_devices;
             else
                 color_devs_info = color_devs_info_mi3;
-            std::unique_ptr<frame_timestamp_reader> ds5_timestamp_reader_backup(new ds_timestamp_reader(backend.create_time_service()));
+            std::unique_ptr<frame_timestamp_reader> d400_timestamp_reader_backup(new ds_timestamp_reader(backend.create_time_service()));
             frame_timestamp_reader* timestamp_reader_from_metadata;
             if (ds::RS457_PID != _pid)
-                timestamp_reader_from_metadata = new ds_timestamp_reader_from_metadata(std::move(ds5_timestamp_reader_backup));
+                timestamp_reader_from_metadata = new ds_timestamp_reader_from_metadata(std::move(d400_timestamp_reader_backup));
             else
-                timestamp_reader_from_metadata = new ds_timestamp_reader_from_metadata_mipi_color(std::move(ds5_timestamp_reader_backup));
+                timestamp_reader_from_metadata = new ds_timestamp_reader_from_metadata_mipi_color(std::move(d400_timestamp_reader_backup));
             
             std::unique_ptr<frame_timestamp_reader> ds_timestamp_reader_metadata(timestamp_reader_from_metadata);
 
@@ -79,16 +79,16 @@ namespace librealsense
             else
                 info = color_devs_info.front();
             auto uvcd = backend.create_uvc_device(info);
-            //auto ftr = std::unique_ptr<frame_timestamp_reader>(new global_timestamp_reader(std::move(ds5_timestamp_reader_metadata), _tf_keeper, enable_global_time_option));
+            //auto ftr = std::unique_ptr<frame_timestamp_reader>(new global_timestamp_reader(std::move(d400_timestamp_reader_metadata), _tf_keeper, enable_global_time_option));
             auto raw_color_ep = std::make_shared<uvc_sensor>("Raw RGB Camera",
                 uvcd,
                 std::unique_ptr<frame_timestamp_reader>(new global_timestamp_reader(std::move(ds_timestamp_reader_metadata), _tf_keeper, enable_global_time_option)),
                 this);
 
-            auto color_ep = std::make_shared<ds5_color_sensor>(this,
+            auto color_ep = std::make_shared<d400_color_sensor>(this,
                 raw_color_ep,
-                ds5_color_fourcc_to_rs2_format,
-                ds5_color_fourcc_to_rs2_stream);
+                d400_color_fourcc_to_rs2_format,
+                d400_color_fourcc_to_rs2_stream);
 
             color_ep->register_option(RS2_OPTION_GLOBAL_TIME_ENABLED, enable_global_time_option);
 
@@ -105,7 +105,7 @@ namespace librealsense
                 // means color end point is part of the depth sensor (e.g. D405)
                 color_devs_info = color_devs_info_mi0;
                 _color_device_idx = _depth_device_idx;
-                ds5_device::_color_stream = _color_stream;
+                d400_device::_color_stream = _color_stream;
                 _separate_color = false;
             }
             else
@@ -114,7 +114,7 @@ namespace librealsense
         }
     }
 
-    void ds5_color::init()
+    void d400_color::init()
     {
         auto& color_ep = get_color_sensor();
         auto& raw_color_ep = get_raw_color_sensor();
@@ -134,7 +134,7 @@ namespace librealsense
         register_processing_blocks();       
     }
 
-    void ds5_color::register_options()
+    void d400_color::register_options()
     {
         auto& color_ep = get_color_sensor();
         auto& raw_color_ep = get_raw_color_sensor();
@@ -178,7 +178,7 @@ namespace librealsense
         }
     }
 
-    void ds5_color::register_metadata(const synthetic_sensor& color_ep) const
+    void d400_color::register_metadata(const synthetic_sensor& color_ep) const
     {
         if (_separate_color)
         {
@@ -202,7 +202,7 @@ namespace librealsense
         _ds_color_common->register_metadata();
     }
 
-    void ds5_color::register_processing_blocks()
+    void d400_color::register_processing_blocks()
     {
         // attributes of md_capture_stats
         auto& color_ep = get_color_sensor();
@@ -228,7 +228,7 @@ namespace librealsense
         }
     }
 
-    void ds5_color::register_metadata_mipi(const synthetic_sensor &color_ep) const
+    void d400_color::register_metadata_mipi(const synthetic_sensor &color_ep) const
     {
         // for mipi device
         color_ep.register_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP, make_uvc_header_parser(&platform::uvc_header::timestamp));
@@ -319,20 +319,20 @@ namespace librealsense
                                                              md_prop_offset));
     }
     
-    void ds5_color::register_stream_to_extrinsic_group(const stream_interface& stream, uint32_t group_index)
+    void d400_color::register_stream_to_extrinsic_group(const stream_interface& stream, uint32_t group_index)
     {
         device::register_stream_to_extrinsic_group(stream, group_index);
     }
 
-    rs2_intrinsics ds5_color_sensor::get_intrinsics(const stream_profile& profile) const
+    rs2_intrinsics d400_color_sensor::get_intrinsics(const stream_profile& profile) const
     {
-        return get_ds5_intrinsic_by_resolution(
+        return get_d400_intrinsic_by_resolution(
             *_owner->_color_calib_table_raw,
-            ds::ds5_calibration_table_id::rgb_calibration_id,
+            ds::d400_calibration_table_id::rgb_calibration_id,
             profile.width, profile.height);
     }
 
-    stream_profiles ds5_color_sensor::init_stream_profiles()
+    stream_profiles d400_color_sensor::init_stream_profiles()
     {
         auto lock = environment::get_instance().get_extrinsics_graph().lock();
         auto&& results = synthetic_sensor::init_stream_profiles();
@@ -348,8 +348,8 @@ namespace librealsense
             auto&& video = dynamic_cast<video_stream_profile_interface*>(p.get());
             const auto&& profile = to_profile(p.get());
 
-            std::weak_ptr<ds5_color_sensor> wp =
-                std::dynamic_pointer_cast<ds5_color_sensor>(this->shared_from_this());
+            std::weak_ptr<d400_color_sensor> wp =
+                std::dynamic_pointer_cast<d400_color_sensor>(this->shared_from_this());
             video->set_intrinsics([profile, wp]()
             {
                 auto sp = wp.lock();
@@ -363,7 +363,7 @@ namespace librealsense
         return results;
     }
 
-    processing_blocks ds5_color_sensor::get_recommended_processing_blocks() const
+    processing_blocks d400_color_sensor::get_recommended_processing_blocks() const
     {
         return get_color_recommended_proccesing_blocks();
     }

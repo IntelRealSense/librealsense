@@ -1,7 +1,7 @@
 //// License: Apache 2.0. See LICENSE file in root directory.
 //// Copyright(c) 2022 Intel Corporation. All Rights Reserved.
 
-#include "ds5/ds5-private.h"
+#include "d400/d400-private.h"
 #include "ds6/ds6-private.h"
 
 using namespace std;

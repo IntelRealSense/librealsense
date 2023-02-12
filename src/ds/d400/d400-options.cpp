@@ -2,8 +2,8 @@
 // Copyright(c) 2016 Intel Corporation. All Rights Reserved.
 
 
-#include "ds/ds5/ds5-thermal-monitor.h"
-#include "ds5-options.h"
+#include "ds/d400/d400-thermal-monitor.h"
+#include "d400-options.h"
 
 #include <rsutils/string/from.h>
 
@@ -207,7 +207,7 @@ namespace librealsense
     }
 
     librealsense::thermal_compensation::thermal_compensation(
-        std::shared_ptr<ds5_thermal_monitor> monitor,
+        std::shared_ptr<d400_thermal_monitor> monitor,
         std::shared_ptr<option> toggle) :
         _thermal_monitor(monitor),
         _thermal_toggle(toggle)

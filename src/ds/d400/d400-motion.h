@@ -3,12 +3,12 @@
 
 #pragma once
 
-#include "ds5-device.h"
+#include "d400-device.h"
 #include "ds/ds-motion-common.h"
 
 namespace librealsense
 {
-    class ds5_motion_base : public virtual ds5_device
+    class d400_motion_base : public virtual d400_device
     {
     public:
         rs2_motion_device_intrinsic get_motion_intrinsics(rs2_stream) const;
@@ -26,7 +26,7 @@ namespace librealsense
         std::shared_ptr<lazy<rs2_extrinsics>>   _depth_to_imu;                  // Mechanical installation pose
 
     protected:
-        ds5_motion_base(std::shared_ptr<context> ctx,
+        d400_motion_base(std::shared_ptr<context> ctx,
             const platform::backend_device_group& group);
 
         std::shared_ptr<ds_motion_common> _ds_motion_common;
@@ -38,10 +38,10 @@ namespace librealsense
         optional_value<uint8_t> _motion_module_device_idx;
     };
 
-    class ds5_motion : public ds5_motion_base
+    class d400_motion : public d400_motion_base
     {
     public:
-        ds5_motion(std::shared_ptr<context> ctx,
+        d400_motion(std::shared_ptr<context> ctx,
             const platform::backend_device_group& group);
 
         std::shared_ptr<synthetic_sensor> create_hid_device(std::shared_ptr<context> ctx,
@@ -64,10 +64,10 @@ namespace librealsense
         optional_value<uint8_t> _fisheye_device_idx;
     };
 
-    class ds5_motion_uvc : public ds5_motion_base
+    class d400_motion_uvc : public d400_motion_base
     {
     public:
-        ds5_motion_uvc(std::shared_ptr<context> ctx,
+        d400_motion_uvc(std::shared_ptr<context> ctx,
             const platform::backend_device_group& group);
 
         std::shared_ptr<synthetic_sensor> create_uvc_device(std::shared_ptr<context> ctx,

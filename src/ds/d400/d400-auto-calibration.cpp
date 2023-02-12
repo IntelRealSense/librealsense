@@ -3,10 +3,10 @@
 
 #include <numeric>
 #include "../third-party/json.hpp"
-#include "ds5-device.h"
-#include "ds5-private.h"
-#include "ds5-thermal-monitor.h"
-#include "ds5-auto-calibration.h"
+#include "d400-device.h"
+#include "d400-private.h"
+#include "d400-thermal-monitor.h"
+#include "d400-auto-calibration.h"
 #include "librealsense2/rsutil.h"
 #include "algo.h"
 
@@ -460,7 +460,7 @@ namespace librealsense
                     if (host_assistance != host_assistance_type::no_assistance)
                         if (count < 20) progress_callback->on_update_progress(static_cast<float>(80 + count++));
                         else
-                            progress_callback->on_update_progress(count++ * (2.f * speed)); //curently this number does not reflect the actual progress
+                            progress_callback->on_update_progress(count++ * (2.f * static_cast<int>(speed))); //curently this number does not reflect the actual progress
                 }
             }, false);
             // Handle errors from firmware
@@ -549,7 +549,7 @@ namespace librealsense
                             if (host_assistance != host_assistance_type::no_assistance)
                                 if (count < 20) progress_callback->on_update_progress(static_cast<float>(80 + count++));
                             else
-                                progress_callback->on_update_progress(count++ * (2.f * speed)); //curently this number does not reflect the actual progress
+                                progress_callback->on_update_progress(count++ * (2.f * static_cast<int>(speed))); //curently this number does not reflect the actual progress
                         }
                     });
                 std::this_thread::sleep_for(std::chrono::milliseconds(100));
@@ -773,7 +773,7 @@ namespace librealsense
                             if (host_assistance != host_assistance_type::no_assistance)
                                 if (count < 20) progress_callback->on_update_progress(static_cast<float>(80 + count++));
                             else
-                                progress_callback->on_update_progress(count++* (2.f * speed)); //curently this number does not reflect the actual progress
+                                progress_callback->on_update_progress(count++* (2.f * static_cast<int>(speed))); //curently this number does not reflect the actual progress
                         }
 
                         now = std::chrono::high_resolution_clock::now();
@@ -1745,7 +1745,7 @@ namespace librealsense
         std::vector<uint8_t> res;
 
         // Fetch current calibration using GETINITCAL command
-        command cmd(ds::GETINTCAL, static_cast<int>(ds::ds5_calibration_table_id::coefficients_table_id));
+        command cmd(ds::GETINTCAL, static_cast<int>(ds::d400_calibration_table_id::coefficients_table_id));
         auto calib = _hw_monitor->send(cmd);
 
         if (calib.size() < sizeof(table_header)) throw std::runtime_error("Missing calibration header from GETINITCAL!");
@@ -1769,15 +1769,15 @@ namespace librealsense
             throw std::runtime_error("Write calibration can be called only after set calibration table was called");
 
         table_header* hd = (table_header*)(_curr_calibration.data());
-        ds5_calibration_table_id tbl_id = static_cast<ds5_calibration_table_id>(hd->table_type);
+        d400_calibration_table_id tbl_id = static_cast<d400_calibration_table_id>(hd->table_type);
         fw_cmd cmd{};
         int param2 = 0;
         switch (tbl_id)
         {
-        case ds5_calibration_table_id::coefficients_table_id:
+        case d400_calibration_table_id::coefficients_table_id:
             cmd = SETINTCAL;
             break;
-        case ds5_calibration_table_id::rgb_calibration_id:
+        case d400_calibration_table_id::rgb_calibration_id:
             cmd = SETINTCALNEW;  // TODO - REMI - CAN BE REMOVED???
             param2 = 1;
             break;
@@ -1790,7 +1790,7 @@ namespace librealsense
         write_calib.data = _curr_calibration;
         _hw_monitor->send(write_calib);
 
-        LOG_DEBUG("Flashing " << ((tbl_id == ds5_calibration_table_id::coefficients_table_id) ? "Depth" : "RGB") << " calibration table");
+        LOG_DEBUG("Flashing " << ((tbl_id == d400_calibration_table_id::coefficients_table_id) ? "Depth" : "RGB") << " calibration table");
 
     }
 
@@ -1799,11 +1799,11 @@ namespace librealsense
         using namespace ds;
 
         table_header* hd = (table_header*)(calibration.data());
-        ds::ds5_calibration_table_id tbl_id = static_cast<ds::ds5_calibration_table_id>(hd->table_type);
+        ds::d400_calibration_table_id tbl_id = static_cast<ds::d400_calibration_table_id>(hd->table_type);
 
         switch (tbl_id)
         {
-        case ds5_calibration_table_id::coefficients_table_id: // Load the modified depth calib table into flash RAM
+        case d400_calibration_table_id::coefficients_table_id: // Load the modified depth calib table into flash RAM
             {
                 uint8_t* table = (uint8_t*)(calibration.data() + sizeof(table_header));
                 command write_calib(ds::CALIBRECALC, 0, 0, 0, 0xcafecafe);
@@ -1817,7 +1817,7 @@ namespace librealsense
                     LOG_ERROR("Flashing coefficients_table_id failed");
                 }
             }
-        case ds5_calibration_table_id::rgb_calibration_id: // case fall-through by design. For RGB skip loading to RAM (not supported)
+        case d400_calibration_table_id::rgb_calibration_id: // case fall-through by design. For RGB skip loading to RAM (not supported)
                 _curr_calibration = calibration;
                 break;
             default:
@@ -1905,7 +1905,7 @@ namespace librealsense
         const float correction_factor = 0.5f;
 
         auto calib_table = get_calibration_table();
-        auto table = (librealsense::ds::ds5_coefficients_table*)calib_table.data();
+        auto table = (librealsense::ds::d400_coefficients_table*)calib_table.data();
 
         float ar[2] = { 0 };
         float tmp = left_rect_sides[2] + left_rect_sides[3];
@@ -2394,7 +2394,7 @@ namespace librealsense
         const float max_change = 16.0f;
         if (fabs(color_intrin.ppx - ppx) < max_change && fabs(color_intrin.ppy - ppy) < max_change && fabs(color_intrin.fx - fx) < max_change && fabs(color_intrin.fy - fy) < max_change)
         {
-            ret = _hw_monitor->send(command{ds::GETINTCAL, static_cast<int>(ds::ds5_calibration_table_id::rgb_calibration_id) });
+            ret = _hw_monitor->send(command{ds::GETINTCAL, static_cast<int>(ds::d400_calibration_table_id::rgb_calibration_id) });
             auto table = reinterpret_cast<librealsense::ds::rgb_calibration_table*>(ret.data());
 
             health[0] = table->intrinsic(2, 0); // px

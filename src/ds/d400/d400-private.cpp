@@ -1,7 +1,7 @@
 //// License: Apache 2.0. See LICENSE file in root directory.
 //// Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
-#include "ds5-private.h"
+#include "d400-private.h"
 
 using namespace std;
 
@@ -11,7 +11,7 @@ namespace librealsense
 {
     namespace ds
     {
-        bool ds5_try_fetch_usb_device(std::vector<platform::usb_device_info>& devices,
+        bool d400_try_fetch_usb_device(std::vector<platform::usb_device_info>& devices,
             const platform::uvc_device_info& info, platform::usb_device_info& result)
         {
             for (auto it = devices.begin(); it != devices.end(); ++it)
@@ -65,7 +65,7 @@ namespace librealsense
             return false;
         }
 
-        std::vector<platform::uvc_device_info> filter_ds5_device_by_capability(const std::vector<platform::uvc_device_info>& devices,
+        std::vector<platform::uvc_device_info> filter_d400_device_by_capability(const std::vector<platform::uvc_device_info>& devices,
             d400_caps caps)
         {
             std::vector<platform::uvc_device_info> results;
@@ -76,7 +76,7 @@ namespace librealsense
                 std::copy_if(devices.begin(), devices.end(), std::back_inserter(results),
                     [](const platform::uvc_device_info& info)
                     {
-                        return ds5_fisheye_pid.find(info.pid) != ds5_fisheye_pid.end();
+                        return d400_fisheye_pid.find(info.pid) != d400_fisheye_pid.end();
                     });
                 break;
             default:
@@ -87,19 +87,19 @@ namespace librealsense
             return results;
         }
 
-        rs2_intrinsics get_ds5_intrinsic_by_resolution(const vector<uint8_t>& raw_data, ds5_calibration_table_id table_id, uint32_t width, uint32_t height)
+        rs2_intrinsics get_d400_intrinsic_by_resolution(const vector<uint8_t>& raw_data, d400_calibration_table_id table_id, uint32_t width, uint32_t height)
         {
             switch (table_id)
             {
-            case ds5_calibration_table_id::coefficients_table_id:
+            case d400_calibration_table_id::coefficients_table_id:
             {
-                return get_ds5_intrinsic_by_resolution_coefficients_table(raw_data, width, height);
+                return get_d400_intrinsic_by_resolution_coefficients_table(raw_data, width, height);
             }
-            case ds5_calibration_table_id::fisheye_calibration_id:
+            case d400_calibration_table_id::fisheye_calibration_id:
             {
                 return get_intrinsic_fisheye_table(raw_data, width, height);
             }
-            case ds5_calibration_table_id::rgb_calibration_id:
+            case d400_calibration_table_id::rgb_calibration_id:
             {
                 return get_color_stream_intrinsic(raw_data, width, height);
             }
@@ -108,9 +108,9 @@ namespace librealsense
             }
         }
 
-        rs2_intrinsics get_ds5_intrinsic_by_resolution_coefficients_table(const std::vector<uint8_t>& raw_data, uint32_t width, uint32_t height)
+        rs2_intrinsics get_d400_intrinsic_by_resolution_coefficients_table(const std::vector<uint8_t>& raw_data, uint32_t width, uint32_t height)
         {
-            auto table = check_calib<ds::ds5_coefficients_table>(raw_data);
+            auto table = check_calib<ds::d400_coefficients_table>(raw_data);
 
             LOG_DEBUG(endl
                 << "baseline = " << table->baseline << " mm" << endl
@@ -204,7 +204,7 @@ namespace librealsense
             }
         }
 
-        pose get_ds5_color_stream_extrinsic(const std::vector<uint8_t>& raw_data)
+        pose get_d400_color_stream_extrinsic(const std::vector<uint8_t>& raw_data)
         {
             auto table = check_calib<rgb_calibration_table>(raw_data);
             float3 trans_vector = table->translation_rect;

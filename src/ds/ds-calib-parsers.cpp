@@ -4,7 +4,7 @@
 #include "ds-calib-parsers.h"
 #include "ds-private.h"
 
-#include "ds/ds5/ds5-private.h"
+#include "ds/d400/d400-private.h"
 #include "ds/ds6/ds6-private.h"
 #include "l500/l500-private.h"
 

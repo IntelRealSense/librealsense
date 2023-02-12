@@ -330,7 +330,7 @@ class require_error
     bool validate_error_message;      // Messages content may vary , subject to backend selection
     rs2_error * err;
 public:
-    require_error(std::string message, bool message_validation = true) : message(move(message)), validate_error_message(message_validation), err() {}
+    require_error(std::string message, bool message_validation = true) : message(std::move(message)), validate_error_message(message_validation), err() {}
     require_error(const require_error &) = delete;
     ~require_error() NOEXCEPT_FALSE
     {

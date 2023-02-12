@@ -49,7 +49,7 @@ namespace librealsense
         virtual processing_blocks get_recommended_processing_blocks() const override;
 
     private /*methods*/:
-        template <typename T> void record_snapshot(rs2_extension extension_type, const  recordable<T>& snapshot);
+        template <typename T> void record_snapshot(rs2_extension extension_type, const librealsense::recordable<T>& snapshot);
         template <rs2_extension E, typename P> bool extend_to_aux(P* p, void** ext);
         void record_frame(frame_holder holder);
         void enable_sensor_hooks();
