@@ -26,9 +26,8 @@
 #include "imgui-fonts-karla.hpp"
 #include "imgui-fonts-fontawesome.hpp"
 #include "imgui-fonts-monofont.hpp"
-
-#include "os.h"
 #include <rsutils/os/os.h>
+#include "os.h"
 
 #include "metadata-helper.h"
 #include "calibration-model.h"
