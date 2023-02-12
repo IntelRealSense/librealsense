@@ -62,7 +62,7 @@ namespace librealsense
             ds::RS457_PID
         };
 
-        static const std::set<std::uint16_t> ds5_multi_sensors_pid = {
+        static const std::set<std::uint16_t> d400_multi_sensors_pid = {
             ds::RS400_MM_PID,
             ds::RS410_MM_PID,
             ds::RS415_PID,
@@ -76,24 +76,24 @@ namespace librealsense
             ds::RS457_PID
         };
 
-        static const std::set<std::uint16_t> ds5_hid_sensors_pid = {
+        static const std::set<std::uint16_t> d400_hid_sensors_pid = {
             ds::RS435I_PID,
             ds::RS430I_PID,
             ds::RS465_PID,
             ds::RS455_PID
         };
 
-        static const std::set<std::uint16_t> ds5_hid_bmi_055_pid = {
+        static const std::set<std::uint16_t> d400_hid_bmi_055_pid = {
             ds::RS435I_PID,
             ds::RS430I_PID,
             ds::RS455_PID
         };
 
-        static const std::set<std::uint16_t> ds5_hid_bmi_085_pid = {
+        static const std::set<std::uint16_t> d400_hid_bmi_085_pid = {
             RS465_PID
         };
 
-        static const std::set<std::uint16_t> ds5_fisheye_pid = {
+        static const std::set<std::uint16_t> d400_fisheye_pid = {
             ds::RS400_MM_PID,
             ds::RS410_MM_PID,
             ds::RS420_MM_PID,
@@ -129,7 +129,7 @@ namespace librealsense
             { RS457_PID,            "Intel RealSense D457" },
         };
 
-        static std::map<uint16_t, std::string> ds5_device_to_fw_min_version = {
+        static std::map<uint16_t, std::string> d400_device_to_fw_min_version = {
             {RS400_PID, "5.8.15.0"},
             {RS410_PID, "5.8.15.0"},
             {RS415_PID, "5.8.15.0"},
@@ -157,9 +157,9 @@ namespace librealsense
             {RS457_PID, "5.13.1.1" }
         };
 
-        std::vector<platform::uvc_device_info> filter_ds5_device_by_capability(
+        std::vector<platform::uvc_device_info> filter_d400_device_by_capability(
             const std::vector<platform::uvc_device_info>& devices, d400_caps caps);
-        bool ds5_try_fetch_usb_device(std::vector<platform::usb_device_info>& devices,
+        bool d400_try_fetch_usb_device(std::vector<platform::usb_device_info>& devices,
             const platform::uvc_device_info& info, platform::usb_device_info& result);
 
         enum class ds5_calibration_table_id

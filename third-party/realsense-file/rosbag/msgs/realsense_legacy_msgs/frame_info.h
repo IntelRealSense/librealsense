@@ -41,7 +41,7 @@ struct frame_info_
    typedef uint64_t _system_time_type;
   _system_time_type system_time;
 
-   typedef std::vector< ::realsense_legacy_msgs::metadata_<ContainerAllocator> , typename ContainerAllocator::template rebind< ::realsense_legacy_msgs::metadata_<ContainerAllocator> >::other >  _frame_metadata_type;
+   typedef std::vector< ::realsense_legacy_msgs::metadata_<ContainerAllocator> , typename std::allocator_traits< ContainerAllocator >::template rebind_alloc< ::realsense_legacy_msgs::metadata_<ContainerAllocator>  > >  _frame_metadata_type;
   _frame_metadata_type frame_metadata;
 
    typedef uint32_t _time_stamp_domain_type;

@@ -4,7 +4,7 @@
 #include <cstring>
 #include "ros_reader.h"
 #include "ds/ds-device-common.h"
-#include "ds/ds5/ds5-private.h"
+#include "ds/d400/d400-private.h"
 #include "ds/ds6/ds6-private.h"
 #include "ivcam/sr300.h"
 #include "l500/l500-depth.h"
@@ -931,9 +931,9 @@ namespace librealsense
     {
         using namespace ds;
 
-        auto it5 = std::find_if(rs400_sku_pid.begin(), rs400_sku_pid.end(), [&](int ds5_pid)
+        auto it5 = std::find_if(rs400_sku_pid.begin(), rs400_sku_pid.end(), [&](int d400_pid)
         {
-            return pid == ds5_pid;
+            return pid == d400_pid;
         });
 
         if (it5 != rs400_sku_pid.end())

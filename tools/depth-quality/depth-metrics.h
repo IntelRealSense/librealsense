@@ -4,12 +4,21 @@
 // Plane Fit implementation follows http://www.ilikebigbits.com/blog/2015/3/2/plane-from-points algorithm
 
 #pragma once
-#include <vector>
-#include <mutex>
+
+#ifndef _USE_MATH_DEFINES
+#define _USE_MATH_DEFINES
+#endif
+#include <algorithm>
 #include <array>
-#include <imgui.h>
+#include <cmath>
+#include <mutex>
+#include <vector>
+
 #include <librealsense2/rs.hpp>
-#include "rendering.h"
+
+#include "float3.h"
+#include "plane.h"
+
 
 namespace rs2
 {

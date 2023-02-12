@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include "ds5-private.h"
+#include "d400-private.h"
 #include "ds/ds-options.h"
 
 #include "algo.h"
@@ -174,11 +174,11 @@ namespace librealsense
         hw_monitor& _hwm;
     };
 
-    class ds5_thermal_monitor;
+    class d400_thermal_monitor;
     class thermal_compensation : public option
     {
     public:
-        thermal_compensation(std::shared_ptr<ds5_thermal_monitor> monitor,
+        thermal_compensation(std::shared_ptr<d400_thermal_monitor> monitor,
             std::shared_ptr<option> toggle);
 
         void set(float value) override;
@@ -197,7 +197,7 @@ namespace librealsense
         }
 
     private:
-        std::shared_ptr<ds5_thermal_monitor>  _thermal_monitor;
+        std::shared_ptr<d400_thermal_monitor>  _thermal_monitor;
         std::shared_ptr<option> _thermal_toggle;
 
         std::function<void(const option&)> _recording_function = [](const option&) {};

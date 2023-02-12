@@ -387,10 +387,18 @@ namespace librealsense
                         if (SUCCEEDED(pSensorCollection->GetAt(i, &pSensor.p)))
                         {
                             /* Retrieve SENSOR_PROPERTY_FRIENDLY_NAME which is the sensor name that is intended to be seen by the user */
-                            BSTR fName{};
-                            LOG_HR(res = pSensor->GetFriendlyName(&fName));
-                            if (FAILED(res))
-                                fName= L"Unidentified HID sensor";
+                            std::string sensor_id;
+                            {
+                                BSTR fName;
+                                LOG_HR( res = pSensor->GetFriendlyName( &fName ) );
+                                if( FAILED( res ) )
+                                    sensor_id = "Unidentified HID sensor";
+                                else
+                                {
+                                    sensor_id = rsutils::string::windows::win_to_utf( fName );
+                                    SysFreeString( fName );
+                                }
+                            }
 
                             /* Retrieve SENSOR_PROPERTY_PERSISTENT_UNIQUE_ID which is a GUID that uniquely identifies the sensor on the current computer */
                             SENSOR_ID id{};
@@ -425,7 +433,7 @@ namespace librealsense
                                             if (IsEqualPropertyKey(propertyKey, SENSOR_PROPERTY_DEVICE_PATH))
                                             {
                                                 info.device_path = rsutils::string::windows::win_to_utf( propertyValue.pwszVal );
-                                                info.id = rsutils::string::windows::win_to_utf( fName );
+                                                info.id = sensor_id;
 
                                                 uint16_t vid, pid, mi;
                                                 std::string uid, guid;
@@ -472,8 +480,6 @@ namespace librealsense
                             }
 
                             action(info, pSensor);
-
-                            SysFreeString(fName);
                         }
                         //Releasing resources
                         safe_release(pSensor);

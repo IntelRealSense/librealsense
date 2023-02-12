@@ -12,15 +12,15 @@
 #include "image.h"
 #include "metadata-parser.h"
 
-#include "ds5-factory.h"
-#include "ds5-private.h"
-#include "ds5-options.h"
+#include "d400-factory.h"
+#include "d400-private.h"
+#include "d400-options.h"
 #include "ds/ds-timestamp.h"
-#include "ds5-nonmonochrome.h"
-#include "ds5-active.h"
-#include "ds5-color.h"
-#include "ds5-motion.h"
-#include "ds5-thermal-monitor.h"
+#include "d400-nonmonochrome.h"
+#include "d400-active.h"
+#include "d400-color.h"
+#include "d400-motion.h"
+#include "d400-thermal-monitor.h"
 #include "sync.h"
 
 #include "firmware_logger_device.h"
@@ -32,7 +32,7 @@
 namespace librealsense
 {
     // PSR
-    class rs400_device : public ds5_nonmonochrome,
+    class rs400_device : public d400_nonmonochrome,
         public ds_advanced_mode_base,
         public firmware_logger_device
     {
@@ -41,10 +41,10 @@ namespace librealsense
                      const platform::backend_device_group& group,
                      bool register_device_notifications)
             : device(ctx, group, register_device_notifications),
-              ds5_device(ctx, group),
-              ds5_nonmonochrome(ctx, group),
-              ds_advanced_mode_base(ds5_device::_hw_monitor, get_depth_sensor()),
-              firmware_logger_device(ctx, group, ds5_device::_hw_monitor,
+              d400_device(ctx, group),
+              d400_nonmonochrome(ctx, group),
+              ds_advanced_mode_base(d400_device::_hw_monitor, get_depth_sensor()),
+              firmware_logger_device(ctx, group, d400_device::_hw_monitor,
                   get_firmware_logs_command(),
                   get_flash_logs_command()) {}
 
@@ -81,8 +81,8 @@ namespace librealsense
             bool register_device_notifications)
             : device(ctx, group, register_device_notifications),
             ds5u_device(ctx, group),
-            ds_advanced_mode_base(ds5_device::_hw_monitor, get_depth_sensor()),
-            firmware_logger_device(ctx, group, ds5_device::_hw_monitor,
+            ds_advanced_mode_base(d400_device::_hw_monitor, get_depth_sensor()),
+            firmware_logger_device(ctx, group, d400_device::_hw_monitor,
                 get_firmware_logs_command(),
                 get_flash_logs_command()) {}
 
@@ -122,8 +122,8 @@ namespace librealsense
     };
 
     // ASR (D460)
-    class rs410_device : public ds5_nonmonochrome,
-                         public ds5_active,
+    class rs410_device : public d400_nonmonochrome,
+                         public d400_active,
                          public ds_advanced_mode_base,
                          public firmware_logger_device
     {
@@ -132,11 +132,11 @@ namespace librealsense
                      const platform::backend_device_group& group,
                      bool register_device_notifications)
             : device(ctx, group, register_device_notifications),
-              ds5_device(ctx, group),
-              ds5_nonmonochrome(ctx, group),
-              ds5_active(ctx, group),
-              ds_advanced_mode_base(ds5_device::_hw_monitor, get_depth_sensor()),
-            firmware_logger_device(ctx, group, ds5_device::_hw_monitor,
+              d400_device(ctx, group),
+              d400_nonmonochrome(ctx, group),
+              d400_active(ctx, group),
+              ds_advanced_mode_base(d400_device::_hw_monitor, get_depth_sensor()),
+            firmware_logger_device(ctx, group, d400_device::_hw_monitor,
                 get_firmware_logs_command(),
                 get_flash_logs_command()) {}
 
@@ -160,9 +160,9 @@ namespace librealsense
     };
 
     // ASRC
-    class rs415_device : public ds5_nonmonochrome,
-                         public ds5_active,
-                         public ds5_color,
+    class rs415_device : public d400_nonmonochrome,
+                         public d400_active,
+                         public d400_color,
                          public ds_advanced_mode_base,
                          public firmware_logger_device
     {
@@ -171,12 +171,12 @@ namespace librealsense
                      const platform::backend_device_group& group,
                      bool register_device_notifications)
             : device(ctx, group, register_device_notifications),
-              ds5_device(ctx, group),
-              ds5_nonmonochrome(ctx, group),
-              ds5_active(ctx, group),
-              ds5_color(ctx, group),
-              ds_advanced_mode_base(ds5_device::_hw_monitor, get_depth_sensor()),
-            firmware_logger_device(ctx, group, ds5_device::_hw_monitor,
+              d400_device(ctx, group),
+              d400_nonmonochrome(ctx, group),
+              d400_active(ctx, group),
+              d400_color(ctx, group),
+              ds_advanced_mode_base(d400_device::_hw_monitor, get_depth_sensor()),
+            firmware_logger_device(ctx, group, d400_device::_hw_monitor,
                 get_firmware_logs_command(),
                 get_flash_logs_command()) {}
 
@@ -202,8 +202,8 @@ namespace librealsense
         };
     };
 
-    class rs416_device : public ds5_nonmonochrome,
-        public ds5_active,
+    class rs416_device : public d400_nonmonochrome,
+        public d400_active,
         public ds_advanced_mode_base,
         public firmware_logger_device
     {
@@ -212,11 +212,11 @@ namespace librealsense
             const platform::backend_device_group& group,
             bool register_device_notifications)
             : device(ctx, group, register_device_notifications),
-            ds5_device(ctx, group),
-            ds5_nonmonochrome(ctx, group),
-            ds5_active(ctx, group),
-            ds_advanced_mode_base(ds5_device::_hw_monitor, get_depth_sensor()),
-            firmware_logger_device(ctx, group, ds5_device::_hw_monitor,
+            d400_device(ctx, group),
+            d400_nonmonochrome(ctx, group),
+            d400_active(ctx, group),
+            ds_advanced_mode_base(d400_device::_hw_monitor, get_depth_sensor()),
+            firmware_logger_device(ctx, group, d400_device::_hw_monitor,
                 get_firmware_logs_command(),
                 get_flash_logs_command()) {}
 
@@ -254,9 +254,9 @@ namespace librealsense
     };
 
     class rs416_rgb_device :
-        public ds5_nonmonochrome,
-        public ds5_active,
-        public ds5_color,
+        public d400_nonmonochrome,
+        public d400_active,
+        public d400_color,
         public ds_advanced_mode_base,
         public firmware_logger_device
 
@@ -266,12 +266,12 @@ namespace librealsense
             const platform::backend_device_group& group,
             bool register_device_notifications)
             : device(ctx, group, register_device_notifications),
-            ds5_device(ctx, group),
-            ds5_nonmonochrome(ctx, group),
-            ds5_active(ctx, group),
-            ds5_color(ctx, group),
-            ds_advanced_mode_base(ds5_device::_hw_monitor, get_depth_sensor()),
-            firmware_logger_device(ctx, group, ds5_device::_hw_monitor,
+            d400_device(ctx, group),
+            d400_nonmonochrome(ctx, group),
+            d400_active(ctx, group),
+            d400_color(ctx, group),
+            ds_advanced_mode_base(d400_device::_hw_monitor, get_depth_sensor()),
+            firmware_logger_device(ctx, group, d400_device::_hw_monitor,
                 get_firmware_logs_command(),
                 get_flash_logs_command()) {}
 
@@ -311,7 +311,7 @@ namespace librealsense
     };
 
     // PWGT
-    class rs420_mm_device : public ds5_motion,
+    class rs420_mm_device : public d400_motion,
                             public ds_advanced_mode_base,
                             public firmware_logger_device
     {
@@ -320,10 +320,10 @@ namespace librealsense
                         const platform::backend_device_group group,
                         bool register_device_notifications)
             : device(ctx, group, register_device_notifications),
-              ds5_device(ctx, group),
-              ds5_motion(ctx, group),
-              ds_advanced_mode_base(ds5_device::_hw_monitor, get_depth_sensor()),
-              firmware_logger_device(ctx, group, ds5_device::_hw_monitor,
+              d400_device(ctx, group),
+              d400_motion(ctx, group),
+              ds_advanced_mode_base(d400_device::_hw_monitor, get_depth_sensor()),
+              firmware_logger_device(ctx, group, d400_device::_hw_monitor,
                 get_firmware_logs_command(),
                 get_flash_logs_command()) {}
 
@@ -359,7 +359,7 @@ namespace librealsense
     };
 
     // PWG
-    class rs420_device : public ds5_device,
+    class rs420_device : public d400_device,
                          public ds_advanced_mode_base,
                          public firmware_logger_device
     {
@@ -368,9 +368,9 @@ namespace librealsense
             const platform::backend_device_group& group,
                      bool register_device_notifications)
             : device(ctx, group, register_device_notifications),
-              ds5_device(ctx, group),
-              ds_advanced_mode_base(ds5_device::_hw_monitor, get_depth_sensor()),
-              firmware_logger_device(ctx, group, ds5_device::_hw_monitor,
+              d400_device(ctx, group),
+              ds_advanced_mode_base(d400_device::_hw_monitor, get_depth_sensor()),
+              firmware_logger_device(ctx, group, d400_device::_hw_monitor,
                 get_firmware_logs_command(),
                 get_flash_logs_command()) {}
 
@@ -397,7 +397,7 @@ namespace librealsense
     };
 
     // AWG
-    class rs430_device : public ds5_active,
+    class rs430_device : public d400_active,
                          public ds_advanced_mode_base,
                          public firmware_logger_device
     {
@@ -406,10 +406,10 @@ namespace librealsense
                      const platform::backend_device_group group,
                      bool register_device_notifications)
             : device(ctx, group, register_device_notifications),
-              ds5_device(ctx, group),
-              ds5_active(ctx, group),
-              ds_advanced_mode_base(ds5_device::_hw_monitor, get_depth_sensor()),
-              firmware_logger_device(ctx, group, ds5_device::_hw_monitor,
+              d400_device(ctx, group),
+              d400_active(ctx, group),
+              ds_advanced_mode_base(d400_device::_hw_monitor, get_depth_sensor()),
+              firmware_logger_device(ctx, group, d400_device::_hw_monitor,
                 get_firmware_logs_command(),
                 get_flash_logs_command()) {}
 
@@ -435,9 +435,9 @@ namespace librealsense
         };
     };
 
-    class rs430i_device : public ds5_active,
+    class rs430i_device : public d400_active,
                           public ds_advanced_mode_base,
-                          public ds5_motion,
+                          public d400_motion,
                           public firmware_logger_device
     {
     public:
@@ -445,11 +445,11 @@ namespace librealsense
             const platform::backend_device_group group,
             bool register_device_notifications)
             : device(ctx, group, register_device_notifications),
-              ds5_device(ctx, group),
-              ds5_active(ctx, group),
-              ds_advanced_mode_base(ds5_device::_hw_monitor, get_depth_sensor()),
-              ds5_motion(ctx, group),
-              firmware_logger_device(ctx, group, ds5_device::_hw_monitor,
+              d400_device(ctx, group),
+              d400_active(ctx, group),
+              ds_advanced_mode_base(d400_device::_hw_monitor, get_depth_sensor()),
+              d400_motion(ctx, group),
+              firmware_logger_device(ctx, group, d400_device::_hw_monitor,
                 get_firmware_logs_command(),
                 get_flash_logs_command())
         {}
@@ -480,8 +480,8 @@ namespace librealsense
     };
 
     // AWGT
-    class rs430_mm_device : public ds5_active,
-                            public ds5_motion,
+    class rs430_mm_device : public d400_active,
+                            public d400_motion,
                             public ds_advanced_mode_base,
                             public firmware_logger_device
     {
@@ -490,11 +490,11 @@ namespace librealsense
                         const platform::backend_device_group group,
                         bool register_device_notifications)
             : device(ctx, group, register_device_notifications),
-              ds5_device(ctx, group),
-              ds5_active(ctx, group),
-              ds5_motion(ctx, group),
-              ds_advanced_mode_base(ds5_device::_hw_monitor, get_depth_sensor()),
-              firmware_logger_device(ctx, group, ds5_device::_hw_monitor,
+              d400_device(ctx, group),
+              d400_active(ctx, group),
+              d400_motion(ctx, group),
+              ds_advanced_mode_base(d400_device::_hw_monitor, get_depth_sensor()),
+              firmware_logger_device(ctx, group, d400_device::_hw_monitor,
                 get_firmware_logs_command(),
                 get_flash_logs_command()) {}
 
@@ -531,8 +531,8 @@ namespace librealsense
     };
 
     // AWGC
-    class rs435_device : public ds5_active,
-                         public ds5_color,
+    class rs435_device : public d400_active,
+                         public d400_color,
                          public ds_advanced_mode_base,
                          public firmware_logger_device
     {
@@ -541,11 +541,11 @@ namespace librealsense
                      const platform::backend_device_group group,
                      bool register_device_notifications)
             : device(ctx, group, register_device_notifications),
-              ds5_device(ctx, group),
-              ds5_active(ctx, group),
-              ds5_color(ctx,  group),
-              ds_advanced_mode_base(ds5_device::_hw_monitor, get_depth_sensor()),
-              firmware_logger_device(ctx, group, ds5_device::_hw_monitor,
+              d400_device(ctx, group),
+              d400_active(ctx, group),
+              d400_color(ctx,  group),
+              ds_advanced_mode_base(d400_device::_hw_monitor, get_depth_sensor()),
+              firmware_logger_device(ctx, group, d400_device::_hw_monitor,
                 get_firmware_logs_command(),
                 get_flash_logs_command()) {}
 
@@ -572,9 +572,9 @@ namespace librealsense
     };
 
     // D457 Development
-    class rs457_device : public ds5_active,
-                         public ds5_color,
-                         public ds5_motion_uvc,
+    class rs457_device : public d400_active,
+                         public d400_color,
+                         public d400_motion_uvc,
                          public ds_advanced_mode_base,
                          public firmware_logger_device
     {
@@ -583,12 +583,12 @@ namespace librealsense
                      const platform::backend_device_group group,
                      bool register_device_notifications)
             : device(ctx, group, register_device_notifications),
-              ds5_device(ctx, group),
-              ds5_active(ctx, group),
-              ds5_color(ctx,  group),
-              ds5_motion_uvc(ctx, group),
-              ds_advanced_mode_base(ds5_device::_hw_monitor, get_depth_sensor()),
-              firmware_logger_device(ctx, group, ds5_device::_hw_monitor,
+              d400_device(ctx, group),
+              d400_active(ctx, group),
+              d400_color(ctx,  group),
+              d400_motion_uvc(ctx, group),
+              ds_advanced_mode_base(d400_device::_hw_monitor, get_depth_sensor()),
+              firmware_logger_device(ctx, group, d400_device::_hw_monitor,
                 get_firmware_logs_command(),
                 get_flash_logs_command()){}
 
@@ -606,9 +606,9 @@ namespace librealsense
     };
 
     // AWGCT
-    class rs430_rgb_mm_device : public ds5_active,
-                                public ds5_color,
-                                public ds5_motion,
+    class rs430_rgb_mm_device : public d400_active,
+                                public d400_color,
+                                public d400_motion,
                                 public ds_advanced_mode_base,
                                 public firmware_logger_device
     {
@@ -617,12 +617,12 @@ namespace librealsense
                             const platform::backend_device_group group,
                             bool register_device_notifications)
             : device(ctx, group, register_device_notifications),
-              ds5_device(ctx, group),
-              ds5_active(ctx, group),
-              ds5_color(ctx,  group),
-              ds5_motion(ctx, group),
-              ds_advanced_mode_base(ds5_device::_hw_monitor, get_depth_sensor()),
-              firmware_logger_device(ctx, group, ds5_device::_hw_monitor,
+              d400_device(ctx, group),
+              d400_active(ctx, group),
+              d400_color(ctx,  group),
+              d400_motion(ctx, group),
+              ds_advanced_mode_base(d400_device::_hw_monitor, get_depth_sensor()),
+              firmware_logger_device(ctx, group, d400_device::_hw_monitor,
                 get_firmware_logs_command(),
                 get_flash_logs_command()) {}
 
@@ -649,9 +649,9 @@ namespace librealsense
     };
 
 
-    class rs435i_device  :      public ds5_active,
-                                public ds5_color,
-                                public ds5_motion,
+    class rs435i_device  :      public d400_active,
+                                public d400_color,
+                                public d400_motion,
                                 public ds_advanced_mode_base,
                                 public firmware_logger_device
     {
@@ -660,12 +660,12 @@ namespace librealsense
                     const platform::backend_device_group group,
                     bool register_device_notifications)
             : device(ctx, group, register_device_notifications),
-              ds5_device(ctx, group),
-              ds5_active(ctx, group),
-              ds5_color(ctx,  group),
-              ds5_motion(ctx, group),
-              ds_advanced_mode_base(ds5_device::_hw_monitor, get_depth_sensor()),
-              firmware_logger_device(ctx, group, ds5_device::_hw_monitor,
+              d400_device(ctx, group),
+              d400_active(ctx, group),
+              d400_color(ctx,  group),
+              d400_motion(ctx, group),
+              ds_advanced_mode_base(d400_device::_hw_monitor, get_depth_sensor()),
+              firmware_logger_device(ctx, group, d400_device::_hw_monitor,
                 get_firmware_logs_command(),
                 get_flash_logs_command())
         {
@@ -795,7 +795,7 @@ namespace librealsense
             //write calibration to preset
             command cmd(ds::fw_cmd::SETINTCALNEW, 0x20, 0x2);  // TODO - REMI - CAN BE REMOVED???
             cmd.data = calib;
-            ds5_device::_hw_monitor->send(cmd);
+            d400_device::_hw_monitor->send(cmd);
         }
 
         std::vector<byte> read_sector(const uint32_t address, const uint16_t size) const
@@ -806,19 +806,19 @@ namespace librealsense
                     << int(ds_advanced_mode_base::HW_MONITOR_COMMAND_SIZE)
                                           << ", requested: " << int( size ) );
             command cmd(ds::fw_cmd::FRB, address, size);
-            return ds5_device::_hw_monitor->send(cmd);
+            return d400_device::_hw_monitor->send(cmd);
         }
 
         std::vector<byte> read_rgb_gold() const
         {
             command cmd(ds::fw_cmd::LOADINTCAL, 0x20, 0x1);
-            return ds5_device::_hw_monitor->send(cmd);
+            return d400_device::_hw_monitor->send(cmd);
         }
 
         std::vector<byte> restore_calib_factory_settings() const
         {
             command cmd(ds::fw_cmd::CAL_RESTORE_DFLT);
-            return ds5_device::_hw_monitor->send(cmd);
+            return d400_device::_hw_monitor->send(cmd);
         }
 
         void restore_rgb_extrinsic(void)
@@ -868,10 +868,10 @@ namespace librealsense
         }
     };
 
-    class rs465_device : public ds5_active,
-                         public ds5_nonmonochrome,
-                         public ds5_color,
-                         public ds5_motion,
+    class rs465_device : public d400_active,
+                         public d400_nonmonochrome,
+                         public d400_color,
+                         public d400_motion,
                          public ds_advanced_mode_base,
                          public firmware_logger_device
     {
@@ -880,13 +880,13 @@ namespace librealsense
             const platform::backend_device_group& group,
             bool register_device_notifications)
             : device(ctx, group, register_device_notifications),
-            ds5_device(ctx, group),
-            ds5_active(ctx, group),
-            ds5_color(ctx, group),
-            ds5_motion(ctx, group),
-            ds5_nonmonochrome(ctx, group),
-            ds_advanced_mode_base(ds5_device::_hw_monitor, get_depth_sensor()),
-            firmware_logger_device(ctx, group, ds5_device::_hw_monitor,
+            d400_device(ctx, group),
+            d400_active(ctx, group),
+            d400_color(ctx, group),
+            d400_motion(ctx, group),
+            d400_nonmonochrome(ctx, group),
+            ds_advanced_mode_base(d400_device::_hw_monitor, get_depth_sensor()),
+            firmware_logger_device(ctx, group, d400_device::_hw_monitor,
                 get_firmware_logs_command(),
                 get_flash_logs_command()) {}
 
@@ -912,7 +912,7 @@ namespace librealsense
         };
     };
 
-    class rs400_imu_device  :      public ds5_motion,
+    class rs400_imu_device  :      public d400_motion,
                                 public ds_advanced_mode_base,
                                 public firmware_logger_device
     {
@@ -921,10 +921,10 @@ namespace librealsense
                     const platform::backend_device_group group,
                     bool register_device_notifications)
             : device(ctx, group, register_device_notifications),
-              ds5_device(ctx, group),
-              ds5_motion(ctx, group),
-              ds_advanced_mode_base(ds5_device::_hw_monitor, get_depth_sensor()),
-              firmware_logger_device(ctx, group, ds5_device::_hw_monitor,
+              d400_device(ctx, group),
+              d400_motion(ctx, group),
+              ds_advanced_mode_base(d400_device::_hw_monitor, get_depth_sensor()),
+              firmware_logger_device(ctx, group, d400_device::_hw_monitor,
                 get_firmware_logs_command(),
                 get_flash_logs_command()) {}
 
@@ -941,8 +941,8 @@ namespace librealsense
         };
     };
 
-    class rs405_device  : public ds5_color,
-                          public ds5_nonmonochrome,
+    class rs405_device  : public d400_color,
+                          public d400_nonmonochrome,
                           public ds_advanced_mode_base,
                           public firmware_logger_device
     {
@@ -951,11 +951,11 @@ namespace librealsense
                     const platform::backend_device_group group,
                     bool register_device_notifications)
             : device(ctx, group, register_device_notifications),
-              ds5_device(ctx, group),
-              ds5_color(ctx, group),
-              ds5_nonmonochrome(ctx, group),
-              ds_advanced_mode_base(ds5_device::_hw_monitor, get_depth_sensor()),
-              firmware_logger_device(ctx, group, ds5_device::_hw_monitor,
+              d400_device(ctx, group),
+              d400_color(ctx, group),
+              d400_nonmonochrome(ctx, group),
+              ds_advanced_mode_base(d400_device::_hw_monitor, get_depth_sensor()),
+              firmware_logger_device(ctx, group, d400_device::_hw_monitor,
                 get_firmware_logs_command(),
                 get_flash_logs_command()) {}
 
@@ -1008,29 +1008,29 @@ namespace librealsense
         }
     };
 
-    class rs455_device  :      public ds5_nonmonochrome,
-                               public ds5_active,
-                               public ds5_color,
-                               public ds5_motion,
+    class rs455_device  :      public d400_nonmonochrome,
+                               public d400_active,
+                               public d400_color,
+                               public d400_motion,
                                public ds_advanced_mode_base,
                                public firmware_logger_device,
-                               public ds5_thermal_tracking
+                               public d400_thermal_tracking
     {
     public:
         rs455_device(std::shared_ptr<context> ctx,
                     const platform::backend_device_group group,
                     bool register_device_notifications)
             : device(ctx, group, register_device_notifications),
-              ds5_device(ctx, group),
-              ds5_nonmonochrome(ctx, group),
-              ds5_active(ctx, group),
-              ds5_color(ctx,  group),
-              ds5_motion(ctx, group),
-              ds_advanced_mode_base(ds5_device::_hw_monitor, get_depth_sensor()),
-              firmware_logger_device(ctx, group, ds5_device::_hw_monitor,
+              d400_device(ctx, group),
+              d400_nonmonochrome(ctx, group),
+              d400_active(ctx, group),
+              d400_color(ctx,  group),
+              d400_motion(ctx, group),
+              ds_advanced_mode_base(d400_device::_hw_monitor, get_depth_sensor()),
+              firmware_logger_device(ctx, group, d400_device::_hw_monitor,
                     get_firmware_logs_command(),
                     get_flash_logs_command()),
-              ds5_thermal_tracking(ds5_device::_thermal_monitor)
+              d400_thermal_tracking(d400_device::_thermal_monitor)
         {}
 
         std::shared_ptr<matcher> create_matcher(const frame_holder& frame) const override;
@@ -1061,7 +1061,7 @@ namespace librealsense
 
     };
 
-    std::shared_ptr<device_interface> ds5_info::create(std::shared_ptr<context> ctx,
+    std::shared_ptr<device_interface> d400_info::create(std::shared_ptr<context> ctx,
                                                        bool register_device_notifications) const
     {
         using namespace ds;
@@ -1119,7 +1119,7 @@ namespace librealsense
         }
     }
 
-    std::vector<std::shared_ptr<device_info>> ds5_info::pick_ds5_devices(
+    std::vector<std::shared_ptr<device_info>> d400_info::pick_d400_devices(
         std::shared_ptr<context> ctx,
         platform::backend_device_group& group)
     {
@@ -1137,7 +1137,7 @@ namespace librealsense
             bool all_sensors_present = mi_present(devices, 0);
 
             // Device with multi sensors can be enabled only if all sensors (RGB + Depth) are present
-            auto is_pid_of_multisensor_device = [](int pid) { return std::find(std::begin(ds::ds5_multi_sensors_pid), std::end(ds::ds5_multi_sensors_pid), pid) != std::end(ds::ds5_multi_sensors_pid); };
+            auto is_pid_of_multisensor_device = [](int pid) { return std::find(std::begin(ds::d400_multi_sensors_pid), std::end(ds::d400_multi_sensors_pid), pid) != std::end(ds::d400_multi_sensors_pid); };
             bool is_device_multisensor = false;
             for (auto&& uvc : devices)
             {
@@ -1154,8 +1154,8 @@ namespace librealsense
 
 
 #if !defined(__APPLE__) // Not supported by macos
-            auto is_pid_of_hid_sensor_device = [](int pid) { return std::find(std::begin(ds::ds5_hid_sensors_pid),
-                std::end(ds::ds5_hid_sensors_pid), pid) != std::end(ds::ds5_hid_sensors_pid); };
+            auto is_pid_of_hid_sensor_device = [](int pid) { return std::find(std::begin(ds::d400_hid_sensors_pid),
+                std::end(ds::d400_hid_sensors_pid), pid) != std::end(ds::d400_hid_sensors_pid); };
             bool is_device_hid_sensor = false;
             for (auto&& uvc : devices)
             {
@@ -1176,16 +1176,16 @@ namespace librealsense
                 platform::usb_device_info hwm;
 
                 std::vector<platform::usb_device_info> hwm_devices;
-                if (ds::ds5_try_fetch_usb_device(group.usb_devices, devices.front(), hwm))
+                if (ds::d400_try_fetch_usb_device(group.usb_devices, devices.front(), hwm))
                 {
                     hwm_devices.push_back(hwm);
                 }
                 else
                 {
-                    LOG_DEBUG("ds5_try_fetch_usb_device(...) failed.");
+                    LOG_DEBUG("d400_try_fetch_usb_device(...) failed.");
                 }
 
-                auto info = std::make_shared<ds5_info>(ctx, devices, hwm_devices, hids);
+                auto info = std::make_shared<d400_info>(ctx, devices, hwm_devices, hids);
                 chosen.insert(chosen.end(), devices.begin(), devices.end());
                 results.push_back(info);
 

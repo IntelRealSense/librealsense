@@ -3,13 +3,13 @@
 
 #include <iostream>
 #include <chrono>
-#include "ds5-color.h"
-#include "ds5-private.h"
-#include "ds5-thermal-monitor.h"
+#include "d400-color.h"
+#include "d400-private.h"
+#include "d400-thermal-monitor.h"
 
 namespace librealsense
 {
-    ds5_thermal_monitor::ds5_thermal_monitor(std::shared_ptr<option> temp_option,
+    d400_thermal_monitor::d400_thermal_monitor(std::shared_ptr<option> temp_option,
                                              std::shared_ptr<option> tl_toggle) :
         _monitor([this](dispatcher::cancellable_timer cancellable_timer)
             {
@@ -24,14 +24,14 @@ namespace librealsense
     {
     }
 
-    ds5_thermal_monitor::~ds5_thermal_monitor()
+    d400_thermal_monitor::~d400_thermal_monitor()
     {
         _monitor.stop();
         _temp_base = 0.f;
         _hw_loop_on = false;
     }
 
-    void ds5_thermal_monitor::update(bool on)
+    void d400_thermal_monitor::update(bool on)
     {
         if (on != _monitor.is_active())
         {
@@ -48,7 +48,7 @@ namespace librealsense
         }
     }
 
-    void ds5_thermal_monitor::polling(dispatcher::cancellable_timer cancellable_timer)
+    void d400_thermal_monitor::polling(dispatcher::cancellable_timer cancellable_timer)
     {
         if (cancellable_timer.try_sleep( std::chrono::milliseconds( _poll_intervals_ms )))
         {
@@ -104,7 +104,7 @@ namespace librealsense
         }
     }
 
-    void ds5_thermal_monitor::notify(float temperature)
+    void d400_thermal_monitor::notify(float temperature)
     {
         _temp_base = temperature;
         for (auto&& cb : _thermal_changes_callbacks)

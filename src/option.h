@@ -299,15 +299,9 @@ namespace librealsense
             return true;
         }
 
-        uvc_pu_option(uvc_sensor& ep, rs2_option id)
-            : _ep(ep), _id(id)
-        {
-        }
+        uvc_pu_option(uvc_sensor& ep, rs2_option id);
 
-        uvc_pu_option(uvc_sensor& ep, rs2_option id, const std::map<float, std::string>& description_per_value)
-            : _ep(ep), _id(id), _description_per_value(description_per_value)
-        {
-        }
+        uvc_pu_option(uvc_sensor& ep, rs2_option id, const std::map<float, std::string>& description_per_value);
 
         const char* get_description() const override;
 
@@ -326,6 +320,7 @@ namespace librealsense
         rs2_option _id;
         const std::map<float, std::string> _description_per_value;
         std::function<void(const option&)> _record = [](const option&) {};
+        lazy<option_range> _range;
     };
 
     // XU control with exclusing access to setter/getters

@@ -4,7 +4,7 @@
 #include "fw-update-device.h"
 #include "../types.h"
 #include "../context.h"
-#include "ds/ds5/ds5-private.h"
+#include "ds/d400/d400-private.h"
 
 #include <chrono>
 #include <stdexcept>

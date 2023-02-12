@@ -34,7 +34,7 @@ struct JoyFeedbackArray_
 
 
 
-   typedef std::vector< ::sensor_msgs::JoyFeedback_<ContainerAllocator> , typename ContainerAllocator::template rebind< ::sensor_msgs::JoyFeedback_<ContainerAllocator> >::other >  _array_type;
+   typedef std::vector< ::sensor_msgs::JoyFeedback_<ContainerAllocator> , typename std::allocator_traits< ContainerAllocator >::template rebind_alloc< ::sensor_msgs::JoyFeedback_<ContainerAllocator>  > >  _array_type;
   _array_type array;
 
 

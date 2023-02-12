@@ -260,14 +260,14 @@ namespace librealsense
             std::lock_guard<std::mutex> lock(other._mtx);
             if (!other._was_init)
             {
-                _init = move(other._init);
+                _init = std::move(other._init);
                 _was_init = false;
             }
             else
             {
-                _init = move(other._init);
+                _init = std::move(other._init);
                 _was_init = true;
-                _ptr = move(other._ptr);
+                _ptr = std::move(other._ptr);
             }
         }
 
@@ -282,14 +282,14 @@ namespace librealsense
             std::lock_guard<std::mutex> lock2(other._mtx);
             if (!other._was_init)
             {
-                _init = move(other._init);
+                _init = std::move(other._init);
                 _was_init = false;
             }
             else
             {
-                _init = move(other._init);
+                _init = std::move(other._init);
                 _was_init = true;
-                _ptr = move(other._ptr);
+                _ptr = std::move(other._ptr);
             }
 
             return *this;
