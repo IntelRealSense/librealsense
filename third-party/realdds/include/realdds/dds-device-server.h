@@ -81,7 +81,7 @@ public:
     void on_set_option( set_option_callback callback ) { _set_option_callback = std::move( callback ); }
     void on_query_option( query_option_callback callback ) { _query_option_callback = std::move( callback ); }
 
-    std::unordered_map< std::string, std::shared_ptr< dds_stream_server > > & get_streams() { return _stream_name_to_server; }
+    std::unordered_map< std::string, std::shared_ptr< dds_stream_server > > & streams() { return _stream_name_to_server; }
 
 private:
     void on_control_message_received();

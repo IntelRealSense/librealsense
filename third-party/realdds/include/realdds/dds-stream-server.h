@@ -199,7 +199,8 @@ public:
 
     void open( std::string const & topic_name, std::shared_ptr< dds_publisher > const & ) override;
 
-    void publish( nlohmann::json && metadata );
+    void publish( const uint8_t * data, size_t size, unsigned long long id ) override;
+    //void publish( nlohmann::json && metadata );
 };
 
 

@@ -14,8 +14,6 @@
 
 #include <fastdds/dds/subscriber/SampleInfo.hpp>
 
-#include <deque>
-
 
 namespace realdds {
 
@@ -28,16 +26,16 @@ dds_stream::dds_stream( std::string const & stream_name, std::string const & sen
 
 void dds_video_stream::open( std::string const & topic_name, std::shared_ptr< dds_subscriber > const & subscriber )
 {
-    if ( is_open() )
+    if( is_open() )
         DDS_THROW( runtime_error, "stream '" + name() + "' is already open" );
-    if ( profiles().empty() )
+    if( profiles().empty() )
         DDS_THROW( runtime_error, "stream '" + name() + "' has no profiles" );
 
-    //Topics with same name and type can be created multiple times (multiple open() calls) without an error.
+    // Topics with same name and type can be created multiple times (multiple open() calls) without an error.
     auto topic = topics::device::image::create_topic( subscriber->get_participant(), topic_name.c_str() );
 
-    //To support automatic streaming (without the need to handle start/stop-streaming commands) the readers are created
-    //here and destroyed on close()
+    // To support automatic streaming (without the need to handle start/stop-streaming commands) the reader is created
+    // here and destroyed on close()
     _reader = std::make_shared< dds_topic_reader >( topic, subscriber );
     _reader->on_data_available( [&]() { handle_data(); } );
     _reader->run( dds_topic_reader::qos( eprosima::fastdds::dds::BEST_EFFORT_RELIABILITY_QOS ) );  // no retries
@@ -51,11 +49,11 @@ void dds_motion_stream::open( std::string const & topic_name, std::shared_ptr< d
     if( profiles().empty() )
         DDS_THROW( runtime_error, "stream '" + name() + "' has no profiles" );
 
-    //Topics with same name and type can be created multiple times (multiple open() calls) without an error.
+    // Topics with same name and type can be created multiple times (multiple open() calls) without an error.
     auto topic = topics::device::image::create_topic( subscriber->get_participant(), topic_name.c_str() );
 
-    //To support automatic streaming (without the need to handle start/stop-streaming commands) the readers are created
-    //here and destroyed on close()
+    // To support automatic streaming (without the need to handle start/stop-streaming commands) the reader is created
+    // here and destroyed on close()
     _reader = std::make_shared< dds_topic_reader >( topic, subscriber );
     _reader->on_data_available( [&]() { handle_data(); } );
     _reader->run( dds_topic_reader::qos( eprosima::fastdds::dds::BEST_EFFORT_RELIABILITY_QOS ) );  // no retries
@@ -67,11 +65,11 @@ void dds_metadata_stream::open( std::string const & topic_name, std::shared_ptr<
     if( is_open() )
         DDS_THROW( runtime_error, "stream '" + name() + "' is already open" );
 
-    //Topics with same name and type can be created multiple times (multiple open() calls) without an error.
+    // Topics with same name and type can be created multiple times (multiple open() calls) without an error.
     auto topic = topics::flexible_msg::create_topic( subscriber->get_participant(), topic_name.c_str() );
 
-    //To support automatic streaming (without the need to handle start/stop-streaming commands) the readers are created
-    //here and destroyed on close()
+    // To support automatic streaming (without the need to handle start/stop-streaming commands) the reader is created
+    // here and destroyed on close()
     _reader = std::make_shared< dds_topic_reader >( topic, subscriber );
     _reader->on_data_available( [&]() { handle_data(); } );
     _reader->run( dds_topic_reader::qos( eprosima::fastdds::dds::BEST_EFFORT_RELIABILITY_QOS ) );  // no retries
@@ -87,11 +85,11 @@ void dds_stream::close()
 
 void dds_stream::start_streaming()
 {
-    if( !is_open() )
+    if( ! is_open() )
         DDS_THROW( runtime_error, "stream '" + name() + "' is not open" );
     if( is_streaming() )
         DDS_THROW( runtime_error, "stream '" + name() + "' is already streaming" );
-    if( !can_start_streaming() )
+    if( ! can_start_streaming() )
         DDS_THROW( runtime_error, "stream '" + name() + "' cannot start streaming" );
 
     _streaming = true;
@@ -102,9 +100,9 @@ void dds_video_stream::handle_data()
 {
     topics::device::image frame;
     eprosima::fastdds::dds::SampleInfo info;
-    while ( _reader && topics::device::image::take_next( *_reader, &frame, &info ) )
+    while( _reader && topics::device::image::take_next( *_reader, &frame, &info ) )
     {
-        if ( !frame.is_valid() )
+        if( ! frame.is_valid() )
             continue;
 
         if( is_streaming() && _on_data_available )
@@ -119,7 +117,7 @@ void dds_motion_stream::handle_data()
     eprosima::fastdds::dds::SampleInfo info;
     while( _reader && topics::device::image::take_next( *_reader, &frame, &info ) )
     {
-        if( !frame.is_valid() )
+        if( ! frame.is_valid() )
             continue;
 
         if( is_streaming() && _on_data_available )
@@ -134,7 +132,7 @@ void dds_metadata_stream::handle_data()
     eprosima::fastdds::dds::SampleInfo info;
     while( _reader && topics::flexible_msg::take_next( *_reader, &metadata, &info ) )
     {
-        if( !metadata.is_valid() )
+        if( ! metadata.is_valid() )
             continue;
 
         if( is_streaming() && _on_data_available )
@@ -145,7 +143,7 @@ void dds_metadata_stream::handle_data()
 
 void dds_stream::stop_streaming()
 {
-    if ( !is_streaming() )
+    if( ! is_streaming() )
         DDS_THROW( runtime_error, "stream '" + name() + "' is not streaming" );
 
     _streaming = false;
@@ -224,4 +222,4 @@ dds_metadata_stream::dds_metadata_stream( std::string const & stream_name, std::
 }
 
 
-} //namespace realdds
+}  // namespace realdds

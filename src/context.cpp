@@ -539,13 +539,13 @@ namespace librealsense
             // Sync using frame ID. Frame IDs are assumed to be increasing with time
             int frame_id = _frame_queue.front().frame_number;
             int md_id = _metadata_queue.empty() ? frame_id : // If no metadata create a "match"
-                        std::stoi( rsutils::json::get< std::string >( _metadata_queue.front().json_data(), "frame_id" ) );
+                        std::stoi( rsutils::json::get< std::string >( _metadata_queue.front().json_data(), "frame-id" ) );
 
             while( frame_id > md_id && _metadata_queue.size() > 1 )
             {
                 // Metadata without frame, remove it from queue and check next
                 _metadata_queue.pop_front();
-                md_id = std::stoi( rsutils::json::get< std::string >( _metadata_queue.front().json_data(), "frame_id" ) );
+                md_id = std::stoi( rsutils::json::get< std::string >( _metadata_queue.front().json_data(), "frame-id" ) );
             }
 
             if( frame_id == md_id )
@@ -699,6 +699,7 @@ namespace librealsense
             if ( profiles.size() > 0 )
             {
                 _dev->open( realdds_profiles );
+
             }
 
             software_sensor::open( profiles );
@@ -739,10 +740,10 @@ namespace librealsense
         {
             // Always expected metadata
             frame.timestamp = rsutils::json::get< rs2_time_t >( dds_md.json_data(), "timestamp" );
-            frame.domain = rsutils::json::get< rs2_timestamp_domain >( dds_md.json_data(), "timestamp_domain" );
+            frame.domain = rsutils::json::get< rs2_timestamp_domain >( dds_md.json_data(), "timestamp-domain" );
             // Expected metadata for all depth images
-            if( rsutils::json::has( dds_md.json_data(), "depth_units" ) )
-                frame.depth_units = rsutils::json::get< float >( dds_md.json_data(), "depth_units" );
+            if( rsutils::json::has( dds_md.json_data(), "depth-units" ) )
+                frame.depth_units = rsutils::json::get< float >( dds_md.json_data(), "depth-units" );
             // Other metadata fields
             for( size_t i = 0; i < static_cast< size_t >( RS2_FRAME_METADATA_COUNT ); ++i )
             {
@@ -786,7 +787,7 @@ namespace librealsense
         {
             // Always expected metadata
             frame.timestamp = rsutils::json::get< rs2_time_t >( dds_md.json_data(), "timestamp" );
-            frame.domain = rsutils::json::get< rs2_timestamp_domain >( dds_md.json_data(), "timestamp_domain" );
+            frame.domain = rsutils::json::get< rs2_timestamp_domain >( dds_md.json_data(), "timestamp-domain" );
             // Other metadata fields
             for( size_t i = 0; i < static_cast< size_t >( RS2_FRAME_METADATA_COUNT ); ++i )
             {
@@ -894,7 +895,6 @@ namespace librealsense
             {
                 sid_index stream_sidx( profile->get_unique_id(), profile->get_stream_index() );
                 streams_to_close.push_back( _streams[stream_sidx] );
-                _data_stream_to_metadata[stream_sidx]->close();
             }
             _dev->close( streams_to_close );
             software_sensor::close();
@@ -1158,7 +1158,7 @@ namespace librealsense
                 if( _dds_dev->supports_metadata() && !metadata_stream )
                 {
                     _dds_dev->foreach_stream( [&]( std::shared_ptr< realdds::dds_stream > s ) {
-                        if( ( stream->name() + " metadata" ).compare( s->name() ) == 0 )
+                        if( ( stream->name() + "_metadata" ).compare( s->name() ) == 0 )
                         {
                             sensor_info.proxy->add_dds_metadata_stream( sidx, std::dynamic_pointer_cast< realdds::dds_metadata_stream >( s ) );
                         }

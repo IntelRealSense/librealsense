@@ -84,14 +84,11 @@ namespace librealsense
             }
 
             //Search extra_data for software device, might be used if metadata_blob is not big enough for all metadata
-            if( !frm.additional_data.sw_device_extra_data.empty() )
+            auto it = frm.additional_data.sw_device_extra_data.find( _type );
+            if( it != frm.additional_data.sw_device_extra_data.end() )
             {
-                for( auto it = frm.additional_data.sw_device_extra_data.begin(); it != frm.additional_data.sw_device_extra_data.end(); ++it )
-                    if( it->first == _type )
-                    {
-                        result = it->second;
-                        return true;
-                    }
+                result = it->second;
+                return true;
             }
 
             return false;

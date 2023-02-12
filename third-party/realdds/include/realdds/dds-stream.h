@@ -9,7 +9,6 @@
 #include <vector>
 #include <set>
 #include <functional>
-#include <deque>
 
 namespace realdds {
 

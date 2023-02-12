@@ -9,6 +9,7 @@
 #include <atomic>
 #include <array>
 #include <vector>
+#include <map>
 #include <math.h>
 
 namespace librealsense {
@@ -71,8 +72,8 @@ struct frame_additional_data : frame_header
     uint32_t raw_size = 0;     // The frame transmitted size (payload only)
 
     // Used by software-device, to save metadata that doesn't have enough room in metadata_blob
-    // (saving sizeof(rs2_frame_metadata_value) + sizeof(rs2_metadata_type) for each value)
-    std::vector< std::pair< rs2_frame_metadata_value, rs2_metadata_type > > sw_device_extra_data;
+    // (saving sizeof(rs2_frame_metadata_value) + sizeof(rs2_metadata_type) for each blob value)
+    std::map< rs2_frame_metadata_value, rs2_metadata_type > sw_device_extra_data;
 
     frame_additional_data() {}
 

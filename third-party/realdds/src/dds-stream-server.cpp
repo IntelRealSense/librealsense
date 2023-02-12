@@ -195,11 +195,22 @@ void dds_stream_server::publish( const uint8_t * data, size_t size, unsigned lon
     DDS_API_CALL( _writer->get()->write( &raw_image ) );
 }
 
-void dds_metadata_stream_server::publish( nlohmann::json && metadata )
+void dds_metadata_stream_server::publish( const uint8_t * data, size_t size, unsigned long long id )
 {
-    if( !is_open() )
+    if( ! is_open() )
         DDS_THROW( runtime_error, "stream '" + name() + "' must be open before publishing" );
 
-    topics::flexible_msg msg( std::move( metadata ) );
+    // Temporary, dds_stream_server API would change to publish relevant topic
+    nlohmann::json json_data( *( reinterpret_cast< const nlohmann::json * >( data ) ) );
+    topics::flexible_msg msg( std::move( json_data ) );
     msg.write_to( *_writer );
 }
+
+//void dds_metadata_stream_server::publish( nlohmann::json && metadata )
+//{
+//    if( !is_open() )
+//        DDS_THROW( runtime_error, "stream '" + name() + "' must be open before publishing" );
+//
+//    topics::flexible_msg msg( std::move( metadata ) );
+//    msg.write_to( *_writer );
+//}

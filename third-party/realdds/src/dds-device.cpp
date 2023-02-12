@@ -157,7 +157,7 @@ bool dds_device::supports_metadata() const
 {
     for( const auto & option : _impl->_options )
     {
-        if( option->get_name() == "metadata_enabled" )
+        if( option->get_name() == "metadata-enabled" )
             return option->get_value();
     }
 

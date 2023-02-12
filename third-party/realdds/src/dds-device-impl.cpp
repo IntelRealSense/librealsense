@@ -131,7 +131,7 @@ void dds_device::impl::open( const dds_stream_profiles & profiles )
         _streams[stream->name()]->open( _info.topic_root + '/' + stream->name(), _subscriber );
         if( _md_supported )
         {
-            std::string metadata_stream_name = stream->name() + " metadata";
+            std::string metadata_stream_name = stream->name() + "_metadata";
             _streams[metadata_stream_name]->open( _info.topic_root + '/' + metadata_stream_name, _subscriber );
         }
     }
@@ -157,6 +157,11 @@ void dds_device::impl::close( dds_streams const & streams )
         stream_names += stream->name();
 
         _streams[stream->name()]->close();
+        if( _md_supported )
+        {
+            std::string metadata_stream_name = stream->name() + "_metadata";
+            _streams[metadata_stream_name]->close();
+        }
     }
 
     nlohmann::json j = {
@@ -310,7 +315,7 @@ bool dds_device::impl::init()
                     {
                         auto option = dds_option::from_json( option_json, _info.name );
                         _options.push_back( option );
-                        if( option->get_name() == "metadata_enabled" )
+                        if( option->get_name() == "metadata-enabled" )
                             _md_supported = option->get_value();
                     }
 
@@ -372,7 +377,7 @@ bool dds_device::impl::init()
 
                     if( _md_supported )
                     {
-                        auto md_stream_name = stream_name + " metadata";
+                        auto md_stream_name = stream_name + "_metadata";
                         _streams[md_stream_name] = std::make_shared< dds_metadata_stream >( md_stream_name, sensor_name );
                     }
 

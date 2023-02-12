@@ -237,7 +237,7 @@ std::vector< std::shared_ptr< realdds::dds_stream_server > > lrs_device_controll
         for( auto & it : stream_name_to_server )
         {
             auto stream_name = it.first;
-            auto md_server = std::make_shared< realdds::dds_metadata_stream_server >( stream_name + " metadata",
+            auto md_server = std::make_shared< realdds::dds_metadata_stream_server >( stream_name + "_metadata",
                                                                                       it.second->sensor_name() );
             servers.push_back( md_server );
         }
@@ -414,10 +414,13 @@ lrs_device_controller::lrs_device_controller( rs2::device dev, std::shared_ptr< 
 
     //TODO - get all device level options
     realdds::dds_options options;
-    auto option = std::make_shared< realdds::dds_option >( std::string( "metadata_enabled" ),
-                                                          _rs_dev.get_info( RS2_CAMERA_INFO_NAME ) );
-    _md_enabled = rs2::metadata_helper::instance().can_support_metadata( _rs_dev.get_info( RS2_CAMERA_INFO_PRODUCT_LINE ) ) &&
-                  rs2::metadata_helper::instance().is_enabled( _rs_dev.get_info( RS2_CAMERA_INFO_PHYSICAL_PORT ) );
+    auto option = std::make_shared< realdds::dds_option >( std::string( "metadata-enabled" ),
+                                                           _rs_dev.get_info( RS2_CAMERA_INFO_NAME ) );
+    // Some camera models support metadata for frames. can_support_metadata will tell us if this model does.
+    // Also, to get the metadata driver support needs to be enabled, requires administrator rights on Windows and Linux.
+    // is_enabled will return current state. If one of the conditions is false we cannot get metadata from the device.
+    _md_enabled = rs2::metadata_helper::instance().can_support_metadata( _rs_dev.get_info( RS2_CAMERA_INFO_PRODUCT_LINE ) )
+               && rs2::metadata_helper::instance().is_enabled( _rs_dev.get_info( RS2_CAMERA_INFO_PHYSICAL_PORT ) );
     option->set_value( _md_enabled );
     option->set_description( "Is metadata being read and sent with frames" );
     options.push_back( option );
@@ -468,7 +471,7 @@ void lrs_device_controller::start_streaming( const json & msg )
     _sensors[sensor_index].open( rs_profiles_to_open );
     _sensors[sensor_index].start( [&]( rs2::frame f ) {
         const auto & stream_name = f.get_profile().stream_name();
-        auto & streams = _dds_device_server->get_streams();
+        auto & streams = _dds_device_server->streams();
 
         auto it = streams.find( stream_name );
         if( it == streams.end() )
@@ -481,7 +484,7 @@ void lrs_device_controller::start_streaming( const json & msg )
 
         if( _md_enabled )
         {
-            const auto & metadata_stream_name = f.get_profile().stream_name() + " metadata";
+            const auto & metadata_stream_name = f.get_profile().stream_name() + "_metadata";
 
             auto it = streams.find( metadata_stream_name );
             if( it == streams.end() )
@@ -492,12 +495,12 @@ void lrs_device_controller::start_streaming( const json & msg )
 
             json metadata = json( {
                 // Special data that is always expected by realdds
-                { "frame_id", std::to_string( f.get_frame_number() ) },
+                { "frame-id", std::to_string( f.get_frame_number() ) },
                 { "timestamp", f.get_timestamp() },
-                { "timestamp_domain", f.get_frame_timestamp_domain() }
+                { "timestamp-domain", f.get_frame_timestamp_domain() }
                 } );
             if( f.is< rs2::depth_frame >() )
-                metadata["depth_units"] = f.as< rs2::depth_frame >().get_units();
+                metadata["depth-units"] = f.as< rs2::depth_frame >().get_units();
 
             for( size_t i = 0; i < static_cast< size_t >( RS2_FRAME_METADATA_COUNT ); ++i )
             {
@@ -508,7 +511,8 @@ void lrs_device_controller::start_streaming( const json & msg )
                 }
             }
 
-            metadata_stream->publish( std::move( metadata ) );
+            // Temporary, dds_stream_server API would change to publish relevant topic
+            metadata_stream->publish( reinterpret_cast< uint8_t* >( &metadata ), sizeof( metadata ), f.get_frame_number() );
         }
     } );
     if( realdds_streams_to_start.size() == 1 )

@@ -246,7 +246,7 @@ namespace librealsense
             auto size_of_data = sizeof(rs2_metadata_type);
             if (data.metadata_size + size_of_enum + size_of_data > 255)
             {
-                data.sw_device_extra_data.push_back( std::make_pair( i.first, i.second ) );
+                data.sw_device_extra_data[i.first] = i.second;
                 continue; //stop adding metadata to frame
             }
             memcpy(data.metadata_blob.data() + data.metadata_size, &i.first, size_of_enum);
