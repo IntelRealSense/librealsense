@@ -8,6 +8,7 @@
 #include "json.hpp"
 #include "versions-db-manager.h"
 #include <types.h>
+#include <rsutils/os/os.h>
 
 namespace rs2
 {
@@ -16,27 +17,6 @@ namespace rs2
     {
         using json = nlohmann::json;
         using namespace http;
-
-        // Get current platform
-        constexpr const char* PLATFORM =
-
-#ifdef _WIN64
-            "Windows amd64";
-#elif _WIN32
-            "Windows x86";
-#elif __linux__
-#ifdef __arm__
-            "Linux arm";
-#else
-            "Linux amd64";
-#endif
-#elif __APPLE__
-            "Mac OS";
-#elif __ANDROID__
-            "Linux arm";
-#else
-            "";
-#endif
 
         query_status_type versions_db_manager::query_versions(const std::string &device_name, component_part_type component, const update_policy_type policy, version& out_version)
         {
@@ -47,7 +27,7 @@ namespace rs2
                 return DB_LOAD_FAILURE;
             }
 
-            std::string platform(PLATFORM);
+            std::string platform = rsutils::get_platform_name();
 
             std::string up_str(to_string(policy));
             std::string comp_str(to_string(component));
@@ -77,7 +57,7 @@ namespace rs2
             // Check if server versions are loaded
             if (!_server_versions_loaded) return false;
 
-            std::string platform = PLATFORM;
+            std::string platform = rsutils::get_platform_name();
 
             std::string component_str(to_string(component));
 

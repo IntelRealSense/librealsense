@@ -9,11 +9,10 @@
 #include <array>
 #include <chrono>
 #include "ivcam/sr300.h"
-#include "ds/ds5/ds5-factory.h"
+#include "ds/d400/d400-factory.h"
 #include "l500/l500-factory.h"
 #include "ds/ds-timestamp.h"
 #include "backend.h"
-#include "mock/recorder.h"
 #include <media/ros/ros_reader.h>
 #include "types.h"
 #include "stream.h"
@@ -91,11 +90,7 @@ namespace librealsense
         {rs_fourcc('M','J','P','G'), RS2_STREAM_COLOR},
     };
 
-    context::context(backend_type type,
-                     const char* filename,
-                     const char* section,
-                     rs2_recording_mode mode,
-                     std::string min_api_version)
+    context::context( backend_type type )
         : _devices_changed_callback(nullptr, [](rs2_devices_changed_callback*){})
     {
         static bool version_logged=false;
@@ -105,19 +100,7 @@ namespace librealsense
             LOG_DEBUG("Librealsense " << std::string(std::begin(rs2_api_version),std::end(rs2_api_version)));
         }
 
-        switch(type)
-        {
-        case backend_type::standard:
-            _backend = platform::create_backend();
-            break;
-        case backend_type::record:
-            _backend = std::make_shared<platform::record_backend>(platform::create_backend(), filename, section, mode);
-            break;
-        case backend_type::playback:
-            _backend = std::make_shared<platform::playback_backend>(filename, section, min_api_version);
-            break;
-            // Strongly-typed enum. Default is redundant
-        }
+        _backend = platform::create_backend();
 
        environment::get_instance().set_time_service(_backend->create_time_service());
 
@@ -333,8 +316,8 @@ namespace librealsense
 
         if (mask & RS2_PRODUCT_LINE_D400)
         {
-            auto ds5_devices = ds5_info::pick_ds5_devices(ctx, devices);
-            std::copy(begin(ds5_devices), end(ds5_devices), std::back_inserter(list));
+            auto d400_devices = d400_info::pick_d400_devices(ctx, devices);
+            std::copy(begin(d400_devices), end(d400_devices), std::back_inserter(list));
         }
 
         if( mask & RS2_PRODUCT_LINE_L500 )

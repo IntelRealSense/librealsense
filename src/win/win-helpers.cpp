@@ -757,7 +757,7 @@ namespace librealsense
 
         PSECURITY_DESCRIPTOR make_allow_all_security_descriptor(void)
         {
-            WCHAR *pszStringSecurityDescriptor;
+            WCHAR const *pszStringSecurityDescriptor;
             pszStringSecurityDescriptor = L"D:(A;;GA;;;WD)(A;;GA;;;AN)S:(ML;;NW;;;ME)";
             PSECURITY_DESCRIPTOR pSecDesc;
             if (!ConvertStringSecurityDescriptorToSecurityDescriptor(

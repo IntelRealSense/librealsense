@@ -49,6 +49,7 @@
 #include "firmware_logger_device.h"
 #include "device-calibration.h"
 #include "calibrated-sensor.h"
+#include <librealsense2/h/rs_internal.h>
 
 #include <rsutils/string/from.h>
 
@@ -171,7 +172,7 @@ rs2_context* rs2_create_context(int api_version, rs2_error** error) BEGIN_API_CA
 {
     verify_version_compatibility(api_version);
 
-    return new rs2_context{ std::make_shared<librealsense::context>(librealsense::backend_type::standard) };
+    return new rs2_context{ std::make_shared< librealsense::context >( librealsense::backend_type::standard ) };
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, api_version)
 
@@ -731,7 +732,10 @@ void rs2_set_option(const rs2_options* options, rs2_option option, float value, 
 {
     VALIDATE_NOT_NULL(options);
     VALIDATE_OPTION(options, option);
-    options->options->get_option(option).set(value);
+    auto& option_ref = options->options->get_option(option);
+    auto range = option_ref.get_range();
+    VALIDATE_RANGE(value, range.min, range.max);
+    option_ref.set(value);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, options, option, value)
 
@@ -843,7 +847,7 @@ void rs2_start(const rs2_sensor* sensor, rs2_frame_callback_ptr on_frame, void* 
     VALIDATE_NOT_NULL(on_frame);
     librealsense::frame_callback_ptr callback(
         new librealsense::frame_callback(on_frame, user));
-    sensor->sensor->start(move(callback));
+    sensor->sensor->start(std::move(callback));
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, sensor, on_frame, user)
 
@@ -853,7 +857,7 @@ void rs2_start_queue(const rs2_sensor* sensor, rs2_frame_queue* queue, rs2_error
     VALIDATE_NOT_NULL(queue);
     librealsense::frame_callback_ptr callback(
         new librealsense::frame_callback(rs2_enqueue_frame, queue));
-    sensor->sensor->start(move(callback));
+    sensor->sensor->start(std::move(callback));
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, sensor, queue)
 
@@ -1321,31 +1325,19 @@ HANDLE_EXCEPTIONS_AND_RETURN(0, RS2_API_MAJOR_VERSION, RS2_API_MINOR_VERSION, RS
 
 rs2_context* rs2_create_recording_context(int api_version, const char* filename, const char* section, rs2_recording_mode mode, rs2_error** error) BEGIN_API_CALL
 {
-    VALIDATE_NOT_NULL(filename);
-    VALIDATE_NOT_NULL(section);
-    verify_version_compatibility(api_version);
-
-    return new rs2_context{ std::make_shared<librealsense::context>(librealsense::backend_type::record, filename, section, mode) };
+    throw not_implemented_exception( "deprecated" );
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, api_version, filename, section, mode)
 
 rs2_context* rs2_create_mock_context_versioned(int api_version, const char* filename, const char* section, const char* min_api_version, rs2_error** error) BEGIN_API_CALL
 {
-    VALIDATE_NOT_NULL(filename);
-    VALIDATE_NOT_NULL(section);
-    verify_version_compatibility(api_version);
-
-    return new rs2_context{ std::make_shared<librealsense::context>(librealsense::backend_type::playback, filename, section, RS2_RECORDING_MODE_COUNT, std::string(min_api_version)) };
+    throw not_implemented_exception( "deprecated" );
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, api_version, filename, section)
 
 rs2_context* rs2_create_mock_context(int api_version, const char* filename, const char* section, rs2_error** error) BEGIN_API_CALL
 {
-    VALIDATE_NOT_NULL(filename);
-    VALIDATE_NOT_NULL(section);
-    verify_version_compatibility(api_version);
-
-    return new rs2_context{ std::make_shared<librealsense::context>(librealsense::backend_type::playback, filename, section, RS2_RECORDING_MODE_COUNT) };
+    throw not_implemented_exception( "deprecated" );
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, api_version, filename, section)
 
@@ -1954,7 +1946,7 @@ rs2_pipeline_profile* rs2_pipeline_start_with_callback(rs2_pipeline* pipe, rs2_f
     VALIDATE_NOT_NULL(pipe);
     librealsense::frame_callback_ptr callback( new librealsense::frame_callback( on_frame, user ),
                                                []( rs2_frame_callback * p ) { p->release(); } );
-    return new rs2_pipeline_profile{ pipe->pipeline->start(std::make_shared<pipeline::config>(), move(callback)) };
+    return new rs2_pipeline_profile{ pipe->pipeline->start(std::make_shared<pipeline::config>(), std::move(callback)) };
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, pipe, on_frame, user)
 
@@ -2221,7 +2213,7 @@ void rs2_start_processing_queue(rs2_processing_block* block, rs2_frame_queue* qu
     VALIDATE_NOT_NULL(queue);
     librealsense::frame_callback_ptr callback(
         new librealsense::frame_callback(rs2_enqueue_frame, queue));
-    block->block->set_output_callback(move(callback));
+    block->block->set_output_callback(std::move(callback));
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, block, queue)
 

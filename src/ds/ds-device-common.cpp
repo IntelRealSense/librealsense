@@ -5,7 +5,7 @@
 
 #include "fw-update/fw-update-device-interface.h"
 
-#include "ds5/ds5-device.h"
+#include "d400/d400-device.h"
 
 #include "proc/hdr-merge.h"
 #include "proc/sequence-id-filter.h"
@@ -103,7 +103,7 @@ namespace librealsense
         {
         case ds_device_type::ds5:
         {
-            auto dev = dynamic_cast<ds5_device*>(_owner);
+            auto dev = dynamic_cast<d400_device*>(_owner);
             return dev->get_raw_depth_sensor();
         }
         default:
@@ -280,8 +280,8 @@ namespace librealsense
     {
         std::string fw_version = firmware_check_interface::extract_firmware_version_string(image);
 
-        auto it = ds::ds5_device_to_fw_min_version.find(_owner->_pid);
-        if (it == ds::ds5_device_to_fw_min_version.end())
+        auto it = ds::d400_device_to_fw_min_version.find(_owner->_pid);
+        if (it == ds::d400_device_to_fw_min_version.end())
             throw librealsense::invalid_value_exception(rsutils::string::from() << "Min and Max firmware versions have not been defined for this device: " << std::hex << _owner->_pid);
         bool result = (firmware_version(fw_version) >= firmware_version(it->second));
         if (!result)
@@ -303,8 +303,8 @@ namespace librealsense
 
     notification ds_notification_decoder::decode(int value)
     {
-        if (ds::ds5_fw_error_report.find(static_cast<uint8_t>(value)) != ds::ds5_fw_error_report.end())
-            return{ RS2_NOTIFICATION_CATEGORY_HARDWARE_ERROR, value, RS2_LOG_SEVERITY_ERROR, ds::ds5_fw_error_report.at(static_cast<uint8_t>(value)) };
+        if (ds::d400_fw_error_report.find(static_cast<uint8_t>(value)) != ds::d400_fw_error_report.end())
+            return{ RS2_NOTIFICATION_CATEGORY_HARDWARE_ERROR, value, RS2_LOG_SEVERITY_ERROR, ds::d400_fw_error_report.at(static_cast<uint8_t>(value)) };
 
         return{ RS2_NOTIFICATION_CATEGORY_HARDWARE_ERROR, value, RS2_LOG_SEVERITY_WARN, (rsutils::string::from() << "D400 HW report - unresolved type " << value) };
     }

@@ -103,13 +103,8 @@ This file adds playback and record capability using ROS-bag files. See [src/medi
 
 |Class|Description|
 |-----|-----------|
-|[playback](librealsense2/hpp/rs_record_playback.hpp#L30)| Device that mimiks live device from given input file |
+|[playback](librealsense2/hpp/rs_record_playback.hpp#L30)| Device that mimics live device from given input file |
 |[recorder](librealsense2/hpp/rs_record_playback.hpp#L206)| Device that records live device into an output file |
 
 ## [rs_internal.hpp](librealsense2\hpp\rs_internal.hpp):
 This file is not intented to be included by SDK users, but rather is used in SDK unit-tests. It allows to record everything that will happen in a specific test into a file and later use that file for dependency injection. 
-
-|Class|Description|
-|-----|-----------|
-|[recording_context](librealsense2\hpp\rs_internal.hpp#L19)| Context that records all backend activity to file |
-|[mock_context](librealsense2\hpp\rs_internal.hpp#L41)| Context that replays all activity from file |
