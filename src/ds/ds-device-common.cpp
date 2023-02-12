@@ -6,7 +6,7 @@
 #include "fw-update/fw-update-device-interface.h"
 
 #include "d400/d400-device.h"
-#include "ds6/ds6-device.h"
+#include "d500/d500-device.h"
 
 #include "proc/hdr-merge.h"
 #include "proc/sequence-id-filter.h"
@@ -102,7 +102,7 @@ namespace librealsense
     {
         if (auto dev = dynamic_cast<d400_device*>(_owner))
             return dev->get_raw_depth_sensor();
-       if (auto dev = dynamic_cast<ds6_device*>(_owner))
+       if (auto dev = dynamic_cast<d500_device*>(_owner))
             return dev->get_raw_depth_sensor();
         throw std::runtime_error("device not referenced in the product line");
     }
@@ -288,7 +288,7 @@ namespace librealsense
     {
         std::string fw_version = firmware_check_interface::extract_firmware_version_string(image);
 
-        // TODO - do the same for ds6 (when min fw will be known)
+        // TODO - do the same for d500 (when min fw will be known)
         auto it = ds::d400_device_to_fw_min_version.find(_owner->_pid);
         if (it == ds::d400_device_to_fw_min_version.end())
             throw librealsense::invalid_value_exception(rsutils::string::from() << "Min and Max firmware versions have not been defined for this device: " << std::hex << _owner->_pid);

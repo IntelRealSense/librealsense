@@ -1,7 +1,7 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2022 Intel Corporation. All Rights Reserved.
 
-#include "ds6-safety.h"
+#include "d500-safety.h"
 
 #include <mutex>
 #include <chrono>
@@ -23,9 +23,9 @@ namespace librealsense
         {rs_fourcc('G','R','E','Y'), RS2_STREAM_SAFETY}
     };
 
-    ds6_safety::ds6_safety(std::shared_ptr<context> ctx,
+    d500_safety::d500_safety(std::shared_ptr<context> ctx,
         const platform::backend_device_group& group)
-        : device(ctx, group), ds6_device(ctx, group),
+        : device(ctx, group), d500_device(ctx, group),
         _safety_stream(new stream(RS2_STREAM_SAFETY))
     {
         using namespace ds;
@@ -41,7 +41,7 @@ namespace librealsense
         _safety_device_idx = add_sensor(safety_ep);
     }
 
-    std::shared_ptr<synthetic_sensor> ds6_safety::create_safety_device(std::shared_ptr<context> ctx,
+    std::shared_ptr<synthetic_sensor> d500_safety::create_safety_device(std::shared_ptr<context> ctx,
         const std::vector<platform::uvc_device_info>& safety_devices_info)
     {
         using namespace ds;
@@ -62,7 +62,7 @@ namespace librealsense
 
         raw_safety_ep->register_xu(safety_xu); // making sure the XU is initialized every time we power the camera
 
-        auto safety_ep = std::make_shared<ds6_safety_sensor>(this,
+        auto safety_ep = std::make_shared<d500_safety_sensor>(this,
             raw_safety_ep,
             safety_fourcc_to_rs2_format,
             safety_fourcc_to_rs2_stream);
@@ -83,7 +83,7 @@ namespace librealsense
         return safety_ep;
     }
 
-    void ds6_safety::register_options(std::shared_ptr<ds6_safety_sensor> safety_ep, std::shared_ptr<uvc_sensor> raw_safety_sensor)
+    void d500_safety::register_options(std::shared_ptr<d500_safety_sensor> safety_ep, std::shared_ptr<uvc_sensor> raw_safety_sensor)
     {
         // Register safety preset active index option
         auto active_safety_preset = std::make_shared<uvc_xu_option<uint16_t>>(
@@ -107,7 +107,7 @@ namespace librealsense
         safety_ep->register_option( RS2_OPTION_SAFETY_MODE, safety_camera_oper_mode );
     }
 
-    void ds6_safety::register_metadata(std::shared_ptr<uvc_sensor> raw_safety_ep)
+    void d500_safety::register_metadata(std::shared_ptr<uvc_sensor> raw_safety_ep)
     {
         raw_safety_ep->register_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP, 
             make_uvc_header_parser(&platform::uvc_header::timestamp));
@@ -181,13 +181,13 @@ namespace librealsense
                 md_safety_info_attributes::crc32_attribute, md_prop_offset));
     }
 
-    void ds6_safety::register_processing_blocks(std::shared_ptr<ds6_safety_sensor> safety_ep)
+    void d500_safety::register_processing_blocks(std::shared_ptr<d500_safety_sensor> safety_ep)
     {
         safety_ep->register_processing_block(processing_block_factory::create_id_pbf(RS2_FORMAT_RAW8, RS2_STREAM_SAFETY));
     }
 
 
-    stream_profiles ds6_safety_sensor::init_stream_profiles()
+    stream_profiles d500_safety_sensor::init_stream_profiles()
     {
         auto lock = environment::get_instance().get_extrinsics_graph().lock();
         auto results = synthetic_sensor::init_stream_profiles();
@@ -201,8 +201,8 @@ namespace librealsense
             auto&& video = dynamic_cast<video_stream_profile_interface*>(p.get());
             const auto&& profile = to_profile(p.get());
 
-            std::weak_ptr<ds6_safety_sensor> wp =
-                std::dynamic_pointer_cast<ds6_safety_sensor>(this->shared_from_this());
+            std::weak_ptr<d500_safety_sensor> wp =
+                std::dynamic_pointer_cast<d500_safety_sensor>(this->shared_from_this());
             video->set_intrinsics([profile, wp]()
                 {
                     auto sp = wp.lock();
@@ -216,12 +216,12 @@ namespace librealsense
         return results;
     }
 
-    rs2_intrinsics ds6_safety_sensor::get_intrinsics(const stream_profile& profile) const
+    rs2_intrinsics d500_safety_sensor::get_intrinsics(const stream_profile& profile) const
     {
         return rs2_intrinsics();
     }
 
-    void ds6_safety_sensor::set_safety_preset(int index, const rs2_safety_preset& sp) const
+    void d500_safety_sensor::set_safety_preset(int index, const rs2_safety_preset& sp) const
     {
         //calculate CRC
         auto computed_crc32 = calc_crc32(reinterpret_cast<const uint8_t*>(&sp), sizeof(rs2_safety_preset));
@@ -242,7 +242,7 @@ namespace librealsense
         _owner->_hw_monitor->send(cmd);
     }
 
-    rs2_safety_preset ds6_safety_sensor::get_safety_preset(int index) const
+    rs2_safety_preset d500_safety_sensor::get_safety_preset(int index) const
     {
         rs2_safety_preset_with_header* result;
 

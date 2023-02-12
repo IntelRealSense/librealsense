@@ -3,7 +3,7 @@
 
 #include "ds-active-common.h"
 #include "d400/d400-color.h"
-#include "ds6/ds6-color.h"
+#include "d500/d500-color.h"
 
 namespace librealsense
 {

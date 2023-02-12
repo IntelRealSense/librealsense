@@ -12,14 +12,14 @@
 #include "image.h"
 #include "metadata-parser.h"
 
-#include "ds6-factory.h"
-#include "ds6-private.h"
+#include "d500-factory.h"
+#include "d500-private.h"
 #include "ds/ds-options.h"
 #include "ds/ds-timestamp.h"
-#include "ds6-active.h"
-#include "ds6-color.h"
-#include "ds6-motion.h"
-#include "ds6-safety.h"
+#include "d500-active.h"
+#include "d500-color.h"
+#include "d500-motion.h"
+#include "d500-safety.h"
 #include "sync.h"
 
 #include "firmware_logger_device.h"
@@ -27,9 +27,9 @@
 
 namespace librealsense
 {
-    class rs_d585_device : public ds6_active,
-        public ds6_color,
-        public ds6_motion,
+    class rs_d585_device : public d500_active,
+        public d500_color,
+        public d500_motion,
         public ds_advanced_mode_base,
         public firmware_logger_device
     {
@@ -38,12 +38,12 @@ namespace librealsense
             const platform::backend_device_group& group,
             bool register_device_notifications)
             : device(ctx, group, register_device_notifications),
-            ds6_device(ctx, group),
-            ds6_active(ctx, group),
-            ds6_color(ctx, group),
-            ds6_motion(ctx, group),
-            ds_advanced_mode_base(ds6_device::_hw_monitor, get_depth_sensor()),
-            firmware_logger_device(ctx, group, ds6_device::_hw_monitor,
+            d500_device(ctx, group),
+            d500_active(ctx, group),
+            d500_color(ctx, group),
+            d500_motion(ctx, group),
+            ds_advanced_mode_base(d500_device::_hw_monitor, get_depth_sensor()),
+            firmware_logger_device(ctx, group, d500_device::_hw_monitor,
                 get_firmware_logs_command(),
                 get_flash_logs_command()) {}
 
@@ -69,10 +69,10 @@ namespace librealsense
         };
     };
     
-    class rs_d585s_device : public ds6_active,
-        public ds6_color,
-        public ds6_safety,
-        public ds6_motion,
+    class rs_d585s_device : public d500_active,
+        public d500_color,
+        public d500_safety,
+        public d500_motion,
         public ds_advanced_mode_base,
         public firmware_logger_device
     {
@@ -81,13 +81,13 @@ namespace librealsense
             const platform::backend_device_group& group,
             bool register_device_notifications)
             : device(ctx, group, register_device_notifications),
-            ds6_device(ctx, group),
-            ds6_active(ctx, group),
-            ds6_color(ctx, group),
-            ds6_safety(ctx, group),
-            ds6_motion(ctx, group),
-            ds_advanced_mode_base(ds6_device::_hw_monitor, get_depth_sensor()),
-            firmware_logger_device(ctx, group, ds6_device::_hw_monitor,
+            d500_device(ctx, group),
+            d500_active(ctx, group),
+            d500_color(ctx, group),
+            d500_safety(ctx, group),
+            d500_motion(ctx, group),
+            ds_advanced_mode_base(d500_device::_hw_monitor, get_depth_sensor()),
+            firmware_logger_device(ctx, group, d500_device::_hw_monitor,
                 get_firmware_logs_command(),
                 get_flash_logs_command()) {}
 
@@ -113,7 +113,7 @@ namespace librealsense
         };
     };
 
-    std::shared_ptr<device_interface> ds6_info::create(std::shared_ptr<context> ctx,
+    std::shared_ptr<device_interface> d500_info::create(std::shared_ptr<context> ctx,
                                                        bool register_device_notifications) const
     {
         using namespace ds;
@@ -134,7 +134,7 @@ namespace librealsense
         }
     }
 
-    std::vector<std::shared_ptr<device_info>> ds6_info::pick_ds6_devices(
+    std::vector<std::shared_ptr<device_info>> d500_info::pick_d500_devices(
         std::shared_ptr<context> ctx,
         platform::backend_device_group& group)
     {
@@ -152,8 +152,8 @@ namespace librealsense
             bool all_sensors_present = mi_present(devices, 0);
 
             // Device with multi sensors can be enabled only if all sensors (RGB + Depth) are present
-            auto is_pid_of_multisensor_device = [](int pid) { return std::find(std::begin(ds::ds6_multi_sensors_pid), 
-                std::end(ds::ds6_multi_sensors_pid), pid) != std::end(ds::ds6_multi_sensors_pid); };
+            auto is_pid_of_multisensor_device = [](int pid) { return std::find(std::begin(ds::d500_multi_sensors_pid), 
+                std::end(ds::d500_multi_sensors_pid), pid) != std::end(ds::d500_multi_sensors_pid); };
             bool is_device_multisensor = false;
             for (auto&& uvc : devices)
             {
@@ -168,8 +168,8 @@ namespace librealsense
 
 
 #if !defined(__APPLE__) // Not supported by macos
-            auto is_pid_of_hid_sensor_device = [](int pid) { return std::find(std::begin(ds::ds6_hid_sensors_pid), 
-                std::end(ds::ds6_hid_sensors_pid), pid) != std::end(ds::ds6_hid_sensors_pid); };
+            auto is_pid_of_hid_sensor_device = [](int pid) { return std::find(std::begin(ds::d500_hid_sensors_pid), 
+                std::end(ds::d500_hid_sensors_pid), pid) != std::end(ds::d500_hid_sensors_pid); };
             bool is_device_hid_sensor = false;
             for (auto&& uvc : devices)
             {
@@ -190,16 +190,16 @@ namespace librealsense
                 platform::usb_device_info hwm;
 
                 std::vector<platform::usb_device_info> hwm_devices;
-                if (ds::ds6_try_fetch_usb_device(group.usb_devices, devices.front(), hwm))
+                if (ds::d500_try_fetch_usb_device(group.usb_devices, devices.front(), hwm))
                 {
                     hwm_devices.push_back(hwm);
                 }
                 else
                 {
-                    LOG_DEBUG("ds6_try_fetch_usb_device(...) failed.");
+                    LOG_DEBUG("d500_try_fetch_usb_device(...) failed.");
                 }
 
-                auto info = std::make_shared<ds6_info>(ctx, devices, hwm_devices, hids);
+                auto info = std::make_shared<d500_info>(ctx, devices, hwm_devices, hids);
                 chosen.insert(chosen.end(), devices.begin(), devices.end());
                 results.push_back(info);
 

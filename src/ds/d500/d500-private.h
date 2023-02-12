@@ -19,23 +19,23 @@ namespace librealsense
             const uint8_t SAFETY_PRESET_ACTIVE_INDEX = 0x2;
         }
 
-        // ds6 Devices supported by the current version
+        // d500 Devices supported by the current version
         static const std::set<std::uint16_t> rs500_sku_pid = {
             ds::RS_D585_PID,
             ds::RS_D585S_PID
         };
 
-        static const std::set<std::uint16_t> ds6_multi_sensors_pid = {
+        static const std::set<std::uint16_t> d500_multi_sensors_pid = {
             ds::RS_D585_PID,
             ds::RS_D585S_PID
         };
 
-        static const std::set<std::uint16_t> ds6_hid_sensors_pid = {
+        static const std::set<std::uint16_t> d500_hid_sensors_pid = {
             ds::RS_D585_PID,
             ds::RS_D585S_PID
         };
 
-        static const std::set<std::uint16_t> ds6_hid_bmi_085_pid = {
+        static const std::set<std::uint16_t> d500_hid_bmi_085_pid = {
             ds::RS_D585_PID,
             ds::RS_D585S_PID
         };
@@ -46,32 +46,32 @@ namespace librealsense
         };
 
         //TODO
-        //static std::map<uint16_t, std::string> ds6_device_to_fw_min_version = {
+        //static std::map<uint16_t, std::string> d500_device_to_fw_min_version = {
         //    {RS_D585_PID, "5.8.15.0"},
         //    {RS_D585S_PID, "5.8.15.0"}
         //};
 
-        bool ds6_try_fetch_usb_device(std::vector<platform::usb_device_info>& devices,
+        bool d500_try_fetch_usb_device(std::vector<platform::usb_device_info>& devices,
             const platform::uvc_device_info& info, platform::usb_device_info& result);
 
-        enum class ds6_gvd_fields      // gvd fields for Safety Camera
+        enum class d500_gvd_fields      // gvd fields for Safety Camera
         {
             // Keep sorted
-            ds6_gvd_camera_fw_version_offset = 12,
-            ds6_gvd_is_camera_locked_offset = 25,
-            ds6_gvd_module_serial_offset = 48,
-            ds6_gvd_module_asic_serial_offset = 64,
-            ds6_gvd_fisheye_sensor_lb = 112,
-            ds6_gvd_fisheye_sensor_hb = 113,
-            ds6_gvd_imu_acc_chip_id = 124,
-            ds6_gvd_depth_sensor_type = 166,
-            ds6_gvd_active_projector = 170,
-            ds6_gvd_rgb_sensor = 174,
-            ds6_gvd_imu_sensor = 178,
-            ds6_gvd_motion_module_fw_version_offset = 212
+            d500_gvd_camera_fw_version_offset = 12,
+            d500_gvd_is_camera_locked_offset = 25,
+            d500_gvd_module_serial_offset = 48,
+            d500_gvd_module_asic_serial_offset = 64,
+            d500_gvd_fisheye_sensor_lb = 112,
+            d500_gvd_fisheye_sensor_hb = 113,
+            d500_gvd_imu_acc_chip_id = 124,
+            d500_gvd_depth_sensor_type = 166,
+            d500_gvd_active_projector = 170,
+            d500_gvd_rgb_sensor = 174,
+            d500_gvd_imu_sensor = 178,
+            d500_gvd_motion_module_fw_version_offset = 212
         };
 
-        enum class ds6_calibration_table_id
+        enum class d500_calibration_table_id
         {
             depth_eeprom_toc_id = 0xb0,
             module_info_id = 0xb1,
@@ -88,23 +88,23 @@ namespace librealsense
             max_id = -1
         };
 
-        const std::map<ds::ds6_calibration_table_id, uint32_t> ds6_calibration_tables_size =
+        const std::map<ds::d500_calibration_table_id, uint32_t> d500_calibration_tables_size =
         {
-            {ds6_calibration_table_id::depth_eeprom_toc_id, 640},
-            {ds6_calibration_table_id::module_info_id, 320},
-            {ds6_calibration_table_id::rgb_lens_shading_id, 1088},
-            {ds6_calibration_table_id::str_lens_shading_id, 1088},
-            {ds6_calibration_table_id::depth_calibration_id, 512},
-            {ds6_calibration_table_id::left_x_lut_id, 4160},
-            {ds6_calibration_table_id::left_y_lut_id, 4160},
-            {ds6_calibration_table_id::right_x_lut_id, 4160},
-            {ds6_calibration_table_id::right_y_lut_id, 4160},
-            {ds6_calibration_table_id::rgb_calibration_id, 256},
-            {ds6_calibration_table_id::rgb_lut_id, 8256},
-            {ds6_calibration_table_id::imu_calibration_id, 192}
+            {d500_calibration_table_id::depth_eeprom_toc_id, 640},
+            {d500_calibration_table_id::module_info_id, 320},
+            {d500_calibration_table_id::rgb_lens_shading_id, 1088},
+            {d500_calibration_table_id::str_lens_shading_id, 1088},
+            {d500_calibration_table_id::depth_calibration_id, 512},
+            {d500_calibration_table_id::left_x_lut_id, 4160},
+            {d500_calibration_table_id::left_y_lut_id, 4160},
+            {d500_calibration_table_id::right_x_lut_id, 4160},
+            {d500_calibration_table_id::right_y_lut_id, 4160},
+            {d500_calibration_table_id::rgb_calibration_id, 256},
+            {d500_calibration_table_id::rgb_lut_id, 8256},
+            {d500_calibration_table_id::imu_calibration_id, 192}
         };
 
-        struct ds6_calibration
+        struct d500_calibration
         {
             uint16_t        version;                        // major.minor
             rs2_intrinsics   left_imager_intrinsic;
@@ -113,23 +113,23 @@ namespace librealsense
             rs2_extrinsics   left_imager_extrinsic;
             rs2_extrinsics   right_imager_extrinsic;
             rs2_extrinsics   depth_extrinsic;
-            std::map<ds6_calibration_table_id, bool> data_present;
+            std::map<d500_calibration_table_id, bool> data_present;
 
-            ds6_calibration() : version(0), left_imager_intrinsic({}), right_imager_intrinsic({}),
+            d500_calibration() : version(0), left_imager_intrinsic({}), right_imager_intrinsic({}),
                 left_imager_extrinsic({}), right_imager_extrinsic({}), depth_extrinsic({})
             {
                 for (auto i = 0; i < max_ds_rect_resolutions; i++)
                     depth_intrinsic[i] = {};
-                data_present.emplace(ds6_calibration_table_id::depth_calibration_id, false);
-                data_present.emplace(ds6_calibration_table_id::rgb_calibration_id, false);
-                //data_present.emplace(ds6_calibration_table_id::fisheye_calibration_id, false);
-                //data_present.emplace(ds6_calibration_table_id::imu_calibration_id, false);
-                //data_present.emplace(ds6_calibration_table_id::lens_shading_id, false);
-                //data_present.emplace(ds6_calibration_table_id::projector_id, false);
+                data_present.emplace(d500_calibration_table_id::depth_calibration_id, false);
+                data_present.emplace(d500_calibration_table_id::rgb_calibration_id, false);
+                //data_present.emplace(d500_calibration_table_id::fisheye_calibration_id, false);
+                //data_present.emplace(d500_calibration_table_id::imu_calibration_id, false);
+                //data_present.emplace(d500_calibration_table_id::lens_shading_id, false);
+                //data_present.emplace(d500_calibration_table_id::projector_id, false);
             }
         };
 
-        struct ds6_undist_configuration
+        struct d500_undist_configuration
         {
             uint32_t     fx;
             uint32_t     fy;
@@ -160,11 +160,11 @@ namespace librealsense
             uint8_t                   reserved[36];
             float                     radial_distortion_lut_range_degs;
             float                     radial_distortion_lut_focal_length;
-            ds6_undist_configuration  undist_config;
+            d500_undist_configuration  undist_config;
             float3x3                  rotation_matrix;
         };
 
-        struct ds6_coefficients_table
+        struct d500_coefficients_table
         {
             table_header              header;
             single_sensor_coef_table  left_coefficients_table;
@@ -176,7 +176,7 @@ namespace librealsense
             uint8_t                   reserved[148];
         };
 
-        struct ds6_rgb_calibration_table
+        struct d500_rgb_calibration_table
         {
             table_header              header;
             single_sensor_coef_table  rgb_coefficients_table;
@@ -185,21 +185,21 @@ namespace librealsense
             uint8_t                   reserved[48];
         };
 
-        rs2_intrinsics get_ds6_intrinsic_by_resolution(const std::vector<uint8_t>& raw_data, ds6_calibration_table_id table_id, uint32_t width, uint32_t height);
-        rs2_intrinsics get_ds6_intrinsic_by_resolution_coefficients_table(const std::vector<uint8_t>& raw_data, uint32_t width, uint32_t height);
+        rs2_intrinsics get_d500_intrinsic_by_resolution(const std::vector<uint8_t>& raw_data, d500_calibration_table_id table_id, uint32_t width, uint32_t height);
+        rs2_intrinsics get_d500_intrinsic_by_resolution_coefficients_table(const std::vector<uint8_t>& raw_data, uint32_t width, uint32_t height);
         pose get_d400_color_stream_extrinsic(const std::vector<uint8_t>& raw_data);
 
-        enum class ds6_calib_location
+        enum class d500_calib_location
         {
-            ds6_calib_eeprom          = 0,
-            ds6_calib_flash_memory    = 1,
-            ds6_calib_ram_memory      = 2
+            d500_calib_eeprom          = 0,
+            d500_calib_flash_memory    = 1,
+            d500_calib_ram_memory      = 2
         };
 
-        enum class ds6_calib_type
+        enum class d500_calib_type
         {
-            ds6_calib_dynamic = 0,
-            ds6_calib_gold    = 1
+            d500_calib_dynamic = 0,
+            d500_calib_gold    = 1
         };
 
 

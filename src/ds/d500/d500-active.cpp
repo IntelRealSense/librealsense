@@ -12,16 +12,16 @@
 #include "image.h"
 #include "metadata-parser.h"
 
-#include "ds6-active.h"
-#include "ds6-private.h"
+#include "d500-active.h"
+#include "d500-private.h"
 #include "ds/ds-options.h"
 #include "ds/ds-timestamp.h"
 
 namespace librealsense
 {
-    ds6_active::ds6_active(std::shared_ptr<context> ctx,
+    d500_active::d500_active(std::shared_ptr<context> ctx,
                            const platform::backend_device_group& group)
-        : device(ctx, group), ds6_device(ctx, group)
+        : device(ctx, group), d500_device(ctx, group)
     {
         using namespace ds;
 

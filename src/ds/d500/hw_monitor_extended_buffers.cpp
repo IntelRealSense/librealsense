@@ -2,7 +2,7 @@
 // Copyright(c) 2023 Intel Corporation. All Rights Reserved.
 
 #include "hw_monitor_extended_buffers.h"
-#include "ds/ds6/ds6-private.h"
+#include "ds/d500/d500-private.h"
 
 
 namespace librealsense
@@ -12,9 +12,9 @@ namespace librealsense
         int msg_length = HW_MONITOR_BUFFER_SIZE;
         if (cmd.cmd == ds::fw_cmd::GET_HKR_CONFIG_TABLE || cmd.cmd == ds::fw_cmd::SET_HKR_CONFIG_TABLE)
         {
-            auto calib_table_id = static_cast<ds::ds6_calibration_table_id>(cmd.param2);
-            auto it = ds::ds6_calibration_tables_size.find(calib_table_id);
-            if (it == ds::ds6_calibration_tables_size.end())
+            auto calib_table_id = static_cast<ds::d500_calibration_table_id>(cmd.param2);
+            auto it = ds::d500_calibration_tables_size.find(calib_table_id);
+            if (it == ds::d500_calibration_tables_size.end())
                 throw std::runtime_error(rsutils::string::from() << " hwm command with wromg param2");
 
             msg_length = it->second;

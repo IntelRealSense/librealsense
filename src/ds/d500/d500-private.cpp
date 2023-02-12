@@ -1,7 +1,7 @@
 //// License: Apache 2.0. See LICENSE file in root directory.
 //// Copyright(c) 2022 Intel Corporation. All Rights Reserved.
 
-#include "ds6-private.h"
+#include "d500-private.h"
 
 using namespace std;
 
@@ -9,7 +9,7 @@ namespace librealsense
 {
     namespace ds
     {
-        bool ds6_try_fetch_usb_device(std::vector<platform::usb_device_info>& devices,
+        bool d500_try_fetch_usb_device(std::vector<platform::usb_device_info>& devices,
             const platform::uvc_device_info& info, platform::usb_device_info& result)
         {
             for (auto it = devices.begin(); it != devices.end(); ++it)
@@ -40,15 +40,15 @@ namespace librealsense
             return false;
         }
 
-        rs2_intrinsics get_ds6_intrinsic_by_resolution(const vector<uint8_t>& raw_data, ds6_calibration_table_id table_id, uint32_t width, uint32_t height)
+        rs2_intrinsics get_d500_intrinsic_by_resolution(const vector<uint8_t>& raw_data, d500_calibration_table_id table_id, uint32_t width, uint32_t height)
         {
             switch (table_id)
             {
-            case ds6_calibration_table_id::depth_calibration_id:
+            case d500_calibration_table_id::depth_calibration_id:
             {
-                return get_ds6_intrinsic_by_resolution_coefficients_table(raw_data, width, height);
+                return get_d500_intrinsic_by_resolution_coefficients_table(raw_data, width, height);
             }
-            case ds6_calibration_table_id::rgb_calibration_id:
+            case d500_calibration_table_id::rgb_calibration_id:
             {
                 return get_color_stream_intrinsic(raw_data, width, height);
             }
@@ -63,7 +63,7 @@ namespace librealsense
         // crop_xy = (calib_org.image_size * scale_ratio - new_size_xy) / 2;
         // calib_new.principal_point = (calib_org.principal_point + 0.5).*scale_ratio - crop_xy - 0.5;
         // calib_new.focal_length = calib_org.focal_length.*scale_ratio;
-        float4 compute_rect_params_from_resolution(const ds::ds6_coefficients_table* table, uint32_t width, uint32_t height)
+        float4 compute_rect_params_from_resolution(const ds::d500_coefficients_table* table, uint32_t width, uint32_t height)
         {
             if (!table)
                 throw invalid_value_exception(rsutils::string::from() << "table is null");
@@ -90,9 +90,9 @@ namespace librealsense
             return { new_fx, new_fy, new_ppx, new_ppy };
         }
 
-        rs2_intrinsics get_ds6_intrinsic_by_resolution_coefficients_table(const std::vector<uint8_t>& raw_data, uint32_t width, uint32_t height)
+        rs2_intrinsics get_d500_intrinsic_by_resolution_coefficients_table(const std::vector<uint8_t>& raw_data, uint32_t width, uint32_t height)
         {
-            auto table = check_calib<ds::ds6_coefficients_table>(raw_data);
+            auto table = check_calib<ds::d500_coefficients_table>(raw_data);
 
             if (width > 0 && height > 0)
             {
@@ -165,9 +165,9 @@ namespace librealsense
             }
         }
 
-        pose get_ds6_color_stream_extrinsic(const std::vector<uint8_t>& raw_data)
+        pose get_d500_color_stream_extrinsic(const std::vector<uint8_t>& raw_data)
         {
-            auto table = check_calib<ds6_rgb_calibration_table>(raw_data);
+            auto table = check_calib<d500_rgb_calibration_table>(raw_data);
             float3 trans_vector = table->translation_rect;
             
             float3x3 rect_rot_mat = table->rgb_coefficients_table.rotation_matrix;

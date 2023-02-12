@@ -35,7 +35,7 @@ namespace librealsense
         const uint16_t RS455_PID = 0x0B5C; // D455
         const uint16_t RS457_PID = 0xabcd; // D457
 
-        // ds5 Devices supported by the current version
+        // d400 Devices supported by the current version
         static const std::set<std::uint16_t> rs400_sku_pid = {
             ds::RS400_PID,
             ds::RS410_PID,

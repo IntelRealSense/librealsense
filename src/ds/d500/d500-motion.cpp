@@ -1,7 +1,7 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2022 Intel Corporation. All Rights Reserved.
 
-#include "ds6-motion.h"
+#include "d500-motion.h"
 
 #include <mutex>
 #include <chrono>
@@ -21,21 +21,21 @@ namespace librealsense
 {
     
 
-    rs2_motion_device_intrinsic ds6_motion::get_motion_intrinsics(rs2_stream stream) const
+    rs2_motion_device_intrinsic d500_motion::get_motion_intrinsics(rs2_stream stream) const
     {
         return _ds_motion_common->get_motion_intrinsics(stream);
     }
 
-    std::shared_ptr<synthetic_sensor> ds6_motion::create_hid_device(std::shared_ptr<context> ctx,
+    std::shared_ptr<synthetic_sensor> d500_motion::create_hid_device(std::shared_ptr<context> ctx,
                                                                 const std::vector<platform::hid_device_info>& all_hid_infos,
                                                                 const firmware_version& camera_fw_version)
     {
         return _ds_motion_common->create_hid_device(ctx, all_hid_infos, camera_fw_version, _tf_keeper);
     }
 
-    ds6_motion::ds6_motion(std::shared_ptr<context> ctx,
+    d500_motion::d500_motion(std::shared_ptr<context> ctx,
                            const platform::backend_device_group& group)
-        : device(ctx, group), ds6_device(ctx, group)
+        : device(ctx, group), d500_device(ctx, group)
     {
         using namespace ds;
 
@@ -58,7 +58,7 @@ namespace librealsense
         }
     }
 
-    void ds6_motion::initialize_fisheye_sensor(std::shared_ptr<context> ctx, const platform::backend_device_group& group)
+    void d500_motion::initialize_fisheye_sensor(std::shared_ptr<context> ctx, const platform::backend_device_group& group)
     {
         using namespace ds;
         
@@ -86,17 +86,17 @@ namespace librealsense
         _fisheye_device_idx = add_sensor(fisheye_ep);
     }
 
-    void ds6_motion::register_fisheye_options()
+    void d500_motion::register_fisheye_options()
     {
         _ds_motion_common->register_fisheye_options();
     }
 
-    void ds6_motion::register_fisheye_metadata()
+    void d500_motion::register_fisheye_metadata()
     {
         _ds_motion_common->register_fisheye_metadata();
     }
 
-    void ds6_motion::register_stream_to_extrinsic_group(const stream_interface& stream, uint32_t group_index)
+    void d500_motion::register_stream_to_extrinsic_group(const stream_interface& stream, uint32_t group_index)
     {
         device::register_stream_to_extrinsic_group(stream, group_index);
     }

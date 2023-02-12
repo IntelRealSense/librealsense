@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include "ds6-device.h"
+#include "d500-device.h"
 #include "ds/ds-color-common.h"
 
 #include <map>
@@ -12,10 +12,10 @@
 
 namespace librealsense
 {
-    class ds6_color : public virtual ds6_device
+    class d500_color : public virtual d500_device
     {
     public:
-        ds6_color(std::shared_ptr<context> ctx,
+        d500_color(std::shared_ptr<context> ctx,
                   const platform::backend_device_group& group);
 
         synthetic_sensor& get_color_sensor()
@@ -44,7 +44,7 @@ namespace librealsense
             const platform::backend_device_group& group);
         void init();
 
-        friend class ds6_color_sensor;
+        friend class d500_color_sensor;
         friend class rs435i_device;
         friend class ds_color_common;
 
@@ -54,17 +54,17 @@ namespace librealsense
         std::shared_ptr<lazy<rs2_extrinsics>> _color_extrinsic;
     };
 
-    class ds6_color_sensor : public synthetic_sensor,
+    class d500_color_sensor : public synthetic_sensor,
                              public video_sensor_interface,
                              public roi_sensor_base,
                              public color_sensor
     {
     public:
-        explicit ds6_color_sensor(ds6_color* owner,
+        explicit d500_color_sensor(d500_color* owner,
             std::shared_ptr<uvc_sensor> uvc_sensor,
-            std::map<uint32_t, rs2_format> ds6_color_fourcc_to_rs2_format,
-            std::map<uint32_t, rs2_stream> ds6_color_fourcc_to_rs2_stream)
-            : synthetic_sensor("RGB Camera", uvc_sensor, owner, ds6_color_fourcc_to_rs2_format, ds6_color_fourcc_to_rs2_stream),
+            std::map<uint32_t, rs2_format> d500_color_fourcc_to_rs2_format,
+            std::map<uint32_t, rs2_stream> d500_color_fourcc_to_rs2_stream)
+            : synthetic_sensor("RGB Camera", uvc_sensor, owner, d500_color_fourcc_to_rs2_format, d500_color_fourcc_to_rs2_stream),
             _owner(owner)
         {}
 
@@ -73,7 +73,7 @@ namespace librealsense
         processing_blocks get_recommended_processing_blocks() const override;
 
     protected:
-        const ds6_color* _owner;
+        const d500_color* _owner;
     };
 
 }
