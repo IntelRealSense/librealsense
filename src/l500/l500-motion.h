@@ -8,7 +8,7 @@
 #include "device.h"
 #include "stream.h"
 #include "l500/l500-device.h"
-#include "ds/ds5/ds5-motion.h"
+#include "ds/d400/d400-motion.h"
 
 namespace librealsense
 {

@@ -27,6 +27,11 @@
 #include <stdlib.h>
 #include <string.h>
 #include <glad/glad.h>
+// next 4 lines --------> manually added by LRS Team!!!
+#ifdef __linux__
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpedantic"
+#endif
 
 struct gladGLversionStruct GLVersion = { 0, 0 };
 
@@ -1623,6 +1628,7 @@ static void load_GL_KHR_debug(GLADloadproc load) {
 	glad_glGetObjectPtrLabelKHR = (PFNGLGETOBJECTPTRLABELKHRPROC)load("glGetObjectPtrLabelKHR");
 	glad_glGetPointervKHR = (PFNGLGETPOINTERVKHRPROC)load("glGetPointervKHR");
 }
+
 static int find_extensionsGL(void) {
 	if (!get_exts()) return 0;
 	GLAD_GL_APPLE_vertex_array_object = has_ext("GL_APPLE_vertex_array_object");
@@ -1714,3 +1720,7 @@ int gladLoadGLLoader(GLADloadproc load) {
 	return GLVersion.major != 0 || GLVersion.minor != 0;
 }
 
+// next 3 lines --------> manually added by LRS Team!!!
+#ifdef __linux__
+#pragma GCC diagnostic pop
+#endif

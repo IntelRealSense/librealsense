@@ -66,18 +66,37 @@ def set_env_vars( env_vars ):
         for env_var, val in env_vars.items():
             os.environ[env_var] = val
         cmd = [sys.executable]
-        if 'site' not in sys.modules:
-            #     -S     : don't imply 'import site' on initialization
-            cmd += ["-S"]
+        #
+        # PYTHON FLAGS
+        #
+        #     -u     : force the stdout and stderr streams to be unbuffered; same as PYTHONUNBUFFERED=1
+        # With buffering we may end up losing output in case of crashes! (in Python 3.7 the text layer of the
+        # streams is unbuffered, but we assume 3.6)
+        cmd += ['-u']
+        #if 'site' not in sys.modules:
+        #    #     -S     : don't imply 'import site' on initialization
+        #    cmd += ["-S"]
+        #
         if sys.flags.verbose:
             #     -v     : verbose (trace import statements)
             cmd += ["-v"]
-        cmd += sys.argv  # --debug, or any other args
+        #
+        cmd += [sys.argv[0]]
+        #
+        # SCRIPT FLAGS
+        #
+        # Pass in the same args as the current script got:
+        cmd += log.original_args
+        #
+        # And add a flag 'rerun' that we'll see next time we get here in the subprocess
         cmd += ["rerun"]
-        log.d( 'running:', cmd )
-        p = subprocess.run( cmd, stderr=subprocess.PIPE, universal_newlines=True )
+        log.d( f'[pid {os.getpid()}] running: {cmd}' )
+        p = subprocess.run( cmd,
+                            stdout=None,
+                            stderr=subprocess.STDOUT,
+                            universal_newlines=True )
         sys.exit( p.returncode )
-    log.d( 'rerun detected' )
+    log.d( f'[pid {os.getpid()}] rerun detected' )
     sys.argv = sys.argv[:-1]  # Remove the rerun
 
 

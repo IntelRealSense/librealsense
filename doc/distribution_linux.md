@@ -72,9 +72,6 @@ librealsense2-dbg | Debug symbols for developers  | librealsense2
 librealsense2-gl | GLSL extension module runtime and configuration file | librealsense2
 librealsense2-gl-dev | GLSL development header files and symbolic link | librealsense2
 librealsense2-gl-dbg | GLSL debug symbols required for debugging purposes | librealsense2
-librealsense2-net | Data over Ethernet extension module, runtime and configuration file | librealsense2 
-librealsense2-net-dev | Network module developer's files | librealsense2 
-librealsense2-net-dbg | Network module debug symbols | librealsense2
 
 **Note** The packages include binaries and configuration files only.
 Use the github repository to obtain the source code.

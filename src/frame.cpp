@@ -36,7 +36,7 @@ frame::frame( frame && r )
 
 frame & frame::operator=( frame && r )
 {
-    data = move( r.data );
+    data = std::move( r.data );
     owner = r.owner;
     ref_count = r.ref_count.exchange( 0 );
     _kept = r._kept.exchange( false );

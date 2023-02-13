@@ -4,6 +4,12 @@
 import sys
 
 
+# We're usually the first to be imported, and so the first see the original arguments as passed
+# into sys.argv... remember them before we change:
+# (NOTE: sys.orig_argv is available as of 3.10)
+original_args = sys.argv[1:]
+
+
 def _write( s ):
     """
     When s is long, write() doesn't seem to work right and only part of the string gets written!

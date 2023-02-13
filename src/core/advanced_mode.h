@@ -149,6 +149,9 @@ namespace librealsense
         std::vector<uint8_t> serialize_json() const override;
         void load_json(const std::string& json_content) override;
 
+        void register_to_visual_preset_option();
+        void unregister_from_visual_preset_option();
+
         static const uint16_t HW_MONITOR_COMMAND_SIZE = 1000;
         static const uint16_t HW_MONITOR_BUFFER_SIZE = 1024;
 

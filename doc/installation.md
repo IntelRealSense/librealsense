@@ -38,7 +38,7 @@ The scripts and commands below invoke `wget, git, add-apt-repository` which may 
 
   2. Install the core packages required to build *librealsense* binaries and the affected kernel modules:  
  
-     `sudo apt-get install git libssl-dev libusb-1.0-0-dev libudev-dev pkg-config libgtk-3-dev`  <br /><br />
+     `sudo apt-get install git libssl-dev libusb-1.0-0-dev libudev-dev pkg-config libgtk-3-dev cmake`  <br /><br />
      Distribution-specific packages:<br />
      * Ubuntu 14 or when running Ubuntu 16.04 live-disk:<br />
       `./scripts/install_glfw3.sh`  <br />
@@ -46,7 +46,7 @@ The scripts and commands below invoke `wget, git, add-apt-repository` which may 
      * Ubuntu 16:<br />
       `sudo apt-get install libglfw3-dev`  <br />
 
-     * Ubuntu 18/20:<br />
+     * Ubuntu 18/20/22:<br />
       `sudo apt-get install libglfw3-dev libgl1-mesa-dev libglu1-mesa-dev at`  <br /><br />
 
 > **Cmake Note**: certain librealsense CMAKE flags (e.g. CUDA) require version 3.8+ which is currently not made available via apt manager for Ubuntu LTS.   

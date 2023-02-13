@@ -5,7 +5,6 @@
 
 #include "types.h"
 #include "backend.h"
-#include "mock/recorder.h"
 #include "core/streaming.h"
 
 #include <vector>
@@ -59,7 +58,7 @@ namespace librealsense
 
     protected:
         explicit device_info(std::shared_ptr<context> backend)
-            : _ctx(move(backend))
+            : _ctx(std::move(backend))
         {}
 
         virtual std::shared_ptr<device_interface> create(std::shared_ptr<context> ctx,
@@ -70,9 +69,7 @@ namespace librealsense
 
     enum class backend_type
     {
-        standard,
-        record,
-        playback
+        standard
     };
 
 
@@ -106,11 +103,7 @@ namespace librealsense
     class context : public std::enable_shared_from_this<context>
     {
     public:
-        explicit context(backend_type type,
-            const char* filename = nullptr,
-            const char* section = nullptr,
-            rs2_recording_mode mode = RS2_RECORDING_MODE_COUNT,
-            std::string min_api_version = "0.0.0");
+        explicit context( backend_type type );
 
         void stop() { _device_watcher->stop(); }
         ~context();
@@ -128,10 +121,6 @@ namespace librealsense
         void remove_device(const std::string& file);
 
         void add_software_device(std::shared_ptr<device_info> software_device);
-
-#if WITH_TRACKING
-        void unload_tracking_module();
-#endif
 
     private:
         void on_device_changed(platform::backend_device_group old,

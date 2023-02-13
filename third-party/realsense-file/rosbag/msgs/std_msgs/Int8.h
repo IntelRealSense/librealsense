@@ -39,15 +39,15 @@ struct Int8_
 
 
 
-  typedef boost::shared_ptr< ::std_msgs::Int8_<ContainerAllocator> > Ptr;
-  typedef boost::shared_ptr< ::std_msgs::Int8_<ContainerAllocator> const> ConstPtr;
+  typedef std::shared_ptr< ::std_msgs::Int8_<ContainerAllocator> > Ptr;
+  typedef std::shared_ptr< ::std_msgs::Int8_<ContainerAllocator> const> ConstPtr;
 
 }; // struct Int8_
 
 typedef ::std_msgs::Int8_<std::allocator<void> > Int8;
 
-typedef boost::shared_ptr< ::std_msgs::Int8 > Int8Ptr;
-typedef boost::shared_ptr< ::std_msgs::Int8 const> Int8ConstPtr;
+typedef std::shared_ptr< ::std_msgs::Int8 > Int8Ptr;
+typedef std::shared_ptr< ::std_msgs::Int8 const> Int8ConstPtr;
 
 // constants requiring out of line definition
 
@@ -79,32 +79,32 @@ namespace message_traits
 
 template <class ContainerAllocator>
 struct IsFixedSize< ::std_msgs::Int8_<ContainerAllocator> >
-  : TrueType
+  : std::true_type
   { };
 
 template <class ContainerAllocator>
 struct IsFixedSize< ::std_msgs::Int8_<ContainerAllocator> const>
-  : TrueType
+  : std::true_type
   { };
 
 template <class ContainerAllocator>
 struct IsMessage< ::std_msgs::Int8_<ContainerAllocator> >
-  : TrueType
+  : std::true_type
   { };
 
 template <class ContainerAllocator>
 struct IsMessage< ::std_msgs::Int8_<ContainerAllocator> const>
-  : TrueType
+  : std::true_type
   { };
 
 template <class ContainerAllocator>
 struct HasHeader< ::std_msgs::Int8_<ContainerAllocator> >
-  : FalseType
+  : std::false_type
   { };
 
 template <class ContainerAllocator>
 struct HasHeader< ::std_msgs::Int8_<ContainerAllocator> const>
-  : FalseType
+  : std::false_type
   { };
 
 

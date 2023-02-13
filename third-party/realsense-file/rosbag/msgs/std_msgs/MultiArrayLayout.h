@@ -36,7 +36,7 @@ struct MultiArrayLayout_
 
 
 
-   typedef std::vector< ::std_msgs::MultiArrayDimension_<ContainerAllocator> , typename ContainerAllocator::template rebind< ::std_msgs::MultiArrayDimension_<ContainerAllocator> >::other >  _dim_type;
+   typedef std::vector< ::std_msgs::MultiArrayDimension_<ContainerAllocator> , typename std::allocator_traits< ContainerAllocator >::template rebind_alloc< ::std_msgs::MultiArrayDimension_<ContainerAllocator>  > >  _dim_type;
   _dim_type dim;
 
    typedef uint32_t _data_offset_type;
@@ -45,15 +45,15 @@ struct MultiArrayLayout_
 
 
 
-  typedef boost::shared_ptr< ::std_msgs::MultiArrayLayout_<ContainerAllocator> > Ptr;
-  typedef boost::shared_ptr< ::std_msgs::MultiArrayLayout_<ContainerAllocator> const> ConstPtr;
+  typedef std::shared_ptr< ::std_msgs::MultiArrayLayout_<ContainerAllocator> > Ptr;
+  typedef std::shared_ptr< ::std_msgs::MultiArrayLayout_<ContainerAllocator> const> ConstPtr;
 
 }; // struct MultiArrayLayout_
 
 typedef ::std_msgs::MultiArrayLayout_<std::allocator<void> > MultiArrayLayout;
 
-typedef boost::shared_ptr< ::std_msgs::MultiArrayLayout > MultiArrayLayoutPtr;
-typedef boost::shared_ptr< ::std_msgs::MultiArrayLayout const> MultiArrayLayoutConstPtr;
+typedef std::shared_ptr< ::std_msgs::MultiArrayLayout > MultiArrayLayoutPtr;
+typedef std::shared_ptr< ::std_msgs::MultiArrayLayout const> MultiArrayLayoutConstPtr;
 
 // constants requiring out of line definition
 
@@ -85,32 +85,32 @@ namespace message_traits
 
 template <class ContainerAllocator>
 struct IsFixedSize< ::std_msgs::MultiArrayLayout_<ContainerAllocator> >
-  : FalseType
+  : std::false_type
   { };
 
 template <class ContainerAllocator>
 struct IsFixedSize< ::std_msgs::MultiArrayLayout_<ContainerAllocator> const>
-  : FalseType
+  : std::false_type
   { };
 
 template <class ContainerAllocator>
 struct IsMessage< ::std_msgs::MultiArrayLayout_<ContainerAllocator> >
-  : TrueType
+  : std::true_type
   { };
 
 template <class ContainerAllocator>
 struct IsMessage< ::std_msgs::MultiArrayLayout_<ContainerAllocator> const>
-  : TrueType
+  : std::true_type
   { };
 
 template <class ContainerAllocator>
 struct HasHeader< ::std_msgs::MultiArrayLayout_<ContainerAllocator> >
-  : FalseType
+  : std::false_type
   { };
 
 template <class ContainerAllocator>
 struct HasHeader< ::std_msgs::MultiArrayLayout_<ContainerAllocator> const>
-  : FalseType
+  : std::false_type
   { };
 
 

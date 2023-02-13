@@ -1,5 +1,4 @@
 #include "D4XX_FW_Image.rc"
 #include "SR3XX_FW_Image.rc"
 #include "L51X_FW_Image.rc"
-#include "L53X_FW_Image.rc"
-#include "target.rc"
+

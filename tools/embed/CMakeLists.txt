@@ -8,7 +8,7 @@ project(RealsenseToolsEmbed)
 # Save the command line compile commands in the build output
 set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
 
-add_executable(rs-embed 
+add_executable(rs-embed
    rs-embed.cpp
    ${LZ4_DIR}/lz4.h
    ${LZ4_DIR}/lz4.c

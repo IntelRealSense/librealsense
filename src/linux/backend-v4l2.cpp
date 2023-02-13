@@ -60,7 +60,6 @@
 const size_t MAX_DEV_PARENT_DIR = 10;
 const double DEFAULT_KPI_FRAME_DROPS_PERCENTAGE = 0.05;
 
-#include "../tm2/tm-boot.h"
 //D457 Dev. TODO -shall be refactored into the kernel headers.
 constexpr uint32_t RS_STREAM_CONFIG_0                       = 0x4000;
 constexpr uint32_t RS_CAMERA_CID_BASE                       = (V4L2_CTRL_CLASS_CAMERA | RS_STREAM_CONFIG_0);
@@ -779,13 +778,16 @@ namespace librealsense
             // next several lines permit to use D457 even if a usb device has already "taken" the video0,1,2 (for example)
             // further development is needed to permit use of several mipi devices
             static int  first_video_index = ind;
-            ind = (ind - first_video_index) % 6; // offset from first mipi video node and assume 6 nodes per mipi camera
+            // Use camera_video_nodes as number of /dev/video[%d] for each camera sensor subset
+            const int camera_video_nodes = 6;
+            int cam_id = ind / camera_video_nodes;
+            ind = (ind - first_video_index) % camera_video_nodes; // offset from first mipi video node and assume 6 nodes per mipi camera
             if (ind == 0 || ind == 2 || ind == 4)
-                mi = 0;
+                mi = 0; // video node indicator
             else if (ind == 1 | ind == 3)
-                mi = 3;
+                mi = 3; // metadata node indicator
             else if (ind == 5)
-                mi = 4;
+                mi = 4; // IMU node indicator
             else
             {
                 LOG_WARNING("Unresolved Video4Linux device mi, device is skipped");
@@ -798,13 +800,12 @@ namespace librealsense
             info.mi = mi;
             info.id = dev_name;
             info.device_path = video_path;
-            // unique id for MIPI:
+            // unique id for MIPI: This will assign sensor set for each camera.
             // it cannot be generated as in usb, because the params busnum, devpath and devnum
             // are not available via mipi
-            // TODO - find a way to assign unique id for mipi
-            // maybe using bus_info and card params (see above in this method)
+            // assign unique id for mipi by appending camera id to bus_info (bus_info is same for each mipi port)
             // Note - jetson can use only bus_info, as card is different for each sensor and metadata node.
-            info.unique_id = bus_info; // use bus_info as per camera unique id for mipi
+            info.unique_id = bus_info + "-" + std::to_string(cam_id); // use bus_info as per camera unique id for mipi
             info.conn_spec = usb_specification;
             info.uvc_capabilities = get_dev_capabilities(dev_name).device_caps;
 
@@ -1283,7 +1284,10 @@ namespace librealsense
 
                 struct timeval current_time = { mono_time.tv_sec, mono_time.tv_nsec / 1000 };
                 timersub(&expiration_time, &current_time, &remaining);
-                if (timercmp(&current_time, &expiration_time, <)) {
+                // timercmp fails cpp check, reduce macro function from time.h
+# define timercmp_lt(a, b) \
+  (((a)->tv_sec == (b)->tv_sec) ? ((a)->tv_usec < (b)->tv_usec) : ((a)->tv_sec < (b)->tv_sec))
+                if (timercmp_lt(&current_time, &expiration_time)) {
                     val = select(_max_fd + 1, &fds, nullptr, nullptr, &remaining);
                 }
                 else {
@@ -1664,7 +1668,7 @@ namespace librealsense
                                       static_cast<uint16_t>(size), const_cast<uint8_t *>(data)};
             if(xioctl(_fd, UVCIOC_CTRL_QUERY, &q) < 0)
             {
-                if (errno == EIO || errno == EAGAIN) // TODO: Log?
+                if (errno == EIO || errno == EAGAIN || errno == EBUSY)
                     return false;
 
                 throw linux_backend_exception("set_xu(...). xioctl(UVCIOC_CTRL_QUERY) failed");
@@ -1679,7 +1683,7 @@ namespace librealsense
                                       static_cast<uint16_t>(size), const_cast<uint8_t *>(data)};
             if(xioctl(_fd, UVCIOC_CTRL_QUERY, &q) < 0)
             {
-                if (errno == EIO || errno == EAGAIN || errno == EBUSY) // TODO: Log?
+                if (errno == EIO || errno == EAGAIN || errno == EBUSY)
                     return false;
 
                 throw linux_backend_exception("get_xu(...). xioctl(UVCIOC_CTRL_QUERY) failed");
@@ -2666,12 +2670,6 @@ namespace librealsense
         std::vector<usb_device_info> v4l_backend::query_usb_devices() const
         {
             auto device_infos = usb_enumerator::query_devices_info();
-            // Give the device a chance to restart, if we don't catch
-            // it, the watcher will find it later.
-            if(tm_boot(device_infos)) {
-                std::this_thread::sleep_for(std::chrono::milliseconds(2000));
-                device_infos = usb_enumerator::query_devices_info();
-            }
             return device_infos;
         }
 

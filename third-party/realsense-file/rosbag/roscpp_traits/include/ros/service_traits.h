@@ -28,8 +28,7 @@
 #ifndef ROSCPP_SERVICE_TRAITS_H
 #define ROSCPP_SERVICE_TRAITS_H
 
-#include <boost/type_traits/remove_reference.hpp>
-#include <boost/type_traits/remove_const.hpp>
+#include <type_traits>
 
 namespace rs2rosinternal
 {
@@ -76,7 +75,7 @@ struct DataType
 template<typename M>
 inline const char* md5sum()
 {
-  return MD5Sum<typename boost::remove_reference<typename std::remove_const<M>::type>::type>::value();
+  return MD5Sum<typename std::remove_reference<typename std::remove_const<M>::type>::type>::value();
 }
 
 /**
@@ -85,7 +84,7 @@ inline const char* md5sum()
 template<typename M>
 inline const char* datatype()
 {
-  return DataType<typename boost::remove_reference<typename std::remove_const<M>::type>::type>::value();
+  return DataType<typename std::remove_reference<typename std::remove_const<M>::type>::type>::value();
 }
 
 /**
@@ -94,7 +93,7 @@ inline const char* datatype()
 template<typename M>
 inline const char* md5sum(const M& m)
 {
-  return MD5Sum<typename boost::remove_reference<typename std::remove_const<M>::type>::type>::value(m);
+  return MD5Sum<typename std::remove_reference<typename std::remove_const<M>::type>::type>::value(m);
 }
 
 /**
@@ -103,7 +102,7 @@ inline const char* md5sum(const M& m)
 template<typename M>
 inline const char* datatype(const M& m)
 {
-  return DataType<typename boost::remove_reference<typename std::remove_const<M>::type>::type>::value(m);
+  return DataType<typename std::remove_reference<typename std::remove_const<M>::type>::type>::value(m);
 }
 
 } // namespace service_traits

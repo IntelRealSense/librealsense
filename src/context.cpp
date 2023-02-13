@@ -9,21 +9,16 @@
 #include <array>
 #include <chrono>
 #include "ivcam/sr300.h"
-#include "ds/ds5/ds5-factory.h"
+#include "ds/d400/d400-factory.h"
 #include "l500/l500-factory.h"
 #include "ds/ds-timestamp.h"
 #include "backend.h"
-#include "mock/recorder.h"
 #include <media/ros/ros_reader.h>
 #include "types.h"
 #include "stream.h"
 #include "environment.h"
 #include "context.h"
 #include "fw-update/fw-update-factory.h"
-
-#ifdef WITH_TRACKING
-#include "tm2/tm-info.h"
-#endif
 
 template<unsigned... Is> struct seq{};
 template<unsigned N, unsigned... Is>
@@ -95,11 +90,7 @@ namespace librealsense
         {rs_fourcc('M','J','P','G'), RS2_STREAM_COLOR},
     };
 
-    context::context(backend_type type,
-                     const char* filename,
-                     const char* section,
-                     rs2_recording_mode mode,
-                     std::string min_api_version)
+    context::context( backend_type type )
         : _devices_changed_callback(nullptr, [](rs2_devices_changed_callback*){})
     {
         static bool version_logged=false;
@@ -109,19 +100,7 @@ namespace librealsense
             LOG_DEBUG("Librealsense " << std::string(std::begin(rs2_api_version),std::end(rs2_api_version)));
         }
 
-        switch(type)
-        {
-        case backend_type::standard:
-            _backend = platform::create_backend();
-            break;
-        case backend_type::record:
-            _backend = std::make_shared<platform::record_backend>(platform::create_backend(), filename, section, mode);
-            break;
-        case backend_type::playback:
-            _backend = std::make_shared<platform::playback_backend>(filename, section, min_api_version);
-            break;
-            // Strongly-typed enum. Default is redundant
-        }
+        _backend = platform::create_backend();
 
        environment::get_instance().set_time_service(_backend->create_time_service());
 
@@ -337,8 +316,8 @@ namespace librealsense
 
         if (mask & RS2_PRODUCT_LINE_D400)
         {
-            auto ds5_devices = ds5_info::pick_ds5_devices(ctx, devices);
-            std::copy(begin(ds5_devices), end(ds5_devices), std::back_inserter(list));
+            auto d400_devices = d400_info::pick_d400_devices(ctx, devices);
+            std::copy(begin(d400_devices), end(d400_devices), std::back_inserter(list));
         }
 
         if( mask & RS2_PRODUCT_LINE_L500 )
@@ -353,13 +332,6 @@ namespace librealsense
             std::copy(begin(sr300_devices), end(sr300_devices), std::back_inserter(list));
         }
 
-#ifdef WITH_TRACKING
-        if (mask & RS2_PRODUCT_LINE_T200)
-        {
-            auto tm2_devices = tm2_info::pick_tm2_devices(ctx, devices.usb_devices);
-            std::copy(begin(tm2_devices), end(tm2_devices), std::back_inserter(list));
-        }
-#endif
         // Supported recovery devices
         if (mask & RS2_PRODUCT_LINE_D400 || mask & RS2_PRODUCT_LINE_SR300 || mask & RS2_PRODUCT_LINE_L500) 
         {
@@ -594,12 +566,6 @@ namespace librealsense
         _playback_devices.erase(it);
         on_device_changed({},{}, prev_playback_devices, _playback_devices);
     }
-
-#if WITH_TRACKING
-    void context::unload_tracking_module()
-    {
-    }
-#endif
 
     std::vector<std::vector<platform::uvc_device_info>> group_devices_by_unique_id(const std::vector<platform::uvc_device_info>& devices)
     {
