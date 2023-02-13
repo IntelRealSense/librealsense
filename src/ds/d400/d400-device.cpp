@@ -1108,24 +1108,19 @@ namespace librealsense
     {
         std::regex old_name_reg("D455");
 
-		switch (cap)
-		{
-		    case ds::d400_caps::CAP_IR_FILTER:
-                device_name += "F"; // Adding "F" to end of device name if it has IR filter.
-                break;
+        switch (cap)
+        {
+        case ds::d400_caps::CAP_IR_FILTER:
+            device_name += "F"; // Adding "F" to end of device name if it has IR filter.
+            break;
 
-		    case ds::d400_caps::CAP_IP65:
-                device_name = std::regex_replace(device_name, old_name_reg, "D456"); // Change device name from D455 to D456.
-                break;
+        case ds::d400_caps::CAP_IP65:
+            device_name = std::regex_replace(device_name, old_name_reg, "D456"); // Change device name from D455 to D456.
+            break;
 
-            default:
-                auto wrong_cap = ds::d400_capabilities_names.find(cap);
-
-                if (wrong_cap == ds::d400_capabilities_names.end())
-                    throw invalid_value_exception("Not found capabilty in map of cabability--gvd version.");
-                else
-                    throw invalid_value_exception("The device name " + wrong_cap->second + " can't be updated.");
-                break;
+        default:
+            throw invalid_value_exception("capability '" + ds::d400_capabilities_names.at(cap) + "' is not supported for device name update");
+            break;
         }
     }
 
