@@ -1106,8 +1106,6 @@ namespace librealsense
     // Check if need change camera name due to number modifications on one device PID.
     void update_device_name(std::string& device_name, const ds::d400_caps cap)
     {
-        std::regex old_name_reg("D455");
-
         switch (cap)
         {
         case ds::d400_caps::CAP_IR_FILTER:
@@ -1115,7 +1113,7 @@ namespace librealsense
             break;
 
         case ds::d400_caps::CAP_IP65:
-            device_name = std::regex_replace(device_name, old_name_reg, "D456"); // Change device name from D455 to D456.
+            device_name = std::regex_replace(device_name, std::regex("D455"), "D456"); // Change device name from D455 to D456.
             break;
 
         default:
