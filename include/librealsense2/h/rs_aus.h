@@ -99,7 +99,7 @@ extern "C" {
     /**
     * Get aus information as raw_data_buffer
     * \param[out] error   if non-null, receives any error that occurs during this call, otherwise, errors are ignored
-    * \return   rs2_raw_data_buffer * with aus information
+    * \return   rs2_raw_data_buffer * with aus information which should be released by rs2_delete_raw_data
     */
     const rs2_raw_data_buffer * rs2_aus_receive_json_data(rs2_error ** error);
 
