@@ -256,7 +256,8 @@ namespace librealsense
             {
                 j[pair.first] = std::to_string(pair.second->get());
             }
-            return json::to_ubjson(j);
+            auto str = j.dump(4);
+            return std::vector<uint8_t>(str.begin(), str.end());
         }
 
     private:
