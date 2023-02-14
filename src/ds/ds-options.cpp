@@ -86,7 +86,8 @@ namespace librealsense
         if (0 == temperature_data.*is_valid_field)
             LOG_ERROR(_ep.get_option_name(_option) << " value is not valid!");
 
-        return temperature_data.*field;
+        float temperature_val = temperature_data.*field;
+        return temperature_val;
     }
 
     option_range asic_and_projector_temperature_options::get_range() const
@@ -500,7 +501,7 @@ namespace librealsense
 
     void alternating_emitter_option::set(float value)
     {
-        std::vector<uint8_t> pattern = { 0 };
+        std::vector<uint8_t> pattern;
 
         if (static_cast<int>(value))
         {
