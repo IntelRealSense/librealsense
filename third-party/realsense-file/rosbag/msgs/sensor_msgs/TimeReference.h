@@ -45,7 +45,7 @@ struct TimeReference_
    typedef rs2rosinternal::Time _time_ref_type;
   _time_ref_type time_ref;
 
-   typedef std::basic_string<char, std::char_traits<char>, typename ContainerAllocator::template rebind<char>::other >  _source_type;
+   typedef std::basic_string<char, std::char_traits<char>, typename std::allocator_traits< ContainerAllocator >::template rebind_alloc< char > >  _source_type;
   _source_type source;
 
 
@@ -91,32 +91,32 @@ namespace message_traits
 
 template <class ContainerAllocator>
 struct IsFixedSize< ::sensor_msgs::TimeReference_<ContainerAllocator> >
-  : FalseType
+  : std::false_type
   { };
 
 template <class ContainerAllocator>
 struct IsFixedSize< ::sensor_msgs::TimeReference_<ContainerAllocator> const>
-  : FalseType
+  : std::false_type
   { };
 
 template <class ContainerAllocator>
 struct IsMessage< ::sensor_msgs::TimeReference_<ContainerAllocator> >
-  : TrueType
+  : std::true_type
   { };
 
 template <class ContainerAllocator>
 struct IsMessage< ::sensor_msgs::TimeReference_<ContainerAllocator> const>
-  : TrueType
+  : std::true_type
   { };
 
 template <class ContainerAllocator>
 struct HasHeader< ::sensor_msgs::TimeReference_<ContainerAllocator> >
-  : TrueType
+  : std::true_type
   { };
 
 template <class ContainerAllocator>
 struct HasHeader< ::sensor_msgs::TimeReference_<ContainerAllocator> const>
-  : TrueType
+  : std::true_type
   { };
 
 
@@ -219,7 +219,7 @@ struct Printer< ::sensor_msgs::TimeReference_<ContainerAllocator> >
     s << indent << "time_ref: ";
     Printer<rs2rosinternal::Time>::stream(s, indent + "  ", v.time_ref);
     s << indent << "source: ";
-    Printer<std::basic_string<char, std::char_traits<char>, typename ContainerAllocator::template rebind<char>::other > >::stream(s, indent + "  ", v.source);
+    Printer<std::basic_string<char, std::char_traits<char>, typename std::allocator_traits< ContainerAllocator >::template rebind_alloc< char > > >::stream(s, indent + "  ", v.source);
   }
 };
 

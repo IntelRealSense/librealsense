@@ -18,16 +18,17 @@ namespace librealsense
             wmf_hid_sensor(const hid_device_info& device_info, CComPtr<ISensor> pISensor) :
                 _hid_device_info(device_info), _pISensor(pISensor) 
             {
-                BSTR fName{};
-
-                auto res = pISensor->GetFriendlyName(&fName);
-                if (FAILED(res))
+                BSTR fName;
+                auto res = pISensor->GetFriendlyName( &fName );
+                if( FAILED( res ) )
                 {
-                    fName = L"Unidentified HID Sensor";
+                    _name = CW2A( L"Unidentified HID Sensor" );
                 }
-
-                _name = CW2A(fName);
-                SysFreeString(fName);
+                else
+                {
+                    _name = CW2A( fName );
+                    SysFreeString( fName );
+                }
             };
 
             const std::string& get_sensor_name() const { return _name; }

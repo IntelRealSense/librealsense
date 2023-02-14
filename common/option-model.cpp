@@ -510,6 +510,8 @@ bool option_model::draw_checkbox( notifications_model & model,
                                                << ( bool_value ? "ON" : "OFF" ) << ")" );
 
         set_option( opt, bool_value ? 1.f : 0.f, error_message );
+        if (invalidate_flag)
+            *invalidate_flag = true;
     }
     if( ImGui::IsItemHovered() && description )
     {
@@ -528,7 +530,8 @@ bool option_model::slider_selected( rs2_option opt,
     if( option_was_set )
     {
         have_unset_value = false;
-        *invalidate_flag = true;
+        if (invalidate_flag)
+            *invalidate_flag = true;
         model.add_log( rsutils::string::from() << "Setting " << opt << " to " << value );
         res = true;
     }
@@ -556,7 +559,8 @@ bool option_model::slider_unselected( rs2_option opt,
             if( set_ok )
             {
                 model.add_log( rsutils::string::from() << "Setting " << opt << " to " << unset_value );
-                *invalidate_flag = true;
+                if (invalidate_flag)
+                    *invalidate_flag = true;
                 have_unset_value = false;
                 res = true;
             }

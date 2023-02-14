@@ -47,7 +47,7 @@ struct stream_info_
 
 
 
-   typedef std::basic_string<char, std::char_traits<char>, typename ContainerAllocator::template rebind<char>::other >  _stream_type_type;
+   typedef std::basic_string<char, std::char_traits<char>, typename std::allocator_traits< ContainerAllocator >::template rebind_alloc< char > >  _stream_type_type;
   _stream_type_type stream_type;
 
    typedef uint32_t _fps_type;
@@ -65,7 +65,7 @@ struct stream_info_
    typedef uint32_t _height_type;
   _height_type height;
 
-   typedef std::basic_string<char, std::char_traits<char>, typename ContainerAllocator::template rebind<char>::other >  _encoding_type;
+   typedef std::basic_string<char, std::char_traits<char>, typename std::allocator_traits< ContainerAllocator >::template rebind_alloc< char > >  _encoding_type;
   _encoding_type encoding;
 
 
@@ -111,32 +111,32 @@ namespace message_traits
 
 template <class ContainerAllocator>
 struct IsFixedSize< ::realsense_legacy_msgs::stream_info_<ContainerAllocator> >
-  : FalseType
+  : std::false_type
   { };
 
 template <class ContainerAllocator>
 struct IsFixedSize< ::realsense_legacy_msgs::stream_info_<ContainerAllocator> const>
-  : FalseType
+  : std::false_type
   { };
 
 template <class ContainerAllocator>
 struct IsMessage< ::realsense_legacy_msgs::stream_info_<ContainerAllocator> >
-  : TrueType
+  : std::true_type
   { };
 
 template <class ContainerAllocator>
 struct IsMessage< ::realsense_legacy_msgs::stream_info_<ContainerAllocator> const>
-  : TrueType
+  : std::true_type
   { };
 
 template <class ContainerAllocator>
 struct HasHeader< ::realsense_legacy_msgs::stream_info_<ContainerAllocator> >
-  : FalseType
+  : std::false_type
   { };
 
 template <class ContainerAllocator>
 struct HasHeader< ::realsense_legacy_msgs::stream_info_<ContainerAllocator> const>
-  : FalseType
+  : std::false_type
   { };
 
 
@@ -404,7 +404,7 @@ struct Printer< ::realsense_legacy_msgs::stream_info_<ContainerAllocator> >
   template<typename Stream> static void stream(Stream& s, const std::string& indent, const ::realsense_legacy_msgs::stream_info_<ContainerAllocator>& v)
   {
     s << indent << "stream_type: ";
-    Printer<std::basic_string<char, std::char_traits<char>, typename ContainerAllocator::template rebind<char>::other > >::stream(s, indent + "  ", v.stream_type);
+    Printer<std::basic_string<char, std::char_traits<char>, typename std::allocator_traits< ContainerAllocator >::template rebind_alloc< char > > >::stream(s, indent + "  ", v.stream_type);
     s << indent << "fps: ";
     Printer<uint32_t>::stream(s, indent + "  ", v.fps);
     s << indent << "camera_info: ";
@@ -418,7 +418,7 @@ struct Printer< ::realsense_legacy_msgs::stream_info_<ContainerAllocator> >
     s << indent << "height: ";
     Printer<uint32_t>::stream(s, indent + "  ", v.height);
     s << indent << "encoding: ";
-    Printer<std::basic_string<char, std::char_traits<char>, typename ContainerAllocator::template rebind<char>::other > >::stream(s, indent + "  ", v.encoding);
+    Printer<std::basic_string<char, std::char_traits<char>, typename std::allocator_traits< ContainerAllocator >::template rebind_alloc< char > > >::stream(s, indent + "  ", v.encoding);
   }
 };
 

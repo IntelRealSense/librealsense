@@ -42,7 +42,7 @@ struct version
     {
     }
 
-    bool is_valid() const { return number; }
+    bool is_valid() const { return( number != 0 ); }
     operator bool() const { return is_valid(); }
 
     void clear() { number = 0; }

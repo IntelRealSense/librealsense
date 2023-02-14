@@ -955,7 +955,7 @@ namespace rs2
     {
     public:
         explicit device_list(std::shared_ptr<rs2_device_list> list)
-            : _list(move(list)) {}
+            : _list(std::move(list)) {}
 
         device_list()
             : _list(nullptr) {}
@@ -977,7 +977,7 @@ namespace rs2
 
         device_list& operator=(std::shared_ptr<rs2_device_list> list)
         {
-            _list = move(list);
+            _list = std::move(list);
             return *this;
         }
 
@@ -1057,140 +1057,6 @@ namespace rs2
 
     private:
         std::shared_ptr<rs2_device_list> _list;
-    };
-
-    /**
-     * The tm2 class is an interface for T2XX devices, such as T265.
-     *
-     * For T265, it provides RS2_STREAM_FISHEYE (2), RS2_STREAM_GYRO, RS2_STREAM_ACCEL, and RS2_STREAM_POSE streams,
-     * and contains the following sensors:
-     *
-     * - pose_sensor: map and relocalization functions.
-     * - wheel_odometer: input for odometry data.
-     */
-    class tm2 : public calibrated_device // TODO: add to wrappers [Python done]
-    {
-    public:
-        tm2(device d)
-            : calibrated_device(d)
-        {
-            rs2_error* e = nullptr;
-            if (rs2_is_device_extendable_to(_dev.get(), RS2_EXTENSION_TM2, &e) == 0 && !e)
-            {
-                _dev.reset();
-            }
-            error::handle(e);
-        }
-
-        /**
-        * Enter the given device into loopback operation mode that uses the given file as input for raw data
-        * \param[in]  from_file  Path to bag file with raw data for loopback
-        */
-        void enable_loopback(const std::string& from_file)
-        {
-            rs2_error* e = nullptr;
-            rs2_loopback_enable(_dev.get(), from_file.c_str(), &e);
-            error::handle(e);
-        }
-
-        /**
-        * Restores the given device into normal operation mode
-        */
-        void disable_loopback()
-        {
-            rs2_error* e = nullptr;
-            rs2_loopback_disable(_dev.get(), &e);
-            error::handle(e);
-        }
-
-        /**
-        * Checks if the device is in loopback mode or not
-        * \return true if the device is in loopback operation mode
-        */
-        bool is_loopback_enabled() const
-        {
-            rs2_error* e = nullptr;
-            int is_enabled = rs2_loopback_is_enabled(_dev.get(), &e);
-            error::handle(e);
-            return is_enabled != 0;
-        }
-
-        /**
-        * Connects to a given tm2 controller
-        * \param[in]  mac_addr   The MAC address of the desired controller
-        */
-        void connect_controller(const std::array<uint8_t, 6>& mac_addr)
-        {
-            rs2_error* e = nullptr;
-            rs2_connect_tm2_controller(_dev.get(), mac_addr.data(), &e);
-            error::handle(e);
-        }
-
-        /**
-        * Disconnects a given tm2 controller
-        * \param[in]  id         The ID of the desired controller
-        */
-        void disconnect_controller(int id)
-        {
-            rs2_error* e = nullptr;
-            rs2_disconnect_tm2_controller(_dev.get(), id, &e);
-            error::handle(e);
-        }
-
-        /**
-        * Set tm2 camera intrinsics
-        * \param[in] fisheye_senor_id The ID of the fisheye sensor
-        * \param[in] intrinsics       value to be written to the device
-        */
-        void set_intrinsics(int fisheye_sensor_id, const rs2_intrinsics& intrinsics)
-        {
-            rs2_error* e = nullptr;
-            auto fisheye_sensor = get_sensor_profile(RS2_STREAM_FISHEYE, fisheye_sensor_id);
-            rs2_set_intrinsics(fisheye_sensor.first.get().get(), fisheye_sensor.second.get(), &intrinsics, &e);
-            error::handle(e);
-        }
-
-        /**
-        * Set tm2 camera extrinsics
-        * \param[in] from_stream     only support RS2_STREAM_FISHEYE
-        * \param[in] from_id         only support left fisheye = 1
-        * \param[in] to_stream       only support RS2_STREAM_FISHEYE
-        * \param[in] to_id           only support right fisheye = 2
-        * \param[in] extrinsics      extrinsics value to be written to the device
-        */
-        void set_extrinsics(rs2_stream from_stream, int from_id, rs2_stream to_stream, int to_id, rs2_extrinsics& extrinsics)
-        {
-            rs2_error* e = nullptr;
-            auto from_sensor = get_sensor_profile(from_stream, from_id);
-            auto to_sensor   = get_sensor_profile(to_stream, to_id);
-            rs2_set_extrinsics(from_sensor.first.get().get(), from_sensor.second.get(), to_sensor.first.get().get(), to_sensor.second.get(), &extrinsics, &e);
-            error::handle(e);
-        }
-
-        /** 
-        * Set tm2 motion device intrinsics
-        * \param[in] stream_type       stream type of the motion device
-        * \param[in] motion_intriniscs intrinsics value to be written to the device
-        */
-        void set_motion_device_intrinsics(rs2_stream stream_type, const rs2_motion_device_intrinsic& motion_intriniscs)
-        {
-            rs2_error* e = nullptr;
-            auto motion_sensor = get_sensor_profile(stream_type, 0);
-            rs2_set_motion_device_intrinsics(motion_sensor.first.get().get(), motion_sensor.second.get(), &motion_intriniscs, &e);
-            error::handle(e);
-        }
-
-    private:
-
-        std::pair<sensor, stream_profile> get_sensor_profile(rs2_stream stream_type, int stream_index) {
-            for (auto s : query_sensors()) {
-                for (auto p : s.get_stream_profiles()) {
-                    if (p.stream_type() == stream_type && p.stream_index() == stream_index)
-                        return std::pair<sensor, stream_profile>(s, p);
-                }
-            }
-            return std::pair<sensor, stream_profile>();
-         }
     };
 }
 #endif // LIBREALSENSE_RS2_DEVICE_HPP

@@ -261,24 +261,6 @@ namespace librealsense
             return (a.file_path == b.file_path);
         }
 
-        struct tm2_device_info
-        {
-            void* device_ptr;
-
-            operator std::string() const
-            {
-                std::ostringstream oss;
-                oss << device_ptr;
-                return oss.str();
-            }
-        };
-
-        inline bool operator==(const tm2_device_info& a,
-            const tm2_device_info& b)
-        {
-            return (a.device_ptr == b.device_ptr);
-        }
-
         struct hid_sensor
         {
             std::string name;

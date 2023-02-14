@@ -39,7 +39,7 @@ struct PointField_
 
 
 
-   typedef std::basic_string<char, std::char_traits<char>, typename ContainerAllocator::template rebind<char>::other >  _name_type;
+   typedef std::basic_string<char, std::char_traits<char>, typename std::allocator_traits< ContainerAllocator >::template rebind_alloc< char > >  _name_type;
   _name_type name;
 
    typedef uint32_t _offset_type;
@@ -62,15 +62,15 @@ struct PointField_
      enum { FLOAT64 = 8u };
  
 
-  typedef boost::shared_ptr< ::sensor_msgs::PointField_<ContainerAllocator> > Ptr;
-  typedef boost::shared_ptr< ::sensor_msgs::PointField_<ContainerAllocator> const> ConstPtr;
+  typedef std::shared_ptr< ::sensor_msgs::PointField_<ContainerAllocator> > Ptr;
+  typedef std::shared_ptr< ::sensor_msgs::PointField_<ContainerAllocator> const> ConstPtr;
 
 }; // struct PointField_
 
 typedef ::sensor_msgs::PointField_<std::allocator<void> > PointField;
 
-typedef boost::shared_ptr< ::sensor_msgs::PointField > PointFieldPtr;
-typedef boost::shared_ptr< ::sensor_msgs::PointField const> PointFieldConstPtr;
+typedef std::shared_ptr< ::sensor_msgs::PointField > PointFieldPtr;
+typedef std::shared_ptr< ::sensor_msgs::PointField const> PointFieldConstPtr;
 
 // constants requiring out of line definition
 
@@ -118,32 +118,32 @@ namespace message_traits
 
 template <class ContainerAllocator>
 struct IsFixedSize< ::sensor_msgs::PointField_<ContainerAllocator> >
-  : FalseType
+  : std::false_type
   { };
 
 template <class ContainerAllocator>
 struct IsFixedSize< ::sensor_msgs::PointField_<ContainerAllocator> const>
-  : FalseType
+  : std::false_type
   { };
 
 template <class ContainerAllocator>
 struct IsMessage< ::sensor_msgs::PointField_<ContainerAllocator> >
-  : TrueType
+  : std::true_type
   { };
 
 template <class ContainerAllocator>
 struct IsMessage< ::sensor_msgs::PointField_<ContainerAllocator> const>
-  : TrueType
+  : std::true_type
   { };
 
 template <class ContainerAllocator>
 struct HasHeader< ::sensor_msgs::PointField_<ContainerAllocator> >
-  : FalseType
+  : std::false_type
   { };
 
 template <class ContainerAllocator>
 struct HasHeader< ::sensor_msgs::PointField_<ContainerAllocator> const>
-  : FalseType
+  : std::false_type
   { };
 
 
@@ -232,7 +232,7 @@ struct Printer< ::sensor_msgs::PointField_<ContainerAllocator> >
   template<typename Stream> static void stream(Stream& s, const std::string& indent, const ::sensor_msgs::PointField_<ContainerAllocator>& v)
   {
     s << indent << "name: ";
-    Printer<std::basic_string<char, std::char_traits<char>, typename ContainerAllocator::template rebind<char>::other > >::stream(s, indent + "  ", v.name);
+    Printer<std::basic_string<char, std::char_traits<char>, typename std::allocator_traits< ContainerAllocator >::template rebind_alloc< char > > >::stream(s, indent + "  ", v.name);
     s << indent << "offset: ";
     Printer<uint32_t>::stream(s, indent + "  ", v.offset);
     s << indent << "datatype: ";

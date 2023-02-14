@@ -3,13 +3,29 @@
 
 #include "core/advanced_mode.h"
 #include "json_loader.hpp"
-#include "ds/ds5/ds5-color.h"
+#include "ds/d400/d400-color.h"
 
 #include <rsutils/string/from.h>
 
 
 namespace librealsense
 {
+    void ds_advanced_mode_base::register_to_visual_preset_option()
+    {
+        _preset_opt = std::make_shared<advanced_mode_preset_option>(*this,
+            _depth_sensor,
+            option_range{ 0,
+            _depth_sensor.get_preset_max_value(),
+            1,
+            RS2_RS400_VISUAL_PRESET_CUSTOM });
+        _depth_sensor.register_option(RS2_OPTION_VISUAL_PRESET, _preset_opt);
+    }
+
+    void ds_advanced_mode_base::unregister_from_visual_preset_option()
+    {
+        _depth_sensor.unregister_option(RS2_OPTION_VISUAL_PRESET);
+    }
+
     ds_advanced_mode_base::ds_advanced_mode_base(std::shared_ptr<hw_monitor> hwm,
         synthetic_sensor& depth_sensor)
         : _hw_monitor(hwm),
@@ -23,23 +39,19 @@ namespace librealsense
         };
 
         // "Remove IR Pattern" visual preset is available only for D400, D410, D415, D460, D465
-        _preset_opt = std::make_shared<advanced_mode_preset_option>(*this,
-            _depth_sensor,
-            option_range{ 0,
-            depth_sensor.get_preset_max_value(),
-            1,
-            RS2_RS400_VISUAL_PRESET_CUSTOM });
-        _depth_sensor.register_option(RS2_OPTION_VISUAL_PRESET, _preset_opt);
+        if (is_enabled())
+            register_to_visual_preset_option();
+
         _color_sensor = [this]() {
             auto& dev = _depth_sensor.get_device();
             for (size_t i = 0; i < dev.get_sensors_count(); ++i)
             {
-                if (auto s = dynamic_cast<const ds5_color_sensor*>(&(dev.get_sensor(i))))
+                if (auto s = dynamic_cast<const d400_color_sensor*>(&(dev.get_sensor(i))))
                 {
-                    return const_cast<ds5_color_sensor*>(s);
+                    return const_cast<d400_color_sensor*>(s);
                 }
             }
-            return (ds5_color_sensor*)nullptr;
+            return (d400_color_sensor*)nullptr;
         };
         
         _amplitude_factor_support = [this]() {
@@ -61,6 +73,14 @@ namespace librealsense
     {
         send_receive(encode_command(ds::fw_cmd::EN_ADV, enable));
         send_receive(encode_command(ds::fw_cmd::HWRST));
+
+        // register / unregister visual preset option
+        if (is_enabled())
+        {
+            register_to_visual_preset_option();
+        }
+        else
+            unregister_from_visual_preset_option();
     }
 
     void ds_advanced_mode_base::apply_preset(const std::vector<platform::stream_profile>& configuration,

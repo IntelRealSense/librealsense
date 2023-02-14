@@ -46,6 +46,35 @@ void librealsense::float_option::set(float value)
     _value = value;
 }
 
+librealsense::uvc_pu_option::uvc_pu_option(uvc_sensor& ep, rs2_option id)
+    : uvc_pu_option(ep, id, std::map<float, std::string>())
+{    
+}
+
+librealsense::uvc_pu_option::uvc_pu_option(uvc_sensor& ep, rs2_option id, const std::map<float, std::string>& description_per_value)
+    : _ep(ep), _id(id), _description_per_value(description_per_value)
+{
+    _range = [this]()
+    {
+        auto uvc_range = _ep.invoke_powered(
+            [this](platform::uvc_device& dev)
+            {
+                return dev.get_pu_range(_id);
+            });
+
+        if (uvc_range.min.size() < sizeof(int32_t)) return option_range{ 0,0,1,0 };
+
+        auto min = *(reinterpret_cast<int32_t*>(uvc_range.min.data()));
+        auto max = *(reinterpret_cast<int32_t*>(uvc_range.max.data()));
+        auto step = *(reinterpret_cast<int32_t*>(uvc_range.step.data()));
+        auto def = *(reinterpret_cast<int32_t*>(uvc_range.def.data()));
+        return option_range{ static_cast<float>(min),
+                            static_cast<float>(max),
+                            static_cast<float>(step),
+                            static_cast<float>(def) };
+    };
+}
+
 void librealsense::uvc_pu_option::set(float value)
 {
     _ep.invoke_powered(
@@ -76,22 +105,7 @@ float librealsense::uvc_pu_option::query() const
 
 librealsense::option_range librealsense::uvc_pu_option::get_range() const
 {
-    auto uvc_range = _ep.invoke_powered(
-        [this](platform::uvc_device& dev)
-        {
-            return dev.get_pu_range(_id);
-        });
-
-    if (uvc_range.min.size() < sizeof(int32_t)) return option_range{0,0,1,0};
-
-    auto min = *(reinterpret_cast<int32_t*>(uvc_range.min.data()));
-    auto max = *(reinterpret_cast<int32_t*>(uvc_range.max.data()));
-    auto step = *(reinterpret_cast<int32_t*>(uvc_range.step.data()));
-    auto def = *(reinterpret_cast<int32_t*>(uvc_range.def.data()));
-    return option_range{static_cast<float>(min),
-                        static_cast<float>(max),
-                        static_cast<float>(step),
-                        static_cast<float>(def)};
+    return *_range;
 }
 
 const char* librealsense::uvc_pu_option::get_description() const

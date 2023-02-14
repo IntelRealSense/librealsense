@@ -215,7 +215,7 @@ void record_sensor::unregister_before_start_callback(int token)
 }
 
 template <typename T>
-void librealsense::record_sensor::record_snapshot(rs2_extension extension_type, const recordable<T>& ext)
+void librealsense::record_sensor::record_snapshot(rs2_extension extension_type, const librealsense::recordable<T>& ext)
 {
     std::shared_ptr<T> snapshot;
     ext.create_snapshot(snapshot);

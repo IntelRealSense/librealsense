@@ -42,7 +42,6 @@ macro(os_set_flags)
     
     if(APPLE)
         set(FORCE_RSUSB_BACKEND ON)
-        set(BUILD_WITH_TM2 ON)
     endif()
     
     if(FORCE_RSUSB_BACKEND)
@@ -50,8 +49,6 @@ macro(os_set_flags)
     else()
         set(BACKEND RS2_USE_V4L2_BACKEND)
     endif()
-
-    add_definitions(-DSQLITE_HAVE_ISNAN)
 endmacro()
 
 macro(os_target_config)

@@ -33,7 +33,7 @@ struct String_
 
 
 
-   typedef std::basic_string<char, std::char_traits<char>, typename ContainerAllocator::template rebind<char>::other >  _data_type;
+   typedef std::basic_string<char, std::char_traits<char>, typename std::allocator_traits< ContainerAllocator >::template rebind_alloc< char > >  _data_type;
   _data_type data;
 
 
@@ -79,32 +79,32 @@ namespace message_traits
 
 template <class ContainerAllocator>
 struct IsFixedSize< ::std_msgs::String_<ContainerAllocator> >
-  : FalseType
+  : std::false_type
   { };
 
 template <class ContainerAllocator>
 struct IsFixedSize< ::std_msgs::String_<ContainerAllocator> const>
-  : FalseType
+  : std::false_type
   { };
 
 template <class ContainerAllocator>
 struct IsMessage< ::std_msgs::String_<ContainerAllocator> >
-  : TrueType
+  : std::true_type
   { };
 
 template <class ContainerAllocator>
 struct IsMessage< ::std_msgs::String_<ContainerAllocator> const>
-  : TrueType
+  : std::true_type
   { };
 
 template <class ContainerAllocator>
 struct HasHeader< ::std_msgs::String_<ContainerAllocator> >
-  : FalseType
+  : std::false_type
   { };
 
 template <class ContainerAllocator>
 struct HasHeader< ::std_msgs::String_<ContainerAllocator> const>
-  : FalseType
+  : std::false_type
   { };
 
 
@@ -176,7 +176,7 @@ struct Printer< ::std_msgs::String_<ContainerAllocator> >
   template<typename Stream> static void stream(Stream& s, const std::string& indent, const ::std_msgs::String_<ContainerAllocator>& v)
   {
     s << indent << "data: ";
-    Printer<std::basic_string<char, std::char_traits<char>, typename ContainerAllocator::template rebind<char>::other > >::stream(s, indent + "  ", v.data);
+    Printer<std::basic_string<char, std::char_traits<char>, typename std::allocator_traits< ContainerAllocator >::template rebind_alloc< char > > >::stream(s, indent + "  ", v.data);
   }
 };
 
