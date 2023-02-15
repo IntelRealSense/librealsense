@@ -82,18 +82,20 @@ endfunction()
 # Trigger the build
 get_pybind11()
 
-# This function override "pybind11_add_module" function,  arguments is same as "pybind11_add_module" arguments
+# This function overrides "pybind11_add_module" function,  arguments is same as "pybind11_add_module" arguments
 # pybind11_add_module(<name> SHARED [file, file2, ...] )
 # Must be declared after pybind11 configuration above
-# "_pybind11_add_module" is calling the origin pybind11 function
-function( pybind11_add_module _arg_project_name _arg_library_type ...)
+function( pybind11_add_module project_name library_type ...)
 
-    message( STATUS "adding python module --> ${_arg_project_name}" )
+    # message( STATUS "adding python module --> ${project_name}" 
+    
+    # "_pybind11_add_module" is calling the origin pybind11 function    
     _pybind11_add_module( ${ARGV})
 
     # Force Pybind11 not to share pyrealsense2 resources with other pybind modules.
     # With this definition we force the ABI version to be unique and not risk crashes on different modules.
     # (workaround for RS5-10582; see also https://github.com/pybind/pybind11/issues/2898)
-    target_compile_definitions( ${_arg_project_name} PRIVATE -DPYBIND11_COMPILER_TYPE=\"_${_arg_project_name}_abi\" )
+    # NOTE: this workaround seems to be needed for debug compilations only
+    target_compile_definitions( ${project_name} PRIVATE -DPYBIND11_COMPILER_TYPE=\"_${project_name}_abi\" )
     
 endfunction()
