@@ -8,10 +8,6 @@ if (POLICY CMP0054)
     cmake_policy(SET CMP0054 NEW)
 endif()
 
-if (POLICY CMP0072 AND UNIX AND NOT APPLE)
-	cmake_policy(SET CMP0072 NEW)
-endif()
-
 set(GLFW_VERSION_MAJOR "3")
 set(GLFW_VERSION_MINOR "3")
 set(GLFW_VERSION_PATCH "0")
