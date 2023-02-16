@@ -115,6 +115,7 @@ target_sources(${LRS_TARGET}
         "${CMAKE_CURRENT_LIST_DIR}/image-avx.h"
         "${CMAKE_CURRENT_LIST_DIR}/metadata.h"
         "${CMAKE_CURRENT_LIST_DIR}/metadata-parser.h"
+        "${CMAKE_CURRENT_LIST_DIR}/occupancy-sensor.h"
         "${CMAKE_CURRENT_LIST_DIR}/option.h"
         "${CMAKE_CURRENT_LIST_DIR}/safety-sensor.h"
         "${CMAKE_CURRENT_LIST_DIR}/sensor.h"

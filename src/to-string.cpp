@@ -46,6 +46,7 @@ const char * get_string( rs2_stream value )
     CASE( POSE )
     CASE( CONFIDENCE )
     CASE( SAFETY )
+    CASE( OCCUPANCY )
     default:
         assert( ! is_valid( value ) );
         return UNKNOWN_VALUE;

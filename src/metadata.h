@@ -49,6 +49,7 @@ namespace librealsense
         META_DATA_HID_IMU_REPORT_ID             = 0x80001001,
         META_DATA_HID_CUSTOM_TEMP_REPORT_ID     = 0x80001002,
         META_DATA_INTEL_SAFETY_ID               = 0x80000014,
+        META_DATA_INTEL_OCCUPANCY_ID            = 0x80000016,
         META_DATA_MIPI_INTEL_DEPTH_ID           = 0x80010000,
         //META_DATA_MIPI_INTEL_RGB_ID             = 0x80010001, // D457 - to be restored after the FW bug is resolved
     };
@@ -260,6 +261,24 @@ namespace librealsense
         mb_fusa_event_attribute                 = (1u << 13),
         mb_fusa_action_attribute                = (1u << 14),
         crc32_attribute                         = (1u << 31)
+    };
+
+    /**\brief md_occupancy_info_attributes - bit mask to find active attributes,
+     *   md_occupancy_info struct */
+    enum class md_occupancy_info_attributes : uint32_t
+    {
+        frame_counter_attribute = (1u << 0),
+        depth_frame_counter_attribute = (1u << 1),
+        frame_timestamp_attribute = (1u << 2),
+        floor_plane_equation_a_attribute = (1u << 3),
+        floor_plane_equation_b_attribute = (1u << 4),
+        floor_plane_equation_c_attribute = (1u << 5),
+        floor_plane_equation_d_attribute = (1u << 6),
+        safety_preset_id_attribute = (1u << 7),
+        grid_rows_attribute = (1u << 8),
+        grid_columns_attribute = (1u << 9),
+        cell_size_attribute = (1u << 10),
+        payload_crc32_attribute = (1u << 31)
     };
 
     /**\brief md_hid_imu_attributes - bit mask to designate the enabled attributed,
@@ -687,6 +706,29 @@ namespace librealsense
     };
     REGISTER_MD_TYPE(md_safety_info, md_type::META_DATA_INTEL_SAFETY_ID)
 
+    /**\brief md_occupancy_info - Occupancy Frame info */
+    struct md_occupancy_info
+    {
+        md_header   header;
+        uint32_t    version;
+        uint32_t    flags;
+        uint32_t    frame_counter;
+        uint32_t    depth_frame_counter;
+        uint32_t    frame_timestamp;
+        uint32_t    floor_plane_equation_a;
+        uint32_t    floor_plane_equation_b;
+        uint32_t    floor_plane_equation_c;
+        uint32_t    floor_plane_equation_d;
+        uint8_t     safety_preset_id;
+        uint16_t    grid_rows;
+        uint16_t    grid_columns;
+        uint8_t     cell_size;
+        uint8_t     reserved[32];
+        uint16_t    padding;
+        uint32_t    payload_crc32;
+    };
+    REGISTER_MD_TYPE(md_occupancy_info, md_type::META_DATA_INTEL_OCCUPANCY_ID)
+
     struct md_intrinsic_pinhole_cam_model
     {
         float2      focal_length;
@@ -804,6 +846,11 @@ namespace librealsense
         md_safety_info          intel_safety_info;
     };
 
+    struct md_occupancy_mode
+    {
+        md_occupancy_info       intel_occupancy_info;
+    };
+
     union md_depth_mode
     {
         md_depth_y_normal_mode  depth_y_mode;
@@ -831,6 +878,7 @@ namespace librealsense
         md_fisheye_mode         fisheye_mode;
         md_rgb_mode             rgb_mode;
         md_safety_mode          safety_mode;
+        md_occupancy_mode       occupancy_mode;
         md_sr300_depth          sr300_depth_mode;
         md_sr300_rgb            sr300_rgb_mode;
     };
