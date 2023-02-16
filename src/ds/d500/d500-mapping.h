@@ -27,6 +27,9 @@ namespace librealsense
         void register_metadata(std::shared_ptr<uvc_sensor> mapping_ep);
         void register_processing_blocks(std::shared_ptr<d500_mapping_sensor> mapping_ep);
         
+        void register_occupancy_metadata(std::shared_ptr<uvc_sensor> raw_mapping_ep);
+        void register_point_cloud_metadata(std::shared_ptr<uvc_sensor> raw_mapping_ep);
+
     protected:
         std::shared_ptr<stream_interface> _occupancy_stream;
         std::shared_ptr<stream_interface> _point_cloud_stream;

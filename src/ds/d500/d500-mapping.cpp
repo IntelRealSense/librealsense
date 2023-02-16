@@ -102,57 +102,111 @@ namespace librealsense
         raw_mapping_ep->register_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP, 
             make_uvc_header_parser(&platform::uvc_header::timestamp));
 
-        // attributes of md_occupancy_mode
-        auto md_prop_offset = offsetof(metadata_raw, mode) +
-            offsetof(md_occupancy_mode, intel_occupancy_info);
+        register_occupancy_metadata(raw_mapping_ep);
+        register_point_cloud_metadata(raw_mapping_ep);
+    }
 
-        raw_mapping_ep->register_metadata(RS2_FRAME_METADATA_FRAME_COUNTER, 
-            make_attribute_parser(&md_occupancy_info::frame_counter, 
-                md_occupancy_info_attributes::frame_counter_attribute, md_prop_offset));
+
+    void d500_mapping::register_occupancy_metadata(std::shared_ptr<uvc_sensor> raw_mapping_ep)
+    {
+        // attributes of md_occupancy
+        auto md_prop_offset = offsetof(metadata_raw, mode) +
+            offsetof(md_mapping_mode, intel_occupancy);
+
+        raw_mapping_ep->register_metadata(RS2_FRAME_METADATA_FRAME_COUNTER,
+            make_attribute_parser(&md_occupancy::frame_counter,
+                md_occupancy_attributes::frame_counter_attribute, md_prop_offset));
 
         raw_mapping_ep->register_metadata(RS2_FRAME_METADATA_SAFETY_DEPTH_FRAME_COUNTER,
-            make_attribute_parser(&md_occupancy_info::depth_frame_counter, 
-                md_occupancy_info_attributes::depth_frame_counter_attribute, md_prop_offset));
-        
+            make_attribute_parser(&md_occupancy::depth_frame_counter,
+                md_occupancy_attributes::depth_frame_counter_attribute, md_prop_offset));
+
         raw_mapping_ep->register_metadata(RS2_FRAME_METADATA_SENSOR_TIMESTAMP,
-            make_attribute_parser(&md_occupancy_info::frame_timestamp, 
-                md_occupancy_info_attributes::frame_timestamp_attribute, md_prop_offset));
+            make_attribute_parser(&md_occupancy::frame_timestamp,
+                md_occupancy_attributes::frame_timestamp_attribute, md_prop_offset));
 
-        raw_mapping_ep->register_metadata(RS2_FRAME_METADATA_OCCUPANCY_FLOOR_PLANE_EQUATION_A,
-            make_attribute_parser(&md_occupancy_info::floor_plane_equation_a,
-                md_occupancy_info_attributes::floor_plane_equation_a_attribute, md_prop_offset));
+        raw_mapping_ep->register_metadata(RS2_FRAME_METADATA_FLOOR_PLANE_EQUATION_A,
+            make_attribute_parser(&md_occupancy::floor_plane_equation_a,
+                md_occupancy_attributes::floor_plane_equation_a_attribute, md_prop_offset));
 
-        raw_mapping_ep->register_metadata(RS2_FRAME_METADATA_OCCUPANCY_FLOOR_PLANE_EQUATION_B,
-            make_attribute_parser(&md_occupancy_info::floor_plane_equation_b,
-                md_occupancy_info_attributes::floor_plane_equation_b_attribute, md_prop_offset));
+        raw_mapping_ep->register_metadata(RS2_FRAME_METADATA_FLOOR_PLANE_EQUATION_B,
+            make_attribute_parser(&md_occupancy::floor_plane_equation_b,
+                md_occupancy_attributes::floor_plane_equation_b_attribute, md_prop_offset));
 
-        raw_mapping_ep->register_metadata(RS2_FRAME_METADATA_OCCUPANCY_FLOOR_PLANE_EQUATION_C,
-            make_attribute_parser(&md_occupancy_info::floor_plane_equation_c,
-                md_occupancy_info_attributes::floor_plane_equation_c_attribute, md_prop_offset));
+        raw_mapping_ep->register_metadata(RS2_FRAME_METADATA_FLOOR_PLANE_EQUATION_C,
+            make_attribute_parser(&md_occupancy::floor_plane_equation_c,
+                md_occupancy_attributes::floor_plane_equation_c_attribute, md_prop_offset));
 
-        raw_mapping_ep->register_metadata(RS2_FRAME_METADATA_OCCUPANCY_FLOOR_PLANE_EQUATION_D,
-            make_attribute_parser(&md_occupancy_info::floor_plane_equation_d,
-                md_occupancy_info_attributes::floor_plane_equation_d_attribute, md_prop_offset));
+        raw_mapping_ep->register_metadata(RS2_FRAME_METADATA_FLOOR_PLANE_EQUATION_D,
+            make_attribute_parser(&md_occupancy::floor_plane_equation_d,
+                md_occupancy_attributes::floor_plane_equation_d_attribute, md_prop_offset));
 
-        raw_mapping_ep->register_metadata(RS2_FRAME_METADATA_OCCUPANCY_SAFETY_PRESET_ID,
-            make_attribute_parser(&md_occupancy_info::safety_preset_id,
-                md_occupancy_info_attributes::safety_preset_id_attribute, md_prop_offset));
+        raw_mapping_ep->register_metadata(RS2_FRAME_METADATA_SAFETY_PRESET_ID,
+            make_attribute_parser(&md_occupancy::safety_preset_id,
+                md_occupancy_attributes::safety_preset_id_attribute, md_prop_offset));
 
         raw_mapping_ep->register_metadata(RS2_FRAME_METADATA_OCCUPANCY_GRID_ROWS,
-            make_attribute_parser(&md_occupancy_info::grid_rows,
-                md_occupancy_info_attributes::grid_rows_attribute, md_prop_offset));
+            make_attribute_parser(&md_occupancy::grid_rows,
+                md_occupancy_attributes::grid_rows_attribute, md_prop_offset));
 
         raw_mapping_ep->register_metadata(RS2_FRAME_METADATA_OCCUPANCY_GRID_COLUMNS,
-            make_attribute_parser(&md_occupancy_info::grid_columns,
-                md_occupancy_info_attributes::grid_columns_attribute, md_prop_offset));
+            make_attribute_parser(&md_occupancy::grid_columns,
+                md_occupancy_attributes::grid_columns_attribute, md_prop_offset));
 
         raw_mapping_ep->register_metadata(RS2_FRAME_METADATA_OCCUPANCY_CELL_SIZE,
-            make_attribute_parser(&md_occupancy_info::cell_size,
-                md_occupancy_info_attributes::cell_size_attribute, md_prop_offset));
+            make_attribute_parser(&md_occupancy::cell_size,
+                md_occupancy_attributes::cell_size_attribute, md_prop_offset));
 
         raw_mapping_ep->register_metadata(RS2_FRAME_METADATA_CRC,
-            make_attribute_parser_with_crc(&md_occupancy_info::payload_crc32,
-                md_occupancy_info_attributes::payload_crc32_attribute, md_prop_offset));
+            make_attribute_parser_with_crc(&md_occupancy::payload_crc32,
+                md_occupancy_attributes::payload_crc32_attribute, md_prop_offset));
+    }
+
+    void d500_mapping::register_point_cloud_metadata(std::shared_ptr<uvc_sensor> raw_mapping_ep)
+    {
+        // attributes of md_point_cloud
+        auto md_prop_offset = offsetof(metadata_raw, mode) +
+            offsetof(md_mapping_mode, intel_point_cloud);
+
+        raw_mapping_ep->register_metadata(RS2_FRAME_METADATA_FRAME_COUNTER,
+            make_attribute_parser(&md_point_cloud::frame_counter,
+                md_point_cloud_attributes::frame_counter_attribute, md_prop_offset));
+
+        raw_mapping_ep->register_metadata(RS2_FRAME_METADATA_SAFETY_DEPTH_FRAME_COUNTER,
+            make_attribute_parser(&md_point_cloud::depth_frame_counter,
+                md_point_cloud_attributes::depth_frame_counter_attribute, md_prop_offset));
+
+        raw_mapping_ep->register_metadata(RS2_FRAME_METADATA_SENSOR_TIMESTAMP,
+            make_attribute_parser(&md_point_cloud::frame_timestamp,
+                md_point_cloud_attributes::frame_timestamp_attribute, md_prop_offset));
+
+        raw_mapping_ep->register_metadata(RS2_FRAME_METADATA_FLOOR_PLANE_EQUATION_A,
+            make_attribute_parser(&md_point_cloud::floor_plane_equation_a,
+                md_point_cloud_attributes::floor_plane_equation_a_attribute, md_prop_offset));
+
+        raw_mapping_ep->register_metadata(RS2_FRAME_METADATA_FLOOR_PLANE_EQUATION_B,
+            make_attribute_parser(&md_point_cloud::floor_plane_equation_b,
+                md_point_cloud_attributes::floor_plane_equation_b_attribute, md_prop_offset));
+
+        raw_mapping_ep->register_metadata(RS2_FRAME_METADATA_FLOOR_PLANE_EQUATION_C,
+            make_attribute_parser(&md_point_cloud::floor_plane_equation_c,
+                md_point_cloud_attributes::floor_plane_equation_c_attribute, md_prop_offset));
+
+        raw_mapping_ep->register_metadata(RS2_FRAME_METADATA_FLOOR_PLANE_EQUATION_D,
+            make_attribute_parser(&md_point_cloud::floor_plane_equation_d,
+                md_point_cloud_attributes::floor_plane_equation_d_attribute, md_prop_offset));
+
+        raw_mapping_ep->register_metadata(RS2_FRAME_METADATA_SAFETY_PRESET_ID,
+            make_attribute_parser(&md_point_cloud::safety_preset_id,
+                md_point_cloud_attributes::safety_preset_id_attribute, md_prop_offset));
+
+        raw_mapping_ep->register_metadata(RS2_FRAME_METADATA_NUMBER_OF_3D_VERTICES,
+            make_attribute_parser(&md_point_cloud::number_of_3d_vertices,
+                md_point_cloud_attributes::number_of_3d_vertices_attribute, md_prop_offset));
+
+        raw_mapping_ep->register_metadata(RS2_FRAME_METADATA_CRC,
+            make_attribute_parser_with_crc(&md_point_cloud::payload_crc32,
+                md_point_cloud_attributes::payload_crc32_attribute, md_prop_offset));
     }
 
     void d500_mapping::register_processing_blocks(std::shared_ptr<d500_mapping_sensor> mapping_ep)
