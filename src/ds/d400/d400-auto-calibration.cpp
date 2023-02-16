@@ -601,8 +601,14 @@ namespace librealsense
                 std::this_thread::sleep_for(std::chrono::milliseconds(200));
             }
 
-            if (host_assistance == host_assistance_type::no_assistance || host_assistance == host_assistance_type::assistance_start)
-                _hw_monitor->send(command{ ds::AUTO_CALIB, focal_length_calib_begin, (uint32_t)fl_step_count, (uint32_t)fy_scan_range, p4 });
+            if( host_assistance == host_assistance_type::no_assistance || host_assistance == host_assistance_type::assistance_start )
+            {
+                _hw_monitor->send( command{ ds::AUTO_CALIB,
+                                            focal_length_calib_begin,
+                                            static_cast< uint32_t >( fl_step_count ),
+                                            static_cast< uint32_t >( fy_scan_range ),
+                                            p4 } );
+            }
 
             if (host_assistance != host_assistance_type::assistance_start)
             {
@@ -717,7 +723,11 @@ namespace librealsense
             // Begin auto-calibration
             if (host_assistance == host_assistance_type::no_assistance || host_assistance == host_assistance_type::assistance_start)
             {
-                _hw_monitor->send(command{ ds::AUTO_CALIB, py_rx_plus_fl_calib_begin, (uint32_t)speed_fl, 0, p4 });
+                _hw_monitor->send( command{ ds::AUTO_CALIB,
+                                            py_rx_plus_fl_calib_begin,
+                                            static_cast< uint32_t >( speed_fl ),
+                                            0,
+                                            p4 } );
                 LOG_OCC_WARN(std::string(rsutils::string::from() << __LINE__ << "occ py_rx_plus_fl_calib_begin speed_fl = " << speed_fl <<  " res size = " << res.size()));
             }
 
@@ -898,7 +908,10 @@ namespace librealsense
         if (depth > 0)
         {
             LOG_OCC_WARN("run_tare_calibration interactive control (2) with parameters: depth = " << depth);
-            _hw_monitor->send(command{ ds::AUTO_CALIB, interactive_scan_control, 2, (uint32_t)depth });
+            _hw_monitor->send( command{ ds::AUTO_CALIB,
+                                        interactive_scan_control,
+                                        2,
+                                        static_cast< uint32_t >( depth ) } );
         }
         else
         {
@@ -917,11 +930,17 @@ namespace librealsense
                 LOG_DEBUG("run_tare_calibration with parameters: speed = " << speed << " average_step_count = " << average_step_count << " step_count = " << step_count << " accuracy = " << accuracy << " scan_parameter = " << scan_parameter << " data_sampling = " << data_sampling);
                 check_tare_params(speed, scan_parameter, data_sampling, average_step_count, step_count, accuracy);
 
-                auto param2 = (uint32_t)ground_truth_mm * 100;
+                auto param2 = static_cast< uint32_t >( ground_truth_mm ) * 100;
 
-                tare_calibration_params param3{ (byte)average_step_count, (byte)step_count, (byte)accuracy, 0 };
+                tare_calibration_params param3{ static_cast< byte >( average_step_count ),
+                                                static_cast< byte >( step_count ),
+                                                static_cast< byte >( accuracy ),
+                                                0 };
 
-                param4 param{ (byte)scan_parameter, 0, (byte)data_sampling };
+                param4 param{ static_cast< byte >( scan_parameter ),
+                              0,
+                              static_cast< byte >( data_sampling ) };
+
                 if (host_assistance != host_assistance_type::no_assistance)
                     param.param_4 |= (1 << 8);
 
