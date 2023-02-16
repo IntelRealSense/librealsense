@@ -47,6 +47,7 @@ const char * get_string( rs2_stream value )
     CASE( CONFIDENCE )
     CASE( SAFETY )
     CASE( OCCUPANCY )
+    CASE( POINT_CLOUD )
     default:
         assert( ! is_valid( value ) );
         return UNKNOWN_VALUE;
@@ -454,6 +455,7 @@ const char * get_string( rs2_format value )
     CASE( Y411 )
     CASE( Y16I )
     CASE( M420 )
+    CASE( OCCUP )
     default:
         assert( ! is_valid( value ) );
         return UNKNOWN_VALUE;

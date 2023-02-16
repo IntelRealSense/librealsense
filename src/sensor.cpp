@@ -1818,8 +1818,8 @@ void log_callback_end( uint32_t fps,
         snapshot = std::make_shared<safety_sensor_snapshot>();
     }
 
-    void occupancy_sensor::create_snapshot(std::shared_ptr<occupancy_sensor>& snapshot) const
+    void mapping_sensor::create_snapshot(std::shared_ptr<mapping_sensor>& snapshot) const
     {
-        snapshot = std::make_shared<occupancy_sensor_snapshot>();
+        snapshot = std::make_shared<mapping_sensor_snapshot>();
     }
 }

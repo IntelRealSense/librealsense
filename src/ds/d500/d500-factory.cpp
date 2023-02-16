@@ -20,7 +20,7 @@
 #include "d500-color.h"
 #include "d500-motion.h"
 #include "d500-safety.h"
-#include "d500-occupancy.h"
+#include "d500-mapping.h"
 #include "sync.h"
 
 #include "firmware_logger_device.h"
@@ -73,7 +73,7 @@ namespace librealsense
     class rs_d585s_device : public d500_active,
         public d500_color,
         public d500_safety,
-        public d500_occupancy,
+        public d500_mapping,
         public d500_motion,
         public ds_advanced_mode_base,
         public firmware_logger_device
@@ -87,7 +87,7 @@ namespace librealsense
             d500_active(ctx, group),
             d500_color(ctx, group),
             d500_safety(ctx, group),
-            d500_occupancy(ctx, group),
+            d500_mapping(ctx, group),
             d500_motion(ctx, group),
             ds_advanced_mode_base(d500_device::_hw_monitor, get_depth_sensor()),
             firmware_logger_device(ctx, group, d500_device::_hw_monitor,

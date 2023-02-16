@@ -47,9 +47,10 @@ namespace librealsense
         META_DATA_INTEL_L500_DEPTH_CONTROL_ID   = 0x80000012,
         META_DATA_CAMERA_DEBUG_ID               = 0x800000FF,
         META_DATA_HID_IMU_REPORT_ID             = 0x80001001,
-        META_DATA_HID_CUSTOM_TEMP_REPORT_ID     = 0x80001002,
+        META_DATA_HID_CUSTOM_TEMP_REPORT_ID     = 0x80001002, 
         META_DATA_INTEL_SAFETY_ID               = 0x80000014,
         META_DATA_INTEL_OCCUPANCY_ID            = 0x80000016,
+        META_DATA_INTEL_POINT_CLOUD_ID          = 0x80000017,
         META_DATA_MIPI_INTEL_DEPTH_ID           = 0x80010000,
         //META_DATA_MIPI_INTEL_RGB_ID             = 0x80010001, // D457 - to be restored after the FW bug is resolved
     };
@@ -706,12 +707,8 @@ namespace librealsense
     };
     REGISTER_MD_TYPE(md_safety_info, md_type::META_DATA_INTEL_SAFETY_ID)
 
-    /**\brief md_occupancy_info - Occupancy Frame info */
-    struct md_occupancy_info
+    struct md_mapping_common_info
     {
-        md_header   header;
-        uint32_t    version;
-        uint32_t    flags;
         uint32_t    frame_counter;
         uint32_t    depth_frame_counter;
         uint32_t    frame_timestamp;
@@ -719,15 +716,37 @@ namespace librealsense
         uint32_t    floor_plane_equation_b;
         uint32_t    floor_plane_equation_c;
         uint32_t    floor_plane_equation_d;
-        uint8_t     safety_preset_id;
-        uint16_t    grid_rows;
-        uint16_t    grid_columns;
-        uint8_t     cell_size;
-        uint8_t     reserved[32];
-        uint16_t    padding;
-        uint32_t    payload_crc32;
+    };
+    /**\brief md_occupancy_info - Occupancy Frame info */
+    struct md_occupancy_info
+    {
+        md_header              header;
+        uint32_t               version;
+        uint32_t               flags;
+        md_mapping_common_info mapping_common_info;
+        uint8_t                safety_preset_id;
+        uint16_t               grid_rows;
+        uint16_t               grid_columns;
+        uint8_t                cell_size;
+        uint8_t                reserved[32];
+        uint16_t               padding;
+        uint32_t               payload_crc32;
     };
     REGISTER_MD_TYPE(md_occupancy_info, md_type::META_DATA_INTEL_OCCUPANCY_ID)
+
+    /**\brief md_point_cloud_info - Point Cloud  Frame info */
+    struct md_point_cloud_info
+    {
+        md_header              header;
+        uint32_t               version;
+        uint32_t               flags;
+        md_mapping_common_info mapping_common_info;
+        uint16_t               number_of_3d_vertices;
+        uint8_t                reserved[32];
+        uint16_t               padding;
+        uint32_t               payload_crc32;
+    };
+    REGISTER_MD_TYPE(md_point_cloud_info, md_type::META_DATA_INTEL_POINT_CLOUD_ID)
 
     struct md_intrinsic_pinhole_cam_model
     {
