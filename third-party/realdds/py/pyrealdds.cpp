@@ -7,6 +7,8 @@
 #include <realdds/dds-participant.h>
 #include <realdds/topics/flexible/flexible-msg.h>
 #include <realdds/topics/flexible/flexiblePubSubTypes.h>
+#include <realdds/topics/image/image-msg.h>
+#include <realdds/topics/ros2/ros2imagePubSubTypes.h>
 #include <realdds/dds-device-broadcaster.h>
 #include <realdds/dds-device-server.h>
 #include <realdds/dds-stream-server.h>
@@ -19,7 +21,10 @@
 #include <realdds/dds-topic.h>
 #include <realdds/dds-topic-reader.h>
 #include <realdds/dds-topic-writer.h>
+#include <realdds/dds-publisher.h>
+#include <realdds/dds-subscriber.h>
 #include <realdds/dds-log-consumer.h>
+#include <realdds/dds-stream-sensor-bridge.h>
 
 #include <rsutils/easylogging/easyloggingpp.h>
 
@@ -43,29 +48,6 @@ std::string to_string( realdds::dds_guid const & guid )
 }
 
 }  // namespace
-
-
-// "When calling a C++ function from Python, the GIL is always held"
-// -- since we're not being called from Python but instead are calling it,
-// we need to acquire it to not have issues with other threads...
-#define FN_FWD_CALL( CLS, FN_NAME, CODE )                                                                              \
-    try                                                                                                                \
-    {                                                                                                                  \
-        py::gil_scoped_acquire gil;                                                                                    \
-        CODE                                                                                                           \
-    }                                                                                                                  \
-    catch( std::exception const & e )                                                                                  \
-    {                                                                                                                  \
-        LOG_ERROR( "EXCEPTION in python " #CLS "." #FN_NAME ": " << e.what() ); \
-    }                                                                                                                  \
-    catch( ... )                                                                                                       \
-    {                                                                                                                  \
-        LOG_ERROR( "UNKNOWN EXCEPTION in python " #CLS "." #FN_NAME ); \
-    }
-#define FN_FWD( CLS, FN_NAME, PY_ARGS, FN_ARGS, CODE )                                                                 \
-    #FN_NAME, []( CLS & self, std::function < void PY_ARGS > callback ) {                                              \
-        self.FN_NAME( [&self,callback] FN_ARGS { FN_FWD_CALL( CLS, FN_NAME, CODE ); } );                                     \
-    }
 
 
 PYBIND11_MODULE(NAME, m) {
@@ -274,6 +256,14 @@ PYBIND11_MODULE(NAME, m) {
             return os.str();
         } );
 
+    using realdds::dds_publisher;
+    py::class_< dds_publisher, std::shared_ptr< dds_publisher > >( m, "publisher" )
+        .def( py::init< std::shared_ptr< dds_participant > const & >() );
+
+    using realdds::dds_subscriber;
+    py::class_< dds_subscriber, std::shared_ptr< dds_subscriber > >( m, "subscriber" )
+        .def( py::init< std::shared_ptr< dds_participant > const & >() );
+
     using realdds::dds_topic_writer;
     py::class_< dds_topic_writer, std::shared_ptr< dds_topic_writer > >( m, "topic_writer" )
         .def( py::init< std::shared_ptr< dds_topic > const & >() )
@@ -427,6 +417,42 @@ PYBIND11_MODULE(NAME, m) {
         .def( "write_to", &flexible_msg::write_to, py::call_guard< py::gil_scoped_release >() );
 
 
+    using image_msg = realdds::topics::device::image;
+    py::class_< image_msg >( m, "image_msg" )
+        .def( py::init<>() )
+        .def_readwrite( "data", &image_msg::raw_data )
+        .def_readwrite( "width", &image_msg::width )
+        .def_readwrite( "height", &image_msg::height )
+        .def( "__repr__",
+              []( image_msg const & self )
+              {
+                  std::ostringstream os;
+                  os << "<" SNAME ".image_msg ";
+                  os << self.raw_data.size();
+                  os << ' ';
+                  os << self.width << 'x' << self.height;
+                  os << ">";
+                  return os.str();
+              } )
+        .def_static(
+            "take_next",
+            []( dds_topic_reader & reader, SampleInfo * sample )
+            {
+                auto actual_type = reader.topic()->get()->get_type_name();
+                if( actual_type != image_msg::type().getName() )
+                    throw std::runtime_error( "can't initialize raw::image from " + actual_type );
+                image_msg data;
+                if( ! image_msg::take_next( reader, &data, sample ) )
+                    assert( ! data.is_valid() );
+                return data;
+            },
+            py::arg( "reader" ),
+            py::arg( "sample" ) = nullptr,
+            py::call_guard< py::gil_scoped_release >() )
+        .def_static( "create_topic", &image_msg::create_topic )
+        /*.def("write_to", &image_msg::write_to, py::call_guard< py::gil_scoped_release >())*/;
+
+
     using realdds::dds_device_broadcaster;
     py::class_< dds_device_broadcaster >( m, "device_broadcaster" )
         .def( py::init< std::shared_ptr< dds_participant > const & >() )
@@ -505,6 +531,7 @@ PYBIND11_MODULE(NAME, m) {
         .def( "init_profiles", &dds_stream_base::init_profiles )
         .def( "init_options", &dds_stream_base::init_options )
         .def( "default_profile_index", &dds_stream_base::default_profile_index )
+        .def( "default_profile", &dds_stream_base::default_profile )
         .def( "options", &dds_stream_base::options )
         .def( "is_open", &dds_stream_base::is_open )
         .def( "is_streaming", &dds_stream_base::is_streaming )
@@ -513,16 +540,17 @@ PYBIND11_MODULE(NAME, m) {
     using realdds::dds_stream_server;
     py::class_< dds_stream_server, std::shared_ptr< dds_stream_server > > stream_server_base( m, "stream_server", stream_base );
     stream_server_base  //
-        .def( "__repr__", []( dds_stream_server const & self ) {
-            std::ostringstream os;
-            os << "<" SNAME "." << self.type_string() << "_stream_server \"" << self.name() << "\" [";
-            for( auto & p : self.profiles() )
-                os << p->to_string();
-            os << ']';
-            os << ' ' << self.default_profile_index();
-            os << '>';
-            return os.str();
-        } );
+        .def( "on_readers_changed", &dds_stream_server::on_readers_changed )
+        .def( "open", &dds_stream_server::open )
+        .def( "__repr__",
+              []( dds_stream_server const & self )
+              {
+                  std::ostringstream os;
+                  os << "<" SNAME "." << self.type_string() << "_stream_server \"" << self.name() << "\"";
+                  os << " " << self.profiles().size() << "[" << self.default_profile_index() << "] profiles";
+                  os << '>';
+                  return os.str();
+              } );
 
     using realdds::dds_video_stream_server;
     py::class_< dds_video_stream_server, std::shared_ptr< dds_video_stream_server > >
@@ -569,20 +597,30 @@ PYBIND11_MODULE(NAME, m) {
         .def( py::init< std::string const&, std::string const& >(), "stream_name"_a, "sensor_name"_a );
 
     using realdds::dds_device_server;
-    py::class_< dds_device_server >( m, "device_server" )
+    py::class_< dds_device_server, std::shared_ptr< dds_device_server > >( m, "device_server" )
         .def( py::init< std::shared_ptr< dds_participant > const&, std::string const& >() )
-        .def( "init", &dds_device_server::init );
+        .def( "init", &dds_device_server::init )
+        .def( "streams",
+              []( dds_device_server const & self )
+              {
+                  std::vector< std::shared_ptr< dds_stream_server > > streams;
+                  for( auto const & name2stream : self.streams() )
+                      streams.push_back( name2stream.second );
+                  return streams;
+              } );
 
     using realdds::dds_stream;
     py::class_< dds_stream, std::shared_ptr< dds_stream > > stream_client_base( m, "stream", stream_base );
     stream_client_base  //
+        .def( "open", &dds_stream::open )
+        .def( "close", &dds_stream::close )
+        .def( "is_open", &dds_stream::is_open )
+        .def( "start_streaming", &dds_stream::start_streaming )
+        .def( "stop_streaming", &dds_stream::stop_streaming )
         .def( "__repr__", []( dds_stream const & self ) {
             std::ostringstream os;
-            os << "<" SNAME "." << self.type_string() << "_stream \"" << self.name() << "\" [";
-            for( auto & p : self.profiles() )
-                os << p->to_string();
-            os << ']';
-            os << ' ' << self.default_profile_index();
+            os << "<" SNAME "." << self.type_string() << "_stream \"" << self.name() << "\"";
+            os << " " << self.profiles().size() << "[" << self.default_profile_index() << "] profiles";
             os << '>';
             return os.str();
         } );
@@ -689,4 +727,35 @@ PYBIND11_MODULE(NAME, m) {
                   self.foreach_device(
                       [callback]( std::shared_ptr< dds_device > const & dev ) { return callback( dev ); } );
               }, py::call_guard< py::gil_scoped_release >() );
+
+    using realdds::dds_stream_sensor_bridge;
+    py::class_< dds_stream_sensor_bridge >( m, "stream_sensor_bridge" )
+        .def( py::init<>() )
+        .def( FN_FWD( dds_stream_sensor_bridge,
+                      on_start_sensor,
+                      (std::string const &, std::vector< std::shared_ptr< realdds::dds_stream_profile > > const &),
+                      ( std::string const & sensor_name,
+                        std::vector< std::shared_ptr< realdds::dds_stream_profile > > const & profiles ),
+                      callback( sensor_name, profiles ); ) )
+        .def( FN_FWD( dds_stream_sensor_bridge,
+                      on_stop_sensor,
+                      (std::string const &),
+                      ( std::string const & sensor_name ),
+                      callback( sensor_name ); ) )
+        .def( FN_FWD( dds_stream_sensor_bridge,
+                      on_readers_changed,
+                      (std::shared_ptr< dds_stream_server > const &, int),
+                      ( std::shared_ptr< dds_stream_server > const & server, int n_readers ),
+                      callback( server, n_readers ); ) )
+        .def( FN_FWD( dds_stream_sensor_bridge,
+                      on_error,
+                      (std::string const &),
+                      ( std::string const & error_string ),
+                      callback( error_string ); ) )
+        .def( "init", &dds_stream_sensor_bridge::init )
+        .def( "reset", &dds_stream_sensor_bridge::reset, py::arg( "by_force" ) = false )
+        .def( "open", &dds_stream_sensor_bridge::open )
+        .def( "close", &dds_stream_sensor_bridge::close )
+        .def( "commit", &dds_stream_sensor_bridge::commit )
+        .def( "is_streaming", &dds_stream_sensor_bridge::is_streaming );
 }

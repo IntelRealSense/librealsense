@@ -603,12 +603,13 @@ namespace librealsense
 
         void start( frame_callback_ptr callback ) override
         {
-            //For each stream in sensor_base::get_active_streams() set callback function that will call on_video_frame
-            for ( auto & profile : sensor_base::get_active_streams() )
+            for( auto & profile : sensor_base::get_active_streams() )
             {
-                //stream is the dds_stream matching the librealsense active stream
-                auto & stream = _streams[sid_index( profile->get_unique_id(), profile->get_stream_index() )];
-                stream->start_streaming( [p = profile, this]( realdds::topics::device::image && dds_frame ) {
+                auto & dds_stream = _streams[sid_index( profile->get_unique_id(), profile->get_stream_index() )];
+                // Opening it will start streaming on the server side automatically
+                dds_stream->open( "rt/" + _dev->device_info().topic_root + '_' + dds_stream->name(), _dev->subscriber());
+                // But we won't get callbacks until we "start streaming"
+                dds_stream->start_streaming( [p = profile, this]( realdds::topics::device::image && dds_frame ) {
                     rs2_stream_profile prof = { p.get() };
 
                     if( Is< video_stream_profile >(p) )
@@ -658,26 +659,14 @@ namespace librealsense
 
         void stop()
         {
-            for ( auto & profile : sensor_base::get_active_streams() )
+            for( auto & profile : sensor_base::get_active_streams() )
             {
-                //stream is the dds_stream matching the librealsense active stream
-                auto & stream = _streams[sid_index( profile->get_unique_id(), profile->get_stream_index() )];
-                stream->stop_streaming();
+                auto & dds_stream = _streams[sid_index( profile->get_unique_id(), profile->get_stream_index() )];
+                dds_stream->stop_streaming();
+                dds_stream->close();
             }
 
             software_sensor::stop();
-        }
-
-        void close() override
-        {
-            realdds::dds_streams streams_to_close;
-            for( auto & profile : sensor_base::get_active_streams() )
-            {
-                streams_to_close.push_back(
-                    _streams[sid_index( profile->get_unique_id(), profile->get_stream_index() )] );
-            }
-            _dev->close( streams_to_close );
-            software_sensor::close();
         }
 
         void add_option( std::shared_ptr< realdds::dds_option > option )

@@ -117,6 +117,26 @@ void dds_video_stream_server::open( std::string const & topic_name, std::shared_
     auto topic = topics::device::image::create_topic( publisher->get_participant(), topic_name.c_str() );
 
     _writer = std::make_shared< dds_topic_writer >( topic, publisher );
+    if( _on_readers_changed )
+    {
+        std::weak_ptr< dds_stream_server > weak_this(
+            std::static_pointer_cast< dds_stream_server >( shared_from_this() ) );
+        _writer->on_publication_matched(
+            [weak_this, on_readers_changed = _on_readers_changed](
+                eprosima::fastdds::dds::PublicationMatchedStatus const & status )
+            {
+                if( auto self = weak_this.lock() )
+                    try
+                    {
+                        LOG_DEBUG( status.current_count << " total readers on '" << self->name() << "'" );
+                        on_readers_changed( self, status.current_count );
+                    }
+                    catch( std::exception const & e )
+                    {
+                        LOG_ERROR( "exception from 'on_readers_changed': " << e.what() );
+                    }
+            } );
+    }
     _writer->run( dds_topic_writer::qos( BEST_EFFORT_RELIABILITY_QOS ) );  // no retries
 }
 
@@ -159,23 +179,30 @@ void dds_stream_server::stop_streaming()
     _image_header.invalidate();
 }
 
+void dds_stream_server::close()
+{
+    _writer.reset();
+}
+
 void dds_stream_server::publish_image( const uint8_t * data, size_t size )
 {
     if( ! _image_header.is_valid() )
         DDS_THROW( runtime_error, "stream '" + name() + "' cannot publish_image() before start_streaming()" );
 
-    LOG_DEBUG( "publishing a DDS video frame for topic: " << _writer->topic()->get()->get_name() );
+    //LOG_DEBUG( "publishing a DDS video frame for topic: " << _writer->topic()->get()->get_name() );
     sensor_msgs::msg::Image raw_image;
     raw_image.header().frame_id() = std::to_string( ++_frame_id );
     auto const now = realdds::now();
     raw_image.header().stamp().sec() = now.seconds();
     raw_image.header().stamp().nanosec() = now.nanosec();
-    raw_image.encoding() = dds_stream_format::from_rs2( _image_header.format );
+    raw_image.encoding() = _image_header.format.to_string();
+    std::transform( raw_image.encoding().begin(), raw_image.encoding().end(), raw_image.encoding().begin(), tolower );
     raw_image.height() = _image_header.height;
     raw_image.width() = _image_header.width;
     raw_image.step() = uint32_t( size / _image_header.height );
     raw_image.is_bigendian() = false;
     raw_image.data().assign( data, data + size );
+    LOG_DEBUG( "publishing '" << name() << "' frame " << std::dec << _frame_id << " " << raw_image.encoding() );
 
     DDS_API_CALL( _writer->get()->write( &raw_image ) );
 }

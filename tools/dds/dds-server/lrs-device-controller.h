@@ -3,16 +3,21 @@
 
 #pragma once
 #include <librealsense2/rs.hpp>  // Include RealSense Cross Platform API
+#include <realdds/dds-stream-sensor-bridge.h>
 #include <third-party/json_fwd.hpp>
 
 #include <unordered_map>
 #include <vector>
 
 namespace realdds {
-    class dds_device_server;
-    class dds_stream_server;
-    class dds_option;
-}
+
+class dds_device_server;
+class dds_stream_server;
+class dds_stream_profile;
+class dds_option;
+
+}  // namespace realdds
+
 
 namespace tools {
 
@@ -22,18 +27,24 @@ class lrs_device_controller
 public:
     lrs_device_controller( rs2::device dev, std::shared_ptr< realdds::dds_device_server > dds_device_server );
     ~lrs_device_controller();
-    void start_streaming( const nlohmann::json & msg );
-    void stop_streaming( const nlohmann::json & msg );
+
     void set_option( const std::shared_ptr< realdds::dds_option > & option, float new_value );
     float query_option( const std::shared_ptr< realdds::dds_option > & option );
 
 private:
-    bool find_sensor( const std::string & requested_stream_name, size_t & sensor_index );
     std::vector< std::shared_ptr< realdds::dds_stream_server > > get_supported_streams();
 
+    void start_streaming( const nlohmann::json & msg );
+
     rs2::device _rs_dev;
+    std::map< std::string, rs2::sensor > _rs_sensors;
     std::string _device_sn;
-    std::vector< rs2::sensor > _sensors;
+    realdds::dds_stream_sensor_bridge _bridge;
+
+    std::map< std::string, std::shared_ptr< realdds::dds_stream_server > > _stream_name_to_server;
+
+    std::vector< rs2::stream_profile > get_rs2_profiles( realdds::dds_stream_profiles const & dds_profiles ) const;
+
     std::shared_ptr< realdds::dds_device_server > _dds_device_server;
 };  // class lrs_device_controller
 

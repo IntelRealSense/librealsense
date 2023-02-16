@@ -9,12 +9,21 @@ device_info = dds.device_info()
 device_info.name = "Intel RealSense D435I"
 device_info.serial = "036522070660"
 device_info.product_line = "D400"
-device_info.topic_root = "realdds/D435I/" + device_info.serial
+device_info.topic_root = "realsense/D435I_" + device_info.serial
 
 
 def build( participant ):
     """
     Build a D435i device server for use in DDS
+    """
+    d435i = dds.device_server( participant, device_info.topic_root )
+    d435i.init( build_streams(), build_options(), get_extrinsics() )
+    return d435i
+
+
+def build_streams():
+    """
+    Build the streams for a D435i device server
     """
     accel = accel_stream()
     gyro = gyro_stream()
@@ -22,11 +31,11 @@ def build( participant ):
     ir1 = ir_stream( 1 )
     ir2 = ir_stream( 2 )
     color = color_stream()
-    extrinsics = get_extrinsics()
-    #
-    d435i = dds.device_server( participant, device_info.topic_root )
-    d435i.init( [accel, color, depth, gyro, ir1, ir2], [], extrinsics )
-    return d435i
+    return [accel, color, depth, gyro, ir1, ir2]
+
+
+def build_options():
+    return []
 
 
 def accel_stream_profiles():

@@ -39,7 +39,7 @@ std::string get_topic_root( topics::device_info const & dev_info )
         model_name.erase( 0, DEVICE_NAME_PREFIX_CCH );
     }
     constexpr char const * RS_ROOT = "realsense/";
-    return RS_ROOT + model_name + '/' + dev_info.serial;
+    return RS_ROOT + model_name + '_' + dev_info.serial;
 }
 
 
