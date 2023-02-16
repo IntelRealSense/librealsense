@@ -1,6 +1,9 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2016 Intel Corporation. All Rights Reserved.
 
+#include <regex>
+#include <iterator>
+
 #include "device.h"
 #include "context.h"
 #include "image.h"
@@ -446,7 +449,10 @@ namespace librealsense
         // Option INTER_CAM_SYNC_MODE is not enabled in D405
         if (_pid != ds::RS405_PID)
             val |= d400_caps::CAP_INTERCAM_HW_SYNC;
-
+        if (gvd_buf[ip65_sealed_offset] == 0x1)
+            val |= d400_caps::CAP_IP65;
+        if (gvd_buf[ir_filter_offset] == 0x1)
+            val |= d400_caps::CAP_IR_FILTER;
         return val;
     }
 
@@ -690,6 +696,22 @@ namespace librealsense
 
                 depth_sensor.register_option(RS2_OPTION_THERMAL_COMPENSATION,
                 std::make_shared<thermal_compensation>(_thermal_monitor,thermal_compensation_toggle));
+            }
+
+            auto ir_filter_mask = d400_caps::CAP_IR_FILTER;
+            if (val_in_range(_pid, { RS435_RGB_PID, RS435I_PID, RS455_PID }) &&
+                (_device_capabilities & ir_filter_mask) == ir_filter_mask &&
+                is_capability_supports(d400_caps::CAP_IR_FILTER, gvd_buff[gvd_version_offset]))
+            {
+                update_device_name(device_name, d400_caps::CAP_IR_FILTER);
+            }
+
+            auto ip65_mask = d400_caps::CAP_IP65;
+            if (val_in_range(_pid, { RS455_PID })&&
+                (_device_capabilities & ip65_mask) == ip65_mask &&
+                is_capability_supports(d400_caps::CAP_IP65, gvd_buff[gvd_version_offset]))
+            {
+                update_device_name(device_name, d400_caps::CAP_IP65);
             }
 
             std::shared_ptr<option> exposure_option = nullptr;
@@ -1079,6 +1101,25 @@ namespace librealsense
     void d400_device::enable_recording(std::function<void(const debug_interface&)> record_action)
     {
         //TODO: Implement
+    }
+
+    // Check if need change camera name due to number modifications on one device PID.
+    void update_device_name(std::string& device_name, const ds::d400_caps cap)
+    {
+        switch (cap)
+        {
+        case ds::d400_caps::CAP_IR_FILTER:
+            device_name += "F"; // Adding "F" to end of device name if it has IR filter.
+            break;
+
+        case ds::d400_caps::CAP_IP65:
+            device_name = std::regex_replace(device_name, std::regex("D455"), "D456"); // Change device name from D455 to D456.
+            break;
+
+        default:
+            throw invalid_value_exception("capability '" + ds::d400_capabilities_names.at(cap) + "' is not supported for device name update");
+            break;
+        }
     }
 
     platform::usb_spec d400_device::get_usb_spec() const

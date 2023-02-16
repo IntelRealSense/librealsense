@@ -174,6 +174,8 @@ namespace librealsense
             CAP_BMI_055 = (1u << 6),
             CAP_BMI_085 = (1u << 7),
             CAP_INTERCAM_HW_SYNC = (1u << 8),
+            CAP_IP65 = (1u << 9),
+            CAP_IR_FILTER = (1u << 10),
             CAP_MAX
         };
 
@@ -186,7 +188,14 @@ namespace librealsense
             { d400_caps::CAP_GLOBAL_SHUTTER,   "Global Shutter"    },
             { d400_caps::CAP_ROLLING_SHUTTER,  "Rolling Shutter"   },
             { d400_caps::CAP_BMI_055,          "IMU BMI_055"       },
-            { d400_caps::CAP_BMI_085,          "IMU BMI_085"       }
+            { d400_caps::CAP_BMI_085,          "IMU BMI_085"       },
+            { d400_caps::CAP_IP65,             "IP65 Sealed device"},
+            { d400_caps::CAP_IR_FILTER,        "IR filter"         }
+        };
+
+        static const std::map<d400_caps, std::int8_t> d400_cap_to_min_gvd_version = {
+            {d400_caps::CAP_IP65, 0x4},
+            {d400_caps::CAP_IR_FILTER, 0x4}
         };
 
         inline d400_caps operator &(const d400_caps lhs, const d400_caps rhs)
@@ -214,7 +223,8 @@ namespace librealsense
             for (auto i : { d400_caps::CAP_ACTIVE_PROJECTOR,d400_caps::CAP_RGB_SENSOR,
                             d400_caps::CAP_FISHEYE_SENSOR,  d400_caps::CAP_IMU_SENSOR,
                             d400_caps::CAP_GLOBAL_SHUTTER,  d400_caps::CAP_ROLLING_SHUTTER,
-                            d400_caps::CAP_BMI_055,         d400_caps::CAP_BMI_085 })
+                            d400_caps::CAP_BMI_055,         d400_caps::CAP_BMI_085,
+                            d400_caps::CAP_IP65,            d400_caps::CAP_IR_FILTER })
             {
                 if (i == (i & cap))
                     stream << d400_capabilities_names.at(i) << "/";
@@ -519,6 +529,7 @@ namespace librealsense
         enum gvd_fields
         {
             // Keep sorted
+            gvd_version_offset = 2,
             camera_fw_version_offset = 12,
             is_camera_locked_offset = 25,
             module_serial_offset = 48,
@@ -526,6 +537,8 @@ namespace librealsense
             fisheye_sensor_lb = 112,
             fisheye_sensor_hb = 113,
             imu_acc_chip_id = 124,
+            ip65_sealed_offset = 161,
+            ir_filter_offset = 164,
             depth_sensor_type = 166,
             active_projector = 170,
             rgb_sensor = 174,

@@ -126,5 +126,6 @@ namespace librealsense
         friend class ds5u_depth_sensor;
     };
 
-    
+    // Update device name according capability in it.
+    void update_device_name(std::string& device_name, const ds::d400_caps cap);
 }
