@@ -136,7 +136,7 @@ def print_stack():
     """
     Function for printing the current call stack. Used when an assertion fails
     """
-    log.out( 'Traceback (most recent call last):' )
+    log.e( 'Traceback (most recent call last):' )
     stack = traceback.format_stack()
     # Avoid stack trace into format_stack():
     #     File "C:/work/git/lrs\unit-tests\py\rspy\test.py", line 124, in check
@@ -325,13 +325,14 @@ def check_exception(exception, expected_type, expected_msg = None, abort_if_fail
         failed = [ "    raised exception was", type(exception),
                  "\n    but expected", expected_type,
                  "\n  With message:", str(exception) ]
-    elif expected_msg and str(exception) != expected_msg:
+    elif expected_msg is not None and str(exception) != expected_msg:
         failed = [ "    exception message:", str(exception),
                  "\n    but we expected:", expected_msg ]
     if failed:
         print_stack()
         log.out( *failed )
         return check_failed( abort_if_failed )
+    log.d( 'caught exception:', exception )
     return check_passed()
 
 
@@ -344,8 +345,9 @@ def check_throws( _lambda, expected_type, expected_msg = None, abort_if_failed =
     try:
         _lambda()
     except Exception as e:
-        check_exception( e, expected_type, expected_msg, abort_if_failed )
-        return check_passed()
+        return check_exception( e, expected_type, expected_msg, abort_if_failed )
+    print_stack()
+    log.out( f'    expected {expected_type} but no exception was thrown' )
     return check_failed( abort_if_failed )
 
 
