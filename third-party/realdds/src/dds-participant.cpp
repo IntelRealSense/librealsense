@@ -45,8 +45,9 @@ namespace {
                     // least, so many could exist with the same name!
                     // To make it readable, we use the id, converting to '/<id>'
                     //      010f58cfc2dd816201000000.1c1  ->  /.1
-                    // NOTE: see 1.1.1 Valid Names (http://wiki.ros.org/Names)
-                    //      "A valid name has the following characteristics :
+                    // NOTE:
+                    //      http://design.ros2.org/articles/topic_and_service_names.html#dds-topic-names
+                    //      "A valid name has the following characteristics:
                     //          - First character is an alpha character ([a-z|A-Z]), tilde (~) or forward slash (/)
                     //          - Subsequent characters can be alphanumeric ([0-9|a-z|A-Z]), underscores (_), or forward slashes (/)"
                     // The '.' after the '/' is not strictly valid so can be identified as a custom addition by us...

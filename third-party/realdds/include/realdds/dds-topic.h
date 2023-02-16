@@ -22,6 +22,14 @@ namespace realdds {
 class dds_participant;
 
 
+// RAII for DDS/ROS topics:
+//      - The length of the DDS topic [name] must not exceed 256 characters
+//      - ROS2 topic names:
+//          - http://design.ros2.org/articles/topic_and_service_names.html#dds-topic-names
+//          - prefixed with "rt/" (note: can be overriden with avoid_ros_namespace_conventions)
+//          - start with [a-zA-z]; continue with [a-zA-z0-9_/]; see additional rules in above link
+//          - i.e., NO SPACES
+//
 class dds_topic
 {
     std::shared_ptr< dds_participant > const _participant;
