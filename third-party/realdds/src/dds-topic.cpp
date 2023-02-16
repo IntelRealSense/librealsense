@@ -26,9 +26,20 @@ dds_topic::dds_topic( std::shared_ptr< dds_participant > const & participant,
     DDS_API_CALL( topic_type.register_type( _participant->get() ) );
 
     // Create the topic
-    _topic = DDS_API_CALL( _participant->get()->create_topic( topic_name,
-                                                              topic_type->getName(),
-                                                              eprosima::fastdds::dds::TOPIC_QOS_DEFAULT ) );
+    _topic = _participant->get()->create_topic( topic_name,
+                                                topic_type->getName(),
+                                                eprosima::fastdds::dds::TOPIC_QOS_DEFAULT );
+    if( ! _topic )
+    {
+        // A topic cannot be created multiple times - if it already existed then create_topic will fail but find_topic
+        // will create for us a proxy to the existing one:
+        // (NOTE: an error will still be issued by FastDDS; this is useful for testing, though)
+        _topic = _participant->get()->find_topic( topic_name, 0 );  // timeout
+        if( ! _topic )
+            DDS_THROW( runtime_error,
+                       "cannot create topic '" + std::string( topic_name ) + "' of type '" + topic_type->getName()
+                           + "'" );
+    }
 
     // Topic constructor creates TypeObject that will be sent as part of DDS discovery phase
     void * data = topic_type->createData();
