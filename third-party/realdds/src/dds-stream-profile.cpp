@@ -2,6 +2,7 @@
 // Copyright(c) 2022 Intel Corporation. All Rights Reserved.
 
 #include <realdds/dds-stream-profile.h>
+#include <realdds/dds-stream-base.h>
 #include <realdds/dds-exceptions.h>
 
 #include <rsutils/json.h>
@@ -11,6 +12,13 @@ using nlohmann::json;
 
 
 namespace realdds {
+
+
+std::ostream & operator<<( std::ostream & os, dds_stream_profile const & profile )
+{
+    os << profile.to_string();
+    return os;
+}
 
 
 dds_stream_format::dds_stream_format( std::string const & s )
@@ -157,7 +165,10 @@ dds_stream_profile::dds_stream_profile( json const & j, int & it )
 std::string dds_stream_profile::to_string() const
 {
     std::ostringstream os;
-    os << '<' << details_to_string();
+    os << '<';
+    if( stream() )
+        os << "'" << stream()->name() << "' ";
+    os << details_to_string();
     os << '>';
     return os.str();
 }

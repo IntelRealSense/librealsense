@@ -10,6 +10,7 @@
 #include <string>
 #include <vector>
 #include <memory>
+#include <iosfwd>
 
 
 namespace realdds {
@@ -29,8 +30,6 @@ struct dds_stream_format
     }
 
     dds_stream_format( std::string const & s );
-    dds_stream_format( dds_stream_format const & ) = default;
-    dds_stream_format( dds_stream_format && ) = default;
 
     bool is_valid() const { return data[0] != 0; }
     operator bool() const { return is_valid(); }
@@ -97,6 +96,9 @@ private:
 
 
 typedef std::vector< std::shared_ptr< dds_stream_profile > > dds_stream_profiles;
+
+
+std::ostream & operator<<( std::ostream &, dds_stream_profile const & );
 
 
 class dds_video_stream_profile : public dds_stream_profile
