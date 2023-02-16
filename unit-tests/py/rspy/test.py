@@ -147,7 +147,7 @@ def print_stack():
     """
     Function for printing the current call stack. Used when an assertion fails
     """
-    log.out( 'Traceback (most recent call last):' )
+    log.e( 'Traceback (most recent call last):' )
     stack = traceback.format_stack()
     # Avoid stack trace into format_stack():
     #     File "C:/work/git/lrs\unit-tests\py\rspy\test.py", line 124, in check
@@ -156,7 +156,7 @@ def print_stack():
     #       stack = traceback.format_stack()
     stack = stack[:-2]
     for line in stack:
-        log.out( line, end = '' )  # format_stack() adds \n
+        log.out( line[:-1], line_prefix = '    ' )  # format_stack() adds \n
 
 
 """
@@ -239,13 +239,13 @@ def check_equal(result, expected, abort_if_failed = False):
         raise RuntimeError( "check_equal should not be used for lists. Use check_equal_lists instead" )
     if type(expected) != type(result):
         print_stack()
-        log.out( "    left  type:", type(result) )
-        log.out( "    right type:", type(expected) )
+        log.out( "        left  type:", type(result) )
+        log.out( "        right type:", type(expected) )
         return check_failed( abort_if_failed )
     if result != expected:
         print_stack()
-        log.out( "    left  :", result )
-        log.out( "    right :", expected )
+        log.out( "        left  :", result )
+        log.out( "        right :", expected )
         return check_failed( abort_if_failed )
     return check_passed()
 
@@ -261,8 +261,8 @@ def check_between( result, min, max, abort_if_failed = False ):
     """
     if result < min  or  result > max:
         print_stack()
-        log.out( "   result :", result )
-        log.out( "  between :", min, '-', max )
+        log.out( "       result :", result )
+        log.out( "      between :", min, '-', max )
         return check_failed( abort_if_failed )
     return check_passed()
 
@@ -320,8 +320,8 @@ def check_equal_lists(result, expected, abort_if_failed = False):
         i += 1
     if failed:
         print_stack()
-        log.out( "    result list  :", result )
-        log.out( "    expected list:", expected )
+        log.out( "        result list  :", result )
+        log.out( "        expected list:", expected )
         return check_failed( abort_if_failed )
     return check_passed()
 
@@ -372,16 +372,17 @@ def check_exception(exception, expected_type, expected_msg = None, abort_if_fail
     """
     failed = False
     if type(exception) != expected_type:
-        failed = [ "    raised exception was", type(exception),
-                 "\n    but expected", expected_type,
-                 "\n  With message:", str(exception) ]
-    elif expected_msg and str(exception) != expected_msg:
-        failed = [ "    exception message:", str(exception),
-                 "\n    but we expected:", expected_msg ]
+        failed = [ "        raised exception was", type(exception),
+                 "\n        but expected", expected_type,
+                 "\n      With message:", str(exception) ]
+    elif expected_msg is not None and str(exception) != expected_msg:
+        failed = [ "        exception message:", str(exception),
+                 "\n        but we expected  :", expected_msg ]
     if failed:
         print_stack()
         log.out( *failed )
         return check_failed( abort_if_failed )
+    log.d( 'expected exception:', exception )
     return check_passed()
 
 
@@ -394,8 +395,9 @@ def check_throws( _lambda, expected_type, expected_msg = None, abort_if_failed =
     try:
         _lambda()
     except Exception as e:
-        check_exception( e, expected_type, expected_msg, abort_if_failed )
-        return check_passed()
+        return check_exception( e, expected_type, expected_msg, abort_if_failed )
+    print_stack()
+    log.out( f'        expected {expected_type} but no exception was thrown' )
     return check_failed( abort_if_failed )
 
 
@@ -474,7 +476,7 @@ def print_info():
         return
     #log.out("Printing information")
     for name, information in test_info.items():
-        log.out( f"    {name} : {information.value}" )
+        log.out( f"        {name} : {information.value}" )
     reset_info()
 
 
