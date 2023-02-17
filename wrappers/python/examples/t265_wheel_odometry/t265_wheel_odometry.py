@@ -23,6 +23,7 @@ import pyrealsense2 as rs
 # get profile/device/ wheel odometry sensor by profile = cfg.resolve(pipe)
 pipe = rs.pipeline()
 cfg = rs.config()
+cfg.enable_stream(rs.stream.pose)
 profile = cfg.resolve(pipe)
 dev = profile.get_device()
 tm2 = dev.as_tm2()
@@ -43,7 +44,7 @@ if(tm2):
     wheel_odometer.load_wheel_odometery_config(chars)
 
 
-    pipe.start()
+    pipe.start(cfg)
     try:
         for _ in range(100):
             frames = pipe.wait_for_frames()
