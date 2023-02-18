@@ -46,7 +46,7 @@ $ cd ~
 $ git clone https://github.com/IntelRealSense/librealsense.git
 $ cd librealsense
 $ sudo cp config/99-realsense-libusb.rules /etc/udev/rules.d/ 
-$ sudo udevadm control --reload-rules && udevadm trigger 
+$ sudo udevadm control --reload-rules && sudo udevadm trigger 
 
 ```
 
