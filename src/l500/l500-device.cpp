@@ -299,7 +299,7 @@ namespace librealsense
     void l500_device::force_hardware_reset() const
     {
         command cmd(ivcam2::fw_cmd::HW_RESET);
-        //cmd.require_response = false;
+        cmd.require_response = false;
         _hw_monitor->send(cmd);
     }
 
@@ -348,7 +348,7 @@ namespace librealsense
             _hw_monitor->send( cmd );
 
             // We allow 6 seconds because on Linux the removal status is updated at a 5 seconds rate.
-            const int MAX_ITERATIONS_FOR_DEVICE_DISCONNECTED_LOOP = DISCONNECT_PERIOD_MS / 50;
+            const int MAX_ITERATIONS_FOR_DEVICE_DISCONNECTED_LOOP = DISCONNECT_PERIOD_MS / DELAY_FOR_RETRIES;
             for( auto i = 0; i < MAX_ITERATIONS_FOR_DEVICE_DISCONNECTED_LOOP; i++ )
             {
                 // If the device was detected as removed we assume the device is entering update
@@ -356,11 +356,11 @@ namespace librealsense
                 // and it is OK
                 if( ! is_valid() )
                 {
-                    //this_thread::sleep_for( milliseconds( DELAY_FOR_CONNECTION ) );
+                    this_thread::sleep_for( milliseconds( DELAY_FOR_CONNECTION ) );
                     return;
                 }
 
-                this_thread::sleep_for( milliseconds( 50 ) );
+                this_thread::sleep_for( milliseconds( DELAY_FOR_RETRIES ) );
             }
 
             if (device_changed_notifications_on())
