@@ -1,1 +1,0 @@
-E shiftTooManyBitsSigned         third-party/stb_image.h+1647                       Shifting signed 32-bit value by 31 bits is undefined behaviour

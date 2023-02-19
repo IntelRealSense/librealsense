@@ -41,10 +41,6 @@
         <error id="uninitMemberVar" severity="warning" msg="Member variable &apos;xml_attribute &lt; char &gt;::m_next_attribute&apos; is not initialized in the constructor." verbose="Member variable &apos;xml_attribute &lt; char &gt;::m_next_attribute&apos; is not initialized in the constructor." cwe="398" file0="common/measurement.cpp">
             <location file="third-party/rapidxml/rapidxml.hpp" line="810" column="9"/>
         </error>
-        <error id="virtualCallInConstructor" severity="style" msg="Virtual function &apos;clear&apos; is called from constructor &apos;frame_drops_dashboard(std::string name,int*frame_drop_count,int*total)&apos; at line 97. Dynamic binding is not used." verbose="Virtual function &apos;clear&apos; is called from constructor &apos;frame_drops_dashboard(std::string name,int*frame_drop_count,int*total)&apos; at line 97. Dynamic binding is not used." file0="common/measurement.cpp">
-            <location file="common/output-model.h" line="104" column="14" info="clear is a virtual function"/>
-            <location file="common/output-model.h" line="97" column="13" info="Calling clear"/>
-        </error>
         <error id="uninitMemberVar" severity="warning" msg="Member variable &apos;frame_callback::user&apos; is not initialized in the constructor." verbose="Member variable &apos;frame_callback::user&apos; is not initialized in the constructor." cwe="398" file0="common/calibration-model.cpp">
             <location file="src/types.h" line="665" column="9"/>
         </error>
@@ -62,6 +58,10 @@
         </error>
         <error id="uninitMemberVar" severity="warning" msg="Member variable &apos;hwmon_cmd::receivedOpcode&apos; is not initialized in the constructor." verbose="Member variable &apos;hwmon_cmd::receivedOpcode&apos; is not initialized in the constructor." cwe="398" file0="common/calibration-model.cpp">
             <location file="src/hw-monitor.h" line="287" column="22"/>
+        </error>
+        <error id="virtualCallInConstructor" severity="style" msg="Virtual function &apos;clear&apos; is called from constructor &apos;frame_drops_dashboard(std::string name,int*frame_drop_count,int*total)&apos; at line 97. Dynamic binding is not used." verbose="Virtual function &apos;clear&apos; is called from constructor &apos;frame_drops_dashboard(std::string name,int*frame_drop_count,int*total)&apos; at line 97. Dynamic binding is not used." file0="common/measurement.cpp">
+            <location file="common/output-model.h" line="104" column="14" info="clear is a virtual function"/>
+            <location file="common/output-model.h" line="97" column="13" info="Calling clear"/>
         </error>
         <error id="uninitMemberVar" severity="warning" msg="Member variable &apos;vao::_vertex_count&apos; is not initialized in the constructor." verbose="Member variable &apos;vao::_vertex_count&apos; is not initialized in the constructor." cwe="398" file0="common/opengl3.cpp">
             <location file="common/opengl3.cpp" line="126" column="6"/>
@@ -82,9 +82,6 @@
             <location file="common/post-processing-filter.h" line="56" column="24" info="process_frame is a pure virtual function without body"/>
             <location file="common/post-processing-filter.h" line="29" column="28" info="Calling process_frame"/>
         </error>
-        <error id="uninitMemberVar" severity="warning" msg="Member variable &apos;notification_model::category&apos; is not initialized in the constructor." verbose="Member variable &apos;notification_model::category&apos; is not initialized in the constructor." cwe="398" file0="common/notifications.cpp">
-            <location file="common/notifications.cpp" line="61" column="25"/>
-        </error>
         <error id="nullPointerRedundantCheck" severity="warning" msg="Either the condition &apos;dev&apos; is redundant or there is possible null pointer dereference: dev." verbose="Either the condition &apos;dev&apos; is redundant or there is possible null pointer dereference: dev." cwe="476" file0="common/model-views.cpp">
             <location file="common/model-views.cpp" line="2288" column="13" info="Null pointer dereference"/>
             <location file="common/model-views.cpp" line="2295" column="13" info="Assuming that condition &apos;dev&apos; is not redundant"/>
@@ -97,17 +94,26 @@
             <location file="common/model-views.cpp" line="2290" column="13" info="Null pointer dereference"/>
             <location file="common/model-views.cpp" line="2295" column="13" info="Assuming that condition &apos;dev&apos; is not redundant"/>
         </error>
-        <error id="nullPointer" severity="warning" msg="Possible null pointer dereference: exporter" verbose="Possible null pointer dereference: exporter" cwe="476" file0="common/viewer.cpp">
-            <location file="common/viewer.cpp" line="218" column="29" info="Null pointer dereference"/>
-            <location file="common/viewer.cpp" line="216" column="66" info="Assuming container is not empty"/>
-            <location file="common/viewer.cpp" line="212" column="33" info="Assuming condition is false"/>
-            <location file="common/viewer.cpp" line="211" column="54" info="Assignment &apos;std::unique_ptr&lt;rs2::filter&gt;exporter&apos;, assigned value is 0"/>
+        <error id="uninitMemberVar" severity="warning" msg="Member variable &apos;notification_model::category&apos; is not initialized in the constructor." verbose="Member variable &apos;notification_model::category&apos; is not initialized in the constructor." cwe="398" file0="common/notifications.cpp">
+            <location file="common/notifications.cpp" line="61" column="25"/>
         </error>
         <error id="uninitMemberVar" severity="warning" msg="Member variable &apos;instructions_printer::rendered_frames&apos; is not initialized in the constructor." verbose="Member variable &apos;instructions_printer::rendered_frames&apos; is not initialized in the constructor." cwe="398" file0="examples/gl/rs-gl.cpp">
             <location file="examples/gl/rs-gl.cpp" line="170" column="23"/>
         </error>
         <error id="uninitMemberVar" severity="warning" msg="Member variable &apos;instructions_printer::last_fps&apos; is not initialized in the constructor." verbose="Member variable &apos;instructions_printer::last_fps&apos; is not initialized in the constructor." cwe="398" file0="examples/gl/rs-gl.cpp">
             <location file="examples/gl/rs-gl.cpp" line="170" column="23"/>
+        </error>
+        <error id="nullPointer" severity="warning" msg="Possible null pointer dereference: exporter" verbose="Possible null pointer dereference: exporter" cwe="476" file0="common/viewer.cpp">
+            <location file="common/viewer.cpp" line="218" column="29" info="Null pointer dereference"/>
+            <location file="common/viewer.cpp" line="216" column="66" info="Assuming container is not empty"/>
+            <location file="common/viewer.cpp" line="212" column="33" info="Assuming condition is false"/>
+            <location file="common/viewer.cpp" line="211" column="54" info="Assignment &apos;std::unique_ptr&lt;rs2::filter&gt;exporter&apos;, assigned value is 0"/>
+        </error>
+        <error id="uninitMemberVar" severity="warning" msg="Member variable &apos;rect_gaussian_dots_target_calculator::_corners&apos; is not initialized in the constructor." verbose="Member variable &apos;rect_gaussian_dots_target_calculator::_corners&apos; is not initialized in the constructor." cwe="398" file0="src/algo.cpp">
+            <location file="src/algo.cpp" line="564" column="39"/>
+        </error>
+        <error id="uninitMemberVar" severity="warning" msg="Member variable &apos;rect_gaussian_dots_target_calculator::_pts&apos; is not initialized in the constructor." verbose="Member variable &apos;rect_gaussian_dots_target_calculator::_pts&apos; is not initialized in the constructor." cwe="398" file0="src/algo.cpp">
+            <location file="src/algo.cpp" line="564" column="39"/>
         </error>
         <error id="uninitMemberVar" severity="warning" msg="Member variable &apos;backend_frame::fo&apos; is not initialized in the constructor." verbose="Member variable &apos;backend_frame::fo&apos; is not initialized in the constructor." cwe="398" file0="src/android/device_watcher.cpp">
             <location file="src/uvc/uvc-types.h" line="423" column="5"/>
@@ -132,12 +138,6 @@
         </error>
         <error id="operatorEqVarError" severity="warning" msg="Member variable &apos;backend_frame::owner&apos; is not assigned a value in &apos;backend_frame::operator=&apos;." verbose="Member variable &apos;backend_frame::owner&apos; is not assigned a value in &apos;backend_frame::operator=&apos;." cwe="398" file0="src/android/device_watcher.cpp">
             <location file="src/uvc/uvc-types.h" line="431" column="20"/>
-        </error>
-        <error id="uninitMemberVar" severity="warning" msg="Member variable &apos;rect_gaussian_dots_target_calculator::_corners&apos; is not initialized in the constructor." verbose="Member variable &apos;rect_gaussian_dots_target_calculator::_corners&apos; is not initialized in the constructor." cwe="398" file0="src/algo.cpp">
-            <location file="src/algo.cpp" line="564" column="39"/>
-        </error>
-        <error id="uninitMemberVar" severity="warning" msg="Member variable &apos;rect_gaussian_dots_target_calculator::_pts&apos; is not initialized in the constructor." verbose="Member variable &apos;rect_gaussian_dots_target_calculator::_pts&apos; is not initialized in the constructor." cwe="398" file0="src/algo.cpp">
-            <location file="src/algo.cpp" line="564" column="39"/>
         </error>
         <error id="virtualCallInConstructor" severity="style" msg="Virtual function &apos;reset&apos; is called from constructor &apos;l500_timestamp_reader(std::shared_ptr&lt;platform::time_service&gt;ts)&apos; at line 488. Dynamic binding is not used." verbose="Virtual function &apos;reset&apos; is called from constructor &apos;l500_timestamp_reader(std::shared_ptr&lt;platform::time_service&gt;ts)&apos; at line 488. Dynamic binding is not used." file0="src/algo/thermal-loop/l500-thermal-loop.cpp">
             <location file="src/l500/l500-private.h" line="491" column="18" info="reset is a virtual function"/>
@@ -168,6 +168,22 @@
         </error>
         <error id="uninitMemberVar" severity="warning" msg="Member variable &apos;limits_option::_cached_limit&apos; is not initialized in the constructor." verbose="Member variable &apos;limits_option::_cached_limit&apos; is not initialized in the constructor." cwe="398" file0="src/ds/d400/d400-active.cpp">
             <location file="src/ds/d400/d400-options.h" line="105" column="9"/>
+        </error>
+        <error id="duplInheritedMember" severity="warning" msg="The class &apos;d400_color&apos; defines member variable with name &apos;_color_stream&apos; also defined in its parent class &apos;d400_device&apos;." verbose="The class &apos;d400_color&apos; defines member variable with name &apos;_color_stream&apos; also defined in its parent class &apos;d400_device&apos;." cwe="398" file0="src/ds/d400/d400-color.cpp">
+            <location file="src/ds/d400/d400-color.h" line="33" column="43" info="Derived variable &apos;d400_color::_color_stream&apos;"/>
+            <location file="src/ds/d400/d400-device.h" line="98" column="43" info="Parent variable &apos;d400_device::_color_stream&apos;"/>
+        </error>
+        <error id="duplInheritedMember" severity="warning" msg="The class &apos;d400_color&apos; defines member variable with name &apos;_color_calib_table_raw&apos; also defined in its parent class &apos;d400_device&apos;." verbose="The class &apos;d400_color&apos; defines member variable with name &apos;_color_calib_table_raw&apos; also defined in its parent class &apos;d400_device&apos;." cwe="398" file0="src/ds/d400/d400-color.cpp">
+            <location file="src/ds/d400/d400-color.h" line="55" column="36" info="Derived variable &apos;d400_color::_color_calib_table_raw&apos;"/>
+            <location file="src/ds/d400/d400-device.h" line="108" column="36" info="Parent variable &apos;d400_device::_color_calib_table_raw&apos;"/>
+        </error>
+        <error id="duplInheritedMember" severity="warning" msg="The class &apos;d400_color&apos; defines member variable with name &apos;_color_extrinsic&apos; also defined in its parent class &apos;d400_device&apos;." verbose="The class &apos;d400_color&apos; defines member variable with name &apos;_color_extrinsic&apos; also defined in its parent class &apos;d400_device&apos;." cwe="398" file0="src/ds/d400/d400-color.cpp">
+            <location file="src/ds/d400/d400-color.h" line="56" column="47" info="Derived variable &apos;d400_color::_color_extrinsic&apos;"/>
+            <location file="src/ds/d400/d400-device.h" line="109" column="47" info="Parent variable &apos;d400_device::_color_extrinsic&apos;"/>
+        </error>
+        <error id="duplInheritedMember" severity="warning" msg="The class &apos;d400_color_sensor&apos; defines member variable with name &apos;_owner&apos; also defined in its parent class &apos;sensor_base&apos;." verbose="The class &apos;d400_color_sensor&apos; defines member variable with name &apos;_owner&apos; also defined in its parent class &apos;sensor_base&apos;." cwe="398" file0="src/ds/d400/d400-color.cpp">
+            <location file="src/ds/d400/d400-color.h" line="78" column="27" info="Derived variable &apos;d400_color_sensor::_owner&apos;"/>
+            <location file="src/sensor.h" line="123" column="17" info="Parent variable &apos;sensor_base::_owner&apos;"/>
         </error>
         <error id="uninitMemberVar" severity="warning" msg="Member variable &apos;preset_param_group::depth_controls&apos; is not initialized in the constructor." verbose="Member variable &apos;preset_param_group::depth_controls&apos; is not initialized in the constructor." cwe="398" file0="src/ds/advanced_mode/advanced_mode.cpp">
             <location file="src/ds/advanced_mode/json_loader.hpp" line="70" column="9"/>
@@ -211,22 +227,6 @@
         <error id="uninitMemberVar" severity="warning" msg="Member variable &apos;json_string_struct_field::strct&apos; is not initialized in the constructor." verbose="Member variable &apos;json_string_struct_field::strct&apos; is not initialized in the constructor." cwe="398" file0="src/ds/advanced_mode/advanced_mode.cpp">
             <location file="src/ds/advanced_mode/json_loader.hpp" line="171" column="9"/>
         </error>
-        <error id="duplInheritedMember" severity="warning" msg="The class &apos;d400_color&apos; defines member variable with name &apos;_color_stream&apos; also defined in its parent class &apos;d400_device&apos;." verbose="The class &apos;d400_color&apos; defines member variable with name &apos;_color_stream&apos; also defined in its parent class &apos;d400_device&apos;." cwe="398" file0="src/ds/d400/d400-color.cpp">
-            <location file="src/ds/d400/d400-color.h" line="33" column="43" info="Derived variable &apos;d400_color::_color_stream&apos;"/>
-            <location file="src/ds/d400/d400-device.h" line="98" column="43" info="Parent variable &apos;d400_device::_color_stream&apos;"/>
-        </error>
-        <error id="duplInheritedMember" severity="warning" msg="The class &apos;d400_color&apos; defines member variable with name &apos;_color_calib_table_raw&apos; also defined in its parent class &apos;d400_device&apos;." verbose="The class &apos;d400_color&apos; defines member variable with name &apos;_color_calib_table_raw&apos; also defined in its parent class &apos;d400_device&apos;." cwe="398" file0="src/ds/d400/d400-color.cpp">
-            <location file="src/ds/d400/d400-color.h" line="55" column="36" info="Derived variable &apos;d400_color::_color_calib_table_raw&apos;"/>
-            <location file="src/ds/d400/d400-device.h" line="108" column="36" info="Parent variable &apos;d400_device::_color_calib_table_raw&apos;"/>
-        </error>
-        <error id="duplInheritedMember" severity="warning" msg="The class &apos;d400_color&apos; defines member variable with name &apos;_color_extrinsic&apos; also defined in its parent class &apos;d400_device&apos;." verbose="The class &apos;d400_color&apos; defines member variable with name &apos;_color_extrinsic&apos; also defined in its parent class &apos;d400_device&apos;." cwe="398" file0="src/ds/d400/d400-color.cpp">
-            <location file="src/ds/d400/d400-color.h" line="56" column="47" info="Derived variable &apos;d400_color::_color_extrinsic&apos;"/>
-            <location file="src/ds/d400/d400-device.h" line="109" column="47" info="Parent variable &apos;d400_device::_color_extrinsic&apos;"/>
-        </error>
-        <error id="duplInheritedMember" severity="warning" msg="The class &apos;d400_color_sensor&apos; defines member variable with name &apos;_owner&apos; also defined in its parent class &apos;sensor_base&apos;." verbose="The class &apos;d400_color_sensor&apos; defines member variable with name &apos;_owner&apos; also defined in its parent class &apos;sensor_base&apos;." cwe="398" file0="src/ds/d400/d400-color.cpp">
-            <location file="src/ds/d400/d400-color.h" line="78" column="27" info="Derived variable &apos;d400_color_sensor::_owner&apos;"/>
-            <location file="src/sensor.h" line="123" column="17" info="Parent variable &apos;sensor_base::_owner&apos;"/>
-        </error>
         <error id="uninitMemberVar" severity="warning" msg="Member variable &apos;auto_calibrated::_old_preset_values&apos; is not initialized in the constructor." verbose="Member variable &apos;auto_calibrated::_old_preset_values&apos; is not initialized in the constructor." cwe="398" file0="src/ds/d400/d400-auto-calibration.cpp">
             <location file="src/ds/d400/d400-auto-calibration.cpp" line="189" column="22"/>
         </error>
@@ -245,15 +245,11 @@
         <error id="uninitMemberVar" severity="warning" msg="Member variable &apos;auto_calibrated::_fill_factor&apos; is not initialized in the constructor." verbose="Member variable &apos;auto_calibrated::_fill_factor&apos; is not initialized in the constructor." cwe="398" file0="src/ds/d400/d400-auto-calibration.cpp">
             <location file="src/ds/d400/d400-auto-calibration.cpp" line="189" column="22"/>
         </error>
-        <error id="uninitMemberVar" severity="warning" msg="Member variable &apos;d400_depth_sensor::_stereo_baseline_mm&apos; is not initialized in the constructor." verbose="Member variable &apos;d400_depth_sensor::_stereo_baseline_mm&apos; is not initialized in the constructor." cwe="398" file0="src/ds/d400/d400-device.cpp">
-            <location file="src/ds/d400/d400-device.cpp" line="118" column="18"/>
-        </error>
         <error id="uninitMemberVar" severity="warning" msg="Member variable &apos;optional_value &lt; uint8_t &gt;::_value&apos; is not initialized in the constructor." verbose="Member variable &apos;optional_value &lt; uint8_t &gt;::_value&apos; is not initialized in the constructor." cwe="398" file0="src/ds/d400/d400-factory.cpp">
             <location file="src/types.h" line="1260" column="9"/>
         </error>
-        <error id="identicalInnerCondition" severity="warning" msg="Identical inner &apos;if&apos; condition is always true." verbose="Identical inner &apos;if&apos; condition is always true (outer condition is &apos;depth==0&apos; and inner condition is &apos;depth==0&apos;)." cwe="398" file0="src/ds/d400/d400-auto-calibration.cpp">
-            <location file="src/ds/d400/d400-auto-calibration.cpp" line="955" column="27" info="identical inner condition: depth==0"/>
-            <location file="src/ds/d400/d400-auto-calibration.cpp" line="919" column="23" info="outer condition: depth==0"/>
+        <error id="uninitMemberVar" severity="warning" msg="Member variable &apos;d400_depth_sensor::_stereo_baseline_mm&apos; is not initialized in the constructor." verbose="Member variable &apos;d400_depth_sensor::_stereo_baseline_mm&apos; is not initialized in the constructor." cwe="398" file0="src/ds/d400/d400-device.cpp">
+            <location file="src/ds/d400/d400-device.cpp" line="118" column="18"/>
         </error>
         <error id="duplInheritedMember" severity="warning" msg="The class &apos;ds_fisheye_sensor&apos; defines member variable with name &apos;_owner&apos; also defined in its parent class &apos;sensor_base&apos;." verbose="The class &apos;ds_fisheye_sensor&apos; defines member variable with name &apos;_owner&apos; also defined in its parent class &apos;sensor_base&apos;." cwe="398" file0="src/ds/d400/d400-factory.cpp">
             <location file="src/ds/ds-motion-common.h" line="75" column="17" info="Derived variable &apos;ds_fisheye_sensor::_owner&apos;"/>
@@ -270,6 +266,10 @@
         <error id="duplInheritedMember" severity="warning" msg="The class &apos;d400_motion&apos; defines member variable with name &apos;_motion_module_device_idx&apos; also defined in its parent class &apos;d400_motion_base&apos;." verbose="The class &apos;d400_motion&apos; defines member variable with name &apos;_motion_module_device_idx&apos; also defined in its parent class &apos;d400_motion_base&apos;." cwe="398" file0="src/ds/d400/d400-factory.cpp">
             <location file="src/ds/d400/d400-motion.h" line="69" column="33" info="Derived variable &apos;d400_motion::_motion_module_device_idx&apos;"/>
             <location file="src/ds/d400/d400-motion.h" line="39" column="33" info="Parent variable &apos;d400_motion_base::_motion_module_device_idx&apos;"/>
+        </error>
+        <error id="identicalInnerCondition" severity="warning" msg="Identical inner &apos;if&apos; condition is always true." verbose="Identical inner &apos;if&apos; condition is always true (outer condition is &apos;depth==0&apos; and inner condition is &apos;depth==0&apos;)." cwe="398" file0="src/ds/d400/d400-auto-calibration.cpp">
+            <location file="src/ds/d400/d400-auto-calibration.cpp" line="955" column="27" info="identical inner condition: depth==0"/>
+            <location file="src/ds/d400/d400-auto-calibration.cpp" line="919" column="23" info="outer condition: depth==0"/>
         </error>
         <error id="duplInheritedMember" severity="warning" msg="The class &apos;d400_depth_sensor&apos; defines member variable with name &apos;_owner&apos; also defined in its parent class &apos;sensor_base&apos;." verbose="The class &apos;d400_depth_sensor&apos; defines member variable with name &apos;_owner&apos; also defined in its parent class &apos;sensor_base&apos;." cwe="398" file0="src/ds/d400/d400-device.cpp">
             <location file="src/ds/d400/d400-device.cpp" line="325" column="28" info="Derived variable &apos;d400_depth_sensor::_owner&apos;"/>
@@ -290,6 +290,9 @@
             <location file="src/proc/motion-transform.h" line="49" column="51" info="Derived variable &apos;motion_to_accel_gyro::_source_stream_profile&apos;"/>
             <location file="src/proc/synthetic-stream.h" line="154" column="29" info="Parent variable &apos;functional_processing_block::_source_stream_profile&apos;"/>
         </error>
+        <error id="uninitMemberVar" severity="warning" msg="Member variable &apos;fw_log_data::_thread_id&apos; is not initialized in the constructor." verbose="Member variable &apos;fw_log_data::_thread_id&apos; is not initialized in the constructor." cwe="398" file0="src/fw-logs/fw-log-data.cpp">
+            <location file="src/fw-logs/fw-log-data.cpp" line="18" column="22"/>
+        </error>
         <error id="virtualCallInConstructor" severity="style" msg="Virtual function &apos;reset&apos; is called from constructor &apos;ds_timestamp_reader_from_metadata(std::unique_ptr&lt;frame_timestamp_reader&gt;backup_timestamp_reader)&apos; at line 21. Dynamic binding is not used." verbose="Virtual function &apos;reset&apos; is called from constructor &apos;ds_timestamp_reader_from_metadata(std::unique_ptr&lt;frame_timestamp_reader&gt;backup_timestamp_reader)&apos; at line 21. Dynamic binding is not used." file0="src/ds/ds-timestamp.cpp">
             <location file="src/ds/ds-timestamp.h" line="31" column="14" info="reset is a virtual function"/>
             <location file="src/ds/ds-timestamp.cpp" line="21" column="9" info="Calling reset"/>
@@ -301,9 +304,6 @@
         <error id="virtualCallInConstructor" severity="style" msg="Virtual function &apos;reset&apos; is called from constructor &apos;ds_custom_hid_timestamp_reader()&apos; at line 331. Dynamic binding is not used." verbose="Virtual function &apos;reset&apos; is called from constructor &apos;ds_custom_hid_timestamp_reader()&apos; at line 331. Dynamic binding is not used." file0="src/ds/ds-timestamp.cpp">
             <location file="src/ds/ds-timestamp.h" line="95" column="14" info="reset is a virtual function"/>
             <location file="src/ds/ds-timestamp.cpp" line="331" column="9" info="Calling reset"/>
-        </error>
-        <error id="uninitMemberVar" severity="warning" msg="Member variable &apos;fw_log_data::_thread_id&apos; is not initialized in the constructor." verbose="Member variable &apos;fw_log_data::_thread_id&apos; is not initialized in the constructor." cwe="398" file0="src/fw-logs/fw-log-data.cpp">
-            <location file="src/fw-logs/fw-log-data.cpp" line="18" column="22"/>
         </error>
         <error id="uninitMemberVar" severity="warning" msg="Member variable &apos;firmware_logger_device::_device_pid&apos; is not initialized in the constructor." verbose="Member variable &apos;firmware_logger_device::_device_pid&apos; is not initialized in the constructor." cwe="398" file0="src/firmware_logger_device.cpp">
             <location file="src/firmware_logger_device.cpp" line="9" column="29"/>
@@ -437,21 +437,6 @@
             <location file="src/media/ros/ros_reader.h" line="26" column="14" info="reset is a virtual function"/>
             <location file="src/media/ros/ros_reader.cpp" line="39" column="13" info="Calling reset"/>
         </error>
-        <error id="shiftTooManyBitsSigned" severity="error" msg="Shifting signed 32-bit value by 31 bits is undefined behaviour" verbose="Shifting signed 32-bit value by 31 bits is undefined behaviour" cwe="758" file0="src/proc/color-formats-converter.cpp">
-            <location file="third-party/stb_image.h" line="1647" column="38" info="Shift"/>
-        </error>
-        <error id="shiftTooManyBits" severity="warning" msg="Shifting 32-bit value by 4294967295 bits is undefined behaviour. See condition at line 1649." verbose="Shifting 32-bit value by 4294967295 bits is undefined behaviour. See condition at line 1649." cwe="758" file0="src/proc/color-formats-converter.cpp">
-            <location file="third-party/stb_image.h" line="1648" column="8" info="Shift"/>
-            <location file="third-party/stb_image.h" line="1649" column="4" info="Assuming that condition &apos;n&gt;=0&apos; is not redundant"/>
-        </error>
-        <error id="shiftTooManyBits" severity="warning" msg="Shifting 32-bit value by 33 bits is undefined behaviour. See condition at line 1649." verbose="Shifting 32-bit value by 33 bits is undefined behaviour. See condition at line 1649." cwe="758" file0="src/proc/color-formats-converter.cpp">
-            <location file="third-party/stb_image.h" line="1648" column="8" info="Shift"/>
-            <location file="third-party/stb_image.h" line="1649" column="4" info="Assuming that condition &apos;n&gt;=0&apos; is not redundant"/>
-        </error>
-        <error id="signConversionCond" severity="warning" msg="Expression &apos;n&apos; can have a negative value. That is converted to an unsigned value and used in an unsigned calculation." verbose="Expression &apos;n&apos; can have a negative value. That is converted to an unsigned value and used in an unsigned calculation." cwe="195" file0="src/proc/color-formats-converter.cpp">
-            <location file="third-party/stb_image.h" line="1648" column="8" info="Negative value is converted to an unsigned value"/>
-            <location file="third-party/stb_image.h" line="1649" column="4" info="Assuming that condition &apos;n&gt;=0&apos; is not redundant"/>
-        </error>
         <error id="uninitMemberVar" severity="warning" msg="Member variable &apos;disparity_transform::_stereoscopic_depth&apos; is not initialized in the constructor." verbose="Member variable &apos;disparity_transform::_stereoscopic_depth&apos; is not initialized in the constructor." cwe="398" file0="src/proc/disparity-transform.cpp">
             <location file="src/proc/disparity-transform.cpp" line="18" column="26"/>
         </error>
@@ -534,13 +519,13 @@
             <location file="src/pipeline/aggregator.h" line="16" column="24" info="Derived variable &apos;aggregator::_mutex&apos;"/>
             <location file="src/proc/synthetic-stream.h" line="61" column="20" info="Parent variable &apos;processing_block::_mutex&apos;"/>
         </error>
-        <error id="derefInvalidIteratorRedundantCheck" severity="warning" msg="Either the condition &apos;format!=formats.end()&apos; is redundant or there is possible dereference of an invalid iterator: format." verbose="Either the condition &apos;format!=formats.end()&apos; is redundant or there is possible dereference of an invalid iterator: format." cwe="825" file0="tools/enumerate-devices/rs-enumerate-devices.cpp">
-            <location file="tools/enumerate-devices/rs-enumerate-devices.cpp" line="180" column="16" info="Dereference of an invalid iterator"/>
-            <location file="tools/enumerate-devices/rs-enumerate-devices.cpp" line="180" column="35" info="Assuming that condition &apos;format!=formats.end()&apos; is not redundant"/>
-        </error>
         <error id="funcArgOrderDifferent" severity="warning" msg="Function &apos;rs2_software_sensor_set_metadata&apos; argument order different: declaration &apos;sensor, value, type, error&apos; definition &apos;sensor, key, value, error&apos;" verbose="Function &apos;rs2_software_sensor_set_metadata&apos; argument order different: declaration &apos;sensor, value, type, error&apos; definition &apos;sensor, key, value, error&apos;" cwe="683" file0="src/rs.cpp">
             <location file="src/rs.cpp" line="2593" column="51"/>
             <location file="include/librealsense2/h/rs_internal.h" line="229" column="51"/>
+        </error>
+        <error id="derefInvalidIteratorRedundantCheck" severity="warning" msg="Either the condition &apos;format!=formats.end()&apos; is redundant or there is possible dereference of an invalid iterator: format." verbose="Either the condition &apos;format!=formats.end()&apos; is redundant or there is possible dereference of an invalid iterator: format." cwe="825" file0="tools/enumerate-devices/rs-enumerate-devices.cpp">
+            <location file="tools/enumerate-devices/rs-enumerate-devices.cpp" line="180" column="16" info="Dereference of an invalid iterator"/>
+            <location file="tools/enumerate-devices/rs-enumerate-devices.cpp" line="180" column="35" info="Assuming that condition &apos;format!=formats.end()&apos; is not redundant"/>
         </error>
         <error id="uninitMemberVar" severity="warning" msg="Member variable &apos;metrics_recorder::_metrics&apos; is not initialized in the constructor." verbose="Member variable &apos;metrics_recorder::_metrics&apos; is not initialized in the constructor." cwe="398" file0="tools/depth-quality/rs-depth-quality.cpp">
             <location file="tools/depth-quality/depth-quality-model.h" line="44" column="13"/>
