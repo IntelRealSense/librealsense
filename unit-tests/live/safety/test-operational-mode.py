@@ -29,7 +29,7 @@ cfg.enable_stream(rs.stream.depth)
 cfg.enable_stream(rs.stream.color)
 
 pipe = rs.pipeline()
-profiles = pipe.start(config)
+profiles = pipe.start(cfg)
 
 f = pipe.wait_for_frames()
 
