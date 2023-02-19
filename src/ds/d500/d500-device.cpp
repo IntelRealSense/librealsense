@@ -484,7 +484,8 @@ namespace librealsense
         using namespace platform;
 
         std::string optic_serial, asic_serial, pid_hex_str, usb_type_str;
-        bool advanced_mode, usb_modality;
+        bool advanced_mode = false;
+        bool usb_modality = true;
         group_multiple_fw_calls(depth_sensor, [&]() {
             std::string fwv;
             _ds_device_common->get_fw_details(optic_serial, asic_serial, fwv);
