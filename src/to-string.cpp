@@ -265,6 +265,7 @@ const char * get_string( rs2_extension value )
     CASE( DEBUG_STREAM_SENSOR )
     CASE( CALIBRATION_CHANGE_DEVICE )
     CASE( SAFETY_SENSOR )
+    CASE( MAPPING_SENSOR )
     default:
         assert( ! is_valid( value ) );
         return UNKNOWN_VALUE;
