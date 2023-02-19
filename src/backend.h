@@ -28,6 +28,7 @@
 const uint16_t MAX_RETRIES                 = 20;
 const uint8_t  DEFAULT_V4L2_FRAME_BUFFERS  = 4;
 const uint16_t DELAY_FOR_RETRIES           = 10;
+const uint16_t DELAY_FOR_CONNECTION        = 50;
 const int      DISCONNECT_PERIOD_MS        = 6000;
 const int      POLLING_DEVICES_INTERVAL_MS = 2000;
 
