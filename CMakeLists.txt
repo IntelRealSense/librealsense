@@ -1,10 +1,9 @@
 #  minimum required cmake version: 3.1.0
 cmake_minimum_required(VERSION 3.1.0)
 
-# This policy provides compatibility with projects that expect the legacy GL library to be used.
+# The NEW policy flag set OpenGL_GL_PREFERENCE variable to GLVND if it was founds.
 if (POLICY CMP0072 AND UNIX AND NOT APPLE)
 	set(CMAKE_POLICY_DEFAULT_CMP0072 NEW)
-	message(STATUS "Policy CMP0072 setted: NEW")
 endif()
 
 set( LRS_TARGET realsense2 )
