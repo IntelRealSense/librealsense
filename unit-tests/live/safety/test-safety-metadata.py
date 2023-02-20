@@ -1,14 +1,11 @@
 # License: Apache 2.0. See LICENSE file in root directory.
 # Copyright(c) 2023 Intel Corporation. All Rights Reserved.
 
-#test:donotrun
+# test:donotrun
 # test:device D585S
 
 import pyrealsense2 as rs
-from rspy import test
-
-
-print("remi")
+from rspy import test,log
 
 safety_metadata_values = [rs.frame_metadata_value.frame_counter,
                           rs.frame_metadata_value.frame_timestamp,
@@ -41,7 +38,7 @@ point_cloud_metadata_values = [rs.frame_metadata_value.frame_counter,
 def check_md_value(frame, md_value):
     test.check(frame.supports_frame_metadata(md_value))
     val = frame.get_frame_metadata(md_value)
-    rs.log(rs.log_severity.info, repr(md_value) + ": " + repr(val))
+    log.i(repr(md_value) + ": " + repr(val))
 
 
 def check_safety_metadata(frame):
@@ -78,7 +75,7 @@ def check_counter_and_timestamp_increase(frame, fps):
 
 
 ################# Checking safety metadata required fileds are received ##################
-test.start("Checking Safety Stream Metadata received")
+test.start("Checking safety stream metadata received")
 
 cfg = rs.config()
 cfg.enable_stream(rs.stream.safety)
@@ -86,14 +83,14 @@ pipe = rs.pipeline()
 pipe.start(cfg)
 iterations = 0
 while iterations < 20:
-    iterations = iterations + 1
+    iterations += 1
     f = pipe.wait_for_frames()
     check_safety_metadata(f)
 pipe.stop()
 test.finish()
 
 ################# Checking occupancy metadata required fileds are received ##################
-test.start("Checking Occupancy Stream Metadata received")
+test.start("Checking occupancy stream metadata received")
 
 cfg = rs.config()
 cfg.enable_stream(rs.stream.occupancy)
@@ -101,14 +98,14 @@ pipe = rs.pipeline()
 pipe.start(cfg)
 iterations = 0
 while iterations < 20:
-    iterations = iterations + 1
+    iterations += 1
     f = pipe.wait_for_frames()
     check_occupancy_metadata(f)
 pipe.stop()
 test.finish()
 
 ################# Checking point cloud metadata required fileds are received ##################
-test.start("Checking Point Cloud Stream Metadata received")
+test.start("Checking point cloud stream metadata received")
 
 cfg = rs.config()
 cfg.enable_stream(rs.stream.point_cloud)
@@ -116,14 +113,14 @@ pipe = rs.pipeline()
 pipe.start(cfg)
 iterations = 0
 while iterations < 20:
-    iterations = iterations + 1
+    iterations += 1
     f = pipe.wait_for_frames()
     check_point_cloud_metadata(f)
 pipe.stop()
 test.finish()
 
 ################# Checking safety frame counter and timestamp increasing ##################
-test.start("Checking Safety Stream Metadata frame counter and timestamp increasing")
+test.start("Checking safety stream metadata frame counter and timestamp increasing")
 cfg = rs.config()
 fps = 30
 cfg.enable_stream(rs.stream.safety, rs.format.raw8, fps)
@@ -131,37 +128,37 @@ pipe = rs.pipeline()
 pipe.start(cfg)
 iterations = 0
 while iterations < 20:
-    iterations = iterations + 1
+    iterations += 1
     f = pipe.wait_for_frames()
     check_counter_and_timestamp_increase(f, fps)
 pipe.stop()
 test.finish()
 
 ################# Checking occupancy frame counter and timestamp increasing ##################
-test.start("Checking Occupancy Stream Metadata frame counter and timestamp increasing")
+test.start("Checking occupancy stream metadata frame counter and timestamp increasing")
 cfg = rs.config()
 fps = 30
-cfg.enable_stream(rs.stream.occupancy)
+cfg.enable_stream(rs.stream.occupancy, rs.format.occupancy, fps)
 pipe = rs.pipeline()
 pipe.start(cfg)
 iterations = 0
 while iterations < 20:
-    iterations = iterations + 1
+    iterations += 1
     f = pipe.wait_for_frames()
     check_counter_and_timestamp_increase(f, fps)
 pipe.stop()
 test.finish()
 
 ################# Checking point cloud frame counter and timestamp increasing ##################
-test.start("Checking Point Cloud Stream Metadata frame counter and timestamp increasing")
+test.start("Checking point cloud stream metadata frame counter and timestamp increasing")
 cfg = rs.config()
 fps = 30
-cfg.enable_stream(rs.stream.point_cloud)
+cfg.enable_stream(rs.stream.point_cloud, rs.format.xyz32, fps)
 pipe = rs.pipeline()
 pipe.start(cfg)
 iterations = 0
 while iterations < 20:
-    iterations = iterations + 1
+    iterations += 1
     f = pipe.wait_for_frames()
     check_counter_and_timestamp_increase(f, fps)
 pipe.stop()
