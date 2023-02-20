@@ -1,11 +1,6 @@
 #  minimum required cmake version: 3.1.0
 cmake_minimum_required(VERSION 3.1.0)
 
-# The NEW policy flag set OpenGL_GL_PREFERENCE variable to GLVND if it was founds.
-# if (POLICY CMP0072 AND UNIX AND NOT APPLE)
-#	set(CMAKE_POLICY_DEFAULT_CMP0072 NEW)
-# endif()
-
 set( LRS_TARGET realsense2 )
 project( ${LRS_TARGET} LANGUAGES CXX C )
 
