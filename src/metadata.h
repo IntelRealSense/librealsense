@@ -723,18 +723,6 @@ namespace librealsense
     };
     REGISTER_MD_TYPE(md_safety_info, md_type::META_DATA_INTEL_SAFETY_ID)
 
-    struct md_mapping_common_info
-    {
-        uint32_t    frame_counter;
-        uint32_t    depth_frame_counter;
-        uint32_t    frame_timestamp;
-        uint32_t    floor_plane_equation_a;
-        uint32_t    floor_plane_equation_b;
-        uint32_t    floor_plane_equation_c;
-        uint32_t    floor_plane_equation_d;
-        uint8_t     safety_preset_id;
-    };
-
     /**\brief md_occupancy - Occupancy Frame */
     struct md_occupancy
     {

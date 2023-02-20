@@ -13,8 +13,6 @@ namespace librealsense {
 
         void create_snapshot(std::shared_ptr<mapping_sensor>& snapshot) const override;
         void enable_recording(std::function<void(const mapping_sensor&)> recording_function) override {};
-        //virtual void set_mapping_preset(int index, const rs2_mapping_preset& sp) const = 0;
-        //virtual rs2_mapping_preset get_mapping_preset(int index) const = 0;
     };
     MAP_EXTENSION(RS2_EXTENSION_MAPPING_SENSOR, librealsense::mapping_sensor);
 
@@ -36,11 +34,5 @@ namespace librealsense {
         {
             //empty
         }
-
-        //void set_mapping_preset(int index, const rs2_mapping_preset& sp)  const {};
-        //rs2_mapping_preset get_mapping_preset(int index) const
-        //{
-        //    return rs2_mapping_preset();
-        //}
     };
 }

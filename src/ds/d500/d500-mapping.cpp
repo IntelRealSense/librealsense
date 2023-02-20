@@ -3,11 +3,8 @@
 
 #include "d500-mapping.h"
 
-#include <mutex>
-#include <chrono>
 #include <vector>
 #include <map>
-#include <iterator>
 #include <cstddef>
 
 #include "ds/ds-timestamp.h"
@@ -68,8 +65,6 @@ namespace librealsense
             backend.create_uvc_device(occupancy_devices_info.front()),
             std::unique_ptr<frame_timestamp_reader>(new global_timestamp_reader(std::move(ds_timestamp_reader_metadata), _tf_keeper, enable_global_time_option)),
             this);
-
-        //raw_mapping_ep->register_xu(occupancy_xu); // making sure the XU is initialized every time we power the camera
 
         auto mapping_ep = std::make_shared<d500_mapping_sensor>(this,
             raw_mapping_ep,
