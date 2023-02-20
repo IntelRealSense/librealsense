@@ -486,13 +486,6 @@ namespace librealsense
             [&, mm_correct_opt]() { return std::make_shared<gyroscope_transform>(_mm_calib, mm_correct_opt);
             });
 
-        if ((camera_fw_version >= firmware_version(custom_sensor_fw_ver)) &&
-            (!val_in_range(_owner->_pid, { ds::RS400_IMU_PID, ds::RS435I_PID, ds::RS430I_PID, ds::RS465_PID, ds::RS405_PID, ds::RS455_PID })))
-        {
-            hid_ep->register_option(RS2_OPTION_MOTION_MODULE_TEMPERATURE,
-                std::make_shared<motion_module_temperature_option>(*raw_hid_ep));
-        }
-
         return hid_ep;
     }
 
