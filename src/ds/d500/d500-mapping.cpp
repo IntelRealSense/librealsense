@@ -15,7 +15,7 @@ namespace librealsense
 {
     
     const std::map<uint32_t, rs2_format> mapping_fourcc_to_rs2_format = {
-        {rs_fourcc('G','R','E','Y'), RS2_FORMAT_OCCUP},
+        {rs_fourcc('G','R','E','Y'), RS2_FORMAT_OCCUPANCY},
         //point cloud - needed a standard format, with 32 bit per pixel:
         // #define V4L2_PIX_FMT_ARGB32  v4l2_fourcc('B', 'A', '2', '4') /* 32  ARGB-8-8-8-8  */
         {rs_fourcc('B','A','2','4'), RS2_FORMAT_XYZ32F}
@@ -33,15 +33,15 @@ namespace librealsense
     {
         using namespace ds;
 
-        const uint32_t occupancy_stream_mi = 13;
-        auto occupancy_devs_info = filter_by_mi(group.uvc_devices, occupancy_stream_mi);
+        const uint32_t mapping_stream_mi = 13;
+        auto mapping_devs_info = filter_by_mi(group.uvc_devices, mapping_stream_mi);
         
-        if (occupancy_devs_info.size() != 1)
-            throw invalid_value_exception(rsutils::string::from() << "RS5XX with Safety models are expected to include a single occupancy device! - "
-                << occupancy_devs_info.size() << " found");
+        if (mapping_devs_info.size() != 1)
+            throw invalid_value_exception(rsutils::string::from() << "RS5XX models with Safety are expected to include a single mapping device! - "
+                << mapping_devs_info.size() << " found");
 
-        auto occupancy_ep = create_mapping_device(ctx, occupancy_devs_info);
-        _mapping_device_idx = add_sensor(occupancy_ep);
+        auto mapping_ep = create_mapping_device(ctx, mapping_devs_info);
+        _mapping_device_idx = add_sensor(mapping_ep);
     }
 
     std::shared_ptr<synthetic_sensor> d500_mapping::create_mapping_device(std::shared_ptr<context> ctx,
@@ -206,7 +206,7 @@ namespace librealsense
 
     void d500_mapping::register_processing_blocks(std::shared_ptr<d500_mapping_sensor> mapping_ep)
     {
-        mapping_ep->register_processing_block(processing_block_factory::create_id_pbf(RS2_FORMAT_OCCUP, RS2_STREAM_OCCUPANCY));
+        mapping_ep->register_processing_block(processing_block_factory::create_id_pbf(RS2_FORMAT_OCCUPANCY, RS2_STREAM_OCCUPANCY));
         mapping_ep->register_processing_block(processing_block_factory::create_id_pbf(RS2_FORMAT_XYZ32F, RS2_STREAM_POINT_CLOUD));
     }
 
