@@ -147,14 +147,19 @@ def print_stack():
     """
     Function for printing the current call stack. Used when an assertion fails
     """
-    log.e( 'Traceback (most recent call last):' )
-    stack = traceback.format_stack()
-    # Avoid stack trace into format_stack():
+    # Avoid stack trace into print_stack():
     #     File "C:/work/git/lrs\unit-tests\py\rspy\test.py", line 124, in check
     #       print_stack()
     #     File "C:/work/git/lrs\unit-tests\py\rspy\test.py", line 87, in print_stack
     #       stack = traceback.format_stack()
-    stack = stack[:-2]
+    print_stack_( traceback.format_stack()[:-2] )
+
+
+def print_stack_( stack ):
+    """
+    Function for printing the current call stack. Used when an assertion fails
+    """
+    log.e( 'Traceback (most recent call last):' )
     for line in stack:
         log.out( line[:-1], line_prefix = '    ' )  # format_stack() adds \n
 
@@ -293,7 +298,11 @@ def unexpected_exception():
     Used to assert that an except block is not reached. It's different from unreachable because it expects
     to be in an except block and prints the stack of the error and not the call-stack for this function
     """
-    traceback.print_exc( file = sys.stdout )
+    type,e,tb = sys.exc_info()
+    print_stack_( traceback.format_list( traceback.extract_tb( tb )))
+    for line in traceback.format_exception_only( type, e ):
+        log.out( line[:-1], line_prefix = '    ' )
+    log.out( '      Unexpected exception!' )
     check_failed()
 
 
