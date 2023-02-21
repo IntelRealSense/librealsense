@@ -9,7 +9,7 @@ target_sources(${LRS_TARGET}
         "${CMAKE_CURRENT_LIST_DIR}/d500-private.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/d500-factory.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/d500-safety.cpp"
-        "${CMAKE_CURRENT_LIST_DIR}/d500-mapping.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/d500-depth-mapping.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/hw_monitor_extended_buffers.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/d500-device.h"
         "${CMAKE_CURRENT_LIST_DIR}/d500-color.h"
@@ -18,6 +18,6 @@ target_sources(${LRS_TARGET}
         "${CMAKE_CURRENT_LIST_DIR}/d500-private.h"
         "${CMAKE_CURRENT_LIST_DIR}/d500-factory.h"
         "${CMAKE_CURRENT_LIST_DIR}/d500-safety.h"
-        "${CMAKE_CURRENT_LIST_DIR}/d500-mapping.h"
+        "${CMAKE_CURRENT_LIST_DIR}/d500-depth-mapping.h"
         "${CMAKE_CURRENT_LIST_DIR}/hw_monitor_extended_buffers.h"
 )

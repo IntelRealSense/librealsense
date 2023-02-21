@@ -265,7 +265,7 @@ const char * get_string( rs2_extension value )
     CASE( DEBUG_STREAM_SENSOR )
     CASE( CALIBRATION_CHANGE_DEVICE )
     CASE( SAFETY_SENSOR )
-    CASE( MAPPING_SENSOR )
+    CASE( DEPTH_MAPPING_SENSOR )
     default:
         assert( ! is_valid( value ) );
         return UNKNOWN_VALUE;
@@ -456,7 +456,6 @@ const char * get_string( rs2_format value )
     CASE( Y411 )
     CASE( Y16I )
     CASE( M420 )
-    case RS2_FORMAT_OCCUPANCY: return "OCCUP";
     default:
         assert( ! is_valid( value ) );
         return UNKNOWN_VALUE;
