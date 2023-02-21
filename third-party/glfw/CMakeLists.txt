@@ -8,11 +8,6 @@ if (POLICY CMP0054)
     cmake_policy(SET CMP0054 NEW)
 endif()
 
-# # The NEW policy flag set OpenGL_GL_PREFERENCE variable to GLVND.
-# if (POLICY CMP0072 AND UNIX AND NOT APPLE)
-	# set(CMAKE_POLICY_DEFAULT_CMP0072 NEW)
-# endif()
-
 set(GLFW_VERSION_MAJOR "3")
 set(GLFW_VERSION_MINOR "3")
 set(GLFW_VERSION_PATCH "0")
