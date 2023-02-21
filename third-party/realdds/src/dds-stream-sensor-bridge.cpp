@@ -54,13 +54,12 @@ void dds_stream_sensor_bridge::on_streaming_needed( stream_bridge & stream, bool
     {
         try
         {
+            auto & sensor = _sensors[stream.server->sensor_name()];
             if( streaming_needed )
-                // We have readers but are not streaming
-                open( stream.profile );
-            else
-                // We are streaming but have no readers
-                close( stream.server );
-            stream.is_streaming = streaming_needed;  // before commit!
+                sensor.verify_compatible_profile( stream.profile );
+            stream.is_streaming = streaming_needed;  // before add_implicit_profiles/commit!
+            if( streaming_needed )
+                add_implicit_profiles();
             commit();
         }
         catch( std::exception const & e )
@@ -149,12 +148,43 @@ void dds_stream_sensor_bridge::reset( bool by_force )
             }
             stop_sensor( name2sensor.first, sensor );
         }
+        sensor.is_committed = false;
 
         for( auto & name2stream : sensor.streams )
         {
             auto & stream = name2stream.second;
             stream.profile = stream.server->default_profile();
             stream.is_explicit = false;
+            if( stream.is_implicit )
+            {
+                auto profile = stream.server->default_profile();
+                if( stream.profile != profile )
+                {
+                    LOG_DEBUG( "restoring stream '" << stream.server->name() << "' to default profile "
+                                                    << profile->to_string() );
+                    stream.profile = profile;
+                }
+                stream.is_implicit = false;
+            }
+        }
+    }
+}
+
+
+void dds_stream_sensor_bridge::sensor_bridge::verify_compatible_profile(
+    std::shared_ptr< realdds::dds_stream_profile > const & profile ) const
+{
+    // Check that the profile is compatible with any of the other already-open profiles
+    for( auto & name2stream : streams )
+    {
+        auto & already_streaming = name2stream.second;
+        if( already_streaming.is_explicit || already_streaming.is_implicit )
+        {
+            // Profiles are compatible if they match resolution, FPS
+            if( !profiles_are_compatible( profile, already_streaming.profile ) )
+                DDS_THROW( runtime_error,
+                           "profile " + profile->to_string() + " is incompatible with already-open "
+                           + already_streaming.profile->to_string() );
         }
     }
 }
@@ -166,25 +196,13 @@ void dds_stream_sensor_bridge::open( std::shared_ptr< realdds::dds_stream_profil
     auto & sensor = _sensors[server->sensor_name()];
     auto & stream = sensor.streams[server->name()];
 
-    if( sensor.is_streaming && ! stream.is_on )
-        DDS_THROW( runtime_error, "stream '" + server->name() + "' was not opened by the sensor" );
-
-    // Check that the profile is compatible with any of the other already-open profiles
-    for( auto & name2stream : sensor.streams )
+    if( ! stream.is_explicit || profile != stream.profile )
     {
-        stream_bridge & already_streaming = name2stream.second;
-        if( already_streaming.is_on || already_streaming.is_explicit )
-        {
-            // Profiles are compatible if they match resolution, FPS
-            if( ! profiles_are_compatible( profile, already_streaming.profile ) )
-                DDS_THROW( runtime_error,
-                           "profile " + profile->to_string() + " is incompatible with already-open "
-                               + already_streaming.profile->to_string() );
-        }
-    }
+        if( sensor.is_committed )
+            DDS_THROW( runtime_error, "sensor '" + server->sensor_name() + "' was committed and cannot be changed" );
 
-    if( ! stream.is_explicit )
-    {
+        sensor.verify_compatible_profile( profile );
+
         LOG_DEBUG( "using " << profile->to_string() );
         stream.profile = profile;
         stream.is_explicit = true;
@@ -199,34 +217,26 @@ void dds_stream_sensor_bridge::close( std::shared_ptr< dds_stream_server > const
         DDS_THROW( runtime_error, "invalid sensor name '" + server->sensor_name() + "'" );
     sensor_bridge & sensor = name2sensor->second;
     stream_bridge & stream = sensor.streams[server->name()];
-    if( stream.is_explicit )
+    if( stream.is_explicit  ||  stream.is_implicit )
     {
-        stream.is_explicit = false;
-        if( ! stream.is_on )
+        if( sensor.is_committed )
+            DDS_THROW( runtime_error, "sensor '" + server->sensor_name() + "' was committed and cannot be changed" );
+
+        stream.is_explicit = stream.is_implicit = false;
+        auto profile = stream.server->default_profile();
+        if( stream.profile != profile )
         {
-            stream.profile = stream.server->default_profile();
-            LOG_DEBUG( "restoring stream '" << stream.server->name() << "' to default profile " << stream.profile->to_string() );
+            LOG_DEBUG( "restoring stream '" << stream.server->name() << "' to default profile " << profile->to_string() );
+            stream.profile = profile;
         }
     }
-}
-
-
-bool dds_stream_sensor_bridge::sensor_bridge::should_stream() const
-{
-    for( auto const & name2stream : streams )
-    {
-        auto & stream = name2stream.second;
-        if( stream.is_streaming )
-            return true;
-    }
-    return false;
 }
 
 
 template< class T >
 std::ostream & operator<<( std::ostream & os, const std::shared_ptr< T > & p )
 {
-    if( !p )
+    if( ! p )
         os << "(nullptr)";
     else
         os << *p;
@@ -257,20 +267,46 @@ void dds_stream_sensor_bridge::commit()
     for( auto & name2sensor : _sensors )
     {
         auto & sensor = name2sensor.second;
-        if( sensor.is_streaming == sensor.should_stream() )
-            continue;
-        sensor.is_streaming = ! sensor.is_streaming;
-        if( sensor.is_streaming )
-            start_sensor( name2sensor.first, sensor );
-        else
-            stop_sensor( name2sensor.first, sensor );
+        if( sensor.is_streaming != sensor.should_stream() )
+        {
+            sensor.is_streaming = ! sensor.is_streaming;
+            if( sensor.is_streaming )
+                start_sensor( name2sensor.first, sensor );
+            else
+                stop_sensor( name2sensor.first, sensor );
+        }
+        sensor.is_committed = sensor.should_commit();
     }
+}
+
+
+bool dds_stream_sensor_bridge::sensor_bridge::should_commit() const
+{
+    for( auto const & name2stream : streams )
+    {
+        auto & stream = name2stream.second;
+        if( stream.is_explicit || stream.is_implicit || stream.is_streaming )
+            return true;
+    }
+    return false;
+}
+
+
+bool dds_stream_sensor_bridge::sensor_bridge::should_stream() const
+{
+    for( auto const & name2stream : streams )
+    {
+        auto & stream = name2stream.second;
+        if( stream.is_streaming )
+            return true;
+    }
+    return false;
 }
 
 
 void dds_stream_sensor_bridge::start_sensor( std::string const & sensor_name, sensor_bridge & sensor )
 {
-    auto active_profiles = finalize_profiles( sensor );
+    auto active_profiles = this->active_profiles( sensor );
     LOG_DEBUG( "starting '" << sensor_name << "' with " << active_profiles );
     if( _on_start_sensor )
         _on_start_sensor( sensor_name, active_profiles );
@@ -278,7 +314,6 @@ void dds_stream_sensor_bridge::start_sensor( std::string const & sensor_name, se
     for( auto profile : active_profiles )
     {
         auto & stream = sensor.streams[profile->stream()->name()];
-        stream.is_on = true;
 
         // Prepare the server with the right header (this will change when we remove "streaming" status from
         // stream-server)
@@ -292,54 +327,70 @@ void dds_stream_sensor_bridge::start_sensor( std::string const & sensor_name, se
 }
 
 
-dds_stream_profiles dds_stream_sensor_bridge::finalize_profiles( sensor_bridge & sensor )
+void dds_stream_sensor_bridge::add_implicit_profiles()
 {
-    // Return a collection a profiles that would cover all streams, even implicit ones that have not been started
-    std::vector< std::shared_ptr< dds_stream_profile > > active_profiles;
+    for( auto & name2sensor : _sensors )
+    {
+        auto & sensor = name2sensor.second;
+        if( sensor.is_committed )
+            continue;
+        for( auto & name2stream : sensor.streams )
+        {
+            stream_bridge & implicit_stream = name2stream.second;
+            if( ! implicit_stream.is_explicit  &&  ! implicit_stream.is_implicit )
+            {
+                // Figure out a profile that would work with the others
+                std::shared_ptr< realdds::dds_stream_profile > implicit_profile;
+                std::shared_ptr< realdds::dds_stream_profile > implicit_profile_inexact;
+                bool sensor_should_be_on = false;
+                for( auto & name2stream2 : sensor.streams )
+                {
+                    stream_bridge & streaming = name2stream2.second;
+                    if( streaming.is_explicit || streaming.is_implicit || streaming.is_streaming )
+                    {
+                        // Find both an exact and inexact match
+                        implicit_profile = find_profile( implicit_stream.server, streaming.profile, false );
+                        if( implicit_profile )
+                            break;
+                        if( ! implicit_profile_inexact )
+                            implicit_profile_inexact = find_profile( implicit_stream.server, streaming.profile, true );
+                        sensor_should_be_on = true;
+                    }
+                }
+                if( ! implicit_profile )
+                {
+                    // Couldn't find an exact match -- pick the first inexact
+                    // (e.g., we're asked for depth at Z16 and have two other IRs at either Y8 or Y16 so they're not
+                    // compatible; pick the first one - the other will align to it)
+                    if( ! implicit_profile_inexact )
+                    {
+                        if( sensor_should_be_on )
+                            LOG_WARNING( "inactive stream '" << name2stream.first
+                                         << "' has no matching profile; it will not be streamable" );
+                        implicit_stream.is_streaming = false;  // just in case
+                        continue;
+                    }
+                    implicit_profile = implicit_profile_inexact;
+                }
 
-    // Fill in any missing implicit stream profiles
+                LOG_DEBUG( "using implicit " << implicit_profile->to_string() );
+                implicit_stream.profile = implicit_profile;
+                implicit_stream.is_implicit = true;
+            }
+        }
+    }
+}
+
+
+dds_stream_profiles dds_stream_sensor_bridge::active_profiles( sensor_bridge const & sensor ) const
+{
+    dds_stream_profiles active_profiles;
     for( auto & name2stream : sensor.streams )
     {
-        stream_bridge & implicit_stream = name2stream.second;
-        if( ! implicit_stream.is_explicit )
-        {
-            // Figure out a profile that would work with the others
-            std::shared_ptr< realdds::dds_stream_profile > implicit_profile;
-            std::shared_ptr< realdds::dds_stream_profile > implicit_profile_inexact;
-            for( auto & name2stream2 : sensor.streams )
-            {
-                stream_bridge & streaming = name2stream2.second;
-                if( streaming.is_streaming )
-                {
-                    implicit_profile = find_profile( implicit_stream.server, streaming.profile, false );  // same formats first
-                    if( implicit_profile )
-                        break;
-                    if( ! implicit_profile_inexact )
-                        implicit_profile_inexact = find_profile( implicit_stream.server, streaming.profile, true );  // allow different formats
-                }
-            }
-            if( ! implicit_profile )
-            {
-                // Couldn't find an exact match -- pick the first inexact
-                // (e.g., we're asked for depth at Z16 and have two other IRs at either Y8 or Y16 so they're not
-                // compatible; pick the first one - the other will align to it)
-                if( ! implicit_profile_inexact )
-                {
-                    LOG_WARNING( "inactive stream '" << name2stream.first << "' has no matching profile; it will not be streamable" );
-                    implicit_stream.is_streaming = implicit_stream.is_on = false;  // just in case
-                    continue;
-                }
-                implicit_profile = implicit_profile_inexact;
-            }
-
-            LOG_DEBUG( "using implicit " << implicit_profile->to_string() );
-            implicit_stream.profile = implicit_profile;
-            implicit_stream.is_on = true;
-        }
-
-        active_profiles.push_back( implicit_stream.profile );
+        auto & stream = name2stream.second;
+        if( stream.is_explicit || stream.is_implicit )
+            active_profiles.push_back( stream.profile );
     }
-
     return active_profiles;
 }
 
@@ -353,19 +404,9 @@ void dds_stream_sensor_bridge::stop_sensor( std::string const & sensor_name, sen
     for( auto & name2stream : sensor.streams )
     {
         auto & stream = name2stream.second;
-        stream.is_on = stream.is_streaming = false;
+        stream.is_streaming = false;
         if( stream.server->is_streaming() )
             stream.server->stop_streaming();
-        if( ! stream.is_explicit )
-        {
-            auto default_profile = stream.server->default_profile();
-            if( stream.profile != default_profile )
-            {
-                LOG_DEBUG( "restoring implicit stream '" << name2stream.first << "' to default profile "
-                                                         << default_profile->to_string() );
-                stream.profile = default_profile;
-            }
-        }
     }
 }
 

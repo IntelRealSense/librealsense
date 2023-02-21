@@ -515,7 +515,14 @@ lrs_device_controller::~lrs_device_controller()
 
 void lrs_device_controller::start_streaming( const json & msg )
 {
-    _bridge.reset();
+    // Note that this function is called "start-streaming" but it's really a response to "open-streams" so does not
+    // actually start streaming. It simply sets and locks in which streams should be open when streaming starts.
+    // This effectively lets one control _specifically_ which streams should be streamable, and nothing else: if left
+    // out, a sensor is reset back to its default state using implicit stream selection.
+    // (For example, the 'Stereo Module' sensor controls Depth, IR1, IR2: but turning on all 3 has performance
+    // implications and may not be desirable. So you can open only Depth and IR1/2 will stay inactive...)
+    if( rsutils::json::get< bool >( msg, "reset", true ) )
+        _bridge.reset();
 
     auto const & msg_profiles = msg["stream-profiles"];
     for( auto const & name2profile : msg_profiles.items() )
@@ -535,6 +542,10 @@ void lrs_device_controller::start_streaming( const json & msg )
 
         _bridge.open( profile );
     }
+
+    // We're here so all the profiles were acceptable; lock them in -- with no implicit profiles!
+    if( rsutils::json::get< bool >( msg, "commit", true ))
+        _bridge.commit();
 }
 
 

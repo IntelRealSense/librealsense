@@ -756,6 +756,7 @@ PYBIND11_MODULE(NAME, m) {
         .def( "reset", &dds_stream_sensor_bridge::reset, py::arg( "by_force" ) = false )
         .def( "open", &dds_stream_sensor_bridge::open )
         .def( "close", &dds_stream_sensor_bridge::close )
+        .def( "add_implicit_profiles", &dds_stream_sensor_bridge::add_implicit_profiles )
         .def( "commit", &dds_stream_sensor_bridge::commit )
         .def( "is_streaming", &dds_stream_sensor_bridge::is_streaming );
 }

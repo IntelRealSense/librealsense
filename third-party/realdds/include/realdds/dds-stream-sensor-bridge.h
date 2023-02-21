@@ -34,16 +34,19 @@ class dds_stream_sensor_bridge
     {
         std::shared_ptr< dds_stream_server > server;
         std::shared_ptr< dds_stream_profile > profile;  // locked in when sensor starts
-        bool is_explicit = false;   // open() was called for the stream; it's not implicit via commit()
-        bool is_on = false;         // sensor has it open, either explicitly or implicitly; implies sensor.is_streaming
-        bool is_streaming = false;  // this stream has readers and we need to publish data on it; implies is_on
+        bool is_explicit = false;   // open() was called for the stream
+        bool is_implicit = false;   // by add_implicit_profiles()
+        bool is_streaming = false;  // this stream has readers and we need to publish data on it
     };
     struct sensor_bridge
     {
-        bool is_streaming = false;
+        bool is_streaming = false;  // implies is_committed
+        bool is_committed = false;  // true once commit() is called and at least one stream is open/streaming
         std::map< std::string, stream_bridge > streams;
 
         bool should_stream() const;
+        bool should_commit() const;
+        void verify_compatible_profile( std::shared_ptr< realdds::dds_stream_profile > const & ) const;
     };
 
 public:
@@ -56,6 +59,7 @@ public:
 
 private:
     std::map< std::string, sensor_bridge > _sensors;
+
     readers_changed_callback _on_readers_changed;
     start_sensor_callback _on_start_sensor;
     stop_sensor_callback _on_stop_sensor;
@@ -65,7 +69,8 @@ public:
     dds_stream_sensor_bridge();
     ~dds_stream_sensor_bridge();
 
-    // Streams should be initialized before they are added to a device-server (before they're opened)
+    // Populate with stream-servers.
+    // Should be called BEFORE a device-server is initialized with these streams (i.e., before they're opened)
     void init( std::vector< std::shared_ptr< dds_stream_server > > const & streams );
 
     // Mark a profile as explicit for streaming:
@@ -74,20 +79,26 @@ public:
     //      - does not actually change streaming status or the underlying sensor!
     void open( std::shared_ptr< dds_stream_profile > const & );
 
-    // Mark a stream as implicit and restore its profile to the default (if not on); does not affect the sensor
+    // Unmark a stream and restore its profile to the default; does not affect the sensor
     void close( std::shared_ptr< dds_stream_server > const & );
+
+    // Add any implicit profiles to a non-streaming sensor
+    //      - ignore committed/streaming sensors
+    //      - happens automatically when a reader subscribes to a stream; otherwise calling this is optional
+    void add_implicit_profiles();
 
     // Apply the current state of streaming to any sensors:
     //      - only has effect if stream.is_streaming state requires such a change
     //      - happens automatically when a reader subscribes to a stream; otherwise calling this is optional
     //      - will call on_start_/stop_sensor() notifications
-    //      - will fill in implicit profiles when starting a sensor, to enable as many streams on-demand
+    // The sensor is committed and stream profiles cannot be changed once this is called until reset() is used
     void commit();
 
     // Bring every stream back to the default profile, and unmark it for streaming
     // NOTE: streams that are streaming (i.e., have readers) cannot be reset except by_force
     void reset( bool by_force = false );
 
+    // Return true if the stream for the given server is currently streaming
     bool is_streaming( std::shared_ptr< dds_stream_server > const & );
 
     // Notifications
@@ -101,9 +112,9 @@ public:
 protected:
     void on_streaming_needed( stream_bridge &, bool streaming_needed );
     std::shared_ptr< dds_stream_server > find_server( std::shared_ptr< dds_stream_profile > const & );
-    std::vector< std::shared_ptr< dds_stream_profile > > finalize_profiles( sensor_bridge & );
     void start_sensor( std::string const & sensor_name, sensor_bridge & sensor );
     void stop_sensor( std::string const & sensor_name, sensor_bridge & sensor );
+    dds_stream_profiles active_profiles( sensor_bridge const & ) const;
 };
 
 
