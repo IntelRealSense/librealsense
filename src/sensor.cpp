@@ -714,7 +714,8 @@ void log_callback_end( uint32_t fps,
             if (rs2_fmt == RS2_FORMAT_MOTION_XYZ32F)
             {
                 auto profile = std::make_shared<motion_stream_profile>(p);
-                VALIDATE_NOT_NULL(profile)
+                if (profile == nullptr)
+                    throw librealsense::invalid_value_exception("null pointer passed for argument \"profile\".");
 
                 profile->set_stream_type(fourcc_to_rs2_stream(p.format));
                 profile->set_stream_index(0);
@@ -725,7 +726,8 @@ void log_callback_end( uint32_t fps,
             else
             {
                 auto&& profile = std::make_shared<video_stream_profile>(p);
-                VALIDATE_NOT_NULL(profile)
+                if (profile == nullptr)
+                    throw librealsense::invalid_value_exception("null pointer passed for argument \"profile\".");
 
                 profile->set_dims(p.width, p.height);
                 profile->set_stream_type(fourcc_to_rs2_stream(p.format));
@@ -1176,7 +1178,8 @@ void log_callback_end( uint32_t fps,
     bool iio_hid_timestamp_reader::has_metadata(const std::shared_ptr<frame_interface>& frame) const
     {
         auto f = std::dynamic_pointer_cast<librealsense::frame>(frame);
-        VALIDATE_NOT_NULL(f)
+        if (f == nullptr)
+            throw librealsense::invalid_value_exception("null pointer recieved from dynamic pointer casting.");
 
         if (f->additional_data.metadata_size > 0)
         {
@@ -1332,7 +1335,8 @@ void log_callback_end( uint32_t fps,
     std::shared_ptr<stream_profile_interface> synthetic_sensor::clone_profile(const std::shared_ptr<stream_profile_interface>& profile)
     {
         auto cloned = std::make_shared<stream_profile_base>(platform::stream_profile{});
-        VALIDATE_NOT_NULL(cloned)
+        if (cloned == nullptr)
+            throw librealsense::invalid_value_exception("null pointer passed for argument \"cloned\".");
 
         if (auto vsp = std::dynamic_pointer_cast<video_stream_profile>(profile))
         {

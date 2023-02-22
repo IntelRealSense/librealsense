@@ -3,7 +3,6 @@
 
 #include "software-device.h"
 #include "stream.h"
-#include "api.h"
 
 #include <rsutils/string/from.h>
 
@@ -153,7 +152,8 @@ namespace librealsense
 
         auto profile = std::make_shared<pose_stream_profile>(
             platform::stream_profile{ 0, 0, (uint32_t)pose_stream.fps, 0 });
-        VALIDATE_NOT_NULL(profile)
+        if (profile == nullptr)
+            throw librealsense::invalid_value_exception("null pointer passed for argument \"profile\".");
 
         profile->set_format(pose_stream.fmt);
         profile->set_framerate(pose_stream.fps);
