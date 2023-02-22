@@ -806,6 +806,7 @@ namespace librealsense
             // assign unique id for mipi by appending camera id to bus_info (bus_info is same for each mipi port)
             // Note - jetson can use only bus_info, as card is different for each sensor and metadata node.
             info.unique_id = bus_info + "-" + std::to_string(cam_id); // use bus_info as per camera unique id for mipi
+            info.dfu_device_path = "/dev/d4xx-dfu504"; // Use legacy DFU device node used in firmware_update_manager
             info.conn_spec = usb_specification;
             info.uvc_capabilities = get_dev_capabilities(dev_name).device_caps;
 
@@ -837,6 +838,7 @@ namespace librealsense
                     std::string device_md_path = "video-rs-" + vs + "-md-" + std::to_string(i);
                     std::string video_path = "/dev/" + device_path;
                     std::string video_md_path = "/dev/" + device_md_path;
+                    std::string dfu_device_path = "/dev/d4xx-dfu-" + std::to_string(i);
                     uvc_device_info info{};
 
                     // Get Video node
@@ -855,6 +857,14 @@ namespace librealsense
                     {
                         LOG_WARNING("MIPI video device issue: " << e.what());
                         continue;
+                    }
+
+                    // Get DFU node for MIPI camera
+                    vfd = open(dfu_device_path.c_str(), O_RDONLY | O_NONBLOCK);
+
+                    if (vfd > 0) {
+                        ::close(vfd); // file exists, close file and continue to assign it
+                        info.dfu_device_path = dfu_device_path;
                     }
 
                     info.mi = vs.compare("imu") ? 0 : 4;
