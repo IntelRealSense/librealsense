@@ -1,10 +1,7 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2022 Intel Corporation. All Rights Reserved.
 
-#include <mutex>
-#include <chrono>
 #include <vector>
-#include <iterator>
 #include <string>
 
 #include "device.h"

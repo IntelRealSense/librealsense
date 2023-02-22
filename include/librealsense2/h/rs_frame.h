@@ -65,8 +65,6 @@ typedef enum rs2_frame_metadata_value
     RS2_FRAME_METADATA_SEQUENCE_NAME                        , /**< sub-preset id */
     RS2_FRAME_METADATA_SEQUENCE_ID                          , /**< sub-preset sequence id */
     RS2_FRAME_METADATA_SEQUENCE_SIZE                        , /**< sub-preset sequence size */
-
-    //mipi metadata_values
     RS2_FRAME_METADATA_TRIGGER                              , /**< Frame trigger type */
     RS2_FRAME_METADATA_PRESET                               , /**< Preset id, used in MIPI SKU Metadata */
     RS2_FRAME_METADATA_INPUT_WIDTH                          , /**< Frame input width in pixels, used as safety attribute */
@@ -87,6 +85,15 @@ typedef enum rs2_frame_metadata_value
     RS2_FRAME_METADATA_SAFETY_SOC_FUSA_ACTION,
     RS2_FRAME_METADATA_SAFETY_FUSA_EVENT,
     RS2_FRAME_METADATA_SAFETY_FUSA_ACTION,
+    RS2_FRAME_METADATA_SAFETY_PRESET_ID,
+    RS2_FRAME_METADATA_FLOOR_PLANE_EQUATION_A,
+    RS2_FRAME_METADATA_FLOOR_PLANE_EQUATION_B,
+    RS2_FRAME_METADATA_FLOOR_PLANE_EQUATION_C,
+    RS2_FRAME_METADATA_FLOOR_PLANE_EQUATION_D,
+    RS2_FRAME_METADATA_OCCUPANCY_GRID_ROWS,
+    RS2_FRAME_METADATA_OCCUPANCY_GRID_COLUMNS,
+    RS2_FRAME_METADATA_OCCUPANCY_CELL_SIZE,
+    RS2_FRAME_METADATA_NUMBER_OF_3D_VERTICES,
     RS2_FRAME_METADATA_COUNT
 } rs2_frame_metadata_value;
 const char* rs2_frame_metadata_to_string(rs2_frame_metadata_value metadata);

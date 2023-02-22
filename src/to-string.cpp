@@ -46,6 +46,8 @@ const char * get_string( rs2_stream value )
     CASE( POSE )
     CASE( CONFIDENCE )
     CASE( SAFETY )
+    CASE( OCCUPANCY )
+    CASE( POINT_CLOUD )
     default:
         assert( ! is_valid( value ) );
         return UNKNOWN_VALUE;
@@ -263,6 +265,7 @@ const char * get_string( rs2_extension value )
     CASE( DEBUG_STREAM_SENSOR )
     CASE( CALIBRATION_CHANGE_DEVICE )
     CASE( SAFETY_SENSOR )
+    CASE( DEPTH_MAPPING_SENSOR )
     default:
         assert( ! is_valid( value ) );
         return UNKNOWN_VALUE;
@@ -565,7 +568,15 @@ const char * get_string( rs2_frame_metadata_value value )
     CASE( SAFETY_SOC_FUSA_ACTION )
     CASE( SAFETY_FUSA_EVENT )
     CASE( SAFETY_FUSA_ACTION )
-
+    CASE( SAFETY_PRESET_ID )
+    CASE( FLOOR_PLANE_EQUATION_A )
+    CASE( FLOOR_PLANE_EQUATION_B )
+    CASE( FLOOR_PLANE_EQUATION_C )
+    CASE( FLOOR_PLANE_EQUATION_D )
+    CASE( OCCUPANCY_GRID_ROWS)
+    CASE( OCCUPANCY_GRID_COLUMNS )
+    CASE( OCCUPANCY_CELL_SIZE )
+    CASE( NUMBER_OF_3D_VERTICES )
     default:
         assert( ! is_valid( value ) );
         return UNKNOWN_VALUE;

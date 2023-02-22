@@ -3,11 +3,8 @@
 
 #include "d500-safety.h"
 
-#include <mutex>
-#include <chrono>
 #include <vector>
 #include <map>
-#include <iterator>
 #include <cstddef>
 
 #include "ds/ds-timestamp.h"
@@ -34,7 +31,7 @@ namespace librealsense
         auto safety_devs_info = filter_by_mi(group.uvc_devices, safety_stream_mi);
         
         if (safety_devs_info.size() != 1)
-            throw invalid_value_exception(rsutils::string::from() << "RS5XX with Safety models are expected to include a single safety device! - "
+            throw invalid_value_exception(rsutils::string::from() << "RS5XX models with Safety are expected to include a single safety device! - "
                 << safety_devs_info.size() << " found");
 
         auto safety_ep = create_safety_device(ctx, safety_devs_info);
