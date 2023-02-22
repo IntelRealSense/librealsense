@@ -192,6 +192,7 @@ namespace librealsense
             uint16_t mi = 0;
             std::string unique_id = "";
             std::string device_path = "";
+            std::string dfu_device_path = ""; // for mipi multiple cameras
             std::string serial = "";
             usb_spec conn_spec = usb_undefined;
             uint32_t uvc_capabilities = 0;
