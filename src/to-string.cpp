@@ -330,7 +330,7 @@ const char * get_string( rs2_option value )
     case RS2_OPTION_AUTO_EXPOSURE_MODE:  return "Fisheye Auto Exposure Mode";
     CASE( POWER_LINE_FREQUENCY )
     CASE( ASIC_TEMPERATURE )
-    case RS2_OPTION_ERROR_POLLING_ENABLED:  return "Error Polling";
+    CASE( ERROR_POLLING_ENABLED )
     CASE( PROJECTOR_TEMPERATURE )
     CASE( OUTPUT_TRIGGER_ENABLED )
     CASE( MOTION_MODULE_TEMPERATURE )
