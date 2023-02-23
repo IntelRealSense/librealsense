@@ -107,7 +107,7 @@ dds_pose_stream_server::dds_pose_stream_server( std::string const & stream_name,
 }
 
 
-void dds_video_stream_server::open( std::string const & topic_name, std::shared_ptr< dds_publisher > const & publisher )
+void dds_stream_server::open( std::string const & topic_name, std::shared_ptr< dds_publisher > const & publisher )
 {
     if( is_open() )
         DDS_THROW( runtime_error, "stream '" + name() + "' is already open" );
@@ -115,43 +115,38 @@ void dds_video_stream_server::open( std::string const & topic_name, std::shared_
         DDS_THROW( runtime_error, "stream '" + name() + "' has no profiles" );
 
     auto topic = topics::device::image::create_topic( publisher->get_participant(), topic_name.c_str() );
-
     _writer = std::make_shared< dds_topic_writer >( topic, publisher );
+
     if( _on_readers_changed )
     {
         std::weak_ptr< dds_stream_server > weak_this(
-            std::static_pointer_cast< dds_stream_server >( shared_from_this() ) );
+            std::static_pointer_cast<dds_stream_server>(shared_from_this()) );
         _writer->on_publication_matched(
             [weak_this, on_readers_changed = _on_readers_changed](
                 eprosima::fastdds::dds::PublicationMatchedStatus const & status )
             {
                 if( auto self = weak_this.lock() )
                     try
-                    {
-                        LOG_DEBUG( status.current_count << " total readers on '" << self->name() << "'" );
-                        on_readers_changed( self, status.current_count );
-                    }
-                    catch( std::exception const & e )
-                    {
-                        LOG_ERROR( "exception from 'on_readers_changed': " << e.what() );
-                    }
+                {
+                    LOG_DEBUG( status.current_count << " total readers on '" << self->name() << "'" );
+                    on_readers_changed( self, status.current_count );
+                }
+                catch( std::exception const & e )
+                {
+                    LOG_ERROR( "exception from 'on_readers_changed': " << e.what() );
+                }
             } );
     }
-    _writer->run( dds_topic_writer::qos( BEST_EFFORT_RELIABILITY_QOS ) );  // no retries
+
+    run_stream();
 }
 
 
-void dds_motion_stream_server::open( std::string const & topic_name,
-                                     std::shared_ptr< dds_publisher > const & publisher )
+void dds_stream_server::run_stream()
 {
-    if( is_open() )
-        DDS_THROW( runtime_error, "stream '" + name() + "' is already open" );
-    if( profiles().empty() )
-        DDS_THROW( runtime_error, "stream '" + name() + "' has no profiles" );
-
-    auto topic = topics::device::image::create_topic( publisher->get_participant(), topic_name.c_str() );
-
-    _writer = std::make_shared< dds_topic_writer >( topic, publisher );
+    if( ! _writer )
+        DDS_THROW( runtime_error, "open() wasn't called before run_writer()" );
+    
     _writer->run( dds_topic_writer::qos( BEST_EFFORT_RELIABILITY_QOS ) );  // no retries
 }
 

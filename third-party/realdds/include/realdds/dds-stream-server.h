@@ -44,8 +44,8 @@ public:
     virtual ~dds_stream_server();
 
     bool is_open() const override { return !! _writer; }
-    virtual void open( std::string const & topic_name, std::shared_ptr< dds_publisher > const & ) = 0;
-    virtual void close();
+    void open( std::string const & topic_name, std::shared_ptr< dds_publisher > const & );
+    void close();
 
     bool is_streaming() const override { return _image_header.is_valid(); }
     void start_streaming( const image_header & header );
@@ -66,6 +66,9 @@ protected:
     image_header _image_header;
     unsigned _frame_id = 0;
     readers_changed_callback _on_readers_changed;
+
+    // Called at the end of open(), when the _writer has been initialized. Override to provide custom QOS etc...
+    virtual void run_stream();
 };
 
 
@@ -75,8 +78,6 @@ class dds_video_stream_server : public dds_stream_server
 
 public:
     dds_video_stream_server( std::string const & stream_name, std::string const & sensor_name );
-
-    void open( std::string const & topic_name, std::shared_ptr< dds_publisher > const & ) override;
 
     void set_intrinsics( const std::set< video_intrinsics > & intrinsics ) { _intrinsics = intrinsics; }
     const std::set< video_intrinsics > & get_intrinsics() const { return _intrinsics; }
@@ -150,8 +151,6 @@ class dds_motion_stream_server : public dds_stream_server
 public:
     dds_motion_stream_server( std::string const & stream_name, std::string const & sensor_name );
     
-    void open( std::string const & topic_name, std::shared_ptr< dds_publisher > const & ) override;
-
     void set_intrinsics( const motion_intrinsics & intrinsics ) { _intrinsics = intrinsics; }
     const motion_intrinsics & get_intrinsics() const { return _intrinsics; }
 
