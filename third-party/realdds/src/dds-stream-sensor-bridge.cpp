@@ -203,7 +203,7 @@ void dds_stream_sensor_bridge::open( std::shared_ptr< realdds::dds_stream_profil
 
         sensor.verify_compatible_profile( profile );
 
-        LOG_DEBUG( "using " << profile->to_string() );
+        LOG_DEBUG( "opening " << profile->to_string() );
         stream.profile = profile;
         stream.is_explicit = true;
     }
@@ -267,6 +267,7 @@ void dds_stream_sensor_bridge::commit()
     for( auto & name2sensor : _sensors )
     {
         auto & sensor = name2sensor.second;
+        sensor.is_committed = sensor.should_commit();
         if( sensor.is_streaming != sensor.should_stream() )
         {
             sensor.is_streaming = ! sensor.is_streaming;
@@ -275,7 +276,6 @@ void dds_stream_sensor_bridge::commit()
             else
                 stop_sensor( name2sensor.first, sensor );
         }
-        sensor.is_committed = sensor.should_commit();
     }
 }
 
@@ -285,7 +285,7 @@ bool dds_stream_sensor_bridge::sensor_bridge::should_commit() const
     for( auto const & name2stream : streams )
     {
         auto & stream = name2stream.second;
-        if( stream.is_explicit || stream.is_implicit || stream.is_streaming )
+        if( stream.is_explicit || stream.is_streaming )
             return true;
     }
     return false;
@@ -373,7 +373,7 @@ void dds_stream_sensor_bridge::add_implicit_profiles()
                     implicit_profile = implicit_profile_inexact;
                 }
 
-                LOG_DEBUG( "using implicit " << implicit_profile->to_string() );
+                LOG_DEBUG( "adding implicit " << implicit_profile->to_string() );
                 implicit_stream.profile = implicit_profile;
                 implicit_stream.is_implicit = true;
             }
@@ -407,6 +407,17 @@ void dds_stream_sensor_bridge::stop_sensor( std::string const & sensor_name, sen
         stream.is_streaming = false;
         if( stream.server->is_streaming() )
             stream.server->stop_streaming();
+        if( stream.is_implicit && ! sensor.is_committed )
+        {
+            auto profile = stream.server->default_profile();
+            if( stream.profile != profile )
+            {
+                LOG_DEBUG( "restoring stream '" << stream.server->name() << "' to default profile "
+                                                << profile->to_string() );
+                stream.profile = profile;
+            }
+            stream.is_implicit = false;
+        }
     }
 }
 
