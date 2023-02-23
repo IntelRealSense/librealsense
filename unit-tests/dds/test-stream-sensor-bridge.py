@@ -81,7 +81,6 @@ class change_expected:
     def __enter__( self ):
         detect_change()
     def __exit__( self, type, value, traceback ):
-        log.d( f'{self=}, {type=}, {value=}, {traceback=}' )
         if type is None:  # If an exception is thrown, don't do anything
             wait_for_change()
 
