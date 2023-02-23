@@ -207,7 +207,7 @@ def abort():
     sys.exit( 1 )
 
 
-def check( exp, description = None, abort_if_failed = False):
+def check( exp, description = None, abort_if_failed = False ):
     """
     Basic function for asserting expressions.
     :param exp: An expression to be asserted, if false the assertion failed
@@ -217,15 +217,14 @@ def check( exp, description = None, abort_if_failed = False):
     if not exp:
         print_stack()
         if description:
-            log.out( f"    {description}" )
+            log.out( f'        {description}' )
         else:
-            log.out( f"    check failed; received {exp}" )
+            log.out( f'        check failed; received {exp}' )
         return check_failed( abort_if_failed )
-    reset_info()
     return check_passed()
 
 
-def check_false( exp, description = None, abort_if_failed = False):
+def check_false( exp, description = None, abort_if_failed = False ):
     """
     Opposite of check()
     """
@@ -344,8 +343,6 @@ def check_float_lists(result, expected, epsilon=1e-6, abort_if_failed = False):
     :param abort_if_failed:  If True and assertion failed the test will be aborted
     :return: True if assertion passed, False otherwise
     """
-    global n_assertions
-    n_assertions += 1
     failed = False
     if len(result) != len(expected):
         failed = True
@@ -362,12 +359,8 @@ def check_float_lists(result, expected, epsilon=1e-6, abort_if_failed = False):
         print_stack()
         log.out( "    result list  :", result )
         log.out( "    expected list:", expected )
-        check_failed()
-        if abort_if_failed:
-            abort()
-        return False
-    reset_info()
-    return True
+        return check_failed( abort_if_failed )
+    return check_passed()
 
 
 def check_exception(exception, expected_type, expected_msg = None, abort_if_failed = False):
@@ -457,7 +450,7 @@ def info( name, value, persistent = False ):
     :param name: The name of the variable
     :param value: The value this variable stores
     :param persistent: If this parameter is True, the information stored will be kept after the following check
-        and will only be erased at the end of the test ( or when reset_info is called with True)
+        and will only be erased at the end of the test (or when reset_info is called with True)
     """
     global test_info
     test_info[name] = Information(value, persistent)
