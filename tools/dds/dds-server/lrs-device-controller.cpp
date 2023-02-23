@@ -104,6 +104,8 @@ std::vector< std::shared_ptr< realdds::dds_stream_server > > lrs_device_controll
     for( auto sensor : _rs_dev.query_sensors() )
     {
         std::string const sensor_name = sensor.get_info( RS2_CAMERA_INFO_NAME );
+        // We keep a copy of the sensors throughout the run time:
+        // Otherwise problems could arise like opening streams and they would close at start_streaming scope end.
         _rs_sensors[sensor_name] = sensor;
 
         auto stream_profiles = sensor.get_stream_profiles();

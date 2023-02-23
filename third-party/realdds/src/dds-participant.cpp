@@ -14,7 +14,6 @@
 
 #include <map>
 #include <mutex>
-#include <vector>
 
 using namespace eprosima::fastdds::dds;
 using namespace realdds;
