@@ -13,14 +13,12 @@ namespace librealsense
     ds_color_common::ds_color_common(uvc_sensor& raw_color_ep,
         synthetic_sensor& color_ep,
         firmware_version fw_version,
-        std::shared_ptr<hw_monitor> hw_monitor,
-        device* owner, ds_device_type device_type) :
+        std::shared_ptr<hw_monitor> hw_monitor, device* owner) :
         _raw_color_ep(raw_color_ep),
         _color_ep(color_ep),
         _fw_version(fw_version),
         _hw_monitor(hw_monitor),
-        _owner(owner),
-        _device_type(device_type) {}
+        _owner(owner) {}
 
     void ds_color_common::register_color_options()
     {
@@ -78,7 +76,7 @@ namespace librealsense
     void ds_color_common::register_metadata()
     {
         _color_ep.register_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP, make_uvc_header_parser(&platform::uvc_header::timestamp));
-        _color_ep.register_metadata(RS2_FRAME_METADATA_ACTUAL_FPS, std::make_shared<d400_md_attribute_actual_fps>(false, [](const rs2_metadata_type& param)
+        _color_ep.register_metadata(RS2_FRAME_METADATA_ACTUAL_FPS, std::make_shared<ds_md_attribute_actual_fps>(false, [](const rs2_metadata_type& param)
             {return param * 100; })); //the units of the exposure of the RGB sensor are 100 microseconds so the md_attribute_actual_fps need the lambda to convert it to microseconds
 
         // attributes of md_capture_timing
