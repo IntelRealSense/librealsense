@@ -2,7 +2,7 @@
 // Copyright(c) 2015 Intel Corporation. All Rights Reserved.
 
 #include "sensor.h"
-#include "api.h"
+
 #include "source.h"
 #include "device.h"
 #include "stream.h"

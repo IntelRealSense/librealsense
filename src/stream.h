@@ -118,11 +118,10 @@ namespace librealsense
 
             res->set_unique_id( id );
             LOG_DEBUG( "video_stream_profile::clone, id= " << id );
-            res->set_dims( get_width(), get_height() );
-            std::function< rs2_intrinsics() > int_func = _calc_intrinsics;
-            res->set_intrinsics( [int_func]() { return int_func(); } );
-            res->set_framerate( get_framerate() );
-
+            res->set_dims(get_width(), get_height());
+            std::function<rs2_intrinsics()> int_func = _calc_intrinsics;
+            res->set_intrinsics([int_func]() { return int_func(); });
+            res->set_framerate(get_framerate());
             environment::get_instance().get_extrinsics_graph().register_same_extrinsics( *res, *this );
             return res;
         }
