@@ -414,11 +414,9 @@ namespace librealsense
         return {};
     }
 
-    ds::d400_caps d400_device::parse_device_capabilities() const
+    ds::d400_caps d400_device::parse_device_capabilities( const std::vector<uint8_t> &gvd_buf ) const
     {
         using namespace ds;
-        std::array<unsigned char,HW_MONITOR_BUFFER_SIZE> gvd_buf;
-        _hw_monitor->get_gvd(gvd_buf.size(), gvd_buf.data(), GVD);
 
         // Opaque retrieval
         d400_caps val{d400_caps::CAP_UNDEFINED};
@@ -584,14 +582,14 @@ namespace librealsense
 
             _hw_monitor->get_gvd(gvd_buff.size(), gvd_buff.data(), GVD);
 
-            optic_serial = _hw_monitor->get_module_serial_string(gvd_buff, module_serial_offset);
-            asic_serial = _hw_monitor->get_module_serial_string(gvd_buff, module_asic_serial_offset);
-            auto fwv = _hw_monitor->get_firmware_version_string(gvd_buff, camera_fw_version_offset);
+            std::string fwv;
+            _ds_device_common->get_fw_details( gvd_buff, optic_serial, asic_serial, fwv );
+
             _fw_version = firmware_version(fwv);
 
             _recommended_fw_version = firmware_version(D4XX_RECOMMENDED_FIRMWARE_VERSION);
             if (_fw_version >= firmware_version("5.10.4.0"))
-                _device_capabilities = parse_device_capabilities();
+                _device_capabilities = parse_device_capabilities( gvd_buff );
         
             //D457 Development
             advanced_mode = is_camera_in_advanced_mode();

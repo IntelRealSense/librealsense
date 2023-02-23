@@ -73,7 +73,7 @@ namespace librealsense
 
         float get_stereo_baseline_mm() const;
 
-        ds::d400_caps parse_device_capabilities() const;
+        ds::d400_caps parse_device_capabilities( const std::vector<uint8_t> &gvd_buf ) const;
 
         //TODO - add these to device class as pure virtual methods
         command get_firmware_logs_command() const;
