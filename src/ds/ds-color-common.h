@@ -16,7 +16,7 @@ namespace librealsense
             synthetic_sensor& color_ep,
             firmware_version fw_version,
             std::shared_ptr<hw_monitor> hw_monitor,
-            device* owner, ds::ds_device_type device_type);
+            device* owner);
         void register_color_options();
         void register_standard_options();
         void register_metadata();
@@ -27,6 +27,5 @@ namespace librealsense
         firmware_version _fw_version;
         std::shared_ptr<hw_monitor> _hw_monitor;
         device* _owner;
-        ds::ds_device_type _device_type;
     };
 }

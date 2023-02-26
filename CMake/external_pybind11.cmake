@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.6)
 include(ExternalProject)
 
+
+
 # We use a function to enforce a scoped variables creation only for the build
 # (i.e turn off BUILD_SHARED_LIBS which is used on LRS build as well)
 function(get_pybind11)
@@ -45,11 +47,6 @@ function(get_pybind11)
         TEST_COMMAND ""
         )
 
-    # Force Pybind11 not to share pyrealsense2 resources with other pybind modules.
-    # With this definition we force the ABI version to be unique and not risk crashes on different modules.
-    # (workaround for RS5-10582; see also https://github.com/pybind/pybind11/issues/2898)
-    add_definitions( -DPYBIND11_COMPILER_TYPE="_librs_abi" )
-
     add_subdirectory( "${CMAKE_BINARY_DIR}/third-party/pybind11"
                       "${CMAKE_BINARY_DIR}/third-party/pybind11/build" )
 
@@ -84,3 +81,21 @@ endfunction()
 
 # Trigger the build
 get_pybind11()
+
+# This function overrides "pybind11_add_module" function,  arguments is same as "pybind11_add_module" arguments
+# pybind11_add_module(<name> SHARED [file, file2, ...] )
+# Must be declared after pybind11 configuration above
+function( pybind11_add_module project_name library_type ...)
+
+    # message( STATUS "adding python module --> ${project_name}" 
+    
+    # "_pybind11_add_module" is calling the origin pybind11 function    
+    _pybind11_add_module( ${ARGV})
+
+    # Force Pybind11 not to share pyrealsense2 resources with other pybind modules.
+    # With this definition we force the ABI version to be unique and not risk crashes on different modules.
+    # (workaround for RS5-10582; see also https://github.com/pybind/pybind11/issues/2898)
+    # NOTE: this workaround seems to be needed for debug compilations only
+    target_compile_definitions( ${project_name} PRIVATE -DPYBIND11_COMPILER_TYPE=\"_${project_name}_abi\" )
+    
+endfunction()

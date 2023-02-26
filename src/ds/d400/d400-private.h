@@ -35,7 +35,7 @@ namespace librealsense
         const uint16_t RS455_PID = 0x0B5C; // D455
         const uint16_t RS457_PID = 0xabcd; // D457
 
-        // ds5 Devices supported by the current version
+        // d400 Devices supported by the current version
         static const std::set<std::uint16_t> rs400_sku_pid = {
             ds::RS400_PID,
             ds::RS410_PID,
@@ -158,9 +158,85 @@ namespace librealsense
         };
 
         std::vector<platform::uvc_device_info> filter_d400_device_by_capability(
-            const std::vector<platform::uvc_device_info>& devices, d400_caps caps);
+            const std::vector<platform::uvc_device_info>& devices, ds_caps caps);
         bool d400_try_fetch_usb_device(std::vector<platform::usb_device_info>& devices,
             const platform::uvc_device_info& info, platform::usb_device_info& result);
 
+        static const std::map<ds_caps, std::int8_t> d400_cap_to_min_gvd_version = {
+            {ds_caps::CAP_IP65, 0x4},
+            {ds_caps::CAP_IR_FILTER, 0x4}
+        };
+
+        // Checks if given capability supporting by current gvd (firmware data) version.
+        static bool is_capability_supports(const ds::ds_caps capability, const uint8_t cur_gvd_version)
+        {
+            auto cap = ds::d400_cap_to_min_gvd_version.find(capability);
+            if (cap == ds::d400_cap_to_min_gvd_version.end())
+            {
+                throw invalid_value_exception("Not found capabilty in map of cabability--gvd version.");
+            }
+
+            uint8_t min_gvd_version = cap->second;
+            return min_gvd_version <= cur_gvd_version;
+        }
+
+        enum class d400_calibration_table_id
+        {
+            coefficients_table_id = 25,
+            depth_calibration_id = 31,
+            rgb_calibration_id = 32,
+            fisheye_calibration_id = 33,
+            imu_calibration_id = 34,
+            lens_shading_id = 35,
+            projector_id = 36,
+            max_id = -1
+        };
+
+        struct d400_calibration
+        {
+            uint16_t        version;                        // major.minor
+            rs2_intrinsics   left_imager_intrinsic;
+            rs2_intrinsics   right_imager_intrinsic;
+            rs2_intrinsics   depth_intrinsic[max_ds_rect_resolutions];
+            rs2_extrinsics   left_imager_extrinsic;
+            rs2_extrinsics   right_imager_extrinsic;
+            rs2_extrinsics   depth_extrinsic;
+            std::map<d400_calibration_table_id, bool> data_present;
+
+            d400_calibration() : version(0), left_imager_intrinsic({}), right_imager_intrinsic({}),
+                left_imager_extrinsic({}), right_imager_extrinsic({}), depth_extrinsic({})
+            {
+                for (auto i = 0; i < max_ds_rect_resolutions; i++)
+                    depth_intrinsic[i] = {};
+                data_present.emplace(d400_calibration_table_id::coefficients_table_id, false);
+                data_present.emplace(d400_calibration_table_id::depth_calibration_id, false);
+                data_present.emplace(d400_calibration_table_id::rgb_calibration_id, false);
+                data_present.emplace(d400_calibration_table_id::fisheye_calibration_id, false);
+                data_present.emplace(d400_calibration_table_id::imu_calibration_id, false);
+                data_present.emplace(d400_calibration_table_id::lens_shading_id, false);
+                data_present.emplace(d400_calibration_table_id::projector_id, false);
+            }
+        };
+
+        struct d400_coefficients_table
+        {
+            table_header        header;
+            float3x3            intrinsic_left;             //  left camera intrinsic data, normilized
+            float3x3            intrinsic_right;            //  right camera intrinsic data, normilized
+            float3x3            world2left_rot;             //  the inverse rotation of the left camera
+            float3x3            world2right_rot;            //  the inverse rotation of the right camera
+            float               baseline;                   //  the baseline between the cameras in mm units
+            uint32_t            brown_model;                //  Distortion model: 0 - DS distorion model, 1 - Brown model
+            uint8_t             reserved1[88];
+            float4              rect_params[max_ds_rect_resolutions];
+            uint8_t             reserved2[64];
+        };
+
+        rs2_intrinsics get_d400_intrinsic_by_resolution(const std::vector<uint8_t>& raw_data, d400_calibration_table_id table_id, uint32_t width, uint32_t height);
+        rs2_intrinsics get_d400_intrinsic_by_resolution_coefficients_table(const std::vector<uint8_t>& raw_data, uint32_t width, uint32_t height);
+        pose get_d400_color_stream_extrinsic(const std::vector<uint8_t>& raw_data);
+
+        rs2_intrinsics get_intrinsic_fisheye_table(const std::vector<uint8_t>& raw_data, uint32_t width, uint32_t height);
+        pose get_fisheye_extrinsics_data(const std::vector<uint8_t>& raw_data);
     } // namespace ds
 } // namespace librealsense

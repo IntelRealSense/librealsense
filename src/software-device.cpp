@@ -152,6 +152,9 @@ namespace librealsense
 
         auto profile = std::make_shared<pose_stream_profile>(
             platform::stream_profile{ 0, 0, (uint32_t)pose_stream.fps, 0 });
+        if (!profile)
+            throw librealsense::invalid_value_exception("null pointer passed for argument \"profile\".");
+
         profile->set_format(pose_stream.fmt);
         profile->set_framerate(pose_stream.fps);
         profile->set_stream_index(pose_stream.index);

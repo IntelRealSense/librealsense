@@ -146,6 +146,7 @@ enum class ERealSenseOptionType : uint8
     VERTICAL_BINNING                           , /**< Enables vertical binning which increases the maximal sensed distance. */
     RECEIVER_SENSITIVITY                       , /**< Control the receiver sensitivity to incoming light, both projected and ambient. */
     EMITTER_FREQUENCY                          , /**< Select emitter (laser) frequency:  0 --> 57[KHZ], 1 --> 97[KHZ] */
+    DEPTH_AUTO_EXPOSURE_MODE                   , /**< Select depth sensor auto exposure mode:  0 --> REGULAR 1 --> ACCELERATED */
 };
 
 UENUM(Blueprintable)
