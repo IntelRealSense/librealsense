@@ -49,7 +49,7 @@ namespace librealsense
         const platform::extension_unit fisheye_xu = { 3, 12, 2,
         { 0xf6c3c3d1, 0x5cde, 0x4477,{ 0xad, 0xf0, 0x41, 0x33, 0xf5, 0x8d, 0xa6, 0xf4 } } };
 
-        const int REGISTER_CLOCK_0 = 0x0001613c;
+        const uint32_t REGISTER_CLOCK_0 = 0x0001613c;
 
         const uint32_t FLASH_SIZE = 0x00200000;
         const uint32_t FLASH_SECTOR_SIZE = 0x1000;
