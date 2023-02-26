@@ -57,22 +57,29 @@ int main( int argc, char ** argv ) try
     SwitchArg machine_readable_arg( "m", "machine-readable", "output entities in a way more suitable for automatic parsing" );
     SwitchArg topic_samples_arg( "t", "topic-samples", "register to topics that send TypeObject and print their samples" );
     SwitchArg debug_arg( "", "debug", "Enable debug logging", false );
+    SwitchArg participants_arg( "", "participants", "Show participants and quit; implies --snapshot", false );
     ValueArg< realdds::dds_domain_id > domain_arg( "d", "domain", "select domain ID to listen on", false, 0, "0-232" );
     cmd.add( snapshot_arg );
     cmd.add( machine_readable_arg );
     cmd.add( topic_samples_arg );
     cmd.add( domain_arg );
     cmd.add( debug_arg );
+    cmd.add( participants_arg );
     cmd.parse( argc, argv );
+
+    bool participants = participants_arg.isSet();
+    bool machine_readable = machine_readable_arg.isSet();
+    bool topic_samples = topic_samples_arg.isSet();
+    bool snapshot = snapshot_arg.isSet() || participants;
 
     // Intercept DDS messages and redirect them to our own logging mechanism
     rsutils::configure_elpp_logger( debug_arg.isSet() );
     eprosima::fastdds::dds::Log::ClearConsumers();
     eprosima::fastdds::dds::Log::RegisterConsumer( realdds::log_consumer::create() );
 
-    if( snapshot_arg.isSet() )
+    if( snapshot )
     {
-        seconds = 3;
+        seconds = participants ? 1 : 3;  // don't need as much time to detect participants
     }
 
     if( domain_arg.isSet() )
@@ -85,17 +92,53 @@ int main( int argc, char ** argv ) try
         }
     }
 
-    dds_sniffer snif;
-    if( snif.init( domain, snapshot_arg.isSet(), machine_readable_arg.isSet(), topic_samples_arg.isSet() ) )
-    {
-        std_prefix = snif.get_participant().guid().guidPrefix;
-        snif.run( seconds );
-    }
-    else
+    dds_sniffer sniffer;
+
+    sniffer.print_discoveries( ! snapshot );
+    sniffer.print_by_topics( snapshot && ! participants );
+    sniffer.print_machine_readable( machine_readable );
+    sniffer.print_topic_samples( topic_samples && ! snapshot );
+
+    if( ! sniffer.init( domain ) )
     {
         LOG_ERROR( "Initialization failure" );
         return EXIT_FAILURE;
     }
+
+
+    std_prefix = sniffer.get_participant().guid().guidPrefix;
+
+    if( ! machine_readable && ! snapshot )
+    {
+        std::cout << "rs-dds-sniffer listening on domain " << domain;
+        std::cout << " (press Ctrl+C to stop)";
+        std::cout << std::endl;
+    }
+
+    if( ! snapshot )
+    {
+        // Wait until user presses Ctrl+C
+        std::cin.ignore( std::numeric_limits< std::streamsize >::max() );
+    }
+    else
+    {
+        // We need to allow enough time to pick up all participants, writers, etc. -- it takes time
+        std::this_thread::sleep_for( std::chrono::seconds( seconds ) );
+    }
+
+    if( participants )
+    {
+        sniffer.print_participants();
+    }
+    else if( snapshot )
+    {
+        if( machine_readable )
+            sniffer.print_topics_machine_readable();
+        else
+            sniffer.print_topics();
+    }
+
+
 
     return EXIT_SUCCESS;
 }
@@ -138,16 +181,8 @@ dds_sniffer::~dds_sniffer()
     _discovered_types_datas.clear();
 }
 
-bool dds_sniffer::init( realdds::dds_domain_id domain,
-                        bool snapshot,
-                        bool machine_readable,
-                        bool topic_samples )
+bool dds_sniffer::init( realdds::dds_domain_id domain )
 {
-    _print_discoveries = ! snapshot;
-    _print_by_topics = snapshot;
-    _print_machine_readable = machine_readable;
-    _print_topic_samples = topic_samples && ! snapshot;
-
     // Set callbacks before calling _participant.init(), or some events, specifically on_participant_added, might get lost
     _participant.create_listener( &_listener )
         ->on_writer_added( [this]( realdds::dds_guid guid, char const * topic_name ) {
@@ -174,41 +209,7 @@ bool dds_sniffer::init( realdds::dds_domain_id domain,
 
     _participant.init( domain, "rs-dds-sniffer" );
 
-    if( ! _print_machine_readable )
-    {
-        std::cout << "rs-dds-sniffer (" << print( _participant.guid() ) << ") ";
-        if( snapshot )
-            std::cout << "taking a snapshot of ";
-        else
-            std::cout << "listening on ";
-        std::cout << "domain " << domain << std::endl;
-    }
-
     return _participant.is_valid();
-}
-
-void dds_sniffer::run( uint32_t seconds )
-{
-    if( seconds == 0 )
-    {
-        std::cin.ignore( std::numeric_limits< std::streamsize >::max() );
-    }
-    else
-    {
-        std::this_thread::sleep_for( std::chrono::seconds( seconds ) );
-    }
-
-    if( _print_by_topics )
-    {
-        if( _print_machine_readable )
-        {
-            print_topics_machine_readable();
-        }
-        else
-        {
-            print_topics();
-        }
-    }
 }
 
 void dds_sniffer::on_writer_added( realdds::dds_guid guid, const char * topic_name )
@@ -559,6 +560,17 @@ void dds_sniffer::print_topics() const
         last_topic.clear();
         last_topic.str( topic.first );  // Save topic name for next iteration
         last_topic.seekg( 0, last_topic.beg );
+    }
+}
+
+void dds_sniffer::print_participants( bool with_guids ) const
+{
+    for( auto & guid2name : _discovered_participants )
+    {
+        std::cout << guid2name.second;
+        if( with_guids )
+            std::cout << ' ' << realdds::print( guid2name.first );
+        std::cout << std::endl;
     }
 }
 

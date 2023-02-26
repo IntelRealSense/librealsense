@@ -46,47 +46,6 @@ dds_device_server::~dds_device_server()
 }
 
 
-void dds_device_server::start_streaming( const std::vector< std::pair < std::string, image_header > > & streams_to_open )
-{
-    for ( auto & p : streams_to_open )
-    {
-        auto & stream_name = p.first;
-        auto & header = p.second;
-        auto it = _stream_name_to_server.find( stream_name );
-        if ( it == _stream_name_to_server.end() )
-            DDS_THROW( runtime_error, "stream '" + stream_name + "' does not exist" );
-        auto & stream = it->second;
-        stream->start_streaming( header );
-    }
-}
-
-
-void dds_device_server::stop_streaming( const std::vector< std::string > & stream_to_close )
-{
-    for ( auto & stream_name : stream_to_close )
-    {
-        auto it = _stream_name_to_server.find( stream_name );
-        if ( it == _stream_name_to_server.end() )
-            DDS_THROW( runtime_error, "stream '" + stream_name + "' does not exist" );
-        auto & stream = it->second;
-        stream->stop_streaming();
-    }
-}
-
-
-void dds_device_server::publish_image( const std::string & stream_name, const uint8_t * data, size_t size )
-{
-    auto it = _stream_name_to_server.find( stream_name );
-    if( it == _stream_name_to_server.end() )
-        DDS_THROW( runtime_error, "stream '" + stream_name + "' does not exist" );
-    auto & stream = it->second;
-    if( ! stream->is_streaming() )
-        DDS_THROW( runtime_error, "stream '" + stream_name + "' is not streaming" );
-
-    stream->publish_image( data, size );
-}
-
-
 static void on_discovery_device_header( size_t const n_streams, const dds_options & options,
                                         const extrinsics_map & extr, dds_notification_server & notifications )
 {
@@ -163,6 +122,20 @@ static void on_discovery_stream_header( std::shared_ptr< dds_stream_server > con
 }
 
 
+static std::string ros_friendly_topic_name( std::string name )
+{
+    // Replace all '/' with '_'
+    int n = 0;
+    for( char & ch : name )
+        if( ch == '/' )
+            if( ++n > 1 )
+                ch = '_';
+    // ROS topics start with "rt/" prefix
+    name.insert( 0, "rt/", 3 );
+    return name;
+}
+
+
 void dds_device_server::init( std::vector< std::shared_ptr< dds_stream_server > > const & streams,
                               const dds_options & options, const extrinsics_map & extr )
 {
@@ -180,7 +153,7 @@ void dds_device_server::init( std::vector< std::shared_ptr< dds_stream_server > 
         on_discovery_device_header( streams.size(), options, extr, *_notification_server );
         for( auto& stream : streams )
         {
-            std::string topic_name = _topic_root + '/' + stream->name();
+            std::string topic_name = ros_friendly_topic_name( _topic_root + '/' + stream->name() );
             stream->open( topic_name, _publisher );
             _stream_name_to_server[stream->name()] = stream;
             on_discovery_stream_header( stream, *_notification_server );
@@ -217,12 +190,27 @@ void dds_device_server::on_control_message_received()
 {
     topics::flexible_msg data;
     eprosima::fastdds::dds::SampleInfo info;
-    while ( topics::flexible_msg::take_next( *_control_reader, &data, &info ) )
+    while( topics::flexible_msg::take_next( *_control_reader, &data, &info ) )
     {
-        if ( !data.is_valid() )
+        if( ! data.is_valid() )
             continue;
 
-        _control_dispatcher.invoke( [x = std::move(data), this]( dispatcher::cancellable_timer ) { handle_control_message( x ); } );
+        _control_dispatcher.invoke(
+            [x = std::move( data ), this]( dispatcher::cancellable_timer )
+            {
+                try
+                {
+                    handle_control_message( x );
+                }
+                catch( std::exception const & e )
+                {
+                    publish_notification( json{
+                        { "id", "error" },
+                        { "error", e.what() },
+                        { "original", x.json_data() },
+                    } );
+                }
+            } );
     }
 }
 
@@ -232,15 +220,10 @@ void dds_device_server::handle_control_message( topics::flexible_msg control_mes
     auto id = rsutils::json::get< std::string >( j, "id" );
     LOG_DEBUG( "-----> JSON = " << j.dump() );
 
-    if ( id.compare("open-streams") == 0 )
+    if( id.compare( "open-streams" ) == 0 )
     {
         if ( _open_streams_callback )
             _open_streams_callback( j );
-    }
-    else if( id.compare( "close-streams" ) == 0 )
-    {
-        if ( _close_streams_callback )
-            _close_streams_callback( j );
     }
     else if( id.compare( "set-option" ) == 0 )
     {
@@ -249,6 +232,10 @@ void dds_device_server::handle_control_message( topics::flexible_msg control_mes
     else if( id.compare( "query-option" ) == 0 )
     {
         handle_query_option( j );
+    }
+    else
+    {
+        DDS_THROW( runtime_error, "invalid control '" + id + "'" );
     }
 }
 
@@ -337,7 +324,7 @@ std::shared_ptr< dds_option > realdds::dds_device_server::find_option( const std
 
 void realdds::dds_device_server::send_set_option_success( uint32_t counter )
 {
-    topics::flexible_msg notification( json {
+    topics::flexible_msg notification( json{
         { "id", "set-option" },
         { "counter", counter },
         { "successful", true },
@@ -348,7 +335,7 @@ void realdds::dds_device_server::send_set_option_success( uint32_t counter )
 
 void realdds::dds_device_server::send_set_option_failure( uint32_t counter, const std::string & fail_reason )
 {
-    topics::flexible_msg notification( json {
+    topics::flexible_msg notification( json{
         { "id", "set-option" },
         { "counter", counter },
         { "successful", false },
@@ -359,14 +346,13 @@ void realdds::dds_device_server::send_set_option_failure( uint32_t counter, cons
 
 void dds_device_server::send_query_option_success( uint32_t counter, float value )
 {
-    topics::flexible_msg notification( json {
+    topics::flexible_msg notification( json{
         { "id", "query-option" },
         { "counter", counter },
         { "value", value },
         { "successful", true },
         { "failure-reason", "" },
     } );
-
     publish_notification( std::move( notification ) );
 }
 

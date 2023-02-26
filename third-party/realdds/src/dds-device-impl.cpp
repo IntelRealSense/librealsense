@@ -114,51 +114,25 @@ void dds_device::impl::run( size_t message_timeout_ms )
 
 void dds_device::impl::open( const dds_stream_profiles & profiles )
 {
-    if ( profiles.empty() )
+    if( profiles.empty() )
         DDS_THROW( runtime_error, "must provide at least one profile" );
 
     auto stream_profiles = nlohmann::json();
-    for ( auto & profile : profiles )
+    for( auto & profile : profiles )
     {
         auto stream = profile->stream();
-        if ( !stream )
-            DDS_THROW( runtime_error, "profile (" + profile->to_string() + ") is not part of any stream" );
-        if ( stream_profiles.find( stream->name() ) != stream_profiles.end() )
+        if( ! stream )
+            DDS_THROW( runtime_error, "profile " + profile->to_string() + " is not part of any stream" );
+        if( stream_profiles.find( stream->name() ) != stream_profiles.end() )
             DDS_THROW( runtime_error, "more than one profile found for stream '" + stream->name() + "'" );
 
         stream_profiles[stream->name()] = profile->to_json();
-
-        _streams[stream->name()]->open( _info.topic_root + '/' + stream->name(), _subscriber );
     }
 
     nlohmann::json j = {
         { "id", "open-streams" },
         { "stream-profiles", stream_profiles },
     };
-
-    write_control_message( j );
-}
-
-void dds_device::impl::close( dds_streams const & streams )
-{
-    if ( streams.empty() )
-        DDS_THROW( runtime_error, "must provide at least one stream" );
-
-    auto stream_names = nlohmann::json::array();
-    for ( auto & stream : streams )
-    {
-        if ( !stream )
-            DDS_THROW( runtime_error, "null stream passed in" );
-        stream_names += stream->name();
-
-        _streams[stream->name()]->close();
-    }
-
-    nlohmann::json j = {
-        { "id", "close-streams" },
-        { "stream-names", stream_names },
-    };
-
     write_control_message( j );
 }
 

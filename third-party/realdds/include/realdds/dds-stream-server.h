@@ -22,7 +22,7 @@ class dds_stream_profile;
 
 struct image_header
 {
-    int format;
+    dds_stream_format format;
     int height = -1;
     int width = -1;
 
@@ -44,7 +44,8 @@ public:
     virtual ~dds_stream_server();
 
     bool is_open() const override { return !! _writer; }
-    virtual void open( std::string const & topic_name, std::shared_ptr< dds_publisher > const & ) = 0;
+    void open( std::string const & topic_name, std::shared_ptr< dds_publisher > const & );
+    void close();
 
     bool is_streaming() const override { return _image_header.is_valid(); }
     void start_streaming( const image_header & header );
@@ -54,9 +55,20 @@ public:
 
     std::shared_ptr< dds_topic > const & get_topic() const override;
 
+    // We don't know how to actually stream -- someone else calls publish_image. So we provide an easy callback
+    // to let our owner know if streaming needs to start or end based on the number of readers we are matched to:
+    typedef std::function< void( std::shared_ptr< dds_stream_server > const &, int n_readers ) >
+        readers_changed_callback;
+    void on_readers_changed( readers_changed_callback callback ) { _on_readers_changed = std::move( callback ); }
+
 protected:
     std::shared_ptr< dds_topic_writer > _writer;
     image_header _image_header;
+    unsigned _frame_id = 0;
+    readers_changed_callback _on_readers_changed;
+
+    // Called at the end of open(), when the _writer has been initialized. Override to provide custom QOS etc...
+    virtual void run_stream();
 };
 
 
@@ -66,8 +78,6 @@ class dds_video_stream_server : public dds_stream_server
 
 public:
     dds_video_stream_server( std::string const & stream_name, std::string const & sensor_name );
-
-    void open( std::string const & topic_name, std::shared_ptr< dds_publisher > const & ) override;
 
     void set_intrinsics( const std::set< video_intrinsics > & intrinsics ) { _intrinsics = intrinsics; }
     const std::set< video_intrinsics > & get_intrinsics() const { return _intrinsics; }
@@ -141,8 +151,6 @@ class dds_motion_stream_server : public dds_stream_server
 public:
     dds_motion_stream_server( std::string const & stream_name, std::string const & sensor_name );
     
-    void open( std::string const & topic_name, std::shared_ptr< dds_publisher > const & ) override;
-
     void set_intrinsics( const motion_intrinsics & intrinsics ) { _intrinsics = intrinsics; }
     const motion_intrinsics & get_intrinsics() const { return _intrinsics; }
 

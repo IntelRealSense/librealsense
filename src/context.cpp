@@ -603,12 +603,13 @@ namespace librealsense
 
         void start( frame_callback_ptr callback ) override
         {
-            //For each stream in sensor_base::get_active_streams() set callback function that will call on_video_frame
-            for ( auto & profile : sensor_base::get_active_streams() )
+            for( auto & profile : sensor_base::get_active_streams() )
             {
-                //stream is the dds_stream matching the librealsense active stream
-                auto & stream = _streams[sid_index( profile->get_unique_id(), profile->get_stream_index() )];
-                stream->start_streaming( [p = profile, this]( realdds::topics::device::image && dds_frame ) {
+                auto & dds_stream = _streams[sid_index( profile->get_unique_id(), profile->get_stream_index() )];
+                // Opening it will start streaming on the server side automatically
+                dds_stream->open( "rt/" + _dev->device_info().topic_root + '_' + dds_stream->name(), _dev->subscriber());
+                // But we won't get callbacks until we "start streaming"
+                dds_stream->start_streaming( [p = profile, this]( realdds::topics::device::image && dds_frame ) {
                     rs2_stream_profile prof = { p.get() };
 
                     if( Is< video_stream_profile >(p) )
@@ -617,13 +618,13 @@ namespace librealsense
 
                         //Copying from dds into LibRS space, same as copy from USB backend.
                         //TODO - use memory pool or some other frame allocator
-                        rs2_frame.pixels = new uint8_t[dds_frame.size];
+                        rs2_frame.pixels = new uint8_t[dds_frame.raw_data.size()];
                         if( !rs2_frame.pixels )
                             throw std::runtime_error( "Could not allocate memory for new frame" );
-                        memcpy( rs2_frame.pixels, dds_frame.raw_data.data(), dds_frame.size );
+                        memcpy( rs2_frame.pixels, dds_frame.raw_data.data(), dds_frame.raw_data.size() );
 
                         rs2_frame.deleter = []( void * ptr ) { delete[] ptr; };
-                        rs2_frame.stride = dds_frame.height > 0 ? dds_frame.size / dds_frame.height : dds_frame.size;
+                        rs2_frame.stride = int( dds_frame.height > 0 ? dds_frame.raw_data.size() / dds_frame.height : dds_frame.raw_data.size() );
                         rs2_frame.bpp = dds_frame.width > 0 ? rs2_frame.stride / dds_frame.width : rs2_frame.stride;
                         rs2_frame.timestamp = frame_counter * 1000.0 / p->get_framerate(); // TODO - timestamp from dds
                         rs2_frame.domain = RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK; // TODO - timestamp domain from options?
@@ -638,10 +639,10 @@ namespace librealsense
 
                         //Copying from dds into LibRS space, same as copy from USB backend.
                         //TODO - use memory pool or some other frame allocator
-                        rs2_frame.data = new uint8_t[dds_frame.size];
+                        rs2_frame.data = new uint8_t[dds_frame.raw_data.size()];
                         if( !rs2_frame.data )
                             throw std::runtime_error( "Could not allocate memory for new frame" );
-                        memcpy( rs2_frame.data, dds_frame.raw_data.data(), dds_frame.size );
+                        memcpy( rs2_frame.data, dds_frame.raw_data.data(), dds_frame.raw_data.size() );
 
                         rs2_frame.deleter = []( void * ptr ) { delete[] ptr; };
                         rs2_frame.timestamp = frame_counter * 1000.0 / p->get_framerate(); // TODO - timestamp from dds
@@ -658,26 +659,14 @@ namespace librealsense
 
         void stop()
         {
-            for ( auto & profile : sensor_base::get_active_streams() )
+            for( auto & profile : sensor_base::get_active_streams() )
             {
-                //stream is the dds_stream matching the librealsense active stream
-                auto & stream = _streams[sid_index( profile->get_unique_id(), profile->get_stream_index() )];
-                stream->stop_streaming();
+                auto & dds_stream = _streams[sid_index( profile->get_unique_id(), profile->get_stream_index() )];
+                dds_stream->stop_streaming();
+                dds_stream->close();
             }
 
             software_sensor::stop();
-        }
-
-        void close() override
-        {
-            realdds::dds_streams streams_to_close;
-            for( auto & profile : sensor_base::get_active_streams() )
-            {
-                streams_to_close.push_back(
-                    _streams[sid_index( profile->get_unique_id(), profile->get_stream_index() )] );
-            }
-            _dev->close( streams_to_close );
-            software_sensor::close();
         }
 
         void add_option( std::shared_ptr< realdds::dds_option > option )

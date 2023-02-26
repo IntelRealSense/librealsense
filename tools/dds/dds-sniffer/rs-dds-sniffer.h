@@ -20,11 +20,18 @@ public:
     dds_sniffer();
     ~dds_sniffer();
 
-    bool init( realdds::dds_domain_id domain = 0, bool snapshot = false, bool machine_readable = false,
-               bool topic_samples = false );
-    void run( uint32_t seconds );
+    void print_discoveries( bool enable ) { _print_discoveries = enable; }
+    void print_by_topics( bool enable ) { _print_by_topics = enable; }
+    void print_machine_readable( bool enable ) { _print_machine_readable = enable; }
+    void print_topic_samples( bool enable ) { _print_topic_samples = enable; }
+
+    bool init( realdds::dds_domain_id domain = 0 );
 
     realdds::dds_participant const & get_participant() const { return _participant; }
+
+    void print_participants( bool with_guids = false ) const;
+    void print_topics() const;
+    void print_topics_machine_readable() const;
 
 private:
     std::shared_ptr< realdds::dds_participant::listener > _listener;
@@ -90,8 +97,6 @@ private:
     void print_participant_discovered( realdds::dds_guid guid,
                                        const char * participant_name,
                                        bool discovered ) const;
-    void print_topics_machine_readable() const;
-    void print_topics() const;
     void ident( uint32_t indentation ) const;
     void print_topic_writer( realdds::dds_guid writer, uint32_t indentation = 0 ) const;
     void print_topic_reader( realdds::dds_guid reader, uint32_t indentation = 0 ) const;
