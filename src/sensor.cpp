@@ -32,9 +32,9 @@ void log_callback_end( uint32_t fps,
     auto callback_warning_duration = 1000.f / ( fps + 1 );
     auto callback_duration = current_time - callback_start_time;
 
-    LOG_DEBUG( "CallbackFinished," << librealsense::get_string( stream_type ) << ",#" << std::dec
-                                   << frame_number << ",@" << std::fixed << current_time
-                                   << ", callback duration: " << callback_duration << " ms" );
+    //LOG_DEBUG( "CallbackFinished," << librealsense::get_string( stream_type ) << ",#" << std::dec
+    //                               << frame_number << ",@" << std::fixed << current_time
+    //                               << ", callback duration: " << callback_duration << " ms" );
 
     if( callback_duration > callback_warning_duration )
     {
@@ -428,14 +428,14 @@ void log_callback_end( uint32_t fps,
 
                     frame_continuation release_and_enqueue(continuation, f.pixels);
 
-                    LOG_DEBUG("FrameAccepted," << librealsense::get_string(req_profile_base->get_stream_type())
-                        << ",Counter," << std::dec << fr->additional_data.frame_number
-                        << ",Index," << req_profile_base->get_stream_index()
-                        << ",BackEndTS," << std::fixed << f.backend_time
-                        << ",SystemTime," << std::fixed << system_time
-                        << " ,diff_ts[Sys-BE]," << system_time - f.backend_time
-                        << ",TS," << std::fixed << timestamp << ",TS_Domain," << rs2_timestamp_domain_to_string(timestamp_domain)
-                        << ",last_frame_number," << last_frame_number << ",last_timestamp," << last_timestamp);
+                    //LOG_DEBUG("FrameAccepted," << librealsense::get_string(req_profile_base->get_stream_type())
+                    //    << ",Counter," << std::dec << fr->additional_data.frame_number
+                    //    << ",Index," << req_profile_base->get_stream_index()
+                    //    << ",BackEndTS," << std::fixed << f.backend_time
+                    //    << ",SystemTime," << std::fixed << system_time
+                    //    << " ,diff_ts[Sys-BE]," << system_time - f.backend_time
+                    //    << ",TS," << std::fixed << timestamp << ",TS_Domain," << rs2_timestamp_domain_to_string(timestamp_domain)
+                    //    << ",last_frame_number," << last_frame_number << ",last_timestamp," << last_timestamp);
 
                     last_frame_number = frame_counter;
                     last_timestamp = timestamp;
