@@ -1732,7 +1732,7 @@ namespace librealsense
             struct v4l2_control control = {get_cid(opt), 0};
             if (xioctl(_fd, VIDIOC_G_CTRL, &control) < 0)
             {
-                if (errno == EIO || errno == EAGAIN) // TODO: Log?
+                if (errno == EIO || errno == EAGAIN || errno == EBUSY)
                     return false;
 
                 throw linux_backend_exception("xioctl(VIDIOC_G_CTRL) failed");
@@ -1771,7 +1771,7 @@ namespace librealsense
             // Set value
             if (xioctl(_fd, VIDIOC_S_CTRL, &control) < 0)
             {
-                if (errno == EIO || errno == EAGAIN) // TODO: Log?
+                if (errno == EIO || errno == EAGAIN || errno == EBUSY)
                     return false;
 
                 throw linux_backend_exception("xioctl(VIDIOC_S_CTRL) failed");

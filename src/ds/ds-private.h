@@ -25,21 +25,22 @@ namespace librealsense
     namespace ds
     {
         // DS5 depth XU identifiers
-        const uint8_t DS5_HWMONITOR = 1;
-        const uint8_t DS5_DEPTH_EMITTER_ENABLED = 2;
-        const uint8_t DS5_EXPOSURE = 3;
-        const uint8_t DS5_LASER_POWER = 4;
-        const uint8_t DS5_HARDWARE_PRESET = 6;
-        const uint8_t DS5_ERROR_REPORTING = 7;
-        const uint8_t DS5_EXT_TRIGGER = 8;
-        const uint8_t DS5_ASIC_AND_PROJECTOR_TEMPERATURES = 9;
-        const uint8_t DS5_ENABLE_AUTO_WHITE_BALANCE = 0xA;
-        const uint8_t DS5_ENABLE_AUTO_EXPOSURE = 0xB;
-        const uint8_t DS5_LED_PWR = 0xE;
-        const uint8_t DS5_THERMAL_COMPENSATION = 0xF;
-        const uint8_t DS5_EMITTER_FREQUENCY               = 0x10;
+        const uint8_t DS5_HWMONITOR                         = 1;
+        const uint8_t DS5_DEPTH_EMITTER_ENABLED             = 2;
+        const uint8_t DS5_EXPOSURE                          = 3;
+        const uint8_t DS5_LASER_POWER                       = 4;
+        const uint8_t DS5_HARDWARE_PRESET                   = 6;
+        const uint8_t DS5_ERROR_REPORTING                   = 7;
+        const uint8_t DS5_EXT_TRIGGER                       = 8;
+        const uint8_t DS5_ASIC_AND_PROJECTOR_TEMPERATURES   = 9;
+        const uint8_t DS5_ENABLE_AUTO_WHITE_BALANCE         = 0xA;
+        const uint8_t DS5_ENABLE_AUTO_EXPOSURE              = 0xB;
+        const uint8_t DS5_LED_PWR                           = 0xE;
+        const uint8_t DS5_THERMAL_COMPENSATION              = 0xF;
+        const uint8_t DS5_EMITTER_FREQUENCY                 = 0x10;
+        const uint8_t DS5_DEPTH_AUTO_EXPOSURE_MODE          = 0x11;
         // DS5 fisheye XU identifiers
-        const uint8_t FISHEYE_EXPOSURE = 1;
+        const uint8_t FISHEYE_EXPOSURE                      = 1;
 
         // subdevice[h] unit[fw], node[h] guid[fw]
         const platform::extension_unit depth_xu = { 0, 3, 2,
@@ -48,7 +49,7 @@ namespace librealsense
         const platform::extension_unit fisheye_xu = { 3, 12, 2,
         { 0xf6c3c3d1, 0x5cde, 0x4477,{ 0xad, 0xf0, 0x41, 0x33, 0xf5, 0x8d, 0xa6, 0xf4 } } };
 
-        const int REGISTER_CLOCK_0 = 0x0001613c;
+        const uint32_t REGISTER_CLOCK_0 = 0x0001613c;
 
         const uint32_t FLASH_SIZE = 0x00200000;
         const uint32_t FLASH_SECTOR_SIZE = 0x1000;
@@ -162,7 +163,7 @@ namespace librealsense
                                      // 260 for Sending two frame - First with laser OFF, and the other with laser ON.
         };
 
-        enum class d400_caps : uint16_t
+        enum class ds_caps : uint16_t
         {
             CAP_UNDEFINED = 0,
             CAP_ACTIVE_PROJECTOR = (1u << 0),    //
@@ -174,50 +175,55 @@ namespace librealsense
             CAP_BMI_055 = (1u << 6),
             CAP_BMI_085 = (1u << 7),
             CAP_INTERCAM_HW_SYNC = (1u << 8),
+            CAP_IP65 = (1u << 9),
+            CAP_IR_FILTER = (1u << 10),
             CAP_MAX
         };
 
-        static const std::map<d400_caps, std::string> d400_capabilities_names = {
-            { d400_caps::CAP_UNDEFINED,        "Undefined"         },
-            { d400_caps::CAP_ACTIVE_PROJECTOR, "Active Projector"  },
-            { d400_caps::CAP_RGB_SENSOR,       "RGB Sensor"        },
-            { d400_caps::CAP_FISHEYE_SENSOR,   "Fisheye Sensor"    },
-            { d400_caps::CAP_IMU_SENSOR,       "IMU Sensor"        },
-            { d400_caps::CAP_GLOBAL_SHUTTER,   "Global Shutter"    },
-            { d400_caps::CAP_ROLLING_SHUTTER,  "Rolling Shutter"   },
-            { d400_caps::CAP_BMI_055,          "IMU BMI_055"       },
-            { d400_caps::CAP_BMI_085,          "IMU BMI_085"       }
+        static const std::map<ds_caps, std::string> ds_capabilities_names = {
+            { ds_caps::CAP_UNDEFINED,        "Undefined"         },
+            { ds_caps::CAP_ACTIVE_PROJECTOR, "Active Projector"  },
+            { ds_caps::CAP_RGB_SENSOR,       "RGB Sensor"        },
+            { ds_caps::CAP_FISHEYE_SENSOR,   "Fisheye Sensor"    },
+            { ds_caps::CAP_IMU_SENSOR,       "IMU Sensor"        },
+            { ds_caps::CAP_GLOBAL_SHUTTER,   "Global Shutter"    },
+            { ds_caps::CAP_ROLLING_SHUTTER,  "Rolling Shutter"   },
+            { ds_caps::CAP_BMI_055,          "IMU BMI_055"       },
+            { ds_caps::CAP_BMI_085,          "IMU BMI_085"       },
+            { ds_caps::CAP_IP65,             "IP65 Sealed device"},
+            { ds_caps::CAP_IR_FILTER,        "IR filter"         }
         };
 
-        inline d400_caps operator &(const d400_caps lhs, const d400_caps rhs)
+        inline ds_caps operator &(const ds_caps lhs, const ds_caps rhs)
         {
-            return static_cast<d400_caps>(static_cast<uint32_t>(lhs) & static_cast<uint32_t>(rhs));
+            return static_cast<ds_caps>(static_cast<uint32_t>(lhs) & static_cast<uint32_t>(rhs));
         }
 
-        inline d400_caps operator |(const d400_caps lhs, const d400_caps rhs)
+        inline ds_caps operator |(const ds_caps lhs, const ds_caps rhs)
         {
-            return static_cast<d400_caps>(static_cast<uint32_t>(lhs) | static_cast<uint32_t>(rhs));
+            return static_cast<ds_caps>(static_cast<uint32_t>(lhs) | static_cast<uint32_t>(rhs));
         }
 
-        inline d400_caps& operator |=(d400_caps& lhs, d400_caps rhs)
+        inline ds_caps& operator |=(ds_caps& lhs, ds_caps rhs)
         {
             return lhs = lhs | rhs;
         }
 
-        inline bool operator &&(d400_caps l, d400_caps r)
+        inline bool operator &&(ds_caps l, ds_caps r)
         {
             return !!(static_cast<uint8_t>(l) & static_cast<uint8_t>(r));
         }
 
-        inline std::ostream& operator <<(std::ostream& stream, const d400_caps& cap)
+        inline std::ostream& operator <<(std::ostream& stream, const ds_caps& cap)
         {
-            for (auto i : { d400_caps::CAP_ACTIVE_PROJECTOR,d400_caps::CAP_RGB_SENSOR,
-                            d400_caps::CAP_FISHEYE_SENSOR,  d400_caps::CAP_IMU_SENSOR,
-                            d400_caps::CAP_GLOBAL_SHUTTER,  d400_caps::CAP_ROLLING_SHUTTER,
-                            d400_caps::CAP_BMI_055,         d400_caps::CAP_BMI_085 })
+            for (auto i : { ds_caps::CAP_ACTIVE_PROJECTOR,ds_caps::CAP_RGB_SENSOR,
+                            ds_caps::CAP_FISHEYE_SENSOR,  ds_caps::CAP_IMU_SENSOR,
+                            ds_caps::CAP_GLOBAL_SHUTTER,  ds_caps::CAP_ROLLING_SHUTTER,
+                            ds_caps::CAP_BMI_055,         ds_caps::CAP_BMI_085,
+                            ds_caps::CAP_IP65,            ds_caps::CAP_IR_FILTER })
             {
                 if (i == (i & cap))
-                    stream << d400_capabilities_names.at(i) << "/";
+                    stream << ds_capabilities_names.at(i) << "/";
             }
             return stream;
         }
@@ -505,6 +511,7 @@ namespace librealsense
         enum gvd_fields
         {
             // Keep sorted
+            gvd_version_offset = 2,
             camera_fw_version_offset = 12,
             is_camera_locked_offset = 25,
             module_serial_offset = 48,
@@ -512,6 +519,8 @@ namespace librealsense
             fisheye_sensor_lb = 112,
             fisheye_sensor_hb = 113,
             imu_acc_chip_id = 124,
+            ip65_sealed_offset = 161,
+            ir_filter_offset = 164,
             depth_sensor_type = 166,
             active_projector = 170,
             rgb_sensor = 174,
@@ -552,8 +561,7 @@ namespace librealsense
         rs2_intrinsics get_color_stream_intrinsic(const std::vector<uint8_t>& raw_data, uint32_t width, uint32_t height);
         bool try_get_intrinsic_by_resolution_new(const std::vector<uint8_t>& raw_data,
             uint32_t width, uint32_t height, rs2_intrinsics* result);
-
-        enum d400_notifications_types
+        enum ds_notifications_types
         {
             success = 0,
             hot_laser_power_reduce,
@@ -588,7 +596,7 @@ namespace librealsense
         };
 
         // Elaborate FW XU report. The reports may be consequently extended for PU/CTL/ISP
-        const std::map< uint8_t, std::string> d400_fw_error_report = {
+        const std::map< uint8_t, std::string> ds_fw_error_report = {
             { success,                      "Success" },
             { hot_laser_power_reduce,       "Laser hot - power reduce" },
             { hot_laser_disable,            "Laser hot - disabled" },

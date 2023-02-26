@@ -3,8 +3,8 @@
 
 #pragma once
 
-#include "ds/d500/d500-private.h"
-#include "ds/d500/hw_monitor_extended_buffers.h"
+#include "d500-private.h"
+#include "hw_monitor_extended_buffers.h"
 
 #include "algo.h"
 #include "error-handling.h"
@@ -64,7 +64,7 @@ namespace librealsense
         void enter_update_state() const override;
         std::vector<uint8_t> backup_flash(update_progress_callback_ptr callback) override;
         void update_flash(const std::vector<uint8_t>& image, update_progress_callback_ptr callback, int update_mode) override;
-        bool check_fw_compatibility(const std::vector<uint8_t>& image) const override;
+        bool check_fw_compatibility( const std::vector<uint8_t>& image ) const override { return true; };
     protected:
         std::shared_ptr<ds_device_common> _ds_device_common;
 
@@ -75,7 +75,7 @@ namespace librealsense
 
         float get_stereo_baseline_mm() const;
 
-        ds::d400_caps parse_device_capabilities() const;
+        ds::ds_caps parse_device_capabilities( const std::vector<uint8_t>& gvd_buf ) const;
 
         //TODO - add these to device class as pure virtual methods
         command get_firmware_logs_command() const;
@@ -89,7 +89,7 @@ namespace librealsense
         std::shared_ptr<hw_monitor_extended_buffers> _hw_monitor;
         firmware_version _fw_version;
         firmware_version _recommended_fw_version;
-        ds::d400_caps _device_capabilities;
+        ds::ds_caps _device_capabilities;
 
         std::shared_ptr<stream_interface> _depth_stream;
         std::shared_ptr<stream_interface> _left_ir_stream;

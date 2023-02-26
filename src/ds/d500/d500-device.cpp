@@ -108,11 +108,6 @@ namespace librealsense
         _ds_device_common->update_flash(image, callback, update_mode);
     }
 
-    bool d500_device::check_fw_compatibility(const std::vector<uint8_t>& image) const
-    {
-        return _ds_device_common->check_fw_compatibility(image);
-    }
-
     class d500_depth_sensor : public synthetic_sensor, public video_sensor_interface, public depth_stereo_sensor, public roi_sensor_base
     {
     public:
@@ -336,37 +331,35 @@ namespace librealsense
         return _hw_monitor->send(cmd);
     }
 
-    ds::d400_caps d500_device::parse_device_capabilities() const // to be d500 adapted
+    ds::ds_caps d500_device::parse_device_capabilities( const std::vector<uint8_t> &gvd_buf ) const // to be d500 adapted
     {
         using namespace ds;
-        std::array<unsigned char,HW_MONITOR_BUFFER_SIZE> gvd_buf;
-        _hw_monitor->get_gvd(gvd_buf.size(), gvd_buf.data(), GVD);
 
         // Opaque retrieval
-        d400_caps val{d400_caps::CAP_UNDEFINED};
+        ds_caps val{ds_caps::CAP_UNDEFINED};
         if (gvd_buf[active_projector])  // DepthActiveMode
-            val |= d400_caps::CAP_ACTIVE_PROJECTOR;
+            val |= ds_caps::CAP_ACTIVE_PROJECTOR;
         if (gvd_buf[rgb_sensor])                           // WithRGB
-            val |= d400_caps::CAP_RGB_SENSOR;
+            val |= ds_caps::CAP_RGB_SENSOR;
         if (gvd_buf[imu_sensor])
         {
-            val |= d400_caps::CAP_IMU_SENSOR;
+            val |= ds_caps::CAP_IMU_SENSOR;
             if (gvd_buf[imu_acc_chip_id] == I2C_IMU_BMI055_ID_ACC)
-                val |= d400_caps::CAP_BMI_055;
+                val |= ds_caps::CAP_BMI_055;
             else if (gvd_buf[imu_acc_chip_id] == I2C_IMU_BMI085_ID_ACC)
-                val |= d400_caps::CAP_BMI_085;
+                val |= ds_caps::CAP_BMI_085;
             else if (d500_hid_bmi_085_pid.end() != d500_hid_bmi_085_pid.find(_pid))
-                val |= d400_caps::CAP_BMI_085;
+                val |= ds_caps::CAP_BMI_085;
             else
                 LOG_WARNING("The IMU sensor is undefined for PID " << std::hex << _pid << " and imu_chip_id: " << gvd_buf[imu_acc_chip_id] << std::dec);
         }
         if (0xFF != (gvd_buf[fisheye_sensor_lb] & gvd_buf[fisheye_sensor_hb]))
-            val |= d400_caps::CAP_FISHEYE_SENSOR;
+            val |= ds_caps::CAP_FISHEYE_SENSOR;
         if (0x1 == gvd_buf[depth_sensor_type])
-            val |= d400_caps::CAP_ROLLING_SHUTTER;  // e.g. ASRC
+            val |= ds_caps::CAP_ROLLING_SHUTTER;  // e.g. ASRC
         if (0x2 == gvd_buf[depth_sensor_type])
-            val |= d400_caps::CAP_GLOBAL_SHUTTER;   // e.g. AWGC
-        val |= d400_caps::CAP_INTERCAM_HW_SYNC;
+            val |= ds_caps::CAP_GLOBAL_SHUTTER;   // e.g. AWGC
+        val |= ds_caps::CAP_INTERCAM_HW_SYNC;
 
         return val;
     }
@@ -409,7 +402,7 @@ namespace librealsense
         const platform::backend_device_group& group)
         : device(ctx, group), global_time_interface(),
           auto_calibrated(),
-          _device_capabilities(ds::d400_caps::CAP_UNDEFINED),
+          _device_capabilities(ds::ds_caps::CAP_UNDEFINED),
           _depth_stream(new stream(RS2_STREAM_DEPTH)),
           _left_ir_stream(new stream(RS2_STREAM_INFRARED, 1)),
           _right_ir_stream(new stream(RS2_STREAM_INFRARED, 2)),
@@ -485,10 +478,10 @@ namespace librealsense
         bool usb_modality = true;
         group_multiple_fw_calls(depth_sensor, [&]() {
             std::string fwv;
-            _ds_device_common->get_fw_details(optic_serial, asic_serial, fwv);
+            _ds_device_common->get_fw_details( gvd_buff, optic_serial, asic_serial, fwv );
             _fw_version = firmware_version(fwv);
             _recommended_fw_version = firmware_version(D4XX_RECOMMENDED_FIRMWARE_VERSION);
-            _device_capabilities = parse_device_capabilities();
+            _device_capabilities = parse_device_capabilities( gvd_buff );
             advanced_mode = is_camera_in_advanced_mode();
 
             auto _usb_mode = usb3_type;
@@ -555,7 +548,7 @@ namespace librealsense
             depth_sensor.register_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE, enable_auto_exposure);
             
             // register HDR options
-            //auto global_shutter_mask = d400_caps::CAP_GLOBAL_SHUTTER;
+            //auto global_shutter_mask = ds_caps::CAP_GLOBAL_SHUTTER;
             auto d500_depth = As<d500_depth_sensor, synthetic_sensor>(&get_depth_sensor());
             d500_depth->init_hdr_config(exposure_range, gain_range);
             auto&& hdr_cfg = d500_depth->get_hdr_config();
@@ -612,14 +605,14 @@ namespace librealsense
                     enable_auto_exposure));
 
             // Alternating laser pattern is applicable for global shutter/active SKUs
-            auto mask = d400_caps::CAP_GLOBAL_SHUTTER | d400_caps::CAP_ACTIVE_PROJECTOR;
+            auto mask = ds_caps::CAP_GLOBAL_SHUTTER | ds_caps::CAP_ACTIVE_PROJECTOR;
             // Alternating laser pattern should be set and query in a different way according to the firmware version
             if ((_device_capabilities & mask) == mask)
             {
                 auto alternating_emitter_opt = std::make_shared<alternating_emitter_option>(*_hw_monitor, &raw_depth_sensor);
                 auto emitter_always_on_opt = std::make_shared<emitter_always_on_option>(*_hw_monitor, &depth_sensor);
 
-                if ((_device_capabilities & d400_caps::CAP_GLOBAL_SHUTTER) == d400_caps::CAP_GLOBAL_SHUTTER)
+                if ((_device_capabilities & ds_caps::CAP_GLOBAL_SHUTTER) == ds_caps::CAP_GLOBAL_SHUTTER)
                 {
                     std::vector<std::pair<std::shared_ptr<option>, std::string>> options_and_reasons = { std::make_pair(alternating_emitter_opt,
                         "Emitter always ON cannot be set while Emitter ON/OFF is enabled") };
@@ -638,14 +631,14 @@ namespace librealsense
                         ));
             }
 
-            if ((_device_capabilities & d400_caps::CAP_INTERCAM_HW_SYNC) == d400_caps::CAP_INTERCAM_HW_SYNC)
+            if ((_device_capabilities & ds_caps::CAP_INTERCAM_HW_SYNC) == ds_caps::CAP_INTERCAM_HW_SYNC)
             {
-                if ((_device_capabilities & d400_caps::CAP_GLOBAL_SHUTTER) == d400_caps::CAP_GLOBAL_SHUTTER)
+                if ((_device_capabilities & ds_caps::CAP_GLOBAL_SHUTTER) == ds_caps::CAP_GLOBAL_SHUTTER)
                 {
                     depth_sensor.register_option(RS2_OPTION_INTER_CAM_SYNC_MODE,
                         std::make_shared<external_sync_mode>(*_hw_monitor, &raw_depth_sensor, 3));
                 }
-                else if ((_device_capabilities & d400_caps::CAP_GLOBAL_SHUTTER) == d400_caps::CAP_GLOBAL_SHUTTER)
+                else if ((_device_capabilities & ds_caps::CAP_GLOBAL_SHUTTER) == ds_caps::CAP_GLOBAL_SHUTTER)
                 {
                     depth_sensor.register_option(RS2_OPTION_INTER_CAM_SYNC_MODE,
                         std::make_shared<external_sync_mode>(*_hw_monitor, &raw_depth_sensor, 2));
@@ -733,7 +726,7 @@ namespace librealsense
         depth_sensor.register_metadata((rs2_frame_metadata_value)RS2_FRAME_METADATA_FORMAT, make_attribute_parser(&md_configuration::format, md_configuration_attributes::format_attribute, md_prop_offset));
         depth_sensor.register_metadata((rs2_frame_metadata_value)RS2_FRAME_METADATA_WIDTH, make_attribute_parser(&md_configuration::width, md_configuration_attributes::width_attribute, md_prop_offset));
         depth_sensor.register_metadata((rs2_frame_metadata_value)RS2_FRAME_METADATA_HEIGHT, make_attribute_parser(&md_configuration::height, md_configuration_attributes::height_attribute, md_prop_offset));
-        depth_sensor.register_metadata((rs2_frame_metadata_value)RS2_FRAME_METADATA_ACTUAL_FPS,  std::make_shared<d400_md_attribute_actual_fps> ());
+        depth_sensor.register_metadata((rs2_frame_metadata_value)RS2_FRAME_METADATA_ACTUAL_FPS,  std::make_shared<ds_md_attribute_actual_fps> ());
 
         depth_sensor.register_metadata(RS2_FRAME_METADATA_GPIO_INPUT_DATA, make_attribute_parser(&md_configuration::gpioInputData, md_configuration_attributes::gpio_input_data_attribute, md_prop_offset));
 

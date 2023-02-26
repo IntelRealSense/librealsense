@@ -14,7 +14,6 @@ namespace rs2
     std::string get_available_firmware_version(int product_line, const std::string& pid);
 
     std::vector<uint8_t> get_default_fw_image(int product_line, const std::string& pid);
-    std::vector<int> parse_fw_version(const std::string& fw);
     bool is_upgradeable(const std::string& curr, const std::string& available);
     bool is_recommended_fw_available(const std::string& product_line, const std::string& pid);
 

@@ -66,13 +66,13 @@ namespace librealsense
         }
 
         std::vector<platform::uvc_device_info> filter_d400_device_by_capability(const std::vector<platform::uvc_device_info>& devices,
-            d400_caps caps)
+            ds_caps caps)
         {
             std::vector<platform::uvc_device_info> results;
 
             switch (caps)
             {
-            case d400_caps::CAP_FISHEYE_SENSOR:
+            case ds_caps::CAP_FISHEYE_SENSOR:
                 std::copy_if(devices.begin(), devices.end(), std::back_inserter(results),
                     [](const platform::uvc_device_info& info)
                     {

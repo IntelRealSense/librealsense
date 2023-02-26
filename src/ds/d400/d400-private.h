@@ -158,9 +158,27 @@ namespace librealsense
         };
 
         std::vector<platform::uvc_device_info> filter_d400_device_by_capability(
-            const std::vector<platform::uvc_device_info>& devices, d400_caps caps);
+            const std::vector<platform::uvc_device_info>& devices, ds_caps caps);
         bool d400_try_fetch_usb_device(std::vector<platform::usb_device_info>& devices,
             const platform::uvc_device_info& info, platform::usb_device_info& result);
+
+        static const std::map<ds_caps, std::int8_t> d400_cap_to_min_gvd_version = {
+            {ds_caps::CAP_IP65, 0x4},
+            {ds_caps::CAP_IR_FILTER, 0x4}
+        };
+
+        // Checks if given capability supporting by current gvd (firmware data) version.
+        static bool is_capability_supports(const ds::ds_caps capability, const uint8_t cur_gvd_version)
+        {
+            auto cap = ds::d400_cap_to_min_gvd_version.find(capability);
+            if (cap == ds::d400_cap_to_min_gvd_version.end())
+            {
+                throw invalid_value_exception("Not found capabilty in map of cabability--gvd version.");
+            }
+
+            uint8_t min_gvd_version = cap->second;
+            return min_gvd_version <= cur_gvd_version;
+        }
 
         enum class d400_calibration_table_id
         {

@@ -1,6 +1,9 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2016 Intel Corporation. All Rights Reserved.
 
+#include <regex>
+#include <iterator>
+
 #include "device.h"
 #include "context.h"
 #include "image.h"
@@ -104,9 +107,23 @@ namespace librealsense
         _ds_device_common->update_flash(image, callback, update_mode);
     }
 
-    bool d400_device::check_fw_compatibility(const std::vector<uint8_t>& image) const
+    bool d400_device::check_fw_compatibility( const std::vector< uint8_t > & image ) const
     {
-        return _ds_device_common->check_fw_compatibility(image);
+        std::string fw_version = firmware_check_interface::extract_firmware_version_string( image );
+
+        auto it = ds::d400_device_to_fw_min_version.find( _pid );
+        if( it == ds::d400_device_to_fw_min_version.end() )
+        {
+            throw librealsense::invalid_value_exception(
+                rsutils::string::from()
+                << "Min and Max firmware versions have not been defined for this device: "
+                << std::hex << _pid );
+        }
+        bool result = ( firmware_version( fw_version ) >= firmware_version( it->second ) );
+        if( ! result )
+            LOG_ERROR( "Firmware version isn't compatible" << fw_version );
+
+        return result;
     }
 
     class d400_depth_sensor : public synthetic_sensor, public video_sensor_interface, public depth_stereo_sensor, public roi_sensor_base
@@ -411,43 +428,43 @@ namespace librealsense
         return {};
     }
 
-    ds::d400_caps d400_device::parse_device_capabilities() const
+    ds::ds_caps d400_device::parse_device_capabilities( const std::vector<uint8_t> &gvd_buf ) const
     {
         using namespace ds;
 
-        std::array<unsigned char,HW_MONITOR_BUFFER_SIZE> gvd_buf;
-        _hw_monitor->get_gvd(gvd_buf.size(), gvd_buf.data(), GVD);
-
         // Opaque retrieval
-        d400_caps val{d400_caps::CAP_UNDEFINED};
+        ds_caps val{ds_caps::CAP_UNDEFINED};
         if (gvd_buf[active_projector])  // DepthActiveMode
-            val |= d400_caps::CAP_ACTIVE_PROJECTOR;
+            val |= ds_caps::CAP_ACTIVE_PROJECTOR;
         if (gvd_buf[rgb_sensor])                           // WithRGB
-            val |= d400_caps::CAP_RGB_SENSOR;
+            val |= ds_caps::CAP_RGB_SENSOR;
         if (gvd_buf[imu_sensor])
         {
-            val |= d400_caps::CAP_IMU_SENSOR;
+            val |= ds_caps::CAP_IMU_SENSOR;
             if (gvd_buf[imu_acc_chip_id] == I2C_IMU_BMI055_ID_ACC)
-                val |= d400_caps::CAP_BMI_055;
+                val |= ds_caps::CAP_BMI_055;
             else if (gvd_buf[imu_acc_chip_id] == I2C_IMU_BMI085_ID_ACC)
-                val |= d400_caps::CAP_BMI_085;
+                val |= ds_caps::CAP_BMI_085;
             else if (d400_hid_bmi_055_pid.end() != d400_hid_bmi_055_pid.find(_pid))
-                val |= d400_caps::CAP_BMI_055;
+                val |= ds_caps::CAP_BMI_055;
             else if (d400_hid_bmi_085_pid.end() != d400_hid_bmi_085_pid.find(_pid))
-                val |= d400_caps::CAP_BMI_085;
+                val |= ds_caps::CAP_BMI_085;
             else
                 LOG_WARNING("The IMU sensor is undefined for PID " << std::hex << _pid << " and imu_chip_id: " << gvd_buf[imu_acc_chip_id] << std::dec);
         }
         if (0xFF != (gvd_buf[fisheye_sensor_lb] & gvd_buf[fisheye_sensor_hb]))
-            val |= d400_caps::CAP_FISHEYE_SENSOR;
+            val |= ds_caps::CAP_FISHEYE_SENSOR;
         if (0x1 == gvd_buf[depth_sensor_type])
-            val |= d400_caps::CAP_ROLLING_SHUTTER;  // e.g. ASRC
+            val |= ds_caps::CAP_ROLLING_SHUTTER;  // e.g. ASRC
         if (0x2 == gvd_buf[depth_sensor_type])
-            val |= d400_caps::CAP_GLOBAL_SHUTTER;   // e.g. AWGC
+            val |= ds_caps::CAP_GLOBAL_SHUTTER;   // e.g. AWGC
         // Option INTER_CAM_SYNC_MODE is not enabled in D405
         if (_pid != ds::RS405_PID)
-            val |= d400_caps::CAP_INTERCAM_HW_SYNC;
-
+            val |= ds_caps::CAP_INTERCAM_HW_SYNC;
+        if (gvd_buf[ip65_sealed_offset] == 0x1)
+            val |= ds_caps::CAP_IP65;
+        if (gvd_buf[ir_filter_offset] == 0x1)
+            val |= ds_caps::CAP_IR_FILTER;
         return val;
     }
 
@@ -496,7 +513,7 @@ namespace librealsense
         const platform::backend_device_group& group)
         : device(ctx, group), global_time_interface(),
           auto_calibrated(),
-          _device_capabilities(ds::d400_caps::CAP_UNDEFINED),
+          _device_capabilities(ds::ds_caps::CAP_UNDEFINED),
           _depth_stream(new stream(RS2_STREAM_DEPTH)),
           _left_ir_stream(new stream(RS2_STREAM_INFRARED, 1)),
           _right_ir_stream(new stream(RS2_STREAM_INFRARED, 2)),
@@ -504,15 +521,6 @@ namespace librealsense
     {
         _depth_device_idx = add_sensor(create_depth_device(ctx, group.uvc_devices));
         init(ctx, group);
-    }
-
-    void d400_device::register_interleaved_y16_processing_block(synthetic_sensor& depth_sensor) const
-    {
-        depth_sensor.register_processing_block(
-            { RS2_FORMAT_Y12I },
-            { {RS2_FORMAT_Y16, RS2_STREAM_INFRARED, 1}, {RS2_FORMAT_Y16, RS2_STREAM_INFRARED, 2} },
-            []() {return std::make_shared<y12i_to_y16y16>(); }
-        );
     }
 
     void d400_device::init(std::shared_ptr<context> ctx,
@@ -572,6 +580,7 @@ namespace librealsense
 
         std::string device_name = (rs400_sku_names.end() != rs400_sku_names.find(_pid)) ? rs400_sku_names.at(_pid) : "RS4xx";
 
+        std::vector<uint8_t> gvd_buff(HW_MONITOR_BUFFER_SIZE);
 
         auto& depth_sensor = get_depth_sensor();
         auto& raw_depth_sensor = get_raw_depth_sensor();
@@ -584,14 +593,17 @@ namespace librealsense
         std::string optic_serial, asic_serial, pid_hex_str, usb_type_str;
         bool advanced_mode, usb_modality;
         group_multiple_fw_calls(depth_sensor, [&]() {
+
+            _hw_monitor->get_gvd(gvd_buff.size(), gvd_buff.data(), GVD);
+
             std::string fwv;
-            _ds_device_common->get_fw_details(optic_serial, asic_serial, fwv);
+            _ds_device_common->get_fw_details( gvd_buff, optic_serial, asic_serial, fwv );
 
             _fw_version = firmware_version(fwv);
 
             _recommended_fw_version = firmware_version(D4XX_RECOMMENDED_FIRMWARE_VERSION);
             if (_fw_version >= firmware_version("5.10.4.0"))
-                _device_capabilities = parse_device_capabilities();
+                _device_capabilities = parse_device_capabilities( gvd_buff );
         
             //D457 Development
             advanced_mode = is_camera_in_advanced_mode();
@@ -698,6 +710,22 @@ namespace librealsense
                 std::make_shared<thermal_compensation>(_thermal_monitor,thermal_compensation_toggle));
             }
 
+            auto ir_filter_mask = ds_caps::CAP_IR_FILTER;
+            if (val_in_range(_pid, { RS435_RGB_PID, RS435I_PID, RS455_PID }) &&
+                (_device_capabilities & ir_filter_mask) == ir_filter_mask &&
+                is_capability_supports(ds_caps::CAP_IR_FILTER, gvd_buff[gvd_version_offset]))
+            {
+                update_device_name(device_name, ds_caps::CAP_IR_FILTER);
+            }
+
+            auto ip65_mask = ds_caps::CAP_IP65;
+            if (val_in_range(_pid, { RS455_PID })&&
+                (_device_capabilities & ip65_mask) == ip65_mask &&
+                is_capability_supports(ds_caps::CAP_IP65, gvd_buff[gvd_version_offset]))
+            {
+                update_device_name(device_name, ds_caps::CAP_IP65);
+            }
+
             std::shared_ptr<option> exposure_option = nullptr;
             std::shared_ptr<option> gain_option = nullptr;
             std::shared_ptr<hdr_option> hdr_enabled_option = nullptr;
@@ -770,6 +798,26 @@ namespace librealsense
                 gain_option = uvc_pu_gain_option;
             }
 
+            // DEPTH AUTO EXPOSURE MODE
+            if ((val_in_range(_pid, { RS455_PID })) && (_fw_version >= firmware_version("5.15.0.0")))
+            {
+                auto depth_auto_exposure_mode = std::make_shared<uvc_xu_option<uint8_t>>( raw_depth_sensor,
+                    depth_xu,
+                    DS5_DEPTH_AUTO_EXPOSURE_MODE,
+                    "Depth Auto Exposure Mode",
+                    std::map<float, std::string>{
+                    { (float)RS2_DEPTH_AUTO_EXPOSURE_REGULAR, "Regular" },
+                    { (float)RS2_DEPTH_AUTO_EXPOSURE_ACCELERATED, "Accelerated" } } , false);
+
+                std::vector< std::pair< std::shared_ptr< option >, std::string > > options_and_reasons
+                    = { std::make_pair( enable_auto_exposure,
+                                        "Depth auto exposure mode cannot be set when auto exposure is enabled" ) };
+
+                depth_sensor.register_option(
+                    RS2_OPTION_DEPTH_AUTO_EXPOSURE_MODE,
+                    std::make_shared< gated_option >( depth_auto_exposure_mode, options_and_reasons ) );
+            }
+
             //EXPOSURE
             depth_sensor.register_option(RS2_OPTION_EXPOSURE,
                 std::make_shared<auto_disabling_control>(
@@ -783,7 +831,7 @@ namespace librealsense
                     enable_auto_exposure));
 
             // Alternating laser pattern is applicable for global shutter/active SKUs
-            auto mask = d400_caps::CAP_GLOBAL_SHUTTER | d400_caps::CAP_ACTIVE_PROJECTOR;
+            auto mask = ds_caps::CAP_GLOBAL_SHUTTER | ds_caps::CAP_ACTIVE_PROJECTOR;
             // Alternating laser pattern should be set and query in a different way according to the firmware version
             if ((_fw_version >= firmware_version("5.11.3.0")) && ((_device_capabilities & mask) == mask))
             {
@@ -791,7 +839,7 @@ namespace librealsense
                 auto alternating_emitter_opt = std::make_shared<alternating_emitter_option>(*_hw_monitor, &raw_depth_sensor, is_fw_version_using_id);
                 auto emitter_always_on_opt = std::make_shared<emitter_always_on_option>(*_hw_monitor, &depth_sensor);
 
-                if ((_fw_version >= firmware_version("5.12.1.0")) && ((_device_capabilities & d400_caps::CAP_GLOBAL_SHUTTER) == d400_caps::CAP_GLOBAL_SHUTTER))
+                if ((_fw_version >= firmware_version("5.12.1.0")) && ((_device_capabilities & ds_caps::CAP_GLOBAL_SHUTTER) == ds_caps::CAP_GLOBAL_SHUTTER))
                 {
                     std::vector<std::pair<std::shared_ptr<option>, std::string>> options_and_reasons = { std::make_pair(alternating_emitter_opt,
                         "Emitter always ON cannot be set while Emitter ON/OFF is enabled") };
@@ -811,7 +859,7 @@ namespace librealsense
                             options_and_reasons
                             ));
                 }
-                else if ((_fw_version >= firmware_version("5.12.1.0")) && ((_device_capabilities & d400_caps::CAP_GLOBAL_SHUTTER) == d400_caps::CAP_GLOBAL_SHUTTER))
+                else if ((_fw_version >= firmware_version("5.12.1.0")) && ((_device_capabilities & ds_caps::CAP_GLOBAL_SHUTTER) == ds_caps::CAP_GLOBAL_SHUTTER))
                 {
                     std::vector<std::pair<std::shared_ptr<option>, std::string>> options_and_reasons = { std::make_pair(emitter_always_on_opt,
                         "Emitter ON/OFF cannot be set while Emitter always ON is enabled") };
@@ -824,16 +872,17 @@ namespace librealsense
                 {
                     depth_sensor.register_option(RS2_OPTION_EMITTER_ON_OFF, alternating_emitter_opt);
                 }
+
             }
 
-            if ((_device_capabilities & d400_caps::CAP_INTERCAM_HW_SYNC) == d400_caps::CAP_INTERCAM_HW_SYNC)
+            if ((_device_capabilities & ds_caps::CAP_INTERCAM_HW_SYNC) == ds_caps::CAP_INTERCAM_HW_SYNC)
             {
-                if (_fw_version >= firmware_version("5.12.12.100") && (_device_capabilities & d400_caps::CAP_GLOBAL_SHUTTER) == d400_caps::CAP_GLOBAL_SHUTTER)
+                if (_fw_version >= firmware_version("5.12.12.100") && (_device_capabilities & ds_caps::CAP_GLOBAL_SHUTTER) == ds_caps::CAP_GLOBAL_SHUTTER)
                 {
                     depth_sensor.register_option(RS2_OPTION_INTER_CAM_SYNC_MODE,
                         std::make_shared<external_sync_mode>(*_hw_monitor, &raw_depth_sensor, 3));
                 }
-                else if (_fw_version >= firmware_version("5.12.4.0") && (_device_capabilities & d400_caps::CAP_GLOBAL_SHUTTER) == d400_caps::CAP_GLOBAL_SHUTTER)
+                else if (_fw_version >= firmware_version("5.12.4.0") && (_device_capabilities & ds_caps::CAP_GLOBAL_SHUTTER) == ds_caps::CAP_GLOBAL_SHUTTER)
                 {
                     depth_sensor.register_option(RS2_OPTION_INTER_CAM_SYNC_MODE,
                         std::make_shared<external_sync_mode>(*_hw_monitor, &raw_depth_sensor, 2));
@@ -961,7 +1010,7 @@ namespace librealsense
         depth_sensor.register_metadata((rs2_frame_metadata_value)RS2_FRAME_METADATA_FORMAT, make_attribute_parser(&md_configuration::format, md_configuration_attributes::format_attribute, md_prop_offset));
         depth_sensor.register_metadata((rs2_frame_metadata_value)RS2_FRAME_METADATA_WIDTH, make_attribute_parser(&md_configuration::width, md_configuration_attributes::width_attribute, md_prop_offset));
         depth_sensor.register_metadata((rs2_frame_metadata_value)RS2_FRAME_METADATA_HEIGHT, make_attribute_parser(&md_configuration::height, md_configuration_attributes::height_attribute, md_prop_offset));
-        depth_sensor.register_metadata((rs2_frame_metadata_value)RS2_FRAME_METADATA_ACTUAL_FPS, std::make_shared<d400_md_attribute_actual_fps>());
+        depth_sensor.register_metadata((rs2_frame_metadata_value)RS2_FRAME_METADATA_ACTUAL_FPS, std::make_shared<ds_md_attribute_actual_fps>());
 
         if (_fw_version >= firmware_version("5.12.7.0"))
         {
@@ -1084,6 +1133,25 @@ namespace librealsense
     void d400_device::enable_recording(std::function<void(const debug_interface&)> record_action)
     {
         //TODO: Implement
+    }
+
+    // Check if need change camera name due to number modifications on one device PID.
+    void update_device_name(std::string& device_name, const ds::ds_caps cap)
+    {
+        switch (cap)
+        {
+        case ds::ds_caps::CAP_IR_FILTER:
+            device_name += "F"; // Adding "F" to end of device name if it has IR filter.
+            break;
+
+        case ds::ds_caps::CAP_IP65:
+            device_name = std::regex_replace(device_name, std::regex("D455"), "D456"); // Change device name from D455 to D456.
+            break;
+
+        default:
+            throw invalid_value_exception("capability '" + ds::ds_capabilities_names.at(cap) + "' is not supported for device name update");
+            break;
+        }
     }
 
     platform::usb_spec d400_device::get_usb_spec() const

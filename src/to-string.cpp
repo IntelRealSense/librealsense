@@ -188,6 +188,20 @@ const char * get_string( rs2_emitter_frequency_mode mode )
 #undef CASE
 }
 
+const char * get_string( rs2_depth_auto_exposure_mode mode )
+{
+#define CASE( X ) STRCASE( DEPTH_AUTO_EXPOSURE, X )
+    switch( mode )
+    {
+    CASE( REGULAR )
+    CASE( ACCELERATED )
+    default:
+        assert( ! is_valid( mode ) );
+        return UNKNOWN_VALUE;
+    }
+#undef CASE
+}
+
 const char * get_string( rs2_safety_mode mode )
 {
 #define CASE( X ) STRCASE( SAFETY_MODE, X )
@@ -333,7 +347,7 @@ const char * get_string( rs2_option value )
     CASE( VISUAL_PRESET )
     CASE( TOTAL_FRAME_DROPS )
     CASE( EMITTER_ENABLED )
-    CASE( AUTO_EXPOSURE_MODE )
+    case RS2_OPTION_AUTO_EXPOSURE_MODE:  return "Fisheye Auto Exposure Mode";
     CASE( POWER_LINE_FREQUENCY )
     CASE( ASIC_TEMPERATURE )
     CASE( ERROR_POLLING_ENABLED )
@@ -407,6 +421,7 @@ const char * get_string( rs2_option value )
     CASE( AUTO_EXPOSURE_LIMIT_TOGGLE )
     CASE( AUTO_GAIN_LIMIT_TOGGLE )
     CASE( EMITTER_FREQUENCY )
+    case RS2_OPTION_DEPTH_AUTO_EXPOSURE_MODE:  return "Auto Exposure Mode";
     CASE( SAFETY_PRESET_ACTIVE_INDEX )
     CASE( SAFETY_MODE )
     default:
@@ -702,5 +717,6 @@ const char * rs2_calibration_type_to_string( rs2_calibration_type type ) { retur
 const char * rs2_calibration_status_to_string( rs2_calibration_status status ) { return librealsense::get_string( status ); }
 const char * rs2_host_perf_mode_to_string( rs2_host_perf_mode mode ) { return librealsense::get_string( mode ); }
 const char * rs2_emitter_frequency_mode_to_string( rs2_emitter_frequency_mode mode ) { return librealsense::get_string( mode ); }
+const char * rs2_depth_auto_exposure_mode_to_string( rs2_depth_auto_exposure_mode mode ) { return librealsense::get_string( mode ); }
 const char * rs2_safety_mode_to_string( rs2_safety_mode mode ) { return librealsense::get_string( mode ); }
 
