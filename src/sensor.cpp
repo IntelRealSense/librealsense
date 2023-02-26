@@ -414,7 +414,6 @@ void log_callback_end( uint32_t fps,
                     }
 
                     const auto&& fr = generate_frame_from_data(f, _timestamp_reader.get(), last_timestamp, last_frame_number, req_profile_base);
-                    const auto&& requires_processing = true; // TODO - Ariel add option
                     const auto&& timestamp_domain = _timestamp_reader->get_frame_timestamp_domain(fr);
                     auto bpp = get_image_bpp( req_profile_base->get_format() );
                     auto&& frame_counter = fr->additional_data.frame_number;
@@ -425,8 +424,6 @@ void log_callback_end( uint32_t fps,
                     auto&& msp = As<motion_stream_profile, stream_profile_interface>(req_profile);
                     if (msp)
                         expected_size = 64;//32; // D457 - WORKAROUND - SHOULD BE REMOVED AFTER CORRECTION IN DRIVER
-
-                    frame_continuation release_and_enqueue(continuation, f.pixels);
 
                     //LOG_DEBUG("FrameAccepted," << librealsense::get_string(req_profile_base->get_stream_type())
                     //    << ",Counter," << std::dec << fr->additional_data.frame_number
@@ -461,7 +458,7 @@ void log_callback_end( uint32_t fps,
                         stream_to_frame_types( req_profile_base->get_stream_type() ),
                         expected_size,
                         fr->additional_data,
-                        requires_processing );
+                        true );
                     auto diff = environment::get_instance().get_time_service()->get_time() - system_time;
                     if( diff > 10 )
                         LOG_DEBUG("!! Frame allocation took " << diff << " msec");
@@ -509,10 +506,10 @@ void log_callback_end( uint32_t fps,
                     diff = environment::get_instance().get_time_service()->get_time() - system_time;
                     if (diff >10 )
                         LOG_DEBUG("!! Frame memcpy took " << diff << " msec");
-                    if (!requires_processing)
-                    {
-                        fh->attach_continuation(std::move(release_and_enqueue));
-                    }
+
+                    // calling the continuation method, and releasing the backend frame buffer
+                    // since the content of the OS frame buffer has been copied, it can released ASAP
+                    continuation();
 
                     if (fh->get_stream().get())
                     {
@@ -550,7 +547,7 @@ void log_callback_end( uint32_t fps,
         if (_on_open)
             _on_open(_internal_config);
 
-        _power = move(on);
+        _power = std::move(on);
         _is_opened = true;
 
         try {
@@ -717,6 +714,9 @@ void log_callback_end( uint32_t fps,
             if (rs2_fmt == RS2_FORMAT_MOTION_XYZ32F)
             {
                 auto profile = std::make_shared<motion_stream_profile>(p);
+                if (!profile)
+                    throw librealsense::invalid_value_exception("null pointer passed for argument \"profile\".");
+
                 profile->set_stream_type(fourcc_to_rs2_stream(p.format));
                 profile->set_stream_index(0);
                 profile->set_format(rs2_fmt);
@@ -726,6 +726,9 @@ void log_callback_end( uint32_t fps,
             else
             {
                 auto&& profile = std::make_shared<video_stream_profile>(p);
+                if (!profile)
+                    throw librealsense::invalid_value_exception("null pointer passed for argument \"profile\".");
+
                 profile->set_dims(p.width, p.height);
                 profile->set_stream_type(fourcc_to_rs2_stream(p.format));
                 profile->set_stream_index(0);
@@ -827,8 +830,8 @@ void log_callback_end( uint32_t fps,
         _fps_and_sampling_frequency_per_rs2_stream(fps_and_sampling_frequency_per_rs2_stream),
         _hid_device(hid_device),
         _is_configured_stream(RS2_STREAM_COUNT),
-        _hid_iio_timestamp_reader(move(hid_iio_timestamp_reader)),
-        _custom_hid_timestamp_reader(move(custom_hid_timestamp_reader))
+        _hid_iio_timestamp_reader(std::move(hid_iio_timestamp_reader)),
+        _custom_hid_timestamp_reader(std::move(custom_hid_timestamp_reader))
     {
         register_metadata(RS2_FRAME_METADATA_BACKEND_TIMESTAMP, make_additional_data_parser(&frame_additional_data::backend_timestamp));
 
@@ -1116,7 +1119,7 @@ void log_callback_end( uint32_t fps,
         std::unique_ptr<frame_timestamp_reader> timestamp_reader,
         device* dev)
         : sensor_base(name, dev, (recommended_proccesing_blocks_interface*)this),
-        _device(move(uvc_device)),
+        _device(std::move(uvc_device)),
         _user_count(0),
         _timestamp_reader(std::move(timestamp_reader))
     {
@@ -1175,6 +1178,8 @@ void log_callback_end( uint32_t fps,
     bool iio_hid_timestamp_reader::has_metadata(const std::shared_ptr<frame_interface>& frame) const
     {
         auto f = std::dynamic_pointer_cast<librealsense::frame>(frame);
+        if (!f)
+            throw librealsense::invalid_value_exception("null pointer recieved from dynamic pointer casting.");
 
         if (f->additional_data.metadata_size > 0)
         {
@@ -1330,6 +1335,8 @@ void log_callback_end( uint32_t fps,
     std::shared_ptr<stream_profile_interface> synthetic_sensor::clone_profile(const std::shared_ptr<stream_profile_interface>& profile)
     {
         auto cloned = std::make_shared<stream_profile_base>(platform::stream_profile{});
+        if (!cloned)
+            throw librealsense::invalid_value_exception("null pointer passed for argument \"cloned\".");
 
         if (auto vsp = std::dynamic_pointer_cast<video_stream_profile>(profile))
         {

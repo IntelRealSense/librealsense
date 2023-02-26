@@ -299,15 +299,9 @@ namespace librealsense
             return true;
         }
 
-        uvc_pu_option(uvc_sensor& ep, rs2_option id)
-            : _ep(ep), _id(id)
-        {
-        }
+        uvc_pu_option(uvc_sensor& ep, rs2_option id);
 
-        uvc_pu_option(uvc_sensor& ep, rs2_option id, const std::map<float, std::string>& description_per_value)
-            : _ep(ep), _id(id), _description_per_value(description_per_value)
-        {
-        }
+        uvc_pu_option(uvc_sensor& ep, rs2_option id, const std::map<float, std::string>& description_per_value);
 
         const char* get_description() const override;
 
@@ -326,6 +320,7 @@ namespace librealsense
         rs2_option _id;
         const std::map<float, std::string> _description_per_value;
         std::function<void(const option&)> _record = [](const option&) {};
+        lazy<option_range> _range;
     };
 
     // XU control with exclusing access to setter/getters
@@ -335,6 +330,10 @@ namespace librealsense
     public:
         void set(float value) override
         {
+            if ( !_allow_set_while_streaming  && _ep.is_streaming() )
+                throw invalid_value_exception( rsutils::string::from()
+                                                       << "setting this option during streaming is not allowed!");
+
             _ep.invoke_powered(
                 [this, value](platform::uvc_device& dev)
                 {
@@ -384,12 +383,12 @@ namespace librealsense
 
         bool is_enabled() const override { return true; }
 
-        uvc_xu_option(uvc_sensor& ep, platform::extension_unit xu, uint8_t id, std::string description)
-            : _ep(ep), _xu(xu), _id(id), _desciption(std::move(description))
+        uvc_xu_option(uvc_sensor& ep, platform::extension_unit xu, uint8_t id, std::string description, bool allow_set_while_streaming = true )
+            : _ep(ep), _xu(xu), _id(id), _desciption(std::move(description)), _allow_set_while_streaming(allow_set_while_streaming)
         {}
 
-        uvc_xu_option(uvc_sensor& ep, platform::extension_unit xu, uint8_t id, std::string description, const std::map<float, std::string>& description_per_value)
-            : _ep(ep), _xu(xu), _id(id), _desciption(std::move(description)), _description_per_value(description_per_value)
+        uvc_xu_option(uvc_sensor& ep, platform::extension_unit xu, uint8_t id, std::string description, const std::map<float, std::string>& description_per_value, bool allow_set_while_streaming = true)
+            : _ep(ep), _xu(xu), _id(id), _desciption(std::move(description)), _description_per_value(description_per_value), _allow_set_while_streaming(allow_set_while_streaming)
         {}
 
         const char* get_description() const override
@@ -413,6 +412,7 @@ namespace librealsense
         std::string         _desciption;
         std::function<void(const option&)> _recording_function = [](const option&) {};
         const std::map<float, std::string> _description_per_value;
+        bool _allow_set_while_streaming;
     };
 
     template<typename T>

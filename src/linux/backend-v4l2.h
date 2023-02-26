@@ -452,7 +452,6 @@ namespace librealsense
             std::string _md_name = "";
 
             std::vector<std::shared_ptr<buffer>> _md_buffers;
-            stream_profile _md_profile;
         };
 
         // D457 Development. To be merged into underlying class

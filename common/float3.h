@@ -23,6 +23,10 @@ inline float3 cross( const float3 & a, const float3 & b )
     return { a.y * b.z - b.y * a.z, a.x * b.z - b.x * a.z, a.x * b.y - a.y * b.x };
 }
 
+inline float operator*(const float3& a, const float3& b) {
+    return a.x * b.x + a.y * b.y + a.z * b.z;
+}
+
 inline float3 operator*( const float3 & a, float t )
 {
     return { a.x * t, a.y * t, a.z * t };

@@ -10,7 +10,7 @@
 #include "proc/temporal-filter.h"
 #include "proc/hole-filling-filter.h"
 #include "proc/depth-formats-converter.h"
-#include "ds/ds5/ds5-device.h"
+#include "ds/d400/d400-device.h"
 #include "../../include/librealsense2/h/rs_sensor.h"
 #include "../common/fw/firmware-version.h"
 #include <rsutils/string/from.h>
@@ -352,10 +352,14 @@ namespace librealsense
 
             for( auto i = 0; i < MAX_ITERATIONS_FOR_DEVICE_DISCONNECTED_LOOP; i++ )
             {
-                // If the device was detected as removed we assume the device is entering update mode
-                // Note: if no device status callback is registered we will wait the whole time and it is OK
+                // If the device was detected as removed we assume the device is entering update
+                // mode Note: if no device status callback is registered we will wait the whole time
+                // and it is OK
                 if( ! is_valid() )
+                {
+                    this_thread::sleep_for( milliseconds( DELAY_FOR_CONNECTION ) );
                     return;
+                }
 
                 this_thread::sleep_for( milliseconds( DELAY_FOR_RETRIES ) );
             }

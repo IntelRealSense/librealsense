@@ -24,19 +24,20 @@ namespace librealsense
     namespace ds
     {
         // DS5 depth XU identifiers
-        const uint8_t DS5_HWMONITOR = 1;
-        const uint8_t DS5_DEPTH_EMITTER_ENABLED = 2;
-        const uint8_t DS5_EXPOSURE = 3;
-        const uint8_t DS5_LASER_POWER = 4;
-        const uint8_t DS5_HARDWARE_PRESET = 6;
-        const uint8_t DS5_ERROR_REPORTING = 7;
-        const uint8_t DS5_EXT_TRIGGER = 8;
-        const uint8_t DS5_ASIC_AND_PROJECTOR_TEMPERATURES = 9;
-        const uint8_t DS5_ENABLE_AUTO_WHITE_BALANCE = 0xA;
-        const uint8_t DS5_ENABLE_AUTO_EXPOSURE = 0xB;
-        const uint8_t DS5_LED_PWR = 0xE;
-        const uint8_t DS5_THERMAL_COMPENSATION = 0xF;
-        const uint8_t DS5_EMITTER_FREQUENCY               = 0x10;
+        const uint8_t DS5_HWMONITOR                         = 1;
+        const uint8_t DS5_DEPTH_EMITTER_ENABLED             = 2;
+        const uint8_t DS5_EXPOSURE                          = 3;
+        const uint8_t DS5_LASER_POWER                       = 4;
+        const uint8_t DS5_HARDWARE_PRESET                   = 6;
+        const uint8_t DS5_ERROR_REPORTING                   = 7;
+        const uint8_t DS5_EXT_TRIGGER                       = 8;
+        const uint8_t DS5_ASIC_AND_PROJECTOR_TEMPERATURES   = 9;
+        const uint8_t DS5_ENABLE_AUTO_WHITE_BALANCE         = 0xA;
+        const uint8_t DS5_ENABLE_AUTO_EXPOSURE              = 0xB;
+        const uint8_t DS5_LED_PWR                           = 0xE;
+        const uint8_t DS5_THERMAL_COMPENSATION              = 0xF;
+        const uint8_t DS5_EMITTER_FREQUENCY                 = 0x10;
+        const uint8_t DS5_DEPTH_AUTO_EXPOSURE_MODE          = 0x11;
 
         enum class ds_device_type
         {
@@ -53,7 +54,7 @@ namespace librealsense
         const platform::extension_unit fisheye_xu = { 3, 12, 2,
         { 0xf6c3c3d1, 0x5cde, 0x4477,{ 0xad, 0xf0, 0x41, 0x33, 0xf5, 0x8d, 0xa6, 0xf4 } } };
 
-        const int REGISTER_CLOCK_0 = 0x0001613c;
+        const uint32_t REGISTER_CLOCK_0 = 0x0001613c;
 
         const uint32_t FLASH_SIZE = 0x00200000;
         const uint32_t FLASH_SECTOR_SIZE = 0x1000;
@@ -174,6 +175,8 @@ namespace librealsense
             CAP_BMI_055 = (1u << 6),
             CAP_BMI_085 = (1u << 7),
             CAP_INTERCAM_HW_SYNC = (1u << 8),
+            CAP_IP65 = (1u << 9),
+            CAP_IR_FILTER = (1u << 10),
             CAP_MAX
         };
 
@@ -186,7 +189,14 @@ namespace librealsense
             { d400_caps::CAP_GLOBAL_SHUTTER,   "Global Shutter"    },
             { d400_caps::CAP_ROLLING_SHUTTER,  "Rolling Shutter"   },
             { d400_caps::CAP_BMI_055,          "IMU BMI_055"       },
-            { d400_caps::CAP_BMI_085,          "IMU BMI_085"       }
+            { d400_caps::CAP_BMI_085,          "IMU BMI_085"       },
+            { d400_caps::CAP_IP65,             "IP65 Sealed device"},
+            { d400_caps::CAP_IR_FILTER,        "IR filter"         }
+        };
+
+        static const std::map<d400_caps, std::int8_t> d400_cap_to_min_gvd_version = {
+            {d400_caps::CAP_IP65, 0x4},
+            {d400_caps::CAP_IR_FILTER, 0x4}
         };
 
         inline d400_caps operator &(const d400_caps lhs, const d400_caps rhs)
@@ -214,7 +224,8 @@ namespace librealsense
             for (auto i : { d400_caps::CAP_ACTIVE_PROJECTOR,d400_caps::CAP_RGB_SENSOR,
                             d400_caps::CAP_FISHEYE_SENSOR,  d400_caps::CAP_IMU_SENSOR,
                             d400_caps::CAP_GLOBAL_SHUTTER,  d400_caps::CAP_ROLLING_SHUTTER,
-                            d400_caps::CAP_BMI_055,         d400_caps::CAP_BMI_085 })
+                            d400_caps::CAP_BMI_055,         d400_caps::CAP_BMI_085,
+                            d400_caps::CAP_IP65,            d400_caps::CAP_IR_FILTER })
             {
                 if (i == (i & cap))
                     stream << d400_capabilities_names.at(i) << "/";
@@ -234,7 +245,7 @@ namespace librealsense
             uint32_t                crc32;          // crc of all the actual table data excluding header/CRC
         };
 
-        enum ds5_rect_resolutions : unsigned short
+        enum d400_rect_resolutions : unsigned short
         {
             res_1920_1080,
             res_1280_720,
@@ -253,7 +264,7 @@ namespace librealsense
             res_576_576,
             res_720_720,
             res_1152_1152,
-            max_ds5_rect_resolutions
+            max_d400_rect_resolutions
         };
 
         struct coefficients_table
@@ -266,7 +277,7 @@ namespace librealsense
             float               baseline;                   //  the baseline between the cameras in mm units
             uint32_t            brown_model;                //  Distortion model: 0 - DS distorion model, 1 - Brown model
             uint8_t             reserved1[88];
-            float4              rect_params[max_ds5_rect_resolutions];
+            float4              rect_params[max_d400_rect_resolutions];
             uint8_t             reserved2[64];
         };
 
@@ -519,6 +530,7 @@ namespace librealsense
         enum gvd_fields
         {
             // Keep sorted
+            gvd_version_offset = 2,
             camera_fw_version_offset = 12,
             is_camera_locked_offset = 25,
             module_serial_offset = 48,
@@ -526,6 +538,8 @@ namespace librealsense
             fisheye_sensor_lb = 112,
             fisheye_sensor_hb = 113,
             imu_acc_chip_id = 124,
+            ip65_sealed_offset = 161,
+            ir_filter_offset = 164,
             depth_sensor_type = 166,
             active_projector = 170,
             rgb_sensor = 174,
@@ -554,21 +568,21 @@ namespace librealsense
             max_id = -1
         };
 
-        struct ds5_calibration
+        struct d400_calibration
         {
             uint16_t        version;                        // major.minor
             rs2_intrinsics   left_imager_intrinsic;
             rs2_intrinsics   right_imager_intrinsic;
-            rs2_intrinsics   depth_intrinsic[max_ds5_rect_resolutions];
+            rs2_intrinsics   depth_intrinsic[max_d400_rect_resolutions];
             rs2_extrinsics   left_imager_extrinsic;
             rs2_extrinsics   right_imager_extrinsic;
             rs2_extrinsics   depth_extrinsic;
             std::map<calibration_table_id, bool> data_present;
 
-            ds5_calibration() : version(0), left_imager_intrinsic({}), right_imager_intrinsic({}),
+            d400_calibration() : version(0), left_imager_intrinsic({}), right_imager_intrinsic({}),
                 left_imager_extrinsic({}), right_imager_extrinsic({}), depth_extrinsic({})
             {
-                for (auto i = 0; i < max_ds5_rect_resolutions; i++)
+                for (auto i = 0; i < max_d400_rect_resolutions; i++)
                     depth_intrinsic[i] = {};
                 data_present.emplace(coefficients_table_id, false);
                 data_present.emplace(depth_calibration_id, false);
@@ -580,7 +594,7 @@ namespace librealsense
             }
         };
 
-        static std::map< ds5_rect_resolutions, int2> resolutions_list = {
+        static std::map< d400_rect_resolutions, int2> resolutions_list = {
             { res_320_240,{ 320, 240 } },
             { res_424_240,{ 424, 240 } },
             { res_480_270,{ 480, 270 } },
@@ -601,7 +615,7 @@ namespace librealsense
         
 
 
-        ds5_rect_resolutions width_height_to_ds5_rect_resolutions(uint32_t width, uint32_t height);
+        d400_rect_resolutions width_height_to_d400_rect_resolutions(uint32_t width, uint32_t height);
 
         bool try_get_intrinsic_by_resolution_new(const std::vector<uint8_t>& raw_data,
             uint32_t width, uint32_t height, rs2_intrinsics* result);
@@ -612,7 +626,7 @@ namespace librealsense
         pose get_fisheye_extrinsics_data(const std::vector<uint8_t>& raw_data);
         pose get_color_stream_extrinsic(const std::vector<uint8_t>& raw_data);
 
-        enum ds5_notifications_types
+        enum d400_notifications_types
         {
             success = 0,
             hot_laser_power_reduce,
@@ -647,7 +661,7 @@ namespace librealsense
         };
 
         // Elaborate FW XU report. The reports may be consequently extended for PU/CTL/ISP
-        const std::map< uint8_t, std::string> ds5_fw_error_report = {
+        const std::map< uint8_t, std::string> d400_fw_error_report = {
             { success,                      "Success" },
             { hot_laser_power_reduce,       "Laser hot - power reduce" },
             { hot_laser_disable,            "Laser hot - disabled" },

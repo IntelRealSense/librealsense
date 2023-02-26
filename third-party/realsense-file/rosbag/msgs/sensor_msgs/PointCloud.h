@@ -43,10 +43,10 @@ struct PointCloud_
    typedef  ::std_msgs::Header_<ContainerAllocator>  _header_type;
   _header_type header;
 
-   typedef std::vector< ::geometry_msgs::Point32_<ContainerAllocator> , typename ContainerAllocator::template rebind< ::geometry_msgs::Point32_<ContainerAllocator> >::other >  _points_type;
+   typedef std::vector< ::geometry_msgs::Point32_<ContainerAllocator> , typename std::allocator_traits< ContainerAllocator >::template rebind_alloc< ::geometry_msgs::Point32_<ContainerAllocator>  > >  _points_type;
   _points_type points;
 
-   typedef std::vector< ::sensor_msgs::ChannelFloat32_<ContainerAllocator> , typename ContainerAllocator::template rebind< ::sensor_msgs::ChannelFloat32_<ContainerAllocator> >::other >  _channels_type;
+   typedef std::vector< ::sensor_msgs::ChannelFloat32_<ContainerAllocator> , typename std::allocator_traits< ContainerAllocator >::template rebind_alloc< ::sensor_msgs::ChannelFloat32_<ContainerAllocator>  > >  _channels_type;
   _channels_type channels;
 
 

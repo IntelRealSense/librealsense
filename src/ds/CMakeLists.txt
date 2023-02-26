@@ -1,7 +1,7 @@
 # License: Apache 2.0. See LICENSE file in root directory.
 # Copyright(c) 2022 Intel Corporation. All Rights Reserved.
 
-include(${_rel_path}/ds/ds5/CMakeLists.txt)
+include(${_rel_path}/ds/d400/CMakeLists.txt)
 
 target_sources(${LRS_TARGET}
     PRIVATE
