@@ -2068,6 +2068,10 @@ namespace rs2
         }
         catch(...) {};
 
+        if (p.stream_type() == RS2_STREAM_SAFETY)
+        {
+            stream_model::show_metadata = true;
+        }
     }
 
     bool stream_model::draw_reflectivity( int x,
