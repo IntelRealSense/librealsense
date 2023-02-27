@@ -21,15 +21,15 @@ namespace realdds {
 //
 struct dds_stream_format
 {
-    static constexpr size_t size = 4;
-    char data[size+1];  // add a terminating NULL for ease
+    static constexpr size_t size = 7;  // We need 6 to cover all the ROS formats; we use 7 so total size is 8
+    char data[size + 1];               // add a terminating NULL for ease
 
     dds_stream_format()
         : data{ 0 }
     {
     }
 
-    dds_stream_format( std::string const & s );
+    dds_stream_format( std::string const & );
 
     bool is_valid() const { return data[0] != 0; }
     operator bool() const { return is_valid(); }

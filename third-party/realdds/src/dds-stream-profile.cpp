@@ -29,14 +29,6 @@ dds_stream_format::dds_stream_format( std::string const & s )
 }
 
 
-template< typename T > uint32_t rs_fourcc( const T a, const T b, const T c, const T d )
-{
-    static_assert( ( std::is_integral< T >::value ), "rs_fourcc supports integral built-in types only" );
-    return ( ( static_cast< uint32_t >( a ) << 24 ) | ( static_cast< uint32_t >( b ) << 16 )
-             | ( static_cast< uint32_t >( c ) << 8 ) | ( static_cast< uint32_t >( d ) << 0 ) );
-}
-
-
 enum rs2_format  // copy from rs2_sensor.h
 {
     RS2_FORMAT_ANY, /**< When passed to enable stream, librealsense will try to provide best suited format */
@@ -84,65 +76,63 @@ enum rs2_format  // copy from rs2_sensor.h
 
 int dds_stream_format::to_rs2() const
 {
-    static std::map< uint32_t, int > fcc_to_rs2{  // copy from ds5-device.cpp
-        { rs_fourcc( 'Y', 'U', 'Y', '2' ), RS2_FORMAT_YUYV },
-        { rs_fourcc( 'Y', 'U', 'Y', 'V' ), RS2_FORMAT_YUYV },
-        { rs_fourcc( 'U', 'Y', 'V', 'Y' ), RS2_FORMAT_UYVY },
-        { rs_fourcc( 'G', 'R', 'E', 'Y' ), RS2_FORMAT_Y8 },
-        { rs_fourcc( 'Y', '8', 'I', ' ' ), RS2_FORMAT_Y8I },
-        { rs_fourcc( 'W', '1', '0', ' ' ), RS2_FORMAT_W10 },
-        { rs_fourcc( 'Y', '1', '6', ' ' ), RS2_FORMAT_Y16 },
-        { rs_fourcc( 'Y', '1', '2', 'I' ), RS2_FORMAT_Y12I },
-        { rs_fourcc( 'Y', '1', '6', 'I' ), RS2_FORMAT_Y16I },
-        { rs_fourcc( 'Z', '1', '6', ' ' ), RS2_FORMAT_Z16 },
-        { rs_fourcc( 'Z', '1', '6', 'H' ), RS2_FORMAT_Z16H },
-        { rs_fourcc( 'R', 'G', 'B', '8' ), RS2_FORMAT_RGB8 },
-        { rs_fourcc( 'R', 'G', 'B', 'A' ), RS2_FORMAT_RGBA8 },
-        { rs_fourcc( 'R', 'G', 'B', '2' ), RS2_FORMAT_BGR8 },
-        { rs_fourcc( 'B', 'G', 'R', 'A' ), RS2_FORMAT_BGRA8 },
-        { rs_fourcc( 'M', 'J', 'P', 'G' ), RS2_FORMAT_MJPEG },
-        { rs_fourcc( 'C', 'N', 'F', '4' ), RS2_FORMAT_RAW8 },
-        { rs_fourcc( 'B', 'Y', 'R', '2' ), RS2_FORMAT_RAW16 },
-        { rs_fourcc( 'M', 'X', 'Y', 'Z' ), RS2_FORMAT_MOTION_XYZ32F },
+    static std::map< std::string, int > fcc_to_rs2{  // copy from ds5-device.cpp
+        { "YUY2", RS2_FORMAT_YUYV },
+        { "YUYV", RS2_FORMAT_YUYV },
+        { "UYVY", RS2_FORMAT_UYVY },
+        { "GREY", RS2_FORMAT_Y8 },
+        { "Y8I",  RS2_FORMAT_Y8I },
+        { "W10",  RS2_FORMAT_W10 },
+        { "Y16",  RS2_FORMAT_Y16 },
+        { "Y12I", RS2_FORMAT_Y12I },
+        { "Y16I", RS2_FORMAT_Y16I },
+        { "Z16",  RS2_FORMAT_Z16 },
+        { "Z16H", RS2_FORMAT_Z16H },
+        { "RGB8", RS2_FORMAT_RGB8 },
+        { "RGBA", RS2_FORMAT_RGBA8 },
+        { "RGB2", RS2_FORMAT_BGR8 },
+        { "BGRA", RS2_FORMAT_BGRA8 },
+        { "MJPG", RS2_FORMAT_MJPEG },
+        { "CNF4", RS2_FORMAT_RAW8 },
+        { "BYR2", RS2_FORMAT_RAW16 },
+        { "MXYZ", RS2_FORMAT_MOTION_XYZ32F },
     };
 
     std::string s = to_string();
-    s.resize( size, ' ' );  // pad with ' '
-    char const * data = s.data();
-    auto it = fcc_to_rs2.find( rs_fourcc( s[0], s[1], s[2], s[3] ) );
+    auto it = fcc_to_rs2.find( s );
     if( it == fcc_to_rs2.end() )
-        DDS_THROW( runtime_error, "invalid format '" + to_string() + "'" );
+        DDS_THROW( runtime_error, "invalid format '" + s + "'" );
     return it->second;
 }
 
 
 dds_stream_format dds_stream_format::from_rs2( int rs2_format )
 {
-    char const * fourcc = nullptr;
+    char const * encoding = nullptr;
     switch( rs2_format )
     {
-    case RS2_FORMAT_YUYV: fourcc = "YUYV"; break;
-    case RS2_FORMAT_Y8: fourcc = "GREY"; break;
-    case RS2_FORMAT_Y8I: fourcc = "Y8I"; break;
-    case RS2_FORMAT_W10: fourcc = "W10"; break;
-    case RS2_FORMAT_Y16: fourcc = "Y16"; break;
-    case RS2_FORMAT_Y12I: fourcc = "Y12I"; break;
-    case RS2_FORMAT_Y16I: fourcc = "Y16I"; break;
-    case RS2_FORMAT_Z16: fourcc = "Z16"; break;
-    case RS2_FORMAT_Z16H: fourcc = "Z16H"; break;
-    case RS2_FORMAT_RGB8: fourcc = "RGB8"; break;
-    case RS2_FORMAT_RGBA8: fourcc = "RGBA"; break;  // todo
-    case RS2_FORMAT_BGR8: fourcc = "RGB2"; break;
-    case RS2_FORMAT_BGRA8: fourcc = "BGRA"; break;  // todo
-    case RS2_FORMAT_MJPEG: fourcc = "MJPG"; break;
-    case RS2_FORMAT_RAW8: fourcc = "CNF4"; break;
-    case RS2_FORMAT_RAW16: fourcc = "BYR2"; break;
-    case RS2_FORMAT_UYVY: fourcc = "UYVY"; break;
-    case RS2_FORMAT_MOTION_XYZ32F: fourcc = "MXYZ"; break;  // todo
+    case RS2_FORMAT_YUYV: encoding = "YUYV"; break;
+    case RS2_FORMAT_Y8: encoding = "GREY"; break;
+    case RS2_FORMAT_Y8I: encoding = "Y8I"; break;
+    case RS2_FORMAT_W10: encoding = "W10"; break;
+    case RS2_FORMAT_Y16: encoding = "Y16"; break;
+    case RS2_FORMAT_Y12I: encoding = "Y12I"; break;
+    case RS2_FORMAT_Y16I: encoding = "Y16I"; break;
+    case RS2_FORMAT_Z16: encoding = "Z16"; break;
+    case RS2_FORMAT_Z16H: encoding = "Z16H"; break;
+    case RS2_FORMAT_RGB8: encoding = "RGB8"; break;
+    case RS2_FORMAT_RGBA8: encoding = "RGBA"; break;  // todo
+    case RS2_FORMAT_BGR8: encoding = "RGB2"; break;
+    case RS2_FORMAT_BGRA8: encoding = "BGRA"; break;  // todo
+    case RS2_FORMAT_MJPEG: encoding = "MJPG"; break;
+    case RS2_FORMAT_RAW8: encoding = "CNF4"; break;
+    case RS2_FORMAT_RAW16: encoding = "BYR2"; break;
+    case RS2_FORMAT_UYVY: encoding = "UYVY"; break;
+    case RS2_FORMAT_MOTION_XYZ32F: encoding = "MXYZ"; break;  // todo
     default:
         DDS_THROW( runtime_error, "cannot translate rs2_format " + std::to_string( rs2_format ) + " to any known dds_stream_format" );
     };
-    return dds_stream_format( fourcc );
+    return dds_stream_format( encoding );
 }
 
 
