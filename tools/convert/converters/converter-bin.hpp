@@ -25,7 +25,7 @@ namespace rs2 {
                     uint32_t ieee754 = 0;
 
                     if (f != 0.) {
-                        int sign = 0;
+                        uint32_t sign = 0;
 
                         if (f < 0) {
                             sign = 1;

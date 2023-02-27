@@ -9,7 +9,7 @@
 #include <array>
 #include <chrono>
 #include "ivcam/sr300.h"
-#include "ds/ds5/ds5-factory.h"
+#include "ds/d400/d400-factory.h"
 #include "l500/l500-factory.h"
 #include "ds/ds-timestamp.h"
 #include "backend.h"
@@ -1020,9 +1020,8 @@ namespace librealsense
 
         if( mask & RS2_PRODUCT_LINE_D400 )
         {
-            auto ds5_devices = ds5_info::pick_ds5_devices(ctx, devices);
-            std::copy(begin(ds5_devices), end(ds5_devices), std::back_inserter(list));
-
+            auto d400_devices = d400_info::pick_d400_devices(ctx, devices);
+            std::copy(begin(d400_devices), end(d400_devices), std::back_inserter(list));
         }
 
         if( mask & RS2_PRODUCT_LINE_L500 )

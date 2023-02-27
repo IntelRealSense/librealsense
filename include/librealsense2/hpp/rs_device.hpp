@@ -962,7 +962,7 @@ namespace rs2
     {
     public:
         explicit device_list(std::shared_ptr<rs2_device_list> list)
-            : _list(move(list)) {}
+            : _list(std::move(list)) {}
 
         device_list()
             : _list(nullptr) {}
@@ -984,7 +984,7 @@ namespace rs2
 
         device_list& operator=(std::shared_ptr<rs2_device_list> list)
         {
-            _list = move(list);
+            _list = std::move(list);
             return *this;
         }
 

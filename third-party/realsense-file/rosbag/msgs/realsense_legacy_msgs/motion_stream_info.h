@@ -41,7 +41,7 @@ struct motion_stream_info_
 
 
 
-   typedef std::basic_string<char, std::char_traits<char>, typename ContainerAllocator::template rebind<char>::other >  _motion_type_type;
+   typedef std::basic_string<char, std::char_traits<char>, typename std::allocator_traits< ContainerAllocator >::template rebind_alloc< char > >  _motion_type_type;
   _motion_type_type motion_type;
 
    typedef uint32_t _fps_type;
@@ -216,7 +216,7 @@ struct Printer< ::realsense_legacy_msgs::motion_stream_info_<ContainerAllocator>
   template<typename Stream> static void stream(Stream& s, const std::string& indent, const ::realsense_legacy_msgs::motion_stream_info_<ContainerAllocator>& v)
   {
     s << indent << "motion_type: ";
-    Printer<std::basic_string<char, std::char_traits<char>, typename ContainerAllocator::template rebind<char>::other > >::stream(s, indent + "  ", v.motion_type);
+    Printer<std::basic_string<char, std::char_traits<char>, typename std::allocator_traits< ContainerAllocator >::template rebind_alloc< char > > >::stream(s, indent + "  ", v.motion_type);
     s << indent << "fps: ";
     Printer<uint32_t>::stream(s, indent + "  ", v.fps);
     s << indent << "stream_intrinsics: ";

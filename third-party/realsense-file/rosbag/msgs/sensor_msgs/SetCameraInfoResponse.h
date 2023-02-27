@@ -38,7 +38,7 @@ struct SetCameraInfoResponse_
    typedef uint8_t _success_type;
   _success_type success;
 
-   typedef std::basic_string<char, std::char_traits<char>, typename ContainerAllocator::template rebind<char>::other >  _status_message_type;
+   typedef std::basic_string<char, std::char_traits<char>, typename std::allocator_traits< ContainerAllocator >::template rebind_alloc< char > >  _status_message_type;
   _status_message_type status_message;
 
 
@@ -186,7 +186,7 @@ struct Printer< ::sensor_msgs::SetCameraInfoResponse_<ContainerAllocator> >
     s << indent << "success: ";
     Printer<uint8_t>::stream(s, indent + "  ", v.success);
     s << indent << "status_message: ";
-    Printer<std::basic_string<char, std::char_traits<char>, typename ContainerAllocator::template rebind<char>::other > >::stream(s, indent + "  ", v.status_message);
+    Printer<std::basic_string<char, std::char_traits<char>, typename std::allocator_traits< ContainerAllocator >::template rebind_alloc< char > > >::stream(s, indent + "  ", v.status_message);
   }
 };
 

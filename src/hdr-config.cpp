@@ -2,7 +2,7 @@
 // Copyright(c) 2020 Intel Corporation. All Rights Reserved.
 
 #include "hdr-config.h"
-#include "ds/ds5/ds5-private.h"
+#include "ds/d400/d400-private.h"
 
 #include <rsutils/string/from.h>
 

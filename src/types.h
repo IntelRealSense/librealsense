@@ -260,14 +260,14 @@ namespace librealsense
             std::lock_guard<std::mutex> lock(other._mtx);
             if (!other._was_init)
             {
-                _init = move(other._init);
+                _init = std::move(other._init);
                 _was_init = false;
             }
             else
             {
-                _init = move(other._init);
+                _init = std::move(other._init);
                 _was_init = true;
-                _ptr = move(other._ptr);
+                _ptr = std::move(other._ptr);
             }
         }
 
@@ -282,14 +282,14 @@ namespace librealsense
             std::lock_guard<std::mutex> lock2(other._mtx);
             if (!other._was_init)
             {
-                _init = move(other._init);
+                _init = std::move(other._init);
                 _was_init = false;
             }
             else
             {
-                _init = move(other._init);
+                _init = std::move(other._init);
                 _was_init = true;
-                _ptr = move(other._ptr);
+                _ptr = std::move(other._ptr);
             }
 
             return *this;
@@ -394,6 +394,7 @@ namespace librealsense
     RS2_ENUM_HELPERS_CUSTOMIZED(rs2_digital_gain, RS2_DIGITAL_GAIN_HIGH, RS2_DIGITAL_GAIN_LOW)
     RS2_ENUM_HELPERS(rs2_host_perf_mode, HOST_PERF)
     RS2_ENUM_HELPERS(rs2_emitter_frequency_mode, EMITTER_FREQUENCY)
+    RS2_ENUM_HELPERS(rs2_depth_auto_exposure_mode, DEPTH_AUTO_EXPOSURE)
 
 
     ////////////////////////////////////////////

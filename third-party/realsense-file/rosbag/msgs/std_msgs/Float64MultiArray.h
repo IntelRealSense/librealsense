@@ -39,7 +39,7 @@ struct Float64MultiArray_
    typedef  ::std_msgs::MultiArrayLayout_<ContainerAllocator>  _layout_type;
   _layout_type layout;
 
-   typedef std::vector<double, typename ContainerAllocator::template rebind<double>::other >  _data_type;
+   typedef std::vector<double, typename std::allocator_traits< ContainerAllocator >::template rebind_alloc< double > >  _data_type;
   _data_type data;
 
 
