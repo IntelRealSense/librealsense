@@ -8,7 +8,7 @@
 
 namespace librealsense
 {
-    enum l500_control
+    enum l500_control : uint8_t
     {
         confidence = 0,
         post_processing_sharpness = 1,
@@ -21,7 +21,7 @@ namespace librealsense
         alternate_ir = 8
     };
 
-    enum l500_command
+    enum l500_command : uint8_t
     {
         get_current = 0,
         get_min = 1,

@@ -22,7 +22,7 @@ cmake version 3.7.2
 
 ### Add swap
 Initial value is 100MB, but we need to build libraries so initial value isn't enough for that.
-In this case, need to switch from 100 to `2048` (2GB).  
+In this case, need to switch from 100 to `2048` (2GB). Note that this is only needed on Raspberry Pi's with a small amount of RAM. 
 ```
 $ sudo vim /etc/dphys-swapfile
 CONF_SWAPSIZE=2048
@@ -46,7 +46,7 @@ $ cd ~
 $ git clone https://github.com/IntelRealSense/librealsense.git
 $ cd librealsense
 $ sudo cp config/99-realsense-libusb.rules /etc/udev/rules.d/ 
-$ sudo udevadm control --reload-rules && udevadm trigger 
+$ sudo udevadm control --reload-rules && sudo udevadm trigger 
 
 ```
 

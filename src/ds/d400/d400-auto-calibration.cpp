@@ -101,7 +101,7 @@ namespace librealsense
         set_coefficients                = 0x19
     };
 
-    enum auto_calib_speed
+    enum auto_calib_speed : uint8_t
     {
         speed_very_fast = 0,
         speed_fast = 1,
@@ -156,13 +156,13 @@ namespace librealsense
     union tare_calibration_params
     {
         tare_params3 param3_struct;
-        int param3;
+        uint32_t param3;
     };
 
     union param4
     {
         params4 param4_struct;
-        int param_4;
+        uint32_t param_4;
     };
 
     const int DEFAULT_CALIB_TYPE = 0;
@@ -481,7 +481,7 @@ namespace librealsense
             LOG_DEBUG("run_on_chip_calibration with parameters: speed = " << speed << " scan_parameter = " << scan_parameter << " data_sampling = " << data_sampling);
             check_params(speed, scan_parameter, data_sampling);
 
-            int p4 = 0;
+            uint32_t p4 = 0;
             if (scan_parameter)
                 p4 |= 1;
             if (host_assistance != host_assistance_type::no_assistance)
@@ -576,7 +576,7 @@ namespace librealsense
             check_focal_length_params(fl_step_count, fy_scan_range, keep_new_value_after_sucessful_scan, fl_data_sampling, adjust_both_sides, fl_scan_location, fy_scan_direction, white_wall_mode);
 
             // Begin auto-calibration
-            int p4 = 0;
+            uint32_t p4 = 0;
             if (keep_new_value_after_sucessful_scan)
                 p4 |= (1 << 1);
             if (fl_data_sampling)
@@ -600,8 +600,14 @@ namespace librealsense
                 std::this_thread::sleep_for(std::chrono::milliseconds(200));
             }
 
-            if (host_assistance == host_assistance_type::no_assistance || host_assistance == host_assistance_type::assistance_start)
-                _hw_monitor->send(command{ ds::AUTO_CALIB, focal_length_calib_begin, fl_step_count, fy_scan_range, p4 });
+            if( host_assistance == host_assistance_type::no_assistance || host_assistance == host_assistance_type::assistance_start )
+            {
+                _hw_monitor->send( command{ ds::AUTO_CALIB,
+                                            focal_length_calib_begin,
+                                            static_cast< uint32_t >( fl_step_count ),
+                                            static_cast< uint32_t >( fy_scan_range ),
+                                            p4 } );
+            }
 
             if (host_assistance != host_assistance_type::assistance_start)
             {
@@ -687,7 +693,7 @@ namespace librealsense
                 << ", fl scan location = " << fl_scan_location << ", fy scan direction = " << fy_scan_direction << ", white wall mode = " << white_wall_mode);
             check_one_button_params(speed, keep_new_value_after_sucessful_scan, data_sampling, adjust_both_sides, fl_scan_location, fy_scan_direction, white_wall_mode);
 
-            int p4 = 0;
+            uint32_t p4 = 0;
             if (scan_parameter)
                 p4 |= 1;
             if (keep_new_value_after_sucessful_scan)
@@ -712,7 +718,11 @@ namespace librealsense
             // Begin auto-calibration
             if (host_assistance == host_assistance_type::no_assistance || host_assistance == host_assistance_type::assistance_start)
             {
-                _hw_monitor->send(command{ ds::AUTO_CALIB, py_rx_plus_fl_calib_begin, speed_fl, 0, p4 });
+                _hw_monitor->send( command{ ds::AUTO_CALIB,
+                                            py_rx_plus_fl_calib_begin,
+                                            static_cast< uint32_t >( speed_fl ),
+                                            0,
+                                            p4 } );
                 LOG_OCC_WARN(std::string(rsutils::string::from() << __LINE__ << "occ py_rx_plus_fl_calib_begin speed_fl = " << speed_fl <<  " res size = " << res.size()));
             }
 
@@ -893,7 +903,10 @@ namespace librealsense
         if (depth > 0)
         {
             LOG_OCC_WARN("run_tare_calibration interactive control (2) with parameters: depth = " << depth);
-            _hw_monitor->send(command{ ds::AUTO_CALIB, interactive_scan_control, 2, depth });
+            _hw_monitor->send( command{ ds::AUTO_CALIB,
+                                        interactive_scan_control,
+                                        2,
+                                        static_cast< uint32_t >( depth ) } );
         }
         else
         {
@@ -912,11 +925,17 @@ namespace librealsense
                 LOG_DEBUG("run_tare_calibration with parameters: speed = " << speed << " average_step_count = " << average_step_count << " step_count = " << step_count << " accuracy = " << accuracy << " scan_parameter = " << scan_parameter << " data_sampling = " << data_sampling);
                 check_tare_params(speed, scan_parameter, data_sampling, average_step_count, step_count, accuracy);
 
-                auto param2 = (int)ground_truth_mm * 100;
+                auto param2 = static_cast< uint32_t >( ground_truth_mm ) * 100;
 
-                tare_calibration_params param3{ (byte)average_step_count, (byte)step_count, (byte)accuracy, 0 };
+                tare_calibration_params param3{ static_cast< byte >( average_step_count ),
+                                                static_cast< byte >( step_count ),
+                                                static_cast< byte >( accuracy ),
+                                                0 };
 
-                param4 param{ (byte)scan_parameter, 0, (byte)data_sampling };
+                param4 param{ static_cast< byte >( scan_parameter ),
+                              0,
+                              static_cast< byte >( data_sampling ) };
+
                 if (host_assistance != host_assistance_type::no_assistance)
                     param.param_4 |= (1 << 8);
 
@@ -1769,16 +1788,16 @@ namespace librealsense
             throw std::runtime_error("Write calibration can be called only after set calibration table was called");
 
         table_header* hd = (table_header*)(_curr_calibration.data());
-        d400_calibration_table_id tbl_id = static_cast<d400_calibration_table_id>(hd->table_type);
+        d400_calibration_table_id  tbl_id = static_cast<d400_calibration_table_id>(hd->table_type);
         fw_cmd cmd{};
-        int param2 = 0;
+        uint32_t param2 = 0;
         switch (tbl_id)
         {
         case d400_calibration_table_id::coefficients_table_id:
             cmd = SETINTCAL;
             break;
         case d400_calibration_table_id::rgb_calibration_id:
-            cmd = SETINTCALNEW;  // TODO - REMI - CAN BE REMOVED???
+            cmd = SETINTCALNEW;
             param2 = 1;
             break;
         default:
@@ -1799,11 +1818,11 @@ namespace librealsense
         using namespace ds;
 
         table_header* hd = (table_header*)(calibration.data());
-        ds::d400_calibration_table_id tbl_id = static_cast<ds::d400_calibration_table_id>(hd->table_type);
+        ds::d400_calibration_table_id  tbl_id = static_cast<ds::d400_calibration_table_id >(hd->table_type);
 
         switch (tbl_id)
         {
-        case d400_calibration_table_id::coefficients_table_id: // Load the modified depth calib table into flash RAM
+            case d400_calibration_table_id::coefficients_table_id: // Load the modified depth calib table into flash RAM
             {
                 uint8_t* table = (uint8_t*)(calibration.data() + sizeof(table_header));
                 command write_calib(ds::CALIBRECALC, 0, 0, 0, 0xcafecafe);
@@ -1817,7 +1836,7 @@ namespace librealsense
                     LOG_ERROR("Flashing coefficients_table_id failed");
                 }
             }
-        case d400_calibration_table_id::rgb_calibration_id: // case fall-through by design. For RGB skip loading to RAM (not supported)
+            case d400_calibration_table_id::rgb_calibration_id: // case fall-through by design. For RGB skip loading to RAM (not supported)
                 _curr_calibration = calibration;
                 break;
             default:

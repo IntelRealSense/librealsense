@@ -500,7 +500,7 @@ namespace librealsense
 
     void alternating_emitter_option::set(float value)
     {
-        std::vector<uint8_t> pattern{};
+        std::vector<uint8_t> pattern;
 
         if (static_cast<int>(value))
         {

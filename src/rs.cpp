@@ -553,6 +553,8 @@ rs2_stream_profile* rs2_clone_video_stream_profile(const rs2_stream_profile* mod
 
     auto vid = std::dynamic_pointer_cast<video_stream_profile_interface>(sp);
     auto i = *intr;
+
+    VALIDATE_NOT_NULL(vid)
     vid->set_intrinsics([i]() { return i; });
     vid->set_dims(width, height);
 

@@ -75,14 +75,18 @@ namespace librealsense
 
             // We allow 6 seconds because on Linux the removal status is updated at a 5 seconds rate.
             const int MAX_ITERATIONS_FOR_DEVICE_DISCONNECTED_LOOP = DISCONNECT_PERIOD_MS / DELAY_FOR_RETRIES;
-            for (auto i = 0; i < MAX_ITERATIONS_FOR_DEVICE_DISCONNECTED_LOOP; i++)
+            for( auto i = 0; i < MAX_ITERATIONS_FOR_DEVICE_DISCONNECTED_LOOP; i++ )
             {
-                // If the device was detected as removed we assume the device is entering update mode
-                // Note: if no device status callback is registered we will wait the whole time and it is OK
-                if (!_owner->is_valid())
+                // If the device was detected as removed we assume the device is entering update
+                // mode Note: if no device status callback is registered we will wait the whole time
+                // and it is OK
+                if( ! _owner->is_valid() )
+                {
+                    this_thread::sleep_for( milliseconds( DELAY_FOR_CONNECTION ) );
                     return;
+                }
 
-                this_thread::sleep_for(milliseconds(DELAY_FOR_RETRIES));
+                this_thread::sleep_for( milliseconds( DELAY_FOR_RETRIES ) );
             }
 
             if (_owner->device_changed_notifications_on())
@@ -113,17 +117,12 @@ namespace librealsense
         return _is_locked;
     }
 
-    void ds_device_common::get_fw_details(std::string& optic_serial, std::string& asic_serial, std::string& fwv) const
+    void ds_device_common::get_fw_details( const std::vector<uint8_t> &gvd_buff, std::string& optic_serial, std::string& asic_serial, std::string& fwv ) const
     {
-        using namespace ds;
-        std::vector<uint8_t> gvd_buff(HW_MONITOR_BUFFER_SIZE);
-
-        _hw_monitor->get_gvd(gvd_buff.size(), gvd_buff.data(), GVD);
         optic_serial = _hw_monitor->get_module_serial_string(gvd_buff, module_serial_offset);
         asic_serial = _hw_monitor->get_module_serial_string(gvd_buff, module_asic_serial_offset);
         fwv = _hw_monitor->get_firmware_version_string(gvd_buff, camera_fw_version_offset);
     }
-
 
     std::vector<uint8_t> ds_device_common::backup_flash(update_progress_callback_ptr callback)
     {
@@ -284,21 +283,6 @@ namespace librealsense
             });
     }
 
-    bool ds_device_common::check_fw_compatibility(const std::vector<uint8_t>& image) const
-    {
-        std::string fw_version = firmware_check_interface::extract_firmware_version_string(image);
-
-        // TODO - do the same for d500 (when min fw will be known)
-        auto it = ds::d400_device_to_fw_min_version.find(_owner->_pid);
-        if (it == ds::d400_device_to_fw_min_version.end())
-            throw librealsense::invalid_value_exception(rsutils::string::from() << "Min and Max firmware versions have not been defined for this device: " << std::hex << _owner->_pid);
-        bool result = (firmware_version(fw_version) >= firmware_version(it->second));
-        if (!result)
-            LOG_ERROR("Firmware version isn't compatible" << fw_version);
-
-        return result;
-    }
-
     bool ds_device_common::is_camera_in_advanced_mode() const
     {
         command cmd(ds::UAMG);
@@ -312,8 +296,8 @@ namespace librealsense
 
     notification ds_notification_decoder::decode(int value)
     {
-        if (ds::d400_fw_error_report.find(static_cast<uint8_t>(value)) != ds::d400_fw_error_report.end())
-            return{ RS2_NOTIFICATION_CATEGORY_HARDWARE_ERROR, value, RS2_LOG_SEVERITY_ERROR, ds::d400_fw_error_report.at(static_cast<uint8_t>(value)) };
+        if (ds::ds_fw_error_report.find(static_cast<uint8_t>(value)) != ds::ds_fw_error_report.end())
+            return{ RS2_NOTIFICATION_CATEGORY_HARDWARE_ERROR, value, RS2_LOG_SEVERITY_ERROR, ds::ds_fw_error_report.at(static_cast<uint8_t>(value)) };
 
         return{ RS2_NOTIFICATION_CATEGORY_HARDWARE_ERROR, value, RS2_LOG_SEVERITY_WARN, (rsutils::string::from() << "D400 HW report - unresolved type " << value) };
     }

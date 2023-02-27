@@ -65,15 +65,15 @@ namespace librealsense
         bool check_fw_compatibility(const std::vector<uint8_t>& image) const override;
     protected:
         std::shared_ptr<ds_device_common> _ds_device_common;
-        virtual void register_interleaved_y16_processing_block(synthetic_sensor& depth_sensor) const;
 
         std::vector<uint8_t> get_d400_raw_calibration_table(ds::d400_calibration_table_id table_id) const;
-        virtual ds::d400_caps parse_device_capabilities() const;
         std::vector<uint8_t> get_new_calibration_table() const;
 
         bool is_camera_in_advanced_mode() const;
 
         float get_stereo_baseline_mm() const;
+
+        ds::ds_caps parse_device_capabilities( const std::vector<uint8_t> &gvd_buf ) const;
 
         //TODO - add these to device class as pure virtual methods
         command get_firmware_logs_command() const;
@@ -90,7 +90,7 @@ namespace librealsense
         std::shared_ptr<hw_monitor> _hw_monitor;
         firmware_version            _fw_version;
         firmware_version            _recommended_fw_version;
-        ds::d400_caps               _device_capabilities;
+        ds::ds_caps               _device_capabilities;
 
         std::shared_ptr<stream_interface> _depth_stream;
         std::shared_ptr<stream_interface> _left_ir_stream;
@@ -126,5 +126,6 @@ namespace librealsense
         friend class ds5u_depth_sensor;
     };
 
-    
+    // Update device name according capability in it.
+    void update_device_name(std::string& device_name, const ds::ds_caps cap);
 }

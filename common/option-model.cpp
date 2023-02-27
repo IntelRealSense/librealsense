@@ -197,16 +197,18 @@ bool option_model::draw_combobox( notifications_model & model,
 
     ImGui::SameLine();
     if( new_line )
-        ImGui::SetCursorPosX( pos_x + 120 );
+        ImGui::SetCursorPosX( pos_x + 140 );
 
     ImGui::PushItemWidth( new_line ? -1.f : 100.f );
 
     std::vector< const char * > labels;
     auto selected = 0, counter = 0;
+    
     for( auto i = range.min; i <= range.max; i += range.step, counter++ )
     {
         if( std::fabs( i - value ) < 0.001f )
             selected = counter;
+
         labels.push_back( endpoint->get_option_value_description( opt, i ) );
     }
     ImGui::PushStyleColor( ImGuiCol_TextSelectedBg, { 1, 1, 1, 1 } );
@@ -215,7 +217,7 @@ bool option_model::draw_combobox( notifications_model & model,
     {
         int tmp_selected = selected;
         float tmp_value = value;
-        ImGui::PushItemWidth( 135.f );
+        ImGui::PushItemWidth( 105.f );
         if( ImGui::Combo( id.c_str(),
                           &tmp_selected,
                           labels.data(),
