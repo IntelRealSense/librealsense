@@ -1,7 +1,0 @@
-E uninitvar                      src/context.cpp+803                                Uninitialized variables: prof.bpp, prof.intrinsics
-E danglingTempReference          src/context.cpp+843                                Using reference to dangling temporary.
-E danglingTempReference          src/context.cpp+844                                Using reference to dangling temporary.
-E danglingTempReference          src/context.cpp+845                                Using reference to dangling temporary.
-E danglingTempReference          src/context.cpp+846                                Using reference to dangling temporary.
-E danglingTempReference          src/context.cpp+847                                Using reference to dangling temporary.
-E danglingTempReference          src/context.cpp+848                                Using reference to dangling temporary.
