@@ -762,7 +762,9 @@ namespace rs2
     private:
         std::unique_ptr< reflectivity > _reflectivity;
         rsutils::number::stabilized_value<float> _stabilized_reflectivity;
-
+        
+        // Turn on showing metadata.
+        void show_metadata_by_default(const rs2::stream_profile& p);
     };
 
     std::pair<std::string, std::string> get_device_name(const device& dev);
