@@ -121,12 +121,12 @@ if [[ $1 == *"help"* ]]; then
      echo "    --fix    Try to auto-fix defects"
      exit 0
 fi
-	
+
 cd ..
 check_folder include $1
 check_folder src $1
 check_folder examples $1
-check_folder third-party/libtm $1
+check_folder third-party/realdds $1
 check_folder tools $1
 cd scripts
 

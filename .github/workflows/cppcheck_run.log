@@ -41,6 +41,10 @@
         <error id="uninitMemberVar" severity="warning" msg="Member variable &apos;xml_attribute &lt; char &gt;::m_next_attribute&apos; is not initialized in the constructor." verbose="Member variable &apos;xml_attribute &lt; char &gt;::m_next_attribute&apos; is not initialized in the constructor." cwe="398" file0="common/measurement.cpp">
             <location file="third-party/rapidxml/rapidxml.hpp" line="810" column="9"/>
         </error>
+        <error id="virtualCallInConstructor" severity="style" msg="Virtual function &apos;clear&apos; is called from constructor &apos;frame_drops_dashboard(std::string name,int*frame_drop_count,int*total)&apos; at line 97. Dynamic binding is not used." verbose="Virtual function &apos;clear&apos; is called from constructor &apos;frame_drops_dashboard(std::string name,int*frame_drop_count,int*total)&apos; at line 97. Dynamic binding is not used." file0="common/measurement.cpp">
+            <location file="common/output-model.h" line="104" column="14" info="clear is a virtual function"/>
+            <location file="common/output-model.h" line="97" column="13" info="Calling clear"/>
+        </error>
         <error id="uninitMemberVar" severity="warning" msg="Member variable &apos;frame_callback::user&apos; is not initialized in the constructor." verbose="Member variable &apos;frame_callback::user&apos; is not initialized in the constructor." cwe="398" file0="common/calibration-model.cpp">
             <location file="src/types.h" line="665" column="9"/>
         </error>
@@ -59,10 +63,6 @@
         <error id="uninitMemberVar" severity="warning" msg="Member variable &apos;hwmon_cmd::receivedOpcode&apos; is not initialized in the constructor." verbose="Member variable &apos;hwmon_cmd::receivedOpcode&apos; is not initialized in the constructor." cwe="398" file0="common/calibration-model.cpp">
             <location file="src/hw-monitor.h" line="287" column="22"/>
         </error>
-        <error id="virtualCallInConstructor" severity="style" msg="Virtual function &apos;clear&apos; is called from constructor &apos;frame_drops_dashboard(std::string name,int*frame_drop_count,int*total)&apos; at line 97. Dynamic binding is not used." verbose="Virtual function &apos;clear&apos; is called from constructor &apos;frame_drops_dashboard(std::string name,int*frame_drop_count,int*total)&apos; at line 97. Dynamic binding is not used." file0="common/measurement.cpp">
-            <location file="common/output-model.h" line="104" column="14" info="clear is a virtual function"/>
-            <location file="common/output-model.h" line="97" column="13" info="Calling clear"/>
-        </error>
         <error id="uninitMemberVar" severity="warning" msg="Member variable &apos;vao::_vertex_count&apos; is not initialized in the constructor." verbose="Member variable &apos;vao::_vertex_count&apos; is not initialized in the constructor." cwe="398" file0="common/opengl3.cpp">
             <location file="common/opengl3.cpp" line="126" column="6"/>
         </error>
@@ -77,9 +77,6 @@
         </error>
         <error id="uninitMemberVar" severity="warning" msg="Member variable &apos;stream_model::original_size&apos; is not initialized in the constructor." verbose="Member variable &apos;stream_model::original_size&apos; is not initialized in the constructor." cwe="398" file0="common/model-views.cpp">
             <location file="common/model-views.cpp" line="1917" column="19"/>
-        </error>
-        <error id="uninitMemberVar" severity="warning" msg="Member variable &apos;notification_model::category&apos; is not initialized in the constructor." verbose="Member variable &apos;notification_model::category&apos; is not initialized in the constructor." cwe="398" file0="common/notifications.cpp">
-            <location file="common/notifications.cpp" line="61" column="25"/>
         </error>
         <error id="pureVirtualCall" severity="warning" msg="Call of pure virtual function &apos;process_frame&apos; in constructor." verbose="Call of pure virtual function &apos;process_frame&apos; in constructor. The call will fail during runtime." file0="common/model-views.cpp">
             <location file="common/post-processing-filter.h" line="56" column="24" info="process_frame is a pure virtual function without body"/>
@@ -96,6 +93,9 @@
         <error id="nullPointerRedundantCheck" severity="warning" msg="Either the condition &apos;dev&apos; is redundant or there is possible null pointer dereference: dev." verbose="Either the condition &apos;dev&apos; is redundant or there is possible null pointer dereference: dev." cwe="476" file0="common/model-views.cpp">
             <location file="common/model-views.cpp" line="2290" column="13" info="Null pointer dereference"/>
             <location file="common/model-views.cpp" line="2295" column="13" info="Assuming that condition &apos;dev&apos; is not redundant"/>
+        </error>
+        <error id="uninitMemberVar" severity="warning" msg="Member variable &apos;notification_model::category&apos; is not initialized in the constructor." verbose="Member variable &apos;notification_model::category&apos; is not initialized in the constructor." cwe="398" file0="common/notifications.cpp">
+            <location file="common/notifications.cpp" line="61" column="25"/>
         </error>
         <error id="nullPointer" severity="warning" msg="Possible null pointer dereference: exporter" verbose="Possible null pointer dereference: exporter" cwe="476" file0="common/viewer.cpp">
             <location file="common/viewer.cpp" line="218" column="29" info="Null pointer dereference"/>
@@ -150,30 +150,6 @@
         <error id="uninitMemberVar" severity="warning" msg="Member variable &apos;serialized_frame::stream_id&apos; is not initialized in the constructor." verbose="Member variable &apos;serialized_frame::stream_id&apos; is not initialized in the constructor." cwe="398" file0="src/device.cpp">
             <location file="src/core/serialization.h" line="106" column="13"/>
         </error>
-        <error id="danglingTempReference" severity="error" msg="Using reference to dangling temporary." verbose="Using reference to dangling temporary." cwe="562" file0="src/context.cpp">
-            <location file="src/context.cpp" line="843" column="50"/>
-            <location file="src/context.cpp" line="842" column="29" info="Assigned to reference."/>
-        </error>
-        <error id="danglingTempReference" severity="error" msg="Using reference to dangling temporary." verbose="Using reference to dangling temporary." cwe="562" file0="src/context.cpp">
-            <location file="src/context.cpp" line="844" column="59"/>
-            <location file="src/context.cpp" line="842" column="29" info="Assigned to reference."/>
-        </error>
-        <error id="danglingTempReference" severity="error" msg="Using reference to dangling temporary." verbose="Using reference to dangling temporary." cwe="562" file0="src/context.cpp">
-            <location file="src/context.cpp" line="845" column="58"/>
-            <location file="src/context.cpp" line="842" column="29" info="Assigned to reference."/>
-        </error>
-        <error id="danglingTempReference" severity="error" msg="Using reference to dangling temporary." verbose="Using reference to dangling temporary." cwe="562" file0="src/context.cpp">
-            <location file="src/context.cpp" line="846" column="56"/>
-            <location file="src/context.cpp" line="842" column="29" info="Assigned to reference."/>
-        </error>
-        <error id="danglingTempReference" severity="error" msg="Using reference to dangling temporary." verbose="Using reference to dangling temporary." cwe="562" file0="src/context.cpp">
-            <location file="src/context.cpp" line="847" column="59"/>
-            <location file="src/context.cpp" line="842" column="29" info="Assigned to reference."/>
-        </error>
-        <error id="danglingTempReference" severity="error" msg="Using reference to dangling temporary." verbose="Using reference to dangling temporary." cwe="562" file0="src/context.cpp">
-            <location file="src/context.cpp" line="848" column="59"/>
-            <location file="src/context.cpp" line="842" column="29" info="Assigned to reference."/>
-        </error>
         <error id="virtualCallInConstructor" severity="style" msg="Virtual function &apos;reset&apos; is called from constructor &apos;sr300_timestamp_reader_from_metadata()&apos; at line 162. Dynamic binding is not used." verbose="Virtual function &apos;reset&apos; is called from constructor &apos;sr300_timestamp_reader_from_metadata()&apos; at line 162. Dynamic binding is not used." file0="src/context.cpp">
             <location file="src/ivcam/sr300.h" line="169" column="14" info="reset is a virtual function"/>
             <location file="src/ivcam/sr300.h" line="162" column="13" info="Calling reset"/>
@@ -189,10 +165,6 @@
         <error id="duplInheritedMember" severity="warning" msg="The class &apos;l500_depth_sensor&apos; defines member variable with name &apos;_owner&apos; also defined in its parent class &apos;sensor_base&apos;." verbose="The class &apos;l500_depth_sensor&apos; defines member variable with name &apos;_owner&apos; also defined in its parent class &apos;sensor_base&apos;." cwe="398" file0="src/context.cpp">
             <location file="src/l500/l500-depth.h" line="269" column="29" info="Derived variable &apos;l500_depth_sensor::_owner&apos;"/>
             <location file="src/sensor.h" line="123" column="17" info="Parent variable &apos;sensor_base::_owner&apos;"/>
-        </error>
-        <error id="uninitvar" severity="error" msg="Uninitialized variables: prof.bpp, prof.intrinsics" verbose="Uninitialized variables: prof.bpp, prof.intrinsics" cwe="457" file0="src/context.cpp">
-            <location file="src/context.cpp" line="803" column="20"/>
-            <location file="src/context.cpp" line="791" column="22" info="Assuming condition is false"/>
         </error>
         <error id="uninitMemberVar" severity="warning" msg="Member variable &apos;limits_option::_cached_limit&apos; is not initialized in the constructor." verbose="Member variable &apos;limits_option::_cached_limit&apos; is not initialized in the constructor." cwe="398" file0="src/ds/d400/d400-active.cpp">
             <location file="src/ds/d400/d400-options.h" line="105" column="9"/>
@@ -211,21 +183,6 @@
         </error>
         <error id="duplInheritedMember" severity="warning" msg="The class &apos;d400_color_sensor&apos; defines member variable with name &apos;_owner&apos; also defined in its parent class &apos;sensor_base&apos;." verbose="The class &apos;d400_color_sensor&apos; defines member variable with name &apos;_owner&apos; also defined in its parent class &apos;sensor_base&apos;." cwe="398" file0="src/ds/d400/d400-color.cpp">
             <location file="src/ds/d400/d400-color.h" line="78" column="27" info="Derived variable &apos;d400_color_sensor::_owner&apos;"/>
-            <location file="src/sensor.h" line="123" column="17" info="Parent variable &apos;sensor_base::_owner&apos;"/>
-        </error>
-        <error id="uninitMemberVar" severity="warning" msg="Member variable &apos;d400_depth_sensor::_stereo_baseline_mm&apos; is not initialized in the constructor." verbose="Member variable &apos;d400_depth_sensor::_stereo_baseline_mm&apos; is not initialized in the constructor." cwe="398" file0="src/ds/d400/d400-device.cpp">
-            <location file="src/ds/d400/d400-device.cpp" line="118" column="18"/>
-        </error>
-        <error id="duplInheritedMember" severity="warning" msg="The class &apos;d400_depth_sensor&apos; defines member variable with name &apos;_owner&apos; also defined in its parent class &apos;sensor_base&apos;." verbose="The class &apos;d400_depth_sensor&apos; defines member variable with name &apos;_owner&apos; also defined in its parent class &apos;sensor_base&apos;." cwe="398" file0="src/ds/d400/d400-device.cpp">
-            <location file="src/ds/d400/d400-device.cpp" line="325" column="28" info="Derived variable &apos;d400_depth_sensor::_owner&apos;"/>
-            <location file="src/sensor.h" line="123" column="17" info="Parent variable &apos;sensor_base::_owner&apos;"/>
-        </error>
-        <error id="duplInheritedMember" severity="warning" msg="The class &apos;ds5u_depth_sensor&apos; defines member variable with name &apos;_owner&apos; also defined in its parent class &apos;d400_depth_sensor&apos;." verbose="The class &apos;ds5u_depth_sensor&apos; defines member variable with name &apos;_owner&apos; also defined in its parent class &apos;d400_depth_sensor&apos;." cwe="398" file0="src/ds/d400/d400-device.cpp">
-            <location file="src/ds/d400/d400-device.cpp" line="386" column="28" info="Derived variable &apos;ds5u_depth_sensor::_owner&apos;"/>
-            <location file="src/ds/d400/d400-device.cpp" line="325" column="28" info="Parent variable &apos;d400_depth_sensor::_owner&apos;"/>
-        </error>
-        <error id="duplInheritedMember" severity="warning" msg="The class &apos;ds5u_depth_sensor&apos; defines member variable with name &apos;_owner&apos; also defined in its parent class &apos;sensor_base&apos;." verbose="The class &apos;ds5u_depth_sensor&apos; defines member variable with name &apos;_owner&apos; also defined in its parent class &apos;sensor_base&apos;." cwe="398" file0="src/ds/d400/d400-device.cpp">
-            <location file="src/ds/d400/d400-device.cpp" line="386" column="28" info="Derived variable &apos;ds5u_depth_sensor::_owner&apos;"/>
             <location file="src/sensor.h" line="123" column="17" info="Parent variable &apos;sensor_base::_owner&apos;"/>
         </error>
         <error id="uninitMemberVar" severity="warning" msg="Member variable &apos;preset_param_group::depth_controls&apos; is not initialized in the constructor." verbose="Member variable &apos;preset_param_group::depth_controls&apos; is not initialized in the constructor." cwe="398" file0="src/ds/advanced_mode/advanced_mode.cpp">
@@ -270,6 +227,21 @@
         <error id="uninitMemberVar" severity="warning" msg="Member variable &apos;json_string_struct_field::strct&apos; is not initialized in the constructor." verbose="Member variable &apos;json_string_struct_field::strct&apos; is not initialized in the constructor." cwe="398" file0="src/ds/advanced_mode/advanced_mode.cpp">
             <location file="src/ds/advanced_mode/json_loader.hpp" line="171" column="9"/>
         </error>
+        <error id="uninitMemberVar" severity="warning" msg="Member variable &apos;d400_depth_sensor::_stereo_baseline_mm&apos; is not initialized in the constructor." verbose="Member variable &apos;d400_depth_sensor::_stereo_baseline_mm&apos; is not initialized in the constructor." cwe="398" file0="src/ds/d400/d400-device.cpp">
+            <location file="src/ds/d400/d400-device.cpp" line="118" column="18"/>
+        </error>
+        <error id="duplInheritedMember" severity="warning" msg="The class &apos;d400_depth_sensor&apos; defines member variable with name &apos;_owner&apos; also defined in its parent class &apos;sensor_base&apos;." verbose="The class &apos;d400_depth_sensor&apos; defines member variable with name &apos;_owner&apos; also defined in its parent class &apos;sensor_base&apos;." cwe="398" file0="src/ds/d400/d400-device.cpp">
+            <location file="src/ds/d400/d400-device.cpp" line="325" column="28" info="Derived variable &apos;d400_depth_sensor::_owner&apos;"/>
+            <location file="src/sensor.h" line="123" column="17" info="Parent variable &apos;sensor_base::_owner&apos;"/>
+        </error>
+        <error id="duplInheritedMember" severity="warning" msg="The class &apos;ds5u_depth_sensor&apos; defines member variable with name &apos;_owner&apos; also defined in its parent class &apos;d400_depth_sensor&apos;." verbose="The class &apos;ds5u_depth_sensor&apos; defines member variable with name &apos;_owner&apos; also defined in its parent class &apos;d400_depth_sensor&apos;." cwe="398" file0="src/ds/d400/d400-device.cpp">
+            <location file="src/ds/d400/d400-device.cpp" line="386" column="28" info="Derived variable &apos;ds5u_depth_sensor::_owner&apos;"/>
+            <location file="src/ds/d400/d400-device.cpp" line="325" column="28" info="Parent variable &apos;d400_depth_sensor::_owner&apos;"/>
+        </error>
+        <error id="duplInheritedMember" severity="warning" msg="The class &apos;ds5u_depth_sensor&apos; defines member variable with name &apos;_owner&apos; also defined in its parent class &apos;sensor_base&apos;." verbose="The class &apos;ds5u_depth_sensor&apos; defines member variable with name &apos;_owner&apos; also defined in its parent class &apos;sensor_base&apos;." cwe="398" file0="src/ds/d400/d400-device.cpp">
+            <location file="src/ds/d400/d400-device.cpp" line="386" column="28" info="Derived variable &apos;ds5u_depth_sensor::_owner&apos;"/>
+            <location file="src/sensor.h" line="123" column="17" info="Parent variable &apos;sensor_base::_owner&apos;"/>
+        </error>
         <error id="uninitMemberVar" severity="warning" msg="Member variable &apos;optional_value &lt; uint8_t &gt;::_value&apos; is not initialized in the constructor." verbose="Member variable &apos;optional_value &lt; uint8_t &gt;::_value&apos; is not initialized in the constructor." cwe="398" file0="src/ds/d400/d400-factory.cpp">
             <location file="src/types.h" line="1260" column="9"/>
         </error>
@@ -307,12 +279,12 @@
             <location file="src/ds/d400/d400-motion.h" line="69" column="33" info="Derived variable &apos;d400_motion::_motion_module_device_idx&apos;"/>
             <location file="src/ds/d400/d400-motion.h" line="39" column="33" info="Parent variable &apos;d400_motion_base::_motion_module_device_idx&apos;"/>
         </error>
-        <error id="uninitMemberVar" severity="warning" msg="Member variable &apos;d400_motion_base::_pid&apos; is not initialized in the constructor." verbose="Member variable &apos;d400_motion_base::_pid&apos; is not initialized in the constructor." cwe="398" file0="src/ds/d400/d400-motion.cpp">
-            <location file="src/ds/d400/d400-motion.cpp" line="101" column="23"/>
-        </error>
         <error id="identicalInnerCondition" severity="warning" msg="Identical inner &apos;if&apos; condition is always true." verbose="Identical inner &apos;if&apos; condition is always true (outer condition is &apos;depth==0&apos; and inner condition is &apos;depth==0&apos;)." cwe="398" file0="src/ds/d400/d400-auto-calibration.cpp">
             <location file="src/ds/d400/d400-auto-calibration.cpp" line="955" column="27" info="identical inner condition: depth==0"/>
             <location file="src/ds/d400/d400-auto-calibration.cpp" line="919" column="23" info="outer condition: depth==0"/>
+        </error>
+        <error id="uninitMemberVar" severity="warning" msg="Member variable &apos;d400_motion_base::_pid&apos; is not initialized in the constructor." verbose="Member variable &apos;d400_motion_base::_pid&apos; is not initialized in the constructor." cwe="398" file0="src/ds/d400/d400-motion.cpp">
+            <location file="src/ds/d400/d400-motion.cpp" line="101" column="23"/>
         </error>
         <error id="duplInheritedMember" severity="warning" msg="The class &apos;motion_to_accel_gyro&apos; defines member variable with name &apos;_source_stream_profile&apos; also defined in its parent class &apos;functional_processing_block&apos;." verbose="The class &apos;motion_to_accel_gyro&apos; defines member variable with name &apos;_source_stream_profile&apos; also defined in its parent class &apos;functional_processing_block&apos;." cwe="398" file0="src/ds/d400/d400-motion.cpp">
             <location file="src/proc/motion-transform.h" line="49" column="51" info="Derived variable &apos;motion_to_accel_gyro::_source_stream_profile&apos;"/>
@@ -379,17 +351,17 @@
         <error id="uninitMemberVar" severity="warning" msg="Member variable &apos;gpu_section::height&apos; is not initialized in the constructor." verbose="Member variable &apos;gpu_section::height&apos; is not initialized in the constructor." cwe="398" file0="src/gl/synthetic-stream-gl.cpp">
             <location file="src/gl/synthetic-stream-gl.cpp" line="207" column="22"/>
         </error>
-        <error id="uninitMemberVar" severity="warning" msg="Member variable &apos;yuy2rgb::_width&apos; is not initialized in the constructor." verbose="Member variable &apos;yuy2rgb::_width&apos; is not initialized in the constructor." cwe="398" file0="src/gl/yuy2rgb-gl.cpp">
-            <location file="src/gl/yuy2rgb-gl.cpp" line="108" column="10"/>
-        </error>
-        <error id="uninitMemberVar" severity="warning" msg="Member variable &apos;yuy2rgb::_height&apos; is not initialized in the constructor." verbose="Member variable &apos;yuy2rgb::_height&apos; is not initialized in the constructor." cwe="398" file0="src/gl/yuy2rgb-gl.cpp">
-            <location file="src/gl/yuy2rgb-gl.cpp" line="108" column="10"/>
-        </error>
         <error id="uninitMemberVar" severity="warning" msg="Member variable &apos;y411_2rgb::_width&apos; is not initialized in the constructor." verbose="Member variable &apos;y411_2rgb::_width&apos; is not initialized in the constructor." cwe="398" file0="src/gl/y4112rgb-gl.cpp">
             <location file="src/gl/y4112rgb-gl.cpp" line="124" column="12"/>
         </error>
         <error id="uninitMemberVar" severity="warning" msg="Member variable &apos;y411_2rgb::_height&apos; is not initialized in the constructor." verbose="Member variable &apos;y411_2rgb::_height&apos; is not initialized in the constructor." cwe="398" file0="src/gl/y4112rgb-gl.cpp">
             <location file="src/gl/y4112rgb-gl.cpp" line="124" column="12"/>
+        </error>
+        <error id="uninitMemberVar" severity="warning" msg="Member variable &apos;yuy2rgb::_width&apos; is not initialized in the constructor." verbose="Member variable &apos;yuy2rgb::_width&apos; is not initialized in the constructor." cwe="398" file0="src/gl/yuy2rgb-gl.cpp">
+            <location file="src/gl/yuy2rgb-gl.cpp" line="108" column="10"/>
+        </error>
+        <error id="uninitMemberVar" severity="warning" msg="Member variable &apos;yuy2rgb::_height&apos; is not initialized in the constructor." verbose="Member variable &apos;yuy2rgb::_height&apos; is not initialized in the constructor." cwe="398" file0="src/gl/yuy2rgb-gl.cpp">
+            <location file="src/gl/yuy2rgb-gl.cpp" line="108" column="10"/>
         </error>
         <error id="uninitMemberVar" severity="warning" msg="Member variable &apos;CLinearCoefficients::_prev_a&apos; is not initialized in the constructor." verbose="Member variable &apos;CLinearCoefficients::_prev_a&apos; is not initialized in the constructor." cwe="398" file0="src/global_timestamp_reader.cpp">
             <location file="src/global_timestamp_reader.cpp" line="24" column="26"/>
