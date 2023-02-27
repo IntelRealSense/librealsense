@@ -13,7 +13,7 @@ participant.init( 123, "device-init-server" )
 
 
 def test_one_stream():
-    s1p1 = dds.video_stream_profile( 9, dds.stream_format("RGB8"), 10, 10 )
+    s1p1 = dds.video_stream_profile( 9, dds.stream_format("rgb8"), 10, 10 )
     s1profiles = [s1p1]
     s1 = dds.depth_stream_server( "s1", "sensor" )
     s1.init_profiles( s1profiles, 0 )
@@ -23,7 +23,7 @@ def test_one_stream():
     server.init( [s1], [], {} )
 
 def test_one_motion_stream():
-    s1p1 = dds.motion_stream_profile( 30, dds.stream_format("RGB8") )
+    s1p1 = dds.motion_stream_profile( 30, dds.stream_format("rgb8") )
     s1profiles = [s1p1]
     s1 = dds.accel_stream_server( "s2", "sensor2" )
     s1.init_profiles( s1profiles, 0 )
@@ -54,7 +54,7 @@ def test_n_profiles( n_profiles ):
         height = fibo[-2] + fibo[-1]
         fibo[-2] = fibo[-1]
         fibo[-1] = height
-        s1profiles += [dds.video_stream_profile( 9, dds.stream_format("RGB8"), width, height )]
+        s1profiles += [dds.video_stream_profile( 9, dds.stream_format("rgb8"), width, height )]
     s1 = dds.ir_stream_server( "s1", "sensor" )
     s1.init_profiles( s1profiles, 0 )
     log.d( s1.profiles() )
