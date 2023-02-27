@@ -80,15 +80,15 @@ int dds_stream_format::to_rs2() const
         { "YUY2", RS2_FORMAT_YUYV },
         { "YUYV", RS2_FORMAT_YUYV },
         { "UYVY", RS2_FORMAT_UYVY },
-        { "GREY", RS2_FORMAT_Y8 },
+        { "mono8", RS2_FORMAT_Y8 },  // Used by IR streams; ROS2-compatible
         { "Y8I",  RS2_FORMAT_Y8I },
         { "W10",  RS2_FORMAT_W10 },
         { "Y16",  RS2_FORMAT_Y16 },
         { "Y12I", RS2_FORMAT_Y12I },
         { "Y16I", RS2_FORMAT_Y16I },
-        { "Z16",  RS2_FORMAT_Z16 },
+        { "16UC1", RS2_FORMAT_Z16 },  // Used by depth streams; ROS2-compatible
         { "Z16H", RS2_FORMAT_Z16H },
-        { "RGB8", RS2_FORMAT_RGB8 },
+        { "rgb8", RS2_FORMAT_RGB8 },  // Used by color streams; ROS2-compatible
         { "RGBA", RS2_FORMAT_RGBA8 },
         { "RGB2", RS2_FORMAT_BGR8 },
         { "BGRA", RS2_FORMAT_BGRA8 },
@@ -112,15 +112,15 @@ dds_stream_format dds_stream_format::from_rs2( int rs2_format )
     switch( rs2_format )
     {
     case RS2_FORMAT_YUYV: encoding = "YUYV"; break;
-    case RS2_FORMAT_Y8: encoding = "GREY"; break;
+    case RS2_FORMAT_Y8: encoding = "mono8"; break;
     case RS2_FORMAT_Y8I: encoding = "Y8I"; break;
     case RS2_FORMAT_W10: encoding = "W10"; break;
     case RS2_FORMAT_Y16: encoding = "Y16"; break;
     case RS2_FORMAT_Y12I: encoding = "Y12I"; break;
     case RS2_FORMAT_Y16I: encoding = "Y16I"; break;
-    case RS2_FORMAT_Z16: encoding = "Z16"; break;
+    case RS2_FORMAT_Z16: encoding = "16UC1"; break;
     case RS2_FORMAT_Z16H: encoding = "Z16H"; break;
-    case RS2_FORMAT_RGB8: encoding = "RGB8"; break;
+    case RS2_FORMAT_RGB8: encoding = "rgb8"; break;
     case RS2_FORMAT_RGBA8: encoding = "RGBA"; break;  // todo
     case RS2_FORMAT_BGR8: encoding = "RGB2"; break;
     case RS2_FORMAT_BGRA8: encoding = "BGRA"; break;  // todo

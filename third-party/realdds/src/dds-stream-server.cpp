@@ -191,7 +191,6 @@ void dds_stream_server::publish_image( const uint8_t * data, size_t size )
     raw_image.header().stamp().sec() = now.seconds();
     raw_image.header().stamp().nanosec() = now.nanosec();
     raw_image.encoding() = _image_header.format.to_string();
-    std::transform( raw_image.encoding().begin(), raw_image.encoding().end(), raw_image.encoding().begin(), tolower );
     raw_image.height() = _image_header.height;
     raw_image.width() = _image_header.width;
     raw_image.step() = uint32_t( size / _image_header.height );
