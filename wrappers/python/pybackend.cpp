@@ -192,7 +192,7 @@ PYBIND11_MODULE(NAME, m) {
         .value("exposure_limit_toggle", RS2_OPTION_AUTO_EXPOSURE_LIMIT_TOGGLE)
         .value("gain_limit_toggle", RS2_OPTION_AUTO_GAIN_LIMIT_TOGGLE)
         .value("emitter_frequency", RS2_OPTION_EMITTER_FREQUENCY)
-		.value("depth_auto_exposure_mode", RS2_OPTION_DEPTH_AUTO_EXPOSURE_MODE)
+        .value("depth_auto_exposure_mode", RS2_OPTION_DEPTH_AUTO_EXPOSURE_MODE)
         .value("safety_preset_active_index", RS2_OPTION_SAFETY_PRESET_ACTIVE_INDEX)
         .value("safety_mode", RS2_OPTION_SAFETY_MODE)
         .value("count", RS2_OPTION_COUNT);

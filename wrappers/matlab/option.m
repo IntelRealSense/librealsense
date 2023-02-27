@@ -94,7 +94,7 @@ classdef option < int64
         receiver_sensitivity            (90)
         emitter_frequency               (93)
         depth_auto_exposue_mode         (94)
-		safety_preset_active_index      (95)
+        safety_preset_active_index      (95)
         safety_mode                     (96)
         count                           (97)
     end
