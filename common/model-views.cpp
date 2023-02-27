@@ -2068,6 +2068,14 @@ namespace rs2
         }
         catch(...) {};
 
+        show_metadata_by_default(p);
+    }
+
+    void stream_model::show_metadata_by_default(const rs2::stream_profile& p)
+    {
+        // The purpose is to show metadata to a user by default because a user will not see frames in this stream.
+        if (p.stream_type() == RS2_STREAM_SAFETY)
+            show_metadata = true;
     }
 
     bool stream_model::draw_reflectivity( int x,
