@@ -773,7 +773,7 @@ namespace librealsense
         to_rs2_video_stream( rs2_stream const stream_type,
                              sid_index const & sidx,
                              std::shared_ptr< realdds::dds_video_stream_profile > const & profile,
-                             const std::set< realdds::video_intrinsics > & intrinsics)
+                             const std::set< realdds::video_intrinsics > & intrinsics )
         {
             rs2_video_stream prof;
             prof.type = stream_type;
@@ -783,11 +783,13 @@ namespace librealsense
             prof.height = profile->height();
             prof.fps = profile->frequency();
             prof.fmt = static_cast< rs2_format >( profile->format().to_rs2() );
+            prof.bpp = 0;
             
-            //Handle intrinsics
-            auto intr = std::find_if( intrinsics.begin(), intrinsics.end(), [profile]( const realdds::video_intrinsics & intr ) {
-                return profile->width() == intr.width && profile->height() == intr.height;
-            } );
+            // Handle intrinsics
+            auto intr = std::find_if( intrinsics.begin(),
+                                      intrinsics.end(),
+                                      [profile]( const realdds::video_intrinsics & intr )
+                                      { return profile->width() == intr.width && profile->height() == intr.height; } );
             if( intr != intrinsics.end() ) //Some profiles don't have intrinsics
             {
                 prof.intrinsics.width = intr->width;
@@ -798,6 +800,10 @@ namespace librealsense
                 prof.intrinsics.fy = intr->focal_lenght_y;
                 prof.intrinsics.model = static_cast< rs2_distortion >( intr->distortion_model );
                 memcpy( prof.intrinsics.coeffs, intr->distortion_coeffs.data(), sizeof( prof.intrinsics.coeffs ) );
+            }
+            else
+            {
+                memset( &prof.intrinsics, 0, sizeof( prof.intrinsics ) );
             }
 
             return prof;
@@ -839,13 +845,12 @@ namespace librealsense
             , _dds_dev( dev )
         {
             LOG_DEBUG( "=====> dds-device-proxy " << this << " created on top of dds-device " << _dds_dev.get() );
-            auto & dev_info = dev->device_info();
-            register_info( RS2_CAMERA_INFO_NAME, dev_info.name );
-            register_info( RS2_CAMERA_INFO_SERIAL_NUMBER, dev_info.serial );
-            register_info( RS2_CAMERA_INFO_PRODUCT_LINE, dev_info.product_line );
-            register_info( RS2_CAMERA_INFO_PRODUCT_ID, dev_info.product_id );
-            register_info( RS2_CAMERA_INFO_PHYSICAL_PORT, dev_info.topic_root );
-            register_info( RS2_CAMERA_INFO_CAMERA_LOCKED, dev_info.locked ? "YES" : "NO" );
+            register_info( RS2_CAMERA_INFO_NAME, dev->device_info().name );
+            register_info( RS2_CAMERA_INFO_SERIAL_NUMBER, dev->device_info().serial );
+            register_info( RS2_CAMERA_INFO_PRODUCT_LINE, dev->device_info().product_line );
+            register_info( RS2_CAMERA_INFO_PRODUCT_ID, dev->device_info().product_id );
+            register_info( RS2_CAMERA_INFO_PHYSICAL_PORT, dev->device_info().topic_root );
+            register_info( RS2_CAMERA_INFO_CAMERA_LOCKED, dev->device_info().locked ? "YES" : "NO" );
 
             //Assumes dds_device initialization finished
             struct sensor_info
