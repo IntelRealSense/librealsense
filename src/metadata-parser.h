@@ -344,10 +344,10 @@ namespace librealsense
     };
 
 
-    class d400_md_attribute_actual_fps : public md_attribute_parser_base
+    class ds_md_attribute_actual_fps : public md_attribute_parser_base
     {
     public:
-        d400_md_attribute_actual_fps(bool discrete = true, attrib_modifyer  exposure_mod = [](const rs2_metadata_type& param) {return param; })
+        ds_md_attribute_actual_fps(bool discrete = true, attrib_modifyer  exposure_mod = [](const rs2_metadata_type& param) {return param; })
             : _fps_values{ 6, 15, 30, 60, 90 } , _exposure_modifyer(exposure_mod), _discrete(discrete)
         {}
 

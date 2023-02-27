@@ -93,6 +93,7 @@ classdef option < int64
         vertical_binning                (89)
         receiver_sensitivity            (90)
         emitter_frequency               (93)
-        count                           (94)
+        depth_auto_exposue_mode         (94)
+        count                           (95)
     end
 end

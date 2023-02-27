@@ -218,7 +218,7 @@ namespace rs2
         */
         std::vector<stream_profile> get_stream_profiles() const
         {
-            std::vector<stream_profile> results{};
+            std::vector<stream_profile> results;
 
             rs2_error* e = nullptr;
             std::shared_ptr<rs2_stream_profile_list> list(
@@ -245,7 +245,7 @@ namespace rs2
         */
         std::vector<stream_profile> get_active_streams() const
         {
-            std::vector<stream_profile> results{};
+            std::vector<stream_profile> results;
 
             rs2_error* e = nullptr;
             std::shared_ptr<rs2_stream_profile_list> list(
@@ -272,7 +272,7 @@ namespace rs2
         */
         std::vector<filter> get_recommended_filters() const
         {
-            std::vector<filter> results{};
+            std::vector<filter> results;
 
             rs2_error* e = nullptr;
             std::shared_ptr<rs2_processing_block_list> list(
