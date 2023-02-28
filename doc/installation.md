@@ -27,7 +27,7 @@ The scripts and commands below invoke `wget, git, add-apt-repository` which may 
   * Get *librealsense* sources in one of the following ways:<br />
 
     - Install *git* and download the complete source tree.<br />
-	  `sudo apt-get install git`<br />
+      `sudo apt-get install git`<br />
       `git clone https://github.com/IntelRealSense/librealsense.git`<br />
 
     - Download and unzip the latest stable version from `master` branch:
