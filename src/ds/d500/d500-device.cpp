@@ -477,6 +477,8 @@ namespace librealsense
         bool advanced_mode = false;
         bool usb_modality = true;
         group_multiple_fw_calls(depth_sensor, [&]() {
+
+            _hw_monitor->get_gvd(gvd_buff.size(), gvd_buff.data(), GVD);
             std::string fwv;
             _ds_device_common->get_fw_details( gvd_buff, optic_serial, asic_serial, fwv );
             _fw_version = firmware_version(fwv);
