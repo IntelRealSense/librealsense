@@ -8,6 +8,7 @@
 
 #include <stdint.h>
 #include <string>
+#include <cstring>
 #include <vector>
 #include <memory>
 #include <iosfwd>
@@ -32,7 +33,8 @@ struct dds_stream_format
     dds_stream_format( std::string const & s );
 
     bool is_valid() const { return data[0] != 0; }
-    operator bool() const { return is_valid(); }
+    bool operator==( dds_stream_format const & rhs ) const { return std::strncmp( data, rhs.data, size ) == 0; }
+    bool operator!=( dds_stream_format const & rhs ) const { return ! operator==( rhs ); }
 
     std::string to_string() const { return std::string( data ); }
     operator std::string() const { return to_string(); }
@@ -68,7 +70,7 @@ public:
     // This is for initialization and is called from dds_stream_base only!
     void init_stream( std::weak_ptr< dds_stream_base > const & stream );
 
-    dds_stream_format format() const { return _format; }
+    dds_stream_format const & format() const { return _format; }
     int16_t frequency() const { return _frequency; }
 
     // These are for debugging - not functional

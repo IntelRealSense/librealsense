@@ -181,7 +181,9 @@ void dds_stream_sensor_bridge::sensor_bridge::verify_compatible_profile(
         if( already_streaming.is_explicit || already_streaming.is_implicit )
         {
             // Profiles are compatible if they match resolution, FPS
-            if( !profiles_are_compatible( profile, already_streaming.profile ) )
+            // If they're of different types (e.g., depth vs ir), we don't care about the format
+            bool const different_types = profile->stream()->type_string() != already_streaming.server->type_string();
+            if( ! profiles_are_compatible( profile, already_streaming.profile, different_types ) )
                 DDS_THROW( runtime_error,
                            "profile " + profile->to_string() + " is incompatible with already-open "
                            + already_streaming.profile->to_string() );
