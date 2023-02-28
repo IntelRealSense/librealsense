@@ -26,7 +26,7 @@ The scripts and commands below invoke `wget, git, add-apt-repository` which may 
 **Download/Clone librealsense github repository:**  
   * Get *librealsense* sources in one of the following ways:<br />
 
-    - Download the complete source tree with *git*<br />
+    - Install *git* and download the complete source tree.<br />
 	  `sudo apt-get install git`<br />
       `git clone https://github.com/IntelRealSense/librealsense.git`<br />
 
