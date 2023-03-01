@@ -134,8 +134,6 @@ for camera in a b c d; do
   done
   # create DFU device link for camera
   if [[ ${create_dfu_dev} -eq 1 ]]; then
-    #subdev=$(echo ${dot} | grep "D4XX depth ${camera} | awk -F'|' '{print $2}' | awk -F'/' '{print $3}' | tr -d ' '")
-    #i2cdev=$(ls -l /sys/class/video4linux/${subdev}/device | awk -F'/' '{print $9}')
     dev_dfu_name="/dev/d4xx-dfu-${camera}"
     dev_dfu_ln="/dev/d4xx-dfu-${camera_idx[${camera}]}"
     if [[ $info -eq 0 ]]; then
