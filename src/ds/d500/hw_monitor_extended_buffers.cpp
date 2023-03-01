@@ -15,7 +15,7 @@ namespace librealsense
             auto calib_table_id = static_cast<ds::d500_calibration_table_id>(cmd.param2);
             auto it = ds::d500_calibration_tables_size.find(calib_table_id);
             if (it == ds::d500_calibration_tables_size.end())
-                throw std::runtime_error(rsutils::string::from() << " hwm command with wromg param2");
+                throw std::runtime_error(rsutils::string::from() << " hwm command with wrong param2");
 
             msg_length = it->second;
         }
@@ -112,6 +112,11 @@ namespace librealsense
         
     std::vector<uint8_t> hw_monitor_extended_buffers::send(std::vector<uint8_t> const& data) const
     {
-        return hw_monitor::send(data);;
+        command cmd = build_command_from_data(data);
+
+        hwm_buffer_type buffer_type = get_buffer_type(cmd);
+        if (buffer_type == hwm_buffer_type::standard)
+            return hw_monitor::send(data);
+        return send(cmd);
     }
 }
