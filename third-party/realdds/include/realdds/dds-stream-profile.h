@@ -16,12 +16,26 @@
 namespace realdds {
 
 
-// Similar to fourcc, this describes how a stream data is organized. The characters are zero-terminated so it can be
-// shorter than 'size' and can be easily converted from/to string.
+// Similar to fourcc, this is a sequence of ASCII characters used to uniquely identify the data format utilized by a
+// stream. Also called an encoding, this "string" of characters defines how the data is written and, therefore, how to
+// read it back.
+// 
+// While fourcc is a 4-character string, we need to use encodings that are compatible with ROS for interoperability.
+// The ROS encodings are detailed here:
+//     https://docs.ros.org/en/latest/api/sensor_msgs/html/image__encodings_8h_source.html
+// Note that the ROS encodings often take more than 4 characters.
+// The encodings also seem to be case-sensitive.
+// 
+// This is intended to be communicated in DDS messages and so has a fixed maximum 'size', but can be otherwise easily
+// converted to a string. It must be '<= size' characters long, and we actually store the terminating null for
+// convenience.
+// 
+// Currently, only specific formats are needed and so 6 characters are enough to fit our needs given their ROS
+// encodings. We round it up to 8 (64 bits, including the terminating null) for alignment and some flexibility.
 //
 struct dds_stream_format
 {
-    static constexpr size_t size = 7;  // We need 6 to cover all the ROS formats; we use 7 so total size is 8
+    static constexpr size_t size = 7;  // max length of encoding
     char data[size + 1];               // add a terminating NULL for ease
 
     dds_stream_format()
