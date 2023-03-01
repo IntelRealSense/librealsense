@@ -1371,16 +1371,6 @@ namespace rs2
                     continue;
                 }
 
-                if( f.is< pose_frame >() )  // Aggregate the trajectory in pause mode to make the
-                                            // path consistent
-                {
-                    auto dev = streams[f.get_profile().unique_id()].dev;
-                    if( dev )
-                    {
-                        dev->tm2.update_model_trajectory( f.as< pose_frame >(), ! paused );
-                    }
-                }
-
                 auto texture = upload_frame( std::move( f ) );
 
                 if( ( selected_tex_source_uid == -1 && f.get_profile().format() == RS2_FORMAT_Z16 )
@@ -2025,65 +2015,6 @@ namespace rs2
             { 0 , 0, 1, 0 },
             { 0, 0, 0, 1 }
         };
-        rs2::matrix4 rx(_rx);
-        rs2::matrix4 rz(_rz);
-
-        int stream_num = 0; // counter to locate the pose info window correctly (currently works for up to 3 streaming devices)
-        pose_frame pose = frame{};
-        for (auto&& stream : streams)
-        {
-            if (stream.second.profile.stream_type() == RS2_STREAM_POSE)
-            {
-                auto f = stream.second.texture->get_last_frame();
-                if (!f.is<pose_frame>())
-                {
-                    continue;
-                }
-
-                pose = f;
-                rs2_pose pose_data = pose.get_pose_data();
-
-                auto t = pose_to_world_transformation(pose_data);
-                float model[4][4];
-                t.to_column_major((float*)model);
-                auto m = model;
-
-                r1 = m * rx;
-                r2 = rz * m * rx;
-
-                // set the pose transformation as the model matrix to draw the axis
-                glMatrixMode(GL_MODELVIEW);
-                glPushMatrix();
-                glLoadMatrixf(view);
-
-                glMultMatrixf((float*)_rx);
-
-                streams[f.get_profile().unique_id()].dev->tm2.draw_trajectory( false );
-
-                // remove model matrix from the rest of the render
-                glPopMatrix();
-
-                _cam_renderer.set_matrix(RS2_GL_MATRIX_CAMERA, r2 * view_mat);
-                _cam_renderer.set_matrix(RS2_GL_MATRIX_PROJECTION, perspective_mat);
-
-                if (f)
-                {
-                    glDisable(GL_DEPTH_TEST);
-                    glEnable(GL_BLEND);
-
-                    glBlendFunc(GL_ONE, GL_ONE);
-
-                    // Render camera model (based on source_frame camera type)
-                    f.apply_filter(_cam_renderer);
-
-                    glDisable(GL_BLEND);
-                    glEnable(GL_DEPTH_TEST);
-                }
-
-                stream_num++;
-            }
-        }
-
 
         check_gl_error();
 
@@ -2115,17 +2046,6 @@ namespace rs2
                 glVertex3f(T, 1, I - T);
             }
             glEnd();
-        }
-
-        check_gl_error();
-
-        if (!pose && !_pc_selected)
-        {
-            glMatrixMode(GL_MODELVIEW);
-            glPushMatrix();
-            glLoadMatrixf(r1 * view_mat);
-            texture_buffer::draw_axes(0.4f, 1);
-            glPopMatrix();
         }
 
         check_gl_error();

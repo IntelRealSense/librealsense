@@ -10,6 +10,7 @@
 #include <thread>
 #include <condition_variable>
 #include <model-views.h>
+#include <subdevice-model.h>
 #include <viewer.h>
 #include "calibration-model.h"
 #include "os.h"

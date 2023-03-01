@@ -5,6 +5,7 @@
 
 #include <unordered_set>
 #include "model-views.h"
+#include "subdevice-model.h"
 #include "notifications.h"
 #include "skybox.h"
 #include "measurement.h"

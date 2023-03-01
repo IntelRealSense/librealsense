@@ -1,5 +1,6 @@
 #include "calibration-model.h"
 #include "model-views.h"
+#include "subdevice-model.h"
 #include "os.h"
 #include "ux-window.h"
 
