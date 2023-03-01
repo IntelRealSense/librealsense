@@ -23,6 +23,8 @@ namespace realdds {
 // While fourcc is a 4-character string, we need to use encodings that are compatible with ROS for interoperability.
 // The ROS encodings are detailed here:
 //     https://docs.ros.org/en/latest/api/sensor_msgs/html/image__encodings_8h_source.html
+// And also listed in the header:
+//     https://github.com/ros2/common_interfaces/blob/rolling/sensor_msgs/include/sensor_msgs/image_encodings.hpp
 // Note that the ROS encodings often take more than 4 characters.
 // The encodings also seem to be case-sensitive.
 // 
