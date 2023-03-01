@@ -4,7 +4,9 @@
 # test:device D455
 
 import pyrealsense2 as rs
+import pyrsutils as rsutils
 from rspy import test
+import json
 
 #############################################################################################
 # Tests
@@ -60,6 +62,29 @@ counters_list = rs.aus_get_counters_list()
 test.check('RS2_AUS_DEPTH_VISUALIZATION_COLORIZED_FRAMES_COUNTER' in counters_list)
 colorized_frames = rs.aus_get('RS2_AUS_DEPTH_VISUALIZATION_COLORIZED_FRAMES_COUNTER')
 test.check_equal(colorized_frames, 20)
+test.finish()
+
+############################################################################################
+
+test.start("Test get aus data")
+check_string = bytearray(rs.aus_get_data()).decode('UTF-8')
+res_dict = json.loads(check_string)
+expected_check_dict = \
+    {
+        'RS2_AUS_CONNECTED_DEVICES_COUNTER': '1',
+        'RS2_AUS_DEPTH_VISUALIZATION_COLORIZED_FRAMES_COUNTER': '-1',
+        'RS2_AUS_INTEL_REALSENSE_D455_CONNECTED_DEVICES_COUNTER': '1',
+        'RS2_AUS_INTEL_REALSENSE_D455_DEPTH_TIMER': '-1',
+        'RS2_AUS_INTEL_REALSENSE_D455_GYRO_TIMER': '-1',
+        'RS2_AUS_INTEL_REALSENSE_D455_COLOR_TIMER': '-1',
+        'RS2_AUS_INTEL_REALSENSE_D455_ACCEL_TIMER': '-1',
+        'os_name': rsutils.get_os_name(),
+        'platform_name': rsutils.get_platform_name(),
+        'librealsense_version': rs.__version__
+    }
+result = all([(expected_check_dict.get(key) == value or expected_check_dict.get(key) == '-1')
+              for key, value in res_dict.items()])
+test.check_equal(result, True)
 test.finish()
 
 ############################################################################################

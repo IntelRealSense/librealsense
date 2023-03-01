@@ -133,5 +133,6 @@ PYBIND11_MODULE(NAME, m) {
     m.def("aus_start", &rs2::aus_start, "timer"_a);
     m.def("aus_stop", &rs2::aus_stop, "timer"_a);
     m.def("aus_get_counters_list", &rs2::aus_get_counters_list);
+    m.def("aus_get_data", &rs2::aus_get_data);
 
 }
