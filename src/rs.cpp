@@ -462,7 +462,7 @@ const char * rs2_aus_get_counter_data( const rs2_strings_list * buffer, int i, r
 }
 HANDLE_EXCEPTIONS_AND_RETURN( 0, buffer )
 
-const rs2_raw_data_buffer * rs2_aus_receive_json_data(rs2_error ** error) BEGIN_API_CALL
+const rs2_raw_data_buffer * rs2_aus_get_data(rs2_error ** error) BEGIN_API_CALL
 {
     std::vector<uint8_t> buffer_aus_data_recieved = librealsense::aus_get_data();
     return new rs2_raw_data_buffer { buffer_aus_data_recieved };

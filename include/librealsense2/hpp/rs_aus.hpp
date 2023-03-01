@@ -74,12 +74,12 @@ namespace rs2
         return results;
     }
 
-    inline  std::vector<uint8_t> aus_receive_json_data()
+    inline  std::vector<uint8_t> aus_get_data()
     {
         std::vector<uint8_t> results;
 
         rs2_error * e = nullptr;
-        const rs2_raw_data_buffer * buf = rs2_aus_receive_json_data(&e);
+        const rs2_raw_data_buffer * buf = rs2_aus_get_data(&e);
         error::handle(e);
 
         std::shared_ptr<const rs2_raw_data_buffer> list(buf, rs2_delete_raw_data);
