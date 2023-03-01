@@ -1288,7 +1288,7 @@ namespace rs2
         return res;
     }
 
-    bool subdevice_model::draw_res_stream_formats(std::string& error_message, std::string& label, std::function<void()> streaming_tooltip, float col0, float col1, std::vector<int> stream_types_ids)
+    bool subdevice_model::draw_res_stream_formats(std::string& error_message, std::string& label, std::function<void()> streaming_tooltip, float col0, float col1)
     {
         bool res = false;
 
@@ -1297,12 +1297,18 @@ namespace rs2
             return false;
         }
 
+        uint32_t depth_res_id, ir1_res_id, ir2_res_id;
+        get_depth_ir_mismatch_resolutions_ids(depth_res_id, ir1_res_id, ir2_res_id);
+
+        std::vector<uint32_t> stream_types_ids;
+        stream_types_ids.push_back(depth_res_id);
+        stream_types_ids.push_back(ir1_res_id);
         for (auto&& stream_type_id : stream_types_ids)
         {
             // resolution
             // Draw combo-box with all resolution options for this stream type
             rs2_stream stream_type = RS2_STREAM_DEPTH;
-            if (stream_type_id != 0)
+            if (stream_type_id != depth_res_id)
                 stream_type = RS2_STREAM_INFRARED;
 
             auto res_pairs = resolutions_per_stream[stream_type];
@@ -1392,9 +1398,12 @@ namespace rs2
 
             // stream and formats
             // Draw combo-box with all format options for current stream type
-            std::map<rs2_stream, std::vector<int>> stream_to_index;
-            stream_to_index[RS2_STREAM_DEPTH] = { 0 };
-            stream_to_index[RS2_STREAM_INFRARED] = { 1, 2 };
+            std::map<rs2_stream, std::vector<uint32_t>> stream_to_index;
+            uint32_t depth_res_id, ir1_res_id, ir2_res_id;
+            get_depth_ir_mismatch_resolutions_ids(depth_res_id, ir1_res_id, ir2_res_id);
+            stream_to_index[RS2_STREAM_DEPTH] = { depth_res_id };
+            stream_to_index[RS2_STREAM_INFRARED] = { ir1_res_id, ir2_res_id };
+
             for (auto&& f : formats)
             {
                 // Format
@@ -1503,7 +1512,7 @@ namespace rs2
                     ImGui::Text("Available Streams:");
                 }
 
-                res &= draw_res_stream_formats(error_message, label, streaming_tooltip, col0, col1, { 0, 1 });
+                res &= draw_res_stream_formats(error_message, label, streaming_tooltip, col0, col1);
             }
         }
         else
@@ -1647,9 +1656,9 @@ namespace rs2
         }
         else
         {
-            for (int i = 0; i < res_values_map.size(); ++i)
+            for (auto it = res_values_map.begin(); it != res_values_map.end(); ++it)
             {
-                selected_resolutions.push_back(res_values_map[i][ui.selected_res_id_map[i]]);
+                selected_resolutions.push_back(it->second[ui.selected_res_id_map[it->first]]);
             }
         }
 
@@ -1720,9 +1729,9 @@ namespace rs2
         }
         else
         {
-            for (int i = 0; i < res_values_map.size(); ++i)
+            for (auto it = res_values_map.begin(); it != res_values_map.end(); ++it)
             {
-                selected_resolutions.push_back(res_values_map[i][ui.selected_res_id_map[i]]);
+                selected_resolutions.push_back(it->second[ui.selected_res_id_map[it->first]]);
             }
         }
 
@@ -1973,9 +1982,9 @@ namespace rs2
                             }
                             else
                             {
-                                for (int i = 0; i < res_values_map.size(); ++i)
+                                for (auto it = res_values_map.begin(); it != res_values_map.end(); ++it)
                                 {
-                                    selected_resolutions.push_back(res_values_map[i][ui.selected_res_id_map[i]]);
+                                    selected_resolutions.push_back(it->second[ui.selected_res_id_map[it->first]]);
                                 }
                                 error_message << "\n{" << stream_display_names[stream] << ","
                                     << selected_resolutions[0].first << "x" << selected_resolutions[0].second << " at " << fps << "Hz, "
@@ -2053,13 +2062,11 @@ namespace rs2
         streaming = false;
         if (ui.selected_res_map_used)
         {
-            for (auto&& p : profiles)
-            {
-                if (p.stream_type() == RS2_STREAM_DEPTH)
-                    streaming_map[0] = false;
-                else
-                    streaming_map[1] = false;
-            }
+            uint32_t depth_res_id, ir1_res_id, ir2_res_id;
+            get_depth_ir_mismatch_resolutions_ids(depth_res_id, ir1_res_id, ir2_res_id);
+            streaming_map[depth_res_id] = false;
+            streaming_map[ir1_res_id] = false;
+            streaming_map[ir2_res_id] = false;
         }
         _pause = false;
 
@@ -2184,13 +2191,11 @@ namespace rs2
         streaming = true;
         if (ui.selected_res_map_used)
         {
-            for (auto&& p : profiles)
-            {
-                if (p.stream_type() == RS2_STREAM_DEPTH)
-                    streaming_map[0] = true;
-                else
-                    streaming_map[1] = true;
-            }
+            uint32_t depth_res_id, ir1_res_id, ir2_res_id;
+            get_depth_ir_mismatch_resolutions_ids(depth_res_id, ir1_res_id, ir2_res_id);
+            streaming_map[depth_res_id] = true;
+            streaming_map[ir1_res_id] = true;
+            streaming_map[ir2_res_id] = true;
         }
         
         if (s->is< color_sensor >())
@@ -6309,15 +6314,39 @@ namespace rs2
                         sub->ui.selected_res_id = int(res_id);
                     else
                     {
+                        uint32_t depth_res_id, ir1_res_id, ir2_res_id;
+                        sub->get_depth_ir_mismatch_resolutions_ids(depth_res_id, ir1_res_id, ir2_res_id);
+
                         if (kvp.first.first == RS2_STREAM_DEPTH)
-                            sub->ui.selected_res_id_map[0] = int(res_id);
+                            sub->ui.selected_res_id_map[depth_res_id] = int(res_id);
                         else
-                            sub->ui.selected_res_id_map[1] = int(res_id);
+                        {
+                            sub->ui.selected_res_id_map[ir1_res_id] = int(res_id);
+                            sub->ui.selected_res_id_map[ir2_res_id] = int(res_id);
+                        }
                     }
                 }
             }
         }
     }
+
+    void subdevice_model::get_depth_ir_mismatch_resolutions_ids(uint32_t& depth_res_id, uint32_t& ir1_res_id, uint32_t& ir2_res_id) const
+    {
+        auto it = res_values_map.begin();
+        if (it != res_values_map.end())
+        {
+            depth_res_id = it->first;
+            if (++it != res_values_map.end())
+            {
+                ir1_res_id = it->first;
+                if (++it != res_values_map.end())
+                {
+                    ir2_res_id = it->first;
+                }
+            }
+        }
+    }
+    
 
     float device_model::draw_preset_panel(float panel_width,
         ux_window& window,

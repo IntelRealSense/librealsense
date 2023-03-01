@@ -596,6 +596,8 @@ namespace rs2
         void restore_ui_selection() { ui = last_valid_ui; }
         void store_ui_selection() { last_valid_ui = ui; }
 
+        void get_depth_ir_mismatch_resolutions_ids(uint32_t& depth_res_id, uint32_t& ir1_res_id, uint32_t& ir2_res_id) const;
+
         template<typename T>
         bool get_default_selection_index(const std::vector<T>& values, const T & def, int* index)
         {
@@ -693,7 +695,7 @@ namespace rs2
         bool draw_resolutions(std::string& error_message, std::string& label, std::function<void()> streaming_tooltip, float col0, float col1);
         bool draw_fps(std::string& error_message, std::string& label, std::function<void()> streaming_tooltip, float col0, float col1);
         bool draw_streams_and_formats(std::string& error_message, std::string& label, std::function<void()> streaming_tooltip, float col0, float col1);
-        bool draw_res_stream_formats(std::string& error_message, std::string& label, std::function<void()> streaming_tooltip, float col0, float col1, std::vector<int> stream_types_ids);
+        bool draw_res_stream_formats(std::string& error_message, std::string& label, std::function<void()> streaming_tooltip, float col0, float col1);
         std::pair<int, int> get_max_resolution(rs2_stream stream) const;
         void sort_resolutions(std::vector<std::pair<int, int>>& resolutions) const;
         bool is_ir_calibration_profile() const;
