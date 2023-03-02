@@ -7,8 +7,8 @@ mark_as_advanced(FETCHCONTENT_BASE_DIR)
 mark_as_advanced(FETCHCONTENT_FULLY_DISCONNECTED)
 mark_as_advanced(FETCHCONTENT_UPDATES_DISCONNECTED)
 
-list(APPEND CMAKE_MESSAGE_INDENT "  ")
 message(CHECK_START  "Fetching & Installing foonathan_memory...")
+list(APPEND CMAKE_MESSAGE_INDENT "  ")
 
 FetchContent_Declare(
   foonathan_memory
@@ -50,24 +50,28 @@ execute_process(COMMAND "${CMAKE_COMMAND}" -G "${CMAKE_GENERATOR}" -DCMAKE_INSTA
                                                                    ${FOONATHAN_MEMORY_BUILD_VARS}
                                                                    . 
                                                                     WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/third-party/foonathan_memory" 
+                                                                    OUTPUT_QUIET
                                                                     RESULT_VARIABLE configure_ret
 )
 
 # Build and install Debug version
 execute_process(COMMAND "${CMAKE_COMMAND}" --build . --config Debug --target install
     WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/third-party/foonathan_memory" 
+    OUTPUT_QUIET
     RESULT_VARIABLE debug_build_ret
 )
 
 # Build and install RelWithDeb version
 execute_process(COMMAND "${CMAKE_COMMAND}" --build . --config RelWithDebInfo --target install
     WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/third-party/foonathan_memory" 
+    OUTPUT_QUIET
     RESULT_VARIABLE rel_with_deb_info_build_ret
 )
 
 # Build and install Release version
 execute_process(COMMAND "${CMAKE_COMMAND}" --build . --config Release --target install
     WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/third-party/foonathan_memory" 
+    OUTPUT_QUIET
     RESULT_VARIABLE release_build_ret
 )
 
