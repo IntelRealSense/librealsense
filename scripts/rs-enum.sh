@@ -77,6 +77,13 @@ if [ -n "$(v4l2-ctl --list-devices | grep tegra)" ]; then
     if [[ $info -eq 0 ]] && [[ $bus != "usb" ]]; then
       [[ -e $dev_ln ]] && sudo unlink $dev_ln
       sudo ln -s $vid $dev_ln
+      #TODO: create DFU device link for camera on jetson
+      subdev=$(media-ctl --print-dot | grep "D4XX depth ${camera} | awk -F'|' '{print $2}' | awk -F'/' '{print $3}' | tr -d ' '")
+      i2cdev=$(ls -l /sys/class/video4linux/${subdev}/device | awk -F'/' '{print $9}')
+      dev_dfu_name="/dev/d4xx-dfu-${i2cdev}"
+      dev_dfu_ln="/dev/d4xx-dfu-${cam_id}"
+      [[ -e $dev_dfu_ln ]] && sudo unlink $dev_dfu_ln
+      sudo ln -s $dev_dfu_name $dev_dfu_ln
     fi
   done
 exit 0
@@ -87,6 +94,7 @@ fi
 dot=$(media-ctl --print-dot)
 # for all d457 muxes a, b, c and d
 for camera in a b c d; do
+  create_dfu_dev=0
   for sens in "${!d4xx_vc_named[@]}"; do
     # get sensor binding from media controller
     d4xx_sens=$(echo "${dot}" | grep "D4XX $sens $camera" | awk '{print $1}')
@@ -97,6 +105,7 @@ for camera in a b c d; do
     vid_nd=$(echo "${dot}" | grep "$be_soc:port${d4xx_vc_named[${sens}]}" | grep -v dashed | awk '{print $3}' | awk -F':' '{print $1}')
     [[ -z $vid_nd ]] && continue; # echo "SENS $sens NOT FOUND" && continue
     vid=$(echo "${dot}" | grep "${vid_nd}" | grep video | tr '\\n' '\n' | grep video | awk -F'"' '{print $1}')
+    [[ -z $vid ]] && continue;
     dev_ln="/dev/video-rs-${camera_names["${sens}"]}-${camera_idx[${camera}]}"
     dev_name=$(v4l2-ctl -d $vid -D | grep Model | awk -F':' '{print $2}')
     # echo Sensor: $sens,\t Device: $vid,\t Link $dev_ln
@@ -108,6 +117,7 @@ for camera in a b c d; do
       # activate ipu6 link enumeration feature
       v4l2-ctl -d $dev_ln -c enumerate_graph_link=1
     fi
+    create_dfu_dev=1 # will create DFU device link for camera
     # metadata link
     # skip IR metadata node for now.
     [[ ${camera_names["${sens}"]} == 'ir' ]] && continue
@@ -122,6 +132,17 @@ for camera in a b c d; do
       sudo ln -s "/dev/video$(($vid_num+1))" $dev_md_ln
     fi
   done
+  # create DFU device link for camera
+  if [[ ${create_dfu_dev} -eq 1 ]]; then
+    dev_dfu_name="/dev/d4xx-dfu-${camera}"
+    dev_dfu_ln="/dev/d4xx-dfu-${camera_idx[${camera}]}"
+    if [[ $info -eq 0 ]]; then
+      [[ -e $dev_dfu_ln ]] && sudo unlink $dev_dfu_ln
+      sudo ln -s $dev_dfu_name $dev_dfu_ln
+    else
+      printf '%s\t%d\t%s\tFirmware \t%s\t%s\n' " i2c " ${camera_idx[${camera}]} "d4xx   " $dev_dfu_name $dev_dfu_ln
+    fi
+  fi
 done
 
 # end of file
