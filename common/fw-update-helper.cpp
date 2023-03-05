@@ -214,6 +214,9 @@ namespace rs2
         else
             serial = _dev.query_sensors().front().get_info(RS2_CAMERA_INFO_FIRMWARE_UPDATE_ID);
 
+        // TODO: DFU issue - remove d500_device usage when HKR FW team fix the firmware product id issue
+        bool d500_device = true;
+		
         // Clear FW update related notification to avoid dismissing the notification on ~device_model()
         // We want the notification alive during the whole process.
         _model.related_notifications.erase(
@@ -302,7 +305,8 @@ namespace rs2
                 // to prevent that, a blocking is added to make sure device is updated before continue to next step of querying device
                 upd.enter_update_state();
 
-                if (!check_for([this, serial, &dfu]() {
+                // TODO: DFU issue - remove d500_device usage when HKR FW team fix the firmware product id issue
+                if (!check_for([this, serial, d500_device, &dfu]() {
                     auto devs = _ctx.query_devices();
 
                     for (uint32_t j = 0; j < devs.size(); j++)
@@ -314,7 +318,8 @@ namespace rs2
                             {
                                 if (d.supports(RS2_CAMERA_INFO_FIRMWARE_UPDATE_ID))
                                 {
-                                    if (serial == d.get_info(RS2_CAMERA_INFO_FIRMWARE_UPDATE_ID))
+                                    // TODO: DFU issue - remove d500_device usage when HKR FW team fix the firmware product id issue
+                                    if (d500_device || serial == d.get_info(RS2_CAMERA_INFO_FIRMWARE_UPDATE_ID))
                                     {
                                         dfu = d;
                                         return true;

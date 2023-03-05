@@ -140,7 +140,10 @@ namespace librealsense
     {
         // checking fw compatibility (covering the case of recovery device with wrong product line fw )
         std::vector<uint8_t> buffer((uint8_t*)fw_image, (uint8_t*)fw_image + fw_image_size);
-        if (!check_fw_compatibility(buffer))
+
+        // TODO: DFU issue - remove d500_device usage when HKR will support D5XX_RECOVERY device
+        bool d500_device = true;
+        if (!d500_device && !check_fw_compatibility(buffer))
             throw librealsense::invalid_value_exception("Device: " + get_serial_number() + " failed to update firmware\nImage is unsupported for this device or corrupted");
 
         auto messenger = _usb_device->open(FW_UPDATE_INTERFACE_NUMBER);
@@ -210,7 +213,9 @@ namespace librealsense
         // WaitForDFU state sends several DFU_GETSTATUS requests, until we hit
         // either RS2_DFU_STATE_DFU_MANIFEST_WAIT_RESET or RS2_DFU_STATE_DFU_ERROR status.
         // This command also reset the device
-        if (!wait_for_state(messenger, RS2_DFU_STATE_DFU_MANIFEST_WAIT_RESET, 20000))
+        
+        // TODO: DFU issue - remove d500_device usage when HKR will fix manifest issue
+        if (!d500_device && !wait_for_state(messenger, RS2_DFU_STATE_DFU_MANIFEST_WAIT_RESET, 20000))
             throw std::runtime_error("Firmware manifest failed");
     }
 

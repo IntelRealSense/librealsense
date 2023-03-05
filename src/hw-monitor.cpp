@@ -65,13 +65,13 @@ namespace librealsense
     }
 
 
-    void hw_monitor::execute_usb_command(uint8_t *out, size_t outSize, uint32_t & op, uint8_t * in, size_t & inSize) const
+    void hw_monitor::execute_usb_command(uint8_t *out, size_t outSize, uint32_t & op, uint8_t * in, size_t & inSize, bool require_response) const
     {
         std::vector<uint8_t> out_vec(out, out + outSize);
-        auto res = _locked_transfer->send_receive(out_vec);
+        auto res = _locked_transfer->send_receive(out_vec, 5000, require_response);
 
         // read
-        if (in && inSize)
+        if (require_response && in && inSize)
         {
             if (res.size() < static_cast<int>(sizeof(uint32_t)))
                 throw invalid_value_exception("Incomplete bulk usb transfer!");
@@ -111,8 +111,9 @@ namespace librealsense
 
         uint32_t op{};
         size_t receivedCmdLen = HW_MONITOR_BUFFER_SIZE;
+        bool require_response = !details.oneDirection;
 
-        execute_usb_command(details.sendCommandData.data(), details.sizeOfSendCommandData, op, outputBuffer, receivedCmdLen);
+        execute_usb_command(details.sendCommandData.data(), details.sizeOfSendCommandData, op, outputBuffer, receivedCmdLen, require_response);
         update_cmd_details(details, receivedCmdLen, outputBuffer);
     }
 
