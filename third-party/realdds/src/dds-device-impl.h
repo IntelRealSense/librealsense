@@ -64,7 +64,6 @@ public:
 
     void run( size_t message_timeout_ms );
     void open( const dds_stream_profiles & profiles );
-    void close( const dds_streams & streams );
 
     void write_control_message( topics::flexible_msg && );
 

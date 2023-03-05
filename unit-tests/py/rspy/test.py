@@ -147,16 +147,21 @@ def print_stack():
     """
     Function for printing the current call stack. Used when an assertion fails
     """
-    log.out( 'Traceback (most recent call last):' )
-    stack = traceback.format_stack()
-    # Avoid stack trace into format_stack():
+    # Avoid stack trace into print_stack():
     #     File "C:/work/git/lrs\unit-tests\py\rspy\test.py", line 124, in check
     #       print_stack()
     #     File "C:/work/git/lrs\unit-tests\py\rspy\test.py", line 87, in print_stack
     #       stack = traceback.format_stack()
-    stack = stack[:-2]
+    print_stack_( traceback.format_stack()[:-2] )
+
+
+def print_stack_( stack ):
+    """
+    Function for printing the current call stack. Used when an assertion fails
+    """
+    log.e( 'Traceback (most recent call last):' )
     for line in stack:
-        log.out( line, end = '' )  # format_stack() adds \n
+        log.out( line[:-1], line_prefix = '    ' )  # format_stack() adds \n
 
 
 """
@@ -202,7 +207,7 @@ def abort():
     sys.exit( 1 )
 
 
-def check( exp, description = None, abort_if_failed = False):
+def check( exp, description = None, abort_if_failed = False ):
     """
     Basic function for asserting expressions.
     :param exp: An expression to be asserted, if false the assertion failed
@@ -212,15 +217,14 @@ def check( exp, description = None, abort_if_failed = False):
     if not exp:
         print_stack()
         if description:
-            log.out( f"    {description}" )
+            log.out( f'        {description}' )
         else:
-            log.out( f"    check failed; received {exp}" )
+            log.out( f'        check failed; received {exp}' )
         return check_failed( abort_if_failed )
-    reset_info()
     return check_passed()
 
 
-def check_false( exp, description = None, abort_if_failed = False):
+def check_false( exp, description = None, abort_if_failed = False ):
     """
     Opposite of check()
     """
@@ -239,13 +243,13 @@ def check_equal(result, expected, abort_if_failed = False):
         raise RuntimeError( "check_equal should not be used for lists. Use check_equal_lists instead" )
     if type(expected) != type(result):
         print_stack()
-        log.out( "    left  type:", type(result) )
-        log.out( "    right type:", type(expected) )
+        log.out( "        left  type:", type(result) )
+        log.out( "        right type:", type(expected) )
         return check_failed( abort_if_failed )
     if result != expected:
         print_stack()
-        log.out( "    left  :", result )
-        log.out( "    right :", expected )
+        log.out( "        left  :", result )
+        log.out( "        right :", expected )
         return check_failed( abort_if_failed )
     return check_passed()
 
@@ -261,8 +265,8 @@ def check_between( result, min, max, abort_if_failed = False ):
     """
     if result < min  or  result > max:
         print_stack()
-        log.out( "   result :", result )
-        log.out( "  between :", min, '-', max )
+        log.out( "       result :", result )
+        log.out( "      between :", min, '-', max )
         return check_failed( abort_if_failed )
     return check_passed()
 
@@ -293,7 +297,11 @@ def unexpected_exception():
     Used to assert that an except block is not reached. It's different from unreachable because it expects
     to be in an except block and prints the stack of the error and not the call-stack for this function
     """
-    traceback.print_exc( file = sys.stdout )
+    type,e,tb = sys.exc_info()
+    print_stack_( traceback.format_list( traceback.extract_tb( tb )))
+    for line in traceback.format_exception_only( type, e ):
+        log.out( line[:-1], line_prefix = '    ' )
+    log.out( '      Unexpected exception!' )
     check_failed()
 
 
@@ -320,8 +328,8 @@ def check_equal_lists(result, expected, abort_if_failed = False):
         i += 1
     if failed:
         print_stack()
-        log.out( "    result list  :", result )
-        log.out( "    expected list:", expected )
+        log.out( "        result list  :", result )
+        log.out( "        expected list:", expected )
         return check_failed( abort_if_failed )
     return check_passed()
 
@@ -335,8 +343,6 @@ def check_float_lists(result, expected, epsilon=1e-6, abort_if_failed = False):
     :param abort_if_failed:  If True and assertion failed the test will be aborted
     :return: True if assertion passed, False otherwise
     """
-    global n_assertions
-    n_assertions += 1
     failed = False
     if len(result) != len(expected):
         failed = True
@@ -353,12 +359,8 @@ def check_float_lists(result, expected, epsilon=1e-6, abort_if_failed = False):
         print_stack()
         log.out( "    result list  :", result )
         log.out( "    expected list:", expected )
-        check_failed()
-        if abort_if_failed:
-            abort()
-        return False
-    reset_info()
-    return True
+        return check_failed( abort_if_failed )
+    return check_passed()
 
 
 def check_exception(exception, expected_type, expected_msg = None, abort_if_failed = False):
@@ -372,16 +374,17 @@ def check_exception(exception, expected_type, expected_msg = None, abort_if_fail
     """
     failed = False
     if type(exception) != expected_type:
-        failed = [ "    raised exception was", type(exception),
-                 "\n    but expected", expected_type,
-                 "\n  With message:", str(exception) ]
-    elif expected_msg and str(exception) != expected_msg:
-        failed = [ "    exception message:", str(exception),
-                 "\n    but we expected:", expected_msg ]
+        failed = [ "        raised exception was", type(exception),
+                 "\n        but expected", expected_type,
+                 "\n      With message:", str(exception) ]
+    elif expected_msg is not None and str(exception) != expected_msg:
+        failed = [ "        exception message:", str(exception),
+                 "\n        but we expected  :", expected_msg ]
     if failed:
         print_stack()
         log.out( *failed )
         return check_failed( abort_if_failed )
+    log.d( 'expected exception:', exception )
     return check_passed()
 
 
@@ -394,8 +397,9 @@ def check_throws( _lambda, expected_type, expected_msg = None, abort_if_failed =
     try:
         _lambda()
     except Exception as e:
-        check_exception( e, expected_type, expected_msg, abort_if_failed )
-        return check_passed()
+        return check_exception( e, expected_type, expected_msg, abort_if_failed )
+    print_stack()
+    log.out( f'        expected {expected_type} but no exception was thrown' )
     return check_failed( abort_if_failed )
 
 
@@ -446,7 +450,7 @@ def info( name, value, persistent = False ):
     :param name: The name of the variable
     :param value: The value this variable stores
     :param persistent: If this parameter is True, the information stored will be kept after the following check
-        and will only be erased at the end of the test ( or when reset_info is called with True)
+        and will only be erased at the end of the test (or when reset_info is called with True)
     """
     global test_info
     test_info[name] = Information(value, persistent)
@@ -474,7 +478,7 @@ def print_info():
         return
     #log.out("Printing information")
     for name, information in test_info.items():
-        log.out( f"    {name} : {information.value}" )
+        log.out( f"        {name} : {information.value}" )
     reset_info()
 
 

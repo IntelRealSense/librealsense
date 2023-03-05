@@ -78,10 +78,10 @@ struct MultiEchoLaserScan_
    typedef float _range_max_type;
   _range_max_type range_max;
 
-   typedef std::vector< ::sensor_msgs::LaserEcho_<ContainerAllocator> , typename ContainerAllocator::template rebind< ::sensor_msgs::LaserEcho_<ContainerAllocator> >::other >  _ranges_type;
+   typedef std::vector< ::sensor_msgs::LaserEcho_<ContainerAllocator> , typename std::allocator_traits< ContainerAllocator >::template rebind_alloc< ::sensor_msgs::LaserEcho_<ContainerAllocator>  > >  _ranges_type;
   _ranges_type ranges;
 
-   typedef std::vector< ::sensor_msgs::LaserEcho_<ContainerAllocator> , typename ContainerAllocator::template rebind< ::sensor_msgs::LaserEcho_<ContainerAllocator> >::other >  _intensities_type;
+   typedef std::vector< ::sensor_msgs::LaserEcho_<ContainerAllocator> , typename std::allocator_traits< ContainerAllocator >::template rebind_alloc< ::sensor_msgs::LaserEcho_<ContainerAllocator>  > >  _intensities_type;
   _intensities_type intensities;
 
 

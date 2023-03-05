@@ -88,6 +88,11 @@ std::shared_ptr< dds_participant > const& dds_device::participant() const
     return _impl->_participant;
 }
 
+std::shared_ptr< dds_subscriber > const & dds_device::subscriber() const
+{
+    return _impl->_subscriber;
+}
+
 topics::device_info const & dds_device::device_info() const
 {
     return _impl->_info;
@@ -126,11 +131,6 @@ size_t dds_device::foreach_option( std::function< void( std::shared_ptr< dds_opt
 void dds_device::open( const dds_stream_profiles & profiles )
 {
     _impl->open( profiles );
-}
-
-void dds_device::close( dds_streams const & streams )
-{
-    _impl->close( streams );
 }
 
 void dds_device::set_option_value( const std::shared_ptr< dds_option > & option, float new_value )

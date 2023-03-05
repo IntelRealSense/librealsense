@@ -9,7 +9,7 @@
 #include <array>
 #include <chrono>
 #include "ivcam/sr300.h"
-#include "ds/ds5/ds5-factory.h"
+#include "ds/d400/d400-factory.h"
 #include "l500/l500-factory.h"
 #include "ds/ds-timestamp.h"
 #include "backend.h"
@@ -716,7 +716,6 @@ namespace librealsense
             if ( profiles.size() > 0 )
             {
                 _dev->open( realdds_profiles );
-
             }
 
             software_sensor::open( profiles );
@@ -841,12 +840,13 @@ namespace librealsense
 
         void start( frame_callback_ptr callback ) override
         {
-            //For each stream in sensor_base::get_active_streams() set callback function that will call on_video_frame
             for ( auto & profile : sensor_base::get_active_streams() )
             {
-                //stream is the dds_stream matching the librealsense active stream
-                sid_index stream_sidx( profile->get_unique_id(), profile->get_stream_index() );
-                auto & stream = _streams[stream_sidx];
+                auto & dds_stream = _streams[sid_index( profile->get_unique_id(), profile->get_stream_index() )];
+                // Opening it will start streaming on the server side automatically
+                dds_stream->open( "rt/" + _dev->device_info().topic_root + '_' + dds_stream->name(), _dev->subscriber());
+                // But we won't get callbacks until we "start streaming"
+                dds_stream->start_streaming();
                 if( Is< realdds::dds_video_stream >( stream ) )
                 {
                     _stream_name_to_video_syncer[stream->name()].reset( [this]( rs2_software_video_frame && f ) {
@@ -893,13 +893,12 @@ namespace librealsense
 
         void stop()
         {
-            for ( auto & profile : sensor_base::get_active_streams() )
+            for( auto & profile : sensor_base::get_active_streams() )
             {
-                //stream is the dds_stream matching the librealsense active stream
                 sid_index stream_sidx( profile->get_unique_id(), profile->get_stream_index() );
-                auto & stream = _streams[stream_sidx];
-                stream->stop_streaming();
-
+                auto & dds_stream = _streams[stream_sidx];
+                dds_stream->stop_streaming();
+                dds_stream->close();
                 if( _dev->supports_metadata() )
                 {
                     _data_stream_to_metadata[stream_sidx]->stop_streaming();
@@ -907,18 +906,6 @@ namespace librealsense
             }
 
             software_sensor::stop();
-        }
-
-        void close() override
-        {
-            realdds::dds_streams streams_to_close;
-            for( auto & profile : sensor_base::get_active_streams() )
-            {
-                sid_index stream_sidx( profile->get_unique_id(), profile->get_stream_index() );
-                streams_to_close.push_back( _streams[stream_sidx] );
-            }
-            _dev->close( streams_to_close );
-            software_sensor::close();
         }
 
         void add_option( std::shared_ptr< realdds::dds_option > option )
@@ -1029,7 +1016,7 @@ namespace librealsense
         to_rs2_video_stream( rs2_stream const stream_type,
                              sid_index const & sidx,
                              std::shared_ptr< realdds::dds_video_stream_profile > const & profile,
-                             const std::set< realdds::video_intrinsics > & intrinsics)
+                             const std::set< realdds::video_intrinsics > & intrinsics )
         {
             rs2_video_stream prof = {};
             prof.type = stream_type;
@@ -1039,11 +1026,13 @@ namespace librealsense
             prof.height = profile->height();
             prof.fps = profile->frequency();
             prof.fmt = static_cast< rs2_format >( profile->format().to_rs2() );
+            prof.bpp = 0;
             
-            //Handle intrinsics
-            auto intr = std::find_if( intrinsics.begin(), intrinsics.end(), [profile]( const realdds::video_intrinsics & intr ) {
-                return profile->width() == intr.width && profile->height() == intr.height;
-            } );
+            // Handle intrinsics
+            auto intr = std::find_if( intrinsics.begin(),
+                                      intrinsics.end(),
+                                      [profile]( const realdds::video_intrinsics & intr )
+                                      { return profile->width() == intr.width && profile->height() == intr.height; } );
             if( intr != intrinsics.end() ) //Some profiles don't have intrinsics
             {
                 prof.intrinsics.width = intr->width;
@@ -1054,6 +1043,10 @@ namespace librealsense
                 prof.intrinsics.fy = intr->focal_lenght_y;
                 prof.intrinsics.model = static_cast< rs2_distortion >( intr->distortion_model );
                 memcpy( prof.intrinsics.coeffs, intr->distortion_coeffs.data(), sizeof( prof.intrinsics.coeffs ) );
+            }
+            else
+            {
+                memset( &prof.intrinsics, 0, sizeof( prof.intrinsics ) );
             }
 
             return prof;
@@ -1095,13 +1088,12 @@ namespace librealsense
             , _dds_dev( dev )
         {
             LOG_DEBUG( "=====> dds-device-proxy " << this << " created on top of dds-device " << _dds_dev.get() );
-            auto dev_info = dev->device_info();
-            register_info( RS2_CAMERA_INFO_NAME, dev_info.name );
-            register_info( RS2_CAMERA_INFO_SERIAL_NUMBER, dev_info.serial );
-            register_info( RS2_CAMERA_INFO_PRODUCT_LINE, dev_info.product_line );
-            register_info( RS2_CAMERA_INFO_PRODUCT_ID, dev_info.product_id );
-            register_info( RS2_CAMERA_INFO_PHYSICAL_PORT, dev_info.topic_root );
-            register_info( RS2_CAMERA_INFO_CAMERA_LOCKED, dev_info.locked ? "YES" : "NO" );
+            register_info( RS2_CAMERA_INFO_NAME, dev->device_info().name );
+            register_info( RS2_CAMERA_INFO_SERIAL_NUMBER, dev->device_info().serial );
+            register_info( RS2_CAMERA_INFO_PRODUCT_LINE, dev->device_info().product_line );
+            register_info( RS2_CAMERA_INFO_PRODUCT_ID, dev->device_info().product_id );
+            register_info( RS2_CAMERA_INFO_PHYSICAL_PORT, dev->device_info().topic_root );
+            register_info( RS2_CAMERA_INFO_CAMERA_LOCKED, dev->device_info().locked ? "YES" : "NO" );
 
             //Assumes dds_device initialization finished
             struct sensor_info
@@ -1287,9 +1279,8 @@ namespace librealsense
 
         if( mask & RS2_PRODUCT_LINE_D400 )
         {
-            auto ds5_devices = ds5_info::pick_ds5_devices(ctx, devices);
-            std::copy(begin(ds5_devices), end(ds5_devices), std::back_inserter(list));
-
+            auto d400_devices = d400_info::pick_d400_devices(ctx, devices);
+            std::copy(begin(d400_devices), end(d400_devices), std::back_inserter(list));
         }
 
         if( mask & RS2_PRODUCT_LINE_L500 )

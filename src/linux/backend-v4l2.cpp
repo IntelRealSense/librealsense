@@ -761,13 +761,16 @@ namespace librealsense
             // next several lines permit to use D457 even if a usb device has already "taken" the video0,1,2 (for example)
             // further development is needed to permit use of several mipi devices
             static int  first_video_index = ind;
-            ind = (ind - first_video_index) % 6; // offset from first mipi video node and assume 6 nodes per mipi camera
+            // Use camera_video_nodes as number of /dev/video[%d] for each camera sensor subset
+            const int camera_video_nodes = 6;
+            int cam_id = ind / camera_video_nodes;
+            ind = (ind - first_video_index) % camera_video_nodes; // offset from first mipi video node and assume 6 nodes per mipi camera
             if (ind == 0 || ind == 2 || ind == 4)
-                mi = 0;
+                mi = 0; // video node indicator
             else if (ind == 1 | ind == 3)
-                mi = 3;
+                mi = 3; // metadata node indicator
             else if (ind == 5)
-                mi = 4;
+                mi = 4; // IMU node indicator
             else
             {
                 LOG_WARNING("Unresolved Video4Linux device mi, device is skipped");
@@ -780,12 +783,12 @@ namespace librealsense
             info.mi = mi;
             info.id = dev_name;
             info.device_path = video_path;
-            // unique id for MIPI:
+            // unique id for MIPI: This will assign sensor set for each camera.
             // it cannot be generated as in usb, because the params busnum, devpath and devnum
             // are not available via mipi
-            // TODO - find a way to assign unique id for mipi
-            // maybe using bus_info and card params (see above in this method)
-            info.unique_id = bus_info; // use bus_info as per camera unique id for mipi
+            // assign unique id for mipi by appending camera id to bus_info (bus_info is same for each mipi port)
+            // Note - jetson can use only bus_info, as card is different for each sensor and metadata node.
+            info.unique_id = bus_info + "-" + std::to_string(cam_id); // use bus_info as per camera unique id for mipi
             info.conn_spec = usb_specification;
             info.uvc_capabilities = get_dev_capabilities(dev_name);
 
@@ -803,10 +806,75 @@ namespace librealsense
                                    const std::string&)> action)
         {
             std::vector<std::string> video_paths = get_video_paths();
-
-            // Collect UVC nodes info to bundle metadata and video
             typedef std::pair<uvc_device_info,std::string> node_info;
             std::vector<node_info> uvc_nodes,uvc_devices;
+            std::vector<node_info> mipi_rs_enum_nodes;
+            /* Enumerate mipi nodes by links with usage of rs-enum script */
+            std::vector<std::string> video_sensors = {"depth", "color", "ir", "imu"};
+            const int MAX_V4L2_DEVICES = 8; // assume maximum 8 mipi devices
+
+            for ( int i = 0; i < MAX_V4L2_DEVICES; i++ ) {
+                for (const auto &vs: video_sensors) {
+                    int vfd = -1;
+                    std::string device_path = "video-rs-" + vs + "-" + std::to_string(i);
+                    std::string device_md_path = "video-rs-" + vs + "-md-" + std::to_string(i);
+                    std::string video_path = "/dev/" + device_path;
+                    std::string video_md_path = "/dev/" + device_md_path;
+                    uvc_device_info info{};
+
+                    // Get Video node
+                    // Check if file on video_path is exists
+                    vfd = open(video_path.c_str(), O_RDONLY | O_NONBLOCK);
+
+                    if (vfd < 0) // file does not exists, continue to the next one
+                        continue;
+                    else
+                        ::close(vfd); // file exists, close file and continue to assign it
+                    try
+                    {
+                        info = get_info_from_mipi_device_path(video_path, device_path);
+                    }
+                    catch(const std::exception & e)
+                    {
+                        LOG_WARNING("MIPI video device issue: " << e.what());
+                        continue;
+                    }
+
+                    info.mi = vs.compare("imu") ? 0 : 4;
+                    info.unique_id += "-" + std::to_string(i);
+                    mipi_rs_enum_nodes.emplace_back(info, video_path);
+
+                    // Get metadata node
+                    // Check if file on video_md_path is exists
+                    vfd = open(video_md_path.c_str(), O_RDONLY | O_NONBLOCK);
+
+                    if (vfd < 0) // file does not exists, continue to the next one
+                        continue;
+                    else
+                        ::close(vfd); // file exists, close file and continue to assign it
+
+                    try
+                    {
+                        info = get_info_from_mipi_device_path(video_md_path, device_md_path);
+                    }
+                    catch(const std::exception & e)
+                    {
+                        LOG_WARNING("MIPI video metadata device issue: " << e.what());
+                        continue;
+                    }
+                    info.mi = 3;
+                    info.unique_id += "-" + std::to_string(i);
+                    mipi_rs_enum_nodes.emplace_back(info, video_md_path);
+                }
+            }
+
+            // Append mipi nodes to uvc nodes list
+            if(mipi_rs_enum_nodes.size())
+            {
+                uvc_nodes.insert(uvc_nodes.end(), mipi_rs_enum_nodes.begin(), mipi_rs_enum_nodes.end());
+            }
+
+            // Collect UVC nodes info to bundle metadata and video
 
             for(auto&& video_path : video_paths)
             {
@@ -820,11 +888,14 @@ namespace librealsense
                     {
                         info = get_info_from_usb_device_path(video_path, name);
                     }
-                    else //video4linux devices that are not USB devices
+                    else if(mipi_rs_enum_nodes.empty()) //video4linux devices that are not USB devices and not previously enumerated by rs links
                     {
                         info = get_info_from_mipi_device_path(video_path, name);
                     }
-
+                    else // continue as we already have mipi nodes enumerated by rs links in uvc_nodes
+                    {
+                        continue;
+                    }
                     auto dev_name = "/dev/" + name;
                     uvc_nodes.emplace_back(info, dev_name);
                 }
@@ -1195,7 +1266,10 @@ namespace librealsense
 
                 struct timeval current_time = { mono_time.tv_sec, mono_time.tv_nsec / 1000 };
                 timersub(&expiration_time, &current_time, &remaining);
-                if (timercmp(&current_time, &expiration_time, <)) {
+                // timercmp fails cpp check, reduce macro function from time.h
+# define timercmp_lt(a, b) \
+  (((a)->tv_sec == (b)->tv_sec) ? ((a)->tv_usec < (b)->tv_usec) : ((a)->tv_sec < (b)->tv_sec))
+                if (timercmp_lt(&current_time, &expiration_time)) {
                     val = select(_max_fd + 1, &fds, nullptr, nullptr, &remaining);
                 }
                 else {
@@ -1553,7 +1627,7 @@ namespace librealsense
                                       static_cast<uint16_t>(size), const_cast<uint8_t *>(data)};
             if(xioctl(_fd, UVCIOC_CTRL_QUERY, &q) < 0)
             {
-                if (errno == EIO || errno == EAGAIN) // TODO: Log?
+                if (errno == EIO || errno == EAGAIN || errno == EBUSY)
                     return false;
 
                 throw linux_backend_exception("set_xu(...). xioctl(UVCIOC_CTRL_QUERY) failed");
@@ -1568,7 +1642,7 @@ namespace librealsense
                                       static_cast<uint16_t>(size), const_cast<uint8_t *>(data)};
             if(xioctl(_fd, UVCIOC_CTRL_QUERY, &q) < 0)
             {
-                if (errno == EIO || errno == EAGAIN || errno == EBUSY) // TODO: Log?
+                if (errno == EIO || errno == EAGAIN || errno == EBUSY)
                     return false;
 
                 throw linux_backend_exception("get_xu(...). xioctl(UVCIOC_CTRL_QUERY) failed");
@@ -1657,7 +1731,7 @@ namespace librealsense
             struct v4l2_control control = {get_cid(opt), 0};
             if (xioctl(_fd, VIDIOC_G_CTRL, &control) < 0)
             {
-                if (errno == EIO || errno == EAGAIN) // TODO: Log?
+                if (errno == EIO || errno == EAGAIN || errno == EBUSY)
                     return false;
 
                 throw linux_backend_exception("xioctl(VIDIOC_G_CTRL) failed");
@@ -1696,7 +1770,7 @@ namespace librealsense
             // Set value
             if (xioctl(_fd, VIDIOC_S_CTRL, &control) < 0)
             {
-                if (errno == EIO || errno == EAGAIN) // TODO: Log?
+                if (errno == EIO || errno == EAGAIN || errno == EBUSY)
                     return false;
 
                 throw linux_backend_exception("xioctl(VIDIOC_S_CTRL) failed");

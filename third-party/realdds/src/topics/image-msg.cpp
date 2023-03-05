@@ -1,9 +1,9 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2022 Intel Corporation. All Rights Reserved.
 
-#include <realdds/topics/image/image.h>
+#include <realdds/topics/ros2/ros2image.h>
 #include <realdds/topics/image/image-msg.h>
-#include <realdds/topics/image/imagePubSubTypes.h>
+#include <realdds/topics/ros2/ros2imagePubSubTypes.h>
 
 #include <realdds/dds-topic.h>
 #include <realdds/dds-topic-reader.h>
@@ -18,25 +18,19 @@ namespace topics {
 namespace device {
 
 
-image::image( raw::device::image && rhs )
+image::image( sensor_msgs::msg::Image && rhs )
 {
-    raw_data = std::move( rhs.raw_data() );
-    frame_id = std::move( rhs.frame_id() );
+    raw_data = std::move( rhs.data() );
     width    = std::move( rhs.width() );
     height   = std::move( rhs.height() );
-    size     = std::move( rhs.size() );
-    format   = std::move( rhs.format() );
 }
 
 
-image & image::operator=( raw::device::image && rhs )
+image & image::operator=( sensor_msgs::msg::Image && rhs )
 {
-    raw_data = std::move( rhs.raw_data() );
-    frame_id = std::move( rhs.frame_id() );
+    raw_data = std::move( rhs.data() );
     width    = std::move( rhs.width() );
     height   = std::move( rhs.height() );
-    size     = std::move( rhs.size() );
-    format   = std::move( rhs.format() );
 
     return *this;
 }
@@ -54,7 +48,7 @@ image::create_topic( std::shared_ptr< dds_participant > const & participant, cha
 /*static*/ bool
 image::take_next( dds_topic_reader & reader, image * output, eprosima::fastdds::dds::SampleInfo * info )
 {
-    raw::device::image raw_data;
+    sensor_msgs::msg::Image raw_data;
     eprosima::fastdds::dds::SampleInfo info_;
     if ( !info )
         info = &info_;  // use the local copy if the user hasn't provided their own

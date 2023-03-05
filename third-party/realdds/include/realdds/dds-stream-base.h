@@ -45,6 +45,14 @@ public:
     int default_profile_index() const { return _default_profile_index; }
     dds_options const & options() const { return _options; }
 
+    std::shared_ptr< dds_stream_profile > default_profile() const
+    {
+        std::shared_ptr< dds_stream_profile > profile;
+        if( default_profile_index() >= 0 && default_profile_index() < profiles().size() )
+            profile = profiles()[default_profile_index()];
+        return profile;
+    }
+
     // For serialization, we need a string representation of the stream type (also the profile types)
     virtual char const * type_string() const = 0;
 

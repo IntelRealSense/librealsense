@@ -27,6 +27,9 @@ class dds_topic_reader;
 // 
 // This is a base class: you need to specify the type of stream via the instantiation of a video_stream, etc.
 //
+// Streaming is over a single topic that remains closed until open() is called. Opening a stream signals the
+// server that frames are requested. In order to actually receive callbacks for those frames, use start_streaming().
+//
 class dds_stream : public dds_stream_base
 {
     typedef dds_stream_base super;

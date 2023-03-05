@@ -41,7 +41,7 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
             test.check_equal( stream.name(), "s1" )
             test.check_equal( stream.sensor_name(), "sensor" )
             test.check_equal( len( profiles ), 1 )
-            test.check_equal( str(profiles[0]), '<pyrealdds.depth_stream_profile 10x10 RGB8 @ 9 Hz>' )
+            test.check_equal( str(profiles[0]), "<pyrealdds.depth_stream_profile 's1' 10x10 rgb8 @ 9 Hz>" )
             test.check_equal( profiles[0].stream(), stream )
             test.check_equal( stream.default_profile_index(), 0 )
         remote.run( 'close_server()', timeout=5 )
@@ -65,7 +65,7 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
             test.check_equal( stream.sensor_name(), "sensor2" )
             test.check_equal( stream.type_string(), "accel" )
             test.check_equal( len( profiles ), 1 )
-            test.check_equal( str(profiles[0]), '<pyrealdds.accel_stream_profile RGB8 @ 30 Hz>' )
+            test.check_equal( str(profiles[0]), "<pyrealdds.accel_stream_profile 's2' rgb8 @ 30 Hz>" )
             test.check_equal( profiles[0].stream(), stream )
             test.check_equal( stream.default_profile_index(), 0 )
         remote.run( 'close_server()', timeout=5 )
@@ -114,7 +114,7 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
         test.check( device.is_running() )
         test.check_equal( device.n_streams(), 1 )
         for stream in device.streams():
-            profiles = stream.profiles() 
+            profiles = stream.profiles()
         test.check_equal( 10, len( profiles ))
         # Go thru the profiles, make sure they're in the right order (json is unordered)
         fibo = [0,1]
@@ -140,7 +140,7 @@ with test.remote( remote_script, nested_indent="  S" ) as remote:
         test.check( device.is_running() )
         test.check_equal( device.n_streams(), 6 )
         for stream in device.streams():
-            profiles = stream.profiles() 
+            profiles = stream.profiles()
         remote.run( 'close_server()', timeout=5 )
     except:
         test.unexpected_exception()

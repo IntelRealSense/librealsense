@@ -10,7 +10,8 @@
 #include <realdds/dds-utilities.h>
 #include <realdds/topics/image/image-msg.h>
 #include <realdds/topics/flexible/flexible-msg.h>
-#include <realdds/topics/image/imagePubSubTypes.h>
+#include <realdds/topics/ros2/ros2imagePubSubTypes.h>
+#include <realdds/dds-time.h>
 
 #include <fastdds/dds/topic/Topic.hpp>
 #include <fastdds/dds/publisher/DataWriter.hpp>
@@ -121,13 +122,42 @@ void dds_video_stream_server::open( std::string const & topic_name, std::shared_
         DDS_THROW( runtime_error, "stream '" + name() + "' has no profiles" );
 
     auto topic = topics::device::image::create_topic( publisher->get_participant(), topic_name.c_str() );
-
     _writer = std::make_shared< dds_topic_writer >( topic, publisher );
+
+
+    run_stream();
+}
+
+void dds_stream_server::run_stream()
+{
+    if( ! _writer )
+        DDS_THROW( runtime_error, "open() wasn't called before run_writer()" );
+
+    if( _on_readers_changed )
+    {
+        std::weak_ptr< dds_stream_server > weak_this(
+            std::static_pointer_cast<dds_stream_server>(shared_from_this()) );
+        _writer->on_publication_matched(
+            [weak_this, on_readers_changed = _on_readers_changed](
+                eprosima::fastdds::dds::PublicationMatchedStatus const & status )
+            {
+                if( auto self = weak_this.lock() )
+                    try
+                {
+                    LOG_DEBUG( status.current_count << " total readers on '" << self->name() << "'" );
+                    on_readers_changed( self, status.current_count );
+                }
+                catch( std::exception const & e )
+                {
+                    LOG_ERROR( "exception from 'on_readers_changed': " << e.what() );
+                }
+            } );
+    }
+    
     _writer->run( dds_topic_writer::qos( BEST_EFFORT_RELIABILITY_QOS ) );  // no retries
 }
 
-
-void dds_motion_stream_server::open( std::string const & topic_name, std::shared_ptr< dds_publisher > const & publisher )
+void dds_motion_stream_server::open( std::string const & topic_name,
 {
     if( is_open() )
         DDS_THROW( runtime_error, "stream '" + name() + "' is already open" );
@@ -135,9 +165,10 @@ void dds_motion_stream_server::open( std::string const & topic_name, std::shared
         DDS_THROW( runtime_error, "stream '" + name() + "' has no profiles" );
 
     auto topic = topics::device::image::create_topic( publisher->get_participant(), topic_name.c_str() );
-
     _writer = std::make_shared< dds_topic_writer >( topic, publisher );
-    _writer->run( dds_topic_writer::qos( BEST_EFFORT_RELIABILITY_QOS ) );  // no retries
+
+
+    run_stream();
 }
 
 
@@ -145,11 +176,14 @@ void dds_metadata_stream_server::open( std::string const & topic_name, std::shar
 {
     if( is_open() )
         DDS_THROW( runtime_error, "stream '" + name() + "' is already open" );
+    if( profiles().empty() )
+        DDS_THROW( runtime_error, "stream '" + name() + "' has no profiles" );
 
     auto topic = topics::flexible_msg::create_topic( publisher->get_participant(), topic_name.c_str() );
-
     _writer = std::make_shared< dds_topic_writer >( topic, publisher );
-    _writer->run( dds_topic_writer::qos( BEST_EFFORT_RELIABILITY_QOS ) );  // no retries
+
+
+    run_stream();
 }
 
 
@@ -177,20 +211,29 @@ void dds_stream_server::stop_streaming()
     _image_header.invalidate();
 }
 
+void dds_stream_server::close()
+{
+    _writer.reset();
+}
 
 void dds_stream_server::publish( const uint8_t * data, size_t size, unsigned long long id )
 {
     if( ! is_streaming() )
         DDS_THROW( runtime_error, "stream '" + name() + "' cannot publish before start_streaming()" );
 
-    LOG_DEBUG( "publishing a DDS frame for topic: " << _writer->topic()->get()->get_name() );
-    topics::raw::device::image raw_image;
-    raw_image.size() = static_cast< uint32_t >( size );
-    raw_image.format() = _image_header.format;
+    LOG_DEBUG( "publishing a DDS video frame for topic: " << _writer->topic()->get()->get_name() );
+    sensor_msgs::msg::Image raw_image;
+    raw_image.header().frame_id() = std::to_string( ++_frame_id );
+    auto const now = realdds::now();
+    raw_image.header().stamp().sec() = now.seconds();
+    raw_image.header().stamp().nanosec() = now.nanosec();
+    raw_image.encoding() = _image_header.format.to_string();
     raw_image.height() = _image_header.height;
     raw_image.width() = _image_header.width;
-    raw_image.raw_data().assign( data, data + size );
-    raw_image.frame_id( std::to_string( id ) );
+    raw_image.step() = uint32_t( size / _image_header.height );
+    raw_image.is_bigendian() = false;
+    raw_image.data().assign( data, data + size );
+    LOG_DEBUG( "publishing '" << name() << "' frame " << std::dec << _frame_id << " " << raw_image.encoding() );
 
     DDS_API_CALL( _writer->get()->write( &raw_image ) );
 }
@@ -205,12 +248,3 @@ void dds_metadata_stream_server::publish( const uint8_t * data, size_t size, uns
     topics::flexible_msg msg( std::move( json_data ) );
     msg.write_to( *_writer );
 }
-
-//void dds_metadata_stream_server::publish( nlohmann::json && metadata )
-//{
-//    if( !is_open() )
-//        DDS_THROW( runtime_error, "stream '" + name() + "' must be open before publishing" );
-//
-//    topics::flexible_msg msg( std::move( metadata ) );
-//    msg.write_to( *_writer );
-//}

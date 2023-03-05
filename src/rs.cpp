@@ -562,6 +562,8 @@ rs2_stream_profile* rs2_clone_video_stream_profile(const rs2_stream_profile* mod
 
     auto vid = std::dynamic_pointer_cast<video_stream_profile_interface>(sp);
     auto i = *intr;
+
+    VALIDATE_NOT_NULL(vid)
     vid->set_intrinsics([i]() { return i; });
     vid->set_dims(width, height);
 
@@ -668,7 +670,10 @@ void rs2_set_option(const rs2_options* options, rs2_option option, float value, 
 {
     VALIDATE_NOT_NULL(options);
     VALIDATE_OPTION(options, option);
-    options->options->get_option(option).set(value);
+    auto& option_ref = options->options->get_option(option);
+    auto range = option_ref.get_range();
+    VALIDATE_RANGE(value, range.min, range.max);
+    option_ref.set(value);
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, options, option, value)
 
@@ -780,7 +785,7 @@ void rs2_start(const rs2_sensor* sensor, rs2_frame_callback_ptr on_frame, void* 
     VALIDATE_NOT_NULL(on_frame);
     librealsense::frame_callback_ptr callback(
         new librealsense::frame_callback(on_frame, user));
-    sensor->sensor->start(move(callback));
+    sensor->sensor->start(std::move(callback));
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, sensor, on_frame, user)
 
@@ -790,7 +795,7 @@ void rs2_start_queue(const rs2_sensor* sensor, rs2_frame_queue* queue, rs2_error
     VALIDATE_NOT_NULL(queue);
     librealsense::frame_callback_ptr callback(
         new librealsense::frame_callback(rs2_enqueue_frame, queue));
-    sensor->sensor->start(move(callback));
+    sensor->sensor->start(std::move(callback));
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, sensor, queue)
 
@@ -1879,7 +1884,7 @@ rs2_pipeline_profile* rs2_pipeline_start_with_callback(rs2_pipeline* pipe, rs2_f
     VALIDATE_NOT_NULL(pipe);
     librealsense::frame_callback_ptr callback( new librealsense::frame_callback( on_frame, user ),
                                                []( rs2_frame_callback * p ) { p->release(); } );
-    return new rs2_pipeline_profile{ pipe->pipeline->start(std::make_shared<pipeline::config>(), move(callback)) };
+    return new rs2_pipeline_profile{ pipe->pipeline->start(std::make_shared<pipeline::config>(), std::move(callback)) };
 }
 HANDLE_EXCEPTIONS_AND_RETURN(nullptr, pipe, on_frame, user)
 
@@ -2146,7 +2151,7 @@ void rs2_start_processing_queue(rs2_processing_block* block, rs2_frame_queue* qu
     VALIDATE_NOT_NULL(queue);
     librealsense::frame_callback_ptr callback(
         new librealsense::frame_callback(rs2_enqueue_frame, queue));
-    block->block->set_output_callback(move(callback));
+    block->block->set_output_callback(std::move(callback));
 }
 HANDLE_EXCEPTIONS_AND_RETURN(, block, queue)
 

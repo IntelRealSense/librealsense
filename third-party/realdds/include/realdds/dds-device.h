@@ -36,6 +36,7 @@ public:
                                                  topics::device_info const & info );
 
     std::shared_ptr< dds_participant > const & participant() const;
+    std::shared_ptr< dds_subscriber > const & subscriber() const;
     topics::device_info const & device_info() const;
 
     // The device GUID is that of the DataWriter which declares it!
@@ -54,7 +55,6 @@ public:
     size_t foreach_option( std::function< void( std::shared_ptr< dds_option > option ) > fn ) const;
 
     void open( const dds_stream_profiles & profiles );
-    void close( const dds_streams & streams );
 
     void set_option_value( const std::shared_ptr< dds_option > & option, float new_value );
     float query_option_value( const std::shared_ptr< dds_option > & option );

@@ -232,17 +232,17 @@ namespace librealsense
 
     struct command
     {
-        uint8_t cmd;
-        int     param1;
-        int     param2;
-        int     param3;
-        int     param4;
+        uint8_t  cmd;
+        uint32_t param1;
+        uint32_t param2;
+        uint32_t param3;
+        uint32_t param4;
         std::vector<uint8_t> data;
         int     timeout_ms = 5000;
         bool    require_response = true;
 
-        explicit command(uint8_t cmd, int param1 = 0, int param2 = 0,
-                int param3 = 0, int param4 = 0, int timeout_ms = 5000,
+        explicit command(uint8_t cmd, uint32_t param1 = 0, uint32_t param2 = 0,
+                uint32_t param3 = 0, uint32_t param4 = 0, int timeout_ms = 5000,
                 bool require_response = true)
             : cmd(cmd), param1(param1),
               param2(param2),
