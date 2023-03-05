@@ -45,6 +45,8 @@ set(COMMON_SRC
     "${CMAKE_CURRENT_LIST_DIR}/updates-model.cpp"
     "${CMAKE_CURRENT_LIST_DIR}/option-model.h"
     "${CMAKE_CURRENT_LIST_DIR}/option-model.cpp"
+    "${CMAKE_CURRENT_LIST_DIR}/device-model.cpp"
+    "${CMAKE_CURRENT_LIST_DIR}/device-model.h"
     "${CMAKE_CURRENT_LIST_DIR}/subdevice-model.h"
     "${CMAKE_CURRENT_LIST_DIR}/subdevice-model.cpp"
     "${CMAKE_CURRENT_LIST_DIR}/processing-block-model.h"

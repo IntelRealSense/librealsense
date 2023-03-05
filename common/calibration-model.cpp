@@ -1,8 +1,9 @@
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2023 Intel Corporation. All Rights Reserved.
 
+#include <rs-config.h>
 #include "calibration-model.h"
-#include "model-views.h"
+#include "device-model.h"
 #include "os.h"
 #include "ux-window.h"
 

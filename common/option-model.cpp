@@ -5,7 +5,7 @@
 #include <librealsense2/rs_advanced_mode.hpp>
 #include <imgui.h>
 #include <imgui_internal.h>
-#include "model-views.h"
+#include "device-model.h"
 #include "subdevice-model.h"
 
 namespace rs2
